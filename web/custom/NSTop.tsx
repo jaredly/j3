@@ -68,11 +68,14 @@ export const hasErrors = (
 ): boolean => {
     const ns = state.nsMap[id] as RealizedNamespace;
     if (!ns) {
-        // debugger;
         console.warn(`trying to haserrors but no ns`);
-        return false;
+        return true;
     }
-    if (results.nodes[ns.id].parsed?.type === 'failure') {
+    const parsed = results.nodes[ns.id].parsed;
+    if (parsed?.type === 'failure') {
+        return true;
+    }
+    if (parsed?.type === 'success' && parsed.errors.length) {
         return true;
     }
     if (Object.keys(workerResults.nodes[ns.id]?.errors ?? {}).length) {

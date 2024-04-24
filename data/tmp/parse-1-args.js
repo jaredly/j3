@@ -14,14 +14,6 @@ let its = int_to_string
 let value = {type: "value"}
 let type = {type: "type"}
 let dot = (a) => (b) => (c) => a(b(c))
-let orr = ($default) => (v) => (($target) => {
-if ($target.type === "some") {
-let v = $target[0];
-return v
-} ;
-return $default;
-throw new Error('match fail 8013:' + JSON.stringify($target))
-})(v)
 let just_trace = (loc) => (trace) => (value) => (($target) => {
 if ($target.type === "none") {
 return ""
@@ -133,7 +125,7 @@ throw new Error('match fail 15152:' + JSON.stringify($target))
 let fold$slget = (get) => (f) => (init) => (value) => f(init)(get(value))
 let spread$slinner = ({"0": inner}) => inner
 let nop = (a) => (b) => a
-let force = (x) => (($target) => {
+let force_opt = (x) => (($target) => {
 if ($target.type === "none") {
 return fatal("empty")
 } ;
@@ -145,6 +137,24 @@ throw new Error('match fail 15409:' + JSON.stringify($target))
 })(x)
 let map$co$co0 = (f) => ({"2": c, "1": b, "0": a}) => $co$co(f(a))(b)(c)
 let map$co1 = (f) => ({"1": b, "0": a}) => $co(a)(f(b))
+
+let StateT = (v0) => ({type: "StateT", 0: v0})
+let run_$gt = ({"0": f}) => (state) => {
+let {"1": result} = f(state);
+return result
+}
+let state_f = ({"0": f}) => f
+let $gt$gt$eq = ({"0": f}) => (next) => StateT((state) => {
+let state$0 = state;
+{
+let {"1": value, "0": state} = f(state$0);
+return state_f(next(value))(state)
+}
+})
+let $lt_ = (x) => StateT((state) => $co(state)(x))
+let $lt_state = StateT((state) => $co(state)(state))
+let state_$gt = (v) => StateT((old) => $co(v)(old))
+let id = (x) => x
 let nil = {type: "nil"}
 let cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 let pany = (v0) => ({type: "pany", 0: v0})
@@ -209,21 +219,6 @@ return tapp(tapps(rest)(l))(one)(l)
 } ;
 throw new Error('match fail 904:' + JSON.stringify($target))
 })(items)
-let pairs = (list) => (($target) => {
-if ($target.type === "nil") {
-return nil
-} ;
-if ($target.type === "cons") {
-let one = $target[0];
-if ($target[1].type === "cons") {
-let two = $target[1][0];
-let rest = $target[1][1];
-return cons($co(one)(two))(pairs(rest))
-} 
-} ;
-return fatal(`Pairs given odd number ${valueToString(list)}`);
-throw new Error('match fail 1690:' + JSON.stringify($target))
-})(list)
 let replaces = (target) => (repl) => (($target) => {
 if ($target.type === "nil") {
 return target
@@ -461,55 +456,6 @@ return bag$sland(externals_type(bound)(one))(externals_type(bound)(two))
 } ;
 throw new Error('match fail 7109:' + JSON.stringify($target))
 })(t)
-let just_pat = (pat) => (($target) => {
-if ($target.type === "pany") {
-return none
-} ;
-if ($target.type === "pvar") {
-let name = $target[0];
-let l = $target[1];
-return some(sanitize(name))
-} ;
-if ($target.type === "pcon") {
-let name = $target[0];
-let il = $target[1];
-let args = $target[2];
-let l = $target[3];
-{
-let $target = foldl($co(0)(nil))(args)((result) => (arg) => {
-let {"1": res, "0": i} = result;
-{
-let $target = just_pat(arg);
-if ($target.type === "none") {
-return $co(i + 1)(res)
-} ;
-if ($target.type === "some") {
-let what = $target[0];
-return $co(i + 1)(cons(`${its(i)}: ${what}`)(res))
-} ;
-throw new Error('match fail 7934:' + JSON.stringify($target))
-}
-});
-if ($target.type === ",") {
-if ($target[1].type === "nil") {
-return none
-} 
-} ;
-if ($target.type === ",") {
-let items = $target[1];
-return some(`{${join(", ")(rev(items)(nil))}}`)
-} ;
-throw new Error('match fail 7917:' + JSON.stringify($target))
-}
-} ;
-if ($target.type === "pstr") {
-return fatal("Cant use string as a pattern in this location")
-} ;
-if ($target.type === "pprim") {
-return fatal("Cant use primitive as a pattern in this location")
-} ;
-throw new Error('match fail 7895:' + JSON.stringify($target))
-})(pat)
 let pat_names_loc = (pat) => (($target) => {
 if ($target.type === "pany") {
 return empty
@@ -748,6 +694,86 @@ return cons($co(o)(t))(zip(one)(two))
 } ;
 throw new Error('match fail 15967:' + JSON.stringify($target))
 })($co(one)(two))
+let $lt_err = (e) => (v) => StateT((state) => $co(cons(e)(state))(v))
+let map_$gt = (f) => (arr) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(nil)
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(f(one))((one) => $gt$gt$eq(map_$gt(f)(rest))((rest) => $lt_(cons(one)(rest))))
+} ;
+throw new Error('match fail 16625:' + JSON.stringify($target))
+})(arr)
+let do_$gt = (f) => (arr) => (($target) => {
+if ($target.type === "nil") {
+return $lt_($unit)
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(f(one))((_16672) => $gt$gt$eq(do_$gt(f)(rest))((_16672) => $lt_($unit)))
+} ;
+throw new Error('match fail 16661:' + JSON.stringify($target))
+})(arr)
+let seq_$gt = (arr) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(nil)
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(one)((one) => $gt$gt$eq(seq_$gt(rest))((rest) => $lt_(cons(one)(rest))))
+} ;
+throw new Error('match fail 16693:' + JSON.stringify($target))
+})(arr)
+let foldl_$gt = (init) => (values) => (f) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(init)
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(f(init)(one))((one) => foldl_$gt(one)(rest)(f))
+} ;
+throw new Error('match fail 16773:' + JSON.stringify($target))
+})(values)
+let foldr_$gt = (init) => (values) => (f) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(init)
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(foldr_$gt(init)(rest)(f))((init) => f(init)(one))
+} ;
+throw new Error('match fail 16805:' + JSON.stringify($target))
+})(values)
+let state$slnil = nil
+let cst_loc = (cst) => (($target) => {
+if ($target.type === "cst/identifier") {
+let l = $target[1];
+return l
+} ;
+if ($target.type === "cst/list") {
+let l = $target[1];
+return l
+} ;
+if ($target.type === "cst/array") {
+let l = $target[1];
+return l
+} ;
+if ($target.type === "cst/spread") {
+let l = $target[1];
+return l
+} ;
+if ($target.type === "cst/string") {
+let l = $target[2];
+return l
+} ;
+throw new Error('match fail 17105:' + JSON.stringify($target))
+})(cst)
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
@@ -771,45 +797,44 @@ let parse_pat = (pat) => (($target) => {
 if ($target.type === "cst/identifier") {
 if ($target[0] === "_") {
 let l = $target[1];
-return pany(l)
+return $lt_(pany(l))
 } 
 } ;
 if ($target.type === "cst/identifier") {
 if ($target[0] === "true") {
 let l = $target[1];
-return pprim(pbool(true)(l))(l)
+return $lt_(pprim(pbool(true)(l))(l))
 } 
 } ;
 if ($target.type === "cst/identifier") {
 if ($target[0] === "false") {
 let l = $target[1];
-return pprim(pbool(false)(l))(l)
+return $lt_(pprim(pbool(false)(l))(l))
 } 
 } ;
 if ($target.type === "cst/string") {
 let first = $target[0];
 if ($target[1].type === "nil") {
 let l = $target[2];
-return pstr(first)(l)
+return $lt_(pstr(first)(l))
 } 
 } ;
 if ($target.type === "cst/identifier") {
 let id = $target[0];
 let l = $target[1];
-{
-let $target = string_to_int(id);
+return $lt_((($target) => {
 if ($target.type === "some") {
 let int = $target[0];
 return pprim(pint(int)(l))(l)
 } ;
 return pvar(id)(l);
 throw new Error('match fail 3019:' + JSON.stringify($target))
-}
+})(string_to_int(id)))
 } ;
 if ($target.type === "cst/array") {
 if ($target[0].type === "nil") {
 let l = $target[1];
-return pcon("nil")(-1)(nil)(l)
+return $lt_(pcon("nil")(-1)(nil)(l))
 } 
 } ;
 if ($target.type === "cst/array") {
@@ -827,13 +852,13 @@ if ($target[0].type === "cons") {
 let one = $target[0][0];
 let rest = $target[0][1];
 let l = $target[1];
-return pcon("cons")(-1)(cons(parse_pat(one))(cons(parse_pat(cst$slarray(rest)(l)))(nil)))(l)
+return $gt$gt$eq(parse_pat(one))((one) => $gt$gt$eq(parse_pat(cst$slarray(rest)(l)))((rest) => $lt_(pcon("cons")(-1)(cons(one)(cons(rest)(nil)))(l))))
 } 
 } ;
 if ($target.type === "cst/list") {
 if ($target[0].type === "nil") {
 let l = $target[1];
-return pcon("()")(-1)(nil)(l)
+return $lt_(pcon("()")(-1)(nil)(l))
 } 
 } ;
 if ($target.type === "cst/list") {
@@ -855,17 +880,17 @@ let name = $target[0][0][0];
 let il = $target[0][0][1];
 let rest = $target[0][1];
 let l = $target[1];
-return pcon(name)(il)(map(rest)(parse_pat))(l)
+return $gt$gt$eq(map_$gt(parse_pat)(rest))((rest) => $lt_(pcon(name)(il)(rest)(l)))
 } 
 } 
 } ;
-return fatal(`parse-pat mo match ${valueToString(pat)}`);
+return $lt_err($co(cst_loc(pat))(`parse-pat mo match ${valueToString(pat)}`))(pany(cst_loc(pat)));
 throw new Error('match fail 1727:' + JSON.stringify($target))
 })(pat)
 
 let parse_pat_tuple = (items) => (il) => (l) => (($target) => {
 if ($target.type === "nil") {
-return pcon(",")(-1)(nil)(il)
+return $lt_(pcon(",")(-1)(nil)(il))
 } ;
 if ($target.type === "cons") {
 let one = $target[0];
@@ -876,68 +901,10 @@ return parse_pat(one)
 if ($target.type === "cons") {
 let one = $target[0];
 let rest = $target[1];
-return pcon(",")(-1)(cons(parse_pat(one))(cons(parse_pat_tuple(rest)(il)(l))(nil)))(l)
+return $gt$gt$eq(parse_pat(one))((one) => $gt$gt$eq(parse_pat_tuple(rest)(il)(l))((rest) => $lt_(pcon(",")(-1)(cons(one)(cons(rest)(nil)))(l))))
 } ;
 throw new Error('match fail 7715:' + JSON.stringify($target))
 })(items)
-let pat_loop = (target) => (args) => (i) => (inner) => (trace) => (($target) => {
-if ($target.type === "nil") {
-return inner
-} ;
-if ($target.type === "cons") {
-let arg = $target[0];
-let rest = $target[1];
-return compile_pat(arg)(`${target}[${its(i)}]`)(pat_loop(target)(rest)(i + 1)(inner)(trace))(trace)
-} ;
-throw new Error('match fail 2297:' + JSON.stringify($target))
-})(args)
-
-let compile_pat = (pat) => (target) => (inner) => (trace) => trace_and_block(pat_loc(pat))(trace)(target)((($target) => {
-if ($target.type === "pany") {
-let l = $target[0];
-return inner
-} ;
-if ($target.type === "pprim") {
-let prim = $target[0];
-let l = $target[1];
-{
-let $target = prim;
-if ($target.type === "pint") {
-let int = $target[0];
-return `if (${target} === ${its(int)}) {\n${inner}\n}`
-} ;
-if ($target.type === "pbool") {
-let bool = $target[0];
-return `if (${target} === ${(($target) => {
-if ($target === true) {
-return "true"
-} ;
-return "false";
-throw new Error('match fail 11090:' + JSON.stringify($target))
-})(bool)}) {\n${inner}\n}`
-} ;
-throw new Error('match fail 11065:' + JSON.stringify($target))
-}
-} ;
-if ($target.type === "pstr") {
-let str = $target[0];
-let l = $target[1];
-return `if (${target} === \"${str}\"){\n${inner}\n}`
-} ;
-if ($target.type === "pvar") {
-let name = $target[0];
-let l = $target[1];
-return `{\nlet ${sanitize(name)} = ${target};\n${inner}\n}`
-} ;
-if ($target.type === "pcon") {
-let name = $target[0];
-let nl = $target[1];
-let args = $target[2];
-let l = $target[3];
-return `if (${target}.type === \"${name}\") {\n${pat_loop(target)(args)(0)(inner)(trace)}\n}`
-} ;
-throw new Error('match fail 11054:' + JSON.stringify($target))
-})(pat))
 let j$slapp = (v0) => (v1) => (v2) => ({type: "j/app", 0: v0, 1: v1, 2: v2})
 let j$slbin = (v0) => (v1) => (v2) => (v3) => ({type: "j/bin", 0: v0, 1: v1, 2: v2, 3: v3})
 let j$slun = (v0) => (v1) => (v2) => ({type: "j/un", 0: v0, 1: v1, 2: v2})
@@ -964,74 +931,26 @@ let j$slcontinue = (v0) => ({type: "j/continue", 0: v0})
 let j$slreturn = (v0) => (v1) => ({type: "j/return", 0: v0, 1: v1})
 let j$sllet = (v0) => (v1) => (v2) => ({type: "j/let", 0: v0, 1: v1, 2: v2})
 let j$slthrow = (v0) => (v1) => ({type: "j/throw", 0: v0, 1: v1})
-let parse_type = (type) => (($target) => {
-if ($target.type === "cst/identifier") {
-let id = $target[0];
-let l = $target[1];
-return tcon(id)(l)
+let pairs = (list) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(nil)
 } ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "nil") {
-let l = $target[1];
-return fatal("(parse-type) with empty list")
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "fn") {
-if ($target[0][1].type === "cons") {
-if ($target[0][1][0].type === "cst/array") {
-let args = $target[0][1][0][0];
-if ($target[0][1][1].type === "cons") {
-let body = $target[0][1][1][0];
-if ($target[0][1][1][1].type === "nil") {
-return foldl(parse_type(body))(rev(args)(nil))((body) => (arg) => tapp(tapp(tcon("->")(-1))(parse_type(arg))(-1))(body)(-1))
-} 
-} 
-} 
-} 
-} 
-} 
+if ($target.type === "cons") {
+let one = $target[0];
+if ($target[1].type === "cons") {
+let two = $target[1][0];
+let rest = $target[1][1];
+return $gt$gt$eq(pairs(rest))((rest) => $lt_(cons($co(one)(two))(rest)))
 } 
 } ;
-if ($target.type === "cst/list") {
-let items = $target[0];
-let l = $target[1];
-return tapps(rev(map(items)(parse_type))(nil))(l)
-} ;
-return fatal(`(parse-type) Invalid type ${valueToString(type)}`);
-throw new Error('match fail 867:' + JSON.stringify($target))
-})(type)
-let mk_deftype = (id) => (li) => (args) => (items) => (l) => sdeftype(id)(li)(map(args)((arg) => (($target) => {
-if ($target.type === "cst/identifier") {
-let name = $target[0];
-let l = $target[1];
-return $co(name)(l)
-} ;
-return fatal("deftype type argument must be identifier");
-throw new Error('match fail 5024:' + JSON.stringify($target))
-})(arg)))(foldr(nil)(items)((res) => (constr) => (($target) => {
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-let name = $target[0][0][0];
-let ni = $target[0][0][1];
-let args = $target[0][1];
-let l = $target[1];
-return cons($co$co$co(name)(ni)(map(args)(parse_type))(l))(res)
-} 
+if ($target.type === "cons") {
+let one = $target[0];
+if ($target[1].type === "nil") {
+return $lt_err($co(cst_loc(one))("extra item in pairs"))(nil)
 } 
 } ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "nil") {
-let l = $target[1];
-return res
-} 
-} ;
-return fatal("Invalid type constructor");
-throw new Error('match fail 1443:' + JSON.stringify($target))
-})(constr)))(l)
+throw new Error('match fail 1690:' + JSON.stringify($target))
+})(list)
 let expr_loc = (expr) => (($target) => {
 if ($target.type === "estr") {
 let l = $target[2];
@@ -1216,29 +1135,6 @@ return externals(set$slnil)(expr)
 } ;
 throw new Error('match fail 7231:' + JSON.stringify($target))
 })(stmt))
-let quot$sljsonify = (quot) => (($target) => {
-if ($target.type === "quot/expr") {
-let expr = $target[0];
-return jsonify(expr)
-} ;
-if ($target.type === "quot/type") {
-let type = $target[0];
-return jsonify(type)
-} ;
-if ($target.type === "quot/stmt") {
-let stmt = $target[0];
-return jsonify(stmt)
-} ;
-if ($target.type === "quot/quot") {
-let cst = $target[0];
-return jsonify(cst)
-} ;
-if ($target.type === "quot/pat") {
-let pat = $target[0];
-return jsonify(pat)
-} ;
-throw new Error('match fail 8939:' + JSON.stringify($target))
-})(quot)
 let fold_expr = (init) => (expr) => (f) => {
 let v = f(init)(expr);
 {
@@ -1587,510 +1483,33 @@ return j$slapp(j$slvar("\$trace")(-1))(cons(j$slprim(j$slint(loc)(-1))(-1))(cons
 } ;
 throw new Error('match fail 16279:' + JSON.stringify($target))
 })(map$slget(trace)(loc))
-let parse_stmt = (cst) => (($target) => {
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "def") {
-if ($target[0][1].type === "cons") {
-if ($target[0][1][0].type === "cst/identifier") {
-let id = $target[0][1][0][0];
-let li = $target[0][1][0][1];
-if ($target[0][1][1].type === "cons") {
-let value = $target[0][1][1][0];
-if ($target[0][1][1][1].type === "nil") {
-let l = $target[1];
-return sdef(id)(li)(parse_expr(value))(l)
-} 
-} 
-} 
-} 
-} 
-} 
-} 
+let quot$sljsonify = (quot) => (($target) => {
+if ($target.type === "quot/expr") {
+let expr = $target[0];
+return jsonify(expr)
 } ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "defn") {
-let a = $target[0][0][1];
-if ($target[0][1].type === "cons") {
-if ($target[0][1][0].type === "cst/identifier") {
-let id = $target[0][1][0][0];
-let li = $target[0][1][0][1];
-if ($target[0][1][1].type === "cons") {
-if ($target[0][1][1][0].type === "cst/array") {
-let args = $target[0][1][1][0][0];
-let b = $target[0][1][1][0][1];
-if ($target[0][1][1][1].type === "cons") {
-let body = $target[0][1][1][1][0];
-if ($target[0][1][1][1][1].type === "nil") {
-let c = $target[1];
-return sdef(id)(li)(parse_expr(cst$sllist(cons(cst$slidentifier("fn")(a))(cons(cst$slarray(args)(b))(cons(body)(nil))))(c)))(c)
-} 
-} 
-} 
-} 
-} 
-} 
-} 
-} 
-} 
+if ($target.type === "quot/type") {
+let type = $target[0];
+return jsonify(type)
 } ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "defn") {
-let l = $target[1];
-return fatal(`Invalid 'defn' ${int_to_string(l)}`)
-} 
-} 
-} 
+if ($target.type === "quot/stmt") {
+let stmt = $target[0];
+return jsonify(stmt)
 } ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "deftype") {
-if ($target[0][1].type === "cons") {
-if ($target[0][1][0].type === "cst/identifier") {
-let id = $target[0][1][0][0];
-let li = $target[0][1][0][1];
-let items = $target[0][1][1];
-let l = $target[1];
-return mk_deftype(id)(li)(nil)(items)(l)
-} 
-} 
-} 
-} 
-} 
+if ($target.type === "quot/quot") {
+let cst = $target[0];
+return jsonify(cst)
 } ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "deftype") {
-if ($target[0][1].type === "cons") {
-if ($target[0][1][0].type === "cst/list") {
-if ($target[0][1][0][0].type === "cons") {
-if ($target[0][1][0][0][0].type === "cst/identifier") {
-let id = $target[0][1][0][0][0][0];
-let li = $target[0][1][0][0][0][1];
-let args = $target[0][1][0][0][1];
-let items = $target[0][1][1];
-let l = $target[1];
-return mk_deftype(id)(li)(args)(items)(l)
-} 
-} 
-} 
-} 
-} 
-} 
-} 
+if ($target.type === "quot/pat") {
+let pat = $target[0];
+return jsonify(pat)
 } ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "typealias") {
-if ($target[0][1].type === "cons") {
-if ($target[0][1][0].type === "cst/identifier") {
-let name = $target[0][1][0][0];
-let nl = $target[0][1][0][1];
-if ($target[0][1][1].type === "cons") {
-let body = $target[0][1][1][0];
-if ($target[0][1][1][1].type === "nil") {
-let l = $target[1];
-return stypealias(name)(nl)(nil)(parse_type(body))(l)
-} 
-} 
-} 
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "typealias") {
-if ($target[0][1].type === "cons") {
-if ($target[0][1][0].type === "cst/list") {
-if ($target[0][1][0][0].type === "cons") {
-if ($target[0][1][0][0][0].type === "cst/identifier") {
-let name = $target[0][1][0][0][0][0];
-let nl = $target[0][1][0][0][0][1];
-let args = $target[0][1][0][0][1];
-if ($target[0][1][1].type === "cons") {
-let body = $target[0][1][1][0];
-if ($target[0][1][1][1].type === "nil") {
-let l = $target[1];
-{
-let args$0 = args;
-{
-let args = map(args$0)((x) => (($target) => {
-if ($target.type === "cst/identifier") {
-let name = $target[0];
-let l = $target[1];
-return $co(name)(l)
-} ;
-return fatal("typealias type argument must be identifier");
-throw new Error('match fail 6380:' + JSON.stringify($target))
-})(x));
-return stypealias(name)(nl)(args)(parse_type(body))(l)
-}
-}
-} 
-} 
-} 
-} 
-} 
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "deftype") {
-let l = $target[1];
-return fatal(`Invalid 'deftype' ${int_to_string(l)}`)
-} 
-} 
-} 
-} ;
-return sexpr(parse_expr(cst))((($target) => {
-if ($target.type === "cst/list") {
-let l = $target[1];
-return l
-} ;
-if ($target.type === "cst/identifier") {
-let l = $target[1];
-return l
-} ;
-if ($target.type === "cst/array") {
-let l = $target[1];
-return l
-} ;
-if ($target.type === "cst/string") {
-let l = $target[2];
-return l
-} ;
-if ($target.type === "cst/spread") {
-let l = $target[1];
-return l
-} ;
-throw new Error('match fail 4949:' + JSON.stringify($target))
-})(cst));
-throw new Error('match fail 606:' + JSON.stringify($target))
-})(cst)
-
-let parse_expr = (cst) => (($target) => {
-if ($target.type === "cst/identifier") {
-if ($target[0] === "true") {
-let l = $target[1];
-return eprim(pbool(true)(l))(l)
-} 
-} ;
-if ($target.type === "cst/identifier") {
-if ($target[0] === "false") {
-let l = $target[1];
-return eprim(pbool(false)(l))(l)
-} 
-} ;
-if ($target.type === "cst/string") {
-let first = $target[0];
-let templates = $target[1];
-let l = $target[2];
-return estr(first)(map(templates)((tpl) => {
-let {"2": l, "1": string, "0": expr} = tpl;
-return $co$co(parse_expr(expr))(string)(l)
-}))(l)
-} ;
-if ($target.type === "cst/identifier") {
-let id = $target[0];
-let l = $target[1];
-{
-let $target = string_to_int(id);
-if ($target.type === "some") {
-let int = $target[0];
-return eprim(pint(int)(l))(l)
-} ;
-if ($target.type === "none") {
-return evar(id)(l)
-} ;
-throw new Error('match fail 970:' + JSON.stringify($target))
-}
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "@") {
-if ($target[0][1].type === "cons") {
-let body = $target[0][1][0];
-if ($target[0][1][1].type === "nil") {
-let l = $target[1];
-return equot(quot$slexpr(parse_expr(body)))(l)
-} 
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "@@") {
-if ($target[0][1].type === "cons") {
-let body = $target[0][1][0];
-if ($target[0][1][1].type === "nil") {
-let l = $target[1];
-return equot(quot$slquot(body))(l)
-} 
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "@!") {
-if ($target[0][1].type === "cons") {
-let body = $target[0][1][0];
-if ($target[0][1][1].type === "nil") {
-let l = $target[1];
-return equot(quot$slstmt(parse_stmt(body)))(l)
-} 
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "@t") {
-if ($target[0][1].type === "cons") {
-let body = $target[0][1][0];
-if ($target[0][1][1].type === "nil") {
-let l = $target[1];
-return equot(quot$sltype(parse_type(body)))(l)
-} 
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "@p") {
-if ($target[0][1].type === "cons") {
-let body = $target[0][1][0];
-if ($target[0][1][1].type === "nil") {
-let l = $target[1];
-return equot(quot$slpat(parse_pat(body)))(l)
-} 
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "if") {
-if ($target[0][1].type === "cons") {
-let cond = $target[0][1][0];
-if ($target[0][1][1].type === "cons") {
-let yes = $target[0][1][1][0];
-if ($target[0][1][1][1].type === "cons") {
-let no = $target[0][1][1][1][0];
-if ($target[0][1][1][1][1].type === "nil") {
-let l = $target[1];
-return ematch(parse_expr(cond))(cons($co(pprim(pbool(true)(l))(l))(parse_expr(yes)))(cons($co(pany(l))(parse_expr(no)))(nil)))(l)
-} 
-} 
-} 
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "fn") {
-if ($target[0][1].type === "cons") {
-if ($target[0][1][0].type === "cst/array") {
-let args = $target[0][1][0][0];
-if ($target[0][1][1].type === "cons") {
-let body = $target[0][1][1][0];
-if ($target[0][1][1][1].type === "nil") {
-let b = $target[1];
-return elambda(map(args)(parse_pat))(parse_expr(body))(b)
-} 
-} 
-} 
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "fn") {
-let l = $target[1];
-return fatal(`Invalid 'fn' ${int_to_string(l)}`)
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "match") {
-if ($target[0][1].type === "cons") {
-let target = $target[0][1][0];
-let cases = $target[0][1][1];
-let l = $target[1];
-return ematch(parse_expr(target))(map(pairs(cases))(($case) => {
-let {"1": expr, "0": pat} = $case;
-return $co(parse_pat(pat))(parse_expr(expr))
-}))(l)
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "let") {
-if ($target[0][1].type === "cons") {
-if ($target[0][1][0].type === "cst/array") {
-let inits = $target[0][1][0][0];
-if ($target[0][1][1].type === "cons") {
-let body = $target[0][1][1][0];
-if ($target[0][1][1][1].type === "nil") {
-let l = $target[1];
-return elet(map(pairs(inits))((pair) => {
-let {"1": value, "0": pat} = pair;
-return $co(parse_pat(pat))(parse_expr(value))
-}))(parse_expr(body))(l)
-} 
-} 
-} 
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "let->") {
-let el = $target[0][0][1];
-if ($target[0][1].type === "cons") {
-if ($target[0][1][0].type === "cst/array") {
-let inits = $target[0][1][0][0];
-if ($target[0][1][1].type === "cons") {
-let body = $target[0][1][1][0];
-if ($target[0][1][1][1].type === "nil") {
-let l = $target[1];
-return foldr(parse_expr(body))(pairs(inits))((body) => (init) => {
-let {"1": value, "0": pat} = init;
-return eapp(evar(">>=")(el))(cons(parse_expr(value))(cons(elambda(cons(parse_pat(pat))(nil))(body)(l))(nil)))(l)
-})
-} 
-} 
-} 
-} 
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === "let") {
-let l = $target[1];
-return fatal(`Invalid 'let' ${int_to_string(l)}`)
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-if ($target[0][0].type === "cst/identifier") {
-if ($target[0][0][0] === ",") {
-let il = $target[0][0][1];
-let args = $target[0][1];
-let l = $target[1];
-return parse_tuple(args)(il)(l)
-} 
-} 
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "nil") {
-let l = $target[1];
-return evar("()")(l)
-} 
-} ;
-if ($target.type === "cst/list") {
-if ($target[0].type === "cons") {
-let target = $target[0][0];
-let args = $target[0][1];
-let l = $target[1];
-return eapp(parse_expr(target))(map(args)(parse_expr))(l)
-} 
-} ;
-if ($target.type === "cst/array") {
-let args = $target[0];
-let l = $target[1];
-return parse_array(args)(l)
-} ;
-throw new Error('match fail 963:' + JSON.stringify($target))
-})(cst)
-
-let parse_tuple = (args) => (il) => (l) => (($target) => {
-if ($target.type === "nil") {
-return evar(",")(il)
-} ;
-if ($target.type === "cons") {
-let one = $target[0];
-if ($target[1].type === "nil") {
-return parse_expr(one)
-} 
-} ;
-if ($target.type === "cons") {
-let one = $target[0];
-let rest = $target[1];
-return eapp(evar(",")(il))(cons(parse_expr(one))(cons(parse_tuple(rest)(il)(l))(nil)))(l)
-} ;
-throw new Error('match fail 7570:' + JSON.stringify($target))
-})(args)
-
-let parse_array = (args) => (l) => (($target) => {
-if ($target.type === "nil") {
-return evar("nil")(l)
-} ;
-if ($target.type === "cons") {
-if ($target[0].type === "cst/spread") {
-let inner = $target[0][0];
-if ($target[1].type === "nil") {
-return parse_expr(inner)
-} 
-} 
-} ;
-if ($target.type === "cons") {
-let one = $target[0];
-let rest = $target[1];
-return eapp(evar("cons")(l))(cons(parse_expr(one))(cons(parse_array(rest)(l))(nil)))(l)
-} ;
-throw new Error('match fail 3422:' + JSON.stringify($target))
-})(args)
+throw new Error('match fail 16401:' + JSON.stringify($target))
+})(quot)
+let run$slnil_$gt = (st) => run_$gt(st)(state$slnil)
+let unexpected = (msg) => (cst) => $lt_err($co(cst_loc(cst))(msg))($unit)
+let eunit = (l) => evar("()")(l)
+let sunit = (k) => sexpr(eunit(k))(k)
 let compile_pat$slj = (pat) => (target) => (inner) => (trace) => (($target) => {
 if ($target.type === "pany") {
 let l = $target[0];
@@ -2145,113 +1564,6 @@ return compile_pat$slj(arg)(j$slindex(target)(j$slprim(j$slint(i)(l))(l))(l))(pa
 } ;
 throw new Error('match fail 11276:' + JSON.stringify($target))
 })(args)
-let compile = (expr) => (trace) => {
-let loc = expr_loc(expr);
-return source_map(loc)(trace_wrap(loc)(trace)((($target) => {
-if ($target.type === "estr") {
-let first = $target[0];
-let tpls = $target[1];
-let l = $target[2];
-{
-let $target = tpls;
-if ($target.type === "nil") {
-return `\"${escape_string(unescapeString(first))}\"`
-} ;
-return `\`${escape_string(unescapeString(first))}${join("")(map(tpls)((item) => {
-let {"2": l, "1": suffix, "0": expr} = item;
-return `\${${compile(expr)(trace)}}${escape_string(unescapeString(suffix))}`
-}))}\``;
-throw new Error('match fail 2641:' + JSON.stringify($target))
-}
-} ;
-if ($target.type === "eprim") {
-let prim = $target[0];
-let l = $target[1];
-{
-let $target = prim;
-if ($target.type === "pint") {
-let int = $target[0];
-return int_to_string(int)
-} ;
-if ($target.type === "pbool") {
-let bool = $target[0];
-{
-let $target = bool;
-if ($target === true) {
-return "true"
-} ;
-if ($target === false) {
-return "false"
-} ;
-throw new Error('match fail 2769:' + JSON.stringify($target))
-}
-} ;
-throw new Error('match fail 2742:' + JSON.stringify($target))
-}
-} ;
-if ($target.type === "evar") {
-let name = $target[0];
-let l = $target[1];
-return sanitize(name)
-} ;
-if ($target.type === "equot") {
-let inner = $target[0];
-let l = $target[1];
-return quot$sljsonify(inner)
-} ;
-if ($target.type === "elambda") {
-let pats = $target[0];
-let body = $target[1];
-let l = $target[2];
-return foldr(compile(body)(trace))(pats)((body) => (pat) => `function name_${its(l)}(${orr("_")(just_pat(pat))}) {${(($target) => {
-if ($target.type === "nil") {
-return ""
-} ;
-{
-let names = $target;
-return join("\n")(map(names)((arg) => {
-let {"1": l, "0": name} = arg;
-return just_trace(l)(trace)(sanitize(name))
-}))
-};
-throw new Error('match fail 8168:' + JSON.stringify($target))
-})(bag$slto_list(pat_names_loc(pat)))} return ${body} }`)
-} ;
-if ($target.type === "elet") {
-let bindings = $target[0];
-let body = $target[1];
-let l = $target[2];
-return foldr(compile(body)(trace))(bindings)((body) => (binding) => compile_let_binding(binding)(body)(trace)(l))
-} ;
-if ($target.type === "eapp") {
-let target = $target[0];
-let args = $target[1];
-let l = $target[2];
-return `${foldl(`${(($target) => {
-if ($target.type === "elambda") {
-return `(${compile(target)(trace)})`
-} ;
-return compile(target)(trace);
-throw new Error('match fail 8976:' + JSON.stringify($target))
-})(target)}/*${its(l)}*/`)(args)((target) => (arg) => `${target}(${compile(arg)(trace)})`)}`
-} ;
-if ($target.type === "ematch") {
-let target = $target[0];
-let cases = $target[1];
-let l = $target[2];
-return `(function match_${its(l)}(\$target) {\n${join("\n")(map(cases)(($case) => {
-let {"1": body, "0": pat} = $case;
-return compile_pat(pat)("\$target")(`return ${compile(body)(trace)}`)(trace)
-}))}\nthrow new Error('failed to match ' + jsonify(\$target) + '. Loc: ${its(l)}');})(/*!*/${compile(target)(trace)})`
-} ;
-throw new Error('match fail 2634:' + JSON.stringify($target))
-})(expr)))
-}
-
-let compile_let_binding = (binding) => (body) => (trace) => (l) => {
-let {"1": init, "0": pat} = binding;
-return `(function let_${its(l)}() {const \$target = ${compile(init)(trace)};\n${compile_pat(pat)("\$target")(`return ${body}`)(trace)};\nthrow new Error('let pattern not matched ${its(pat_loc(pat))}. ' + valueToString(\$target));})(/*!*/)`
-}
 let j$slcompile_stmt = (ctx) => (stmt) => (($target) => {
 if ($target.type === "j/sexpr") {
 let expr = $target[0];
@@ -2802,37 +2114,73 @@ let {"0": items} = block;
 return b(foldl(init)(items)(fold$slstmt(fx)))(block)
 }
 }
-let compile_stmt = (stmt) => (trace) => (($target) => {
-if ($target.type === "sexpr") {
-let expr = $target[0];
+let parse_type = (type) => (($target) => {
+if ($target.type === "cst/identifier") {
+let id = $target[0];
 let l = $target[1];
-return compile(expr)(trace)
+return $lt_(tcon(id)(l))
 } ;
-if ($target.type === "sdef") {
+if ($target.type === "cst/list") {
+if ($target[0].type === "nil") {
+let l = $target[1];
+return $lt_err($co(l)("(parse-type) with empty list"))(tcon("()")(l))
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "fn") {
+if ($target[0][1].type === "cons") {
+if ($target[0][1][0].type === "cst/array") {
+let args = $target[0][1][0][0];
+if ($target[0][1][1].type === "cons") {
+let body = $target[0][1][1][0];
+let rest = $target[0][1][1][1];
+return $gt$gt$eq(parse_type(body))((body) => $gt$gt$eq(map_$gt(parse_type)(args))((args) => $gt$gt$eq(do_$gt(unexpected("extra item in type"))(rest))((_17506) => $lt_(foldl(body)(rev(args)(nil))((body) => (arg) => tapp(tapp(tcon("->")(-1))(arg)(-1))(body)(-1))))))
+} 
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+let items = $target[0];
+let l = $target[1];
+return $gt$gt$eq(map_$gt(parse_type)(items))((items) => $lt_(tapps(rev(items)(nil))(l)))
+} ;
+return $lt_err($co(cst_loc(type))(`(parse-type) Invalid type ${valueToString(type)}`))(tcon("()")(cst_loc(type)));
+throw new Error('match fail 867:' + JSON.stringify($target))
+})(type)
+let mk_deftype = (id) => (li) => (args) => (items) => (l) => $gt$gt$eq(foldr_$gt(nil)(args)((args) => (arg) => (($target) => {
+if ($target.type === "cst/identifier") {
 let name = $target[0];
-let nl = $target[1];
-let body = $target[2];
-let l = $target[3];
-return $pl$pl(cons("const ")(cons(sanitize(name))(cons(" = ")(cons(compile(body)(trace))(cons(";\n")(nil))))))
+let l = $target[1];
+return $lt_(cons($co(name)(l))(args))
 } ;
-if ($target.type === "stypealias") {
-let name = $target[0];
-return `/* type alias ${name} */`
+return $lt_err($co(l)("deftype type argument must be identifier"))(args);
+throw new Error('match fail 5024:' + JSON.stringify($target))
+})(arg)))((args) => $gt$gt$eq(foldr_$gt(nil)(items)((res) => (constr) => (($target) => {
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+let name = $target[0][0][0];
+let ni = $target[0][0][1];
+let args = $target[0][1];
+let l = $target[1];
+return $gt$gt$eq(map_$gt(parse_type)(args))((args) => $lt_(cons($co$co$co(name)(ni)(args)(l))(res)))
+} 
+} 
 } ;
-if ($target.type === "sdeftype") {
-let name = $target[0];
-let nl = $target[1];
-let type_arg = $target[2];
-let cases = $target[3];
-let l = $target[4];
-return join("\n")(map(cases)(($case) => {
-let {"3": l, "2": args, "1": nl, "0": name2} = $case;
-return $pl$pl(cons("const ")(cons(sanitize(name2))(cons(" = ")(cons($pl$pl(mapi(0)(args)((i) => (_475) => $pl$pl(cons("(v")(cons(int_to_string(i))(cons(") => ")(nil)))))))(cons("({type: \"")(cons(name2)(cons("\"")(cons($pl$pl(mapi(0)(args)((i) => (_501) => $pl$pl(cons(", ")(cons(int_to_string(i))(cons(": v")(cons(int_to_string(i))(nil))))))))(cons("});")(nil))))))))))
-}))
+if ($target.type === "cst/list") {
+if ($target[0].type === "nil") {
+let l = $target[1];
+return $lt_err($co(l)("Empty type constructor"))(res)
+} 
 } ;
-throw new Error('match fail 410:' + JSON.stringify($target))
-})(stmt)
-let run = (v) => eval(compile(parse_expr(v))(map$slnil))
+return $lt_err($co(l)("Invalid type constructor"))(res);
+throw new Error('match fail 1443:' + JSON.stringify($target))
+})(constr)))((items) => $lt_(sdeftype(id)(li)(args)(items)(l))))
 let call_at_end = (items) => (($target) => {
 if ($target.type === "nil") {
 return none
@@ -2891,7 +2239,6 @@ throw new Error('match fail 14040:' + JSON.stringify($target))
 } ;
 throw new Error('match fail 14020:' + JSON.stringify($target))
 })(items)
-let example_expr = parse_expr({"0":{"0":{"0":"match","1":12702,"type":"cst/identifier"},"1":{"0":{"0":"stmt","1":12703,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"sexpr","1":12705,"type":"cst/identifier"},"1":{"0":{"0":"expr","1":12706,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12707,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12704,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"compile","1":12709,"type":"cst/identifier"},"1":{"0":{"0":"expr","1":12710,"type":"cst/identifier"},"1":{"0":{"0":"trace","1":12711,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12708,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"sdef","1":12713,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12714,"type":"cst/identifier"},"1":{"0":{"0":"nl","1":12715,"type":"cst/identifier"},"1":{"0":{"0":"body","1":12716,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12717,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12712,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"++","1":12719,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12721,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12724,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12725,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12723,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12726,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"compile","1":12729,"type":"cst/identifier"},"1":{"0":{"0":"body","1":12730,"type":"cst/identifier"},"1":{"0":{"0":"trace","1":12731,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12728,"type":"cst/list"},"1":{"0":{"0":";\\n","1":{"type":"nil"},"2":12732,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12720,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12718,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"stypealias","1":12735,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12736,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12737,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12738,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12739,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12740,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12734,"type":"cst/list"},"1":{"0":{"0":"/* type alias ","1":{"0":{"0":{"0":"name","1":12743,"type":"cst/identifier"},"1":" */","2":12744,"type":",,"},"1":{"type":"nil"},"type":"cons"},"2":12741,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sdeftype","1":12746,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12747,"type":"cst/identifier"},"1":{"0":{"0":"nl","1":12748,"type":"cst/identifier"},"1":{"0":{"0":"type-arg","1":12749,"type":"cst/identifier"},"1":{"0":{"0":"cases","1":12750,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12751,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12745,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"join","1":12753,"type":"cst/identifier"},"1":{"0":{"0":"\\n","1":{"type":"nil"},"2":12754,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"map","1":12757,"type":"cst/identifier"},"1":{"0":{"0":"cases","1":12758,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"fn","1":12760,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"case","1":12762,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"1":12761,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"let","1":12764,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":{"0":{"0":",,,","1":12767,"type":"cst/identifier"},"1":{"0":{"0":"name2","1":12768,"type":"cst/identifier"},"1":{"0":{"0":"nl","1":12769,"type":"cst/identifier"},"1":{"0":{"0":"args","1":12770,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12771,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12766,"type":"cst/list"},"1":{"0":{"0":"case","1":12772,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12765,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12774,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12776,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12779,"type":"cst/identifier"},"1":{"0":{"0":"name2","1":12780,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12778,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12781,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12784,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"mapi","1":12786,"type":"cst/identifier"},"1":{"0":{"0":"0","1":12787,"type":"cst/identifier"},"1":{"0":{"0":"args","1":12788,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"fn","1":12790,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"i","1":12792,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12793,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12791,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12795,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"(v","1":{"type":"nil"},"2":12797,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12800,"type":"cst/identifier"},"1":{"0":{"0":"i","1":12801,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12799,"type":"cst/list"},"1":{"0":{"0":") => ","1":{"type":"nil"},"2":12802,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12796,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12794,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12789,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12785,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12783,"type":"cst/list"},"1":{"0":{"0":"({type: \\\"","1":{"type":"nil"},"2":12804,"type":"cst/string"},"1":{"0":{"0":"name2","1":12806,"type":"cst/identifier"},"1":{"0":{"0":"\\\"","1":{"type":"nil"},"2":12807,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12810,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"mapi","1":12812,"type":"cst/identifier"},"1":{"0":{"0":"0","1":12813,"type":"cst/identifier"},"1":{"0":{"0":"args","1":12814,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"fn","1":12816,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"i","1":12818,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12819,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12817,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12821,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":", ","1":{"type":"nil"},"2":12823,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12826,"type":"cst/identifier"},"1":{"0":{"0":"i","1":12827,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12825,"type":"cst/list"},"1":{"0":{"0":": v","1":{"type":"nil"},"2":12828,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12831,"type":"cst/identifier"},"1":{"0":{"0":"i","1":12832,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12830,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12822,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12820,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12815,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12811,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12809,"type":"cst/list"},"1":{"0":{"0":"});","1":{"type":"nil"},"2":12833,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12775,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12773,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12763,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12759,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12756,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12752,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12701,"type":"cst/list"})
 let j$slcompile_stmts = (ctx) => (stmts) => join("\n")(map(stmts)(j$slcompile_stmt(ctx)))
 let let_fix_shadow = ({"1": init, "0": pat}) => (l) => {
 let names = pat_names(pat);
@@ -2919,7 +2266,7 @@ let new_names = mapi(0)(shadow)((i) => (name) => `${name}\$${its(i)}`);
 {
 let mapping = map$slfrom_list(zip(shadow)(new_names));
 {
-let by_loc = map$slfrom_list(map(overlap)(({"1": loc, "0": name}) => $co(loc)(force(map$slget(mapping)(name)))));
+let by_loc = map$slfrom_list(map(overlap)(({"1": loc, "0": name}) => $co(loc)(force_opt(map$slget(mapping)(name)))));
 {
 let $target = overlap;
 if ($target.type === "nil") {
@@ -2951,7 +2298,488 @@ throw new Error('match fail 15609:' + JSON.stringify($target))
 }
 }
 let expand_bindings = (bindings) => (l) => foldr(nil)(bindings)((res) => (binding) => concat(cons(let_fix_shadow(binding)(l))(cons(res)(nil))))
-let ex = parse_expr({"0":{"0":{"0":"let","1":16241,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"x","1":16243,"type":"cst/identifier"},"1":{"0":{"0":"10","1":16244,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":16242,"type":"cst/array"},"1":{"0":{"0":"x","1":16246,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16240,"type":"cst/list"})
+let parse_typealias = (name) => (body) => (l) => $gt$gt$eq($lt_((($target) => {
+if ($target.type === "cst/identifier") {
+let name = $target[0];
+let nl = $target[1];
+return $co$co(name)(nl)(nil)
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+let name = $target[0][0][0];
+let nl = $target[0][0][1];
+let args = $target[0][1];
+return $co$co(name)(nl)(args)
+} 
+} 
+} ;
+throw new Error('match fail 17297:' + JSON.stringify($target))
+})(name)))(({"2": args, "1": nl, "0": name}) => $gt$gt$eq(foldr_$gt(nil)(args)((args) => (x) => (($target) => {
+if ($target.type === "cst/identifier") {
+let name = $target[0];
+let l = $target[1];
+return $lt_(cons($co(name)(l))(args))
+} ;
+return $lt_err($co(cst_loc(x))("typealias type argument must be identifier"))(args);
+throw new Error('match fail 17336:' + JSON.stringify($target))
+})(x)))((args) => $gt$gt$eq(parse_type(body))((body) => $lt_(stypealias(name)(nl)(args)(body)(l)))))
+let parse_stmt = (cst) => (($target) => {
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "def") {
+if ($target[0][1].type === "cons") {
+if ($target[0][1][0].type === "cst/identifier") {
+let id = $target[0][1][0][0];
+let li = $target[0][1][0][1];
+if ($target[0][1][1].type === "cons") {
+let value = $target[0][1][1][0];
+let rest = $target[0][1][1][1];
+let l = $target[1];
+return $gt$gt$eq(parse_expr(value))((expr) => $gt$gt$eq(do_$gt(unexpected("extra items in def"))(rest))((_16836) => $lt_(sdef(id)(li)(expr)(l))))
+} 
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "def") {
+let l = $target[1];
+return $lt_err($co(l)("Invalid 'def'"))(sunit(l))
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "defn") {
+if ($target[0][1].type === "cons") {
+if ($target[0][1][0].type === "cst/identifier") {
+let id = $target[0][1][0][0];
+let li = $target[0][1][0][1];
+if ($target[0][1][1].type === "nil") {
+let c = $target[1];
+return $lt_(sdef(id)(li)(evar("nil")(c))(c))
+} 
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "defn") {
+if ($target[0][1].type === "cons") {
+if ($target[0][1][0].type === "cst/identifier") {
+let id = $target[0][1][0][0];
+let li = $target[0][1][0][1];
+if ($target[0][1][1].type === "cons") {
+if ($target[0][1][1][0].type === "cst/array") {
+let args = $target[0][1][1][0][0];
+let b = $target[0][1][1][0][1];
+let rest = $target[0][1][1][1];
+let c = $target[1];
+return $gt$gt$eq(map_$gt(parse_pat)(args))((args) => $gt$gt$eq((($target) => {
+if ($target.type === "nil") {
+return $lt_err($co(b)("Empty arguments list"))($unit)
+} ;
+return $lt_($unit);
+throw new Error('match fail 17240:' + JSON.stringify($target))
+})(args))((_17057) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(sdef(id)(li)(evar("nil")(c))(c))
+} ;
+if ($target.type === "cons") {
+let body = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(parse_expr(body))((body) => $gt$gt$eq(do_$gt(unexpected("extra items in defn"))(rest))((_17050) => $lt_(sdef(id)(li)(elambda(args)(body)(c))(c))))
+} ;
+throw new Error('match fail 17027:' + JSON.stringify($target))
+})(rest)))
+} 
+} 
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "defn") {
+let l = $target[1];
+return $lt_err($co(l)("Invalid 'defn'"))(sunit(l))
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "deftype") {
+if ($target[0][1].type === "cons") {
+let name = $target[0][1][0];
+let items = $target[0][1][1];
+let l = $target[1];
+{
+let $target = name;
+if ($target.type === "cst/identifier") {
+let id = $target[0];
+let li = $target[1];
+return mk_deftype(id)(li)(nil)(items)(l)
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+let id = $target[0][0][0];
+let li = $target[0][0][1];
+let args = $target[0][1];
+return mk_deftype(id)(li)(args)(items)(l)
+} 
+} 
+} ;
+throw new Error('match fail 17376:' + JSON.stringify($target))
+}
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "deftype") {
+let l = $target[1];
+return $lt_err($co(l)("Invalid deftype"))(sunit(l))
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "typealias") {
+if ($target[0][1].type === "cons") {
+let name = $target[0][1][0];
+if ($target[0][1][1].type === "cons") {
+let body = $target[0][1][1][0];
+if ($target[0][1][1][1].type === "nil") {
+let l = $target[1];
+return parse_typealias(name)(body)(l)
+} 
+} 
+} 
+} 
+} 
+} 
+} ;
+return $gt$gt$eq(parse_expr(cst))((expr) => $lt_(sexpr(expr)(cst_loc(cst))));
+throw new Error('match fail 606:' + JSON.stringify($target))
+})(cst)
+
+let parse_expr = (cst) => (($target) => {
+if ($target.type === "cst/identifier") {
+if ($target[0] === "true") {
+let l = $target[1];
+return $lt_(eprim(pbool(true)(l))(l))
+} 
+} ;
+if ($target.type === "cst/identifier") {
+if ($target[0] === "false") {
+let l = $target[1];
+return $lt_(eprim(pbool(false)(l))(l))
+} 
+} ;
+if ($target.type === "cst/string") {
+let first = $target[0];
+let templates = $target[1];
+let l = $target[2];
+return $gt$gt$eq(map_$gt(({"2": l, "1": suffix, "0": expr}) => $gt$gt$eq(parse_expr(expr))((expr) => $lt_($co$co(expr)(suffix)(l))))(templates))((tpls) => $lt_(estr(first)(tpls)(l)))
+} ;
+if ($target.type === "cst/identifier") {
+let id = $target[0];
+let l = $target[1];
+return $lt_((($target) => {
+if ($target.type === "some") {
+let int = $target[0];
+return eprim(pint(int)(l))(l)
+} ;
+if ($target.type === "none") {
+return evar(id)(l)
+} ;
+throw new Error('match fail 970:' + JSON.stringify($target))
+})(string_to_int(id)))
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "@") {
+if ($target[0][1].type === "cons") {
+let body = $target[0][1][0];
+if ($target[0][1][1].type === "nil") {
+let l = $target[1];
+return $gt$gt$eq(parse_expr(body))((expr) => $lt_(equot(quot$slexpr(expr))(l)))
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "@@") {
+if ($target[0][1].type === "cons") {
+let body = $target[0][1][0];
+if ($target[0][1][1].type === "nil") {
+let l = $target[1];
+return $lt_(equot(quot$slquot(body))(l))
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "@!") {
+if ($target[0][1].type === "cons") {
+let body = $target[0][1][0];
+if ($target[0][1][1].type === "nil") {
+let l = $target[1];
+return $gt$gt$eq(parse_stmt(body))((stmt) => $lt_(equot(quot$slstmt(stmt))(l)))
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "@t") {
+if ($target[0][1].type === "cons") {
+let body = $target[0][1][0];
+if ($target[0][1][1].type === "nil") {
+let l = $target[1];
+return $gt$gt$eq(parse_type(body))((body) => $lt_(equot(quot$sltype(body))(l)))
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "@p") {
+if ($target[0][1].type === "cons") {
+let body = $target[0][1][0];
+if ($target[0][1][1].type === "nil") {
+let l = $target[1];
+return $gt$gt$eq(parse_pat(body))((body) => $lt_(equot(quot$slpat(body))(l)))
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "if") {
+if ($target[0][1].type === "cons") {
+let cond = $target[0][1][0];
+if ($target[0][1][1].type === "cons") {
+let yes = $target[0][1][1][0];
+if ($target[0][1][1][1].type === "cons") {
+let no = $target[0][1][1][1][0];
+if ($target[0][1][1][1][1].type === "nil") {
+let l = $target[1];
+return $gt$gt$eq(parse_expr(cond))((cond) => $gt$gt$eq(parse_expr(yes))((yes) => $gt$gt$eq(parse_expr(no))((no) => $lt_(ematch(cond)(cons($co(pprim(pbool(true)(l))(l))(yes))(cons($co(pany(l))(no))(nil)))(l)))))
+} 
+} 
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "fn") {
+if ($target[0][1].type === "cons") {
+if ($target[0][1][0].type === "cst/array") {
+let args = $target[0][1][0][0];
+if ($target[0][1][1].type === "cons") {
+let body = $target[0][1][1][0];
+let rest = $target[0][1][1][1];
+let b = $target[1];
+return $gt$gt$eq(map_$gt(parse_pat)(args))((args) => $gt$gt$eq(parse_expr(body))((body) => $gt$gt$eq(do_$gt(unexpected("extra arg in fn"))(rest))((_17702) => $lt_(elambda(args)(body)(b)))))
+} 
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "fn") {
+let l = $target[1];
+return $lt_err($co(l)(`Invalid 'fn' ${int_to_string(l)}`))(evar("()")(l))
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "match") {
+if ($target[0][1].type === "cons") {
+let target = $target[0][1][0];
+let cases = $target[0][1][1];
+let l = $target[1];
+return $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq(pairs(cases))((cases) => $gt$gt$eq(map_$gt(({"1": expr, "0": pat}) => $gt$gt$eq(parse_pat(pat))((pat) => $gt$gt$eq(parse_expr(expr))((expr) => $lt_($co(pat)(expr)))))(cases))((cases) => $lt_(ematch(target)(cases)(l)))))
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "let") {
+if ($target[0][1].type === "cons") {
+if ($target[0][1][0].type === "cst/array") {
+let inits = $target[0][1][0][0];
+if ($target[0][1][1].type === "cons") {
+let body = $target[0][1][1][0];
+if ($target[0][1][1][1].type === "nil") {
+let l = $target[1];
+return $gt$gt$eq(pairs(inits))((inits) => $gt$gt$eq(map_$gt(({"1": value, "0": pat}) => $gt$gt$eq(parse_pat(pat))((pat) => $gt$gt$eq(parse_expr(value))((value) => $lt_($co(pat)(value)))))(inits))((bindings) => $gt$gt$eq(parse_expr(body))((body) => $lt_(elet(bindings)(body)(l)))))
+} 
+} 
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "let->") {
+let el = $target[0][0][1];
+if ($target[0][1].type === "cons") {
+if ($target[0][1][0].type === "cst/array") {
+let inits = $target[0][1][0][0];
+if ($target[0][1][1].type === "cons") {
+let body = $target[0][1][1][0];
+if ($target[0][1][1][1].type === "nil") {
+let l = $target[1];
+return $gt$gt$eq(parse_expr(body))((body) => $gt$gt$eq(pairs(inits))((inits) => foldr_$gt(body)(inits)((body) => ({"1": value, "0": pat}) => $gt$gt$eq(parse_expr(value))((value) => $gt$gt$eq(parse_pat(pat))((pat) => $lt_(eapp(evar(">>=")(el))(cons(value)(cons(elambda(cons(pat)(nil))(body)(l))(nil)))(l)))))))
+} 
+} 
+} 
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === "let") {
+let l = $target[1];
+return $lt_err($co(l)(`Invalid 'let' ${int_to_string(l)}`))(evar("()")(l))
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === ",") {
+let il = $target[0][0][1];
+let args = $target[0][1];
+let l = $target[1];
+return parse_tuple(args)(il)(l)
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "nil") {
+let l = $target[1];
+return $lt_(evar("()")(l))
+} 
+} ;
+if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+let target = $target[0][0];
+let args = $target[0][1];
+let l = $target[1];
+return $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq(map_$gt(parse_expr)(args))((args) => $lt_(eapp(target)(args)(l))))
+} 
+} ;
+if ($target.type === "cst/array") {
+let args = $target[0];
+let l = $target[1];
+return parse_array(args)(l)
+} ;
+throw new Error('match fail 963:' + JSON.stringify($target))
+})(cst)
+
+let parse_tuple = (args) => (il) => (l) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(evar(",")(il))
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+if ($target[1].type === "nil") {
+return parse_expr(one)
+} 
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(parse_expr(one))((one) => $gt$gt$eq(parse_tuple(rest)(il)(l))((tuple) => $lt_(eapp(evar(",")(il))(cons(one)(cons(tuple)(nil)))(l))))
+} ;
+throw new Error('match fail 7570:' + JSON.stringify($target))
+})(args)
+
+let parse_array = (args) => (l) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(evar("nil")(l))
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "cst/spread") {
+let inner = $target[0][0];
+if ($target[1].type === "nil") {
+return parse_expr(inner)
+} 
+} 
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(parse_expr(one))((one) => $gt$gt$eq(parse_array(rest)(l))((rest) => $lt_(eapp(evar("cons")(l))(cons(one)(cons(rest)(nil)))(l))))
+} ;
+throw new Error('match fail 3422:' + JSON.stringify($target))
+})(args)
 let compile$slj = (expr) => (trace) => maybe_trace(expr_loc(expr))(trace)((($target) => {
 if ($target.type === "estr") {
 let first = $target[0];
@@ -3069,7 +2897,7 @@ return j$sllet(pat)(compile$slj(init)(trace))(l)
 } ;
 throw new Error('match fail 12356:' + JSON.stringify($target))
 })(pat_$gtj$slpat(pat))
-let run$slj = (v) => eval(j$slcompile(0)(compile$slj(parse_expr(v))(map$slnil)))
+let run$slj = (v) => eval(j$slcompile(0)(compile$slj(run$slnil_$gt(parse_expr(v)))(map$slnil)))
 let simplify_block = ({"0": items}) => (($target) => {
 {
 let $target = call_at_end(items);
@@ -3084,6 +2912,7 @@ throw new Error('match fail 14189:' + JSON.stringify($target))
 };
 throw new Error('match fail 14526:' + JSON.stringify($target))
 })(items)
+let example_expr = run$slnil_$gt(parse_expr({"0":{"0":{"0":"match","1":12702,"type":"cst/identifier"},"1":{"0":{"0":"stmt","1":12703,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"sexpr","1":12705,"type":"cst/identifier"},"1":{"0":{"0":"expr","1":12706,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12707,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12704,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"compile","1":12709,"type":"cst/identifier"},"1":{"0":{"0":"expr","1":12710,"type":"cst/identifier"},"1":{"0":{"0":"trace","1":12711,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12708,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"sdef","1":12713,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12714,"type":"cst/identifier"},"1":{"0":{"0":"nl","1":12715,"type":"cst/identifier"},"1":{"0":{"0":"body","1":12716,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12717,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12712,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"++","1":12719,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12721,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12724,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12725,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12723,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12726,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"compile","1":12729,"type":"cst/identifier"},"1":{"0":{"0":"body","1":12730,"type":"cst/identifier"},"1":{"0":{"0":"trace","1":12731,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12728,"type":"cst/list"},"1":{"0":{"0":";\\n","1":{"type":"nil"},"2":12732,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12720,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12718,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"stypealias","1":12735,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12736,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12737,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12738,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12739,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12740,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12734,"type":"cst/list"},"1":{"0":{"0":"/* type alias ","1":{"0":{"0":{"0":"name","1":12743,"type":"cst/identifier"},"1":" */","2":12744,"type":",,"},"1":{"type":"nil"},"type":"cons"},"2":12741,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sdeftype","1":12746,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12747,"type":"cst/identifier"},"1":{"0":{"0":"nl","1":12748,"type":"cst/identifier"},"1":{"0":{"0":"type-arg","1":12749,"type":"cst/identifier"},"1":{"0":{"0":"cases","1":12750,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12751,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12745,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"join","1":12753,"type":"cst/identifier"},"1":{"0":{"0":"\\n","1":{"type":"nil"},"2":12754,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"map","1":12757,"type":"cst/identifier"},"1":{"0":{"0":"cases","1":12758,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"fn","1":12760,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"case","1":12762,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"1":12761,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"let","1":12764,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":{"0":{"0":",,,","1":12767,"type":"cst/identifier"},"1":{"0":{"0":"name2","1":12768,"type":"cst/identifier"},"1":{"0":{"0":"nl","1":12769,"type":"cst/identifier"},"1":{"0":{"0":"args","1":12770,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12771,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12766,"type":"cst/list"},"1":{"0":{"0":"case","1":12772,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12765,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12774,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12776,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12779,"type":"cst/identifier"},"1":{"0":{"0":"name2","1":12780,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12778,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12781,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12784,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"mapi","1":12786,"type":"cst/identifier"},"1":{"0":{"0":"0","1":12787,"type":"cst/identifier"},"1":{"0":{"0":"args","1":12788,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"fn","1":12790,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"i","1":12792,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12793,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12791,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12795,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"(v","1":{"type":"nil"},"2":12797,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12800,"type":"cst/identifier"},"1":{"0":{"0":"i","1":12801,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12799,"type":"cst/list"},"1":{"0":{"0":") => ","1":{"type":"nil"},"2":12802,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12796,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12794,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12789,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12785,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12783,"type":"cst/list"},"1":{"0":{"0":"({type: \\\"","1":{"type":"nil"},"2":12804,"type":"cst/string"},"1":{"0":{"0":"name2","1":12806,"type":"cst/identifier"},"1":{"0":{"0":"\\\"","1":{"type":"nil"},"2":12807,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12810,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"mapi","1":12812,"type":"cst/identifier"},"1":{"0":{"0":"0","1":12813,"type":"cst/identifier"},"1":{"0":{"0":"args","1":12814,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"fn","1":12816,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"i","1":12818,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12819,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12817,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12821,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":", ","1":{"type":"nil"},"2":12823,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12826,"type":"cst/identifier"},"1":{"0":{"0":"i","1":12827,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12825,"type":"cst/list"},"1":{"0":{"0":": v","1":{"type":"nil"},"2":12828,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12831,"type":"cst/identifier"},"1":{"0":{"0":"i","1":12832,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12830,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12822,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12820,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12815,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12811,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12809,"type":"cst/list"},"1":{"0":{"0":"});","1":{"type":"nil"},"2":12833,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12775,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12773,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12763,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12759,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12756,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12752,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12701,"type":"cst/list"}))
 let compile_stmt$slj = (stmt) => (trace) => (($target) => {
 if ($target.type === "sexpr") {
 let expr = $target[0];
@@ -3114,5 +2943,6 @@ return j$sllet(j$slpvar(name2)(nl))(foldr(j$slobj(cons(left($co("type")(j$slstr(
 } ;
 throw new Error('match fail 14258:' + JSON.stringify($target))
 })(stmt)
+let ex = run$slnil_$gt(parse_expr({"0":{"0":{"0":"let","1":16241,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"x","1":16243,"type":"cst/identifier"},"1":{"0":{"0":"10","1":16244,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":16242,"type":"cst/array"},"1":{"0":{"0":"x","1":16246,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16240,"type":"cst/list"}))
 let simplify_js = tx((expr) => some(expr))(apply_until(simplify_one))((pat) => none)((pat) => pat)((stmt) => some(stmt))(apply_until(simplify_stmt))((block) => some(block))(apply_until(simplify_block))
-return eval("({0: parse_stmt,  1: parse_expr, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size}) => ({\ntype: 'fns', parse_stmt, parse_expr, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size})")(parse_and_compile(parse_stmt)(parse_expr)((stmt) => (ctx) => j$slcompile_stmts(ctx)(map(compile_stmt$slj(stmt)(ctx))(map$slstmt(simplify_js))))((expr) => (ctx) => j$slcompile(ctx)(map$slexpr(simplify_js)(compile$slj(expr)(ctx))))(names)(externals_stmt)((expr) => bag$slto_list(externals(set$slnil)(expr)))(stmt_size)(expr_size)(type_size))
+return eval("({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size}) => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size})")(parse_and_compile((stmt) => state_f(parse_stmt(stmt))(state$slnil))((expr) => state_f(parse_expr(expr))(state$slnil))((stmt) => (ctx) => j$slcompile_stmts(ctx)(map(compile_stmt$slj(stmt)(ctx))(map$slstmt(simplify_js))))((expr) => (ctx) => j$slcompile(ctx)(map$slexpr(simplify_js)(compile$slj(expr)(ctx))))(names)(externals_stmt)((expr) => bag$slto_list(externals(set$slnil)(expr)))(stmt_size)(expr_size)(type_size))

@@ -1102,58 +1102,64 @@
 
 (defn parse-expr [cst]
     (match cst
-        (cst/identifier "true" l)                                           (<- (eprim (pbool true l) l))
-        (cst/identifier "false" l)                                          (<- (eprim (pbool false l) l))
-        (cst/string first templates l)                                      (let-> [
-                                                                                tpls (map->
-                                                                                         (fn [(,, expr suffix l)]
-                                                                                             (let-> [expr (parse-expr expr) ] (<- (,, expr suffix l))))
-                                                                                             templates)]
-                                                                                (<- (estr first tpls l)))
-        (cst/identifier id l)                                               (<-
-                                                                                (match (string-to-int id)
-                                                                                    (some int) (eprim (pint int l) l)
-                                                                                    (none)     (evar id l)))
-        (cst/list [(cst/identifier "@" _) body] l)                          (let-> [expr (parse-expr body)] (<- (equot (quot/expr expr) l)))
-        (cst/list [(cst/identifier "@@" _) body] l)                         (<- (equot (quot/quot body) l))
-        (cst/list [(cst/identifier "@!" _) body] l)                         (let-> [stmt (parse-stmt body)] (<- (equot (quot/stmt stmt) l)))
-        (cst/list [(cst/identifier "@t" _) body] l)                         (let-> [body (parse-type body)] (<- (equot (quot/type body) l)))
-        (cst/list [(cst/identifier "@p" _) body] l)                         (let-> [body (parse-pat body)] (<- (equot (quot/pat body) l)))
-        (cst/list [(cst/identifier "if" _) cond yes no] l)                  (let-> [cond (parse-expr cond) yes (parse-expr yes) no (parse-expr no)]
-                                                                                (<- (ematch cond [(, (pprim (pbool true l) l) yes) (, (pany l) no)] l)))
-        (cst/list [(cst/identifier "fn" _) (cst/array args _) body]  b)     (let-> [args (map-> parse-pat args) body (parse-expr body)]
-                                                                                (<- (elambda args body b)))
-        (cst/list [(cst/identifier "fn" _) .._] l)                          (<-err (, l "Invalid 'fn' ${(int-to-string l)}") (evar "()" l))
-        (cst/list [(cst/identifier "match" _) target ..cases] l)            (let-> [
-                                                                                target (parse-expr target)
-                                                                                cases  (pairs cases)
-                                                                                cases  (map->
-                                                                                           (fn [(, pat expr)]
-                                                                                               (let-> [pat (parse-pat pat) expr (parse-expr expr)] (<- (, pat expr))))
-                                                                                               cases)]
-                                                                                (<- (ematch target cases l)))
-        (cst/list [(cst/identifier "let" _) (cst/array inits _) body] l)    (let-> [
-                                                                                inits    (pairs inits)
-                                                                                bindings (map->
-                                                                                             (fn [(, pat value)]
-                                                                                                 (let-> [pat (parse-pat pat) value (parse-expr value)]
-                                                                                                     (<- (, pat value))))
-                                                                                                 inits)
-                                                                                body     (parse-expr body)]
-                                                                                (<- (elet bindings body l)))
-        (cst/list [(cst/identifier "let->" el) (cst/array inits _) body] l) (let-> [body (parse-expr body) inits (pairs inits)]
-                                                                                (foldr->
-                                                                                    body
-                                                                                        inits
-                                                                                        (fn [body (, pat value)]
-                                                                                        (let-> [value (parse-expr value) pat (parse-pat pat)]
-                                                                                            (<- (eapp (evar ">>=" el) [value (elambda [pat] body l)] l))))))
-        (cst/list [(cst/identifier "let" _) .._] l)                         (<-err (, l "Invalid 'let' ${(int-to-string l)}") (evar "()" l))
-        (cst/list [(cst/identifier "," il) ..args] l)                       (parse-tuple args il l)
-        (cst/list [] l)                                                     (<- (evar "()" l))
-        (cst/list [target ..args] l)                                        (let-> [target (parse-expr target) args (map-> parse-expr args)]
-                                                                                (<- (eapp target args l)))
-        (cst/array args l)                                                  (parse-array args l)))
+        (cst/identifier "true" l)                                            (<- (eprim (pbool true l) l))
+        (cst/identifier "false" l)                                           (<- (eprim (pbool false l) l))
+        (cst/string first templates l)                                       (let-> [
+                                                                                 tpls (map->
+                                                                                          (fn [(,, expr suffix l)]
+                                                                                              (let-> [expr (parse-expr expr) ] (<- (,, expr suffix l))))
+                                                                                              templates)]
+                                                                                 (<- (estr first tpls l)))
+        (cst/identifier id l)                                                (<-
+                                                                                 (match (string-to-int id)
+                                                                                     (some int) (eprim (pint int l) l)
+                                                                                     (none)     (evar id l)))
+        (cst/list [(cst/identifier "@" _) body] l)                           (let-> [expr (parse-expr body)] (<- (equot (quot/expr expr) l)))
+        (cst/list [(cst/identifier "@@" _) body] l)                          (<- (equot (quot/quot body) l))
+        (cst/list [(cst/identifier "@!" _) body] l)                          (let-> [stmt (parse-stmt body)] (<- (equot (quot/stmt stmt) l)))
+        (cst/list [(cst/identifier "@t" _) body] l)                          (let-> [body (parse-type body)] (<- (equot (quot/type body) l)))
+        (cst/list [(cst/identifier "@p" _) body] l)                          (let-> [body (parse-pat body)] (<- (equot (quot/pat body) l)))
+        (cst/list [(cst/identifier "if" _) cond yes no] l)                   (let-> [cond (parse-expr cond) yes (parse-expr yes) no (parse-expr no)]
+                                                                                 (<- (ematch cond [(, (pprim (pbool true l) l) yes) (, (pany l) no)] l)))
+        (cst/list
+            [(cst/identifier "fn" _) (cst/array args _) body ..rest]
+                
+                b) (let-> [
+                                                                                 args (map-> parse-pat args)
+                                                                                 body (parse-expr body)
+                                                                                 ()   (do-> (unexpected "extra arg in fn") rest)]
+                                                                                 (<- (elambda args body b)))
+        (cst/list [(cst/identifier "fn" _) .._] l)                           (<-err (, l "Invalid 'fn' ${(int-to-string l)}") (evar "()" l))
+        (cst/list [(cst/identifier "match" _) target ..cases] l)             (let-> [
+                                                                                 target (parse-expr target)
+                                                                                 cases  (pairs cases)
+                                                                                 cases  (map->
+                                                                                            (fn [(, pat expr)]
+                                                                                                (let-> [pat (parse-pat pat) expr (parse-expr expr)] (<- (, pat expr))))
+                                                                                                cases)]
+                                                                                 (<- (ematch target cases l)))
+        (cst/list [(cst/identifier "let" _) (cst/array inits _) body] l)     (let-> [
+                                                                                 inits    (pairs inits)
+                                                                                 bindings (map->
+                                                                                              (fn [(, pat value)]
+                                                                                                  (let-> [pat (parse-pat pat) value (parse-expr value)]
+                                                                                                      (<- (, pat value))))
+                                                                                                  inits)
+                                                                                 body     (parse-expr body)]
+                                                                                 (<- (elet bindings body l)))
+        (cst/list [(cst/identifier "let->" el) (cst/array inits _) body] l)  (let-> [body (parse-expr body) inits (pairs inits)]
+                                                                                 (foldr->
+                                                                                     body
+                                                                                         inits
+                                                                                         (fn [body (, pat value)]
+                                                                                         (let-> [value (parse-expr value) pat (parse-pat pat)]
+                                                                                             (<- (eapp (evar ">>=" el) [value (elambda [pat] body l)] l))))))
+        (cst/list [(cst/identifier "let" _) .._] l)                          (<-err (, l "Invalid 'let' ${(int-to-string l)}") (evar "()" l))
+        (cst/list [(cst/identifier "," il) ..args] l)                        (parse-tuple args il l)
+        (cst/list [] l)                                                      (<- (evar "()" l))
+        (cst/list [target ..args] l)                                         (let-> [target (parse-expr target) args (map-> parse-expr args)]
+                                                                                 (<- (eapp target args l)))
+        (cst/array args l)                                                   (parse-array args l)))
 
 (defn parse-tuple [args il l]
     (match args
