@@ -1,6 +1,6 @@
 import { fixDuplicateLocs } from '../../../../src/state/fixDuplicateLocs';
 import { fromJCST, jcst } from '../round-1/j-cst';
-import { arr, unwrapArray, wrapArray } from '../round-1/parse';
+import { arr, tuple, unwrapArray, wrapArray } from '../round-1/parse';
 import { Infer, TypeChecker } from './interface';
 
 type Type = { _type: 1 };
@@ -9,11 +9,13 @@ type Expr = { _expr: 1 };
 type Env = { _env: 1 };
 
 export const advancedInfer = (fns: {
-    infer_stmts2: (env: Env) => (stmts: arr<Stmt>) => InferStmts2;
-    infer2: (env: Env) => (expr: Expr) => InferExpr2;
+    infer_stmts2: (env: Env) => (stmts: arr<Stmt>) => InferStmts2<Env, Type>;
+    infer2: (env: Env) => (expr: Expr) => InferExpr2<Type>;
 }): Infer<Env, Stmt, Expr, Type> => ({
     infer(stmts, env) {
-        const result: InferStmts2 = fns['infer_stmts2'](env)(wrapArray(stmts));
+        const result: InferStmts2<Env, Type> = fns['infer_stmts2'](env)(
+            wrapArray(stmts),
+        );
         return {
             result:
                 result[0].type === 'ok'
@@ -44,7 +46,7 @@ export const advancedInfer = (fns: {
         };
     },
     inferExpr(expr, env) {
-        const result: InferExpr2 = fns.infer2(env)(expr);
+        const result: InferExpr2<Type> = fns.infer2(env)(expr);
         return {
             typesAndLocs: unwrapArray(result[1]).map((res) => ({
                 loc: res[0],
@@ -70,44 +72,24 @@ export const advancedInfer = (fns: {
     },
 });
 
-type InferExpr2 = {
-    type: ',,';
-    0:
-        | { type: 'ok'; 0: any }
-        | {
-              type: 'err';
-              0: {
-                  type: ',';
-                  0: string;
-                  1: arr<{ type: ','; 0: string; 1: number }>;
-              };
-          };
-    1: arr<{ type: ','; 0: number; 1: any }>;
-    2: {
-        type: ',';
-        0: arr<number>;
-        1: arr<{ type: ','; 0: number; 1: number }>;
-    };
+type terr = {
+    type: ',';
+    0: string;
+    1: arr<tuple<string, number>>;
 };
 
-type InferStmts2 = {
+type InferExpr2<Type> = {
     type: ',,';
-    0:
-        | { type: 'ok'; 0: { type: ','; 0: any; 1: arr<any> } }
-        | {
-              type: 'err';
-              0: {
-                  type: ',';
-                  0: string;
-                  1: arr<{ type: ','; 0: string; 1: number }>;
-              };
-          };
-    1: arr<{ type: ','; 0: number; 1: any }>;
-    2: {
-        type: ',';
-        0: arr<number>;
-        1: arr<{ type: ','; 0: number; 1: number }>;
-    };
+    0: { type: 'ok'; 0: Type } | { type: 'err'; 0: terr };
+    1: arr<tuple<number, Type>>;
+    2: tuple<arr<number>, arr<tuple<number, number>>>;
+};
+
+type InferStmts2<Env, Type> = {
+    type: ',,';
+    0: { type: 'ok'; 0: tuple<Env, arr<Type>> } | { type: 'err'; 0: terr };
+    1: arr<tuple<number, Type>>;
+    2: tuple<arr<number>, arr<tuple<number, number>>>;
 };
 
 export const basicInfer = (fns: {
@@ -194,7 +176,7 @@ export const typeChecker = (fns: {
         : undefined,
 });
 
-const getUsages = (data: InferExpr2[2]) => {
+const getUsages = (data: InferExpr2<any>[2]) => {
     const usages: Record<number, number[]> = {};
     unwrapArray(data[0]).forEach((loc) => (usages[loc] = []));
     unwrapArray(data[1]).forEach(({ 0: loc, 1: provider }) => {

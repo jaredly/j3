@@ -10,7 +10,7 @@ comin atcha
 - [x] search restultsss
   - [x] simplify results
   - [x] Show the name of the definition that a result comes from
-- [ ] search for a string (within STRINGs y'all. yes please.)
+- [x] search for a string (within STRINGs y'all. yes please.)
   - hmm
 - [x] cmd+p should bring up the jump to
 - [x] cmd+p should show types
