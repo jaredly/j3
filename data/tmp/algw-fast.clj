@@ -751,7 +751,7 @@
     (terr string (array (, string int)))
         (ttypes type type)
         (twrap type-error-t type-error-t)
-        (tmissing string type (array string)))
+        (tmissing string type (array (, string type))))
 
 (defn type-error [message loced-items] (terr message loced-items))
 

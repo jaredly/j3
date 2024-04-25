@@ -1,4 +1,5 @@
 import { fixDuplicateLocs } from '../../../../src/state/fixDuplicateLocs';
+import { InferenceError } from '../FullEvalator';
 import { fromJCST, jcst } from '../round-1/j-cst';
 import { arr, tuple, unwrapArray, wrapArray } from '../round-1/parse';
 import { Infer, TypeChecker } from './interface';
@@ -26,18 +27,7 @@ export const advancedInfer = (fns: {
                               types: unwrapArray(result[0][0][1]),
                           },
                       }
-                    : {
-                          type: 'err',
-                          err: {
-                              message: result[0][0][0],
-                              items: unwrapArray(result[0][0][1]).map(
-                                  (item) => ({
-                                      loc: item[1],
-                                      name: item[0],
-                                  }),
-                              ),
-                          },
-                      },
+                    : { type: 'err', err: parseTerr(result[0][0]) },
             typesAndLocs: unwrapArray(result[1]).map((tal) => ({
                 loc: tal[0],
                 type: tal[1],
@@ -55,39 +45,52 @@ export const advancedInfer = (fns: {
             result:
                 result[0].type === 'ok'
                     ? { type: 'ok', value: result[0][0] }
-                    : {
-                          type: 'err',
-                          err: {
-                              message: result[0][0][0],
-                              items: unwrapArray(result[0][0][1]).map(
-                                  (item) => ({
-                                      loc: item[1],
-                                      name: item[0],
-                                  }),
-                              ),
-                          },
-                      },
+                    : { type: 'err', err: parseTerr(result[0][0]) },
             usages: getUsages(result[2]),
         };
     },
 });
 
-type terr = {
-    type: ',';
-    0: string;
-    1: arr<tuple<string, number>>;
-};
+type terr<Type> =
+    | {
+          type: ',';
+          0: string;
+          1: arr<tuple<string, number>>;
+      }
+    | {
+          type: 'terr';
+          0: string;
+          1: arr<tuple<string, number>>;
+      }
+    | {
+          type: 'ttype';
+          0: Type;
+          2: Type;
+      }
+    | {
+          type: 'twrap';
+          0: terr<Type>;
+          1: terr<Type>;
+      }
+    | {
+          type: 'tmissing';
+          0: string;
+          1: Type;
+          2: arr<tuple<string, Type>>;
+      };
 
 type InferExpr2<Type> = {
     type: ',,';
-    0: { type: 'ok'; 0: Type } | { type: 'err'; 0: terr };
+    0: { type: 'ok'; 0: Type } | { type: 'err'; 0: terr<Type> };
     1: arr<tuple<number, Type>>;
     2: tuple<arr<number>, arr<tuple<number, number>>>;
 };
 
 type InferStmts2<Env, Type> = {
     type: ',,';
-    0: { type: 'ok'; 0: tuple<Env, arr<Type>> } | { type: 'err'; 0: terr };
+    0:
+        | { type: 'ok'; 0: tuple<Env, arr<Type>> }
+        | { type: 'err'; 0: terr<Type> };
     1: arr<tuple<number, Type>>;
     2: tuple<arr<number>, arr<tuple<number, number>>>;
 };
@@ -191,3 +194,16 @@ const getUsages = (data: InferExpr2<any>[2]) => {
     });
     return usages;
 };
+
+function parseTerr(result: terr<any>): InferenceError {
+    if (result.type !== ',') {
+        throw new Error(`cant handle the truth`);
+    }
+    return {
+        message: result[0],
+        items: unwrapArray(result[1]).map((item) => ({
+            loc: item[1],
+            name: item[0],
+        })),
+    };
+}
