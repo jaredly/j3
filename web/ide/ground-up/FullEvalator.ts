@@ -18,10 +18,26 @@ export type Produce = ProduceItem | ProduceItem[];
 
 export type AnyEnv = FullEvalator<any, any, any>;
 
-export type InferenceError = {
-    message: string;
-    items: { name: string; loc: number }[];
-};
+export type InferenceError =
+    | {
+          type: 'with-items';
+          message: string;
+          items: { name: string; loc: number }[];
+      }
+    | {
+          type: 'missing';
+          missing: { name: string; loc: number; type: Node }[];
+      }
+    | {
+          type: 'nested';
+          outer: InferenceError;
+          inner: InferenceError;
+      }
+    | {
+          type: 'types';
+          one: Node;
+          two: Node;
+      };
 
 export type FullEvalator<
     Env extends { values: { [key: string]: any } },

@@ -155,6 +155,15 @@ let $lt_ = (x) => StateT((state) => $co(state)(x))
 let $lt_state = StateT((state) => $co(state)(state))
 let state_$gt = (v) => StateT((old) => $co(v)(old))
 let id = (x) => x
+let loop = (init) => (f) => f(init)((v) => loop(v)(f))
+let map_some = (f) => (v) => (($target) => {
+if ($target.type === "some") {
+let v = $target[0];
+return some(f(v))
+} ;
+return none;
+throw new Error('match fail 18811:' + JSON.stringify($target))
+})(v)
 let nil = {type: "nil"}
 let cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 let pany = (v0) => ({type: "pany", 0: v0})
@@ -774,6 +783,40 @@ return l
 } ;
 throw new Error('match fail 17105:' + JSON.stringify($target))
 })(cst)
+let pat$slidents = (pat) => (($target) => {
+if ($target.type === "pvar") {
+let name = $target[0];
+let l = $target[1];
+return one($co(name)(l))
+} ;
+if ($target.type === "pcon") {
+let name = $target[0];
+let il = $target[1];
+let pats = $target[2];
+let l = $target[3];
+return many(cons(one($co(name)(il)))(map(pats)(pat$slidents)))
+} ;
+return empty;
+throw new Error('match fail 18605:' + JSON.stringify($target))
+})(pat)
+let type$slidents = (type) => (($target) => {
+if ($target.type === "tvar") {
+let name = $target[0];
+let l = $target[1];
+return one($co(name)(l))
+} ;
+if ($target.type === "tapp") {
+let target = $target[0];
+let arg = $target[1];
+return bag$sland(type$slidents(target))(type$slidents(arg))
+} ;
+if ($target.type === "tcon") {
+let name = $target[0];
+let l = $target[1];
+return one($co(name)(l))
+} ;
+throw new Error('match fail 18755:' + JSON.stringify($target))
+})(type)
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
@@ -986,7 +1029,7 @@ return l
 } ;
 throw new Error('match fail 4708:' + JSON.stringify($target))
 })(expr)
-let parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => (v7) => (v8) => (v9) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7, 8: v8, 9: v9})
+let parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => (v7) => (v8) => (v9) => (v10) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7, 8: v8, 9: v9, 10: v10})
 let externals = (bound) => (expr) => (($target) => {
 if ($target.type === "evar") {
 let name = $target[0];
@@ -1212,7 +1255,6 @@ throw new Error('match fail 9654:' + JSON.stringify($target))
 let expr_size = (expr) => fold_expr(0)(expr)((v) => (_9712) => 1 + v)
 let stmt_size = (stmt) => 1 + (($target) => {
 if ($target.type === "sdef") {
-let string = $target[0];
 let expr = $target[2];
 return expr_size(expr)
 } ;
@@ -1221,14 +1263,10 @@ let expr = $target[0];
 return expr_size(expr)
 } ;
 if ($target.type === "stypealias") {
-let string = $target[0];
-let args = $target[2];
 let type = $target[3];
 return type_size(type)
 } ;
 if ($target.type === "sdeftype") {
-let string = $target[0];
-let args = $target[2];
 let constructors = $target[3];
 return foldl(0)(constructors)((v) => ($const) => foldl(v)(map($co$co$co2($const))(type_size))($pl))
 } ;
@@ -1510,6 +1548,225 @@ let run$slnil_$gt = (st) => run_$gt(st)(state$slnil)
 let unexpected = (msg) => (cst) => $lt_err($co(cst_loc(cst))(msg))($unit)
 let eunit = (l) => evar("()")(l)
 let sunit = (k) => sexpr(eunit(k))(k)
+let locals_at = (locs) => (tl) => (expr) => (($target) => {
+if ($target.type === "eprim") {
+return none
+} ;
+if ($target.type === "estr") {
+let tpls = $target[1];
+return loop(tpls)((tpls) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return none
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === ",,") {
+let expr = $target[0][0];
+let rest = $target[1];
+{
+let $target = locals_at(locs)(tl)(expr);
+if ($target.type === "some") {
+let v = $target[0];
+return some(v)
+} ;
+return recur(rest);
+throw new Error('match fail 18433:' + JSON.stringify($target))
+}
+} 
+} ;
+throw new Error('match fail 18417:' + JSON.stringify($target))
+})(tpls))
+} ;
+if ($target.type === "evar") {
+let l = $target[1];
+{
+let $target = $eq(l)(tl);
+if ($target === true) {
+return some(locs)
+} ;
+return none;
+throw new Error('match fail 18163:' + JSON.stringify($target))
+}
+} ;
+if ($target.type === "equot") {
+return none
+} ;
+if ($target.type === "elambda") {
+let pats = $target[0];
+let expr = $target[1];
+return locals_at(bag$sland(many(map(pats)(pat_names_loc)))(locs))(tl)(expr)
+} ;
+if ($target.type === "eapp") {
+let expr = $target[0];
+let args = $target[1];
+{
+let $target = locals_at(locs)(tl)(expr);
+if ($target.type === "some") {
+let l = $target[0];
+return some(l)
+} ;
+return loop(args)((args) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return none
+} ;
+if ($target.type === "cons") {
+let arg = $target[0];
+let args = $target[1];
+{
+let $target = locals_at(locs)(tl)(arg);
+if ($target.type === "some") {
+let v = $target[0];
+return some(v)
+} ;
+return recur(args);
+throw new Error('match fail 18229:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 18217:' + JSON.stringify($target))
+})(args));
+throw new Error('match fail 18166:' + JSON.stringify($target))
+}
+} ;
+if ($target.type === "elet") {
+let bindings = $target[0];
+let expr = $target[1];
+return loop($co(bindings)(locs))(({"1": locs, "0": bindings}) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return locals_at(locs)(tl)(expr)
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === ",") {
+let pat = $target[0][0];
+let init = $target[0][1];
+let rest = $target[1];
+{
+let locs$0 = locs;
+{
+let locs = bag$sland(locs$0)(pat_names_loc(pat));
+{
+let $target = locals_at(locs)(tl)(init);
+if ($target.type === "some") {
+let v = $target[0];
+return some(v)
+} ;
+return recur($co(rest)(locs));
+throw new Error('match fail 18386:' + JSON.stringify($target))
+}
+}
+}
+} 
+} ;
+throw new Error('match fail 18349:' + JSON.stringify($target))
+})(bindings))
+} ;
+if ($target.type === "ematch") {
+let expr = $target[0];
+let cases = $target[1];
+{
+let $target = locals_at(locs)(tl)(expr);
+if ($target.type === "some") {
+let l = $target[0];
+return some(l)
+} ;
+return loop(cases)((cases) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return none
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === ",") {
+let pat = $target[0][0];
+let expr = $target[0][1];
+let cases = $target[1];
+{
+let $target = locals_at(bag$sland(pat_names_loc(pat))(locs))(tl)(expr);
+if ($target.type === "some") {
+let v = $target[0];
+return some(v)
+} ;
+return recur(cases);
+throw new Error('match fail 18314:' + JSON.stringify($target))
+}
+} 
+} ;
+throw new Error('match fail 18299:' + JSON.stringify($target))
+})(cases));
+throw new Error('match fail 18168:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 18095:' + JSON.stringify($target))
+})(expr)
+let expr$slidents = (expr) => (($target) => {
+if ($target.type === "estr") {
+let exprs = $target[1];
+return many(map(exprs)(dot(expr$slidents)($co$co0)))
+} ;
+if ($target.type === "evar") {
+let name = $target[0];
+let l = $target[1];
+return one($co(name)(l))
+} ;
+if ($target.type === "elambda") {
+let pats = $target[0];
+let expr = $target[1];
+let l = $target[2];
+return many(cons(expr$slidents(expr))(map(pats)(pat$slidents)))
+} ;
+if ($target.type === "eapp") {
+let target = $target[0];
+let args = $target[1];
+return many(cons(expr$slidents(target))(map(args)(expr$slidents)))
+} ;
+if ($target.type === "elet") {
+let bindings = $target[0];
+let body = $target[1];
+return many(cons(expr$slidents(body))(map(bindings)(({"1": exp, "0": pat}) => bag$sland(pat$slidents(pat))(expr$slidents(exp)))))
+} ;
+if ($target.type === "ematch") {
+let target = $target[0];
+let cases = $target[1];
+return bag$sland(expr$slidents(target))(many(map(cases)(({"1": exp, "0": pat}) => bag$sland(pat$slidents(pat))(expr$slidents(exp)))))
+} ;
+return empty;
+throw new Error('match fail 18479:' + JSON.stringify($target))
+})(expr)
+let stmt$slidents = (stmt) => (($target) => {
+if ($target.type === "sdef") {
+let name = $target[0];
+let l = $target[1];
+let body = $target[2];
+return bag$sland(one($co(name)(l)))(expr$slidents(body))
+} ;
+if ($target.type === "sexpr") {
+let exp = $target[0];
+return expr$slidents(exp)
+} ;
+if ($target.type === "stypealias") {
+let name = $target[0];
+let l = $target[1];
+let args = $target[2];
+let body = $target[3];
+return bag$sland(type$slidents(body))(many(cons(one($co(name)(l)))(map(args)(one))))
+} ;
+if ($target.type === "sdeftype") {
+let name = $target[0];
+let l = $target[1];
+let args = $target[2];
+let constrs = $target[3];
+return bag$sland(many(map(constrs)(({"2": args, "1": l, "0": name}) => bag$sland(one($co(name)(l)))(many(map(args)(type$slidents))))))(bag$sland(one($co(name)(l)))(many(map(args)(one))))
+} ;
+throw new Error('match fail 18646:' + JSON.stringify($target))
+})(stmt)
+let locals_at_stmt = (locs) => (tl) => (stmt) => (($target) => {
+if ($target.type === "sexpr") {
+let exp = $target[0];
+return locals_at(locs)(tl)(exp)
+} ;
+if ($target.type === "sdef") {
+let exp = $target[2];
+return locals_at(locs)(tl)(exp)
+} ;
+return none;
+throw new Error('match fail 18879:' + JSON.stringify($target))
+})(stmt)
 let compile_pat$slj = (pat) => (target) => (inner) => (trace) => (($target) => {
 if ($target.type === "pany") {
 let l = $target[0];
@@ -2945,4 +3202,11 @@ throw new Error('match fail 14258:' + JSON.stringify($target))
 })(stmt)
 let ex = run$slnil_$gt(parse_expr({"0":{"0":{"0":"let","1":16241,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"x","1":16243,"type":"cst/identifier"},"1":{"0":{"0":"10","1":16244,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":16242,"type":"cst/array"},"1":{"0":{"0":"x","1":16246,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16240,"type":"cst/list"}))
 let simplify_js = tx((expr) => some(expr))(apply_until(simplify_one))((pat) => none)((pat) => pat)((stmt) => some(stmt))(apply_until(simplify_stmt))((block) => some(block))(apply_until(simplify_block))
-return eval("({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size}) => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size})")(parse_and_compile((stmt) => state_f(parse_stmt(stmt))(state$slnil))((expr) => state_f(parse_expr(expr))(state$slnil))((stmt) => (ctx) => j$slcompile_stmts(ctx)(map(compile_stmt$slj(stmt)(ctx))(map$slstmt(simplify_js))))((expr) => (ctx) => j$slcompile(ctx)(map$slexpr(simplify_js)(compile$slj(expr)(ctx))))(names)(externals_stmt)((expr) => bag$slto_list(externals(set$slnil)(expr)))(stmt_size)(expr_size)(type_size))
+return eval("({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at})")(parse_and_compile((stmt) => state_f(parse_stmt(stmt))(state$slnil))((expr) => state_f(parse_expr(expr))(state$slnil))((stmt) => (ctx) => j$slcompile_stmts(ctx)(map(compile_stmt$slj(stmt)(ctx))(map$slstmt(simplify_js))))((expr) => (ctx) => j$slcompile(ctx)(map$slexpr(simplify_js)(compile$slj(expr)(ctx))))(names)(externals_stmt)((expr) => bag$slto_list(externals(set$slnil)(expr)))(stmt_size)(expr_size)(type_size)((tl) => (stmt) => (($target) => {
+if ($target.type === "some") {
+let v = $target[0];
+return bag$slto_list(v)
+} ;
+return nil;
+throw new Error('match fail 18854:' + JSON.stringify($target))
+})(locals_at_stmt(empty)(tl)(stmt))))

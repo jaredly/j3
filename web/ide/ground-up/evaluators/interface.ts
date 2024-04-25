@@ -15,6 +15,7 @@ export type Analyze<Stmt, Expr, Type> = {
     stmtSize(stmt: Stmt): number | null;
     exprSize(expr: Expr): number | null;
     typeSize(type: Type): number | null;
+    localsAt?(loc: number, stmt: Stmt): [string, number][];
 };
 
 export type Infer<Env, Stmt, Expr, Type> = {

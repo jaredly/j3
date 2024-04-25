@@ -265,59 +265,6 @@ const getCommands = (
 ) => {
     const commands: Command[] = [];
 
-    commands.push({
-        type: 'plain',
-        title: `Search...`,
-        action() {
-            setSearchResults({ term: { type: 'free', text: '' }, results: [] });
-        },
-    });
-
-    if (state.highlight?.length) {
-        const node = state.map[state.highlight[0]];
-        const name = node.type === 'identifier' ? node.text : '??';
-
-        commands.push({
-            type: 'plain',
-            title: `Rename ${state.highlight.length} instances of ${name}`,
-            action() {
-                dispatch({
-                    type: 'select',
-                    at: state.highlight!.map((idx): Cursor => {
-                        const path = pathForIdx(idx, state);
-                        if (!path) throw new Error(`no path for ${idx}`);
-                        return {
-                            start: [
-                                ...path.slice(0, -1),
-                                { type: 'start', idx },
-                            ],
-                            end: [...path.slice(0, -1), { type: 'end', idx }],
-                        };
-                    }),
-                });
-            },
-        });
-
-        commands.push({
-            type: 'plain',
-            title: `Show ${state.highlight.length} instances of ${name}`,
-            action() {
-                const pathFor = collectPaths(state);
-                setSearchResults({
-                    term: { type: 'references', name },
-                    results: state.highlight!.map((idx) => {
-                        const path = pathFor(idx);
-                        if (!path.length)
-                            throw new Error(
-                                `cant get path for highlight ${idx}`,
-                            );
-                        return { path: path[0], idx };
-                    }),
-                });
-            },
-        });
-    }
-
     const sel = state.at[0]?.start;
     if (sel) {
         const idx = sel[sel.length - 1].idx;
@@ -433,6 +380,59 @@ const getCommands = (
                 });
             }
         }
+    }
+
+    commands.push({
+        type: 'plain',
+        title: `Search...`,
+        action() {
+            setSearchResults({ term: { type: 'free', text: '' }, results: [] });
+        },
+    });
+
+    if (state.highlight?.length) {
+        const node = state.map[state.highlight[0]];
+        const name = node.type === 'identifier' ? node.text : '??';
+
+        commands.push({
+            type: 'plain',
+            title: `Rename ${state.highlight.length} instances of ${name}`,
+            action() {
+                dispatch({
+                    type: 'select',
+                    at: state.highlight!.map((idx): Cursor => {
+                        const path = pathForIdx(idx, state);
+                        if (!path) throw new Error(`no path for ${idx}`);
+                        return {
+                            start: [
+                                ...path.slice(0, -1),
+                                { type: 'start', idx },
+                            ],
+                            end: [...path.slice(0, -1), { type: 'end', idx }],
+                        };
+                    }),
+                });
+            },
+        });
+
+        commands.push({
+            type: 'plain',
+            title: `Show ${state.highlight.length} instances of ${name}`,
+            action() {
+                const pathFor = collectPaths(state);
+                setSearchResults({
+                    term: { type: 'references', name },
+                    results: state.highlight!.map((idx) => {
+                        const path = pathFor(idx);
+                        if (!path.length)
+                            throw new Error(
+                                `cant get path for highlight ${idx}`,
+                            );
+                        return { path: path[0], idx };
+                    }),
+                });
+            },
+        });
     }
 
     return commands;

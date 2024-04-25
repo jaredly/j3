@@ -1,5 +1,21 @@
 
-# Parse but better
+# [ ] Stmts and such
+
+???
+
+# [ ] Autocomplete
+
+- So, if you have a ?
+  or you ... are editing something
+
+- [ ] autocomplete with JUST globals
+  - so this would be ... living on `state`? maybe? or maybe not idk
+    could be like a `Cursor`
+
+- [x] make inference errors much more specific
+- [ ] do an autocomplete, when the cursor is on a `missing` type error.
+
+# [x] Parse but better
 
 parse_stmt2
 parse_expr2

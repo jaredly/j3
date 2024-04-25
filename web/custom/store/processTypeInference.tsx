@@ -3,13 +3,15 @@
 // import { DepsOrNoDeps } from './ResultsCache';
 // import { ResultsEnv } from './getResults';
 
-export const showError = (err: {
-    message: string;
-    items: { name: string; loc: number }[];
-}) => {
-    return `${err.message}${err.items
-        .map((item) => `\n - ${item.name} (${item.loc})`)
-        .join('')}`;
+import { InferenceError } from '../../ide/ground-up/FullEvalator';
+
+export const showError = (err: InferenceError) => {
+    if (err.type === 'with-items') {
+        return `${err.message}${err.items
+            .map((item) => `\n - ${item.name} (${item.loc})`)
+            .join('')}`;
+    }
+    return 'some other inference error idk ' + JSON.stringify(err);
 };
 
 // export function processTypeInference<

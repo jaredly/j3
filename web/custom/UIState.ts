@@ -12,7 +12,11 @@ import { Ctx, HistoryItem } from '../../src/to-ast/library';
 import { NNode } from '../../src/state/getNestedNodes';
 import { Map, NsMap } from '../../src/types/mcst';
 import { NUIResults, Store } from './store/Store';
-import { Errors, FullEvalator } from '../ide/ground-up/FullEvalator';
+import {
+    Errors,
+    FullEvalator,
+    InferenceError,
+} from '../ide/ground-up/FullEvalator';
 import { LocedName } from './store/sortTops';
 import { TraceMap } from '../ide/ground-up/loadEv';
 
@@ -199,13 +203,7 @@ export type WorkerPlugin<Results, Parsed, Options> = {
     ): {
         result:
             | { type: 'ok'; value: null }
-            | {
-                  type: 'err';
-                  err: {
-                      message: string;
-                      items: { name: string; loc: number }[];
-                  };
-              };
+            | { type: 'err'; err: InferenceError };
         typesAndLocs: { type: any; loc: number }[];
         usages: Record<number, number[]>;
     };

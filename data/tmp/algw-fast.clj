@@ -751,7 +751,7 @@
     (terr string (array (, string int)))
         (ttypes type type)
         (twrap type-error-t type-error-t)
-        (tmissing string type (array (, string type))))
+        (tmissing (array (,, string int type))))
 
 (defn type-error [message loced-items] (terr message loced-items))
 
@@ -1097,6 +1097,12 @@
 (defn type-error->s [err]
     (match err
         (twrap _ inner)      (type-error->s inner)
+        (tmissing missing)   "Missing values: ${(join
+                                 ""
+                                     (map
+                                     missing
+                                         (fn [(,, name loc type)]
+                                         "\n - ${name} (${(its loc)}): ${(type-to-string type)}")))}"
         (ttypes t1 t2)       "Incompatible types: ${(type-to-string t1)} and ${(type-to-string t2)}"
         (terr message names) "${message}${(join "" (map names (fn [(, name loc)] "\n - ${name} (${(its loc)})")))}"))
 
@@ -1396,11 +1402,10 @@
                                     (fn [(, result maps) t]
                                     (let [(, text maps) (tts-inner t maps false)] (, [text ..result] maps))))]
                  (<-err
-                     (type-error
-                         "Missing variables"
-                             (map
-                             (zip missing (rev text []))
-                                 (fn [(, (, name loc) type)] (, "${name} inferred as ${type}" loc))))))))
+                     (tmissing
+                         (map
+                             (zip missing (map missing-vars (type-apply subst)))
+                                 (fn [(, (, name loc) type)] (,, name loc type))))))))
 
 (defn tenv/values [(tenv values _ _ _)] values)
 
@@ -1474,7 +1479,7 @@
             ["(fn [int] int)" "(fn [int int] int)" "(fn [int int int] int)"])
         (,
         [(@! (defn what [a] (+ 2 ho)))]
-            ["Missing variables\n - ho inferred as int (15537)"])])
+            ["Missing values: \n - ho (15537): int"])])
 
 (** ## Testing Errors **)
 
@@ -2197,7 +2202,6 @@ map->
 (deftype evaluator
     (typecheck
         inference
-            analysis
             (fn [type] string)
             (fn [tenv string] (option type))
             (fn [type] cst)))
@@ -2222,7 +2226,7 @@ map->
 foldl
 
 ((eval
-    "({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type, 4: type_to_cst\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, externals_stmt, externals_expr, names, type_to_string, get_type, type_to_cst \n }) ")
+    "({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: type_to_string, 2: get_type, 3: type_to_cst\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, type_to_string, get_type, type_to_cst \n }) ")
     (typecheck
         (inference
             builtin-env
@@ -2235,7 +2239,6 @@ foldl
                 (let [
                     (, (,, _ (, types usage-record) subst) result) ((state-f (infer tenv expr)) state/nil)]
                     (,, result (applied-types types subst) usage-record))))
-            (analysis externals-stmt externals-list names)
             type-to-string
             (fn [tenv name]
             (match (tenv/type tenv name)

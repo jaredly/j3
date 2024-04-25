@@ -1,7 +1,14 @@
 import { fixDuplicateLocs } from '../../../../src/state/fixDuplicateLocs';
 import { InferenceError } from '../FullEvalator';
 import { fromJCST, jcst } from '../round-1/j-cst';
-import { arr, tuple, unwrapArray, wrapArray } from '../round-1/parse';
+import {
+    arr,
+    tuple,
+    tuple3,
+    unwrapArray,
+    unwrapTuple3,
+    wrapArray,
+} from '../round-1/parse';
 import { Infer, TypeChecker } from './interface';
 
 type Type = { _type: 1 };
@@ -12,6 +19,7 @@ type Env = { _env: 1 };
 export const advancedInfer = (fns: {
     infer_stmts2: (env: Env) => (stmts: arr<Stmt>) => InferStmts2<Env, Type>;
     infer2: (env: Env) => (expr: Expr) => InferExpr2<Type>;
+    type_to_cst: (type: Type) => jcst;
 }): Infer<Env, Stmt, Expr, Type> => ({
     infer(stmts, env) {
         const result: InferStmts2<Env, Type> = fns['infer_stmts2'](env)(
@@ -27,7 +35,10 @@ export const advancedInfer = (fns: {
                               types: unwrapArray(result[0][0][1]),
                           },
                       }
-                    : { type: 'err', err: parseTerr(result[0][0]) },
+                    : {
+                          type: 'err',
+                          err: parseTerr(fns.type_to_cst, result[0][0]),
+                      },
             typesAndLocs: unwrapArray(result[1]).map((tal) => ({
                 loc: tal[0],
                 type: tal[1],
@@ -45,7 +56,10 @@ export const advancedInfer = (fns: {
             result:
                 result[0].type === 'ok'
                     ? { type: 'ok', value: result[0][0] }
-                    : { type: 'err', err: parseTerr(result[0][0]) },
+                    : {
+                          type: 'err',
+                          err: parseTerr(fns.type_to_cst, result[0][0]),
+                      },
             usages: getUsages(result[2]),
         };
     },
@@ -74,9 +88,7 @@ type terr<Type> =
       }
     | {
           type: 'tmissing';
-          0: string;
-          1: Type;
-          2: arr<tuple<string, Type>>;
+          0: arr<tuple3<string, number, Type>>;
       };
 
 type InferExpr2<Type> = {
@@ -117,6 +129,7 @@ export const basicInfer = (fns: {
                 result: {
                     type: 'err',
                     err: {
+                        type: 'with-items',
                         message: (err as Error).message,
                         items: [],
                     },
@@ -139,6 +152,7 @@ export const basicInfer = (fns: {
                 result: {
                     type: 'err',
                     err: {
+                        type: 'with-items',
                         message: (err as Error).message,
                         items: [],
                     },
@@ -195,11 +209,27 @@ const getUsages = (data: InferExpr2<any>[2]) => {
     return usages;
 };
 
-function parseTerr(result: terr<any>): InferenceError {
-    if (result.type !== ',') {
-        throw new Error(`cant handle the truth`);
+function parseTerr(
+    type_to_cst: (t: any) => jcst,
+    result: terr<any>,
+): InferenceError {
+    if (result.type === 'tmissing') {
+        return {
+            type: 'missing',
+            missing: unwrapArray(result[0])
+                .map(unwrapTuple3)
+                .map(([name, loc, type]) => ({
+                    loc,
+                    name,
+                    type: fixDuplicateLocs(fromJCST(type_to_cst(type))),
+                })),
+        };
+    }
+    if (result.type !== ',' && result.type !== 'terr') {
+        throw new Error(`cant handle the truth ${JSON.stringify(result)}`);
     }
     return {
+        type: 'with-items',
         message: result[0],
         items: unwrapArray(result[1]).map((item) => ({
             loc: item[1],

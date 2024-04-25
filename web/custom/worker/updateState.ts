@@ -239,17 +239,19 @@ export function updateState(
                     state.results.groups[groupKey].typeFailed = true;
                     const err = result.err;
                     const text = showError(err);
-                    group.forEach((item) => {
-                        state.results!.tops[item.id].produce.push({
-                            type: 'error',
-                            message: 'Type Inference: ' + text,
-                        });
+                    if (err.type === 'with-items') {
                         err.items.forEach(({ loc, name }) => {
                             add(
                                 state.results!.tops[topForLoc[loc]].errors,
                                 loc,
                                 text,
                             );
+                        });
+                    }
+                    group.forEach((item) => {
+                        state.results!.tops[item.id].produce.push({
+                            type: 'error',
+                            message: 'Type Inference: ' + text,
                         });
                     });
                 }
@@ -340,17 +342,19 @@ export function updateState(
                 state.results.groups[groupKey].typeFailed = true;
                 const err = res.result.err;
                 const text = showError(err);
-                group.forEach((item) => {
-                    state.results!.tops[item.id].produce.push({
-                        type: 'error',
-                        message: 'Type Inference: ' + text,
-                    });
+                if (err.type === 'with-items') {
                     err.items.forEach(({ loc, name }) => {
                         add(
                             state.results!.tops[topForLoc[loc]]?.errors ?? {},
                             loc,
                             text,
                         );
+                    });
+                }
+                group.forEach((item) => {
+                    state.results!.tops[item.id].produce.push({
+                        type: 'error',
+                        message: 'Type Inference: ' + text,
                     });
                 });
             }

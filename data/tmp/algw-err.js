@@ -94,7 +94,7 @@ let cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2
 let terr = (v0) => (v1) => ({type: "terr", 0: v0, 1: v1})
 let ttypes = (v0) => (v1) => ({type: "ttypes", 0: v0, 1: v1})
 let twrap = (v0) => (v1) => ({type: "twrap", 0: v0, 1: v1})
-let tmissing = (v0) => (v1) => (v2) => ({type: "tmissing", 0: v0, 1: v1, 2: v2})
+let tmissing = (v0) => ({type: "tmissing", 0: v0})
 let scheme = (v0) => (v1) => ({type: "scheme", 0: v0, 1: v1})
 let type_free = (type) => (($target) => {
 if ($target.type === "tvar") {
@@ -1237,7 +1237,7 @@ let {"1": maps, "0": text} = tts_inner(t)(maps$0)(false);
 return $co(cons(text)(result))(maps)
 }
 });
-return $lt_err(type_error("Missing variables")(map(zip(missing)(rev(text)(nil)))(({"1": type, "0": {"1": loc, "0": name}}) => $co(`${name} inferred as ${type}`)(loc))))
+return $lt_err(tmissing(map(zip(missing)(map(missing_vars)(type_apply(subst))))(({"1": type, "0": {"1": loc, "0": name}}) => $co$co(name)(loc)(type))))
 }
 };
 throw new Error('match fail 15854:' + JSON.stringify($target))
@@ -1382,6 +1382,10 @@ let type_error_$gts = (err) => (($target) => {
 if ($target.type === "twrap") {
 let inner = $target[1];
 return type_error_$gts(inner)
+} ;
+if ($target.type === "tmissing") {
+let missing = $target[0];
+return `Missing values: ${join("")(map(missing)(({"2": type, "1": loc, "0": name}) => `\n - ${name} (${its(loc)}): ${type_to_string(type)}`))}`
 } ;
 if ($target.type === "ttypes") {
 let t1 = $target[0];
@@ -1620,7 +1624,7 @@ let tenv_apply = (subst) => ({"3": alias, "2": names, "1": cons, "0": types}) =>
 let generalize = (tenv) => (t) => scheme(set$sldiff(type_free(t))(tenv_free(tenv)))(t)
 let new_type_var = (prefix) => (l) => $gt$gt$eq($lt_idx)((nidx) => $gt$gt$eq(idx_$gt(nidx + 1))((_16872) => $lt_(tvar(`${prefix}:${its(nidx)}`)(l))))
 let basic = tenv(map$slfrom_list(cons($co("+")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("-")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("()")($co(scheme(set$slnil)(tcon("()")(-1)))(-1)))(cons($co(",")($co(scheme(set$slfrom_list(cons("a")(cons("b")(nil))))(tfn(tvar("a")(-1))(tfn(tvar("b")(-1))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1))(-1)))(-1)))(nil))))))(map$slfrom_list(cons($co(",")(tconstructor(set$slfrom_list(cons("a")(cons("b")(nil))))(cons(tvar("a")(-1))(cons(tvar("b")(-1))(nil)))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1)))(nil)))(map$slfrom_list(cons($co("int")($co$co(0)(set$slnil)(-1)))(cons($co("string")($co$co(0)(set$slnil)(-1)))(cons($co("bool")($co$co(0)(set$slnil)(-1)))(nil)))))(map$slnil)
-let typecheck = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+let typecheck = (v0) => (v1) => (v2) => (v3) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3})
 let subst_to_string = (subst) => join("\n")(map(map$slto_list(subst))(({"1": v, "0": k}) => `${k} : ${type_to_string_raw(v)}`))
 let externals = (bound) => (expr) => (($target) => {
 if ($target.type === "evar") {
@@ -2311,10 +2315,10 @@ return $gt$gt$eq(infer_stmtss(tenv)(cons(one)(nil)))(({"0": tenv$qu}) => several
 throw new Error('match fail 6659:' + JSON.stringify($target))
 })(stmts)
 let infer_stmts = (tenv) => (stmts) => foldl_$gt(tenv)(stmts)((tenv) => (stmt) => $gt$gt$eq(infer_stmtss(tenv)(cons(stmt)(nil)))(({"1": types, "0": tenv$qu}) => $lt_(tenv$slmerge(tenv)(tenv$qu))))
-return eval("({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: type_to_string, 3: get_type, 4: type_to_cst\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, externals_stmt, externals_expr, names, type_to_string, get_type, type_to_cst \n }) ")(typecheck(inference(builtin_env)((tenv) => (stmts) => fst(force(type_error_$gts)(run$slnil_$gt(infer_stmtss(tenv)(stmts)))))(infer_stmts2)(tenv$slmerge)((tenv) => (expr) => force(type_error_$gts)(run$slnil_$gt(infer(tenv)(expr))))((tenv) => (expr) => {
+return eval("({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: type_to_string, 2: get_type, 3: type_to_cst\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, type_to_string, get_type, type_to_cst \n }) ")(typecheck(inference(builtin_env)((tenv) => (stmts) => fst(force(type_error_$gts)(run$slnil_$gt(infer_stmtss(tenv)(stmts)))))(infer_stmts2)(tenv$slmerge)((tenv) => (expr) => force(type_error_$gts)(run$slnil_$gt(infer(tenv)(expr))))((tenv) => (expr) => {
 let {"1": result, "0": {"2": subst, "1": {"1": usage_record, "0": types}}} = state_f(infer(tenv)(expr))(state$slnil);
 return $co$co(result)(applied_types(types)(subst))(usage_record)
-}))(analysis(externals_stmt)(externals_list)(names))(type_to_string)((tenv) => (name) => (($target) => {
+}))(type_to_string)((tenv) => (name) => (($target) => {
 if ($target.type === "some") {
 if ($target[0].type === ",") {
 let v = $target[0][0];

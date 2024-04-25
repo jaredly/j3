@@ -109,7 +109,10 @@
         (pstr string int)
         (pprim prim int))
 
-(deftype type (tvar int int) (tapp type type int) (tcon string int))
+(deftype type
+    (tvar string int)
+        (tapp type type int)
+        (tcon string int))
 
 (deftype stmt
     (stypealias string int (array (, string int)) type int)
@@ -1586,6 +1589,117 @@
 
 dot
 
+(defn loop [init f] (f init (fn [v] (loop v f))))
+
+(defn locals-at-stmt [locs tl stmt]
+    (match stmt
+        (sexpr exp _)    (locals-at locs tl exp)
+        (sdef _ _ exp _) (locals-at locs tl exp)
+        _                none))
+
+(defn locals-at [locs tl expr]
+    (match expr
+        (eprim _ _)            none
+        (estr _ tpls _)        (loop
+                                   tpls
+                                       (fn [tpls recur]
+                                       (match tpls
+                                           []                     none
+                                           [(,, expr _ _) ..rest] (match (locals-at locs tl expr)
+                                                                      (some v) (some v)
+                                                                      _        (recur rest)))))
+        (evar _ l)             (if (= l tl)
+                                   (some locs)
+                                       none)
+        (equot _ _)            none
+        (elambda pats expr _)  (locals-at (bag/and (many (map pats pat-names-loc)) locs) tl expr)
+        (eapp expr args _)     (match (locals-at locs tl expr)
+                                   (some l) (some l)
+                                   _        (loop
+                                                args
+                                                    (fn [args recur]
+                                                    (match args
+                                                        []           (none)
+                                                        [arg ..args] (match (locals-at locs tl arg)
+                                                                         (some v) (some v)
+                                                                         _        (recur args))))))
+        (elet bindings expr _) (loop
+                                   (, bindings locs)
+                                       (fn [(, bindings locs) recur]
+                                       (match bindings
+                                           []                    (locals-at locs tl expr)
+                                           [(, pat init) ..rest] (let [locs (bag/and locs (pat-names-loc pat))]
+                                                                     (match (locals-at locs tl init)
+                                                                         (some v) (some v)
+                                                                         _        (recur (, rest locs)))))))
+        (ematch expr cases _)  (match (locals-at locs tl expr)
+                                   (some l) (some l)
+                                   _        (loop
+                                                cases
+                                                    (fn [cases recur]
+                                                    (match cases
+                                                        []                     (none)
+                                                        [(, pat expr) ..cases] (match (locals-at (bag/and (pat-names-loc pat) locs) tl expr)
+                                                                                   (some v) (some v)
+                                                                                   _        (recur cases))))))))
+
+(let [expr (@ (let [x 1] _))]
+    (,
+        (bag/to-list (expr/idents expr))
+            (map-some bag/to-list (locals-at empty 18464 expr))))
+
+(defn map-some [f v]
+    (match v
+        (some v) (some (f v))
+        _        (none)))
+
+(** ## Idents **)
+
+(defn expr/idents [expr]
+    (match expr
+        (estr _ exprs _)        (many (map exprs (dot expr/idents ,,0)))
+        (evar name l)           (one (, name l))
+        (elambda pats expr l)   (many [(expr/idents expr) ..(map pats pat/idents)])
+        (eapp target args _)    (many [(expr/idents target) ..(map args expr/idents)])
+        (elet bindings body _)  (many
+                                    [(expr/idents body)
+                                        ..(map
+                                        bindings
+                                            (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))])
+        (ematch target cases _) (bag/and
+                                    (expr/idents target)
+                                        (many
+                                        (map
+                                            cases
+                                                (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))))
+        _                       empty))
+
+(defn pat/idents [pat]
+    (match pat
+        (pvar name l)         (one (, name l))
+        ; TODO add loc for pcon ...
+        (pcon name il pats l) (many [(one (, name il)) ..(map pats pat/idents)])
+        _                     empty))
+
+(defn stmt/idents [stmt]
+    (match stmt
+        (sdef name l body _)             (bag/and (one (, name l)) (expr/idents body))
+        (sexpr exp _)                    (expr/idents exp)
+        (stypealias name l args body _)  (bag/and (type/idents body) (many [(one (, name l)) ..(map args one)]))
+        (sdeftype name l args constrs _) (bag/and
+                                             (many
+                                                 (map
+                                                     constrs
+                                                         (fn [(,,, name l args _)]
+                                                         (bag/and (one (, name l)) (many (map args type/idents))))))
+                                                 (bag/and (one (, name l)) (many (map args one))))))
+
+(defn type/idents [type]
+    (match type
+        (tvar name l)       (one (, name l))
+        (tapp target arg _) (bag/and (type/idents target) (type/idents arg))
+        (tcon name l)       (one (, name l))))
+
 (defn map-expr [f expr]
     (match (f expr)
         (estr first tpl l)     (estr first (map tpl (map,,0 (map-expr f))) l)
@@ -1627,13 +1741,13 @@ dot
     (+
         1
             (match stmt
-            (sdef string _ expr _)                  (expr-size expr)
-            (sexpr expr _)                          (expr-size expr)
-            (stypealias string _ args type _)       (type-size type)
-            (sdeftype string _ args constructors _) (foldl
-                                                        0
-                                                            constructors
-                                                            (fn [v const] (foldl v (map (,,,2 const) type-size) +))))))
+            (sdef _ _ expr _)               (expr-size expr)
+            (sexpr expr _)                  (expr-size expr)
+            (stypealias _ _ _ type _)       (type-size type)
+            (sdeftype _ _ _ constructors _) (foldl
+                                                0
+                                                    constructors
+                                                    (fn [v const] (foldl v (map (,,,2 const) type-size) +))))))
 
 (defn externals [bound expr]
     (match expr
@@ -1742,10 +1856,11 @@ dot
             (fn [expr] (array (,, string name-kind int)))
             (fn [stmt] int)
             (fn [expr] int)
-            (fn [type] int)))
+            (fn [type] int)
+            (fn [int stmt] (array (, string int)))))
 
 ((eval
-    "({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size}) => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size})")
+    "({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at})")
     (parse-and-compile
         (fn [stmt] (state-f (parse-stmt stmt) state/nil))
             (fn [expr] (state-f (parse-expr expr) state/nil))
@@ -1760,4 +1875,8 @@ dot
             (fn [expr] (bag/to-list (externals set/nil expr)))
             stmt-size
             expr-size
-            type-size))
+            type-size
+            (fn [tl stmt]
+            (match (locals-at-stmt empty tl stmt)
+                (some v) (bag/to-list v)
+                _        []))))

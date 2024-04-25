@@ -41,6 +41,7 @@ export const analyzer = (fns: {
     stmt_size(stmt: Stmt): number;
     expr_size(expr: Expr): number;
     type_size(type: Type): number;
+    locals_at?(loc: number): (stmt: Stmt) => arr<tuple<string, number>>;
 }): Analyze<Stmt, Expr, Type> => ({
     names: guard([], (stmt) => parseLocedName(fns.names(stmt))),
     externalsStmt: guard([], (stmt) =>
@@ -52,4 +53,7 @@ export const analyzer = (fns: {
     stmtSize: guard(-1, fns.stmt_size),
     exprSize: guard(-1, fns.expr_size),
     typeSize: guard(-1, fns.type_size),
+    localsAt: fns.locals_at
+        ? (loc, stmt) => unwrapArray(fns.locals_at!(loc)(stmt)).map(unwrapTuple)
+        : undefined,
 });
