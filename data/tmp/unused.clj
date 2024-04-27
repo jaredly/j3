@@ -16,7 +16,7 @@ one
 
 (deftype (array a) (cons a (array a)) (nil))
 
-eve
+even
 
 (defn y [a] a a b c d)
 

@@ -78,7 +78,7 @@ export const fuzzyScore = (
     };
 };
 
-type FuzzyScore = {
+export type FuzzyScore = {
     loc: number;
     score: number;
     full: boolean;
