@@ -3,7 +3,7 @@
 
 ???
 
-# [ ] Autocomplete
+# [x] Autocomplete
 
 - So, if you have a ?
   or you ... are editing something

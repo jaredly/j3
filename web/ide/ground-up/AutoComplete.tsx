@@ -9,11 +9,15 @@ import {
     fuzzyScore,
 } from '../../../src/to-ast/fuzzy';
 import { useLatest } from '../../custom/useLatest';
+import { Node } from '../../../src/types/cst';
+import { RenderStatic } from '../../custom/RenderStatic';
 
 const wait = 300;
 
 export const AutoComplete = () => {
     const [hidden, setHidden] = React.useState(true);
+    const [selection, setSelection] = React.useState(0);
+    const [hover, setHover] = React.useState(null as null | number);
 
     const store = useGetStore();
     const data = useSubscribe(
@@ -61,14 +65,13 @@ export const AutoComplete = () => {
         if (!data) return;
         const tid = setTimeout(() => {
             setHidden(false);
+            setSelection(0);
         }, wait);
         return () => clearTimeout(tid);
     }, [data]);
 
     const latest = useLatest(data);
     const isHidden = useLatest(hidden);
-    const [selection, setSelection] = React.useState(0);
-    const [hover, setHover] = React.useState(null as null | number);
     const latestSel = useLatest(selection);
 
     React.useEffect(() => {
@@ -123,7 +126,7 @@ export const AutoComplete = () => {
                 border: '1px solid rgba(200,200,200,0.2)',
             }}
         >
-            {data.auto.map(({ name, loc, score, action }, i) => (
+            {data.auto.map(({ name, loc, score, action, type }, i) => (
                 <div
                     key={i}
                     onMouseEnter={() => setHover(i)}
@@ -144,6 +147,11 @@ export const AutoComplete = () => {
                     }}
                 >
                     {name}
+                    {type ? (
+                        <div>
+                            <RenderStatic node={type} />
+                        </div>
+                    ) : null}
                 </div>
             ))}
         </div>
@@ -184,11 +192,48 @@ const getAutoCompletePath = (state: NUIState, results: CombinedResults) => {
 };
 
 const getAutoCompletes = (text: string, results: CombinedResults) => {
-    const found: { score: FuzzyScore; name: string; loc: number }[] = [];
+    const found: {
+        score: FuzzyScore;
+        name: string;
+        loc: number;
+        type: Node;
+    }[] = [];
+    const typesByName: Record<string, Node> = {};
+
+    Object.entries(results.workerResults.nodes).forEach(([ns, node]) => {
+        node.produce.forEach((item) => {
+            if (
+                typeof item !== 'string' &&
+                item.type === 'type' &&
+                item.name &&
+                item.cst
+            ) {
+                typesByName[item.name] = item.cst;
+            }
+        });
+    });
+
+    // Object.entries(results.results.nodes).forEach(([ns, node]) => {
+    //     if (node.parsed?.type === 'success') {
+    //         node.parsed.names.forEach(name => {
+    //             if (name.kind === 'value') return;
+    //             const score = fuzzyScore(0, text, name.name);
+    //             if (!score.full) return;
+    //             results.workerResults.nodes[+ns].produce.forEach(item => {
+    //                 if (typeof item !== 'string' && item.type === 'type') {
+    //                     if (item.name === name.name) {
+    //                     }
+    //                 }
+    //             })
+    //         })
+    //     }
+    // })
+
     Object.entries(results.results.jumpToName.value).forEach(([name, loc]) => {
         const score = fuzzyScore(0, text, name);
         if (!score.full) return;
-        found.push({ score, name, loc });
+        found.push({ score, name, loc, type: typesByName[name] });
     });
+
     return found.sort((a, b) => compareScores(a.score, b.score));
 };
