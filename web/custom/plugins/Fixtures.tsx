@@ -8,7 +8,7 @@ import { fromMCST } from '../../../src/types/mcst';
 import { newNodeAfter, newNodeBefore } from '../../../src/state/newNodeBefore';
 import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
 import { useGetStore } from '../store/StoreCtx';
-import { highlightIdxs } from '../NSTop';
+import { highlightIdxs } from '../RenderProduceItem';
 import { Data, Expr, parse, findLastIndex, LineFixture } from './Data';
 
 export const fixturePlugin: NamespacePlugin<any, Data<Expr>, any> = {

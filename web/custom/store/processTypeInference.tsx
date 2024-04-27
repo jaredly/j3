@@ -11,6 +11,11 @@ export const showError = (err: InferenceError) => {
             .map((item) => `\n - ${item.name} (${item.loc})`)
             .join('')}`;
     }
+    if (err.type === 'missing') {
+        return `Missing items: ${err.missing
+            .map(({ name, loc, type }) => `\n - ${name} (${loc})`)
+            .join('')}`;
+    }
     return 'some other inference error idk ' + JSON.stringify(err);
 };
 

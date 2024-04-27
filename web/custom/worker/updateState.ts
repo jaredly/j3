@@ -250,8 +250,8 @@ export function updateState(
                     }
                     group.forEach((item) => {
                         state.results!.tops[item.id].produce.push({
-                            type: 'error',
-                            message: 'Type Inference: ' + text,
+                            type: 'inference-error',
+                            err,
                         });
                     });
                 }
@@ -353,8 +353,8 @@ export function updateState(
                 }
                 group.forEach((item) => {
                     state.results!.tops[item.id].produce.push({
-                        type: 'error',
-                        message: 'Type Inference: ' + text,
+                        type: 'inference-error',
+                        err,
                     });
                 });
             }
