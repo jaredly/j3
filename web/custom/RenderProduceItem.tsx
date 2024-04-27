@@ -2,6 +2,7 @@ import React, { ReactNode } from 'react';
 import { pathForIdx } from '../ide/ground-up/pathForIdx';
 import { ProduceItem } from '../ide/ground-up/FullEvalator';
 import { useGetStore } from './store/StoreCtx';
+import { showError } from './store/processTypeInference';
 
 export const RenderProduceItem = ({
     value,
@@ -26,6 +27,26 @@ export const RenderProduceItem = ({
                 </div>
             );
         }
+        case 'inference-error':
+            if (value.err.type === 'missing') {
+                return (
+                    <div style={{ color: 'rgb(255,50,50)' }}>
+                        Missing (or erroring) terms:
+                        {value.err.missing.map((m, i) => (
+                            <div key={i}>
+                                <JumpTo loc={m.loc}>
+                                    - {m.name} ({m.loc})
+                                </JumpTo>
+                            </div>
+                        ))}
+                    </div>
+                );
+            }
+            return (
+                <div style={{ color: 'rgb(255,50,50)' }}>
+                    {highlightIdxs(showError(value.err))}
+                </div>
+            );
         case 'withjs': {
             let parts = highlightIdxs(value.message);
             return (

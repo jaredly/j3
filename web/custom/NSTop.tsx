@@ -86,6 +86,7 @@ export const hasErrors = (
             (p) =>
                 typeof p !== 'string' &&
                 (p.type === 'withjs' ||
+                    p.type === 'inference-error' ||
                     p.type === 'error' ||
                     p.type === 'eval'),
         )

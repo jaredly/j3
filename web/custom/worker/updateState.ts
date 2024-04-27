@@ -351,6 +351,15 @@ export function updateState(
                         );
                     });
                 }
+                if (err.type === 'missing') {
+                    err.missing.forEach(({ name, loc }) => {
+                        add(
+                            state.results!.tops[topForLoc[loc]]?.errors ?? {},
+                            loc,
+                            `Missing term "${name}"`,
+                        );
+                    });
+                }
                 group.forEach((item) => {
                     state.results!.tops[item.id].produce.push({
                         type: 'inference-error',
