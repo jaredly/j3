@@ -2,6 +2,7 @@ import * as React from 'react';
 import { useGetStore, useSubscribe } from '../../custom/store/StoreCtx';
 import { calcCursorPos } from '../../custom/Cursors';
 import { hierarchy } from 'd3';
+import { ProduceItem } from './FullEvalator';
 
 export const AutoComplete = () => {
     const [hidden, setHidden] = React.useState(false);
@@ -32,6 +33,21 @@ export const AutoComplete = () => {
             }
             const pos = calcCursorPos(path, state.regs, true);
             if (!pos) return;
+            const ns = path.find((n) => n.type === 'ns-top')?.idx;
+            if (ns == null) return;
+            const missings = results.workerResults.nodes[ns].produce
+                .filter(
+                    (p): p is Extract<typeof p, { type: 'inference-error' }> =>
+                        typeof p !== 'string' && p.type === 'inference-error',
+                )
+                .map((p) => p.err);
+            const isMissing = missings.some(
+                (p) =>
+                    p.type === 'missing' &&
+                    p.missing.some((m) => m.loc === last.idx),
+            );
+            if (!isMissing) return null;
+
             setHidden(false);
             return {
                 pos: { top: pos.top, left: pos.left, height: pos.height },
