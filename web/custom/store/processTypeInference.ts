@@ -5,7 +5,7 @@
 
 import { InferenceError } from '../../ide/ground-up/FullEvalator';
 
-export const showError = (err: InferenceError) => {
+export const showError = (err: InferenceError): string => {
     if (err.type === 'with-items') {
         return `${err.message}${err.items
             .map((item) => `\n - ${item.name} (${item.loc})`)
@@ -15,6 +15,14 @@ export const showError = (err: InferenceError) => {
         return `Missing items: ${err.missing
             .map(({ name, loc, type }) => `\n - ${name} (${loc})`)
             .join('')}`;
+    }
+    if (err.type === 'nested') {
+        return `${showError(err.inner)}\n -> \n${showError(err.outer)}`;
+    }
+    if (err.type === 'types') {
+        return `Types dont match\n${JSON.stringify(err.one)} (${
+            err.one.loc
+        }) vs ${JSON.stringify(err.two)} (${err.two.loc})`;
     }
     return 'some other inference error idk ' + JSON.stringify(err);
 };

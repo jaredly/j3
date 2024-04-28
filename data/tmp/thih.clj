@@ -261,13 +261,11 @@
 
 ;(lol)
 
-;(definstance
-    (Types Pred)
-        {apply (fn [s (isin i t)] (isin i (apply s t))) tv (fn [(isin i t)] (tv t))})
+;(definstance (Types Pred)
+    {apply (fn [s (isin i t)] (isin i (apply s t))) tv (fn [(isin i t)] (tv t))})
 
-;(definstance
-    (=> (Types a) (Types (array a)))
-        {
+;(definstance (=> (Types a) (Types (array a)))
+    {
         apply (fn [s] (map (apply s)))
         tv    (fn [t] (foldl set/nil (map tv t) set/merge))})
 
@@ -349,16 +347,8 @@
         (tvar (tyvar name kind) _) "(var ${name} ${(kind->s kind)})"
         (tapp target arg _)        (match (type->fn type)
                                        (, [] _)        (let [(, target args) (unwrap-tapp target [arg])]
-                                                           "(${
-                                                               (type->s' show-kind target)
-                                                               } ${
-                                                               (join " " (map (type->s' show-kind) args))
-                                                               })")
-                                       (, args result) "(fn [${
-                                                           (join " " (map (type->s' show-kind) args))
-                                                           }] ${
-                                                           (type->s' show-kind result)
-                                                           })")
+                                                           "(${(type->s' show-kind target)} ${(join " " (map (type->s' show-kind) args))})")
+                                       (, args result) "(fn [${(join " " (map (type->s' show-kind) args))}] ${(type->s' show-kind result)})")
         (tcon (tycon "(,)" _) _)   ","
         (tcon (tycon "[]" _) _)    "list"
         (tcon (tycon name k) _)    (if show-kind
@@ -400,32 +390,18 @@
 (defn star-con [name] (tcon (tycon name star) -1))
 
 (defn qual->s [t->s (=> preds t)]
-    "${
-        (match preds
-            [] ""
-            _  "${(join "; " (map pred->s preds))} |=> ")
-        }${
-        (t->s t)
-        }")
+    "${(match preds
+        [] ""
+        _  "${(join "; " (map pred->s preds))} |=> ")}${(t->s t)}")
 
 (defn assump->s [(!>! name (forall kinds (=> preds type)))]
-    "${
-        name
-        }: ${
-        (match kinds
-            [] ""
-            _  "${
-                   (join
-                       "; "
-                           (mapi (fn [kind i] "${(gen-name i)} ${(kind->s kind)}") 0 kinds))
-                   }; ")
-        }${
-        (match preds
-            [] ""
-            _  "${(join "; " (map pred->s preds))}; ")
-        }${
-        (type->s type)
-        }")
+    "${name}: ${(match kinds
+        [] ""
+        _  "${(join
+               "; "
+                   (mapi (fn [kind i] "${(gen-name i)} ${(kind->s kind)}") 0 kinds))}; ")}${(match preds
+        [] ""
+        _  "${(join "; " (map pred->s preds))}; ")}${(type->s type)}")
 
 (defn type/kind [type]
     (match type
@@ -434,13 +410,7 @@
         (tapp t _ l) (match (type/kind t)
                          (kfun _ k) k
                          _          (fatal
-                                        "Invalid ssssssssssssssssssstype application ${
-                                            (int-to-string l)
-                                            } while trying to determine the kind of ${
-                                            (type->s type)
-                                            }: ${
-                                            (type->s t)
-                                            } isn't a kfun."))))
+                                        "Invalid ssssssssssssssssssstype application ${(int-to-string l)} while trying to determine the kind of ${(type->s type)}: ${(type->s t)} isn't a kfun."))))
 
 (defn type/valid? [type]
     (match type
@@ -934,9 +904,8 @@
                 29190))
         (,
         (@@
-            (definstance
-                (=> (types a) (types (array a)))
-                    {
+            (definstance (=> (types a) (types (array a)))
+                {
                     apply (fn [s] (map (apply s)))
                     tv    (fn [s] (foldl set/nil (map s tv) set/merge))}))
             (sdefinstance
@@ -974,9 +943,8 @@
 (@@ (definstance (pretty int) {show-pretty string-to-int}))
 
 (@@
-    (definstance
-        (=> (types a) (types (array a)))
-            {
+    (definstance (=> (types a) (types (array a)))
+        {
             apply (fn [s] (map (apply s)))
             tv    (fn [s] (foldl set/nil (map s tv) set/merge))}))
 
@@ -1053,24 +1021,12 @@
             (pany l)           inner
             (pprim prim l)     (match prim
                                    (pint int _)   "if (${target} === ${(its int)}) {\n${inner}\n}"
-                                   (pbool bool _) "if (${
-                                                      target
-                                                      } === ${
-                                                      (match bool
-                                                          true "true"
-                                                          _    "false")
-                                                      }) {\n${
-                                                      inner
-                                                      }\n}")
+                                   (pbool bool _) "if (${target} === ${(match bool
+                                                      true "true"
+                                                      _    "false")}) {\n${inner}\n}")
             (pstr str l)       "if (${target} === \"${str}\"){\n${inner}\n}"
             (pvar name l)      "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
-            (pcon name args l) "if (${
-                                   target
-                                   }.type === \"${
-                                   name
-                                   }\") {\n${
-                                   (pat-loop target args 0 inner trace)
-                                   }\n}")))
+            (pcon name args l) "if (${target}.type === \"${name}\") {\n${(pat-loop target args 0 inner trace)}\n}")))
 
 (defn orr [default v]
     (match v
@@ -1109,21 +1065,13 @@
                 (match expr
                 (estr first tpls l)           (match tpls
                                                   [] "\"${(escape-string (unescapeString first))}\""
-                                                  _  "`${
-                                                         (escape-string (unescapeString first))
-                                                         }${
-                                                         (join
-                                                             ""
-                                                                 (mapr
-                                                                 tpls
-                                                                     (fn [item]
-                                                                     (let [(,, expr suffix l) item]
-                                                                         "${${
-                                                                             (compile expr trace)
-                                                                             }}${
-                                                                             (escape-string (unescapeString suffix))
-                                                                             }"))))
-                                                         }`")
+                                                  _  "`${(escape-string (unescapeString first))}${(join
+                                                         ""
+                                                             (mapr
+                                                             tpls
+                                                                 (fn [item]
+                                                                 (let [(,, expr suffix l) item]
+                                                                     "${${(compile expr trace)}}${(escape-string (unescapeString suffix))}"))))}`")
                 (eprim prim l)                (match prim
                                                   (pint int _)     (int-to-string int)
                                                   (pfloat float _) (jsonify float)
@@ -1136,50 +1084,26 @@
                 (equot/type inner l)          (jsonify inner)
                 (equot/pat inner l)           (jsonify inner)
                 (equotquot inner l)           (jsonify inner)
-                (elambda pats body l)         "function lambda_${
-                                                  (its l)
-                                                  }(${
-                                                  (join
-                                                      ") { return function lambda_${(its l)}("
-                                                          (mapi (fn [pat i] (orr "_${(int-to-string i)}" (just-pat pat))) 0 pats))
-                                                  }) { return ${
-                                                  (compile body trace)
-                                                  } ${
-                                                  (join "" (map (fn [_] "}") pats))
-                                                  }"
+                (elambda pats body l)         "function lambda_${(its l)}(${(join
+                                                  ") { return function lambda_${(its l)}("
+                                                      (mapi (fn [pat i] (orr "_${(int-to-string i)}" (just-pat pat))) 0 pats))}) { return ${(compile body trace)} ${(join "" (map (fn [_] "}") pats))}"
                 (elet (, [] inferred) body l) (foldl
                                                   (compile body trace)
                                                       (concat inferred)
                                                       (fn [body (, name [(, [] init)])]
-                                                      "(function let_${
-                                                          (its l)
-                                                          }() {const ${
-                                                          (sanitize name)
-                                                          } = ${
-                                                          (compile init trace)
-                                                          };\n${
-                                                          ("return ${body}"
-                                                              ;(compile-pat pat "$target" "return ${body}" trace))
-                                                          };\nthrow new Error('let pattern not matched. ' + valueToString($target));\n})()"))
+                                                      "(function let_${(its l)}() {const ${(sanitize name)} = ${(compile init trace)};\n${("return ${body}"
+                                                          ;(compile-pat pat "$target" "return ${body}" trace))};\nthrow new Error('let pattern not matched. ' + valueToString($target));\n})()"))
                 (eapp fn args l)              (let [args (join ")(" (map (fn [arg] (compile arg trace)) args))]
                                                   (match fn
                                                       (elambda _ _ _) "(${(compile fn trace)})(${args})"
                                                       _               "${(compile fn trace)}(${args})"))
-                (ematch target cases l)       "(function match_${
-                                                  (its l)
-                                                  }($target) {\n${
-                                                  (join
-                                                      "\n"
-                                                          (mapr
-                                                          cases
-                                                              (fn [case]
-                                                              (let [(, pat body) case]
-                                                                  (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))
-                                                  }\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${
-                                                  (its l)
-                                                  }');\n})(${
-                                                  (compile target trace)
-                                                  })"))))
+                (ematch target cases l)       "(function match_${(its l)}($target) {\n${(join
+                                                  "\n"
+                                                      (mapr
+                                                      cases
+                                                          (fn [case]
+                                                          (let [(, pat body) case]
+                                                              (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))}\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${(its l)}');\n})(${(compile target trace)})"))))
 
 (compile
     (parse-expr
@@ -1238,17 +1162,11 @@
         (sexpr expr l)                               (compile expr trace)
         (sdef name nl body l)                        (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
         (stypealias _ _ _ _ _)                       "/* type alias */"
-        (sdefinstance name nl type preds inst-fns l) "$_.registerInstance(\"${
-                                                         name
-                                                         }\", ${
-                                                         (its l)
-                                                         }, {${
-                                                         (join
-                                                             ", "
-                                                                 (map
-                                                                 (fn [(,, name l fn)] "${(sanitize name)}: ${(compile fn trace)}")
-                                                                     inst-fns))
-                                                         }})"
+        (sdefinstance name nl type preds inst-fns l) "$_.registerInstance(\"${name}\", ${(its l)}, {${(join
+                                                         ", "
+                                                             (map
+                                                             (fn [(,, name l fn)] "${(sanitize name)}: ${(compile fn trace)}")
+                                                                 inst-fns))}})"
         (sdeftype name nl type-arg cases l)          (join
                                                          "\n"
                                                              (mapr
@@ -1333,11 +1251,7 @@
                                               (ok (|-> u t))
                                                   (err
                                                   (,
-                                                      "Different Kinds ${
-                                                          (kind->s (tyvar/kind u))
-                                                          } vs ${
-                                                          (kind->s (type/kind t))
-                                                          }"
+                                                      "Different Kinds ${(kind->s (tyvar/kind u))} vs ${(kind->s (type/kind t))}"
                                                           [])))
         (, (tcon tc1 _) (tcon tc2 _))     (if (tycon= tc1 tc2)
                                               (ok map/nil)
@@ -1385,15 +1299,7 @@
                               (if (not (kind= (tyvar/kind u) (type/kind t)))
                               (err
                                   (,
-                                      "kinds do not match: type variable ${
-                                          (tyvar->s u)
-                                          } has kind ${
-                                          (kind->s (tyvar/kind u))
-                                          }, but ${
-                                          (type->s t)
-                                          } has kind ${
-                                          (kind->s (type/kind t))
-                                          }"
+                                      "kinds do not match: type variable ${(tyvar->s u)} has kind ${(kind->s (tyvar/kind u))}, but ${(type->s t)} has kind ${(kind->s (type/kind t))}"
                                           []))
                                   (ok (|-> u t))))))
 
@@ -1605,11 +1511,7 @@
             (none)    (let [(isin name type) p]
                           (err
                               (,
-                                  "Can't find an instance for class '${
-                                      name
-                                      }' for type ${
-                                      (type->s type)
-                                      }"
+                                  "Can't find an instance for class '${name}' for type ${(type->s type)}"
                                       [])))
             (some ps) (to-hnfs ce ps))))
 
@@ -1641,17 +1543,11 @@
             false))
 
 (defn scheme->s [(forall kinds (=> preds t))]
-    "${
-        (match kinds
-            [] ""
-            _  "${(join " " (map kind->s kinds))}; ")
-        }${
-        (match preds
-            [] ""
-            _  "${(join " " (map pred->s preds))}; ")
-        }${
-        (type->s t)
-        }")
+    "${(match kinds
+        [] ""
+        _  "${(join " " (map kind->s kinds))}; ")}${(match preds
+        [] ""
+        _  "${(join " " (map pred->s preds))}; ")}${(type->s t)}")
 
 (defn scheme/apply [subst (forall ks qt)]
     (forall ks (qual/apply subst qt type/apply)))
@@ -2140,11 +2036,7 @@ map->
             "no vps"
             (map
             (fn [(, a preds)]
-                "${
-                    (tyvar->s a)
-                    } is in predicates: ${
-                    (join ";" (map pred->s preds))
-                    }")
+                "${(tyvar->s a)} is in predicates: ${(join ";" (map pred->s preds))}")
                 vps)))
 
 (defn is-empty [x]
@@ -2159,13 +2051,7 @@ map->
         (if (any is-empty tss)
             (err
                 (,
-                    "Cannot resolve ambiguities: ${
-                        (vps->s vps)
-                        } defaults for variables: ${
-                        (tss->s tss)
-                        } with known variables: ${
-                        (join "; " (map tyvar->s known-variables))
-                        }"
+                    "Cannot resolve ambiguities: ${(vps->s vps)} defaults for variables: ${(tss->s tss)} with known variables: ${(join "; " (map tyvar->s known-variables))}"
                         []))
                 (ok (f vps (map head tss))))))
 
@@ -2429,13 +2315,9 @@ map->
             map/nil))
 
 (defn type-error->s [(, msg items)]
-    "${
-        msg
-        }${
-        (ljoin
-            "\n - "
-                (map (fn [(, loc name)] "${name} (${(int-to-string loc)})") items))
-        }")
+    "${msg}${(ljoin
+        "\n - "
+            (map (fn [(, loc name)] "${name} (${(int-to-string loc)})") items))}")
 
 (def program-results->s
     (fn [(, (,,, a types tenv subst) result)]
@@ -2863,13 +2745,11 @@ foldl
 (** ## Debuggings **)
 
 (defn type-env->s [(type-env constructors types aliases)]
-    "## Constructors${
-        (ljoin
-            "\n - "
-                (map
-                (fn [(, name scheme)] "${name}: ${(scheme->s scheme)}")
-                    (map/to-list constructors)))
-        }")
+    "## Constructors${(ljoin
+        "\n - "
+            (map
+            (fn [(, name scheme)] "${name}: ${(scheme->s scheme)}")
+                (map/to-list constructors)))}")
 
 (defn ljoin [prefix items]
     (match items
@@ -2881,35 +2761,19 @@ foldl
 (ljoin "-" ["a" "b"])
 
 (defn class-env->s [(class-env instances defaults)]
-    "## Instances${
-        (ljoin
-            "\n"
-                (map
-                (fn [(, name (, ones quals))]
-                    "${
-                        name
-                        } ${
-                        (match ones
-                            [] ""
-                            _  " <- ${(join ", " ones)}")
-                        }${
-                        (match quals
-                            [] "\n - (no instances)"
-                            _  (ljoin "\n - " (map (qual->s pred->s) quals)))
-                        }")
-                    (map/to-list instances)))
-        }\n## Defaults${
-        (ljoin "\n - " (map type->s defaults))
-        }")
+    "## Instances${(ljoin
+        "\n"
+            (map
+            (fn [(, name (, ones quals))]
+                "${name} ${(match ones
+                    [] ""
+                    _  " <- ${(join ", " ones)}")}${(match quals
+                    [] "\n - (no instances)"
+                    _  (ljoin "\n - " (map (qual->s pred->s) quals)))}")
+                (map/to-list instances)))}\n## Defaults${(ljoin "\n - " (map type->s defaults))}")
 
 (defn full-env->s [(full-env tenv cenv assumps)]
-    "# Type Env\n${
-        (type-env->s tenv)
-        }\n# Class Env\n${
-        (class-env->s cenv)
-        }\n# Assumps${
-        (ljoin "\n" (map assump->s assumps))
-        }")
+    "# Type Env\n${(type-env->s tenv)}\n# Class Env\n${(class-env->s cenv)}\n# Assumps${(ljoin "\n" (map assump->s assumps))}")
 
 (defn full-env/assumps [(full-env _ _ assumps)] assumps)
 

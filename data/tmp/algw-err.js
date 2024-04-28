@@ -71,6 +71,7 @@ return `${v}:${its(id)}`
 return `?:${its(id)}`;
 throw new Error('match fail 22801:' + JSON.stringify($target))
 })(map$slget(map)(id))
+let loop = (value) => (run) => run(value)((next_value) => loop(next_value)(run))
 let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 let tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 let tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
@@ -1466,7 +1467,7 @@ return $gt$gt$eq(externals_type_record(bound)(one))((one) => $gt$gt$eq(externals
 } ;
 throw new Error('match fail 21473:' + JSON.stringify($target))
 })(t)
-let record_type_usages = (locals) => (tenv) => (t) => (($target) => {
+let record_local_tcon_usages = (locals) => (tenv) => (t) => (($target) => {
 if ($target.type === "tvar") {
 return $lt_($unit)
 } ;
@@ -1486,7 +1487,7 @@ throw new Error('match fail 21577:' + JSON.stringify($target))
 if ($target.type === "tapp") {
 let one = $target[0];
 let two = $target[1];
-return $gt$gt$eq(record_type_usages(locals)(tenv)(one))((_21606) => $gt$gt$eq(record_type_usages(locals)(tenv)(two))((_21606) => $lt_($unit)))
+return $gt$gt$eq(record_local_tcon_usages(locals)(tenv)(one))((_21606) => $gt$gt$eq(record_local_tcon_usages(locals)(tenv)(two))((_21606) => $lt_($unit)))
 } ;
 throw new Error('match fail 21564:' + JSON.stringify($target))
 })(t)
@@ -1519,7 +1520,7 @@ if ($target.type === "some") {
 let loc = $target[0];
 return record_usage_$gt(l)(loc)
 } ;
-return $lt_err(type_error("Udnbound type")(cons($co(name)(l))(nil)));
+return $lt_err(type_error("Unbound type")(cons($co(name)(l))(nil)));
 throw new Error('match fail 23574:' + JSON.stringify($target))
 };
 {
@@ -1604,6 +1605,22 @@ return $gt$gt$eq(type_with_free_rec(free)(a))((a) => $gt$gt$eq(type_with_free_re
 } ;
 throw new Error('match fail 23459:' + JSON.stringify($target))
 })(type)
+let tdefs_$gts = (tdefs) => (constructors) => map(map$slto_list(tdefs))(({"1": {"2": loc, "1": cnames, "0": num_args}, "0": name}) => `\n - ${name}${join("")(map(set$slto_list(cnames))((cname) => `\n   - ${cname} ${(($target) => {
+if ($target.type === "none") {
+return `Cant find defn for ${cname}`
+} ;
+if ($target.type === "some") {
+if ($target[0].type === "tconstructor") {
+let free = $target[0][0];
+let args = $target[0][1];
+let res = $target[0][2];
+let loc = $target[0][3];
+return type_to_string(tfns(args)(res))
+} 
+} ;
+throw new Error('match fail 24179:' + JSON.stringify($target))
+})(map$slget(constructors)(cname))}`))}`)
+let values_$gts = (values) => map(map$slto_list(values))(({"1": {"1": loc, "0": {"1": type, "0": free}}, "0": name}) => `\n - ${name} ${type_to_string(type)}`)
 let tenv$slrm = ({"3": alias, "2": names, "1": cons, "0": types}) => ($var) => tenv(map$slrm(types)($var))(cons)(names)(alias)
 let compose_subst = (place) => (new_subst) => (old_subst) => (($target) => {
 if ($target.type === "some") {
@@ -1924,6 +1941,7 @@ return bag$sland(many(map(constrs)(({"2": args, "1": l, "0": name}) => bag$sland
 } ;
 throw new Error('match fail 22611:' + JSON.stringify($target))
 })(stmt)
+let tenv_$gts = ({"3": aliases, "2": tdefs, "1": constructors, "0": values}) => `Type Env\n# Values${join("")(values_$gts(values))}\n# Types${join("")(tdefs_$gts(tdefs)(constructors))}`
 let instantiate = ({"1": t, "0": vars}) => (l) => $gt$gt$eq($lt_(set$slto_list(vars)))((names) => $gt$gt$eq(map_$gt((name) => new_type_var(name)(l))(names))((with_types) => $gt$gt$eq($lt_(map$slfrom_list(zip(names)(with_types))))((subst) => $lt_($co(type_apply(subst)(t))(subst)))))
 let var_bind = ($var) => (type) => (l) => (($target) => {
 if ($target.type === "tvar") {
@@ -1947,9 +1965,9 @@ throw new Error('match fail 1597:' + JSON.stringify($target))
 };
 throw new Error('match fail 1575:' + JSON.stringify($target))
 })(type)
-let infer_stypes = (tenv$qu) => (stypes) => (salias) => $gt$gt$eq($lt_(foldl(map(salias)(({"0": name}) => name))(stypes)((names) => ({"0": name}) => cons(name)(names))))((names) => $gt$gt$eq($lt_(tenv$qu))(({"3": aliases, "2": types}) => $gt$gt$eq($lt_(set$slmerge(set$slfrom_list(map$slkeys(types)))(set$slmerge(set$slfrom_list(names))(set$slfrom_list(map$slkeys(aliases))))))((bound) => $gt$gt$eq($lt_(map$slfrom_list(map(stypes)(({"1": l, "0": name}) => $co(name)(l)))))((mutual_rec) => $gt$gt$eq(foldl_$gt(tenv$slnil)(salias)((tenv) => ({"3": nl, "2": body, "1": args, "0": name}) => (($target) => {
+let infer_stypes = (tenv$qu) => (stypes) => (salias) => $gt$gt$eq($lt_(foldl(map(salias)(({"3": nl, "0": name}) => $co(name)(nl)))(stypes)((names) => ({"1": nl, "0": name}) => cons($co(name)(nl))(names))))((names) => $gt$gt$eq($lt_(tenv$qu))(({"3": aliases, "2": types}) => $gt$gt$eq($lt_(set$slmerge(set$slfrom_list(map$slkeys(types)))(set$slmerge(set$slfrom_list(map(names)(fst)))(set$slfrom_list(map$slkeys(aliases))))))((bound) => $gt$gt$eq($lt_(map$slfrom_list(names)))((mutual_rec) => $gt$gt$eq(foldl_$gt(tenv$slnil)(salias)((tenv) => ({"3": nl, "2": body, "1": args, "0": name}) => (($target) => {
 if ($target.type === "nil") {
-return $gt$gt$eq(record_def_$gt(nl))((_21417) => $gt$gt$eq(record_type_usages(map$slfrom_list(args))(tenv)(body))((_21417) => $gt$gt$eq(record_usages_in_type(tenv$qu)(map$slmerge(map$slfrom_list(args))(mutual_rec))(body))((_21417) => $lt_(tenv$sladd_alias(tenv)(name)($co$co(map(args)(fst))(body)(nl))))))
+return $gt$gt$eq(record_def_$gt(nl))((_21417) => $gt$gt$eq(record_local_tcon_usages(map$slfrom_list(args))(tenv)(body))((_21417) => $gt$gt$eq(record_usages_in_type(tenv$qu)(map$slmerge(map$slfrom_list(args))(mutual_rec))(body))((_21417) => $lt_(tenv$sladd_alias(tenv)(name)($co$co(map(args)(fst))(body)(nl))))))
 } ;
 {
 let unbound = $target;
@@ -2279,6 +2297,20 @@ let idents = map$slfrom_list(map(bag$slto_list(many(map(stmts)(stmt$slidents))))
 return $co(map(defns)(with_name(idents)))(map(uses)(({"1": prov, "0": user}) => $co(with_name(idents)(user))(prov)))
 }
 }
+let test_multi = (tenv) => (stmts) => (($target) => {
+if ($target.type === "err") {
+let e = $target[0];
+return type_error_$gts(e)
+} ;
+if ($target.type === "ok") {
+if ($target[0].type === ",") {
+let tenv = $target[0][0];
+let types = $target[0][1];
+return join("\n")(map(types)(type_to_string))
+} 
+} ;
+throw new Error('match fail 24252:' + JSON.stringify($target))
+})(run$slnil_$gt(infer_stmtss(tenv)(stmts)))
 let builtin_env = (() => {
 let k = vbl("k");
 {

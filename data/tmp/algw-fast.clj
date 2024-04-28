@@ -1552,16 +1552,17 @@
     (let-> [
         names                    (<-
                                      (foldl
-                                         (map salias (fn [(,,, name _ _ _)] name))
+                                         (map salias (fn [(,,, name _ _ nl)] (, name nl)))
                                              stypes
-                                             (fn [names (sdeftype name _ _ _ _)] [name ..names])))
+                                             (fn [names (sdeftype name nl _ _ _)] [(, name nl) ..names])))
         (tenv _ _ types aliases) (<- tenv')
         bound                    (<-
                                      (set/merge
                                          (set/from-list (map/keys types))
-                                             (set/merge (set/from-list names) (set/from-list (map/keys aliases)))))
-        mutual-rec               (<-
-                                     (map/from-list (map stypes (fn [(sdeftype name l _ _ _)] (, name l)))))
+                                             (set/merge
+                                             (set/from-list (map names fst))
+                                                 (set/from-list (map/keys aliases)))))
+        mutual-rec               (<- (map/from-list names))
         tenv                     (foldl->
                                      tenv/nil
                                          salias
@@ -1572,7 +1573,7 @@
                                                      body))
                                              []      (let-> [
                                                          () (record-def-> nl)
-                                                         () (record-type-usages (map/from-list args) tenv body)
+                                                         () (record-local-tcon-usages (map/from-list args) tenv body)
                                                          () (record-usages-in-type
                                                                 tenv'
                                                                     (map/merge (map/from-list args) mutual-rec)
@@ -1628,6 +1629,31 @@
 
 map->
 
+(defn test-multi [tenv stmts]
+    (match (run/nil-> (infer-stmtss tenv stmts))
+        (err e)             (type-error->s e)
+        (ok (, tenv types)) (join "\n" (map types type-to-string))))
+
+(,
+    (test-multi builtin-env)
+        [(, [(@! 1)] "int")
+        (,
+        [(@! (typealias a (, int expr)))
+            (@! (typealias b (, int a)))
+            (@! (deftype expr (ea) (eb a)))
+            (@! (eb (, 1 (ea))))]
+            "expr")])
+
+(defn loop [value run]
+    (run value (fn [next-value] (loop next-value run))))
+
+(loop
+    0
+        (fn [v recur]
+        (if (> v 5)
+            [v]
+                [v ..(recur (+ v 2))])))
+
 (defn infer-stmtss [tenv' stmts]
     (let-> [
         (,,, sdefs stypes salias sexps) (<- (split-stmts stmts [] [] [] []))
@@ -1637,28 +1663,54 @@ map->
         expr-types                      (map-> (infer (tenv/merge val-tenv tenv')) sexps)]
         (<- (, (tenv/merge type-tenv val-tenv) expr-types))))
 
-(force
-    type-error->s
-        (run/nil->
-        (infer-stmtss
-            (foldl tenv/nil [(, "int" 0) (, "string" 0)] tenv/add-builtin-type)
-                [(@! (typealias one (, int string)))
-                (@! (deftype (, a b) (, a b)))
-                (@! (deftype one (two int)))
-                (@! (deftype kind (star) (kfun kind kind)))
-                (@! (let [(kfun m n) (star)] 1))])))
+(tenv->s
+    (fst
+        (force
+            type-error->s
+                (run/nil->
+                (infer-stmtss
+                    (foldl tenv/nil [(, "int" 0) (, "string" 0)] tenv/add-builtin-type)
+                        [(@! (typealias one (, int string)))
+                        (@! (deftype (, a b) (, a b)))
+                        (@! (deftype one (two int)))
+                        (@! (deftype kind (star) (kfun kind kind)))
+                        (@! (let [(kfun m n) (star)] 1))])))))
 
-(force
-    type-error->s
-        (run/nil->
-        (infer-stmtss
-            builtin-env
-                [(@! (deftype (array a) (cons a (array a)) (nil)))
-                (@!
-                (defn mapi [i values f]
-                    (match values
-                        []           []
-                        [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)])))])))
+(tenv->s
+    (fst
+        (force
+            type-error->s
+                (run/nil->
+                (infer-stmtss
+                    builtin-env
+                        [(@! (deftype (array a) (cons a (array a)) (nil)))
+                        (@!
+                        (defn mapi [i values f]
+                            (match values
+                                []           []
+                                [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)])))])))))
+
+(defn tdefs->s [tdefs constructors]
+    (map
+        (map/to-list tdefs)
+            (fn [(, name (,, num-args cnames loc))]
+            "\n - ${name}${(join
+                ""
+                    (map
+                    (set/to-list cnames)
+                        (fn [cname]
+                        "\n   - ${cname} ${(match (map/get constructors cname)
+                            (none)                                  "Cant find defn for ${cname}"
+                            (some (tconstructor free args res loc)) (type-to-string (tfns args res)))}")))}")))
+
+(defn values->s [values]
+    (map
+        (map/to-list values)
+            (fn [(, name (, (scheme free type) loc))]
+            "\n - ${name} ${(type-to-string type)}")))
+
+(defn tenv->s [(tenv values constructors tdefs aliases)]
+    "Type Env\n# Values${(join "" (values->s values))}\n# Types${(join "" (tdefs->s tdefs constructors))}")
 
 (** ## Recording Usages **)
 
@@ -1671,7 +1723,7 @@ map->
                                                         (some (,, _ _ loc)) (record-usage-> l loc)
                                                         _                   (match (map/get rec name)
                                                                                 (some loc) (record-usage-> l loc)
-                                                                                _          (<-err (type-error "Udnbound type" [(, name l)])))
+                                                                                _          (<-err (type-error "Unbound type" [(, name l)])))
                                                         _                   (let [nope name] (<- ()))))
             (tapp one two l) (let-> [
                                  () (record-usages-in-type tenv rec one)
@@ -1689,7 +1741,8 @@ map->
 (defn run/usages [tenv stmts]
     (let [
         (, (,, _ (, _ (, defns uses)) _) _) ((state-f
-                                                (foldl->
+                                                ;(infer-stmtss tenv stmts)
+                                                    (foldl->
                                                     tenv
                                                         stmts
                                                         (fn [tenv stmt]
@@ -1981,15 +2034,15 @@ map->
                              two (externals-type-record bound two)]
                              (<- (bag/and one two)))))
 
-(defn record-type-usages [locals tenv t]
+(defn record-local-tcon-usages [locals tenv t]
     (match t
         (tvar _ _)       (<- ())
         (tcon name l)    (match (map/get locals name)
                              (some pl) (record-usage-> l pl)
                              _         (<- ()))
         (tapp one two _) (let-> [
-                             () (record-type-usages locals tenv one)
-                             () (record-type-usages locals tenv two)]
+                             () (record-local-tcon-usages locals tenv one)
+                             () (record-local-tcon-usages locals tenv two)]
                              (<- ()))))
 
 (defn externals-type [bound t]

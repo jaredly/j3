@@ -77,9 +77,9 @@ type terr<Type> =
           1: arr<tuple<string, number>>;
       }
     | {
-          type: 'ttype';
+          type: 'ttypes';
           0: Type;
-          2: Type;
+          1: Type;
       }
     | {
           type: 'twrap';
@@ -226,7 +226,21 @@ function parseTerr(
         };
     }
     if (result.type !== ',' && result.type !== 'terr') {
-        throw new Error(`cant handle the truth ${JSON.stringify(result)}`);
+        // throw new Error(`cant handle the truth ${JSON.stringify(result)}`);
+        if (result.type === 'ttypes') {
+            return {
+                type: 'types',
+                one: fixDuplicateLocs(fromJCST(type_to_cst(result[0]))),
+                two: fixDuplicateLocs(fromJCST(type_to_cst(result[1]))),
+            };
+        }
+        if (result.type === 'twrap') {
+            return {
+                type: 'nested',
+                outer: parseTerr(type_to_cst, result[0]),
+                inner: parseTerr(type_to_cst, result[1]),
+            };
+        }
     }
     return {
         type: 'with-items',

@@ -117,7 +117,7 @@ export const fromJCST = (node: jcst): Node => {
             };
         default:
             let _: never = node;
-            throw new Error(`Unknown jcst type`);
+            throw new Error(`Unknown jcst type ${(node as any).type}`);
     }
 };
 

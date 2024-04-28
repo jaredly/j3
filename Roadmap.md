@@ -1,7 +1,78 @@
 
-# [ ] Stmts and such
+# Getting back into thih
 
-???
+- [ ] algw-err is now checking type aliases, and we need to support recursive type aliases
+
+# [ ] DOCSTRINGS PLEEASE
+
+OK I've decided:
+- ~~toplevels will have a separate "slot" for docstrings~~ nope not that, see below.
+- for things that are defined inline, it'll look like
+```clj
+(deftype hello
+  ''some docstring
+  (one thing)
+  ''other docstring
+  (two otherthing))
+```
+
+oooooooooooooooooooh or what about
+like
+I could just do
+```clj
+('' some docstring
+ defn something [abc]
+  efgh)
+```
+right?
+I make the rules? Yeah honestly I don't hate it. and it allows me to not
+do a bunch of specialty stuff.
+all it'll take is a little tweak to the layout algorithm, and we're golden.
+
+
+
+#### Brainstorming
+- [ ] Noww that I've got autocomplete, and hover-for-type ... I'd really like some docstrings.
+  I feel like ... they /ought/ to go "right above" the definition ... but that's a little annoying to do,
+  from a technical perspective.... right?
+  WELLL I could just ... make it so that `nsTops` have an extra slot for documentation. Right?
+  That would ... mean that /other/ things, like ... idk type constructors ... which are defined in the middle
+  of a toplevel, wouldn't be able to go through the same channels. Is that so bad?
+  hmmm I mean ... I guess I could snoop on the result of `names`, and make a ... "slot" for each name that
+  is given.
+  So that .. the "docstring" header for a toplevel might have several "cells" in it, one for each named thing.
+  would want to make sure it's not ... too fragile though.
+  Might also be a little weird?
+  Like, the docstrings wouldn't be colocated.
+
+```clj
+(deftype hello
+  (one thing)
+  (two otherthing))
+```
+in one incarnation would look like
+```clj
+'' hello docstring
+(deftype hello
+  ''some docstring
+  (one thing)
+  ''other docstring
+  (two otherthing))
+```
+but in the "toplevels have a magic pouch" it would be
+```clj
+'' hello docstring
+'' some docstring
+'' other docstring
+(deftype hello
+  (one thing)
+  (two otherthing))
+```
+which yeah not the most ideal.
+althouuuuugh for those things, I could just have the rule be "for the loc of the name, find
+an first-child ancestor that has a prev-sibling that is a rich-text node, and use that".
+Honestly that's not too bad.
+and (ding ding ding) it allows my parser to continue to ignore rich-text and comments.
 
 # [x] Autocomplete
 
@@ -18,7 +89,7 @@
 
 # [ ] Autocomplete with locals pls?
 
-# [ ] Cache the most recent successful "type" response for a given top, and use that if we're failing. That'll make things much nicer.
+# [x] Cache the most recent successful "type" response for a given top, and use that if we're failing. That'll make things much nicer.
 
 # [x] Parse but better
 
@@ -50,7 +121,7 @@ comin atcha
     needs.
 
 
-# Highlight Usages n stuff
+# [x] Highlight Usages n stuff
 
 So what's the big idea.
 Probably ... something on state?
@@ -59,7 +130,7 @@ on a timeout...
 ayyyyyy
 maybe a timeout at some point, idk? it's pretty cool.
 
-- [ ] CommandPalette -> showww the usages, in a little bit of context!
+- [x] CommandPalette -> showww the usages, in a little bit of context!
 
 # Effects
 
@@ -83,6 +154,8 @@ maybe a timeout at some point, idk? it's pretty cool.
 
 I WOUUULD really like ... to have the notion of "commits".
 And then ... the ability to show "these things have changed".
+probably an "autocommit if everything's green"? And then
+manual commits to "name" what has changed.
 
 
 
@@ -107,22 +180,22 @@ a structured editor, I first write the editor, and then the language?
 
 # NightTime Thoughts
 
-- find-in-page - should have a right sidebar overlay thihng that shows the results in-context
+- [ ] find-in-page - should have a right sidebar overlay thihng that shows the results in-context
   (2 lines above & below?)
-- ALSO multi-select, if there are selections that are off-screen, show them in a little toast? that would be rad
-- to enable this, have a *cache* of `pathsForIdx`, which ought to be pretty simple to update?
-- search results will have the top path be `type:search-result` instead of `type:card`, and hovery deals will
+- [ ] ALSO multi-select, if there are selections that are off-screen, show them in a little toast? that would be rad
+- [ ] to enable this, have a *cache* of `pathsForIdx`, which ought to be pretty simple to update?
+- [ ] search results will have the top path be `type:search-result` instead of `type:card`, and hovery deals will
   have `type:hover` ... although hm the hovery deal is a little weird because we *do* want the selection to
   show up ... hm ok, maybe the hovers are readonly? and pretend to have the same ~path as where the selection is?
   yeah let's do that.
 - ALSO multiselect, theselection highlight should be orange instead of blue
-- ALSO let's really do "highlight all usages of the current identifier" pleeease and thank you.
-- ALSO have a command palette thing that's "rename", and what it does is multiselect all usages, which is great
-- type checker exports a "phases" thing, (array (, int (array string))) - indicating the phase numbers ... and the "kinds" that get processed during that phase.
-- LocedName `kind` shouldn't be hardcoded in js anywhere. Just cue off of what the evaluator gives you.
+- [x] ALSO let's really do "highlight all usages of the current identifier" pleeease and thank you.
+- [x] ALSO have a command palette thing that's "rename", and what it does is multiselect all usages, which is great
+- [ ] type checker exports a "phases" thing, (array (, int (array string))) - indicating the phase numbers ... and the "kinds" that get processed during that phase.
+- [ ] LocedName `kind` shouldn't be hardcoded in js anywhere. Just cue off of what the evaluator gives you.
   - cmd-p = jump to, pleease. Also indicate the `kind` of the thing you're jumping to.
-- maintain a "jump history", that you can pull up just like search results (it'll show a +/- 2 lines context)
-- maybe prune all but the last hour of changes? That oughta be enough, for nowwwww
+- [ ] maintain a "jump history", that you can pull up just like search results (it'll show a +/- 2 lines context)
+- [ ] maybe prune all but the last hour of changes? That oughta be enough, for nowwwww
 
 # Noww that
 
