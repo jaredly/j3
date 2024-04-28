@@ -13,7 +13,12 @@
     could be like a `Cursor`
 
 - [x] make inference errors much more specific
-- [ ] do an autocomplete, when the cursor is on a `missing` type error.
+- [x] do an autocomplete, when the cursor is on a `missing` type error.
+- [ ] maybe like shift-space to trigger the autocompleter on a non-missing?
+
+# [ ] Autocomplete with locals pls?
+
+# [ ] Cache the most recent successful "type" response for a given top, and use that if we're failing. That'll make things much nicer.
 
 # [x] Parse but better
 

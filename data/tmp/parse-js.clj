@@ -144,26 +144,10 @@
     (match stmt
         (j/expr expr l)                   (compile ctx expr)
         (j/block block l)                 (compile-block ctx block)
-        (j/if cond yes else l)            "if (${
-                                              (compile ctx cond)
-                                              }) ${
-                                              (compile-block ctx yes)
-                                              } ${
-                                              (match else
-                                                  (none)       ""
-                                                  (some block) " else ${(compile-block ctx block)}")
-                                              }"
-        (j/for arg init cond inc block l) "for (let ${
-                                              arg
-                                              } = ${
-                                              (compile ctx init)
-                                              }; ${
-                                              (compile ctx cond)
-                                              }; ${
-                                              (compile ctx inc)
-                                              }) ${
-                                              (compile-block ctx block)
-                                              }"
+        (j/if cond yes else l)            "if (${(compile ctx cond)}) ${(compile-block ctx yes)} ${(match else
+                                              (none)       ""
+                                              (some block) " else ${(compile-block ctx block)}")}"
+        (j/for arg init cond inc block l) "for (let ${arg} = ${(compile ctx init)}; ${(compile ctx cond)}; ${(compile ctx inc)}) ${(compile-block ctx block)}"
         (j/break l)                       "break"
         (j/continue l)                    "continue"
         (j/return result l)               "return ${(compile ctx result)}"
@@ -208,60 +192,38 @@
 (defn pat-arg [ctx pat]
     (match pat
         (j/pvar name l)           (sanitize name)
-        (j/parray items spread l) "[${
-                                      (join ", " (map items (pat-arg ctx)))
-                                      }${
-                                      (match spread
-                                          (some s) "...${(pat-arg ctx s)}"
-                                          (none)   "")
-                                      }]"
-        (j/pobj items spread l)   "{${
-                                      (join ", " (map items (fn [(, name pat)] "${name}${(pat-arg ctx pat)}")))
-                                      }}${
-                                      (match spread
-                                          (some s) "...${(pat-arg ctx s)}"
-                                          (none)   "")
-                                      }"))
+        (j/parray items spread l) "[${(join ", " (map items (pat-arg ctx)))}${(match spread
+                                      (some s) "...${(pat-arg ctx s)}"
+                                      (none)   "")}]"
+        (j/pobj items spread l)   "{${(join ", " (map items (fn [(, name pat)] "${name}${(pat-arg ctx pat)}")))}}${(match spread
+                                      (some s) "...${(pat-arg ctx s)}"
+                                      (none)   "")}"))
 
 (defn compile [ctx expr]
     (match expr
         (j/app target args l)      "${(paren-expr ctx target)}(${(join ", " (map args (compile ctx)))})"
         (j/bin op left right l)    "${(compile ctx left)} ${op} ${(compile ctx right)}"
         (j/un op arg l)            "${op}${(compile ctx arg)}"
-        (j/lambda args body l)     "(${
-                                       (join ", " (map args (pat-arg ctx)))
-                                       }) => ${
-                                       (compile-body ctx body)
-                                       }"
+        (j/lambda args body l)     "(${(join ", " (map args (pat-arg ctx)))}) => ${(compile-body ctx body)}"
         (j/prim prim l)            (compile-prim ctx prim)
         (j/var name l)             (sanitize name)
         (j/attr target attr l)     "${(paren-expr ctx target)}.${(sanitize attr)}"
         (j/index target idx l)     "${(paren-expr ctx target)}[${(compile ctx idx)}]"
-        (j/tern cond yes no l)     "${
-                                       (paren-expr ctx cond)
-                                       } ? ${
-                                       (paren-expr ctx yes)
-                                       } : ${
-                                       (paren-expr ctx no)
-                                       }"
+        (j/tern cond yes no l)     "${(paren-expr ctx cond)} ? ${(paren-expr ctx yes)} : ${(paren-expr ctx no)}"
         (j/assign name op value l) "${name} ${op} ${(compile ctx value)}"
-        (j/array items l)          "[${
-                                       (join
-                                           ", "
-                                               (map
-                                               items
-                                                   (fn [item]
-                                                   (match item
-                                                       (left expr)             (compile ctx expr)
-                                                       (right (j/spread expr)) "...${(compile ctx expr)}"))))
-                                       }]"
-        (j/obj items l)            "{${
-                                       (join
-                                           ", "
-                                               (map
-                                               items
-                                                   (fn [item]
-                                                   (match item
-                                                       (left (, name value))   "${name}: ${(compile ctx value)}"
-                                                       (right (j/spread expr)) "...${(compile ctx expr)}"))))
-                                       }}"))
+        (j/array items l)          "[${(join
+                                       ", "
+                                           (map
+                                           items
+                                               (fn [item]
+                                               (match item
+                                                   (left expr)             (compile ctx expr)
+                                                   (right (j/spread expr)) "...${(compile ctx expr)}"))))}]"
+        (j/obj items l)            "{${(join
+                                       ", "
+                                           (map
+                                           items
+                                               (fn [item]
+                                               (match item
+                                                   (left (, name value))   "${name}: ${(compile ctx value)}"
+                                                   (right (j/spread expr)) "...${(compile ctx expr)}"))))}}"))

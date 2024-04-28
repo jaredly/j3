@@ -151,7 +151,8 @@ export function updateState(
             state.results.groups[groupKey] = {
                 changed: true,
                 typeFailed: false,
-                tenv: null,
+                // Hang on to the previous one, in case of failure
+                tenv: state.results.groups[groupKey]?.tenv,
                 tops: group.map((g) => g.id),
                 traces: {},
             };
@@ -340,6 +341,15 @@ export function updateState(
                 });
             } else {
                 state.results.groups[groupKey].typeFailed = true;
+
+                // If there's a previously successful run, load that up
+                if (state.results.groups[groupKey].tenv) {
+                    tenv = state.evaluator.inference.addTypes(
+                        tenv,
+                        state.results.groups[groupKey].tenv,
+                    );
+                }
+
                 const err = res.result.err;
                 const text = showError(err);
                 if (err.type === 'with-items') {
