@@ -58,6 +58,13 @@ export type SearchResults = {
     }[];
 };
 
+const initialDebug: Debug = {
+    ids: false,
+    showJs: false,
+    execOrder: false,
+    selection: false,
+    disableEvaluation: false,
+};
 export const GroundUp = ({
     id,
     initial,
@@ -77,66 +84,14 @@ export const GroundUp = ({
         null as null | SearchResults,
     );
 
-    const [debug, setDebug] = useState<Debug>({
-        ids: false,
-        showJs: false,
-        execOrder: false,
-        selection: false,
-        disableEvaluation: false,
-    });
+    const [debug, setDebug] = useState<Debug>(initialDebug);
 
     const store = useSyncStore(initial.state, undefined, initial.evaluator);
     const { state } = useGlobalState(store);
 
-    useEffect(() => {
-        store.setDebug(debug.execOrder, debug.disableEvaluation, debug.showJs);
-    }, [debug.execOrder, debug.disableEvaluation, debug.showJs]);
+    useSaveState(store, save, state, id);
 
-    let first = useRef(true);
-    useEffect(() => {
-        if (first.current) {
-            first.current = false;
-            return;
-        }
-        save({ ...state, regs: {} });
-    }, [state.map, state.nsMap, state.cards, state.evaluator, state.meta, id]);
-
-    useEffect(() => {
-        // @ts-ignore
-        window.state = state;
-        // @ts-ignore
-        window.store = store;
-    }, [state]);
-
-    useEffect(() => {
-        const path = state.at[0]?.start;
-        try {
-            if (path && !isValidCursorLocation(path, state.regs)) {
-                console.log('Not valid sorry', path);
-                const left = goLeftUntil(
-                    path,
-                    state.map,
-                    state.nsMap,
-                    state.cards,
-                    state.regs,
-                );
-                if (left) {
-                    store.dispatch({
-                        type: 'select',
-                        at: [{ start: left.selection }],
-                    });
-                    return;
-                }
-            }
-        } catch (err) {
-            console.error(err);
-            console.log('failed to find valid');
-        }
-    }, [state.at, state.map, state.regs]);
-
-    useEffect(() => {
-        console.log('ev', store.getEvaluator());
-    }, [store.getEvaluator()]);
+    useSelectionFixer(state, store);
 
     const size = useSize(store);
 
@@ -165,59 +120,15 @@ export const GroundUp = ({
                     />
                 ))}
             </WithStore>
-            <div
-                style={{
-                    position: 'fixed',
-                    top: 60,
-                    right: 4,
-                    backgroundColor: 'black',
-                    padding: 16,
-                    maxHeight: 'calc(100vh - 60px)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}
-            >
-                {(
-                    [
-                        'ids',
-                        'selection',
-                        'execOrder',
-                        'showJs',
-                        'disableEvaluation',
-                    ] as const
-                ).map((k) => (
-                    <div key={k}>
-                        <label>
-                            <input
-                                type="checkbox"
-                                checked={debug[k]}
-                                onChange={() =>
-                                    setDebug({ ...debug, [k]: !debug[k] })
-                                }
-                            />
-                            {' ' + k}
-                        </label>
-                    </div>
-                ))}
-                <WithStore store={store}>
-                    <div>
-                        <ShowEvaluators
-                            state={state}
-                            store={store}
-                            listing={listing}
-                            id={id}
-                        />
-                    </div>
-                    <div>Size: {size}</div>
-                    <div style={{ flex: 1, overflow: 'auto' }}>
-                        {debug.selection ? (
-                            <ShowAt at={state.at} hover={state.hover} />
-                        ) : null}
-                        <ShowErrors />
-                        <RenderTraces />
-                    </div>
-                </WithStore>
-            </div>
+            <DebugCard
+                debug={debug}
+                setDebug={setDebug}
+                store={store}
+                state={state}
+                listing={listing}
+                id={id}
+                size={size}
+            />
             <Cursors at={state.at} regs={state.regs} />
             <WithStore store={store}>
                 <Hover />
@@ -252,3 +163,132 @@ const useSize = (store: Store) => {
         [],
     );
 };
+
+function useSaveState(
+    store: Store,
+    save: (state: NUIState) => void,
+    state: NUIState,
+    id: string,
+) {
+    useEffect(() => {
+        // @ts-ignore
+        window.state = state;
+        // @ts-ignore
+        window.store = store;
+    }, [state]);
+
+    let first = useRef(true);
+    useEffect(() => {
+        if (first.current) {
+            first.current = false;
+            return;
+        }
+        save({ ...state, regs: {} });
+    }, [state.map, state.nsMap, state.cards, state.evaluator, state.meta, id]);
+}
+
+function useSelectionFixer(state: NUIState, store: Store) {
+    useEffect(() => {
+        const path = state.at[0]?.start;
+        try {
+            if (path && !isValidCursorLocation(path, state.regs)) {
+                console.log('Not valid sorry', path);
+                const left = goLeftUntil(
+                    path,
+                    state.map,
+                    state.nsMap,
+                    state.cards,
+                    state.regs,
+                );
+                if (left) {
+                    store.dispatch({
+                        type: 'select',
+                        at: [{ start: left.selection }],
+                    });
+                    return;
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            console.log('failed to find valid');
+        }
+    }, [state.at, state.map, state.regs]);
+}
+
+function DebugCard({
+    debug,
+    setDebug,
+    store,
+    state,
+    listing,
+    id,
+    size,
+}: {
+    debug: Debug;
+    setDebug: React.Dispatch<React.SetStateAction<Debug>>;
+    store: Store;
+    state: NUIState;
+    listing: string[] | null;
+    id: string;
+    size: number;
+}) {
+    useEffect(() => {
+        store.setDebug(debug.execOrder, debug.disableEvaluation, debug.showJs);
+    }, [debug.execOrder, debug.disableEvaluation, debug.showJs]);
+
+    return (
+        <div
+            style={{
+                position: 'fixed',
+                top: 60,
+                right: 4,
+                backgroundColor: 'black',
+                padding: 16,
+                maxHeight: 'calc(100vh - 60px)',
+                display: 'flex',
+                flexDirection: 'column',
+            }}
+        >
+            {(
+                [
+                    'ids',
+                    'selection',
+                    'execOrder',
+                    'showJs',
+                    'disableEvaluation',
+                ] as const
+            ).map((k) => (
+                <div key={k}>
+                    <label>
+                        <input
+                            type="checkbox"
+                            checked={debug[k]}
+                            onChange={() =>
+                                setDebug({ ...debug, [k]: !debug[k] })
+                            }
+                        />
+                        {' ' + k}
+                    </label>
+                </div>
+            ))}
+            <WithStore store={store}>
+                <div>
+                    <ShowEvaluators
+                        state={state}
+                        store={store}
+                        listing={listing}
+                        id={id}
+                    />
+                </div>
+                <div>Size: {size}</div>
+                <div style={{ flex: 1, overflow: 'auto' }}>
+                    {debug.selection ? (
+                        <ShowAt at={state.at} hover={state.hover} />
+                    ) : null}
+                    <ShowErrors />
+                    <RenderTraces />
+                </div>
+            </WithStore>
+        </div>
+    );
+}

@@ -2,6 +2,7 @@
 #
 
 - [x] render readonly for sseearch results
+- [x] better menuuu
 - [ ] "pin" a toplevel, render readonly
 
 

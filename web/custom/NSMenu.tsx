@@ -117,31 +117,7 @@ const getItems = (store: Store, ns: RealizedNamespace): MenuItem[] => {
             type: 'action',
             name: 'Copy tree',
             action() {
-                const state = store.getState();
-                const exported = exportNs(ns.id, state);
-                const text = JSON.stringify([
-                    {
-                        type: 'ns',
-                        items: [exported],
-                    },
-                ]);
-                // nstree?
-                navigator.clipboard.write([
-                    new ClipboardItem({
-                        ['text/plain']: new Blob([text], {
-                            type: 'text/plain',
-                        }),
-                        ['text/html']: new Blob(
-                            [
-                                clipboardPrefix +
-                                    text +
-                                    clipboardSuffix +
-                                    `Copied a namespace`,
-                            ],
-                            { type: 'text/html' },
-                        ),
-                    }),
-                ]);
+                navigator.clipboard.write([copyNsItem(ns, store.getState())]);
             },
         },
         { type: 'section', text: 'Set plugin' },
@@ -205,3 +181,22 @@ const getItems = (store: Store, ns: RealizedNamespace): MenuItem[] => {
 type MenuItem =
     | { type: 'section'; text: string }
     | { type: 'action'; name: string; selected?: boolean; action: () => void };
+function copyNsItem(ns: RealizedNamespace, state: NUIState) {
+    const exported = exportNs(ns.id, state);
+    const text = JSON.stringify([
+        {
+            type: 'ns',
+            items: [exported],
+        },
+    ]);
+    const item = new ClipboardItem({
+        ['text/plain']: new Blob([text], {
+            type: 'text/plain',
+        }),
+        ['text/html']: new Blob(
+            [clipboardPrefix + text + clipboardSuffix + `Copied a namespace`],
+            { type: 'text/html' },
+        ),
+    });
+    return item;
+}
