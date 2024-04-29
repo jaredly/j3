@@ -493,11 +493,11 @@ function renderList(
     tightFirst?: number,
 ): NNode {
     if (tightFirst != null && tightFirst > 0) {
-        const firstNode = map[node.values[0]];
+        const firstNode = node.values.length > 0 ? map[node.values[0]] : null;
         const [doc, first, rest] =
-            firstNode.type === 'rich-text' ||
-            firstNode.type === 'comment' ||
-            firstNode.type === 'blank'
+            firstNode?.type === 'rich-text' ||
+            firstNode?.type === 'comment' ||
+            firstNode?.type === 'blank'
                 ? [
                       node.values[0],
                       node.values.slice(1, tightFirst + 1),

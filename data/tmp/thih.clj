@@ -1904,10 +1904,11 @@ map->
                         (, ds rs) ((** This intersect call is the part that makes it so that, if you have multiple bindings in a group,
                                       the only variables that can have typeclass constraints are ones that appear in every binding. **)
                                       (split
-                                          class-env
-                                              fs
-                                              (foldr1 (intersect tyvar=) (map set/to-list vss))
-                                              ps'))]
+                                      class-env
+                                          fs
+                                          (foldr1 (intersect tyvar=) (map set/to-list vss))
+                                          ps')
+                                      )]
                         (<-
                             (if (restricted bindings)
                                 (let [

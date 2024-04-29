@@ -74,6 +74,7 @@ export const calculateLayout = (
         case 'list': {
             let firstNode = map[node.values[0]];
             if (
+                firstNode &&
                 (firstNode.type === 'rich-text' ||
                     firstNode.type === 'blank' ||
                     firstNode.type === 'comment') &&

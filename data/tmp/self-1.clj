@@ -197,13 +197,7 @@ cons
                              (pbool bool) "if (${target} === ${bool}) {\n${inner}\n}")
         (pstr str)       "if (${target} === \"${str}\"){\n${inner}\n}"
         (pvar name)      "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
-        (pcon name args) "if (${
-                             target
-                             }.type === \"${
-                             name
-                             }\") {\n${
-                             (pat-loop target args 0 inner)
-                             }\n}"))
+        (pcon name args) "if (${target}.type === \"${name}\") {\n${(pat-loop target args 0 inner)}\n}"))
 
 (compile-pat
     (pcon "cons" [(pprim (pint 2)) (pcon "lol" [(pprim (pint 3))])])
@@ -216,17 +210,13 @@ cons
     (match expr
         (estr first tpls)     (match tpls
                                   [] "\"${(escape-string (unescapeString first))}\""
-                                  _  "`${
-                                         (escape-string (unescapeString first))
-                                         }${
-                                         (join
-                                             ""
-                                                 (map
-                                                 tpls
-                                                     (fn [item]
-                                                     (let [(, expr suffix) item]
-                                                         "${${(compile expr)}}${(escape-string (unescape-string suffix))}"))))
-                                         }`")
+                                  _  "`${(escape-string (unescapeString first))}${(join
+                                         ""
+                                             (map
+                                             tpls
+                                                 (fn [item]
+                                                 (let [(, expr suffix) item]
+                                                     "${${(compile expr)}}${(escape-string (unescape-string suffix))}"))))}`")
         (eprim prim)          (match prim
                                   (pstr string) (++ ["\"" (escape-string (unescape-string string)) "\""])
                                   (pint int)    (int-to-string int)
@@ -240,17 +230,13 @@ cons
         (eapp f arg)          (match f
                                   (elambda name) (++ ["(" (compile f) ")(" (compile arg) ")"])
                                   _              (++ [(compile f) "(" (compile arg) ")"]))
-        (ematch target cases) "(($target) => {${
-                                  (join
-                                      "\n"
-                                          (map
-                                          cases
-                                              (fn [case]
-                                              (let [(, pat body) case]
-                                                  (compile-pat pat "$target" "return ${(compile body)}")))))
-                                  }\nthrow new Error('Failed to match. ' + valueToString($target))})(${
-                                  (compile target)
-                                  })"))
+        (ematch target cases) "(($target) => {${(join
+                                  "\n"
+                                      (map
+                                      cases
+                                          (fn [case]
+                                          (let [(, pat body) case]
+                                              (compile-pat pat "$target" "return ${(compile body)}")))))}\nthrow new Error('Failed to match. ' + valueToString($target))})(${(compile target)})"))
 
 (defn run [v] (eval (compile v)))
 
