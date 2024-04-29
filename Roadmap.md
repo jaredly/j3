@@ -1,7 +1,7 @@
 
 #
 
-- [ ] render readonly for sseearch results
+- [x] render readonly for sseearch results
 - [ ] "pin" a toplevel, render readonly
 
 

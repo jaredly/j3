@@ -93,10 +93,7 @@ export const NSDragger = ({
             ) : (
                 'v'
             )}
-            ]
-            {cm ? (
-                <NSMenu mref={mref} setCM={setCM} dispatch={dispatch} ns={ns} />
-            ) : null}
+            ]{cm ? <NSMenu mref={mref} setCM={setCM} ns={ns} /> : null}
         </div>
     );
 };

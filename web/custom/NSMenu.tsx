@@ -1,11 +1,11 @@
-import React from 'react';
-import { Action, NUIState, RealizedNamespace } from './UIState';
+import React, { useState } from 'react';
+import { NUIState, RealizedNamespace } from './UIState';
 import { plugins } from './plugins';
-import { useGetStore } from './store/StoreCtx';
-import { Node } from '../../src/types/cst';
+import { useGetStore, useSubscribe } from './store/StoreCtx';
 import { fromMCST } from '../../src/types/mcst';
 import { clipboardPrefix, clipboardSuffix } from './ByHand';
 import { NSExport } from '../../src/state/clipboard';
+import { Store } from './store/Store';
 
 export const exportNs = (id: number, state: NUIState) => {
     const ns = state.nsMap[id] as RealizedNamespace;
@@ -16,24 +16,47 @@ export const exportNs = (id: number, state: NUIState) => {
     return res;
 };
 
+const sectionStyle = {
+    padding: '8px 12px',
+    fontSize: '80%',
+    fontWeight: 'bold',
+    fontStyle: 'italic',
+} as const;
+
+const buttonStyle = {
+    fontFamily: 'inherit',
+    padding: '8px 12px',
+    // background: sel === i ? '#333' : 'none',
+    background: 'none',
+    border: 'none',
+    cursor: 'pointer',
+    color: 'inherit',
+    textAlign: 'left',
+    // display: 'flex',
+    // flexDirection: 'column',
+    // alignItems: 'center',
+    // fontFamily: 'Jet Brains',
+} as const;
+
 export function NSMenu({
     mref,
     setCM,
-    dispatch,
     ns,
 }: {
     mref: React.RefObject<HTMLDivElement>;
     setCM: React.Dispatch<React.SetStateAction<boolean>>;
-    dispatch: React.Dispatch<Action>;
     ns: RealizedNamespace;
 }) {
     const store = useGetStore();
-    const current =
-        typeof ns.plugin === 'string'
-            ? ns.plugin
-            : ns.plugin
-            ? ns.plugin.id
-            : null;
+    const items = useSubscribe(
+        () => {
+            return getItems(store, ns);
+        },
+        (fn) => store.onChange('ns:' + ns.id, fn),
+        [ns.id],
+    );
+    const [hover, setHover] = useState(null as null | number);
+
     return (
         <div
             ref={mref}
@@ -53,106 +76,132 @@ export function NSMenu({
                 flexDirection: 'column',
             }}
         >
-            <button
-                style={{
-                    cursor: 'pointer',
-                    backgroundColor: 'white',
-                }}
-                onClick={() => {
-                    const state = store.getState();
-                    const exported = exportNs(ns.id, state);
-                    const text = JSON.stringify([
-                        {
-                            type: 'ns',
-                            items: [exported],
-                        },
-                    ]);
-                    // nstree?
-                    navigator.clipboard.write([
-                        new ClipboardItem({
-                            ['text/plain']: new Blob([text], {
-                                type: 'text/plain',
-                            }),
-                            ['text/html']: new Blob(
-                                [
-                                    clipboardPrefix +
-                                        text +
-                                        clipboardSuffix +
-                                        `Copied a namespace`,
-                                ],
-                                { type: 'text/html' },
-                            ),
-                        }),
-                    ]);
-                }}
-            >
-                Copy tree
-            </button>
-
-            <div style={{ padding: '4px 8px' }}>Set Plugin</div>
-            {plugins.map((plugin) => (
-                <button
-                    key={plugin.id}
-                    style={{
-                        cursor: 'pointer',
-                        backgroundColor:
-                            plugin.id === current ? '#ccc' : 'white',
-                    }}
-                    onClick={() => {
-                        dispatch({
-                            type: 'ns',
-                            nsMap: {
-                                [ns.id]: {
-                                    ...ns,
-                                    plugin: { id: plugin.id, options: null },
-                                },
-                            },
-                        });
-                    }}
-                >
-                    {plugin.title}
-                </button>
-            ))}
-            <button
-                style={{ cursor: 'pointer' }}
-                onClick={() => {
-                    dispatch({
-                        type: 'ns',
-                        nsMap: {
-                            [ns.id]: { ...ns, plugin: undefined },
-                        },
-                    });
-                }}
-            >
-                No plugin
-            </button>
-            <div style={{ padding: '4px 8px' }}>Set Render Function</div>
-            {['pre', 'none', null].map((id) => (
-                <button
-                    key={id ?? 'default'}
-                    style={{
-                        cursor: 'pointer',
-                        background: id === ns.display?.id ? 'red' : 'white',
-                    }}
-                    onClick={() => {
-                        console.log('setting display', id);
-                        dispatch({
-                            type: 'ns',
-                            nsMap: {
-                                [ns.id]: {
-                                    ...ns,
-                                    display:
-                                        id === null
-                                            ? undefined
-                                            : { id, options: null },
-                                },
-                            },
-                        });
-                    }}
-                >
-                    {id === null ? 'Default' : id}
-                </button>
-            ))}
+            {items.map((item, i) =>
+                item.type === 'section' ? (
+                    <div key={i} style={sectionStyle}>
+                        {item.text}
+                    </div>
+                ) : (
+                    <button
+                        key={i}
+                        onMouseEnter={() => setHover(i)}
+                        onMouseLeave={() => setHover(null)}
+                        style={{
+                            ...buttonStyle,
+                            background: item.selected
+                                ? '#444'
+                                : hover === i
+                                ? '#333'
+                                : 'none',
+                            cursor: item.selected ? 'default' : 'pointer',
+                        }}
+                        onClick={item.action}
+                    >
+                        {item.name}
+                    </button>
+                ),
+            )}
         </div>
     );
 }
+
+const getItems = (store: Store, ns: RealizedNamespace): MenuItem[] => {
+    const current =
+        typeof ns.plugin === 'string'
+            ? ns.plugin
+            : ns.plugin
+            ? ns.plugin.id
+            : null;
+    return [
+        {
+            type: 'action',
+            name: 'Copy tree',
+            action() {
+                const state = store.getState();
+                const exported = exportNs(ns.id, state);
+                const text = JSON.stringify([
+                    {
+                        type: 'ns',
+                        items: [exported],
+                    },
+                ]);
+                // nstree?
+                navigator.clipboard.write([
+                    new ClipboardItem({
+                        ['text/plain']: new Blob([text], {
+                            type: 'text/plain',
+                        }),
+                        ['text/html']: new Blob(
+                            [
+                                clipboardPrefix +
+                                    text +
+                                    clipboardSuffix +
+                                    `Copied a namespace`,
+                            ],
+                            { type: 'text/html' },
+                        ),
+                    }),
+                ]);
+            },
+        },
+        { type: 'section', text: 'Set plugin' },
+        ...plugins.map(
+            (plugin): MenuItem => ({
+                type: 'action',
+                name: `> ${plugin.title}`,
+                selected: plugin.id === current,
+                action() {
+                    if (plugin.id === current) return;
+                    store.dispatch({
+                        type: 'ns',
+                        nsMap: {
+                            [ns.id]: {
+                                ...ns,
+                                plugin: { id: plugin.id, options: null },
+                            },
+                        },
+                    });
+                },
+            }),
+        ),
+        {
+            type: 'action',
+            name: '> No plugin',
+            selected: !current,
+            action() {
+                if (!current) return;
+                store.dispatch({
+                    type: 'ns',
+                    nsMap: {
+                        [ns.id]: { ...ns, plugin: undefined },
+                    },
+                });
+            },
+        },
+        { type: 'section', text: 'Set Render Function' },
+        ...['pre', 'none', null].map(
+            (id): MenuItem => ({
+                type: 'action',
+                name: '> ' + (id === null ? 'Default' : id),
+                action() {
+                    store.dispatch({
+                        type: 'ns',
+                        nsMap: {
+                            [ns.id]: {
+                                ...ns,
+                                display:
+                                    id === null
+                                        ? undefined
+                                        : { id, options: null },
+                            },
+                        },
+                    });
+                },
+            }),
+        ),
+    ];
+};
+
+type MenuItem =
+    | { type: 'section'; text: string }
+    | { type: 'action'; name: string; selected?: boolean; action: () => void };

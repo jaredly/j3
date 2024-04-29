@@ -73,7 +73,6 @@ export const ShowSearchResults = ({
             .map((r, i) => {
                 const ns = r.path.find((p) => p.type === 'ns-top')!.idx;
                 let at = getContext(r);
-                // const node = simplify(fromMCST(at, state.map));
 
                 return { ns, at, r };
             })
