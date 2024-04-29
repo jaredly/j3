@@ -1,7 +1,19 @@
 
 # Getting back into thih
 
-- [ ] algw-err is now checking type aliases, and we need to support recursive type aliases
+- [x] algw-err is now checking type aliases, and we need to support recursive type aliases
+- [ ] So I thikn that last thing that happened was I needed to figure out when/how
+  to deal with a definstance ... and I determined that I need to switch to a multi-pass
+  thing ... where the `kind` of a given `name` would determine which "pass" it would get
+  processed in.
+  ...
+  So, how does that play with the `tenv` that I'm producing, and caching? Is that gonna be
+  a problem?
+  mensch this is kinda involved.
+
+  wait but can I decide that `definstance`s can be late-binding?
+  I think I need to check to see if I can ditch `simplify` withouth suffering too much.
+  Can I simplify late in the game, like during compilation?
 
 # [ ] DOCSTRINGS PLEEASE
 

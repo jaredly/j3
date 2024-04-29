@@ -72,7 +72,16 @@ export const calculateLayout = (
             return { type: 'flat', width: cw - pos, pos };
         }
         case 'list': {
-            const firstName = idName(map[node.values[0]]);
+            let firstNode = map[node.values[0]];
+            if (
+                (firstNode.type === 'rich-text' ||
+                    firstNode.type === 'blank' ||
+                    firstNode.type === 'comment') &&
+                node.values.length > 1
+            ) {
+                firstNode = map[node.values[1]];
+            }
+            const firstName = idName(firstNode);
             const cw = childWidth(
                 node.values,
                 recursive,
@@ -94,7 +103,7 @@ export const calculateLayout = (
             ) {
                 return {
                     type: 'multiline',
-                    tightFirst: howTight(map[node.values[0]]),
+                    tightFirst: howTight(firstNode),
                     pos,
                     pairs: firstName === 'switch' || firstName === 'match',
                     cw,

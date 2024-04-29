@@ -251,6 +251,7 @@ export const getNestedNodes = (
                             : [
                                   renderList(
                                       node,
+                                      map,
                                       layout?.tightFirst,
                                   ) satisfies NNode,
                               ]
@@ -272,6 +273,7 @@ export const getNestedNodes = (
                             : [
                                   renderList(
                                       node,
+                                      map,
                                       layout?.tightFirst,
                                   ) satisfies NNode,
                               ]
@@ -487,42 +489,65 @@ function renderList(
     node: {
         values: number[];
     } & MNodeExtra,
+    map: Map,
     tightFirst?: number,
 ): NNode {
     if (tightFirst != null && tightFirst > 0) {
+        const firstNode = map[node.values[0]];
+        const [doc, first, rest] =
+            firstNode.type === 'rich-text' ||
+            firstNode.type === 'comment' ||
+            firstNode.type === 'blank'
+                ? [
+                      node.values[0],
+                      node.values.slice(1, tightFirst + 1),
+                      node.values.slice(tightFirst + 1),
+                  ]
+                : [
+                      null,
+                      node.values.slice(0, tightFirst),
+                      node.values.slice(tightFirst),
+                  ];
         return {
             type: 'vert',
             children: [
+                ...(doc != null
+                    ? [
+                          {
+                              type: 'ref',
+                              id: doc,
+                              path: { type: 'child', at: 0 },
+                          } as const,
+                      ]
+                    : []),
                 {
                     type: 'horiz',
-                    children: withCommas(node.values.slice(0, tightFirst)),
+                    children: withCommas(first),
                 },
                 {
                     type: 'indent',
                     child: {
                         type: 'vert',
-                        children: node.values
-                            .slice(tightFirst)
-                            .map((id, i) => ({
-                                type: 'ref',
-                                id,
-                                path: { type: 'child', at: i + tightFirst },
-                            })),
+                        children: rest.map((id, i) => ({
+                            type: 'ref',
+                            id,
+                            path: {
+                                type: 'child',
+                                at: i + tightFirst + (doc != null ? 1 : 0),
+                            },
+                        })),
                     },
                 },
             ],
         };
     }
     return {
-        // type: 'indent',
-        // child: {
         type: 'vert',
         children: node.values.map((id, i) => ({
             type: 'ref',
             id,
             path: { type: 'child', at: i },
         })),
-        // },
     };
 }
 

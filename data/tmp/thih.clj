@@ -1931,8 +1931,8 @@ map->
                                                 explicit)]
             (<-
                 (,
-                    (+++ impl-preds (concat expl-preds))
-                        (+++ impl-assumps expl-assumps))))))
+                    (concat [impl-preds ..expl-preds])
+                        (concat [impl-assumps expl-assumps]))))))
 
 (defn infer/seq [ti ce as assumptions]
     (match assumptions
@@ -2508,11 +2508,6 @@ filter
                 [(, "a" 1)]
                 [(,,, "empty" 2 [] 39) (,,, "one" 4 [(tcon (tycon "a" star) 5)] 6)])))
 
-;(defn foldl-> [init values f]
-    (match values
-        []           (<- init)
-        [one ..rest] (let-> [one (f init one)] (foldl-> one rest f))))
-
 (defn foldl-ok-> [init values f]
     (let [<- ok >>= ok>>=]
         (match values
@@ -2528,13 +2523,6 @@ filter
                              (err e) (, (err e) snd)))))
 
 (defn concat2 [a b] (concat [a b]))
-
-;(defn foldr-> [init values f]
-    (match values
-        []           (<- init)
-        [one ..rest] (let-> [init (foldr-> init rest f)] (f init one))))
-
-22088
 
 ;(defn infer-deftype2 [tenv' bound tname tnl targs constructors l]
     (let-> [
@@ -2623,21 +2611,6 @@ filter
                         [(, [] [(map (fn [(, name body)] (, name [(, [] body)])) defs)])])]
         (<- (full-env tenv ce assumps))))
 
-(defn split-stmts [stmts sdefs stypes salias sexps]
-    (match stmts
-        []           (,,, sdefs stypes salias sexps)
-        [one ..rest] (match one
-                         (sdef _ _ _ _)                          (split-stmts rest [one ..sdefs] stypes salias sexps)
-                         (sdeftype _ _ _ _ _)                    (split-stmts rest sdefs [one ..stypes] salias sexps)
-                         (sdefinstance name nl type preds fns l) (split-stmts rest sdefs stypes salias sexps)
-                         (stypealias name _ args body _)         (split-stmts
-                                                                     rest
-                                                                         sdefs
-                                                                         stypes
-                                                                         [(,, name args body) ..salias]
-                                                                         sexps)
-                         (sexpr expr _)                          (split-stmts rest sdefs stypes salias [expr ..sexps]))))
-
 (defn infer-defns [ce assumps stmts]
     (let-> [
         names   (<- (set/from-list (map (fn [(sdef name _ _ _)] name) stmts)))
@@ -2666,19 +2639,38 @@ filter
             []           (<- [])
             [one ..rest] (let-> [one (f one) rest (map-ok-> f rest)] (<- [one ..rest])))))
 
+(defn split-stmts [stmts sdefs stypes salias sexps sinst]
+    (match stmts
+        []           (, sdefs stypes salias sexps sinst)
+        [one ..rest] (match one
+                         (sdef _ _ _ _)                          (split-stmts rest [one ..sdefs] stypes salias sexps sinst)
+                         (sdeftype _ _ _ _ _)                    (split-stmts rest sdefs [one ..stypes] salias sexps sinst)
+                         (sdefinstance name nl type preds fns l) (split-stmts rest sdefs stypes salias sexps [one ..sinst])
+                         (stypealias name _ args body _)         (split-stmts
+                                                                     rest
+                                                                         sdefs
+                                                                         stypes
+                                                                         [(,, name args body) ..salias]
+                                                                         sexps
+                                                                         sinst)
+                         (sexpr expr _)                          (split-stmts rest sdefs stypes salias [expr ..sexps] sinst))))
+
+(defn infer-sinst [ce assumps (sdefinstance name nl type preds fns l)]
+    0)
+
 (defn infer-stmtss [ce assumps stmts]
     (let-> [
-        (,,, sdefs stypes salias sexps) (<- (split-stmts stmts [] [] [] []))
+        (, sdefs stypes salias sexps sinst) (<- (split-stmts stmts [] [] [] [] []))
         ;(type-tenv
             (infer-stypes tenv' stypes salias)
                 tenv'
                 (<- (tenv/merge type-tenv tenv')))
-        tts                             (map-> (fn [stmt] (infer-stmt ce assumps stmt)) stypes)
-        type-tenv                       (<- (foldl full-env/nil tts full-env/merge))
-        (full-env a b c)                (match sdefs
-                                            [] (<- full-env/nil)
-                                            _  (infer-defns ce assumps sdefs))
-        types                           (map-> (infer ce (concat2 c assumps)) sexps)]
+        tts                                 (map-> (fn [stmt] (infer-stmt ce assumps stmt)) stypes)
+        type-tenv                           (<- (foldl full-env/nil tts full-env/merge))
+        (full-env a b c)                    (match sdefs
+                                                [] (<- full-env/nil)
+                                                _  (infer-defns ce assumps sdefs))
+        types                               (map-> (infer ce (concat2 c assumps)) sexps)]
         (<- (, (full-env/merge type-tenv (full-env a b c)) types))))
 
 (defn test-stmts [x]
