@@ -101,10 +101,15 @@ export const ShowSearchResults = ({
                                 type: 'select',
                                 at: [
                                     {
-                                        start: r.path.concat({
-                                            type: 'end',
-                                            idx: r.idx,
-                                        }),
+                                        // ugh hack
+                                        start: ['start', 'end'].includes(
+                                            r.path[r.path.length - 1].type,
+                                        )
+                                            ? r.path
+                                            : r.path.concat({
+                                                  type: 'end',
+                                                  idx: r.idx,
+                                              }),
                                     },
                                 ],
                             });
@@ -145,7 +150,11 @@ export const ShowSearchResults = ({
                                 &times;
                             </button>
                             <div style={{ margin: 18, marginTop: 0 }}>
-                                <RenderReadOnly idx={at.idx} path={at.path} />
+                                <RenderReadOnly
+                                    key={at.idx}
+                                    idx={at.idx}
+                                    path={at.path}
+                                />
                             </div>
                         </div>
                     </div>
