@@ -13,12 +13,14 @@ export const NSDragger = ({
     path,
     dispatch,
     drag,
+    setPin,
 }: {
     ns: RealizedNamespace;
     nsp: string;
     path: Path[];
     dispatch: React.Dispatch<Action>;
     drag: Drag;
+    setPin: (pin: number | null) => void;
 }) => {
     const [hover, setHover] = useState(false);
     const source = useMemo(() => {
@@ -93,7 +95,10 @@ export const NSDragger = ({
             ) : (
                 'v'
             )}
-            ]{cm ? <NSMenu mref={mref} setCM={setCM} ns={ns} /> : null}
+            ]
+            {cm ? (
+                <NSMenu mref={mref} setCM={setCM} ns={ns} setPin={setPin} />
+            ) : null}
         </div>
     );
 };

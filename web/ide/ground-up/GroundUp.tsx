@@ -11,6 +11,7 @@ import { CardRoot } from '../../custom/CardRoot';
 import { Store } from '../../custom/store/Store';
 import {
     StoreCtx,
+    useGetStore,
     useGlobalState,
     useSubscribe,
 } from '../../custom/store/StoreCtx';
@@ -26,6 +27,7 @@ import { ShowEvaluators } from './ShowEvaluators';
 import { ShowAt } from './ShowAt';
 import { ShowErrors } from './ShowErrors';
 import { AutoComplete } from './AutoComplete';
+import { RenderReadOnly } from '../../custom/RenderStatic';
 
 export const WithStore = ({
     store,
@@ -85,6 +87,7 @@ export const GroundUp = ({
     );
 
     const [debug, setDebug] = useState<Debug>(initialDebug);
+    const [pin, setPin] = useState(null as null | number);
 
     const store = useSyncStore(initial.state, undefined, initial.evaluator);
     const { state } = useGlobalState(store);
@@ -117,6 +120,7 @@ export const GroundUp = ({
                         state={state}
                         debug={debug}
                         dispatch={store.dispatch}
+                        setPin={setPin}
                     />
                 ))}
             </WithStore>
@@ -140,7 +144,60 @@ export const GroundUp = ({
                     />
                 ) : null}
                 <AutoComplete />
+                {pin ? <ShowPin pin={pin} setPin={setPin} /> : null}
             </WithStore>
+        </div>
+    );
+};
+
+const ShowPin = ({
+    pin,
+    setPin,
+}: {
+    pin: number;
+    setPin: (pin: number | null) => void;
+}) => {
+    const store = useGetStore();
+    const ns = useSubscribe(
+        () => store.getState().nsMap[pin],
+        (fn) => store.onChange('ns:' + pin, fn),
+        [pin],
+    );
+    return (
+        <div
+            style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backgroundColor: 'black',
+                zIndex: 100,
+                padding: 4,
+            }}
+        >
+            <button
+                style={{
+                    background: 'none',
+                    color: 'white',
+                    cursor: 'pointer',
+                    border: 'none',
+                    padding: 8,
+                }}
+                onClick={() => setPin(null)}
+            >
+                &times;
+            </button>
+            <div
+                style={{
+                    padding: '24px 36px',
+                    paddingTop: 4,
+                }}
+            >
+                <RenderReadOnly
+                    idx={ns.top}
+                    path={[{ type: 'ns-top', idx: pin }]}
+                />
+            </div>
         </div>
     );
 };

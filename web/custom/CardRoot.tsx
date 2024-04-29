@@ -15,11 +15,13 @@ export function CardRoot({
     card,
     dispatch,
     debug,
+    setPin,
 }: {
     debug: Debug;
     card: number;
     state: NUIState;
     dispatch: React.Dispatch<Action>;
+    setPin: (pin: number | null) => void;
 }) {
     const dragProps = useDrag(dispatch, state);
 
@@ -60,6 +62,7 @@ export function CardRoot({
             }}
         >
             <NSTop
+                setPin={setPin}
                 debug={debug}
                 nsReg={nsReg}
                 drag={dragObj}

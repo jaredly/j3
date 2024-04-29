@@ -1345,6 +1345,9 @@
         (map/merge classes classes')
             (concat [defaults defaults'])))
 
+(defn class-env/add-default [(class-env cls defaults) new-defaults]
+    (class-env cls (concat [defaults new-defaults])))
+
 (def class-env/nil (class-env map/nil []))
 
 (def class-env/std (class-env ))
@@ -1426,7 +1429,8 @@
     defn add-inst [preconditions inst-pred (class-env classes defaults)]
     (let [(isin class-name _) inst-pred]
         (match (map/get classes class-name)
-            (none)                          (fatal "no class ${class-name} for instance")
+            (none)                          (fatal
+                                                "no class '${class-name}' found, when trying to add instance. Known classes: ${(join ", " (map/keys classes))}")
             (some (, c-supers c-instances)) (let [
                                                 c  (, c-supers [(=> preconditions inst-pred) ..c-instances])
                                                 qs (map (fn [(=> _ q)] q) c-instances)]
@@ -1459,7 +1463,7 @@
         (class-env supers _) ce
         (, got _)            (match (map/get supers i)
                                  (some s) s
-                                 _        (fatal "Unknown name ${i}"))]
+                                 _        (fatal "Unknown class '${i}' in predicate [by-super]"))]
         [pred ..(concat (map (fn [i'] (by-super ce (isin i' t))) got))]))
 
 (def builtin-env
@@ -1476,7 +1480,7 @@
         (isin i t)  pred
         (, _ insts) (match (map/get classes i)
                         (some s) s
-                        _        (fatal "unknown name ${i}"))]
+                        _        (fatal "Unknown class '${i}' in predicate [by-inst]"))]
         (find-some
             (fn [(=> ps h)]
                 (match (matchPred h pred)
@@ -2530,6 +2534,8 @@ filter
 
 (defn concat2 [a b] (concat [a b]))
 
+(** Um stuff I haven't done yet **)
+
 ;(defn infer-deftype2 [tenv' bound tname tnl targs constructors l]
     (let-> [
         names           (<- (map (fn [(,,, name _ _ _)] name) constructors))
@@ -2569,6 +2575,10 @@ filter
                     (map/set map/nil tname (, (len targs) (set/from-list names)))
                     map/nil))))
 
+;(defn infer-types [full aliases deftypes]
+    (let [names (map (fn [(,, name args type)] name) aliases)]
+        (foldl (foldl full aliases infer-alias) deftypes infer-deftype)))
+
 ;(defn infer-stypes [tenv' stypes salias]
     (let-> [
         names                    (<-
@@ -2602,10 +2612,6 @@ filter
                                              (<- (tenv/merge tenv' tenv)))))
         tenv'                    (<- (tenv/merge tenv tenv'))]
         (<- tenv)))
-
-;(defn infer-types [full aliases deftypes]
-    (let [names (map (fn [(,, name args type)] name) aliases)]
-        (foldl (foldl full aliases infer-alias) deftypes infer-deftype)))
 
 (defn infer-defs [ce assumps defs]
     (let-> [
@@ -2665,11 +2671,7 @@ filter
     (let-> [
         (** Todo: track usage of the class declaration **)
         what (map-> (fn [(,, name loc f)] (infer ce assumps f)) fns)]
-        (<-
-            (full-env
-                type-env/nil
-                    (add-inst preds (isin name type) class-env/nil)
-                    []))))
+        (<- (full-env type-env/nil (add-inst preds (isin name type) ce) []))))
 
 (defn infer-stmtss [ce assumps stmts]
     (let-> [
@@ -2680,14 +2682,14 @@ filter
                 (<- (tenv/merge type-tenv tenv')))
         tts                                 (map-> (fn [stmt] (infer-stmt ce assumps stmt)) stypes)
         its                                 (map-> (fn [stmt] (infer-sinst ce assumps stmt)) sinst)
-        type-tenv                           (<- (foldl full-env/nil tts full-env/merge))
+        (full-env ta tb tc)                 (<- (foldl full-env/nil (concat [tts its]) full-env/merge))
         (full-env a b c)                    (match sdefs
                                                 [] (<- full-env/nil)
-                                                _  (infer-defns ce assumps sdefs))
+                                                _  (infer-defns (class-env/merge ce tb) (concat [assumps tc]) sdefs))
         types                               (map-> (infer ce (concat2 c assumps)) sexps)]
-        (<- (, (full-env/merge type-tenv (full-env a b c)) types))))
+        (<- (, (full-env/merge (full-env ta tb tc) (full-env a b c)) types))))
 
-(defn test-stmts [x]
+(defn test-stmts [ce x]
     (just-assumps->s
         (fst
             (force
@@ -2695,10 +2697,10 @@ filter
                     (snd
                     (run/tenv->
                         builtin-tenv
-                            (infer-stmtss builtin-ce builtin-assumptions (map parse-stmt x))))))))
+                            (infer-stmtss ce builtin-assumptions (map parse-stmt x))))))))
 
 (,
-    test-stmts
+    (test-stmts builtin-ce)
         [(, [(@@ (def x 1))] "x: int")
         (,
         [(@@
@@ -2719,6 +2721,41 @@ filter
                     true
                         (even x))))]
             "odd: a *; a ∈ num; a ∈ ord; (fn [a] bool)\neven: a *; a ∈ num; a ∈ ord; (fn [a] bool)")])
+
+(** Test some type class goodness **)
+
+(defn test-full [ce x]
+    (full-env->s
+        (fst
+            (force
+                type-error->s
+                    (snd
+                    (run/tenv->
+                        builtin-tenv
+                            (infer-stmtss ce builtin-assumptions (map parse-stmt x))))))))
+
+(def example-ce
+    (foldl
+        (foldl
+            (class-env/add-default class-env/nil [tint])
+                [(, "pretty" []) (, "num" []) (, "ord" [])]
+                add-class)
+            [(, [] (isin "pretty" tunit)) (, [] (isin "num" tint)) (, [] (isin "ord" tint))]
+            (fn [ce (, pre pred)] (add-inst pre pred ce))))
+
+(class-env->s example-ce)
+
+(,
+    (test-full example-ce)
+        [(, [(@@ (def x "hi"))] "x: string")
+        (, [(@@ (def x 1))] "x: int")
+        (, [(@@ "${""}")] )
+        (, [(@@ (definstance (pretty string) {show-pretty (fn [v] "astring")}))] )
+        (,
+        [(@@
+            (definstance (=> (pretty a) (pretty (array a))) {show-pretty (fn [v] "Lol")}))
+            (@@ "${[]}")]
+            1)])
 
 foldl
 

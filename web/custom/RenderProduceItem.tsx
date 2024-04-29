@@ -123,8 +123,12 @@ const RenderInferenceError = ({ err }: { err: InferenceError }) => {
         return (
             <div>
                 <div>Types don't match</div>
-                <RenderStatic node={err.one} />
-                <RenderStatic node={err.two} />
+                <JumpTo loc={err.one.loc}>
+                    <RenderStatic node={err.one} />
+                </JumpTo>
+                <JumpTo loc={err.two.loc}>
+                    <RenderStatic node={err.two} />
+                </JumpTo>
             </div>
         );
     }

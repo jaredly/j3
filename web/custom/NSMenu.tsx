@@ -42,15 +42,17 @@ export function NSMenu({
     mref,
     setCM,
     ns,
+    setPin,
 }: {
     mref: React.RefObject<HTMLDivElement>;
     setCM: React.Dispatch<React.SetStateAction<boolean>>;
     ns: RealizedNamespace;
+    setPin: (pin: number | null) => void;
 }) {
     const store = useGetStore();
     const items = useSubscribe(
         () => {
-            return getItems(store, ns);
+            return getItems(store, ns, setPin);
         },
         (fn) => store.onChange('ns:' + ns.id, fn),
         [ns.id],
@@ -105,7 +107,11 @@ export function NSMenu({
     );
 }
 
-const getItems = (store: Store, ns: RealizedNamespace): MenuItem[] => {
+const getItems = (
+    store: Store,
+    ns: RealizedNamespace,
+    setPin: (pin: number | null) => void,
+): MenuItem[] => {
     const current =
         typeof ns.plugin === 'string'
             ? ns.plugin
@@ -118,6 +124,13 @@ const getItems = (store: Store, ns: RealizedNamespace): MenuItem[] => {
             name: 'Copy tree',
             action() {
                 navigator.clipboard.write([copyNsItem(ns, store.getState())]);
+            },
+        },
+        {
+            type: 'action',
+            name: 'Pin To Bottom',
+            action() {
+                setPin(ns.id);
             },
         },
         { type: 'section', text: 'Set plugin' },

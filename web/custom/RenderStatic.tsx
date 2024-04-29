@@ -61,34 +61,15 @@ export const RenderReadOnly = ({
     idx: number;
     path: Path[];
 }) => {
-    const values = useNode(idx, path);
-    // const { map, root, top } = useMemo(() => {
-    //     const map: Map = {};
-    //     const root = toMCST(node, map);
-    //     const myDisplay: Display = display ?? {};
-    //     if (!display) {
-    //         layout(root, 0, map, myDisplay, {});
-    //     }
-    //     const top = getDeepNestedNodes(map[root], map, myDisplay);
-    //     return { map, root, top, display };
-    // }, [node]);
+    const values = useNode(idx, path, true);
 
     return (
         <RenderNNode
             nnode={values.nnode}
             values={{
                 ...values,
-                // display: {},
-                // highlight: false,
-                // meta: {},
-                // nnode: top,
-                // node: map[root],
                 reg: () => {},
-                // unused: false,
             }}
-            // Recurse={({ idx }) => {
-            //     return <span>ref {idx}??</span>;
-            // }}
             Recurse={RenderReadOnly}
             hoverPath={[]}
             idx={idx}

@@ -104,12 +104,14 @@ function NSTop({
     nsReg,
     drag,
     debug,
+    setPin,
 }: {
     idx: number;
     nsReg: NsReg;
     path: Path[];
     drag: Drag;
     debug: Debug;
+    setPin: (pin: number | null) => void;
 }) {
     const store = useGetStore();
     const { ns, produce } = useNamespace(idx, path);
@@ -147,6 +149,7 @@ function NSTop({
                             ns={ns}
                             dispatch={store.dispatch}
                             path={path}
+                            setPin={setPin}
                         />
                         {debug.ids ? (
                             <div
@@ -224,6 +227,7 @@ function NSTop({
                         <NSTop
                             key={id}
                             idx={id}
+                            setPin={setPin}
                             debug={debug}
                             drag={drag}
                             nsReg={nsReg}

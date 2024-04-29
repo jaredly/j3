@@ -10,7 +10,11 @@ import { NUIState, RealizedNamespace } from '../UIState';
 
 const findNs = (path: Path[]) => path.find((p) => p.type === 'ns-top')!.idx;
 
-export const useNode = (idx: number, path: Path[]): Values => {
+export const useNode = (
+    idx: number,
+    path: Path[],
+    readOnly?: boolean,
+): Values => {
     const store = useContext(StoreCtx);
     let [state, setState] = useState(() =>
         getValues(
@@ -34,6 +38,7 @@ export const useNode = (idx: number, path: Path[]): Values => {
 
     const hover = useSubscribe(
         () => {
+            if (readOnly) return false;
             const state = store.getState();
             return equal(state.hover, path);
         },
@@ -43,6 +48,7 @@ export const useNode = (idx: number, path: Path[]): Values => {
 
     const selection = useSubscribe(
         () => {
+            if (readOnly) return undefined;
             const path = pathRef.current;
             const state = store.getState();
 
