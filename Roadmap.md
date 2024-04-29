@@ -15,7 +15,9 @@
   I think I need to check to see if I can ditch `simplify` withouth suffering too much.
   Can I simplify late in the game, like during compilation?
 
-# [ ] DOCSTRINGS PLEEASE
+- [x] clear errors for tops that stop needing processing
+
+# [x] DOCSTRINGS PLEEASE
 
 OK I've decided:
 - ~~toplevels will have a separate "slot" for docstrings~~ nope not that, see below.

@@ -116,6 +116,18 @@ export const setupSyncStore = (
 
                 Object.assign(workerResults.nodes, msg.results);
                 Object.assign(workerResults.traces, msg.traces);
+
+                Object.keys(workerResults.nodes).forEach((k) => {
+                    if (!results.nodes[+k] || !results.nodes[+k].parsed) {
+                        console.log(`Node doesnt exist anymore`, k);
+                        delete workerResults.nodes[+k];
+                        changedNodes[+k] = true;
+                        nodeListeners[`ns:${k}`]?.forEach((f) =>
+                            f(state, results.nodes[+k], null, false),
+                        );
+                    }
+                });
+
                 Object.keys(msg.results).forEach((key) => {
                     nodeListeners[`ns:${key}`]?.forEach((f) =>
                         f(state, results.nodes[+key], msg.results[+key], false),
