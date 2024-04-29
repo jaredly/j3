@@ -1,4 +1,11 @@
 
+#
+
+- [ ] render readonly for sseearch results
+- [ ] "pin" a toplevel, render readonly
+
+
+
 # Getting back into thih
 
 - [x] algw-err is now checking type aliases, and we need to support recursive type aliases

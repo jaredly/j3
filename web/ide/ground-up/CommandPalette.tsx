@@ -16,6 +16,8 @@ import { collectPaths, pathForIdx } from './pathForIdx';
 import { extractToToplevel } from './extractToToplevel';
 import { ProduceItem } from './FullEvalator';
 import { RenderStatic } from '../../custom/RenderStatic';
+import { compareScores, fuzzyScore } from '../../../src/to-ast/fuzzy';
+import { filterNulls } from '../../custom/old-stuff/filterNulls';
 
 export const CommandPalette = ({
     setSearchResults,
@@ -74,10 +76,18 @@ export const CommandPalette = ({
     );
 
     const filtered = React.useMemo(() => {
+        if (!text.trim) return commands;
         const needle = text.toLowerCase();
-        return commands.filter((cmd) => {
-            return cmd.title.toLowerCase().includes(needle);
-        });
+        return commands
+            .map((cmd) => {
+                const score = fuzzyScore(0, needle, cmd.title);
+                if (!score.full) return null;
+                return { cmd, score };
+                // return cmd.title.toLowerCase().includes(needle);
+            })
+            .filter(filterNulls)
+            .sort((a, b) => compareScores(a.score, b.score))
+            .map((m) => m.cmd);
     }, [text, commands]);
 
     if (!open) return null;

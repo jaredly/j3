@@ -1333,7 +1333,9 @@
                 (isin "ord" (tvar (tyvar "b" star) -1))]
                 (isin "ord" (mkpair (tvar (tyvar "a" star) -1) (tvar (tyvar "b" star) -1))))]))
 
-(deftype class-env
+((** class-env (map class-name (, supers instances)
+     **)
+    deftype class-env
     (class-env
         (map string (, (array string) (array (qual pred))))
             (array type)))
@@ -1418,16 +1420,19 @@
         (ok _) true
         _      false))
 
-(defn add-inst [preds p (class-env classes defaults)]
-    (let [(isin name supers) p]
-        (match (map/get classes name)
-            (none)                          (fatal "no class ${name} for instance")
+((** Add an instance to the class-env
+    - preds is a list of predicates that need to be hold in order for the instance to exist
+    - p **)
+    defn add-inst [preconditions inst-pred (class-env classes defaults)]
+    (let [(isin class-name _) inst-pred]
+        (match (map/get classes class-name)
+            (none)                          (fatal "no class ${class-name} for instance")
             (some (, c-supers c-instances)) (let [
-                                                c  (, c-supers [(=> preds (isin name supers)) ..c-instances])
+                                                c  (, c-supers [(=> preconditions inst-pred) ..c-instances])
                                                 qs (map (fn [(=> _ q)] q) c-instances)]
-                                                (if (any (overlap p) qs)
+                                                (if (any (overlap inst-pred) qs)
                                                     (fatal "overlapping instance")
-                                                        (class-env (map/set classes name c) defaults))))))
+                                                        (class-env (map/set classes class-name c) defaults))))))
 
 (defn apply-transformers [transformers env]
     (foldl env transformers (fn [env f] (f env))))
@@ -2644,20 +2649,27 @@ filter
     (match stmts
         []           (, sdefs stypes salias sexps sinst)
         [one ..rest] (match one
-                         (sdef _ _ _ _)                          (split-stmts rest [one ..sdefs] stypes salias sexps sinst)
-                         (sdeftype _ _ _ _ _)                    (split-stmts rest sdefs [one ..stypes] salias sexps sinst)
-                         (sdefinstance name nl type preds fns l) (split-stmts rest sdefs stypes salias sexps [one ..sinst])
-                         (stypealias name _ args body _)         (split-stmts
-                                                                     rest
-                                                                         sdefs
-                                                                         stypes
-                                                                         [(,, name args body) ..salias]
-                                                                         sexps
-                                                                         sinst)
-                         (sexpr expr _)                          (split-stmts rest sdefs stypes salias [expr ..sexps] sinst))))
+                         (sdef _ _ _ _)                  (split-stmts rest [one ..sdefs] stypes salias sexps sinst)
+                         (sdeftype _ _ _ _ _)            (split-stmts rest sdefs [one ..stypes] salias sexps sinst)
+                         (sdefinstance _ _ _ _ _ _)      (split-stmts rest sdefs stypes salias sexps [one ..sinst])
+                         (stypealias name _ args body _) (split-stmts
+                                                             rest
+                                                                 sdefs
+                                                                 stypes
+                                                                 [(,, name args body) ..salias]
+                                                                 sexps
+                                                                 sinst)
+                         (sexpr expr _)                  (split-stmts rest sdefs stypes salias [expr ..sexps] sinst))))
 
 (defn infer-sinst [ce assumps (sdefinstance name nl type preds fns l)]
-    0)
+    (let-> [
+        (** Todo: track usage of the class declaration **)
+        what (map-> (fn [(,, name loc f)] (infer ce assumps f)) fns)]
+        (<-
+            (full-env
+                type-env/nil
+                    (add-inst preds (isin name type) class-env/nil)
+                    []))))
 
 (defn infer-stmtss [ce assumps stmts]
     (let-> [
@@ -2667,6 +2679,7 @@ filter
                 tenv'
                 (<- (tenv/merge type-tenv tenv')))
         tts                                 (map-> (fn [stmt] (infer-stmt ce assumps stmt)) stypes)
+        its                                 (map-> (fn [stmt] (infer-sinst ce assumps stmt)) sinst)
         type-tenv                           (<- (foldl full-env/nil tts full-env/merge))
         (full-env a b c)                    (match sdefs
                                                 [] (<- full-env/nil)

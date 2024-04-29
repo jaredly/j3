@@ -2,12 +2,13 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Node } from '../../../src/types/cst';
 import { fromMCST } from '../../../src/types/mcst';
 import { transformNode } from '../../../src/types/transform-cst';
-import { RenderStatic } from '../../custom/RenderStatic';
+import { RenderReadOnly, RenderStatic } from '../../custom/RenderStatic';
 import { useGetStore } from '../../custom/store/StoreCtx';
 import { SearchResults } from './GroundUp';
 import { findTops } from './findTops';
 import { NUIState } from '../../custom/UIState';
 import { pathForIdx } from './pathForIdx';
+import { Path } from '../../../src/state/path';
 
 const simplify = (outer: Node) => {
     let max = findMaxLoc(outer) + 1;
@@ -71,14 +72,13 @@ export const ShowSearchResults = ({
         return results.results
             .map((r, i) => {
                 const ns = r.path.find((p) => p.type === 'ns-top')!.idx;
-                const node = simplify(
-                    fromMCST(r.path[r.path.length - 2].idx, state.map),
-                );
+                let at = getContext(r);
+                // const node = simplify(fromMCST(at, state.map));
 
-                return { ns, node, r };
+                return { ns, at, r };
             })
             .sort((a, b) => allTops.indexOf(a.ns) - allTops.indexOf(b.ns))
-            .map(({ ns, node, r }, i) => {
+            .map(({ ns, at, r }, i) => {
                 // I want to ... sort results ... by ns location
 
                 const parsed = r2.nodes[ns].parsed;
@@ -99,7 +99,14 @@ export const ShowSearchResults = ({
                         onClick={() => {
                             store.dispatch({
                                 type: 'select',
-                                at: [{ start: r.path }],
+                                at: [
+                                    {
+                                        start: r.path.concat({
+                                            type: 'end',
+                                            idx: r.idx,
+                                        }),
+                                    },
+                                ],
                             });
                         }}
                     >
@@ -137,16 +144,8 @@ export const ShowSearchResults = ({
                             >
                                 &times;
                             </button>
-                            <div
-                                style={{
-                                    margin: 18,
-                                    marginTop: 0,
-                                }}
-                            >
-                                <RenderStatic
-                                    node={node}
-                                    display={r2.nodes[ns].layout}
-                                />
+                            <div style={{ margin: 18, marginTop: 0 }}>
+                                <RenderReadOnly idx={at.idx} path={at.path} />
                             </div>
                         </div>
                     </div>
@@ -242,6 +241,21 @@ const freeTextSearch = (
         }))
         .filter((m) => m.path);
 };
+
+function getContext(r: { idx: number; path: Path[] }) {
+    const nat = r.path.findIndex((p) => p.type === 'ns-top');
+    for (let i = 2; i > 0; i--) {
+        if (nat <= r.path.length - i - 1) {
+            // return r.path[r.path.length - i].idx;
+            return {
+                path: r.path.slice(0, -i),
+                idx: r.path[r.path.length - i].idx,
+            };
+        }
+    }
+    // return r.idx;
+    return r;
+}
 
 function findMaxLoc(outer: Node) {
     let max = 0;

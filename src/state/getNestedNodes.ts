@@ -522,7 +522,7 @@ function renderList(
                     : []),
                 {
                     type: 'horiz',
-                    children: withCommas(first),
+                    children: withCommas(first, doc != null ? 1 : 0),
                 },
                 {
                     type: 'indent',
@@ -551,7 +551,7 @@ function renderList(
     };
 }
 
-function withCommas(values: number[]): NNode[] {
+function withCommas(values: number[], offset = 0): NNode[] {
     if (!values.length) {
         return [{ type: 'blinker', loc: 'inside' }];
     }
@@ -560,10 +560,10 @@ function withCommas(values: number[]): NNode[] {
     // }
     return values.flatMap((id, i): NNode[] =>
         i === 0
-            ? [{ type: 'ref', id, path: { type: 'child', at: i } }]
+            ? [{ type: 'ref', id, path: { type: 'child', at: i + offset } }]
             : [
                   { type: 'punct', text: ' ', color: 'white' },
-                  { type: 'ref', id, path: { type: 'child', at: i } },
+                  { type: 'ref', id, path: { type: 'child', at: i + offset } },
               ],
     );
 }

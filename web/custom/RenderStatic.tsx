@@ -10,6 +10,7 @@ import React from 'react';
 import { layout } from '../../src/layout';
 import { Display } from '../../src/to-ast/library';
 import { Path } from '../store';
+import { useNode } from './store/useNode';
 
 export const RenderStatic = ({
     node,
@@ -49,6 +50,49 @@ export const RenderStatic = ({
             hoverPath={[]}
             idx={root}
             path={[]}
+        />
+    );
+};
+
+export const RenderReadOnly = ({
+    idx,
+    path,
+}: {
+    idx: number;
+    path: Path[];
+}) => {
+    const values = useNode(idx, path);
+    // const { map, root, top } = useMemo(() => {
+    //     const map: Map = {};
+    //     const root = toMCST(node, map);
+    //     const myDisplay: Display = display ?? {};
+    //     if (!display) {
+    //         layout(root, 0, map, myDisplay, {});
+    //     }
+    //     const top = getDeepNestedNodes(map[root], map, myDisplay);
+    //     return { map, root, top, display };
+    // }, [node]);
+
+    return (
+        <RenderNNode
+            nnode={values.nnode}
+            values={{
+                ...values,
+                // display: {},
+                // highlight: false,
+                // meta: {},
+                // nnode: top,
+                // node: map[root],
+                reg: () => {},
+                // unused: false,
+            }}
+            // Recurse={({ idx }) => {
+            //     return <span>ref {idx}??</span>;
+            // }}
+            Recurse={RenderReadOnly}
+            hoverPath={[]}
+            idx={idx}
+            path={path}
         />
     );
 };

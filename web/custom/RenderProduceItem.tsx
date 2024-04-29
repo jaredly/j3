@@ -1,8 +1,9 @@
 import React, { ReactNode } from 'react';
 import { pathForIdx } from '../ide/ground-up/pathForIdx';
-import { ProduceItem } from '../ide/ground-up/FullEvalator';
+import { InferenceError, ProduceItem } from '../ide/ground-up/FullEvalator';
 import { useGetStore } from './store/StoreCtx';
 import { showError } from './store/processTypeInference';
+import { RenderStatic } from './RenderStatic';
 
 export const RenderProduceItem = ({
     value,
@@ -28,46 +29,10 @@ export const RenderProduceItem = ({
             );
         }
         case 'inference-error':
-            if (value.err.type === 'missing') {
-                return (
-                    <div style={{ color: 'rgb(255,50,50)' }}>
-                        Missing (or erroring) terms:
-                        {value.err.missing.map((m, i) => (
-                            <div key={i}>
-                                <JumpTo loc={m.loc}>
-                                    - {m.name} ({m.loc})
-                                </JumpTo>
-                            </div>
-                        ))}
-                    </div>
-                );
-            }
-            return (
-                <div style={{ color: 'rgb(255,50,50)' }}>
-                    {highlightIdxs(showError(value.err))}
-                </div>
-            );
+            return <RenderInferenceError err={value.err} />;
         case 'withjs': {
             let parts = highlightIdxs(value.message);
-            return (
-                <div style={{ color: 'rgb(255,50,50)' }}>
-                    {parts}
-                    {/* <i>Not doing symbolication because it wont really work</i> */}
-                    {/* {value.locs.map((n, i) => (
-                        <JumpTo loc={n.loc}>
-                            idx: {n.loc} ({n.row}:{n.col})
-                        </JumpTo>
-                    ))} */}
-                    {/* <pre>
-                        {value.js
-                            .split('\n')
-                            .map(
-                                (l, i) => `${(i + 1 + '').padStart(3, ' ')} : ${l}`,
-                            )
-                            .join('\n')}
-                    </pre> */}
-                </div>
-            );
+            return <div style={{ color: 'rgb(255,50,50)' }}>{parts}</div>;
         }
         case 'error': {
             let parts = highlightIdxs(value.message);
@@ -136,5 +101,46 @@ export const JumpTo = ({
         >
             {children}
         </span>
+    );
+};
+
+const RenderInferenceError = ({ err }: { err: InferenceError }) => {
+    if (err.type === 'missing') {
+        return (
+            <div style={{ color: 'rgb(255,50,50)' }}>
+                Missing (or erroring) terms:
+                {err.missing.map((m, i) => (
+                    <div key={i}>
+                        <JumpTo loc={m.loc}>
+                            - {m.name} ({m.loc})
+                        </JumpTo>
+                    </div>
+                ))}
+            </div>
+        );
+    }
+    if (err.type === 'types') {
+        return (
+            <div>
+                <div>Types don't match</div>
+                <RenderStatic node={err.one} />
+                <RenderStatic node={err.two} />
+            </div>
+        );
+    }
+    if (err.type === 'nested') {
+        return (
+            <div>
+                Nested
+                <RenderInferenceError err={err.outer} />
+                -&gt;
+                <RenderInferenceError err={err.inner} />
+            </div>
+        );
+    }
+    return (
+        <div style={{ color: 'rgb(255,50,50)' }}>
+            {highlightIdxs(showError(err))}
+        </div>
     );
 };
