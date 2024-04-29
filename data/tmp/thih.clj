@@ -2706,13 +2706,23 @@ filter
 (defn infer-sinst [ce assumps (sdefinstance name nl type preds fns l)]
     (let-> [
         (** Todo: track usage of the class declaration **)
-        what (map-> (fn [(,, name loc f)] (infer ce assumps f)) fns)]
+        what     (map-> (fn [(,, name loc f)] (infer ce assumps f)) fns)
+        free     (<- (foldl empty (map (fn [(isin _ t)] (find-free t)) preds) bag/and))
+        free-map ]
         (<- (full-env type-env/nil (add-inst preds (isin name type) ce) []))))
 
 (defn find-free [type]
     (match type
-        (tcon (tycon name _) l) (one (, name l))
-        _                       (let [args (tfn-args type [])] (many (map find-free args)))))
+        (tcon (tycon name kind) l) (one (,, name l kind))
+        _                          (let [args (tfn-args type [])] (many (map find-free args)))))
+
+(defn replace-free [free type]
+    (match type
+        (tcon (tycon name _) l) (match (map/get free name)
+                                    (some kind) (tvar (tyvar name kind) l)
+                                    _           type)
+        (tapp target arg l)     (tapp (replace-free free target) (replace-free free arg) l)
+        _                       type))
 
 (defn tfn-args [type cur]
     (match type

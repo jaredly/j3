@@ -4,6 +4,7 @@
 - [x] render readonly for sseearch results
 - [x] better menuuu
 - [x] "pin" a toplevel, render readonly
+- [ ] okayyyy so, my traces are .. not really up to snufff. Is it that, I need to distinguish between locals and globals?
 
 # THIH
 

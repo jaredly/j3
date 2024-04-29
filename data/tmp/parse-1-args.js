@@ -817,6 +817,26 @@ return one($co(name)(l))
 } ;
 throw new Error('match fail 18755:' + JSON.stringify($target))
 })(type)
+let pairs_plus = (extra) => (list) => (($target) => {
+if ($target.type === "nil") {
+return nil
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+if ($target[1].type === "cons") {
+let two = $target[1][0];
+let rest = $target[1][1];
+return cons($co(one)(two))(pairs_plus(extra)(rest))
+} 
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+if ($target[1].type === "nil") {
+return cons($co(one)(extra))(nil)
+} 
+} ;
+throw new Error('match fail 18956:' + JSON.stringify($target))
+})(list)
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
@@ -2876,15 +2896,13 @@ if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
 if ($target[0][0].type === "cst/identifier") {
 if ($target[0][0][0] === "fn") {
+let ll = $target[0][0][1];
 if ($target[0][1].type === "cons") {
 if ($target[0][1][0].type === "cst/array") {
 let args = $target[0][1][0][0];
-if ($target[0][1][1].type === "cons") {
-let body = $target[0][1][1][0];
-let rest = $target[0][1][1][1];
+let rest = $target[0][1][1];
 let b = $target[1];
-return $gt$gt$eq(map_$gt(parse_pat)(args))((args) => $gt$gt$eq(parse_expr(body))((body) => $gt$gt$eq(do_$gt(unexpected("extra arg in fn"))(rest))((_17702) => $lt_(elambda(args)(body)(b)))))
-} 
+return $gt$gt$eq(map_$gt(parse_pat)(args))((args) => $gt$gt$eq(parse_one_expr(rest)(ll)(b))((body) => $lt_(elambda(args)(body)(b))))
 } 
 } 
 } 
@@ -2905,11 +2923,12 @@ if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
 if ($target[0][0].type === "cst/identifier") {
 if ($target[0][0][0] === "match") {
+let ml = $target[0][0][1];
 if ($target[0][1].type === "cons") {
 let target = $target[0][1][0];
 let cases = $target[0][1][1];
 let l = $target[1];
-return $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq(pairs(cases))((cases) => $gt$gt$eq(map_$gt(({"1": expr, "0": pat}) => $gt$gt$eq(parse_pat(pat))((pat) => $gt$gt$eq(parse_expr(expr))((expr) => $lt_($co(pat)(expr)))))(cases))((cases) => $lt_(ematch(target)(cases)(l)))))
+return $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq($lt_(pairs_plus(cst$slidentifier("()")(ml))(cases)))((cases) => $gt$gt$eq(map_$gt(({"1": expr, "0": pat}) => $gt$gt$eq(parse_pat(pat))((pat) => $gt$gt$eq(parse_expr(expr))((expr) => $lt_($co(pat)(expr)))))(cases))((cases) => $lt_(ematch(target)(cases)(l)))))
 } 
 } 
 } 
@@ -2919,16 +2938,13 @@ if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
 if ($target[0][0].type === "cst/identifier") {
 if ($target[0][0][0] === "let") {
+let ll = $target[0][0][1];
 if ($target[0][1].type === "cons") {
 if ($target[0][1][0].type === "cst/array") {
 let inits = $target[0][1][0][0];
-if ($target[0][1][1].type === "cons") {
-let body = $target[0][1][1][0];
-if ($target[0][1][1][1].type === "nil") {
+let rest = $target[0][1][1];
 let l = $target[1];
-return $gt$gt$eq(pairs(inits))((inits) => $gt$gt$eq(map_$gt(({"1": value, "0": pat}) => $gt$gt$eq(parse_pat(pat))((pat) => $gt$gt$eq(parse_expr(value))((value) => $lt_($co(pat)(value)))))(inits))((bindings) => $gt$gt$eq(parse_expr(body))((body) => $lt_(elet(bindings)(body)(l)))))
-} 
-} 
+return $gt$gt$eq(pairs(inits))((inits) => $gt$gt$eq(map_$gt(({"1": value, "0": pat}) => $gt$gt$eq(parse_pat(pat))((pat) => $gt$gt$eq(parse_expr(value))((value) => $lt_($co(pat)(value)))))(inits))((bindings) => $gt$gt$eq(parse_one_expr(rest)(ll)(l))((body) => $lt_(elet(bindings)(body)(l)))))
 } 
 } 
 } 
@@ -2999,6 +3015,18 @@ return parse_array(args)(l)
 } ;
 throw new Error('match fail 963:' + JSON.stringify($target))
 })(cst)
+
+let parse_one_expr = (rest) => (ll) => (l) => (($target) => {
+if ($target.type === "cons") {
+let body = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(do_$gt(unexpected("extra item body"))(rest))((_18918) => parse_expr(body))
+} ;
+if ($target.type === "nil") {
+return $lt_err($co(ll)("Missing body"))(evar("()")(l))
+} ;
+throw new Error('match fail 18909:' + JSON.stringify($target))
+})(rest)
 
 let parse_tuple = (args) => (il) => (l) => (($target) => {
 if ($target.type === "nil") {
