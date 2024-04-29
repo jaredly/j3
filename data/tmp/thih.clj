@@ -1271,7 +1271,7 @@
                                               (ok (|-> u t))
                                                   (err
                                                   (,
-                                                      "Diffe rent Kinds ${(kind->s (tyvar/kind u))} vs ${(kind->s (type/kind t))}"
+                                                      "Different Kinds ${(kind->s (tyvar/kind u))} vs ${(kind->s (type/kind t))}"
                                                           [])))
         (, (tcon tc1 _) (tcon tc2 _))     (if (tycon= tc1 tc2)
                                               (ok map/nil)
@@ -2709,6 +2709,24 @@ filter
         what (map-> (fn [(,, name loc f)] (infer ce assumps f)) fns)]
         (<- (full-env type-env/nil (add-inst preds (isin name type) ce) []))))
 
+(defn find-free [type]
+    (match type
+        (tcon (tycon name _) l) (one (, name l))
+        _                       (let [args (tfn-args type [])] (many (map find-free args)))))
+
+(defn tfn-args [type cur]
+    (match type
+        (tapp target arg _) (tfn-args target [arg ..cur])
+        _                   cur))
+
+(tfn-args (parse-type (@@ (array l m))) [])
+
+(find-free (parse-type (@@ hi)))
+
+(find-free (parse-type (@@ (lol a (array l m)))))
+
+(@t (array t))
+
 (defn infer-stmtss [ce assumps stmts]
     (let-> [
         (, sdefs stypes salias sexps sinst) (<- (split-stmts stmts [] [] [] [] []))
@@ -2782,10 +2800,12 @@ filter
 (class-env->s example-ce)
 
 (,
-    (test-full example-ce)
+    (errorToString (test-full example-ce))
         [(, [(@@ (def x "hi"))] "Assumps\n - x: string")
         (, [(@@ (def x 1))] "Assumps\n - x: int")
-        (, [(@@ "${""}")] )
+        (,
+        [(@@ "${""}")]
+            "Fatal runtime: Can't find an instance for class 'pretty' for type string")
         (,
         [(@@ (definstance (pretty string) {show-pretty (fn [v] "a string")}))
             (@@ (def x (show-pretty "")))

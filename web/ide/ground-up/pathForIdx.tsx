@@ -55,7 +55,15 @@ export const collectPaths = (state: NUIState) => {
     return pathsFor;
 };
 
-export const pathForIdx = (
+export const pathForIdx = (num: number, state: NUIState) => {
+    const paths = collectPaths(state)(num);
+    if (!paths.length) {
+        return pathForIdxOld(num, state);
+    }
+    return paths.length ? paths[0] : null;
+};
+
+export const pathForIdxOld = (
     num: number,
     {
         regs,
@@ -107,6 +115,8 @@ export const pathForIdx = (
             ns = nodeToNs[idx];
             if (ns == null) {
                 console.error(`cant find ns for idx`, idx, nodeToNs, parents);
+                console.log('top num', num);
+                console.log(parents);
                 return;
             }
             path.unshift({ type: 'ns-top', idx: ns });

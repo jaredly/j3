@@ -12,7 +12,7 @@ import {
 import { AnyEnv } from './getResults';
 import { Message, Sendable, ToPage } from '../worker/worker';
 import { calcChangedNodes } from './calcChangedNodes';
-import { pathForIdx } from '../../ide/ground-up/pathForIdx';
+import { collectPaths, pathForIdx } from '../../ide/ground-up/pathForIdx';
 // import Worker from '../worker?worker'
 
 export const useSyncStore = (
@@ -331,10 +331,11 @@ const getJumpToAction = (
             continue;
         }
         if (+prov === idx) return;
-        const path = pathForIdx(+prov, state);
-        if (path) {
+        const paths = collectPaths(state)(+prov);
+        // const path = pathForIdx(+prov, state);
+        if (paths.length) {
             console.log('jumping to', prov);
-            return { type: 'select', at: [{ start: path }] };
+            return { type: 'select', at: [{ start: paths[0] }] };
         } else {
             console.warn(`Cant find a path for ${prov}`);
             return;
@@ -349,9 +350,10 @@ const getJumpToAction = (
             console.warn(`Cant find a definition for ${name}`);
             return;
         }
-        const path = pathForIdx(found, state);
-        if (path) {
-            return { type: 'select', at: [{ start: path }] };
+        const paths = collectPaths(state)(found);
+        // const path = pathForIdx(found, state);
+        if (paths.length) {
+            return { type: 'select', at: [{ start: paths[0] }] };
         } else {
             console.warn(`Cant find a path for ${found}`);
             return;

@@ -1,5 +1,5 @@
 import React, { ReactNode } from 'react';
-import { pathForIdx } from '../ide/ground-up/pathForIdx';
+import { collectPaths, pathForIdx } from '../ide/ground-up/pathForIdx';
 import { InferenceError, ProduceItem } from '../ide/ground-up/FullEvalator';
 import { useGetStore } from './store/StoreCtx';
 import { showError } from './store/processTypeInference';
@@ -85,11 +85,12 @@ export const JumpTo = ({
             }}
             onClick={() => {
                 console.log('jumping', loc);
-                const path = pathForIdx(loc, store.getState());
-                if (!path) return alert('nope');
+                const paths = collectPaths(store.getState())(loc);
+                // const path = pathForIdx(loc, store.getState());
+                if (!paths.length) return alert('nope');
                 store.dispatch({
                     type: 'select',
-                    at: [{ start: path }],
+                    at: [{ start: paths[0] }],
                 });
             }}
             onMouseLeave={() => {

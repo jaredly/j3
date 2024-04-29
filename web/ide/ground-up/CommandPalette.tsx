@@ -433,17 +433,22 @@ const getCommands = (
             type: 'plain',
             title: `Rename ${state.highlight.length} instances of ${name}`,
             action() {
+                const pathFor = collectPaths(state);
                 dispatch({
                     type: 'select',
                     at: state.highlight!.map((idx): Cursor => {
-                        const path = pathForIdx(idx, state);
-                        if (!path) throw new Error(`no path for ${idx}`);
+                        const paths = pathFor(idx);
+                        if (!paths.length)
+                            throw new Error(`no path for ${idx}`);
                         return {
                             start: [
-                                ...path.slice(0, -1),
+                                ...paths[0].slice(0, -1),
                                 { type: 'start', idx },
                             ],
-                            end: [...path.slice(0, -1), { type: 'end', idx }],
+                            end: [
+                                ...paths[0].slice(0, -1),
+                                { type: 'end', idx },
+                            ],
                         };
                     }),
                 });
@@ -524,6 +529,8 @@ function getJumpToResult(store: Store): SuperCommand {
     const tops = findTops(state);
     const results = store.getResults();
 
+    const pathFor = collectPaths(state);
+
     tops.forEach((top) => {
         const node = results.results.nodes[top.ns.id];
         if (node?.parsed?.type === 'success') {
@@ -549,11 +556,11 @@ function getJumpToResult(store: Store): SuperCommand {
                         <RenderStatic node={t.cst} />
                     ) : undefined,
                     action() {
-                        const path = pathForIdx(name.loc, state);
-                        if (path != null) {
+                        const paths = pathFor(name.loc);
+                        if (paths.length) {
                             store.dispatch({
                                 type: 'select',
-                                at: [{ start: path }],
+                                at: [{ start: paths[0] }],
                             });
                         }
                     },

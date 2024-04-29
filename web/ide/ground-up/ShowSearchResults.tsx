@@ -7,7 +7,7 @@ import { useGetStore } from '../../custom/store/StoreCtx';
 import { SearchResults } from './GroundUp';
 import { findTops } from './findTops';
 import { NUIState } from '../../custom/UIState';
-import { pathForIdx } from './pathForIdx';
+import { collectPaths, pathForIdx } from './pathForIdx';
 import { Path } from '../../../src/state/path';
 
 const simplify = (outer: Node) => {
@@ -242,10 +242,11 @@ const freeTextSearch = (
             return false;
         })
         .slice(0, 100);
+    const pathFor = collectPaths(state);
     return matches
         .map(([key]) => ({
             idx: +key,
-            path: pathForIdx(+key, state)!,
+            path: pathFor(+key)[0],
         }))
         .filter((m) => m.path);
 };
