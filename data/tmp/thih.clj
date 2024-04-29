@@ -1340,9 +1340,24 @@
         (map string (, (array string) (array (qual pred))))
             (array type)))
 
+(defn map/merge-deep [merge one two]
+    (foldr
+        two
+            (map/to-list one)
+            (fn [res (, k v)]
+            (match (map/get res k)
+                (none)    (map/set res k v)
+                (some v2) (map/set res k (merge k v v2))))))
+
 (defn class-env/merge [(class-env classes defaults) (class-env classes' defaults')]
     (class-env
-        (map/merge classes classes')
+        (map/merge-deep
+            (fn [k (, super1 inst1) (, super2 inst2)]
+                (if (!= super1 super2)
+                    (fatal "Cant merge classes for ${k}: superclasses differ")
+                        (, super1 (concat [inst1 inst2]))))
+                classes
+                classes')
             (concat [defaults defaults'])))
 
 (defn class-env/add-default [(class-env cls defaults) new-defaults]
@@ -2686,7 +2701,7 @@ filter
         (full-env a b c)                    (match sdefs
                                                 [] (<- full-env/nil)
                                                 _  (infer-defns (class-env/merge ce tb) (concat [assumps tc]) sdefs))
-        types                               (map-> (infer ce (concat2 c assumps)) sexps)]
+        types                               (map-> (infer (class-env/merge ce tb) (concat [tc c assumps])) sexps)]
         (<- (, (full-env/merge (full-env ta tb tc) (full-env a b c)) types))))
 
 (defn test-stmts [ce x]
@@ -2747,10 +2762,14 @@ filter
 
 (,
     (test-full example-ce)
-        [(, [(@@ (def x "hi"))] "x: string")
-        (, [(@@ (def x 1))] "x: int")
+        [(, [(@@ (def x "hi"))] "Assumps\n - x: string")
+        (, [(@@ (def x 1))] "Assumps\n - x: int")
         (, [(@@ "${""}")] )
-        (, [(@@ (definstance (pretty string) {show-pretty (fn [v] "astring")}))] )
+        (,
+        [(@@ (definstance (pretty string) {show-pretty (fn [v] "a string")}))
+            (@@ (def x "${""}"))
+            (@@ "${""}")]
+            "Class Env\n> Instances\n - pretty \n   - string ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int\nAssumps\n - x: string")
         (,
         [(@@
             (definstance (=> (pretty a) (pretty (array a))) {show-pretty (fn [v] "Lol")}))
@@ -2787,12 +2806,19 @@ foldl
 
 (** ## Debuggings **)
 
-(defn type-env->s [(type-env constructors types aliases)]
-    "## Constructors${(ljoin
-        "\n - "
+(defn type-env->g [(type-env constructors types aliases)]
+    [(ggroup
+        "> Constructors"
             (map
-            (fn [(, name scheme)] "${name}: ${(scheme->s scheme)}")
-                (map/to-list constructors)))}")
+            (fn [(, name scheme)] (gtext " - ${name}: ${(scheme->s scheme)}"))
+                (map/to-list constructors)))
+        (ggroup
+        "> Types"
+            (map
+            (fn [(, name (, kinds constr-names))]
+                (gtext
+                    " - ${name}: ${(join "," (map kind->s kinds))} ${(join "," (set/to-list constr-names))}"))
+                (map/to-list types)))])
 
 (defn ljoin [prefix items]
     (match items
@@ -2803,20 +2829,47 @@ foldl
 
 (ljoin "-" ["a" "b"])
 
-(defn class-env->s [(class-env instances defaults)]
-    "## Instances${(ljoin
-        "\n"
+(defn group->ss [group]
+    (match group
+        (gtext text)          [text]
+        (ggroup header items) (let [contents (concat (map group->ss items))]
+                                  (match contents
+                                      [] []
+                                      _  [header ..contents]))))
+
+(defn groups->s [group] (join "\n" (concat (map group->ss group))))
+
+(deftype group (ggroup string (array group)) (gtext string))
+
+(defn class-env->g [(class-env instances defaults)]
+    [(ggroup
+        "> Instances"
             (map
             (fn [(, name (, ones quals))]
-                "${name} ${(match ones
-                    [] ""
-                    _  " <- ${(join ", " ones)}")}${(match quals
-                    [] "\n - (no instances)"
-                    _  (ljoin "\n - " (map (qual->s pred->s) quals)))}")
-                (map/to-list instances)))}\n## Defaults${(ljoin "\n - " (map type->s defaults))}")
+                (gtext
+                    " - ${name} ${(match ones
+                        [] ""
+                        _  " <- ${(join ", " ones)}")}${(match quals
+                        [] "\n   - (no instances)"
+                        _  (ljoin "\n   - " (map (qual->s pred->s) quals)))}"))
+                (map/to-list instances)))
+        (ggroup
+        "> Defaults"
+            (map (dot (dot gtext (prefix " - ")) type->s) defaults)
+            )])
 
-(defn full-env->s [(full-env tenv cenv assumps)]
-    "# Type Env\n${(type-env->s tenv)}\n# Class Env\n${(class-env->s cenv)}\n# Assumps${(ljoin "\n" (map assump->s assumps))}")
+(def class-env->s (dot groups->s class-env->g))
+
+(defn prefix [pre text] "${pre}${text}")
+
+(defn full-env->g [(full-env tenv cenv assumps)]
+    [(ggroup "Type Env" (type-env->g tenv))
+        (ggroup "Class Env" (class-env->g cenv))
+        (ggroup
+        "Assumps"
+            (map (dot (dot gtext (prefix " - ")) assump->s) assumps))])
+
+(def full-env->s (dot groups->s full-env->g))
 
 (defn full-env/assumps [(full-env _ _ assumps)] assumps)
 
@@ -2849,19 +2902,19 @@ foldl
     test-stmt
         [(,
         [(@@ (def x 1))]
-            "# Type Env\n## Constructors\n# Class Env\n## Instances\n## Defaults\n# Assumps\nx: int")
+            "Assumps\n - x: int")
         (,
         [(@@ (deftype bag (hi int)))]
-            "# Type Env\n## Constructors\n - hi: (fn [int] bag)\n# Class Env\n## Instances\n## Defaults\n# Assumps\nhi: (fn [int] bag)")
+            "Type Env\n> Constructors\n - hi: (fn [int] bag)\n> Types\n - bag:  hi\nAssumps\n - hi: (fn [int] bag)")
         (,
         [(@@ (deftype (bag a) (hi a)))
             (@@ (deftype bog (bog (bag int))))
             (@@ (def x (hi 10)))
             (@@ (def y (bog (hi 1))))]
-            "# Type Env\n## Constructors\n - hi: *; (fn [a] (bag a))\n - bog: (fn [(bag int)] bog)\n# Class Env\n## Instances\n## Defaults\n# Assumps\nhi: a *; (fn [a] (bag a))\nbog: (fn [(bag int)] bog)\nx: (bag int)\ny: bog")
+            "Type Env\n> Constructors\n - hi: *; (fn [a] (bag a))\n - bog: (fn [(bag int)] bog)\n> Types\n - bag: * hi\n - bog:  bog\nAssumps\n - hi: a *; (fn [a] (bag a))\n - bog: (fn [(bag int)] bog)\n - x: (bag int)\n - y: bog")
         (,
         [(@@ (defn lol [x] "Lol ${x}")) (@@ (lol true))]
-            "# Type Env\n## Constructors\n# Class Env\n## Instances\n## Defaults\n# Assumps\nlol: a *; a ∈ pretty; (fn [a] string)")])
+            "Assumps\n - lol: a *; a ∈ pretty; (fn [a] string)")])
 
 (full-env->s builtin-full)
 

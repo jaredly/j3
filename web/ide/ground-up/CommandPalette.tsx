@@ -353,6 +353,31 @@ const getCommands = (
             }
         }
 
+        if (node?.type === 'stringText') {
+            if (node.text.includes('\\n')) {
+                commands.push({
+                    type: 'plain',
+                    title: '\\n -> newline',
+                    action() {
+                        dispatch({
+                            type: 'update',
+                            map: {
+                                [node.loc]: {
+                                    ...node,
+                                    text: node.text.replace(/\\n/g, '\n'),
+                                },
+                            },
+                            selection: sel
+                                .slice(0, -1)
+                                .concat([
+                                    { type: 'subtext', at: 0, idx: node.loc },
+                                ]),
+                        });
+                    },
+                });
+            }
+        }
+
         const ev = store.getEvaluator();
         if (ev) {
             commands.push({
