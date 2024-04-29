@@ -349,7 +349,6 @@
                                        (, [] _)        (let [(, target args) (unwrap-tapp target [arg])]
                                                            "(${(type->s' show-kind target)} ${(join " " (map (type->s' show-kind) args))})")
                                        (, args result) "(fn [${(join " " (map (type->s' show-kind) args))}] ${(type->s' show-kind result)})")
-        (tcon (tycon "(,)" _) _)   ","
         (tcon (tycon "[]" _) _)    "list"
         (tcon (tycon name k) _)    (if show-kind
                                        "${name} [${(kind->s k)}]"
@@ -470,7 +469,7 @@
 
 (def tarrow (tcon (tycon "(->)" (kfun star (kfun star star))) -1))
 
-(def ttuple2 (tcon (tycon "(,)" (kfun star (kfun star star))) -1))
+(def ttuple2 (tcon (tycon "," (kfun star (kfun star star))) -1))
 
 (def tstring (star-con "string"))
 
@@ -619,6 +618,7 @@
         (cst/list [target ..args] l)                                        (match args
                                                                                 [] (parse-expr target)
                                                                                 _  (eapp (parse-expr target) (map parse-expr args) l))
+        (cst/list [] l)                                                     (evar "()" l)
         (cst/array args l)                                                  (parse-array args l)))
 
 (parse-expr (@@ (fn [a] 1)))
@@ -775,6 +775,11 @@
         [one]        (, [] one)
         [one ..rest] (let [(, more last) (splitlast rest)] (, [one ..more] last))))
 
+(defn fix-kinds [kind type]
+    (match type
+        (tcon (tycon n _) l) (tcon (tycon n kind) l)
+        (tapp target arg l)  (tapp (fix-kinds (kfun star kind) target) (fix-kinds star arg) l)))
+
 (** ## Statements **)
 
 (defn parse-stmt [cst]
@@ -808,7 +813,7 @@
                 l) (sdefinstance
                                                                                       cls
                                                                                           cl
-                                                                                          (parse-type typ)
+                                                                                          (fix-kinds star (parse-type typ))
                                                                                           []
                                                                                           (map
                                                                                           (fn [(, name value)]
@@ -826,7 +831,7 @@
                                                                                                                     (map
                                                                                                                         (fn [pred]
                                                                                                                             (match pred
-                                                                                                                                (cst/list [(cst/identifier cls cl) typ] _) (isin cls (parse-type typ))
+                                                                                                                                (cst/list [(cst/identifier cls cl) typ] _) (isin cls (fix-kinds star (parse-type typ)))
                                                                                                                                 _                                          (fatal "Invalid predicate ${(its l)}")))
                                                                                                                             predlist))]
                                                                                       (sdefinstance
@@ -903,6 +908,21 @@
                 [(,, "show-pretty" 29250 (evar "string-to-int" 29251))]
                 29190))
         (,
+        (@@ (definstance (pretty (, a b)) {a b}))
+            (sdefinstance
+            "pretty"
+                30790
+                (tapp
+                (tapp
+                    (tcon (tycon "," (kfun (star) (kfun (star) (star)))) 30782)
+                        (tcon (tycon "a" (star)) 30788)
+                        30781)
+                    (tcon (tycon "b" (star)) 30784)
+                    30781)
+                []
+                [(,, "a" 30786 (evar "b" 30787))]
+                30779))
+        (,
         (@@
             (definstance (=> (types a) (types (array a)))
                 {
@@ -912,7 +932,7 @@
             "types"
                 29398
                 (tapp
-                (tcon (tycon "array" (star)) 29294)
+                (tcon (tycon "array" (kfun (star) (star))) 29294)
                     (tcon (tycon "a" (star)) 29295)
                     29293)
                 [(isin "types" (tcon (tycon "a" (star)) 29290))]
@@ -1251,7 +1271,7 @@
                                               (ok (|-> u t))
                                                   (err
                                                   (,
-                                                      "Different Kinds ${(kind->s (tyvar/kind u))} vs ${(kind->s (type/kind t))}"
+                                                      "Diffe rent Kinds ${(kind->s (tyvar/kind u))} vs ${(kind->s (type/kind t))}"
                                                           [])))
         (, (tcon tc1 _) (tcon tc2 _))     (if (tycon= tc1 tc2)
                                               (ok map/nil)
@@ -2167,6 +2187,7 @@ map->
                 [(, "+" biNum)
                 (, "-" biNum)
                 (, "*" biNum)
+                (, "()" (generic [] tunit))
                 (, "negate" uNum)
                 (, "abs" uNum)
                 (, "fromInt" (generic ["num"] (tfn tint g0)))
@@ -2767,9 +2788,20 @@ filter
         (, [(@@ "${""}")] )
         (,
         [(@@ (definstance (pretty string) {show-pretty (fn [v] "a string")}))
-            (@@ (def x "${""}"))
-            (@@ "${""}")]
+            (@@ (def x (show-pretty "")))
+            (@@ (show-pretty ""))]
             "Class Env\n> Instances\n - pretty \n   - string ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int\nAssumps\n - x: string")
+        (,
+        [(@@
+            (definstance (pretty (, string string)) {show-pretty (fn [a] "pairr")}))
+            (@@ (show-pretty (, "" "")))]
+            "Class Env\n> Instances\n - pretty \n   - (, string string) ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int")
+        (,
+        [(@@
+            (definstance (=> (pretty a) (pretty (, a string)))
+                {show-pretty (fn [a] "lol")}))
+            (@@ (show-pretty (, () "lol")))]
+            "Class Env\n> Instances\n - pretty \n   - a ∈ pretty |=> (, a string) ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int")
         (,
         [(@@
             (definstance (=> (pretty a) (pretty (array a))) {show-pretty (fn [v] "Lol")}))

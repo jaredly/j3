@@ -3,7 +3,13 @@
 
 - [x] render readonly for sseearch results
 - [x] better menuuu
-- [ ] "pin" a toplevel, render readonly
+- [x] "pin" a toplevel, render readonly
+
+# THIH
+
+definstance, what do I need to do...
+- hook up the instance declaration
+- .. ok I need a function that will take my parsed type nonsense, and ... attach the right kinds to tcons
 
 
 
