@@ -4,7 +4,7 @@
 import { Node } from '../../../src/types/cst';
 import { fromMCST } from '../../../src/types/mcst';
 import { NUIState } from '../../custom/UIState';
-import { builtins } from './builtins';
+import { builtins, traceEnv } from './builtins';
 import { extractBuiltins } from './extractBuiltins';
 import { addTypeConstructors } from './addTypeConstructors';
 import { findTops } from './findTops';
@@ -165,7 +165,7 @@ export const bootstrap: FullEvalator<
 > = {
     id: 'bootstrap',
     init: () => {
-        return { values: builtins() };
+        return { values: { ...builtins(), ...traceEnv() } };
     },
     analysis: {
         externalsStmt(stmt) {

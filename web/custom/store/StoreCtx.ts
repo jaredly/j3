@@ -80,7 +80,7 @@ export const useGetStore = () => useContext(StoreCtx);
 
 export const useSubscribe = <T>(
     calc: () => T,
-    sub: (fn: () => void) => () => void,
+    sub: (fn: () => void) => (() => void) | (() => void)[],
     deps: any[],
 ) => {
     const saved = useRef<T | null>(null);
@@ -93,13 +93,17 @@ export const useSubscribe = <T>(
     const [_, tick] = useState(0);
 
     useEffect(() => {
-        return sub(() => {
+        const res = sub(() => {
             const nw = calc();
             if (!equal(nw, saved.current)) {
                 saved.current = nw;
                 tick((t) => t + 1);
             }
         });
+        if (Array.isArray(res)) {
+            return () => res.forEach((f) => f());
+        }
+        return res;
     }, []);
 
     return saved.current!;

@@ -6,7 +6,7 @@ import { NUIState } from '../../custom/UIState';
 import { urlForId } from './urlForId';
 import { bootstrapEvaluator } from './bootstrapEvaluator';
 import { fnsEvaluator } from './fnsEvaluator';
-import { builtins } from './builtins';
+import { Tracer, builtins, traceEnv } from './builtins';
 import { valueToString } from './valueToString';
 import { basicParser, recoveringParser } from './evaluators/parsers';
 import { compiler } from './evaluators/compiler';
@@ -33,7 +33,7 @@ export const evaluatorFromText = (
     id: string,
     texts: string[],
 ): FullEvalator<{ values: { [key: string]: any } }, Stmt, Expr> | null => {
-    const benv = builtins();
+    const benv = { ...builtins(), ...traceEnv() };
     const san = sanitizedEnv(benv);
     const envArgs = '{' + Object.keys(san).join(', ') + '}';
 
@@ -177,13 +177,13 @@ export type TraceMap = { [loc: number]: Trace[][] };
 export function withTracing(
     traceMap: TraceMap,
     loc: number,
-    san: { [key: string]: any },
+    setTracer: (nw: null | Tracer) => void,
     env: FnsEnv,
 ) {
     const trace: TraceMap[0] = [];
     traceMap[loc] = trace;
 
-    san.$setTracer((traces: Trace[]) => {
+    setTracer((traces: Trace[]) => {
         trace.push(
             traces.map((trace) => {
                 if (trace.type === 'tval') {

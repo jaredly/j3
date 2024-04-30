@@ -14,7 +14,6 @@ export type Tracer = (
 ) => void;
 
 export function builtins() {
-    let tracer: null | Tracer = null;
     let env = {
         // Math
         '+': (a: number) => (b: number) => a + b,
@@ -114,26 +113,6 @@ export function builtins() {
             }
         },
         sanitize,
-        $setTracer(nw: null | Tracer) {
-            tracer = nw;
-        },
-        $trace(loc: number, info: any, value: any) {
-            if (tracer) {
-                console.log('doing a tracer', loc, value);
-                tracer([
-                    { type: 'tloc', 0: loc },
-                    info.formatter
-                        ? { type: 'tfmt', 0: value, 1: info.formatter }
-                        : { type: 'tval', 0: value },
-                ]);
-            }
-            // tracer?.(loc, value, info);
-            return value;
-        },
-
-        trace: (things: arr<Trace>) => {
-            tracer?.(unwrapArray(things));
-        },
 
         // Just handy
         'replace-all': (a: string) => (b: string) => (c: string) =>
@@ -150,3 +129,28 @@ export function builtins() {
     };
     return env;
 }
+
+export const traceEnv = () => {
+    let tracer: null | Tracer = null;
+    return {
+        $setTracer(nw: null | Tracer) {
+            tracer = nw;
+        },
+        $trace(loc: number, info: any, value: any) {
+            if (tracer) {
+                // console.log('doing a tracer', loc, value);
+                tracer([
+                    { type: 'tloc', 0: loc },
+                    info.formatter
+                        ? { type: 'tfmt', 0: value, 1: info.formatter }
+                        : { type: 'tval', 0: value },
+                ]);
+            }
+            // tracer?.(loc, value, info);
+            return value;
+        },
+        trace: (things: arr<Trace>) => {
+            tracer?.(unwrapArray(things));
+        },
+    };
+};

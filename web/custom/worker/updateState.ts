@@ -154,7 +154,8 @@ export function updateState(
                 // Hang on to the previous one, in case of failure
                 tenv: state.results.groups[groupKey]?.tenv,
                 tops: group.map((g) => g.id),
-                traces: {},
+                // ooh traces ... might ... want to stick around?? idk
+                traces: state.results.groups[groupKey]?.traces ?? {},
             };
         } else {
             if (!state.results.groups[groupKey]) {

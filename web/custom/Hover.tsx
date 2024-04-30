@@ -79,7 +79,7 @@ export const Hover = ({}: {}) => {
         setShow(false);
         const tid = setTimeout(() => {
             setShow(true);
-        }, 200);
+        }, 400);
         return () => clearTimeout(tid);
     }, [hoverLoc]);
 
@@ -150,34 +150,16 @@ type HoverItem = {
 };
 
 const useHover = (show: boolean) => {
-    const [state, setState] = useState(
-        null as null | { box: CursorRect; found: HoverItem[] },
-    );
     const store = useGetStore();
-
-    // return useSubscribe(() => {
-    //     const state = store.getState();
-    //     const results = store.getResults();
-    //     return (getHoverState(state, results));
-    // }, fn => [store.on('hover', fn), store.on('results', fn)], [])
-
-    useEffect(() => {
-        if (!show) return;
-        const state = store.getState();
-        const results = store.getResults();
-        setState(getHoverState(state, results));
-        const f = (state: NUIState) => {
-            setState(getHoverState(state, store.getResults()));
-        };
-        const one = store.on('hover', f);
-        const two = store.on('results', f);
-        return () => {
-            one();
-            two();
-        };
-    }, [show]);
-
-    return state;
+    return useSubscribe(
+        () => {
+            const state = store.getState();
+            const results = store.getResults();
+            return getHoverState(state, results);
+        },
+        (fn) => [store.on('hover', fn), store.on('results', fn)],
+        [],
+    );
 };
 
 function getHoverState(state: NUIState, results: CombinedResults) {

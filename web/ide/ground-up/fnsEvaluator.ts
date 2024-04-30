@@ -193,7 +193,7 @@ export const fnsEvaluator = (
 
         setTracing(idx, traceMap, env) {
             if (idx != null) {
-                withTracing(traceMap, idx, env.values, env);
+                withTracing(traceMap, idx, san.$setTracer, env);
             } else {
                 env.values.$setTracer(null);
             }
@@ -333,7 +333,7 @@ const compileStmt = (
         } else {
             try {
                 if (meta[top]?.traceTop) {
-                    withTracing(traceMap, top, env.values, env);
+                    withTracing(traceMap, top, san.$setTracer, env);
                 }
                 const result = fn(values);
                 if (result != null) {

@@ -121,7 +121,7 @@ export function RenderTraces() {
                                                         }
                                                     }}
                                                 >
-                                                    {node.type === 'identifier'
+                                                    {node?.type === 'identifier'
                                                         ? node.text
                                                         : loc}
                                                 </div>

@@ -4,9 +4,9 @@
 - [x] render readonly for sseearch results
 - [x] better menuuu
 - [x] "pin" a toplevel, render readonly
-- [ ] okayyyy so, my traces are .. not really up to snufff. Is it that, I need to distinguish between locals and globals?
+- [x] okayyyy so, my traces are .. not really up to snufff. Is it that, I need to distinguish between locals and globals?
 - [x] gotta be able to delete an empty ns that's before you
-- [ ] let's do hover on timeout, not on alt
+- [x] let's do hover on timeout, not on alt
 
 # THIH
 

@@ -72,4 +72,5 @@ export type State = {
     results?: AsyncResults;
     debugExecOrder?: boolean;
     debugShowJs?: boolean;
+    traceFn?: (loc: number, info: any, value: any) => any;
 };
