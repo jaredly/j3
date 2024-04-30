@@ -13,7 +13,11 @@ export const selectWithin = (
                 continue;
             }
             range.setStart(child, graphemes.slice(0, pos).join('').length);
-            range.collapse(true);
+            // if (pos < graphemes.length - 1) {
+            range.setEnd(child, graphemes.slice(0, pos + 1).join('').length);
+            // } else {
+            //     range.collapse(true);
+            // }
             return 0;
             // let prevPos = null;
             // let offset = 0;

@@ -1,5 +1,5 @@
 import { Node } from '../../../src/types/cst';
-import { NNode } from '../../../src/state/getNestedNodes';
+import { NNode } from '../../../src/state/nestedNodes/NNode';
 import { Path } from '../../store';
 import { Errors } from '../../ide/ground-up/FullEvalator';
 import { AnyEnv } from '../store/getResults';

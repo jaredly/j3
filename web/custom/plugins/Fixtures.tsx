@@ -1,6 +1,6 @@
 import React from 'react';
 import { Action, MetaDataMap, NamespacePlugin } from '../UIState';
-import { NNode } from '../../../src/state/getNestedNodes';
+import { NNode } from '../../../src/state/nestedNodes/NNode';
 import equal from 'fast-deep-equal';
 import { valueToString } from '../../ide/ground-up/valueToString';
 import { Path } from '../../store';

@@ -2,7 +2,8 @@ import equal from 'fast-deep-equal';
 import React from 'react';
 import { splitNamespaces } from '../../src/db/hash-tree';
 import { splitGraphemes } from '../../src/parse/parse';
-import { NNode, stringBgColor } from '../../src/state/getNestedNodes';
+import { stringBgColor } from '../../src/state/nestedNodes/getNestedNodes';
+import { NNode } from '../../src/state/nestedNodes/NNode';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
 import { pathForIdx } from '../ide/ground-up/pathForIdx';
@@ -404,9 +405,13 @@ export const RenderNNode = (
                 </span>
             );
         case 'text': {
+            let rawText = nnode.text;
+            if (rawText.endsWith('\n')) {
+                rawText += '​';
+            }
             let body;
             if (coverageLevel?.type === 'inner') {
-                const text = splitGraphemes(nnode.text);
+                const text = splitGraphemes(rawText);
                 const start =
                     coverageLevel.start.type === 'subtext'
                         ? coverageLevel.start.at
@@ -431,13 +436,13 @@ export const RenderNNode = (
                     </>
                 );
             } else {
-                body = nnode.text;
+                body = rawText;
                 if (
-                    nnode.text.length > 1 &&
+                    rawText.length > 1 &&
                     (props.values.display?.style?.type === 'id' ||
                         props.values.display?.style?.type === 'unresolved')
                 ) {
-                    const nss = splitNamespaces(nnode.text);
+                    const nss = splitNamespaces(rawText);
                     if (nss.length) {
                         body = nss.map((n, i) =>
                             i === 0 ? (

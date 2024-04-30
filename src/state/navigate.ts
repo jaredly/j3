@@ -1,7 +1,7 @@
 import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../parse/parse';
 import { Map } from '../types/mcst';
-import { getNodes } from './getNestedNodes';
+import { getNodes } from './nestedNodes/getNodes';
 import { ONode } from './types';
 import { Path } from './path';
 

@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { Action, MetaData, NUIState } from '../UIState';
 import { Display } from '../../../src/to-ast/library';
-import { NNode, getNestedNodes } from '../../../src/state/getNestedNodes';
+import { getNestedNodes } from '../../../src/state/nestedNodes/getNestedNodes';
+import { NNode } from '../../../src/state/nestedNodes/NNode';
 import { MNode } from '../../../src/types/mcst';
 import { Reg } from '../types';
 import { CoverageLevel } from '../../../src/state/clipboard';

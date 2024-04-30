@@ -2,10 +2,8 @@ import { useMemo } from 'react';
 import { Node } from '../../src/types/cst';
 import { Map, toMCST } from '../../src/types/mcst';
 import { RenderNNode } from './Render';
-import {
-    getDeepNestedNodes,
-    getNestedNodes,
-} from '../../src/state/getNestedNodes';
+import { getNestedNodes } from '../../src/state/nestedNodes/getNestedNodes';
+import { getDeepNestedNodes } from '../../src/state/nestedNodes/getNodes';
 import React from 'react';
 import { layout } from '../../src/layout';
 import { Display } from '../../src/to-ast/library';

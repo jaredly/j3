@@ -11,7 +11,7 @@ import { WorkerResults } from './store/useSyncStore';
 import { unique } from './store/unique';
 import { HoverContents } from './worker/types';
 import { renderNNode } from '../ide/ground-up/renderNodeToString';
-import { getNestedNodes } from '../../src/state/getNestedNodes';
+import { getNestedNodes } from '../../src/state/nestedNodes/getNestedNodes';
 import { Map, toMCST } from '../../src/types/mcst';
 import { Node, nodesEqual } from '../../src/types/cst';
 import { RenderStatic } from './RenderStatic';

@@ -1,6 +1,7 @@
 import { Display } from '../../../src/to-ast/library';
 import { Map } from '../../../src/types/mcst';
-import { NNode, getNestedNodes } from '../../../src/state/getNestedNodes';
+import { getNestedNodes } from '../../../src/state/nestedNodes/getNestedNodes';
+import { NNode } from '../../../src/state/nestedNodes/NNode';
 import { white } from './reduce';
 import { Block, StyledText } from '@blocknote/core';
 import { filterNulls } from '../../custom/old-stuff/filterNulls';

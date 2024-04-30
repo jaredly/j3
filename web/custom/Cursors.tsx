@@ -203,8 +203,8 @@ export const calcCursorPos = (
                                 last.at,
                             );
                             r.setStart(nodes.main.node.firstChild!, 0);
+                            r.collapse(true);
                         }
-                        r.collapse(true);
                     } else {
                         return;
                     }

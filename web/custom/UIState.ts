@@ -9,7 +9,7 @@ import {
 import { Path } from '../../src/state/path';
 import { Def, DefType, Node } from '../../src/types/ast';
 import { Ctx, HistoryItem } from '../../src/to-ast/library';
-import { NNode } from '../../src/state/getNestedNodes';
+import { NNode } from '../../src/state/nestedNodes/NNode';
 import { Map, NsMap } from '../../src/types/mcst';
 import { NUIResults, Store } from './store/Store';
 import {

@@ -1,5 +1,5 @@
 import { Map, NsMap } from '../types/mcst';
-import { getNodes } from './getNestedNodes';
+import { getNodes } from './nestedNodes/getNodes';
 import { StateSelect } from './getKeyUpdate';
 import { Path } from './path';
 import { Card, RealizedNamespace, RegMap } from '../../web/custom/UIState';
