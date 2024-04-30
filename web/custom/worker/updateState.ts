@@ -8,7 +8,7 @@ import {
     PluginParsed,
     SuccessParsed,
 } from '../store/getImmediateResults';
-import { showError } from '../store/processTypeInference';
+import { locedErrors, showError } from '../store/processTypeInference';
 import { LocedName } from '../store/sortTops';
 import { unique } from '../store/unique';
 import { add } from './add';
@@ -240,16 +240,13 @@ export function updateState(
                 if (result.type === 'err') {
                     state.results.groups[groupKey].typeFailed = true;
                     const err = result.err;
-                    const text = showError(err);
-                    if (err.type === 'with-items') {
-                        err.items.forEach(({ loc, name }) => {
-                            add(
-                                state.results!.tops[topForLoc[loc]].errors,
-                                loc,
-                                text,
-                            );
-                        });
-                    }
+                    locedErrors(err).forEach(({ loc, text }) => {
+                        add(
+                            state.results!.tops[topForLoc[loc]].errors,
+                            loc,
+                            text,
+                        );
+                    });
                     group.forEach((item) => {
                         state.results!.tops[item.id].produce.push({
                             type: 'inference-error',
@@ -353,25 +350,11 @@ export function updateState(
                 }
 
                 const err = res.result.err;
-                const text = showError(err);
-                if (err.type === 'with-items') {
-                    err.items.forEach(({ loc, name }) => {
-                        add(
-                            state.results!.tops[topForLoc[loc]]?.errors ?? {},
-                            loc,
-                            text,
-                        );
-                    });
-                }
-                if (err.type === 'missing') {
-                    err.missing.forEach(({ name, loc }) => {
-                        add(
-                            state.results!.tops[topForLoc[loc]]?.errors ?? {},
-                            loc,
-                            `Missing term "${name}"`,
-                        );
-                    });
-                }
+
+                locedErrors(err).forEach(({ loc, text }) => {
+                    add(state.results!.tops[topForLoc[loc]]?.errors, loc, text);
+                });
+
                 group.forEach((item) => {
                     state.results!.tops[item.id].produce.push({
                         type: 'inference-error',

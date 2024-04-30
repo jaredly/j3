@@ -3,6 +3,7 @@ export const add = <K extends string | number, T>(
     k: K,
     item: T,
 ) => {
+    if (!obj) return;
     if (!obj[k]) obj[k] = [item];
     else obj[k].push(item);
 };

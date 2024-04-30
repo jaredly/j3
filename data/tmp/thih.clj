@@ -1353,11 +1353,13 @@
                 (isin "ord" (tvar (tyvar "b" star) -1))]
                 (isin "ord" (mkpair (tvar (tyvar "a" star) -1) (tvar (tyvar "b" star) -1))))]))
 
-((** class-env (map class-name (, supers instances)
+((** class-env (map class-name (, supers instances) (default-types)
      **)
     deftype class-env
     (class-env
-        (map string (, (array string) (array (qual pred))))
+        (map
+            string
+                (, (array string) (array (qual pred)) (array (, string type))))
             (array type)))
 
 (defn map/merge-deep [merge one two]
@@ -1372,10 +1374,12 @@
 (defn class-env/merge [(class-env classes defaults) (class-env classes' defaults')]
     (class-env
         (map/merge-deep
-            (fn [k (, super1 inst1) (, super2 inst2)]
+            (fn [k (, super1 inst1 fns) (, super2 inst2 fns2)]
                 (if (!= super1 super2)
                     (fatal "Cant merge classes for ${k}: superclasses differ")
-                        (, super1 (concat [inst1 inst2]))))
+                        (if (!= fns fns2)
+                        (fatal "Cant merge classes for ${k}: isntance methods differ")
+                            (, super1 (concat [inst1 inst2]) fns))))
                 classes
                 classes')
             (concat [defaults defaults'])))
@@ -1389,8 +1393,8 @@
 
 (defn supers [(class-env classes _) id]
     (match (map/get classes id)
-        (some (, is its)) is
-        _                 (fatal "Unknown class ${id}")))
+        (some (, is its _)) is
+        _                   (fatal "Unknown class ${id}")))
 
 (defn insts [(class-env classes _) id]
     (match (map/get classes id)
@@ -1412,12 +1416,12 @@
 
 (defn compose-transformers [one two ce] (two (one ce)))
 
-(defn add-class [(class-env classes defaults) (, name supers)]
+(defn add-class [(class-env classes defaults) (, name supers fns)]
     (match (map/get classes name)
         (some _) (fatal "class ${name} already defined")
         _        (match (find supers (fn [name] (not (map/has classes name))))
                      (some super_) (fatal "Superclass not defined ${super_}")
-                     _             (class-env (map/set classes name (, supers [])) defaults))))
+                     _             (class-env (map/set classes name (, supers [] fns)) defaults))))
 
 (def add-prelude-classes
     (compose-transformers core-classes num-classes))
@@ -1425,28 +1429,28 @@
 (defn core-classes [env]
     (foldl
         env
-            [(, "eq" [])
-            (, "ix" [])
-            (, "ord" ["eq"])
-            (, "show" [])
-            (, "read" [])
-            (, "pretty" [])
-            (, "bounded" [])
-            (, "enum" [])
-            (, "functor" [])
-            (, "monad" [])]
+            [(, "eq" [] [(, "=" (tfns [(tgen 0 -1) (tgen 0 -1)] tbool))])
+            (, "ix" [] [])
+            (, "ord" ["eq"] [])
+            (, "show" [] [])
+            (, "read" [] [])
+            (, "pretty" [] [(, "show-pretty" (tfn (tgen 0 -1) tstring))])
+            (, "bounded" [] [])
+            (, "enum" [] [])
+            (, "functor" [] [])
+            (, "monad" [] [])]
             add-class))
 
 (defn num-classes [env]
     (foldl
         env
-            [(, "num" ["eq" "show"])
-            (, "real" ["num" "ord"])
-            (, "fractional" ["num"])
-            (, "integral" ["real" "enum"])
-            (, "realfrac" ["real" "fractional"])
-            (, "floating" ["fractional"])
-            (, "realfloat" ["realfrac" "floating"])]
+            [(, "num" ["eq" "show"] [])
+            (, "real" ["num" "ord"] [])
+            (, "fractional" ["num"] [])
+            (, "integral" ["real" "enum"] [])
+            (, "realfrac" ["real" "fractional"] [])
+            (, "floating" ["fractional"] [])
+            (, "realfloat" ["realfrac" "floating"] [])]
             add-class))
 
 (add-prelude-classes initial-env)
@@ -1464,14 +1468,14 @@
     defn add-inst [preconditions inst-pred (class-env classes defaults)]
     (let [(isin class-name _) inst-pred]
         (match (map/get classes class-name)
-            (none)                          (fatal
-                                                "no class '${class-name}' found, when trying to add instance. Known classes: ${(join ", " (map/keys classes))}")
-            (some (, c-supers c-instances)) (let [
-                                                c  (, c-supers [(=> preconditions inst-pred) ..c-instances])
-                                                qs (map (fn [(=> _ q)] q) c-instances)]
-                                                (if (any (overlap inst-pred) qs)
-                                                    (fatal "overlapping instance")
-                                                        (class-env (map/set classes class-name c) defaults))))))
+            (none)                              (fatal
+                                                    "no class '${class-name}' found, when trying to add instance. Known classes: ${(join ", " (map/keys classes))}")
+            (some (, c-supers c-instances fns)) (let [
+                                                    c  (, c-supers [(=> preconditions inst-pred) ..c-instances] fns)
+                                                    qs (map (fn [(=> _ q)] q) c-instances)]
+                                                    (if (any (overlap inst-pred) qs)
+                                                        (fatal "overlapping instance")
+                                                            (class-env (map/set classes class-name c) defaults))))))
 
 (defn apply-transformers [transformers env]
     (foldl env transformers (fn [env f] (f env))))
@@ -1512,10 +1516,10 @@
 
 (defn by-inst [(class-env classes _) pred]
     (let [
-        (isin i t)  pred
-        (, _ insts) (match (map/get classes i)
-                        (some s) s
-                        _        (fatal "Unknown class '${i}' in predicate [by-inst]"))]
+        (isin i t)    pred
+        (, _ insts _) (match (map/get classes i)
+                          (some s) s
+                          _        (fatal "Unknown class '${i}' in predicate [by-inst]"))]
         (find-some
             (fn [(=> ps h)]
                 (match (matchPred h pred)
@@ -2813,7 +2817,9 @@ filter
     (foldl
         (foldl
             (class-env/add-default class-env/nil [tint])
-                [(, "pretty" []) (, "num" []) (, "ord" [])]
+                [(, "pretty" [] [(, "show-pretty" (tfns [(tgen 0 -1)] tstring))])
+                (, "num" [] [])
+                (, "ord" [] [])]
                 add-class)
             [(, [] (isin "pretty" tunit)) (, [] (isin "num" tint)) (, [] (isin "ord" tint))]
             (fn [ce (, pre pred)] (add-inst pre pred ce))))
@@ -2831,23 +2837,23 @@ filter
         [(@@ (definstance (pretty string) {show-pretty (fn [v] "a string")}))
             (@@ (def x (show-pretty "")))
             (@@ (show-pretty ""))]
-            "Class Env\n> Instances\n - pretty \n   - string ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int\nAssumps\n - x: string")
+            "Class Env\n> Instances\n - pretty \n   - string ∈ pretty\n   - () ∈ pretty\n   - show-pretty (fn [a] string)\n - ord \n   - int ∈ ord\n   - (no fns)\n - num \n   - int ∈ num\n   - (no fns)\n> Defaults\n - int\nAssumps\n - x: string")
         (,
         [(@@
             (definstance (pretty (, string string)) {show-pretty (fn [a] "pairr")}))
             (@@ (show-pretty (, "" "")))]
-            "Class Env\n> Instances\n - pretty \n   - (, string string) ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int")
+            "Class Env\n> Instances\n - pretty \n   - (, string string) ∈ pretty\n   - () ∈ pretty\n   - show-pretty (fn [a] string)\n - ord \n   - int ∈ ord\n   - (no fns)\n - num \n   - int ∈ num\n   - (no fns)\n> Defaults\n - int")
         (,
         [(@@
             (definstance (=> (pretty a) (pretty (, a string)))
                 {show-pretty (fn [a] "lol")}))
             (@@ (show-pretty (, () "lol")))]
-            "Class Env\n> Instances\n - pretty \n   - (var a *) ∈ pretty |=> (, (var a *) string) ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int")
+            "Class Env\n> Instances\n - pretty \n   - (var a *) ∈ pretty |=> (, (var a *) string) ∈ pretty\n   - () ∈ pretty\n   - show-pretty (fn [a] string)\n - ord \n   - int ∈ ord\n   - (no fns)\n - num \n   - int ∈ num\n   - (no fns)\n> Defaults\n - int")
         (,
         [(@@
             (definstance (=> (pretty a) (pretty (list a))) {show-pretty (fn [v] "Lol")}))
             (@@ (show-pretty [()]))]
-            "Class Env\n> Instances\n - pretty \n   - (var a *) ∈ pretty |=> (list (var a *)) ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int")])
+            "Class Env\n> Instances\n - pretty \n   - (var a *) ∈ pretty |=> (list (var a *)) ∈ pretty\n   - () ∈ pretty\n   - show-pretty (fn [a] string)\n - ord \n   - int ∈ ord\n   - (no fns)\n - num \n   - int ∈ num\n   - (no fns)\n> Defaults\n - int")])
 
 foldl
 
@@ -2918,13 +2924,17 @@ foldl
     [(ggroup
         "> Instances"
             (map
-            (fn [(, name (, ones quals))]
+            (fn [(, name (, ones quals fns))]
                 (gtext
                     " - ${name} ${(match ones
                         [] ""
                         _  " <- ${(join ", " ones)}")}${(match quals
                         [] "\n   - (no instances)"
-                        _  (ljoin "\n   - " (map (qual->s pred->s) quals)))}"))
+                        _  (ljoin "\n   - " (map (qual->s pred->s) quals)))}${(match fns
+                        [] "\n   - (no fns)"
+                        _  (ljoin
+                               "\n   - "
+                                   (map (fn [(, name type)] "${name} ${(type->s type)}") fns)))}"))
                 (map/to-list instances)))
         (ggroup
         "> Defaults"

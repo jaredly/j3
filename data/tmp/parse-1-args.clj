@@ -1052,6 +1052,14 @@
                                                                                           body
                                                                                               (rev args [])
                                                                                               (fn [body arg] (tapp (tapp (tcon "->" -1) arg -1) body -1)))))
+        (cst/list [(cst/identifier "," cl) ..items] l)                        (let-> [items (map-> parse-type items)]
+                                                                                  (<-
+                                                                                      (loop
+                                                                                          items
+                                                                                              (fn [items recur]
+                                                                                              (match items
+                                                                                                  [one]        one
+                                                                                                  [one ..rest] (tapp (tapp (tcon "," cl) one l) (recur rest) l))))))
         (cst/list items l)                                                    (let-> [items (map-> parse-type items)] (<- (tapps (rev items []) l)))
         _                                                                     (<-err
                                                                                   (,
@@ -1073,7 +1081,16 @@
                 -1))
         (,
         (@@ (fn [x] oops and))
-            (tapp (tapp (tcon "->" -1) (tcon "x" 17592) -1) (tcon "oops" 17567) -1))])
+            (tapp (tapp (tcon "->" -1) (tcon "x" 17592) -1) (tcon "oops" 17567) -1))
+        (,
+        (@@ (, a b c))
+            (tapp
+            (tapp (tcon "," 19030) (tcon "a" 19031) 19029)
+                (tapp
+                (tapp (tcon "," 19030) (tcon "b" 19032) 19029)
+                    (tcon "c" 19033)
+                    19029)
+                19029))])
 
 (defn parse-pat [pat]
     (match pat

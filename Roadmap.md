@@ -16,6 +16,9 @@ definstance, what do I need to do...
 - hook up the instance declaration
 - .. ok I need a function that will take my parsed type nonsense, and ... attach the right kinds to tcons
 
+- [ ] class-declarations need to know the types of their associated functions. that need to be implemented
+  - we could get fancy with "default implementations" but ... not at the moment.
+
 
 
 # Getting back into thih

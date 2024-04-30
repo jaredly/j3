@@ -2422,6 +2422,31 @@ return $gt$gt$eq(parse_type(body))((body) => $gt$gt$eq(map_$gt(parse_type)(args)
 } 
 } ;
 if ($target.type === "cst/list") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "cst/identifier") {
+if ($target[0][0][0] === ",") {
+let cl = $target[0][0][1];
+let items = $target[0][1];
+let l = $target[1];
+return $gt$gt$eq(map_$gt(parse_type)(items))((items) => $lt_(loop(items)((items) => (recur) => (($target) => {
+if ($target.type === "cons") {
+let one = $target[0];
+if ($target[1].type === "nil") {
+return one
+} 
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+return tapp(tapp(tcon(",")(cl))(one)(l))(recur(rest))(l)
+} ;
+throw new Error('match fail 19066:' + JSON.stringify($target))
+})(items))))
+} 
+} 
+} 
+} ;
+if ($target.type === "cst/list") {
 let items = $target[0];
 let l = $target[1];
 return $gt$gt$eq(map_$gt(parse_type)(items))((items) => $lt_(tapps(rev(items)(nil))(l)))
