@@ -101,7 +101,12 @@ export const ShowSearchResults = ({
                                 at: [
                                     {
                                         // ugh hack
-                                        start: ['start', 'end'].includes(
+                                        start: [
+                                            'start',
+                                            'end',
+                                            'subtext',
+                                            'text',
+                                        ].includes(
                                             r.path[r.path.length - 1].type,
                                         )
                                             ? r.path

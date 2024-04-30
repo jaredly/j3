@@ -5,7 +5,9 @@
         (, [one .._] 0)  one
         (, [_ ..rest] i) (if (<= i 0)
                              (fatal "Index out of range")
-                                 (list/get rest (- i 1)))))
+                                 (list/get rest (- i 1)))
+        (, [] _)         (fatal
+                             "Unable to get index ${(int-to-string i)} from empty list")))
 
 (deftype (result good bad) (ok good) (err bad))
 
@@ -1473,9 +1475,10 @@
             (some (, c-supers c-instances fns)) (let [
                                                     c  (, c-supers [(=> preconditions inst-pred) ..c-instances] fns)
                                                     qs (map (fn [(=> _ q)] q) c-instances)]
-                                                    (if (any (overlap inst-pred) qs)
-                                                        (fatal "overlapping instance")
-                                                            (class-env (map/set classes class-name c) defaults))))))
+                                                    (match (find qs (overlap inst-pred))
+                                                        (some other) (fatal
+                                                                         "overlapping instance: ${(pred->s inst-pred)} and ${(pred->s other)}")
+                                                        _            (class-env (map/set classes class-name c) defaults))))))
 
 (defn apply-transformers [transformers env]
     (foldl env transformers (fn [env f] (f env))))
@@ -1654,6 +1657,11 @@
     (match arr
         []           (<- [])
         [one ..rest] (let-> [one (f one) rest (map-> f rest)] (<- [one ..rest]))))
+
+(defn do-> [f arr]
+    (match arr
+        []           (<- ())
+        [one ..rest] (let-> [() (f one) () (do-> f rest)] (<- ()))))
 
 (defn seq-> [arr]
     (match arr
@@ -1905,11 +1913,11 @@ map->
         (,, ps as' ts) (infer/pats pats)
         (, qs t)       (infer/expr ce (concat [as' as]) body)]
         (let [res-type (foldr t ts (fn [res arg] (tfn arg res)))]
-            (ti-return (, (concat [ps qs]) res-type)))))
+            (<- (, (concat [ps qs]) res-type)))))
 
 (defn infer/alts [ce as alts t]
-    (let-> [psts ((map-> (infer/alt ce as) alts)) _ ((map-> (unify t) (map snd psts)))]
-        (ti-return (concat (map fst psts)))))
+    (let-> [psts ((map-> (infer/alt ce as) alts)) () (do-> (unify t) (map snd psts))]
+        (<- (concat (map fst psts)))))
 
 (defn infer/expl [ce as (,, i sc alts)]
     (let-> [(=> qs t) (fresh-inst sc) ps (infer/alts ce as alts t) s (get-subst)]
@@ -2710,11 +2718,36 @@ filter
 (defn infer-sinst [ce assumps (sdefinstance name nl type preds fns l)]
     (let-> [
         (** Todo: track usage of the class declaration **)
-        what     (map-> (fn [(,, name loc f)] (infer ce assumps f)) fns)
-        free     (<- (foldl empty (map (fn [(isin _ t)] (find-free t)) preds) bag/and))
-        free-map (<-
-                     (map/from-list
-                         (map (fn [(,, name _ kind)] (, name kind)) (bag/to-list free))))]
+        free                  (<- (foldl empty (map (fn [(isin _ t)] (find-free t)) preds) bag/and))
+        free-map              (<-
+                                  (map/from-list
+                                      (map (fn [(,, name _ kind)] (, name kind)) (bag/to-list free))))
+        (class-env classes _) (<- ce)
+        (, a b inst-fns)      (match (map/get classes name)
+                                  (some cls) (<- cls)
+                                  (none)     (<-err
+                                                 (,
+                                                     
+                                                         "Trying to define an instance for a class that hasn't been defined"
+                                                         [])))
+        what                  (map->
+                                  (fn [(,, name loc f)]
+                                      (match (assoc/get inst-fns name)
+                                          (some fn-type) (let-> [
+                                                             preds (infer/program
+                                                                       ce
+                                                                           assumps
+                                                                           [(,
+                                                                           [(,,
+                                                                               name
+                                                                                   (forall [] (=> [] (inst/type [(replace-free free-map type)] fn-type)))
+                                                                                   [(, [] f)])]
+                                                                               [])])
+                                                             ;()
+                                                             ;(unify (inst/type [(replace-free free-map type)] fn-type) t)]
+                                                             (<- ()))
+                                          (none)         (<-err (, "Unknown instance function" [(, loc name)]))))
+                                      fns)]
         (<-
             (full-env
                 type-env/nil
@@ -2725,6 +2758,13 @@ filter
                         (isin name (replace-free free-map type))
                         ce)
                     []))))
+
+(defn assoc/get [lst k]
+    (match lst
+        []               none
+        [(, a b) ..rest] (if (= a k)
+                             (some b)
+                                 (assoc/get rest k))))
 
 (defn find-free [type]
     (match type
@@ -2833,6 +2873,15 @@ filter
         (,
         [(@@ "${""}")]
             "Fatal runtime: Can't find an instance for class 'pretty' for type string")
+        (,
+        [(@@ (definstance (pretty string) {lol 10}))]
+            "Fatal runtime: Unknown instance function\n - lol (31644)")
+        (,
+        [(@@ (definstance (pretty string) {show-pretty 10}))]
+            "Fatal runtime: Can't find an instance for class 'num' for type (fn [string] string)")
+        (,
+        [(@@ (definstance (pretty string) {show-pretty true}))]
+            "Fatal runtime: Unable to unify -> Cant unify (fn [string] string) and bool\n - (fn [string [*]] string [*]) (-1)\n - bool [*] (-1)")
         (,
         [(@@ (definstance (pretty string) {show-pretty (fn [v] "a string")}))
             (@@ (def x (show-pretty "")))

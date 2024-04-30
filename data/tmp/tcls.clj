@@ -2,6 +2,8 @@
 
 (defn one [x] (show-pretty x))
 
+(definstance (pretty int) {show-pretty (fn [x] (+ 123 "${10}"))})
+
 (defn map [f x]
     (match x
         []           []

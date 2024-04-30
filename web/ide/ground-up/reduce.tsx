@@ -681,7 +681,7 @@ const calcHighlight = (state: NUIState, usages: Record<number, number[]>) => {
         if (cursor.end) return;
         const last = cursor.start[cursor.start.length - 1];
         const node = state.map[last.idx];
-        if (node.type !== 'identifier') return;
+        if (node?.type !== 'identifier') return;
         if (usages[node.loc]) {
             highlight.push(node.loc, ...usages[node.loc]);
             return;

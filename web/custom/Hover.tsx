@@ -69,9 +69,14 @@ export const Hover = ({}: {}) => {
     const hover = useHover(show);
 
     const store = useGetStore();
-    const hoverLoc = useSubscribe(
-        () => store.getState().hover,
-        (fn) => store.on('hover', fn),
+    // const hoverLoc = useSubscribe(
+    //     () => store.getState().hover,
+    //     (fn) => store.on('hover', fn),
+    //     [],
+    // );
+    const state = useSubscribe(
+        () => store.getState(),
+        (fn) => store.on('all', fn),
         [],
     );
 
@@ -81,7 +86,7 @@ export const Hover = ({}: {}) => {
             setShow(true);
         }, 400);
         return () => clearTimeout(tid);
-    }, [hoverLoc]);
+    }, [state]);
 
     if (!hover || !show) return null;
 

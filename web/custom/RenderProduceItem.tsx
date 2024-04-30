@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useRef } from 'react';
 import { collectPaths, pathForIdx } from '../ide/ground-up/pathForIdx';
 import { InferenceError, ProduceItem } from '../ide/ground-up/FullEvalator';
 import { useGetStore } from './store/StoreCtx';
@@ -74,6 +74,10 @@ export const JumpTo = ({
     loc: number;
 }) => {
     const store = useGetStore();
+    const cleanup = useRef(null as null | (() => void));
+    useEffect(() => {
+        return () => cleanup.current?.();
+    }, []);
     return (
         <span
             className="hover"
@@ -81,7 +85,9 @@ export const JumpTo = ({
                 const got = store.getState().regs[loc];
                 const node = got?.main ?? got?.outside;
                 if (!node) return;
-                // node.node.style.backgroundColor = 'red';
+                node.node.style.backgroundColor = 'red';
+                cleanup.current = () =>
+                    (node.node.style.backgroundColor = 'unset');
             }}
             onClick={() => {
                 console.log('jumping', loc);
@@ -97,7 +103,8 @@ export const JumpTo = ({
                 const got = store.getState().regs[loc];
                 const node = got?.main ?? got?.outside;
                 if (!node) return;
-                // node.node.style.backgroundColor = 'unset';
+                cleanup.current?.();
+                cleanup.current = null;
             }}
         >
             {children}
@@ -122,7 +129,7 @@ const RenderInferenceError = ({ err }: { err: InferenceError }) => {
     }
     if (err.type === 'types') {
         return (
-            <div>
+            <div style={{ color: 'rgb(255,50,50)' }}>
                 <div>Types don't match</div>
                 <JumpTo loc={err.one.loc}>
                     <RenderStatic node={err.one} />
@@ -135,7 +142,7 @@ const RenderInferenceError = ({ err }: { err: InferenceError }) => {
     }
     if (err.type === 'nested') {
         return (
-            <div>
+            <div style={{ color: 'rgb(255,50,50)' }}>
                 Nested
                 <RenderInferenceError err={err.outer} />
                 -&gt;
