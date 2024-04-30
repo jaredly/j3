@@ -2845,9 +2845,9 @@ filter
             "Class Env\n> Instances\n - pretty \n   - (var a *) ∈ pretty |=> (, (var a *) string) ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int")
         (,
         [(@@
-            (definstance (=> (pretty a) (pretty (array a))) {show-pretty (fn [v] "Lol")}))
-            (@@ "${[]}")]
-            1)])
+            (definstance (=> (pretty a) (pretty (list a))) {show-pretty (fn [v] "Lol")}))
+            (@@ (show-pretty [()]))]
+            "Class Env\n> Instances\n - pretty \n   - (var a *) ∈ pretty |=> (list (var a *)) ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int")])
 
 foldl
 
