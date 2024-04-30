@@ -262,6 +262,38 @@ export const getKeyUpdate = (
         );
     }
 
+    if (key === '∞' || (key === '5' && mods?.alt)) {
+        if (flast.type === 'start' || flast.type === 'end') {
+            return {
+                type: 'select',
+                selection: fullPath.slice(0, -1).concat([
+                    {
+                        ...flast,
+                        type: flast.type === 'start' ? 'end' : 'start',
+                    },
+                ]),
+            };
+        }
+        for (let i = 1; i < fullPath.length; i++) {
+            const pt = fullPath[fullPath.length - i];
+            const node = map[pt.idx];
+            if (!node) break;
+            if (
+                node.type === 'list' ||
+                node.type === 'array' ||
+                node.type === 'record'
+            ) {
+                return {
+                    type: 'select',
+                    selection: fullPath
+                        .slice(0, -i)
+                        .concat([{ type: 'end', idx: pt.idx }]),
+                };
+            }
+        }
+        return;
+    }
+
     if (
         key === 'Meta' ||
         key === 'Shift' ||

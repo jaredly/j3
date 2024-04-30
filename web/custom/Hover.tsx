@@ -6,7 +6,7 @@ import type { Error } from '../../src/types/types';
 import { advancePath } from '../ide/ground-up/findTops';
 import { CursorRect, subRect } from './Cursors';
 import { NUIState, UIState } from './UIState';
-import { useGetStore } from './store/StoreCtx';
+import { useGetStore, useSubscribe } from './store/StoreCtx';
 import { WorkerResults } from './store/useSyncStore';
 import { unique } from './store/unique';
 import { HoverContents } from './worker/types';
@@ -68,25 +68,20 @@ export const Hover = ({}: {}) => {
     const [show, setShow] = useState(false);
     const hover = useHover(show);
 
+    const store = useGetStore();
+    const hoverLoc = useSubscribe(
+        () => store.getState().hover,
+        (fn) => store.on('hover', fn),
+        [],
+    );
+
     useEffect(() => {
-        const down = (evt: KeyboardEvent) => {
-            if (evt.key === 'Alt') {
-                setShow(true);
-            }
-        };
-        const up = (evt: KeyboardEvent) => {
-            if (evt.key === 'Alt') {
-                setShow(false);
-            }
-            // console.log(evt.key);
-        };
-        document.addEventListener('keydown', down);
-        document.addEventListener('keyup', up);
-        return () => {
-            document.removeEventListener('keydown', down);
-            document.removeEventListener('keyup', up);
-        };
-    }, []);
+        setShow(false);
+        const tid = setTimeout(() => {
+            setShow(true);
+        }, 200);
+        return () => clearTimeout(tid);
+    }, [hoverLoc]);
 
     if (!hover || !show) return null;
 
@@ -160,19 +155,22 @@ const useHover = (show: boolean) => {
     );
     const store = useGetStore();
 
+    // return useSubscribe(() => {
+    //     const state = store.getState();
+    //     const results = store.getResults();
+    //     return (getHoverState(state, results));
+    // }, fn => [store.on('hover', fn), store.on('results', fn)], [])
+
     useEffect(() => {
         if (!show) return;
-
         const state = store.getState();
         const results = store.getResults();
         setState(getHoverState(state, results));
-
         const f = (state: NUIState) => {
             setState(getHoverState(state, store.getResults()));
         };
-
         const one = store.on('hover', f);
-        const two = store.on('hover', f);
+        const two = store.on('results', f);
         return () => {
             one();
             two();
