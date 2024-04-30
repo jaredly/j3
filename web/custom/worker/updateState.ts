@@ -257,6 +257,7 @@ export function updateState(
                         });
                     });
                 }
+                processUsages(usages, state, topForLoc);
 
                 continue;
             }
@@ -392,20 +393,7 @@ export function updateState(
                     hoverType(type),
                 );
             });
-            Object.entries(res.usages).forEach(([key, locs]) => {
-                if (!locs.length) {
-                    state.results!.tops[topForLoc[+key]].usages[+key] = [];
-                }
-                locs.forEach((loc) => {
-                    if (!state.results!.tops[topForLoc[loc]]) {
-                        if (loc !== -1) {
-                            console.warn('no top', topForLoc[loc], loc);
-                        }
-                        return;
-                    }
-                    add(state.results!.tops[topForLoc[loc]].usages, +key, loc);
-                });
-            });
+            processUsages(res.usages, state, topForLoc);
 
             // group.forEach((item) => {
             //     state.results?.tops[item.id].produce.push(
@@ -511,6 +499,27 @@ export function updateState(
     }
 
     return { ...state, nodes };
+}
+
+function processUsages(
+    usages: Record<number, number[]>,
+    state: State,
+    topForLoc: Record<number, number>,
+) {
+    Object.entries(usages).forEach(([key, locs]) => {
+        if (!locs.length) {
+            state.results!.tops[topForLoc[+key]].usages[+key] = [];
+        }
+        locs.forEach((loc) => {
+            if (!state.results!.tops[topForLoc[loc]]) {
+                if (loc !== -1) {
+                    console.warn('no top', topForLoc[loc], loc);
+                }
+                return;
+            }
+            add(state.results!.tops[topForLoc[loc]].usages, +key, loc);
+        });
+    });
 }
 
 function showExecOrder(tops: AsyncResults['tops'], one: Sortable, i: number) {

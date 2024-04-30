@@ -8,6 +8,7 @@
 - [x] gotta be able to delete an empty ns that's before you
 - [x] let's do hover on timeout, not on alt
 - [x] fix the longstanding issue with newlines in stringText
+- [ ] usage in plugins too pleeeease
 
 # THIH
 
