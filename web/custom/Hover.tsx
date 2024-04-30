@@ -19,7 +19,7 @@ import { CombinedResults } from './store/Store';
 
 export const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];
-    return got?.main?.node ?? got?.start?.node ?? got?.outside?.node;
+    return got?.main?.node ?? got?.outside?.node ?? got?.start?.node;
 };
 
 export const calc = (
@@ -98,7 +98,7 @@ export const Hover = ({}: {}) => {
                 style={{
                     position: 'absolute',
                     whiteSpace: 'pre-wrap',
-                    top: box.top + box.height + 5,
+                    top: box.bottom + 5,
                     left: box.left,
                     pointerEvents: 'none',
                     padding: 8,

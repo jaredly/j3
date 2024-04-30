@@ -1,4 +1,15 @@
 
+# Thinking more about thih
+
+- [ ] I should take a look at OutsideIn(X)
+  - oohhh so interesteing constraint: local let's can't be polymorphic anymore!! honestly I'm not super mad about it, you can always lift, bruh
+- [ ] can I change thih to put the (preds) in the state monad? Would that have any adverse effects? It seems like we're doing a lot of collecting...
+  - probably stick them in a `bag` so we're not doing endless `concat`s
+
+>> collapse should just hide children
+- [ ] BUG changing the "output" format doesn't immediately jog the things; I need it to
+
+
 #
 
 - [x] render readonly for sseearch results
@@ -9,6 +20,28 @@
 - [x] let's do hover on timeout, not on alt
 - [x] fix the longstanding issue with newlines in stringText
 - [ ] usage in plugins too pleeeease
+
+I worry ... that I've gotten algw-fast so nice
+... and then ... thih is so ... much less polished ...
+
+How .. hard will it be to add "predicates" to algw-fast?
+like, it should be doable, right? I'd much rather do that,
+than try to massage thih into shape ...
+
+Oh that's right:
+- Kinds
+and
+- Type Classes
+
+and ... I think I remember it being:
+- you can have type classes w/o HKT, but HKT doesn't make sense without type classes
+
+# So, Adding TYPE CLASSES to algw-fast
+
+- we need to keep track of `preds`, on the StateT. (it can be a `bag`)
+- type-env needs to have info on what's available.
+- StateT will also want to hang onto "... selected ... instance ... at fn call"
+- and ... schemes need to be wrapped in quals. Right?
 
 # THIH
 

@@ -648,7 +648,11 @@
 (typealias
     (State value)
         (StateT
-        (,, int (, type-record usage-record) (map string type))
+        (** next-idx
+            (array of types for all locations)
+            (array of usages)
+            (map of "value name" => "type"), the "subst" map. **)
+            (,, int (, type-record usage-record) (map string type))
             value))
 
 (typealias usage-record (, (array int) (array (, int int))))
@@ -731,21 +735,7 @@
     The "occurs check" prevents infinite types (like a subst from a : int -> a). **)
 
 (defn unify [t1 t2 l]
-    (err>>= (unify-inner t1 t2 l) (fn [e] (err (twrap (ttypes t1 t2) e))))
-        ;(let [
-        l1             (type-loc t1)
-        l2             (type-loc t2)
-        _              (trace
-                           [(tloc l)
-                               (tloc l1)
-                               (tloc l2)
-                               (ttext "unify")
-                               (tfmt t1 type-to-string-raw)
-                               (tfmt t2 type-to-string-raw)])
-        (, subst nidx) (unify-inner t1 t2 nidx l)
-        _              (trace
-                           [(tloc l) (tloc l1) (tloc l2) (ttext "unified") (tfmt subst show-subst)])]
-        (, subst nidx)))
+    (err>>= (unify-inner t1 t2 l) (fn [e] (err (twrap (ttypes t1 t2) e)))))
 
 (deftype type-error-t
     (terr string (array (, string int)))
@@ -1928,28 +1918,17 @@ map->
         (one v)      (f init v)
         (many items) (foldr init items (bag/fold f))))
 
+(def bag/to-list (bag/fold (fn [list a] [a ..list]) nil))
+
+(,
+    bag/to-list
+        [(, (many [empty (one 1) (many [(one 2) empty]) (one 10)]) [1 2 10])])
+
 (defn concat [one two]
     (match one
         []           two
         [one]        [one ..two]
         [one ..rest] [one ..(concat rest two)]))
-
-(defn bag/to-list [bag]
-    (match bag
-        (empty)     []
-        (one a)     [a]
-        (many bags) (foldr
-                        []
-                            bags
-                            (fn [res bag]
-                            (match bag
-                                (empty) res
-                                (one a) [a ..res]
-                                _       (concat (bag/to-list bag) res))))))
-
-(,
-    bag/to-list
-        [(, (many [empty (one 1) (many [(one 2) empty]) (one 10)]) [1 2 10])])
 
 (defn pat-names [pat]
     (match pat

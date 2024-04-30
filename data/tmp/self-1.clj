@@ -261,9 +261,9 @@ cons
         (, (@ (+ 2 3)) 5)
         (,
         (@
-            (match (pany)
-                (pany)      "any"
-                (pvar name) name))
+            (match (nil)
+                (nil)         "any"
+                (cons name _) name))
             "any")
         (, (@ "a${2}b") "a2b")
         (, (@ ((fn [a] (+ a 2)) 21)) 23)

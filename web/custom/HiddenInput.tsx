@@ -7,8 +7,7 @@ import {
 } from '../../src/state/clipboard';
 import { Path } from '../../src/state/path';
 import { clipboardPrefix, clipboardSuffix } from './ByHand';
-import { UIState, Action, NUIState } from './UIState';
-import { getRegNode } from './Hover';
+import { Action, NUIState } from './UIState';
 import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/parse';
 import { goRight } from '../../src/state/goRightUntil';

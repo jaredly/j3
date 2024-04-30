@@ -313,9 +313,9 @@ export const RenderNNode = (
                         ...(nnode.style ?? {}),
                     }}
                     ref={(node) => reg(node, idx, path, 'outside')}
-                    onMouseEnter={() =>
-                        dispatch?.({ type: 'hover', path: props.hoverPath })
-                    }
+                    // onMouseEnter={() =>
+                    //     dispatch?.({ type: 'hover', path: props.hoverPath })
+                    // }
                 >
                     {/* {props.debug ? nnode.type : null} */}
                     {(props.firstLineOnly && firstRenderable != -1
@@ -368,6 +368,12 @@ export const RenderNNode = (
                         ...selectStyle,
                         ...errorStyle,
                     }}
+                    onMouseEnter={() =>
+                        dispatch?.({ type: 'hover', path: props.hoverPath })
+                    }
+                    onMouseLeave={() => {
+                        dispatch?.({ type: 'hover', path: [] });
+                    }}
                 >
                     {nnode.text}
                 </span>
@@ -394,12 +400,11 @@ export const RenderNNode = (
                         ...errorStyle,
                     }}
                     onMouseEnter={() =>
-                        dispatch?.({
-                            type: 'hover',
-                            path: props.hoverPath,
-                            // path.concat({ idx, type: 'start' }),
-                        })
+                        dispatch?.({ type: 'hover', path: props.hoverPath })
                     }
+                    onMouseLeave={() => {
+                        dispatch?.({ type: 'hover', path: [] });
+                    }}
                 >
                     {nnode.text}
                 </span>
@@ -482,6 +487,9 @@ export const RenderNNode = (
                     onMouseEnter={() =>
                         dispatch?.({ type: 'hover', path: props.hoverPath })
                     }
+                    onMouseLeave={() => {
+                        dispatch?.({ type: 'hover', path: [] });
+                    }}
                     onClick={(evt) => {
                         if (evt.metaKey) {
                             evt.stopPropagation();
@@ -548,9 +556,9 @@ export const RenderNNode = (
                             flexDirection: 'column',
                             // gap: '0 8px',
                         }}
-                        onMouseEnter={() =>
-                            dispatch?.({ type: 'hover', path: props.hoverPath })
-                        }
+                        // onMouseEnter={() =>
+                        //     dispatch?.({ type: 'hover', path: props.hoverPath })
+                        // }
                     >
                         {nnode.firstLine.map((node, i) => (
                             <RenderNNode {...props} nnode={node} key={i} />
@@ -604,9 +612,9 @@ export const RenderNNode = (
                         display: 'grid',
                         // gap: '0 8px'
                     }}
-                    onMouseEnter={() =>
-                        dispatch?.({ type: 'hover', path: props.hoverPath })
-                    }
+                    // onMouseEnter={() =>
+                    //     dispatch?.({ type: 'hover', path: props.hoverPath })
+                    // }
                 >
                     {nnode.firstLine.length ? (
                         <span
@@ -680,9 +688,9 @@ export const RenderNNode = (
         case 'indent':
             return (
                 <span
-                    onMouseEnter={() =>
-                        dispatch?.({ type: 'hover', path: props.hoverPath })
-                    }
+                    // onMouseEnter={() =>
+                    //     dispatch?.({ type: 'hover', path: props.hoverPath })
+                    // }
                     style={{ display: 'inline-block', paddingLeft: 10 }}
                 >
                     <RenderNNode {...props} nnode={nnode.child} />
