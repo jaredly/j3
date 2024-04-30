@@ -42,10 +42,14 @@ export const Outside = () => {
                         top: 0,
                         backgroundColor: 'black',
                         zIndex: 100,
+                        display: 'flex',
+                        flexDirection: 'row',
+                        overflow: 'auto',
+                        alignItems: 'center',
                     }}
                 >
                     {recent.map(({ title }) => (
-                        <span key={title}>
+                        <span key={title} style={{ minWidth: 'max-content' }}>
                             <a
                                 href={'#' + title}
                                 style={{

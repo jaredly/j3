@@ -226,32 +226,40 @@ export function handleBackspace(
     }
 
     const gpath = fullPath[fullPath.length - 3];
-    if (
-        ppath.type === 'ns-top' &&
-        gpath.type === 'ns' &&
-        atStart &&
-        node.type === 'blank'
-    ) {
-        // debugger;
-        // if (!isEmpty) {
-        //     return goLeft(selection.start, map, nsMap, cards);
-        // }
-        console.log('back', node);
-        const left = goLeft(selection.start, map, nsMap, cards);
-        if (!left) return;
+    if (ppath.type === 'ns-top' && gpath.type === 'ns' && atStart) {
         const ns = nsMap[gpath.idx] as RealizedNamespace;
         const children = ns.children.slice();
-        const cid = children.splice(children.indexOf(gpath.child), 1)[0];
-        // STOPSHIP cleanup the thing that was removed
-        return {
-            type: 'update',
-            map: { [flast.idx]: null },
-            selection: left.selection,
-            nsMap: {
-                [cid]: null,
-                [ns.id]: { ...ns, children },
-            },
-        };
+        const at = children.indexOf(gpath.child);
+        if (at > 0 && map[nsMap[children[at - 1]].top].type === 'blank') {
+            const toRemove = children[at - 1];
+            children.splice(at - 1, 1);
+            return {
+                type: 'update',
+                map: { [nsMap[toRemove].top]: null },
+                selection: fullPath,
+                nsMap: {
+                    [toRemove]: null,
+                    [ns.id]: { ...ns, children },
+                },
+            };
+        }
+
+        if (node.type === 'blank') {
+            console.log('back', node);
+            const left = goLeft(selection.start, map, nsMap, cards);
+            if (!left) return;
+            const cid = children.splice(children.indexOf(gpath.child), 1)[0];
+            // STOPSHIP cleanup the thing that was removed
+            return {
+                type: 'update',
+                map: { [flast.idx]: null },
+                selection: left.selection,
+                nsMap: {
+                    [cid]: null,
+                    [ns.id]: { ...ns, children },
+                },
+            };
+        }
     }
 
     if (ppath.type === 'ns' && atStart) {
