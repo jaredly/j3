@@ -81,7 +81,7 @@ export const JumpTo = ({
                 const got = store.getState().regs[loc];
                 const node = got?.main ?? got?.outside;
                 if (!node) return;
-                node.node.style.backgroundColor = 'red';
+                // node.node.style.backgroundColor = 'red';
             }}
             onClick={() => {
                 console.log('jumping', loc);
@@ -97,7 +97,7 @@ export const JumpTo = ({
                 const got = store.getState().regs[loc];
                 const node = got?.main ?? got?.outside;
                 if (!node) return;
-                node.node.style.backgroundColor = 'unset';
+                // node.node.style.backgroundColor = 'unset';
             }}
         >
             {children}

@@ -2708,8 +2708,19 @@ filter
         (** Todo: track usage of the class declaration **)
         what     (map-> (fn [(,, name loc f)] (infer ce assumps f)) fns)
         free     (<- (foldl empty (map (fn [(isin _ t)] (find-free t)) preds) bag/and))
-        free-map ]
-        (<- (full-env type-env/nil (add-inst preds (isin name type) ce) []))))
+        free-map (<-
+                     (map/from-list
+                         (map (fn [(,, name _ kind)] (, name kind)) (bag/to-list free))))]
+        (<-
+            (full-env
+                type-env/nil
+                    (add-inst
+                    (map
+                        (fn [(isin name type)] (isin name (replace-free free-map type)))
+                            preds)
+                        (isin name (replace-free free-map type))
+                        ce)
+                    []))))
 
 (defn find-free [type]
     (match type
@@ -2831,7 +2842,7 @@ filter
             (definstance (=> (pretty a) (pretty (, a string)))
                 {show-pretty (fn [a] "lol")}))
             (@@ (show-pretty (, () "lol")))]
-            "Class Env\n> Instances\n - pretty \n   - a ∈ pretty |=> (, a string) ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int")
+            "Class Env\n> Instances\n - pretty \n   - (var a *) ∈ pretty |=> (, (var a *) string) ∈ pretty\n   - () ∈ pretty\n - ord \n   - int ∈ ord\n - num \n   - int ∈ num\n> Defaults\n - int")
         (,
         [(@@
             (definstance (=> (pretty a) (pretty (array a))) {show-pretty (fn [v] "Lol")}))

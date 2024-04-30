@@ -499,7 +499,7 @@ export function handleBackspace(
     if (node.type === 'blank') {
         if (ppath.type === 'annot-annot' && parent.type === 'annot') {
             const { update, nsMap: upNs } = replacePath(
-                fullPath,
+                fullPath.slice(0, -2),
                 parent.target,
                 map,
                 nsMap,

@@ -195,7 +195,7 @@ export const fnsEvaluator = (
             if (idx != null) {
                 withTracing(traceMap, idx, san.$setTracer, env);
             } else {
-                env.values.$setTracer(null);
+                san.$setTracer(null);
             }
         },
 
