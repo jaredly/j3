@@ -1852,7 +1852,7 @@
 (defn infer/pats [pats]
     (let-> [psasts (map-> infer/pat pats)]
         (let [as (concat (map (fn [(, as' _)] as') psasts)) ts (map (fn [(, _ t)] t) psasts)]
-            (ti-return (, as ts)))))
+            (<- (, as ts)))))
 
 (defn get-constructor [name l]
     (let-> [tenv <-tenv]
@@ -1879,22 +1879,11 @@
         []               (, [] [])
         [(, a b) ..rest] (let [(, left right) (unzip rest)] (, [a ..left] [b ..right]))))
 
-map->
-
 (defn infer/expr [ce as expr]
-    (let-> [
-        old   (reset-preds-> empty)
-        t     (infer/expr-inner ce as expr)
-        preds (reset-preds-> old)]
-        (<- (, (bag/to-list preds) t))))
-
-(defn infer/expr-inner [ce as expr]
     (match expr
         (evar name l)            (let-> [sc (ok-> (find-scheme name as l)) t (fresh-inst-rec sc)] (<- t))
         (estr first templates l) (let-> [
-                                     types  (map->
-                                                (infer/expr-inner ce as)
-                                                    (map (fn [(,, expr _ _)] expr) templates))
+                                     types  (map-> (infer/expr ce as) (map (fn [(,, expr _ _)] expr) templates))
                                      types' (map->
                                                 (fn [_]
                                                     (fresh-inst-rec
@@ -1910,17 +1899,17 @@ map->
         (equotquot cst int)      (<- (star-con "cst"))
         (eapp target args l)     (match args
                                      [arg]        (let-> [
-                                                      target-type (infer/expr-inner ce as target)
-                                                      arg-type    (infer/expr-inner ce as arg)
+                                                      target-type (infer/expr ce as target)
+                                                      arg-type    (infer/expr ce as arg)
                                                       result-var  (new-tvar star)
                                                       _           (unify (tfn arg-type result-var) target-type)]
                                                       (<- result-var))
-                                     [one ..rest] (infer/expr-inner ce as (eapp (eapp target [one] l) rest l)))
-        (elambda pats body l)    (infer/expr-inner
+                                     [one ..rest] (infer/expr ce as (eapp (eapp target [one] l) rest l)))
+        (elambda pats body l)    (infer/expr
                                      ce
                                          as
                                          (elet (, [] [[(, "lambda-arg" [(, pats body)])]]) (evar "lambda-arg" l) l))
-        (ematch target cases l)  (infer/expr-inner
+        (ematch target cases l)  (infer/expr
                                      ce
                                          as
                                          (elet
@@ -1929,15 +1918,16 @@ map->
                                              l))
         (elet bindings body l)   (let-> [
                                      (, ps as') (infer/binding-group ce as bindings)
-                                     t          (infer/expr-inner ce (concat [as' as]) body)
+                                     t          (infer/expr ce (concat [as' as]) body)
                                      ()         (preds-> (many [(many (map one ps))]))]
                                      (<- t))))
 
 (defn infer/alt [ce as (, pats body)]
     (let-> [
         (, as' ts) (infer/pats pats)
-        t          (infer/expr-inner ce (concat [as' as]) body)]
-        (let [res-type (foldr t ts (fn [res arg] (tfn arg res)))] (<- res-type))))
+        body       (infer/expr ce (concat [as' as]) body)]
+        (let [res-type (foldr body ts (fn [res arg] (tfn arg res)))]
+            (<- res-type))))
 
 (defn infer/alts [ce as alts t]
     (let-> [
@@ -1948,15 +1938,18 @@ map->
         (<- (bag/to-list preds))))
 
 (defn infer/expl [ce as (,, i sc alts)]
-    (let-> [(=> qs t) (fresh-inst sc) ps (infer/alts ce as alts t) s (get-subst)]
+    (let-> [
+        (=> qs t) (fresh-inst sc)
+        preds     (infer/alts ce as alts t)
+        subst     (get-subst)]
         (let [
-            qs' (preds/apply s qs)
-            t'  (type/apply s t)
+            qs' (preds/apply subst qs)
+            t'  (type/apply subst t)
             fs  (set/to-list
-                    (foldr1 set/merge (map assump/tv (map (assump/apply s) as))))
+                    (foldr1 set/merge (map assump/tv (map (assump/apply subst) as))))
             gs  (without (set/to-list (type/tv t')) fs tyvar=)
             sc' (quantify gs (=> qs' t'))
-            ps' (filter (fn [x] (not (entail ce qs' x))) (preds/apply s ps))]
+            ps' (filter (fn [x] (not (entail ce qs' x))) (preds/apply subst preds))]
             (let-> [(, ds rs) ((split ce fs gs ps'))]
                 (if (!= sc sc')
                     (<-err (, "signature too general" []))
@@ -1998,7 +1991,7 @@ map->
                                 (let [
                                     gs'  (without gs (set/to-list (preds/tv rs)) tyvar=)
                                     scs' (map (fn [x] (quantify gs' (=> [] x))) ts')]
-                                    (, (+++ ds rs) (zipWith !>! identifiers scs')))
+                                    (, (concat [ds rs]) (zipWith !>! identifiers scs')))
                                     (let [scs' (map (fn [x] (quantify gs (=> rs x))) ts')]
                                     (, ds (zipWith !>! identifiers scs')))))))))))
 
