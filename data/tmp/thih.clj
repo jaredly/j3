@@ -1935,16 +1935,17 @@ map->
 
 (defn infer/alt [ce as (, pats body)]
     (let-> [
-        old        (reset-preds-> empty)
         (, as' ts) (infer/pats pats)
-        ps         (reset-preds-> old)
-        (, qs t)   (infer/expr ce (concat [as' as]) body)]
-        (let [res-type (foldr t ts (fn [res arg] (tfn arg res)))]
-            (<- (, (concat [(bag/to-list ps) qs]) res-type)))))
+        t          (infer/expr-inner ce (concat [as' as]) body)]
+        (let [res-type (foldr t ts (fn [res arg] (tfn arg res)))] (<- res-type))))
 
 (defn infer/alts [ce as alts t]
-    (let-> [psts ((map-> (infer/alt ce as) alts)) () (do-> (unify t) (map snd psts))]
-        (<- (concat (map fst psts)))))
+    (let-> [
+        old   (reset-preds-> empty)
+        psts  ((map-> (infer/alt ce as) alts))
+        ()    (do-> (unify t) psts)
+        preds (reset-preds-> old)]
+        (<- (bag/to-list preds))))
 
 (defn infer/expl [ce as (,, i sc alts)]
     (let-> [(=> qs t) (fresh-inst sc) ps (infer/alts ce as alts t) s (get-subst)]
