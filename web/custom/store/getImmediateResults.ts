@@ -83,6 +83,7 @@ export type ImmediateResults<Stmt> = {
             // so we can know what individual MNodes to update, e.g.
             // if the "error status" changed.
             parsed?: boolean;
+            display?: boolean;
         }
     >;
 };
@@ -91,6 +92,7 @@ const allChanged = {
     meta: true,
     parsed: true,
     plugin: true,
+    display: true,
     source: true,
 };
 
@@ -139,6 +141,7 @@ export const getImmediateResults = (
         const ncache = results.nodes[top.ns.id];
 
         changes.plugin = ncache.ns.plugin !== top.ns.plugin;
+        changes.display = ncache.ns.display !== top.ns.display;
         ncache.ns = top.ns;
 
         // Source change!

@@ -172,6 +172,7 @@ const getItems = (
             (id): MenuItem => ({
                 type: 'action',
                 name: '> ' + (id === null ? 'Default' : id),
+                selected: ns.display?.id == id,
                 action() {
                     store.dispatch({
                         type: 'ns',

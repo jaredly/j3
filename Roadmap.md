@@ -6,8 +6,8 @@
 - [ ] can I change thih to put the (preds) in the state monad? Would that have any adverse effects? It seems like we're doing a lot of collecting...
   - probably stick them in a `bag` so we're not doing endless `concat`s
 
->> collapse should just hide children
-- [ ] BUG changing the "output" format doesn't immediately jog the things; I need it to
+- [x] collapse should just hide children
+- [x] BUG changing the "output" format doesn't immediately jog the things; I need it to
 
 
 #

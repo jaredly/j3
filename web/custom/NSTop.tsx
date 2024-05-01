@@ -176,7 +176,7 @@ function NSTop({
                                     ns={ns}
                                     debug={false}
                                     idx={ns.top}
-                                    firstLineOnly={ns.collapsed}
+                                    // firstLineOnly={ns.collapsed}
                                     path={path.concat([
                                         { type: 'ns-top', idx: ns.id },
                                     ])}
@@ -186,7 +186,7 @@ function NSTop({
                                     key={ns.top}
                                     idx={ns.top}
                                     debug={debug.ids}
-                                    firstLineOnly={ns.collapsed}
+                                    // firstLineOnly={ns.collapsed}
                                     path={path.concat([
                                         { type: 'ns-top', idx: ns.id },
                                     ])}

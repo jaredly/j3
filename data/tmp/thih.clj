@@ -1691,38 +1691,51 @@
 (** ## Type inference state **)
 
 (typealias
-    (TI' value)
+    (State value)
+        (** nidx
+        types (recording what locs have what type)
+        tenv (current type environment, so I don't have to pass it around...)
+        subst (the current subst! adding a new subst uses compose-subst)
+        predssss (the predicates we are collecting) **)
         (StateT
-        (,,, int (array (, int type)) type-env (map tyvar type))
+        (, int (array (, int type)) type-env (map tyvar type) (array pred))
             value))
 
-(def <-idx (let-> [(,,, idx _ _ _) <-state] (<- idx)))
-
-(def <-subst (let-> [(,,, _ _ _ subst) <-state] (<- subst)))
-
-(def <-tenv (let-> [(,,, _ _ tenv _) <-state] (<- tenv)))
-
-(defn tenv-> [tenv]
-    (let-> [(,,, a b _ d) <-state _ (state-> (,,, a b tenv d))] (<- ())))
+(def <-idx (let-> [(, idx _) <-state] (<- idx)))
 
 (defn idx-> [idx]
-    (let-> [(,,, _ b c d) <-state _ (state-> (,,, idx b c d))] (<- ())))
+    (let-> [(, _ rest) <-state _ (state-> (, idx rest))] (<- ())))
+
+(def <-types (let-> [(, _ types _) <-state] (<- types)))
 
 (defn record-> [loc type]
     (let-> [
-        (,,, idx types tenv subst) <-state
-        _                          (state-> (,,, idx [(, loc type) ..types] tenv subst))]
+        (, idx types rest) <-state
+        _                  (state-> (, idx [(, loc type) ..types] rest))]
         (<- ())))
 
-(def <-types (let-> [(,,, _ types _ _) <-state] (<- types)))
+(def <-tenv (let-> [(, _ _ tenv _) <-state] (<- tenv)))
+
+(defn tenv-> [tenv]
+    (let-> [(, a b _ d) <-state _ (state-> (, a b tenv d))] (<- ())))
+
+(def <-subst (let-> [(, _ _ _ subst _) <-state] (<- subst)))
 
 (defn subst-> [new-subst]
     (let-> [
-        (,,, idx types tenv subst) <-state
-        _                          (state-> (,,, idx types tenv (compose-subst new-subst subst)))]
+        (, idx types tenv subst rest) <-state
+        _                             (state-> (, idx types tenv (compose-subst new-subst subst) rest))]
         (<- ())))
 
-(def state/nil (,,, 0 [] type-env/nil map/nil))
+(def <-preds (let-> [(, _ _ _ _ preds) <-state] (<- preds)))
+
+(defn preds-> [preds]
+    (let-> [
+        (, a b c d current) <-state
+        _                   (state-> (, a b c d (bag/and current preds)))]
+        (<- ())))
+
+(def state/nil (, 0 [] type-env/nil map/nil empty))
 
 (defn run/nil-> [x] (run-> x state/nil))
 
@@ -1999,7 +2012,7 @@ map->
                        (, qs as'') (infer/seq ti ce (+++ as' as) bss)]
                        (<- (, (+++ ps qs) (+++ as'' as'))))))
 
-(defn run/tenv-> [tenv ti] (run-> ti (,,, 0 [] tenv map/nil)))
+(defn run/tenv-> [tenv ti] (run-> ti (, 0 [] tenv map/nil empty)))
 
 (defn infer/program [ce as bindgroups]
     (let-> [
@@ -2378,7 +2391,7 @@ map->
             (map (fn [(, loc name)] "${name} (${(int-to-string loc)})") items))}")
 
 (def program-results->s
-    (fn [(, (,,, a types tenv subst) result)]
+    (fn [(, (, a types tenv subst) result)]
         (match result
             (ok b)  (join "\n" (map assump->s b))
             (err e) "Error! ${(type-error->s e)}")))
@@ -3273,7 +3286,7 @@ foldl
                     _                    (none)))
                 (fn [(full-env tenv ce assumps) stms]
                 (let [
-                    (, (,,, _ types _ _) result) (run/tenv-> tenv (infer-stmtss ce assumps stms))]
+                    (, (, _ types _ _) result) (run/tenv-> tenv (infer-stmtss ce assumps stms))]
                     (,, result types (, [] [])))))
             (analysis
             externals-stmt

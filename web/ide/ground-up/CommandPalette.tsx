@@ -427,7 +427,7 @@ const getCommands = (
 
     if (state.highlight?.length) {
         const node = state.map[state.highlight[0]];
-        const name = node.type === 'identifier' ? node.text : '??';
+        const name = node?.type === 'identifier' ? node.text : '??';
 
         commands.push({
             type: 'plain',
@@ -436,21 +436,23 @@ const getCommands = (
                 const pathFor = collectPaths(state);
                 dispatch({
                     type: 'select',
-                    at: state.highlight!.map((idx): Cursor => {
-                        const paths = pathFor(idx);
-                        if (!paths.length)
-                            throw new Error(`no path for ${idx}`);
-                        return {
-                            start: [
-                                ...paths[0].slice(0, -1),
-                                { type: 'start', idx },
-                            ],
-                            end: [
-                                ...paths[0].slice(0, -1),
-                                { type: 'end', idx },
-                            ],
-                        };
-                    }),
+                    at: state
+                        .highlight!.map((idx): Cursor | null => {
+                            const paths = pathFor(idx);
+                            if (!paths.length) return null;
+                            // throw new Error(`no path for ${idx}`);
+                            return {
+                                start: [
+                                    ...paths[0].slice(0, -1),
+                                    { type: 'start', idx },
+                                ],
+                                end: [
+                                    ...paths[0].slice(0, -1),
+                                    { type: 'end', idx },
+                                ],
+                            };
+                        })
+                        .filter(filterNulls),
                 });
             },
         });
@@ -462,14 +464,18 @@ const getCommands = (
                 const pathFor = collectPaths(state);
                 setSearchResults({
                     term: { type: 'references', name },
-                    results: state.highlight!.map((idx) => {
-                        const path = pathFor(idx);
-                        if (!path.length)
-                            throw new Error(
-                                `cant get path for highlight ${idx}`,
-                            );
-                        return { path: path[0], idx };
-                    }),
+                    results: state
+                        .highlight!.map((idx) => {
+                            const path = pathFor(idx);
+                            if (!path.length) {
+                                return;
+                            }
+                            // throw new Error(
+                            //     `cant get path for highlight ${idx}`,
+                            // );
+                            return { path: path[0], idx };
+                        })
+                        .filter(filterNulls),
                 });
             },
         });

@@ -210,7 +210,12 @@ export const setupSyncStore = (
                 let changed = false;
                 const nodes: Record<number, NodeResults<any>> = {};
                 Object.entries(results.changes).forEach(([key, changes]) => {
-                    if (changes.meta || changes.parsed || changes.plugin) {
+                    if (
+                        changes.meta ||
+                        changes.parsed ||
+                        changes.plugin ||
+                        changes.display
+                    ) {
                         changed = true;
                         nodes[+key] = results.nodes[+key];
                     }
