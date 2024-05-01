@@ -1,19 +1,23 @@
-import React, { useMemo } from 'react';
+import React, {
+    useEffect,
+    useLayoutEffect,
+    useMemo,
+    useRef,
+    useState,
+} from 'react';
 import { Path } from '../../src/state/path';
 import { ProduceItem } from '../ide/ground-up/FullEvalator';
 import { Debug } from '../ide/ground-up/GroundUp';
 import { NSDragger } from './NSDragger';
 import { Drag, NsReg } from './NsReg';
 import { Render, RenderNNode } from './Render';
-import { NUIState, RealizedNamespace } from './UIState';
+import { RealizedNamespace } from './UIState';
 import { plugins } from './plugins';
 import { Store } from './store/Store';
 import { useExpanded, useGetStore } from './store/StoreCtx';
 import { useNamespace } from './store/useNamespace';
 import { useNode } from './store/useNode';
 import { RenderProps } from './types';
-import { ImmediateResults } from './store/getImmediateResults';
-import { WorkerResults } from './store/useSyncStore';
 import { RenderProduceItem } from './RenderProduceItem';
 
 const PluginRender = ({
@@ -55,46 +59,6 @@ const PluginRender = ({
             hoverPath={props.path}
             Recurse={Render}
         />
-    );
-};
-
-export const hasErrors = (
-    id: number,
-    state: NUIState,
-    {
-        results,
-        workerResults,
-    }: { results: ImmediateResults<any>; workerResults: WorkerResults },
-): boolean => {
-    const ns = state.nsMap[id] as RealizedNamespace;
-    if (!ns) {
-        console.warn(`trying to haserrors but no ns`);
-        return true;
-    }
-    const parsed = results.nodes[ns.id].parsed;
-    if (parsed?.type === 'failure') {
-        return true;
-    }
-    if (parsed?.type === 'success' && parsed.errors.length) {
-        return true;
-    }
-    if (Object.keys(workerResults.nodes[ns.id]?.errors ?? {}).length) {
-        return true;
-    }
-    if (
-        workerResults.nodes[ns.id]?.produce.some(
-            (p) =>
-                typeof p !== 'string' &&
-                (p.type === 'withjs' ||
-                    p.type === 'inference-error' ||
-                    p.type === 'error' ||
-                    p.type === 'eval'),
-        )
-    ) {
-        return true;
-    }
-    return ns.children.some((id) =>
-        hasErrors(id, state, { results, workerResults }),
     );
 };
 
@@ -192,31 +156,10 @@ function NSTop({
                                     ])}
                                 />
                             )}
-                            {ns.plugin ? (
-                                <div
-                                    style={{
-                                        whiteSpace: 'pre',
-                                        fontSize: '80%',
-                                        // opacity: 0.5,
-                                        color: 'rgba(255,255,255,0.5)',
-                                    }}
-                                >
-                                    {renderProduce(produce)}
-                                </div>
-                            ) : ns.collapsed ? (
-                                '...'
-                            ) : (
-                                <div
-                                    style={{
-                                        whiteSpace: 'pre',
-                                        fontSize: '80%',
-                                        // opacity: 0.5,
-                                        color: 'rgba(255,255,255,0.5)',
-                                    }}
-                                >
-                                    {renderProduce(produce)}
-                                </div>
-                            )}
+                            <RenderProduce
+                                collapsed={ns.collapsed}
+                                value={produce}
+                            />
                         </div>
                     </>
                 ) : null}
@@ -263,10 +206,61 @@ const Wrapped = React.memo(NSTop, (prevProps, nextProps) => {
 
 export { Wrapped as NSTop };
 
-const renderProduce = (value: ProduceItem[]) => {
-    return value?.map((item, i) => (
-        <div key={i}>
-            <RenderProduceItem value={item} />
+const RenderProduce = ({
+    value,
+    collapsed,
+}: {
+    value: ProduceItem[];
+    collapsed?: boolean;
+}) => {
+    const [hover, setHover] = useState(false);
+    const [show, setShow] = useState(false);
+    const inner = useRef<HTMLDivElement>(null);
+    const [height, setHeight] = useState(null as null | number);
+
+    useEffect(() => {
+        if (!hover) return setShow(false);
+        let tid = setTimeout(() => setShow(true), 300);
+        return () => clearTimeout(tid);
+    }, [hover]);
+
+    useLayoutEffect(() => {
+        if (inner.current) {
+            setHeight(inner.current.getBoundingClientRect().height);
+        }
+    }, [value]);
+
+    const maxHeight = 40;
+
+    if (!value.length) return null;
+
+    if (collapsed) return <>...</>;
+    return (
+        <div
+            style={{
+                whiteSpace: 'pre',
+                fontSize: '80%',
+                color: 'rgba(255,255,255,0.5)',
+                maxHeight: show ? 'unset' : `${maxHeight}px`,
+                maxWidth: 1000,
+                overflowY: 'hidden',
+                overflowX: 'auto',
+                padding: 4,
+                border:
+                    height != null && height > maxHeight
+                        ? '1px solid #666'
+                        : 'unset',
+            }}
+            onMouseEnter={() => setHover(true)}
+            onMouseLeave={() => setHover(false)}
+        >
+            <div ref={inner}>
+                {value?.map((item, i) => (
+                    <div key={i}>
+                        <RenderProduceItem value={item} />
+                    </div>
+                ))}
+            </div>
         </div>
-    ));
+    );
 };

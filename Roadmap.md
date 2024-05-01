@@ -1,4 +1,45 @@
 
+- [x] DEFAULT COLLAPSE MODE should be 1-line
+  with "hover to see the whole thing in a popover"
+  and then you can "pin" the output to make it take up more space.
+  That will help tremendously with the jank of moving everything around.
+
+# I ... had a thought
+what if ... I not only make this env multi-compiler
+but also ... multi syntax?
+Like, I love my structured editor
+but how cool would it be to be able to self-host all the way down?
+That is to say, to have the javascript host be in "toplevels" (edited by codemirror probably)?
+Wouldn't that be cool?
+It would allow me to do my literate programming dealio, all the way down. Which I would definitely like.
+So I could tell the whole story in the same medium.
+
+# Can I figure out Rose?
+
+- [ ] 'labeled type' is an element of `type`
+- [ ] and would probably have a `kind` of `row`?
+- [ ] needs predicates
+  - "containment" (iscontainedby v1 v2)
+    -> expands v2 to include everything in v1? right?
+  - "combination" (combine fields1 fields2 fields3)
+    -> if all are defined, we just do checks (and unify subitems I guess)
+    -> if f3 is a variable, can just iterate fields1 and fields2
+    -> if f1 or f2 are variables, we find the different btw f1 and f3
+    -> if we have multiple variables ... then we're probably not constrained enough?
+
+QUESTION
+can I use predicates to get the `lacks` thing going?
+
+sooo there's the other way to do it
+which is with a special type constructor ... right?
+
+OK so the story is
+let's deal with type classes first, as I have a concrete implementation
+THEN once I have constraints that make sense
+AND kinds added to the lang
+I can mess with rows, using the kinds and probably also the constraints
+
+
 # Thinking more about thih
 
 - [ ] I should take a look at OutsideIn(X)
@@ -8,7 +49,10 @@
 
 - [x] collapse should just hide children
 - [x] BUG changing the "output" format doesn't immediately jog the things; I need it to
-- [ ] add a 'show type env' debug button. and a type_env_to_string fn
+- [x] add a 'show type env' debug button. and a type_env_to_string fn
+
+OK FOLKS
+at this point, I'm ~confident that I can just slap predicates on
 
 
 #

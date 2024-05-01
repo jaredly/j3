@@ -5,7 +5,7 @@ import { isAncestor } from './CardRoot';
 import { Drag } from './NsReg';
 import { NSMenu } from './NSMenu';
 import { useGetStore, useSubscribe } from './store/StoreCtx';
-import { hasErrors } from './NSTop';
+import { hasErrors } from './hasErrors';
 
 export const NSDragger = ({
     ns,
