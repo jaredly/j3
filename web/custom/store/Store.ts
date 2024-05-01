@@ -148,13 +148,16 @@ export const adaptiveBounce = (fn: () => void) => {
 };
 
 const nope = () => {
-    throw new Error('noop');
+    console.warn('nope');
+    return null;
 };
 
 export const noopStore: Store = {
     setDebug() {},
     dispatch: nope,
-    getEvaluator: nope,
+    getEvaluator() {
+        return null;
+    },
     getResults: () => ({
         results: blankInitialResults(),
         workerResults: {
@@ -164,8 +167,14 @@ export const noopStore: Store = {
         },
     }),
     getState: () => initialState(),
-    onChange: nope,
-    on: nope,
+    onChange() {
+        console.warn('nope');
+        return () => {};
+    },
+    on() {
+        console.warn('nope');
+        return () => {};
+    },
     reg: nope,
 };
 

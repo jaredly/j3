@@ -1,10 +1,17 @@
 
 # js in your jerd
 
-- [ ] find an editor (CodeJar)
+- [x] find an editor (CodeJar)
+  - [x] make a very basic bootstrap
 - [ ] find a parser for analysis (typescript?)
 - [ ] do a type check maybee (typescript?)
+- [ ] ARH cmd-enter needs to make a new raw-codeeee
 
+soooo how would it be ... to .... allow me to ... evaluate js a little bit... yeah ok I will do that.
+so like
+'we can do a very little bit'
+-> maybeeee only toplevel (raw-code ....args)
+so that I can get the fixture test running
 
 #
 

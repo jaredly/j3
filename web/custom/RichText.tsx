@@ -21,6 +21,7 @@ import {
 import { Path } from '../store';
 import { useGetStore } from './store/StoreCtx';
 import { Reg } from './types';
+import { useAutoFocus } from './useAutoFocus';
 
 export const RichText = ({
     initial,
@@ -55,29 +56,7 @@ export const RichText = ({
     window.editor = editor;
     // const node = React.useRef<HTMLDivElement>(null);
 
-    React.useEffect(() => {
-        const state = store.getState();
-        const at = state.at[0]?.start;
-        const last = at[at.length - 1];
-        if (last.idx === idx && last.type === 'rich-text') {
-            // console.log('focusing', last, idx);
-            // node.current?.focus();
-            setTimeout(() => {
-                editor?.focus();
-            }, 100);
-        }
-
-        return store.on('selection', () => {
-            const state = store.getState();
-            const at = state.at[0]?.start;
-            const last = at[at.length - 1];
-            if (last.idx === idx && last.type === 'rich-text') {
-                // console.log('focusing 2', last, idx);
-                // node.current?.focus();
-                editor?.focus();
-            }
-        });
-    }, []);
+    useAutoFocus(store, idx, 'rich-text', editor.focus);
 
     // useEditorSelectionChange(() => {
     //     // console.log(editor.getSelection());
