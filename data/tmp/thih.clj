@@ -1819,6 +1819,10 @@
 (defn fresh-inst [(forall ks qt)]
     (let-> [ts (map-> new-tvar ks)] (<- (inst/qual ts inst/type qt))))
 
+(defn fresh-inst-rec [scheme]
+    (let-> [(=> preds t) (fresh-inst scheme) () (preds-> (many (map one preds)))]
+        (<- t)))
+
 (defn inst/type [types type]
     (match type
         (tapp l r loc) (tapp (inst/type types l) (inst/type types r) loc)
@@ -1889,21 +1893,17 @@ map->
 
 (defn infer/expr-inner [ce as expr]
     (match expr
-        (evar name l)            (let-> [
-                                     sc        (ok-> (find-scheme name as l))
-                                     (=> ps t) (fresh-inst sc)
-                                     ()        (preds-> (many (map one ps)))]
-                                     (<- t))
+        (evar name l)            (let-> [sc (ok-> (find-scheme name as l)) t (fresh-inst-rec sc)] (<- t))
         (estr first templates l) (let-> [
-                                     results        (map-> (infer/expr ce as) (map (fn [(,, expr _ _)] expr) templates))
-                                     (, ps types)   (<- (unzip results))
-                                     results'       (map->
-                                                        (fn [_]
-                                                            (fresh-inst (forall [star] (=> [(isin "pretty" (tgen 0 -1))] (tgen 0 -1)))))
-                                                            types)
-                                     (, ps' types') (<- (unzip (map (fn [(=> a b)] (, a b)) results')))
-                                     _              (map-> (fn [(, a b)] (unify a b)) (zip types types'))
-                                     ()             (preds-> (many [(many (map one (concat ps))) (many (map one (concat ps')))]))]
+                                     types  (map->
+                                                (infer/expr-inner ce as)
+                                                    (map (fn [(,, expr _ _)] expr) templates))
+                                     types' (map->
+                                                (fn [_]
+                                                    (fresh-inst-rec
+                                                        (forall [star] (=> [(isin "pretty" (tgen 0 -1))] (tgen 0 -1)))))
+                                                    types)
+                                     _      (map-> (fn [(, a b)] (unify a b)) (zip types types'))]
                                      (<- tstring))
         (eprim prim l)           (infer/prim prim)
         (equot _ l)              (<- (star-con "expr"))
@@ -1913,11 +1913,10 @@ map->
         (equotquot cst int)      (<- (star-con "cst"))
         (eapp target args l)     (match args
                                      [arg]        (let-> [
-                                                      (, ps target-type) (infer/expr ce as target)
-                                                      (, qs arg-type)    (infer/expr ce as arg)
-                                                      result-var         (new-tvar star)
-                                                      _                  (unify (tfn arg-type result-var) target-type)
-                                                      ()                 (preds-> (many [(many (map one ps)) (many (map one qs))]))]
+                                                      target-type (infer/expr-inner ce as target)
+                                                      arg-type    (infer/expr-inner ce as arg)
+                                                      result-var  (new-tvar star)
+                                                      _           (unify (tfn arg-type result-var) target-type)]
                                                       (<- result-var))
                                      [one ..rest] (infer/expr-inner ce as (eapp (eapp target [one] l) rest l)))
         (elambda pats body l)    (infer/expr-inner
@@ -1933,8 +1932,8 @@ map->
                                              l))
         (elet bindings body l)   (let-> [
                                      (, ps as') (infer/binding-group ce as bindings)
-                                     (, qs t)   (infer/expr ce (concat [as' as]) body)
-                                     ()         (preds-> (many [(many (map one ps)) (many (map one qs))]))]
+                                     t          (infer/expr-inner ce (concat [as' as]) body)
+                                     ()         (preds-> (many [(many (map one ps))]))]
                                      (<- t))))
 
 (defn infer/alt [ce as (, pats body)]
