@@ -38,9 +38,9 @@ export const analyzer = (fns: {
     names(stmt: Stmt): namesRes;
     externals_stmt(stmt: Stmt): namesRes;
     externals_expr(expr: Expr): namesRes;
-    stmt_size(stmt: Stmt): number;
-    expr_size(expr: Expr): number;
-    type_size(type: Type): number;
+    stmt_size?(stmt: Stmt): number;
+    expr_size?(expr: Expr): number;
+    type_size?(type: Type): number;
     locals_at?(loc: number): (stmt: Stmt) => arr<tuple<string, number>>;
 }): Analyze<Stmt, Expr, Type> => ({
     names: guard([], (stmt) => parseLocedName(fns.names(stmt))),
@@ -50,9 +50,9 @@ export const analyzer = (fns: {
     externalsExpr: guard([], (stmt) =>
         parseLocedName(fns.externals_expr(stmt)),
     ),
-    stmtSize: guard(-1, fns.stmt_size),
-    exprSize: guard(-1, fns.expr_size),
-    typeSize: guard(-1, fns.type_size),
+    stmtSize: fns.stmt_size ? guard(-1, fns.stmt_size) : () => null,
+    exprSize: fns.expr_size ? guard(-1, fns.expr_size) : () => null,
+    typeSize: fns.type_size ? guard(-1, fns.type_size) : () => null,
     localsAt: fns.locals_at
         ? (loc, stmt) => unwrapArray(fns.locals_at!(loc)(stmt)).map(unwrapTuple)
         : undefined,

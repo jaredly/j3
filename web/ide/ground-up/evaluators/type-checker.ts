@@ -172,6 +172,7 @@ export const typeChecker = (fns: {
     ) => (b: string) => { type: 'some'; 0: Type } | { type: 'none' };
     type_to_string(t: Type): string;
     type_to_cst?(t: Type): jcst;
+    env_to_string?(env: Env): string;
 }): Omit<
     TypeChecker<Env, Stmt, Expr, Type>,
     keyof Infer<Env, Stmt, Expr, Type>
@@ -191,6 +192,7 @@ export const typeChecker = (fns: {
     typeToCst: fns.type_to_cst
         ? (type) => fixDuplicateLocs(fromJCST(fns.type_to_cst!(type)))
         : undefined,
+    envToString: fns.env_to_string,
 });
 
 const getUsages = (data: InferExpr2<any>[2]) => {

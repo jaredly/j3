@@ -2,7 +2,7 @@
 
 (defn one [x] (show-pretty x))
 
-(definstance (pretty int) {show-pretty (fn [x] (+ 123 "${10}"))})
+(definstance (pretty (, int string)) {show-pretty (fn [x] "hello")})
 
 (defn map [f x]
     (match x
@@ -11,7 +11,7 @@
 
 (defn two [x y] (, (show y) (, (map show x) (show x))))
 
-(defn one [x] (fn s))
+(defn one [x] (f s))
 
 (** so, this should turn into (defn two [show-a x y] (, (map (tcls show show-a) x) ((tcls show (show-array show-a)) x)))
     right? tcls ... um lol it needs kind-level polymorphism? so we won't do that. we could ... do (.show show-a), if we had a record type.

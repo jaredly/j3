@@ -1,6 +1,5 @@
 import { MNode } from '../../types/mcst';
 import { Path, PathChild } from '../path';
-import { NNode } from './NNode';
 
 export type NNode =
     | { type: 'nest'; node: MNode; inner: NNode }

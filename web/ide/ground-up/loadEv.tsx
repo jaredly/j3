@@ -113,12 +113,7 @@ export const evaluatorFromText = (
                 ? compiler(data)
                 : undefined;
         const ann =
-            data['names'] &&
-            data['externals_stmt'] &&
-            data['externals_expr'] &&
-            data['stmt_size'] &&
-            data['expr_size'] &&
-            data['type_size']
+            data['names'] && data['externals_stmt'] && data['externals_expr']
                 ? analyzer(data)
                 : undefined;
         const infer =
@@ -132,8 +127,7 @@ export const evaluatorFromText = (
             data['env_nil'] &&
             data['add_stmt'] &&
             data['get_type'] &&
-            data['type_to_string'] &&
-            data['type_to_cst']
+            data['type_to_string']
                 ? { ...typeChecker(data), ...infer }
                 : undefined;
 
@@ -148,6 +142,7 @@ export const evaluatorFromText = (
             );
         }
 
+        console.log('going for it', data);
         return fnsEvaluator(id, parser, comp, ann, typeCheck, san);
     }
 

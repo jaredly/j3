@@ -47,6 +47,7 @@ export type TypeChecker<Env, Stmt, Expr, Type> = {
     typeForName(env: Env, name: string): Type | null;
     typeToString(type: Type): string;
     typeToCst?(type: Type): Node;
+    envToString?(env: Env): string;
 } & Infer<Env, Stmt, Expr, Type>;
 
 export type Compiler<Stmt, Expr> = {

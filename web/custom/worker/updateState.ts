@@ -267,7 +267,6 @@ export function updateState(
                 (g) => (nodes[g.id].parsed as SuccessParsed<any>).stmt,
             );
             let res;
-            // debugger;
             try {
                 res = state.evaluator.inference.infer(stmts, tenv);
             } catch (err) {
@@ -289,6 +288,15 @@ export function updateState(
                     tenv,
                     res.result.value.env,
                 );
+
+                if (state.evaluator.inference.envToString) {
+                    state.results.tops[group[0].id].produce.push({
+                        type: 'pre',
+                        text: state.evaluator.inference.envToString(
+                            res.result.value.env,
+                        ),
+                    });
+                }
 
                 state.results.groups[groupKey].typeFailed = false;
                 group.forEach((one) => {

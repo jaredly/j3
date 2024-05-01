@@ -8,6 +8,7 @@
 
 - [x] collapse should just hide children
 - [x] BUG changing the "output" format doesn't immediately jog the things; I need it to
+- [ ] add a 'show type env' debug button. and a type_env_to_string fn
 
 
 #

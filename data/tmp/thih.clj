@@ -1480,6 +1480,11 @@
                                                                          "overlapping instance: ${(pred->s inst-pred)} and ${(pred->s other)}")
                                                         _            (class-env (map/set classes class-name c) defaults))))))
 
+(defn just-this-class [(class-env classes _) name]
+    (match (map/get classes name)
+        (none)                  (fatal "class not found")
+        (some (, supers _ fns)) (class-env (map/set map/nil name (, supers [] fns)) [])))
+
 (defn apply-transformers [transformers env]
     (foldl env transformers (fn [env f] (f env))))
 
@@ -1738,6 +1743,8 @@
         _                   (state-> (, a b c d (bag/and current preds)))]
         (<- ())))
 
+(defn pred-list-> [list] (preds-> (many (map one list))))
+
 (def state/nil (, 0 [] type-env/nil map/nil empty))
 
 (defn run/nil-> [x] (run-> x state/nil))
@@ -1820,8 +1827,7 @@
     (let-> [ts (map-> new-tvar ks)] (<- (inst/qual ts inst/type qt))))
 
 (defn fresh-inst-rec [scheme]
-    (let-> [(=> preds t) (fresh-inst scheme) () (preds-> (many (map one preds)))]
-        (<- t)))
+    (let-> [(=> preds t) (fresh-inst scheme) () (pred-list-> preds)] (<- t)))
 
 (defn inst/type [types type]
     (match type
@@ -1917,9 +1923,8 @@
                                              (eapp (evar "match" l) [target] l)
                                              l))
         (elet bindings body l)   (let-> [
-                                     (, ps as') (infer/binding-group ce as bindings)
-                                     t          (infer/expr ce (concat [as' as]) body)
-                                     ()         (preds-> (many [(many (map one ps))]))]
+                                     as' (infer/binding-group ce as bindings)
+                                     t   (infer/expr ce (concat [as' as]) body)]
                                      (<- t))))
 
 (defn infer/alt [ce as (, pats body)]
@@ -1941,7 +1946,7 @@
     (let-> [
         (=> qs t) (fresh-inst sc)
         preds     (infer/alts ce as alts t)
-        subst     (get-subst)]
+        subst     <-subst]
         (let [
             qs' (preds/apply subst qs)
             t'  (type/apply subst t)
@@ -1962,11 +1967,11 @@
         (let [
             identifiers (map fst bindings)
             scs         (map toScheme type-vars)
-            as'         (+++ (zipWith !>! identifiers scs) assumps)
+            as'         (concat [(zipWith !>! identifiers scs) assumps])
             altss       (map snd bindings)]
             (let-> [
                 pss ((sequence (zipWith (infer/alts class-env as') altss type-vars)))
-                s   (get-subst)]
+                s   <-subst]
                 (let [
                     ps' (preds/apply s (concat pss))
                     ts' (map (type/apply s) type-vars)
@@ -1986,48 +1991,46 @@
                                           (foldr1 (intersect tyvar=) (map set/to-list vss))
                                           ps')
                                       )]
-                        (<-
-                            (if (restricted bindings)
-                                (let [
-                                    gs'  (without gs (set/to-list (preds/tv rs)) tyvar=)
-                                    scs' (map (fn [x] (quantify gs' (=> [] x))) ts')]
-                                    (, (concat [ds rs]) (zipWith !>! identifiers scs')))
-                                    (let [scs' (map (fn [x] (quantify gs (=> rs x))) ts')]
-                                    (, ds (zipWith !>! identifiers scs')))))))))))
+                        (if (restricted bindings)
+                            (let-> [
+                                gs'  (<- (without gs (set/to-list (preds/tv rs)) tyvar=))
+                                scs' (<- (map (fn [x] (quantify gs' (=> [] x))) ts'))
+                                ()   (pred-list-> (concat [ds rs]))]
+                                (<- (zipWith !>! identifiers scs')))
+                                (let-> [scs' (<- (map (fn [x] (quantify gs (=> rs x))) ts')) () (pred-list-> ds)]
+                                (<- (zipWith !>! identifiers scs'))))))))))
 
 (defn infer/binding-group [class-env as (, explicit implicits)]
     (let [
         expl-assumps (map (fn [(,, name scheme _)] (!>! name scheme)) explicit)]
         (let-> [
-            (, impl-preds impl-assumps) (infer/seq
-                                            infer/impls
-                                                class-env
-                                                (+++ expl-assumps as)
-                                                implicits)
-            expl-preds                  (map->
-                                            (infer/expl class-env (concat [impl-assumps expl-assumps as]))
-                                                explicit)]
-            (<-
-                (,
-                    (concat [impl-preds ..expl-preds])
-                        (concat [impl-assumps expl-assumps]))))))
+            impl-assumps (infer/seq
+                             infer/impls
+                                 class-env
+                                 (concat [expl-assumps as])
+                                 implicits)
+            expl-preds   (map->
+                             (infer/expl class-env (concat [impl-assumps expl-assumps as]))
+                                 explicit)
+            ()           (pred-list-> (concat expl-preds))]
+            (<- (concat [impl-assumps expl-assumps])))))
 
 (defn infer/seq [ti ce as assumptions]
     (match assumptions
-        []         (<- (, [] []))
-        [bs ..bss] (let-> [
-                       (, ps as')  (ti ce as bs)
-                       (, qs as'') (infer/seq ti ce (+++ as' as) bss)]
-                       (<- (, (+++ ps qs) (+++ as'' as'))))))
+        []         (<- [])
+        [bs ..bss] (let-> [as' (ti ce as bs) as'' (infer/seq ti ce (concat [as' as]) bss)]
+                       (<- (concat [as'' as'])))))
 
 (defn run/tenv-> [tenv ti] (run-> ti (, 0 [] tenv map/nil empty)))
 
 (defn infer/program [ce as bindgroups]
     (let-> [
-        (, preds assumps) (infer/seq infer/binding-group ce as bindgroups)
-        subst0            (get-subst)
-        reduced           (ok-> (reduce ce (preds/apply subst0 preds)))
-        subst             (ok-> (defaultSubst ce [] reduced))]
+        old     (reset-preds-> empty)
+        assumps (infer/seq infer/binding-group ce as bindgroups)
+        preds   (reset-preds-> old)
+        subst0  <-subst
+        reduced (ok-> (reduce ce (preds/apply subst0 (bag/to-list preds))))
+        subst   (ok-> (defaultSubst ce [] reduced))]
         (<- (map (assump/apply (compose-subst subst subst0)) assumps))))
 
 (** ## Type Classes Stuff **)
@@ -2045,7 +2048,7 @@
 
 (typealias ambiguity (, tyvar (array pred)))
 
-(defn ambiguities [ce known-variables preds]
+(defn ambiguities [known-variables preds]
     (map
         (fn [v]
             (,
@@ -2064,24 +2067,19 @@
         "realfloat"
         "realfrac"])
 
-(defn +++ [a b] (concat [a b]))
-
 (def stdClasses
-    (+++
-        ["eq"
-            "ord"
-            "show"
-            "read"
-            "pretty"
-            "bounded"
-            "enum"
-            "ix"
-            "functor"
-            "monad"
-            "monadplus"]
-            numClasses))
-
-(defn id [x] x)
+    ["eq"
+        "ord"
+        "show"
+        "read"
+        "pretty"
+        "bounded"
+        "enum"
+        "ix"
+        "functor"
+        "monad"
+        "monadplus"
+        ..numClasses])
 
 (defn candidates [ce (, v qs)]
     (let [
@@ -2124,7 +2122,7 @@
 
 (defn withDefaults [f ce known-variables predicates]
     (let [
-        vps (ambiguities ce known-variables predicates)
+        vps (ambiguities known-variables predicates)
         tss (map (candidates ce) vps)]
         (if (any is-empty tss)
             (err
@@ -2506,6 +2504,7 @@ filter
                                                                (filter (fn [(!>! n _)] (= n name)) assumps))))
         (stypealias name nl args type l)       (<- full-env/nil)
         (sdeftype name nl args constructors l) (infer-deftype (,,, name nl args constructors))
+        (sdefinstance _ _ _ _ _ _)             (infer-sinst ce assumps stmt)
         (sexpr body l)                         (let-> [_ (infer/program ce assumps [(, [] [[(, "it" [(, [] body)])]])])]
                                                    (<- full-env/nil))))
 
@@ -2744,28 +2743,26 @@ filter
                                   (map/from-list
                                       (map (fn [(,, name _ kind)] (, name kind)) (bag/to-list free))))
         (class-env classes _) (<- ce)
-        (, a b inst-fns)      (match (map/get classes name)
+        (, _ _ inst-fns)      (match (map/get classes name)
                                   (some cls) (<- cls)
                                   (none)     (<-err
                                                  (,
                                                      
                                                          "Trying to define an instance for a class that hasn't been defined"
                                                          [])))
-        what                  (map->
+        ()                    (do->
                                   (fn [(,, name loc f)]
                                       (match (assoc/get inst-fns name)
                                           (some fn-type) (let-> [
-                                                             preds (infer/program
-                                                                       ce
-                                                                           assumps
-                                                                           [(,
-                                                                           [(,,
-                                                                               name
-                                                                                   (forall [] (=> [] (inst/type [(replace-free free-map type)] fn-type)))
-                                                                                   [(, [] f)])]
-                                                                               [])])
-                                                             ;()
-                                                             ;(unify (inst/type [(replace-free free-map type)] fn-type) t)]
+                                                             _ (infer/program
+                                                                   ce
+                                                                       assumps
+                                                                       [(,
+                                                                       [(,,
+                                                                           name
+                                                                               (forall [] (=> [] (inst/type [(replace-free free-map type)] fn-type)))
+                                                                               [(, [] f)])]
+                                                                           [])])]
                                                              (<- ()))
                                           (none)         (<-err (, "Unknown instance function" [(, loc name)]))))
                                       fns)]
@@ -2777,7 +2774,7 @@ filter
                         (fn [(isin name type)] (isin name (replace-free free-map type)))
                             preds)
                         (isin name (replace-free free-map type))
-                        ce)
+                        (just-this-class ce name))
                     []))))
 
 (defn assoc/get [lst k]
@@ -2904,26 +2901,29 @@ filter
         [(@@ (definstance (pretty string) {show-pretty true}))]
             "Fatal runtime: Unable to unify -> Cant unify (fn [string] string) and bool\n - (fn [string [*]] string [*]) (-1)\n - bool [*] (-1)")
         (,
+        [(@@ (definstance (pretty string) {show-pretty (fn [v] "a")}))]
+            "Class Env\n> Instances\n - pretty \n   - string ∈ pretty\n   - show-pretty (fn [a] string)")
+        (,
         [(@@ (definstance (pretty string) {show-pretty (fn [v] "a string")}))
             (@@ (def x (show-pretty "")))
             (@@ (show-pretty ""))]
-            "Class Env\n> Instances\n - pretty \n   - string ∈ pretty\n   - () ∈ pretty\n   - show-pretty (fn [a] string)\n - ord \n   - int ∈ ord\n   - (no fns)\n - num \n   - int ∈ num\n   - (no fns)\n> Defaults\n - int\nAssumps\n - x: string")
+            "Class Env\n> Instances\n - pretty \n   - string ∈ pretty\n   - show-pretty (fn [a] string)\nAssumps\n - x: string")
         (,
         [(@@
             (definstance (pretty (, string string)) {show-pretty (fn [a] "pairr")}))
             (@@ (show-pretty (, "" "")))]
-            "Class Env\n> Instances\n - pretty \n   - (, string string) ∈ pretty\n   - () ∈ pretty\n   - show-pretty (fn [a] string)\n - ord \n   - int ∈ ord\n   - (no fns)\n - num \n   - int ∈ num\n   - (no fns)\n> Defaults\n - int")
+            "Class Env\n> Instances\n - pretty \n   - (, string string) ∈ pretty\n   - show-pretty (fn [a] string)")
         (,
         [(@@
             (definstance (=> (pretty a) (pretty (, a string)))
                 {show-pretty (fn [a] "lol")}))
             (@@ (show-pretty (, () "lol")))]
-            "Class Env\n> Instances\n - pretty \n   - (var a *) ∈ pretty |=> (, (var a *) string) ∈ pretty\n   - () ∈ pretty\n   - show-pretty (fn [a] string)\n - ord \n   - int ∈ ord\n   - (no fns)\n - num \n   - int ∈ num\n   - (no fns)\n> Defaults\n - int")
+            "Class Env\n> Instances\n - pretty \n   - (var a *) ∈ pretty |=> (, (var a *) string) ∈ pretty\n   - show-pretty (fn [a] string)")
         (,
         [(@@
             (definstance (=> (pretty a) (pretty (list a))) {show-pretty (fn [v] "Lol")}))
             (@@ (show-pretty [()]))]
-            "Class Env\n> Instances\n - pretty \n   - (var a *) ∈ pretty |=> (list (var a *)) ∈ pretty\n   - () ∈ pretty\n   - show-pretty (fn [a] string)\n - ord \n   - int ∈ ord\n   - (no fns)\n - num \n   - int ∈ num\n   - (no fns)\n> Defaults\n - int")])
+            "Class Env\n> Instances\n - pretty \n   - (var a *) ∈ pretty |=> (list (var a *)) ∈ pretty\n   - show-pretty (fn [a] string)")])
 
 foldl
 
@@ -3070,6 +3070,8 @@ foldl
             "Assumps\n - lol: a *; a ∈ pretty; (fn [a] string)")])
 
 (full-env->s builtin-full)
+
+20567
 
 (** ## Dependency analysis
     Needed so we can know when to do mutual recursion, as well as for sorting definitions by dependency order. **)
@@ -3264,7 +3266,8 @@ foldl
             (,,
                 (result (, full-env (array scheme)) type-error-t)
                     (array (, int type))
-                    usage-record))))
+                    usage-record))
+            (fn [full-env] string)))
 
 (deftype parser
     (parser
@@ -3276,7 +3279,7 @@ foldl
 (deftype evaluator (evaluator inferator analysis parser))
 
 ((eval
-    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer, 4: type_to_string, 5: get_type, 6: infer_stmts2},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: {0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile},\n }) => ({type: 'fns', \n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type,\n   parse_stmt, parse_expr, compile_stmt, compile, infer_stmts2 \n }) ")
+    "({0: {0: env_nil, 1: infer_stmts, 2: add_stmt, 3: infer, 4: type_to_string, 5: get_type, 6: infer_stmts2, 7: env_to_string},\n  1: {0: externals_stmt, 1: externals_expr, 2: names},\n  2: {0: parse_stmt, 1: parse_expr, 2: compile_stmt, 3: compile},\n }) => ({type: 'fns', \n   env_nil, infer_stmts, add_stmt, infer, externals_stmt, externals_expr, names, type_to_string, get_type,\n   parse_stmt, parse_expr, compile_stmt, compile, infer_stmts2, env_to_string \n }) ")
     (evaluator
         (inferator
             builtin-full
@@ -3295,7 +3298,8 @@ foldl
                 (fn [(full-env tenv ce assumps) stms]
                 (let [
                     (, (, _ types _ _) result) (run/tenv-> tenv (infer-stmtss ce assumps stms))]
-                    (,, result types (, [] [])))))
+                    (,, result types (, [] []))))
+                full-env->s)
             (analysis
             externals-stmt
                 (fn [expr] (bag/to-list (externals set/nil expr)))
