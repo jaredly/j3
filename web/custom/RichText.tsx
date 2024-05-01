@@ -56,7 +56,7 @@ export const RichText = ({
     window.editor = editor;
     // const node = React.useRef<HTMLDivElement>(null);
 
-    useAutoFocus(store, idx, 'rich-text', editor.focus);
+    useAutoFocus(store, idx, 'rich-text', () => editor.focus());
 
     // useEditorSelectionChange(() => {
     //     // console.log(editor.getSelection());

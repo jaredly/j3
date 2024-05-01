@@ -2,6 +2,9 @@
 
 (** Parser consumes (Node)s and produces (stmt /  expr) **)
 
+(** ## Prelude
+    Some basic handy functions **)
+
 (** cons = (a, b) => ({type: 'cons', 0: a, 1: b}) **)
 
 (** nil = {type: 'nil'} **)
@@ -55,23 +58,19 @@
 
 (** pair = (a, b) => ({type: ',', 0: a, 1: b}) **)
 
-(** c = {
-  prim: (prim, loc=-1) => ({type: 'eprim', 0: prim, 1: loc}),
-  int: (v, loc=-1) => ({type: 'pint', 0: v, 1: loc}),
-  bool: (v, loc=-1) => ({type: 'pbool', 0: v, 1: loc}),
-  evar: (text, loc=-1) => ({type: 'evar', 0: text, 1: loc}),
-  app: (target, arg, loc=-1) => ({type: 'eapp', 0: target, 1: arg, 2: loc}),
-  nil: l => c.evar('nil', l),
-  cons: (a, b, l) => c.app(c.app(c.evar('cons', l), a, l), b, l),
-  list: (values, l) => {
-    let v = c.nil(l)
-    for (let i=values.length-1;i>=0;i--) {
-      v = c.cons(values[i], v, l)
-    }
-    return v
-  },
-  
+(** foldr = (init, items, f) => items.length === 0 ? init : f(foldr(init, items.slice(1), f), items[0]) **)
+
+(** loop = (v, f) => f(v, n => loop(n, f)) **)
+
+(** makePairs = array => {
+  const res = [];
+  for (let i=0; i<array.length; i+=2) {
+    res.push([array[i], array[i + 1]]);
+  }
+  return res
 } **)
+
+(** ## Parser **)
 
 (** parsePrim = node => {
   const v = +node.text
@@ -82,6 +81,8 @@
     return c.prim(c.bool(node.text === 'true', node.loc), node.loc)
   }
 } **)
+
+(** ## Expressions **)
 
 (** parse = node => {
   switch (node.type) {
@@ -113,8 +114,19 @@
       }
       return res
     }
+    case 'array': {
+      if (!node.values.length) return c.evar('nil', node.loc)
+      let last = node.values[node.values.length - 1]
+      let res = last.type === 'spread'
+        ? parse(last.contents)
+        : c.cons(parse(last), c.nil(node.loc), node.loc)
+      for (let i=node.values.length - 2; i>=0; i--) {
+        res = c.cons(parse(node.values[i]), res)
+      }
+      return res
+    }
   }
-  return 'lol' + node.type
+  throw new Error(`cant parse ${JSON.stringify(node)}`)
 } **)
 
 (** forms = {
@@ -150,43 +162,35 @@
   ])}),
 } **)
 
-(** makePairs = array => {
-  const res = [];
-  for (let i=0; i<array.length; i+=2) {
-    res.push([array[i], array[i + 1]]);
-  }
-  return res
-} **)
-
-(** parsePat = node => {
-  switch (node.type) {
-    case 'identifier':
-      switch(node.text) {
-        case '_': return {type: 'pany', 0: node.loc}
-        case 'true': case 'false':
-          return {type: 'pprim', 0: {type: 'pbool', 0: node.text === 'true', 1: node.loc}, 1: node.loc}
-      }
-      const v = +node.text
-      if (!isNaN(v)) return {type: 'pprim', 0: {type: 'pint', 0: v, 1: node.loc}, 1: node.loc}
-      return {type: 'pvar', 0: node.text, 1: node.loc}
-    case 'string':
-      return {type: 'pstr', 0: node.first.text, 1: node.loc}
-    case 'list':
-      if (!node.values.length) return {type: 'pcon', 0: '()', 1: nil}
-      if (node.values[0].type !== 'identifier') throw new Error('pat exp must start with identifier')
-      return {type: 'pcon', 0: node.values[0].text, 1: arr(node.values.slice(1).map(parsePat))}
-  }
-} **)
-
-(** foldr = (init, items, f) => items.length === 0 ? init : f(foldr(init, items.slice(1), f), items[0]) **)
-
-(** loop = (v, f) => f(v, n => loop(n, f)) **)
-
-(** test = v => valueToString(parse(v)) **)
-
 (parse 1)
 
 (@ 12)
+
+(parse "hi${1}")
+
+(parse true)
+
+(parse [1 2 3])
+
+(** test = v => valueToString(parse(v)) **)
+
+(** c = {
+  prim: (prim, loc=-1) => ({type: 'eprim', 0: prim, 1: loc}),
+  int: (v, loc=-1) => ({type: 'pint', 0: v, 1: loc}),
+  bool: (v, loc=-1) => ({type: 'pbool', 0: v, 1: loc}),
+  evar: (text, loc=-1) => ({type: 'evar', 0: text, 1: loc}),
+  app: (target, arg, loc=-1) => ({type: 'eapp', 0: target, 1: arg, 2: loc}),
+  nil: l => c.evar('nil', l),
+  cons: (a, b, l) => c.app(c.app(c.evar('cons', l), a, l), b, l),
+  list: (values, l) => {
+    let v = c.nil(l)
+    for (let i=values.length-1;i>=0;i--) {
+      v = c.cons(values[i], v, l)
+    }
+    return v
+  },
+  
+} **)
 
 (,
     test
@@ -203,17 +207,115 @@
             "(ematch (evar \"x\" 161) [(, (pprim (pint 1 162) 162) (eprim (pint 2 163) 163)) (, (pstr \"hi\" 164) (eprim (pint 1 166) 166))] 157)")
         (,
         (@ (let [(, a b) c] d))
-            "(elet (pcon \",\" [(pvar \"a\" 182) (pvar \"b\" 184)]) (evar \"c\" 185) (evar \"d\" 186) 175)")])
+            "(elet (pcon \",\" [(pvar \"a\" 182) (pvar \"b\" 184)] 180) (evar \"c\" 185) (evar \"d\" 186) 175)")
+        (,
+        (@ (let [[a ..b] c] d))
+            "(elet (pcon \"cons\" [(pvar \"a\" 203) (pvar \"b\" 204)] 202) (evar \"c\" 208) (evar \"d\" 209) 196)")])
 
-(parse "hi${1}")
+(** ## Patterns **)
 
-(parse true)
+(** p = {
+  prim: (v, loc=-1) => ({type: 'pprim', 0: v, 1: loc}),
+  bool: (v, loc=-1) => ({type: 'pbool', 0: v, 1: loc}),
+  int: (v, loc=-1) => ({type: 'pint', 0: v, 1: loc}),
+  any: loc => ({type: 'pany', 0: loc}),
+  con: (name, args, loc) => ({type: 'pcon', 0: name, 1: arr(args), 2: loc}),
+  cons: (one, two, loc) => p.con('cons', [one, two], loc),
+  nil: loc => p.con('nil', [], loc),
+} **)
 
-(parse [1 2 3])
+(** parsePat = node => {
+  switch (node.type) {
+    case 'identifier':
+      switch(node.text) {
+        case '_': return p.any(node.loc)
+        case 'true': case 'false':
+          return p.prim(p.bool(node.text === 'true', node.loc), node.loc)
+      }
+      const v = +node.text
+      if (!isNaN(v)) return p.prim(p.int(v, node.loc), node.loc)
+      return {type: 'pvar', 0: node.text, 1: node.loc}
+    case 'string':
+      return {type: 'pstr', 0: node.first.text, 1: node.loc}
+    case 'list':
+      if (!node.values.length) return p.con('()', [], node.loc)
+      if (node.values[0].type !== 'identifier') throw new Error('pat exp must start with identifier')
+      return p.con(node.values[0].text, node.values.slice(1).map(parsePat), node.loc)
+    case 'array':
+      if (!node.values.length) return p.nil(node.loc)
+      let last = node.values[node.values.length - 1]
+      let res = last.type === 'spread' ? parsePat(last.contents) : p.cons(parsePat(last), p.nil(node.loc), node.loc)
+      for (let i=node.values.length - 2; i>=0; i--) {
+        res = p.cons(parsePat(node.values[i]), res, node.loc)
+      }
+      return res
+  }
+  throw new Error('unknown pat' + JSON.stringify(node))
+} **)
 
-[1 2 3]
+(** ## Statements **)
 
+(** parseStmt = (node) => {
+  switch (node.type) {
+    case 'blank':
+    case 'comment':
+    case 'comment-node':
+    case 'rich-text':
+      return;
+    case 'list':
+      if (node.values.length && node.values[0].type === 'identifier') {
+        const f = stmtForms[node.values[0].text];
+        if (f) {
+          const res = f(node.loc, ...node.values.slice(1))
+          if (res) return res
+        }
+      }
+  }
+  const inner = parse(node)
+  return inner ? {type: 'sexpr', 0: inner, 1: node.loc} : inner
+} **)
 
+(** stmtForms = {
+  deftype(loc, head, ...tail) {
+    if (!head || !tail.length) return
+    const name = head.type === 'identifier' ? head.text : head.type === 'list' && head.values.length >= 1 && head.values[0].type === 'identifier' ? head.values[0].text : null
+    if (!name) return
+    const constructors = tail.map(item => {
+      if (item.type !== 'list') throw new Error(`constructor not a list`)
+      if (item.values.length < 1) throw new Error(`empty list`)
+      return pair(item.values[0].text, item.values.length - 1)
+    })
+    return {type: 'sdeftype', 0: name, 1: constructors}
+  },
+  def(loc, name, value) {
+    if (!name || !value) return
+    if (name.type !== 'identifier') return
+    return {type: 'sdef', 0: name.text, 1: parse(value), 2: loc}
+  },
+  defn(loc, name, args, value) {
+    if (!name || !args || !value) return
+    if (name.type !== 'identifier' || args.type !== 'array') return
+    const body = forms.fn(loc, args, value)
+    if (!body) return
+    return {type: 'sdef', 0: name.text, 1: body, 2: loc}
+  }
+} **)
+
+(** testStmt = v => valueToString(parseStmt(v)) **)
+
+(testStmt 1)
+
+(,
+    testStmt
+        [(, (@ 1) "(sexpr (eprim (pint 1 238) 238) 238)")
+        (, (@ (def hi 10)) "(sdef \"hi\" (eprim (pint 10 254) 254) 245)")
+        (,
+        (@ (defn lol [a b] (+ a b)))
+            "(sdef \"lol\" (elambda (pvar \"a\" 268) (elambda (pvar \"b\" 269) (eapp (eapp (evar \"+\" 271) (evar \"a\" 272) 270) (evar \"b\" 273) 270) 261) 261) 261)")])
+
+(** ## Compiler **)
+
+(** compile = 1 **)
 
 
 

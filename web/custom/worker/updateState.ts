@@ -142,7 +142,7 @@ export function updateState(
             group.some((g) =>
                 g.deps.some((ln) => {
                     const got = topsForName[ln.name];
-                    if (!got) return false;
+                    if (!got || !got.group) return false;
                     return state.results!.groups[got.group].changed;
                 }),
             );
