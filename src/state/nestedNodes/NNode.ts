@@ -13,6 +13,7 @@ export type NNode =
     | { type: 'punct'; text: string; color: string }
     | { type: 'text'; text: string }
     | { type: 'rich-text'; contents: any }
+    | { type: 'raw-code'; raw: string; lang: string }
     | {
           type: 'brace';
           text: string;

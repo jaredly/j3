@@ -82,6 +82,7 @@ export const transformNode = (
         case 'attachment':
         case 'unparsed':
         case 'rich-text':
+        case 'raw-code':
         case 'identifier':
             break;
         case 'recordAccess': {

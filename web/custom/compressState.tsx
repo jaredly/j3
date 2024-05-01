@@ -23,7 +23,7 @@ export const maybeMerge = (
     const id = nchanged[0];
     if (!next.map[id] || !prev.map[id]) return;
     const node = next.map[id]!;
-    if (node.type === 'rich-text') {
+    if (node.type === 'rich-text' || node.type === 'raw-code') {
         return { ...prev, map: next.map, at: next.at };
     }
     if (node.type !== 'identifier') return;

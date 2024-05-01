@@ -179,6 +179,7 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
         case 'comment-node':
         case 'comment':
         case 'blank':
+        case 'raw-code':
             console.log(form);
             throw new Error(
                 `How did we get here? Comments and blanks should be filtered out: ${form.type}`,

@@ -218,6 +218,15 @@ export const getNestedNodes = (
                     idText(node, map) ??
                     '🚨 getNestedNodes cant find text',
             };
+        case 'raw-code':
+            return {
+                type: 'horiz',
+                children: [
+                    { type: 'blinker', loc: 'start' },
+                    { type: 'raw-code', raw: node.raw, lang: node.lang },
+                    { type: 'blinker', loc: 'end' },
+                ],
+            };
         case 'rich-text':
             return {
                 type: 'horiz',

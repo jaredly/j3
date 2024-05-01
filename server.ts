@@ -16,7 +16,7 @@ import { ListLikeContents, fromMCST, toMCST } from './src/types/mcst';
 import { renderNodeToString } from './web/ide/ground-up/renderNodeToString';
 import { layout } from './src/layout';
 import { findTops } from './web/ide/ground-up/findTops';
-import { bootstrap } from './web/ide/ground-up/Evaluators';
+import { bootstrap } from './web/ide/ground-up/bootstrap';
 import { evaluatorFromText } from './web/ide/ground-up/loadEv';
 import { compressState } from './web/custom/compressState';
 import { stateToBootstrapJs } from './web/ide/ground-up/to-file';
@@ -42,68 +42,36 @@ const readBody = (readable: IncomingMessage) => {
     });
 };
 
-const fileToJs = (state: NUIState) => {
-    if (!state.evaluator) return;
+// const fileToJs = (state: NUIState) => {
+//     if (!state.evaluator) return;
 
-    if (!state.evaluator || state.evaluator === ':repr:') return;
+//     if (!state.evaluator || state.evaluator === ':repr:') return;
 
-    try {
-        const evaluator =
-            state.evaluator === ':bootstrap:'
-                ? bootstrap
-                : Array.isArray(state.evaluator)
-                ? evaluatorFromText(
-                      state.evaluator.join(':'),
-                      state.evaluator.map((id) =>
-                          readFileSync(
-                              `data/tmp/${
-                                  id + (id.endsWith('.js') ? '' : '.js')
-                              }`,
-                              'utf-8',
-                          ),
-                      ),
-                  )
-                : null;
+//     try {
+//         const evaluator =
+//             state.evaluator === ':bootstrap:'
+//                 ? bootstrap
+//                 : Array.isArray(state.evaluator)
+//                 ? evaluatorFromText(
+//                       state.evaluator.join(':'),
+//                       state.evaluator.map((id) =>
+//                           readFileSync(
+//                               `data/tmp/${
+//                                   id + (id.endsWith('.js') ? '' : '.js')
+//                               }`,
+//                               'utf-8',
+//                           ),
+//                       ),
+//                   )
+//                 : null;
 
-        return evaluator?.toFile?.(state).js;
-    } catch (err) {
-        console.log('Couldnt evaluator to js');
-        console.log(err);
-        return;
-    }
-
-    // if (state.evaluator === ':bootstrap:') {
-    //     return stateToBootstrapJs(state);
-    // }
-    // if (Array.isArray(state.evaluator)) {
-    //     const text = state.evaluator.map((id) =>
-    //         readFileSync(
-    //             `data/tmp/${id + (id.endsWith('.js') ? '' : '.js')}`,
-    //             'utf-8',
-    //         ),
-    //     );
-    //     try {
-    //         const ev = evaluatorFromText(state.evaluator.join(':'), text);
-    //         if (ev?.toFile) {
-    //             try {
-    //                 const res = ev.toFile(state);
-    //                 if (Object.keys(res.errors).length) {
-    //                     console.log(`Failed to turn to file`, res.errors);
-    //                     return;
-    //                 }
-    //                 return res.js;
-    //             } catch (err) {
-    //                 console.log('Failed to do turn file to js');
-    //                 return;
-    //             }
-    //         }
-    //     } catch (err) {
-    //         console.log('Couldnt make an evaluator');
-    //         console.log(err);
-    //         return;
-    //     }
-    // }
-};
+//         return evaluator?.toFile?.(state).js;
+//     } catch (err) {
+//         console.log('Couldnt evaluator to js');
+//         console.log(err);
+//         return;
+//     }
+// };
 
 const serializeFile = (state: NUIState) => {
     const all = findTops(state);

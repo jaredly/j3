@@ -141,6 +141,7 @@ export const nodeToString_ = (
                 )
                 .join('')}"`;
         case 'unparsed':
+        case 'raw-code':
             return node.raw;
         default:
             let _: never = node;

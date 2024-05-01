@@ -1,4 +1,5 @@
-import { bootstrap, repr } from './Evaluators';
+import { repr } from './Evaluators';
+import { bootstrap } from './bootstrap';
 import { FullEvalator } from './FullEvalator';
 import { expr, stmt } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';
@@ -16,6 +17,7 @@ import {
     basicInfer,
     typeChecker,
 } from './evaluators/type-checker';
+import { jsEvaluator } from './jsEvaluator';
 
 const jsUrl = (id: string) => urlForId(id) + (id.endsWith('.js') ? '' : '.js');
 
@@ -233,6 +235,8 @@ export const loadEvaluator = (
         switch (ev) {
             case ':bootstrap:':
                 return fn(bootstrap, false);
+            case ':js:':
+                return fn(jsEvaluator, false);
             case ':repr:':
                 return fn(repr, false);
             default:

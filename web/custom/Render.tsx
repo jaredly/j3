@@ -13,6 +13,7 @@ import { Values } from './store/Store';
 import { useGetStore } from './store/StoreCtx';
 import { useNode } from './store/useNode';
 import { RenderProps } from './types';
+import { RawCode } from './RawCode';
 
 const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
 export const rainbow: string[] = ['#669'];
@@ -512,6 +513,16 @@ export const RenderNNode = (
                 >
                     {body}
                 </span>
+            );
+        }
+        case 'raw-code': {
+            return (
+                <RawCode
+                    initial={nnode.raw}
+                    lang={nnode.lang}
+                    idx={props.idx}
+                    path={props.path}
+                />
             );
         }
         case 'rich-text': {

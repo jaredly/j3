@@ -1,4 +1,4 @@
-import { bootstrap } from './Evaluators';
+import { bootstrap } from './bootstrap';
 import { Errors, FullEvalator, Produce } from './FullEvalator';
 import { valueToString } from './valueToString';
 import { findTops } from './findTops';

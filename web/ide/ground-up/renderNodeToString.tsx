@@ -71,6 +71,8 @@ export const renderNNode = (
             return renderNNode(nnode.inner, map, left, display);
         case 'dom':
             return '<dom node>';
+        case 'raw-code':
+            return '(** ' + nnode.raw + ' **)';
         case 'rich-text':
             // return JSON.stringify(nnode.contents);
             return (

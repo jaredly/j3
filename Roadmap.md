@@ -1,4 +1,13 @@
 
+# js in your jerd
+
+- [ ] find an editor (CodeJar)
+- [ ] find a parser for analysis (typescript?)
+- [ ] do a type check maybee (typescript?)
+
+
+#
+
 - [x] DEFAULT COLLAPSE MODE should be 1-line
   with "hover to see the whole thing in a popover"
   and then you can "pin" the output to make it take up more space.

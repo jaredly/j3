@@ -1,5 +1,5 @@
 import { NUIState, RealizedNamespace } from '../web/custom/UIState';
-import { bootstrap } from '../web/ide/ground-up/Evaluators';
+import { bootstrap } from '../web/ide/ground-up/bootstrap';
 import { evaluatorFromText } from '../web/ide/ground-up/loadEv';
 import { join } from 'path';
 import {

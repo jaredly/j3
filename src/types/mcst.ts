@@ -10,6 +10,7 @@ import {
     NodeContents,
     NodeExtra,
     stringText,
+    RawCode,
 } from './cst';
 
 export type MNode = MNodeContents & MNodeExtra;
@@ -44,6 +45,7 @@ export type MNodeContents =
     | ListLikeContents
     | stringText
     | RichText
+    | RawCode
     | Attachment
     | { type: 'hash'; hash: string | number }
 

@@ -134,6 +134,7 @@ export const calculateLayout = (
             return node.text.includes('\n')
                 ? { type: 'multiline', pos, tightFirst: 0, cw: 0 }
                 : { type: 'flat', width: node.text.length + 1, pos };
+        case 'raw-code':
         case 'rich-text':
             return { type: 'multiline', pos, tightFirst: 0, cw: false };
         case 'comment-node':

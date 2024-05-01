@@ -481,6 +481,30 @@ const getCommands = (
         });
     }
 
+    if (sel) {
+        const idx = sel[sel.length - 1].idx;
+        commands.push({
+            type: 'plain',
+            title: 'Set to "raw javascript code"',
+            action() {
+                dispatch({
+                    type: 'update',
+                    map: {
+                        [idx]: {
+                            type: 'raw-code',
+                            lang: 'javascript',
+                            raw: '// write some code',
+                            loc: idx,
+                        },
+                    },
+                    selection: sel
+                        .slice(0, -1)
+                        .concat([{ type: 'start', idx }]),
+                });
+            },
+        });
+    }
+
     return commands;
 };
 

@@ -109,6 +109,7 @@ const evSelect = (
                 <>
                     <option value={':repr:'}>REPR</option>
                     <option value={':bootstrap:'}>Bootstrap</option>
+                    <option value={':js:'}>JavaScript</option>
                 </>
             ) : null}
             {listing

@@ -14,6 +14,12 @@ import { goRight } from '../../src/state/goRightUntil';
 import { useGetStore } from './store/StoreCtx';
 // import { Ctx } from '../../src/to-ast/library';
 
+const shouldIgnore = (el: Element | null) => {
+    if (!el) return false;
+    if (el.classList.contains('bn-editor')) return true;
+    if (el.getAttribute('contenteditable')) return true;
+};
+
 export function HiddenInput({
     state,
     dispatch,
@@ -28,7 +34,7 @@ export function HiddenInput({
     useEffect(() => {
         if (
             document.activeElement !== hiddenInput.current &&
-            !document.activeElement?.classList.contains('bn-editor')
+            !shouldIgnore(document.activeElement)
         ) {
             // console.log(document.activeElement);
             hiddenInput.current?.focus();

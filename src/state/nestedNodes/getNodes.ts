@@ -49,6 +49,7 @@ export const unnestNodes = (node: NNode): ONode[] => {
             ];
         case 'dom':
         case 'rich-text':
+        case 'raw-code':
             return [];
         case 'ref':
         case 'blinker':

@@ -44,6 +44,8 @@ export const sexp = (node: Node): string => {
             return `(comment ${sexp(node.contents)})`;
         case 'comment':
             return 'comment';
+        case 'raw-code':
+            return 'raw-code';
         case 'rich-text':
             return 'rich-text';
         case 'attachment':

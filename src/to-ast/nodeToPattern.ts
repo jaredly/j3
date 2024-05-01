@@ -313,6 +313,7 @@ export const nodeToPattern = (
         case 'annot':
         case 'string':
         case 'stringText':
+        case 'raw-code':
         case 'recordAccess':
         case 'accessText':
         case 'spread':

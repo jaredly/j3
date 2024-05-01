@@ -38,6 +38,12 @@ export type Attachment = {
     file: AttachedFile | null;
 };
 
+export type RawCode = {
+    type: 'raw-code';
+    lang: string;
+    raw: string;
+};
+
 export type RichText = {
     type: 'rich-text';
     contents: any;
@@ -140,6 +146,7 @@ export type NodeContents =
     | accessText
     | spread
     | RichText
+    | RawCode
     | Attachment
     | tapply
     | { type: 'blank' }
