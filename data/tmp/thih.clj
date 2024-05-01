@@ -1851,11 +1851,8 @@
 
 (defn infer/pats [pats]
     (let-> [psasts (map-> infer/pat pats)]
-        (let [
-            ps (concat (map (fn [(,, ps' _ _)] ps') psasts))
-            as (concat (map (fn [(,, _ as' _)] as') psasts))
-            ts (map (fn [(,, _ _ t)] t) psasts)]
-            (ti-return (,, ps as ts)))))
+        (let [as (concat (map (fn [(, as' _)] as') psasts)) ts (map (fn [(, _ t)] t) psasts)]
+            (ti-return (, as ts)))))
 
 (defn get-constructor [name l]
     (let-> [tenv <-tenv]
@@ -1865,17 +1862,17 @@
 
 (defn infer/pat [pat]
     (match pat
-        (pvar name l)          (let-> [v (new-tvar star)] (ti-return (,, [] [(!>! name (to-scheme v))] v)))
-        (pany l)               (let-> [v (new-tvar star)] (ti-return (,, [] [] v)))
+        (pvar name l)          (let-> [v (new-tvar star)] (<- (, [(!>! name (to-scheme v))] v)))
+        (pany l)               (let-> [v (new-tvar star)] (<- (, [] v)))
         ; (pas name inner l)
-        (pprim prim l)         (let-> [t (infer/prim prim)] (ti-return (,, [] [] t)))
+        (pprim prim l)         (let-> [t (infer/prim prim)] (<- (, [] t)))
         (pcon name patterns l) (let-> [
-                                   scheme        (get-constructor name l)
-                                   (,, ps as ts) (infer/pats patterns)
-                                   t'            (new-tvar star)
-                                   (=> qs t)     (fresh-inst scheme)
-                                   _             (unify t (foldr t' ts (fn [res arg] (tfn arg res))))]
-                                   (<- (,, (concat [ps qs]) as t')))))
+                                   scheme    (get-constructor name l)
+                                   (, as ts) (infer/pats patterns)
+                                   t'        (new-tvar star)
+                                   t         (fresh-inst-rec scheme)
+                                   _         (unify t (foldr t' ts (fn [res arg] (tfn arg res))))]
+                                   (<- (, as t')))))
 
 (defn unzip [list]
     (match list
@@ -1938,10 +1935,12 @@ map->
 
 (defn infer/alt [ce as (, pats body)]
     (let-> [
-        (,, ps as' ts) (infer/pats pats)
-        (, qs t)       (infer/expr ce (concat [as' as]) body)]
+        old        (reset-preds-> empty)
+        (, as' ts) (infer/pats pats)
+        ps         (reset-preds-> old)
+        (, qs t)   (infer/expr ce (concat [as' as]) body)]
         (let [res-type (foldr t ts (fn [res arg] (tfn arg res)))]
-            (<- (, (concat [ps qs]) res-type)))))
+            (<- (, (concat [(bag/to-list ps) qs]) res-type)))))
 
 (defn infer/alts [ce as alts t]
     (let-> [psts ((map-> (infer/alt ce as) alts)) () (do-> (unify t) (map snd psts))]
