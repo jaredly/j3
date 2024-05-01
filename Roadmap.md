@@ -3,6 +3,7 @@
   with "hover to see the whole thing in a popover"
   and then you can "pin" the output to make it take up more space.
   That will help tremendously with the jank of moving everything around.
+  - [ ] ok there's a little shift when errors are introduced, but much much less.
 
 # I ... had a thought
 what if ... I not only make this env multi-compiler

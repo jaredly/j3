@@ -1,4 +1,26 @@
 
+==============
+
+OK so we'll have a special CST node type that is ... 'code'. Right?
+and it'll be {type: 'code', raw: string, lang: string}
+
+SO the "level-0" runtime doesn't know how to parse, doesn't know how to execute,
+it only takes a raw code and eval's it.
+hrm ok I guess I'll want it to be able to do basic analysis on the code toooo
+so like "externals" and stuff. gotta bring babel in there I guesssss
+ohhh wait am I gonna typescript? 🤔 hrm.
+ugh like do I really ... want to take on that kind of dependency?
+but I mean this IDE is really cool, even without the structured editor goodness...
+
+then level-1 is implemented in `code` nodes.
+
+do I need to one-world it up just yet? like I probably don't tbh
+
+
+
+
+
+
 ===========
 
 "WIP" state.
