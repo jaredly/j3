@@ -21,6 +21,7 @@ export const ShowErrors = () => {
         });
         send.produce.forEach((item) => {
             if (typeof item === 'string') return;
+            if (!item) return;
             if (
                 item.type === 'error' ||
                 item.type === 'withjs' ||

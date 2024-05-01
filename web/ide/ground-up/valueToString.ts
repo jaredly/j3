@@ -20,12 +20,12 @@ export const valueToString = (v: any): string => {
             .join('')})`;
     }
     if (typeof v === 'string') {
-        if (v.includes('"') && !v.includes("'")) {
-            return (
-                "'" + JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"') + "'"
-            );
-        }
-        return JSON.stringify(v); // + 'umraw' + v;
+        // if (v.includes('"') && !v.includes("'")) {
+        //     return (
+        //         "'" + JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"') + "'"
+        //     );
+        // }
+        return JSON.stringify(v);
     }
     if (typeof v === 'function') {
         return '<function>';

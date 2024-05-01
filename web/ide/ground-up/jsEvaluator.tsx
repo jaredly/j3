@@ -1,6 +1,8 @@
 import { Node } from '../../../src/types/cst';
 import { NUIState } from '../../custom/UIState';
+import { filterNulls } from '../../custom/old-stuff/filterNulls';
 import { FullEvalator, Produce } from './FullEvalator';
+import { slash } from './round-1/bootstrap';
 
 const evalWith = (text: string, values: Record<string, any>, args: Node[]) => {
     const res = new Function(`{${Object.keys(values).join(',')}}`, text)(
@@ -59,7 +61,7 @@ export const jsEvaluator: FullEvalator<
     },
     // analysis
     parse(node) {
-        if (node.type === 'blank') {
+        if (node.type === 'blank' || node.type === 'rich-text') {
             return { stmt: null, errors: [] };
         }
         if (node.type === 'raw-code') {
@@ -80,6 +82,18 @@ export const jsEvaluator: FullEvalator<
             (node.values[0].type === 'raw-code' ||
                 node.values[0].type === 'identifier')
         ) {
+            if (
+                node.values[0].type === 'identifier' &&
+                node.values[0].text === '@'
+            ) {
+                return {
+                    stmt:
+                        node.values.length > 1
+                            ? { type: 'cst', cst: node.values[1] }
+                            : null,
+                    errors: [],
+                };
+            }
             return {
                 stmt: {
                     type: 'raw',
@@ -95,71 +109,75 @@ export const jsEvaluator: FullEvalator<
         return { stmt: { type: 'cst', cst: node }, errors: [] };
     },
     parseExpr(node) {
-        if (node.type === 'raw-code') {
-            return {
-                expr: { type: 'raw', raw: node.raw, args: [] },
-                errors: [],
-            };
-        }
-        if (node.type === 'identifier') {
-            return {
-                expr: { type: 'raw', raw: node.text, args: [] },
-                errors: [],
-            };
-        }
-        return { expr: null, errors: [] };
+        const { stmt, errors } = this.parse(node);
+        return { expr: stmt, errors };
     },
     evaluate(expr, env, meta) {
         if (expr.type === 'cst') {
+            if (expr.cst.type === 'string' && expr.cst.templates.length === 0) {
+                return slash(expr.cst.first.text);
+            }
             return expr.cst;
         }
-        return evalWith(expr.raw, env.values, expr.args);
+        return evalWith('return ' + expr.raw, env.values, expr.args);
     },
     setTracing() {},
     addStatements(stmts, env, meta, trace, top, renderResult, debugShowJs) {
         const display: Record<number, Produce> = {};
         const values: Record<string, any> = {};
-        Object.entries(stmts).forEach(([key, stmt]) => {
-            if (stmt.type === 'cst') {
-                display[+key] = JSON.stringify(stmt.cst);
-                return;
-            }
-            const { name, text } = parseAssign(stmt.raw);
-            if (stmt.args.length || !name) {
-                try {
-                    const res = evalWith(
-                        'return ' + stmt.raw.trim(),
-                        env.values,
-                        stmt.args,
-                    );
-                    display[+key] = JSON.stringify(res) ?? '';
-                } catch (err) {
-                    display[+key] = {
+        const entries = Object.entries(stmts)
+            .map(([key, stmt]) => {
+                if (stmt.type === 'cst') {
+                    display[+key] = JSON.stringify(stmt.cst) ?? '';
+                    return;
+                }
+                const { name, text } = parseAssign(stmt.raw);
+                if (stmt.args.length || !name) {
+                    try {
+                        const res = evalWith(
+                            'return ' + stmt.raw.trim(),
+                            env.values,
+                            stmt.args,
+                        );
+                        display[+key] = JSON.stringify(res) ?? '';
+                    } catch (err) {
+                        display[+key] = {
+                            type: 'error',
+                            message: (err as Error).message,
+                        };
+                    }
+                    return;
+                }
+
+                return { key, name, text };
+            })
+            .filter(filterNulls);
+        if (entries.length) {
+            const source = `${entries
+                .map((e) => `const ${e.name} = ${e.text.trim()}`)
+                .join('\n')};\nreturn {${entries
+                .map((e) => e.name)
+                .join(',')}}`;
+            try {
+                const res = evalWith(source, env.values, []);
+                entries.forEach((e) => {
+                    const value = res[e.name];
+                    values[e.name] = value;
+                    env.values[e.name] = value;
+                    display[+e.key] =
+                        typeof value === 'function'
+                            ? '<function>'
+                            : JSON.stringify(value) ?? '';
+                });
+            } catch (err) {
+                entries.forEach((e) => {
+                    display[+e.key] = {
                         type: 'error',
                         message: (err as Error).message,
                     };
-                }
-                return;
+                });
             }
-
-            try {
-                const res = (env.values[name] = evalWith(
-                    `const ${name} = ${text.trim()};\nreturn ${name}`,
-                    env.values,
-                    [],
-                ));
-                values[name] = res;
-                display[+key] =
-                    typeof res === 'function'
-                        ? '<function>'
-                        : JSON.stringify(res) ?? '';
-            } catch (err) {
-                display[+key] = {
-                    type: 'error',
-                    message: (err as Error).message,
-                };
-            }
-        });
+        }
         return { env, display, values };
     },
 
