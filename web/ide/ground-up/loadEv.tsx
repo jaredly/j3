@@ -96,7 +96,7 @@ export const evaluatorFromText = (
         } else if (result.type === 'bootstrap') {
             Object.assign(data, result);
         } else {
-            console.log(id, `The result type is unknown...?`, result.type);
+            console.log(id, `The result type is unknown...?`, result);
             Object.assign(data, result);
         }
     }

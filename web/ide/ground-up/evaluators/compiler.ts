@@ -5,6 +5,7 @@ import { Compiler } from './interface';
 export type MetaList = [number, MetaData['trace']][];
 
 export const compiler = (fns: {
+    prelude?: Record<string, string>;
     compile: (e: Expr) => (meta: MetaList) => string;
     compile_stmt: (s: Stmt) => (meta: MetaList) => string;
 }): Compiler<Stmt, Expr> => ({

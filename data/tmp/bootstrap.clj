@@ -327,10 +327,11 @@
       env[node[0]] = value
       return value
     case 'sdeftype':
+      const res = {}
       unwrapArray(node[1]).forEach(({0: name, 1: count}) => {
-        env[name] = constrFn(name, count)
+        res[name] = env[name] = constrFn(name, count)
       })
-      return null
+      return res
   }
 }
  **)
@@ -539,7 +540,7 @@
   }
 } **)
 
-(** ({prelude,
+(** ({type: 'fns', prelude,
   compile, compile_stmt,
   parse_stmt: parseStmt, parse_expr: parse,
   names: s => arr(names(s)),
@@ -548,9 +549,15 @@
 
 (** compile = ast => _meta => `evaluate(${JSON.stringify(ast)}, $env)` **)
 
-(** compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${ast[0]} = ` : ''}evaluateStmt(${JSON.stringify(ast)}, $env)` **)
+(** compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${ast[0]} = ` : ast.type === 'sdeftype' ? `const {${
+  unwrapArray(ast[1]).map(c => c[0])
+}} = ` : ''}evaluateStmt(${JSON.stringify(ast)}, $env)` **)
 
 (** makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = '' + v, obj), {}) **)
 
 (** prelude = makePrelude({evaluate,evaluateStmt,unwrapArray})  **)
+
+(** testCompileStmt = v => compile_stmt(parseStmt(v))() **)
+
+(testCompileStmt (deftype card (red) (black)))
 

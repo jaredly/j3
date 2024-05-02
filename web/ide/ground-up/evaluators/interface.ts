@@ -3,7 +3,9 @@ import { MetaDataMap } from '../../../custom/UIState';
 import { LocedName } from '../../../custom/store/sortTops';
 import { InferenceError } from '../FullEvalator';
 
-export type Parser<Stmt, Expr> = {
+export type Parser<Stmt, Expr, SimpleNode> = {
+    toNode(node: SimpleNode): Node;
+    fromNode(simple: Node): SimpleNode;
     parse(node: Node): { stmt: null | Stmt; errors: [number, string][] };
     parseExpr(node: Node): { expr: null | Expr; errors: [number, string][] };
 };
@@ -51,6 +53,7 @@ export type TypeChecker<Env, Stmt, Expr, Type> = {
 } & Infer<Env, Stmt, Expr, Type>;
 
 export type Compiler<Stmt, Expr> = {
+    prelude?: Record<string, string>;
     compileStmt(stmt: Stmt, meta: MetaDataMap): string;
     compileExpr(expr: Expr, meta: MetaDataMap): string;
 };

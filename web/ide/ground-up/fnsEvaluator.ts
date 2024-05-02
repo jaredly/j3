@@ -25,7 +25,7 @@ import { Env, Expr, Stmt, Type } from './evaluators/analyze';
 
 export const fnsEvaluator = (
     id: string,
-    parser: Parser<Stmt, Expr>,
+    parser: Parser<Stmt, Expr, any>,
     compiler: Compiler<Stmt, Expr>,
     analyze: undefined | Analyze<Stmt, Expr, Type>,
     typeCheck: undefined | TypeChecker<Env, Stmt, Expr, Type>,
