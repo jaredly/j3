@@ -12,7 +12,10 @@ export function useAutoFocus(
         const state = store.getState();
         const last = lastPath(state);
         if (last?.idx === idx && last.type === type) {
-            focus();
+            // This is to allow the rich-text node to render, it's a little delayed
+            setTimeout(() => {
+                focus();
+            }, 100);
         }
 
         return store.on('selection', () => {

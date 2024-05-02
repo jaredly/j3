@@ -30,8 +30,8 @@ export const jsEvaluator: FullEvalator<
     analysis: {
         names(stmt) {
             if (stmt.type === 'cst') return [];
-            const match = [...stmt.raw.matchAll(/^(\w+)\s*=/g)][0];
-            return match ? [{ kind: 'value', name: match[1], loc: -1 }] : [];
+            const { name } = parseAssign(stmt.raw);
+            return name ? [{ kind: 'value', name: name, loc: -1 }] : [];
         },
         externalsStmt(stmt) {
             if (stmt.type === 'cst') return [];
@@ -148,7 +148,8 @@ export const jsEvaluator: FullEvalator<
                     } catch (err) {
                         display[+key] = {
                             type: 'error',
-                            message: (err as Error).message,
+                            message:
+                                (err as Error).message + (err as Error).stack,
                         };
                     }
                     return;
@@ -213,9 +214,8 @@ export const jsEvaluator: FullEvalator<
 };
 
 const parseAssign = (text: string) => {
-    const match = [...text.matchAll(/^(\w+)\s*=/g)][0];
+    const match = text.match(/^(\w+)\s*=[^>]/);
     if (match) {
-        const name = match[1];
         return { name: match[1], text: text.slice(match[0].length) };
     }
     return { name: null, text };

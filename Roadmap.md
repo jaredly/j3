@@ -8,6 +8,25 @@ That removes some amount of bumping around, because then I can go right to a fns
 
 yeahhh. but I can also include a tree-walker dealio as an example if I want?
 
+OH so fun story, it looks like maybe I'll be able to do it after all? like ...
+so I have this "prelude" that allows me to define `evaluate`.
+And then my `compile(ast)` just looks like `ast => "evaluate(${JSON.stringify(ast)})`.
+pretty slick.
+
+SO I will also need to pass in an `$env` vlb when evaluating, because I won't be taking globals
+off of the normal js scope.
+
+Q: so ... prelude. ... can it just be a raw string? If so, how would I know what values it has?
+and then ... how would I turn it into a ... "file"?
+
+`compile_stmt` .. probably wants to .. have more control?
+like, right now fnsEvaluator is doing a bunch
+like adding `return {a, b, c}` to it.
+wellllll but not having the return is helpful when we `toFile` it...
+
+hrmhrmhrm. what if I have like `compile2` and `compileStmt2` that rely on a passed-in $env instead of
+... js scope?
+
 # js in your jerd
 
 - [x] find an editor (CodeJar)

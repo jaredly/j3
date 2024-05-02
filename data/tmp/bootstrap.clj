@@ -287,7 +287,7 @@
     const constructors = tail.map(item => {
       if (item.type !== 'list') throw new Error(`constructor not a list`)
       if (item.values.length < 1) throw new Error(`empty list`)
-      return pair(item.values[0].text, item.values.length - 1)
+      return {type: ',,', 0: item.values[0].text, 1: item.values.length - 1, 2: item.values[0].loc}
     })
     return {type: 'sdeftype', 0: name, 1: arr(constructors)}
   },
@@ -396,7 +396,11 @@
   }
 }        **)
 
-(** run = v => evaluate(parse(v), {',': a => b => pair(a,b)}) **)
+(** run = v => {
+  const res = evaluate(parse(v), {',': a => b => pair(a,b)})
+  if (typeof res === 'number' || typeof res === 'string') return res
+  return valueToString(res)
+} **)
 
 (,
     run
@@ -409,7 +413,8 @@
                 3 10))
             10)
         (, (@ "hi ${1}.") "hi 1.")
-        (, (@ "hi") "hi")])
+        (, (@ "hi") "hi")
+        (, (@ (, 1 2)) "(, 1 2)")])
 
 (** stmts = stmts => {
   if (stmts.type !== 'array') throw new Error('need array')
@@ -427,12 +432,83 @@
         [(, [0] "0")
         (, [(def n 10) n] "10")
         (, [(defn hi [x] (, x 2)) (hi 5)] "(, 5 2)")
-        (, [(deftype (optsion a) (some a) (none)) (some 10)] "(some 10)")
+        (, [(deftype (option a) (some a) (none)) (some 10)] "(some 10)")
         (, [(deftype lots (lol a b c)) (lol 1 true "hi")] "(lol 1 true \"hi\")")])
 
-(** ## Compile to js **)
+(** ## Analysis **)
 
-(** compile = node => {
+(** externals = stmt => {
+  switch (stmt.type) {
+    case 'sexpr': return externals_expr(stmt[0], [])
+    case 'sdef': return externals_expr(stmt[1], [stmt[0]])
+    case 'sdeftype': return []
+  }
+  return []
+} **)
+
+(** names = stmt => {
+  switch (stmt.type) {
+    case 'sexpr': return []
+    case 'sdef': return [[stmt[0], {type: 'value'}, stmt[2]]]
+    case 'sdeftype': return unwrapArray(stmt[1]).map(c => [c[0], {type: 'value'}, c[2]])
+  }
+} **)
+
+(** externals_expr = (expr, locals) => {
+  switch (expr.type) {
+    case 'evar': return locals.includes(expr[0]) ? [] : [[expr[0], {type: 'value'}, expr[1]]]
+    case 'eapp': return externals_expr(expr[0], locals).concat(externals_expr(expr[1], locals))
+    case 'elambda': return externals_expr(expr[1], locals.concat(pat_names(expr[0])))
+    case 'eprim': return []
+    case 'estr': return unwrapArray(expr[1]).map(v => externals_expr(v[0], locals))
+    case 'elet': return externals_expr(expr[1], locals).concat(
+      externals_expr(expr[2], locals.concat(pat_names(expr[0]))))
+    case 'ematch':
+      return externals_expr(expr[0], locals).concat(
+        unwrapArray(expr[1]).flatMap(kase => externals_expr(kase[1], locals.concat(pat_names(kase[0])))))
+  }
+  return []
+} **)
+
+(** pat_names = pat => {
+  switch (pat.type) {
+    case 'pvar': return [pat[0]]
+    case 'pany': return []
+    case 'pprim': return []
+    case 'pcon':
+      return unwrapArray(pat[1]).flatMap(pat_names)
+  }
+  return []
+}
+ **)
+
+(** testExt = v => valueToString(externals(parseStmt(v))) **)
+
+(,
+    testExt
+        [(, (@ lol) "[[\"lol\", (value), 620]]")
+        (, (@ (fn [(, x)] (+ x))) "[[\"+\", (value), 641]]")
+        (, (@ "hi ${x}") "[[[\"x\", (value), 653]]]")
+        (,
+        (@
+            (match m
+                (, a b) (+ a)))
+            "[[\"m\", (value), 663], [\"+\", (value), 665]]")
+        (, (@ (let [x 2] (+ x))) "[[\"+\", (value), 686]]")])
+
+(** testNames = v => valueToString(names(parseStmt(v))) **)
+
+(,
+    testNames
+        [(, (@ hi) "[]")
+        (, (@ (def x 10)) "[[\"x\", (value), 712]]")
+        (,
+        (@ (deftype (option x) (some x) (none)))
+            "[[\"some\", (value), 730], [\"none\", (value), 733]]")])
+
+(** Compile to js **)
+
+(** compile_ = node => {
   switch (node.type) {
     case 'eprim': return '' + node[0][0]
     case 'estr': return `\`${unslash(node[0])}${unwrapArray(node[1]).map(
@@ -450,7 +526,7 @@
   }
 } **)
 
-(** compilePat = (node, target, body) => {
+(** compilePat_ = (node, target, body) => {
   switch (node.type) {
     case 'pany':
       return body
@@ -462,4 +538,19 @@
       const args = unwrapArray(node[1])
   }
 } **)
+
+(** ({prelude,
+  compile, compile_stmt,
+  parse_stmt: parseStmt, parse_expr: parse,
+  names: s => arr(names(s)),
+  externals_stmt: s => arr(externals(s)),
+  externals_expr: e => arr(externals_expr(e, []))}) **)
+
+(** compile = ast => _meta => `evaluate(${JSON.stringify(ast)}, $env)` **)
+
+(** compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${ast[0]} = ` : ''}evaluateStmt(${JSON.stringify(ast)}, $env)` **)
+
+(** makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = '' + v, obj), {}) **)
+
+(** prelude = makePrelude({evaluate,evaluateStmt,unwrapArray})  **)
 
