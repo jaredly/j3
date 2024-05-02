@@ -57,7 +57,6 @@ export const fnsEvaluator = (
                 throw new Error(`toFile requires analysis`);
             }
             let env = this.init();
-            let tenv = this.inference?.init();
             const errors: Errors = {};
             const allNames: LocedName[] = [];
             let ret: null | string = null;

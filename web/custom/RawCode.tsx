@@ -62,11 +62,18 @@ export const RawCode = ({
         focus.current = () => {
             if (document.activeElement === ref.current) return;
             ref.current?.focus();
+            setTimeout(() => ref.current?.focus(), 100);
         };
         return () => jar.destroy();
     }, []);
 
-    useAutoFocus(store, idx, 'raw-code', () => focus.current?.());
+    useAutoFocus(store, idx, 'rich-text', () => {
+        if (!focus.current) {
+            console.log('dropping a focus');
+        }
+        focus.current?.();
+    });
+    console.log(store.getState().at);
 
     return (
         <div

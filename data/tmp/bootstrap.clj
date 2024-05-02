@@ -430,5 +430,36 @@
         (, [(deftype (optsion a) (some a) (none)) (some 10)] "(some 10)")
         (, [(deftype lots (lol a b c)) (lol 1 true "hi")] "(lol 1 true \"hi\")")])
 
+(** ## Compile to js **)
 
+(** compile = node => {
+  switch (node.type) {
+    case 'eprim': return '' + node[0][0]
+    case 'estr': return `\`${unslash(node[0])}${unwrapArray(node[1]).map(
+      ({0: expr, 1: suf}) => `\${${compile(expr)}}${unslash(suf)}\``
+    ).join('\n')}`
+    case 'evar': return sanitize(node[0])
+    case 'elambda':
+      return `(${patArgs(node[0])}) => ${compile(node[1])}`
+    case 'eapp':
+      return `(${compile(node[0])})(${compile(node[1])})`
+    case 'elet':
+      return `((${patArgs(node[0])}) => ${compile(node[2])})(${compile(node[1])})`
+    case 'ematch':
+      return `(($target) => {${unwrapArray(node[1]).map(({0: pat, 1: body}) => compilePat(pat, '$target', 'return ' + compile(body))).join('\n')})(${compile(node[0])})`
+  }
+} **)
+
+(** compilePat = (node, target, body) => {
+  switch (node.type) {
+    case 'pany':
+      return body
+    case 'pvar':
+      return `{const ${sanitize(node[0])} = ${target};\n${body}}`
+    case 'pprim':
+      return `if (${target} === ${node[0][0]}) {${body}}`
+    case 'pcon':
+      const args = unwrapArray(node[1])
+  }
+} **)
 

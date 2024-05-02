@@ -12,19 +12,13 @@ export function useAutoFocus(
         const state = store.getState();
         const last = lastPath(state);
         if (last?.idx === idx && last.type === type) {
-            // console.log('focusing', last, idx);
-            // node.current?.focus();
-            setTimeout(() => {
-                focus();
-            }, 100);
+            focus();
         }
 
         return store.on('selection', () => {
             const state = store.getState();
             const last = lastPath(state);
             if (last?.idx === idx && last.type === type) {
-                // console.log('focusing 2', last, idx);
-                // node.current?.focus();
                 focus();
             }
         });

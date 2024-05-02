@@ -1,5 +1,5 @@
 (** ## JCST
-    Converting the concrete syntax tree into s-expr-y values to work with out languages that don't have records. **)
+    Converting the concrete syntax tree into s-expr-y values to work with our languages that don't have records. **)
 
 (** ## Prelude
     Some basic handy functions **)

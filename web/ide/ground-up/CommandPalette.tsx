@@ -139,6 +139,8 @@ export const CommandPalette = ({
                         if (evt.key === 'Enter' || evt.key === 'Return') {
                             if (focus?.type === 'input') {
                                 if (!focus.validate || focus.validate(text)) {
+                                    evt.preventDefault();
+                                    evt.stopPropagation();
                                     focus.action(text);
                                     setOpen(false);
                                     return;
@@ -148,6 +150,8 @@ export const CommandPalette = ({
                             const selected = filtered[sel];
                             if (!selected) return;
                             if (selected.type === 'plain') {
+                                evt.preventDefault();
+                                evt.stopPropagation();
                                 selected.action();
                                 setOpen(false);
                             } else if (
@@ -499,7 +503,7 @@ const getCommands = (
                     },
                     selection: sel
                         .slice(0, -1)
-                        .concat([{ type: 'start', idx }]),
+                        .concat([{ type: 'rich-text', idx, sel: null }]),
                 });
             },
         });
