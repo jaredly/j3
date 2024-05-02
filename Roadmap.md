@@ -1,11 +1,25 @@
 
+# QUerstion
+
+do I want ... the bootstrap, to do tree-walking evaluation, or compilation?
+compilation definitely results in faster code
+and so maybe I want to jump right to that?
+That removes some amount of bumping around, because then I can go right to a fnsEvaluator. ... right?
+
+yeahhh. but I can also include a tree-walker dealio as an example if I want?
+
 # js in your jerd
 
 - [x] find an editor (CodeJar)
   - [x] make a very basic bootstrap
 - [ ] find a parser for analysis (typescript?)
+- [ ] make it pretty (prism?)
 - [ ] do a type check maybee (typescript?)
 - [ ] ARH cmd-enter needs to make a new raw-codeeee
+
+- [ ] ooooh BUG, if there's a `name` that's `constructor` or `toString`, it will totally bork
+  things.
+  OH so I need to switch to `hasOwnProperty` right?
 
 soooo how would it be ... to .... allow me to ... evaluate js a little bit... yeah ok I will do that.
 so like

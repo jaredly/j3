@@ -21,6 +21,10 @@
 
 (** unwrapArray(arr([1,2,3])) **)
 
+(** foldlArr = (i, v, f) => v.type === 'nil' ? i : foldlArr(f(i, v[0]), v[1], f) **)
+
+(** set = (obj, k, v) => (obj[k] = v, obj) **)
+
 (** valueToString = (v) => {
     if (Array.isArray(v)) {
         return `[${v.map(valueToString).join(', ')}]`;
@@ -162,18 +166,6 @@
   ])}),
 } **)
 
-(parse 1)
-
-(@ 12)
-
-(parse "hi${1}")
-
-(parse true)
-
-(parse [1 2 3])
-
-(** test = v => valueToString(parse(v)) **)
-
 (** c = {
   prim: (prim, loc=-1) => ({type: 'eprim', 0: prim, 1: loc}),
   int: (v, loc=-1) => ({type: 'pint', 0: v, 1: loc}),
@@ -191,6 +183,18 @@
   },
   
 } **)
+
+(parse 1)
+
+(@ 12)
+
+(parse "hi${1}")
+
+(parse true)
+
+(parse [1 2 3])
+
+(** test = v => valueToString(parse(v)) **)
 
 (,
     test
@@ -313,9 +317,79 @@
         (@ (defn lol [a b] (+ a b)))
             "(sdef \"lol\" (elambda (pvar \"a\" 268) (elambda (pvar \"b\" 269) (eapp (eapp (evar \"+\" 271) (evar \"a\" 272) 270) (evar \"b\" 273) 270) 261) 261) 261)")])
 
-(** ## Compiler **)
+(** ## Tree-Walking Evaluator **)
 
-(** compile = 1 **)
+(** evaluate = (node, scope) => {
+  switch (node.type) {
+    case 'eprim':
+      return node[0][0]
+    case 'evar':
+      if (!Object.hasOwn(scope, node[0])) {
+        throw new Error(`Unknown vbl: ${node[0]}. ${Object.keys(scope).join(', ')}`)
+      }
+      return scope[node[0]]
+    case 'elambda':
+      return v => evaluate(node[1], {...scope, ...evalPat(node[0], v)})
+    case 'eapp':
+      return evaluate(node[0], scope)(evaluate(node[1], scope))
+    case 'elet':
+      const init = evaluate(node[1], scope)
+      const got = evalPat(node[0], init)
+      if (!got) throw new Error(`let pattern didnt match: ${JSON.stringify(init)}`)
+      return evaluate(node[2], {...scope, ...got})
+    case 'ematch':
+      const target = evaluate(node[0], scope)
+      for (let {0: pat, 1: body} of unwrapArray(node[1])) {
+        const got = evalPat(pat, target)
+        if (got) {
+          return evaluate(body, {...scope, ...got})
+        }
+      }
+      throw new Error(`match failed (${node[2]}): ${JSON.stringify(target)}`)
+  }
+  return node.type
+} **)
+
+(** evalPat = (node, v) => {
+  switch (node.type) {
+    case 'pany': return {}
+    case 'pprim': return v === node[0][0] ? {} : null
+    case 'pvar':
+      return {[node[0]]: v}
+    case 'pcon':
+      if (v.type === node[0]) {
+        const args = unwrapArray(node[1])
+        const scope = {}
+        for (let i=0; i<args.length; i++) {
+          const sub = evalPat(args[i], v[i])
+          if (!sub) return
+          Object.assign(scope, sub)
+        }
+        return scope
+      }
+  }
+}        **)
+
+(** run = v => evaluate(parse(v), {',': a => b => pair(a,b)}) **)
+
+(run ((fn [x] 1) 10))
+
+(run (, 1 2))
+
+(run (let [(, x 3) (, 212 3)] x))
+
+(run
+    (match 3
+        2 1
+        3 10))
+
+(test (, 1 2))
+
+(run ((fn [(, a _)] a) (, 1 12)))
+
+(test (fn [(, a _)] a))
+
+(parse 1)
 
 
 

@@ -67,14 +67,6 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
                 .join('')}`;
 
         case 'eprim':
-            // if (expr[0].type === 'pstr') {
-            // return expr[0][0].replaceAll(/\\./g, (m) => {
-            //     if (m[1] === 'n') {
-            //         return '\n';
-            //     }
-            //     return m[1];
-            // });
-            // }
             return expr[0][0];
         case 'equot':
             return expr[0];
@@ -101,7 +93,6 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
             });
         case 'ematch': {
             const target = evalExpr(expr[0], scope);
-            // console.log(target);
             for (let kase of unwrapArray(expr[1])) {
                 const bindings = matchPat(kase[0], target);
                 if (bindings) {
@@ -110,49 +101,7 @@ export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
                         ...bindings,
                     });
                 }
-
-                // switch (kase[0].type) {
-                //     case 'pany':
-                //         return evalExpr(kase[1], scope);
-                //     case 'pprim':
-                //         switch (kase[0][0].type) {
-                //             case 'pint':
-                //                 if (target === kase[0][0][0]) {
-                //                     return evalExpr(kase[1], scope);
-                //                 }
-                //                 continue;
-                //             case 'pbool':
-                //                 if (target === kase[0][0][0]) {
-                //                     return evalExpr(kase[1], scope);
-                //                 }
-                //                 continue;
-                //             case 'pstr':
-                //                 if (target === kase[0][0][0]) {
-                //                     return evalExpr(kase[1], scope);
-                //                 }
-                //                 continue;
-                //         }
-                //         continue;
-                //     case 'pvar':
-                //         return evalExpr(kase[1], {
-                //             ...scope,
-                //             [kase[0][0]]: target,
-                //         });
-                //     case 'pcon':
-                //         if (target.type === kase[0][0]) {
-                //             const iscope = { ...scope };
-                //             const items = unwrapArray(kase[0][1]);
-                //             for (let i = 0; i < items.length; i++) {
-                //                 iscope[items[i]] = target[i];
-                //             }
-                //             return evalExpr(kase[1], iscope);
-                //         } else {
-                //             // console.log('nope', target.type, kase[0][0]);
-                //         }
-                // }
-                // console.log(kase[0].type);
             }
-            // console.log('targ', target);
             throw new Error(
                 `failed to match: target = ${JSON.stringify(
                     target,

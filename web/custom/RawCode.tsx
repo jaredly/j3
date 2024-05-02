@@ -25,10 +25,23 @@ export const RawCode = ({
 
     useEffect(() => {
         if (!ref.current) return;
-        const jar = CodeJar(ref.current, () => {}, {
-            tab: '  ',
-            addClosing: false,
-        });
+        const jar = CodeJar(
+            ref.current,
+            (el) => {
+                // @ts-ignore
+                const html = Prism.highlight(
+                    el.textContent,
+                    // @ts-ignore
+                    Prism.languages.javascript,
+                    'javascript',
+                );
+                el.innerHTML = html;
+            },
+            {
+                tab: '  ',
+                addClosing: false,
+            },
+        );
         jar.updateCode(initial);
         jar.onUpdate((code) => {
             const node = store.getState().map[idx];
@@ -58,9 +71,11 @@ export const RawCode = ({
     return (
         <div
             style={{
-                backgroundColor: '#224',
+                // backgroundColor: '#224',
+                backgroundColor: 'rgb(28 28 28)',
                 padding: 8,
             }}
+            className="language-javascript"
             onMouseDown={(evt) => evt.stopPropagation()}
             onClick={(evt) => {
                 evt.stopPropagation();

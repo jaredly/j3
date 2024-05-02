@@ -141,9 +141,9 @@ export function updateState(
             sourceUpdate ||
             group.some((g) =>
                 g.deps.some((ln) => {
-                    const got = topsForName[ln.name];
-                    if (!got || !got.group) return false;
-                    return state.results!.groups[got.group].changed;
+                    if (!Object.hasOwn(topsForName, ln.name)) return false;
+                    return state.results!.groups[topsForName[ln.name].group]
+                        .changed;
                 }),
             );
 
