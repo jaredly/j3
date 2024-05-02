@@ -1,7 +1,9 @@
 import { Node } from '../../../src/types/cst';
+import { fromMCST } from '../../../src/types/mcst';
 import { NUIState } from '../../custom/UIState';
 import { filterNulls } from '../../custom/old-stuff/filterNulls';
 import { FullEvalator, Produce } from './FullEvalator';
+import { findTops } from './findTops';
 import { slash } from './round-1/bootstrap';
 
 const evalWith = (text: string, values: Record<string, any>, args: Node[]) => {
@@ -125,7 +127,7 @@ export const jsEvaluator: FullEvalator<
         return evalWith('return ' + expr.raw, env.values, expr.args);
     },
     setTracing() {},
-    addStatements(stmts, env, meta, trace, top, renderResult, debugShowJs) {
+    addStatements(stmts, env) {
         const display: Record<number, Produce> = {};
         const values: Record<string, any> = {};
         const entries = Object.entries(stmts)
@@ -184,8 +186,29 @@ export const jsEvaluator: FullEvalator<
         return { env, display, values };
     },
 
-    toFile(state: NUIState, target: number) {
-        return { js: 'not yet' };
+    toFile(state: NUIState, target?: number) {
+        const tops = findTops(state);
+        let res;
+        let names: string[] = [];
+        const source = tops
+            .map((top) => {
+                const node = fromMCST(top.top, state.map);
+                if (node.type !== 'raw-code') return;
+                if (top.top === target) {
+                    res = node.raw;
+                    return;
+                }
+                const { name, text } = parseAssign(node.raw);
+                if (!name) return;
+                names.push(name);
+                return `const ${name} = ${text.trim()}`;
+            })
+            .filter(filterNulls);
+        return {
+            js:
+                source.join('\n\n') +
+                `\n\nreturn ${res ?? `{${names.join(',')}}`}`,
+        };
     },
 };
 

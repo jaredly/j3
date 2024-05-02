@@ -1,26 +1,18 @@
-(** ## JCST
-    Converting the concrete syntax tree into s-expr-y values to work with out languages that don't have records. **)
+const cons = (a, b) => ({type: 'cons', 0: a, 1: b})
 
-(** ## Prelude
-    Some basic handy functions **)
+const nil = {type: 'nil'}
 
-(** cons = (a, b) => ({type: 'cons', 0: a, 1: b}) **)
-
-(** nil = {type: 'nil'} **)
-
-(** arr = (values) => {
+const arr = (values) => {
   let v = nil
   for (let i=values.length-1;i>=0;i--) {
     v = cons(values[i], v)
   }
   return v
-} **)
+}
 
-(** unwrapArray = value => value.type === 'nil' ? [] : [value[0], ...unwrapArray(value[1])] **)
+const unwrapArray = value => value.type === 'nil' ? [] : [value[0], ...unwrapArray(value[1])]
 
-(** unwrapArray(arr([1,2,3])) **)
-
-(** valueToString = (v) => {
+const valueToString = (v) => {
     if (Array.isArray(v)) {
         return `[${v.map(valueToString).join(', ')}]`;
     }
@@ -53,19 +45,18 @@
 
     return '' + v;
 };
- **)
 
-(** pair = (a, b) => ({type: ',', 0: a, 1: b}) **)
+const pair = (a, b) => ({type: ',', 0: a, 1: b})
 
-(** makePairs = array => {
+const makePairs = array => {
   const res = [];
   for (let i=0; i<array.length; i+=2) {
     res.push([array[i], array[i + 1]]);
   }
   return res
-} **)
+}
 
-(** fromNode = node => {
+const fromNode = node => {
   switch (node.type) {
     case 'comment':
     case 'comment-node':
@@ -92,24 +83,11 @@
         }))
       ), 2: node.loc}
   }
-} **)
+}
 
-(** test = v => valueToString(fromNode(v)) **)
+const test = v => valueToString(fromNode(v))
 
-(,
-    test
-        [(, (@ 10) "(cst/identifier \"10\" 55)")
-        (,
-        (@ [1 ; ya 2 ])
-            "(cst/array [(cst/identifier \"1\" 69) (cst/identifier \"2\" 71)] 68)")
-        (,
-        (@ "hi ${1} 12")
-            "(cst/string \"hi \" [(,, (cst/identifier \"1\" 81) \" 12\" 82)] 79)")
-        (,
-        {hi 10}
-            "(cst/record [(cst/identifier \"hi\" 92) (cst/identifier \"10\" 93)] 88)")])
-
-(** toNode = jcst => {
+const toNode = jcst => {
   switch (jcst.type) {
     case 'cst/identifier':
       return {type: 'identifier', text: node[0], loc: node[1]}
@@ -131,6 +109,6 @@
         loc: node[2]
       }
   }
-} **)
+}
 
-(** ({fromNode, toNode, valueToString}) **)
+return ({fromNode, toNode, valueToString})
