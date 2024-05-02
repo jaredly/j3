@@ -289,7 +289,7 @@
       if (item.values.length < 1) throw new Error(`empty list`)
       return pair(item.values[0].text, item.values.length - 1)
     })
-    return {type: 'sdeftype', 0: name, 1: constructors}
+    return {type: 'sdeftype', 0: name, 1: arr(constructors)}
   },
   def(loc, name, value) {
     if (!name || !value) return
@@ -319,10 +319,36 @@
 
 (** ## Tree-Walking Evaluator **)
 
+(** evaluateStmt = (node, env) => {
+  switch (node.type) {
+    case 'sexpr': return evaluate(node[0], env)
+    case 'sdef':
+      const value = evaluate(node[1], env)
+      env[node[0]] = value
+      return value
+    case 'sdeftype':
+      unwrapArray(node[1]).forEach(({0: name, 1: count}) => {
+        env[name] = constrFn(name, count)
+      })
+      return null
+  }
+}
+ **)
+
+(** constrFn = (name, count) => {
+  const next = (left) => {
+    if (left === 0) return values => ({type: name, ...values})
+    return values => arg => next(left - 1)([...values, arg])
+  }
+  return next(count)([])
+} **)
+
 (** evaluate = (node, scope) => {
   switch (node.type) {
     case 'eprim':
       return node[0][0]
+    case 'estr':
+      return node[0] + unwrapArray(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + suf).join('')
     case 'evar':
       if (!Object.hasOwn(scope, node[0])) {
         throw new Error(`Unknown vbl: ${node[0]}. ${Object.keys(scope).join(', ')}`)
@@ -372,24 +398,37 @@
 
 (** run = v => evaluate(parse(v), {',': a => b => pair(a,b)}) **)
 
-(run ((fn [x] 1) 10))
+(,
+    run
+        [(, (@ ((fn [x] 1) 0)) 1)
+        (, (@ (let [(, x _) (, 1 2)] x)) 1)
+        (,
+        (@
+            (match 3
+                1 2
+                3 10))
+            10)
+        (, (@ "hi ${1}.") "hi 1.")
+        (, (@ "hi") "hi")])
 
-(run (, 1 2))
+(** stmts = stmts => {
+  if (stmts.type !== 'array') throw new Error('need array')
+  const env = {',': a => b => pair(a, b)}
+  let res
+  stmts.values.forEach(stmt => {
+    res = evaluateStmt(parseStmt(stmt), env)
+  });
+  return valueToString(res)
+}
+ **)
 
-(run (let [(, x 3) (, 212 3)] x))
-
-(run
-    (match 3
-        2 1
-        3 10))
-
-(test (, 1 2))
-
-(run ((fn [(, a _)] a) (, 1 12)))
-
-(test (fn [(, a _)] a))
-
-(parse 1)
+(,
+    stmts
+        [(, [0] "0")
+        (, [(def n 10) n] "10")
+        (, [(defn hi [x] (, x 2)) (hi 5)] "(, 5 2)")
+        (, [(deftype (optsion a) (some a) (none)) (some 10)] "(some 10)")
+        (, [(deftype lots (lol a b c)) (lol 1 true "hi")] "(lol 1 true \"hi\")")])
 
 
 

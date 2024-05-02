@@ -19,7 +19,7 @@ type stmt =
 export const jsEvaluator: FullEvalator<
     { values: { [key: string]: any } },
     stmt,
-    stmt
+    stmt | string
 > = {
     id: 'js-evaluator',
     init() {
@@ -42,7 +42,7 @@ export const jsEvaluator: FullEvalator<
             }));
         },
         externalsExpr(expr) {
-            if (expr.type === 'cst') return [];
+            if (typeof expr === 'string' || expr.type === 'cst') return [];
             return [...expr.raw.matchAll(/\w+/g)].map((m) => ({
                 kind: 'value',
                 name: m[0],
@@ -109,14 +109,17 @@ export const jsEvaluator: FullEvalator<
         return { stmt: { type: 'cst', cst: node }, errors: [] };
     },
     parseExpr(node) {
+        if (node.type === 'string' && node.templates.length === 0) {
+            return { expr: slash(node.first.text), errors: [] };
+        }
         const { stmt, errors } = this.parse(node);
         return { expr: stmt, errors };
     },
     evaluate(expr, env, meta) {
+        if (typeof expr === 'string') {
+            return expr;
+        }
         if (expr.type === 'cst') {
-            if (expr.cst.type === 'string' && expr.cst.templates.length === 0) {
-                return slash(expr.cst.first.text);
-            }
             return expr.cst;
         }
         return evalWith('return ' + expr.raw, env.values, expr.args);
