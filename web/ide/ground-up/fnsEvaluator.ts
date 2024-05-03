@@ -39,7 +39,7 @@ export const fnsEvaluator = (
                 const total = preludeText(compiler);
                 Object.assign(values, new Function(total)());
             }
-            console.log('doing a values', values);
+            // console.log('doing a values', values);
             return { js: [], values };
         },
 
@@ -221,12 +221,13 @@ export const fnsEvaluator = (
                     .filter((n) => n.kind === 'value')
                     .map((n) => n.name) ?? [];
             const { needed, values } = assembleExternals(externals, env, san);
+            values.$env = env.values;
 
             try {
                 const js = compiler.compileExpr(expr, meta);
                 const fn = new Function(
                     needed.length
-                        ? `{${needed.map(sanitize).join(', ')}}`
+                        ? `{$env,${needed.map(sanitize).join(', ')}}`
                         : '_',
                     'return ' + js,
                 );

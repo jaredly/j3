@@ -47,7 +47,16 @@ export const advancedInfer = (fns: {
         };
     },
     inferExpr(expr, env) {
-        const result: InferExpr2<Type> = fns.infer2(env)(expr);
+        let result: InferExpr2<Type>;
+        try {
+            result = fns.infer2(env)(expr);
+        } catch (err) {
+            return {
+                result: { type: 'err', err: { type: 'missing', missing: [] } },
+                typesAndLocs: [],
+                usages: {},
+            };
+        }
         return {
             typesAndLocs: unwrapArray(result[1]).map((res) => ({
                 loc: res[0],

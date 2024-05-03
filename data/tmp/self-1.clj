@@ -10,7 +10,7 @@
         []           ""
         [one ..rest] (match rest
                          [] one
-                         _  (++ [one sep (join sep rest)]))))
+                         _  "${one}${sep}${(join sep rest)}")))
 
 (join " " ["one" "two" "three"])
 
@@ -18,9 +18,9 @@ cons
 
 "\n"
 
-(deftype lol (lol a b c))
+(deftype lol (lol int string bool))
 
-(jsonify (cons 2 3))
+(jsonify (cons 2 nil))
 
 (join " " [])
 
@@ -48,9 +48,9 @@ cons
         []           init
         [one ..rest] (f (foldr init rest f) one)))
 
-(foldl 0 [1 2 3 4] ,)
+;(foldl 0 [1 2 3 4] ,)
 
-(foldr 5 [1 2 3 4] ,)
+;(foldr 5 [1 2 3 4] ,)
 
 (defn consr [a b] (cons b a))
 
@@ -69,7 +69,7 @@ cons
 (deftype expr
     (eprim prim)
         (evar string)
-        (elambda string expr)
+        (elambda pat expr)
         (eapp expr expr)
         (elet string expr expr)
         (ematch expr (array (, pat expr))))
@@ -97,7 +97,7 @@ cons
         ["({type: \""
             name
             "\""
-            (++ (mapi 0 args (fn [i arg] (++ [", " (int-to-string i) ": " arg]))))
+            (++ (mapi 0 args (fn [i arg] ", ${(int-to-string i)}: ${arg}")))
             "})"]))
 
 (literal-constr "cons" ["0"])
@@ -271,7 +271,7 @@ cons
                 (cons name _) name))
             "any")
         (, (@ "a${2}b") "a2b")
-        (, (@ ((fn [a] (+ a 2)) 21)) 23)
+        (, (@ ((fn [a] (+ a 21)) 21)) 23)
         (, (@ (let [one 1 two 2] (+ 1 2))) 3)
         (,
         (@
