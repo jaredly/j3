@@ -289,6 +289,7 @@ function DebugCard({
     id: string;
     size: number;
 }) {
+    const [show, setShow] = useState(false);
     useEffect(() => {
         store.setDebug(debug.execOrder, debug.disableEvaluation, debug.showJs);
     }, [debug.execOrder, debug.disableEvaluation, debug.showJs]);
@@ -300,53 +301,70 @@ function DebugCard({
                 top: 60,
                 right: 4,
                 // @ts-ignore
-                backgroundColor: store.dispatch === store.reg ? 'red' : 'black',
-                padding: 16,
+                backgroundColor: store.dispatch === store.reg ? 'red' : '#222',
+                padding: show ? 16 : 0,
                 maxHeight: 'calc(100vh - 60px)',
                 display: 'flex',
                 flexDirection: 'column',
             }}
         >
-            {(
-                [
-                    'ids',
-                    'selection',
-                    'execOrder',
-                    'showJs',
-                    'disableEvaluation',
-                ] as const
-            ).map((k) => (
-                <div key={k}>
-                    <label>
-                        <input
-                            type="checkbox"
-                            checked={debug[k]}
-                            onChange={() =>
-                                setDebug({ ...debug, [k]: !debug[k] })
-                            }
-                        />
-                        {' ' + k}
-                    </label>
-                </div>
-            ))}
-            <WithStore store={store}>
-                <div>
-                    <ShowEvaluators
-                        state={state}
-                        store={store}
-                        listing={listing}
-                        id={id}
-                    />
-                </div>
-                <div>Size: {size}</div>
-                <div style={{ flex: 1, overflow: 'auto' }}>
-                    {debug.selection ? (
-                        <ShowAt at={state.at} hover={state.hover} />
-                    ) : null}
-                    <ShowErrors />
-                    <RenderTraces />
-                </div>
-            </WithStore>
+            <button
+                style={{
+                    fontFamily: 'inherit',
+                    color: 'inherit',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 8,
+                }}
+                onClick={() => setShow(!show)}
+            >
+                Debug Card
+            </button>
+            {show ? (
+                <>
+                    {(
+                        [
+                            'ids',
+                            'selection',
+                            'execOrder',
+                            'showJs',
+                            'disableEvaluation',
+                        ] as const
+                    ).map((k) => (
+                        <div key={k}>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={debug[k]}
+                                    onChange={() =>
+                                        setDebug({ ...debug, [k]: !debug[k] })
+                                    }
+                                />
+                                {' ' + k}
+                            </label>
+                        </div>
+                    ))}
+                    <WithStore store={store}>
+                        <div>
+                            <ShowEvaluators
+                                state={state}
+                                store={store}
+                                listing={listing}
+                                id={id}
+                            />
+                        </div>
+                        <div>Size: {size}</div>
+                        <div style={{ flex: 1, overflow: 'auto' }}>
+                            {debug.selection ? (
+                                <ShowAt at={state.at} hover={state.hover} />
+                            ) : null}
+                            <ShowErrors />
+                            <RenderTraces />
+                        </div>
+                    </WithStore>
+                </>
+            ) : null}
         </div>
     );
 }

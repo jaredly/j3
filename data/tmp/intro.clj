@@ -14,3 +14,5 @@
     cannot convert {"id":"91b090fd-fe50-42b8-b9a3-d40413285da9","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"Now that we have self-hosted type inference, let's make our language even nicer to use! We'll add a basic \"do notation\" (via a syntax-only transform)  which will make tracking state in an immutable way much nicer, and we'll be able to do error tracking without resorting to a ","styles":{}},{"type":"text","text":"panic","styles":{"code":true}},{"type":"text","text":".","styles":{}}],"children":[]}
     And that completes L1! Up to this point, everything we've written would be parseable & runnable by our original bootstrap implementation. Going forward, we'll have fancier language features like Type Classes and Algebraic Effects, which require information from the Type Inference step in order to produce the compiled output. 
      **)
+
+(** hello **)

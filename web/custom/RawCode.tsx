@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Path } from '../../src/state/path';
 // import { ReactCodeJar } from 'react-codejar';
 import { CodeJar } from 'codejar';
-import { useGetStore } from './store/StoreCtx';
+import { useGetStore, useSubscribe } from './store/StoreCtx';
 import { lastPath, useAutoFocus } from './useAutoFocus';
 import { newNodeAfter } from '../../src/state/newNodeBefore';
 import { NewThing } from '../../src/state/getKeyUpdate';
@@ -25,9 +25,28 @@ export const RawCode = ({
 
     const focus = useRef(null as null | (() => void));
 
+    const raw = useSubscribe(
+        () => {
+            const node = store.getState().map[idx];
+            return node?.type === 'raw-code' ? node.raw : null;
+        },
+        (fn) => store.onChange(idx, fn),
+        [idx],
+    );
+
+    const jar = useRef<ReturnType<typeof CodeJar>>();
+    useEffect(() => {
+        if (!jar.current) return;
+        if (jar.current.toString() !== raw) {
+            const pos = jar.current.save();
+            jar.current.updateCode(raw);
+            jar.current.restore(pos);
+        }
+    }, [raw]);
+
     useEffect(() => {
         if (!ref.current) return;
-        const jar = CodeJar(
+        jar.current = CodeJar(
             ref.current,
             (el) => {
                 // @ts-ignore
@@ -42,10 +61,11 @@ export const RawCode = ({
             {
                 tab: '  ',
                 addClosing: false,
+                history: false,
             },
         );
-        jar.updateCode(initial);
-        jar.onUpdate((code) => {
+        jar.current.updateCode(initial);
+        jar.current.onUpdate((code) => {
             const node = store.getState().map[idx];
             if (!node) return;
             if (node.type === 'raw-code' && node.raw === code) return;
@@ -67,7 +87,7 @@ export const RawCode = ({
             ref.current?.focus();
             setTimeout(() => ref.current?.focus(), 100);
         };
-        return () => jar.destroy();
+        return () => jar.current?.destroy();
     }, []);
 
     useAutoFocus(store, idx, 'rich-text', () => {
@@ -100,7 +120,15 @@ export const RawCode = ({
                 ref={ref}
                 onMouseDown={(evt) => evt.stopPropagation()}
                 onClick={(evt) => evt.stopPropagation()}
-                onKeyDown={(evt) => {
+                onKeyDownCapture={(evt) => {
+                    if (evt.key === 'z' && evt.metaKey) {
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        store.dispatch({
+                            type: evt.shiftKey ? 'redo' : 'undo',
+                        });
+                        return;
+                    }
                     if (evt.key === 'Enter' && evt.metaKey) {
                         const state = store.getState();
                         const nidx = state.nidx();
