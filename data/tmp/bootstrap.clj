@@ -410,12 +410,12 @@
     case 'sexpr': return evaluate(node[0], env)
     case 'sdef':
       const value = evaluate(node[1], env)
-      env[node[0]] = value
+      env[sanitize(node[0])] = value
       return value
     case 'sdeftype':
       const res = {}
       unwrapArray(node[1]).forEach(({0: name, 1: args}) => {
-        res[name] = env[name] = constrFn(name, args)
+        res[sanitize(name)] = env[sanitize(name)] = constrFn(name, args)
       })
       return res
   }
@@ -439,17 +439,18 @@
     case 'estr':
       return slash(node[0]) + unwrapArray(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + slash(suf)).join('')
     case 'evar':
-      if (!Object.hasOwn(scope, node[0])) {
-        throw new Error(`Unknown vbl: ${node[0]}. ${Object.keys(scope).join(', ')}`)
+      var name = sanitize(node[0])
+      if (!Object.hasOwn(scope, name)) {
+        throw new Error(`Unknown vbl: ${name}. ${Object.keys(scope).join(', ')}`)
       }
-      return scope[node[0]]
+      return scope[name]
     case 'elambda':
-      return v => evaluate(node[1], {...scope, [node[0]]: v})
+      return v => evaluate(node[1], {...scope, [sanitize(node[0])]: v})
     case 'eapp':
       return evaluate(node[0], scope)(evaluate(node[1], scope))
     case 'elet':
       const init = evaluate(node[1], scope)
-      return evaluate(node[2], {...scope, [node[0]]: got})
+      return evaluate(node[2], {...scope, [sanitize(node[0])]: got})
     case 'ematch':
       const target = evaluate(node[0], scope)
       for (let {0: pat, 1: body} of unwrapArray(node[1])) {
@@ -470,7 +471,7 @@
     case 'pany': return {}
     case 'pprim': return v === node[0][0] ? {} : null
     case 'pvar':
-      return {[node[0]]: v}
+      return {[sanitize(node[0])]: v}
     case 'pcon':
       if (v.type === node[0]) {
         const args = unwrapArray(node[1])
@@ -486,7 +487,7 @@
 }        **)
 
 (** run = v => {
-  const res = evaluate(parse(v), {',': a => b => pair(a,b)})
+  const res = evaluate(parse(v), {'$co': a => b => pair(a,b)})
   if (typeof res === 'number' || typeof res === 'string') return res
   return valueToString(res)
 } **)
@@ -521,7 +522,7 @@
 
 (** stmts = stmts => {
   if (stmts.type !== 'array') throw new Error('need array')
-  const env = {',': a => b => pair(a, b)}
+  const env = {'$co': a => b => pair(a, b)}
   let res
   stmts.values.forEach(stmt => {
     res = evaluateStmt(parseStmt(stmt), env)

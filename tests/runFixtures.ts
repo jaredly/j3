@@ -8,6 +8,7 @@ import {
 } from '../web/custom/store/getImmediateResults';
 import { calculateInitialState } from '../web/custom/worker/calculateInitialState';
 import { Fixture } from './bootstrap.test';
+import { jsEvaluator } from '../web/ide/ground-up/jsEvaluator';
 
 export const runFixtures = async (fixtures: Fixture[]) => {
     const evaluators: { [key: number]: string } = {};
@@ -20,6 +21,8 @@ export const runFixtures = async (fixtures: Fixture[]) => {
         const ev =
             evaluator === null
                 ? bootstrap
+                : evaluator === ':javascript:'
+                ? jsEvaluator
                 : evaluatorFromText(
                       `some ev for ${evaluator.join(' ')}`,
                       evaluator.map((id) => evaluators[id]),
@@ -27,7 +30,9 @@ export const runFixtures = async (fixtures: Fixture[]) => {
 
         if (!ev) {
             throw new Error(
-                `couldnt make an evaluator ${id} from ${evaluator?.join(', ')}`,
+                `couldnt make an evaluator ${id} from ${JSON.stringify(
+                    evaluator,
+                )}`,
             );
         }
         let tid;

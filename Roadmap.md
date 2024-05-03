@@ -4,6 +4,9 @@
 - [ ] I need to ... make the bootstrap parse types be the same as what self-1 is expecting. right now I'm making it worse.
 - [ ] alsooo should I be smarter about externals detections in raw js? idk
 
+COMPROMISE
+what if bootstrap.js sanitized everything??? Like that would work, right?
+
 # QUerstion
 
 do I want ... the bootstrap, to do tree-walking evaluation, or compilation?

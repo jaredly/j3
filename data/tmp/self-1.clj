@@ -10,17 +10,17 @@
         []           ""
         [one ..rest] (match rest
                          [] one
-                         _  "${one}${sep}${(join sep rest)}")))
+                         _  (++ [one sep (join sep rest)]))))
 
 (join " " ["one" "two" "three"])
 
 cons
 
-"\n"
+(deftype lol (lol a b c))
 
-(deftype lol (lol int string bool))
+(jsonify (cons 2 3))
 
-(jsonify (cons 2 nil))
+(eval "JSON.stringify(cons(1)(2)) + ''")
 
 (join " " [])
 
@@ -48,9 +48,9 @@ cons
         []           init
         [one ..rest] (f (foldr init rest f) one)))
 
-;(foldl 0 [1 2 3 4] ,)
+(foldl 0 [1 2 3 4] ,)
 
-;(foldr 5 [1 2 3 4] ,)
+(foldr 5 [1 2 3 4] ,)
 
 (defn consr [a b] (cons b a))
 
@@ -69,7 +69,7 @@ cons
 (deftype expr
     (eprim prim)
         (evar string)
-        (elambda pat expr)
+        (elambda string expr)
         (eapp expr expr)
         (elet string expr expr)
         (ematch expr (array (, pat expr))))
@@ -86,7 +86,7 @@ cons
 (deftype type (tvar int) (tapp type type) (tcon string))
 
 (deftype stmt
-    (sdeftype string (array (,, string int int)))
+    (sdeftype string (array (, string (array type))))
         (sdef string expr)
         (sexpr expr))
 
@@ -97,7 +97,7 @@ cons
         ["({type: \""
             name
             "\""
-            (++ (mapi 0 args (fn [i arg] ", ${(int-to-string i)}: ${arg}")))
+            (++ (mapi 0 args (fn [i arg] (++ [", " (int-to-string i) ": " arg]))))
             "})"]))
 
 (literal-constr "cons" ["0"])
@@ -105,8 +105,6 @@ cons
 (def x 123)
 
 (mapi 0 ["0"] (fn [i arg] arg))
-
-(defn loop [v f] (f v (fn [n] (loop n f))))
 
 (defn compile-st [stmt]
     (match stmt
@@ -117,16 +115,12 @@ cons
                                       (map
                                       cases
                                           (fn [case]
-                                          (let [(,, name2 args _) case]
+                                          (let [(, name2 args) case]
                                               (++
-                                                  ["const ${(sanitize name2)} = ${(join
-                                                      ""
-                                                          (loop
-                                                          0
-                                                              (fn [v recur]
-                                                              (if (= v args)
-                                                                  []
-                                                                      ["(v${(int-to-string v)}) => " ..(recur (+ v 1))]))))}"
+                                                  ["const "
+                                                      (sanitize name2)
+                                                      " = "
+                                                      (++ (mapi 0 args (fn [i _] (++ ["(v" (int-to-string i) ") => "]))))
                                                       "({type: \""
                                                       name2
                                                       "\""
@@ -187,7 +181,7 @@ cons
         []           inner
         [arg ..rest] (compile-pat
                          arg
-                             "${target}[a${i}]"
+                             "${target}[${i}]"
                              (pat-loop target rest (+ i 1) inner))))
 
 (map [] +)
@@ -209,7 +203,12 @@ cons
         "$target"
         "lol")
 
-(compile-pat (pvar "casess") "a" "lol")
+(compile-pat (pvar "case") "a" "lol")
+
+(compile
+    (@
+        (match 2
+            1 2)))
 
 (defn compile [expr]
     (match expr
@@ -271,7 +270,7 @@ cons
                 (cons name _) name))
             "any")
         (, (@ "a${2}b") "a2b")
-        (, (@ ((fn [a] (+ a 21)) 21)) 42)
+        (, (@ ((fn [a] (+ a 2)) 21)) 23)
         (, (@ (let [one 1 two 2] (+ 1 2))) 3)
         (,
         (@
@@ -288,13 +287,10 @@ cons
         (, (@ "`${1}") "`1")
         (, (@ "${${1}") "${1")])
 
-;(eval (compile (@ (+ 2 3))))
+(eval (compile (@ (+ 2 3))))
 
 (@ (+ 2 3))
 
 (@@ 1)
 
-(eval
-    (** compile => compile_stmt => ({type: 'fns', compile: a => _ => compile(a), compile_stmt: a => _ => compile_stmt(a)}) **)
-        compile
-        compile-st)
+1

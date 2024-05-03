@@ -32,7 +32,7 @@ export type Fixture = {
     id: number;
     name: string;
     file: string;
-    evaluator: null | number[];
+    evaluator: null | ':javascript:' | number[];
 };
 
 const fixtures: Fixture[] = [
