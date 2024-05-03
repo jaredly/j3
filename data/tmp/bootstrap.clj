@@ -667,7 +667,7 @@
 
 (** makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {}) **)
 
-(** prelude = makePrelude({evaluate,evaluateStmt,unwrapArray,constrFn,sanitize,sanMap,evalPat,kwdRx: kwdString,slash})  **)
+(** prelude = makePrelude({evaluate,evaluateStmt,unwrapArray,constrFn,sanitize,sanMap,evalPat,kwdRx: kwdString,slash, 'eval': v => new Function('return ' + v)()})  **)
 
 (** testCompileStmt = v => compile_stmt(parseStmt(v))() **)
 

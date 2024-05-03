@@ -22,8 +22,6 @@ cons
 
 (jsonify (cons 2 3))
 
-(eval "JSON.stringify(cons(1)(2)) + ''")
-
 (join " " [])
 
 (join " " ["one"])
@@ -88,7 +86,7 @@ cons
 (deftype type (tvar int) (tapp type type) (tcon string))
 
 (deftype stmt
-    (sdeftype string (array (, string (array type))))
+    (sdeftype string (array (,, string int int)))
         (sdef string expr)
         (sexpr expr))
 
@@ -108,6 +106,8 @@ cons
 
 (mapi 0 ["0"] (fn [i arg] arg))
 
+(defn loop [v f] (f v (fn [n] (loop n f))))
+
 (defn compile-st [stmt]
     (match stmt
         (sexpr expr)          (compile expr)
@@ -117,12 +117,16 @@ cons
                                       (map
                                       cases
                                           (fn [case]
-                                          (let [(, name2 args) case]
+                                          (let [(,, name2 args _) case]
                                               (++
-                                                  ["const "
-                                                      (sanitize name2)
-                                                      " = "
-                                                      (++ (mapi 0 args (fn [i _] (++ ["(v" (int-to-string i) ") => "]))))
+                                                  ["const ${(sanitize name2)} = ${(join
+                                                      ""
+                                                          (loop
+                                                          0
+                                                              (fn [v recur]
+                                                              (if (= v args)
+                                                                  []
+                                                                      ["(v${(int-to-string v)}) => " ..(recur (+ v 1))]))))}"
                                                       "({type: \""
                                                       name2
                                                       "\""
@@ -284,13 +288,13 @@ cons
         (, (@ "`${1}") "`1")
         (, (@ "${${1}") "${1")])
 
-(eval (compile (@ (+ 2 3))))
+;(eval (compile (@ (+ 2 3))))
 
 (@ (+ 2 3))
 
 (@@ 1)
 
 (eval
-    (** compile => compile_stmt => ({type: 'fns', compile, compile_stmt}) **)
+    (** compile => compile_stmt => ({type: 'fns', compile: a => _ => compile(a), compile_stmt: a => _ => compile_stmt(a)}) **)
         compile
         compile-st)

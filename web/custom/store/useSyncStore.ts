@@ -189,9 +189,14 @@ export const setupSyncStore = (
                 // );
                 // evaluator = ev;
                 // um idk
-                loadEvaluator(state.evaluator, (ev) => {
-                    evaluator = ev;
-                });
+                try {
+                    loadEvaluator(state.evaluator, (ev) => {
+                        evaluator = ev;
+                    });
+                } catch (err) {
+                    console.error('failed to load evaluator');
+                    console.error(err);
+                }
             }
 
             // console.time('get results');

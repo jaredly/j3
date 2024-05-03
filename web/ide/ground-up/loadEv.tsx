@@ -38,7 +38,7 @@ export const evaluatorFromText = (
     const benv = { ...builtins(), ...traceEnv() };
     const san = sanitizedEnv(benv);
     const envArgs =
-        '{' +
+        '{$env,' +
         Object.keys(san)
             .filter((n) => sanitize(n) === n)
             .join(', ') +
@@ -48,7 +48,10 @@ export const evaluatorFromText = (
     for (let text of texts) {
         let result;
         try {
-            result = new Function(envArgs, '{' + text + '}')(san);
+            result = new Function(envArgs, '{' + text + '}')({
+                ...san,
+                $env: san,
+            });
         } catch (err) {
             console.error(err);
             return null;
@@ -244,16 +247,23 @@ export const loadEvaluator = (
                 return fn(jsEvaluator, false);
             case ':repr:':
                 return fn(repr, false);
-            default:
-                if (ev?.endsWith('.json')) {
-                    // fn(null, false); // clear it out
-                    loadEv([ev]).then((ev) => fn(ev, true));
-                } else {
-                    fn(null, false);
-                }
+            // default:
+            //     if (ev?.endsWith('.json')) {
+            //         // fn(null, false); // clear it out
+            //         loadEv([ev]).then((ev) => fn(ev, true));
+            //     } else {
+            //         fn(null, false);
+            //     }
         }
     } else if (ev) {
-        loadEv(ev).then((ev) => fn(ev, true));
+        loadEv(ev).then(
+            (ev) => fn(ev, true),
+            (err) => {
+                console.error(`Failed to load ev`);
+                console.error(err);
+                fn(null, true);
+            },
+        );
     } else {
         fn(null, false);
     }
