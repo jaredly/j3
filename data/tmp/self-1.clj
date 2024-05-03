@@ -170,7 +170,7 @@ cons
                                       (map
                                       cases
                                           (fn [case]
-                                          (let [(, name2 args) case]
+                                          (let [(,, name2 args loc) case]
                                               (++
                                                   ["const "
                                                       (sanitize name2)

@@ -100,6 +100,9 @@ export const evaluatorFromText = (
                 compile,
             });
         } else if (result.type === 'fns') {
+            if (result.prelude && data.prelude) {
+                Object.assign(result.prelude, data.prelude);
+            }
             Object.assign(data, result);
         } else if (result.type === 'bootstrap') {
             Object.assign(data, result);

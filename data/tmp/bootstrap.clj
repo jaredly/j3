@@ -121,6 +121,9 @@
   if (node.type === 'list') {
     const values = filterBlanks(node.values)
     if (!values.length) return {type: 'tcon', 0: '()', 1: node.loc}
+    if (values.length === 3 && values[0].type === 'identifier' && values[1].type === 'array') {
+      return {type: 'tcon', 0: 'a function', 1: node.loc}
+    }
     let res = parseType(values[0])
     for (let i=1;i<values.length; i++) {
       res = {type: 'tapp', 0: res, 1: parseType(values[i]), 2: node.loc}
@@ -183,7 +186,7 @@
   fn: (loc, args, body) => {
     if (!args || !body) return
     if (args.type !== 'array') return
-    const pats = args.values.map(parsePat)
+    const pats = filterBlanks(args.values).map(parsePat)
     return foldr(parse(body), pats, (body, arg) =>
       arg.type === 'pvar' ?
     ({type: 'elambda', 0: arg[0], 1: body, 2: loc}) : {
@@ -193,7 +196,7 @@
   let: (loc, bindings, body) => {
     if (!bindings || !body) return
     if (bindings.type !== 'array') return
-    const pairs = makePairs(bindings.values)
+    const pairs = makePairs(filterBlanks(bindings.values))
     return foldr(parse(body), pairs, (body, [pat, init]) => {
       if (pat.type === 'identifier') {
         return {type: 'elet', 0: pat.text, 1: parse(init), 2: body, 3: loc}
@@ -299,7 +302,13 @@
             "(ematch (evar \"c\" 208) [(, (pcon \"cons\" [(pvar \"a\" 203) (pvar \"b\" 204)] 202) (evar \"d\" 209))] 196)")
         (,
         (@ [a ..b])
-            "(eapp (eapp (evar \"cons\" -1) (evar \"a\" 790) -1) (evar \"b\" 791) -1)")])
+            "(eapp (eapp (evar \"cons\" -1) (evar \"a\" 790) -1) (evar \"b\" 791) -1)")
+        (,
+        (@
+            (match a
+                (** hi **)
+                1 1))
+            "(ematch (evar \"a\" 1032) [(, (pprim (pint 1 1034) 1034) (eprim (pint 1 1035) 1035))] 1029)")])
 
 (** ## Patterns **)
 
