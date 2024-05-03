@@ -34,7 +34,24 @@ export const fnsEvaluator = (
     return {
         id,
         init() {
-            return { js: [], values: sanitizedEnv(builtins()) };
+            const values = sanitizedEnv(builtins());
+            if (compiler.prelude) {
+                const text = Object.entries(compiler.prelude)
+                    .map(([name, defn]) => `const ${name} = ${defn};`)
+                    .join('\n\n');
+                Object.assign(
+                    values,
+                    new Function(
+                        text +
+                            `\nreturn {${Object.keys(compiler.prelude).join(
+                                ',',
+                            )}}`,
+                    )(),
+                );
+                console.log('preluded', text);
+            }
+            console.log('doing a values', values);
+            return { js: [], values };
         },
 
         // @ts-ignore
@@ -287,7 +304,9 @@ const compileStmt = (
     try {
         let display: ProduceItem[] = [];
         const fn = new Function(
-            needed.length ? `{${needed.map(sanitize).join(', ')}}` : '_',
+            needed.length
+                ? `{${needed.map(sanitize).concat(['$env']).join(', ')}}`
+                : '_',
             `{${stmts.length === 1 && !names?.length ? `return ${js}` : js};\n${
                 names
                     ? 'return {' +
@@ -299,6 +318,7 @@ const compileStmt = (
                     : ''
             }}`,
         );
+        values.$env = env.values;
         const result_values: { [key: string]: any } = {};
         if (names?.length) {
             let result: { [key: string]: any };
@@ -337,6 +357,8 @@ const compileStmt = (
                 const result = fn(values);
                 if (result != null) {
                     display.push(...renderValue(result));
+                } else {
+                    display.push(`<null>`);
                 }
             } catch (err) {
                 return {
@@ -379,10 +401,12 @@ function assembleExternals(
     const provided = names?.map((obj) => obj.name) ?? [];
     const needed = unique(
         externals.concat(['$trace', 'jsonify', 'valueToString']),
-    ).filter(
-        // Skip recursive self-calls
-        (name) => !provided.includes(name),
-    );
+    )
+        .filter(
+            // Skip recursive self-calls
+            (name) => !provided.includes(name),
+        )
+        .filter((n) => sanitize(n) === n);
     const values: Record<string, any> = {};
     needed.forEach((name) => {
         if (env.values[name] == null) {

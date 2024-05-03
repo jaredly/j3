@@ -30,6 +30,8 @@ export const valueToString = (v: any): string => {
     if (typeof v === 'function') {
         return '<function>';
     }
+    if (v == null) return 'null';
+    if (v === undefined) return 'undefined';
 
     return '' + v;
 };

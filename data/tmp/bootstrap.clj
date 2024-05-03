@@ -434,7 +434,8 @@
         (, [(def n 10) n] "10")
         (, [(defn hi [x] (, x 2)) (hi 5)] "(, 5 2)")
         (, [(deftype (option a) (some a) (none)) (some 10)] "(some 10)")
-        (, [(deftype lots (lol a b c)) (lol 1 true "hi")] "(lol 1 true \"hi\")")])
+        (, [(deftype lots (lol a b c)) (lol 1 true "hi")] "(lol 1 true \"hi\")")
+        (, [(deftype a (com, 1 2)) (com, 1 2)] )])
 
 (** ## Analysis **)
 
@@ -545,17 +546,57 @@
   parse_stmt: parseStmt, parse_expr: parse,
   names: s => arr(names(s)),
   externals_stmt: s => arr(externals(s)),
-  externals_expr: e => arr(externals_expr(e, []))}) **)
+  externals_expr: e => arr(externals_expr(e, [])),
+  fromNode: x => x,
+  toNode: x => x}) **)
 
-(** compile = ast => _meta => `evaluate(${JSON.stringify(ast)}, $env)` **)
+(** compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)` **)
 
-(** compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${ast[0]} = ` : ast.type === 'sdeftype' ? `const {${
-  unwrapArray(ast[1]).map(c => c[0])
-}} = ` : ''}evaluateStmt(${JSON.stringify(ast)}, $env)` **)
+(** sanitize = (() => {
+  const sanMap = {
+    '-': '_',
+    '+': '$pl',
+    '*': '$ti',
+    '=': '$eq',
+    '>': '$gt',
+    '<': '$lt',
+    "'": '$qu',
+    '"': '$dq',
+    ',': '$co',
+    '/': '$sl',
+    ';': '$semi',
+    '@': '$at',
+    '!': '$ex',
+    '|': '$bar',
+    '()': '$unit',
+    '?': '$qe',
+    $: '$$',
+  };
+  const kwds =
+    'case new var const let if else return super break while for default';
+  const rx = [];
+  kwds.split(' ').forEach((kwd) =>
+    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),
+  );
+  return (raw) => {
+    for (let [key, val] of Object.entries(sanMap)) {
+        raw = raw.replaceAll(key, val);
+    }
+    rx.forEach(([rx, res]) => {
+        raw = raw.replaceAll(rx, res);
+    });
+    return raw;
+  }
+})()
+ **)
+
+(** compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
+  unwrapArray(ast[1]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
+}} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)` **)
 
 (** makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = '' + v, obj), {}) **)
 
-(** prelude = makePrelude({evaluate,evaluateStmt,unwrapArray})  **)
+(** prelude = makePrelude({evaluate,evaluateStmt,unwrapArray,constrFn,sanitize})  **)
 
 (** testCompileStmt = v => compile_stmt(parseStmt(v))() **)
 

@@ -9,6 +9,7 @@ export const compiler = (fns: {
     compile: (e: Expr) => (meta: MetaList) => string;
     compile_stmt: (s: Stmt) => (meta: MetaList) => string;
 }): Compiler<Stmt, Expr> => ({
+    prelude: fns.prelude,
     compileExpr(expr, meta) {
         const mm = prepareMeta(meta);
         return fns.compile(expr)(mm);

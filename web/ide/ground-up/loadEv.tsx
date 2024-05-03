@@ -37,7 +37,12 @@ export const evaluatorFromText = (
 ): FullEvalator<{ values: { [key: string]: any } }, Stmt, Expr> | null => {
     const benv = { ...builtins(), ...traceEnv() };
     const san = sanitizedEnv(benv);
-    const envArgs = '{' + Object.keys(san).join(', ') + '}';
+    const envArgs =
+        '{' +
+        Object.keys(san)
+            .filter((n) => sanitize(n) === n)
+            .join(', ') +
+        '}';
 
     let data: any = {};
     for (let text of texts) {
@@ -216,7 +221,7 @@ export function withTracing(
 }
 
 export function sanitizedEnv(benv: { [key: string]: any }) {
-    const san: { [key: string]: any } = {};
+    const san: { [key: string]: any } = { ...benv };
     Object.entries(benv).forEach(([k, v]) => (san[sanitize(k)] = v));
     return san;
 }
