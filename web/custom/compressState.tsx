@@ -65,5 +65,5 @@ export const compressState = (state: NUIState): NUIState => {
         }
     });
 
-    return { ...state, history };
+    return { ...state, history: history.slice(-500) };
 };
