@@ -62,7 +62,9 @@ export const NSDragger = ({
             style={{
                 cursor: 'pointer',
                 marginRight: 12,
-                color: hover ? 'white' : '#444',
+                color: hover || cm ? 'white' : '#444',
+                opacity: hover || cm || errs ? 1 : 0,
+                transition: '.2s ease opacity',
                 position: 'relative',
                 width: 30,
             }}
@@ -86,14 +88,14 @@ export const NSDragger = ({
             }
         >
             [
-            {ns.collapsed ? (
+            {ns.collapsed === true ? (
                 <span style={{ color: errs ? 'red' : '#aaa' }}>
                     {ns.children.length}
                 </span>
             ) : errs ? (
                 '🚨'
             ) : (
-                'v'
+                '⋯'
             )}
             ]
             {cm ? (

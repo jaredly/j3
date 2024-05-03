@@ -5,22 +5,13 @@
     The simplest useful language I can think of would be a calculator language that only has 1 kind of runtime value: the floating-point number. Expressions would be something like expr = number | (expr op expr) where op is one of + - / *.
     Now, for our language to actually be able to self-host & be nice to use, we'll need the following kinds of runtime values:
     - primitives (string, integer, boolean)
-    - functions (we'll got with auto-currying for now)
+    - functions (we'll go with auto-currying for now)
     - algebraic data types (enums from Rust or Swift, or TypeScript's tagged unions). To keep things simple though, we'll omit labels from the arguments.
     And that's all we need! Notably we won't have arrays (but we will have linked lists w/ cons and nil), or objects, or even floats for now.
     
-    We'll define a couple of utility functions that the structured editor will make use of: valueToNode and valueToString. This will allow the editor to display & manipulate the values that result from running code written in our language. **)
-
-(** /*
-// Here's the type of `Node`
-type Node =
-| {type: 'identifier', text: string, loc: number}
-| {type: 'list', values: Node[], loc: number}
-| {type: 'array', values: Node[], loc: number}
-} {type: 'string', first: {type: 'stringText', text: string, loc: number},
-    templates: {expr: Node, suffix: {type: 'stringText', text: string, loc: number}},
-    loc: number}
-*/ **)
+    We'll now define a couple of utility functions that the structured editor will make use of: valueToNode and valueToString. This will allow the editor to display & manipulate the values that result from running code written in our language.
+    
+    These utility functions have to be written in JavaScript (instead of our language) because the argument has type any, which our type system will not allow. Once we add Type Classes in Version 2 of the language (L2), we'll be able to drop this JavaScript in favor of an automatically derived type-class instance :). **)
 
 (** valueToNode = (v) => {
   if (typeof v === 'object' && v && 'type' in v) {

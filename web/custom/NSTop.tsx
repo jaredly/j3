@@ -249,11 +249,10 @@ const RenderProduce = ({
                 whiteSpace: 'pre',
                 fontSize: '80%',
                 color: 'rgba(255,255,255,0.5)',
-                maxHeight:
-                    show || collapsed === 'pinned' ? 'unset' : `${maxHeight}px`,
+                maxHeight: collapsed === 'pinned' ? 'unset' : `${maxHeight}px`,
                 maxWidth: 1000,
-                overflowY: 'hidden',
-                overflowX: 'auto',
+                overflowY: show ? 'visible' : 'hidden',
+                overflowX: show ? 'visible' : 'auto',
                 padding: 4,
                 border:
                     tooLong && collapsed !== 'pinned'
@@ -263,7 +262,10 @@ const RenderProduce = ({
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
         >
-            <div ref={inner} style={{ position: 'relative' }}>
+            <div
+                ref={inner}
+                style={{ position: 'relative', backgroundColor: 'black' }}
+            >
                 {value?.map((item, i) => (
                     <div key={i}>
                         <RenderProduceItem value={item} />
@@ -275,6 +277,7 @@ const RenderProduce = ({
                             position: 'absolute',
                             top: 4,
                             right: 4,
+                            cursor: 'pointer',
                         }}
                         onClick={() => {
                             const current = store.getState().nsMap[ns];

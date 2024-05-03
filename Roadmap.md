@@ -6,6 +6,7 @@
 - [ ] Do nice readmeeeees
 - [x] jsEvaluator, maybe don't evaluate (abc def); only if `abc` is a raw-code
   - [x] raw-code, rendered inline, should look nice
+- [ ] I should allow a plain `:` as an identifier...
 
 # For the Boots
 
