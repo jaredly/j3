@@ -11,6 +11,10 @@ export const evaluatorWorker: WorkerPlugin<
     },
     parse(node, errors_, evaluator) {
         const { expr, errors } = evaluator.parseExpr(node);
+        if (!expr) {
+            console.log(node);
+            return null;
+        }
         errors.forEach(([k, v]) => add(errors_, k, v));
         return {
             parsed: { expr, id: node.loc },

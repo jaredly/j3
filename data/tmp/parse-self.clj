@@ -10,7 +10,7 @@
                          [] one
                          _  "${one}${sep}${(join sep rest)}")))
 
-(join " " ["one" "two" "three"])
+(join " " ["ones" "two" "three"])
 
 (join " " [])
 

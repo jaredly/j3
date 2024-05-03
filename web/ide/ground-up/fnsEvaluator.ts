@@ -414,12 +414,11 @@ function assembleExternals(
     const provided = names?.map((obj) => obj.name) ?? [];
     const needed = unique(
         externals.concat(['$trace', 'jsonify', 'valueToString']),
-    )
-        .filter(
-            // Skip recursive self-calls
-            (name) => !provided.includes(name),
-        )
-        .filter((n) => sanitize(n) === n);
+    ).filter(
+        // Skip recursive self-calls
+        (name) => !provided.includes(name),
+    );
+    // .filter((n) => sanitize(n) === n);
     const values: Record<string, any> = {};
     needed.forEach((name) => {
         if (env.values[name] == null) {

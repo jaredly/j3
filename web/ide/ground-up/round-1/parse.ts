@@ -376,6 +376,8 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | undefined => {
             }
             return { type: 'evar', 0: node.text, 1: node.loc };
         }
+        case 'raw-code':
+            return { type: 'estr', 0: node.raw, 1: wrapArray([]) };
         case 'string':
             const parsed = node.templates.map((t) => parseExpr(t.expr, ctx));
             if (parsed.some((m) => !m)) {

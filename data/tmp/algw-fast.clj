@@ -1195,7 +1195,7 @@
                                                       (<- tenv/nil))
         (sdeftype tname tnl targs constructors l) (infer-deftype tenv' map/nil tname tnl targs constructors l)))
 
-(force
+;(force
     type-error->s
         (run/nil->
         (infer-stmt

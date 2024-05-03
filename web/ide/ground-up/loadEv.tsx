@@ -152,7 +152,7 @@ export const evaluatorFromText = (
             );
         }
 
-        console.log('going for it', data);
+        // console.log('going for it', data);
         return fnsEvaluator(id, parser, comp, ann, typeCheck, san);
     }
 
@@ -224,7 +224,7 @@ export function withTracing(
 }
 
 export function sanitizedEnv(benv: { [key: string]: any }) {
-    const san: { [key: string]: any } = { ...benv };
+    const san: { [key: string]: any } = {};
     Object.entries(benv).forEach(([k, v]) => (san[sanitize(k)] = v));
     return san;
 }

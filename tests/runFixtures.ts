@@ -80,6 +80,7 @@ export const runFixtures = async (fixtures: Fixture[]) => {
             console.timeEnd('worker');
         } catch (err) {
             console.warn(`worker failed`, (err as Error).message);
+            console.error(err);
             throw new Error(`worker failed`);
             break;
         }
