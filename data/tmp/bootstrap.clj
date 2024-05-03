@@ -74,6 +74,34 @@
   return res
 } **)
 
+(** ## Our AST target **)
+
+;(deftype (array a) (nil) (cons a (array a)))
+
+;(deftype expr
+    (eprim prim)
+        (evar string)
+        (elambda string expr)
+        (eapp expr expr)
+        (elet string expr expr)
+        (ematch expr (array (, pat expr))))
+
+;(deftype prim (pint int) (pbool bool))
+
+;(deftype pat
+    (pany)
+        (pvar string)
+        (pprim prim)
+        (pstr string)
+        (pcon string (array string)))
+
+;(deftype type (tvar int) (tapp type type) (tcon string))
+
+;(deftype stmt
+    (sdeftype string (array (, string (array type))))
+        (sdef string expr)
+        (sexpr expr))
+
 (** ## Parser **)
 
 (** parsePrim = node => {
@@ -84,6 +112,21 @@
   if (node.text === 'true' || node.text === 'false') {
     return c.prim(c.bool(node.text === 'true', node.loc), node.loc)
   }
+} **)
+
+(** parseType = node => {
+  if (node.type === 'identifier') {
+    return {type: 'tcon', 0: node.text, 1: node.loc}
+  }
+  if (node.type === 'list') {
+    if (!node.values.length) return {type: 'tcon', 0: '()', 1: node.loc}
+    let res = parseType(node.values[0])
+    for (let i=1;i<node.values.length; i++) {
+      res = {type: 'tapp', 0: res, 1: parseType(node.values[i]), 2: node.loc}
+    }
+    return res
+  }
+  throw new Error(`cant parse type ${node.type}`)
 } **)
 
 (** ## Expressions **)
@@ -137,14 +180,21 @@
     if (!args || !body) return
     if (args.type !== 'array') return
     const pats = args.values.map(parsePat)
-    return foldr(parse(body), pats, (body, arg) => ({type: 'elambda', 0: arg, 1: body, 2: loc}))
+    return foldr(parse(body), pats, (body, arg) =>
+      arg.type === 'pvar' ?
+    ({type: 'elambda', 0: arg[0], 1: body, 2: loc}) : {
+      type: 'elambda', 0: '$arg', 1: {type: 'ematch', 0: {type: 'evar', 0: '$arg', 1: loc}, 1: arr([pair(arg, body)]), 2: loc}}
+    )
   },
   let: (loc, bindings, body) => {
     if (!bindings || !body) return
     if (bindings.type !== 'array') return
     const pairs = makePairs(bindings.values)
     return foldr(parse(body), pairs, (body, [pat, init]) => {
-      return {type: 'elet', 0: parsePat(pat), 1: parse(init), 2: body, 3: loc}
+      if (pat.type === 'identifier') {
+        return {type: 'elet', 0: pat.text, 1: parse(init), 2: body, 3: loc}
+      }
+      return {type: 'ematch', 0: parse(init), 1: arr([pair(parsePat(pat), body)]), 2: loc}
     })
   },
   match: (loc, target, ...rest) => {
@@ -230,9 +280,7 @@
     test
         [(, (@ 1) "(eprim (pint 1 89) 89)")
         (, [] "(evar \"nil\" 118)")
-        (,
-        (@ (fn [a] 1))
-            "(elambda (pvar \"a\" 136) (eprim (pint 1 133) 133) 129)")
+        (, (@ (fn [a] 1)) "(elambda \"a\" (eprim (pint 1 133) 133) 129)")
         (,
         (@
             (match x
@@ -241,10 +289,10 @@
             "(ematch (evar \"x\" 161) [(, (pprim (pint 1 162) 162) (eprim (pint 2 163) 163)) (, (pstr \"hi\" 164) (eprim (pint 1 166) 166))] 157)")
         (,
         (@ (let [(, a b) c] d))
-            "(elet (pcon \",\" [(pvar \"a\" 182) (pvar \"b\" 184)] 180) (evar \"c\" 185) (evar \"d\" 186) 175)")
+            "(ematch (evar \"c\" 185) [(, (pcon \",\" [(pvar \"a\" 182) (pvar \"b\" 184)] 180) (evar \"d\" 186))] 175)")
         (,
         (@ (let [[a ..b] c] d))
-            "(elet (pcon \"cons\" [(pvar \"a\" 203) (pvar \"b\" 204)] 202) (evar \"c\" 208) (evar \"d\" 209) 196)")
+            "(ematch (evar \"c\" 208) [(, (pcon \"cons\" [(pvar \"a\" 203) (pvar \"b\" 204)] 202) (evar \"d\" 209))] 196)")
         (,
         (@ [a ..b])
             "(eapp (eapp (evar \"cons\" -1) (evar \"a\" 790) -1) (evar \"b\" 791) -1)")])
@@ -322,7 +370,7 @@
     const constructors = tail.map(item => {
       if (item.type !== 'list') throw new Error(`constructor not a list`)
       if (item.values.length < 1) throw new Error(`empty list`)
-      return {type: ',,', 0: item.values[0].text, 1: item.values.length - 1, 2: item.values[0].loc}
+      return {type: ',,', 0: item.values[0].text, 1: arr(item.values.slice(1).map(parseType)), 2: item.values[0].loc}
     })
     return {type: 'sdeftype', 0: name, 1: arr(constructors)}
   },
@@ -349,8 +397,11 @@
         [(, (@ 1) "(sexpr (eprim (pint 1 238) 238) 238)")
         (, (@ (def hi 10)) "(sdef \"hi\" (eprim (pint 10 254) 254) 245)")
         (,
+        (@ (deftype (option a) (some a) (none)))
+            "(sdeftype \"option\" [(,, \"some\" [(tcon \"a\" 1018)] 1017) (,, \"none\" [] 1020)])")
+        (,
         (@ (defn lol [a b] (+ a b)))
-            "(sdef \"lol\" (elambda (pvar \"a\" 268) (elambda (pvar \"b\" 269) (eapp (eapp (evar \"+\" 271) (evar \"a\" 272) 270) (evar \"b\" 273) 270) 261) 261) 261)")])
+            "(sdef \"lol\" (elambda \"a\" (elambda \"b\" (eapp (eapp (evar \"+\" 271) (evar \"a\" 272) 270) (evar \"b\" 273) 270) 261) 261) 261)")])
 
 (** ## Tree-Walking Evaluator **)
 
@@ -363,21 +414,23 @@
       return value
     case 'sdeftype':
       const res = {}
-      unwrapArray(node[1]).forEach(({0: name, 1: count}) => {
-        res[name] = env[name] = constrFn(name, count)
+      unwrapArray(node[1]).forEach(({0: name, 1: args}) => {
+        res[name] = env[name] = constrFn(name, args)
       })
       return res
   }
 }
  **)
 
-(** constrFn = (name, count) => {
-  const next = (left) => {
-    if (left === 0) return values => ({type: name, ...values})
-    return values => arg => next(left - 1)([...values, arg])
+(** constrFn = (name, args) => {
+  const next = (args) => {
+    if (args.type === 'nil') return values => ({type: name, ...values})
+    return values => arg => next(args[1])([...values, arg])
   }
-  return next(count)([])
+  return next(args)([])
 } **)
+
+(** constrFn('hi', arr([1, 2]))(101)(11) **)
 
 (** evaluate = (node, scope) => {
   switch (node.type) {
@@ -391,14 +444,12 @@
       }
       return scope[node[0]]
     case 'elambda':
-      return v => evaluate(node[1], {...scope, ...evalPat(node[0], v)})
+      return v => evaluate(node[1], {...scope, [node[0]]: v})
     case 'eapp':
       return evaluate(node[0], scope)(evaluate(node[1], scope))
     case 'elet':
       const init = evaluate(node[1], scope)
-      const got = evalPat(node[0], init)
-      if (!got) throw new Error(`let pattern didnt match: ${JSON.stringify(init)}`)
-      return evaluate(node[2], {...scope, ...got})
+      return evaluate(node[2], {...scope, [node[0]]: got})
     case 'ematch':
       const target = evaluate(node[0], scope)
       for (let {0: pat, 1: body} of unwrapArray(node[1])) {
@@ -511,11 +562,11 @@
   switch (expr.type) {
     case 'evar': return locals.includes(expr[0]) ? [] : [[expr[0], {type: 'value'}, expr[1]]]
     case 'eapp': return externals_expr(expr[0], locals).concat(externals_expr(expr[1], locals))
-    case 'elambda': return externals_expr(expr[1], locals.concat(pat_names(expr[0])))
+    case 'elambda': return externals_expr(expr[1], locals.concat(expr[0]))
     case 'eprim': return []
     case 'estr': return unwrapArray(expr[1]).flatMap(v => externals_expr(v[0], locals))
     case 'elet': return externals_expr(expr[1], locals).concat(
-      externals_expr(expr[2], locals.concat(pat_names(expr[0]))))
+      externals_expr(expr[2], locals.concat(expr[0])))
     case 'ematch':
       return externals_expr(expr[0], locals).concat(
         unwrapArray(expr[1]).flatMap(kase => externals_expr(kase[1], locals.concat(pat_names(kase[0])))))

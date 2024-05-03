@@ -63,7 +63,12 @@ export const jsEvaluator: FullEvalator<
     },
     // analysis
     parse(node) {
-        if (node.type === 'blank' || node.type === 'rich-text') {
+        if (
+            node.type === 'blank' ||
+            node.type === 'rich-text' ||
+            node.type === 'comment' ||
+            node.type === 'comment-node'
+        ) {
             return { stmt: null, errors: [] };
         }
         if (node.type === 'raw-code') {
