@@ -1,4 +1,10 @@
 
+# PLAN Higher up...
+
+- [x] right now, clip history that I save to ~500 items?
+  - bootstrap.json down to 1.2mb
+- [ ] Do nice readmeeeees
+
 # For the Boots
 
 - [ ] I need to ... make the bootstrap parse types be the same as what self-1 is expecting. right now I'm making it worse.

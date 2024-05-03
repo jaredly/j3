@@ -24,6 +24,7 @@ export const bootstrapEvaluator = (
 > => {
     let benv = bootstrap.init();
     data.stmts.forEach((stmt: stmt & { loc: number }) => {
+        if (stmt.type === 'sexpr') return;
         const res = bootstrap.addStatements({ [0]: stmt }, benv, {}, {}, -1);
         benv = res.env;
     });

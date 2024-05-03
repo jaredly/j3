@@ -468,7 +468,7 @@
       return evaluate(node[0], scope)(evaluate(node[1], scope))
     case 'elet':
       const init = evaluate(node[1], scope)
-      return evaluate(node[2], {...scope, [sanitize(node[0])]: got})
+      return evaluate(node[2], {...scope, [sanitize(node[0])]: init})
     case 'ematch':
       const target = evaluate(node[0], scope)
       for (let {0: pat, 1: body} of unwrapArray(node[1])) {
@@ -488,6 +488,7 @@
   switch (node.type) {
     case 'pany': return {}
     case 'pprim': return v === node[0][0] ? {} : null
+    case 'pstr': return v === node[0]
     case 'pvar':
       return {[sanitize(node[0])]: v}
     case 'pcon':
