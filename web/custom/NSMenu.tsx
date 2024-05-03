@@ -6,6 +6,7 @@ import { fromMCST } from '../../src/types/mcst';
 import { clipboardPrefix, clipboardSuffix } from './ByHand';
 import { NSExport } from '../../src/state/clipboard';
 import { Store } from './store/Store';
+import { displayFunctionIds } from './store/displayFunction';
 
 export const exportNs = (id: number, state: NUIState) => {
     const ns = state.nsMap[id] as RealizedNamespace;
@@ -168,7 +169,7 @@ const getItems = (
             },
         },
         { type: 'section', text: 'Set Render Function' },
-        ...['pre', 'none', null].map(
+        ...displayFunctionIds.map(
             (id): MenuItem => ({
                 type: 'action',
                 name: '> ' + (id === null ? 'Default' : id),

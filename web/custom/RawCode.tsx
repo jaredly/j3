@@ -36,7 +36,7 @@ export const RawCode = ({
 
     const jar = useRef<ReturnType<typeof CodeJar>>();
     useEffect(() => {
-        if (!jar.current) return;
+        if (!jar.current || raw == null) return;
         if (jar.current.toString() !== raw) {
             const pos = jar.current.save();
             jar.current.updateCode(raw);

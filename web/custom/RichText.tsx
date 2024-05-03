@@ -19,7 +19,7 @@ import {
     useEditorSelectionChange,
 } from '@blocknote/react';
 import { Path } from '../store';
-import { useGetStore } from './store/StoreCtx';
+import { useGetStore, useSubscribe } from './store/StoreCtx';
 import { Reg } from './types';
 import { useAutoFocus } from './useAutoFocus';
 
@@ -57,6 +57,25 @@ export const RichText = ({
     // const node = React.useRef<HTMLDivElement>(null);
 
     useAutoFocus(store, idx, 'rich-text', () => editor?.focus());
+
+    const contents = useSubscribe(
+        () => {
+            const node = store.getState().map[idx];
+            return node?.type === 'rich-text' ? node.contents : null;
+        },
+        (fn) => store.onChange(idx, fn),
+        [idx],
+    );
+
+    let firstRender = React.useRef(true);
+    React.useEffect(() => {
+        if (firstRender.current) {
+            firstRender.current = false;
+            return;
+        }
+        // erg
+        // editor.removeBlocks()
+    }, [contents]);
 
     // useEditorSelectionChange(() => {
     //     // console.log(editor.getSelection());

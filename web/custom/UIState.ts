@@ -19,6 +19,7 @@ import {
 } from '../ide/ground-up/FullEvalator';
 import { LocedName } from './store/sortTops';
 import { TraceMap } from '../ide/ground-up/loadEv';
+import { displayFunctionIds } from './store/displayFunction';
 
 export type MetaData = {
     trace?: {
@@ -174,6 +175,8 @@ export type Card = {
     top: number;
 };
 
+export type CollapseState = boolean | 'pinned';
+
 export type RealizedNamespace = {
     id: number;
     type: 'normal';
@@ -182,9 +185,9 @@ export type RealizedNamespace = {
     top: number;
     hidden?: boolean;
     children: number[];
-    collapsed?: boolean;
+    collapsed?: CollapseState;
     plugin?: { id: string; options: any }; // hash or something, or just a name ya know
-    display?: { id: string; options: any };
+    display?: { id: (typeof displayFunctionIds)[any]; options: any };
     // PLUGINS get evaluated ... after everything else?
     //
 };

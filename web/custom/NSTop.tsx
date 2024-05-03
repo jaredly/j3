@@ -11,7 +11,7 @@ import { Debug } from '../ide/ground-up/GroundUp';
 import { NSDragger } from './NSDragger';
 import { Drag, NsReg } from './NsReg';
 import { Render, RenderNNode } from './Render';
-import { RealizedNamespace } from './UIState';
+import { CollapseState, RealizedNamespace } from './UIState';
 import { plugins } from './plugins';
 import { Store } from './store/Store';
 import { useExpanded, useGetStore } from './store/StoreCtx';
@@ -159,6 +159,7 @@ function NSTop({
                                 />
                             )}
                             <RenderProduce
+                                ns={ns.id}
                                 collapsed={ns.collapsed}
                                 value={produce}
                             />
@@ -209,16 +210,19 @@ const Wrapped = React.memo(NSTop, (prevProps, nextProps) => {
 export { Wrapped as NSTop };
 
 const RenderProduce = ({
+    ns,
     value,
     collapsed,
 }: {
+    ns: number;
     value: ProduceItem[];
-    collapsed?: boolean;
+    collapsed?: CollapseState;
 }) => {
     const [hover, setHover] = useState(false);
     const [show, setShow] = useState(false);
     const inner = useRef<HTMLDivElement>(null);
     const [height, setHeight] = useState(null as null | number);
+    const store = useGetStore();
 
     useEffect(() => {
         if (!hover) return setShow(false);
@@ -236,32 +240,61 @@ const RenderProduce = ({
 
     if (!value.length) return null;
 
-    if (collapsed) return <>...</>;
+    const tooLong = height != null && height > maxHeight;
+
+    if (collapsed === true) return <>...</>;
     return (
         <div
             style={{
                 whiteSpace: 'pre',
                 fontSize: '80%',
                 color: 'rgba(255,255,255,0.5)',
-                maxHeight: show ? 'unset' : `${maxHeight}px`,
+                maxHeight:
+                    show || collapsed === 'pinned' ? 'unset' : `${maxHeight}px`,
                 maxWidth: 1000,
                 overflowY: 'hidden',
                 overflowX: 'auto',
                 padding: 4,
                 border:
-                    height != null && height > maxHeight
+                    tooLong && collapsed !== 'pinned'
                         ? '1px solid #666'
                         : 'unset',
             }}
             onMouseEnter={() => setHover(true)}
             onMouseLeave={() => setHover(false)}
         >
-            <div ref={inner}>
+            <div ref={inner} style={{ position: 'relative' }}>
                 {value?.map((item, i) => (
                     <div key={i}>
                         <RenderProduceItem value={item} />
                     </div>
                 ))}
+                {tooLong ? (
+                    <div
+                        style={{
+                            position: 'absolute',
+                            top: 4,
+                            right: 4,
+                        }}
+                        onClick={() => {
+                            const current = store.getState().nsMap[ns];
+                            store.dispatch({
+                                type: 'ns',
+                                nsMap: {
+                                    [ns]: {
+                                        ...current,
+                                        collapsed:
+                                            collapsed === 'pinned'
+                                                ? false
+                                                : 'pinned',
+                                    },
+                                },
+                            });
+                        }}
+                    >
+                        📌
+                    </div>
+                ) : null}
             </div>
         </div>
     );

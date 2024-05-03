@@ -83,10 +83,12 @@ export const repr: FullEvalator<{ values: {} }, Node, Node> = {
         return { expr: node, errors: [] };
     },
     setTracing(idx) {},
-    addStatements(stmts, env) {
+    addStatements(stmts, env, _, __, ___, displayFunction) {
         const display: Record<number, Produce> = {};
         Object.keys(stmts).forEach((id) => {
-            display[+id] = JSON.stringify(stmts[+id]);
+            display[+id] = displayFunction
+                ? displayFunction(stmts[+id])
+                : JSON.stringify(stmts[+id]) ?? '';
         });
         return { env, display, values: {} };
     },
