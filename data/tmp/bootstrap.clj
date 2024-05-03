@@ -5,10 +5,6 @@
 (** ## Prelude
     Some basic handy functions **)
 
-(** cons = (a, b) => ({type: 'cons', 0: a, 1: b}) **)
-
-(** nil = {type: 'nil'} **)
-
 (** arr = (values) => {
   let v = nil
   for (let i=values.length-1;i>=0;i--) {
@@ -17,11 +13,13 @@
   return v
 } **)
 
+(** cons = (a, b) => ({type: 'cons', 0: a, 1: b}) **)
+
+(** nil = {type: 'nil'} **)
+
 (** unwrapArray = value => value.type === 'nil' ? [] : [value[0], ...unwrapArray(value[1])] **)
 
 (** unwrapArray(arr([1,2,3])) **)
-
-(** foldlArr = (i, v, f) => v.type === 'nil' ? i : foldlArr(f(i, v[0]), v[1], f) **)
 
 (** set = (obj, k, v) => (obj[k] = v, obj) **)
 
@@ -76,9 +74,9 @@
 
 (** ## Our AST target **)
 
-;(deftype (array a) (nil) (cons a (array a)))
+(deftype (array a) (nil) (cons a (array a)))
 
-;(deftype expr
+(deftype expr
     (eprim prim)
         (evar string)
         (elambda string expr)
@@ -86,18 +84,18 @@
         (elet string expr expr)
         (ematch expr (array (, pat expr))))
 
-;(deftype prim (pint int) (pbool bool))
+(deftype prim (pint int) (pbool bool))
 
-;(deftype pat
+(deftype pat
     (pany)
         (pvar string)
         (pprim prim)
         (pstr string)
         (pcon string (array string)))
 
-;(deftype type (tvar int) (tapp type type) (tcon string))
+(deftype type (tvar int) (tapp type type) (tcon string))
 
-;(deftype stmt
+(deftype stmt
     (sdeftype string (array (, string (array type))))
         (sdef string expr)
         (sexpr expr))
@@ -269,25 +267,30 @@
   }
 } **)
 
-(parse 1)
+((** parse **)
+    1)
 
-(parse (@@ 1))
+((** parse **)
+    (@@ 1))
 
 (@ 12)
 
-(parse "hi${1}")
+((** parse **)
+    "hi${1}")
 
-(parse true)
+((** parse **)
+    true)
 
-(parse [1 2 3])
+((** parse **)
+    [1 2 3])
 
 (** test = v => valueToString(parse(v)) **)
 
 (,
-    test
+    (** test **)
         [(, (@ 1) "(eprim (pint 1 89) 89)")
         (, [] "(evar \"nil\" 118)")
-        (, (@ (fn [a] 1)) "(elambda \"a\" (eprim (pint 1 133) 133) 129)")
+        (, (fn [a] 1) "(elambda \"a\" (eprim (pint 1 133) 133) 129)")
         (,
         (@
             (match x
@@ -354,7 +357,8 @@
   throw new Error('unknown pat' + JSON.stringify(node))
 } **)
 
-(parsePat [1 ..2])
+((** parsePat **)
+    [1 ..2])
 
 (** ## Statements **)
 
@@ -408,10 +412,11 @@
 
 (** testStmt = v => valueToString(parseStmt(v)) **)
 
-(testStmt 1)
+((** testStmt **)
+    1)
 
 (,
-    testStmt
+    (** testStmt **)
         [(, (@ 1) "(sexpr (eprim (pint 1 238) 238) 238)")
         (, (@ (def hi 10)) "(sdef \"hi\" (eprim (pint 10 254) 254) 245)")
         (,
@@ -447,8 +452,6 @@
   }
   return next(args)([])
 } **)
-
-(** constrFn('hi', arr([1, 2]))(101)(11) **)
 
 (** evaluate = (node, scope) => {
   switch (node.type) {
@@ -526,7 +529,7 @@
     }) **)
 
 (,
-    run
+    (** run **)
         [(, (@ ((fn [x] 1) 0)) 1)
         (, (@ (let [(, x _) (, 1 2)] x)) 1)
         (,
@@ -551,7 +554,7 @@
  **)
 
 (,
-    stmts
+    (** stmts **)
         [(, [0] "0")
         (, [(def n 10) n] "10")
         (, [(defn hi [x] (, x 2)) (hi 5)] "(, 5 2)")
@@ -606,19 +609,27 @@
 }
  **)
 
-(** testExt = v => valueToString(externals(parseStmt(v))) **)
+(** testExt = v =>(externals(parseStmt(v))) **)
 
 (,
-    testExt
-        [(, (@ lol) "[[\"lol\", (value), 620]]")
-        (, (@ (fn [(, x)] (+ x))) "[[\"+\", (value), 641]]")
-        (, (@ "hi ${x}") "[[\"x\", (value), 653]]")
+    (** testExt **)
+        [(,
+        (@ lol)
+            (** [["lol",{"type":"value"},620]] **))
+        (,
+        (@ (fn [(, x)] (+ x)))
+            (** [["+",{"type":"value"},641]] **))
+        (,
+        (@ "hi ${x}")
+            (** [["x",{"type":"value"},653]] **))
         (,
         (@
             (match m
                 (, a b) (+ a)))
-            "[[\"m\", (value), 663], [\"+\", (value), 665]]")
-        (, (@ (let [x 2] (+ x))) "[[\"+\", (value), 686]]")
+            (** [["m",{"type":"value"},663],["+",{"type":"value"},665]] **))
+        (,
+        (@ (let [x 2] (+ x)))
+            (** [["+",{"type":"value"},686]] **))
         (,
         (@
             (defn pat-loop [target args i inner]
@@ -628,50 +639,17 @@
                                      arg
                                          "${target}[${i}]"
                                          (pat-loop target rest (+ i 1) inner)))))
-            "[[\"compile-pat\", (value), 855], [\"+\", (value), 868]]")])
+            (** [["compile-pat",{"type":"value"},855],["+",{"type":"value"},868]] **))])
 
 (** testNames = v => valueToString(names(parseStmt(v))) **)
 
 (,
-    testNames
+    (** testNames **)
         [(, (@ hi) "[]")
         (, (@ (def x 10)) "[[\"x\", (value), 712]]")
         (,
         (@ (deftype (option x) (some x) (none)))
             "[[\"some\", (value), 730], [\"none\", (value), 733]]")])
-
-(** Compile to js **)
-
-(** compile_ = node => {
-  switch (node.type) {
-    case 'eprim': return '' + node[0][0]
-    case 'estr': return `\`${unslash(node[0])}${unwrapArray(node[1]).map(
-      ({0: expr, 1: suf}) => `\${${compile(expr)}}${unslash(suf)}\``
-    ).join('\n')}`
-    case 'evar': return sanitize(node[0])
-    case 'elambda':
-      return `(${patArgs(node[0])}) => ${compile(node[1])}`
-    case 'eapp':
-      return `(${compile(node[0])})(${compile(node[1])})`
-    case 'elet':
-      return `((${patArgs(node[0])}) => ${compile(node[2])})(${compile(node[1])})`
-    case 'ematch':
-      return `(($target) => {${unwrapArray(node[1]).map(({0: pat, 1: body}) => compilePat(pat, '$target', 'return ' + compile(body))).join('\n')})(${compile(node[0])})`
-  }
-} **)
-
-(** compilePat_ = (node, target, body) => {
-  switch (node.type) {
-    case 'pany':
-      return body
-    case 'pvar':
-      return `{const ${sanitize(node[0])} = ${target};\n${body}}`
-    case 'pprim':
-      return `if (${target} === ${node[0][0]}) {${body}}`
-    case 'pcon':
-      const args = unwrapArray(node[1])
-  }
-} **)
 
 (** ({type: 'fns', prelude,
   compile, compile_stmt,
@@ -683,6 +661,17 @@
   toNode: x => x}) **)
 
 (** compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)` **)
+
+(** sanitize =  (raw) => {
+    for (let [key, val] of Object.entries(sanMap)) {
+        raw = raw.replaceAll(key, val);
+    }
+    kwdRx.forEach(([rx, res]) => {
+        raw = raw.replaceAll(rx, res);
+    });
+    return raw;
+  }
+ **)
 
 (** sanMap = {
     '-': '_',
@@ -719,17 +708,6 @@
 
 (** kwdString = '[' + kwdRx.map(([r, v]) => `[${r}, "${v}"]`).join(', ') + ']' **)
 
-(** sanitize =  (raw) => {
-    for (let [key, val] of Object.entries(sanMap)) {
-        raw = raw.replaceAll(key, val);
-    }
-    kwdRx.forEach(([rx, res]) => {
-        raw = raw.replaceAll(rx, res);
-    });
-    return raw;
-  }
- **)
-
 (** sanitize('for') **)
 
 (** compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
@@ -742,5 +720,6 @@
 
 (** testCompileStmt = v => compile_stmt(parseStmt(v))() **)
 
-(testCompileStmt (deftype card (red) (black)))
+((** testCompileStmt **)
+    (deftype card (red) (black)))
 

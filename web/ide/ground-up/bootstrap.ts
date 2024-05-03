@@ -17,6 +17,40 @@ import {
 import { FullEvalator, Produce } from './FullEvalator';
 import { valueToString } from './valueToString';
 import { LocedName } from '../../custom/store/sortTops';
+import { Node } from '../../../src/types/cst';
+
+export const valueToNode = (v: any): Node => {
+    if (typeof v === 'object' && v && 'type' in v) {
+        if (v.type === 'cons' || v.type === 'nil') {
+            const un = unwrapArray(v);
+            return { type: 'array', values: un.map(valueToNode), loc: -1 };
+        }
+        let args = [];
+        for (let i = 0; i in v; i++) {
+            args.push(v[i]);
+        }
+        return {
+            type: 'list',
+            values: [
+                { type: 'identifier', text: v.type, loc: -1 },
+                ...args.map(valueToNode),
+            ],
+            loc: -1,
+        };
+    }
+    if (typeof v === 'string') {
+        return {
+            type: 'string',
+            first: { type: 'stringText', text: v, loc: -1 },
+            templates: [],
+            loc: -1,
+        };
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+        return { type: 'identifier', text: v + '', loc: -1 };
+    }
+    return { type: 'raw-code', raw: JSON.stringify(v), lang: 'json', loc: -1 };
+};
 
 export const bootstrap: FullEvalator<
     { values: { [key: string]: any } },
@@ -27,6 +61,8 @@ export const bootstrap: FullEvalator<
     init: () => {
         return { values: { ...builtins(), ...traceEnv() } };
     },
+    valueToString,
+    valueToNode,
     analysis: {
         externalsStmt(stmt) {
             switch (stmt.type) {

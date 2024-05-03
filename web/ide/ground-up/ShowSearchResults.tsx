@@ -244,6 +244,9 @@ const freeTextSearch = (
             ) {
                 return true;
             }
+            if (node.type === 'raw-code') {
+                return node.raw.toLowerCase().includes(text);
+            }
             return false;
         })
         .slice(0, 100);

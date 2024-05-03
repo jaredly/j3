@@ -37,6 +37,7 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
         for (let [k, res] of Object.entries(results)) {
             if (res.error) return true;
             if (!equal(res.expected, res.found)) return true;
+            if (res.expected === undefined) return true;
         }
         return false;
     },
@@ -52,7 +53,13 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
         } = {};
         if (data.test) {
             if (!data.test.expr) {
-                return {};
+                return {
+                    [data.test.node.loc]: {
+                        expected: null,
+                        found: null,
+                        error: "Test expression didn't parse",
+                    },
+                };
             }
             try {
                 test = evaluate(data.test.expr);
@@ -68,7 +75,14 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
                 });
                 return { results };
             }
-            if (typeof test !== 'function') return {};
+            if (typeof test !== 'function')
+                return {
+                    [data.test.node.loc]: {
+                        expected: null,
+                        found: null,
+                        error: "Test expression isn't a function",
+                    },
+                };
         }
         data.fixtures.forEach((item) => {
             if (item.type === 'line' && item.input?.expr) {

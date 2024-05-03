@@ -299,7 +299,8 @@ function DebugCard({
                 position: 'fixed',
                 top: 60,
                 right: 4,
-                backgroundColor: 'black',
+                // @ts-ignore
+                backgroundColor: store.dispatch === store.reg ? 'red' : 'black',
                 padding: 16,
                 maxHeight: 'calc(100vh - 60px)',
                 display: 'flex',

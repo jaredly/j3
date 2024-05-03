@@ -2,7 +2,6 @@ import React from 'react';
 import { Action, MetaDataMap, NamespacePlugin } from '../UIState';
 import { NNode } from '../../../src/state/nestedNodes/NNode';
 import equal from 'fast-deep-equal';
-import { valueToString } from '../../ide/ground-up/valueToString';
 import { Path } from '../../store';
 import { fromMCST } from '../../../src/types/mcst';
 import { newNodeAfter, newNodeBefore } from '../../../src/state/newNodeBefore';
@@ -10,6 +9,9 @@ import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
 import { useGetStore } from '../store/StoreCtx';
 import { highlightIdxs } from '../RenderProduceItem';
 import { Data, Expr, parse, findLastIndex, LineFixture } from './Data';
+import { valueToString } from '../../ide/ground-up/valueToString';
+import { Node } from '../../../src/types/cst';
+import { valueToNode } from '../../ide/ground-up/bootstrap';
 
 export const fixturePlugin: NamespacePlugin<any, Data<Expr>, any> = {
     id: 'fixture',
@@ -205,6 +207,16 @@ export const fixturePlugin: NamespacePlugin<any, Data<Expr>, any> = {
                                                                       dispatch={
                                                                           store.dispatch
                                                                       }
+                                                                      valueToString={
+                                                                          store.getEvaluator()
+                                                                              ?.valueToString ??
+                                                                          valueToString
+                                                                      }
+                                                                      valueToNode={
+                                                                          store.getEvaluator()
+                                                                              ?.valueToNode ??
+                                                                          valueToNode
+                                                                      }
                                                                   />
                                                               ),
                                                           },
@@ -226,6 +238,8 @@ function StatusMessage({
     item,
     results,
     dispatch,
+    valueToString,
+    valueToNode,
 }: {
     item: LineFixture<any>;
     results: {
@@ -236,6 +250,8 @@ function StatusMessage({
         };
     };
     dispatch: React.Dispatch<Action>;
+    valueToString: (v: any) => string;
+    valueToNode: (v: any) => Node | null;
 }): JSX.Element | null {
     const store = useGetStore();
 
@@ -270,16 +286,20 @@ function StatusMessage({
                             },
                         ],
                     });
+                    const node = valueToNode(res.found);
                     dispatch({
                         type: 'paste',
                         items: [
-                            {
-                                type: 'text',
-                                trusted: false,
-                                text: valueToString(
-                                    results[item.input!.node.loc].found,
-                                ),
-                            },
+                            node == null
+                                ? {
+                                      type: 'text',
+                                      trusted: false,
+                                      text: valueToString(res.found),
+                                  }
+                                : {
+                                      type: 'nodes',
+                                      nodes: [node],
+                                  },
                         ],
                     });
                 }}

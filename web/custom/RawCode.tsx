@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Path } from '../../src/state/path';
 // import { ReactCodeJar } from 'react-codejar';
 import { CodeJar } from 'codejar';
@@ -6,6 +6,7 @@ import { useGetStore } from './store/StoreCtx';
 import { lastPath, useAutoFocus } from './useAutoFocus';
 import { newNodeAfter } from '../../src/state/newNodeBefore';
 import { NewThing } from '../../src/state/getKeyUpdate';
+import { useLatest } from './useLatest';
 
 export const RawCode = ({
     initial,
@@ -20,6 +21,7 @@ export const RawCode = ({
 }) => {
     const store = useGetStore();
     const ref = useRef<HTMLDivElement>(null);
+    const toplevel = path[path.length - 1].type === 'ns-top';
 
     const focus = useRef(null as null | (() => void));
 
@@ -45,6 +47,7 @@ export const RawCode = ({
         jar.updateCode(initial);
         jar.onUpdate((code) => {
             const node = store.getState().map[idx];
+            if (!node) return;
             if (node.type === 'raw-code' && node.raw === code) return;
             store.dispatch({
                 type: 'update',
@@ -80,7 +83,9 @@ export const RawCode = ({
             style={{
                 // backgroundColor: '#224',
                 backgroundColor: 'rgb(28 28 28)',
-                padding: 8,
+                // padding: 8,
+                padding: toplevel ? 8 : '0 8px',
+                borderRadius: 4,
             }}
             className="language-javascript"
             onMouseDown={(evt) => evt.stopPropagation()}
@@ -128,13 +133,13 @@ export const RawCode = ({
                     }
                 }}
                 onFocus={() => {
-                    console.log('doing a focus');
+                    // console.log('doing a focus');
                     const last = lastPath(store.getState());
                     if (last?.idx === idx && last.type === 'rich-text') {
-                        console.log('alread focused');
+                        // console.log('alread focused');
                         return;
                     }
-                    console.log('sleecttt', last);
+                    // console.log('sleecttt', last);
                     store.dispatch({
                         type: 'select',
                         at: [

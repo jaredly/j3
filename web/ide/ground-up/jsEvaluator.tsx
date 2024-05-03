@@ -27,6 +27,20 @@ export const jsEvaluator: FullEvalator<
     init() {
         return { values: {} };
     },
+    valueToString(v) {
+        if (typeof v === 'function') {
+            return '<function>';
+        }
+        return JSON.stringify(v);
+    },
+    valueToNode(v) {
+        return {
+            type: 'raw-code',
+            lang: 'javascript',
+            loc: -1,
+            raw: JSON.stringify(v),
+        };
+    },
     analysis: {
         names(stmt) {
             if (stmt.type === 'cst') return [];
@@ -77,37 +91,42 @@ export const jsEvaluator: FullEvalator<
                 errors: [],
             };
         }
-        if (node.type === 'identifier') {
+        if (
+            node.type === 'identifier' &&
+            (!isNaN(+node.text) ||
+                node.text === 'true' ||
+                node.text === 'false')
+        ) {
             return {
                 stmt: { type: 'raw', raw: node.text, args: [] },
                 errors: [],
             };
         }
+
         if (
             node.type === 'list' &&
             node.values.length >= 1 &&
-            (node.values[0].type === 'raw-code' ||
-                node.values[0].type === 'identifier')
+            node.values[0].type === 'identifier' &&
+            node.values[0].text === '@'
         ) {
-            if (
-                node.values[0].type === 'identifier' &&
-                node.values[0].text === '@'
-            ) {
-                return {
-                    stmt:
-                        node.values.length > 1
-                            ? { type: 'cst', cst: node.values[1] }
-                            : null,
-                    errors: [],
-                };
-            }
+            return {
+                stmt:
+                    node.values.length > 1
+                        ? { type: 'cst', cst: node.values[1] }
+                        : null,
+                errors: [],
+            };
+        }
+
+        if (
+            node.type === 'list' &&
+            node.values.length >= 1 &&
+            node.values[0].type === 'raw-code'
+        ) {
             return {
                 stmt: {
                     type: 'raw',
-                    raw:
-                        node.values[0].type === 'raw-code'
-                            ? node.values[0].raw
-                            : node.values[0].text,
+                    raw: node.values[0].raw,
                     args: node.values.slice(1),
                 },
                 errors: [],
@@ -132,13 +151,15 @@ export const jsEvaluator: FullEvalator<
         return evalWith('return ' + expr.raw, env.values, expr.args);
     },
     setTracing() {},
-    addStatements(stmts, env) {
+    addStatements(stmts, env, _, __, ___, displayResult) {
         const display: Record<number, Produce> = {};
         const values: Record<string, any> = {};
         const entries = Object.entries(stmts)
             .map(([key, stmt]) => {
                 if (stmt.type === 'cst') {
-                    display[+key] = JSON.stringify(stmt.cst) ?? '';
+                    display[+key] = displayResult
+                        ? displayResult(stmt.cst)
+                        : JSON.stringify(stmt.cst) ?? '';
                     return;
                 }
                 const { name, text } = parseAssign(stmt.raw);
@@ -149,7 +170,9 @@ export const jsEvaluator: FullEvalator<
                             env.values,
                             stmt.args,
                         );
-                        display[+key] = JSON.stringify(res) ?? '';
+                        display[+key] = displayResult
+                            ? displayResult(res)
+                            : JSON.stringify(res) ?? 'undefined';
                     } catch (err) {
                         display[+key] = {
                             type: 'error',
@@ -175,10 +198,11 @@ export const jsEvaluator: FullEvalator<
                     const value = res[e.name];
                     values[e.name] = value;
                     env.values[e.name] = value;
-                    display[+e.key] =
-                        typeof value === 'function'
-                            ? '<function>'
-                            : JSON.stringify(value) ?? '';
+                    display[+e.key] = displayResult
+                        ? displayResult(res)
+                        : typeof value === 'function'
+                        ? '<function>'
+                        : JSON.stringify(value) ?? '';
                 });
             } catch (err) {
                 entries.forEach((e) => {

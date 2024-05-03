@@ -18,6 +18,7 @@ import { ProduceItem } from './FullEvalator';
 import { RenderStatic } from '../../custom/RenderStatic';
 import { compareScores, fuzzyScore } from '../../../src/to-ast/fuzzy';
 import { filterNulls } from '../../custom/old-stuff/filterNulls';
+import { stringText } from '../../../src/types/cst';
 
 export const CommandPalette = ({
     setSearchResults,
@@ -487,6 +488,7 @@ const getCommands = (
 
     if (sel) {
         const idx = sel[sel.length - 1].idx;
+        const node = state.map[idx];
         commands.push({
             type: 'plain',
             title: 'Set to "raw javascript code"',
@@ -497,7 +499,12 @@ const getCommands = (
                         [idx]: {
                             type: 'raw-code',
                             lang: 'javascript',
-                            raw: '// write some code',
+                            raw:
+                                node.type === 'identifier'
+                                    ? node.text
+                                    : node.type === 'string'
+                                    ? (state.map[node.first] as stringText).text
+                                    : '// some code',
                             loc: idx,
                         },
                     },

@@ -51,6 +51,8 @@ export type FullEvalator<
     init(): Env;
     parse(node: Node): { stmt: Stmt | null; errors: [number, string][] };
     parseExpr(node: Node): { expr: Expr | null; errors: [number, string][] };
+    valueToString(v: any): string;
+    valueToNode(v: any): Node | null;
 
     // Type checker stuff
     inference?: TypeChecker<TypeEnv, Stmt, Expr, Type>;

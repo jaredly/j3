@@ -4,6 +4,8 @@
 - [x] right now, clip history that I save to ~500 items?
   - bootstrap.json down to 1.2mb
 - [ ] Do nice readmeeeees
+- [x] jsEvaluator, maybe don't evaluate (abc def); only if `abc` is a raw-code
+  - [x] raw-code, rendered inline, should look nice
 
 # For the Boots
 

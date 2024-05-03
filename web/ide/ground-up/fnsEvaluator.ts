@@ -17,6 +17,7 @@ import { fixDuplicateLocs } from '../../../src/state/fixDuplicateLocs';
 import { Analyze, Compiler, Parser, TypeChecker } from './evaluators/interface';
 import { add } from '../../custom/worker/add';
 import { Env, Expr, Stmt, Type } from './evaluators/analyze';
+import { valueToNode } from './bootstrap';
 
 /**
  * This is for creating an evaluator out of a sandbox that was compiled
@@ -42,6 +43,9 @@ export const fnsEvaluator = (
             // console.log('doing a values', values);
             return { js: [], values };
         },
+        // TODO: allow customization
+        valueToString,
+        valueToNode,
 
         // @ts-ignore
         // _data: data,

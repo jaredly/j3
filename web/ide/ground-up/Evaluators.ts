@@ -70,6 +70,12 @@ export class LocError extends Error {
 export const repr: FullEvalator<{ values: {} }, Node, Node> = {
     id: 'repr',
     init: () => ({ values: {} }),
+    valueToString(v) {
+        return 'no values in :repr:';
+    },
+    valueToNode(v) {
+        throw new Error('no values in :repr:');
+    },
     parse(node: Node) {
         return { stmt: node, errors: [] };
     },

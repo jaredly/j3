@@ -1,4 +1,4 @@
-import { bootstrap } from './bootstrap';
+import { bootstrap, valueToNode } from './bootstrap';
 import { Errors, FullEvalator, Produce } from './FullEvalator';
 import { valueToString } from './valueToString';
 import { findTops } from './findTops';
@@ -36,6 +36,8 @@ export const bootstrapEvaluator = (
             return { values: bootstrap.init().values, source: [] };
         },
         analysis: bootstrap.analysis,
+        valueToString,
+        valueToNode,
         setTracing(idx, traceMap) {},
         addStatements(stmts: Record<number, stmt>, env) {
             const display: Record<number, Produce> = {};

@@ -4,7 +4,7 @@ export function addTypeConstructors(
     stmt: {
         type: 'sdeftype';
         0: string;
-        1: arr<{ type: ','; 0: string; 1: arr<type_> }>;
+        1: arr<{ type: ',,'; 0: string; 1: arr<type_>; 2: number }>;
     },
     env: { [key: string]: any },
 ) {
