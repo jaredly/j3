@@ -66,7 +66,7 @@ export const fnsEvaluator = (
 
             if (compiler.prelude) {
                 const total = preludeText(compiler);
-                env.js.push(total);
+                env.js.push(`const $env = (() => {${total}})();`);
             }
 
             const errors: Errors = {};
