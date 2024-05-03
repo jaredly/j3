@@ -48,13 +48,14 @@ const PluginRender = ({
         return (
             <div>
                 {results == null ? 'No plugin results...' : ''}
-                <Render {...props} />
+                <Render key={ns.top} {...props} />
             </div>
         );
     return (
         <RenderNNode
             {...props}
             values={values}
+            key={ns.top}
             nnode={rn}
             hoverPath={props.path}
             Recurse={Render}
@@ -138,6 +139,7 @@ function NSTop({
                             {ns.plugin ? (
                                 <PluginRender
                                     ns={ns}
+                                    key={ns.top}
                                     debug={false}
                                     idx={ns.top}
                                     // firstLineOnly={ns.collapsed}

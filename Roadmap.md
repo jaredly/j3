@@ -5,7 +5,11 @@
 - [ ] alsooo should I be smarter about externals detections in raw js? idk
 
 COMPROMISE
-what if bootstrap.js sanitized everything??? Like that would work, right?
+- [x] what if bootstrap.js sanitized everything??? Like that would work, right?
+- [ ] OK So nowwwww what about them builtins?
+  - self-1 has a thing with all those builtins
+    but what if it were differenttt
+    - maybe like exporting a "builtins" or something? like a prelude? I mean ... right?
 
 # QUerstion
 
