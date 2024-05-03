@@ -36,19 +36,8 @@ export const fnsEvaluator = (
         init() {
             const values = sanitizedEnv(builtins());
             if (compiler.prelude) {
-                const text = Object.entries(compiler.prelude)
-                    .map(([name, defn]) => `const ${name} = ${defn};`)
-                    .join('\n\n');
-                Object.assign(
-                    values,
-                    new Function(
-                        text +
-                            `\nreturn {${Object.keys(compiler.prelude).join(
-                                ',',
-                            )}}`,
-                    )(),
-                );
-                console.log('preluded', text);
+                const total = preludeText(compiler);
+                Object.assign(values, new Function(total)());
             }
             console.log('doing a values', values);
             return { js: [], values };
@@ -74,6 +63,12 @@ export const fnsEvaluator = (
                 throw new Error(`toFile requires analysis`);
             }
             let env = this.init();
+
+            if (compiler.prelude) {
+                const total = preludeText(compiler);
+                env.js.push(total);
+            }
+
             const errors: Errors = {};
             const allNames: LocedName[] = [];
             let ret: null | string = null;
@@ -329,9 +324,12 @@ const compileStmt = (
                 return {
                     env,
                     display: [
-                        `JS Evaluation Error: ${
-                            (err as Error).message
-                        }\n${js}\nDeps: ${needed.join(',')}`,
+                        {
+                            type: 'error',
+                            message: `JS Evaluation Error: ${
+                                (err as Error).message
+                            }\n${js}\nDeps: ${needed.join(',')}`,
+                        },
                     ],
                     values: {},
                 };
@@ -364,9 +362,12 @@ const compileStmt = (
                 return {
                     env,
                     display: [
-                        `JS Evaluation Error: ${
-                            (err as Error).message
-                        }\n${js}\nDeps: ${needed.join(',')}`,
+                        {
+                            type: 'error',
+                            message: `JS Evaluation Error: ${
+                                (err as Error).message
+                            }\n${js}\nDeps: ${needed.join(',')}`,
+                        },
                     ],
                     values: {},
                 };
@@ -391,6 +392,15 @@ const compileStmt = (
         };
     }
 };
+
+function preludeText(compiler: Compiler<Stmt, Expr>) {
+    const text = Object.entries(compiler.prelude!)
+        .map(([name, defn]) => `const ${name} = ${defn};`)
+        .join('\n\n');
+    const total =
+        text + `\nreturn {${Object.keys(compiler.prelude!).join(',')}}`;
+    return total;
+}
 
 function assembleExternals(
     externals: string[],

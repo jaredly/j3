@@ -79,14 +79,11 @@ const parse = node => {
     case 'identifier': {
       return parsePrim(node) || c.evar(node.text, node.loc)
     }
-    case 'array': {
-      return c.list(node.values.map(parse), node.loc)
-    }
     case 'string': {
       const exprs = node.templates.map(t => parse(t.expr))
       return {type: 'estr', 0: node.first.text, 1: arr(
         node.templates.map((t, i) => pair(exprs[i], t.suffix.text))
-      )}
+      ), 2: node.loc}
     }
     case 'list': {
       if (!node.values.length) return c.evar('()', node.loc)
@@ -115,6 +112,8 @@ const parse = node => {
       }
       return res
     }
+    case 'raw-code':
+      return {type: 'estr', 0: node.raw, 1: nil, 2: node.loc}
   }
   throw new Error(`cant parse ${JSON.stringify(node)}`)
 }
@@ -140,7 +139,7 @@ const forms = {
     return {type: 'ematch', 0: parse(target), 1: arr(cases.map(([pat, body]) => pair(parsePat(pat), parse(body)))), 2: loc}
   },
   '@': (loc, inner) => ({type: 'equot', 0: parse(inner), 1: loc}),
-  '@@': (loc, inner) => ({type: 'equot', 0: inner, 1: loc}),
+  '@@': (loc, inner) => ({type: 'equot', 0: fromNode(inner), 1: loc}),
   '@!': (loc, inner) => ({type: 'equot', 0: parseStmt(inner), 1: loc}),
   'if': (loc, cond, yes, no) => ({type: 'ematch', 0: parse(cond), 1: arr([pair(
     {type: 'pprim', 0: {type: 'pbool', 0: true, 1: loc}, 1: loc},
@@ -168,6 +167,35 @@ const c = {
     return v
   },
   
+}
+
+const fromNode = node => {
+  switch (node.type) {
+    case 'comment':
+    case 'comment-node':
+    case 'rich-text':
+      return
+    case 'identifier':
+      return {type: 'cst/identifier', 0: node.text, 1: node.loc}
+    case 'spread':
+      const inner = fromNode(node.contents)
+      return inner
+      ? {type: 'cst/spread', 0: inner, 1: node.loc}
+      : {type: 'cst/empty-spread', 0: node.loc}
+    case 'array':
+    case 'record':
+    case 'list':
+      return {type: 'cst/' + node.type, 0: arr(node.values.map(fromNode).filter(Boolean)), 1: node.loc}
+    case 'string':
+      return {type: 'cst/string', 0: node.first.text, 1: arr(
+        node.templates.map(item => ({
+          type: ',,',
+          0: fromNode(item.expr) ?? {type: 'cst/string', 0: '', 1: nil},
+          1: item.suffix.text,
+          2: item.suffix.loc,
+        }))
+      ), 2: node.loc}
+  }
 }
 
 const test = v => valueToString(parse(v))
@@ -288,7 +316,7 @@ const evaluate = (node, scope) => {
     case 'eprim':
       return node[0][0]
     case 'estr':
-      return node[0] + unwrapArray(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + suf).join('')
+      return slash(node[0]) + unwrapArray(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + slash(suf)).join('')
     case 'evar':
       if (!Object.hasOwn(scope, node[0])) {
         throw new Error(`Unknown vbl: ${node[0]}. ${Object.keys(scope).join(', ')}`)
@@ -312,8 +340,10 @@ const evaluate = (node, scope) => {
         }
       }
       throw new Error(`match failed (${node[2]}): ${JSON.stringify(target)}`)
+    case 'equot':
+      return node[0]
   }
-  return node.type
+  throw new Error(`cant evaluatoe ${node.type}`)
 }
 
 const evalPat = (node, v) => {
@@ -341,6 +371,20 @@ const run = v => {
   if (typeof res === 'number' || typeof res === 'string') return res
   return valueToString(res)
 }
+
+const slash = (n) =>
+    n.replaceAll(/\\./g, (m) => {
+        if (m[1] === 'n') {
+            return '\n';
+        }
+        if (m[1] === 't') {
+            return '\t';
+        }
+        if (m[1] === 'r') {
+            return '\r';
+        }
+        return m[1];
+    })
 
 const stmts = stmts => {
   if (stmts.type !== 'array') throw new Error('need array')
@@ -375,7 +419,7 @@ const externals_expr = (expr, locals) => {
     case 'eapp': return externals_expr(expr[0], locals).concat(externals_expr(expr[1], locals))
     case 'elambda': return externals_expr(expr[1], locals.concat(pat_names(expr[0])))
     case 'eprim': return []
-    case 'estr': return unwrapArray(expr[1]).map(v => externals_expr(v[0], locals))
+    case 'estr': return unwrapArray(expr[1]).flatMap(v => externals_expr(v[0], locals))
     case 'elet': return externals_expr(expr[1], locals).concat(
       externals_expr(expr[2], locals.concat(pat_names(expr[0]))))
     case 'ematch':
@@ -433,8 +477,7 @@ const compilePat_ = (node, target, body) => {
 
 const compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)`
 
-const sanitize = (() => {
-  const sanMap = {
+const sanMap = {
     '-': '_',
     '+': '$pl',
     '*': '$ti',
@@ -453,30 +496,36 @@ const sanitize = (() => {
     '?': '$qe',
     $: '$$',
   };
+
+const kwdRx = (() => {
   const kwds =
     'case new var const let if else return super break while for default';
   const rx = [];
   kwds.split(' ').forEach((kwd) =>
     rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),
   );
-  return (raw) => {
+  return rx;
+  })();
+
+const kwdString = '[' + kwdRx.map(([r, v]) => `[${r}, "${v}"]`).join(', ') + ']'
+
+const sanitize = (raw) => {
     for (let [key, val] of Object.entries(sanMap)) {
         raw = raw.replaceAll(key, val);
     }
-    rx.forEach(([rx, res]) => {
+    kwdRx.forEach(([rx, res]) => {
         raw = raw.replaceAll(rx, res);
     });
     return raw;
   }
-})()
 
 const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
   unwrapArray(ast[1]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
 }} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)`
 
-const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = '' + v, obj), {})
+const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {})
 
-const prelude = makePrelude({evaluate,evaluateStmt,unwrapArray,constrFn,sanitize})
+const prelude = makePrelude({evaluate,evaluateStmt,unwrapArray,constrFn,sanitize,sanMap,evalPat,kwdRx: kwdString,slash})
 
 const testCompileStmt = v => compile_stmt(parseStmt(v))()
 
