@@ -119,15 +119,18 @@
     return {type: 'tcon', 0: node.text, 1: node.loc}
   }
   if (node.type === 'list') {
-    if (!node.values.length) return {type: 'tcon', 0: '()', 1: node.loc}
-    let res = parseType(node.values[0])
-    for (let i=1;i<node.values.length; i++) {
-      res = {type: 'tapp', 0: res, 1: parseType(node.values[i]), 2: node.loc}
+    const values = filterBlanks(node.values)
+    if (!values.length) return {type: 'tcon', 0: '()', 1: node.loc}
+    let res = parseType(values[0])
+    for (let i=1;i<values.length; i++) {
+      res = {type: 'tapp', 0: res, 1: parseType(values[i]), 2: node.loc}
     }
     return res
   }
   throw new Error(`cant parse type ${node.type}`)
 } **)
+
+(** filterBlanks = values => values.filter(n => !['blank', 'comment', 'rich-text', 'comment-node'].includes(n.type)) **)
 
 (** ## Expressions **)
 
@@ -143,18 +146,19 @@
       ), 2: node.loc}
     }
     case 'list': {
-      if (!node.values.length) return c.evar('()', node.loc)
-      if (node.values[0].type === 'identifier') {
-        const first = node.values[0].text;
+      const values = filterBlanks(node.values)
+      if (!values.length) return c.evar('()', node.loc)
+      if (values[0].type === 'identifier') {
+        const first = values[0].text;
         if (forms[first]) {
-          const res = forms[first](node.loc, ...node.values.slice(1))
+          const res = forms[first](node.loc, ...values.slice(1))
           if (res) return res
         }
       }
-      const values = node.values.map(parse)
-      let res = values[0]
-      for (let i=1; i<values.length; i++) {
-        res = c.app(res, values[i], node.loc)
+      const parsed = values.map(parse)
+      let res = parsed[0]
+      for (let i=1; i<parsed.length; i++) {
+        res = c.app(res, parsed[i], node.loc)
       }
       return res
     }
@@ -322,16 +326,19 @@
       return {type: 'pvar', 0: node.text, 1: node.loc}
     case 'string':
       return {type: 'pstr', 0: node.first.text, 1: node.loc}
-    case 'list':
-      if (!node.values.length) return p.con('()', [], node.loc)
-      if (node.values[0].type !== 'identifier') throw new Error('pat exp must start with identifier')
-      return p.con(node.values[0].text, node.values.slice(1).map(parsePat), node.loc)
+    case 'list': {
+      const values = filterBlanks(node.values)
+      if (!values.length) return p.con('()', [], node.loc)
+      if (values[0].type !== 'identifier') throw new Error('pat exp must start with identifier')
+      return p.con(values[0].text, values.slice(1).map(parsePat), node.loc)
+    }
     case 'array':
-      if (!node.values.length) return p.nil(node.loc)
-      let last = node.values[node.values.length - 1]
+      const values = filterBlanks(node.values)
+      if (!values.length) return p.nil(node.loc)
+      let last = values[values.length - 1]
       let res = last.type === 'spread' ? parsePat(last.contents) : p.cons(parsePat(last), p.nil(node.loc), node.loc)
-      for (let i=node.values.length - 2; i>=0; i--) {
-        res = p.cons(parsePat(node.values[i]), res, node.loc)
+      for (let i=values.length - 2; i>=0; i--) {
+        res = p.cons(parsePat(values[i]), res, node.loc)
       }
       return res
   }
@@ -350,10 +357,11 @@
     case 'rich-text':
       return;
     case 'list':
-      if (node.values.length && node.values[0].type === 'identifier') {
-        const f = stmtForms[node.values[0].text];
+      const values = filterBlanks(node.values)
+      if (values.length && values[0].type === 'identifier') {
+        const f = stmtForms[values[0].text];
         if (f) {
-          const res = f(node.loc, ...node.values.slice(1))
+          const res = f(node.loc, ...values.slice(1))
           if (res) return res
         }
       }
@@ -369,8 +377,9 @@
     if (!name) return
     const constructors = tail.map(item => {
       if (item.type !== 'list') throw new Error(`constructor not a list`)
-      if (item.values.length < 1) throw new Error(`empty list`)
-      return {type: ',,', 0: item.values[0].text, 1: arr(item.values.slice(1).map(parseType)), 2: item.values[0].loc}
+      const values = filterBlanks(item.values)
+      if (values.length < 1) throw new Error(`empty list`)
+      return {type: ',,', 0: values[0].text, 1: arr(values.slice(1).map(parseType)), 2: values[0].loc}
     })
     return {type: 'sdeftype', 0: name, 1: arr(constructors)}
   },
