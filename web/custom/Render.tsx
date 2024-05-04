@@ -14,83 +14,21 @@ import { useGetStore } from './store/StoreCtx';
 import { useNode } from './store/useNode';
 import { RenderProps } from './types';
 import { RawCode } from './RawCode';
-
-const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
-export const rainbow: string[] = ['#669'];
-for (let i = 0; i < raw.length; i += 6) {
-    rainbow.push('#' + raw.slice(i, i + 6));
-}
-
-// We'll start at depth=1, so this just rolls it one over
-rainbow.unshift(rainbow.pop()!);
-
-export function getRainbowHashColor(hash: string | number) {
-    const idx =
-        typeof hash === 'number'
-            ? Math.floor(hash * (rainbow.length / 5 - 1))
-            : parseInt(hash, 16);
-    const color = rainbow[idx % rainbow.length];
-    return color;
-}
-
-// https://github.com/darkskyapp/string-hash/blob/master/index.js
-function fasthash(str: string) {
-    var hash = 5381,
-        i = str.length;
-
-    while (i) {
-        hash = (hash * 33) ^ str.charCodeAt(--i);
-    }
-
-    /* JavaScript does bitwise operations (like XOR, above) on 32-bit signed
-     * integers. Since we want the results to be always positive, convert the
-     * signed int to an unsigned by doing an unsigned bitshift. */
-    return hash >>> 0;
-}
-
-const nodeColor = (type: MNode['type'], text?: string | null) => {
-    return specials.includes(text!)
-        ? '#814d4d'
-        : type === 'identifier' && text != null
-        ? getRainbowHashColor(fasthash(text))
-        : colors[type];
-};
+import { colors, getRainbowHashColor, nodeColor, rainbow } from './rainbow';
 
 const columnRecords = true;
 
-const specials = [
-    'defn',
-    'def',
-    'deftype',
-    'fn',
-    'match',
-    'defnrec',
-    'fnrec',
-    'if',
-    'let',
-    'match',
-];
-
-export const stringColor = '#ff9b00';
-export const colors: {
-    [key: string]: string;
-} = {
-    identifier: '#5bb6b7',
-    comment: '#616162',
-    tag: '#82f682',
-    number: '#8585ff', //'#4848a5',
-    string: 'yellow',
-    stringText: stringColor,
-    unparsed: 'red',
-};
-
-export const textStyle = (
+const textStyle = (
     node: MNode,
     display?: Ctx['display'][0],
 ): React.CSSProperties | undefined => {
     const color = nodeColor(
         node.type,
-        node.type === 'identifier' ? node.text : null,
+        node.type === 'identifier'
+            ? node.text
+            : node.type === 'accessText'
+            ? node.text
+            : null,
     );
     if (display?.style) {
         switch (display.style.type) {
@@ -100,7 +38,9 @@ export const textStyle = (
                 return {
                     fontStyle: 'italic',
                     fontFamily: 'serif',
-                    color: '#84a4a5',
+                    // color: '#84a4a5',
+                    color: color ?? '#84a4a5',
+                    // color: getRainbowHashColor(display.style.)
                 };
             case 'number':
                 return { color: colors['number'] };
@@ -119,6 +59,7 @@ export const textStyle = (
     }
     switch (node.type) {
         case 'identifier':
+        case 'accessText':
             return { color: color };
         case 'stringText':
             return {
@@ -129,7 +70,7 @@ export const textStyle = (
         case 'comment':
             return { color: '#4eb94e' };
     }
-    return { color: 'violet' };
+    return { color: color ?? 'violet' };
 };
 
 export const Render = React.memo(

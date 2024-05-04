@@ -35,6 +35,7 @@ import { moveNode } from '../../../src/state/moveNode';
 import { ResultsCache } from '../../custom/store/ResultsCache';
 import { valueToString } from './valueToString';
 import { urlForId } from './urlForId';
+import { white } from './white';
 
 export const reduceUpdate = (
     state: NUIState,
@@ -541,8 +542,6 @@ export const useHash = (): string => {
     }, []);
     return hash;
 };
-
-export const white = (n: number) => ''.padStart(n, ' ');
 
 export const stringify = (v: any, level: number, max: number): string => {
     if (level === max) {

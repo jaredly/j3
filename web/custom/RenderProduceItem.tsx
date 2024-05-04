@@ -40,6 +40,8 @@ export const RenderProduceItem = ({
         }
         case 'pre':
             return <pre>{value.text}</pre>;
+        case 'node':
+            return <RenderStatic node={value.node} />;
     }
     return <b>Unrecognized produce item {JSON.stringify(value)}</b>;
 };

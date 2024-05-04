@@ -9,6 +9,7 @@ export type Errors = { [key: number]: string[] };
 
 export type ProduceItem =
     | string
+    | { type: 'node'; node: Node }
     | { type: 'inference-error'; err: InferenceError }
     | { type: 'type'; text: string; cst?: Node; name?: string }
     | { type: 'withjs'; message: string; js: string; stack?: string }

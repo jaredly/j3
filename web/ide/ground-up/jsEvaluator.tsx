@@ -18,6 +18,15 @@ type stmt =
     | { type: 'raw'; raw: string; args: Node[] }
     | { type: 'cst'; cst: Node };
 
+const serString = (v: any) =>
+    typeof v === 'string' && v.includes('"')
+        ? `'${v.replace(/'/g, "\\'")}'`
+        : v === null
+        ? 'null'
+        : v === undefined
+        ? 'undefined'
+        : JSON.stringify(v);
+
 export const jsEvaluator: FullEvalator<
     { values: { [key: string]: any } },
     stmt,
@@ -31,14 +40,14 @@ export const jsEvaluator: FullEvalator<
         if (typeof v === 'function') {
             return '<function>';
         }
-        return JSON.stringify(v);
+        return serString(v);
     },
     valueToNode(v) {
         return {
             type: 'raw-code',
             lang: 'javascript',
             loc: -1,
-            raw: JSON.stringify(v),
+            raw: serString(v),
         };
     },
     analysis: {

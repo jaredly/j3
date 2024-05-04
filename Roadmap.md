@@ -4,8 +4,8 @@
 - [x] intro.json
 - [x] structured-editor.json
 - [x] encoding.json
-- [ ] drag & drop should be a lot smarter.
-  Let's have it be separate from the normal cursor drag.
+- [x] ast.json
+- [ ]
 
 # PLAN Higher up...
 
@@ -17,6 +17,9 @@
 - [ ] I should allow a plain `:` as an identifier...
 - [ ] backspace `( abc)` with cursor after the open paren; should delete the blank. Actually all blanks.
   - [ ] ANDDD backspace to break a list *should* create multiple namespaces if needed. PLEASE
+- [ ] drag & drop should be a lot smarter.
+  Let's have it be separate from the normal cursor drag.
+- [ ] what if a collapsed toplevel... listed the names of things declared in it?
 
 # For the Boots
 

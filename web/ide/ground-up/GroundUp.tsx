@@ -29,6 +29,7 @@ import { ShowErrors } from './ShowErrors';
 import { AutoComplete } from './AutoComplete';
 import { RenderReadOnly } from '../../custom/RenderStatic';
 import { selectEnd } from '../../../src/state/navigate';
+import { collectErrors } from './collectErrors';
 
 export const WithStore = ({
     store,
@@ -318,6 +319,8 @@ function DebugCard({
         store.setDebug(debug.execOrder, debug.disableEvaluation, debug.showJs);
     }, [debug.execOrder, debug.disableEvaluation, debug.showJs]);
 
+    const errors = collectErrors(store);
+
     return (
         <div
             style={{
@@ -326,7 +329,7 @@ function DebugCard({
                 right: 4,
                 // @ts-ignore
                 backgroundColor: store.dispatch === store.reg ? 'red' : '#222',
-                padding: show ? 16 : 0,
+                padding: show || errors.length ? 16 : 0,
                 maxHeight: 'calc(100vh - 60px)',
                 display: 'flex',
                 flexDirection: 'column',
@@ -345,7 +348,7 @@ function DebugCard({
             >
                 Debug Card
             </button>
-            {show ? (
+            {show || errors.length ? (
                 <>
                     {(
                         [

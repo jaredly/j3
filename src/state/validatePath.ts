@@ -1,4 +1,5 @@
-import { idText, splitGraphemes } from '../parse/parse';
+import { splitGraphemes } from '../parse/parse';
+import { idText } from '../parse/idText';
 import { Map } from '../types/mcst';
 import { Path } from './path';
 

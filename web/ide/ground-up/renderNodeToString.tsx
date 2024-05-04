@@ -1,10 +1,9 @@
+import { Block } from '@blocknote/core';
+import { NNode } from '../../../src/state/nestedNodes/NNode';
+import { getNestedNodes } from '../../../src/state/nestedNodes/getNestedNodes';
 import { Display } from '../../../src/to-ast/library';
 import { Map } from '../../../src/types/mcst';
-import { getNestedNodes } from '../../../src/state/nestedNodes/getNestedNodes';
-import { NNode } from '../../../src/state/nestedNodes/NNode';
-import { white } from './reduce';
-import { Block, StyledText } from '@blocknote/core';
-import { filterNulls } from '../../custom/old-stuff/filterNulls';
+import { white } from './white';
 
 export const renderNodeToString = (
     top: number,

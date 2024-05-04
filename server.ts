@@ -1,6 +1,5 @@
 #!/usr/bin/env bun
 import {
-    copyFileSync,
     existsSync,
     mkdirSync,
     readFileSync,
@@ -11,16 +10,13 @@ import {
 } from 'fs';
 import { IncomingMessage, createServer } from 'http';
 import path from 'path';
-import { NUIState } from './web/custom/UIState';
-import { ListLikeContents, fromMCST, toMCST } from './src/types/mcst';
-import { renderNodeToString } from './web/ide/ground-up/renderNodeToString';
 import { layout } from './src/layout';
-import { findTops } from './web/ide/ground-up/findTops';
-import { bootstrap } from './web/ide/ground-up/bootstrap';
-import { evaluatorFromText } from './web/ide/ground-up/loadEv';
+import { toMCST } from './src/types/mcst';
+import { NUIState } from './web/custom/UIState';
 import { compressState } from './web/custom/compressState';
-import { stateToBootstrapJs } from './web/ide/ground-up/to-file';
 import { ResultsCache } from './web/custom/store/ResultsCache';
+import { findTops } from './web/ide/ground-up/findTops';
+import { renderNodeToString } from './web/ide/ground-up/renderNodeToString';
 
 const base = path.join(__dirname, 'data');
 

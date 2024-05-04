@@ -8,7 +8,8 @@ import {
     SandboxNamespace,
 } from '../../web/custom/UIState';
 import { plugins } from '../../web/custom/plugins';
-import { idText, pathPos, splitGraphemes } from '../parse/parse';
+import { pathPos, splitGraphemes } from '../parse/parse';
+import { idText } from '../parse/idText';
 import { Ctx, NodeStyle } from '../to-ast/Ctx';
 import { Type } from '../types/ast';
 import { Map, MNode, NsMap } from '../types/mcst';

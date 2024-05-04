@@ -1,8 +1,4 @@
-const cons = (a, b) => ({type: 'cons', 0: a, 1: b})
-
-const nil = {type: 'nil'}
-
-const arr = (values) => {
+const list = (values) => {
   let v = nil
   for (let i=values.length-1;i>=0;i--) {
     v = cons(values[i], v)
@@ -10,20 +6,18 @@ const arr = (values) => {
   return v
 }
 
-const unwrapArray = value => value.type === 'nil' ? [] : [value[0], ...unwrapArray(value[1])]
+const cons = (a, b) => ({type: 'cons', 0: a, 1: b})
 
-const foldlArr = (i, v, f) => v.type === 'nil' ? i : foldlArr(f(i, v[0]), v[1], f)
+const nil = {type: 'nil'}
+
+const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])]
 
 const set = (obj, k, v) => (obj[k] = v, obj)
 
 const valueToString = (v) => {
-    if (Array.isArray(v)) {
-        return `[${v.map(valueToString).join(', ')}]`;
-    }
-
     if (typeof v === 'object' && v && 'type' in v) {
         if (v.type === 'cons' || v.type === 'nil') {
-            const un = unwrapArray(v);
+            const un = unwrapList(v);
             return '[' + un.map(valueToString).join(' ') + ']';
         }
 
@@ -102,7 +96,7 @@ const parse = node => {
     }
     case 'string': {
       const exprs = node.templates.map(t => parse(t.expr))
-      return {type: 'estr', 0: node.first.text, 1: arr(
+      return {type: 'estr', 0: node.first.text, 1: list(
         node.templates.map((t, i) => pair(exprs[i], t.suffix.text))
       ), 2: node.loc}
     }
@@ -148,7 +142,7 @@ const forms = {
     return foldr(parse(body), pats, (body, arg) =>
       arg.type === 'pvar' ?
     ({type: 'elambda', 0: arg[0], 1: body, 2: loc}) : {
-      type: 'elambda', 0: '$arg', 1: {type: 'ematch', 0: {type: 'evar', 0: '$arg', 1: loc}, 1: arr([pair(arg, body)]), 2: loc}}
+      type: 'elambda', 0: '$arg', 1: {type: 'ematch', 0: {type: 'evar', 0: '$arg', 1: loc}, 1: list([pair(arg, body)]), 2: loc}}
     )
   },
   let: (loc, bindings, body) => {
@@ -159,13 +153,13 @@ const forms = {
       if (pat.type === 'identifier') {
         return {type: 'elet', 0: pat.text, 1: parse(init), 2: body, 3: loc}
       }
-      return {type: 'ematch', 0: parse(init), 1: arr([pair(parsePat(pat), body)]), 2: loc}
+      return {type: 'ematch', 0: parse(init), 1: list([pair(parsePat(pat), body)]), 2: loc}
     })
   },
   match: (loc, target, ...rest) => {
     if (!target || !rest.length) return
     const cases = makePairs(rest)
-    return {type: 'ematch', 0: parse(target), 1: arr(cases.map(([pat, body]) => pair(parsePat(pat), parse(body)))), 2: loc}
+    return {type: 'ematch', 0: parse(target), 1: list(cases.map(([pat, body]) => pair(parsePat(pat), parse(body)))), 2: loc}
   },
   '@': (loc, inner) => ({type: 'equot', 0: parse(inner), 1: loc}),
   '@@': (loc, inner) => ({type: 'equot', 0: fromNode(inner), 1: loc}),
@@ -214,9 +208,9 @@ const fromNode = node => {
     case 'array':
     case 'record':
     case 'list':
-      return {type: 'cst/' + node.type, 0: arr(node.values.map(fromNode).filter(Boolean)), 1: node.loc}
+      return {type: 'cst/' + node.type, 0: list(node.values.map(fromNode).filter(Boolean)), 1: node.loc}
     case 'string':
-      return {type: 'cst/string', 0: node.first.text, 1: arr(
+      return {type: 'cst/string', 0: node.first.text, 1: list(
         node.templates.map(item => ({
           type: ',,',
           0: fromNode(item.expr) ?? {type: 'cst/string', 0: '', 1: nil},
@@ -234,7 +228,7 @@ const p = {
   bool: (v, loc=-1) => ({type: 'pbool', 0: v, 1: loc}),
   int: (v, loc=-1) => ({type: 'pint', 0: v, 1: loc}),
   any: loc => ({type: 'pany', 0: loc}),
-  con: (name, args, loc) => ({type: 'pcon', 0: name, 1: arr(args), 2: loc}),
+  con: (name, args, loc) => ({type: 'pcon', 0: name, 1: list(args), 2: loc}),
   cons: (one, two, loc) => p.con('cons', [one, two], loc),
   nil: loc => p.con('nil', [], loc),
 }
@@ -301,9 +295,9 @@ const stmtForms = {
       if (item.type !== 'list') throw new Error(`constructor not a list`)
       const values = filterBlanks(item.values)
       if (values.length < 1) throw new Error(`empty list`)
-      return {type: ',,', 0: values[0].text, 1: arr(values.slice(1).map(parseType)), 2: values[0].loc}
+      return {type: ',,', 0: values[0].text, 1: list(values.slice(1).map(parseType)), 2: values[0].loc}
     })
-    return {type: 'sdeftype', 0: name, 1: arr(constructors)}
+    return {type: 'sdeftype', 0: name, 1: list(constructors)}
   },
   def(loc, name, value) {
     if (!name || !value) return
@@ -330,7 +324,7 @@ const evaluateStmt = (node, env) => {
       return value
     case 'sdeftype':
       const res = {}
-      unwrapArray(node[1]).forEach(({0: name, 1: args}) => {
+      unwrapList(node[1]).forEach(({0: name, 1: args}) => {
         res[sanitize(name)] = env[sanitize(name)] = constrFn(name, args)
       })
       return res
@@ -350,7 +344,7 @@ const evaluate = (node, scope) => {
     case 'eprim':
       return node[0][0]
     case 'estr':
-      return slash(node[0]) + unwrapArray(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + slash(suf)).join('')
+      return slash(node[0]) + unwrapList(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + slash(suf)).join('')
     case 'evar':
       var name = sanitize(node[0])
       if (!Object.hasOwn(scope, name)) {
@@ -366,7 +360,7 @@ const evaluate = (node, scope) => {
       return evaluate(node[2], {...scope, [sanitize(node[0])]: init})
     case 'ematch':
       const target = evaluate(node[0], scope)
-      for (let {0: pat, 1: body} of unwrapArray(node[1])) {
+      for (let {0: pat, 1: body} of unwrapList(node[1])) {
         const got = evalPat(pat, target)
         if (got) {
           return evaluate(body, {...scope, ...got})
@@ -388,7 +382,7 @@ const evalPat = (node, v) => {
       return {[sanitize(node[0])]: v}
     case 'pcon':
       if (v.type === node[0]) {
-        const args = unwrapArray(node[1])
+        const args = unwrapList(node[1])
         const scope = {}
         for (let i=0; i<args.length; i++) {
           const sub = evalPat(args[i], v[i])
@@ -398,12 +392,6 @@ const evalPat = (node, v) => {
         return scope
       }
   }
-}
-
-const run = v => {
-  const res = evaluate(parse(v), {'$co': a => b => pair(a,b)})
-  if (typeof res === 'number' || typeof res === 'string') return res
-  return valueToString(res)
 }
 
 const slash = (n) =>
@@ -420,7 +408,13 @@ const slash = (n) =>
         return m[1];
     })
 
-const stmts = stmts => {
+const run = v => {
+  const res = evaluate(parse(v), {'$co': a => b => pair(a,b)})
+  if (typeof res === 'number' || typeof res === 'string') return res
+  return valueToString(res)
+}
+
+const evalStmts = stmts => {
   if (stmts.type !== 'array') throw new Error('need array')
   const env = {'$co': a => b => pair(a, b)}
   let res
@@ -442,23 +436,23 @@ const externals = stmt => {
 const names = stmt => {
   switch (stmt.type) {
     case 'sexpr': return []
-    case 'sdef': return [[stmt[0], {type: 'value'}, stmt[2]]]
-    case 'sdeftype': return unwrapArray(stmt[1]).map(c => [c[0], {type: 'value'}, c[2]])
+    case 'sdef': return [{name: stmt[0], kind: 'value', loc: stmt[2]}]
+    case 'sdeftype': return unwrapList(stmt[1]).map(c => ({name: c[0], kind: 'value', loc: c[2]}))
   }
 }
 
 const externals_expr = (expr, locals) => {
   switch (expr.type) {
-    case 'evar': return locals.includes(expr[0]) ? [] : [[expr[0], {type: 'value'}, expr[1]]]
+    case 'evar': return locals.includes(expr[0]) ? [] : [{name: expr[0], kind: 'value', loc: expr[1]}]
     case 'eapp': return externals_expr(expr[0], locals).concat(externals_expr(expr[1], locals))
     case 'elambda': return externals_expr(expr[1], locals.concat(expr[0]))
     case 'eprim': return []
-    case 'estr': return unwrapArray(expr[1]).flatMap(v => externals_expr(v[0], locals))
+    case 'estr': return unwrapList(expr[1]).flatMap(v => externals_expr(v[0], locals))
     case 'elet': return externals_expr(expr[1], locals).concat(
       externals_expr(expr[2], locals.concat(expr[0])))
     case 'ematch':
       return externals_expr(expr[0], locals).concat(
-        unwrapArray(expr[1]).flatMap(kase => externals_expr(kase[1], locals.concat(pat_names(kase[0])))))
+        unwrapList(expr[1]).flatMap(kase => externals_expr(kase[1], locals.concat(pat_names(kase[0])))))
   }
   return []
 }
@@ -469,47 +463,34 @@ const pat_names = pat => {
     case 'pany': return []
     case 'pprim': return []
     case 'pcon':
-      return unwrapArray(pat[1]).flatMap(pat_names)
+      return unwrapList(pat[1]).flatMap(pat_names)
   }
   return []
 }
 
-const testExt = v => valueToString(externals(parseStmt(v)))
+const testExt = v =>(externals(parseStmt(v)))
 
-const testNames = v => valueToString(names(parseStmt(v)))
+const testNames = v => names(parseStmt(v))
 
-const compile_ = node => {
-  switch (node.type) {
-    case 'eprim': return '' + node[0][0]
-    case 'estr': return `\`${unslash(node[0])}${unwrapArray(node[1]).map(
-      ({0: expr, 1: suf}) => `\${${compile(expr)}}${unslash(suf)}\``
-    ).join('\n')}`
-    case 'evar': return sanitize(node[0])
-    case 'elambda':
-      return `(${patArgs(node[0])}) => ${compile(node[1])}`
-    case 'eapp':
-      return `(${compile(node[0])})(${compile(node[1])})`
-    case 'elet':
-      return `((${patArgs(node[0])}) => ${compile(node[2])})(${compile(node[1])})`
-    case 'ematch':
-      return `(($target) => {${unwrapArray(node[1]).map(({0: pat, 1: body}) => compilePat(pat, '$target', 'return ' + compile(body))).join('\n')})(${compile(node[0])})`
-  }
-}
-
-const compilePat_ = (node, target, body) => {
-  switch (node.type) {
-    case 'pany':
-      return body
-    case 'pvar':
-      return `{const ${sanitize(node[0])} = ${target};\n${body}}`
-    case 'pprim':
-      return `if (${target} === ${node[0][0]}) {${body}}`
-    case 'pcon':
-      const args = unwrapArray(node[1])
-  }
-}
+const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {})
 
 const compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)`
+
+const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
+  unwrapList(ast[1]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
+}} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)`
+
+const testCompileStmt = v => compile_stmt(parseStmt(v))()
+
+const sanitize = (raw) => {
+    for (let [key, val] of Object.entries(sanMap)) {
+        raw = raw.replaceAll(key, val);
+    }
+    kwdRx.forEach(([rx, res]) => {
+        raw = raw.replaceAll(rx, res);
+    });
+    return raw;
+  }
 
 const sanMap = {
     '-': '_',
@@ -543,31 +524,13 @@ const kwdRx = (() => {
 
 const kwdString = '[' + kwdRx.map(([r, v]) => `[${r}, "${v}"]`).join(', ') + ']'
 
-const sanitize = (raw) => {
-    for (let [key, val] of Object.entries(sanMap)) {
-        raw = raw.replaceAll(key, val);
-    }
-    kwdRx.forEach(([rx, res]) => {
-        raw = raw.replaceAll(rx, res);
-    });
-    return raw;
-  }
-
-const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
-  unwrapArray(ast[1]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
-}} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)`
-
-const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {})
-
-const prelude = makePrelude({evaluate,evaluateStmt,unwrapArray,constrFn,sanitize,sanMap,evalPat,kwdRx: kwdString,slash})
-
-const testCompileStmt = v => compile_stmt(parseStmt(v))()
+const prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwdRx: kwdString,slash})
 
 return ({type: 'fns', prelude,
   compile, compile_stmt,
   parse_stmt: parseStmt, parse_expr: parse,
-  names: s => arr(names(s)),
-  externals_stmt: s => arr(externals(s)),
-  externals_expr: e => arr(externals_expr(e, [])),
+  names,
+  externals_stmt: externals,
+  externals_expr: e => externals_expr(e, []),
   fromNode: x => x,
   toNode: x => x})

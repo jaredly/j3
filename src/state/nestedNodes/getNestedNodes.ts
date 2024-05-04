@@ -1,4 +1,4 @@
-import { idText } from '../../parse/parse';
+import { idText } from '../../parse/idText';
 import { Layout, MNode, Map } from '../../types/mcst';
 import { NNode } from './NNode';
 import { recordPairs } from './recordPairs';

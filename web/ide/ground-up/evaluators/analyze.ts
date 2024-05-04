@@ -15,12 +15,16 @@ export type Expr = { _expr: 1 };
 export type Type = { _type: 1 };
 export type Env = { _env: 1 };
 
-type namesRes = arr<tuple3<string, { type: LocedName['kind'] }, number>>;
+type namesRes =
+    | arr<tuple3<string, { type: LocedName['kind'] }, number>>
+    | Array<LocedName>;
 
 const parseLocedName = (res: namesRes) =>
-    unwrapArray(res)
-        .map(unwrapTuple3)
-        .map(([name, { type: kind }, loc]) => ({ name, kind, loc }));
+    Array.isArray(res)
+        ? res
+        : unwrapArray(res)
+              .map(unwrapTuple3)
+              .map(([name, { type: kind }, loc]) => ({ name, kind, loc }));
 
 const guard =
     <a, b>(dft: b, fn: (a: a) => b) =>

@@ -1,6 +1,7 @@
 import { ProduceItem } from '../../ide/ground-up/FullEvalator';
 import React from 'react';
 import { valueToString } from '../../ide/ground-up/valueToString';
+// import { isValidNode } from '../../../src/types/isStr';
 
 export const displayFunctionIds = ['pre', 'none', null] as const;
 
@@ -9,6 +10,14 @@ export const displayFunction = (config?: {
     options: any;
 }): undefined | ((v: any) => ProduceItem[]) => {
     if (!config) return;
+    // if (config.id === 'node') {
+    //     return (value) => {
+    //         if (isValidNode(value)) {
+    //             return [{ type: 'node', node: value }];
+    //         }
+    //         return [valueToString(value)];
+    //     };
+    // }
     if (config.id === 'pre') {
         return (value) => {
             if (typeof value === 'string') {

@@ -1,7 +1,8 @@
 // Basic level
 
 import { validateExpr } from '../src/get-type/validate';
-import { idText, parseByCharacter, pathPos } from '../src/parse/parse';
+import { parseByCharacter, pathPos } from '../src/parse/parse';
+import { idText } from '../src/parse/idText';
 import {
     nodeToString,
     remapPos,

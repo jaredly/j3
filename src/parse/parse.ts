@@ -1,54 +1,18 @@
 // hmm
+import GraphemeSplitter from 'grapheme-splitter';
+import { fixMissingReferences } from '../../web/custom/old-stuff/reduce';
 import { applyMods } from '../getCtx';
-import { layout } from '../layout';
-import { ClipboardItem, collectNodes, paste } from '../state/clipboard';
-import { applyUpdate, getKeyUpdate, Mods, State } from '../state/getKeyUpdate';
-import { Path, cmpFullPath } from '../state/path';
-import { lastName } from '../db/hash-tree';
 import { applyInferMod, infer } from '../infer/infer';
-import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
+import { ClipboardItem } from '../state/clipboard';
+import { Mods, State, applyUpdate, getKeyUpdate } from '../state/getKeyUpdate';
+import { Path, cmpFullPath } from '../state/path';
+import { AutoCompleteReplace } from '../to-ast/Ctx';
+import { applyMenuItem } from '../to-ast/autoComplete';
 import { CompilationResults, CstCtx } from '../to-ast/library';
 import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
 import { nodeToType } from '../to-ast/nodeToType';
-import { addDef } from '../to-ast/to-ast';
 import { Node } from '../types/cst';
-import { fromMCST, Map, MNode, NsMap } from '../types/mcst';
-import { applyMenuItem } from '../to-ast/autoComplete';
-import { fixMissingReferences } from '../../web/custom/old-stuff/reduce';
-import GraphemeSplitter from 'grapheme-splitter';
-import { NUIState } from '../../web/custom/UIState';
-
-export const idText = (node: MNode, map: Map) => {
-    switch (node.type) {
-        case 'identifier':
-            if (!node.text) {
-                console.log('empty node text', node);
-            }
-        case 'comment':
-            return node.text;
-        case 'unparsed':
-            return node.raw;
-        case 'accessText':
-        case 'stringText':
-            return node.text;
-        case 'blank':
-            return '';
-        case 'hash':
-            if (
-                typeof node.hash === 'string' &&
-                node.hash.startsWith(':builtin:')
-            ) {
-                return lastName(node.hash.slice(':builtin:'.length));
-            }
-            if (typeof node.hash === 'number') {
-                const ref = map[node.hash];
-                if (ref?.type === 'identifier') {
-                    return ref.text;
-                }
-            }
-            return '🚨';
-    }
-};
+import { Map, NsMap, fromMCST } from '../types/mcst';
 
 const seg = new GraphemeSplitter();
 

@@ -1,10 +1,10 @@
 import equal from 'fast-deep-equal';
 import {
     autoCompleteIfNeeded,
-    idText,
     orderStartAndEnd,
     splitGraphemes,
 } from '../parse/parse';
+import { idText } from '../parse/idText';
 import { Ctx, newCtx } from '../to-ast/Ctx';
 import { nodeToString } from '../to-cst/nodeToString';
 import { accessText, Node, NodeExtra, stringText } from '../types/cst';
