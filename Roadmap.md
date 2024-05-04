@@ -1,12 +1,22 @@
 
+# The Blorg Porst
+
+- [x] intro.json
+- [x] structured-editor.json
+- [x] encoding.json
+- [ ] drag & drop should be a lot smarter.
+  Let's have it be separate from the normal cursor drag.
+
 # PLAN Higher up...
 
 - [x] right now, clip history that I save to ~500 items?
   - bootstrap.json down to 1.2mb
-- [ ] Do nice readmeeeees
+- [x] Do nice readmeeeees
 - [x] jsEvaluator, maybe don't evaluate (abc def); only if `abc` is a raw-code
   - [x] raw-code, rendered inline, should look nice
 - [ ] I should allow a plain `:` as an identifier...
+- [ ] backspace `( abc)` with cursor after the open paren; should delete the blank. Actually all blanks.
+  - [ ] ANDDD backspace to break a list *should* create multiple namespaces if needed. PLEASE
 
 # For the Boots
 

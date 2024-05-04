@@ -195,6 +195,11 @@ export const getNestedNodes = (
         case 'comment':
             return {
                 type: 'horiz',
+                style: {
+                    fontFamily:
+                        'Inter, "SF Pro Display", -apple-system, "system-ui"',
+                    fontStyle: 'italic',
+                },
                 children: [
                     { type: 'blinker', loc: 'start' },
                     { type: 'punct', color: '#4eb94e', text: '; ' },

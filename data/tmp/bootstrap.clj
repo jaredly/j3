@@ -1,4 +1,4 @@
-(** ## Bootstrap (js) parser + compiler **)
+(** ## Bootstrap (js) parser + evaluator **)
 
 (** Parser consumes (Node)s and produces (stmt /  expr) **)
 

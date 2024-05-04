@@ -63,7 +63,7 @@ export const NSDragger = ({
                 cursor: 'pointer',
                 marginRight: 12,
                 color: hover || cm ? 'white' : '#444',
-                opacity: hover || cm || errs ? 1 : 0,
+                opacity: hover || cm || errs || ns.collapsed === true ? 1 : 0.6,
                 transition: '.2s ease opacity',
                 position: 'relative',
                 width: 30,

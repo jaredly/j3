@@ -1,8 +1,8 @@
 (** ## A bit about this editor environment **)
 
 (** This tutorial takes place in a structured editor, which has some important differences from a standard text editor. The "structured" part refers to the fact that the editor's "source of truth" representation of your source code is not a long sequence of utf-8 characters, but rather "structured data". For many structured editors, the structure of the data is the Abstract Syntax Tree (AST) of the given programming language. Typical programming languages have node types for expressions (variables, numbers, strings, function application, lambdas, array & object literals, infix boolean and prefix unary operators), statements (control structures such as if, for, and while, function and class declaration), and, types (type variables, type application).
-    This has the downside of being quite complicated; both on the implementation side (ensuring that rendering, formatting, and editing each node type works as intended is a huge job) but more importantly there's a lot of mental overhead for the user, because key strokes might do different things depending on what kind of Node your cursor is in, so there's a ton to keep track of.
-    In an attempt to avoid these downsides, this editor works on what I call the "Concrete Syntax Tree"; essentially lisp s-expressions. In my opinion, this strikes a nice balance between the benefits you get from moving beyond "a jumble of text characters in a file" while still keeping the representation simple enough that it doesn't get in the way of the editing experience.
+    This has the downside of being quite complicated; both on the implementation side (ensuring that rendering, formatting, and editing each node type works as intended is a huge job) but more importantly: there's a lot of mental overhead for the user, because key strokes might do different things depending on what kind of Node your cursor is in, so you have to be aware of what kind of node (out of dozens of types) you are currently editing.
+    In an attempt to avoid these downsides, this editor works on what I call the "Concrete Syntax Tree"; essentially lisp s-expressions (identifiers, strings, lists, and arrays). In my opinion, this strikes a nice balance between the benefits you get from moving beyond "a jumble of text characters in a file" while still keeping the representation simple enough that it doesn't get in the way of the editing experience.
     Some notable features of this structured editor:
     - it's impossible to have "unbalanced parenthesis" or a "missing close-quote". Deleting a close-paren deletes the whole group.
     - code formatting is automatic (a la prettier)
@@ -20,8 +20,17 @@
 | {type: 'array', values: Node[], loc: number}
 | {type: 'string', first: {type: 'stringText', text: string, loc: number},
     templates: {expr: Node, suffix: {type: 'stringText', text: string, loc: number}},
-    loc: number} **)
+    loc: number}
+// I've made the probably-controversial decision of using only a two-dot ellipsis for
+// spreads. This allows for a more fluid editing experience in my opinion (otherwise,
+// two dots would just be invalid syntax, and who wants that). The single dot is
+// reserved for bare-attribute syntax, once our language supports records of some sort.
+| {type: 'spread', contents: Node, loc: number}
 
-(** And here's some code. Feel free to play around with it; everything on this page is editable. **)
+// this here is a "raw code" type node, which is, sadly, just a big ol' text string,
+// no structured editor goodness here. Fortunately we'll move off of them quickly
+// as we get into self-hosting land. **)
 
-(hello "world ${abc}!" 12 [])
+(** And here's some code! Feel free to play around with it; everything on this page is editable. **)
+
+(hello "world ${abc}!" 12 [..b])

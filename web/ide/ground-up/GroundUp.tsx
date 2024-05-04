@@ -28,6 +28,7 @@ import { ShowAt } from './ShowAt';
 import { ShowErrors } from './ShowErrors';
 import { AutoComplete } from './AutoComplete';
 import { RenderReadOnly } from '../../custom/RenderStatic';
+import { selectEnd } from '../../../src/state/navigate';
 
 export const WithStore = ({
     store,
@@ -91,6 +92,29 @@ export const GroundUp = ({
 
     const store = useSyncStore(initial.state, undefined, initial.evaluator);
     const { state } = useGlobalState(store);
+
+    useEffect(() => {
+        const state = store.getState();
+        if (!state.at.length) {
+            const ns = state.cards[0].top;
+            if (ns == null) return;
+            const child = state.nsMap[ns].children[0];
+            if (child == null) return;
+            const node = state.nsMap[child].top;
+            const sel = selectEnd(
+                node,
+                [
+                    { type: 'card', card: 0, idx: -1 },
+                    { type: 'ns', child: child, idx: ns },
+                    { type: 'ns-top', idx: child },
+                ],
+                state.map,
+            );
+            if (sel) {
+                store.dispatch({ type: 'select', at: [{ start: sel }] });
+            }
+        }
+    }, []);
 
     useSaveState(store, save, state, id);
 

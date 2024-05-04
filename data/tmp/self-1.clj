@@ -1,4 +1,4 @@
-(** ## Builtins dump **)
+(** ## Builtins **)
 
 (def prelude
     (eval
@@ -119,7 +119,7 @@ cons
 
 (** ## Our AST (provided by the bootstrap) **)
 
-(deftype (array a) (nil) (cons a (array a)))
+(deftype (list a) (nil) (cons a (list a)))
 
 (deftype expr
     (eprim prim)
@@ -127,7 +127,7 @@ cons
         (elambda string expr)
         (eapp expr expr)
         (elet string expr expr)
-        (ematch expr (array (, pat expr))))
+        (ematch expr (list (, pat expr))))
 
 (deftype prim (pint int) (pbool bool))
 
@@ -136,12 +136,12 @@ cons
         (pvar string)
         (pprim prim)
         (pstr string)
-        (pcon string (array string)))
+        (pcon string (list string)))
 
 (deftype type (tvar int) (tapp type type) (tcon string))
 
 (deftype stmt
-    (sdeftype string (array (, string (array type))))
+    (sdeftype string (list (, string (list type))))
         (sdef string expr)
         (sexpr expr))
 
