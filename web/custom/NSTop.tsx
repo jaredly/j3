@@ -251,9 +251,9 @@ const RenderProduce = ({
                 color: 'rgba(255,255,255,0.5)',
                 maxHeight: collapsed === 'pinned' ? 'unset' : `${maxHeight}px`,
                 maxWidth: 1000,
+                zIndex: show ? 100 : 0,
                 overflowY: show ? 'visible' : 'hidden',
                 overflowX: show ? 'visible' : 'auto',
-                padding: 4,
                 border:
                     tooLong && collapsed !== 'pinned'
                         ? '1px solid #666'
@@ -264,7 +264,15 @@ const RenderProduce = ({
         >
             <div
                 ref={inner}
-                style={{ position: 'relative', backgroundColor: 'black' }}
+                style={{
+                    position: 'relative',
+                    backgroundColor: 'black',
+                    padding: 4,
+                    border:
+                        tooLong && collapsed !== 'pinned'
+                            ? '1px solid #666'
+                            : 'unset',
+                }}
             >
                 {value?.map((item, i) => (
                     <div key={i}>

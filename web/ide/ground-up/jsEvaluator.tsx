@@ -252,9 +252,9 @@ export const jsEvaluator: FullEvalator<
 };
 
 const parseAssign = (text: string) => {
-    const match = text.match(/^(\w+)\s*=[^>]/);
+    const match = text.match(/^(\/\/[^\n]+\n)*\s*(\w+)\s*=[^>]/);
     if (match) {
-        return { name: match[1], text: text.slice(match[0].length) };
+        return { name: match[2], text: text.slice(match[0].length) };
     }
     return { name: null, text };
 };

@@ -96,7 +96,7 @@ export const RawCode = ({
         }
         focus.current?.();
     });
-    console.log(store.getState().at);
+    // console.log(store.getState().at);
 
     return (
         <div

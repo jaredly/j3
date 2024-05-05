@@ -1,13 +1,14 @@
 (** ## Bootstrap (js) parser + evaluator **)
 
-(** Parser consumes (Node)s and produces (stmt /  expr) **)
+(** Because we're using a structured editor for our language, the job of parsing is quite a bit simpler; we just need to turn the CST into the AST, instead of messing around with tokenizing, counting parentheses, etc. **)
 
 (** ## Prelude
     Some basic handy functions **)
 
-(** list = (values) => {
+(** // turn a javascript array into a linked list with `cons` and `nil`.
+list = (values) => {
   let v = nil
-  for (let i=values.length-1;i>=0;i--) {
+  for (let i = values.length - 1; i >= 0; i--) {
     v = cons(values[i], v)
   }
   return v
@@ -17,7 +18,8 @@
 
 (** nil = {type: 'nil'} **)
 
-(** unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])] **)
+(** // unwrap a list into a javascript array
+unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])] **)
 
 (** unwrapList(list([1,2,3])) **)
 
@@ -25,15 +27,20 @@
 
 (** foldr = (init, items, f) => items.length === 0 ? init : f(foldr(init, items.slice(1), f), items[0]) **)
 
-(** makePairs = array => {
+(** // This will be useful for the `let` and `match` forms, where we expect a list of pairs of nodes.
+makePairs = array => {
   const res = [];
-  for (let i=0; i<array.length - 1; i+=2) {
+  for (let i = 0; i < array.length - 1; i += 2) {
     res.push([array[i], array[i + 1]]);
   }
   return res
 } **)
 
-(** valueToString = (v) => {
+(, (** makePairs **) [(, (** [1, 2, 3, 4] **) (** [[1, 2], [3, 4]] **))])
+
+(** // turn a runtime value into a nice-to-read string. Roughly corresponds to `show` from Haskell
+// or `repr` from python
+valueToString = (v) => {
     if (typeof v === 'object' && v && 'type' in v) {
         if (v.type === 'cons' || v.type === 'nil') {
             const un = unwrapList(v);
@@ -64,35 +71,17 @@
 };
  **)
 
-(** filterBlanks = values => values.filter(n => !['blank', 'comment', 'rich-text', 'comment-node'].includes(n.type)) **)
-
-(** valueToNode = (v) => {
-  if (typeof v === 'object' && v && 'type' in v) {
-    if (v.type === 'cons' || v.type === 'nil') {
-      const un = unwrapList(v)
-      return {type: 'array', values: un.map(valueToNode), loc: -1}
-    }
-    let args = [];
-    for (let i=0; i in v; i++) {
-      args.push(v[i]);
-    }
-    return {type: 'list', values: [{type: 'identifier', text: v.type, loc: -1}, ...args.map(valueToNode)], loc: -1}
-  }
-  if (typeof v === 'string') {
-    return {type: 'string', first: {type: 'stringText', text: v, loc: -1}, templates: [], loc: -1}
-  }
-  if (typeof v === 'number' || typeof v === 'boolean') {
-    return {type: 'identifier', text: v + '', loc: -1}
-  }
-  return null 
-}
- **)
+(** // These are the CST nodes that we want to ignore while parsing.
+filterBlanks = values => values.filter(n => !['blank', 'comment', 'rich-text', 'comment-node'].includes(n.type)) **)
 
 (** ## Parser **)
 
-(** ## Primitives **)
+(** ## Primitives
+    just ints and booleans at the moment **)
 
-(** parsePrim = node => {
+(** // Expects a node of type 'identifier' and if it's an int or true/false, returns
+// the appropriate `prim`
+parsePrim = node => {
   const v = +node.text
   if (v + '' === node.text && Math.floor(v) === v) {
     return c.prim(c.int(v, node.loc), node.loc)
@@ -106,17 +95,11 @@
 (** parsePrim({text: '23', loc: 10}) **)
 
 (,
-    (** n => parsePrim(n) ?? "not a prim" **)
-        [(,
-        (@ true)
-            (** {"0":{"0":true,"1":1080,"type":"pbool"},"1":1080,"type":"eprim"} **))
-        (,
-        (@ false)
-            (** {"0":{"0":false,"1":1103,"type":"pbool"},"1":1103,"type":"eprim"} **))
-        (,
-        (@ 123)
-            (** {"0":{"0":123,"1":1087,"type":"pint"},"1":1087,"type":"eprim"} **))
-        (, (@ hi) (** "not a prim" **))])
+    (** n => valueToString(parsePrim(n) ?? "not a prim") **)
+        [(, (@ true) (** "(eprim (pbool true 1080) 1080)" **))
+        (, (@ false) (** "(eprim (pbool false 1103) 1103)" **))
+        (, (@ 123) (** "(eprim (pint 123 1087) 1087)" **))
+        (, (@ hi) (** '"not a prim"' **))])
 
 (** ## Types **)
 
@@ -127,10 +110,29 @@
   if (node.type === 'list') {
     const values = filterBlanks(node.values)
     if (!values.length) return {type: 'tcon', 0: '()', 1: node.loc}
-    if (values.length === 3 && values[0].type === 'identifier' && values[0].text === 'fn' && values[1].type === 'array') {
+    if (values.length === 3 &&
+        values[0].type === 'identifier' &&
+        values[0].text === 'fn' &&
+        values[1].type === 'array') {
       const body = parseType(values[2])
+      // This 'reduceRight' is how we convert a function type declaration
+      // with potentially many arguments into function types with only
+      // single arguments.
+      // for a fn type (fn [a b c] d)
+      // the inner function will be called with
+      //    [body]                       [arg]
+      // -> d                            c
+      // -> (fn [c] d)                   b
+      // -> (fn [b] (fn [c] d))          a
+      // and returns
+      // -> (fn [a] (fn [b] (fn [d] d)))
       return values[1].values.reduceRight((body, arg) => (
-        {type: 'tapp', 0: {type: 'tapp', 0: {type: 'tcon', 0: '->', 1: node.loc}, 1: parseType(arg), 2: node.loc}, 1: body, 2: node.loc}
+        {type: 'tapp',
+         0: {type: 'tapp',
+             0: {type: 'tcon', 0: '->', 1: node.loc},
+             1: parseType(arg), 2: node.loc},
+         1: body,
+         2: node.loc}
       ), body)
     }
     let res = parseType(values[0])
@@ -161,20 +163,27 @@
     }
     case 'string': {
       const exprs = node.templates.map(t => parse(t.expr))
-      return {type: 'estr', 0: node.first.text, 1: list(
-        node.templates.map((t, i) => pair(exprs[i], t.suffix.text))
-      ), 2: node.loc}
+      return {
+        type: 'estr',
+        0: node.first.text,
+        1: list(node.templates.map((t, i) => pair(exprs[i], t.suffix.text))),
+        2: node.loc
+      }
     }
     case 'list': {
       const values = filterBlanks(node.values)
       if (!values.length) return c.evar('()', node.loc)
       if (values[0].type === 'identifier') {
         const first = values[0].text;
+        // If we're in a list w/ the first item being an identifier, see if
+        // we're in a 'special form' (defined next)
         if (forms[first]) {
           const res = forms[first](node.loc, ...values.slice(1))
           if (res) return res
         }
       }
+      // Otherwise do function application. Remember that we're auto-currying,
+      // so (a b c d) is sugar for (((a b) c) d)
       const parsed = values.map(parse)
       let res = parsed[0]
       for (let i=1; i<parsed.length; i++) {
@@ -185,6 +194,10 @@
     case 'array': {
       if (!node.values.length) return c.evar('nil', node.loc)
       let last = node.values[node.values.length - 1]
+      // a normal list [1 2 3] turns into (cons 1 (cons 2 (cons 3 nil)))
+      // a final `spread` node is neatly represented by replacing the
+      // final `nil` with the contents of the spread.
+      // so [a b ..c] becomes (cons a (cons b c))
       let res = last.type === 'spread'
         ? parse(last.contents)
         : c.cons(parse(last), c.nil(node.loc), node.loc)
@@ -193,6 +206,9 @@
       }
       return res
     }
+    // for our language, the `raw-code` node just gets passed through as a runtime string.
+    // we can call `eval` on it if we need an escape hatch for e.g. producing the API
+    // expected by the structured editor.
     case 'raw-code':
       return {type: 'estr', 0: node.raw, 1: nil, 2: node.loc}
   }
@@ -224,7 +240,10 @@
   match: (loc, target, ...rest) => {
     if (!target || !rest.length) return
     const cases = makePairs(rest)
-    return {type: 'ematch', 0: parse(target), 1: list(cases.map(([pat, body]) => pair(parsePat(pat), parse(body)))), 2: loc}
+    return {type: 'ematch',
+            0: parse(target),
+            1: list(cases.map(([pat, body]) => pair(parsePat(pat), parse(body)))),
+            2: loc}
   },
   '@': (loc, inner) => ({type: 'equot', 0: parse(inner), 1: loc}),
   '@@': (loc, inner) => ({type: 'equot', 0: fromNode(inner), 1: loc}),
@@ -466,7 +485,7 @@
     case 'eprim':
       return node[0][0]
     case 'estr':
-      return slash(node[0]) + unwrapList(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + slash(suf)).join('')
+      return unescapeSlashes(node[0]) + unwrapList(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + unescapeSlashes(suf)).join('')
     case 'evar':
       var name = sanitize(node[0])
       if (!Object.hasOwn(scope, name)) {
@@ -516,7 +535,8 @@
   }
 }        **)
 
-(** slash = (n) =>
+(** // "A\\nB" -> "A\nB"
+unescapeSlashes = (n) =>
     n.replaceAll(/\\./g, (m) => {
         if (m[1] === 'n') {
             return '\n';
@@ -529,6 +549,10 @@
         }
         return m[1];
     }) **)
+
+(,
+    (** unescapeSlashes **)
+        [(, "\n" "\n") (, "\\n" "\n") (, "\\\\n" "\\n") (, "\\\\" "\\") (, "\\\n" "\\\n")])
 
 (** run = v => {
   const res = evaluate(parse(v), {'$co': a => b => pair(a,b)})
@@ -554,24 +578,27 @@
   if (stmts.type !== 'array') throw new Error('need array')
   const env = {'$co': a => b => pair(a, b)}
   let res
-  stmts.values.forEach(stmt => {
+  filterBlanks(stmts.values).forEach(stmt => {
     res = evaluateStmt(parseStmt(stmt), env)
   });
-  return res
+  return valueToString(res)
 }
  **)
 
 (,
     (** evalStmts **)
-        [(, [0] "0")
-        (, [(def n 10) n] "10")
-        (, [(defn hi [x] (, x 2)) (hi 5)] (** {"0":5,"1":2,"type":","} **))
+        [(, [0] (** "0" **))
+        (, [(def n 10) n] (** "10" **))
+        (, [(defn hi [x] (, x 2)) (hi 5)] (** "(, 5 2)" **))
+        (, [(deftype (option a) (some a) (none)) (some 10)] (** "(some 10)" **))
         (,
-        [(deftype (option a) (some a) (none)) (some 10)]
-            (** {"0":10,"type":"some"} **)
-            (** {"0":1,"1":true,"2":"hi","type":"lol"} **))
-        (, [(deftype lots (lol a b c)) (lol 1 true "hi")] )
-        (, [(deftype a (com, 1 2)) (com, 1 2)] "(com, 1 2)")])
+        [(deftype (option a) (some a) (none))
+            (match (some 10)
+            (some v) v
+            _        5)]
+            (** "10" **))
+        (, [(deftype lots (lol a b c)) (lol 1 true "hi")] (** '(lol 1 true "hi")' **))
+        (, [(deftype a (com, 1 2)) (com, 1 2)] (** "(com, 1 2)" **))])
 
 (** ## Analysis **)
 
@@ -677,18 +704,25 @@
 
 ((** testCompileStmt **) (deftype card (red) (black)))
 
-(** sanitize =  (raw) => {
+(** // Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
+sanitize =  (raw) => {
     for (let [key, val] of Object.entries(sanMap)) {
         raw = raw.replaceAll(key, val);
     }
-    kwdRx.forEach(([rx, res]) => {
-        raw = raw.replaceAll(rx, res);
-    });
-    return raw;
-  }
+    if (kwds.includes(raw)) return '$' + raw
+    return raw
+}
  **)
 
+(,
+    (** sanitize **)
+        [(, "hello-world" "hello_world")
+        (, "a/b/c" "a$slb$slc")
+        (, "abc$" "abc$$")])
+
 (** sanMap = {
+    // '$$$$' gets interpreted by replaceAll as '$$', for reasons
+    $: '$$$$',
     '-': '_',
     '+': '$pl',
     '*': '$ti',
@@ -705,25 +739,18 @@
     '|': '$bar',
     '()': '$unit',
     '?': '$qe',
-    $: '$$',
   };
  **)
 
-(** kwdRx = (() => {
+(** kwds = (() => {
   const kwds =
     'case new var const let if else return super break while for default';
   const rx = [];
-  kwds.split(' ').forEach((kwd) =>
-    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),
-  );
-  return rx;
-  })();
-
+  return kwds.split(' ')
+})();
  **)
-
-(** kwdString = '[' + kwdRx.map(([r, v]) => `[${r}, "${v}"]`).join(', ') + ']' **)
 
 (** sanitize('for') **)
 
-(** prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwdRx: kwdString,slash})  **)
+(** prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes})  **)
 

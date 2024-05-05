@@ -169,7 +169,13 @@ createServer(async (req, res) => {
         let { state, cache }: { state: NUIState; cache?: ResultsCache<any> } =
             JSON.parse(await readBody(req));
         const last = state.history[state.history.length - 1].ts;
-        state = compressState(state);
+        try {
+            state = compressState(state);
+        } catch (err) {
+            console.warn(`Couldn't compress state!`);
+            console.error(err);
+            console.log('^ ignoring the above error');
+        }
 
         const raw = JSON.stringify(state);
         if (existsSync(full)) {
