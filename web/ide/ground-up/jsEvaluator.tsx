@@ -5,6 +5,7 @@ import { filterNulls } from '../../custom/old-stuff/filterNulls';
 import { FullEvalator, Produce } from './FullEvalator';
 import { findTops } from './findTops';
 import { slash } from './round-1/bootstrap';
+import { sanitize } from './round-1/sanitize';
 
 const evalWith = (text: string, values: Record<string, any>, args: Node[]) => {
     const res = new Function(`{${Object.keys(values).join(',')}}`, text)(

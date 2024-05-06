@@ -225,7 +225,10 @@ export const fnsEvaluator = (
                     .filter((n) => n.kind === 'value')
                     .map((n) => n.name) ?? [];
             const { needed, values } = assembleExternals(externals, env, san);
-            values.$env = env.values;
+            values.$env = {};
+            needed.forEach((name) => {
+                values.$env[name] = values[sanitize(name)];
+            });
 
             try {
                 const js = compiler.compileExpr(expr, meta);
@@ -320,7 +323,11 @@ const compileStmt = (
                     : ''
             }}`,
         );
-        values.$env = env.values;
+        // TODO: only do this if it's actually needed
+        values.$env = {};
+        needed.forEach((name) => {
+            values.$env[name] = values[sanitize(name)];
+        });
         const result_values: { [key: string]: any } = {};
         if (names?.length) {
             let result: { [key: string]: any };
@@ -417,7 +424,13 @@ function assembleExternals(
 ) {
     const provided = names?.map((obj) => obj.name) ?? [];
     const needed = unique(
-        externals.concat(['$trace', 'jsonify', 'valueToString']),
+        externals.concat([
+            '$trace',
+            'jsonify',
+            'valueToString',
+            'evaluateStmt',
+            'evaluate',
+        ]),
     ).filter(
         // Skip recursive self-calls
         (name) => !provided.includes(name),

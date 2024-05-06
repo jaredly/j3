@@ -1,3 +1,5 @@
-(** hello **)
+(defn one-thing [a] (+ a 10))
 
-(** yes **)
+(one-thing 101)
+
++
