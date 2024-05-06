@@ -116,7 +116,7 @@ const Saver = ({
                     .then(() => {
                         setTimeout(() => {
                             setSaving(false);
-                        }, 200);
+                        }, 100);
                     });
             }}
         >

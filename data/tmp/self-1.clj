@@ -1,9 +1,7 @@
 (** ## Builtins **)
 
-(def prelude
-    (eval
-        (** (() => {
-const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', 
+(def builtins
+    (** const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', 
 '>': '$gt', '<': '$lt', "'": '$qu', '"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};
 
 const kwds = 'case var else const let var new if return default break while for super'.split(' ');
@@ -50,8 +48,7 @@ const unescapeString = (text) => text.replace(/\\\\./g, (matched) => {
 const $co = (a) => (b) => ({ type: ',', 0: a, 1: b });
 const reduce = (init) => (items) => (f) => {
     return unwrapList(items).reduce((a, b) => f(a)(b), init);
-};
-return {$pl$pl: '' + $pl$pl}})() **)))
+}; **))
 
 (** ## Prelude **)
 
@@ -105,7 +102,7 @@ return {$pl$pl: '' + $pl$pl}})() **)))
         (** elet: bindings, body **)
         (elet (list (, pat expr)) expr int)
         (** ematch: target, cases **)
-        (ematch expr (list (, pat expr))))
+        (ematch expr (list (, pat expr)) int))
 
 (deftype quot
     (quot/expr expr)
@@ -129,7 +126,7 @@ return {$pl$pl: '' + $pl$pl}})() **)))
         (pvar string int)
         (pprim prim int)
         (pstr string int)
-        (pcon string (list pat) int))
+        (pcon string int (list pat) int))
 
 (deftype type
     (tvar string int)
@@ -242,15 +239,15 @@ return {$pl$pl: '' + $pl$pl}})() **)))
 
 (defn compile-pat [pat target inner]
     (match pat
-        (pany _)           inner
-        (pprim prim _)     (match prim
-                               (pint int)   "if (${target} === ${(int-to-string int)}) {\n${inner}\n}"
-                               (pbool bool) "if (${target} === ${(if bool
-                                                "true"
-                                                    "false")}) {\n${inner}\n}")
-        (pstr str _)       "if (${target} === \"${str}\"){\n${inner}\n}"
-        (pvar name _)      "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
-        (pcon name args _) "if (${target}.type === \"${name}\") {\n${(pat-loop target args 0 inner)}\n}"))
+        (pany _)             inner
+        (pprim prim _)       (match prim
+                                 (pint int)   "if (${target} === ${(int-to-string int)}) {\n${inner}\n}"
+                                 (pbool bool) "if (${target} === ${(if bool
+                                                  "true"
+                                                      "false")}) {\n${inner}\n}")
+        (pstr str _)         "if (${target} === \"${str}\"){\n${inner}\n}"
+        (pvar name _)        "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
+        (pcon name _ args _) "if (${target}.type === \"${name}\") {\n${(pat-loop target args 0 inner)}\n}"))
 
 (compile-pat (@p (cons 2 (cons (lol 2) nil))) "$target" "lol")
 
@@ -262,22 +259,22 @@ compile-pat
 
 (defn pat-as-arg [pat]
     (match pat
-        (pany _)        none
-        (pprim _ _)     none
-        (pstr _ _)      none
-        (pvar name _)   (some (sanitize name))
-        (pcon _ args _) (match (foldl
-                            (, 0 [])
-                                args
-                                (fn [(, i res) arg]
-                                (,
-                                    (+ i 1)
-                                        (match (pat-as-arg arg)
-                                        (none)     res
-                                        (some arg) ["${(int-to-string i)}: ${arg}" ..res]))))
-                            (, _ [])   none
-                            (, _ args) (some "{${(join ", " args)}}"))
-        _               (fatal "No pat ${(jsonify pat)}")))
+        (pany _)          none
+        (pprim _ _)       none
+        (pstr _ _)        none
+        (pvar name _)     (some (sanitize name))
+        (pcon _ _ args _) (match (foldl
+                              (, 0 [])
+                                  args
+                                  (fn [(, i res) arg]
+                                  (,
+                                      (+ i 1)
+                                          (match (pat-as-arg arg)
+                                          (none)     res
+                                          (some arg) ["${(int-to-string i)}: ${arg}" ..res]))))
+                              (, _ [])   none
+                              (, _ args) (some "{${(join ", " args)}}"))
+        _                 (fatal "No pat ${(jsonify pat)}")))
 
 (pat-as-arg (@p (, a _)))
 
@@ -366,6 +363,11 @@ pat-as-arg
 "\\\n"
 
 1746
+
+(@
+    (match nil
+        (nil)         ""
+        (cons name _) name))
 
 (,
     run

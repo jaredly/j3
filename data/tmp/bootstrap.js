@@ -270,9 +270,9 @@ const p = {
   bool: (v, loc=-1) => ({type: 'pbool', 0: v, 1: loc}),
   int: (v, loc=-1) => ({type: 'pint', 0: v, 1: loc}),
   any: loc => ({type: 'pany', 0: loc}),
-  con: (name, args, loc) => ({type: 'pcon', 0: name, 1: list(args), 2: loc}),
-  cons: (one, two, loc) => p.con('cons', [one, two], loc),
-  nil: loc => p.con('nil', [], loc),
+  con: (name, nloc, args, loc) => ({type: 'pcon', 0: name, 1: nloc, 2: list(args), 3: loc}),
+  cons: (one, two, loc) => p.con('cons', loc, [one, two], loc),
+  nil: loc => p.con('nil', loc, [], loc),
 }
 
 const parsePat = node => {
@@ -291,9 +291,9 @@ const parsePat = node => {
       return {type: 'pstr', 0: node.first.text, 1: node.loc}
     case 'list': {
       const values = filterBlanks(node.values)
-      if (!values.length) return p.con('()', [], node.loc)
+      if (!values.length) return p.con('()', node.loc, [], node.loc)
       if (values[0].type !== 'identifier') throw new Error('pat exp must start with identifier')
-      return p.con(values[0].text, values.slice(1).map(parsePat), node.loc)
+      return p.con(values[0].text, values[0].loc, values.slice(1).map(parsePat), node.loc)
     }
     case 'array':
       const values = filterBlanks(node.values)
@@ -373,7 +373,7 @@ const evaluate = (node, scope) => {
     case 'evar':
       var name = node[0]
       if (!Object.hasOwn(scope, name)) {
-        throw new Error(`Unknown vbl: ${name}. ${Object.keys(scope).join(', ')}`)
+        throw new Error(`Variable not in scope: ${name}. ${Object.keys(scope).join(', ')}`)
       }
       return scope[name]
     // For lambdas, we're producing an arrow function that accepts the right number of (curried) arguments, matches each provided value with the
@@ -428,7 +428,7 @@ const evalPat = (node, v) => {
       return {[node[0]]: v}
     case 'pcon':
       if (v.type === node[0]) {
-        const args = unwrapList(node[1])
+        const args = unwrapList(node[2])
         const scope = {}
         for (let i=0; i<args.length; i++) {
           const sub = evalPat(args[i], v[i])
@@ -560,7 +560,7 @@ const pat_names = pat => {
     case 'pany': return []
     case 'pprim': return []
     case 'pcon':
-      return unwrapList(pat[1]).flatMap(pat_names)
+      return unwrapList(pat[2]).flatMap(pat_names)
   }
   return []
 }
