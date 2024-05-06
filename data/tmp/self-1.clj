@@ -261,6 +261,10 @@
 
 (defn fix-slashes [str] (escape-string (unescapeString str)))
 
+(,
+    fix-slashes
+        [(, "\n" "\\n") (, "\\n" "\\n") (, "\\\n" "\\\\\\n") (, "\"" "\\\"")])
+
 (defn with-parens [expr]
     (maybe-parens (compile expr) (needs-parens expr)))
 
@@ -311,7 +315,7 @@
                                     (compile body)
                                         pats
                                         (fn [body pat] "(${(pat-as-arg pat)}) => ${body}"))
-        (** Let bindings are compiled as function application. This does mean we don't support recursive let bindings in this implementation.
+        (** Let bindings are compiled as function application. This does mean we don't support recursive let bindings in this implementation. We're doing this to avoid having to reason about javascript's "statement vs expression" split; e.g. in our language, let is an expression, whereas in javascript it's a statement. We'll get more sophisticated about this later on, when we compile to a JavaScript AST.
             let x = y in z -> ((x) => z)(y) **)
         (elet bindings body _)  (foldr
                                     (compile body)
@@ -319,11 +323,12 @@
                                         (fn [body (, pat init)]
                                         "((${(pat-as-arg pat)}) => ${body})(${(compile init)})"
                                             ))
-        (** Curried application **)
+        (** Curried application. (a b c) -> a(b)(c) **)
         (eapp f args _)         (foldl
                                     (with-parens f)
                                         args
                                         (fn [target arg] "${target}(${(compile arg)})"))
+        (** Match is the most complex form to compile. compile-pat produces a block of code which, if the pattern matches, will return. So we wrap our cases in a lambda, and call it with the target of the match. If none of the cases trigger, then we throw an exception. **)
         (ematch target cases _) (let [
                                     cases (map
                                               cases
@@ -331,25 +336,26 @@
                                                   (let [(, pat body) case]
                                                       (compile-pat pat "$target" "return ${(compile body)}"))))
                                     ]
-                                    "(($target) => {${(join "\n" cases)}\nthrow new Error('Failed to match. ' + valueToString($target))})(${(compile target)})")))
+                                    "(($target) => {\n${(join "\n" cases)}\nthrow new Error('Failed to match. ' + valueToString($target));\n})(${(compile target)})")))
+
+(compile
+    (@
+        (fn [value]
+            (if (< 10 value)
+                "yes"
+                    "no"))))
 
 (,
     (fn [v] (eval (compile v)))
         [(, (@ 1) 1)
         (, (@ "hello") "hello")
-        (, (@ "\"") "\"")
-        (, (@ "\n") "\n")
-        (, (@ "\\n") "\\n")
-        (, (@ "\\\n") "\\\n")
-        (, (@ "\\\"") "\\\"")
-        (, (@ "\\'") "\\'")
         (, (@ (+ 2 3)) 5)
         (, (@ (@ 1)) (eprim (pint 1 5354) 5354))
         (,
         (@
-            (match (nil)
-                (nil)         "any"
-                (cons name _) name))
+            (match []
+                []         "any"
+                [name .._] name))
             "any")
         (, (@ "a${2}b") "a2b")
         (, (@ ((fn [a] (+ a 2)) 21)) 23)
@@ -366,8 +372,10 @@
                 true 1
                 2))
             1)
+        (** Testing some weird string edge cases **)
         (, (@ "`${1}") "`1")
-        (, (@ "${${1}") "${1")])
+        (, (@ "${${1}") "${1")
+        (, (@ "${${"a}"}") "${a}")])
 
 (eval
     (** compile => compile_stmt => ({type:'fns',compile: a => _ => compile(a), compile_stmt: a => _ => compile_stmt(a)}) **)
