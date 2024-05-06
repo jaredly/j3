@@ -50,7 +50,7 @@ export const evaluatorFromText = (
         try {
             result = new Function(envArgs, '{' + text + '}')({
                 ...san,
-                $env: san,
+                $env: benv,
             });
         } catch (err) {
             console.error(err);

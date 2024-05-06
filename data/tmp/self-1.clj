@@ -1,54 +1,7 @@
-(** ## Builtins **)
+(** ## Self-Hosted Code Generation **)
 
-(def builtins
-    (** const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', 
-'>': '$gt', '<': '$lt', "'": '$qu', '"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};
-
-const kwds = 'case var else const let var new if return default break while for super'.split(' ');
-const sanitize = (raw) => { if (raw == null) debugger;
-    for (let [key, val] of Object.entries(sanMap)) {
-        raw = raw.replaceAll(key, val);
-    }
-    if (kwds.includes(raw)) {
-      raw = '$' + raw;
-    }
-    return raw;
-};
-const jsonify = (raw) => JSON.stringify(raw);
-const string_to_int = (a) => {
-    var v = parseInt(a);
-    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}
-    return {type: 'none'}
-}
-
-const unwrapList = (v) => {
-    if (!v) debugger
-    return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])]
-};
-const $eq = (a) => (b) => a == b;
-const fatal = (e) => {throw new Error(e)}
-const nil = { type: 'nil' };
-const cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });
-const $pl$pl = (items) => unwrapList(items).join('');
-const $pl = (a) => (b) => a + b;
-const _ = (a) => (b) => a - b;
-const int_to_string = (a) => a + '';
-const replace_all = (a) => (b) => (c) => {
-    return a.replaceAll(b, c);
-};
-
-const unescapeString = (text) => text.replace(/\\\\./g, (matched) => {
-    if (matched[1] === 'n') {
-        return '\\n';
-    }
-    if (matched[1] === 't') return '\\t';
-    if (matched[1] === 'r') return '\\r';
-    return matched[1];
-});
-const $co = (a) => (b) => ({ type: ',', 0: a, 1: b });
-const reduce = (init) => (items) => (f) => {
-    return unwrapList(items).reduce((a, b) => f(a)(b), init);
-}; **))
+(** Going with a tree-walking interpreter for the self-hosted part would result in running a VM inside of a VM, which doesn't sound like a great idea performance-wise. Therefore, for the self-hosted compiler, we'll be doing code generation!
+    Given that we're generating JavaScript code, it will technically still be run in a VM 😅 but we'll ignore that part. Maybe later we'll implement code generation for something a little closer to the metal, like chicken scheme cough I meant golang. **)
 
 (** ## Prelude **)
 
@@ -81,7 +34,20 @@ const reduce = (init) => (items) => (f) => {
 
 (deftype (list a) (nil) (cons a (list a)))
 
-(** ## Our AST (provided by the bootstrap) **)
+(defn concat [lsts]
+    (match lsts
+        []                    []
+        [one]                 one
+        [[] ..rest]           (concat rest)
+        [[one ..rest] ..lsts] [one ..(concat [rest ..lsts])]))
+
+(defn indices [lst] (mapi 0 lst (fn [i _] i)))
+
+(deftype (option a) (some a) (none))
+
+(** ## Our AST **)
+
+(** We saw this before in the bootstrap, so feel free to skip. It's included here for completeness, and because the code wouldn't run without it 😉. **)
 
 (deftype expr
     (** the trailing int on each constructor is a unique id **)
@@ -95,7 +61,7 @@ const reduce = (init) => (items) => (f) => {
         (evar string int)
         (** equot: this form allows embedding of the CST or AST into the runtime, which makes writing tests for our parsers, compilers, and type checkers much simpler. **)
         (equot quot int)
-        (** elambda: args, body , parsed from the form (fn [arg1 arg2] body). **)
+        (** elambda: args, body, parsed from the form (fn [arg1 arg2] body). **)
         (elambda (list pat) expr int)
         (** eapp: target, args **)
         (eapp expr (list expr) int)
@@ -119,7 +85,7 @@ const reduce = (init) => (items) => (f) => {
         (cst/spread cst int)
         (cst/string string (list (,, cst string int)) int))
 
-(deftype prim (pint int) (pbool bool))
+(deftype prim (pint int int) (pbool bool int))
 
 (deftype pat
     (pany int)
@@ -138,58 +104,147 @@ const reduce = (init) => (items) => (f) => {
         (sdef string expr int)
         (sexpr expr int))
 
-(** ## Compilation **)
-
-(defn +++ [items]
-    (match items
-        []           ""
-        [one]        one
-        [one ..rest] "${one}${(+++ rest)}"))
-
-(defn literal-constr [name args]
-    (+++
-        ["({type: \""
-            name
-            "\""
-            (+++ (mapi 0 args (fn [i arg] ", ${(int-to-string i)}: ${arg}")))
-            "})"]))
-
-(literal-constr "cons" ["0"])
-
-(def x 123)
-
-(mapi 0 ["0"] (fn [i arg] arg))
+(** ## Statements **)
 
 (defn compile-st [stmt]
     (match stmt
         (sexpr expr _)          (compile expr)
-        (sdef name body _)      (+++ ["const " (sanitize name) " = " (compile body) ";\n"])
+        (sdef name body _)      "const ${(sanitize name)} = ${(compile body)};\n"
         (sdeftype name cases _) (join
                                     "\n"
                                         (map
                                         cases
                                             (fn [case]
-                                            (let [(,, name2 args loc) case]
-                                                (+++
-                                                    ["const "
-                                                        (sanitize name2)
-                                                        " = "
-                                                        (+++ (mapi 0 args (fn [i _] (+++ ["(v" (int-to-string i) ") => "]))))
-                                                        "({type: \""
-                                                        name2
-                                                        "\""
-                                                        (+++
-                                                        (mapi
-                                                            0
-                                                                args
-                                                                (fn [i _] (+++ [", " (int-to-string i) ": v" (int-to-string i)]))))
-                                                        "});"])))))))
+                                            (let [
+                                                (,, name args loc) case
+                                                arrows             (join "" (map (indices args) (fn [i] "(v${(int-to-string i)}) => ")))
+                                                body               (constructor-fn
+                                                                       name
+                                                                           (map (indices args) (fn [i] "v${(int-to-string i)}")))]
+                                                "const ${(sanitize name)} = ${arrows}${body}"))))))
 
-(** ## Some more utils **)
+(defn constructor-fn [name args]
+    "({type: \"${name}\"${(join "" (mapi 0 args (fn [i arg] ", ${(int-to-string i)}: ${arg}")))}})")
 
-(defn snd [tuple] (let [(, _ v) tuple] v))
+(,
+    (fn [(, name args)] (constructor-fn name args))
+        [(, (, "nil" []) "({type: \"nil\"})")
+        (, (, "cons" ["10" "a"]) "({type: \"cons\", 0: 10, 1: a})")])
 
-(defn fst [tuple] (let [(, v _) tuple] v))
+(** ## Patterns, done worse **)
+
+(** This is a naive method of compiling patterns to javascript, which results in a ton of nested if statements. **)
+
+(defn compile-pat-naive [pat target inner]
+    (match pat
+        (pany _)             inner
+        (pprim prim _)       "if (${target} === ${(compile-prim prim)}) {\n${inner}\n}"
+        (pstr str _)         "if (${target} === \"${str}\"){\n${inner}\n}"
+        (pvar name _)        "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
+        (pcon name _ args _) "if (${target}.type === \"${name}\") {\n${(pat-loop target args 0 inner)}\n}"))
+
+(defn pat-loop [target args i inner]
+    (match args
+        []           inner
+        [arg ..rest] (compile-pat-naive
+                         arg
+                             "${target}[${(int-to-string i)}]"
+                             (pat-loop target rest (+ i 1) inner))))
+
+(** ## Patterns **)
+
+(** By collecting all of the checks and assignments produced by a deeply nested pattern, we can then produce a single if statement (if there are any checks) with a single block of assignments (if needed). **)
+
+(defn compile-pat-list [pat target]
+    (match pat
+        (pany _)             (, [] [])
+        (pprim prim _)       (, ["${target} === ${(compile-prim prim)}"] [])
+        (pstr str _)         (, ["${target} === \"${str}\""] [])
+        (pvar name _)        (, [] ["let ${(sanitize name)} = ${target};"])
+        (pcon name _ args _) (let [(, check assign) (pat-loop-list target args 0)]
+                                 (, ["${target}.type === \"${name}\"" ..check] assign))))
+
+(,
+    (fn [pat] (compile-pat-list pat "v"))
+        [(, (@p hi) (, [] ["let hi = v;"]))
+        (, (@p _) (, [] []))
+        (,
+        (@p [1 (lol "hi" x) 23 ..rest])
+            (,
+            ["v.type === \"cons\""
+                "v[0] === 1"
+                "v[1].type === \"cons\""
+                "v[1][0].type === \"lol\""
+                "v[1][0][0] === \"hi\""
+                "v[1][1].type === \"cons\""
+                "v[1][1][0] === 23"]
+                ["let x = v[1][0][1];" "let rest = v[1][1][1];"]))])
+
+(defn pat-loop-list [target args i]
+    (match args
+        []           (, [] [])
+        [arg ..rest] (let [
+                         (, check assign) (compile-pat-list arg "${target}[${(int-to-string i)}]")
+                         (, c2 a2)        (pat-loop-list target rest (+ i 1))]
+                         (, (concat [check c2]) (concat [assign a2])))))
+
+(defn compile-pat [pat target inner]
+    (let [
+        (, check assign) (compile-pat-list pat target)
+        inner            (match assign
+                             [] inner
+                             _  "{\n${(join "\n" assign)}\n${inner}\n}")
+        inner            (match check
+                             [] inner
+                             _  "if (${(join " &&\n" check)}) {\n${inner}\n}")]
+        inner))
+
+(,
+    (fn [pat] (compile-pat pat "v" "// evaluation continues"))
+        [(, (@p _) "// evaluation continues")
+        (,
+        (@p name)
+            "{\nlet name = v;\n// evaluation continues\n}")
+        (,
+        (@p [2 3 x (lol 2 y)])
+            "if (v.type === \"cons\" &&\nv[0] === 2 &&\nv[1].type === \"cons\" &&\nv[1][0] === 3 &&\nv[1][1].type === \"cons\" &&\nv[1][1][1].type === \"cons\" &&\nv[1][1][1][0].type === \"lol\" &&\nv[1][1][1][0][0] === 2 &&\nv[1][1][1][1].type === \"nil\") {\n{\nlet x = v[1][1][0];\nlet y = v[1][1][1][0][1];\n// evaluation continues\n}\n}")])
+
+((** pat-as-arg turns a pattern into a valid "javascript l-value", that could be on the left-hand side of an assignment, or as a function argument. **)
+    defn pat-as-arg [pat]
+    (match (pat-as-arg-inner pat)
+        (none)     "_"
+        (some arg) arg))
+
+(defn pat-as-arg-inner [pat]
+    (match pat
+        (pany _)          none
+        (pprim _ _)       none
+        (pstr _ _)        none
+        (pvar name _)     (some (sanitize name))
+        (pcon _ _ args _) (match (foldl
+                              (, 0 [])
+                                  args
+                                  (fn [(, i res) arg]
+                                  (,
+                                      (+ i 1)
+                                          (match (pat-as-arg-inner arg)
+                                          (none)     res
+                                          (some arg) ["${(int-to-string i)}: ${arg}" ..res]))))
+                              (, _ [])   none
+                              (, _ args) (some "{${(join ", " args)}}"))
+        _                 (fatal "No pat ${(jsonify pat)}")))
+
+(,
+    pat-as-arg-inner
+        [(, (@p (, a _)) (some "{0: a}"))
+        (, (@p _) (none))
+        (, (@p [a 2 ..rest]) (some "{1: {1: rest}, 0: a}"))
+        (, (@p arg) (some "arg"))
+        (, (@p case) (some "$case"))])
+
+(** ## Expressions **)
+
+(** ## String escape utils **)
 
 (defn replaces [target repl]
     (match repl
@@ -204,90 +259,10 @@ const reduce = (init) => (items) => (f) => {
         string
             [(, "\\" "\\\\") (, "\n" "\\n") (, "\"" "\\\"") (, "`" "\\`") (, "$" "\\$")]))
 
-(defn unescape-string [string]
-    (replaces string [(, "\\n" "\n") (, "\\\\" "\\") (, "\\\"" "\"")]))
+(defn fix-slashes [str] (escape-string (unescapeString str)))
 
-(unescape-string "\\n")
-
-(escape-string "\\n")
-
-"\\n"
-
-"\\"
-
-"\\"
-
-(unescape-string (escape-string "\\n"))
-
-"\n"
-
-"\\n"
-
-(escape-string "\n")
-
-(defn pat-loop [target args i inner]
-    (match args
-        []           inner
-        [arg ..rest] (compile-pat
-                         arg
-                             "${target}[${(int-to-string i)}]"
-                             (pat-loop target rest (+ i 1) inner))))
-
-(map [] +)
-
-(join "" [])
-
-(defn compile-pat [pat target inner]
-    (match pat
-        (pany _)             inner
-        (pprim prim _)       (match prim
-                                 (pint int)   "if (${target} === ${(int-to-string int)}) {\n${inner}\n}"
-                                 (pbool bool) "if (${target} === ${(if bool
-                                                  "true"
-                                                      "false")}) {\n${inner}\n}")
-        (pstr str _)         "if (${target} === \"${str}\"){\n${inner}\n}"
-        (pvar name _)        "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
-        (pcon name _ args _) "if (${target}.type === \"${name}\") {\n${(pat-loop target args 0 inner)}\n}"))
-
-(compile-pat (@p (cons 2 (cons (lol 2) nil))) "$target" "lol")
-
-compile-pat
-
-compile-pat
-
-(deftype (option a) (some a) (none))
-
-(defn pat-as-arg [pat]
-    (match pat
-        (pany _)          none
-        (pprim _ _)       none
-        (pstr _ _)        none
-        (pvar name _)     (some (sanitize name))
-        (pcon _ _ args _) (match (foldl
-                              (, 0 [])
-                                  args
-                                  (fn [(, i res) arg]
-                                  (,
-                                      (+ i 1)
-                                          (match (pat-as-arg arg)
-                                          (none)     res
-                                          (some arg) ["${(int-to-string i)}: ${arg}" ..res]))))
-                              (, _ [])   none
-                              (, _ args) (some "{${(join ", " args)}}"))
-        _                 (fatal "No pat ${(jsonify pat)}")))
-
-(pat-as-arg (@p (, a _)))
-
-pat-as-arg
-
-(pat-as-arg (@p [_ ..rest]))
-
-(compile-pat (pvar "case" 1) "a" "lol")
-
-(compile
-    (@
-        (match 2
-            1 2)))
+(defn with-parens [expr]
+    (maybe-parens (compile expr) (needs-parens expr)))
 
 (defn maybe-parens [inner parens]
     (if parens
@@ -300,77 +275,66 @@ pat-as-arg
         (eprim _ _)     true
         _               false))
 
-(defn with-parens [expr]
-    (maybe-parens (compile expr) (needs-parens expr)))
+(defn compile-quot [quot]
+    (match quot
+        (quot/quot x) (jsonify x)
+        (quot/expr x) (jsonify x)
+        (quot/stmt x) (jsonify x)
+        (quot/pat x)  (jsonify x)
+        (quot/type x) (jsonify x)))
+
+(defn compile-prim [prim]
+    (match prim
+        (pint int _)   (int-to-string int)
+        (pbool bool _) (match bool
+                           true  "true"
+                           false "false")))
 
 (defn compile [expr]
     (match expr
+        (** Simple strings are compiled as "" normal js strings, and template strings are compiled with back-ticks. **)
         (estr first tpls _)     (match tpls
-                                    [] "\"${(escape-string (unescapeString first))}\""
-                                    _  "`${(escape-string (unescapeString first))}${(join
-                                           ""
-                                               (map
-                                               tpls
-                                                   (fn [item]
-                                                   (let [(,, expr suffix _) item]
-                                                       "${${(compile expr)}}${(escape-string (unescape-string suffix))}"))))}`")
-        (eprim prim _)          (match prim
-                                    (pint int)   (int-to-string int)
-                                    (pbool bool) (match bool
-                                                     true  "true"
-                                                     false "false"))
+                                    [] "\"${(fix-slashes first)}\""
+                                    _  (let [
+                                           tpls (map
+                                                    tpls
+                                                        (fn [item]
+                                                        (let [(,, expr suffix _) item]
+                                                            "${${(compile expr)}}${(fix-slashes suffix)}")))
+                                           ]
+                                           "`${(fix-slashes first)}${(join "" tpls)}`"))
+        (eprim prim _)          (compile-prim prim)
         (evar name _)           (sanitize name)
-        (equot inner _)         (jsonify inner)
+        (equot inner _)         (compile-quot inner)
+        (** Curried functions **)
         (elambda pats body _)   (foldr
                                     (compile body)
                                         pats
-                                        (fn [body pat]
-                                        (++
-                                            ["("
-                                                (match (pat-as-arg pat)
-                                                (some arg) arg
-                                                _          "_")
-                                                ") => "
-                                                body])))
+                                        (fn [body pat] "(${(pat-as-arg pat)}) => ${body}"))
+        (** Let bindings are compiled as function application. This does mean we don't support recursive let bindings in this implementation.
+            let x = y in z -> ((x) => z)(y) **)
         (elet bindings body _)  (foldr
                                     (compile body)
                                         bindings
                                         (fn [body (, pat init)]
-                                        "((${(match (pat-as-arg pat)
-                                            (some v) v
-                                            _        "_")}) => ${body})(${(compile init)})"
+                                        "((${(pat-as-arg pat)}) => ${body})(${(compile init)})"
                                             ))
+        (** Curried application **)
         (eapp f args _)         (foldl
                                     (with-parens f)
                                         args
                                         (fn [target arg] "${target}(${(compile arg)})"))
-        (ematch target cases _) "(($target) => {${(join
-                                    "\n"
-                                        (map
-                                        cases
-                                            (fn [case]
-                                            (let [(, pat body) case]
-                                                (compile-pat pat "$target" "return ${(compile body)}")))))}\nthrow new Error('Failed to match. ' + valueToString($target))})(${(compile target)})"))
-
-(defn run [v] (eval (compile v)))
-
-"\""
-
-"\n"
-
-"\\n"
-
-"\\\n"
-
-1746
-
-(@
-    (match nil
-        (nil)         ""
-        (cons name _) name))
+        (ematch target cases _) (let [
+                                    cases (map
+                                              cases
+                                                  (fn [case]
+                                                  (let [(, pat body) case]
+                                                      (compile-pat pat "$target" "return ${(compile body)}"))))
+                                    ]
+                                    "(($target) => {${(join "\n" cases)}\nthrow new Error('Failed to match. ' + valueToString($target))})(${(compile target)})")))
 
 (,
-    run
+    (fn [v] (eval (compile v)))
         [(, (@ 1) 1)
         (, (@ "hello") "hello")
         (, (@ "\"") "\"")
@@ -380,6 +344,7 @@ pat-as-arg
         (, (@ "\\\"") "\\\"")
         (, (@ "\\'") "\\'")
         (, (@ (+ 2 3)) 5)
+        (, (@ (@ 1)) (eprim (pint 1 5354) 5354))
         (,
         (@
             (match (nil)
@@ -404,14 +369,7 @@ pat-as-arg
         (, (@ "`${1}") "`1")
         (, (@ "${${1}") "${1")])
 
-(eval (compile (@ (+ 2 3))))
-
-(@ (+ 2 3))
-
-(@@ 1)
-
 (eval
-    (** compile => compile_stmt => prelude => ({type:'fns',compile: a => _ => compile(a), compile_stmt: a => _ => compile_stmt(a), prelude}) **)
+    (** compile => compile_stmt => ({type:'fns',compile: a => _ => compile(a), compile_stmt: a => _ => compile_stmt(a)}) **)
         compile
-        compile-st
-        prelude)
+        compile-st)

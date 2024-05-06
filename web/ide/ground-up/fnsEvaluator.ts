@@ -136,6 +136,8 @@ export const fnsEvaluator = (
             });
 
             if (target != null && ret == null) {
+                console.log(target, sorted);
+                debugger;
                 throw new Error(`tagtet wasnt a toplevel ${target}`);
             }
             if (ret) {
