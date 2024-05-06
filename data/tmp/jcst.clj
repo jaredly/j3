@@ -14,13 +14,13 @@ const list = (values) => {
   return v
 } **)
 
-(** unwrapArray = value => value.type === 'nil' ? [] : [value[0], ...unwrapArray(value[1])] **)
+(** const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])] **)
 
-(** unwrapArray(arr([1,2,3])) **)
+(** unwrapList(list([1,2,3])) **)
 
-(** pair = (a, b) => ({type: ',', 0: a, 1: b}) **)
+(** const pair = (a, b) => ({type: ',', 0: a, 1: b}) **)
 
-(** makePairs = array => {
+(** const makePairs = array => {
   const res = [];
   for (let i=0; i<array.length; i+=2) {
     res.push([array[i], array[i + 1]]);
@@ -28,7 +28,7 @@ const list = (values) => {
   return res
 } **)
 
-(** fromNode = node => {
+(** const fromNode = node => {
   switch (node.type) {
     case 'comment':
     case 'comment-node':
@@ -44,15 +44,13 @@ const list = (values) => {
     case 'array':
     case 'record':
     case 'list':
-      return {type: 'cst/' + node.type, 0: arr(node.values.map(fromNode).filter(Boolean)), 1: node.loc}
+      return {type: 'cst/' + node.type, 0: list(node.values.map(fromNode).filter(Boolean)), 1: node.loc}
     case 'string':
-      return {type: 'cst/string', 0: node.first.text, 1: arr(
-        node.templates.map(item => ({
-          type: ',,',
-          0: fromNode(item.expr) ?? {type: 'cst/string', 0: '', 1: nil},
-          1: item.suffix.text,
-          2: item.suffix.loc,
-        }))
+      return {type: 'cst/string', 0: node.first.text, 1: list(
+        node.templates.map(item => pair(
+          fromNode(item.expr) ?? {type: 'cst/string', 0: '', 1: nil},
+          pair(item.suffix.text, item.suffix.loc)
+        ))
       ), 2: node.loc}
   }
 } **)
@@ -60,14 +58,14 @@ const list = (values) => {
 (** test = v => valueToString(fromNode(v)) **)
 
 (,
-    test
+    (** v => valueToString(fromNode(v)) **)
         [(, (@ 10) "(cst/identifier \"10\" 55)")
         (,
         (@ [1 ; ya 2 ])
             "(cst/array [(cst/identifier \"1\" 69) (cst/identifier \"2\" 71)] 68)")
         (,
         (@ "hi ${1} 12")
-            "(cst/string \"hi \" [(,, (cst/identifier \"1\" 81) \" 12\" 82)] 79)")
+            (** '(cst/string "hi " [(, (cst/identifier "1" 81) (, " 12" 82))] 79)' **))
         (,
         {hi 10}
             "(cst/record [(cst/identifier \"hi\" 92) (cst/identifier \"10\" 93)] 88)")])

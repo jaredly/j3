@@ -1,8 +1,6 @@
 const cons = (a, b) => ({type: 'cons', 0: a, 1: b})
-
 const nil = {type: 'nil'}
-
-const arr = (values) => {
+const list = (values) => {
   let v = nil
   for (let i=values.length-1;i>=0;i--) {
     v = cons(values[i], v)
@@ -10,7 +8,7 @@ const arr = (values) => {
   return v
 }
 
-const unwrapArray = value => value.type === 'nil' ? [] : [value[0], ...unwrapArray(value[1])]
+const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])]
 
 const pair = (a, b) => ({type: ',', 0: a, 1: b})
 
@@ -38,42 +36,14 @@ const fromNode = node => {
     case 'array':
     case 'record':
     case 'list':
-      return {type: 'cst/' + node.type, 0: arr(node.values.map(fromNode).filter(Boolean)), 1: node.loc}
+      return {type: 'cst/' + node.type, 0: list(node.values.map(fromNode).filter(Boolean)), 1: node.loc}
     case 'string':
-      return {type: 'cst/string', 0: node.first.text, 1: arr(
-        node.templates.map(item => ({
-          type: ',,',
-          0: fromNode(item.expr) ?? {type: 'cst/string', 0: '', 1: nil},
-          1: item.suffix.text,
-          2: item.suffix.loc,
-        }))
+      return {type: 'cst/string', 0: node.first.text, 1: list(
+        node.templates.map(item => pair(
+          fromNode(item.expr) ?? {type: 'cst/string', 0: '', 1: nil},
+          pair(item.suffix.text, item.suffix.loc)
+        ))
       ), 2: node.loc}
-  }
-}
-
-const test = v => valueToString(fromNode(v))
-
-const toNode = jcst => {
-  switch (jcst.type) {
-    case 'cst/identifier':
-      return {type: 'identifier', text: node[0], loc: node[1]}
-    case 'cst/spread':
-      return {type: 'spread', contents: toNode(node[0]), loc: node[1]}
-    case 'cst/empty-spread':
-      return {type: 'spread', contents: {type: 'blank', loc: node[0]}, loc: node[0]}
-    case 'cst/array':
-    case 'cst/list':
-    case 'cst/record':
-      return {type: jcst.type.slice(4), values: unwrapArray(node[0]).map(toNode), loc: node[1]}
-    case 'cst/string':
-      return {type: 'string', first: {type: 'stringText', text: node[0], loc: node[2]},
-        templates: unwrapArray(node[1]).map(({0: expr, 1: text, 2: loc}) => ({
-          expr: toNode(expr),
-          suffix: {text, loc},
-          loc,
-        })),
-        loc: node[2]
-      }
   }
 }
 

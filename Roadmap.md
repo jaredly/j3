@@ -9,10 +9,14 @@ for the series of artcicle
 - [x] structured-editor.json
 - [x] encoding.json
 - [x] ast.json
-- [x] bootstrap.json ... ok I think I'm done with the bootstrap
-
+- [x] bootstrap.json
+- [x] self-1.json
 
 # PLAN Higher up...
+
+- [x] get bootstrap.json AST in alignment with parse-self.json
+- [x] hrmmm let's get rid of all these `,,` and `,,,` nonsense.
+  Just do tuples like they ought to be done. `(, a b c)` is `(, a (, b c))`
 
 - [x] Rich Text spell check only enabled when the node is focused
 - [x] bootstrap should really parse into `pat`s for `let` and `fn`, it's weird to bail.

@@ -2,13 +2,14 @@
 
 (** Once we have our runtime encoding (primitives, functions, and algebraic data types), we need to decide on an Abstract Syntax Tree. Once again we'll keep the list relatively short, with the goal of "the simplest language that's still nice to use". **)
 
-(** Utility Types (list, tuple, 3ple) **)
+(** Utility Types (list, tuple) **)
 
 (deftype (list a) (nil) (cons a (list a)))
 
 (deftype (, a b) (, a b))
 
-(deftype (,, a b c) (,, a b c))
+(** A note about ,: We'll be doing a little extra work any time we see the tuple constructor , to allow tuples of any length; (, a b c) will be sugar for (, a (, b c)), (, a b c d) will desugar to (, a (, b (, c d))) and so on. This will show up when parsing types, patterns, and expressions.
+    This is really handy for when you want to have a couple things grouped together, but don't want to go to the trouble of coming up with a name for a deftype. **)
 
 (** We're prefixing constructor names (p for prim, e for expr) to prevent name conflicts between the types. Once we implement polymorphic (structural) variants in language version 2, we don't need the crutch. **)
 
@@ -19,8 +20,8 @@
         (eprim prim int)
         (** prefix, template-pairs. All strings are template strings in our language :)
         So "Hello ${world}!" would parse into
-        (estr "Hello" [(,, (evar "world") "!" 1234)]) **)
-        (estr string (list (,, expr string int)) int)
+        (estr "Hello" [(, (evar "world") "!" 1234)]) **)
+        (estr string (list (, expr string int)) int)
         (** a variable reference! might be local or global **)
         (evar string int)
         (** args, body , parsed from the form (fn [arg1 arg2] body). **)

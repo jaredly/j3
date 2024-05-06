@@ -31,6 +31,10 @@ const valueToString = (v) => {
             const un = unwrapList(v);
             return '[' + un.map(valueToString).join(' ') + ']';
         }
+        if (v.type === ',') {
+            const items = unwrapTuple(v);
+            return `(, ${items.map(valueToString).join(' ')})`
+        }
 
         let args = [];
         for (let i = 0; i in v; i++) {
@@ -54,7 +58,7 @@ const valueToString = (v) => {
 
     return '' + v;
 };
-
+const unwrapTuple = (v) => [v[0], ...(v[1].type === ',' ? unwrapTuple(v[1]) : [v[1]])]
 
 // These are the CST nodes that we want to ignore while parsing.
 const isBlank = n => ['blank', 'comment', 'rich-text', 'comment-node'].includes(n.type)
@@ -70,7 +74,8 @@ const parse = node => {
       return {
         type: 'estr',
         0: node.first.text,
-        1: list(node.templates.map((t, i) => ({type: ',,', 0: exprs[i], 1: t.suffix.text, 2: t.suffix.loc}))),
+        1: list(node.templates.map((t, i) => 
+          pair(exprs[i], pair(t.suffix.text, t.suffix.loc)))),
         2: node.loc
       }
     }
@@ -89,7 +94,7 @@ const parse = node => {
       }
       // Otherwise do function application.
       const parsed = values.map(parse)
-      return c.app(parsed[0], list(parsed.slice(1)))
+      return c.app(parsed[0], list(parsed.slice(1)), node.loc)
     }
     case 'array': {
       if (!node.values.length) return c.evar('nil', node.loc)
@@ -140,6 +145,8 @@ const forms = {
             1: list(cases.map(([pat, body]) => pair(parsePat(pat), parse(body)))),
             2: loc}
   },
+  ',': (loc, ...args) => args.map(parse).reduceRight((right, left) =>
+    c.app(c.evar(',', loc), list([left, right]), loc)),
   '@': (loc, inner) => ({type: 'equot', 0: {type: 'quot/expr', 0: parse(inner)}, 1: loc}),
   '@!': (loc, inner) => ({type: 'equot', 0: {type: 'quot/stmt', 0: parseStmt(inner)}, 1: loc}),
   '@p': (loc, inner) => ({type: 'equot', 0: {type: 'quot/pat', 0: parsePat(inner)}, 1: loc}),
@@ -200,12 +207,9 @@ const fromNode = node => {
       return {type: 'cst/' + node.type, 0: list(node.values.map(fromNode).filter(Boolean)), 1: node.loc}
     case 'string':
       return {type: 'cst/string', 0: node.first.text, 1: list(
-        node.templates.map(item => ({
-          type: ',,',
-          0: fromNode(item.expr) ?? {type: 'cst/string', 0: '', 1: nil},
-          1: item.suffix.text,
-          2: item.suffix.loc,
-        }))
+        node.templates.map(item => pair(fromNode(item.expr) ?? {type: 'cst/string', 0: '', 1: nil},
+          pair(item.suffix.text, item.suffix.loc),
+        ))
       ), 2: node.loc}
   }
 }
@@ -255,6 +259,15 @@ const parseType = node => {
          2: node.loc}
       ), body)
     }
+    // Tuples are also a special case; (, a b c) is sugar for (, a (, b c))
+    if (values[0].type === 'identifier' && values[0].text === ',' && values.length > 1) {
+      return values.slice(1).map(parseType).reduceRight((right, left) => ({
+        type: 'tapp',
+        0: {type: 'tapp', 0: {type: 'tcon', 0: ',', 1: values[0].loc}, 1: left, 2: node.loc},
+        1: right,
+        2: node.loc
+      }))
+    }
     let res = parseType(values[0])
     for (let i=1;i<values.length; i++) {
       res = {type: 'tapp', 0: res, 1: parseType(values[i]), 2: node.loc}
@@ -293,6 +306,10 @@ const parsePat = node => {
       const values = filterBlanks(node.values)
       if (!values.length) return p.con('()', node.loc, [], node.loc)
       if (values[0].type !== 'identifier') throw new Error('pat exp must start with identifier')
+      if (values[0].text === ',') {
+        return values.slice(1).map(parsePat).reduceRight((right, left) =>
+          p.con(',', values[0].loc, [left, right], node.loc))
+      }
       return p.con(values[0].text, values[0].loc, values.slice(1).map(parsePat), node.loc)
     }
     case 'array':
@@ -334,27 +351,35 @@ const stmtForms = {
     // handling both `(deftype expr` (no type arg) and `(deftype (list a)` (some type args)
     // we don't actually do anything with the type arguments, because we don't have a type checker yet,
     // and by the time we do we'll be in a self-hosted parser
-    const name = head.type === 'identifier' ? head.text : head.type === 'list' && head.values.length >= 1 && head.values[0].type === 'identifier' ? head.values[0].text : null
+    const name = head.type === 'identifier'
+    ? {head, args: []}
+    : head.type === 'list' && head.values.length >= 1 && head.values[0].type === 'identifier'
+      ? { head: head.values[0], args: head.values.slice(1).map(node => {
+          if (node.type !== 'identifier') throw new Error(`type argument must be an identifier`)
+          return pair(node.text, node.loc);
+        }
+      ) }
+      : null;
     if (!name) return
     const constructors = tail.map(item => {
       if (item.type !== 'list') throw new Error(`constructor not a list`)
       const values = filterBlanks(item.values)
       if (values.length < 1) throw new Error(`empty list`)
-      return {type: ',,', 0: values[0].text, 1: list(values.slice(1).map(parseType)), 2: values[0].loc}
+      return pair(values[0].text, pair(values[0].loc, pair(list(values.slice(1).map(parseType)), item.loc)))
     })
-    return {type: 'sdeftype', 0: name, 1: list(constructors)}
+    return {type: 'sdeftype', 0: name.head.text, 1: name.head.loc, 2: list(name.args), 3: list(constructors), 4: loc}
   },
   def(loc, name, value) {
     if (!name || !value) return
     if (name.type !== 'identifier') return
-    return {type: 'sdef', 0: name.text, 1: parse(value), 2: loc}
+    return {type: 'sdef', 0: name.text, 1: name.loc, 2: parse(value), 3: loc}
   },
   defn(loc, name, args, value) {
     if (!name || !args || !value) return
     if (name.type !== 'identifier' || args.type !== 'array') return
     const body = forms.fn(loc, args, value)
     if (!body) return
-    return {type: 'sdef', 0: name.text, 1: body, 2: loc}
+    return {type: 'sdef', 0: name.text, 1: name.loc, 2: body, 3: loc}
   }
 }
 
@@ -367,7 +392,7 @@ const evaluate = (node, scope) => {
     // For strings, we need to handle escapes correctly (e.g. the AST node will have "a\\n", which needs to become "a\n" at runtime) and evaluate
     // any contained template expressions
     case 'estr':
-      return unescapeSlashes(node[0]) + unwrapList(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + unescapeSlashes(suf)).join('')
+      return unescapeSlashes(node[0]) + unwrapList(node[1]).map(({0: exp, 1: {0: suf}}) => evaluate(exp, scope) + unescapeSlashes(suf)).join('')
     // For variables, we look up the name in the `scope` map that we pass everywhere.
     // We use `sanitize` for compatability with the structured editor environment, which expects variable names to be valid javascript names.
     case 'evar':
@@ -472,12 +497,12 @@ const evaluateStmt = (node, env) => {
   switch (node.type) {
     case 'sexpr': return evaluate(node[0], env)
     case 'sdef':
-      const value = evaluate(node[1], env)
+      const value = evaluate(node[2], env)
       env[node[0]] = value
       return value
     case 'sdeftype':
       const res = {}
-      unwrapList(node[1]).forEach(({0: name, 1: args}) => {
+      unwrapList(node[3]).forEach(({0: name, 1: {1: {0: args}}}) => {
         res[name] = env[name] = constrFn(name, args)
       })
       return res
@@ -515,7 +540,7 @@ const evalStmts = stmts => {
 const externals = stmt => {
   switch (stmt.type) {
     case 'sexpr': return externals_expr(stmt[0], [])
-    case 'sdef': return externals_expr(stmt[1], [stmt[0]])
+    case 'sdef': return externals_expr(stmt[2], [stmt[0]])
     case 'sdeftype': return []
   }
   return []
@@ -548,8 +573,8 @@ const externals_expr = (expr, locals) => {
 const names = stmt => {
   switch (stmt.type) {
     case 'sexpr': return []
-    case 'sdef': return [{name: stmt[0], kind: 'value', loc: stmt[2]}]
-    case 'sdeftype': return unwrapList(stmt[1]).map(c => ({name: c[0], kind: 'value', loc: c[2]}))
+    case 'sdef': return [{name: stmt[0], kind: 'value', loc: stmt[1]}]
+    case 'sdeftype': return unwrapList(stmt[3]).map(({0: name, 1: {0: loc}}) => ({name, kind: 'value', loc}))
   }
 }
 
@@ -571,7 +596,7 @@ const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] =
 const compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)`
 
 const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
-  unwrapList(ast[1]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
+  unwrapList(ast[3]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
 }} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)`
 
 const testCompileStmt = v => compile_stmt(parseStmt(v))()
@@ -616,7 +641,7 @@ const kwds = (() => {
 })();
 
 
-const prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes}) 
+const prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString}) 
 
 return ({type: 'fns', prelude,
   compile, compile_stmt,

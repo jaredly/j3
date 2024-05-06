@@ -49,6 +49,10 @@ const valueToString = (v) => {
             const un = unwrapList(v);
             return '[' + un.map(valueToString).join(' ') + ']';
         }
+        if (v.type === ',') {
+            const items = unwrapTuple(v);
+            return `(, ${items.map(valueToString).join(' ')})`
+        }
 
         let args = [];
         for (let i = 0; i in v; i++) {
@@ -72,7 +76,7 @@ const valueToString = (v) => {
 
     return '' + v;
 };
- **)
+const unwrapTuple = (v) => [v[0], ...(v[1].type === ',' ? unwrapTuple(v[1]) : [v[1]])] **)
 
 (** // These are the CST nodes that we want to ignore while parsing.
 const isBlank = n => ['blank', 'comment', 'rich-text', 'comment-node'].includes(n.type)
@@ -89,9 +93,9 @@ const filterBlanks = values => values.filter(node => !isBlank(node)) **)
         (eprim prim int)
         (** estr: prefix, template-pairs. All strings are template strings in our language :)
         So "Hello ${world}!" would parse into
-        (estr "Hello" [(,, (evar "world") "!" 1234)])
+        (estr "Hello" [(, (evar "world") "!" 1234)])
         template-pairs is a list of expression and suffix (with a unique ID for the string tacked on) **)
-        (estr string (list (,, expr string int)) int)
+        (estr string (list (, expr string int)) int)
         (** evar: a variable reference! might be local or global **)
         (evar string int)
         (** equot: this form allows embedding of the CST or AST into the runtime, which makes writing tests for our parsers, compilers, and type checkers much simpler. **)
@@ -122,7 +126,8 @@ const filterBlanks = values => values.filter(node => !isBlank(node)) **)
       return {
         type: 'estr',
         0: node.first.text,
-        1: list(node.templates.map((t, i) => ({type: ',,', 0: exprs[i], 1: t.suffix.text, 2: t.suffix.loc}))),
+        1: list(node.templates.map((t, i) => 
+          pair(exprs[i], pair(t.suffix.text, t.suffix.loc)))),
         2: node.loc
       }
     }
@@ -141,7 +146,7 @@ const filterBlanks = values => values.filter(node => !isBlank(node)) **)
       }
       // Otherwise do function application.
       const parsed = values.map(parse)
-      return c.app(parsed[0], list(parsed.slice(1)))
+      return c.app(parsed[0], list(parsed.slice(1)), node.loc)
     }
     case 'array': {
       if (!node.values.length) return c.evar('nil', node.loc)
@@ -192,6 +197,8 @@ const filterBlanks = values => values.filter(node => !isBlank(node)) **)
             1: list(cases.map(([pat, body]) => pair(parsePat(pat), parse(body)))),
             2: loc}
   },
+  ',': (loc, ...args) => args.map(parse).reduceRight((right, left) =>
+    c.app(c.evar(',', loc), list([left, right]), loc)),
   '@': (loc, inner) => ({type: 'equot', 0: {type: 'quot/expr', 0: parse(inner)}, 1: loc}),
   '@!': (loc, inner) => ({type: 'equot', 0: {type: 'quot/stmt', 0: parseStmt(inner)}, 1: loc}),
   '@p': (loc, inner) => ({type: 'equot', 0: {type: 'quot/pat', 0: parsePat(inner)}, 1: loc}),
@@ -252,12 +259,9 @@ const fromNode = node => {
       return {type: 'cst/' + node.type, 0: list(node.values.map(fromNode).filter(Boolean)), 1: node.loc}
     case 'string':
       return {type: 'cst/string', 0: node.first.text, 1: list(
-        node.templates.map(item => ({
-          type: ',,',
-          0: fromNode(item.expr) ?? {type: 'cst/string', 0: '', 1: nil},
-          1: item.suffix.text,
-          2: item.suffix.loc,
-        }))
+        node.templates.map(item => pair(fromNode(item.expr) ?? {type: 'cst/string', 0: '', 1: nil},
+          pair(item.suffix.text, item.suffix.loc),
+        ))
       ), 2: node.loc}
   }
 } **)
@@ -267,6 +271,12 @@ const fromNode = node => {
         [(, (@ 1) (** "(eprim (pint 1 89) 89)" **))
         (, (@ []) (** '(evar "nil" 118)' **))
         (,
+        (@ (, a b))
+            (** '(eapp (evar "," 1812) [(evar "a" 1814) (evar "b" 1815)] 1812)' **))
+        (,
+        (@ (, a b c))
+            (** '(eapp (evar "," 1825) [(evar "a" 1829) (eapp (evar "," 1825) [(evar "b" 1830) (evar "c" 1831)] 1825)] 1825)' **))
+        (,
         (@@ abc)
             (** '(equot (quot/quot (cst/identifier "abc" 1207)) 1204)' **))
         (,
@@ -275,7 +285,7 @@ const fromNode = node => {
         (, (@ true) (** "(eprim (pbool true 1170) 1170)" **))
         (,
         (@ "hi ${name}!")
-            (** '(estr "hi " [(,, (evar "name" 1199) "!" 1200)] 1197)' **))
+            (** '(estr "hi " [(, (evar "name" 1199) "!" 1200)] 1197)' **))
         (,
         (fn [a b] 1)
             (** '(elambda [(pvar "a" 136) (pvar "b" 1505)] (eprim (pint 1 133) 133) 129)' **))
@@ -354,6 +364,15 @@ const parsePrim = node => {
          2: node.loc}
       ), body)
     }
+    // Tuples are also a special case; (, a b c) is sugar for (, a (, b c))
+    if (values[0].type === 'identifier' && values[0].text === ',' && values.length > 1) {
+      return values.slice(1).map(parseType).reduceRight((right, left) => ({
+        type: 'tapp',
+        0: {type: 'tapp', 0: {type: 'tcon', 0: ',', 1: values[0].loc}, 1: left, 2: node.loc},
+        1: right,
+        2: node.loc
+      }))
+    }
     let res = parseType(values[0])
     for (let i=1;i<values.length; i++) {
       res = {type: 'tapp', 0: res, 1: parseType(values[i]), 2: node.loc}
@@ -371,7 +390,13 @@ const parsePrim = node => {
             (** '(tapp (tcon "list" 1123) (tcon "a" 1124) 1122)' **))
         (,
         (@ (fn [x] 10))
-            (** '(tapp (tapp (tcon "->" 1131) (tcon "x" 1137) 1131) (tcon "10" 1138) 1131)' **))])
+            (** '(tapp (tapp (tcon "->" 1131) (tcon "x" 1137) 1131) (tcon "10" 1138) 1131)' **))
+        (,
+        (@ (, a b))
+            (** '(tapp (tapp (tcon "," 1771) (tcon "a" 1772) 1770) (tcon "b" 1773) 1770)' **))
+        (,
+        (@ (, a b c))
+            (** '(tapp (tapp (tcon "," 1781) (tcon "a" 1782) 1780) (tapp (tapp (tcon "," 1781) (tcon "b" 1783) 1780) (tcon "c" 1784) 1780) 1780)' **))])
 
 (** ## Patterns **)
 
@@ -404,6 +429,10 @@ const p = {
       const values = filterBlanks(node.values)
       if (!values.length) return p.con('()', node.loc, [], node.loc)
       if (values[0].type !== 'identifier') throw new Error('pat exp must start with identifier')
+      if (values[0].text === ',') {
+        return values.slice(1).map(parsePat).reduceRight((right, left) =>
+          p.con(',', values[0].loc, [left, right], node.loc))
+      }
       return p.con(values[0].text, values[0].loc, values.slice(1).map(parsePat), node.loc)
     }
     case 'array':
@@ -427,6 +456,9 @@ const p = {
         (,
         (@ (, a b))
             (** '(pcon "," 1242 [(pvar "a" 1243) (pvar "b" 1244)] 1241)' **))
+        (,
+        (@ (, a b c))
+            (** '(pcon "," 1802 [(pvar "a" 1803) (pcon "," 1802 [(pvar "b" 1804) (pvar "c" 1805)] 1801)] 1801)' **))
         (, (@ []) (** '(pcon "nil" 1251 [] 1251)' **))
         (,
         (@ [a b ..c])
@@ -461,40 +493,50 @@ const p = {
     // handling both `(deftype expr` (no type arg) and `(deftype (list a)` (some type args)
     // we don't actually do anything with the type arguments, because we don't have a type checker yet,
     // and by the time we do we'll be in a self-hosted parser
-    const name = head.type === 'identifier' ? head.text : head.type === 'list' && head.values.length >= 1 && head.values[0].type === 'identifier' ? head.values[0].text : null
+    const name = head.type === 'identifier'
+    ? {head, args: []}
+    : head.type === 'list' && head.values.length >= 1 && head.values[0].type === 'identifier'
+      ? { head: head.values[0], args: head.values.slice(1).map(node => {
+          if (node.type !== 'identifier') throw new Error(`type argument must be an identifier`)
+          return pair(node.text, node.loc);
+        }
+      ) }
+      : null;
     if (!name) return
     const constructors = tail.map(item => {
       if (item.type !== 'list') throw new Error(`constructor not a list`)
       const values = filterBlanks(item.values)
       if (values.length < 1) throw new Error(`empty list`)
-      return {type: ',,', 0: values[0].text, 1: list(values.slice(1).map(parseType)), 2: values[0].loc}
+      return pair(values[0].text, pair(values[0].loc, pair(list(values.slice(1).map(parseType)), item.loc)))
     })
-    return {type: 'sdeftype', 0: name, 1: list(constructors)}
+    return {type: 'sdeftype', 0: name.head.text, 1: name.head.loc, 2: list(name.args), 3: list(constructors), 4: loc}
   },
   def(loc, name, value) {
     if (!name || !value) return
     if (name.type !== 'identifier') return
-    return {type: 'sdef', 0: name.text, 1: parse(value), 2: loc}
+    return {type: 'sdef', 0: name.text, 1: name.loc, 2: parse(value), 3: loc}
   },
   defn(loc, name, args, value) {
     if (!name || !args || !value) return
     if (name.type !== 'identifier' || args.type !== 'array') return
     const body = forms.fn(loc, args, value)
     if (!body) return
-    return {type: 'sdef', 0: name.text, 1: body, 2: loc}
+    return {type: 'sdef', 0: name.text, 1: name.loc, 2: body, 3: loc}
   }
 } **)
 
 (,
     (** v => valueToString(parseStmt(v)) **)
         [(, (@ 1) (** "(sexpr (eprim (pint 1 238) 238) 238)" **))
-        (, (@ (def hi 10)) (** '(sdef "hi" (eprim (pint 10 254) 254) 245)' **))
+        (,
+        (@ (def hi 10))
+            (** '(sdef "hi" 253 (eprim (pint 10 254) 254) 245)' **))
         (,
         (@ (deftype (option a) (some a) (none)))
-            (** '(sdeftype "option" [(,, "some" [(tcon "a" 1018)] 1017) (,, "none" [] 1020)])' **))
+            (** '(sdeftype "option" 1014 [(, "a" 1015)] [(, "some" 1017 [(tcon "a" 1018)] 1016) (, "none" 1020 [] 1019)] 1011)' **))
         (,
         (@ (defn lol [a b] (+ a b)))
-            (** '(sdef "lol" (elambda [(pvar "a" 268) (pvar "b" 269)] (eapp (evar "+" 271) [(evar "a" 272) (evar "b" 273)] -1) 261) 261)' **))])
+            (** '(sdef "lol" 265 (elambda [(pvar "a" 268) (pvar "b" 269)] (eapp (evar "+" 271) [(evar "a" 272) (evar "b" 273)] 270) 261) 261)' **))])
 
 (** ## Tree-Walking Evaluator **)
 
@@ -509,7 +551,7 @@ const p = {
     // For strings, we need to handle escapes correctly (e.g. the AST node will have "a\\n", which needs to become "a\n" at runtime) and evaluate
     // any contained template expressions
     case 'estr':
-      return unescapeSlashes(node[0]) + unwrapList(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + unescapeSlashes(suf)).join('')
+      return unescapeSlashes(node[0]) + unwrapList(node[1]).map(({0: exp, 1: {0: suf}}) => evaluate(exp, scope) + unescapeSlashes(suf)).join('')
     // For variables, we look up the name in the `scope` map that we pass everywhere.
     // We use `sanitize` for compatability with the structured editor environment, which expects variable names to be valid javascript names.
     case 'evar':
@@ -558,7 +600,7 @@ const p = {
 } **)
 
 (,
-    (** v => evaluate(parse(v), {',': a => b => pair(a,b)}) **)
+    (** v => evaluate(parse(v), testEnv) **)
         [(, (@ ((fn [x] 1) 0)) 1)
         (, (@ (let [(, x _) (, 1 2)] x)) 1)
         (,
@@ -570,7 +612,8 @@ const p = {
         (, (@ (@t list)) (** {"0":"list","1":1575,"type":"tcon"} **))
         (, (@ "hi ${1}.") "hi 1.")
         (, (@ "hi") "hi")
-        (, (@ (, 1 2)) (** {"0":1,"1":2,"type":","} **))])
+        (, (@ (, 1 2)) (** {"0":1,"1":2,"type":","} **))
+        (, (@ (, 1 2 3)) (** {"0":1,"1":{"0":2,"1":3,"type":","},"type":","} **))])
 
 (** // This is our way of figuring out what bindings should result from the application of a
 // pattern to a given value.
@@ -640,12 +683,12 @@ const unescapeSlashes = (n) =>
   switch (node.type) {
     case 'sexpr': return evaluate(node[0], env)
     case 'sdef':
-      const value = evaluate(node[1], env)
+      const value = evaluate(node[2], env)
       env[node[0]] = value
       return value
     case 'sdeftype':
       const res = {}
-      unwrapList(node[1]).forEach(({0: name, 1: args}) => {
+      unwrapList(node[3]).forEach(({0: name, 1: {1: {0: args}}}) => {
         res[name] = env[name] = constrFn(name, args)
       })
       return res
@@ -707,7 +750,7 @@ const constrFn = (name, args) => {
 const externals = stmt => {
   switch (stmt.type) {
     case 'sexpr': return externals_expr(stmt[0], [])
-    case 'sdef': return externals_expr(stmt[1], [stmt[0]])
+    case 'sdef': return externals_expr(stmt[2], [stmt[0]])
     case 'sdeftype': return []
   }
   return []
@@ -762,15 +805,15 @@ const externals = stmt => {
 const names = stmt => {
   switch (stmt.type) {
     case 'sexpr': return []
-    case 'sdef': return [{name: stmt[0], kind: 'value', loc: stmt[2]}]
-    case 'sdeftype': return unwrapList(stmt[1]).map(c => ({name: c[0], kind: 'value', loc: c[2]}))
+    case 'sdef': return [{name: stmt[0], kind: 'value', loc: stmt[1]}]
+    case 'sdeftype': return unwrapList(stmt[3]).map(({0: name, 1: {0: loc}}) => ({name, kind: 'value', loc}))
   }
 } **)
 
 (,
     (** v => names(parseStmt(v)) **)
         [(, (@ hi) (** [] **))
-        (, (@ (def x 10)) (** [{"name":"x","kind":"value","loc":712}] **))
+        (, (@ (def x 10)) (** [{"name":"x","kind":"value","loc":714}] **))
         (,
         (@ (deftype (option x) (some x) (none)))
             (** [{"name":"some","kind":"value","loc":730},{"name":"none","kind":"value","loc":733}] **))])
@@ -804,7 +847,7 @@ const pat_names = pat => {
 (** const compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)` **)
 
 (** const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
-  unwrapList(ast[1]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
+  unwrapList(ast[3]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
 }} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)` **)
 
 (** const testCompileStmt = v => compile_stmt(parseStmt(v))() **)
@@ -859,5 +902,5 @@ const sanitize =  (raw) => {
 
 (** sanitize('for') **)
 
-(** const prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes})  **)
+(** const prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString})  **)
 

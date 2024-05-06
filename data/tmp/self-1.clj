@@ -56,7 +56,7 @@
         So "Hello ${world}!" would parse into
         (estr "Hello" [(,, (evar "world") "!" 1234)])
         template-pairs is a list of expression and suffix (with a unique ID for the string tacked on) **)
-        (estr string (list (,, expr string int)) int)
+        (estr string (list (, expr string int)) int)
         (** evar: a variable reference! might be local or global **)
         (evar string int)
         (** equot: this form allows embedding of the CST or AST into the runtime, which makes writing tests for our parsers, compilers, and type checkers much simpler. **)
@@ -100,28 +100,33 @@
         (tcon string int))
 
 (deftype stmt
-    (sdeftype string (list (,, string (list type) int)) int)
-        (sdef string expr int)
+    (sdeftype
+        string
+            int
+            (list (, string int))
+            (list (, string (list type) int))
+            int)
+        (sdef string int expr int)
         (sexpr expr int))
 
 (** ## Statements **)
 
 (defn compile-st [stmt]
     (match stmt
-        (sexpr expr _)          (compile expr)
-        (sdef name body _)      "const ${(sanitize name)} = ${(compile body)};\n"
-        (sdeftype name cases _) (join
-                                    "\n"
-                                        (map
-                                        cases
-                                            (fn [case]
-                                            (let [
-                                                (,, name args loc) case
-                                                arrows             (join "" (map (indices args) (fn [i] "(v${(int-to-string i)}) => ")))
-                                                body               (constructor-fn
-                                                                       name
-                                                                           (map (indices args) (fn [i] "v${(int-to-string i)}")))]
-                                                "const ${(sanitize name)} = ${arrows}${body}"))))))
+        (sexpr expr _)              (compile expr)
+        (sdef name _ body _)        "const ${(sanitize name)} = ${(compile body)};\n"
+        (sdeftype name _ _ cases _) (join
+                                        "\n"
+                                            (map
+                                            cases
+                                                (fn [case]
+                                                (let [
+                                                    (, name _ args _) case
+                                                    arrows            (join "" (map (indices args) (fn [i] "(v${(int-to-string i)}) => ")))
+                                                    body              (constructor-fn
+                                                                          name
+                                                                              (map (indices args) (fn [i] "v${(int-to-string i)}")))]
+                                                    "const ${(sanitize name)} = ${arrows}${body}"))))))
 
 (defn constructor-fn [name args]
     "({type: \"${name}\"${(join "" (mapi 0 args (fn [i arg] ", ${(int-to-string i)}: ${arg}")))}})")
@@ -279,6 +284,13 @@
         (eprim _ _)     true
         _               false))
 
+(,
+    (fn [x] x)
+        [(,
+        (@! (deftype (a b) (c b)))
+            (sdeftype "a" 6438 [(, "b" 6439)] [(, "c" 6441 [(tcon "b" 6442)] 6440)] 6433))
+        (, (@ x) (evar "x" 6483))])
+
 (defn compile-quot [quot]
     (match quot
         (quot/quot x) (jsonify x)
@@ -303,7 +315,7 @@
                                            tpls (map
                                                     tpls
                                                         (fn [item]
-                                                        (let [(,, expr suffix _) item]
+                                                        (let [(, expr suffix _) item]
                                                             "${${(compile expr)}}${(fix-slashes suffix)}")))
                                            ]
                                            "`${(fix-slashes first)}${(join "" tpls)}`"))
