@@ -8,8 +8,26 @@
 
 (deftype (, a b) (, a b))
 
-(** A note about ,: We'll be doing a little extra work any time we see the tuple constructor , to allow tuples of any length; (, a b c) will be sugar for (, a (, b c)), (, a b c d) will desugar to (, a (, b (, c d))) and so on. This will show up when parsing types, patterns, and expressions.
+(** ## Sugar **)
+
+(** The tuple constructor , to allow tuples of any length; (, a b c) will be sugar for (, a (, b c)), (, a b c d) will desugar to (, a (, b (, c d))) and so on. This will show up when parsing types, patterns, and expressions.
     This is really handy for when you want to have a couple things grouped together, but don't want to go to the trouble of coming up with a name for a deftype. **)
+
+(** We've also got a simplified "do notation" to allow for "state" and "error handling" in a pure & functional language.
+    (let-> [pat init] value) is translated into continuation-passing style with >>= (pronounced "bind"):
+    (>>= init (fn [pat] value))
+    As a small example, consider the result type (deftype (result good bad) (ok good) (err bad)), similar to the one seen in Rust. If we define bind to be
+    (defn >>= [res next]
+      (match res
+        (ok value) (next value)
+        (err e) (err e))
+    Then we can use our "do notation" to handle functions that return results, and it will "bail" if ever it encounters an err. Here's an example with some simple parsing:
+    (let-> [name     (parse-name data)
+            address  (parse-address data)]
+      (<- "Hello ${name}, you live at ${address}."))
+    parse-name and parse-age both take some input data and return a (result string err-type). If both succeed, then we can proceed with constructing the welcome message, but if either fails the whole expression will evaluate to an err.
+    The <- function in this example is pronounced return (or sometimes pure); it is the function that constructs the "happy path". For results, it is trivial (def <- ok).
+    If you want to have a value bound in a let-> that isn't already wrapped in a result, you use <- there too. For example (let-> [age (<- 10)] ...). In this simple example, that let-> isn't needed, the above is equivalent to (let [age 10] ...). **)
 
 (** We're prefixing constructor names (p for prim, e for expr) to prevent name conflicts between the types. Once we implement polymorphic (structural) variants in language version 2, we don't need the crutch. **)
 

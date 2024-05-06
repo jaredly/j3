@@ -189,6 +189,18 @@ const filterBlanks = values => values.filter(node => !isBlank(node)) **)
       2: loc
     }
   },
+  'let->': (loc, bindings, body) => {
+    if (!bindings || !body) return;
+    if (bindings.type !== 'array') return
+    const pairs = makePairs(filterBlanks(bindings.values))
+    return pairs.reduceRight(
+      (body, [pat, init]) => c.app(c.evar('>>=', loc), list([
+        parse(init),
+        {type: 'elambda', 0: list([parsePat(pat)]), 1: body, 2: loc}
+      ]), loc),
+      parse(body)
+    )
+  },
   match: (loc, target, ...rest) => {
     if (!target || !rest.length) return
     const cases = makePairs(rest)
@@ -303,7 +315,10 @@ const fromNode = node => {
             (** '(elet [(, (pcon "cons" 202 [(pvar "a" 203) (pvar "b" 204)] 202) (evar "c" 208))] (evar "d" 209) 196)' **))
         (,
         (@ [a ..b])
-            (** '(eapp (evar "cons" -1) [(evar "a" 790) (evar "b" 791)] -1)' **))])
+            (** '(eapp (evar "cons" -1) [(evar "a" 790) (evar "b" 791)] -1)' **))
+        (,
+        (@ (let-> [a b] c))
+            (** '(eapp (evar ">>=" 1851) [(evar "b" 1855) (elambda [(pvar "a" 1854)] (evar "c" 1856) 1851)] 1851)' **))])
 
 (** ## Primitives
     just ints and booleans at the moment **)
