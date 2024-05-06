@@ -371,7 +371,7 @@ const evaluate = (node, scope) => {
     // For variables, we look up the name in the `scope` map that we pass everywhere.
     // We use `sanitize` for compatability with the structured editor environment, which expects variable names to be valid javascript names.
     case 'evar':
-      var name = sanitize(node[0])
+      var name = node[0]
       if (!Object.hasOwn(scope, name)) {
         throw new Error(`Unknown vbl: ${name}. ${Object.keys(scope).join(', ')}`)
       }
@@ -425,7 +425,7 @@ const evalPat = (node, v) => {
     case 'pprim': return v === node[0][0] ? {} : null
     case 'pstr': return v === node[0]
     case 'pvar':
-      return {[sanitize(node[0])]: v}
+      return {[node[0]]: v}
     case 'pcon':
       if (v.type === node[0]) {
         const args = unwrapList(node[1])
@@ -443,11 +443,14 @@ const evalPat = (node, v) => {
 }       
 
 const testEnv = {
-  '$co': a => b => pair(a, b),
+  ',': a => b => pair(a, b),
   cons: a => b => ({type: 'cons', 0: a, 1: b}),
   nil: {type: 'nil'},
   some: a => ({type: 'some', 0: a}),
   none: {type: 'none'},
+  '<': a => b => a < b,
+  '+': a => b => a + b,
+  '-': a => b => a - b,
 }
 
 // "A\\nB" -> "A\nB"
@@ -470,12 +473,12 @@ const evaluateStmt = (node, env) => {
     case 'sexpr': return evaluate(node[0], env)
     case 'sdef':
       const value = evaluate(node[1], env)
-      env[sanitize(node[0])] = value
+      env[node[0]] = value
       return value
     case 'sdeftype':
       const res = {}
       unwrapList(node[1]).forEach(({0: name, 1: args}) => {
-        res[sanitize(name)] = env[sanitize(name)] = constrFn(name, args)
+        res[name] = env[name] = constrFn(name, args)
       })
       return res
   }

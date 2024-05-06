@@ -227,7 +227,10 @@ export const fnsEvaluator = (
             const { needed, values } = assembleExternals(externals, env, san);
             values.$env = {};
             needed.forEach((name) => {
-                values.$env[name] = values[sanitize(name)];
+                const got = values[sanitize(name)];
+                if (got) {
+                    values.$env[name] = got;
+                }
             });
 
             try {
@@ -326,7 +329,10 @@ const compileStmt = (
         // TODO: only do this if it's actually needed
         values.$env = {};
         needed.forEach((name) => {
-            values.$env[name] = values[sanitize(name)];
+            const got = values[sanitize(name)];
+            if (got) {
+                values.$env[name] = got;
+            }
         });
         const result_values: { [key: string]: any } = {};
         if (names?.length) {

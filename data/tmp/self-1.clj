@@ -2,20 +2,18 @@
 
 (def prelude
     (eval
-        (** (() => {const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', 
+        (** (() => {
+const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', 
 '>': '$gt', '<': '$lt', "'": '$qu', '"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};
 
-const kwds = 'case var else const let var new if return default break while for super';
-const rx = [];
-kwds.split(' ').forEach((kwd) =>
-    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);
+const kwds = 'case var else const let var new if return default break while for super'.split(' ');
 const sanitize = (raw) => { if (raw == null) debugger;
     for (let [key, val] of Object.entries(sanMap)) {
         raw = raw.replaceAll(key, val);
     }
-    rx.forEach(([rx, res]) => {
-        raw = raw.replaceAll(rx, res);
-    });
+    if (kwds.includes(raw)) {
+      raw = '$' + raw;
+    }
     return raw;
 };
 const jsonify = (raw) => JSON.stringify(raw);
@@ -64,18 +62,6 @@ return {$pl$pl: '' + $pl$pl}})() **)))
                          [] one
                          _  "${one}${sep}${(join sep rest)}")))
 
-(join " " ["one" "two" "three"])
-
-cons
-
-(jsonify (cons 2 nil))
-
-(eval "JSON.stringify(cons(1)(2)) + ''")
-
-(join " " [])
-
-(join " " ["one"])
-
 (defn map [values f]
     (match values
         []           []
@@ -85,8 +71,6 @@ cons
     (match values
         []           []
         [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
-
-(jsonify ["0"])
 
 (defn foldl [init items f]
     (match items
@@ -98,19 +82,9 @@ cons
         []           init
         [one ..rest] (f (foldr init rest f) one)))
 
-(defn consr [a b] (cons b a))
-
-(foldr nil [1 2 3 4] consr)
-
-"\\"
-
-"\n"
-
-"\\n"
+(deftype (list a) (nil) (cons a (list a)))
 
 (** ## Our AST (provided by the bootstrap) **)
-
-(deftype (list a) (nil) (cons a (list a)))
 
 (deftype expr
     (** the trailing int on each constructor is a unique id **)
@@ -291,7 +265,7 @@ compile-pat
         (pany _)        none
         (pprim _ _)     none
         (pstr _ _)      none
-        (pvar name _)   (some name)
+        (pvar name _)   (some (sanitize name))
         (pcon _ args _) (match (foldl
                             (, 0 [])
                                 args
@@ -303,7 +277,7 @@ compile-pat
                                         (some arg) ["${(int-to-string i)}: ${arg}" ..res]))))
                             (, _ [])   none
                             (, _ args) (some "{${(join ", " args)}}"))
-        _               (fatal "No pat")))
+        _               (fatal "No pat ${(jsonify pat)}")))
 
 (pat-as-arg (@p (, a _)))
 
@@ -317,6 +291,20 @@ pat-as-arg
     (@
         (match 2
             1 2)))
+
+(defn maybe-parens [inner parens]
+    (if parens
+        "(${inner})"
+            inner))
+
+(defn needs-parens [expr]
+    (match expr
+        (elambda _ _ _) true
+        (eprim _ _)     true
+        _               false))
+
+(defn with-parens [expr]
+    (maybe-parens (compile expr) (needs-parens expr)))
 
 (defn compile [expr]
     (match expr
@@ -336,11 +324,29 @@ pat-as-arg
                                                      false "false"))
         (evar name _)           (sanitize name)
         (equot inner _)         (jsonify inner)
-        (elambda pat body _)    (++ ["(" (sanitize name) ") => " (compile body)])
-        (elet bindings body _)  (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
-        (eapp f arg _)          (match f
-                                    (elambda name) (++ ["(" (compile f) ")(" (compile arg) ")"])
-                                    _              (++ [(compile f) "(" (compile arg) ")"]))
+        (elambda pats body _)   (foldr
+                                    (compile body)
+                                        pats
+                                        (fn [body pat]
+                                        (++
+                                            ["("
+                                                (match (pat-as-arg pat)
+                                                (some arg) arg
+                                                _          "_")
+                                                ") => "
+                                                body])))
+        (elet bindings body _)  (foldr
+                                    (compile body)
+                                        bindings
+                                        (fn [body (, pat init)]
+                                        "((${(match (pat-as-arg pat)
+                                            (some v) v
+                                            _        "_")}) => ${body})(${(compile init)})"
+                                            ))
+        (eapp f args _)         (foldl
+                                    (with-parens f)
+                                        args
+                                        (fn [target arg] "${target}(${(compile arg)})"))
         (ematch target cases _) "(($target) => {${(join
                                     "\n"
                                         (map
