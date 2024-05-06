@@ -10,7 +10,7 @@
 
 5249
 
-(deftype (array a) (cons a (array a)) (nil))
+(deftype (list a) (cons a (list a)) (nil))
 
 (defn at [arr i default_]
     (match arr
@@ -90,11 +90,11 @@
     Pretty normal stuff. One thing to note is that str isn't primitive, because all strings are template strings which support embeddings. **)
 
 (deftype cst
-    (cst/list (array cst) int)
-        (cst/array (array cst) int)
+    (cst/list (list cst) int)
+        (cst/array (list cst) int)
         (cst/spread cst int)
         (cst/identifier string int)
-        (cst/string string (array (,, cst string int)) int))
+        (cst/string string (list (,, cst string int)) int))
 
 (deftype quot
     (quot/expr expr)
@@ -105,20 +105,20 @@
 
 (deftype expr
     (eprim prim int)
-        (estr string (array (,, expr string int)) int)
+        (estr string (list (,, expr string int)) int)
         (evar string int)
         (equot quot int)
-        (elambda (array pat) expr int)
-        (eapp expr (array expr) int)
-        (elet (array (, pat expr)) expr int)
-        (ematch expr (array (, pat expr)) int))
+        (elambda (list pat) expr int)
+        (eapp expr (list expr) int)
+        (elet (list (, pat expr)) expr int)
+        (ematch expr (list (, pat expr)) int))
 
 (deftype prim (pint int int) (pbool bool int))
 
 (deftype pat
     (pany int)
         (pvar string int)
-        (pcon string int (array pat) int)
+        (pcon string int (list pat) int)
         (pstr string int)
         (pprim prim int))
 
@@ -176,10 +176,10 @@
     (sdeftype
         string
             int
-            (array (, string int))
-            (array (,,, string int (array type) int))
+            (list (, string int))
+            (list (,,, string int (list type) int))
             int)
-        (stypealias string int (array (, string int)) type int)
+        (stypealias string int (list (, string int)) type int)
         (sdef string int expr int)
         (sexpr expr int))
 
@@ -410,7 +410,7 @@
         ; free variables
             (set string)
             ; arguments
-            (array type)
+            (list type)
             ; the resulting type
             type
             ; the loc
@@ -425,7 +425,7 @@
             ; type names (number of arguments) (set of constructor names) loc
             (map string (,, int (set string) int))
             ; type aliases (argument names) (body) (loc)
-            (map string (,, (array string) type int))))
+            (map string (,, (list string) type int))))
 
 (defn tenv/type [(tenv types _ _ _) key] (map/get types key))
 
@@ -503,8 +503,8 @@
         [(, (tvar "a" -1) (tcon "int" -1))
         (, (tvar "b" -1) (tvar "b" -1))
         (,
-        (tapp (tcon "array" -1) (tvar "a" -1) -1)
-            (tapp (tcon "array" -1) (tcon "int" -1) -1))])
+        (tapp (tcon "list" -1) (tvar "a" -1) -1)
+            (tapp (tcon "list" -1) (tcon "int" -1) -1))])
 
 (defn scheme-apply [subst (scheme vbls type)]
     (scheme vbls (type-apply (map-without subst vbls) type)))
@@ -649,15 +649,15 @@
     (State value)
         (StateT
         (** next-idx
-            (array of types for all locations)
-            (array of usages)
+            (list of types for all locations)
+            (list of usages)
             (map of "value name" => "type"), the "subst" map. **)
             (,, int (, type-record usage-record) (map string type))
             value))
 
-(typealias usage-record (, (array int) (array (, int int))))
+(typealias usage-record (, (list int) (list (, int int))))
 
-(typealias type-record (array (,, int type bool)))
+(typealias type-record (list (,, int type bool)))
 
 (def <-idx (let-> [(,, idx _ _) <-state] (<- idx)))
 
@@ -738,10 +738,10 @@
     (err>>= (unify-inner t1 t2 l) (fn [e] (err (twrap (ttypes t1 t2) e)))))
 
 (deftype type-error-t
-    (terr string (array (, string int)))
+    (terr string (list (, string int)))
         (ttypes type type)
         (twrap type-error-t type-error-t)
-        (tmissing (array (,, string int type))))
+        (tmissing (list (,, string int type))))
 
 (defn type-error [message loced-items] (terr message loced-items))
 
@@ -1228,7 +1228,7 @@
 
 (type-to-string
     (replace-in-type
-        (map/from-list [(, "a" (@t int)) (, "b" (@t (array string)))])
+        (map/from-list [(, "a" (@t int)) (, "b" (@t (list string)))])
             (@t (,, string a b))))
 
 (defn subst-aliases [alias type]
@@ -1287,14 +1287,14 @@
             (ok t)  (type-to-string t)
             (err e) (type-error->s e)))
         [(,
-        [(@! (deftype (array a) (cons a (array a)) (nil)))
+        [(@! (deftype (list a) (cons a (list a)) (nil)))
             (@!
             (defn foldr [init items f]
                 (match items
                     []           init
                     [one ..rest] (f (foldr init rest f) one))))
             (@! foldr)]
-            "(fn [a (array b) (fn [a b] a)] a)")
+            "(fn [a (list b) (fn [a b] a)] a)")
         (,
         [(@!
             (defn what [f a]
@@ -1304,8 +1304,8 @@
             (@! what)]
             "(fn [(fn [a] a) a] a)")
         (,
-        [(@! (deftype (array2 a) (cons2 a (array2 a)) (nil2))) (@! (cons2 1 nil2))]
-            "(array2 int)")
+        [(@! (deftype (list2 a) (cons2 a (list2 a)) (nil2))) (@! (cons2 1 nil2))]
+            "(list2 int)")
         (, [(@! (defn fib [x] (+ 1 (fib (+ 2 x))))) (@! fib)] "(fn [int] int)")
         (, [(@! (, 1 2))] "(, int int)")
         (,
@@ -1316,14 +1316,14 @@
             (@! (let [a (what 1 (no)) b (what "a" (no))] (, a b)))]
             "(, (what-t int) (what-t string))")
         (,
-        [(@! (deftype (array a) (cons a (array a)) (nil)))
+        [(@! (deftype (list a) (cons a (list a)) (nil)))
             (@!
             (fn [zip one two]
                 (match (, one two)
                     (, [] [])               []
                     (, [a ..one] [b ..two]) [(, a b) ..(zip one two)]
                     _                       [])))]
-            "(fn [(fn [(array a) (array b)] (array (, a b))) (array a) (array b)] (array (, a b)))")
+            "(fn [(fn [(list a) (list b)] (list (, a b))) (list a) (list b)] (list (, a b)))")
         (,
         [(@! (typealias hello int))
             (@! (deftype what (whatok hello)))
@@ -1673,7 +1673,7 @@ map->
                 (run/nil->
                 (infer-stmtss
                     builtin-env
-                        [(@! (deftype (array a) (cons a (array a)) (nil)))
+                        [(@! (deftype (list a) (cons a (list a)) (nil)))
                         (@!
                         (defn mapi [i values f]
                             (match values
@@ -1772,10 +1772,10 @@ map->
         [(@! (deftype a (b))) (@! (typealias c a))]
             (, ["c:23288" "b:23283" "a:23281"] [(, "a:23289" 23281)]))
         (,
-        [(@! (deftype (array a) (cons a (array a)) (nil)))]
+        [(@! (deftype (list a) (cons a (list a)) (nil)))]
             (,
-            ["nil:23447" "cons:23441" "a:23438" "array:23437"]
-                [(, "array:23444" 23437) (, "a:23445" 23438) (, "a:23442" 23438)]))
+            ["nil:23447" "cons:23441" "a:23438" "list:23437"]
+                [(, "list:23444" 23437) (, "a:23445" 23438) (, "a:23442" 23438)]))
         (,
         [(@! (deftype t (c int)))
             (@!
@@ -1902,7 +1902,7 @@ map->
 (** ## Dependency analysis
     Needed so we can know when to do mutual recursion, as well as for sorting definitions by dependency order. **)
 
-(deftype (bag a) (one a) (many (array (bag a))) (empty))
+(deftype (bag a) (one a) (many (list (bag a))) (empty))
 
 (defn bag/and [first second]
     (match (, first second)
@@ -2088,7 +2088,7 @@ map->
 
 ;(typealias what l)
 
-(defn tarray [arg] (tapp (tcon "array" -1) arg -1))
+(defn tlist [arg] (tapp (tcon "list" -1) arg -1))
 
 (defn tset [arg] (tapp (tcon "set" -1) arg -1))
 
@@ -2122,7 +2122,7 @@ map->
                             "trace"
                                 (kk
                                 (tfns
-                                    [(tapp (tcon "array" -1) (tapp (tcon "trace-fmt" -1) k -1) -1)]
+                                    [(tapp (tcon "list" -1) (tapp (tcon "trace-fmt" -1) k -1) -1)]
                                         (tcon "()" -1))))
                             (, "unescapeString" (concrete (tfns [tstring] tstring)))
                             (, "int-to-string" (concrete (tfns [tint] tstring)))
@@ -2130,7 +2130,7 @@ map->
                             (,
                             "string-to-float"
                                 (concrete (tfns [tstring] (toption (tcon "float" -1)))))
-                            (, "++" (concrete (tfns [(tarray tstring)] tstring)))
+                            (, "++" (concrete (tfns [(tlist tstring)] tstring)))
                             (, "map/nil" (kv (tmap k v)))
                             (, "map/set" (kv (tfns [(tmap k v) k v] (tmap k v))))
                             (, "map/rm" (kv (tfns [(tmap k v) k] (tmap k v))))
@@ -2139,8 +2139,8 @@ map->
                             "map/map"
                                 (generic ["k" "v" "v2"] (tfns [(tfns [v] v2) (tmap k v)] (tmap k v2))))
                             (, "map/merge" (kv (tfns [(tmap k v) (tmap k v)] (tmap k v))))
-                            (, "map/values" (kv (tfns [(tmap k v)] (tarray v))))
-                            (, "map/keys" (kv (tfns [(tmap k v)] (tarray k))))
+                            (, "map/values" (kv (tfns [(tmap k v)] (tlist v))))
+                            (, "map/keys" (kv (tfns [(tmap k v)] (tlist k))))
                             (, "set/nil" (kk (tset k)))
                             (, "set/add" (kk (tfns [(tset k) k] (tset k))))
                             (, "set/has" (kk (tfns [(tset k) k] tbool)))
@@ -2148,10 +2148,10 @@ map->
                             (, "set/diff" (kk (tfns [(tset k) (tset k)] (tset k))))
                             (, "set/merge" (kk (tfns [(tset k) (tset k)] (tset k))))
                             (, "set/overlap" (kk (tfns [(tset k) (tset k)] (tset k))))
-                            (, "set/to-list" (kk (tfns [(tset k)] (tarray k))))
-                            (, "set/from-list" (kk (tfns [(tarray k)] (tset k))))
-                            (, "map/from-list" (kv (tfns [(tarray (t, k v))] (tmap k v))))
-                            (, "map/to-list" (kv (tfns [(tmap k v)] (tarray (t, k v)))))
+                            (, "set/to-list" (kk (tfns [(tset k)] (tlist k))))
+                            (, "set/from-list" (kk (tfns [(tlist k)] (tset k))))
+                            (, "map/from-list" (kv (tfns [(tlist (t, k v))] (tmap k v))))
+                            (, "map/to-list" (kv (tfns [(tmap k v)] (tlist (t, k v)))))
                             (, "jsonify" (generic ["v"] (tfns [(tvar "v" -1)] tstring)))
                             (, "valueToString" (generic ["v"] (tfns [(vbl "v")] tstring)))
                             (, "eval" (generic ["v"] (tfns [(tcon "string" -1)] (vbl "v"))))
@@ -2210,16 +2210,16 @@ map->
         check-stmts **)
         (inference
         tenv
-            (fn [tenv (array stmt)] tenv)
-            (fn [tenv (array stmt)]
+            (fn [tenv (list stmt)] tenv)
+            (fn [tenv (list stmt)]
             (,,
-                (result (, tenv (array type)) type-error-t)
-                    (array (, int type))
+                (result (, tenv (list type)) type-error-t)
+                    (list (, int type))
                     usage-record))
             (fn [tenv tenv] tenv)
             (fn [tenv expr] type)
             (fn [tenv expr]
-            (,, (result type type-error-t) (array (, int type)) usage-record))))
+            (,, (result type type-error-t) (list (, int type)) usage-record))))
 
 (deftype name-kind (value) (type))
 
@@ -2227,9 +2227,9 @@ map->
     (** externals
         declared-names **)
         (analysis
-        (fn [stmt] (array (,, string name-kind int)))
-            (fn [expr] (array (,, string name-kind int)))
-            (fn [stmt] (array (,, string name-kind int)))))
+        (fn [stmt] (list (,, string name-kind int)))
+            (fn [expr] (list (,, string name-kind int)))
+            (fn [stmt] (list (,, string name-kind int)))))
 
 (deftype evaluator
     (typecheck

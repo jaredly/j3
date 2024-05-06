@@ -219,6 +219,7 @@ const ShowPin = ({
                 }}
             >
                 <RenderReadOnly
+                    key={ns.top}
                     idx={ns.top}
                     path={[{ type: 'ns-top', idx: pin }]}
                 />

@@ -25,15 +25,15 @@ const string_to_int = (a) => {
     return {type: 'none'}
 }
 
-const unwrapArray = (v) => {
+const unwrapList = (v) => {
     if (!v) debugger
-    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]
+    return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])]
 };
 const $eq = (a) => (b) => a == b;
 const fatal = (e) => {throw new Error(e)}
 const nil = { type: 'nil' };
 const cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });
-const $pl$pl = (items) => unwrapArray(items).join('');
+const $pl$pl = (items) => unwrapList(items).join('');
 const $pl = (a) => (b) => a + b;
 const _ = (a) => (b) => a - b;
 const int_to_string = (a) => a + '';
@@ -51,12 +51,9 @@ const unescapeString = (text) => text.replace(/\\\\./g, (matched) => {
 });
 const $co = (a) => (b) => ({ type: ',', 0: a, 1: b });
 const reduce = (init) => (items) => (f) => {
-    return unwrapArray(items).reduce((a, b) => f(a)(b), init);
+    return unwrapList(items).reduce((a, b) => f(a)(b), init);
 };
 return {$pl$pl: '' + $pl$pl}})() **)))
-
-(def builtins
-    "const sanMap = { '-': '_', '+': '$pl', '*': '$ti', '=': '$eq', \n'>': '$gt', '<': '$lt', \"'\": '$qu', '\"': '$dq', ',': '$co', '@': '$at', '/': '$sl'};\n\nconst kwds = 'case var else const let var new if return default break while for super';\nconst rx = [];\nkwds.split(' ').forEach((kwd) =>\n    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),);\nconst sanitize = (raw) => { if (raw == null) debugger;\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    rx.forEach(([rx, res]) => {\n        raw = raw.replaceAll(rx, res);\n    });\n    return raw;\n};\nconst jsonify = (raw) => JSON.stringify(raw);\nconst string_to_int = (a) => {\n    var v = parseInt(a);\n    if (!isNaN(v) && '' + v === a) return {type: 'some', 0: v}\n    return {type: 'none'}\n}\n\nconst unwrapArray = (v) => {\n    if (!v) debugger\n    return v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])]\n};\nconst $eq = (a) => (b) => a == b;\nconst fatal = (e) => {throw new Error(e)}\nconst nil = { type: 'nil' };\nconst cons = (a) => (b) => ({ type: 'cons', 0: a, 1: b });\nconst $pl$pl = (items) => unwrapArray(items).join('');\nconst $pl = (a) => (b) => a + b;\nconst _ = (a) => (b) => a - b;\nconst int_to_string = (a) => a + '';\nconst replace_all = (a) => (b) => (c) => {\n    return a.replaceAll(b, c);\n};\n\nconst unescapeString = (text) => text.replace(/\\\\./g, (matched) => {\n    if (matched[1] === 'n') {\n        return '\\n';\n    }\n    if (matched[1] === 't') return '\\t';\n    if (matched[1] === 'r') return '\\r';\n    return matched[1];\n});\nconst $co = (a) => (b) => ({ type: ',', 0: a, 1: b });\nconst reduce = (init) => (items) => (f) => {\n    return unwrapArray(items).reduce((a, b) => f(a)(b), init);\n};\n")
 
 (** ## Prelude **)
 
@@ -65,15 +62,13 @@ return {$pl$pl: '' + $pl$pl}})() **)))
         []           ""
         [one ..rest] (match rest
                          [] one
-                         _  (++ [one sep (join sep rest)]))))
+                         _  "${one}${sep}${(join sep rest)}")))
 
 (join " " ["one" "two" "three"])
 
 cons
 
-(deftype lol (lol a b c))
-
-(jsonify (cons 2 3))
+(jsonify (cons 2 nil))
 
 (eval "JSON.stringify(cons(1)(2)) + ''")
 
@@ -103,10 +98,6 @@ cons
         []           init
         [one ..rest] (f (foldr init rest f) one)))
 
-(foldl 0 [1 2 3 4] ,)
-
-(foldr 5 [1 2 3 4] ,)
-
 (defn consr [a b] (cons b a))
 
 (foldr nil [1 2 3 4] consr)
@@ -122,37 +113,74 @@ cons
 (deftype (list a) (nil) (cons a (list a)))
 
 (deftype expr
-    (eprim prim)
-        (evar string)
-        (elambda string expr)
-        (eapp expr expr)
-        (elet string expr expr)
+    (** the trailing int on each constructor is a unique id **)
+        (eprim prim int)
+        (** estr: prefix, template-pairs. All strings are template strings in our language :)
+        So "Hello ${world}!" would parse into
+        (estr "Hello" [(,, (evar "world") "!" 1234)])
+        template-pairs is a list of expression and suffix (with a unique ID for the string tacked on) **)
+        (estr string (list (,, expr string int)) int)
+        (** evar: a variable reference! might be local or global **)
+        (evar string int)
+        (** equot: this form allows embedding of the CST or AST into the runtime, which makes writing tests for our parsers, compilers, and type checkers much simpler. **)
+        (equot quot int)
+        (** elambda: args, body , parsed from the form (fn [arg1 arg2] body). **)
+        (elambda (list pat) expr int)
+        (** eapp: target, args **)
+        (eapp expr (list expr) int)
+        (** elet: bindings, body **)
+        (elet (list (, pat expr)) expr int)
+        (** ematch: target, cases **)
         (ematch expr (list (, pat expr))))
+
+(deftype quot
+    (quot/expr expr)
+        (quot/stmt stmt)
+        (quot/type type)
+        (quot/pat pat)
+        (quot/quot cst))
+
+(deftype cst
+    (cst/identifier string int)
+        (cst/list (list cst) int)
+        (cst/array (list cst) int)
+        (cst/record (list cst) int)
+        (cst/spread cst int)
+        (cst/string string (list (,, cst string int)) int))
 
 (deftype prim (pint int) (pbool bool))
 
 (deftype pat
-    (pany)
-        (pvar string)
-        (pprim prim)
-        (pstr string)
-        (pcon string (list string)))
+    (pany int)
+        (pvar string int)
+        (pprim prim int)
+        (pstr string int)
+        (pcon string (list pat) int))
 
-(deftype type (tvar int) (tapp type type) (tcon string))
+(deftype type
+    (tvar string int)
+        (tapp type type int)
+        (tcon string int))
 
 (deftype stmt
-    (sdeftype string (list (, string (list type))))
-        (sdef string expr)
-        (sexpr expr))
+    (sdeftype string (list (,, string (list type) int)) int)
+        (sdef string expr int)
+        (sexpr expr int))
 
 (** ## Compilation **)
 
+(defn +++ [items]
+    (match items
+        []           ""
+        [one]        one
+        [one ..rest] "${one}${(+++ rest)}"))
+
 (defn literal-constr [name args]
-    (++
+    (+++
         ["({type: \""
             name
             "\""
-            (++ (mapi 0 args (fn [i arg] (++ [", " (int-to-string i) ": " arg]))))
+            (+++ (mapi 0 args (fn [i arg] ", ${(int-to-string i)}: ${arg}")))
             "})"]))
 
 (literal-constr "cons" ["0"])
@@ -163,28 +191,28 @@ cons
 
 (defn compile-st [stmt]
     (match stmt
-        (sexpr expr)          (compile expr)
-        (sdef name body)      (++ ["const " (sanitize name) " = " (compile body) ";\n"])
-        (sdeftype name cases) (join
-                                  "\n"
-                                      (map
-                                      cases
-                                          (fn [case]
-                                          (let [(,, name2 args loc) case]
-                                              (++
-                                                  ["const "
-                                                      (sanitize name2)
-                                                      " = "
-                                                      (++ (mapi 0 args (fn [i _] (++ ["(v" (int-to-string i) ") => "]))))
-                                                      "({type: \""
-                                                      name2
-                                                      "\""
-                                                      (++
-                                                      (mapi
-                                                          0
-                                                              args
-                                                              (fn [i _] (++ [", " (int-to-string i) ": v" (int-to-string i)]))))
-                                                      "});"])))))))
+        (sexpr expr _)          (compile expr)
+        (sdef name body _)      (+++ ["const " (sanitize name) " = " (compile body) ";\n"])
+        (sdeftype name cases _) (join
+                                    "\n"
+                                        (map
+                                        cases
+                                            (fn [case]
+                                            (let [(,, name2 args loc) case]
+                                                (+++
+                                                    ["const "
+                                                        (sanitize name2)
+                                                        " = "
+                                                        (+++ (mapi 0 args (fn [i _] (+++ ["(v" (int-to-string i) ") => "]))))
+                                                        "({type: \""
+                                                        name2
+                                                        "\""
+                                                        (+++
+                                                        (mapi
+                                                            0
+                                                                args
+                                                                (fn [i _] (+++ [", " (int-to-string i) ": v" (int-to-string i)]))))
+                                                        "});"])))))))
 
 (** ## Some more utils **)
 
@@ -226,17 +254,12 @@ cons
 
 (escape-string "\n")
 
-(defn quot [expr]
-    (match expr
-        (eprim prim) (match prim
-                         (pstr string) (++ ["{type: "]))))
-
 (defn pat-loop [target args i inner]
     (match args
         []           inner
         [arg ..rest] (compile-pat
                          arg
-                             "${target}[${i}]"
+                             "${target}[${(int-to-string i)}]"
                              (pat-loop target rest (+ i 1) inner))))
 
 (map [] +)
@@ -245,20 +268,50 @@ cons
 
 (defn compile-pat [pat target inner]
     (match pat
-        (pany)           inner
-        (pprim prim)     (match prim
-                             (pint int)   "if (${target} === ${int}) {\n${inner}\n}"
-                             (pbool bool) "if (${target} === ${bool}) {\n${inner}\n}")
-        (pstr str)       "if (${target} === \"${str}\"){\n${inner}\n}"
-        (pvar name)      "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
-        (pcon name args) "if (${target}.type === \"${name}\") {\n${(pat-loop target args 0 inner)}\n}"))
+        (pany _)           inner
+        (pprim prim _)     (match prim
+                               (pint int)   "if (${target} === ${(int-to-string int)}) {\n${inner}\n}"
+                               (pbool bool) "if (${target} === ${(if bool
+                                                "true"
+                                                    "false")}) {\n${inner}\n}")
+        (pstr str _)       "if (${target} === \"${str}\"){\n${inner}\n}"
+        (pvar name _)      "{\nlet ${(sanitize name)} = ${target};\n${inner}\n}"
+        (pcon name args _) "if (${target}.type === \"${name}\") {\n${(pat-loop target args 0 inner)}\n}"))
 
-(compile-pat
-    (pcon "cons" [(pprim (pint 2)) (pcon "lol" [(pprim (pint 3))])])
-        "$target"
-        "lol")
+(compile-pat (@p (cons 2 (cons (lol 2) nil))) "$target" "lol")
 
-(compile-pat (pvar "case") "a" "lol")
+compile-pat
+
+compile-pat
+
+(deftype (option a) (some a) (none))
+
+(defn pat-as-arg [pat]
+    (match pat
+        (pany _)        none
+        (pprim _ _)     none
+        (pstr _ _)      none
+        (pvar name _)   (some name)
+        (pcon _ args _) (match (foldl
+                            (, 0 [])
+                                args
+                                (fn [(, i res) arg]
+                                (,
+                                    (+ i 1)
+                                        (match (pat-as-arg arg)
+                                        (none)     res
+                                        (some arg) ["${(int-to-string i)}: ${arg}" ..res]))))
+                            (, _ [])   none
+                            (, _ args) (some "{${(join ", " args)}}"))
+        _               (fatal "No pat")))
+
+(pat-as-arg (@p (, a _)))
+
+pat-as-arg
+
+(pat-as-arg (@p [_ ..rest]))
+
+(compile-pat (pvar "case" 1) "a" "lol")
 
 (compile
     (@
@@ -267,35 +320,34 @@ cons
 
 (defn compile [expr]
     (match expr
-        (estr first tpls)     (match tpls
-                                  [] "\"${(escape-string (unescapeString first))}\""
-                                  _  "`${(escape-string (unescapeString first))}${(join
-                                         ""
-                                             (map
-                                             tpls
-                                                 (fn [item]
-                                                 (let [(, expr suffix) item]
-                                                     "${${(compile expr)}}${(escape-string (unescape-string suffix))}"))))}`")
-        (eprim prim)          (match prim
-                                  (pstr string) (++ ["\"" (escape-string (unescape-string string)) "\""])
-                                  (pint int)    (int-to-string int)
-                                  (pbool bool)  (match bool
-                                                    true  "true"
-                                                    false "false"))
-        (evar name)           (sanitize name)
-        (equot inner)         (jsonify inner)
-        (elambda name body)   (++ ["(" (sanitize name) ") => " (compile body)])
-        (elet name init body) (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
-        (eapp f arg)          (match f
-                                  (elambda name) (++ ["(" (compile f) ")(" (compile arg) ")"])
-                                  _              (++ [(compile f) "(" (compile arg) ")"]))
-        (ematch target cases) "(($target) => {${(join
-                                  "\n"
-                                      (map
-                                      cases
-                                          (fn [case]
-                                          (let [(, pat body) case]
-                                              (compile-pat pat "$target" "return ${(compile body)}")))))}\nthrow new Error('Failed to match. ' + valueToString($target))})(${(compile target)})"))
+        (estr first tpls _)     (match tpls
+                                    [] "\"${(escape-string (unescapeString first))}\""
+                                    _  "`${(escape-string (unescapeString first))}${(join
+                                           ""
+                                               (map
+                                               tpls
+                                                   (fn [item]
+                                                   (let [(,, expr suffix _) item]
+                                                       "${${(compile expr)}}${(escape-string (unescape-string suffix))}"))))}`")
+        (eprim prim _)          (match prim
+                                    (pint int)   (int-to-string int)
+                                    (pbool bool) (match bool
+                                                     true  "true"
+                                                     false "false"))
+        (evar name _)           (sanitize name)
+        (equot inner _)         (jsonify inner)
+        (elambda pat body _)    (++ ["(" (sanitize name) ") => " (compile body)])
+        (elet bindings body _)  (++ ["((" (sanitize name) ") => " (compile body) ")(" (compile init) ")"])
+        (eapp f arg _)          (match f
+                                    (elambda name) (++ ["(" (compile f) ")(" (compile arg) ")"])
+                                    _              (++ [(compile f) "(" (compile arg) ")"]))
+        (ematch target cases _) "(($target) => {${(join
+                                    "\n"
+                                        (map
+                                        cases
+                                            (fn [case]
+                                            (let [(, pat body) case]
+                                                (compile-pat pat "$target" "return ${(compile body)}")))))}\nthrow new Error('Failed to match. ' + valueToString($target))})(${(compile target)})"))
 
 (defn run [v] (eval (compile v)))
 
@@ -306,6 +358,8 @@ cons
 "\\n"
 
 "\\\n"
+
+1746
 
 (,
     run

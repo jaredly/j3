@@ -205,8 +205,11 @@ export const getValues = (
     workerResults?: Sendable | null,
     unused = false,
 ): Values => {
-    if (!results) debugger;
-    if (!state.map[idx]) {
+    // if (!results) {
+    //     debugger;
+    //     throw new Error(`no results`);
+    // }
+    if (!results || !state.map[idx]) {
         return {
             dispatch() {},
             display: {},

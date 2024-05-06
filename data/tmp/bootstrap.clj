@@ -204,7 +204,7 @@ const filterBlanks = values => values.filter(node => !isBlank(node)) **)
   // So `{type: 'identifier', text: 'a', loc: 10}` becomes `{type: 'identifier', 0: 'a', 1: 10}`
   '@@': (loc, inner) => ({type: 'equot', 0: {type: 'quot/quot', 0: fromNode(inner)}, 1: loc}),
   // Our AST doesn't have a special `if` form, this is just sugar for `(match cond true if-true _ if-false)`
-  'if': (loc, cond, yes, no) => ({type: 'ematch', 0: parse(cond), 1: arr([pair(
+  'if': (loc, cond, yes, no) => ({type: 'ematch', 0: parse(cond), 1: list([pair(
     {type: 'pprim', 0: {type: 'pbool', 0: true, 1: loc}, 1: loc},
     parse(yes)
     ), pair(
@@ -549,7 +549,7 @@ const p = {
           return evaluate(body, {...scope, ...got})
         }
       }
-      throw new Error(`match failed (${node[2]}): ${JSON.stringify(target)}`)
+      throw new Error(`match failed (${node[2]}): ${JSON.stringify(target)} - ${JSON.stringify(node[0])}`)
     // `equot` trivially produces the contained data structure; whether it's CST or AST.
     case 'equot':
       return node[0][0]
@@ -612,6 +612,9 @@ const evalPat = (node, v) => {
   nil: {type: 'nil'},
   some: a => ({type: 'some', 0: a}),
   none: {type: 'none'},
+  '$lt': a => b => a < b,
+  '$pl': a => b => a + b,
+  '_': a => b => a - b,
 } **)
 
 (** // "A\\nB" -> "A\nB"
@@ -686,7 +689,14 @@ const constrFn = (name, args) => {
             (** "10" **))
         (, [(deftype lots (lol a b c)) (lol 1 true "hi")] (** '(lol 1 true "hi")' **))
         (, [(deftype a (com, 1 2)) (com, 1 2)] (** "(com, 1 2)" **))
-        (, [(deftype (list a) (cons a (list a)) (nil)) [1 2]] (** "[1 2]" **))])
+        (, [(deftype (list a) (cons a (list a)) (nil)) [1 2]] (** "[1 2]" **))
+        (,
+        [(defn fib- [x]
+            (if (< x 1)
+                1
+                    (+ (fib- (- x 2)) (fib- (- x 1)))))
+            (fib- 6)]
+            (** "21" **))])
 
 (** ## Analysis **)
 
@@ -704,7 +714,7 @@ const externals = stmt => {
 } **)
 
 (,
-    (** v =>(externals(parseStmt(v))) **)
+    (** v => externals(parseStmt(v)) **)
         [(, (@ lol) (** [{"name":"lol","kind":"value","loc":620}] **))
         (, (@ (fn [(, x)] (+ x))) (** [{"name":"+","kind":"value","loc":641}] **))
         (, (@ "hi ${x}") (** [{"name":"x","kind":"value","loc":653}] **))
@@ -817,7 +827,7 @@ const sanitize =  (raw) => {
         (, "a/b/c" "a$slb$slc")
         (, "abc$" "abc$$")])
 
-(** sanMap = {
+(** const sanMap = {
     // '$$$$' gets interpreted by replaceAll as '$$', for reasons
     $: '$$$$',
     '-': '_',
@@ -839,7 +849,7 @@ const sanitize =  (raw) => {
   };
  **)
 
-(** kwds = (() => {
+(** const kwds = (() => {
   const kwds =
     'case new var const let if else return super break while for default';
   const rx = [];
@@ -849,5 +859,5 @@ const sanitize =  (raw) => {
 
 (** sanitize('for') **)
 
-(** prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes})  **)
+(** const prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes})  **)
 

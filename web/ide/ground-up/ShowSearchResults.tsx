@@ -80,7 +80,7 @@ export const ShowSearchResults = ({
             .map(({ ns, at, r }, i) => {
                 // I want to ... sort results ... by ns location
 
-                const parsed = r2.nodes[ns].parsed;
+                const parsed = r2.nodes[ns]?.parsed;
                 let container;
                 if (parsed?.type === 'success') {
                     const names = parsed.names;

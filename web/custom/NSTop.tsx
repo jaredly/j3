@@ -252,6 +252,7 @@ const RenderProduce = ({
                 maxHeight: collapsed === 'pinned' ? 'unset' : `${maxHeight}px`,
                 maxWidth: 1000,
                 zIndex: show ? 100 : 0,
+                position: 'relative',
                 overflowY: show ? 'visible' : 'hidden',
                 overflowX: show ? 'visible' : 'auto',
                 border:
@@ -265,7 +266,7 @@ const RenderProduce = ({
             <div
                 ref={inner}
                 style={{
-                    position: 'relative',
+                    // position: 'relative',
                     backgroundColor: 'black',
                     padding: 4,
                     border:

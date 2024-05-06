@@ -63,6 +63,7 @@ export const RenderReadOnly = ({
 
     return (
         <RenderNNode
+            key={idx}
             nnode={values.nnode}
             values={{
                 ...values,

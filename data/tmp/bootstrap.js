@@ -1,19 +1,30 @@
+// turn a javascript array into a linked list with `cons` and `nil`.
 const list = (values) => {
   let v = nil
-  for (let i=values.length-1;i>=0;i--) {
+  for (let i = values.length - 1; i >= 0; i--) {
     v = cons(values[i], v)
   }
   return v
 }
-
 const cons = (a, b) => ({type: 'cons', 0: a, 1: b})
-
 const nil = {type: 'nil'}
-
+// unwrap a list into a javascript array
 const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])]
 
-const set = (obj, k, v) => (obj[k] = v, obj)
 
+const pair = (a, b) => ({type: ',', 0: a, 1: b})
+
+// This will be useful for the `let` and `match` forms, where we expect a list of pairs of nodes.
+const makePairs = array => {
+  const res = [];
+  for (let i = 0; i < array.length - 1; i += 2) {
+    res.push([array[i], array[i + 1]]);
+  }
+  return res
+}
+
+// turn a runtime value into a nice-to-read string. Roughly corresponds to `show` from Haskell
+// or `repr` from python
 const valueToString = (v) => {
     if (typeof v === 'object' && v && 'type' in v) {
         if (v.type === 'cons' || v.type === 'nil') {
@@ -44,50 +55,10 @@ const valueToString = (v) => {
     return '' + v;
 };
 
-const pair = (a, b) => ({type: ',', 0: a, 1: b})
 
-const foldr = (init, items, f) => items.length === 0 ? init : f(foldr(init, items.slice(1), f), items[0])
-
-const loop = (v, f) => f(v, n => loop(n, f))
-
-const makePairs = array => {
-  const res = [];
-  for (let i=0; i<array.length; i+=2) {
-    res.push([array[i], array[i + 1]]);
-  }
-  return res
-}
-
-const parsePrim = node => {
-  const v = +node.text
-  if (!isNaN(v)) {
-    return c.prim(c.int(v, node.loc), node.loc)
-  }
-  if (node.text === 'true' || node.text === 'false') {
-    return c.prim(c.bool(node.text === 'true', node.loc), node.loc)
-  }
-}
-
-const parseType = node => {
-  if (node.type === 'identifier') {
-    return {type: 'tcon', 0: node.text, 1: node.loc}
-  }
-  if (node.type === 'list') {
-    const values = filterBlanks(node.values)
-    if (!values.length) return {type: 'tcon', 0: '()', 1: node.loc}
-    if (values.length === 3 && values[0].type === 'identifier' && values[1].type === 'array') {
-      return {type: 'tcon', 0: 'a function', 1: node.loc}
-    }
-    let res = parseType(values[0])
-    for (let i=1;i<values.length; i++) {
-      res = {type: 'tapp', 0: res, 1: parseType(values[i]), 2: node.loc}
-    }
-    return res
-  }
-  throw new Error(`cant parse type ${node.type}`)
-}
-
-const filterBlanks = values => values.filter(n => !['blank', 'comment', 'rich-text', 'comment-node'].includes(n.type))
+// These are the CST nodes that we want to ignore while parsing.
+const isBlank = n => ['blank', 'comment', 'rich-text', 'comment-node'].includes(n.type)
+const filterBlanks = values => values.filter(node => !isBlank(node))
 
 const parse = node => {
   switch (node.type) {
@@ -96,30 +67,37 @@ const parse = node => {
     }
     case 'string': {
       const exprs = node.templates.map(t => parse(t.expr))
-      return {type: 'estr', 0: node.first.text, 1: list(
-        node.templates.map((t, i) => pair(exprs[i], t.suffix.text))
-      ), 2: node.loc}
+      return {
+        type: 'estr',
+        0: node.first.text,
+        1: list(node.templates.map((t, i) => ({type: ',,', 0: exprs[i], 1: t.suffix.text, 2: t.suffix.loc}))),
+        2: node.loc
+      }
     }
     case 'list': {
       const values = filterBlanks(node.values)
+      // empty list gets parsed as a `()` unit value.
       if (!values.length) return c.evar('()', node.loc)
       if (values[0].type === 'identifier') {
         const first = values[0].text;
+        // If we're in a list w/ the first item being an identifier, see if
+        // we're in a 'special form' (defined below)
         if (forms[first]) {
           const res = forms[first](node.loc, ...values.slice(1))
           if (res) return res
         }
       }
+      // Otherwise do function application.
       const parsed = values.map(parse)
-      let res = parsed[0]
-      for (let i=1; i<parsed.length; i++) {
-        res = c.app(res, parsed[i], node.loc)
-      }
-      return res
+      return c.app(parsed[0], list(parsed.slice(1)))
     }
     case 'array': {
       if (!node.values.length) return c.evar('nil', node.loc)
       let last = node.values[node.values.length - 1]
+      // a normal list [1 2 3] turns into (cons 1 (cons 2 (cons 3 nil))).
+      // a final `spread` node is neatly represented by replacing the
+      // final `nil` with the contents of the spread.
+      // so [a b ..c] becomes (cons a (cons b c))
       let res = last.type === 'spread'
         ? parse(last.contents)
         : c.cons(parse(last), c.nil(node.loc), node.loc)
@@ -128,6 +106,9 @@ const parse = node => {
       }
       return res
     }
+    // for our language, the `raw-code` node just gets passed through as a runtime string.
+    // we can call `eval` on it if we need an escape hatch for e.g. producing the API
+    // expected by the structured editor.
     case 'raw-code':
       return {type: 'estr', 0: node.raw, 1: nil, 2: node.loc}
   }
@@ -139,32 +120,39 @@ const forms = {
     if (!args || !body) return
     if (args.type !== 'array') return
     const pats = filterBlanks(args.values).map(parsePat)
-    return foldr(parse(body), pats, (body, arg) =>
-      arg.type === 'pvar' ?
-    ({type: 'elambda', 0: arg[0], 1: body, 2: loc}) : {
-      type: 'elambda', 0: '$arg', 1: {type: 'ematch', 0: {type: 'evar', 0: '$arg', 1: loc}, 1: list([pair(arg, body)]), 2: loc}}
-    )
+    return {type: 'elambda', 0: list(pats), 1: parse(body), 2: loc}
   },
   let: (loc, bindings, body) => {
     if (!bindings || !body) return
     if (bindings.type !== 'array') return
     const pairs = makePairs(filterBlanks(bindings.values))
-    return foldr(parse(body), pairs, (body, [pat, init]) => {
-      if (pat.type === 'identifier') {
-        return {type: 'elet', 0: pat.text, 1: parse(init), 2: body, 3: loc}
-      }
-      return {type: 'ematch', 0: parse(init), 1: list([pair(parsePat(pat), body)]), 2: loc}
-    })
+    return {type: 'elet', 0: list(
+      pairs.map(([pat, init]) => pair(parsePat(pat), parse(init)))),
+      1: parse(body),
+      2: loc
+    }
   },
   match: (loc, target, ...rest) => {
     if (!target || !rest.length) return
     const cases = makePairs(rest)
-    return {type: 'ematch', 0: parse(target), 1: list(cases.map(([pat, body]) => pair(parsePat(pat), parse(body)))), 2: loc}
+    return {type: 'ematch',
+            0: parse(target),
+            1: list(cases.map(([pat, body]) => pair(parsePat(pat), parse(body)))),
+            2: loc}
   },
-  '@': (loc, inner) => ({type: 'equot', 0: parse(inner), 1: loc}),
-  '@@': (loc, inner) => ({type: 'equot', 0: fromNode(inner), 1: loc}),
-  '@!': (loc, inner) => ({type: 'equot', 0: parseStmt(inner), 1: loc}),
-  'if': (loc, cond, yes, no) => ({type: 'ematch', 0: parse(cond), 1: arr([pair(
+  '@': (loc, inner) => ({type: 'equot', 0: {type: 'quot/expr', 0: parse(inner)}, 1: loc}),
+  '@!': (loc, inner) => ({type: 'equot', 0: {type: 'quot/stmt', 0: parseStmt(inner)}, 1: loc}),
+  '@p': (loc, inner) => ({type: 'equot', 0: {type: 'quot/pat', 0: parsePat(inner)}, 1: loc}),
+  '@t': (loc, inner) => ({type: 'equot', 0: {type: 'quot/type', 0: parseType(inner)}, 1: loc}),
+  // The "double quote" means that the runtime value isn't going to be an AST type, but rather
+  // a CST type! We'll use it in the self-hosting parser to be able to write tests like
+  // `(parse (@@ (some form))`. The `fromNode` function that we're calling converts the
+  // CST of the structured editor into a data format that fits within our encoding, where
+  // attributes of data types have numeric indices, not text labels.
+  // So `{type: 'identifier', text: 'a', loc: 10}` becomes `{type: 'identifier', 0: 'a', 1: 10}`
+  '@@': (loc, inner) => ({type: 'equot', 0: {type: 'quot/quot', 0: fromNode(inner)}, 1: loc}),
+  // Our AST doesn't have a special `if` form, this is just sugar for `(match cond true if-true _ if-false)`
+  'if': (loc, cond, yes, no) => ({type: 'ematch', 0: parse(cond), 1: list([pair(
     {type: 'pprim', 0: {type: 'pbool', 0: true, 1: loc}, 1: loc},
     parse(yes)
     ), pair(
@@ -181,7 +169,7 @@ const c = {
   evar: (text, loc=-1) => ({type: 'evar', 0: text, 1: loc}),
   app: (target, arg, loc=-1) => ({type: 'eapp', 0: target, 1: arg, 2: loc}),
   nil: l => c.evar('nil', l),
-  cons: (a, b, l) => c.app(c.app(c.evar('cons', l), a, l), b, l),
+  cons: (a, b, l) => c.app(c.evar('cons', l), list([a, b]), l), //c.app(c.app(c.evar('cons', l), list([a]), l), b, l),
   list: (values, l) => {
     let v = c.nil(l)
     for (let i=values.length-1;i>=0;i--) {
@@ -192,12 +180,13 @@ const c = {
   
 }
 
+// Here's our utility function for converting the structure editor's CST nodes into values that conform to our
+// in-memory data encoding; where data type attributes have numeric indices instead of text labels, and arrays
+// are converted to linked lists.
+// We also prefix the constructor names with `cst/` to prevent name conflicts with other types.
 const fromNode = node => {
+  if (isBlank(node)) return
   switch (node.type) {
-    case 'comment':
-    case 'comment-node':
-    case 'rich-text':
-      return
     case 'identifier':
       return {type: 'cst/identifier', 0: node.text, 1: node.loc}
     case 'spread':
@@ -221,8 +210,61 @@ const fromNode = node => {
   }
 }
 
-const test = v => valueToString(parse(v))
+// Expects a node of type 'identifier' and if it's an int or true/false, returns
+// the appropriate `prim`
+const parsePrim = node => {
+  const v = +node.text
+  if (v + '' === node.text && Math.floor(v) === v) {
+    return c.prim(c.int(v, node.loc), node.loc)
+  }
+  if (node.text === 'true' || node.text === 'false') {
+    return c.prim(c.bool(node.text === 'true', node.loc), node.loc)
+  }
+  return null
+}
 
+const parseType = node => {
+  if (node.type === 'identifier') {
+    return {type: 'tcon', 0: node.text, 1: node.loc}
+  }
+  if (node.type === 'list') {
+    const values = filterBlanks(node.values)
+    if (!values.length) return {type: 'tcon', 0: '()', 1: node.loc}
+    if (values.length === 3 &&
+        values[0].type === 'identifier' &&
+        values[0].text === 'fn' &&
+        values[1].type === 'array') {
+      const body = parseType(values[2])
+      // This 'reduceRight' is how we convert a function type declaration
+      // with potentially many arguments into function types with only
+      // single arguments.
+      // for a fn type (fn [a b c] d)
+      // the inner function will be called with
+      //    [body]           [arg]
+      //    d                c
+      //    (-> c d)         b
+      //    (-> b (-> c d))  a
+      // and returns
+      //    (-> a (-> b (-> c d)))
+      return values[1].values.reduceRight((body, arg) => (
+        {type: 'tapp',
+         0: {type: 'tapp',
+             0: {type: 'tcon', 0: '->', 1: node.loc},
+             1: parseType(arg), 2: node.loc},
+         1: body,
+         2: node.loc}
+      ), body)
+    }
+    let res = parseType(values[0])
+    for (let i=1;i<values.length; i++) {
+      res = {type: 'tapp', 0: res, 1: parseType(values[i]), 2: node.loc}
+    }
+    return res
+  }
+  throw new Error(`cant parse type ${node.type}`)
+}
+
+// Some helper functions for producing pattern AST nodes
 const p = {
   prim: (v, loc=-1) => ({type: 'pprim', 0: v, 1: loc}),
   bool: (v, loc=-1) => ({type: 'pbool', 0: v, 1: loc}),
@@ -238,11 +280,12 @@ const parsePat = node => {
     case 'identifier':
       switch(node.text) {
         case '_': return p.any(node.loc)
-        case 'true': case 'false':
+        case 'true':
+        case 'false':
           return p.prim(p.bool(node.text === 'true', node.loc), node.loc)
       }
       const v = +node.text
-      if (!isNaN(v)) return p.prim(p.int(v, node.loc), node.loc)
+      if (v + '' === node.text && Math.floor(v) === v) return p.prim(p.int(v, node.loc), node.loc)
       return {type: 'pvar', 0: node.text, 1: node.loc}
     case 'string':
       return {type: 'pstr', 0: node.first.text, 1: node.loc}
@@ -256,6 +299,7 @@ const parsePat = node => {
       const values = filterBlanks(node.values)
       if (!values.length) return p.nil(node.loc)
       let last = values[values.length - 1]
+      // Doing the same trick here with the final spread as we do in the `parse` for expressions
       let res = last.type === 'spread' ? parsePat(last.contents) : p.cons(parsePat(last), p.nil(node.loc), node.loc)
       for (let i=values.length - 2; i>=0; i--) {
         res = p.cons(parsePat(values[i]), res, node.loc)
@@ -266,12 +310,9 @@ const parsePat = node => {
 }
 
 const parseStmt = (node) => {
+  if (isBlank(node)) return
   switch (node.type) {
-    case 'blank':
-    case 'comment':
-    case 'comment-node':
-    case 'rich-text':
-      return;
+    // Check for toplevel forms
     case 'list':
       const values = filterBlanks(node.values)
       if (values.length && values[0].type === 'identifier') {
@@ -282,6 +323,7 @@ const parseStmt = (node) => {
         }
       }
   }
+  // Otherwise, it's a toplevel expression
   const inner = parse(node)
   return inner ? {type: 'sexpr', 0: inner, 1: node.loc} : inner
 }
@@ -289,6 +331,9 @@ const parseStmt = (node) => {
 const stmtForms = {
   deftype(loc, head, ...tail) {
     if (!head || !tail.length) return
+    // handling both `(deftype expr` (no type arg) and `(deftype (list a)` (some type args)
+    // we don't actually do anything with the type arguments, because we don't have a type checker yet,
+    // and by the time we do we'll be in a self-hosted parser
     const name = head.type === 'identifier' ? head.text : head.type === 'list' && head.values.length >= 1 && head.values[0].type === 'identifier' ? head.values[0].text : null
     if (!name) return
     const constructors = tail.map(item => {
@@ -313,7 +358,112 @@ const stmtForms = {
   }
 }
 
-const testStmt = v => valueToString(parseStmt(v))
+const evaluate = (node, scope) => {
+  if (!scope) throw new Error(`evaluate called without scope`)
+  switch (node.type) {
+    // For primitives, we trivially produce the contained value
+    case 'eprim':
+      return node[0][0]
+    // For strings, we need to handle escapes correctly (e.g. the AST node will have "a\\n", which needs to become "a\n" at runtime) and evaluate
+    // any contained template expressions
+    case 'estr':
+      return unescapeSlashes(node[0]) + unwrapList(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + unescapeSlashes(suf)).join('')
+    // For variables, we look up the name in the `scope` map that we pass everywhere.
+    // We use `sanitize` for compatability with the structured editor environment, which expects variable names to be valid javascript names.
+    case 'evar':
+      var name = sanitize(node[0])
+      if (!Object.hasOwn(scope, name)) {
+        throw new Error(`Unknown vbl: ${name}. ${Object.keys(scope).join(', ')}`)
+      }
+      return scope[name]
+    // For lambdas, we're producing an arrow function that accepts the right number of (curried) arguments, matches each provided value with the
+    // corresponding pattern, and then evaluates the body with the `scope` map having all of the resulting bindings.
+    // Note that auto-currying means that `(fn [a b] c)` becomes `a => b => c` instead of `(a, b) => c`.
+    case 'elambda':
+      return unwrapList(node[0]).reduceRight((body, arg) => scope => v => body({...scope, ...evalPat(arg, v)}), scope => evaluate(node[1], scope))(scope)
+    // Application is also curried, so we need to loop through the arguments list so that `(eapp t [a b])` becomes `t(a)(b)`.
+    case 'eapp':
+      return unwrapList(node[1]).reduce((f, arg) => f(evaluate(arg, scope)), evaluate(node[0], scope))
+    // For `let`, we go through each binding, evaluate the provided `init` against the pattern, and add any bindings to the scope.
+    // We're doing the evaluations in *series* instead of *parallel* to allow later bindings to refer to previous ones.
+    // so you can do `(let [a 2 b (+ a 4)] b)` and have it evaluate correctly.
+    // Note that this method doesn't allow for self-recursion in let bindings. We'll relax that restriction in the self-hosted compiler.
+    case 'elet':
+      const inner = unwrapList(node[0]).reduce((scope, {0: pat, 1: init}) => {
+        const value = evaluate(init, scope)
+        const match = evalPat(pat, value)
+        if (match == null) throw new Error(`let pattern didnt't match! ${JSON.stringify(value)} vs ${valueToString(pat)}`)
+        return {...scope, ...match}
+      }, scope)
+      return evaluate(node[1], inner)
+    // Match walks through each case, checks to see if the patterns matches the value, and if it does, evaluates the body with any bindings from that
+    // pattern added onto the scope.
+    // If no cases match, we throw an error.
+    case 'ematch':
+      const target = evaluate(node[0], scope)
+      for (let {0: pat, 1: body} of unwrapList(node[1])) {
+        const got = evalPat(pat, target)
+        if (got) {
+          return evaluate(body, {...scope, ...got})
+        }
+      }
+      throw new Error(`match failed (${node[2]}): ${JSON.stringify(target)} - ${JSON.stringify(node[0])}`)
+    // `equot` trivially produces the contained data structure; whether it's CST or AST.
+    case 'equot':
+      return node[0][0]
+  }
+  throw new Error(`cant evaluatoe ${node.type}`)
+}
+
+// This is our way of figuring out what bindings should result from the application of a
+// pattern to a given value.
+// If `evalPat` returns `null`, that means that pattern *does not* match the value; otherwise
+// it returns a mapping of variable names to bound values.
+const evalPat = (node, v) => {
+  switch (node.type) {
+    case 'pany': return {}
+    case 'pprim': return v === node[0][0] ? {} : null
+    case 'pstr': return v === node[0]
+    case 'pvar':
+      return {[sanitize(node[0])]: v}
+    case 'pcon':
+      if (v.type === node[0]) {
+        const args = unwrapList(node[1])
+        const scope = {}
+        for (let i=0; i<args.length; i++) {
+          const sub = evalPat(args[i], v[i])
+          if (!sub) return null
+          Object.assign(scope, sub)
+        }
+        return scope
+      }
+      return null
+  }
+  throw new Error(`Unexpected pat ${JSON.stringify(node)}`)
+}       
+
+const testEnv = {
+  '$co': a => b => pair(a, b),
+  cons: a => b => ({type: 'cons', 0: a, 1: b}),
+  nil: {type: 'nil'},
+  some: a => ({type: 'some', 0: a}),
+  none: {type: 'none'},
+}
+
+// "A\\nB" -> "A\nB"
+const unescapeSlashes = (n) =>
+    n.replaceAll(/\\./g, (m) => {
+        if (m[1] === 'n') {
+            return '\n';
+        }
+        if (m[1] === 't') {
+            return '\t';
+        }
+        if (m[1] === 'r') {
+            return '\r';
+        }
+        return m[1];
+    })
 
 const evaluateStmt = (node, env) => {
   switch (node.type) {
@@ -331,6 +481,11 @@ const evaluateStmt = (node, env) => {
   }
 }
 
+
+// this little helper function produces a "constructor function" for a given type constructor definition.
+// so `(cons a (list a))` produces `a => b => ({type: 'cons', 0: a, 1: b})`
+// and `(ok v)` produces `a => ({type: 'ok', 0: a})`
+// and `(nil)` produces `({type: 'nil'})`
 const constrFn = (name, args) => {
   const next = (args) => {
     if (args.type === 'nil') return values => ({type: name, ...values})
@@ -339,91 +494,21 @@ const constrFn = (name, args) => {
   return next(args)([])
 }
 
-const evaluate = (node, scope) => {
-  switch (node.type) {
-    case 'eprim':
-      return node[0][0]
-    case 'estr':
-      return slash(node[0]) + unwrapList(node[1]).map(({0: exp, 1: suf}) => evaluate(exp, scope) + slash(suf)).join('')
-    case 'evar':
-      var name = sanitize(node[0])
-      if (!Object.hasOwn(scope, name)) {
-        throw new Error(`Unknown vbl: ${name}. ${Object.keys(scope).join(', ')}`)
-      }
-      return scope[name]
-    case 'elambda':
-      return v => evaluate(node[1], {...scope, [sanitize(node[0])]: v})
-    case 'eapp':
-      return evaluate(node[0], scope)(evaluate(node[1], scope))
-    case 'elet':
-      const init = evaluate(node[1], scope)
-      return evaluate(node[2], {...scope, [sanitize(node[0])]: init})
-    case 'ematch':
-      const target = evaluate(node[0], scope)
-      for (let {0: pat, 1: body} of unwrapList(node[1])) {
-        const got = evalPat(pat, target)
-        if (got) {
-          return evaluate(body, {...scope, ...got})
-        }
-      }
-      throw new Error(`match failed (${node[2]}): ${JSON.stringify(target)}`)
-    case 'equot':
-      return node[0]
-  }
-  throw new Error(`cant evaluatoe ${node.type}`)
-}
-
-const evalPat = (node, v) => {
-  switch (node.type) {
-    case 'pany': return {}
-    case 'pprim': return v === node[0][0] ? {} : null
-    case 'pstr': return v === node[0]
-    case 'pvar':
-      return {[sanitize(node[0])]: v}
-    case 'pcon':
-      if (v.type === node[0]) {
-        const args = unwrapList(node[1])
-        const scope = {}
-        for (let i=0; i<args.length; i++) {
-          const sub = evalPat(args[i], v[i])
-          if (!sub) return
-          Object.assign(scope, sub)
-        }
-        return scope
-      }
-  }
-}
-
-const slash = (n) =>
-    n.replaceAll(/\\./g, (m) => {
-        if (m[1] === 'n') {
-            return '\n';
-        }
-        if (m[1] === 't') {
-            return '\t';
-        }
-        if (m[1] === 'r') {
-            return '\r';
-        }
-        return m[1];
-    })
-
-const run = v => {
-  const res = evaluate(parse(v), {'$co': a => b => pair(a,b)})
-  if (typeof res === 'number' || typeof res === 'string') return res
-  return valueToString(res)
-}
-
 const evalStmts = stmts => {
   if (stmts.type !== 'array') throw new Error('need array')
-  const env = {'$co': a => b => pair(a, b)}
+  const env = {...testEnv} // evaluateStmt might mutate the `env` so we need to make a new obj here
   let res
-  stmts.values.forEach(stmt => {
+  filterBlanks(stmts.values).forEach(stmt => {
     res = evaluateStmt(parseStmt(stmt), env)
   });
   return valueToString(res)
 }
 
+
+// This function collects a list of all "external references" in a given toplevel statement.
+// It is used to sort toplevels in the structured editor so that evaluation happens in the
+// correct dependency order, and for detecting circular dependencies (which need to be
+// evaluated as a group).
 const externals = stmt => {
   switch (stmt.type) {
     case 'sexpr': return externals_expr(stmt[0], [])
@@ -433,6 +518,30 @@ const externals = stmt => {
   return []
 }
 
+const externals_expr = (expr, locals) => {
+  switch (expr.type) {
+    case 'evar': return locals.includes(expr[0]) ? [] : [{name: expr[0], kind: 'value', loc: expr[1]}]
+    case 'eapp': return externals_expr(expr[0], locals).concat(unwrapList(expr[1]).flatMap(arg => externals_expr(arg, locals)))
+    case 'elambda': return externals_expr(expr[1], locals.concat(unwrapList(expr[0]).flatMap(pat_names)))
+    case 'eprim': return []
+    case 'estr': return unwrapList(expr[1]).flatMap(v => externals_expr(v[0], locals))
+    case 'elet': {
+      const [ext, loc2] = unwrapList(expr[0]).reduce(([ext, locals], {0: pat, 1: init}) => [
+        ext.concat(externals_expr(init, locals)),
+        locals.concat(pat_names(pat)),
+      ], [[], locals]);
+      return ext.concat(externals_expr(expr[1], loc2));
+    }
+    case 'ematch':
+      return externals_expr(expr[0], locals).concat(
+        unwrapList(expr[1]).flatMap(kase => externals_expr(kase[1], locals.concat(pat_names(kase[0])))))
+  }
+  return []
+}
+
+// `names` is the complement to `externals`; it produces a list of all values *provided* by a given statement.
+// Once we have type checking, we'll also want to report type names produced by a statement (which will have
+// `kind: "type"`).
 const names = stmt => {
   switch (stmt.type) {
     case 'sexpr': return []
@@ -441,22 +550,7 @@ const names = stmt => {
   }
 }
 
-const externals_expr = (expr, locals) => {
-  switch (expr.type) {
-    case 'evar': return locals.includes(expr[0]) ? [] : [{name: expr[0], kind: 'value', loc: expr[1]}]
-    case 'eapp': return externals_expr(expr[0], locals).concat(externals_expr(expr[1], locals))
-    case 'elambda': return externals_expr(expr[1], locals.concat(expr[0]))
-    case 'eprim': return []
-    case 'estr': return unwrapList(expr[1]).flatMap(v => externals_expr(v[0], locals))
-    case 'elet': return externals_expr(expr[1], locals).concat(
-      externals_expr(expr[2], locals.concat(expr[0])))
-    case 'ematch':
-      return externals_expr(expr[0], locals).concat(
-        unwrapList(expr[1]).flatMap(kase => externals_expr(kase[1], locals.concat(pat_names(kase[0])))))
-  }
-  return []
-}
-
+// Produce a list of names that are bound when the pattern matches successfully.
 const pat_names = pat => {
   switch (pat.type) {
     case 'pvar': return [pat[0]]
@@ -468,9 +562,6 @@ const pat_names = pat => {
   return []
 }
 
-const testExt = v =>(externals(parseStmt(v)))
-
-const testNames = v => names(parseStmt(v))
 
 const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {})
 
@@ -482,17 +573,19 @@ const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(
 
 const testCompileStmt = v => compile_stmt(parseStmt(v))()
 
-const sanitize = (raw) => {
+// Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
+const sanitize =  (raw) => {
     for (let [key, val] of Object.entries(sanMap)) {
         raw = raw.replaceAll(key, val);
     }
-    kwdRx.forEach(([rx, res]) => {
-        raw = raw.replaceAll(rx, res);
-    });
-    return raw;
-  }
+    if (kwds.includes(raw)) return '$' + raw
+    return raw
+}
+
 
 const sanMap = {
+    // '$$$$' gets interpreted by replaceAll as '$$', for reasons
+    $: '$$$$',
     '-': '_',
     '+': '$pl',
     '*': '$ti',
@@ -509,22 +602,18 @@ const sanMap = {
     '|': '$bar',
     '()': '$unit',
     '?': '$qe',
-    $: '$$',
   };
 
-const kwdRx = (() => {
+
+const kwds = (() => {
   const kwds =
     'case new var const let if else return super break while for default';
   const rx = [];
-  kwds.split(' ').forEach((kwd) =>
-    rx.push([new RegExp(`^${kwd}$`, 'g'), '$' + kwd]),
-  );
-  return rx;
-  })();
+  return kwds.split(' ')
+})();
 
-const kwdString = '[' + kwdRx.map(([r, v]) => `[${r}, "${v}"]`).join(', ') + ']'
 
-const prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwdRx: kwdString,slash})
+const prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes}) 
 
 return ({type: 'fns', prelude,
   compile, compile_stmt,

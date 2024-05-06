@@ -31,7 +31,7 @@ export const useNode = (
 
     const diff = state.node.loc !== idx;
     if (diff) {
-        throw new Error(`ok cant handle the idx actually changing`);
+        console.warn(`ok cant handle the idx actually changing`);
     }
 
     const pathRef = useLatest(path);
