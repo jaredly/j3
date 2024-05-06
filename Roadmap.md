@@ -1,13 +1,21 @@
 
+# For Export
+
+for the series of artcicle
+
 # The Blorg Porst
 
 - [x] intro.json
 - [x] structured-editor.json
 - [x] encoding.json
 - [x] ast.json
-- [ ]
+- [x] bootstrap.json ... ok I think I'm done with the bootstrap
+
 
 # PLAN Higher up...
+
+- [x] Rich Text spell check only enabled when the node is focused
+- [x] bootstrap should really parse into `pat`s for `let` and `fn`, it's weird to bail.
 
 - [x] right now, clip history that I save to ~500 items?
   - bootstrap.json down to 1.2mb

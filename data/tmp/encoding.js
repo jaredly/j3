@@ -1,7 +1,7 @@
 const valueToNode = (v) => {
   if (typeof v === 'object' && v && 'type' in v) {
     if (v.type === 'cons' || v.type === 'nil') {
-      const un = unwrapArray(v)
+      const un = unwrapList(v)
       return {type: 'array', values: un.map(valueToNode), loc: -1}
     }
     let args = [];
@@ -20,13 +20,9 @@ const valueToNode = (v) => {
 }
 
 const valueToString = (v) => {
-    if (Array.isArray(v)) {
-        return `[${v.map(valueToString).join(', ')}]`;
-    }
-
     if (typeof v === 'object' && v && 'type' in v) {
         if (v.type === 'cons' || v.type === 'nil') {
-            const un = unwrapArray(v);
+            const un = unwrapList(v);
             return '[' + un.map(valueToString).join(' ') + ']';
         }
 
@@ -49,10 +45,16 @@ const valueToString = (v) => {
     if (typeof v === 'function') {
         return '<function>';
     }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+      return '' + v;
+    }
 
-    return '' + v;
+    if (v == null) {
+      return `Unexpected ${v}`;
+    }
+    return 'Unexpected value: ' + JSON.stringify(v);
 };
 
-const unwrapArray = value => value.type === 'nil' ? [] : [value[0], ...unwrapArray(value[1])]
+const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])]
 
 return ({valueToString, valueToNode})

@@ -58,6 +58,15 @@ export const RichText = ({
 
     useAutoFocus(store, idx, 'rich-text', () => editor?.focus());
 
+    const isFocused = useSubscribe(
+        () => {
+            const path = store.getState().at[0]?.start;
+            return path && path[path.length - 1].idx === idx;
+        },
+        (fn) => store.on('selection', fn),
+        [idx],
+    );
+
     const contents = useSubscribe(
         () => {
             const node = store.getState().map[idx];
@@ -103,6 +112,7 @@ export const RichText = ({
             editor={editor}
             theme={'dark'}
             sideMenu={false}
+            spellCheck={isFocused}
             onKeyDown={(evt) => {
                 // console.log('key down', evt.key, editor.document);
                 if (
