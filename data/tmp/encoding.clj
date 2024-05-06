@@ -19,7 +19,7 @@
     
     These utility functions have to be written in JavaScript (instead of our language) because the argument has type any, which our type system will not allow. Once we add Type Classes in Version 2 of the language (L2), we'll be able to drop this JavaScript in favor of an automatically derived type-class instance :). **)
 
-(** valueToNode = (v) => {
+(** const valueToNode = (v) => {
   if (typeof v === 'object' && v && 'type' in v) {
     if (v.type === 'cons' || v.type === 'nil') {
       const un = unwrapList(v)
@@ -41,7 +41,7 @@
 }
  **)
 
-(** valueToString = (v) => {
+(** const valueToString = (v) => {
     if (typeof v === 'object' && v && 'type' in v) {
         if (v.type === 'cons' || v.type === 'nil') {
             const un = unwrapList(v);
@@ -78,6 +78,6 @@
 };
  **)
 
-(** unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])] **)
+(** const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])] **)
 
 (** ({valueToString, valueToNode}) **)

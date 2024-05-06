@@ -1,34 +1,37 @@
 (** ## Bootstrap (js) parser + evaluator **)
 
-(** Because we're using a structured editor for our language, the job of parsing is quite a bit simpler; we just need to turn the CST into the AST, instead of messing around with tokenizing, counting parentheses, etc. **)
+(** Because we're using a structured editor for our language, the job of parsing is quite a bit simpler; we just need to turn the CST into the AST, instead of messing around with tokenizing, counting parentheses, etc. In lisp parlance, we've skipped the "tokenizer" and "reader" steps. **)
 
 (** ## Prelude
     Some basic handy functions **)
 
 (** // turn a javascript array into a linked list with `cons` and `nil`.
-list = (values) => {
+const list = (values) => {
   let v = nil
   for (let i = values.length - 1; i >= 0; i--) {
     v = cons(values[i], v)
   }
   return v
-} **)
+}
+const cons = (a, b) => ({type: 'cons', 0: a, 1: b})
+const nil = {type: 'nil'}
+// unwrap a list into a javascript array
+const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])]
+ **)
 
-(** cons = (a, b) => ({type: 'cons', 0: a, 1: b}) **)
+(,
+    (** list **)
+        [(,
+        (** [1, 2, 3] **)
+            (** {"0":1,"1":{"0":2,"1":{"0":3,"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"} **))
+        (, (** [] **) (** {"type":"nil"} **))])
 
-(** nil = {type: 'nil'} **)
+(, (** unwrapList **) [(, (** list([1, 2, 3]) **) (** [1,2,3] **)) (, (** list([]) **) (** [] **))])
 
-(** // unwrap a list into a javascript array
-unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])] **)
-
-(** unwrapList(list([1,2,3])) **)
-
-(** pair = (a, b) => ({type: ',', 0: a, 1: b}) **)
-
-(** foldr = (init, items, f) => items.length === 0 ? init : f(foldr(init, items.slice(1), f), items[0]) **)
+(** const pair = (a, b) => ({type: ',', 0: a, 1: b}) **)
 
 (** // This will be useful for the `let` and `match` forms, where we expect a list of pairs of nodes.
-makePairs = array => {
+const makePairs = array => {
   const res = [];
   for (let i = 0; i < array.length - 1; i += 2) {
     res.push([array[i], array[i + 1]]);
@@ -40,7 +43,7 @@ makePairs = array => {
 
 (** // turn a runtime value into a nice-to-read string. Roughly corresponds to `show` from Haskell
 // or `repr` from python
-valueToString = (v) => {
+const valueToString = (v) => {
     if (typeof v === 'object' && v && 'type' in v) {
         if (v.type === 'cons' || v.type === 'nil') {
             const un = unwrapList(v);
@@ -72,7 +75,8 @@ valueToString = (v) => {
  **)
 
 (** // These are the CST nodes that we want to ignore while parsing.
-filterBlanks = values => values.filter(n => !['blank', 'comment', 'rich-text', 'comment-node'].includes(n.type)) **)
+const isBlank = n => ['blank', 'comment', 'rich-text', 'comment-node'].includes(n.type)
+const filterBlanks = values => values.filter(node => !isBlank(node)) **)
 
 (** ## Parser **)
 
@@ -108,7 +112,7 @@ filterBlanks = values => values.filter(n => !['blank', 'comment', 'rich-text', '
         (quot/pat pat)
         (quot/quot cst))
 
-(** parse = node => {
+(** const parse = node => {
   switch (node.type) {
     case 'identifier': {
       return parsePrim(node) || c.evar(node.text, node.loc)
@@ -163,7 +167,7 @@ filterBlanks = values => values.filter(n => !['blank', 'comment', 'rich-text', '
   throw new Error(`cant parse ${JSON.stringify(node)}`)
 } **)
 
-(** forms = {
+(** const forms = {
   fn: (loc, args, body) => {
     if (!args || !body) return
     if (args.type !== 'array') return
@@ -210,7 +214,7 @@ filterBlanks = values => values.filter(n => !['blank', 'comment', 'rich-text', '
   ])}),
 } **)
 
-(** c = {
+(** const c = {
   prim: (prim, loc=-1) => ({type: 'eprim', 0: prim, 1: loc}),
   int: (v, loc=-1) => ({type: 'pint', 0: v, 1: loc}),
   bool: (v, loc=-1) => ({type: 'pbool', 0: v, 1: loc}),
@@ -232,12 +236,9 @@ filterBlanks = values => values.filter(n => !['blank', 'comment', 'rich-text', '
 // in-memory data encoding; where data type attributes have numeric indices instead of text labels, and arrays
 // are converted to linked lists.
 // We also prefix the constructor names with `cst/` to prevent name conflicts with other types.
-fromNode = node => {
+const fromNode = node => {
+  if (isBlank(node)) return
   switch (node.type) {
-    case 'comment':
-    case 'comment-node':
-    case 'rich-text':
-      return
     case 'identifier':
       return {type: 'cst/identifier', 0: node.text, 1: node.loc}
     case 'spread':
@@ -299,7 +300,7 @@ fromNode = node => {
 
 (** // Expects a node of type 'identifier' and if it's an int or true/false, returns
 // the appropriate `prim`
-parsePrim = node => {
+const parsePrim = node => {
   const v = +node.text
   if (v + '' === node.text && Math.floor(v) === v) {
     return c.prim(c.int(v, node.loc), node.loc)
@@ -321,7 +322,7 @@ parsePrim = node => {
 
 (** ## Types **)
 
-(** parseType = node => {
+(** const parseType = node => {
   if (node.type === 'identifier') {
     return {type: 'tcon', 0: node.text, 1: node.loc}
   }
@@ -375,7 +376,7 @@ parsePrim = node => {
 (** ## Patterns **)
 
 (** // Some helper functions for producing pattern AST nodes
-p = {
+const p = {
   prim: (v, loc=-1) => ({type: 'pprim', 0: v, 1: loc}),
   bool: (v, loc=-1) => ({type: 'pbool', 0: v, 1: loc}),
   int: (v, loc=-1) => ({type: 'pint', 0: v, 1: loc}),
@@ -385,7 +386,7 @@ p = {
   nil: loc => p.con('nil', [], loc),
 } **)
 
-(** parsePat = node => {
+(** const parsePat = node => {
   switch (node.type) {
     case 'identifier':
       switch(node.text) {
@@ -435,14 +436,9 @@ p = {
 
 (** ## Statements **)
 
-(** parseStmt = (node) => {
+(** const parseStmt = (node) => {
+  if (isBlank(node)) return
   switch (node.type) {
-    // Ignore blanks and comments
-    case 'blank':
-    case 'comment':
-    case 'comment-node':
-    case 'rich-text':
-      return;
     // Check for toplevel forms
     case 'list':
       const values = filterBlanks(node.values)
@@ -459,7 +455,7 @@ p = {
   return inner ? {type: 'sexpr', 0: inner, 1: node.loc} : inner
 } **)
 
-(** stmtForms = {
+(** const stmtForms = {
   deftype(loc, head, ...tail) {
     if (!head || !tail.length) return
     // handling both `(deftype expr` (no type arg) and `(deftype (list a)` (some type args)
@@ -504,7 +500,7 @@ p = {
 
 (** To evaluate our code in this bootstrap environment, we're treating the AST as a very basic "bytecode" that we're evaluating in a "virtual machine". Evaluating a program, in this paradigm, simply consists of walking each node of the tree and "reducing" it to a runtime value. **)
 
-(** evaluate = (node, scope) => {
+(** const evaluate = (node, scope) => {
   if (!scope) throw new Error(`evaluate called without scope`)
   switch (node.type) {
     // For primitives, we trivially produce the contained value
@@ -533,6 +529,7 @@ p = {
     // For `let`, we go through each binding, evaluate the provided `init` against the pattern, and add any bindings to the scope.
     // We're doing the evaluations in *series* instead of *parallel* to allow later bindings to refer to previous ones.
     // so you can do `(let [a 2 b (+ a 4)] b)` and have it evaluate correctly.
+    // Note that this method doesn't allow for self-recursion in let bindings. We'll relax that restriction in the self-hosted compiler.
     case 'elet':
       const inner = unwrapList(node[0]).reduce((scope, {0: pat, 1: init}) => {
         const value = evaluate(init, scope)
@@ -579,7 +576,7 @@ p = {
 // pattern to a given value.
 // If `evalPat` returns `null`, that means that pattern *does not* match the value; otherwise
 // it returns a mapping of variable names to bound values.
-evalPat = (node, v) => {
+const evalPat = (node, v) => {
   switch (node.type) {
     case 'pany': return {}
     case 'pprim': return v === node[0][0] ? {} : null
@@ -609,7 +606,7 @@ evalPat = (node, v) => {
         (, [(, a b) (, 10 20)] (** {"a":10,"b":20} **))
         (, [[1 _ ..rest] [1 2 3 4]] (** {"rest": list([3, 4])} **))])
 
-(** testEnv = {
+(** const testEnv = {
   '$co': a => b => pair(a, b),
   cons: a => b => ({type: 'cons', 0: a, 1: b}),
   nil: {type: 'nil'},
@@ -618,7 +615,7 @@ evalPat = (node, v) => {
 } **)
 
 (** // "A\\nB" -> "A\nB"
-unescapeSlashes = (n) =>
+const unescapeSlashes = (n) =>
     n.replaceAll(/\\./g, (m) => {
         if (m[1] === 'n') {
             return '\n';
@@ -636,7 +633,7 @@ unescapeSlashes = (n) =>
     (** unescapeSlashes **)
         [(, "\n" "\n") (, "\\n" "\n") (, "\\\\n" "\\n") (, "\\\\" "\\") (, "\\\n" "\\\n")])
 
-(** evaluateStmt = (node, env) => {
+(** const evaluateStmt = (node, env) => {
   switch (node.type) {
     case 'sexpr': return evaluate(node[0], env)
     case 'sdef':
@@ -657,7 +654,7 @@ unescapeSlashes = (n) =>
 // so `(cons a (list a))` produces `a => b => ({type: 'cons', 0: a, 1: b})`
 // and `(ok v)` produces `a => ({type: 'ok', 0: a})`
 // and `(nil)` produces `({type: 'nil'})`
-constrFn = (name, args) => {
+const constrFn = (name, args) => {
   const next = (args) => {
     if (args.type === 'nil') return values => ({type: name, ...values})
     return values => arg => next(args[1])([...values, arg])
@@ -665,7 +662,7 @@ constrFn = (name, args) => {
   return next(args)([])
 } **)
 
-(** evalStmts = stmts => {
+(** const evalStmts = stmts => {
   if (stmts.type !== 'array') throw new Error('need array')
   const env = {...testEnv} // evaluateStmt might mutate the `env` so we need to make a new obj here
   let res
@@ -697,7 +694,7 @@ constrFn = (name, args) => {
 // It is used to sort toplevels in the structured editor so that evaluation happens in the
 // correct dependency order, and for detecting circular dependencies (which need to be
 // evaluated as a group).
-externals = stmt => {
+const externals = stmt => {
   switch (stmt.type) {
     case 'sexpr': return externals_expr(stmt[0], [])
     case 'sdef': return externals_expr(stmt[1], [stmt[0]])
@@ -728,7 +725,7 @@ externals = stmt => {
                                          (pat-loop target rest (+ i 1) inner)))))
             (** [{"name":"compile-pat","kind":"value","loc":855},{"name":"+","kind":"value","loc":868}] **))])
 
-(** externals_expr = (expr, locals) => {
+(** const externals_expr = (expr, locals) => {
   switch (expr.type) {
     case 'evar': return locals.includes(expr[0]) ? [] : [{name: expr[0], kind: 'value', loc: expr[1]}]
     case 'eapp': return externals_expr(expr[0], locals).concat(unwrapList(expr[1]).flatMap(arg => externals_expr(arg, locals)))
@@ -752,7 +749,7 @@ externals = stmt => {
 (** // `names` is the complement to `externals`; it produces a list of all values *provided* by a given statement.
 // Once we have type checking, we'll also want to report type names produced by a statement (which will have
 // `kind: "type"`).
-names = stmt => {
+const names = stmt => {
   switch (stmt.type) {
     case 'sexpr': return []
     case 'sdef': return [{name: stmt[0], kind: 'value', loc: stmt[2]}]
@@ -769,7 +766,7 @@ names = stmt => {
             (** [{"name":"some","kind":"value","loc":730},{"name":"none","kind":"value","loc":733}] **))])
 
 (** // Produce a list of names that are bound when the pattern matches successfully.
-pat_names = pat => {
+const pat_names = pat => {
   switch (pat.type) {
     case 'pvar': return [pat[0]]
     case 'pany': return []
@@ -792,20 +789,20 @@ pat_names = pat => {
   fromNode: x => x,
   toNode: x => x}) **)
 
-(** makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {}) **)
+(** const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {}) **)
 
-(** compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)` **)
+(** const compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)` **)
 
-(** compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
+(** const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
   unwrapList(ast[1]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
 }} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)` **)
 
-(** testCompileStmt = v => compile_stmt(parseStmt(v))() **)
+(** const testCompileStmt = v => compile_stmt(parseStmt(v))() **)
 
 ((** testCompileStmt **) (deftype card (red) (black)))
 
 (** // Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
-sanitize =  (raw) => {
+const sanitize =  (raw) => {
     for (let [key, val] of Object.entries(sanMap)) {
         raw = raw.replaceAll(key, val);
     }

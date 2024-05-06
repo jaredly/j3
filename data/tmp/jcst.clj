@@ -4,11 +4,9 @@
 (** ## Prelude
     Some basic handy functions **)
 
-(** cons = (a, b) => ({type: 'cons', 0: a, 1: b}) **)
-
-(** nil = {type: 'nil'} **)
-
-(** arr = (values) => {
+(** const cons = (a, b) => ({type: 'cons', 0: a, 1: b})
+const nil = {type: 'nil'}
+const list = (values) => {
   let v = nil
   for (let i=values.length-1;i>=0;i--) {
     v = cons(values[i], v)

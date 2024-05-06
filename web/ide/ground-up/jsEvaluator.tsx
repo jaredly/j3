@@ -14,8 +14,9 @@ const evalWith = (text: string, values: Record<string, any>, args: Node[]) => {
     return res;
 };
 
-type stmt =
-    | { type: 'raw'; raw: string; args: Node[] }
+type stmt = { type: 'raw'; raw: string; loc: number; names: string[] } | expr;
+type expr =
+    | { type: 'raw-call'; raw: string; args: Node[] }
     | { type: 'cst'; cst: Node };
 
 const serString = (v: any) =>
@@ -30,7 +31,7 @@ const serString = (v: any) =>
 export const jsEvaluator: FullEvalator<
     { values: { [key: string]: any } },
     stmt,
-    stmt | string
+    expr | string
 > = {
     id: 'js-evaluator',
     init() {
@@ -52,9 +53,12 @@ export const jsEvaluator: FullEvalator<
     },
     analysis: {
         names(stmt) {
-            if (stmt.type === 'cst') return [];
-            const { name } = parseAssign(stmt.raw);
-            return name ? [{ kind: 'value', name: name, loc: -1 }] : [];
+            if (stmt.type === 'cst' || stmt.type == 'raw-call') return [];
+            return getNames(stmt.raw).map((name) => ({
+                name,
+                kind: 'value',
+                loc: stmt.loc,
+            }));
         },
         externalsStmt(stmt) {
             if (stmt.type === 'cst') return [];
@@ -75,6 +79,10 @@ export const jsEvaluator: FullEvalator<
             }));
         },
         stmtSize(stmt) {
+            if (stmt.type === 'raw' || stmt.type === 'raw-call') {
+                return stmt.raw.split('\n').filter((n) => !n.match(/^\s*\/\//))
+                    .length;
+            }
             return 1;
         },
         exprSize(expr) {
@@ -95,10 +103,21 @@ export const jsEvaluator: FullEvalator<
             return { stmt: null, errors: [] };
         }
         if (node.type === 'raw-code') {
-            return {
-                stmt: { type: 'raw', raw: node.raw, args: [] },
-                errors: [],
-            };
+            const names = getNames(node.raw);
+            return names.length
+                ? {
+                      stmt: {
+                          type: 'raw',
+                          raw: node.raw,
+                          names,
+                          loc: node.loc,
+                      },
+                      errors: [],
+                  }
+                : {
+                      errors: [],
+                      stmt: { type: 'raw-call', raw: node.raw, args: [] },
+                  };
         }
         if (
             node.type === 'identifier' &&
@@ -107,7 +126,12 @@ export const jsEvaluator: FullEvalator<
                 node.text === 'false')
         ) {
             return {
-                stmt: { type: 'raw', raw: node.text, args: [] },
+                stmt: {
+                    type: 'raw-call',
+                    raw: node.text,
+                    args: [],
+                    loc: node.loc,
+                },
                 errors: [],
             };
         }
@@ -132,11 +156,24 @@ export const jsEvaluator: FullEvalator<
             node.values.length >= 1 &&
             node.values[0].type === 'raw-code'
         ) {
+            const names = getNames(node.values[0].raw);
+            if (names.length) {
+                return {
+                    stmt: null,
+                    errors: [
+                        [
+                            node.values[0].loc,
+                            `Can't declare toplevel const in an expression`,
+                        ],
+                    ],
+                };
+            }
             return {
                 stmt: {
-                    type: 'raw',
+                    type: 'raw-call',
                     raw: node.values[0].raw,
                     args: node.values.slice(1),
+                    loc: node.loc,
                 },
                 errors: [],
             };
@@ -148,6 +185,14 @@ export const jsEvaluator: FullEvalator<
             return { expr: slash(node.first.text), errors: [] };
         }
         const { stmt, errors } = this.parse(node);
+        if (stmt?.type === 'raw') {
+            return {
+                expr: null,
+                errors: [
+                    [node.loc, `Can't declare toplevel const in an expression`],
+                ],
+            };
+        }
         return { expr: stmt, errors };
     },
     evaluate(expr, env, meta) {
@@ -171,8 +216,8 @@ export const jsEvaluator: FullEvalator<
                         : JSON.stringify(stmt.cst) ?? '';
                     return;
                 }
-                const { name, text } = parseAssign(stmt.raw);
-                if (stmt.args.length || !name) {
+                // const { name, text } = parseAssign(stmt.raw);
+                if (stmt.type === 'raw-call') {
                     try {
                         const res = evalWith(
                             'return ' + stmt.raw.trim(),
@@ -192,26 +237,33 @@ export const jsEvaluator: FullEvalator<
                     return;
                 }
 
-                return { key, name, text };
+                return { key, stmt };
             })
-            .filter(filterNulls);
+            .filter(
+                (
+                    x,
+                ): x is { key: string; stmt: Extract<stmt, { type: 'raw' }> } =>
+                    x != null,
+            );
         if (entries.length) {
             const source = `${entries
-                .map((e) => `const ${e.name} = ${e.text.trim()}`)
+                .map((e) => e.stmt.raw)
                 .join('\n')};\nreturn {${entries
-                .map((e) => e.name)
+                .flatMap((e) => e.stmt.names)
                 .join(',')}}`;
             try {
                 const res = evalWith(source, env.values, []);
                 entries.forEach((e) => {
-                    const value = res[e.name];
-                    values[e.name] = value;
-                    env.values[e.name] = value;
-                    display[+e.key] = displayResult
-                        ? displayResult(res)
-                        : typeof value === 'function'
-                        ? '<function>'
-                        : JSON.stringify(value) ?? '';
+                    display[+e.key] = e.stmt.names.flatMap((name) => {
+                        const value = res[name];
+                        values[name] = value;
+                        env.values[name] = value;
+                        return displayResult
+                            ? displayResult(res)
+                            : typeof value === 'function'
+                            ? [`${name} = <function>`]
+                            : [name + ' = ' + (JSON.stringify(value) ?? '')];
+                    });
                 });
             } catch (err) {
                 entries.forEach((e) => {
@@ -228,7 +280,7 @@ export const jsEvaluator: FullEvalator<
     toFile(state: NUIState, target?: number) {
         const tops = findTops(state);
         let res;
-        let names: string[] = [];
+        let allNames: string[] = [];
         const source = tops
             .map((top) => {
                 const node = fromMCST(top.top, state.map);
@@ -237,24 +289,33 @@ export const jsEvaluator: FullEvalator<
                     res = node.raw;
                     return;
                 }
-                const { name, text } = parseAssign(node.raw);
-                if (!name) return;
-                names.push(name);
-                return `const ${name} = ${text.trim()}`;
+                const names = getNames(node.raw);
+                if (!names.length) return;
+                allNames.push(...names);
+                return node.raw;
             })
             .filter(filterNulls);
         return {
             js:
                 source.join('\n\n') +
-                `\n\nreturn ${res ?? `{${names.join(',')}}`}`,
+                `\n\nreturn ${res ?? `{${allNames.join(',')}}`}`,
         };
     },
 };
 
-const parseAssign = (text: string) => {
-    const match = text.match(/^(\/\/[^\n]+\n)*\s*(\w+)\s*=[^>]/);
-    if (match) {
-        return { name: match[2], text: text.slice(match[0].length) };
-    }
-    return { name: null, text };
+// const parseAssign = (text: string) => {
+//     const match = text.match(/^(\/\/[^\n]+\n)*\s*(\w+)\s*=[^>]/);
+//     if (match) {
+//         return { name: match[2], text: text.slice(match[0].length) };
+//     }
+//     return { name: null, text };
+// };
+
+const getNames = (text: string) => {
+    const names: string[] = [];
+    text.replace(
+        /^const\s+(\w+)\s*=[^>=]/gm,
+        (_, name) => (names.push(name), ''),
+    );
+    return names;
 };
