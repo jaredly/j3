@@ -76,7 +76,8 @@
 
 (defn loop [v f] (f v (fn [nv] (loop nv f))))
 
-(** ## Our AST & CST **)
+(** ## Our AST & CST
+    Provided for reference **)
 
 (deftype cst
     (cst/list (list cst) int)
@@ -129,10 +130,7 @@
 
 (** ## Parsing **)
 
-(defn tapps [items l]
-    (match items
-        [one]        one
-        [one ..rest] (tapp (tapps rest l) one l)))
+(** ## Types **)
 
 (defn parse-type [type]
     (match type
@@ -185,6 +183,8 @@
                     16639)
                 16639))])
 
+(** ## Patterns **)
+
 (defn parse-pat [pat]
     (match pat
         (cst/id "_" l)                         (pany l)
@@ -194,25 +194,67 @@
         (cst/id id l)                          (match (string-to-int id)
                                                    (some int) (pprim (pint int l) l)
                                                    _          (pvar id l))
-        (cst/array [] l)                       (pcon "nil" -1 [] l)
+        (cst/array [] l)                       (pcon "nil" l [] l)
         (cst/array [(cst/spread inner _)] _)   (parse-pat inner)
-        (cst/array [one ..rest] l)             (pcon "cons" -1 [(parse-pat one) (parse-pat (cst/array rest l))] l)
-        (cst/list [] l)                        (pcon "()" -1 [] l)
+        (cst/array [one ..rest] l)             (pcon "cons" l [(parse-pat one) (parse-pat (cst/array rest l))] l)
+        (cst/list [] l)                        (pcon "()" l [] l)
         (cst/list [(cst/id "," il) ..args] l)  (parse-pat-tuple args il l)
         (cst/list [(cst/id name il) ..rest] l) (pcon name il (map rest parse-pat) l)
         _                                      (fatal "parse-pat mo match ${(valueToString pat)}")))
 
 (defn parse-pat-tuple [items il l]
     (match items
-        []           (pcon "," -1 [] il)
+        []           (pcon "," l [] il)
         [one]        (parse-pat one)
-        [one ..rest] (pcon "," -1 [(parse-pat one) (parse-pat-tuple rest il l)] l)))
+        [one ..rest] (pcon "," l [(parse-pat one) (parse-pat-tuple rest il l)] l)))
 
-(parse-pat (@@ [1 2 ..a]))
+(,
+    parse-pat
+        [(, (@@ 1) (pprim (pint 1 16818) 16818))
+        (, (@@ a) (pvar "a" 16824))
+        (, (@@ _) (pany 16830))
+        (, (@@ (some v)) (pcon "some" 16853 [(pvar "v" 16854)] 16852))
+        (, (@@ []) (pcon "nil" 16872 [] 16872))
+        (,
+        (@@ [1 2])
+            (pcon
+            "cons"
+                16885
+                [(pprim (pint 1 16886) 16886)
+                (pcon
+                "cons"
+                    16885
+                    [(pprim (pint 2 16887) 16887) (pcon "nil" 16885 [] 16885)]
+                    16885)]
+                16885))
+        (,
+        (@@ [1 ..b])
+            (pcon
+            "cons"
+                17003
+                [(pprim (pint 1 17004) 17004) (pvar "b" 17005)]
+                17003))
+        (,
+        (@@ (, 1 2))
+            (pcon
+            ","
+                16928
+                [(pprim (pint 1 16930) 16930) (pprim (pint 2 16931) 16931)]
+                16928))
+        (,
+        (@@ (, 1 2 3))
+            (pcon
+            ","
+                16958
+                [(pprim (pint 1 16960) 16960)
+                (pcon
+                ","
+                    16958
+                    [(pprim (pint 2 16961) 16961) (pprim (pint 3 16962) 16962)]
+                    16958)]
+                16958))])
 
-(parse-pat (@@ (, 1 2)))
-
-(parse-pat (@@ (, 1 2 3)))
+(** ## Expressions **)
 
 (defn parse-expr [cst]
     (match cst
@@ -304,11 +346,11 @@
                 [(,
                 (pcon
                     ","
-                        -1
+                        7785
                         [(pprim (pint 1 7787) 7787)
                         (pcon
                         ","
-                            -1
+                            7785
                             [(pprim (pint 2 7788) 7788) (pprim (pint 3 7790) 7790)]
                             7785)]
                         7785)
@@ -383,7 +425,7 @@
         (,
         (@@ (fn [(, a b)] a))
             (elambda
-            [(pcon "," -1 [(pvar "a" 1913) (pvar "b" 1914)] 1911)]
+            [(pcon "," 1911 [(pvar "a" 1913) (pvar "b" 1914)] 1911)]
                 (evar "a" 1915)
                 1908))
         (,
@@ -402,7 +444,7 @@
         (@@ (let [(, a b) (, 2 3)] 1))
             (elet
             [(,
-                (pcon "," -1 [(pvar "a" 1794) (pvar "b" 1795)] 1792)
+                (pcon "," 1792 [(pvar "a" 1794) (pvar "b" 1795)] 1792)
                     (eapp
                     (evar "," 1797)
                         [(eprim (pint 2 1798) 1798) (eprim (pint 3 1799) 1799)]
@@ -412,7 +454,10 @@
         (, (@@ (@@ 1)) (equot (quot/quot (cst/id "1" 3110)) 3108))
         (, (@@ (@ 1)) (equot (quot/expr (eprim (pint 1 3124) 3124)) 3122))])
 
-(defn mk-deftype [id li args items l]
+(** ## Statements **)
+
+((** A helper for producing the sdeftype form. **)
+    defn mk-deftype [id li args items l]
     (sdeftype
         id
             li
@@ -465,10 +510,6 @@
                                                                                                  (cst/array _ l)    l
                                                                                                  (cst/string _ _ l) l
                                                                                                  (cst/spread _ l)   l))))
-
-(parse-expr (@@ (fn [a] 1)))
-
-(parse-expr (@@ (@! 12)))
 
 (,
     parse-stmt

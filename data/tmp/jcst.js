@@ -7,7 +7,6 @@ const list = (values) => {
   }
   return v
 }
-
 const unwrapList = value => {
   const res = [];
   for (; value.type === 'cons'; value = value[1]) {
@@ -15,16 +14,8 @@ const unwrapList = value => {
   }
   return res;
 }
-
 const pair = (a, b) => ({type: ',', 0: a, 1: b})
 
-const makePairs = array => {
-  const res = [];
-  for (let i=0; i<array.length; i+=2) {
-    res.push([array[i], array[i + 1]]);
-  }
-  return res
-}
 
 const fromNode = node => {
   switch (node.type) {
@@ -55,6 +46,22 @@ const fromNode = node => {
   }
 }
 
+// This is a little helper to make our tests easier to read
+const cstToString = (cst) => {
+    switch (cst.type) {
+      case 'cst/id': return `${cst[0]}:${cst[1]}`
+      case 'cst/list': return `(${unwrapList(cst[0]).map(cstToString).join(' ')}):${cst[1]}`
+      case 'cst/array': return `[${unwrapList(cst[0]).map(cstToString).join(' ')}]:${cst[1]}`
+      case 'cst/record': return `{${unwrapList(cst[0]).map(cstToString).join(' ')}}:${cst[1]}`
+      case 'cst/spread': return `..${cstToString(cst[0])}:${cst[1]}`
+      case 'cst/string':
+        return `"${cst[0]}${
+          unwrapList(cst[1]).map(t => `\${${cstToString(t[0])}}${t[1][0]}:${t[1][1]}`)
+        }":${cst[2]}`
+    }
+};
+
+
 const toNode = node => {
   switch (node.type) {
     case 'cst/id':
@@ -78,40 +85,5 @@ const toNode = node => {
       }
   }
 }
-
-const valueToString = (v) => {
-    if (Array.isArray(v)) {
-        return `[${v.map(valueToString).join(', ')}]`;
-    }
-
-    if (typeof v === 'object' && v && 'type' in v) {
-        if (v.type === 'cons' || v.type === 'nil') {
-            const un = unwrapList(v);
-            return '[' + un.map(valueToString).join(' ') + ']';
-        }
-
-        let args = [];
-        for (let i = 0; i in v; i++) {
-            args.push(v[i]);
-        }
-        return `(${v.type}${args
-            .map((arg) => ' ' + valueToString(arg))
-            .join('')})`;
-    }
-    if (typeof v === 'string') {
-        if (v.includes('"') && !v.includes("'")) {
-            return (
-                "'" + JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"') + "'"
-            );
-        }
-        return JSON.stringify(v);
-    }
-    if (typeof v === 'function') {
-        return '<function>';
-    }
-
-    return '' + v;
-};
-
 
 return ({type: 'fns', fromNode, toNode})

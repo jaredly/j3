@@ -2,51 +2,6 @@ import { Node } from '../../../../src/types/cst';
 import { filterNulls } from '../../../custom/old-stuff/filterNulls';
 import { arr, filterBlanks, unwrapArray, wrapArray } from './parse';
 
-export const arrEq = <t>(
-    eq: (o: t, t: t) => boolean,
-    one: arr<t>,
-    two: arr<t>,
-): boolean => {
-    if (one.type === 'nil') {
-        return two.type === 'nil';
-    }
-    if (two.type === 'nil') {
-        return false;
-    }
-    if (!eq(one[0], two[0])) {
-        return false;
-    }
-    return arrEq(eq, one[1], two[1]);
-};
-
-export const jscstEq = (one: jcst, two: jcst): boolean => {
-    if (one.type !== two.type) return false;
-    const t = two as typeof one;
-    switch (one.type) {
-        case 'cst/array':
-        case 'cst/list':
-        case 'cst/record':
-            return arrEq(jscstEq, one[0], two[0] as any);
-        case 'cst/identifier':
-            return one[0] === two[0];
-        case 'cst/empty-spread':
-            return two.type === 'cst/empty-spread';
-        case 'cst/spread':
-            return two.type === 'cst/spread' && jscstEq(one[0], two[0]);
-        case 'cst/string':
-            return (
-                one[0] === two[0] &&
-                arrEq(
-                    (one, two) => {
-                        return one[1] === two[1] && jscstEq(one[0], two[0]);
-                    },
-                    one[1],
-                    (two as any)[1],
-                )
-            );
-    }
-};
-
 export type jcst =
     | { type: 'cst/list'; 0: arr<jcst>; 1: number }
     | { type: 'cst/array'; 0: arr<jcst>; 1: number }

@@ -11,15 +11,20 @@ for the series of artcicle
 - [x] ast.json
 - [x] bootstrap.json
 - [x] self-1.json
+- [x] jcst.json
 - [-] parse-self.json
   - [x] executing
   - [ ] annotated
 - [ ] algw-fast.json
+  - [x] executing
   - I think I probably want to do a stripped-down version first?
     Just like with the parsing & code generation.
 
 
 # PLAN Higher up...
+
+- [ ] I ... kinda want ... the inferred `type` to be displayed directly *above* the toplevel.
+  to avoid jumping, should we reserve space for everything there? Or just for toplevels with a single named export?
 
 Innn the interest of scrappiness; once we have a bare-bones `parse + compile` for self-hosting,
 let's get right to type inference.
