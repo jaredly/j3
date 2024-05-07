@@ -81,7 +81,11 @@ export type stmt =
     | {
           type: 'sdeftype';
           0: string;
-          1: arr<{ type: ',,'; 0: string; 1: arr<type_>; 2: number }>;
+          1: arr<{
+              type: ',';
+              0: string;
+              1: { type: ','; 0: arr<type_>; 1: number };
+          }>;
       }
     | { type: 'sdef'; 0: string; 1: expr }
     | { type: 'sexpr'; 0: expr; 1: number };
@@ -118,10 +122,9 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                     case 'deftype': {
                         if (values.length < 2) return;
                         const vvalues: {
-                            type: ',,';
+                            type: ',';
                             0: string;
-                            1: arr<type_>;
-                            2: number;
+                            1: { type: ','; 0: arr<type_>; 1: number };
                         }[] = [];
                         for (let item of filterBlanks(values.slice(2))) {
                             if (
@@ -145,10 +148,13 @@ export const parseStmt = (node: Node, ctx: Ctx): stmt | undefined => {
                                 }
                             }
                             vvalues.push({
-                                type: ',,',
+                                type: ',',
                                 0: item.values[0].text,
-                                1: wrapArray(args),
-                                2: item.values[0].loc,
+                                1: {
+                                    type: ',',
+                                    0: wrapArray(args),
+                                    1: item.values[0].loc,
+                                },
                             });
                         }
                         let name;

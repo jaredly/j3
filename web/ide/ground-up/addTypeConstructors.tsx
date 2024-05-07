@@ -4,7 +4,11 @@ export function addTypeConstructors(
     stmt: {
         type: 'sdeftype';
         0: string;
-        1: arr<{ type: ',,'; 0: string; 1: arr<type_>; 2: number }>;
+        1: arr<{
+            type: ',';
+            0: string;
+            1: { type: ','; 0: arr<type_>; 1: number };
+        }>;
     },
     env: { [key: string]: any },
 ) {
@@ -20,6 +24,6 @@ export function addTypeConstructors(
             return (values: any[]) => (arg: any) =>
                 next(args[1])([...values, arg]);
         };
-        env[cname] = next(constr[1])([]);
+        env[cname] = next(constr[1][0])([]);
     });
 }

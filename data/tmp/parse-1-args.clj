@@ -920,6 +920,10 @@
 
 (j/compile
     0
+        (compile/j (run/nil-> (parse-expr (@@ (let [x 101] 1)))) map/nil))
+
+(j/compile
+    0
         (map/expr
         simplify-js
             (compile/j (run/nil-> (parse-expr (@@ (let [a 1 a (+ a 1)] a)))) map/nil)))
@@ -973,8 +977,10 @@
                                                                                 "});"]))))))))))
 
 (j/compile
-    0
+    100
         (map/expr simplify-js (compile/j example-expr map/nil)))
+
+1029
 
 (j/compile 0 (compile/j example-expr map/nil))
 
@@ -1133,8 +1139,8 @@
         (cst/identifier "false" l)                                          (<- (eprim (pbool false l) l))
         (cst/string first templates l)                                      (let-> [
                                                                                 tpls (map->
-                                                                                         (fn [(,, expr suffix l)]
-                                                                                             (let-> [expr (parse-expr expr) ] (<- (,, expr suffix l))))
+                                                                                         (fn [(, expr suffix l)]
+                                                                                             (let-> [expr (parse-expr expr) ] (<- (, expr suffix l))))
                                                                                              templates)]
                                                                                 (<- (estr first tpls l)))
         (cst/identifier id l)                                               (<-
@@ -1259,7 +1265,7 @@
                 [(, (pprim (pbool true 4619) 4619) (evar "a" 4625))
                 (, (pany 4619) (evar "b" 4626))]
                 4619))
-        (, (@@ "a${1}b") (estr "a" [(,, (eprim (pint 1 3610) 3610) "b" 3611)] 3608))
+        (, (@@ "a${1}b") (estr "a" [(, (eprim (pint 1 3610) 3610) "b" 3611)] 3608))
         (,
         (@@ [1 2])
             (eapp

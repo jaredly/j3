@@ -770,19 +770,28 @@ dot
 (defn externals-stmt [stmt]
     (bag/to-list
         (match stmt
-            (sdeftype string _ free constructors _) (let [frees (set/from-list (map free fst))]
-                                                        (many
-                                                            (map
-                                                                constructors
-                                                                    (fn [constructor]
-                                                                    (match constructor
-                                                                        (, name l args _) (match args
-                                                                                              [] empty
-                                                                                              _  (many (map args (externals-type frees)))))))))
-            (stypealias name _ args body _)         (let [frees (set/from-list (map args fst))]
-                                                        (externals-type frees body))
-            (sdef name _ body _)                    (externals (set/add set/nil name) body)
-            (sexpr expr _)                          (externals set/nil expr))))
+            (sdeftype name l free constructors _) (let [frees (set/from-list (map free fst))]
+                                                      (many
+                                                          [(one (,, name (value) l))
+                                                              ..(map
+                                                              constructors
+                                                                  (fn [constructor]
+                                                                  (match constructor
+                                                                      (, name l args _) (match args
+                                                                                            [] empty
+                                                                                            _  (many (map args (externals-type frees)))))))]))
+            (stypealias name _ args body _)       (let [frees (set/from-list (map args fst))]
+                                                      (externals-type frees body))
+            (sdef name _ body _)                  (externals (set/add set/nil name) body)
+            (sexpr expr _)                        (externals set/nil expr))))
+
+(,
+    (fn [x] (externals-stmt (parse-stmt x)))
+        [(, (@@ (def x 10)) [])
+        (,
+        (@@ (deftype hi (one int)))
+            [(,, "hi" (value) 16457) (,, "int" (type) 16460)])
+        (, (@@ (typealias lol int)) [(,, "int" (type) 16480)])])
 
 (** ## Export **)
 

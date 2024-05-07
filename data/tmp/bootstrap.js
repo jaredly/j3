@@ -9,7 +9,10 @@ const list = (values) => {
 const cons = (a, b) => ({type: 'cons', 0: a, 1: b})
 const nil = {type: 'nil'}
 // unwrap a list into a javascript array
-const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])]
+const unwrapList = (value, at=0) => {
+  if (at > 100) debugger
+  return value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1], at+1)]
+  }
 
 
 const pair = (a, b) => ({type: ',', 0: a, 1: b})
@@ -136,6 +139,18 @@ const forms = {
       1: parse(body),
       2: loc
     }
+  },
+  'let->': (loc, bindings, body) => {
+    if (!bindings || !body) return;
+    if (bindings.type !== 'array') return
+    const pairs = makePairs(filterBlanks(bindings.values))
+    return pairs.reduceRight(
+      (body, [pat, init]) => c.app(c.evar('>>=', loc), list([
+        parse(init),
+        {type: 'elambda', 0: list([parsePat(pat)]), 1: body, 2: loc}
+      ]), loc),
+      parse(body)
+    )
   },
   match: (loc, target, ...rest) => {
     if (!target || !rest.length) return
@@ -346,6 +361,9 @@ const parseStmt = (node) => {
 }
 
 const stmtForms = {
+  typealias(loc, head, tail) {
+    return {type: 'stypealias'}
+  },
   deftype(loc, head, ...tail) {
     if (!head || !tail.length) return
     // handling both `(deftype expr` (no type arg) and `(deftype (list a)` (some type args)
@@ -397,8 +415,9 @@ const evaluate = (node, scope) => {
     // We use `sanitize` for compatability with the structured editor environment, which expects variable names to be valid javascript names.
     case 'evar':
       var name = node[0]
+      if (name === '()') return null
       if (!Object.hasOwn(scope, name)) {
-        throw new Error(`Variable not in scope: ${name}. ${Object.keys(scope).join(', ')}`)
+        throw new Error(`Variable not in scope: ${name} (${node[1]}). ${Object.keys(scope).join(', ')}`)
       }
       return scope[name]
     // For lambdas, we're producing an arrow function that accepts the right number of (curried) arguments, matches each provided value with the
@@ -452,6 +471,7 @@ const evalPat = (node, v) => {
     case 'pvar':
       return {[node[0]]: v}
     case 'pcon':
+      if (node[0] === '()') return v === null ? {} : null
       if (v.type === node[0]) {
         const args = unwrapList(node[2])
         const scope = {}
@@ -476,6 +496,7 @@ const testEnv = {
   '<': a => b => a < b,
   '+': a => b => a + b,
   '-': a => b => a - b,
+  '()': null
 }
 
 // "A\\nB" -> "A\nB"
@@ -576,6 +597,7 @@ const names = stmt => {
     case 'sdef': return [{name: stmt[0], kind: 'value', loc: stmt[1]}]
     case 'sdeftype': return unwrapList(stmt[3]).map(({0: name, 1: {0: loc}}) => ({name, kind: 'value', loc}))
   }
+  return []
 }
 
 // Produce a list of names that are bound when the pattern matches successfully.

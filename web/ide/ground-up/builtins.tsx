@@ -45,6 +45,7 @@ export function builtins() {
         // Array, tuple
         nil: { type: 'nil' },
         cons: (a: any) => (b: any) => ({ type: 'cons', 0: a, 1: b }),
+        // '()': Symbol('unit'),
         '()': null,
         ',':
             <a, b>(a: a) =>

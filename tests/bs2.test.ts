@@ -54,6 +54,18 @@ const fixtures: Fixture[] = [
         file: 'parse-self.json',
         evaluator: [0, 1],
     },
+    {
+        id: 3,
+        name: 'parse-self + self-1 -> parse-self',
+        file: 'parse-self.json',
+        evaluator: [2, 1],
+    },
+    {
+        id: 4,
+        name: 'parse-self + self-1 -> self-1',
+        file: 'self-1.json',
+        evaluator: [2, 1],
+    },
     // {
     //     id: 2.1,
     //     name: 'bootstrap -> parse-self',

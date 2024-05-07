@@ -342,7 +342,7 @@ const compileStmt = (
             try {
                 result = fn(values);
             } catch (err) {
-                // debugger;
+                debugger;
                 return {
                     env,
                     display: [
@@ -381,6 +381,7 @@ const compileStmt = (
                     display.push(`<null>`);
                 }
             } catch (err) {
+                debugger;
                 return {
                     env,
                     display: [
@@ -407,7 +408,8 @@ const compileStmt = (
         return {
             env,
             display: [
-                `JS Syntax Error: ${(err as Error).message}\n${js}`,
+                `JS Syntax Error: ${(err as Error).message}`,
+                'Names: ' + JSON.stringify(names),
                 { type: 'pre', text: js },
             ],
             values: {},

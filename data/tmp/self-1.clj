@@ -83,7 +83,7 @@
         (cst/array (list cst) int)
         (cst/record (list cst) int)
         (cst/spread cst int)
-        (cst/string string (list (,, cst string int)) int))
+        (cst/string string (list (, cst string int)) int))
 
 (deftype prim (pint int int) (pbool bool int))
 
@@ -107,7 +107,8 @@
             (list (, string (list type) int))
             int)
         (sdef string int expr int)
-        (sexpr expr int))
+        (sexpr expr int)
+        (stypealias))
 
 (** ## Statements **)
 
@@ -126,7 +127,8 @@
                                                     body              (constructor-fn
                                                                           name
                                                                               (map (indices args) (fn [i] "v${(int-to-string i)}")))]
-                                                    "const ${(sanitize name)} = ${arrows}${body}"))))))
+                                                    "const ${(sanitize name)} = ${arrows}${body}"))))
+        (stypealias)                "/* type alias */"))
 
 (defn constructor-fn [name args]
     "({type: \"${name}\"${(join "" (mapi 0 args (fn [i arg] ", ${(int-to-string i)}: ${arg}")))}})")

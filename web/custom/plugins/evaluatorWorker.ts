@@ -10,10 +10,12 @@ export const evaluatorWorker: WorkerPlugin<
         return true;
     },
     parse(node, errors_, evaluator) {
+        debugger;
         const { expr, errors } = evaluator.parseExpr(node);
         if (!expr) {
-            console.log(node);
-            return null;
+            console.error('Evaluator plugin unable to parse', node);
+            console.error(errors);
+            return null; // 'Evaluator plugin unable to parse: ' + JSON.stringify(errors);
         }
         errors.forEach(([k, v]) => add(errors_, k, v));
         return {
@@ -43,8 +45,12 @@ export const evaluatorWorker: WorkerPlugin<
     // and we just do a thing where it's like
     // "send your evaluator..."
     // OK SO
-    process() {
+    process(parsed, meta, evaluator) {
+        // if (!parsed) {
+
+        // const { expr, errors } = evaluator.parseExpr(node);
         return 'hello';
+        // }
         // if (!options || !options.endsWith('.js')) {
         //     // throw new Error(`Bad name`);
         //     return {
