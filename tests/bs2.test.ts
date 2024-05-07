@@ -81,6 +81,18 @@ const fixtures: Fixture[] = [
         file: 'parse-self.json',
         evaluator: [2.1, 2],
     },
+    {
+        id: 4,
+        name: 'selfed-self -> algw-fast',
+        file: 'algw-fast.json',
+        evaluator: [2.1, 2],
+    },
+    {
+        id: 5,
+        name: 'selfed-self+type -> parse-self',
+        file: 'parse-self.json',
+        evaluator: [2.1, 2, 4],
+    },
     //
     // {
     //     id: 2.1,

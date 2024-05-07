@@ -713,6 +713,21 @@ return $co(state)(v)
 throw new Error('Failed to match. ' + valueToString($target));
 })(f(state)));
 
+const unwrap_type_tuple = (arg2) => loop(arg2)((arg) => (recur) => (($target) => {
+if ($target.type === "tapp" &&
+$target[0].type === "tapp" &&
+$target[0][0].type === "tcon" &&
+$target[0][0][0] === ",") {
+{
+let arg1 = $target[0][1];
+let arg2 = $target[1];
+return cons(arg1)(recur(arg2))
+}
+}
+return cons(arg)(nil)
+throw new Error('Failed to match. ' + valueToString($target));
+})(arg));
+
 const scheme = (v0) => (v1) => ({type: "scheme", 0: v0, 1: v1})
 const pany = (v0) => ({type: "pany", 0: v0})
 const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
@@ -786,6 +801,19 @@ let l = $target[2];
 return (({1: r, 0: iargs}) => ((args) => (({1: free, 0: args}) => (({1: free, 0: two}) => $co(and_loc(locs)(l)(`(fn [${join(" ")(rev(args)(nil))}] ${two})`))(free))(tts_inner(r)(free)(locs)))(tts_list(args)(free)(locs)))(cons(a)(iargs)))(unwrap_fn(b))
 }
 }
+if ($target.type === "tapp" &&
+$target[0].type === "tapp" &&
+$target[0][0].type === "tcon" &&
+$target[0][0][0] === ",") {
+{
+let l$co = $target[0][0][1];
+let arg1 = $target[0][1];
+let la = $target[0][2];
+let arg2 = $target[1];
+let l = $target[2];
+return ((args) => (({1: free, 0: args}) => $co(and_loc(locs)(l)(`(, ${join(" ")(rev(args)(nil))})`))(free))(tts_list(args)(free)(locs)))(cons(arg1)(unwrap_type_tuple(arg2)))
+}
+}
 if ($target.type === "tapp") {
 {
 let a = $target[0];
@@ -851,6 +879,19 @@ let la = $target[0][2];
 let b = $target[1];
 let l = $target[2];
 return (({1: r, 0: iargs}) => ((args) => (({1: free, 0: args}) => (({1: free, 0: two}) => $co(cst$sllist(cons(cst$slidentifier("fn")(la))(cons(cst$slarray(rev(args)(nil))(la))(cons(two)(nil))))(l))(free))(ttc_inner(r)(free)))(ttc_list(args)(free)))(cons(a)(iargs)))(unwrap_fn(b))
+}
+}
+if ($target.type === "tapp" &&
+$target[0].type === "tapp" &&
+$target[0][0].type === "tcon" &&
+$target[0][0][0] === ",") {
+{
+let l$co = $target[0][0][1];
+let arg1 = $target[0][1];
+let la = $target[0][2];
+let arg2 = $target[1];
+let l = $target[2];
+return ((args) => (({1: free, 0: args}) => $co(cst$sllist(cons(cst$slidentifier(",")(l$co))(rev(args)(nil)))(l))(free))(ttc_list(args)(free)))(cons(arg1)(unwrap_type_tuple(arg2)))
 }
 }
 if ($target.type === "tapp") {

@@ -7,8 +7,12 @@ export const valueToString = (v: any): string => {
 
     if (typeof v === 'object' && v && 'type' in v) {
         if (v.type === 'cons' || v.type === 'nil') {
-            const un = unwrapArray(v);
-            return '[' + un.map(valueToString).join(' ') + ']';
+            try {
+                const un = unwrapArray(v);
+                return '[' + un.map(valueToString).join(' ') + ']';
+            } catch (err) {
+                return 'invalid list';
+            }
         }
 
         let args = [];

@@ -105,7 +105,7 @@
         string
             int
             (list (, string int))
-            (list (, string (list type) int))
+            (list (, string int (list type) int))
             int)
         (sdef string int expr int)
         (sexpr expr int)
@@ -317,9 +317,7 @@
                                     _  (let [
                                            tpls (map
                                                     tpls
-                                                        (fn [item]
-                                                        (let [(, expr suffix _) item]
-                                                            "${${(compile expr)}}${(fix-slashes suffix)}")))
+                                                        (fn [(, expr suffix _)] "${${(compile expr)}}${(fix-slashes suffix)}"))
                                            ]
                                            "`${(fix-slashes first)}${(join "" tpls)}`"))
         (eprim prim _)          (compile-prim prim)

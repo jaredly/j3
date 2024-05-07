@@ -167,9 +167,9 @@ export const fnsEvaluator = (
             let names: LocedName[] | null = null;
             if (analyze) {
                 try {
-                    names = Object.values(stmts).flatMap((stmt) =>
-                        analyze.names(stmt),
-                    );
+                    names = Object.values(stmts)
+                        .flatMap((stmt) => analyze.names(stmt))
+                        .filter((n) => n.kind === 'value');
                 } catch (err) {
                     console.error(`cant get names`, err);
                     Object.keys(stmts).forEach((k) => {
@@ -227,6 +227,7 @@ export const fnsEvaluator = (
                     .filter((n) => n.kind === 'value')
                     .map((n) => n.name) ?? [];
             const { needed, values } = assembleExternals(externals, env, san);
+            // console.log(`doing evaluate`, needed, values);
             values.$env = {};
             needed.forEach((name) => {
                 const got = values[sanitize(name)];
@@ -269,7 +270,7 @@ const compileStmt = (
     traceMap: TraceMap,
     renderValue: (v: any) => ProduceItem[] = (v) => [valueToString(v)],
     top: number,
-    names?: null | LocedName[],
+    namedValues?: null | LocedName[],
     debugShowJs?: boolean,
 ): {
     env: any;
@@ -289,7 +290,12 @@ const compileStmt = (
             console.error(err);
         }
     }
-    const { needed, values } = assembleExternals(externals, env, san, names);
+    const { needed, values } = assembleExternals(
+        externals,
+        env,
+        san,
+        namedValues,
+    );
 
     let jss;
     try {
@@ -317,13 +323,12 @@ const compileStmt = (
             needed.length
                 ? `{${needed.map(sanitize).concat(['$env']).join(', ')}}`
                 : '_',
-            `{${stmts.length === 1 && !names?.length ? `return ${js}` : js};\n${
-                names
+            `{${
+                stmts.length === 1 && !namedValues?.length ? `return ${js}` : js
+            };\n${
+                namedValues
                     ? 'return {' +
-                      names
-                          .filter((n) => n.kind === 'value')
-                          .map(({ name }) => sanitize(name))
-                          .join(',') +
+                      namedValues.map(({ name }) => sanitize(name)).join(',') +
                       '}'
                     : ''
             }}`,
@@ -337,7 +342,7 @@ const compileStmt = (
             }
         });
         const result_values: { [key: string]: any } = {};
-        if (names?.length) {
+        if (namedValues?.length) {
             let result: { [key: string]: any };
             try {
                 result = fn(values);
@@ -356,11 +361,11 @@ const compileStmt = (
                     values: {},
                 };
             }
-            names.forEach(({ name }) => {
+            namedValues.forEach(({ name, kind }) => {
                 result_values[name] = result[sanitize(name)];
             });
             Object.assign(env.values, result_values);
-            display = names
+            display = namedValues
                 .flatMap(({ name }) =>
                     result_values[name] === undefined
                         ? null
@@ -403,13 +408,18 @@ const compileStmt = (
             );
         }
 
-        return { env, display, values: names?.length ? result_values : {}, js };
+        return {
+            env,
+            display,
+            values: namedValues?.length ? result_values : {},
+            js,
+        };
     } catch (err) {
         return {
             env,
             display: [
                 `JS Syntax Error: ${(err as Error).message}`,
-                'Names: ' + JSON.stringify(names),
+                'Names: ' + JSON.stringify(namedValues),
                 { type: 'pre', text: js },
             ],
             values: {},
@@ -438,6 +448,9 @@ function assembleExternals(
             '$trace',
             'jsonify',
             'valueToString',
+            // lol HACK HACK would be great to remove.
+            // and have the evaluator define what globals needs to
+            // be "implicitly required" for evaluation.
             'evaluateStmt',
             'evaluate',
         ]),
@@ -454,6 +467,14 @@ function assembleExternals(
             }
         } else {
             values[sanitize(name)] = env.values[name];
+        }
+        if (
+            values[sanitize(name)] === undefined &&
+            name !== 'evaluate' &&
+            name !== 'evaluateStmt'
+        ) {
+            debugger;
+            console.log(`missing an external!`, name);
         }
     });
     return { needed, values };

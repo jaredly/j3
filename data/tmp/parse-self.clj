@@ -1,7 +1,5 @@
 (** ## Self-Hosted Parsing **)
 
-"Hello${"hi"}"
-
 (** ## Prelude **)
 
 (defn join [sep items]
@@ -76,6 +74,8 @@
 
 (deftype (list a) (nil) (cons a (list a)))
 
+(defn loop [v f] (f v (fn [nv] (loop nv f))))
+
 (** ## Our AST & CST **)
 
 (deftype cst
@@ -142,7 +142,19 @@
                                                                            (parse-type body)
                                                                                (rev args [])
                                                                                (fn [body arg] (tapp (tapp (tcon "->" -1) (parse-type arg) -1) body -1)))
-        (cst/list items l)                                             (tapps (rev (map items parse-type) []) l)
+        (cst/list [(cst/identifier "," nl) ..items] al)                (loop
+                                                                           (map items parse-type)
+                                                                               (fn [items recur]
+                                                                               (match items
+                                                                                   [one two]    (tapp (tapp (tcon "," nl) one al) two al)
+                                                                                   [one]        one
+                                                                                   [one ..rest] (tapp (tapp (tcon "," nl) one al) (recur rest) al))))
+        (cst/list items l)                                             (loop
+                                                                           (rev (map items parse-type) [])
+                                                                               (fn [items recur]
+                                                                               (match items
+                                                                                   [one]        one
+                                                                                   [one ..rest] (tapp (recur rest) one l))))
         _                                                              (fatal "(parse-type) Invalid type ${(valueToString type)}")))
 
 (,
@@ -156,7 +168,22 @@
             (tapp
             (tapp (tcon "->" -1) (tcon "a" 5688) -1)
                 (tapp (tapp (tcon "->" -1) (tcon "b" 5689) -1) (tcon "c" 5690) -1)
-                -1))])
+                -1))
+        (,
+        (@@ (, a b))
+            (tapp
+            (tapp (tcon "," 16610) (tcon "a" 16611) 16609)
+                (tcon "b" 16612)
+                16609))
+        (,
+        (@@ (, a b c))
+            (tapp
+            (tapp (tcon "," 16640) (tcon "a" 16643) 16639)
+                (tapp
+                (tapp (tcon "," 16640) (tcon "b" 16644) 16639)
+                    (tcon "c" 16645)
+                    16639)
+                16639))])
 
 (defn parse-pat [pat]
     (match pat
@@ -605,7 +632,7 @@
 (defn pat-externals [pat]
     (match pat
         (** Soo this should be probably a (type)? Or rather, we should look up the corresponding type, and depend on that instead. **)
-        (pcon name nl args l) (bag/and (one (,, name (value) nl)) (many (map args pat-externals)))
+        (pcon name nl args l) (bag/and (one (, name (value) nl)) (many (map args pat-externals)))
         _                     empty))
 
 (defn expr-type [expr]
@@ -631,13 +658,13 @@
             (tapp target arg _) (fold-type (fold-type v target f) arg f)
             _                   v)))
 
-(defn ,,0 [x] (let [(,, a _ _) x] a))
+(defn ,,0 [x] (let [(, a _ _) x] a))
 
-(defn ,,1 [x] (let [(,, _ a _) x] a))
+(defn ,,1 [x] (let [(, _ a _) x] a))
 
-(defn ,,2 [x] (let [(,, _ _ a) x] a))
+(defn ,,2 [x] (let [(, _ _ a) x] a))
 
-(defn map,,0 [f (,, a b c)] (,, (f a) b c))
+(defn map,,0 [f (, a b c)] (, (f a) b c))
 
 (defn map,1 [f (, a b)] (, a (f b)))
 
@@ -678,7 +705,7 @@ dot
 
 (defn type-size [type] (fold-type 0 type (fn [v _] (+ 1 v))))
 
-(defn ,,,2 [x] (let [(,,, _ _ x _) x] x))
+(defn ,,,2 [x] (let [(, _ _ x _) x] x))
 
 (defn stmt-size [stmt]
     (+
@@ -696,7 +723,7 @@ dot
     (match expr
         (evar name l)            (match (set/has bound name)
                                      true empty
-                                     _    (one (,, name (value) l)))
+                                     _    (one (, name (value) l)))
         (eprim prim l)           empty
         (estr first templates l) (many
                                      (map
@@ -741,45 +768,44 @@ dot
 
 (,
     (dot bag/to-list (externals (set/from-list ["+" "-" "cons" "nil"])))
-        [(, (parse-expr (@@ hi)) [(,, "hi" (value) 7036)])
-        (, (parse-expr (@@ [1 2 c])) [(,, "c" (value) 7052)])
+        [(, (parse-expr (@@ hi)) [(, "hi" (value) 7036)])
+        (, (parse-expr (@@ [1 2 c])) [(, "c" (value) 7052)])
         (,
         (parse-expr (@@ (one two three)))
-            [(,, "one" (value) 7066) (,, "two" (value) 7067) (,, "three" (value) 7068)])])
+            [(, "one" (value) 7066) (, "two" (value) 7067) (, "three" (value) 7068)])])
 
 (defn externals-type [bound t]
     (match t
         (tvar _ _)       empty
         (tcon name l)    (match (set/has bound name)
                              true empty
-                             _    (one (,, name (type) l)))
+                             _    (one (, name (type) l)))
         (tapp one two _) (bag/and (externals-type bound one) (externals-type bound two))))
 
 (defn names [stmt]
     (match stmt
-        (sdef name l _ _)                  [(,, name (value) l)]
+        (sdef name l _ _)                  [(, name (value) l)]
         (sexpr _ _)                        []
-        (stypealias name l _ _ _)          [(,, name (type) l)]
-        (sdeftype name l _ constructors _) [(,, name (type) l)
+        (stypealias name l _ _ _)          [(, name (type) l)]
+        (sdeftype name l _ constructors _) [(, name (type) l)
                                                ..(map
                                                constructors
                                                    (fn [arg]
                                                    (match arg
-                                                       (, name l _ _) (,, name (value) l))))]))
+                                                       (, name l _ _) (, name (value) l))))]))
 
 (defn externals-stmt [stmt]
     (bag/to-list
         (match stmt
             (sdeftype name l free constructors _) (let [frees (set/from-list (map free fst))]
                                                       (many
-                                                          [(one (,, name (value) l))
-                                                              ..(map
+                                                          (map
                                                               constructors
                                                                   (fn [constructor]
                                                                   (match constructor
                                                                       (, name l args _) (match args
                                                                                             [] empty
-                                                                                            _  (many (map args (externals-type frees)))))))]))
+                                                                                            _  (many (map args (externals-type frees)))))))))
             (stypealias name _ args body _)       (let [frees (set/from-list (map args fst))]
                                                       (externals-type frees body))
             (sdef name _ body _)                  (externals (set/add set/nil name) body)
@@ -788,10 +814,8 @@ dot
 (,
     (fn [x] (externals-stmt (parse-stmt x)))
         [(, (@@ (def x 10)) [])
-        (,
-        (@@ (deftype hi (one int)))
-            [(,, "hi" (value) 16457) (,, "int" (type) 16460)])
-        (, (@@ (typealias lol int)) [(,, "int" (type) 16480)])])
+        (, (@@ (deftype hi (one int))) [(, "int" (type) 16460)])
+        (, (@@ (typealias lol int)) [(, "int" (type) 16480)])])
 
 (** ## Export **)
 
@@ -799,9 +823,9 @@ dot
     (parse-and-compile
         (fn [cst] stmt)
             (fn [cst] expr)
-            (fn [stmt] (list (,, string name-kind int)))
-            (fn [stmt] (list (,, string name-kind int)))
-            (fn [expr] (list (,, string name-kind int)))
+            (fn [stmt] (list (, string name-kind int)))
+            (fn [stmt] (list (, string name-kind int)))
+            (fn [expr] (list (, string name-kind int)))
             (fn [stmt] int)
             (fn [expr] int)
             (fn [type] int)))

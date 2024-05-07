@@ -303,27 +303,31 @@
 
 (defn tts-inner [t free locs]
     (match t
-        (tvar s l)                           (let [(, fmap idx) free]
-                                                 (match fmap
-                                                     (some fmap) (match (map/get fmap s)
-                                                                     (some s) (, (and-loc locs l s) free)
-                                                                     none     (let [name (at letters idx "_too_many_vbls_")]
-                                                                                  (, (and-loc locs l name) (, (some (map/set fmap s name)) (+ 1 idx)))))
-                                                     _           (, (and-loc locs l s) free)))
-        (tcon s l)                           (, (and-loc locs l s) free)
-        (tapp (tapp (tcon "->" _) a la) b l) (let [
-                                                 (, iargs r)   (unwrap-fn b)
-                                                 args          [a ..iargs]
-                                                 (, args free) (tts-list args free locs)
-                                                 (, two free)  (tts-inner r free locs)]
-                                                 (, (and-loc locs l "(fn [${(join " " (rev args []))}] ${two})") free))
-        (tapp a b l)                         (let [
-                                                 (, target args) (unwrap-app a)
-                                                 args            [b ..args]
-                                                 args            (rev args [])
-                                                 (, args free)   (tts-list args free locs)
-                                                 (, one free)    (tts-inner target free locs)]
-                                                 (, (and-loc locs l "(${one} ${(join " " (rev args []))})") free))))
+        (tvar s l)                                 (let [(, fmap idx) free]
+                                                       (match fmap
+                                                           (some fmap) (match (map/get fmap s)
+                                                                           (some s) (, (and-loc locs l s) free)
+                                                                           none     (let [name (at letters idx "_too_many_vbls_")]
+                                                                                        (, (and-loc locs l name) (, (some (map/set fmap s name)) (+ 1 idx)))))
+                                                           _           (, (and-loc locs l s) free)))
+        (tcon s l)                                 (, (and-loc locs l s) free)
+        (tapp (tapp (tcon "->" _) a la) b l)       (let [
+                                                       (, iargs r)   (unwrap-fn b)
+                                                       args          [a ..iargs]
+                                                       (, args free) (tts-list args free locs)
+                                                       (, two free)  (tts-inner r free locs)]
+                                                       (, (and-loc locs l "(fn [${(join " " (rev args []))}] ${two})") free))
+        (tapp (tapp (tcon "," l,) arg1 la) arg2 l) (let [
+                                                       args          [arg1 ..(unwrap-type-tuple arg2)]
+                                                       (, args free) (tts-list args free locs)]
+                                                       (, (and-loc locs l "(, ${(join " " (rev args []))})") free))
+        (tapp a b l)                               (let [
+                                                       (, target args) (unwrap-app a)
+                                                       args            [b ..args]
+                                                       args            (rev args [])
+                                                       (, args free)   (tts-list args free locs)
+                                                       (, one free)    (tts-inner target free locs)]
+                                                       (, (and-loc locs l "(${one} ${(join " " (rev args []))})") free))))
 
 (defn ttc-list [args free]
     (foldl
@@ -334,31 +338,35 @@
 
 (defn ttc-inner [t free]
     (match t
-        (tvar vname loc)                     (let [(, fmap idx) free]
-                                                 (match fmap
-                                                     (some fmap) (match (map/get fmap vname)
-                                                                     (some name) (, (cst/identifier name loc) free)
-                                                                     none        (let [name (at letters idx "_too_many_vbls_")]
-                                                                                     (,
-                                                                                         (cst/identifier name loc)
-                                                                                             (, (some (map/set fmap vname name)) (+ 1 idx)))))
-                                                     _           (, (cst/identifier vname loc) free)))
-        (tcon name l)                        (, (cst/identifier name l) free)
-        (tapp (tapp (tcon "->" _) a la) b l) (let [
-                                                 (, iargs r)   (unwrap-fn b)
-                                                 args          [a ..iargs]
-                                                 (, args free) (ttc-list args free)
-                                                 (, two free)  (ttc-inner r free)]
-                                                 (,
-                                                     (cst/list [(cst/identifier "fn" la) (cst/array (rev args []) la) two] l)
-                                                         free))
-        (tapp a b l)                         (let [
-                                                 (, target args) (unwrap-app a)
-                                                 args            [b ..args]
-                                                 args            (rev args [])
-                                                 (, args free)   (ttc-list args free)
-                                                 (, one free)    (ttc-inner target free)]
-                                                 (, (cst/list [one ..(rev args [])] l) free))))
+        (tvar vname loc)                           (let [(, fmap idx) free]
+                                                       (match fmap
+                                                           (some fmap) (match (map/get fmap vname)
+                                                                           (some name) (, (cst/identifier name loc) free)
+                                                                           none        (let [name (at letters idx "_too_many_vbls_")]
+                                                                                           (,
+                                                                                               (cst/identifier name loc)
+                                                                                                   (, (some (map/set fmap vname name)) (+ 1 idx)))))
+                                                           _           (, (cst/identifier vname loc) free)))
+        (tcon name l)                              (, (cst/identifier name l) free)
+        (tapp (tapp (tcon "->" _) a la) b l)       (let [
+                                                       (, iargs r)   (unwrap-fn b)
+                                                       args          [a ..iargs]
+                                                       (, args free) (ttc-list args free)
+                                                       (, two free)  (ttc-inner r free)]
+                                                       (,
+                                                           (cst/list [(cst/identifier "fn" la) (cst/array (rev args []) la) two] l)
+                                                               free))
+        (tapp (tapp (tcon "," l,) arg1 la) arg2 l) (let [
+                                                       args          [arg1 ..(unwrap-type-tuple arg2)]
+                                                       (, args free) (ttc-list args free)]
+                                                       (, (cst/list [(cst/identifier "," l,) ..(rev args [])] l) free))
+        (tapp a b l)                               (let [
+                                                       (, target args) (unwrap-app a)
+                                                       args            [b ..args]
+                                                       args            (rev args [])
+                                                       (, args free)   (ttc-list args free)
+                                                       (, one free)    (ttc-inner target free)]
+                                                       (, (cst/list [one ..(rev args [])] l) free))))
 
 (ttc-inner (@t (fn [x] y)) (, (some map/nil) 0))
 
@@ -372,6 +380,39 @@
 (defn type-to-cst [t]
     (let [(, cst _) (ttc-inner t (, (some map/nil) 0))] cst))
 
+(,
+    type-to-cst
+        [(, (@t hi) (cst/identifier "hi" 24524))
+        (,
+        (@t (fn [x] int))
+            (cst/list
+            [(cst/identifier "fn" -1)
+                (cst/array [(cst/identifier "x" 24539)] -1)
+                (cst/identifier "int" 24540)]
+                -1))
+        (,
+        (@t (-> a b))
+            (cst/list
+            [(cst/identifier "fn" 24569)
+                (cst/array [(cst/identifier "a" 24571)] 24569)
+                (cst/identifier "b" 24572)]
+                24569))
+        (,
+        (@t (cons a b))
+            (cst/list
+            [(cst/identifier "cons" 24607)
+                (cst/identifier "a" 24608)
+                (cst/identifier "b" 24609)]
+                24606))
+        (,
+        (@t (, a b c))
+            (cst/list
+            [(cst/identifier "," 24635)
+                (cst/identifier "a" 24636)
+                (cst/identifier "b" 24637)
+                (cst/identifier "c" 24638)]
+                24634))])
+
 (defn type-to-string [t]
     (let [(, text _) (tts-inner t (, (some map/nil) 0) false)] text))
 
@@ -379,7 +420,16 @@
     type-to-string
         [(, (@t (-> a (-> b c))) "(fn [a b] c)")
         (, (@t (-> a b)) "(fn [a] b)")
-        (, (@t (cons a b)) "(cons a b)")])
+        (, (@t (cons a b)) "(cons a b)")
+        (, (@t (, a b c)) "(, a b c)")])
+
+(defn unwrap-type-tuple [arg2]
+    (loop
+        arg2
+            (fn [arg recur]
+            (match arg
+                (tapp (tapp (tcon "," _) arg1 _) arg2 _) [arg1 ..(recur arg2)]
+                _                                        [arg]))))
 
 (defn type-to-string-raw [t]
     (let [(, text _) (tts-inner t (, none 0) false)] text))

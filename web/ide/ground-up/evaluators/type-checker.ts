@@ -39,11 +39,11 @@ export const advancedInfer = (fns: {
                           type: 'err',
                           err: parseTerr(fns.type_to_cst, result[0][0]),
                       },
-            typesAndLocs: unwrapArray(result[1]).map((tal) => ({
+            typesAndLocs: unwrapArray(result[1][0]).map((tal) => ({
                 loc: tal[0],
                 type: tal[1],
             })),
-            usages: getUsages(result[2]),
+            usages: getUsages(result[1][1]),
         };
     },
     inferExpr(expr, env) {
@@ -58,7 +58,7 @@ export const advancedInfer = (fns: {
             };
         }
         return {
-            typesAndLocs: unwrapArray(result[1]).map((res) => ({
+            typesAndLocs: unwrapArray(result[1][0]).map((res) => ({
                 loc: res[0],
                 type: res[1],
             })),
@@ -69,7 +69,7 @@ export const advancedInfer = (fns: {
                           type: 'err',
                           err: parseTerr(fns.type_to_cst, result[0][0]),
                       },
-            usages: getUsages(result[2]),
+            usages: getUsages(result[1][1]),
         };
     },
 });
@@ -101,19 +101,25 @@ type terr<Type> =
       };
 
 type InferExpr2<Type> = {
-    type: ',,';
+    type: ',';
     0: { type: 'ok'; 0: Type } | { type: 'err'; 0: terr<Type> };
-    1: arr<tuple<number, Type>>;
-    2: tuple<arr<number>, arr<tuple<number, number>>>;
+    1: {
+        type: ',';
+        0: arr<tuple<number, Type>>;
+        1: tuple<arr<number>, arr<tuple<number, number>>>;
+    };
 };
 
 type InferStmts2<Env, Type> = {
-    type: ',,';
+    type: ',';
     0:
         | { type: 'ok'; 0: tuple<Env, arr<Type>> }
         | { type: 'err'; 0: terr<Type> };
-    1: arr<tuple<number, Type>>;
-    2: tuple<arr<number>, arr<tuple<number, number>>>;
+    1: {
+        type: ',';
+        0: arr<tuple<number, Type>>;
+        1: tuple<arr<number>, arr<tuple<number, number>>>;
+    };
 };
 
 export const basicInfer = (fns: {
@@ -204,7 +210,7 @@ export const typeChecker = (fns: {
     envToString: fns.env_to_string,
 });
 
-const getUsages = (data: InferExpr2<any>[2]) => {
+const getUsages = (data: InferExpr2<any>[1][1]) => {
     const usages: Record<number, number[]> = {};
     unwrapArray(data[0]).forEach((loc) => (usages[loc] = []));
     unwrapArray(data[1]).forEach(({ 0: loc, 1: provider }) => {

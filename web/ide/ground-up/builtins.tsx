@@ -50,15 +50,15 @@ export function builtins() {
         ',':
             <a, b>(a: a) =>
             (b: b) => ({ type: ',', 0: a, 1: b }),
-        ',,':
-            <a, b, c>(a: a) =>
-            (b: b) =>
-            (c: c) => ({ type: ',,', 0: a, 1: b, 2: c }),
-        ',,,':
-            <a, b, c, d>(a: a) =>
-            (b: b) =>
-            (c: c) =>
-            (d: d) => ({ type: ',,,', 0: a, 1: b, 2: c, 3: d }),
+        // ',,':
+        //     <a, b, c>(a: a) =>
+        //     (b: b) =>
+        //     (c: c) => ({ type: ',,', 0: a, 1: b, 2: c }),
+        // ',,,':
+        //     <a, b, c, d>(a: a) =>
+        //     (b: b) =>
+        //     (c: c) =>
+        //     (d: d) => ({ type: ',,,', 0: a, 1: b, 2: c, 3: d }),
         '++': (items: arr<string>) => unwrapArray(items).join(''),
         'map/nil': [],
         'map/set': (m: [any, any][]) => (k: any) => (v: any) =>

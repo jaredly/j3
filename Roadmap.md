@@ -11,6 +11,13 @@ for the series of artcicle
 - [x] ast.json
 - [x] bootstrap.json
 - [x] self-1.json
+- [-] parse-self.json
+  - [x] executing
+  - [ ] annotated
+- [ ] algw-fast.json
+  - I think I probably want to do a stripped-down version first?
+    Just like with the parsing & code generation.
+
 
 # PLAN Higher up...
 

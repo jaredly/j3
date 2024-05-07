@@ -46,7 +46,7 @@ export const matchPat = (
 };
 
 export const slash = (n: string) => {
-    if (!n || !n.replaceAll) {
+    if (n == null || !n.replaceAll) {
         debugger;
     }
     return n.replaceAll(/\\./g, (m) => {

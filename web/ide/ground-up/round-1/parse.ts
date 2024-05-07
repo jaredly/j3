@@ -4,13 +4,13 @@ import { jcst, toJCST } from './j-cst';
 
 export type arr<a> = { type: 'cons'; 0: a; 1: arr<a> } | { type: 'nil' };
 export type tuple<a, b> = { type: ','; 0: a; 1: b };
-export type tuple3<a, b, c> = { type: ',,'; 0: a; 1: b; 2: c };
+export type tuple3<a, b, c> = tuple<a, tuple<b, c>>;
 
 export const unwrapTuple = <a, b>(v: tuple<a, b>): [a, b] => [v[0], v[1]];
-export const unwrapTuple3 = <a, b, c>(v: tuple3<a, b, c>): [a, b, c] => [
+export const unwrapTuple3 = <a, b, c>(v: tuple<a, tuple<b, c>>): [a, b, c] => [
     v[0],
-    v[1],
-    v[2],
+    v[1][0],
+    v[1][1],
 ];
 
 export const unwrapArray = <a>(v: arr<a>): a[] =>
@@ -465,7 +465,9 @@ export const parseExpr = (node: Node, ctx: Ctx): expr | undefined => {
                         body = {
                             type: 'ematch',
                             0: value,
-                            1: wrapArray([{ type: ',', 0: pat, 1: body }]),
+                            1: wrapArray([
+                                { type: ',' as const, 0: pat, 1: body },
+                            ]),
                         };
                     }
                 }
