@@ -77,7 +77,9 @@ export const setupSyncStore = (
     }
 
     if (!initialResults) {
+        console.time('Initial results');
         getImmediateResults(state, evaluator ?? null, results);
+        console.timeEnd('Initial results');
     }
 
     let msgid = 0;

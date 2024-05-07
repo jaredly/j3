@@ -42,6 +42,7 @@ const fixtures: Fixture[] = [
         file: 'bootstrap.json',
         evaluator: ':javascript:',
     },
+    // The bootstrapped, VM
     {
         id: 1,
         name: 'bootstrap -> self-1',
@@ -49,23 +50,56 @@ const fixtures: Fixture[] = [
         evaluator: [0],
     },
     {
-        id: 2,
-        name: 'bootstrap + self-1 -> parse-self',
+        id: 1.1,
+        name: 'bootstrap -> parse-self',
         file: 'parse-self.json',
-        evaluator: [0, 1],
+        evaluator: [0],
     },
+    // The self-compile-to-js
+    {
+        id: 2,
+        name: 'bootstrapped-self -> self-1',
+        file: 'self-1.json',
+        evaluator: [1.1, 1],
+    },
+    {
+        id: 2.1,
+        name: 'bootstrapped-self -> parse-self',
+        file: 'parse-self.json',
+        evaluator: [1.1, 1],
+    },
+    // Using the self-js
     {
         id: 3,
-        name: 'parse-self + self-1 -> parse-self',
-        file: 'parse-self.json',
-        evaluator: [2, 1],
+        name: 'selfed-self -> self-1',
+        file: 'self-1.json',
+        evaluator: [2.1, 2],
     },
     {
-        id: 4,
-        name: 'parse-self + self-1 -> self-1',
-        file: 'self-1.json',
-        evaluator: [2, 1],
+        id: 3.1,
+        name: 'selfed-self -> parse-self',
+        file: 'parse-self.json',
+        evaluator: [2.1, 2],
     },
+    //
+    // {
+    //     id: 2.1,
+    //     name: 'bootstrap + self-1 -> parse-self',
+    //     file: 'parse-self.json',
+    //     evaluator: [0, 1],
+    // },
+    // {
+    //     id: 3,
+    //     name: 'parse-self + self-1 -> parse-self',
+    //     file: 'parse-self.json',
+    //     evaluator: [2, 1],
+    // },
+    // {
+    //     id: 4,
+    //     name: 'parse-self + self-1 -> self-1',
+    //     file: 'self-1.json',
+    //     evaluator: [2, 1],
+    // },
     // {
     //     id: 2.1,
     //     name: 'bootstrap -> parse-self',
