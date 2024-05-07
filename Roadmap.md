@@ -14,6 +14,14 @@ for the series of artcicle
 
 # PLAN Higher up...
 
+Innn the interest of scrappiness; once we have a bare-bones `parse + compile` for self-hosting,
+let's get right to type inference.
+(Q) Should we labor through the manual tracking of the `subst` list???
+  - maybe? yeah let's go with "no" on that one. I don't really see a plus side to it.
+    but we can mention what's going on.
+(Q) Do I dare try to remove `map`, and just use a `(list (, k v))`?? not sure really.
+  - I mean, I could see what the perf implications are.
+
 - [x] get bootstrap.json AST in alignment with parse-self.json
 - [x] hrmmm let's get rid of all these `,,` and `,,,` nonsense.
   Just do tuples like they ought to be done. `(, a b c)` is `(, a (, b c))`

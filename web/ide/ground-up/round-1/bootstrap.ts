@@ -45,8 +45,11 @@ export const matchPat = (
     }
 };
 
-export const slash = (n: string) =>
-    n.replaceAll(/\\./g, (m) => {
+export const slash = (n: string) => {
+    if (!n || !n.replaceAll) {
+        debugger;
+    }
+    return n.replaceAll(/\\./g, (m) => {
         if (m[1] === 'n') {
             return '\n';
         }
@@ -58,6 +61,7 @@ export const slash = (n: string) =>
         }
         return m[1];
     });
+};
 
 export const evalExpr = (expr: expr, scope: { [key: string]: any }): any => {
     switch (expr.type) {

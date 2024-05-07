@@ -86,7 +86,7 @@
         (cst/array (array cst) int)
         (cst/spread cst int)
         (cst/identifier string int)
-        (cst/string string (array (,, cst string int)) int))
+        (cst/string string (array (, cst string int)) int))
 
 (deftype (array a) (nil) (cons a (array a)))
 
@@ -99,7 +99,7 @@
 
 (deftype expr
     (eprim prim int)
-        (estr string (array (,, expr string int)) int)
+        (estr string (array (, expr string int)) int)
         (evar string int)
         (equot quot int)
         (elambda (array pat) expr int)
@@ -127,14 +127,12 @@
         string
             int
             (array (, string int))
-            (array (,,, string int (array type) int))
+            (array (, string int (array type) int))
             int)
         (sdef string int expr int)
         (sexpr expr int))
 
 (** ## A State monad **)
-
-;(deftype (result good bad) (ok good) (err bad))
 
 (deftype (StateT state value) (StateT (fn [state] (, state value))))
 
@@ -212,7 +210,7 @@
         (j/un string j/expr int)
         (j/lambda (array j/pat) (either j/block j/expr) int)
         (j/prim j/prim int)
-        (j/str string (array (,, j/expr string int)) int)
+        (j/str string (array (, j/expr string int)) int)
         (j/raw string int)
         (j/var string int)
         (j/attr j/expr string int)
@@ -409,7 +407,7 @@
                                 (j/prim item l)            (j/prim item l)
                                 (j/str string tpls l)      (j/str
                                                                string
-                                                                   (map tpls (fn [(,, expr suffix l)] (,, (loop expr) suffix l)))
+                                                                   (map tpls (fn [(, expr suffix l)] (, (loop expr) suffix l)))
                                                                    l)
                                 (j/raw string l)           (j/raw string l)
                                 (j/var string l)           (j/var string l)
@@ -438,9 +436,9 @@
 
 (defn simplify-one [expr]
     (match expr
-        (j/app (j/lambda [] (right inner) l) [] l)                    (some inner)
-        (j/lambda args (left (j/block [(j/return value _)])) l)       (some (j/lambda args (right value) l))
-        (j/lambda args (right (j/app (j/lambda [] body ll) [] al)) l) (some (j/lambda args body l))
+        (j/app (j/lambda [] (right inner) _) [] _)                    (some inner)
+        (j/lambda args (left (j/block [(j/return value _)])) _)       (some (j/lambda args (right value) l))
+        (j/lambda args (right (j/app (j/lambda [] body ll) [] al)) _) (some (j/lambda args body l))
         _                                                             none))
 
 (defn make-lets [params args l]
@@ -594,7 +592,7 @@
                                                   (map
                                                   tpls
                                                       (fn [item]
-                                                      (let [(,, expr suffix l) item]
+                                                      (let [(, expr suffix l) item]
                                                           "${${(j/compile ctx expr)}}${(escape-string (unescapeString suffix))}"))))}`")
         (j/var name l)             (sanitize name)
         (j/attr target attr l)     "${(j/paren-expr ctx target)}.${(sanitize attr)}"
@@ -828,7 +826,7 @@
         (sdeftype name nl type-arg cases l) (map
                                                 cases
                                                     (fn [case]
-                                                    (let [(,,, name2 nl args l) case]
+                                                    (let [(, name2 nl args l) case]
                                                         (j/let
                                                             (j/pvar name2 nl)
                                                                 (foldr
@@ -865,9 +863,7 @@
             (match expr
             (estr first tpls l)             (j/str
                                                 first
-                                                    (map
-                                                    tpls
-                                                        (fn [(,, expr suffix l)] (,, (compile/j expr trace) suffix l)))
+                                                    (map tpls (fn [(, expr suffix l)] (, (compile/j expr trace) suffix l)))
                                                     l)
             (eprim prim l)                  (match prim
                                                 (pint int pl)   (j/prim (j/int int pl) l)
@@ -926,7 +922,7 @@
     0
         (map/expr
         simplify-js
-            (compile/j (run/nil-> (parse-expr (@@ (let [a 1 a (+ a 1)] a)))) map/nil)))
+            (compile/j (run/nil-> (parse-expr (@@ (let [a 11 a (+ a 1)] a)))) map/nil)))
 
 (def ex (run/nil-> (parse-expr (@@ (let [x 10] x)))))
 
@@ -960,7 +956,7 @@
                                                                 (map
                                                                 cases
                                                                     (fn [case]
-                                                                    (let [(,,, name2 nl args l) case]
+                                                                    (let [(, name2 nl args l) case]
                                                                         (++
                                                                             ["const "
                                                                                 (sanitize name2)
@@ -1352,7 +1348,7 @@
                       items
                       (fn [res constr]
                       (match constr
-                          (cst/list [(cst/identifier name ni) ..args] l) (let-> [args (map-> parse-type args)] (<- [(,,, name ni args l) ..res]))
+                          (cst/list [(cst/identifier name ni) ..args] l) (let-> [args (map-> parse-type args)] (<- [(, name ni args l) ..res]))
                           (cst/list [] l)                                (<-err (, l "Empty type constructor") res)
                           _                                              (<-err (, l "Invalid type constructor") res))))]
         (<- (sdeftype id li args items l))))
@@ -1365,20 +1361,20 @@
 
 (defn parse-typealias [name body l]
     (let-> [
-        (,, name nl args) (<-
-                              (match name
-                                  (cst/identifier name nl)                       (,, name nl [])
-                                  (cst/list [(cst/identifier name nl) ..args] _) (,, name nl args)))
-        args              (foldr->
-                              []
-                                  args
-                                  (fn [args x]
-                                  (match x
-                                      (cst/identifier name l) (<- [(, name l) ..args])
-                                      _                       (<-err
-                                                                  (, (cst-loc x) "typealias type argument must be identifier")
-                                                                      args))))
-        body              (parse-type body)]
+        (, name nl args) (<-
+                             (match name
+                                 (cst/identifier name nl)                       (, name nl [])
+                                 (cst/list [(cst/identifier name nl) ..args] _) (, name nl args)))
+        args             (foldr->
+                             []
+                                 args
+                                 (fn [args x]
+                                 (match x
+                                     (cst/identifier name l) (<- [(, name l) ..args])
+                                     _                       (<-err
+                                                                 (, (cst-loc x) "typealias type argument must be identifier")
+                                                                     args))))
+        body             (parse-type body)]
         (<- (stypealias name nl args body l))))
 
 (defn parse-one-expr [rest ll l]
@@ -1452,8 +1448,8 @@
             "what"
                 1335
                 []
-                [(,,, "one" 1337 [(tcon "int" 1338)] 1336)
-                (,,, "two" 1340 [(tcon "bool" 1341)] 1339)]
+                [(, "one" 1337 [(tcon "int" 1338)] 1336)
+                (, "two" 1340 [(tcon "bool" 1341)] 1339)]
                 1333))
         (,
         (@@ (deftype (array a) (nil) (cons (array a))))
@@ -1461,8 +1457,8 @@
             "array"
                 1486
                 [(, "a" 1487)]
-                [(,,, "nil" 1489 [] 1488)
-                (,,, "cons" 1491 [(tapp (tcon "array" 1493) (tcon "a" 1494) 1492)] 1490)]
+                [(, "nil" 1489 [] 1488)
+                (, "cons" 1491 [(tapp (tcon "array" 1493) (tcon "a" 1494) 1492)] 1490)]
                 1483))
         (,
         (@@ (+ 1 2))

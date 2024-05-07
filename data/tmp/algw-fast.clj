@@ -8,8 +8,6 @@
 
 (deftype (option a) (some a) (none))
 
-5249
-
 (deftype (list a) (cons a (list a)) (nil))
 
 (defn at [arr i default_]
@@ -94,7 +92,7 @@
         (cst/array (list cst) int)
         (cst/spread cst int)
         (cst/identifier string int)
-        (cst/string string (list (,, cst string int)) int))
+        (cst/string string (list (, cst string int)) int))
 
 (deftype quot
     (quot/expr expr)
@@ -105,7 +103,7 @@
 
 (deftype expr
     (eprim prim int)
-        (estr string (list (,, expr string int)) int)
+        (estr string (list (, expr string int)) int)
         (evar string int)
         (equot quot int)
         (elambda (list pat) expr int)
@@ -124,7 +122,7 @@
 
 (defn expr/idents [expr]
     (match expr
-        (estr _ exprs _)        (many (map exprs (dot expr/idents ,,0)))
+        (estr _ exprs _)        (many (map exprs (dot expr/idents fst)))
         (evar name l)           (one (, name l))
         (elambda pats expr l)   (many [(expr/idents expr) ..(map pats pat/idents)])
         (eapp target args _)    (many [(expr/idents target) ..(map args expr/idents)])
@@ -157,7 +155,7 @@
                                              (many
                                                  (map
                                                      constrs
-                                                         (fn [(,,, name l args _)]
+                                                         (fn [(, name l args _)]
                                                          (bag/and (one (, name l)) (many (map args type/idents))))))
                                                  (bag/and (one (, name l)) (many (map args one))))))
 
@@ -177,7 +175,7 @@
         string
             int
             (list (, string int))
-            (list (,,, string int (list type) int))
+            (list (, string int (list type) int))
             int)
         (stypealias string int (list (, string int)) type int)
         (sdef string int expr int)
@@ -391,7 +389,7 @@
     type scheme **)
 
 (defn tenv/add-builtin-type [(tenv a b names d) (, name args)]
-    (tenv a b (map/set names name (,, args set/nil -1)) d))
+    (tenv a b (map/set names name (, args set/nil -1)) d))
 
 (defn tenv/merge [(tenv values constructors types alias)
     (tenv nvalues ncons ntypes nalias)]
@@ -423,9 +421,9 @@
             ; type constructors
             (map string tconstructor)
             ; type names (number of arguments) (set of constructor names) loc
-            (map string (,, int (set string) int))
+            (map string (, int (set string) int))
             ; type aliases (argument names) (body) (loc)
-            (map string (,, (list string) type int))))
+            (map string (, (list string) type int))))
 
 (defn tenv/type [(tenv types _ _ _) key] (map/get types key))
 
@@ -443,11 +441,11 @@
     (tenv
         types
             (map/merge cons ncons)
-            (map/set names name (,, vbls (set/from-list (map/keys ncons)) loc))
+            (map/set names name (, vbls (set/from-list (map/keys ncons)) loc))
             alias))
 
-(defn tenv/add-alias [(tenv a b c aliases) name (,, args body l)]
-    (tenv a b c (map/set aliases name (,, args body l))))
+(defn tenv/add-alias [(tenv a b c aliases) name (, args body l)]
+    (tenv a b c (map/set aliases name (, args body l))))
 
 (** ## Finding "free" type variables
     The *-free functions are about finding unbound type variables.
@@ -652,51 +650,51 @@
             (list of types for all locations)
             (list of usages)
             (map of "value name" => "type"), the "subst" map. **)
-            (,, int (, type-record usage-record) (map string type))
+            (, int (, type-record usage-record) (map string type))
             value))
 
 (typealias usage-record (, (list int) (list (, int int))))
 
-(typealias type-record (list (,, int type bool)))
+(typealias type-record (list (, int type bool)))
 
-(def <-idx (let-> [(,, idx _ _) <-state] (<- idx)))
+(def <-idx (let-> [(, idx _ _) <-state] (<- idx)))
 
-(def <-subst (let-> [(,, _ _ subst) <-state] (<- subst)))
+(def <-subst (let-> [(, _ _ subst) <-state] (<- subst)))
 
 (defn idx-> [idx]
-    (let-> [(,, _ b c) <-state _ (state-> (,, idx b c))] (<- ())))
+    (let-> [(, _ b c) <-state _ (state-> (, idx b c))] (<- ())))
 
 (defn record-> [loc type keep]
     (let-> [
-        (,, idx (, types usages) subst) <-state
-        _                               (state-> (,, idx (, [(,, loc type keep) ..types] usages) subst))]
+        (, idx (, types usages) subst) <-state
+        _                              (state-> (, idx (, [(, loc type keep) ..types] usages) subst))]
         (<- ())))
 
 (defn record-usage-> [loc provider]
     (let-> [
-        (,, idx (, types (, defs usages)) subst) <-state
-        _                                        (state-> (,, idx (, types (, defs [(, loc provider) ..usages])) subst))]
+        (, idx (, types (, defs usages)) subst) <-state
+        _                                       (state-> (, idx (, types (, defs [(, loc provider) ..usages])) subst))]
         (<- ())))
 
 (defn record-def-> [loc]
     (let-> [
-        (,, idx (, types (, defs usages)) subst) <-state
-        _                                        (state-> (,, idx (, types (, [loc ..defs] usages)) subst))]
+        (, idx (, types (, defs usages)) subst) <-state
+        _                                       (state-> (, idx (, types (, [loc ..defs] usages)) subst))]
         (<- ())))
 
-(def <-types (let-> [(,, _ types _) <-state] (<- types)))
+(def <-types (let-> [(, _ types _) <-state] (<- types)))
 
 (defn subst-> [new-subst]
     (let-> [
-        (,, idx types subst) <-state
-        _                    (state-> (,, idx types (compose-subst "" new-subst subst)))]
+        (, idx types subst) <-state
+        _                   (state-> (, idx types (compose-subst "" new-subst subst)))]
         (<- ())))
 
 (defn subst-reset-> [new-subst]
-    (let-> [(,, idx types subst) <-state _ (state-> (,, idx types new-subst))]
+    (let-> [(, idx types subst) <-state _ (state-> (, idx types new-subst))]
         (<- subst)))
 
-(def state/nil (,, 0 (, [] (, [] [])) map/nil))
+(def state/nil (, 0 (, [] (, [] [])) map/nil))
 
 (defn run/nil-> [st] (run-> st state/nil))
 
@@ -741,7 +739,7 @@
     (terr string (list (, string int)))
         (ttypes type type)
         (twrap type-error-t type-error-t)
-        (tmissing (list (,, string int type))))
+        (tmissing (list (, string int type))))
 
 (defn type-error [message loced-items] (terr message loced-items))
 
@@ -834,7 +832,7 @@
         (estr first templates l) (let-> [
                                      string-type (<- (tcon "string" l))
                                      ()          (do->
-                                                     (fn [(,, expr suffix sl)]
+                                                     (fn [(, expr suffix sl)]
                                                          (let-> [t (t-expr tenv expr)] (unify t string-type l)))
                                                          templates)]
                                      (<- string-type))
@@ -845,10 +843,10 @@
             - if the body's subst has some binding for our arg variable, use that **)
         ;(elambda name nl body l)
         ;(let [
-            (, arg-type nidx)              (new-type-var name nidx l)
-            env-with-name                  (tenv/set-type tenv name (scheme set/nil arg-type))
-            (,, body-subst body-type nidx) (t-expr env-with-name body nidx)]
-            (,,
+            (, arg-type nidx)             (new-type-var name nidx l)
+            env-with-name                 (tenv/set-type tenv name (scheme set/nil arg-type))
+            (, body-subst body-type nidx) (t-expr env-with-name body nidx)]
+            (,
                 body-subst
                     (tfn (type-apply body-subst arg-type) body-type l)
                     nidx))
@@ -903,12 +901,12 @@
             - compose the substitutions from the body with those from the value **)
         ;(elet (pvar name nl) value body l)
         ;(let [
-            (,, value-subst value-type nidx) (t-expr tenv value nidx)
-            value-scheme                     (generalize (tenv-apply value-subst tenv) value-type)
-            env-with-name                    (tenv/set-type tenv name value-scheme)
-            e2                               (tenv-apply value-subst env-with-name)
-            (,, body-subst body-type nidx)   (t-expr e2 body nidx)]
-            (,, (compose-subst "elet" body-subst value-subst) body-type nidx))
+            (, value-subst value-type nidx) (t-expr tenv value nidx)
+            value-scheme                    (generalize (tenv-apply value-subst tenv) value-type)
+            env-with-name                   (tenv/set-type tenv name value-scheme)
+            e2                              (tenv-apply value-subst env-with-name)
+            (, body-subst body-type nidx)   (t-expr e2 body nidx)]
+            (, (compose-subst "elet" body-subst value-subst) body-type nidx))
         (** Let: complex version! Now with a whole lot of polymorphism!
             - infer the type of the value
             - infer the type of the pattern, along with a mapping of bindings (from "name" to "tvar")
@@ -973,15 +971,15 @@
         _              (record-> (pat-loc pat) t false)]
         (<- (, t bindings)))
         ;(let [
-        l                    (pat-loc pat)
-        _                    (trace [(tloc l) (tcolor "blue") (ttext "enter")])
-        (,, type subst nidx) (t-pat-inner tenv pat nidx)
-        _                    (trace
-                                 [(tloc l)
-                                     (tcolor "white")
-                                     (ttext "exit")
-                                     (tfmt type type-to-string-raw)])]
-        (,, type subst nidx)))
+        l                   (pat-loc pat)
+        _                   (trace [(tloc l) (tcolor "blue") (ttext "enter")])
+        (, type subst nidx) (t-pat-inner tenv pat nidx)
+        _                   (trace
+                                [(tloc l)
+                                    (tcolor "white")
+                                    (ttext "exit")
+                                    (tfmt type type-to-string-raw)])]
+        (, type subst nidx)))
 
 (defn t-pat-inner [tenv pat]
     (match pat
@@ -1068,9 +1066,9 @@
                         (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)
                         -1))])
             (map/from-list
-            [(, "int" (,, 0 set/nil -1))
-                (, "string" (,, 0 set/nil -1))
-                (, "bool" (,, 0 set/nil -1))])
+            [(, "int" (, 0 set/nil -1))
+                (, "string" (, 0 set/nil -1))
+                (, "bool" (, 0 set/nil -1))])
             map/nil))
 
 (run/record (infer basic (@ (+ 2 3))))
@@ -1091,7 +1089,7 @@
                                  ""
                                      (map
                                      missing
-                                         (fn [(,, name loc type)]
+                                         (fn [(, name loc type)]
                                          "\n - ${name} (${(its loc)}): ${(type-to-string type)}")))}"
         (ttypes t1 t2)       "Incompatible types: ${(type-to-string t1)} and ${(type-to-string t2)}"
         (terr message names) "${message}${(join "" (map names (fn [(, name loc)] "\n - ${name} (${(its loc)})")))}"))
@@ -1188,7 +1186,7 @@
                                                               map/nil
                                                                   map/nil
                                                                   map/nil
-                                                                  (map/set map/nil name (,, (map args (fn [(, name _)] name)) body nl)))))
+                                                                  (map/set map/nil name (, (map args (fn [(, name _)] name)) body nl)))))
         (sexpr expr l)                            (let-> [
                                                       (** this "infer" is for side-effects only **)
                                                       _ (infer tenv' expr)]
@@ -1229,7 +1227,7 @@
 (type-to-string
     (replace-in-type
         (map/from-list [(, "a" (@t int)) (, "b" (@t (list string)))])
-            (@t (,, string a b))))
+            (@t (, string a b))))
 
 (defn subst-aliases [alias type]
     (let-> [
@@ -1239,18 +1237,18 @@
                               args)]
         (match base
             (tcon name l) (match (map/get alias name)
-                              (some (,, names subst al)) (if (!= (len names) (len args))
-                                                             (<-err
-                                                                 (type-error
-                                                                     "Wrong number of args given to alias ${name}: expected ${(its (len names))}, given ${(its (len args))}."
-                                                                         [(, name l)]))
-                                                                 (let-> [
-                                                                 subst (<-
-                                                                           (if (= (len names) 0)
-                                                                               subst
-                                                                                   (replace-in-type (map/from-list (zip names (map args fst))) subst)))]
-                                                                 (subst-aliases alias subst)))
-                              _                          (<- (foldl base args (fn [target (, arg l)] (tapp target arg l)))))
+                              (some (, names subst al)) (if (!= (len names) (len args))
+                                                            (<-err
+                                                                (type-error
+                                                                    "Wrong number of args given to alias ${name}: expected ${(its (len names))}, given ${(its (len args))}."
+                                                                        [(, name l)]))
+                                                                (let-> [
+                                                                subst (<-
+                                                                          (if (= (len names) 0)
+                                                                              subst
+                                                                                  (replace-in-type (map/from-list (zip names (map args fst))) subst)))]
+                                                                (subst-aliases alias subst)))
+                              _                         (<- (foldl base args (fn [target (, arg l)] (tapp target arg l)))))
             _             (<- (foldl base args (fn [target (, arg l)] (tapp target arg l)))))))
 
 (type-to-string
@@ -1258,7 +1256,7 @@
         type-error->s
             (run/nil->
             (subst-aliases
-                (map/from-list [(, "hello" (,, ["a"] (@t (, int a)) 1))])
+                (map/from-list [(, "hello" (, ["a"] (@t (, int a)) 1))])
                     (@t (hello string))))))
 
 (defn check-type-names [tenv' type]
@@ -1336,12 +1334,12 @@
             (@! (name))]
             "(fn [(, int string)] what)")
         (,
-        [(@! (deftype (,, a b c) (,, a b c)))
+        [(@! (deftype (, a b c) (, a b c)))
             (@! (typealias id string))
-            (@! (typealias (hello a) (,, int id a)))
+            (@! (typealias (hello a) (, int id a)))
             (@! (deftype what (name (hello bool))))
             (@! name)]
-            "(fn [(,, int string bool)] what)")
+            "(fn [(, int string bool)] what)")
         (,
         [(@! (deftype kind (star) (kfun kind kind))) (@! (let [(kfun m n) (star)] 1))]
             "int")])
@@ -1395,7 +1393,7 @@
                      (tmissing
                          (map
                              (zip missing (map missing-vars (type-apply subst)))
-                                 (fn [(, (, name loc) type)] (,, name loc type))))))))
+                                 (fn [(, (, name loc) type)] (, name loc type))))))))
 
 (defn tenv/values [(tenv values _ _ _)] values)
 
@@ -1413,7 +1411,7 @@
 
 (defn find-missing-names [values ex]
     (let [
-        externals (bag/fold (fn [ext (,, name _ l)] (map/set ext name l)) map/nil ex)]
+        externals (bag/fold (fn [ext (, name _ l)] (map/set ext name l)) map/nil ex)]
         (filter
             (fn [(, name loc)]
                 (match (map/get values name)
@@ -1502,7 +1500,7 @@
 
 (defn infer-deftype [tenv' mutual-rec tname tnl targs constructors l]
     (let-> [
-        names           (<- (map constructors (fn [(,,, name _ _ _)] name)))
+        names           (<- (map constructors (fn [(, name _ _ _)] name)))
         ()              (record-def-> tnl)
         final           (foldl->
                             (tcon tname tnl)
@@ -1514,7 +1512,7 @@
         (, values cons) (foldl->
                             (, map/nil map/nil)
                                 constructors
-                                (fn [(, values cons) (,,, name nl args l)]
+                                (fn [(, values cons) (, name nl args l)]
                                 (let-> [
                                     args (map-> (type-with-free-rec free-map) args)
                                     ()   (do-> (record-usages-in-type tenv' mutual-rec) args)
@@ -1535,14 +1533,14 @@
             (tenv
                 values
                     cons
-                    (map/set map/nil tname (,, (len targs) (set/from-list names) tnl))
+                    (map/set map/nil tname (, (len targs) (set/from-list names) tnl))
                     map/nil))))
 
 (defn infer-stypes [tenv' stypes salias]
     (let-> [
         names                    (<-
                                      (foldl
-                                         (map salias (fn [(,,, name _ _ nl)] (, name nl)))
+                                         (map salias (fn [(, name _ _ nl)] (, name nl)))
                                              stypes
                                              (fn [names (sdeftype name nl _ _ _)] [(, name nl) ..names])))
         (tenv _ _ types aliases) (<- tenv')
@@ -1556,7 +1554,7 @@
         tenv                     (foldl->
                                      tenv/nil
                                          salias
-                                         (fn [tenv (,,, name args body nl)]
+                                         (fn [tenv (, name args body nl)]
                                          (match (bag/to-list
                                              (externals-type
                                                  (set/merge bound (set/from-list (map args fst)))
@@ -1568,11 +1566,9 @@
                                                                 tenv'
                                                                     (map/merge (map/from-list args) mutual-rec)
                                                                     body)]
-                                                         (<- (tenv/add-alias tenv name (,, (map args fst) body nl))))
+                                                         (<- (tenv/add-alias tenv name (, (map args fst) body nl))))
                                              unbound (<-err
-                                                         (type-error
-                                                             "Unbound types"
-                                                                 (map unbound (fn [(,, name _ l)] (, name l))))))))
+                                                         (type-error "Unbound types" (map unbound (fn [(, name _ l)] (, name l))))))))
         merged                   (<- (tenv/merge tenv tenv'))
         tenv                     (foldl->
                                      tenv
@@ -1592,7 +1588,7 @@
 
 (defn split-stmts [stmts sdefs stypes salias sexps]
     (match stmts
-        []           (,,, sdefs stypes salias sexps)
+        []           (, sdefs stypes salias sexps)
         [one ..rest] (match one
                          (sdef _ _ _ _)                   (split-stmts rest [one ..sdefs] stypes salias sexps)
                          (sdeftype _ _ _ _ _)             (split-stmts rest sdefs [one ..stypes] salias sexps)
@@ -1600,7 +1596,7 @@
                                                               rest
                                                                   sdefs
                                                                   stypes
-                                                                  [(,,, name args body nl) ..salias]
+                                                                  [(, name args body nl) ..salias]
                                                                   sexps)
                          (sexpr expr _)                   (split-stmts rest sdefs stypes salias [expr ..sexps]))))
 
@@ -1646,11 +1642,11 @@ map->
 
 (defn infer-stmtss [tenv' stmts]
     (let-> [
-        (,,, sdefs stypes salias sexps) (<- (split-stmts stmts [] [] [] []))
-        type-tenv                       (infer-stypes tenv' stypes salias)
-        tenv'                           (<- (tenv/merge type-tenv tenv'))
-        val-tenv                        (infer-defns tenv' sdefs)
-        expr-types                      (map-> (infer (tenv/merge val-tenv tenv')) sexps)]
+        (, sdefs stypes salias sexps) (<- (split-stmts stmts [] [] [] []))
+        type-tenv                     (infer-stypes tenv' stypes salias)
+        tenv'                         (<- (tenv/merge type-tenv tenv'))
+        val-tenv                      (infer-defns tenv' sdefs)
+        expr-types                    (map-> (infer (tenv/merge val-tenv tenv')) sexps)]
         (<- (, (tenv/merge type-tenv val-tenv) expr-types))))
 
 (tenv->s
@@ -1683,7 +1679,7 @@ map->
 (defn tdefs->s [tdefs constructors]
     (map
         (map/to-list tdefs)
-            (fn [(, name (,, num-args cnames loc))]
+            (fn [(, name (, num-args cnames loc))]
             "\n - ${name}${(join
                 ""
                     (map
@@ -1708,13 +1704,13 @@ map->
     (let [(tenv types _ tdefs alias) tenv]
         (match type
             (tcon name l)    (match (map/get alias name)
-                                 (some (,, _ _ al)) (record-usage-> l al)
-                                 _                  (match (map/get tdefs name)
-                                                        (some (,, _ _ loc)) (record-usage-> l loc)
-                                                        _                   (match (map/get rec name)
-                                                                                (some loc) (record-usage-> l loc)
-                                                                                _          (<-err (type-error "Unbound type" [(, name l)])))
-                                                        _                   (let [nope name] (<- ()))))
+                                 (some (, _ _ al)) (record-usage-> l al)
+                                 _                 (match (map/get tdefs name)
+                                                       (some (, _ _ loc)) (record-usage-> l loc)
+                                                       _                  (match (map/get rec name)
+                                                                              (some loc) (record-usage-> l loc)
+                                                                              _          (<-err (type-error "Unbound type" [(, name l)])))
+                                                       _                  (let [nope name] (<- ()))))
             (tapp one two l) (let-> [
                                  () (record-usages-in-type tenv rec one)
                                  () (record-usages-in-type tenv rec two)]
@@ -1730,17 +1726,17 @@ map->
 
 (defn run/usages [tenv stmts]
     (let [
-        (, (,, _ (, _ (, defns uses)) _) _) ((state-f
-                                                ;(infer-stmtss tenv stmts)
-                                                    (foldl->
-                                                    tenv
-                                                        stmts
-                                                        (fn [tenv stmt]
-                                                        (let-> [(, nenv _) (infer-stmtss tenv [stmt])]
-                                                            (<- (tenv/merge tenv nenv))))))
-                                                state/nil)
-        idents                              (map/from-list
-                                                (map (bag/to-list (many (map stmts stmt/idents))) rev-pair))]
+        (, (, _ (, _ (, defns uses)) _) _) ((state-f
+                                               ;(infer-stmtss tenv stmts)
+                                                   (foldl->
+                                                   tenv
+                                                       stmts
+                                                       (fn [tenv stmt]
+                                                       (let-> [(, nenv _) (infer-stmtss tenv [stmt])]
+                                                           (<- (tenv/merge tenv nenv))))))
+                                               state/nil)
+        idents                             (map/from-list
+                                               (map (bag/to-list (many (map stmts stmt/idents))) rev-pair))]
         (,
             (map defns (with-name idents))
                 (map uses (fn [(, user prov)] (, (with-name idents user) prov))))))
@@ -1796,7 +1792,7 @@ map->
         (eprim prim int)            (prim->s prim)
         (estr string templates int) "\"${string}${(join
                                         ""
-                                            (map templates (fn [(,, expr suffix _)] "${(expr->s expr)}${suffix}")))}\""
+                                            (map templates (fn [(, expr suffix _)] "${(expr->s expr)}${suffix}")))}\""
         (evar string int)           string
         (elambda pats expr int)     "(fn [${(join " " (map pats pat->s))}] ${(expr->s expr)})"
         (eapp target args int)      "(${(expr->s target)} ${(join " " (map args expr->s))})"
@@ -1836,7 +1832,7 @@ map->
             (match expr
             (estr string templates int) (foldl
                                             empty
-                                                (map templates (fn [(,, expr _ _)] (things-by-loc expr)))
+                                                (map templates (fn [(, expr _ _)] (things-by-loc expr)))
                                                 bag/and)
             (elambda pats expr int)     (bag/and
                                             (foldl empty (map pats pats-by-loc) bag/and)
@@ -1870,24 +1866,24 @@ map->
 
 (defn show-all-types [tenv expr]
     (let [
-        (, (,, _ (, types usages) subst) result) ((state-f (infer tenv expr)) state/nil)
-        type-map                                 (foldr
-                                                     map/nil
-                                                         types
-                                                         (fn [map (,, loc type keep)]
-                                                         (map/add
-                                                             map
-                                                                 loc
-                                                                 (if keep
-                                                                 type
-                                                                     (type-apply subst type)))))
-        final                                    (match result
-                                                     (ok v)  (type-to-string v)
-                                                     (err e) (type-error->s e))
-        exprs                                    (foldr
-                                                     map/nil
-                                                         (bag/to-list (things-by-loc expr))
-                                                         (fn [map (, loc expr)] (map/add map loc expr)))]
+        (, (, _ (, types usages) subst) result) ((state-f (infer tenv expr)) state/nil)
+        type-map                                (foldr
+                                                    map/nil
+                                                        types
+                                                        (fn [map (, loc type keep)]
+                                                        (map/add
+                                                            map
+                                                                loc
+                                                                (if keep
+                                                                type
+                                                                    (type-apply subst type)))))
+        final                                   (match result
+                                                    (ok v)  (type-to-string v)
+                                                    (err e) (type-error->s e))
+        exprs                                   (foldr
+                                                    map/nil
+                                                        (bag/to-list (things-by-loc expr))
+                                                        (fn [map (, loc expr)] (map/add map loc expr)))]
         "Result: ${final}\nExprs:\n${(join
             "\n\n"
                 (map
@@ -1944,7 +1940,7 @@ map->
 (defn pat-externals [pat]
     (match pat
         (** Soo this should be probably a (type)? **)
-        (pcon name il args l) (bag/and (one (,, name (value) il)) (many (map args pat-externals)))
+        (pcon name il args l) (bag/and (one (, name (value) il)) (many (map args pat-externals)))
         _                     empty))
 
 (defn externals 
@@ -1952,14 +1948,14 @@ map->
         (match expr
         (evar name l)              (match (set/has bound name)
                                        true empty
-                                       _    (one (,, name (value) l)))
+                                       _    (one (, name (value) l)))
         (eprim prim l)             empty
         (estr first templates int) (many
                                        (map
                                            templates
                                                (fn [arg]
                                                (match arg
-                                                   (,, expr _ _) (externals bound expr)))))
+                                                   (, expr _ _) (externals bound expr)))))
         (equot expr int)           empty
         (elambda pats body int)    (bag/and
                                        (foldl empty (map pats pat-externals) bag/and)
@@ -1989,13 +1985,11 @@ map->
 
 (,
     (dot bag/to-list (externals (set/from-list ["+" "-" "cons" "nil" "()"])))
-        [(, (@ hi) [(,, "hi" (value) 16110)])
-        (, (@ [1 2 c]) [(,, "c" (value) 16144)])
+        [(, (@ hi) [(, "hi" (value) 16110)])
+        (, (@ [1 2 c]) [(, "c" (value) 16144)])
         (,
         (@ (one two three))
-            [(,, "one" (value) 16158)
-            (,, "two" (value) 16159)
-            (,, "three" (value) 16160)])
+            [(, "one" (value) 16158) (, "two" (value) 16159) (, "three" (value) 16160)])
         (, (@ ()) [])])
 
 (defn dot [a b c] (a (b c)))
@@ -2007,7 +2001,7 @@ map->
         (tvar _ _)       (<- empty)
         (tcon name l)    (match (map/get bound name)
                              (some pl) (let-> [() (record-usage-> l pl)] (<- empty))
-                             _         (<- (one (,, name (type) l))))
+                             _         (<- (one (, name (type) l))))
         (tapp one two _) (let-> [
                              one (externals-type-record bound one)
                              two (externals-type-record bound two)]
@@ -2029,16 +2023,16 @@ map->
         (tvar _ _)       empty
         (tcon name l)    (if (set/has bound name)
                              empty
-                                 (one (,, name (type) l)))
+                                 (one (, name (type) l)))
         (tapp one two _) (bag/and (externals-type bound one) (externals-type bound two))))
 
 (defn names [stmt]
     (match stmt
-        (sdef name l _ _)                  [(,, name (value) l)]
+        (sdef name l _ _)                  [(, name (value) l)]
         (sexpr _ _)                        []
-        (stypealias name l _ _ _)          [(,, name (type) l)]
-        (sdeftype name l _ constructors _) [(,, name (type) l)
-                                               ..(map constructors (fn [(,,, name l _ _)] (,, name (value) l)))]))
+        (stypealias name l _ _ _)          [(, name (type) l)]
+        (sdeftype name l _ constructors _) [(, name (type) l)
+                                               ..(map constructors (fn [(, name l _ _)] (, name (value) l)))]))
 
 (defn externals-stmt [stmt]
     (bag/to-list
@@ -2047,7 +2041,7 @@ map->
                                                         (many
                                                             (map
                                                                 constructors
-                                                                    (fn [(,,, name l args _)]
+                                                                    (fn [(, name l args _)]
                                                                     (match args
                                                                         [] empty
                                                                         _  (many (map args (externals-type frees))))))))
@@ -2163,18 +2157,15 @@ map->
                             (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v"))))]))
                     (map/from-list [(, "()" (tconstructor set/nil [] (tcon "()" -1) -1))])
                     (map/from-list
-                    [(, "int" (,, 0 set/nil -1))
-                        (, "float" (,, 0 set/nil -1))
-                        (, "string" (,, 0 set/nil -1))
-                        (, "bool" (,, 0 set/nil -1))
-                        (, "map" (,, 2 set/nil -1))
-                        (, "set" (,, 1 set/nil -1))
-                        (, "->" (,, 2 set/nil -1))])
+                    [(, "int" (, 0 set/nil -1))
+                        (, "float" (, 0 set/nil -1))
+                        (, "string" (, 0 set/nil -1))
+                        (, "bool" (, 0 set/nil -1))
+                        (, "map" (, 2 set/nil -1))
+                        (, "set" (, 1 set/nil -1))
+                        (, "->" (, 2 set/nil -1))])
                     map/nil)
                 [(@! (deftype (, a b) (, a b)))
-                (@! (deftype (,, a b c) (,, a b c)))
-                (@! (deftype (,,, a b c d) (,,, a b c d)))
-                (@! (deftype (,,,, a b c d e) (,,,, a b c d e)))
                 (@!
                 (deftype (trace-fmt a)
                     (tcolor string)
@@ -2212,14 +2203,14 @@ map->
         tenv
             (fn [tenv (list stmt)] tenv)
             (fn [tenv (list stmt)]
-            (,,
+            (,
                 (result (, tenv (list type)) type-error-t)
                     (list (, int type))
                     usage-record))
             (fn [tenv tenv] tenv)
             (fn [tenv expr] type)
             (fn [tenv expr]
-            (,, (result type type-error-t) (list (, int type)) usage-record))))
+            (, (result type type-error-t) (list (, int type)) usage-record))))
 
 (deftype name-kind (value) (type))
 
@@ -2227,9 +2218,9 @@ map->
     (** externals
         declared-names **)
         (analysis
-        (fn [stmt] (list (,, string name-kind int)))
-            (fn [expr] (list (,, string name-kind int)))
-            (fn [stmt] (list (,, string name-kind int)))))
+        (fn [stmt] (list (, string name-kind int)))
+            (fn [expr] (list (, string name-kind int)))
+            (fn [stmt] (list (, string name-kind int)))))
 
 (deftype evaluator
     (typecheck
@@ -2242,15 +2233,15 @@ map->
 
 (defn infer-stmts2 [tenv stmts]
     (let [
-        (, (,, _ (, types usage-record) subst) result) ((state-f (infer-stmtss tenv stmts)) state/nil)]
-        (,, result (applied-types types subst) usage-record)))
+        (, (, _ (, types usage-record) subst) result) ((state-f (infer-stmtss tenv stmts)) state/nil)]
+        (, result (applied-types types subst) usage-record)))
 
 (infer-stmts2 builtin-env [(@! (def x 10)) (@! x) (@! (let [m 2] (+ m m)))])
 
 (defn applied-types [types subst]
     (map
         types
-            (fn [(,, loc type keep)]
+            (fn [(, loc type keep)]
             (if keep
                 (, loc type)
                     (, loc (type-apply subst type))))))
@@ -2271,8 +2262,8 @@ foldl->
                 (fn [tenv expr] (force type-error->s (run/nil-> (infer tenv expr))))
                 (fn [tenv expr]
                 (let [
-                    (, (,, _ (, types usage-record) subst) result) ((state-f (infer tenv expr)) state/nil)]
-                    (,, result (applied-types types subst) usage-record))))
+                    (, (, _ (, types usage-record) subst) result) ((state-f (infer tenv expr)) state/nil)]
+                    (, result (applied-types types subst) usage-record))))
             type-to-string
             (fn [tenv name]
             (match (tenv/type tenv name)
