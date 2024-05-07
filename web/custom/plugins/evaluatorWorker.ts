@@ -34,8 +34,8 @@ export const evaluatorWorker: WorkerPlugin<
             usages,
         };
     },
-    hasErrors(results) {
-        return false;
+    getErrors(results) {
+        return [];
     },
 
     // So is this where ... we would kick things off?

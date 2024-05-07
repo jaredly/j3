@@ -2296,12 +2296,12 @@ map->
                 (, loc type)
                     (, loc (type-apply subst type))))))
 
-foldl
-
-foldl->
-
 ((eval
-    "({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: type_to_string, 2: get_type, 3: type_to_cst\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, type_to_string, get_type, type_to_cst \n }) ")
+    (** ({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},
+  1: type_to_string, 2: get_type, 3: type_to_cst
+ }) => ({type: 'fns',
+   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, type_to_string, get_type, type_to_cst 
+ })  **))
     (typecheck
         (inference
             builtin-env

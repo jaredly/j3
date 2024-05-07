@@ -15,7 +15,7 @@ for the series of artcicle
 - [-] parse-self.json
   - [x] executing
   - [x] trimmed & refactored the implementation
-  - [ ] annotated
+  - [x] annotated; eh, I feel like there's not a whole ton to talk about?
 - [ ] algw-fast.json
   - [x] executing
   - I think I probably want to do a stripped-down version first?

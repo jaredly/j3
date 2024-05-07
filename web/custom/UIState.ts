@@ -219,7 +219,7 @@ export type WorkerPlugin<Results, Parsed, Options> = {
         env: any,
         options: Options,
     ): Results;
-    hasErrors(results: Results): boolean;
+    getErrors(results: Results): [string, number][];
 };
 
 export type NamespacePlugin<Results, Parsed, Options> = {

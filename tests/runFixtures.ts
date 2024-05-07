@@ -91,6 +91,7 @@ export const runFixtures = async (fixtures: Fixture[]) => {
             });
             console.timeEnd('worker');
         } catch (err) {
+            console.log(`Failed while doing ${id} : ${name}`);
             console.warn(`worker failed`, (err as Error).message);
             console.error(err);
             throw new Error(`worker failed`);

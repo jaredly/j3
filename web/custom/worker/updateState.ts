@@ -423,11 +423,20 @@ export function updateState(
                 node.ns.plugin!.options,
             );
             state.results.tops[group[0].id].pluginResults = results;
-            if (plugin.hasErrors(results)) {
-                state.results.tops[group[0].id].produce.push({
-                    type: 'error',
-                    message: `Plugin had errors`,
-                });
+            const errors = plugin.getErrors(results);
+            if (errors.length) {
+                state.results.tops[group[0].id].produce.push(
+                    // {
+                    //     type: 'error',
+                    //     message: `Plugin ${node.ns.plugin!.id} had errors (loc ${
+                    //         group[0].id
+                    //     })`,
+                    // },
+                    ...errors.map(([name, id]) => ({
+                        type: 'error' as const,
+                        message: `Plugin ${name} (${id})`,
+                    })),
+                );
             }
             continue;
         }

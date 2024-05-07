@@ -225,15 +225,15 @@
         (cst/array [one ..rest] l)             (pcon "cons" l [(parse-pat one) (parse-pat (cst/array rest l))] l)
         (cst/list [] l)                        (pcon "()" l [] l)
         (** The pattern (, a b c) turns into (, a (, b c)) **)
-        (cst/list [(cst/id "," il) ..args] l)  (parse-pat-tuple args il l)
+        (cst/list [(cst/id "," il) ..args] l)  (loop
+                                                   args
+                                                       (fn [items recur]
+                                                       (match items
+                                                           [one]        (parse-pat one)
+                                                           []           (pcon "," l [] il)
+                                                           [one ..rest] (pcon "," l [(parse-pat one) (recur rest)] l))))
         (cst/list [(cst/id name il) ..rest] l) (pcon name il (map rest parse-pat) l)
         _                                      (fatal "Invalid pattern: ${(valueToString pat)}")))
-
-(defn parse-pat-tuple [items il l]
-    (match items
-        []           (pcon "," l [] il)
-        [one]        (parse-pat one)
-        [one ..rest] (pcon "," l [(parse-pat one) (parse-pat-tuple rest il l)] l)))
 
 (,
     parse-pat
@@ -283,14 +283,14 @@
 
 (** ## Expressions **)
 
+(defn parse-template [templates]
+    (map templates (fn [(, expr string l)] (, (parse-expr expr) string l))))
+
 (defn parse-expr [cst]
     (match cst
         (cst/id "true" l)                                           (eprim (pbool true l) l)
         (cst/id "false" l)                                          (eprim (pbool false l) l)
-        (cst/string first templates l)                              (estr
-                                                                        first
-                                                                            (map templates (fn [(, expr string l)] (, (parse-expr expr) string l)))
-                                                                            l)
+        (cst/string first templates l)                              (estr first (parse-template templates) l)
         (cst/id id l)                                               (match (string-to-int id)
                                                                         (some int) (eprim (pint int l) l)
                                                                         (none)     (evar id l))
@@ -318,6 +318,8 @@
                                                                                 (let [(, pat value) pair] (, (parse-pat pat) (parse-expr value)))))
                                                                             (parse-expr body)
                                                                             l)
+        (** This is our "do-notation" let form.
+            (let-> [pat init] body) turns into (>>= init (fn [pat] body)) **)
         (cst/list [(cst/id "let->" el) (cst/array inits _) body] l) (foldr
                                                                         (parse-expr body)
                                                                             (pairs inits)
@@ -328,22 +330,23 @@
                                                                                         [(parse-expr value) (elambda [(parse-pat pat)] body l)]
                                                                                         l))))
         (cst/list [(cst/id "let" _) .._] l)                         (fatal "Invalid 'let' ${(int-to-string l)}")
-        (cst/list [(cst/id "," il) ..args] l)                       (parse-tuple args il l)
+        (cst/list [(cst/id "," il) ..args] l)                       (loop
+                                                                        args
+                                                                            (fn [args recur]
+                                                                            (match args
+                                                                                []           (evar "," il)
+                                                                                [one]        (parse-expr one)
+                                                                                [one ..rest] (eapp (evar "," il) [(parse-expr one) (recur rest)] l))))
         (cst/list [] l)                                             (evar "()" l)
         (cst/list [target ..args] l)                                (eapp (parse-expr target) (map args parse-expr) l)
-        (cst/array args l)                                          (parse-array args l)))
-
-(defn parse-tuple [args il l]
-    (match args
-        []           (evar "," il)
-        [one]        (parse-expr one)
-        [one ..rest] (eapp (evar "," il) [(parse-expr one) (parse-tuple rest il l)] l)))
-
-(defn parse-array [args l]
-    (match args
-        []                     (evar "nil" l)
-        [(cst/spread inner _)] (parse-expr inner)
-        [one ..rest]           (eapp (evar "cons" l) [(parse-expr one) (parse-array rest l)] l)))
+        (cst/array args l)                                          (loop
+                                                                        args
+                                                                            (fn [args recur]
+                                                                            (match args
+                                                                                []                     (evar "nil" l)
+                                                                                [(cst/spread inner _)] (parse-expr inner)
+                                                                                [one ..rest]           (eapp (evar "cons" l) [(parse-expr one) (recur rest)] l))))
+        _                                                           (fatal "Invalid expression")))
 
 (,
     parse-expr

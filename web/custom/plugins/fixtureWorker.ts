@@ -3,6 +3,7 @@ import { Node } from '../../../src/types/cst';
 import { WorkerPlugin } from '../UIState';
 import { LocedName } from '../store/sortTops';
 import { Data, Expr, parse, parseExpr } from './Data';
+import { valueToString } from '../../ide/ground-up/valueToString';
 
 export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
     test: (node: Node) => {
@@ -15,6 +16,7 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
             usages: {},
         };
     },
+
     // infer(parsed, evaluator, tenv) {
     //     const { result, typesAndLocs } = evaluator.inference!.inferExpr(
     //         parsed.expr,
@@ -25,21 +27,34 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
     //         typesAndLocs,
     //     };
     // },
+
     parse(node, errors, evaluator) {
         const deps: LocedName[] = [];
         const parsed = parse(node, parseExpr(evaluator, errors, deps));
         return parsed ? { parsed, deps } : null;
     },
 
-    hasErrors(results: {
+    getErrors(results: {
         [key: number]: { expected: any; found: any; error?: string };
     }) {
+        const errors: [string, number][] = [];
         for (let [k, res] of Object.entries(results)) {
-            if (res.error) return true;
-            if (!equal(res.expected, res.found)) return true;
-            if (res.expected === undefined) return true;
+            if (res.error) {
+                errors.push([res.error, +k]);
+            }
+            if (!equal(res.expected, res.found)) {
+                errors.push([
+                    `Fixture test not equal ${valueToString(
+                        res.expected,
+                    )} vs ${valueToString(res.found)}`,
+                    +k,
+                ]);
+            }
+            if (res.expected === undefined) {
+                errors.push([`No "expected" value for fixture test`, +k]);
+            }
         }
-        return false;
+        return errors;
     },
 
     process(data, meta, evaluator, traces, env) {
