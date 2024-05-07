@@ -45,10 +45,17 @@ export const runFixtures = async (fixtures: Fixture[]) => {
             }
         });
 
-        console.time('toFile');
-        const result = ev.toFile(state, tid);
-        console.timeEnd('toFile');
-        console.log(`js size ${result.js.length}`);
+        try {
+            console.time('toFile');
+            const result = ev.toFile(state, tid);
+            console.timeEnd('toFile');
+            console.log(`js size ${result.js.length}`);
+            evaluators[+id] = result.js;
+        } catch (err) {
+            console.log(`Failed while doing ${id} : ${name}`);
+            throw err;
+            // no good
+        }
 
         try {
             const results = blankInitialResults();
@@ -92,7 +99,6 @@ export const runFixtures = async (fixtures: Fixture[]) => {
         // if (Object.keys(result.errors).length) {
         //     throw new Error(JSON.stringify(result.errors));
         // }
-        evaluators[+id] = result.js;
         // writeFileSync('./ugh' + id + '.js', result.js);
     }
 };

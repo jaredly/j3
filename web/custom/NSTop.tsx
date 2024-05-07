@@ -225,8 +225,8 @@ const RenderProduce = ({
     const store = useGetStore();
 
     useEffect(() => {
-        if (!hover) return setShow(false);
-        let tid = setTimeout(() => setShow(true), 300);
+        // if (!hover) return setShow(false);
+        let tid = setTimeout(() => setShow(hover), 300);
         return () => clearTimeout(tid);
     }, [hover]);
 
@@ -280,7 +280,7 @@ const RenderProduce = ({
                         <RenderProduceItem value={item} />
                     </div>
                 ))}
-                {tooLong ? (
+                {tooLong && (show || collapsed === 'pinned') ? (
                     <div
                         style={{
                             position: 'absolute',

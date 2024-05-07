@@ -14,9 +14,13 @@ const list = (values) => {
   return v
 } **)
 
-(** const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])] **)
-
-(** unwrapList(list([1,2,3])) **)
+(** const unwrapList = value => {
+  const res = [];
+  for (; value.type === 'cons'; value = value[1]) {
+    res.push(value[0]);
+  }
+  return res;
+} **)
 
 (** const pair = (a, b) => ({type: ',', 0: a, 1: b}) **)
 
@@ -35,7 +39,7 @@ const list = (values) => {
     case 'rich-text':
       return
     case 'identifier':
-      return {type: 'cst/identifier', 0: node.text, 1: node.loc}
+      return {type: 'cst/id', 0: node.text, 1: node.loc}
     case 'spread':
       const inner = fromNode(node.contents)
       return inner
@@ -52,27 +56,27 @@ const list = (values) => {
           pair(item.suffix.text, item.suffix.loc)
         ))
       ), 2: node.loc}
+    case 'raw-code':
+      return {type: 'cst/string', 0: node.raw, 1: nil, 2: node.loc}
   }
 } **)
 
-(** test = v => valueToString(fromNode(v)) **)
-
 (,
     (** v => valueToString(fromNode(v)) **)
-        [(, (@ 10) "(cst/identifier \"10\" 55)")
+        [(, (@ 10) (** '(cst/id "10" 55)' **))
         (,
         (@ [1 ; ya 2 ])
-            "(cst/array [(cst/identifier \"1\" 69) (cst/identifier \"2\" 71)] 68)")
+            (** '(cst/array [(cst/id "1" 69) (cst/id "2" 71)] 68)' **))
         (,
         (@ "hi ${1} 12")
-            (** '(cst/string "hi " [(, (cst/identifier "1" 81) (, " 12" 82))] 79)' **))
+            (** '(cst/string "hi " [(, (cst/id "1" 81) (, " 12" 82))] 79)' **))
         (,
         {hi 10}
-            "(cst/record [(cst/identifier \"hi\" 92) (cst/identifier \"10\" 93)] 88)")])
+            (** '(cst/record [(cst/id "hi" 92) (cst/id "10" 93)] 88)' **))])
 
-(** toNode = jcst => {
-  switch (jcst.type) {
-    case 'cst/identifier':
+(** const toNode = node => {
+  switch (node.type) {
+    case 'cst/id':
       return {type: 'identifier', text: node[0], loc: node[1]}
     case 'cst/spread':
       return {type: 'spread', contents: toNode(node[0]), loc: node[1]}
@@ -81,10 +85,10 @@ const list = (values) => {
     case 'cst/array':
     case 'cst/list':
     case 'cst/record':
-      return {type: jcst.type.slice(4), values: unwrapArray(node[0]).map(toNode), loc: node[1]}
+      return {type: node.type.slice(4), values: unwrapList(node[0]).map(toNode), loc: node[1]}
     case 'cst/string':
       return {type: 'string', first: {type: 'stringText', text: node[0], loc: node[2]},
-        templates: unwrapArray(node[1]).map(({0: expr, 1: text, 2: loc}) => ({
+        templates: unwrapList(node[1]).map(({0: expr, 1: text, 2: loc}) => ({
           expr: toNode(expr),
           suffix: {text, loc},
           loc,
@@ -94,14 +98,18 @@ const list = (values) => {
   }
 } **)
 
-(** valueToString = (v) => {
+(,
+    (** v => equal(fromNode(v), fromNode(toNode(fromNode(v)))) **)
+        [(, (@ 10) (** true **)) (, (@ [1 (2 3)]) (** true **)) (, (@ {a b "two" ..two ..}) (** true **))])
+
+(** const valueToString = (v) => {
     if (Array.isArray(v)) {
         return `[${v.map(valueToString).join(', ')}]`;
     }
 
     if (typeof v === 'object' && v && 'type' in v) {
         if (v.type === 'cons' || v.type === 'nil') {
-            const un = unwrapArray(v);
+            const un = unwrapList(v);
             return '[' + un.map(valueToString).join(' ') + ']';
         }
 
@@ -129,4 +137,4 @@ const list = (values) => {
 };
  **)
 
-(** ({fromNode, toNode}) **)
+(** ({type: 'fns', fromNode, toNode}) **)

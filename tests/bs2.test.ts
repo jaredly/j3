@@ -42,6 +42,12 @@ const fixtures: Fixture[] = [
         file: 'bootstrap.json',
         evaluator: ':javascript:',
     },
+    {
+        id: 0.1,
+        name: 'jsbootstrap -> jcst',
+        file: 'jcst.json',
+        evaluator: ':javascript:',
+    },
     // The bootstrapped, VM
     {
         id: 1,
@@ -60,38 +66,38 @@ const fixtures: Fixture[] = [
         id: 2,
         name: 'bootstrapped-self -> self-1',
         file: 'self-1.json',
-        evaluator: [1.1, 1],
+        evaluator: [0.1, 1.1, 1],
     },
     {
         id: 2.1,
         name: 'bootstrapped-self -> parse-self',
         file: 'parse-self.json',
-        evaluator: [1.1, 1],
+        evaluator: [0.1, 1.1, 1],
     },
     // Using the self-js
     {
         id: 3,
         name: 'selfed-self -> self-1',
         file: 'self-1.json',
-        evaluator: [2.1, 2],
+        evaluator: [0.1, 2.1, 2],
     },
     {
         id: 3.1,
         name: 'selfed-self -> parse-self',
         file: 'parse-self.json',
-        evaluator: [2.1, 2],
+        evaluator: [0.1, 2.1, 2],
     },
     {
         id: 4,
         name: 'selfed-self -> algw-fast',
         file: 'algw-fast.json',
-        evaluator: [2.1, 2],
+        evaluator: [0.1, 2.1, 2],
     },
     {
         id: 5,
         name: 'selfed-self+type -> parse-self',
         file: 'parse-self.json',
-        evaluator: [2.1, 2, 4],
+        evaluator: [0.1, 2.1, 2, 4],
     },
     //
     // {

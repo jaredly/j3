@@ -1,3 +1,4 @@
+import equal from 'fast-deep-equal';
 import { Node } from '../../../src/types/cst';
 import { fromMCST } from '../../../src/types/mcst';
 import { NUIState } from '../../custom/UIState';
@@ -36,7 +37,7 @@ export const jsEvaluator: FullEvalator<
 > = {
     id: 'js-evaluator',
     init() {
-        return { values: {} };
+        return { values: { equal } };
     },
     valueToString(v) {
         if (typeof v === 'function') {

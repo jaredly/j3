@@ -27,6 +27,7 @@ export function builtins() {
         unescapeString: slash,
         'show-pretty': (v: any) => JSON.stringify(v),
         show: (v: any) => JSON.stringify(v),
+        equal,
 
         'int-to-string': (a: number) => a + '',
         'string-to-float': (a: string) => {

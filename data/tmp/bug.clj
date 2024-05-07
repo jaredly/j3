@@ -8,3 +8,6 @@ one-thing
 
 (deftype (x a) (a int))
 
+(@ hi)
+
+(@@ hi)

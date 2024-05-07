@@ -262,7 +262,7 @@ const fromNode = node => {
   if (isBlank(node)) return
   switch (node.type) {
     case 'identifier':
-      return {type: 'cst/identifier', 0: node.text, 1: node.loc}
+      return {type: 'cst/id', 0: node.text, 1: node.loc}
     case 'spread':
       const inner = fromNode(node.contents)
       return inner
@@ -291,9 +291,7 @@ const fromNode = node => {
         (,
         (@ (, a b c))
             (** '(eapp (evar "," 1825) [(evar "a" 1829) (eapp (evar "," 1825) [(evar "b" 1830) (evar "c" 1831)] 1825)] 1825)' **))
-        (,
-        (@@ abc)
-            (** '(equot (quot/quot (cst/identifier "abc" 1207)) 1204)' **))
+        (, (@@ abc) (** '(equot (quot/quot (cst/id "abc" 1207)) 1204)' **))
         (,
         (@ [1 2])
             (** '(eapp (evar "cons" -1) [(eprim (pint 1 1179) 1179) (eapp (evar "cons" 1178) [(eprim (pint 2 1181) 1181) (evar "nil" 1178)] 1178)] -1)' **))
