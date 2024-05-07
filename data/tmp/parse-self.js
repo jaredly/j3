@@ -1,17 +1,7 @@
-const pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1})
-const pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1})
-const snd = (tuple) => (({1: v}) => v)(tuple);
-
-const fst = (tuple) => (({0: v}) => v)(tuple);
-
-const some = (v0) => ({type: "some", 0: v0})
-const none = ({type: "none"})
-const value = ({type: "value"})
-const type = ({type: "type"})
-const loop = (v) => (f) => f(v)((nv) => loop(nv)(f));
-
 const nil = ({type: "nil"})
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
+const pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1})
+const pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1})
 const pany = (v0) => ({type: "pany", 0: v0})
 const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
 const pcon = (v0) => (v1) => (v2) => (v3) => ({type: "pcon", 0: v0, 1: v1, 2: v2, 3: v3})
@@ -20,13 +10,6 @@ const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1})
 const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
-const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
-const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
-const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1})
-const cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
-const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
-const one = (v0) => ({type: "one", 0: v0})
-const many = (v0) => ({type: "many", 0: v0})
 const join = (sep) => (items) => (($target) => {
 if ($target.type === "nil") {
 return ""
@@ -61,6 +44,17 @@ return cons(f(i)(one))(mapi($pl(1)(i))(rest)(f))
 throw new Error('Failed to match. ' + valueToString($target));
 })(values);
 
+const snd = (tuple) => (({1: v}) => v)(tuple);
+
+const fst = (tuple) => (({0: v}) => v)(tuple);
+
+const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
+const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
+const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1})
+const cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
+const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
+const some = (v0) => ({type: "some", 0: v0})
+const none = ({type: "none"})
 const pairs = (list) => (($target) => {
 if ($target.type === "nil") {
 return nil
@@ -164,6 +158,10 @@ return f(foldr(init)(rest)(f))(one)
 throw new Error('Failed to match. ' + valueToString($target));
 })(items);
 
+const value = ({type: "value"})
+const type = ({type: "type"})
+const one = (v0) => ({type: "one", 0: v0})
+const many = (v0) => ({type: "many", 0: v0})
 const bag$sland = (first) => (second) => (($target) => {
 if ($target.type === "," &&
 $target[0].type === "many" &&
@@ -294,6 +292,8 @@ return cons($co(o)(t))(zip(one)(two))
 throw new Error('Failed to match. ' + valueToString($target));
 })($co(one)(two));
 
+const loop = (v) => (f) => f(v)((nv) => loop(nv)(f));
+
 const get_id = (x) => (($target) => {
 if ($target.type === "cst/id") {
 {
@@ -375,6 +375,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const empty = many(nil);
 
+/* type alias */
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
 const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
@@ -532,7 +533,7 @@ if ($target.type === "cst/list" &&
 $target[0].type === "nil") {
 {
 let l = $target[1];
-return fatal("(parse-type) with empty list")
+return tcon("()")(l)
 }
 }
 if ($target.type === "cst/list" &&
@@ -1203,4 +1204,4 @@ return eapp(evar("cons")(l))(cons(parse_expr(one))(cons(parse_array(rest)(l))(ni
 throw new Error('Failed to match. ' + valueToString($target));
 })(args);
 
-return eval("({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) => ({\ntype: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr})")(parse_and_compile(parse_stmt)(parse_expr)(names)(externals_stmt)((expr) => bag$slto_list(externals(set$slnil)(expr))))
+return eval("({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) =>\n  ({type: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr})")(parse_and_compile(parse_stmt)(parse_expr)(names)(externals_stmt)((expr) => bag$slto_list(externals(set$slnil)(expr))))

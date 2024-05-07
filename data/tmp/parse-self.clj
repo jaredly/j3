@@ -1,5 +1,16 @@
 (** ## Self-Hosted Parsing **)
 
+(** Here we're doing essentially the same things as bootstrap, but we have the advantages of rich pattern-matching, so we can do
+    (match node
+        (cst/list [(cst/id "def" _) (cst/id name _) body] _) ...)  
+    instead of
+    if (node.type === 'list' &&
+        node.values.length === 3 &&
+        node[0].type === 'identifier' &&
+        node[0].text === 'def' &&
+        node[1].type === 'identifier') { 
+    Isn't it great? **)
+
 (** ## Prelude **)
 
 (** Yes I am committing many point-free crimes in this prelude; map should have the function as the first argument, foldr's function should have the arguments flipped, etc. This is just how it works in my head 🙃. **)
@@ -146,24 +157,28 @@
 (defn parse-type [type]
     (match type
         (cst/id id l)                                          (tcon id l)
-        (cst/list [] l)                                        (fatal "(parse-type) with empty list")
-        (cst/list [(cst/id "fn" _) (cst/array args _) body] _) (foldl
+        (** The (fn [a b] c) form is sugar for (-> a (-> b c)) **)
+        (cst/list [(cst/id "fn" _) (cst/array args _) body] l) (foldl
                                                                    (parse-type body)
                                                                        (rev args [])
-                                                                       (fn [body arg] (tapp (tapp (tcon "->" -1) (parse-type arg) -1) body -1)))
+                                                                       (fn [body arg] (tapp (tapp (tcon "->" l) (parse-type arg) l) body l)))
+        (** We desugar (, a b c) into (, a (, b c)) **)
         (cst/list [(cst/id "," nl) ..items] al)                (loop
                                                                    (map items parse-type)
                                                                        (fn [items recur]
                                                                        (match items
-                                                                           [one two]    (tapp (tapp (tcon "," nl) one al) two al)
                                                                            [one]        one
+                                                                           [one two]    (tapp (tapp (tcon "," nl) one al) two al)
                                                                            [one ..rest] (tapp (tapp (tcon "," nl) one al) (recur rest) al))))
+        (** Function application in types is auto-curried (a b c) is ((a b) c) **)
         (cst/list items l)                                     (loop
                                                                    (rev (map items parse-type) [])
                                                                        (fn [items recur]
                                                                        (match items
                                                                            [one]        one
-                                                                           [one ..rest] (tapp (recur rest) one l))))
+                                                                           [one ..rest] (tapp (recur rest) one l)
+                                                                           (** A special case here for the () form, which is the unit type. **)
+                                                                           []           (tcon "()" l))))
         _                                                      (fatal "(parse-type) Invalid type ${(valueToString type)}")))
 
 (,
@@ -171,13 +186,13 @@
         [(, (@@ (hi ho)) (tapp (tcon "hi" 5527) (tcon "ho" 5528) 5526))
         (,
         (@@ (fn [x] y))
-            (tapp (tapp (tcon "->" -1) (tcon "x" 5558) -1) (tcon "y" 5559) -1))
+            (tapp (tapp (tcon "->" 5555) (tcon "x" 5558) 5555) (tcon "y" 5559) 5555))
         (,
         (@@ (fn [a b] c))
             (tapp
-            (tapp (tcon "->" -1) (tcon "a" 5688) -1)
-                (tapp (tapp (tcon "->" -1) (tcon "b" 5689) -1) (tcon "c" 5690) -1)
-                -1))
+            (tapp (tcon "->" 5685) (tcon "a" 5688) 5685)
+                (tapp (tapp (tcon "->" 5685) (tcon "b" 5689) 5685) (tcon "c" 5690) 5685)
+                5685))
         (,
         (@@ (, a b))
             (tapp
@@ -209,9 +224,10 @@
         (cst/array [(cst/spread inner _)] _)   (parse-pat inner)
         (cst/array [one ..rest] l)             (pcon "cons" l [(parse-pat one) (parse-pat (cst/array rest l))] l)
         (cst/list [] l)                        (pcon "()" l [] l)
+        (** The pattern (, a b c) turns into (, a (, b c)) **)
         (cst/list [(cst/id "," il) ..args] l)  (parse-pat-tuple args il l)
         (cst/list [(cst/id name il) ..rest] l) (pcon name il (map rest parse-pat) l)
-        _                                      (fatal "parse-pat mo match ${(valueToString pat)}")))
+        _                                      (fatal "Invalid pattern: ${(valueToString pat)}")))
 
 (defn parse-pat-tuple [items il l]
     (match items
@@ -592,6 +608,8 @@
 
 (deftype name-kind (value) (type))
 
+(typealias loced-name (, string name-kind int))
+
 (** ## Collecting exports **)
 
 (defn names [stmt]
@@ -709,18 +727,19 @@
         (, (@@ (deftype hi (one int))) [(, "int" (type) 16460)])
         (, (@@ (typealias lol int)) [(, "int" (type) 16480)])])
 
-(** ## Export **)
+(** ## Exporting for the structured editor **)
 
 (deftype parse-and-compile
     (parse-and-compile
         (fn [cst] stmt)
             (fn [cst] expr)
-            (fn [stmt] (list (, string name-kind int)))
-            (fn [stmt] (list (, string name-kind int)))
-            (fn [expr] (list (, string name-kind int)))))
+            (fn [stmt] (list loced-name))
+            (fn [stmt] (list loced-name))
+            (fn [expr] (list loced-name))))
 
 ((eval
-    "({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) => ({\ntype: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr})")
+    (** ({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) =>
+  ({type: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr}) **))
     (parse-and-compile
         parse-stmt
             parse-expr

@@ -24,6 +24,7 @@ for the series of artcicle
 
 # PLAN Higher up...
 
+- [ ] I do need plugins to clue in to the `usage` dealio, so I don't think things aren't used.
 - [ ] I ... kinda want ... the inferred `type` to be displayed directly *above* the toplevel.
   to avoid jumping, should we reserve space for everything there? Or just for toplevels with a single named export?
 
