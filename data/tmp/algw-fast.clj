@@ -91,7 +91,7 @@
     (cst/list (list cst) int)
         (cst/array (list cst) int)
         (cst/spread cst int)
-        (cst/identifier string int)
+        (cst/id string int)
         (cst/string string (list (, cst string int)) int))
 
 (deftype quot
@@ -341,25 +341,21 @@
         (tvar vname loc)                           (let [(, fmap idx) free]
                                                        (match fmap
                                                            (some fmap) (match (map/get fmap vname)
-                                                                           (some name) (, (cst/identifier name loc) free)
+                                                                           (some name) (, (cst/id name loc) free)
                                                                            none        (let [name (at letters idx "_too_many_vbls_")]
-                                                                                           (,
-                                                                                               (cst/identifier name loc)
-                                                                                                   (, (some (map/set fmap vname name)) (+ 1 idx)))))
-                                                           _           (, (cst/identifier vname loc) free)))
-        (tcon name l)                              (, (cst/identifier name l) free)
+                                                                                           (, (cst/id name loc) (, (some (map/set fmap vname name)) (+ 1 idx)))))
+                                                           _           (, (cst/id vname loc) free)))
+        (tcon name l)                              (, (cst/id name l) free)
         (tapp (tapp (tcon "->" _) a la) b l)       (let [
                                                        (, iargs r)   (unwrap-fn b)
                                                        args          [a ..iargs]
                                                        (, args free) (ttc-list args free)
                                                        (, two free)  (ttc-inner r free)]
-                                                       (,
-                                                           (cst/list [(cst/identifier "fn" la) (cst/array (rev args []) la) two] l)
-                                                               free))
+                                                       (, (cst/list [(cst/id "fn" la) (cst/array (rev args []) la) two] l) free))
         (tapp (tapp (tcon "," l,) arg1 la) arg2 l) (let [
                                                        args          [arg1 ..(unwrap-type-tuple arg2)]
                                                        (, args free) (ttc-list args free)]
-                                                       (, (cst/list [(cst/identifier "," l,) ..(rev args [])] l) free))
+                                                       (, (cst/list [(cst/id "," l,) ..(rev args [])] l) free))
         (tapp a b l)                               (let [
                                                        (, target args) (unwrap-app a)
                                                        args            [b ..args]
@@ -382,35 +378,33 @@
 
 (,
     type-to-cst
-        [(, (@t hi) (cst/identifier "hi" 24524))
+        [(, (@t hi) (cst/id "hi" 24524))
         (,
         (@t (fn [x] int))
             (cst/list
-            [(cst/identifier "fn" 24536)
-                (cst/array [(cst/identifier "x" 24539)] 24536)
-                (cst/identifier "int" 24540)]
+            [(cst/id "fn" 24536)
+                (cst/array [(cst/id "x" 24539)] 24536)
+                (cst/id "int" 24540)]
                 24536))
         (,
         (@t (-> a b))
             (cst/list
-            [(cst/identifier "fn" 24569)
-                (cst/array [(cst/identifier "a" 24571)] 24569)
-                (cst/identifier "b" 24572)]
+            [(cst/id "fn" 24569)
+                (cst/array [(cst/id "a" 24571)] 24569)
+                (cst/id "b" 24572)]
                 24569))
         (,
         (@t (cons a b))
             (cst/list
-            [(cst/identifier "cons" 24607)
-                (cst/identifier "a" 24608)
-                (cst/identifier "b" 24609)]
+            [(cst/id "cons" 24607) (cst/id "a" 24608) (cst/id "b" 24609)]
                 24606))
         (,
         (@t (, a b c))
             (cst/list
-            [(cst/identifier "," 24635)
-                (cst/identifier "a" 24636)
-                (cst/identifier "b" 24637)
-                (cst/identifier "c" 24638)]
+            [(cst/id "," 24635)
+                (cst/id "a" 24636)
+                (cst/id "b" 24637)
+                (cst/id "c" 24638)]
                 24634))])
 
 (defn type-to-string [t]
