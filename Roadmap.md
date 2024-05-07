@@ -14,6 +14,7 @@ for the series of artcicle
 - [x] jcst.json
 - [-] parse-self.json
   - [x] executing
+  - [x] trimmed & refactored the implementation
   - [ ] annotated
 - [ ] algw-fast.json
   - [x] executing

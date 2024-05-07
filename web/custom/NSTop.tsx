@@ -238,6 +238,14 @@ const RenderProduce = ({
 
     const maxHeight = 40;
 
+    // HACK (maybe) to only show inferred type if tehre's only one of them...
+    const numTypes = value.filter(
+        (p) => typeof p !== 'string' && p.type === 'type',
+    ).length;
+    if (numTypes > 1) {
+        value = value.filter((p) => typeof p === 'string' || p.type !== 'type');
+    }
+
     if (!value.length) return null;
 
     const tooLong = height != null && height > maxHeight;

@@ -2,6 +2,8 @@
 
 (** ## Prelude **)
 
+(** Yes I am committing many point-free crimes in this prelude; map should have the function as the first argument, foldr's function should have the arguments flipped, etc. This is just how it works in my head 🙃. **)
+
 (defn join [sep items]
     (match items
         []           ""
@@ -74,6 +76,15 @@
 
 (deftype (list a) (nil) (cons a (list a)))
 
+(defn filter-some [items]
+    (foldr
+        []
+            items
+            (fn [res v]
+            (match v
+                (some v) [v ..res]
+                _        res))))
+
 (defn loop [v f] (f v (fn [nv] (loop nv f))))
 
 (** ## Our AST & CST
@@ -86,13 +97,6 @@
         (cst/id string int)
         (cst/string string (list (, cst string int)) int))
 
-(deftype quot
-    (quot/expr expr)
-        (quot/stmt stmt)
-        (quot/type type)
-        (quot/pat pat)
-        (quot/quot cst))
-
 (deftype expr
     (eprim prim int)
         (estr string (list (, expr string int)) int)
@@ -102,6 +106,13 @@
         (eapp expr (list expr) int)
         (elet (list (, pat expr)) expr int)
         (ematch expr (list (, pat expr)) int))
+
+(deftype quot
+    (quot/expr expr)
+        (quot/stmt stmt)
+        (quot/type type)
+        (quot/pat pat)
+        (quot/quot cst))
 
 (deftype prim (pint int int) (pbool bool int))
 
@@ -456,60 +467,21 @@
 
 (** ## Statements **)
 
-((** A helper for producing the sdeftype form. **)
-    defn mk-deftype [id li args items l]
-    (sdeftype
-        id
-            li
-            (map
-            args
-                (fn [arg]
-                (match arg
-                    (cst/id name l) (, name l)
-                    _               (fatal "deftype type argument must be identifier"))))
-            (foldr
-            []
-                items
-                (fn [res constr]
-                (match constr
-                    (cst/list [(cst/id name ni) ..args] l) [(, name ni (map args parse-type) l) ..res]
-                    (cst/list [] l)                        res
-                    _                                      (fatal "Invalid type constructor"))))
-            l))
-
 (defn parse-stmt [cst]
     (match cst
-        (cst/list [(cst/id "def" _) (cst/id id li) value] l)                             (sdef id li (parse-expr value) l)
-        (cst/list [(cst/id "defn" a) (cst/id id li) (cst/array args b) body] c)          (sdef
-                                                                                             id
-                                                                                                 li
-                                                                                                 (parse-expr (cst/list [(cst/id "fn" a) (cst/array args b) body] c))
-                                                                                                 c)
-        (cst/list [(cst/id "defn" _) .._] l)                                             (fatal "Invalid 'defn' ${(int-to-string l)}")
-        (cst/list [(cst/id "deftype" _) (cst/id id li) ..items] l)                       (mk-deftype id li [] items l)
-        (cst/list
-            [(cst/id "deftype" _) (cst/list [(cst/id id li) ..args] _) ..items]
-                l) (mk-deftype id li args items l)
-        (cst/list [(cst/id "typealias" _) (cst/id name nl) body] l)                      (stypealias name nl [] (parse-type body) l)
-        (cst/list
-            [(cst/id "typealias" _) (cst/list [(cst/id name nl) ..args] _) body]
-                l) (let [
-                                                                                             args (map
-                                                                                                      args
-                                                                                                          (fn [x]
-                                                                                                          (match x
-                                                                                                              (cst/id name l) (, name l)
-                                                                                                              _               (fatal "typealias type argument must be identifier"))))]
-                                                                                             (stypealias name nl args (parse-type body) l))
-        (cst/list [(cst/id "deftype" _) .._] l)                                          (fatal "Invalid 'deftype' ${(int-to-string l)}")
-        _                                                                                (sexpr
-                                                                                             (parse-expr cst)
-                                                                                                 (match cst
-                                                                                                 (cst/list _ l)     l
-                                                                                                 (cst/id _ l)       l
-                                                                                                 (cst/array _ l)    l
-                                                                                                 (cst/string _ _ l) l
-                                                                                                 (cst/spread _ l)   l))))
+        (cst/list [(cst/id "def" _) (cst/id id li) value] l)                    (sdef id li (parse-expr value) l)
+        (cst/list [(cst/id "defn" a) (cst/id id li) (cst/array args b) body] c) (let [
+                                                                                    body (parse-expr (cst/list [(cst/id "fn" a) (cst/array args b) body] c))]
+                                                                                    (sdef id li body c))
+        (cst/list [(cst/id "defn" _) .._] l)                                    (fatal "Invalid 'defn' ${(int-to-string l)}")
+        (cst/list [(cst/id "deftype" _) head ..items] l)                        (let [
+                                                                                    (, id li args) (id-with-maybe-args head)
+                                                                                    constrs        (filter-some (map items parse-type-constructor))]
+                                                                                    (sdeftype id li args constrs l))
+        (cst/list [(cst/id "deftype" _) .._] l)                                 (fatal "Invalid 'deftype' ${(int-to-string l)}")
+        (cst/list [(cst/id "typealias" _) head body] l)                         (let [(, id li args) (id-with-maybe-args head)]
+                                                                                    (stypealias id li args (parse-type body) l))
+        _                                                                       (sexpr (parse-expr cst) (cst-loc cst))))
 
 (,
     parse-stmt
@@ -563,68 +535,52 @@
         (@@ (defn a [m] m))
             (sdef "a" 2051 (elambda [(pvar "m" 2055)] (evar "m" 2053) 2049) 2049))])
 
-(** ## Debugging Helpers **)
+(defn id-with-maybe-args [head]
+    (match head
+        (cst/id id li)                       (, id li [])
+        (cst/list [(cst/id id li) ..args] _) (, id li (map args get-id))
+        _                                    (fatal "Invalid type constructor")))
 
-(defn pat-loc [pat]
-    (match pat
-        (pany l)       l
-        (pprim _ l)    l
-        (pstr _ l)     l
-        (pvar _ l)     l
-        (pcon _ _ _ l) l))
+(defn get-id [x]
+    (match x
+        (cst/id name l) (, name l)
+        _               (fatal "type argument must be identifier")))
 
-(defn expr-loc [expr]
-    (match expr
-        (estr _ _ l)    l
-        (eprim _ l)     l
-        (evar _ l)      l
-        (equot _ l)     l
-        (elambda _ _ l) l
-        (elet _ _ l)    l
-        (eapp _ _ l)    l
-        (ematch _ _ l)  l))
+(defn parse-type-constructor [constr]
+    (match constr
+        (cst/list [(cst/id name ni) ..args] l) (some (, name ni (map args parse-type) l))
+        (cst/list [] l)                        none
+        _                                      (fatal "Invalid type constructor")))
 
-(def its int-to-string)
+(defn cst-loc [cst]
+    (match cst
+        (cst/list _ l)     l
+        (cst/id _ l)       l
+        (cst/array _ l)    l
+        (cst/string _ _ l) l
+        (cst/spread _ l)   l))
 
-(defn trace-and-block [loc trace value js]
-    (match (map/get trace loc)
-        (none)      js
-        (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${value});\n${js}"))
+(** ## Analysis **)
 
-(defn trace-wrap [loc trace js]
-    (match (map/get trace loc)
-        (none)      js
-        (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${js})"))
+(** In order for the structured editor to be able to evaluate our toplevel terms in the correct order, we need to be able to report what names are exported from a given toplevel term, and what names are external to it, i.e. dependencies. We do this much in the same way as we did in the bootstrap (js) implementation, but there's a small twist: we don't have mutability.
+    A naive way of collecting everything would be to recursively walk the tree and return a (list) of the externals, concatenating the lists from sub-nodes. This would do a ton of extra work, however, because concatenating two lists takes O(n), and you'd end up walking each sub-list many many times.
+    To get around this issue, we use a bag type (a kind of [difference list](https://en.wikipedia.org/wiki/Difference_list)) which allows us to join the results of sub-trees in constant time, and only at the end traverse over everything (O(n)) to produce the final list. **)
 
-(defn trace-and [loc trace value js]
-    (match (map/get trace loc)
-        (none)      js
-        (some info) "($trace(${(its loc)}, ${(jsonify info)}, ${value}), ${js})"))
+(deftype (bag a) (one a) (many (list (bag a))))
 
-(defn just-trace [loc trace value]
-    (match (map/get trace loc)
-        (none)      ""
-        (some info) "$trace(${(its loc)}, ${(jsonify info)}, ${value});"))
-
-(defn source-map [loc js] "/*${(its loc)}*/${js}/*<${(its loc)}*/")
-
-(** ## Dependency analysis **)
-
-(deftype name-kind (value) (type))
-
-(deftype (bag a) (one a) (many (list (bag a))) (empty))
+(def empty (many []))
 
 (defn bag/and [first second]
     (match (, first second)
-        (, (empty) a)           a
-        (, a (empty))           a
+        (, (many []) a)         a
+        (, a (many []))         a
         (, (many [a]) (many b)) (many [a ..b])
         (, a (many b))          (many [a ..b])
         _                       (many [first second])))
 
 (defn bag/fold [f init bag]
     (match bag
-        (empty)      init
+        (many [])    init
         (one v)      (f init v)
         (many items) (foldr init items (bag/fold f))))
 
@@ -634,180 +590,9 @@
     bag/to-list
         [(, (many [empty (one 1) (many [(one 2) empty]) (one 10)]) [1 2 10])])
 
-(defn pat-names [pat]
-    (match pat
-        (pany _)              set/nil
-        (pvar name l)         (set/add set/nil name)
-        (pcon name nl args l) (foldl
-                                  set/nil
-                                      args
-                                      (fn [bound arg] (set/merge bound (pat-names arg))))
-        (pstr string int)     set/nil
-        (pprim prim int)      set/nil))
+(deftype name-kind (value) (type))
 
-(defn pat-names-loc [pat]
-    (match pat
-        (pany _)              empty
-        (pvar name l)         (one (, name l))
-        (pcon name nl args l) (foldl
-                                  (one (, name nl))
-                                      args
-                                      (fn [bound arg] (bag/and bound (pat-names-loc arg))))
-        (pstr string int)     empty
-        (pprim prim int)      empty))
-
-(defn pat-externals [pat]
-    (match pat
-        (** Soo this should be probably a (type)? Or rather, we should look up the corresponding type, and depend on that instead. **)
-        (pcon name nl args l) (bag/and (one (, name (value) nl)) (many (map args pat-externals)))
-        _                     empty))
-
-(defn expr-type [expr]
-    (match expr
-        (eprim prim int)     "prim"
-        (estr string _ int)  "str"
-        (evar string int)    "var"
-        (equot quot int)     "quot"
-        (elambda _ expr int) "lambda"
-        (eapp expr _ int)    "app"
-        (elet _ expr int)    "let"
-        (ematch expr _ int)  "match"))
-
-(defn type-type [type]
-    (match type
-        (tapp _ _ _) "app"
-        (tvar _ _)   "var"
-        (tcon _ _)   "con"))
-
-(defn fold-type [init type f]
-    (let [v (f init type)]
-        (match type
-            (tapp target arg _) (fold-type (fold-type v target f) arg f)
-            _                   v)))
-
-(defn ,,0 [x] (let [(, a _ _) x] a))
-
-(defn ,,1 [x] (let [(, _ a _) x] a))
-
-(defn ,,2 [x] (let [(, _ _ a) x] a))
-
-(defn map,,0 [f (, a b c)] (, (f a) b c))
-
-(defn map,1 [f (, a b)] (, a (f b)))
-
-dot
-
-(defn map-expr [f expr]
-    (match (f expr)
-        (estr first tpl l)     (estr first (map tpl (fn [(, expr rest)] (, (map-expr f expr) rest))) l)
-        (elambda pats body l)  (elambda pats (map-expr f body) l)
-        (elet bindings body l) (elet (map bindings (map,1 (map-expr f))) (map-expr f body) l)
-        (eapp target args l)   (eapp (map-expr f target) (map args (map-expr f)) l)
-        (ematch expr cases l)  (ematch (map-expr f expr) (map cases (map,1 (map-expr f))) l)
-        otherwise              otherwise))
-
-(defn fold-expr [init expr f]
-    (let [v (f init expr)]
-        (match expr
-            (estr _ tpl _)         (foldl v tpl (fn [init (, expr _)] (fold-expr init expr f)))
-            (elambda _ body _)     (fold-expr v body f)
-            (elet bindings body _) (fold-expr
-                                       (foldl
-                                           v
-                                               bindings
-                                               (fn [init binding] (fold-expr init (snd binding) f)))
-                                           body
-                                           f)
-            (eapp target args _)   (foldl
-                                       (fold-expr v target f)
-                                           args
-                                           (fn [init expr] (fold-expr init expr f)))
-            (ematch expr cases _)  (foldl
-                                       (fold-expr v expr f)
-                                           cases
-                                           (fn [init case] (fold-expr init (snd case) f)))
-            _                      v)))
-
-(defn expr-size [expr] (fold-expr 0 expr (fn [v _] (+ 1 v))))
-
-(defn type-size [type] (fold-type 0 type (fn [v _] (+ 1 v))))
-
-(defn ,,,2 [x] (let [(, _ _ x _) x] x))
-
-(defn stmt-size [stmt]
-    (+
-        1
-            (match stmt
-            (sdef string _ expr _)                  (expr-size expr)
-            (sexpr expr _)                          (expr-size expr)
-            (stypealias string _ args type _)       (type-size type)
-            (sdeftype string _ args constructors _) (foldl
-                                                        0
-                                                            constructors
-                                                            (fn [v (, _ _ args _)] (foldl v (map args type-size) +))))))
-
-(defn externals [bound expr]
-    (match expr
-        (evar name l)            (match (set/has bound name)
-                                     true empty
-                                     _    (one (, name (value) l)))
-        (eprim prim l)           empty
-        (estr first templates l) (many
-                                     (map
-                                         templates
-                                             (fn [arg]
-                                             (match arg
-                                                 (, expr _ _) (externals bound expr)))))
-        (equot expr l)           empty
-        (elambda pats body l)    (bag/and
-                                     (foldl empty (map pats pat-externals) bag/and)
-                                         (externals (foldl bound (map pats pat-names) set/merge) body))
-        (elet bindings body l)   (bag/and
-                                     (foldl
-                                         empty
-                                             (map
-                                             bindings
-                                                 (fn [arg]
-                                                 (let [(, pat init) arg]
-                                                     (bag/and (pat-externals pat) (externals bound init)))))
-                                             bag/and)
-                                         (externals
-                                         (foldl
-                                             bound
-                                                 (map bindings (fn [arg] (let [(, pat _) arg] (pat-names pat))))
-                                                 set/merge)
-                                             body))
-        (eapp target args l)     (bag/and
-                                     (externals bound target)
-                                         (foldl empty (map args (externals bound)) bag/and))
-        (ematch expr cases l)    (bag/and
-                                     (externals bound expr)
-                                         (foldl
-                                         empty
-                                             cases
-                                             (fn [bag arg]
-                                             (match arg
-                                                 (, pat body) (bag/and
-                                                                  (bag/and bag (pat-externals pat))
-                                                                      (externals (set/merge bound (pat-names pat)) body))))))))
-
-(defn dot [a b c] (a (b c)))
-
-(,
-    (dot bag/to-list (externals (set/from-list ["+" "-" "cons" "nil"])))
-        [(, (parse-expr (@@ hi)) [(, "hi" (value) 7036)])
-        (, (parse-expr (@@ [1 2 c])) [(, "c" (value) 7052)])
-        (,
-        (parse-expr (@@ (one two three)))
-            [(, "one" (value) 7066) (, "two" (value) 7067) (, "three" (value) 7068)])])
-
-(defn externals-type [bound t]
-    (match t
-        (tvar _ _)       empty
-        (tcon name l)    (match (set/has bound name)
-                             true empty
-                             _    (one (, name (type) l)))
-        (tapp one two _) (bag/and (externals-type bound one) (externals-type bound two))))
+(** ## Collecting exports **)
 
 (defn names [stmt]
     (match stmt
@@ -821,20 +606,100 @@ dot
                                                    (match arg
                                                        (, name l _ _) (, name (value) l))))]))
 
+(** ## Collecting dependencies **)
+
+(defn externals [bound expr]
+    (match expr
+        (evar name l)          (match (set/has bound name)
+                                   true empty
+                                   _    (one (, name (value) l)))
+        (eprim _ _)            empty
+        (estr _ templates _)   (many
+                                   (map
+                                       templates
+                                           (fn [arg]
+                                           (match arg
+                                               (, expr _ _) (externals bound expr)))))
+        (equot _ _)            empty
+        (elambda pats body _)  (bag/and
+                                   (foldl empty (map pats pat-externals) bag/and)
+                                       (externals (foldl bound (map pats pat-bound) set/merge) body))
+        (elet bindings body _) (bag/and
+                                   (foldl
+                                       empty
+                                           (map
+                                           bindings
+                                               (fn [arg]
+                                               (let [(, pat init) arg]
+                                                   (bag/and (pat-externals pat) (externals bound init)))))
+                                           bag/and)
+                                       (externals
+                                       (foldl
+                                           bound
+                                               (map bindings (fn [arg] (let [(, pat _) arg] (pat-bound pat))))
+                                               set/merge)
+                                           body))
+        (eapp target args _)   (bag/and
+                                   (externals bound target)
+                                       (foldl empty (map args (externals bound)) bag/and))
+        (ematch expr cases _)  (bag/and
+                                   (externals bound expr)
+                                       (foldl
+                                       empty
+                                           cases
+                                           (fn [bag arg]
+                                           (match arg
+                                               (, pat body) (bag/and
+                                                                (bag/and bag (pat-externals pat))
+                                                                    (externals (set/merge bound (pat-bound pat)) body))))))))
+
+(defn pat-bound [pat]
+    (match pat
+        (pany _)          set/nil
+        (pvar name _)     (set/add set/nil name)
+        (pcon _ _ args _) (foldl
+                              set/nil
+                                  args
+                                  (fn [bound arg] (set/merge bound (pat-bound arg))))
+        (pstr _ _)        set/nil
+        (pprim _ _)       set/nil))
+
+(defn externals-type [bound t]
+    (match t
+        (tvar _ _)       empty
+        (tcon name l)    (match (set/has bound name)
+                             true empty
+                             _    (one (, name (type) l)))
+        (tapp one two _) (bag/and (externals-type bound one) (externals-type bound two))))
+
+(defn pat-externals [pat]
+    (match pat
+        (** Note: It's a little weird that we're reporting this as a value dependency. Really, we should look up the type that provides this constructor, and depend on that. This does work, because deftypes produce values for each of their constructors... maybe we should have a (constr) variant of name-kind? **)
+        (pcon name nl args l) (bag/and (one (, name (value) nl)) (many (map args pat-externals)))
+        _                     empty))
+
+(,
+    (fn [x] (bag/to-list (externals (set/from-list ["+" "-" "cons" "nil"]) x)))
+        [(, (parse-expr (@@ hi)) [(, "hi" (value) 7036)])
+        (, (parse-expr (@@ [1 2 c])) [(, "c" (value) 7052)])
+        (,
+        (parse-expr (@@ (one two three)))
+            [(, "one" (value) 7066) (, "two" (value) 7067) (, "three" (value) 7068)])])
+
 (defn externals-stmt [stmt]
     (bag/to-list
         (match stmt
-            (sdeftype name l free constructors _) (let [frees (set/from-list (map free fst))]
+            (sdeftype name _ free constructors _) (let [bound (set/from-list [name ..(map free fst)])]
                                                       (many
                                                           (map
                                                               constructors
                                                                   (fn [constructor]
                                                                   (match constructor
-                                                                      (, name l args _) (match args
-                                                                                            [] empty
-                                                                                            _  (many (map args (externals-type frees)))))))))
-            (stypealias name _ args body _)       (let [frees (set/from-list (map args fst))]
-                                                      (externals-type frees body))
+                                                                      (, _ _ args _) (match args
+                                                                                         [] empty
+                                                                                         _  (many (map args (externals-type bound)))))))))
+            (stypealias name _ args body _)       (let [bound (set/from-list [name ..(map args fst)])]
+                                                      (externals-type bound body))
             (sdef name _ body _)                  (externals (set/add set/nil name) body)
             (sexpr expr _)                        (externals set/nil expr))))
 
@@ -852,19 +717,13 @@ dot
             (fn [cst] expr)
             (fn [stmt] (list (, string name-kind int)))
             (fn [stmt] (list (, string name-kind int)))
-            (fn [expr] (list (, string name-kind int)))
-            (fn [stmt] int)
-            (fn [expr] int)
-            (fn [type] int)))
+            (fn [expr] (list (, string name-kind int)))))
 
 ((eval
-    "({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr, 5: stmt_size, 6: expr_size, 7: type_size}) => ({\ntype: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size})")
+    "({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) => ({\ntype: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr})")
     (parse-and-compile
         parse-stmt
             parse-expr
             names
             externals-stmt
-            (fn [expr] (bag/to-list (externals set/nil expr)))
-            stmt-size
-            expr-size
-            type-size))
+            (fn [expr] (bag/to-list (externals set/nil expr)))))

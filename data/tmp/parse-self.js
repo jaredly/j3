@@ -6,37 +6,8 @@ const fst = (tuple) => (({0: v}) => v)(tuple);
 
 const some = (v0) => ({type: "some", 0: v0})
 const none = ({type: "none"})
-const its = int_to_string;
-
 const value = ({type: "value"})
 const type = ({type: "type"})
-const dot = (a) => (b) => (c) => a(b(c));
-
-const just_trace = (loc) => (trace) => (value) => (($target) => {
-if ($target.type === "none") {
-return ""
-}
-if ($target.type === "some") {
-{
-let info = $target[0];
-return `\$trace(${its(loc)}, ${jsonify(info)}, ${value});`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(trace)(loc));
-
-const $co$co0 = (x) => (({0: a}) => a)(x);
-
-const $co$co1 = (x) => (({1: {0: a}}) => a)(x);
-
-const $co$co2 = (x) => (({1: {1: a}}) => a)(x);
-
-const $co$co$co2 = (x) => (({1: {1: {0: x}}}) => x)(x);
-
-const map$co$co0 = (f) => ({1: {1: c, 0: b}, 0: a}) => $co(f(a))($co(b)(c));
-
-const map$co1 = (f) => ({1: b, 0: a}) => $co(a)(f(b));
-
 const loop = (v) => (f) => f(v)((nv) => loop(nv)(f));
 
 const nil = ({type: "nil"})
@@ -56,7 +27,6 @@ const cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
 const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
 const one = (v0) => ({type: "one", 0: v0})
 const many = (v0) => ({type: "many", 0: v0})
-const empty = ({type: "empty"})
 const join = (sep) => (items) => (($target) => {
 if ($target.type === "nil") {
 return ""
@@ -90,24 +60,6 @@ return cons(f(i)(one))(mapi($pl(1)(i))(rest)(f))
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(values);
-
-const tapps = (items) => (l) => (($target) => {
-if ($target.type === "cons" &&
-$target[1].type === "nil") {
-{
-let one = $target[0];
-return one
-}
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return tapp(tapps(rest)(l))(one)(l)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(items);
 
 const pairs = (list) => (($target) => {
 if ($target.type === "nil") {
@@ -148,81 +100,6 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(repl);
-
-const pat_loc = (pat) => (($target) => {
-if ($target.type === "pany") {
-{
-let l = $target[0];
-return l
-}
-}
-if ($target.type === "pprim") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "pstr") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "pvar") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "pcon") {
-{
-let l = $target[3];
-return l
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(pat);
-
-const trace_wrap = (loc) => (trace) => (js) => (($target) => {
-if ($target.type === "none") {
-return js
-}
-if ($target.type === "some") {
-{
-let info = $target[0];
-return `\$trace(${its(loc)}, ${jsonify(info)}, ${js})`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(trace)(loc));
-
-const trace_and = (loc) => (trace) => (value) => (js) => (($target) => {
-if ($target.type === "none") {
-return js
-}
-if ($target.type === "some") {
-{
-let info = $target[0];
-return `(\$trace(${its(loc)}, ${jsonify(info)}, ${value}), ${js})`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(trace)(loc));
-
-const trace_and_block = (loc) => (trace) => (value) => (js) => (($target) => {
-if ($target.type === "none") {
-return js
-}
-if ($target.type === "some") {
-{
-let info = $target[0];
-return `\$trace(${its(loc)}, ${jsonify(info)}, ${value});\n${js}`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(trace)(loc));
-
-const source_map = (loc) => (js) => `/*${its(loc)}*/${js}/*<${its(loc)}*/`;
 
 const rev = (arr) => (col) => (($target) => {
 if ($target.type === "nil") {
@@ -289,14 +166,16 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const bag$sland = (first) => (second) => (($target) => {
 if ($target.type === "," &&
-$target[0].type === "empty") {
+$target[0].type === "many" &&
+$target[0][0].type === "nil") {
 {
 let a = $target[1];
 return a
 }
 }
 if ($target.type === "," &&
-$target[1].type === "empty") {
+$target[1].type === "many" &&
+$target[1][0].type === "nil") {
 {
 let a = $target[0];
 return a
@@ -326,7 +205,8 @@ throw new Error('Failed to match. ' + valueToString($target));
 })($co(first)(second));
 
 const bag$slfold = (f) => (init) => (bag) => (($target) => {
-if ($target.type === "empty") {
+if ($target.type === "many" &&
+$target[0].type === "nil") {
 return init
 }
 if ($target.type === "one") {
@@ -346,147 +226,30 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const bag$slto_list = (bag) => bag$slfold((list) => (one) => cons(one)(list))(nil)(bag);
 
-const pat_names = (pat) => (($target) => {
+const pat_bound = (pat) => (($target) => {
 if ($target.type === "pany") {
 return set$slnil
 }
 if ($target.type === "pvar") {
 {
 let name = $target[0];
-let l = $target[1];
 return set$sladd(set$slnil)(name)
 }
 }
 if ($target.type === "pcon") {
 {
-let name = $target[0];
-let nl = $target[1];
 let args = $target[2];
-let l = $target[3];
-return foldl(set$slnil)(args)((bound) => (arg) => set$slmerge(bound)(pat_names(arg)))
+return foldl(set$slnil)(args)((bound) => (arg) => set$slmerge(bound)(pat_bound(arg)))
 }
 }
 if ($target.type === "pstr") {
-{
-let string = $target[0];
-let int = $target[1];
 return set$slnil
 }
-}
 if ($target.type === "pprim") {
-{
-let prim = $target[0];
-let int = $target[1];
 return set$slnil
 }
-}
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
-
-const pat_externals = (pat) => (($target) => {
-if ($target.type === "pcon") {
-{
-let name = $target[0];
-let nl = $target[1];
-let args = $target[2];
-let l = $target[3];
-return bag$sland(one($co(name)($co(value)(nl))))(many(map(args)(pat_externals)))
-}
-}
-return empty
-throw new Error('Failed to match. ' + valueToString($target));
-})(pat);
-
-const externals_type = (bound) => (t) => (($target) => {
-if ($target.type === "tvar") {
-return empty
-}
-if ($target.type === "tcon") {
-{
-let name = $target[0];
-let l = $target[1];
-return (($target) => {
-if ($target === true) {
-return empty
-}
-return one($co(name)($co(type)(l)))
-throw new Error('Failed to match. ' + valueToString($target));
-})(set$slhas(bound)(name))
-}
-}
-if ($target.type === "tapp") {
-{
-let one = $target[0];
-let two = $target[1];
-return bag$sland(externals_type(bound)(one))(externals_type(bound)(two))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(t);
-
-const pat_names_loc = (pat) => (($target) => {
-if ($target.type === "pany") {
-return empty
-}
-if ($target.type === "pvar") {
-{
-let name = $target[0];
-let l = $target[1];
-return one($co(name)(l))
-}
-}
-if ($target.type === "pcon") {
-{
-let name = $target[0];
-let nl = $target[1];
-let args = $target[2];
-let l = $target[3];
-return foldl(one($co(name)(nl)))(args)((bound) => (arg) => bag$sland(bound)(pat_names_loc(arg)))
-}
-}
-if ($target.type === "pstr") {
-{
-let string = $target[0];
-let int = $target[1];
-return empty
-}
-}
-if ($target.type === "pprim") {
-{
-let prim = $target[0];
-let int = $target[1];
-return empty
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(pat);
-
-const fold_type = (init) => (type) => (f) => ((v) => (($target) => {
-if ($target.type === "tapp") {
-{
-let target = $target[0];
-let arg = $target[1];
-return fold_type(fold_type(v)(target)(f))(arg)(f)
-}
-}
-return v
-throw new Error('Failed to match. ' + valueToString($target));
-})(type))(f(init)(type));
-
-const type_type = (type) => (($target) => {
-if ($target.type === "tapp") {
-return "app"
-}
-if ($target.type === "tvar") {
-return "var"
-}
-if ($target.type === "tcon") {
-return "con"
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const type_size = (type) => fold_type(0)(type)((v) => (_) => $pl(1)(v));
 
 const concat = (lists) => (($target) => {
 if ($target.type === "nil") {
@@ -530,6 +293,87 @@ return cons($co(o)(t))(zip(one)(two))
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })($co(one)(two));
+
+const get_id = (x) => (($target) => {
+if ($target.type === "cst/id") {
+{
+let name = $target[0];
+let l = $target[1];
+return $co(name)(l)
+}
+}
+return fatal("type argument must be identifier")
+throw new Error('Failed to match. ' + valueToString($target));
+})(x);
+
+const id_with_maybe_args = (head) => (($target) => {
+if ($target.type === "cst/id") {
+{
+let id = $target[0];
+let li = $target[1];
+return $co(id)($co(li)(nil))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id") {
+{
+let id = $target[0][0][0];
+let li = $target[0][0][1];
+let args = $target[0][1];
+return $co(id)($co(li)(map(args)(get_id)))
+}
+}
+return fatal("Invalid type constructor")
+throw new Error('Failed to match. ' + valueToString($target));
+})(head);
+
+const cst_loc = (cst) => (($target) => {
+if ($target.type === "cst/list") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "cst/id") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "cst/array") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "cst/string") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "cst/spread") {
+{
+let l = $target[1];
+return l
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(cst);
+
+const filter_some = (items) => foldr(nil)(items)((res) => (v) => (($target) => {
+if ($target.type === "some") {
+{
+let v = $target[0];
+return cons(v)(res)
+}
+}
+return res
+throw new Error('Failed to match. ' + valueToString($target));
+})(v));
+
+const empty = many(nil);
 
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -600,7 +444,7 @@ if ($target.type === "cst/array" &&
 $target[0].type === "nil") {
 {
 let l = $target[1];
-return pcon("nil")(-1)(nil)(l)
+return pcon("nil")(l)(nil)(l)
 }
 }
 if ($target.type === "cst/array" &&
@@ -618,14 +462,14 @@ $target[0].type === "cons") {
 let one = $target[0][0];
 let rest = $target[0][1];
 let l = $target[1];
-return pcon("cons")(-1)(cons(parse_pat(one))(cons(parse_pat(cst$slarray(rest)(l)))(nil)))(l)
+return pcon("cons")(l)(cons(parse_pat(one))(cons(parse_pat(cst$slarray(rest)(l)))(nil)))(l)
 }
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "nil") {
 {
 let l = $target[1];
-return pcon("()")(-1)(nil)(l)
+return pcon("()")(l)(nil)(l)
 }
 }
 if ($target.type === "cst/list" &&
@@ -657,7 +501,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const parse_pat_tuple = (items) => (il) => (l) => (($target) => {
 if ($target.type === "nil") {
-return pcon(",")(-1)(nil)(il)
+return pcon(",")(l)(nil)(il)
 }
 if ($target.type === "cons" &&
 $target[1].type === "nil") {
@@ -670,7 +514,7 @@ if ($target.type === "cons") {
 {
 let one = $target[0];
 let rest = $target[1];
-return pcon(",")(-1)(cons(parse_pat(one))(cons(parse_pat_tuple(rest)(il)(l))(nil)))(l)
+return pcon(",")(l)(cons(parse_pat(one))(cons(parse_pat_tuple(rest)(il)(l))(nil)))(l)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -768,92 +612,21 @@ return fatal(`(parse-type) Invalid type ${valueToString(type)}`)
 throw new Error('Failed to match. ' + valueToString($target));
 })(type);
 
-const mk_deftype = (id) => (li) => (args) => (items) => (l) => sdeftype(id)(li)(map(args)((arg) => (($target) => {
-if ($target.type === "cst/id") {
+const parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+const pat_externals = (pat) => (($target) => {
+if ($target.type === "pcon") {
 {
 let name = $target[0];
-let l = $target[1];
-return $co(name)(l)
+let nl = $target[1];
+let args = $target[2];
+let l = $target[3];
+return bag$sland(one($co(name)($co(value)(nl))))(many(map(args)(pat_externals)))
 }
 }
-return fatal("deftype type argument must be identifier")
+return empty
 throw new Error('Failed to match. ' + valueToString($target));
-})(arg)))(foldr(nil)(items)((res) => (constr) => (($target) => {
-if ($target.type === "cst/list" &&
-$target[0].type === "cons" &&
-$target[0][0].type === "cst/id") {
-{
-let name = $target[0][0][0];
-let ni = $target[0][0][1];
-let args = $target[0][1];
-let l = $target[1];
-return cons($co(name)($co(ni)($co(map(args)(parse_type))(l))))(res)
-}
-}
-if ($target.type === "cst/list" &&
-$target[0].type === "nil") {
-{
-let l = $target[1];
-return res
-}
-}
-return fatal("Invalid type constructor")
-throw new Error('Failed to match. ' + valueToString($target));
-})(constr)))(l);
+})(pat);
 
-const expr_loc = (expr) => (($target) => {
-if ($target.type === "estr") {
-{
-let l = $target[2];
-return l
-}
-}
-if ($target.type === "eprim") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "evar") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "equot") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "elambda") {
-{
-let l = $target[2];
-return l
-}
-}
-if ($target.type === "elet") {
-{
-let l = $target[2];
-return l
-}
-}
-if ($target.type === "eapp") {
-{
-let l = $target[2];
-return l
-}
-}
-if ($target.type === "ematch") {
-{
-let l = $target[2];
-return l
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(expr);
-
-const parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => (v7) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7})
 const externals = (bound) => (expr) => (($target) => {
 if ($target.type === "evar") {
 {
@@ -869,17 +642,11 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 }
 if ($target.type === "eprim") {
-{
-let prim = $target[0];
-let l = $target[1];
 return empty
-}
 }
 if ($target.type === "estr") {
 {
-let first = $target[0];
 let templates = $target[1];
-let l = $target[2];
 return many(map(templates)((arg) => (($target) => {
 if ($target.type === "," &&
 $target[1].type === ",") {
@@ -893,33 +660,26 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 }
 if ($target.type === "equot") {
-{
-let expr = $target[0];
-let l = $target[1];
 return empty
-}
 }
 if ($target.type === "elambda") {
 {
 let pats = $target[0];
 let body = $target[1];
-let l = $target[2];
-return bag$sland(foldl(empty)(map(pats)(pat_externals))(bag$sland))(externals(foldl(bound)(map(pats)(pat_names))(set$slmerge))(body))
+return bag$sland(foldl(empty)(map(pats)(pat_externals))(bag$sland))(externals(foldl(bound)(map(pats)(pat_bound))(set$slmerge))(body))
 }
 }
 if ($target.type === "elet") {
 {
 let bindings = $target[0];
 let body = $target[1];
-let l = $target[2];
-return bag$sland(foldl(empty)(map(bindings)((arg) => (({1: init, 0: pat}) => bag$sland(pat_externals(pat))(externals(bound)(init)))(arg)))(bag$sland))(externals(foldl(bound)(map(bindings)((arg) => (({0: pat}) => pat_names(pat))(arg)))(set$slmerge))(body))
+return bag$sland(foldl(empty)(map(bindings)((arg) => (({1: init, 0: pat}) => bag$sland(pat_externals(pat))(externals(bound)(init)))(arg)))(bag$sland))(externals(foldl(bound)(map(bindings)((arg) => (({0: pat}) => pat_bound(pat))(arg)))(set$slmerge))(body))
 }
 }
 if ($target.type === "eapp") {
 {
 let target = $target[0];
 let args = $target[1];
-let l = $target[2];
 return bag$sland(externals(bound)(target))(foldl(empty)(map(args)(externals(bound)))(bag$sland))
 }
 }
@@ -927,13 +687,12 @@ if ($target.type === "ematch") {
 {
 let expr = $target[0];
 let cases = $target[1];
-let l = $target[2];
 return bag$sland(externals(bound)(expr))(foldl(empty)(cases)((bag) => (arg) => (($target) => {
 if ($target.type === ",") {
 {
 let pat = $target[0];
 let body = $target[1];
-return bag$sland(bag$sland(bag)(pat_externals(pat)))(externals(set$slmerge(bound)(pat_names(pat)))(body))
+return bag$sland(bag$sland(bag)(pat_externals(pat)))(externals(set$slmerge(bound)(pat_bound(pat)))(body))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -942,6 +701,33 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(expr);
+
+const externals_type = (bound) => (t) => (($target) => {
+if ($target.type === "tvar") {
+return empty
+}
+if ($target.type === "tcon") {
+{
+let name = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target === true) {
+return empty
+}
+return one($co(name)($co(type)(l)))
+throw new Error('Failed to match. ' + valueToString($target));
+})(set$slhas(bound)(name))
+}
+}
+if ($target.type === "tapp") {
+{
+let one = $target[0];
+let two = $target[1];
+return bag$sland(externals_type(bound)(one))(externals_type(bound)(two))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(t);
 
 const names = (stmt) => (($target) => {
 if ($target.type === "sdef") {
@@ -987,28 +773,25 @@ const externals_stmt = (stmt) => bag$slto_list((($target) => {
 if ($target.type === "sdeftype") {
 {
 let name = $target[0];
-let l = $target[1];
 let free = $target[2];
 let constructors = $target[3];
-return ((frees) => many(map(constructors)((constructor) => (($target) => {
+return ((bound) => many(map(constructors)((constructor) => (($target) => {
 if ($target.type === "," &&
 $target[1].type === "," &&
 $target[1][1].type === ",") {
 {
-let name = $target[0];
-let l = $target[1][0];
 let args = $target[1][1][0];
 return (($target) => {
 if ($target.type === "nil") {
 return empty
 }
-return many(map(args)(externals_type(frees)))
+return many(map(args)(externals_type(bound)))
 throw new Error('Failed to match. ' + valueToString($target));
 })(args)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(constructor))))(set$slfrom_list(map(free)(fst)))
+})(constructor))))(set$slfrom_list(cons(name)(map(free)(fst))))
 }
 }
 if ($target.type === "stypealias") {
@@ -1016,7 +799,7 @@ if ($target.type === "stypealias") {
 let name = $target[0];
 let args = $target[2];
 let body = $target[3];
-return ((frees) => externals_type(frees)(body))(set$slfrom_list(map(args)(fst)))
+return ((bound) => externals_type(bound)(body))(set$slfrom_list(cons(name)(map(args)(fst))))
 }
 }
 if ($target.type === "sdef") {
@@ -1035,186 +818,28 @@ return externals(set$slnil)(expr)
 throw new Error('Failed to match. ' + valueToString($target));
 })(stmt));
 
-const fold_expr = (init) => (expr) => (f) => ((v) => (($target) => {
-if ($target.type === "estr") {
+const parse_type_constructor = (constr) => (($target) => {
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id") {
 {
-let tpl = $target[1];
-return foldl(v)(tpl)((init) => ({0: expr}) => fold_expr(init)(expr)(f))
+let name = $target[0][0][0];
+let ni = $target[0][0][1];
+let args = $target[0][1];
+let l = $target[1];
+return some($co(name)($co(ni)($co(map(args)(parse_type))(l))))
 }
 }
-if ($target.type === "elambda") {
+if ($target.type === "cst/list" &&
+$target[0].type === "nil") {
 {
-let body = $target[1];
-return fold_expr(v)(body)(f)
+let l = $target[1];
+return none
 }
 }
-if ($target.type === "elet") {
-{
-let bindings = $target[0];
-let body = $target[1];
-return fold_expr(foldl(v)(bindings)((init) => (binding) => fold_expr(init)(snd(binding))(f)))(body)(f)
-}
-}
-if ($target.type === "eapp") {
-{
-let target = $target[0];
-let args = $target[1];
-return foldl(fold_expr(v)(target)(f))(args)((init) => (expr) => fold_expr(init)(expr)(f))
-}
-}
-if ($target.type === "ematch") {
-{
-let expr = $target[0];
-let cases = $target[1];
-return foldl(fold_expr(v)(expr)(f))(cases)((init) => ($case) => fold_expr(init)(snd($case))(f))
-}
-}
-return v
+return fatal("Invalid type constructor")
 throw new Error('Failed to match. ' + valueToString($target));
-})(expr))(f(init)(expr));
-
-const expr_type = (expr) => (($target) => {
-if ($target.type === "eprim") {
-{
-let prim = $target[0];
-let int = $target[1];
-return "prim"
-}
-}
-if ($target.type === "estr") {
-{
-let string = $target[0];
-let int = $target[2];
-return "str"
-}
-}
-if ($target.type === "evar") {
-{
-let string = $target[0];
-let int = $target[1];
-return "var"
-}
-}
-if ($target.type === "equot") {
-{
-let quot = $target[0];
-let int = $target[1];
-return "quot"
-}
-}
-if ($target.type === "elambda") {
-{
-let expr = $target[1];
-let int = $target[2];
-return "lambda"
-}
-}
-if ($target.type === "eapp") {
-{
-let expr = $target[0];
-let int = $target[2];
-return "app"
-}
-}
-if ($target.type === "elet") {
-{
-let expr = $target[1];
-let int = $target[2];
-return "let"
-}
-}
-if ($target.type === "ematch") {
-{
-let expr = $target[0];
-let int = $target[2];
-return "match"
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(expr);
-
-const expr_size = (expr) => fold_expr(0)(expr)((v) => (_) => $pl(1)(v));
-
-const stmt_size = (stmt) => $pl(1)((($target) => {
-if ($target.type === "sdef") {
-{
-let string = $target[0];
-let expr = $target[2];
-return expr_size(expr)
-}
-}
-if ($target.type === "sexpr") {
-{
-let expr = $target[0];
-return expr_size(expr)
-}
-}
-if ($target.type === "stypealias") {
-{
-let string = $target[0];
-let args = $target[2];
-let type = $target[3];
-return type_size(type)
-}
-}
-if ($target.type === "sdeftype") {
-{
-let string = $target[0];
-let args = $target[2];
-let constructors = $target[3];
-return foldl(0)(constructors)((v) => ({1: {1: {0: args}}}) => foldl(v)(map(args)(type_size))($pl))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(stmt));
-
-const map_expr = (f) => (expr) => (($target) => {
-if ($target.type === "estr") {
-{
-let first = $target[0];
-let tpl = $target[1];
-let l = $target[2];
-return estr(first)(map(tpl)(({1: rest, 0: expr}) => $co(map_expr(f)(expr))(rest)))(l)
-}
-}
-if ($target.type === "elambda") {
-{
-let pats = $target[0];
-let body = $target[1];
-let l = $target[2];
-return elambda(pats)(map_expr(f)(body))(l)
-}
-}
-if ($target.type === "elet") {
-{
-let bindings = $target[0];
-let body = $target[1];
-let l = $target[2];
-return elet(map(bindings)(map$co1(map_expr(f))))(map_expr(f)(body))(l)
-}
-}
-if ($target.type === "eapp") {
-{
-let target = $target[0];
-let args = $target[1];
-let l = $target[2];
-return eapp(map_expr(f)(target))(map(args)(map_expr(f)))(l)
-}
-}
-if ($target.type === "ematch") {
-{
-let expr = $target[0];
-let cases = $target[1];
-let l = $target[2];
-return ematch(map_expr(f)(expr))(map(cases)(map$co1(map_expr(f))))(l)
-}
-}
-{
-let otherwise = $target;
-return otherwise
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(expr));
+})(constr);
 
 const parse_stmt = (cst) => (($target) => {
 if ($target.type === "cst/list" &&
@@ -1251,7 +876,7 @@ let args = $target[0][1][1][0][0];
 let b = $target[0][1][1][0][1];
 let body = $target[0][1][1][1][0];
 let c = $target[1];
-return sdef(id)(li)(parse_expr(cst$sllist(cons(cst$slid("fn")(a))(cons(cst$slarray(args)(b))(cons(body)(nil))))(c)))(c)
+return ((body) => sdef(id)(li)(body)(c))(parse_expr(cst$sllist(cons(cst$slid("fn")(a))(cons(cst$slarray(args)(b))(cons(body)(nil))))(c)))
 }
 }
 if ($target.type === "cst/list" &&
@@ -1267,76 +892,12 @@ if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
 $target[0][0].type === "cst/id" &&
 $target[0][0][0] === "deftype" &&
-$target[0][1].type === "cons" &&
-$target[0][1][0].type === "cst/id") {
+$target[0][1].type === "cons") {
 {
-let id = $target[0][1][0][0];
-let li = $target[0][1][0][1];
+let head = $target[0][1][0];
 let items = $target[0][1][1];
 let l = $target[1];
-return mk_deftype(id)(li)(nil)(items)(l)
-}
-}
-if ($target.type === "cst/list" &&
-$target[0].type === "cons" &&
-$target[0][0].type === "cst/id" &&
-$target[0][0][0] === "deftype" &&
-$target[0][1].type === "cons" &&
-$target[0][1][0].type === "cst/list" &&
-$target[0][1][0][0].type === "cons" &&
-$target[0][1][0][0][0].type === "cst/id") {
-{
-let id = $target[0][1][0][0][0][0];
-let li = $target[0][1][0][0][0][1];
-let args = $target[0][1][0][0][1];
-let items = $target[0][1][1];
-let l = $target[1];
-return mk_deftype(id)(li)(args)(items)(l)
-}
-}
-if ($target.type === "cst/list" &&
-$target[0].type === "cons" &&
-$target[0][0].type === "cst/id" &&
-$target[0][0][0] === "typealias" &&
-$target[0][1].type === "cons" &&
-$target[0][1][0].type === "cst/id" &&
-$target[0][1][1].type === "cons" &&
-$target[0][1][1][1].type === "nil") {
-{
-let name = $target[0][1][0][0];
-let nl = $target[0][1][0][1];
-let body = $target[0][1][1][0];
-let l = $target[1];
-return stypealias(name)(nl)(nil)(parse_type(body))(l)
-}
-}
-if ($target.type === "cst/list" &&
-$target[0].type === "cons" &&
-$target[0][0].type === "cst/id" &&
-$target[0][0][0] === "typealias" &&
-$target[0][1].type === "cons" &&
-$target[0][1][0].type === "cst/list" &&
-$target[0][1][0][0].type === "cons" &&
-$target[0][1][0][0][0].type === "cst/id" &&
-$target[0][1][1].type === "cons" &&
-$target[0][1][1][1].type === "nil") {
-{
-let name = $target[0][1][0][0][0][0];
-let nl = $target[0][1][0][0][0][1];
-let args = $target[0][1][0][0][1];
-let body = $target[0][1][1][0];
-let l = $target[1];
-return ((args) => stypealias(name)(nl)(args)(parse_type(body))(l))(map(args)((x) => (($target) => {
-if ($target.type === "cst/id") {
-{
-let name = $target[0];
-let l = $target[1];
-return $co(name)(l)
-}
-}
-return fatal("typealias type argument must be identifier")
-throw new Error('Failed to match. ' + valueToString($target));
-})(x)))
+return (({1: {1: args, 0: li}, 0: id}) => ((constrs) => sdeftype(id)(li)(args)(constrs)(l))(filter_some(map(items)(parse_type_constructor))))(id_with_maybe_args(head))
 }
 }
 if ($target.type === "cst/list" &&
@@ -1348,39 +909,21 @@ let l = $target[1];
 return fatal(`Invalid 'deftype' ${int_to_string(l)}`)
 }
 }
-return sexpr(parse_expr(cst))((($target) => {
-if ($target.type === "cst/list") {
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "typealias" &&
+$target[0][1].type === "cons" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][1].type === "nil") {
 {
+let head = $target[0][1][0];
+let body = $target[0][1][1][0];
 let l = $target[1];
-return l
+return (({1: {1: args, 0: li}, 0: id}) => stypealias(id)(li)(args)(parse_type(body))(l))(id_with_maybe_args(head))
 }
 }
-if ($target.type === "cst/id") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "cst/array") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "cst/string") {
-{
-let l = $target[2];
-return l
-}
-}
-if ($target.type === "cst/spread") {
-{
-let l = $target[1];
-return l
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(cst))
+return sexpr(parse_expr(cst))(cst_loc(cst))
 throw new Error('Failed to match. ' + valueToString($target));
 })(cst);
 
@@ -1660,4 +1203,4 @@ return eapp(evar("cons")(l))(cons(parse_expr(one))(cons(parse_array(rest)(l))(ni
 throw new Error('Failed to match. ' + valueToString($target));
 })(args);
 
-return eval("({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr, 5: stmt_size, 6: expr_size, 7: type_size}) => ({\ntype: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size})")(parse_and_compile(parse_stmt)(parse_expr)(names)(externals_stmt)((expr) => bag$slto_list(externals(set$slnil)(expr)))(stmt_size)(expr_size)(type_size))
+return eval("({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) => ({\ntype: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr})")(parse_and_compile(parse_stmt)(parse_expr)(names)(externals_stmt)((expr) => bag$slto_list(externals(set$slnil)(expr))))

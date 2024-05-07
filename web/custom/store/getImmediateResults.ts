@@ -148,7 +148,7 @@ export const getImmediateResults = (
         const changed = ncache.ids.filter(
             (id) => state.map[id] !== lastState.map[id],
         );
-        const topChange = top.top !== lastState.nsMap[top.ns.id].top;
+        const topChange = top.top !== lastState.nsMap[top.ns.id]?.top;
         if (changed.length || topChange) {
             // console.log('map change', top.top);
             changed.forEach((id) => (nodeChanges[id] = top.ns.id));
