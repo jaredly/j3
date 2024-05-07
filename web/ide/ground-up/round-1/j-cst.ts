@@ -135,6 +135,13 @@ export const toJCST = (node: Node): jcst | null => {
     switch (node.type) {
         case 'identifier':
             return { type: 'cst/identifier', 0: node.text, 1: node.loc };
+        case 'raw-code':
+            return {
+                type: 'cst/string',
+                0: node.raw,
+                1: { type: 'nil' },
+                2: node.loc,
+            };
         case 'list': {
             const values = filterBlanks(node.values).map(toJCST);
             if (!values.every(Boolean)) return null;

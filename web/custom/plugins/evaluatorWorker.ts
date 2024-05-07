@@ -10,7 +10,6 @@ export const evaluatorWorker: WorkerPlugin<
         return true;
     },
     parse(node, errors_, evaluator) {
-        debugger;
         const { expr, errors } = evaluator.parseExpr(node);
         if (!expr) {
             console.error('Evaluator plugin unable to parse', node);
