@@ -1,23 +1,18 @@
-import { MyEvalError, LocError } from './Evaluators';
-import { Errors, FullEvalator, Produce, ProduceItem } from './FullEvalator';
-import { valueToString } from './valueToString';
-import { findTops } from './findTops';
-import { arr, expr, stmt, unwrapArray, wrapArray } from './round-1/parse';
-import { sanitize } from './round-1/sanitize';
 import { fromMCST } from '../../../src/types/mcst';
-import { fromJCST, toJCST } from './round-1/j-cst';
-import { FnsEnv, TraceMap, sanitizedEnv, withTracing } from './loadEv';
 import { MetaDataMap } from '../../custom/UIState';
+import { filterNulls } from '../../custom/old-stuff/filterNulls';
 import { depSort } from '../../custom/store/depSort';
 import { LocedName } from '../../custom/store/sortTops';
 import { unique } from '../../custom/store/unique';
-import { builtins } from './builtins';
-import { filterNulls } from '../../custom/old-stuff/filterNulls';
-import { fixDuplicateLocs } from '../../../src/state/fixDuplicateLocs';
-import { Analyze, Compiler, Parser, TypeChecker } from './evaluators/interface';
-import { add } from '../../custom/worker/add';
-import { Env, Expr, Stmt, Type } from './evaluators/analyze';
+import { Errors, FullEvalator, ProduceItem } from './FullEvalator';
 import { valueToNode } from './bootstrap';
+import { builtins } from './builtins';
+import { Env, Expr, Stmt, Type } from './evaluators/analyze';
+import { Analyze, Compiler, Parser, TypeChecker } from './evaluators/interface';
+import { findTops } from './findTops';
+import { FnsEnv, TraceMap, sanitizedEnv, withTracing } from './loadEv';
+import { sanitize } from './round-1/sanitize';
+import { valueToString } from './valueToString';
 
 /**
  * This is for creating an evaluator out of a sandbox that was compiled

@@ -1,5 +1,4 @@
 import { LocedName } from '../../../custom/store/sortTops';
-import { jcst, toJCST } from '../round-1/j-cst';
 import {
     arr,
     tuple,
@@ -8,7 +7,7 @@ import {
     unwrapTuple,
     unwrapTuple3,
 } from '../round-1/parse';
-import { Analyze, Parser } from './interface';
+import { Analyze } from './interface';
 
 export type Stmt = { _stmt: 1 };
 export type Expr = { _expr: 1 };

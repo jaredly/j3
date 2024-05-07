@@ -395,6 +395,95 @@ const stypealias = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "stypealias",
 const sdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
 const sdef = (v0) => (v1) => (v2) => (v3) => ({type: "sdef", 0: v0, 1: v1, 2: v2, 3: v3})
 const sexpr = (v0) => (v1) => ({type: "sexpr", 0: v0, 1: v1})
+const parse_type = (type) => (($target) => {
+if ($target.type === "cst/id") {
+{
+let id = $target[0];
+let l = $target[1];
+return tcon(id)(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "fn" &&
+$target[0][1].type === "cons" &&
+$target[0][1][0].type === "cst/array" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][1].type === "nil") {
+{
+let args = $target[0][1][0][0];
+let body = $target[0][1][1][0];
+let l = $target[1];
+return foldl(parse_type(body))(rev(args)(nil))((body) => (arg) => tapp(tapp(tcon("->")(l))(parse_type(arg))(l))(body)(l))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === ",") {
+{
+let nl = $target[0][0][1];
+let items = $target[0][1];
+let al = $target[1];
+return loop(map(items)(parse_type))((items) => (recur) => (($target) => {
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return one
+}
+}
+if ($target.type === "cons" &&
+$target[1].type === "cons" &&
+$target[1][1].type === "nil") {
+{
+let one = $target[0];
+let two = $target[1][0];
+return tapp(tapp(tcon(",")(nl))(one)(al))(two)(al)
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return tapp(tapp(tcon(",")(nl))(one)(al))(recur(rest))(al)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(items))
+}
+}
+if ($target.type === "cst/list") {
+{
+let items = $target[0];
+let l = $target[1];
+return loop(rev(map(items)(parse_type))(nil))((items) => (recur) => (($target) => {
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return one
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return tapp(recur(rest))(one)(l)
+}
+}
+if ($target.type === "nil") {
+return tcon("()")(l)
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(items))
+}
+}
+return fatal(`(parse-type) Invalid type ${valueToString(type)}`)
+throw new Error('Failed to match. ' + valueToString($target));
+})(type);
+
 const parse_pat = (pat) => (($target) => {
 if ($target.type === "cst/id" &&
 $target[0] === "_") {
@@ -481,7 +570,26 @@ $target[0][0][0] === ",") {
 let il = $target[0][0][1];
 let args = $target[0][1];
 let l = $target[1];
-return parse_pat_tuple(args)(il)(l)
+return loop(args)((items) => (recur) => (($target) => {
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return parse_pat(one)
+}
+}
+if ($target.type === "nil") {
+return pcon(",")(l)(nil)(il)
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return pcon(",")(l)(cons(parse_pat(one))(cons(recur(rest))(nil)))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(items))
 }
 }
 if ($target.type === "cst/list" &&
@@ -495,123 +603,9 @@ let l = $target[1];
 return pcon(name)(il)(map(rest)(parse_pat))(l)
 }
 }
-return fatal(`parse-pat mo match ${valueToString(pat)}`)
+return fatal(`Invalid pattern: ${valueToString(pat)}`)
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
-
-
-const parse_pat_tuple = (items) => (il) => (l) => (($target) => {
-if ($target.type === "nil") {
-return pcon(",")(l)(nil)(il)
-}
-if ($target.type === "cons" &&
-$target[1].type === "nil") {
-{
-let one = $target[0];
-return parse_pat(one)
-}
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return pcon(",")(l)(cons(parse_pat(one))(cons(parse_pat_tuple(rest)(il)(l))(nil)))(l)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(items);
-
-const parse_type = (type) => (($target) => {
-if ($target.type === "cst/id") {
-{
-let id = $target[0];
-let l = $target[1];
-return tcon(id)(l)
-}
-}
-if ($target.type === "cst/list" &&
-$target[0].type === "nil") {
-{
-let l = $target[1];
-return tcon("()")(l)
-}
-}
-if ($target.type === "cst/list" &&
-$target[0].type === "cons" &&
-$target[0][0].type === "cst/id" &&
-$target[0][0][0] === "fn" &&
-$target[0][1].type === "cons" &&
-$target[0][1][0].type === "cst/array" &&
-$target[0][1][1].type === "cons" &&
-$target[0][1][1][1].type === "nil") {
-{
-let args = $target[0][1][0][0];
-let body = $target[0][1][1][0];
-return foldl(parse_type(body))(rev(args)(nil))((body) => (arg) => tapp(tapp(tcon("->")(-1))(parse_type(arg))(-1))(body)(-1))
-}
-}
-if ($target.type === "cst/list" &&
-$target[0].type === "cons" &&
-$target[0][0].type === "cst/id" &&
-$target[0][0][0] === ",") {
-{
-let nl = $target[0][0][1];
-let items = $target[0][1];
-let al = $target[1];
-return loop(map(items)(parse_type))((items) => (recur) => (($target) => {
-if ($target.type === "cons" &&
-$target[1].type === "cons" &&
-$target[1][1].type === "nil") {
-{
-let one = $target[0];
-let two = $target[1][0];
-return tapp(tapp(tcon(",")(nl))(one)(al))(two)(al)
-}
-}
-if ($target.type === "cons" &&
-$target[1].type === "nil") {
-{
-let one = $target[0];
-return one
-}
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return tapp(tapp(tcon(",")(nl))(one)(al))(recur(rest))(al)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(items))
-}
-}
-if ($target.type === "cst/list") {
-{
-let items = $target[0];
-let l = $target[1];
-return loop(rev(map(items)(parse_type))(nil))((items) => (recur) => (($target) => {
-if ($target.type === "cons" &&
-$target[1].type === "nil") {
-{
-let one = $target[0];
-return one
-}
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return tapp(recur(rest))(one)(l)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(items))
-}
-}
-return fatal(`(parse-type) Invalid type ${valueToString(type)}`)
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
 
 const parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
 const pat_externals = (pat) => (($target) => {
@@ -949,7 +943,7 @@ if ($target.type === "cst/string") {
 let first = $target[0];
 let templates = $target[1];
 let l = $target[2];
-return estr(first)(map(templates)(({1: {1: l, 0: string}, 0: expr}) => $co(parse_expr(expr))($co(string)(l))))(l)
+return estr(first)(parse_template(templates))(l)
 }
 }
 if ($target.type === "cst/id") {
@@ -1130,7 +1124,26 @@ $target[0][0][0] === ",") {
 let il = $target[0][0][1];
 let args = $target[0][1];
 let l = $target[1];
-return parse_tuple(args)(il)(l)
+return loop(args)((args) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return evar(",")(il)
+}
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return parse_expr(one)
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return eapp(evar(",")(il))(cons(parse_expr(one))(cons(recur(rest))(nil)))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(args))
 }
 }
 if ($target.type === "cst/list" &&
@@ -1153,36 +1166,7 @@ if ($target.type === "cst/array") {
 {
 let args = $target[0];
 let l = $target[1];
-return parse_array(args)(l)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(cst);
-
-
-const parse_tuple = (args) => (il) => (l) => (($target) => {
-if ($target.type === "nil") {
-return evar(",")(il)
-}
-if ($target.type === "cons" &&
-$target[1].type === "nil") {
-{
-let one = $target[0];
-return parse_expr(one)
-}
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return eapp(evar(",")(il))(cons(parse_expr(one))(cons(parse_tuple(rest)(il)(l))(nil)))(l)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(args);
-
-
-const parse_array = (args) => (l) => (($target) => {
+return loop(args)((args) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return evar("nil")(l)
 }
@@ -1198,10 +1182,18 @@ if ($target.type === "cons") {
 {
 let one = $target[0];
 let rest = $target[1];
-return eapp(evar("cons")(l))(cons(parse_expr(one))(cons(parse_array(rest)(l))(nil)))(l)
+return eapp(evar("cons")(l))(cons(parse_expr(one))(cons(recur(rest))(nil)))(l)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(args);
+})(args))
+}
+}
+return fatal("Invalid expression")
+throw new Error('Failed to match. ' + valueToString($target));
+})(cst);
+
+
+const parse_template = (templates) => map(templates)(({1: {1: l, 0: string}, 0: expr}) => $co(parse_expr(expr))($co(string)(l)));
 
 return eval("({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) =>\n  ({type: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr})")(parse_and_compile(parse_stmt)(parse_expr)(names)(externals_stmt)((expr) => bag$slto_list(externals(set$slnil)(expr))))

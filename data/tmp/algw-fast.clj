@@ -386,10 +386,10 @@
         (,
         (@t (fn [x] int))
             (cst/list
-            [(cst/identifier "fn" -1)
-                (cst/array [(cst/identifier "x" 24539)] -1)
+            [(cst/identifier "fn" 24536)
+                (cst/array [(cst/identifier "x" 24539)] 24536)
                 (cst/identifier "int" 24540)]
-                -1))
+                24536))
         (,
         (@t (-> a b))
             (cst/list
@@ -2320,3 +2320,5 @@ map->
                 (some (, v _)) (some (scheme/type v))
                 _              (none)))
             type-to-cst))
+
+24533
