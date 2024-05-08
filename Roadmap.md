@@ -24,6 +24,9 @@ for the series of artcicle
 
 # PLAN Higher up...
 
+- [ ] HRM "instantiate" ... doesn't need to return the subst? I think I might be doing unnecessary work...
+  - because the whole point of instantiate is that those vbls get replaced...
+  - LOL ok so for the "pattern" whatsit, we do actually need to hang on to those instantiations.
 - [ ] I do need plugins to clue in to the `usage` dealio, so I don't think things aren't used.
 - [ ] I ... kinda want ... the inferred `type` to be displayed directly *above* the toplevel.
   to avoid jumping, should we reserve space for everything there? Or just for toplevels with a single named export?

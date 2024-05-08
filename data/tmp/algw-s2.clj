@@ -1,4 +1,4 @@
-(** ## Type Checker
+(** ## Hindley Milner Type Inference
     Heavily based on the excellent paper [Algorithm W Step-By-Step](https://github.com/wh5a/Algorithm-W-Step-By-Step/blob/master/AlgorithmW.pdf).
     This first version of the type checker is "vanilla algorithm w", and so won't actually be powerful enough to type check our language. We'll follow up by extending it with the ability to handle patterns, match forms, and user-defined types. **)
 
@@ -12,6 +12,11 @@
     (match items
         []           init
         [one ..rest] (f (foldr init rest f) one)))
+
+(defn foldl [init items f]
+    (match items
+        []           init
+        [one ..rest] (foldl (f init one) rest f)))
 
 (defn map [f values]
     (match values
@@ -30,37 +35,40 @@
     (eprim prim int)
         (evar string int)
         (elambda string expr int)
-        (eapp expr (list expr) int)
+        (eapp expr expr int)
         (elet (list (, string expr)) expr int))
 
 (deftype type
-    (** Note that the first argument to tvar is purely decorative. The second argument is the unique identifier used for substitution, resolution, etc. **)
-        (tvar string int int)
+    (tvar string int)
         (tapp type type int)
         (tcon string int))
 
 (defn type= [one two]
     (match (, one two)
-        (, (tvar _ id _) (tvar _ id' _))              (= id id')
+        (, (tvar id _) (tvar id' _))                  (= id id')
         (, (tapp target arg _) (tapp target' arg' _)) (if (type= target target')
                                                           (type= arg arg')
                                                               false)
         (, (tcon name _) (tcon name' _))              (= name name')
         _                                             false))
 
+(defn tfn [arg body l] (tapp (tapp (tcon "->" l) arg l) body l))
+
 (** ## The Type Environment **)
 
 (** A scheme is the way that we represent generic types (sometimes called a "polytype"). The first argument is a set of the tvar ids that are generic in the contained type. **)
 
-(deftype scheme (forall (set int) type))
+(deftype scheme (forall (set string) type))
 
 (deftype tenv
     (tenv
         (** Types of values currently in scope **)
             (map string scheme)))
 
-(defn tenv/set-type [(tenv values) name scheme]
+(defn tenv/with-type [(tenv values) name scheme]
     (tenv (map/set values name scheme)))
+
+(defn tenv/resolve [(tenv values) name] (map/get values name))
 
 (** ## Finding "free" type variables
     The */free functions are about finding unbound type variables (that aren't bound by a forall scheme)
@@ -70,9 +78,9 @@
 
 (defn type/free [type]
     (match type
-        (tvar _ id _) (set/add set/nil id)
-        (tcon _ _)    set/nil
-        (tapp a b _)  (set/merge (type/free a) (type/free b))))
+        (tvar id _)  (set/add set/nil id)
+        (tcon _ _)   set/nil
+        (tapp a b _) (set/merge (type/free a) (type/free b))))
 
 (defn scheme/free [(forall vbls type)]
     (set/diff (type/free type) vbls))
@@ -82,26 +90,26 @@
 
 (,
     (fn [a] (set/to-list (scheme/free a)))
-        [(, (forall (set/from-list [0]) (tvar "a" 0 -1)) [])
-        (, (forall (set/from-list []) (tvar "a" 0 -1)) [0])])
+        [(, (forall (set/from-list ["a"]) (tvar "a" -1)) [])
+        (, (forall (set/from-list []) (tvar "a" -1)) ["a"])])
 
 (** ## Applying type substitutions
     A core notion of Hindley-Milner's "Algorithm W" is the "substitution map". It contains a mapping from a type variable to a "replacement type". Applying the substitution map to a type consists of finding all tvars in a type that have a replacement defined in the map, and making that substitution. **)
 
 (defn type/apply [subst type]
     (match type
-        (tvar _ id _)         (match (map/get subst id)
+        (tvar id _)           (match (map/get subst id)
                                   (none)   type
                                   (some t) t)
         (tapp target arg loc) (tapp (type/apply subst target) (type/apply subst arg) loc)
         _                     type))
 
 (,
-    (type/apply (map/from-list [(, 0 (tcon "int" -1))]))
-        [(, (tvar "a" 0 -1) (tcon "int" -1))
-        (, (tvar "b" 1 -1) (tvar "b" 1 -1))
+    (type/apply (map/from-list [(, "a" (tcon "int" -1))]))
+        [(, (tvar "a" -1) (tcon "int" -1))
+        (, (tvar "b" -1) (tvar "b" -1))
         (,
-        (tapp (tcon "list" -1) (tvar "a" 0 -1) -1)
+        (tapp (tcon "list" -1) (tvar "a" -1) -1)
             (tapp (tcon "list" -1) (tcon "int" -1) -1))])
 
 (defn scheme/apply [subst (forall vbls type)]
@@ -126,19 +134,19 @@
 (map/merge (map/from-list [(, 0 1)]) (map/from-list [(, 0 10)]))
 
 (def demo-new-subst
-    (map/from-list [(, 0 (tcon "0-mapped" -1)) (, 1 (tvar "c" 10 -1))]))
+    (map/from-list [(, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))]))
 
 (,
     (fn [x]
         (map/to-list (compose-subst demo-new-subst (map/from-list x))))
         [(** v5 gets the v0 substitution applied to it **)
         (,
-        [(, 5 (tvar "a" 0 -1))]
-            [(, 5 (tcon "0-mapped" -1))
-            (, 0 (tcon "0-mapped" -1))
-            (, 1 (tvar "c" 10 -1))])
+        [(, "x" (tvar "a" -1))]
+            [(, "x" (tcon "a-mapped" -1))
+            (, "a" (tcon "a-mapped" -1))
+            (, "b" (tvar "c" -1))])
         (** v0 gets the v1 substitution applied to it, and then overrides the v0 from new-subst **)
-        (, [(, 0 (tvar "b" 1 -1))] [(, 0 (tvar "c" 10 -1)) (, 1 (tvar "c" 10 -1))])])
+        (, [(, "a" (tvar "b" -1))] [(, "a" (tvar "c" -1)) (, "b" (tvar "c" -1))])])
 
 (** ## Generalizing
     Once we have inferred the type for a named value (either at the top-level, or in a let), we "lock in" the polymorphism with generalize. This consists of finding any type variables that only exist in our current type (not in the type environment), and setting them as the "free" set of our forall. **)
@@ -240,4 +248,103 @@
 
 ;(defn idx-> [idx]
     (let-> [(, _ subst) <-state _ (state-> (, idx subst))] (<- ())))
+
+(** ## Instantiation
+    When inferring the type for a variable reference (evar) we need to instantiate the corresponding scheme with all new type variables -- otherwise we wouldn't be able to use a polymorphic (generic) function two times with different types in the same expression. **)
+
+(defn new-type-var [name l]
+    (let-> [nidx <-next-idx]
+        (<- (tvar "${name}:${(int-to-string nidx)}" l))))
+
+(defn make-subst-for-free [vars l]
+    (let-> [
+        mapping (map->
+                    (fn [id] (let-> [new-var (new-type-var id l)] (<- (, id new-var))))
+                        (set/to-list vars))]
+        (<- (map/from-list mapping))))
+
+(defn instantiate [(forall vars t) l]
+    (let-> [subst (make-subst-for-free vars l)] (<- (type/apply subst t))))
+
+
+
+(** ## Unification
+    Because our type-language is so simple, unification is quite straightforward. If we come across a tvar, we treat whatever's on the other side as its substitution; otherwise we recurse.
+    Importantly, unify doesn't produce a "unified type"; instead it produces a substitution which, when applied to both types, will yield the same unified type.
+    If two types are irreconcilable, it throws an exception.
+    The "occurs check" prevents infinite types (like a subst from a : int -> a). **)
+
+(defn unify [t1 t2 l]
+    (match (, t1 t2)
+        (, (tvar var l) t)                 (var-bind var t l)
+        (, t (tvar var l))                 (var-bind var t l)
+        (, (tcon a la) (tcon b lb))        (if (= a b)
+                                               (<- ())
+                                                   (fatal "Incompatible concrete types: ${a} vs ${b}"))
+        (, (tapp t1 a1 _) (tapp t2 a2 _) ) (let-> [
+                                               ()    (unify t1 t2 l)
+                                               subst <-subst
+                                               ()    (unify (type/apply subst a1) (type/apply subst a2) l)]
+                                               (<- ()))))
+
+(defn one-subst [var type] (map/from-list [(, var type)]))
+
+(defn var-bind [var type l]
+    (match type
+        (tvar v _) (if (= var v)
+                       (<- ())
+                           (let-> [_ (subst-> (one-subst var type))] (<- ())))
+        _          (if (set/has (type/free type) var)
+                       (fatal
+                           "Cycle found while unifying type with type variable. ${var}")
+                           (let-> [_ (subst-> (one-subst var type))] (<- ())))))
+
+(** ## Infer Expression **)
+
+(defn apply-> [f arg] (let-> [subst <-subst] (<- (f subst arg))))
+
+(def tenv/apply-> (apply-> tenv/apply))
+
+(def type/apply-> (apply-> type/apply))
+
+(defn infer/prim [prim]
+    (match prim
+        (pint _ l)  (tcon "int" l)
+        (pbool _ l) (tcon "bool" l)
+        (pstr _ l)  (tcon "string" l)))
+
+(defn infer/expr [tenv expr]
+    (match expr
+        (evar name l)        (match (tenv/resolve tenv name)
+                                 (none)        (fatal "Variable not found in scope: ${name}")
+                                 (some scheme) (instantiate scheme l))
+        (eprim prim _)       (<- (infer/prim prim))
+        (** For lambdas (fn [name] body)
+            - create a type variable to represent the type of the argument
+            - add the type variable to the typing environment
+            - infer the body, using the augmented environment
+            - apply any resulting substitutions to our arg variable **)
+        (elambda arg body l) (let-> [
+                                 arg-type (new-type-var arg l)
+                                 sub-env  (<- (tenv/with-type tenv arg (forall set/nil arg-type)))
+                                 body     (infer/expr sub-env body)
+                                 arg-type (type/apply-> arg-type)]
+                                 (<- (tfn arg-type body l)))
+        (** Function application (target arg)
+            - create a type variable to represent the return value of the function application
+            - infer the target type
+            - infer the arg type, using substitutions from the target. (?) Could this be done the other way around?
+            - unify the target type with a (fn [arg-type] result-var) type variable
+            - the substitutions from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
+        (eapp target arg l)  (let-> [
+                                 result-var  (new-type-var "result" l)
+                                 target-type (infer/expr tenv target)
+                                 arg-tenv    (tenv/apply-> tenv)
+                                 arg-type    (infer/expr arg-tenv arg)
+                                 target-type (type/apply-> target-type)
+                                 _           (unify target-type (tfn arg-type result-var l) l)]
+                                 (type/apply-> result-var))
+        ))
+
+
 
