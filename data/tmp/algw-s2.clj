@@ -27,16 +27,40 @@
 
 (** ## AST **)
 
-(deftype prim (pint int int) (pbool bool int) (pstr string int))
+(deftype prim (pint int int) (pbool bool int))
 
 (deftype stmt (sdef string int expr int) (sexpr expr int))
+
+(deftype cst
+    (cst/list (list cst) int)
+        (cst/array (list cst) int)
+        (cst/spread cst int)
+        (cst/id string int)
+        (cst/string string (list (, cst string int)) int))
+
+(deftype quot
+    (quot/expr expr)
+        (quot/stmt stmt)
+        (quot/type type)
+        (quot/pat pat)
+        (quot/quot cst))
 
 (deftype expr
     (eprim prim int)
         (evar string int)
-        (elambda string expr int)
-        (eapp expr expr int)
-        (elet (list (, string expr)) expr int))
+        (estr string (list (, expr string int)) int)
+        (equot quot int)
+        (elambda (list pat) expr int)
+        (eapp expr (list expr) int)
+        (elet (list (, pat expr)) expr int)
+        (ematch expr (list (, pat expr)) int))
+
+(deftype pat
+    (pany int)
+        (pvar string int)
+        (pcon string int (list pat) int)
+        (pstr string int)
+        (pprim prim int))
 
 (deftype type
     (tvar string int)
@@ -310,40 +334,46 @@
 (defn infer/prim [prim]
     (match prim
         (pint _ l)  (tcon "int" l)
-        (pbool _ l) (tcon "bool" l)
-        (pstr _ l)  (tcon "string" l)))
+        (pbool _ l) (tcon "bool" l)))
 
 (defn infer/expr [tenv expr]
     (match expr
-        (evar name l)        (match (tenv/resolve tenv name)
-                                 (none)        (fatal "Variable not found in scope: ${name}")
-                                 (some scheme) (instantiate scheme l))
-        (eprim prim _)       (<- (infer/prim prim))
+        (evar name l)         (match (tenv/resolve tenv name)
+                                  (none)        (fatal "Variable not found in scope: ${name}")
+                                  (some scheme) (instantiate scheme l))
+        (eprim prim _)        (<- (infer/prim prim))
         (** For lambdas (fn [name] body)
             - create a type variable to represent the type of the argument
             - add the type variable to the typing environment
             - infer the body, using the augmented environment
             - apply any resulting substitutions to our arg variable **)
-        (elambda arg body l) (let-> [
-                                 arg-type (new-type-var arg l)
-                                 sub-env  (<- (tenv/with-type tenv arg (forall set/nil arg-type)))
-                                 body     (infer/expr sub-env body)
-                                 arg-type (type/apply-> arg-type)]
-                                 (<- (tfn arg-type body l)))
+        (elambda args body l) (match args
+                                  [(pvar arg al)] (let-> [
+                                                      arg-type (new-type-var arg al)
+                                                      sub-env  (<- (tenv/with-type tenv arg (forall set/nil arg-type)))
+                                                      body     (infer/expr sub-env body)
+                                                      arg-type (type/apply-> arg-type)]
+                                                      (<- (tfn arg-type body l)))
+                                  [one]           (fatal "Not handling patterns at the moment")
+                                  (** This isn't necessarily the most efficient way to handle curried arguments, but imo it makes the above inference algorithm cleaner & more understandable, as you only have to think about one argument at a time. **)
+                                  [one ..rest]    (infer/expr tenv (elambda [one] (elambda rest body l) l)))
         (** Function application (target arg)
             - create a type variable to represent the return value of the function application
             - infer the target type
-            - infer the arg type, using substitutions from the target. (?) Could this be done the other way around?
-            - unify the target type with a (fn [arg-type] result-var) type variable
-            - the substitutions from the unification is then applied to the return value type variable, giving us the overall type of the expression **)
-        (eapp target arg l)  (let-> [
-                                 result-var  (new-type-var "result" l)
-                                 target-type (infer/expr tenv target)
-                                 arg-tenv    (tenv/apply-> tenv)
-                                 arg-type    (infer/expr arg-tenv arg)
-                                 target-type (type/apply-> target-type)
-                                 _           (unify target-type (tfn arg-type result-var l) l)]
-                                 (type/apply-> result-var))
+            - infer the arg type, using substitutions from the target. Q: Could this be done the other way around?
+            - unify the inferred target type with the function type produced by our inferred argument type and our result variable.
+            - the substitutions from the unification is then applied to the result type variable, giving us the overall type of the expression **)
+        (eapp target args l)  (match args
+                                  [arg]        (let-> [
+                                                   result-var  (new-type-var "result" l)
+                                                   target-type (infer/expr tenv target)
+                                                   arg-tenv    (tenv/apply-> tenv)
+                                                   arg-type    (infer/expr arg-tenv arg)
+                                                   target-type (type/apply-> target-type)
+                                                   _           (unify target-type (tfn arg-type result-var l) l)]
+                                                   (type/apply-> result-var))
+                                  (** Same story here as for the lambdas. Splitting things out like this allows us to look at one argument at a time. **)
+                                  [one ..rest] (infer/expr tenv (eapp (eapp target [one] l) rest l)))
         ))
 
 
