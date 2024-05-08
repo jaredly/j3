@@ -1,4 +1,5 @@
 import { fixDuplicateLocs } from '../../../../src/state/fixDuplicateLocs';
+import { Node } from '../../../../src/types/cst';
 import { InferenceError } from '../FullEvalator';
 import { fromJCST, jcst } from '../round-1/j-cst';
 import {
@@ -179,14 +180,16 @@ export const basicInfer = (fns: {
     },
 });
 
-export const typeChecker = (fns: {
+export const typeChecker = <SimpleNode>(fns: {
+    fromNode?: (node: Node) => SimpleNode;
+    toNode?: (node: SimpleNode) => Node;
     env_nil: Env;
     add_stmt: (a: Env) => (b: Env) => Env;
     get_type: (
         a: Env,
     ) => (b: string) => { type: 'some'; 0: Type } | { type: 'none' };
     type_to_string(t: Type): string;
-    type_to_cst?(t: Type): jcst;
+    type_to_cst?(t: Type): SimpleNode;
     env_to_string?(env: Env): string;
 }): Omit<
     TypeChecker<Env, Stmt, Expr, Type>,
@@ -205,7 +208,12 @@ export const typeChecker = (fns: {
     },
     typeToString: fns.type_to_string,
     typeToCst: fns.type_to_cst
-        ? (type) => fixDuplicateLocs(fromJCST(fns.type_to_cst!(type)))
+        ? (type) =>
+              fixDuplicateLocs(
+                  fns.toNode
+                      ? fns.toNode(fns.type_to_cst!(type))
+                      : fromJCST(fns.type_to_cst!(type) as jcst),
+              )
         : undefined,
     envToString: fns.env_to_string,
 });

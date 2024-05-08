@@ -18,14 +18,14 @@ export type jcst =
           }>;
           2: number;
       }
-    | { type: 'cst/identifier'; 0: string; 1: number };
+    | { type: 'cst/id'; 0: string; 1: number };
 
 `
 (deftype cst
     (cst/list (array cst) int)
     (cst/array (array cst) int)
     (cst/record (array cst) int)
-    (cst/identifier string int)
+    (cst/id string int)
     (cst/string string (array (, cst string int)) int)
     )
 `;
@@ -34,7 +34,7 @@ const pair = (a: any, b: any) => ({ type: ',' as const, 0: a, 1: b });
 
 export const fromJCST = (node: jcst): Node => {
     switch (node.type) {
-        case 'cst/identifier':
+        case 'cst/id':
             return { type: 'identifier', loc: node[1], text: node[0] };
         case 'cst/array':
             return {
@@ -89,7 +89,7 @@ export const fromJCST = (node: jcst): Node => {
 export const toJCST = (node: Node): jcst | null => {
     switch (node.type) {
         case 'identifier':
-            return { type: 'cst/identifier', 0: node.text, 1: node.loc };
+            return { type: 'cst/id', 0: node.text, 1: node.loc };
         case 'raw-code':
             return {
                 type: 'cst/string',
@@ -100,20 +100,17 @@ export const toJCST = (node: Node): jcst | null => {
         case 'list': {
             const values = filterBlanks(node.values).map(toJCST);
             if (!values.every(Boolean)) return null;
-            if (
-                values[0]?.type === 'cst/identifier' &&
-                values[0][0] === "@@'"
-            ) {
+            if (values[0]?.type === 'cst/id' && values[0][0] === "@@'") {
                 // MAGIC
                 // ???? What even was this about, I don't rememebr
                 return {
                     type: 'cst/list',
                     0: wrapArray([
-                        { type: 'cst/identifier', 0: ',', 1: node.loc },
+                        { type: 'cst/id', 0: ',', 1: node.loc },
                         {
                             type: 'cst/list',
                             0: wrapArray([
-                                { type: 'cst/identifier', 0: '@@', 1: -1 },
+                                { type: 'cst/id', 0: '@@', 1: -1 },
                                 ...(values.slice(1) as jcst[]),
                             ]),
                             1: node.loc,

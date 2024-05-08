@@ -13,6 +13,17 @@ export type Tracer = (
     // info: NonNullable<MetaData['trace']>,
 ) => void;
 
+const filter = <A,>(lst: arr<A>, f: (a: A) => boolean): arr<A> => {
+    return lst.type === 'nil'
+        ? lst
+        : f(lst[0])
+        ? lst[1]
+        : { ...lst, [1]: filter(lst[1], f) };
+};
+const concat = <A,>(a: arr<A>, b: arr<A>): arr<A> => {
+    return a.type === 'nil' ? b : { ...a, [1]: concat(a[1], b) };
+};
+
 export function builtins() {
     let env = {
         // Math
@@ -80,6 +91,41 @@ export function builtins() {
         'map/values': (m: [any, any][]) => wrapArray(m.map((i) => i[1])),
         'map/keys': (m: [any, any][]) => wrapArray(m.map((i) => i[0])),
 
+        // 'set/nil': { type: 'nil' },
+        // 'set/add': (s: arr<any>) => (v: any) => ({ type: 'cons', 0: v, 1: s }),
+        // 'set/has': (s: arr<any>) => (v: any) => {
+        //     for (; s.type === 'cons'; s = s[1]) {
+        //         // TODO use `equal` here
+        //         if (s[0] == v) return true;
+        //     }
+        //     return false;
+        // },
+        // 'set/rm': (s: arr<any>) => (v: any) => filter(s, (n) => n !== v),
+        // // NOTE this is only working for primitives
+        // 'set/diff': (a: arr<any>) => (b: arr<any>) => {
+        //     const bs: Record<any, true> = {};
+        //     unwrapArray(b).forEach((i) => (bs[i] = true));
+        //     return filter(a, (v) => !bs[v]);
+        // },
+        // // a.filter((i) => !b.some((j) => equal(i, j))),
+        // 'set/merge': (a: arr<any>) => (b: arr<any>) => {
+        //     const as: Record<any, true> = {};
+        //     unwrapArray(a).forEach((i) => (as[i] = true));
+        //     return concat(
+        //         a,
+        //         filter(b, (n) => !as[n]),
+        //     );
+        // },
+        // // [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],
+        // 'set/overlap': (a: arr<any>) => (b: arr<any>) => {
+        //     const as: Record<any, true> = {};
+        //     unwrapArray(a).forEach((i) => (as[i] = true));
+        //     return filter(b, (v) => as[v]);
+        // },
+        // // a.filter((x) => b.some((y) => equal(y, x))),
+        // 'set/to-list': (a: arr<any>) => a,
+        // 'set/from-list': (a: arr<any>) => a,
+
         'set/nil': [],
         'set/add': (s: any[]) => (v: any) => [v, ...s],
         'set/has': (s: any[]) => (v: any) => s.includes(v),
@@ -93,6 +139,7 @@ export function builtins() {
             a.filter((x) => b.some((y) => equal(y, x))),
         'set/to-list': wrapArray,
         'set/from-list': unwrapArray,
+
         'map/from-list': (a: arr<{ type: ','; 0: any; 1: any }>) =>
             unwrapArray(a).map((i) => [i[0], i[1]]),
         'map/to-list': (a: [any, any][]) =>

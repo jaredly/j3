@@ -17,16 +17,16 @@ export const basicParser = <SimpleNode>(fns: {
         if (fns.fromNode) {
             return fns.fromNode(node);
         }
-        // return toJCST(node) as SimpleNode;
-        return node as SimpleNode;
+        return toJCST(node) as SimpleNode;
+        // return node as SimpleNode;
     },
 
     toNode(node) {
         if (fns.toNode) {
             return fns.toNode(node);
         }
-        // return fromJCST(node as jcst);
-        return node as Node;
+        return fromJCST(node as jcst);
+        // return node as Node;
     },
 
     parse(node) {
