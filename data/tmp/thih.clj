@@ -107,7 +107,7 @@
         []           ""
         [one ..rest] (match rest
                          [] one
-                         _  (++ [one sep (join sep rest)]))))
+                         _  "${one}${sep}${(join sep rest)}")))
 
 (join " " ["one" "two" "three"])
 
@@ -230,6 +230,8 @@
         (eapp expr (list expr) int)
         (elet bindgroup expr int)
         (ematch expr (list (, pat expr)) int))
+
+(defn lol [(elet b _ _)] b)
 
 (deftype prim (pint int int) (pfloat float int) (pbool bool int))
 

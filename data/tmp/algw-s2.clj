@@ -29,6 +29,12 @@
         []               (, [] [])
         [(, a b) ..rest] (let [(, one two) (unzip rest)] (, [a ..one] [b ..two]))))
 
+(defn concat [lists]
+    (match lists
+        []                     []
+        [[] ..rest]            (concat rest)
+        [[one ..rest] ..lists] [one ..(concat [rest ..lists])]))
+
 (defn map [f values]
     (match values
         []           []
@@ -779,7 +785,8 @@
         args            (map (type/resolve-aliases aliases) (reverse (map fst args)))]
         (match target
             (tcon name l) (match (map/get aliases name)
-                              (some (, free type)) (let [subst (map/from-list (zip free args))] (type/apply subst type))
+                              (some (, free type)) (let [subst (map/from-list (zip free args))]
+                                                       (type/resolve-aliases aliases (type/apply subst type)))
                               _                    (foldl target args (fn [a b] (tapp a b l))))
             (tvar _ l)    (foldl target args (fn [a b] (tapp a b l))))))
 
@@ -801,21 +808,22 @@
         stmts
             (fn [stmts recur]
             (match stmts
-                []            (, [] [])
-                [stmt ..rest] (let [(, defs others) (recur rest)]
+                []            (, [] [] [])
+                [stmt ..rest] (let [(, defs aliases others) (recur rest)]
                                   (match stmt
-                                      (sdef name nl body l) (, [(, name nl body l) ..defs] others)
-                                      _                     (, defs [stmt ..others])))))))
+                                      (sdef name nl body l)  (, [(, name nl body l) ..defs] aliases others)
+                                      (stypealias _ _ _ _ _) (, defs [stmt ..aliases] others)
+                                      _                      (, defs aliases [stmt ..others])))))))
 
 (defn infer/stmts [tenv stmts]
     (let [
-        (, defs others) (split-stmts stmts)
-        denv            (infer/defs tenv defs)
-        final           (foldl
-                            denv
-                                others
-                                (fn [env stmt]
-                                (tenv/merge env (infer/stmt (tenv/merge tenv env) stmt))))]
+        (, defs aliases others) (split-stmts stmts)
+        denv                    (infer/defs tenv defs)
+        final                   (foldl
+                                    denv
+                                        (concat [aliases others])
+                                        (fn [env stmt]
+                                        (tenv/merge env (infer/stmt (tenv/merge tenv env) stmt))))]
         final))
 
 (,
@@ -861,7 +869,96 @@
                             (, [(tvar "m" 6478)] (tapp (tcon "x" 6470) (tvar "m" 6474) 6474))))])
                 (map/from-list [(, "x" (, 1 (set/from-list ["a"])))])
                 (map/from-list [])))
-        (,  )
+        (,
+        [[(@! (typealias a int)) (@! (deftype lol (elol a)))]]
+            (tenv
+            (map/from-list
+                [(,
+                    "elol"
+                        (forall
+                        (map/from-list [])
+                            (tapp
+                            (tapp (tcon "->" 8491) (tcon "int" 8486) 8491)
+                                (tcon "lol" 8491)
+                                8491)))])
+                (map/from-list
+                [(, "elol" (, (map/from-list []) (, [(tcon "int" 8486)] (tcon "lol" 8491))))])
+                (map/from-list [(, "lol" (, 0 (set/from-list ["elol"])))])
+                (map/from-list [(, "a" (, [] (tcon "int" 8486)))])))
+        (,
+        [[(@! (typealias alt (, (list pat) expr)))
+            (@! (typealias bindgroup (, alt)))
+            (@! (deftype expr (elet bindgroup expr int)))]
+            [(@! (defn x [(elet b _ _)] b))]]
+            (tenv
+            (map/from-list
+                [(,
+                    "elet"
+                        (forall
+                        (map/from-list [])
+                            (tapp
+                            (tapp
+                                (tcon "->" 8634)
+                                    (tapp
+                                    (tapp
+                                        (tcon "," 8597)
+                                            (tapp (tcon "list" 8599) (tcon "pat" 8600) 8599)
+                                            8597)
+                                        (tcon "expr" 8601)
+                                        8597)
+                                    8634)
+                                (tapp
+                                (tapp (tcon "->" 8634) (tcon "expr" 8693) 8634)
+                                    (tapp
+                                    (tapp (tcon "->" 8634) (tcon "int" 8694) 8634)
+                                        (tcon "expr" 8634)
+                                        8634)
+                                    8634)
+                                8634)))
+                    (,
+                    "x"
+                        (forall
+                        (map/from-list [])
+                            (tapp
+                            (tapp (tcon "->" 8731) (tcon "expr" 8634) 8731)
+                                (tapp
+                                (tapp
+                                    (tcon "," 8597)
+                                        (tapp (tcon "list" 8599) (tcon "pat" 8600) 8599)
+                                        8597)
+                                    (tcon "expr" 8601)
+                                    8597)
+                                8731)))])
+                (map/from-list
+                [(,
+                    "elet"
+                        (,
+                        (map/from-list [])
+                            (,
+                            [(tapp
+                                (tapp
+                                    (tcon "," 8597)
+                                        (tapp (tcon "list" 8599) (tcon "pat" 8600) 8599)
+                                        8597)
+                                    (tcon "expr" 8601)
+                                    8597)
+                                (tcon "expr" 8693)
+                                (tcon "int" 8694)]
+                                (tcon "expr" 8634))))])
+                (map/from-list [(, "expr" (, 0 (set/from-list ["elet"])))])
+                (map/from-list
+                [(,
+                    "alt"
+                        (,
+                        []
+                            (tapp
+                            (tapp
+                                (tcon "," 8597)
+                                    (tapp (tcon "list" 8599) (tcon "pat" 8600) 8598)
+                                    8596)
+                                (tcon "expr" 8601)
+                                8596)))
+                    (, "bindgroup" (, [] (tcon "alt" 8629)))])))
         ])
 
 (infer/stmts

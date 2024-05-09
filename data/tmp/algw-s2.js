@@ -423,6 +423,26 @@ return tenv(map$slfrom_list(cons($co("+")(concrete(tfns(cons(tint)(cons(tint)(ni
 }
 }
 })()
+let concat = (lists) => (($target) => {
+if ($target.type === "nil") {
+return nil
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "nil") {
+let rest = $target[1];
+return concat(rest)
+} 
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "cons") {
+let one = $target[0][0];
+let rest = $target[0][1];
+let lists = $target[1];
+return cons(one)(concat(cons(rest)(lists)))
+} 
+} ;
+throw new Error('match fail 9447:' + JSON.stringify($target))
+})(lists)
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -490,7 +510,7 @@ let free = $target[0][0];
 let type = $target[0][1];
 {
 let subst = map$slfrom_list(zip(free)(args));
-return type$slapply(subst)(type)
+return type$slresolve_aliases(aliases)(type$slapply(subst)(type))
 }
 } 
 } ;
@@ -509,13 +529,13 @@ throw new Error('match fail 5806:' + JSON.stringify($target))
 }
 let split_stmts = (stmts) => loop(stmts)((stmts) => (recur) => (($target) => {
 if ($target.type === "nil") {
-return $co(nil)(nil)
+return $co(nil)($co(nil)(nil))
 } ;
 if ($target.type === "cons") {
 let stmt = $target[0];
 let rest = $target[1];
 {
-let {"1": others, "0": defs} = recur(rest);
+let {"1": {"1": others, "0": aliases}, "0": defs} = recur(rest);
 {
 let $target = stmt;
 if ($target.type === "sdef") {
@@ -523,9 +543,12 @@ let name = $target[0];
 let nl = $target[1];
 let body = $target[2];
 let l = $target[3];
-return $co(cons($co(name)($co(nl)($co(body)(l))))(defs))(others)
+return $co(cons($co(name)($co(nl)($co(body)(l))))(defs))($co(aliases)(others))
 } ;
-return $co(defs)(cons(stmt)(others));
+if ($target.type === "stypealias") {
+return $co(defs)($co(cons(stmt)(aliases))(others))
+} ;
+return $co(defs)($co(aliases)(cons(stmt)(others)));
 throw new Error('match fail 6045:' + JSON.stringify($target))
 }
 }
@@ -821,11 +844,11 @@ return infer$sldeftype(tenv)(name)(args)(constrs)(l)
 throw new Error('match fail 2876:' + JSON.stringify($target))
 })(stmt)
 let infer$slstmts = (tenv) => (stmts) => {
-let {"1": others, "0": defs} = split_stmts(stmts);
+let {"1": {"1": others, "0": aliases}, "0": defs} = split_stmts(stmts);
 {
 let denv = infer$sldefs(tenv)(defs);
 {
-let final = foldl(denv)(others)((env) => (stmt) => tenv$slmerge(env)(infer$slstmt(tenv$slmerge(tenv)(env))(stmt)));
+let final = foldl(denv)(concat(cons(aliases)(cons(others)(nil))))((env) => (stmt) => tenv$slmerge(env)(infer$slstmt(tenv$slmerge(tenv)(env))(stmt)));
 return final
 }
 }
