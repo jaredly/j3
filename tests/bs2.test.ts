@@ -129,7 +129,7 @@ const fixtures: Fixture[] = [
         id: 10,
         name: 'selfed-self+algw -> thih',
         file: 'thih.json',
-        evaluator: [0.1, 2.1, 2, 4],
+        evaluator: [0.1, 2.1, 2, 6],
     },
     //
     // {

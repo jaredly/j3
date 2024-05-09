@@ -1178,7 +1178,7 @@
 (defn compile-stmt [stmt trace]
     (match stmt
         (sexpr expr l)                               (compile expr trace)
-        (sdef name nl body l)                        (++ ["const " (sanitize name) " = " (compile body trace) ";\n"])
+        (sdef name nl body l)                        "const ${(sanitize name)} = ${(compile body trace)};\n"
         (stypealias _ _ _ _ _)                       "/* type alias */"
         (sdefinstance name nl type preds inst-fns l) "$_.registerInstance(\"${name}\", ${(its l)}, {${(join
                                                          ", "
@@ -1191,17 +1191,19 @@
                                                              cases
                                                                  (fn [case]
                                                                  (let [(,,, name2 nl args l) case]
-                                                                     (++
-                                                                         ["const "
+                                                                     (join
+                                                                         ""
+                                                                             ["const "
                                                                              (sanitize name2)
                                                                              " = "
-                                                                             (++ (mapi (fn [_ i] (++ ["(v" (int-to-string i) ") => "])) 0 args))
+                                                                             (join "" (mapi (fn [_ i] (join "" ["(v" (int-to-string i) ") => "])) 0 args))
                                                                              "({type: \""
                                                                              name2
                                                                              "\""
-                                                                             (++
-                                                                             (mapi
-                                                                                 (fn [_ i] (++ [", " (int-to-string i) ": v" (int-to-string i)]))
+                                                                             (join
+                                                                             ""
+                                                                                 (mapi
+                                                                                 (fn [_ i] (join "" [", " (int-to-string i) ": v" (int-to-string i)]))
                                                                                      0
                                                                                      args))
                                                                              "});"])))))))

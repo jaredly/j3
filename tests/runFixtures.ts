@@ -9,6 +9,7 @@ import {
 import { calculateInitialState } from '../web/custom/worker/calculateInitialState';
 import { Fixture } from './bootstrap.test';
 import { jsEvaluator } from '../web/ide/ground-up/jsEvaluator';
+import { nodeToString } from '../src/to-cst/nodeToString';
 
 export const runFixtures = async (fixtures: Fixture[]) => {
     const evaluators: { [key: number]: string } = {};
@@ -71,14 +72,19 @@ export const runFixtures = async (fixtures: Fixture[]) => {
             );
             Object.entries(worker.results!.groups).forEach(([key, group]) => {
                 if (group.typeFailed) {
-                    console.log(
-                        group.tops.flatMap((t) => {
-                            const p = worker.nodes[t].parsed;
-                            return p?.type === 'success'
-                                ? p.names.map((n) => n.name)
-                                : [];
-                        }),
-                    );
+                    const names = group.tops.flatMap((t) => {
+                        const p = worker.nodes[t].parsed;
+                        return p?.type === 'success'
+                            ? p.names.map((n) => n.name)
+                            : [];
+                    });
+                    if (names.length) {
+                        console.log(names);
+                    } else {
+                        group.tops.map((t) =>
+                            console.log(nodeToString(worker.nodes[t].node, {})),
+                        );
+                    }
                     throw new Error(`group ${key} typeFailed!`);
                 }
             });
