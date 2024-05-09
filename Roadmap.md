@@ -20,8 +20,9 @@ for the series of artcicle
   - [x] split stmts
   - [x] basic deftype idk
   - [x] typealias why nottt
-  - [ ] quot n stuff
-  - [ ] get it running on everything, verify that its allgood
+  - [x] quot n stuff
+  - [x] get it running on everything, verify that its allgood
+  - [x] hrm maybe scope should be to "forall" schemes?
   This is the basic version
   ok so I will do patterns and stuff, because it's not actually that much more work.
   I neeeeed a test suite or something...
@@ -32,6 +33,7 @@ for the series of artcicle
 
 
 # PLAN Higher up...
+
 
 - [ ] HRM "instantiate" ... doesn't need to return the subst? I think I might be doing unnecessary work...
   - because the whole point of instantiate is that those vbls get replaced...

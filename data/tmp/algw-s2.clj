@@ -172,6 +172,9 @@
 (defn tenv/with-type [(tenv values tcons types aliases) name scheme]
     (tenv (map/set values name scheme) tcons types aliases))
 
+(defn tenv/with-scope [(tenv values tcons types aliases) scope]
+    (tenv (map/merge values scope) tcons types aliases))
+
 (defn tenv/resolve [(tenv values _ _ _) name] (map/get values name))
 
 (** ## Finding "free" type variables
@@ -224,7 +227,10 @@
     A simpler (and very reasonable) optimization would be to split the tenv into "global terms" and "local terms", because global terms are not allowed to have unresolved type variables, and local terms tend to be relatively small in number.
     These optimizations would also speed up tenv/free considerably. **)
     defn tenv/apply [subst (tenv values tcons types aliases)]
-    (tenv (map/map (scheme/apply subst) values) tcons types aliases))
+    (tenv (scope/apply subst values) tcons types aliases))
+
+(defn scope/apply [subst scope]
+    (map/map (scheme/apply subst) scope))
 
 (** ## Composing substitution maps
     One very nice property of Algorithm W is that the constraints are resolved unidirectionally. In a generic "constraint solving" algorithm, the constraints must be applied repeatedly until some "fixed point" is reached, because applying one constraint might result in other constraints newly becoming applicable.
@@ -360,6 +366,10 @@
 
 (def type/apply-> (apply-> type/apply))
 
+(def scope/apply-> (apply-> scope/apply))
+
+(def scheme/apply-> (apply-> scheme/apply))
+
 (** ## Instantiation
     When inferring the type for a variable reference (evar) we need to instantiate the corresponding scheme with all new type variables -- otherwise we wouldn't be able to use a polymorphic (generic) function two times with different types in the same expression. **)
 
@@ -409,6 +419,12 @@
                            "Cycle found while unifying type with type variable. ${var}")
                            (let-> [_ (subst-> (one-subst var type))] (<- ())))))
 
+(** ## Inference
+    Here are the functions that we'll be using most often when writing the inference code (defined above, but summarized here as a refresher):
+    - infer/expr tenv expr - takes an expression, returns a type
+    - unify t1 t2  - compares two types that need to be equivalent, and (a) if they can't be unified, throws an error, or (b) if they can be, adds the "substitutions" to the current state
+    - type/apply-> type - applies the current substitution map (from state) to the given type, which updates type variables with updated resolved types. **)
+
 (** ## Infer Expressions **)
 
 (defn infer/prim [prim]
@@ -443,7 +459,7 @@
                                                     (some scheme) (instantiate scheme l))
         (eprim prim _)                          (<- (infer/prim prim))
         (equot quot l)                          (<- (infer/quot quot l))
-        (estr first templates l)                (let-> [
+        (estr _ templates l)                    (let-> [
                                                     () (do->
                                                            (fn [(, expr _ _)]
                                                                (let-> [t (infer/expr tenv expr) () (unify t (tcon "string" l) l)] (<- ())))
@@ -464,7 +480,7 @@
             Other than that, it's the same as the simple case. **)
         (elambda [pat] body l)                  (let-> [
                                                     (, arg-type scope) (infer/pattern tenv pat)
-                                                    bound-env          (add-scope tenv scope)
+                                                    bound-env          (tenv/add-scope tenv scope)
                                                     body-type          (infer/expr bound-env body)
                                                     arg-type           (type/apply-> arg-type)]
                                                     (<- (tfn arg-type body-type l)))
@@ -498,12 +514,12 @@
                                                     scheme      (<- (generalize applied-env value-type))
                                                     bound-env   (<- (tenv/with-type applied-env name scheme))]
                                                     (infer/expr bound-env body))
-        (** For non-pvar patterns, we don't allow produced type variables to be generic. If we did, things like (fn [x] (let [(, a b) x] a) would return an "unbound" type variable: it would be inferred as forall a, b; a -> b. **)
+        (** For non-pvar patterns, it's almost exactly the same, but we don't allow produced type variables to be generic. If we did, things like (fn [x] (let [(, a b) x] a) would return an "unbound" type variable: it would be inferred as forall a, b; a -> b. **)
         (elet [(, pat value)] body l)           (let-> [
                                                     (, type scope) (infer/pattern tenv pat)
                                                     value-type     (infer/expr tenv value)
                                                     ()             (unify type value-type l)
-                                                    bound-env      (add-scope tenv scope)
+                                                    bound-env      (tenv/add-scope tenv scope)
                                                     body-type      (infer/expr bound-env body)]
                                                     (<- body-type))
         (elet [one ..more] body l)              (infer/expr tenv (elet [one] (elet more body l) l))
@@ -516,7 +532,7 @@
                                                                         (let-> [
                                                                             (, type scope) (infer/pattern tenv pat)
                                                                             ()             (unify type target-type l)
-                                                                            bound-env      (add-scope tenv scope)]
+                                                                            bound-env      (tenv/add-scope tenv scope)]
                                                                             (infer/expr bound-env body)))
                                                                         cases)
                                                     ()          (do->
@@ -529,13 +545,12 @@
                                                                         all-results)]
                                                     (type/apply-> result-type))))
 
-(defn add-scope [tenv scope]
+(defn tenv/add-scope [tenv scope]
     (foldl->
         tenv
             (map/to-list scope)
             (fn [tenv (, name vbl)]
-            (let-> [vbl (type/apply-> vbl)]
-                (<- (tenv/with-type tenv name (forall set/nil vbl)))))))
+            (let-> [vbl (scheme/apply-> vbl)] (<- (tenv/with-type tenv name vbl))))))
 
 (,
     (errorToString (fn [x] (run/nil-> (infer/expr builtin-env x))))
@@ -614,7 +629,8 @@
 ((** Here we are producing (1) a type for the pattern, and (2) a "scope" mapping of names to type variables. **)
     defn infer/pattern [tenv pattern]
     (match pattern
-        (pvar name l)         (let-> [v (new-type-var name l)] (<- (, v (map/from-list [(, name v)]))))
+        (pvar name l)         (let-> [v (new-type-var name l)]
+                                  (<- (, v (map/from-list [(, name (forall set/nil v))]))))
         (pany l)              (let-> [v (new-type-var "any" l)] (<- (, v map/nil)))
         (pstr _ l)            (<- (, (tcon "string" l) map/nil))
         (pprim (pbool _ _) l) (<- (, (tcon "bool" l) map/nil))
@@ -643,9 +659,9 @@
         (some (, free cargs cres)) (let-> [subst (make-subst-for-free free l)]
                                        (<- (, (map (type/apply subst) cargs) (type/apply subst cres))))))
 
-(** ## Infer Statements **)
+(** ## Handling Statements **)
 
-(defn infer/def [tenv name nl expr l]
+(defn add/def [tenv name nl expr l]
     (run/nil->
         (let-> [
             self     (new-type-var name nl)
@@ -658,7 +674,7 @@
 
 (,
     (fn [(sdef name nl expr l)]
-        (let [(tenv values _ _ _) (infer/def builtin-env name nl expr l)]
+        (let [(tenv values _ _ _) (add/def builtin-env name nl expr l)]
             (map/to-list values)))
         [(, (@! (def x 10)) [(, "x" (forall set/nil (tcon "int" 3024)))])
         (,
@@ -681,7 +697,7 @@
 
 (** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
 
-(defn infer/defs [tenv defns]
+(defn add/defs [tenv defns]
     (run/nil->
         (let-> [
             names     (<- (map (fn [(, name _)] name) defns))
@@ -707,7 +723,7 @@
 
 (,
     (fn [x]
-        (infer/defs
+        (add/defs
             builtin-env
                 (map (fn [(sdef name nl body l)] (, name nl body l)) x)))
         [(,
@@ -732,7 +748,7 @@
                 map/nil
                 map/nil))])
 
-(defn infer/typealias [(tenv values tcons types aliases) name args type]
+(defn add/typealias [(tenv values tcons types aliases) name args type]
     (tenv
         map/nil
             map/nil
@@ -745,7 +761,7 @@
                 (map fst args)
                     (type/con-to-var (set/from-list (map fst args)) type)))))
 
-(defn infer/deftype [(tenv _ tcons types aliases) name args constrs l]
+(defn add/deftype [(tenv _ tcons types aliases) name args constrs l]
     (let [
         free           (set/from-list (map fst args))
         res            (foldl
@@ -796,12 +812,12 @@
                                 (, target [(, arg l) ..inner]))
         _                   (, type [])))
 
-(defn infer/stmt [tenv stmt]
+(defn add/stmt [tenv stmt]
     (match stmt
-        (sdef name nl expr l)            (infer/def tenv name nl expr l)
+        (sdef name nl expr l)            (add/def tenv name nl expr l)
         (sexpr expr l)                   (run/nil-> (let-> [_ (infer/expr tenv expr)] (<- tenv/nil)))
-        (stypealias name _ args type _)  (infer/typealias tenv name args type)
-        (sdeftype name _ args constrs l) (infer/deftype tenv name args constrs l)))
+        (stypealias name _ args type _)  (add/typealias tenv name args type)
+        (sdeftype name _ args constrs l) (add/deftype tenv name args constrs l)))
 
 (defn split-stmts [stmts]
     (loop
@@ -815,15 +831,14 @@
                                       (stypealias _ _ _ _ _) (, defs [stmt ..aliases] others)
                                       _                      (, defs aliases [stmt ..others])))))))
 
-(defn infer/stmts [tenv stmts]
+(defn add/stmts [tenv stmts]
     (let [
         (, defs aliases others) (split-stmts stmts)
-        denv                    (infer/defs tenv defs)
+        denv                    (add/defs tenv defs)
         final                   (foldl
                                     denv
                                         (concat [aliases others])
-                                        (fn [env stmt]
-                                        (tenv/merge env (infer/stmt (tenv/merge tenv env) stmt))))]
+                                        (fn [env stmt] (tenv/merge env (add/stmt (tenv/merge tenv env) stmt))))]
         final))
 
 (,
@@ -832,7 +847,7 @@
             tenv/nil
                 x
                 (fn [env stmts]
-                (tenv/merge env (infer/stmts (tenv/merge builtin-env env) stmts)))))
+                (tenv/merge env (add/stmts (tenv/merge builtin-env env) stmts)))))
         [(,
         [[(@! (deftype (x m) (a m)))]
             [(@!
@@ -961,7 +976,7 @@
                     (, "bindgroup" (, [] (tcon "alt" 8629)))])))
         ])
 
-(infer/stmts
+(add/stmts
     tenv/nil
         [(@! (typealias (a b) (, int b)))
         (@! (deftype hi (red int) (blue) (green (a bool))))])
@@ -1070,6 +1085,8 @@
                     (, "->" (, 2 set/nil))])
                 map/nil)))
 
+(** ## Exporting for the structured editor **)
+
 (eval
     (** env_nil => add_stmt => get_type => type_to_string => infer_stmts => infer =>
   ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, infer_stmts, infer})
@@ -1081,5 +1098,5 @@
         (match (set/to-list vbls)
             []   (type->s type)
             vbls "forall ${(join " " vbls)} : ${(type->s type)}"))
-        infer/stmts
+        add/stmts
         (fn [env expr] (forall set/nil (run/nil-> (infer/expr env expr)))))
