@@ -391,6 +391,32 @@ return `${one}${sep}${join(sep)(rest)}`
 } ;
 throw new Error('match fail 6314:' + JSON.stringify($target))
 })(lst)
+let tbool = tcon("bool")(-1)
+let tmap = (k) => (v) => tapp(tapp(tcon("map")(-1))(k)(-1))(v)(-1)
+let toption = (arg) => tapp(tcon("option")(-1))(arg)(-1)
+let tlist = (arg) => tapp(tcon("list")(-1))(arg)(-1)
+let tset = (arg) => tapp(tcon("set")(-1))(arg)(-1)
+let concrete = (t) => forall(set$slnil)(t)
+let generic = (vbls) => (t) => forall(set$slfrom_list(vbls))(t)
+let vbl = (k) => tvar(k)(-1)
+let t$co = (a) => (b) => tapp(tapp(tcon(",")(-1))(a)(-1))(b)(-1)
+let tstring = tcon("string")(-1)
+let builtin_env = (() => {
+let k = vbl("k");
+{
+let v = vbl("v");
+{
+let v2 = vbl("v2");
+{
+let kv = generic(cons("k")(cons("v")(nil)));
+{
+let kk = generic(cons("k")(nil));
+return tenv(map$slfrom_list(cons($co("+")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint)(-1))))(cons($co("-")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint)(-1))))(cons($co(">")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("<")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool)(-1))))(cons($co("!=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool)(-1))))(cons($co(">=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("<=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co(",")(generic(cons("k")(cons("v")(nil)))(tfns(cons(k)(cons(v)(nil)))(t$co(k)(v))(-1))))(cons($co("trace")(kk(tfns(cons(tapp(tcon("list")(-1))(tapp(tcon("trace-fmt")(-1))(k)(-1))(-1))(nil))(tcon("()")(-1))(-1))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring)(-1))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint))(-1))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1)))(-1))))(cons($co("++")(concrete(tfns(cons(tlist(tstring))(nil))(tstring)(-1))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v))(-1))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v))(-1))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v))(-1))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2)(-1))(cons(tmap(k)(v))(nil)))(tmap(k)(v2))(-1))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v))(-1))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(v))(-1))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(k))(-1))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool)(-1))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tlist(k))(-1))))(cons($co("set/from-list")(kk(tfns(cons(tlist(k))(nil))(tset(k))(-1))))(cons($co("map/from-list")(kv(tfns(cons(tlist(t$co(k)(v)))(nil))(tmap(k)(v))(-1))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(t$co(k)(v)))(-1))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring)(-1))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring)(-1))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v"))(-1))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring)(-1))(cons(vbl("v"))(nil)))(tstring)(-1))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring)(-1))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v"))(-1))))(nil))))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")($co(set$slnil)($co(nil)(tcon("()")(-1)))))(cons($co(",")($co(set$slfrom_list(cons("k")(cons("v")(nil))))($co(cons(k)(cons(v)(nil)))(t$co(k)(v)))))(nil))))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("float")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(cons($co("map")($co(2)(set$slnil)))(cons($co("set")($co(1)(set$slnil)))(cons($co("->")($co(2)(set$slnil)))(nil)))))))))(map$slnil)
+}
+}
+}
+}
+})()
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -652,6 +678,12 @@ let quot = $target[0];
 let l = $target[1];
 return $lt_(infer$slquot(quot)(l))
 } ;
+if ($target.type === "estr") {
+let first = $target[0];
+let templates = $target[1];
+let l = $target[2];
+return $gt$gt$eq(do_$gt(({"0": expr}) => $gt$gt$eq(infer$slexpr(tenv)(expr))((t) => $gt$gt$eq(unify(t)(tcon("string")(l))(l))((_6807) => $lt_($unit))))(templates))((_6792) => $lt_(tcon("string")(l)))
+} ;
 if ($target.type === "elambda") {
 if ($target[0].type === "cons") {
 if ($target[0][0].type === "pvar") {
@@ -701,6 +733,13 @@ let one = $target[1][0];
 let rest = $target[1][1];
 let l = $target[2];
 return infer$slexpr(tenv)(eapp(eapp(target)(cons(one)(nil))(l))(rest)(l))
+} 
+} ;
+if ($target.type === "eapp") {
+let target = $target[0];
+if ($target[1].type === "nil") {
+let l = $target[2];
+return infer$slexpr(tenv)(target)
 } 
 } ;
 if ($target.type === "elet") {
@@ -789,7 +828,7 @@ return final
 }
 }
 }
-return eval("env_nil => add_stmt => get_type => type_to_string => infer_stmts => infer =>\n  ({env_nil, add_stmt, get_type, type_to_string, infer_stmts, infer})\n")(basic$slenv)(tenv$slmerge)(({"0": values}) => (name) => map$slget(values)(name))(({"1": type, "0": vbls}) => (($target) => {
+return eval("env_nil => add_stmt => get_type => type_to_string => infer_stmts => infer =>\n  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, infer_stmts, infer})\n")(builtin_env)(tenv$slmerge)(({"0": values}) => (name) => map$slget(values)(name))(({"1": type, "0": vbls}) => (($target) => {
 if ($target.type === "nil") {
 return type_$gts(type)
 } ;

@@ -445,7 +445,7 @@ export function updateState(
         if (state.results.groups[groupKey].typeFailed) {
             if (state.debugExecOrder) {
                 group.forEach((one) => {
-                    showExecOrder(state.results!.tops, one, i);
+                    showExecOrder(state.results!.tops, one, i, group);
                 });
             }
 
@@ -488,7 +488,7 @@ export function updateState(
             Object.assign(env.values, state.results!.tops[one.id].values);
 
             if (state.debugExecOrder) {
-                showExecOrder(state.results!.tops, one, i);
+                showExecOrder(state.results!.tops, one, i, group);
             }
         });
 
@@ -523,10 +523,18 @@ function processUsages(
     });
 }
 
-function showExecOrder(tops: AsyncResults['tops'], one: Sortable, i: number) {
+function showExecOrder(
+    tops: AsyncResults['tops'],
+    one: Sortable,
+    i: number,
+    group: Sortable[],
+) {
+    const groupNames = unique(group.flatMap((s) => s.names.map((n) => n.name)));
     tops[one.id].produce.push(
-        `Exec order ${i}\nDeps: ${unique(one.deps.map((n) => n.name)).join(
+        `Exec order ${i} - ${groupNames.join(', ')}\nDeps: ${unique(
+            one.deps.map((n) => n.name),
+        ).join(', ')}\nProduce: ${unique(one.names.map((n) => n.name)).join(
             ', ',
-        )}\nProduce: ${unique(one.names.map((n) => n.name)).join(', ')}`,
+        )}`,
     );
 }

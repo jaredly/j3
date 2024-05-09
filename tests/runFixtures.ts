@@ -71,6 +71,14 @@ export const runFixtures = async (fixtures: Fixture[]) => {
             );
             Object.entries(worker.results!.groups).forEach(([key, group]) => {
                 if (group.typeFailed) {
+                    console.log(
+                        group.tops.flatMap((t) => {
+                            const p = worker.nodes[t].parsed;
+                            return p?.type === 'success'
+                                ? p.names.map((n) => n.name)
+                                : [];
+                        }),
+                    );
                     throw new Error(`group ${key} typeFailed!`);
                 }
             });

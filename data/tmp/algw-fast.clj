@@ -181,7 +181,7 @@
         (sdef string int expr int)
         (sexpr expr int))
 
-(defn ,,0 [(,, a _ _)] a)
+(defn ,,0 [(, a _ _)] a)
 
 (defn expr-to-string [expr]
     (match expr
