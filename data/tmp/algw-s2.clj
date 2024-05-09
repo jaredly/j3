@@ -36,11 +36,45 @@
 
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
 
+(defn fst [(, a _)] a)
+
+(defn length [v]
+    (match v
+        []         0
+        [_ ..rest] (+ 1 (length rest))))
+
+(defn loop [v f] (f v (fn [nv] (loop nv f))))
+
+(defn reverse [lst]
+    (loop
+        (, lst [])
+            (fn [(, lst coll) recur]
+            (match lst
+                []           coll
+                [one ..rest] (recur (, rest [one ..coll]))))))
+
+(reverse [1 2 3 4 5 6])
+
+(defn join [sep lst]
+    (match lst
+        []           ""
+        [one]        one
+        [one ..rest] "${one}${sep}${(join sep rest)}"))
+
 (** ## AST **)
 
 (deftype prim (pint int int) (pbool bool int))
 
-(deftype stmt (sdef string int expr int) (sexpr expr int))
+(deftype stmt
+    (sdef string int expr int)
+        (sexpr expr int)
+        (sdeftype
+        string
+            int
+            (list (, string int))
+            (list (, string int (list type) int))
+            int)
+        (stypealias string int (list (, string int)) type int))
 
 (deftype cst
     (cst/list (list cst) int)
@@ -114,14 +148,25 @@
         (** Types of values currently in scope **)
             (map string scheme)
             (** Data type constructors; (free variables) (arguments) (resulting type) **)
-            (map string (, (set string) (list type) type))))
+            (map string (, (set string) (list type) type))
+            (** Data types (# free variables, constructor names) **)
+            (map string (, int (set string)))
+            (** Type aliases **)
+            (map string (, (list string) type))))
 
-(def tenv/nil (tenv map/nil map/nil))
+(defn tenv/merge [(tenv v1 c1 t1 a1) (tenv v2 c2 t2 a2)]
+    (tenv
+        (map/merge v1 v2)
+            (map/merge c1 c2)
+            (map/merge t1 t2)
+            (map/merge a1 a2)))
 
-(defn tenv/with-type [(tenv values tcons) name scheme]
-    (tenv (map/set values name scheme) tcons))
+(def tenv/nil (tenv map/nil map/nil map/nil map/nil))
 
-(defn tenv/resolve [(tenv values _) name] (map/get values name))
+(defn tenv/with-type [(tenv values tcons types aliases) name scheme]
+    (tenv (map/set values name scheme) tcons types aliases))
+
+(defn tenv/resolve [(tenv values _ _ _) name] (map/get values name))
 
 (** ## Finding "free" type variables
     The */free functions are about finding unbound type variables (that aren't bound by a containing forall).
@@ -138,7 +183,7 @@
 (defn scheme/free [(forall vbls type)]
     (set/diff (type/free type) vbls))
 
-(defn tenv/free [(tenv values _)]
+(defn tenv/free [(tenv values _ _ _)]
     (foldr set/nil (map scheme/free (map/values values)) set/merge))
 
 (,
@@ -172,8 +217,8 @@
 ((** As an optimization, we could segregate the type environment into "values with unresolved type variables" and "values without", or even set up a lookup table from "tvar id" to "names of values that contain that tvar". For now though, we'll do the simple thing of just always iterating over everything in scope.
     A simpler (and very reasonable) optimization would be to split the tenv into "global terms" and "local terms", because global terms are not allowed to have unresolved type variables, and local terms tend to be relatively small in number.
     These optimizations would also speed up tenv/free considerably. **)
-    defn tenv/apply [subst (tenv values tcons)]
-    (tenv (map/map (scheme/apply subst) values) tcons))
+    defn tenv/apply [subst (tenv values tcons types aliases)]
+    (tenv (map/map (scheme/apply subst) values) tcons types aliases))
 
 (** ## Composing substitution maps
     One very nice property of Algorithm W is that the constraints are resolved unidirectionally. In a generic "constraint solving" algorithm, the constraints must be applied repeatedly until some "fixed point" is reached, because applying one constraint might result in other constraints newly becoming applicable.
@@ -496,24 +541,64 @@
         (,
         (@ (fn [arg] (let [(, id _) arg] (, (id 2) (id true)))))
             "Fatal runtime: Incompatible concrete types: int vs bool")
-        (, (@ ((fn [x] x) 2)) (tcon "int" 4866))])
+        (, (@ ((fn [x] x) 2)) (tcon "int" 4866))
+        (,
+        (@
+            (match 1
+                1 true))
+            (tcon "bool" 5074))
+        (,
+        (@
+            (fn [x]
+                (match x
+                    (, 1 a) a)))
+            (tapp
+            (tapp
+                (tcon "->" 5085)
+                    (tapp
+                    (tapp (tcon "," -1) (tcon "int" 5094) -1)
+                        (tvar "match result:1" 5089)
+                        -1)
+                    5085)
+                (tvar "match result:1" 5089)
+                5085))
+        (,
+        (@
+            (match 1
+                1 true
+                2 2))
+            "Fatal runtime: Incompatible concrete types: int vs bool")
+        (,
+        (@
+            (fn [x]
+                (match x
+                    (, 2 _) 10
+                    (, m _) m)))
+            )])
 
 (** ## Patterns **)
 
 ((** This looks up a type constructor definition, and replaces any free variables in the arguments & result type with fresh type variables. **)
-    defn instantiate-tcon [(tenv _ tcons) name l]
+    defn instantiate-tcon [(tenv _ tcons _ _) name l]
     (match (map/get tcons name)
         (none)                     (fatal "Unknown type constructor: ${name}")
         (some (, free cargs cres)) (let-> [subst (make-subst-for-free free l)]
                                        (<- (, (map (type/apply subst) cargs) (type/apply subst cres))))))
 
-(defn infer/pattern [tenv pattern]
+((** Here we are producing (1) a type for the pattern, and (2)  "scope" mapping of names to type variables. **)
+    defn infer/pattern [tenv pattern]
     (match pattern
         (pvar name l)         (let-> [v (new-type-var name l)] (<- (, v (map/from-list [(, name v)]))))
         (pany l)              (let-> [v (new-type-var "any" l)] (<- (, v map/nil)))
         (pstr _ l)            (<- (, (tcon "string" l) map/nil))
         (pprim (pbool _ _) l) (<- (, (tcon "bool" l) map/nil))
         (pprim (pint _ _) l)  (<- (, (tcon "int" l) map/nil))
+        (** This is the only really complex case.
+            cannot convert {"id":"8dc25efa-f2e6-431d-b516-a2dcbec00fec","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"instantiate the type constructor","styles":{}}],"children":[]}
+            cannot convert {"id":"fbc62acd-aa18-4fde-9aaf-f465cc5b0860","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"infer the types for the pattern arguments","styles":{}}],"children":[]}
+            cannot convert {"id":"d4cdaae3-0b80-4226-9b11-306ff6533ea4","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"unify the pattern types with the expected constructor types","styles":{}}],"children":[]}
+            cannot convert {"id":"5631b441-770a-402c-b026-d53be33aa320","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"apply any substitutions to the type constructor's \"result\" type","styles":{}}],"children":[]}
+            cannot convert {"id":"9de5a662-ca3d-422b-aef1-a621140eebaa","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"merge all the sub scopes together","styles":{}}],"children":[]} **)
         (pcon name _ args l)  (let-> [
                                   (, cargs cres)       (instantiate-tcon tenv name l)
                                   sub-patterns         (map-> (infer/pattern tenv) args)
@@ -525,44 +610,42 @@
                                   scope                (<- (foldl map/nil scopes map/merge))]
                                   (<- (, cres scope)))))
 
+(def basic/env
+    (let [
+        tcons [(,
+                  ","
+                      (,
+                      (set/from-list ["a" "b"])
+                          [(tvar "a" -1) (tvar "b" -1)]
+                          (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)))]]
+        (tenv
+            (map/from-list
+                [(, "+" (forall set/nil (tfns [tint tint] tint -1)))
+                    ..(map
+                    (fn [(, name (, free args res))]
+                        (, name (forall free (tfns args res -1))))
+                        tcons)])
+                (map/from-list tcons)
+                map/nil
+                map/nil)))
+
 (** ## Infer Statements **)
 
-(defn infer/stmt [tenv stmt]
-    (match stmt
-        (sdef name nl expr l) (run/nil->
-                                  (let-> [
-                                      self     (new-type-var name nl)
-                                      self-env (<- (tenv/with-type tenv name (forall set/nil self)))
-                                      type     (infer/expr self-env expr)
-                                      self     (type/apply-> self)
-                                      ()       (unify self type l)
-                                      type     (type/apply-> type)]
-                                      (<- (tenv/with-type tenv/nil name (generalize tenv type)))))
-        (sexpr expr l)        (run/nil-> (let-> [_ (infer/expr tenv expr)] (<- tenv/nil)))))
-
-(def basic/env
-    (tenv
-        (map/from-list
-            [(, "+" (forall set/nil (tfns [tint tint] tint -1)))
-                (,
-                ","
-                    (forall
-                    (set/from-list ["a" "b"])
-                        (tfns
-                        [(tvar "a" -1) (tvar "b" -1)]
-                            (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)
-                            -1)))])
-            (map/from-list
-            [(,
-                ","
-                    (,
-                    (set/from-list ["a" "b"])
-                        [(tvar "a" -1) (tvar "b" -1)]
-                        (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)))])))
+(defn infer/def [tenv name nl expr l]
+    (run/nil->
+        (let-> [
+            self     (new-type-var name nl)
+            self-env (<- (tenv/with-type tenv name (forall set/nil self)))
+            type     (infer/expr self-env expr)
+            self     (type/apply-> self)
+            ()       (unify self type l)
+            type     (type/apply-> type)]
+            (<- (tenv/with-type tenv/nil name (generalize tenv type))))))
 
 (,
-    (fn [x]
-        (let [(tenv values _) (infer/stmt basic/env x)] (map/to-list values)))
+    (fn [(sdef name nl expr l)]
+        (let [(tenv values _ _ _) (infer/def basic/env name nl expr l)]
+            (map/to-list values)))
         [(, (@! (def x 10)) [(, "x" (forall set/nil (tcon "int" 3024)))])
         (,
         (@! (defn id [x] x))
@@ -584,7 +667,7 @@
 
 (** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
 
-(defn infer/defns [tenv defns]
+(defn infer/defs [tenv defns]
     (run/nil->
         (let-> [
             names     (<- (map (fn [(, name _)] name) defns))
@@ -611,7 +694,7 @@
 
 (,
     (fn [x]
-        (infer/defns
+        (infer/defs
             basic/env
                 (map (fn [(sdef name nl body l)] (, name nl body l)) x)))
         [(,
@@ -632,5 +715,144 @@
                         (forall
                         (map/from-list [])
                             (tapp (tapp (tcon "->" 3776) (tcon "int" -1) 3776) (tcon "int" -1) 3776)))])
+                map/nil
+                map/nil
                 map/nil))])
 
+(defn infer/typealias [(tenv values tcons types aliases) name args type]
+    (tenv
+        map/nil
+            map/nil
+            map/nil
+            (** TODO verify that all referenced types do exist **)
+            (map/set
+            map/nil
+                name
+                (,
+                (map fst args)
+                    (type/con-to-var (set/from-list (map fst args)) type)))))
+
+(defn infer/deftype [(tenv _ tcons types aliases) name args constrs l]
+    (let [
+        free           (set/from-list (map fst args))
+        res            (foldl
+                           (tcon name l)
+                               args
+                               (fn [inner (, name l)] (tapp inner (tvar name l) l)))
+        parsed-constrs (map
+                           (fn [(, name _ args _)]
+                               (let [
+                                   args (map (type/con-to-var free) args)
+                                   args (map (type/resolve-aliases aliases) args)]
+                                   (, name (, free args res))))
+                               constrs)]
+        (tenv
+            (map/from-list
+                (map
+                    (fn [(, name (, free args res))] (, name (forall free (tfns args res l))))
+                        parsed-constrs))
+                (map/from-list parsed-constrs)
+                (map/set
+                map/nil
+                    name
+                    (, (length args) (set/from-list (map fst constrs))))
+                map/nil)))
+
+(defn type/con-to-var [vars type]
+    (match type
+        (tvar _ _)    type
+        (tcon name l) (if (set/has vars name)
+                          (tvar name l)
+                              type)
+        (tapp a b l)  (tapp (type/con-to-var vars a) (type/con-to-var vars b) l)))
+
+(defn type/resolve-aliases [aliases type]
+    (let [
+        (, target args) (type/unroll-app type)
+        args            (map (type/resolve-aliases aliases) (reverse (map fst args)))]
+        (match target
+            (tcon name l) (match (map/get aliases name)
+                              (some (, free type)) (let [subst (map/from-list (zip free args))] (type/apply subst type))
+                              _                    (foldl target args (fn [a b] (tapp a b l))))
+            (tvar _ l)    (foldl target args (fn [a b] (tapp a b l))))))
+
+(defn type/unroll-app [type]
+    (match type
+        (tapp target arg l) (let [(, target inner) (type/unroll-app target)]
+                                (, target [(, arg l) ..inner]))
+        _                   (, type [])))
+
+(defn infer/stmt [tenv stmt]
+    (match stmt
+        (sdef name nl expr l)            (infer/def tenv name nl expr l)
+        (sexpr expr l)                   (run/nil-> (let-> [_ (infer/expr tenv expr)] (<- tenv/nil)))
+        (stypealias name _ args type _)  (infer/typealias tenv name args type)
+        (sdeftype name _ args constrs l) (infer/deftype tenv name args constrs l)))
+
+(defn split-stmts [stmts]
+    (loop
+        stmts
+            (fn [stmts recur]
+            (match stmts
+                []            (, [] [])
+                [stmt ..rest] (let [(, defs others) (recur rest)]
+                                  (match stmt
+                                      (sdef name nl body l) (, [(, name nl body l) ..defs] others)
+                                      _                     (, defs [stmt ..others])))))))
+
+(defn infer/stmts [tenv stmts]
+    (let [
+        (, defs others) (split-stmts stmts)
+        denv            (infer/defs tenv defs)
+        final           (foldl
+                            denv
+                                others
+                                (fn [env stmt]
+                                (tenv/merge env (infer/stmt (tenv/merge tenv env) stmt))))]
+        final))
+
+(,
+    (fn [x] (foldl basic/env x infer/stmts))
+        [(,
+        [[(@! (deftype (x m) (a m)))]
+            [(@!
+            (defn aa [x]
+                (match x
+                    (a 2) 2
+                    (a m) m)))]]
+            (tenv
+            (map/from-list
+                [(,
+                    "aa"
+                        (forall
+                        (map/from-list [])
+                            (tapp
+                            (tapp
+                                (tcon "->" 6481)
+                                    (tapp (tcon "x" 6470) (tcon "int" 6490) 6474)
+                                    6481)
+                                (tcon "int" 6491)
+                                6481)))])
+                (map/from-list [])
+                (map/from-list [])
+                (map/from-list [])))
+        ])
+
+(infer/stmts
+    tenv/nil
+        [(@! (typealias (a b) (, int b)))
+        (@! (deftype hi (red int) (blue) (green (a bool))))])
+
+(eval
+    (** env_nil => add_stmt => get_type => type_to_string => infer_stmts => infer =>
+  ({env_nil, add_stmt, get_type, type_to_string, infer_stmts, infer})
+ **)
+        basic/env
+        tenv/merge
+        (fn [(tenv values _ _ _) name] (map/get values name))
+        (fn [(forall vbls type)]
+        (match (set/to-list vbls)
+            []   (type->s type)
+            vbls "forall ${(join " " vbls)} : ${(type->s type)}"))
+        infer/stmts
+        (fn [env expr] (forall set/nil (run/nil-> (infer/expr env expr)))))

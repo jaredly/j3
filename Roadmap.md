@@ -12,10 +12,17 @@ for the series of artcicle
 - [x] bootstrap.json
 - [x] self-1.json
 - [x] jcst.json
-- [-] parse-self.json
+- [x] parse-self.json
   - [x] executing
   - [x] trimmed & refactored the implementation
   - [x] annotated; eh, I feel like there's not a whole ton to talk about?
+- [ ] algw-s2.json
+  - [x] split stmts
+  - [x] basic deftype idk
+  - [x] typealias why nottt
+  This is the basic version
+  ok so I will do patterns and stuff, because it's not actually that much more work.
+  I neeeeed a test suite or something...
 - [ ] algw-fast.json
   - [x] executing
   - I think I probably want to do a stripped-down version first?

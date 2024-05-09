@@ -219,7 +219,7 @@ createServer(async (req, res) => {
         if (!existsSync(full)) {
             console.log('404 sorry', full);
             res.writeHead(404, headers('application/json'));
-            return res.end('Nope');
+            return res.end('File does not exist: ' + full);
         }
         if (statSync(full).isDirectory()) {
             res.writeHead(200, headers('application/json'));
