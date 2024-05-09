@@ -125,6 +125,12 @@ const fixtures: Fixture[] = [
         file: 'parse-self.json',
         evaluator: [0.1, 2.1, 2, 6],
     },
+    {
+        id: 10,
+        name: 'selfed-self+algw -> thih',
+        file: 'thih.json',
+        evaluator: [0.1, 2.1, 2, 6],
+    },
     //
     // {
     //     id: 2.1,

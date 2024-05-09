@@ -201,7 +201,7 @@
         (cst/record (list cst) int)
         (cst/spread cst int)
         (cst/id string int)
-        (cst/string string (list (,, cst string int)) int))
+        (cst/string string (list (, cst string int)) int))
 
 (deftype (list a) (nil) (cons a (list a)))
 
@@ -415,7 +415,7 @@
         (tapp t _ l) (match (type/kind t)
                          (kfun _ k) k
                          _          (fatal
-                                        "Invalid ssssssssssssssssssstype application ${(int-to-string l)} while trying to determine the kind of ${(type->s type)}: ${(type->s t)} isn't a kfun."))))
+                                        "Invalid type application ${(int-to-string l)} while trying to determine the kind of ${(type->s type)}: ${(type->s t)} isn't a kfun."))))
 
 (defn type/valid? [type]
     (match type
@@ -571,7 +571,7 @@
         (cst/string first templates l)                              (estr
                                                                         first
                                                                             (map
-                                                                            (fn [tpl] (let [(,, expr string l) tpl] (,, (parse-expr expr) string l)))
+                                                                            (fn [tpl] (let [(, expr string l) tpl] (,, (parse-expr expr) string l)))
                                                                                 templates)
                                                                             l)
         (cst/id id l)                                               (match (string-to-int id)
