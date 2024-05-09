@@ -16,8 +16,16 @@ const valueToNode = (v) => {
   if (typeof v === 'number' || typeof v === 'boolean') {
     return {type: 'identifier', text: v + '', loc: -1}
   }
-  return null 
+  return {
+    type: 'list',
+    values: [
+      { type: 'identifier', text: 'eval', loc: -1 },
+      { type: 'raw-code', raw: JSON.stringify(v), lang: 'json', loc: -1 },
+    ],
+    loc: -1,
+  };
 }
+
 
 const valueToString = (v) => {
     if (typeof v === 'object' && v && 'type' in v) {
@@ -54,6 +62,7 @@ const valueToString = (v) => {
     }
     return 'Unexpected value: ' + JSON.stringify(v);
 };
+
 
 const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])]
 

@@ -3,8 +3,13 @@ import { useGetStore } from '../../custom/store/StoreCtx';
 import { pathForIdx } from './pathForIdx';
 import { collectErrors } from './collectErrors';
 
-export const ShowErrors = () => {
-    const [hide, setHide] = useState(false);
+export const ShowErrors = ({
+    hide,
+    setHide,
+}: {
+    hide: boolean;
+    setHide: (b: boolean) => void;
+}) => {
     const store = useGetStore();
     const found = collectErrors(store);
 

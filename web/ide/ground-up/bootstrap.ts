@@ -49,7 +49,55 @@ export const valueToNode = (v: any): Node => {
     if (typeof v === 'number' || typeof v === 'boolean') {
         return { type: 'identifier', text: v + '', loc: -1 };
     }
-    return { type: 'raw-code', raw: JSON.stringify(v), lang: 'json', loc: -1 };
+    if (
+        Array.isArray(v) &&
+        v.every((item) => Array.isArray(item) && item.length === 2)
+    ) {
+        return {
+            type: 'list',
+            values: [
+                { type: 'identifier', text: 'map/from-list', loc: -1 },
+                {
+                    type: 'array',
+                    values: v.map((item) => ({
+                        type: 'list',
+                        values: [
+                            { type: 'identifier', text: ',', loc: -1 },
+                            valueToNode(item[0]),
+                            valueToNode(item[1]),
+                        ],
+                        loc: -1,
+                    })),
+                    loc: -1,
+                },
+            ],
+            loc: -1,
+        };
+    }
+    if (Array.isArray(v)) {
+        if (v.length === 0)
+            return { type: 'identifier', text: 'set/nil', loc: -1 };
+        return {
+            type: 'list',
+            values: [
+                { type: 'identifier', text: 'set/from-list', loc: -1 },
+                {
+                    type: 'array',
+                    values: v.map((item) => valueToNode(item)),
+                    loc: -1,
+                },
+            ],
+            loc: -1,
+        };
+    }
+    return {
+        type: 'list',
+        values: [
+            { type: 'identifier', text: 'eval', loc: -1 },
+            { type: 'raw-code', raw: JSON.stringify(v), lang: 'json', loc: -1 },
+        ],
+        loc: -1,
+    };
 };
 
 export const bootstrap: FullEvalator<

@@ -1,142 +1,7 @@
-const pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1})
-const pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1})
-const snd = (tuple) => (({1: v}) => v)(tuple);
-
-const fst = (tuple) => (({0: v}) => v)(tuple);
-
-const some = (v0) => ({type: "some", 0: v0})
-const none = ({type: "none"})
-const its = int_to_string;
-
-const value = ({type: "value"})
-const type = ({type: "type"})
-const dot = (a) => (b) => (c) => a(b(c));
-
-const just_trace = (loc) => (trace) => (value) => (($target) => {
-if ($target.type === "none") {
-return ""
-}
-if ($target.type === "some") {
-{
-let info = $target[0];
-return `\$trace(${its(loc)}, ${jsonify(info)}, ${value});`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(trace)(loc));
-
-const left = (v0) => ({type: "left", 0: v0})
-const right = (v0) => ({type: "right", 0: v0})
-const maybe_paren = (text) => (wrap) => (($target) => {
-if ($target === true) {
-return `(${text})`
-}
-return text
-throw new Error('Failed to match. ' + valueToString($target));
-})(wrap);
-
-const $co$co0 = (x) => (({0: a}) => a)(x);
-
-const $co$co1 = (x) => (({1: a}) => a)(x);
-
-const $co$co2 = (x) => (({2: a}) => a)(x);
-
-const $co$co$co2 = (x) => (({2: x}) => x)(x);
-
-const map_opt = (v) => (f) => (($target) => {
-if ($target.type === "none") {
-return none
-}
-if ($target.type === "some") {
-{
-let v = $target[0];
-return some(f(v))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(v);
-
-const apply_until = (f) => (v) => (($target) => {
-if ($target.type === "some") {
-{
-let v = $target[0];
-return apply_until(f)(v)
-}
-}
-if ($target.type === "none") {
-return v
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(v));
-
-const fold$sloption = (inner) => (init) => (value) => (($target) => {
-if ($target.type === "none") {
-return init
-}
-if ($target.type === "some") {
-{
-let v = $target[0];
-return inner(init)(v)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(value);
-
-const fold$sleither = (fleft) => (fright) => (init) => (value) => (($target) => {
-if ($target.type === "left") {
-{
-let l = $target[0];
-return fleft(init)(l)
-}
-}
-if ($target.type === "right") {
-{
-let r = $target[0];
-return fright(init)(r)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(value);
-
-const fold$slget = (get) => (f) => (init) => (value) => f(init)(get(value));
-
-const nop = (a) => (b) => a;
-
-const force_opt = (x) => (($target) => {
-if ($target.type === "none") {
-return fatal("empty")
-}
-if ($target.type === "some") {
-{
-let x = $target[0];
-return x
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(x);
-
-const map$co$co0 = (f) => ({2: c, 1: b, 0: a}) => $co$co(f(a))(b)(c);
-
-const map$co1 = (f) => ({1: b, 0: a}) => $co(a)(f(b));
-
-/* type alias */
-const id = (x) => x;
-
-const loop = (init) => (f) => f(init)((v) => loop(v)(f));
-
-const map_some = (f) => (v) => (($target) => {
-if ($target.type === "some") {
-{
-let v = $target[0];
-return some(f(v))
-}
-}
-return none
-throw new Error('Failed to match. ' + valueToString($target));
-})(v);
-
 const nil = ({type: "nil"})
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
+const pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1})
+const pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1})
 const pany = (v0) => ({type: "pany", 0: v0})
 const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
 const pcon = (v0) => (v1) => (v2) => (v3) => ({type: "pcon", 0: v0, 1: v1, 2: v2, 3: v3})
@@ -145,19 +10,6 @@ const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1})
 const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
-const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
-const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
-const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1})
-const cst$slidentifier = (v0) => (v1) => ({type: "cst/identifier", 0: v0, 1: v1})
-const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
-const one = (v0) => ({type: "one", 0: v0})
-const many = (v0) => ({type: "many", 0: v0})
-const empty = ({type: "empty"})
-const j$slspread = (v0) => ({type: "j/spread", 0: v0})
-const j$slpvar = (v0) => (v1) => ({type: "j/pvar", 0: v0, 1: v1})
-const j$slparray = (v0) => (v1) => (v2) => ({type: "j/parray", 0: v0, 1: v1, 2: v2})
-const j$slpobj = (v0) => (v1) => (v2) => ({type: "j/pobj", 0: v0, 1: v1, 2: v2})
-const StateT = (v0) => ({type: "StateT", 0: v0})
 const join = (sep) => (items) => (($target) => {
 if ($target.type === "nil") {
 return ""
@@ -192,6 +44,15 @@ return cons(f(i)(one))(mapi($pl(1)(i))(rest)(f))
 throw new Error('Failed to match. ' + valueToString($target));
 })(values);
 
+const snd = (tuple) => (({1: v}) => v)(tuple);
+
+const fst = (tuple) => (({0: v}) => v)(tuple);
+
+const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
+const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
+const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1})
+const cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
+const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
 const tapps = (items) => (l) => (($target) => {
 if ($target.type === "cons" &&
 $target[1].type === "nil") {
@@ -210,6 +71,8 @@ return tapp(tapps(rest)(l))(one)(l)
 throw new Error('Failed to match. ' + valueToString($target));
 })(items);
 
+const some = (v0) => ({type: "some", 0: v0})
+const none = ({type: "none"})
 const replaces = (target) => (repl) => (($target) => {
 if ($target.type === "nil") {
 return target
@@ -268,47 +131,6 @@ return l
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
-
-const trace_wrap = (loc) => (trace) => (js) => (($target) => {
-if ($target.type === "none") {
-return js
-}
-if ($target.type === "some") {
-{
-let info = $target[0];
-return `\$trace(${its(loc)}, ${jsonify(info)}, ${js})`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(trace)(loc));
-
-const trace_and = (loc) => (trace) => (value) => (js) => (($target) => {
-if ($target.type === "none") {
-return js
-}
-if ($target.type === "some") {
-{
-let info = $target[0];
-return `(\$trace(${its(loc)}, ${jsonify(info)}, ${value}), ${js})`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(trace)(loc));
-
-const trace_and_block = (loc) => (trace) => (value) => (js) => (($target) => {
-if ($target.type === "none") {
-return js
-}
-if ($target.type === "some") {
-{
-let info = $target[0];
-return `\$trace(${its(loc)}, ${jsonify(info)}, ${value});\n${js}`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(trace)(loc));
-
-const source_map = (loc) => (js) => `/*${its(loc)}*/${js}/*<${its(loc)}*/`;
 
 const rev = (arr) => (col) => (($target) => {
 if ($target.type === "nil") {
@@ -373,6 +195,13 @@ return f(foldr(init)(rest)(f))(one)
 throw new Error('Failed to match. ' + valueToString($target));
 })(items);
 
+const its = int_to_string;
+
+const value = ({type: "value"})
+const type = ({type: "type"})
+const one = (v0) => ({type: "one", 0: v0})
+const many = (v0) => ({type: "many", 0: v0})
+const empty = ({type: "empty"})
 const bag$sland = (first) => (second) => (($target) => {
 if ($target.type === "," &&
 $target[0].type === "empty") {
@@ -476,12 +305,14 @@ let name = $target[0];
 let nl = $target[1];
 let args = $target[2];
 let l = $target[3];
-return bag$sland(one($co$co(name)(value)(nl)))(many(map(args)(pat_externals)))
+return bag$sland(one($co(name)($co(value)(nl))))(many(map(args)(pat_externals)))
 }
 }
 return empty
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
+
+const dot = (a) => (b) => (c) => a(b(c));
 
 const externals_type = (bound) => (t) => (($target) => {
 if ($target.type === "tvar") {
@@ -495,7 +326,7 @@ return (($target) => {
 if ($target === true) {
 return empty
 }
-return one($co$co(name)(type)(l))
+return one($co(name)($co(type)(l)))
 throw new Error('Failed to match. ' + valueToString($target));
 })(set$slhas(bound)(name))
 }
@@ -547,6 +378,19 @@ return empty
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
 
+const just_trace = (loc) => (trace) => (value) => (($target) => {
+if ($target.type === "none") {
+return ""
+}
+if ($target.type === "some") {
+{
+let info = $target[0];
+return `\$trace(${its(loc)}, ${jsonify(info)}, ${value});`
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(trace)(loc));
+
 const fold_type = (init) => (type) => (f) => ((v) => (($target) => {
 if ($target.type === "tapp") {
 {
@@ -573,6 +417,54 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(type);
 
 const type_size = (type) => fold_type(0)(type)((v) => (_) => $pl(1)(v));
+
+const j$slint = (v0) => (v1) => ({type: "j/int", 0: v0, 1: v1})
+const j$slfloat = (v0) => (v1) => ({type: "j/float", 0: v0, 1: v1})
+const j$slbool = (v0) => (v1) => ({type: "j/bool", 0: v0, 1: v1})
+const j$slspread = (v0) => ({type: "j/spread", 0: v0})
+const j$slpvar = (v0) => (v1) => ({type: "j/pvar", 0: v0, 1: v1})
+const j$slparray = (v0) => (v1) => (v2) => ({type: "j/parray", 0: v0, 1: v1, 2: v2})
+const j$slpobj = (v0) => (v1) => (v2) => ({type: "j/pobj", 0: v0, 1: v1, 2: v2})
+const left = (v0) => ({type: "left", 0: v0})
+const right = (v0) => ({type: "right", 0: v0})
+const j$slcompile_prim = (ctx) => (prim) => (($target) => {
+if ($target.type === "j/int") {
+{
+let int = $target[0];
+let l = $target[1];
+return int_to_string(int)
+}
+}
+if ($target.type === "j/float") {
+{
+let float = $target[0];
+let l = $target[1];
+return jsonify(float)
+}
+}
+if ($target.type === "j/bool") {
+{
+let bool = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target === true) {
+return "true"
+}
+return "false"
+throw new Error('Failed to match. ' + valueToString($target));
+})(bool)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(prim);
+
+const maybe_paren = (text) => (wrap) => (($target) => {
+if ($target === true) {
+return `(${text})`
+}
+return text
+throw new Error('Failed to match. ' + valueToString($target));
+})(wrap);
 
 const pat_arg = (ctx) => (pat) => (($target) => {
 if ($target.type === "j/pvar") {
@@ -622,6 +514,14 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
+
+const $co$co0 = (x) => (({0: a}) => a)(x);
+
+const $co$co1 = (x) => (({1: {0: a}}) => a)(x);
+
+const $co$co2 = (x) => (({1: {1: a}}) => a)(x);
+
+const $co$co$co2 = (x) => (({1: {1: {0: x}}}) => x)(x);
 
 const pat_$gtj$slpat = (pat) => (($target) => {
 if ($target.type === "pany") {
@@ -731,6 +631,32 @@ throw new Error('Failed to match. ' + valueToString($target));
 throw new Error('Failed to match. ' + valueToString($target));
 })(lst);
 
+const map_opt = (v) => (f) => (($target) => {
+if ($target.type === "none") {
+return none
+}
+if ($target.type === "some") {
+{
+let v = $target[0];
+return some(f(v))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(v);
+
+const apply_until = (f) => (v) => (($target) => {
+if ($target.type === "some") {
+{
+let v = $target[0];
+return apply_until(f)(v)
+}
+}
+if ($target.type === "none") {
+return v
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(f(v));
+
 const len = (x) => (($target) => {
 if ($target.type === "nil") {
 return 0
@@ -773,7 +699,57 @@ throw new Error('Failed to match. ' + valueToString($target));
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
 
+const fold$sloption = (inner) => (init) => (value) => (($target) => {
+if ($target.type === "none") {
+return init
+}
+if ($target.type === "some") {
+{
+let v = $target[0];
+return inner(init)(v)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(value);
+
+const fold$sleither = (fleft) => (fright) => (init) => (value) => (($target) => {
+if ($target.type === "left") {
+{
+let l = $target[0];
+return fleft(init)(l)
+}
+}
+if ($target.type === "right") {
+{
+let r = $target[0];
+return fright(init)(r)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(value);
+
+const fold$slget = (get) => (f) => (init) => (value) => f(init)(get(value));
+
 const spread$slinner = ({0: inner}) => inner;
+
+const nop = (a) => (b) => a;
+
+const force_opt = (x) => (($target) => {
+if ($target.type === "none") {
+return fatal("empty")
+}
+if ($target.type === "some") {
+{
+let x = $target[0];
+return x
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(x);
+
+const map$co$co0 = (f) => ({1: {1: c, 0: b}, 0: a}) => $co(f(a))($co(b)(c));
+
+const map$co1 = (f) => ({1: b, 0: a}) => $co(a)(f(b));
 
 const zip = (one) => (two) => (($target) => {
 if ($target.type === "," &&
@@ -795,6 +771,8 @@ return cons($co(o)(t))(zip(one)(two))
 throw new Error('Failed to match. ' + valueToString($target));
 })($co(one)(two));
 
+/* type alias */
+const StateT = (v0) => ({type: "StateT", 0: v0})
 const run_$gt = ({0: f}) => (state) => (({1: result}) => result)(f(state));
 
 const state_f = ({0: f}) => f;
@@ -879,10 +857,12 @@ return $gt$gt$eq(foldr_$gt(init)(rest)(f))((init) => f(init)(one))
 throw new Error('Failed to match. ' + valueToString($target));
 })(values);
 
+const id = (x) => x;
+
 const state$slnil = nil;
 
 const cst_loc = (cst) => (($target) => {
-if ($target.type === "cst/identifier") {
+if ($target.type === "cst/id") {
 {
 let l = $target[1];
 return l
@@ -914,6 +894,8 @@ return l
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(cst);
+
+const loop = (init) => (f) => f(init)((v) => loop(v)(f));
 
 const pat$slidents = (pat) => (($target) => {
 if ($target.type === "pvar") {
@@ -961,6 +943,17 @@ return one($co(name)(l))
 throw new Error('Failed to match. ' + valueToString($target));
 })(type);
 
+const map_some = (f) => (v) => (($target) => {
+if ($target.type === "some") {
+{
+let v = $target[0];
+return some(f(v))
+}
+}
+return none
+throw new Error('Failed to match. ' + valueToString($target));
+})(v);
+
 const pairs_plus = (extra) => (list) => (($target) => {
 if ($target.type === "nil") {
 return nil
@@ -1004,21 +997,21 @@ const sdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "sdeftype", 0: 
 const sdef = (v0) => (v1) => (v2) => (v3) => ({type: "sdef", 0: v0, 1: v1, 2: v2, 3: v3})
 const sexpr = (v0) => (v1) => ({type: "sexpr", 0: v0, 1: v1})
 const parse_pat = (pat) => (($target) => {
-if ($target.type === "cst/identifier" &&
+if ($target.type === "cst/id" &&
 $target[0] === "_") {
 {
 let l = $target[1];
 return $lt_(pany(l))
 }
 }
-if ($target.type === "cst/identifier" &&
+if ($target.type === "cst/id" &&
 $target[0] === "true") {
 {
 let l = $target[1];
 return $lt_(pprim(pbool(true)(l))(l))
 }
 }
-if ($target.type === "cst/identifier" &&
+if ($target.type === "cst/id" &&
 $target[0] === "false") {
 {
 let l = $target[1];
@@ -1033,7 +1026,7 @@ let l = $target[2];
 return $lt_(pstr(first)(l))
 }
 }
-if ($target.type === "cst/identifier") {
+if ($target.type === "cst/id") {
 {
 let id = $target[0];
 let l = $target[1];
@@ -1083,7 +1076,7 @@ return $lt_(pcon("()")(-1)(nil)(l))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === ",") {
 {
 let il = $target[0][0][1];
@@ -1094,7 +1087,7 @@ return parse_pat_tuple(args)(il)(l)
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier") {
+$target[0][0].type === "cst/id") {
 {
 let name = $target[0][0][0];
 let il = $target[0][0][1];
@@ -1129,11 +1122,6 @@ return $gt$gt$eq(parse_pat(one))((one) => $gt$gt$eq(parse_pat_tuple(rest)(il)(l)
 throw new Error('Failed to match. ' + valueToString($target));
 })(items);
 
-const parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => (v7) => (v8) => (v9) => (v10) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7, 8: v8, 9: v9, 10: v10})
-const j$slint = (v0) => (v1) => ({type: "j/int", 0: v0, 1: v1})
-const j$slfloat = (v0) => (v1) => ({type: "j/float", 0: v0, 1: v1})
-const j$slbool = (v0) => (v1) => ({type: "j/bool", 0: v0, 1: v1})
-
 const j$slapp = (v0) => (v1) => (v2) => ({type: "j/app", 0: v0, 1: v1, 2: v2})
 const j$slbin = (v0) => (v1) => (v2) => (v3) => ({type: "j/bin", 0: v0, 1: v1, 2: v2, 3: v3})
 const j$slun = (v0) => (v1) => (v2) => ({type: "j/un", 0: v0, 1: v1, 2: v2})
@@ -1160,8 +1148,6 @@ const j$slcontinue = (v0) => ({type: "j/continue", 0: v0})
 const j$slreturn = (v0) => (v1) => ({type: "j/return", 0: v0, 1: v1})
 const j$sllet = (v0) => (v1) => (v2) => ({type: "j/let", 0: v0, 1: v1, 2: v2})
 const j$slthrow = (v0) => (v1) => ({type: "j/throw", 0: v0, 1: v1})
-const tx = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => (v7) => ({type: "tx", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7})
-const fx = (v0) => (v1) => (v2) => (v3) => ({type: "fx", 0: v0, 1: v1, 2: v2, 3: v3})
 const pairs = (list) => (($target) => {
 if ($target.type === "nil") {
 return $lt_(nil)
@@ -1184,6 +1170,19 @@ return $lt_err($co(cst_loc(one))("extra item in pairs"))(nil)
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(list);
+
+const trace_wrap = (loc) => (trace) => (js) => (($target) => {
+if ($target.type === "none") {
+return js
+}
+if ($target.type === "some") {
+{
+let info = $target[0];
+return `\$trace(${its(loc)}, ${jsonify(info)}, ${js})`
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(trace)(loc));
 
 const expr_loc = (expr) => (($target) => {
 if ($target.type === "estr") {
@@ -1237,6 +1236,35 @@ return l
 throw new Error('Failed to match. ' + valueToString($target));
 })(expr);
 
+const trace_and = (loc) => (trace) => (value) => (js) => (($target) => {
+if ($target.type === "none") {
+return js
+}
+if ($target.type === "some") {
+{
+let info = $target[0];
+return `(\$trace(${its(loc)}, ${jsonify(info)}, ${value}), ${js})`
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(trace)(loc));
+
+const trace_and_block = (loc) => (trace) => (value) => (js) => (($target) => {
+if ($target.type === "none") {
+return js
+}
+if ($target.type === "some") {
+{
+let info = $target[0];
+return `\$trace(${its(loc)}, ${jsonify(info)}, ${value});\n${js}`
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(trace)(loc));
+
+const source_map = (loc) => (js) => `/*${its(loc)}*/${js}/*<${its(loc)}*/`;
+
+const parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => (v7) => (v8) => (v9) => (v10) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7, 8: v8, 9: v9, 10: v10})
 const externals = (bound) => (expr) => (($target) => {
 if ($target.type === "evar") {
 {
@@ -1246,7 +1274,7 @@ return (($target) => {
 if ($target === true) {
 return empty
 }
-return one($co$co(name)(value)(l))
+return one($co(name)($co(value)(l)))
 throw new Error('Failed to match. ' + valueToString($target));
 })(set$slhas(bound)(name))
 }
@@ -1264,7 +1292,8 @@ let first = $target[0];
 let templates = $target[1];
 let l = $target[2];
 return many(map(templates)((arg) => (($target) => {
-if ($target.type === ",,") {
+if ($target.type === "," &&
+$target[1].type === ",") {
 {
 let expr = $target[0];
 return externals(bound)(expr)
@@ -1330,7 +1359,7 @@ if ($target.type === "sdef") {
 {
 let name = $target[0];
 let l = $target[1];
-return cons($co$co(name)(value)(l))(nil)
+return cons($co(name)($co(value)(l)))(nil)
 }
 }
 if ($target.type === "sexpr") {
@@ -1340,7 +1369,7 @@ if ($target.type === "stypealias") {
 {
 let name = $target[0];
 let l = $target[1];
-return cons($co$co(name)(type)(l))(nil)
+return cons($co(name)($co(type)(l)))(nil)
 }
 }
 if ($target.type === "sdeftype") {
@@ -1348,12 +1377,14 @@ if ($target.type === "sdeftype") {
 let name = $target[0];
 let l = $target[1];
 let constructors = $target[3];
-return cons($co$co(name)(type)(l))(map(constructors)((arg) => (($target) => {
-if ($target.type === ",,,") {
+return cons($co(name)($co(type)(l)))(map(constructors)((arg) => (($target) => {
+if ($target.type === "," &&
+$target[1].type === "," &&
+$target[1][1].type === ",") {
 {
 let name = $target[0];
-let l = $target[1];
-return $co$co(name)(value)(l)
+let l = $target[1][0];
+return $co(name)($co(value)(l))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -1370,11 +1401,13 @@ let string = $target[0];
 let free = $target[2];
 let constructors = $target[3];
 return ((frees) => many(map(constructors)((constructor) => (($target) => {
-if ($target.type === ",,,") {
+if ($target.type === "," &&
+$target[1].type === "," &&
+$target[1][1].type === ",") {
 {
 let name = $target[0];
-let l = $target[1];
-let args = $target[2];
+let l = $target[1][0];
+let args = $target[1][1][0];
 return (($target) => {
 if ($target.type === "nil") {
 return empty
@@ -1540,37 +1573,6 @@ return foldl(0)(constructors)((v) => ($const) => foldl(v)(map($co$co$co2($const)
 throw new Error('Failed to match. ' + valueToString($target));
 })(stmt));
 
-const j$slcompile_prim = (ctx) => (prim) => (($target) => {
-if ($target.type === "j/int") {
-{
-let int = $target[0];
-let l = $target[1];
-return int_to_string(int)
-}
-}
-if ($target.type === "j/float") {
-{
-let float = $target[0];
-let l = $target[1];
-return jsonify(float)
-}
-}
-if ($target.type === "j/bool") {
-{
-let bool = $target[0];
-let l = $target[1];
-return (($target) => {
-if ($target === true) {
-return "true"
-}
-return "false"
-throw new Error('Failed to match. ' + valueToString($target));
-})(bool)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(prim);
-
 const j$slneeds_parens = (expr) => (($target) => {
 if ($target.type === "j/bin") {
 return true
@@ -1596,6 +1598,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const is_bop = (op) => contains(bops)(op);
 
+const tx = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => (v6) => (v7) => ({type: "tx", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5, 6: v6, 7: v7})
 const map$slpat = (tx) => (pat) => ((loop) => (({3: post_p, 2: pre_p}) => (($target) => {
 if ($target.type === "none") {
 return pat
@@ -1650,6 +1653,7 @@ $target[1][0][0][1].type === "nil") {
 {
 let args = $target[0];
 let value = $target[1][0][0][0][0];
+let l = $target[2];
 return some(j$sllambda(args)(right(value))(l))
 }
 }
@@ -1664,6 +1668,7 @@ let args = $target[0];
 let body = $target[1][0][0][1];
 let ll = $target[1][0][0][2];
 let al = $target[1][0][2];
+let l = $target[2];
 return some(j$sllambda(args)(body)(l))
 }
 }
@@ -1712,6 +1717,7 @@ return cons(j$sllet(one)(two)(l))(make_lets(params)(args)(l))
 throw new Error('Failed to match. ' + valueToString($target));
 })($co(params)(args));
 
+const fx = (v0) => (v1) => (v2) => (v3) => ({type: "fx", 0: v0, 1: v1, 2: v2, 3: v3})
 const fold$slpat = (fx) => (init) => (pat) => (({1: p}) => p((($target) => {
 if ($target.type === "j/pvar") {
 return init
@@ -1883,7 +1889,8 @@ if ($target.type === "nil") {
 return none
 }
 if ($target.type === "cons" &&
-$target[0].type === ",,") {
+$target[0].type === "," &&
+$target[0][1].type === ",") {
 {
 let expr = $target[0][0];
 let rest = $target[1];
@@ -2111,7 +2118,7 @@ let name = $target[0];
 let l = $target[1];
 let args = $target[2];
 let constrs = $target[3];
-return bag$sland(many(map(constrs)(({2: args, 1: l, 0: name}) => bag$sland(one($co(name)(l)))(many(map(args)(type$slidents))))))(bag$sland(one($co(name)(l)))(many(map(args)(one))))
+return bag$sland(many(map(constrs)(({1: {1: {0: args}, 0: l}, 0: name}) => bag$sland(one($co(name)(l)))(many(map(args)(type$slidents))))))(bag$sland(one($co(name)(l)))(many(map(args)(one))))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -2885,7 +2892,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 const fold$slblock = (fx) => (init) => (block) => (({2: b}) => (({0: items}) => b(foldl(init)(items)(fold$slstmt(fx)))(block))(block))(fx);
 
 const parse_type = (type) => (($target) => {
-if ($target.type === "cst/identifier") {
+if ($target.type === "cst/id") {
 {
 let id = $target[0];
 let l = $target[1];
@@ -2901,7 +2908,7 @@ return $lt_err($co(l)("(parse-type) with empty list"))(tcon("()")(l))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "fn" &&
 $target[0][1].type === "cons" &&
 $target[0][1][0].type === "cst/array" &&
@@ -2915,7 +2922,7 @@ return $gt$gt$eq(parse_type(body))((body) => $gt$gt$eq(map_$gt(parse_type)(args)
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === ",") {
 {
 let cl = $target[0][0][1];
@@ -2952,7 +2959,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(type);
 
 const mk_deftype = (id) => (li) => (args) => (items) => (l) => $gt$gt$eq(foldr_$gt(nil)(args)((args) => (arg) => (($target) => {
-if ($target.type === "cst/identifier") {
+if ($target.type === "cst/id") {
 {
 let name = $target[0];
 let l = $target[1];
@@ -2964,7 +2971,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(arg)))((args) => $gt$gt$eq(foldr_$gt(nil)(items)((res) => (constr) => (($target) => {
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier") {
+$target[0][0].type === "cst/id") {
 {
 let name = $target[0][0][0];
 let ni = $target[0][0][1];
@@ -3072,7 +3079,7 @@ return expr
 throw new Error('Failed to match. ' + valueToString($target));
 })(expr))(init)))(nil))(nil)))
 throw new Error('Failed to match. ' + valueToString($target));
-})(overlap))(map$slfrom_list(map(overlap)(({1: loc, 0: name}) => $co(loc)(force_opt(map$slget(mapping)(name)))))))(map$slfrom_list(zip(shadow)(new_names))))(mapi(0)(shadow)((i) => (name) => `${name}\$${its(i)}`)))(set$slto_list(foldl(set$slnil)(overlap)((ov) => ({0: name}) => set$sladd(ov)(name)))))(bag$slfold((shadow) => ({2: l, 1: kind, 0: name}) => (($target) => {
+})(overlap))(map$slfrom_list(map(overlap)(({1: loc, 0: name}) => $co(loc)(force_opt(map$slget(mapping)(name)))))))(map$slfrom_list(zip(shadow)(new_names))))(mapi(0)(shadow)((i) => (name) => `${name}\$${its(i)}`)))(set$slto_list(foldl(set$slnil)(overlap)((ov) => ({0: name}) => set$sladd(ov)(name)))))(bag$slfold((shadow) => ({1: {1: l, 0: kind}, 0: name}) => (($target) => {
 if ($target.type === "value") {
 return (($target) => {
 if ($target === true) {
@@ -3089,7 +3096,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 const expand_bindings = (bindings) => (l) => foldr(nil)(bindings)((res) => (binding) => concat(cons(let_fix_shadow(binding)(l))(cons(res)(nil))));
 
 const parse_typealias = (name) => (body) => (l) => $gt$gt$eq($lt_((($target) => {
-if ($target.type === "cst/identifier") {
+if ($target.type === "cst/id") {
 {
 let name = $target[0];
 let nl = $target[1];
@@ -3098,7 +3105,7 @@ return $co(name)($co(nl)(nil))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier") {
+$target[0][0].type === "cst/id") {
 {
 let name = $target[0][0][0];
 let nl = $target[0][0][1];
@@ -3108,7 +3115,7 @@ return $co(name)($co(nl)(args))
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(name)))(({1: {1: args, 0: nl}, 0: name}) => $gt$gt$eq(foldr_$gt(nil)(args)((args) => (x) => (($target) => {
-if ($target.type === "cst/identifier") {
+if ($target.type === "cst/id") {
 {
 let name = $target[0];
 let l = $target[1];
@@ -3122,10 +3129,10 @@ throw new Error('Failed to match. ' + valueToString($target));
 const parse_stmt = (cst) => (($target) => {
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "def" &&
 $target[0][1].type === "cons" &&
-$target[0][1][0].type === "cst/identifier" &&
+$target[0][1][0].type === "cst/id" &&
 $target[0][1][1].type === "cons") {
 {
 let id = $target[0][1][0][0];
@@ -3138,7 +3145,7 @@ return $gt$gt$eq(parse_expr(value))((expr) => $gt$gt$eq(do_$gt(unexpected("extra
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "def") {
 {
 let l = $target[1];
@@ -3147,10 +3154,10 @@ return $lt_err($co(l)("Invalid 'def'"))(sunit(l))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "defn" &&
 $target[0][1].type === "cons" &&
-$target[0][1][0].type === "cst/identifier" &&
+$target[0][1][0].type === "cst/id" &&
 $target[0][1][1].type === "nil") {
 {
 let id = $target[0][1][0][0];
@@ -3161,10 +3168,10 @@ return $lt_(sdef(id)(li)(evar("nil")(c))(c))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "defn" &&
 $target[0][1].type === "cons" &&
-$target[0][1][0].type === "cst/identifier" &&
+$target[0][1][0].type === "cst/id" &&
 $target[0][1][1].type === "cons" &&
 $target[0][1][1][0].type === "cst/array") {
 {
@@ -3197,7 +3204,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "defn") {
 {
 let l = $target[1];
@@ -3206,7 +3213,7 @@ return $lt_err($co(l)("Invalid 'defn'"))(sunit(l))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "deftype" &&
 $target[0][1].type === "cons") {
 {
@@ -3214,7 +3221,7 @@ let name = $target[0][1][0];
 let items = $target[0][1][1];
 let l = $target[1];
 return (($target) => {
-if ($target.type === "cst/identifier") {
+if ($target.type === "cst/id") {
 {
 let id = $target[0];
 let li = $target[1];
@@ -3223,7 +3230,7 @@ return mk_deftype(id)(li)(nil)(items)(l)
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier") {
+$target[0][0].type === "cst/id") {
 {
 let id = $target[0][0][0];
 let li = $target[0][0][1];
@@ -3237,7 +3244,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "deftype") {
 {
 let l = $target[1];
@@ -3246,7 +3253,7 @@ return $lt_err($co(l)("Invalid deftype"))(sunit(l))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "typealias" &&
 $target[0][1].type === "cons" &&
 $target[0][1][1].type === "cons" &&
@@ -3264,14 +3271,14 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 
 const parse_expr = (cst) => (($target) => {
-if ($target.type === "cst/identifier" &&
+if ($target.type === "cst/id" &&
 $target[0] === "true") {
 {
 let l = $target[1];
 return $lt_(eprim(pbool(true)(l))(l))
 }
 }
-if ($target.type === "cst/identifier" &&
+if ($target.type === "cst/id" &&
 $target[0] === "false") {
 {
 let l = $target[1];
@@ -3286,7 +3293,7 @@ let l = $target[2];
 return $gt$gt$eq(map_$gt(({1: {1: l, 0: suffix}, 0: expr}) => $gt$gt$eq(parse_expr(expr))((expr) => $lt_($co(expr)($co(suffix)(l)))))(templates))((tpls) => $lt_(estr(first)(tpls)(l)))
 }
 }
-if ($target.type === "cst/identifier") {
+if ($target.type === "cst/id") {
 {
 let id = $target[0];
 let l = $target[1];
@@ -3306,7 +3313,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "@" &&
 $target[0][1].type === "cons" &&
 $target[0][1][1].type === "nil") {
@@ -3318,7 +3325,7 @@ return $gt$gt$eq(parse_expr(body))((expr) => $lt_(equot(quot$slexpr(expr))(l)))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "@@" &&
 $target[0][1].type === "cons" &&
 $target[0][1][1].type === "nil") {
@@ -3330,7 +3337,7 @@ return $lt_(equot(quot$slquot(body))(l))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "@!" &&
 $target[0][1].type === "cons" &&
 $target[0][1][1].type === "nil") {
@@ -3342,7 +3349,7 @@ return $gt$gt$eq(parse_stmt(body))((stmt) => $lt_(equot(quot$slstmt(stmt))(l)))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "@t" &&
 $target[0][1].type === "cons" &&
 $target[0][1][1].type === "nil") {
@@ -3354,7 +3361,7 @@ return $gt$gt$eq(parse_type(body))((body) => $lt_(equot(quot$sltype(body))(l)))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "@p" &&
 $target[0][1].type === "cons" &&
 $target[0][1][1].type === "nil") {
@@ -3366,7 +3373,7 @@ return $gt$gt$eq(parse_pat(body))((body) => $lt_(equot(quot$slpat(body))(l)))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "if" &&
 $target[0][1].type === "cons" &&
 $target[0][1][1].type === "cons" &&
@@ -3382,7 +3389,7 @@ return $gt$gt$eq(parse_expr(cond))((cond) => $gt$gt$eq(parse_expr(yes))((yes) =>
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "fn" &&
 $target[0][1].type === "cons" &&
 $target[0][1][0].type === "cst/array") {
@@ -3396,7 +3403,7 @@ return $gt$gt$eq(map_$gt(parse_pat)(args))((args) => $gt$gt$eq(parse_one_expr(re
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "fn") {
 {
 let l = $target[1];
@@ -3405,7 +3412,7 @@ return $lt_err($co(l)(`Invalid 'fn' ${int_to_string(l)}`))(evar("()")(l))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "match" &&
 $target[0][1].type === "cons") {
 {
@@ -3413,12 +3420,12 @@ let ml = $target[0][0][1];
 let target = $target[0][1][0];
 let cases = $target[0][1][1];
 let l = $target[1];
-return $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq($lt_(pairs_plus(cst$slidentifier("()")(ml))(cases)))((cases) => $gt$gt$eq(map_$gt(({1: expr, 0: pat}) => $gt$gt$eq(parse_pat(pat))((pat) => $gt$gt$eq(parse_expr(expr))((expr) => $lt_($co(pat)(expr)))))(cases))((cases) => $lt_(ematch(target)(cases)(l)))))
+return $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq($lt_(pairs_plus(cst$slid("()")(ml))(cases)))((cases) => $gt$gt$eq(map_$gt(({1: expr, 0: pat}) => $gt$gt$eq(parse_pat(pat))((pat) => $gt$gt$eq(parse_expr(expr))((expr) => $lt_($co(pat)(expr)))))(cases))((cases) => $lt_(ematch(target)(cases)(l)))))
 }
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "let" &&
 $target[0][1].type === "cons" &&
 $target[0][1][0].type === "cst/array") {
@@ -3432,7 +3439,7 @@ return $gt$gt$eq(pairs(inits))((inits) => $gt$gt$eq(map_$gt(({1: value, 0: pat})
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "let->" &&
 $target[0][1].type === "cons" &&
 $target[0][1][0].type === "cst/array" &&
@@ -3448,7 +3455,7 @@ return $gt$gt$eq(parse_expr(body))((body) => $gt$gt$eq(pairs(inits))((inits) => 
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === "let") {
 {
 let l = $target[1];
@@ -3457,7 +3464,7 @@ return $lt_err($co(l)(`Invalid 'let' ${int_to_string(l)}`))(evar("()")(l))
 }
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
-$target[0][0].type === "cst/identifier" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === ",") {
 {
 let il = $target[0][0][1];
@@ -3711,7 +3718,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 throw new Error('Failed to match. ' + valueToString($target));
 })(items);
 
-const example_expr = run$slnil_$gt(parse_expr({"0":{"0":{"0":"match","1":12702,"type":"cst/identifier"},"1":{"0":{"0":"stmt","1":12703,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"sexpr","1":12705,"type":"cst/identifier"},"1":{"0":{"0":"expr","1":12706,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12707,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12704,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"compile","1":12709,"type":"cst/identifier"},"1":{"0":{"0":"expr","1":12710,"type":"cst/identifier"},"1":{"0":{"0":"trace","1":12711,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12708,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"sdef","1":12713,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12714,"type":"cst/identifier"},"1":{"0":{"0":"nl","1":12715,"type":"cst/identifier"},"1":{"0":{"0":"body","1":12716,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12717,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12712,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"++","1":12719,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12721,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12724,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12725,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12723,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12726,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"compile","1":12729,"type":"cst/identifier"},"1":{"0":{"0":"body","1":12730,"type":"cst/identifier"},"1":{"0":{"0":"trace","1":12731,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12728,"type":"cst/list"},"1":{"0":{"0":";\\n","1":{"type":"nil"},"2":12732,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12720,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12718,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"stypealias","1":12735,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12736,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12737,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12738,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12739,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12740,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12734,"type":"cst/list"},"1":{"0":{"0":"/* type alias ","1":{"0":{"0":{"0":"name","1":12743,"type":"cst/identifier"},"1":{"0":" */","1":12744,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":12741,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sdeftype","1":12746,"type":"cst/identifier"},"1":{"0":{"0":"name","1":12747,"type":"cst/identifier"},"1":{"0":{"0":"nl","1":12748,"type":"cst/identifier"},"1":{"0":{"0":"type-arg","1":12749,"type":"cst/identifier"},"1":{"0":{"0":"cases","1":12750,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12751,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12745,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"join","1":12753,"type":"cst/identifier"},"1":{"0":{"0":"\\n","1":{"type":"nil"},"2":12754,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"map","1":12757,"type":"cst/identifier"},"1":{"0":{"0":"cases","1":12758,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"fn","1":12760,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"case","1":12762,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"1":12761,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"let","1":12764,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":{"0":{"0":",","1":12767,"type":"cst/identifier"},"1":{"0":{"0":"name2","1":12768,"type":"cst/identifier"},"1":{"0":{"0":"nl","1":12769,"type":"cst/identifier"},"1":{"0":{"0":"args","1":12770,"type":"cst/identifier"},"1":{"0":{"0":"l","1":12771,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12766,"type":"cst/list"},"1":{"0":{"0":"case","1":12772,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12765,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12774,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12776,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12779,"type":"cst/identifier"},"1":{"0":{"0":"name2","1":12780,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12778,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12781,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12784,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"mapi","1":12786,"type":"cst/identifier"},"1":{"0":{"0":"0","1":12787,"type":"cst/identifier"},"1":{"0":{"0":"args","1":12788,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"fn","1":12790,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"i","1":12792,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12793,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12791,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12795,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"(v","1":{"type":"nil"},"2":12797,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12800,"type":"cst/identifier"},"1":{"0":{"0":"i","1":12801,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12799,"type":"cst/list"},"1":{"0":{"0":") => ","1":{"type":"nil"},"2":12802,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12796,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12794,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12789,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12785,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12783,"type":"cst/list"},"1":{"0":{"0":"({type: \\\"","1":{"type":"nil"},"2":12804,"type":"cst/string"},"1":{"0":{"0":"name2","1":12806,"type":"cst/identifier"},"1":{"0":{"0":"\\\"","1":{"type":"nil"},"2":12807,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12810,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"mapi","1":12812,"type":"cst/identifier"},"1":{"0":{"0":"0","1":12813,"type":"cst/identifier"},"1":{"0":{"0":"args","1":12814,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"fn","1":12816,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"i","1":12818,"type":"cst/identifier"},"1":{"0":{"0":"_","1":12819,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12817,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12821,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":", ","1":{"type":"nil"},"2":12823,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12826,"type":"cst/identifier"},"1":{"0":{"0":"i","1":12827,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12825,"type":"cst/list"},"1":{"0":{"0":": v","1":{"type":"nil"},"2":12828,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12831,"type":"cst/identifier"},"1":{"0":{"0":"i","1":12832,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12830,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12822,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12820,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12815,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12811,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12809,"type":"cst/list"},"1":{"0":{"0":"});","1":{"type":"nil"},"2":12833,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12775,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12773,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12763,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12759,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12756,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12752,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12701,"type":"cst/list"}));
+const example_expr = run$slnil_$gt(parse_expr({"0":{"0":{"0":"match","1":12702,"type":"cst/id"},"1":{"0":{"0":"stmt","1":12703,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"sexpr","1":12705,"type":"cst/id"},"1":{"0":{"0":"expr","1":12706,"type":"cst/id"},"1":{"0":{"0":"l","1":12707,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12704,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"compile","1":12709,"type":"cst/id"},"1":{"0":{"0":"expr","1":12710,"type":"cst/id"},"1":{"0":{"0":"trace","1":12711,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12708,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"sdef","1":12713,"type":"cst/id"},"1":{"0":{"0":"name","1":12714,"type":"cst/id"},"1":{"0":{"0":"nl","1":12715,"type":"cst/id"},"1":{"0":{"0":"body","1":12716,"type":"cst/id"},"1":{"0":{"0":"l","1":12717,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12712,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"++","1":12719,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12721,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12724,"type":"cst/id"},"1":{"0":{"0":"name","1":12725,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12723,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12726,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"compile","1":12729,"type":"cst/id"},"1":{"0":{"0":"body","1":12730,"type":"cst/id"},"1":{"0":{"0":"trace","1":12731,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12728,"type":"cst/list"},"1":{"0":{"0":";\\n","1":{"type":"nil"},"2":12732,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12720,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12718,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"stypealias","1":12735,"type":"cst/id"},"1":{"0":{"0":"name","1":12736,"type":"cst/id"},"1":{"0":{"0":"_","1":12737,"type":"cst/id"},"1":{"0":{"0":"_","1":12738,"type":"cst/id"},"1":{"0":{"0":"_","1":12739,"type":"cst/id"},"1":{"0":{"0":"_","1":12740,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12734,"type":"cst/list"},"1":{"0":{"0":"/* type alias ","1":{"0":{"0":{"0":"name","1":12743,"type":"cst/id"},"1":{"0":" */","1":12744,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":12741,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sdeftype","1":12746,"type":"cst/id"},"1":{"0":{"0":"name","1":12747,"type":"cst/id"},"1":{"0":{"0":"nl","1":12748,"type":"cst/id"},"1":{"0":{"0":"type-arg","1":12749,"type":"cst/id"},"1":{"0":{"0":"cases","1":12750,"type":"cst/id"},"1":{"0":{"0":"l","1":12751,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12745,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"join","1":12753,"type":"cst/id"},"1":{"0":{"0":"\\n","1":{"type":"nil"},"2":12754,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"map","1":12757,"type":"cst/id"},"1":{"0":{"0":"cases","1":12758,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12760,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"case","1":12762,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"1":12761,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"let","1":12764,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":{"0":{"0":",","1":12767,"type":"cst/id"},"1":{"0":{"0":"name2","1":12768,"type":"cst/id"},"1":{"0":{"0":"nl","1":12769,"type":"cst/id"},"1":{"0":{"0":"args","1":12770,"type":"cst/id"},"1":{"0":{"0":"l","1":12771,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12766,"type":"cst/list"},"1":{"0":{"0":"case","1":12772,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12765,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12774,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12776,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12779,"type":"cst/id"},"1":{"0":{"0":"name2","1":12780,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12778,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12781,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12784,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"mapi","1":12786,"type":"cst/id"},"1":{"0":{"0":"0","1":12787,"type":"cst/id"},"1":{"0":{"0":"args","1":12788,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12790,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"i","1":12792,"type":"cst/id"},"1":{"0":{"0":"_","1":12793,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12791,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12795,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"(v","1":{"type":"nil"},"2":12797,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12800,"type":"cst/id"},"1":{"0":{"0":"i","1":12801,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12799,"type":"cst/list"},"1":{"0":{"0":") => ","1":{"type":"nil"},"2":12802,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12796,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12794,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12789,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12785,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12783,"type":"cst/list"},"1":{"0":{"0":"({type: \\\"","1":{"type":"nil"},"2":12804,"type":"cst/string"},"1":{"0":{"0":"name2","1":12806,"type":"cst/id"},"1":{"0":{"0":"\\\"","1":{"type":"nil"},"2":12807,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12810,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"mapi","1":12812,"type":"cst/id"},"1":{"0":{"0":"0","1":12813,"type":"cst/id"},"1":{"0":{"0":"args","1":12814,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12816,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"i","1":12818,"type":"cst/id"},"1":{"0":{"0":"_","1":12819,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12817,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12821,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":", ","1":{"type":"nil"},"2":12823,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12826,"type":"cst/id"},"1":{"0":{"0":"i","1":12827,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12825,"type":"cst/list"},"1":{"0":{"0":": v","1":{"type":"nil"},"2":12828,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12831,"type":"cst/id"},"1":{"0":{"0":"i","1":12832,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12830,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12822,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12820,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12815,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12811,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12809,"type":"cst/list"},"1":{"0":{"0":"});","1":{"type":"nil"},"2":12833,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12775,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12773,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12763,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12759,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12756,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12752,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12701,"type":"cst/list"}));
 
 const compile_stmt$slj = (stmt) => (trace) => (($target) => {
 if ($target.type === "sexpr") {
@@ -3749,7 +3756,7 @@ return map(cases)(($case) => (({1: {1: {1: l, 0: args}, 0: nl}, 0: name2}) => j$
 throw new Error('Failed to match. ' + valueToString($target));
 })(stmt);
 
-const ex = run$slnil_$gt(parse_expr({"0":{"0":{"0":"let","1":16241,"type":"cst/identifier"},"1":{"0":{"0":{"0":{"0":"x","1":16243,"type":"cst/identifier"},"1":{"0":{"0":"10","1":16244,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":16242,"type":"cst/array"},"1":{"0":{"0":"x","1":16246,"type":"cst/identifier"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16240,"type":"cst/list"}));
+const ex = run$slnil_$gt(parse_expr({"0":{"0":{"0":"let","1":16241,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"x","1":16243,"type":"cst/id"},"1":{"0":{"0":"10","1":16244,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":16242,"type":"cst/array"},"1":{"0":{"0":"x","1":16246,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16240,"type":"cst/list"}));
 
 const simplify_js = tx((expr) => some(expr))(apply_until(simplify_one))((pat) => none)((pat) => pat)((stmt) => some(stmt))(apply_until(simplify_stmt))((block) => some(block))(apply_until(simplify_block));
 
