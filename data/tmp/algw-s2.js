@@ -504,6 +504,24 @@ throw new Error('match fail 6045:' + JSON.stringify($target))
 } ;
 throw new Error('match fail 6012:' + JSON.stringify($target))
 })(stmts))
+let infer$slquot = (quot) => (l) => (($target) => {
+if ($target.type === "quot/expr") {
+return tcon("expr")(l)
+} ;
+if ($target.type === "quot/stmt") {
+return tcon("stmt")(l)
+} ;
+if ($target.type === "quot/type") {
+return tcon("type")(l)
+} ;
+if ($target.type === "quot/pat") {
+return tcon("pat")(l)
+} ;
+if ($target.type === "quot/quot") {
+return tcon("cst")(l)
+} ;
+throw new Error('match fail 6714:' + JSON.stringify($target))
+})(quot)
 let unify = (t1) => (t2) => (l) => (($target) => {
 if ($target.type === ",") {
 if ($target[0].type === "tvar") {
@@ -628,6 +646,11 @@ throw new Error('match fail 2272:' + JSON.stringify($target))
 if ($target.type === "eprim") {
 let prim = $target[0];
 return $lt_(infer$slprim(prim))
+} ;
+if ($target.type === "equot") {
+let quot = $target[0];
+let l = $target[1];
+return $lt_(infer$slquot(quot)(l))
 } ;
 if ($target.type === "elambda") {
 if ($target[0].type === "cons") {

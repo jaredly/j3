@@ -410,6 +410,14 @@
         (pint _ l)  (tcon "int" l)
         (pbool _ l) (tcon "bool" l)))
 
+(defn infer/quot [quot l]
+    (match quot
+        (quot/expr _) (tcon "expr" l)
+        (quot/stmt _) (tcon "stmt" l)
+        (quot/type _) (tcon "type" l)
+        (quot/pat _)  (tcon "pat" l)
+        (quot/quot _) (tcon "cst" l)))
+
 (defn infer/expr [tenv expr]
     (** This is a performance optimization, to isolate the substitution maps to the level of the individual expression.
         The algorithm described in "Algorithm W Step By Step" doesn't put the substitution map on the state monad, instead opting to pass around subst maps, composing them individually. This results in a lot of bookkeeping, and in one case there's actually a bug when two substitution maps are composed in the wrong order (the inference for EApp has s3 <> s2 <> s1, when it should be s1 <> s2 <> s3).
@@ -436,6 +444,7 @@
                                                     (none)        (fatal "Variable not found in scope: ${name}")
                                                     (some scheme) (instantiate scheme l))
         (eprim prim _)                          (<- (infer/prim prim))
+        (equot quot l)                          (<- (infer/quot quot l))
         (** For lambdas (fn [name] body)
             - create a type variable to represent the type of the argument
             - add the type variable to the typing environment
@@ -574,7 +583,14 @@
                 (match x
                     (, 2 _) 10
                     (, m _) m)))
-            )])
+            (tapp
+            (tapp
+                (tcon "->" 6436)
+                    (tapp (tapp (tcon "," -1) (tcon "int" 6446) -1) (tvar "b:3" 6444) -1)
+                    6436)
+                (tcon "int" 6447)
+                6436))
+        (, (@ (@ hi)) (tcon "expr" 6701))])
 
 (** ## Patterns **)
 

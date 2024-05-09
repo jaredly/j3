@@ -20,6 +20,8 @@ for the series of artcicle
   - [x] split stmts
   - [x] basic deftype idk
   - [x] typealias why nottt
+  - [ ] quot n stuff
+  - [ ] get it running on everything, verify that its allgood
   This is the basic version
   ok so I will do patterns and stuff, because it's not actually that much more work.
   I neeeeed a test suite or something...
