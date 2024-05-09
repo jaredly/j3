@@ -430,14 +430,6 @@
         ()   (subst-> new)]
         (<- type)))
 
-(defn add-scope [tenv scope]
-    (foldl->
-        tenv
-            (map/to-list scope)
-            (fn [tenv (, name vbl)]
-            (let-> [vbl (type/apply-> vbl)]
-                (<- (tenv/with-type tenv name (forall set/nil vbl)))))))
-
 (defn infer/expr-inner [tenv expr]
     (match expr
         (evar name l)                           (match (tenv/resolve tenv name)
@@ -531,8 +523,16 @@
                                                                         all-results)]
                                                     (type/apply-> result-type))))
 
+(defn add-scope [tenv scope]
+    (foldl->
+        tenv
+            (map/to-list scope)
+            (fn [tenv (, name vbl)]
+            (let-> [vbl (type/apply-> vbl)]
+                (<- (tenv/with-type tenv name (forall set/nil vbl)))))))
+
 (,
-    (errorToString (fn [x] (run/nil-> (infer/expr basic/env x))))
+    (errorToString (fn [x] (run/nil-> (infer/expr builtin-env x))))
         [(, (@ 10) (tcon "int" 4512))
         (, (@ hi) "Fatal runtime: Variable not found in scope: hi")
         (, (@ (let [x 10] x)) (tcon "int" 4547))
@@ -603,16 +603,9 @@
         (@ "hi ${1}")
             "Fatal runtime: Incompatible concrete types: int vs string")])
 
-(** ## Patterns **)
+(** ## Infer Patterns **)
 
-((** This looks up a type constructor definition, and replaces any free variables in the arguments & result type with fresh type variables. **)
-    defn instantiate-tcon [(tenv _ tcons _ _) name l]
-    (match (map/get tcons name)
-        (none)                     (fatal "Unknown type constructor: ${name}")
-        (some (, free cargs cres)) (let-> [subst (make-subst-for-free free l)]
-                                       (<- (, (map (type/apply subst) cargs) (type/apply subst cres))))))
-
-((** Here we are producing (1) a type for the pattern, and (2)  "scope" mapping of names to type variables. **)
+((** Here we are producing (1) a type for the pattern, and (2) a "scope" mapping of names to type variables. **)
     defn infer/pattern [tenv pattern]
     (match pattern
         (pvar name l)         (let-> [v (new-type-var name l)] (<- (, v (map/from-list [(, name v)]))))
@@ -637,24 +630,12 @@
                                   scope                (<- (foldl map/nil scopes map/merge))]
                                   (<- (, cres scope)))))
 
-(def basic/env
-    (let [
-        tcons [(,
-                  ","
-                      (,
-                      (set/from-list ["a" "b"])
-                          [(tvar "a" -1) (tvar "b" -1)]
-                          (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1)))]]
-        (tenv
-            (map/from-list
-                [(, "+" (forall set/nil (tfns [tint tint] tint -1)))
-                    ..(map
-                    (fn [(, name (, free args res))]
-                        (, name (forall free (tfns args res -1))))
-                        tcons)])
-                (map/from-list tcons)
-                map/nil
-                map/nil)))
+((** This looks up a type constructor definition, and replaces any free variables in the arguments & result type with fresh type variables. **)
+    defn instantiate-tcon [(tenv _ tcons _ _) name l]
+    (match (map/get tcons name)
+        (none)                     (fatal "Unknown type constructor: ${name}")
+        (some (, free cargs cres)) (let-> [subst (make-subst-for-free free l)]
+                                       (<- (, (map (type/apply subst) cargs) (type/apply subst cres))))))
 
 (** ## Infer Statements **)
 
@@ -671,7 +652,7 @@
 
 (,
     (fn [(sdef name nl expr l)]
-        (let [(tenv values _ _ _) (infer/def basic/env name nl expr l)]
+        (let [(tenv values _ _ _) (infer/def builtin-env name nl expr l)]
             (map/to-list values)))
         [(, (@! (def x 10)) [(, "x" (forall set/nil (tcon "int" 3024)))])
         (,
@@ -703,9 +684,8 @@
             bound-env (<-
                           (foldl
                               tenv
-                                  (zip names vbls)
-                                  (fn [tenv (, name vbl)]
-                                  (tenv/with-type tenv name (forall set/nil vbl)))))
+                                  (zip names (map (forall set/nil) vbls))
+                                  (fn [tenv (, name vbl)] (tenv/with-type tenv name vbl))))
             types     (map-> (fn [(, _ _ expr _)] (infer/expr bound-env expr)) defns)
             vbls      (map-> type/apply-> vbls)
             ()        (do->
@@ -722,7 +702,7 @@
 (,
     (fn [x]
         (infer/defs
-            basic/env
+            builtin-env
                 (map (fn [(sdef name nl body l)] (, name nl body l)) x)))
         [(,
         [(@! (defn even [x] (let [o (odd x)] (+ x 2))))
@@ -914,7 +894,14 @@
 (def tstring (tcon "string" -1))
 
 (def builtin-env
-    (let [k (vbl "k") v (vbl "v") v2 (vbl "v2") kv (generic ["k" "v"]) kk (generic ["k"])]
+    (let [
+        k  (vbl "k")
+        v  (vbl "v")
+        v2 (vbl "v2")
+        kv (generic ["k" "v"])
+        kk (generic ["k"])
+        a  (vbl "a")
+        b  (vbl "b")]
         (tenv
             (map/from-list
                 [(, "+" (concrete (tfns [tint tint] tint -1)))
@@ -926,8 +913,8 @@
                     (, ">=" (concrete (tfns [tint tint] tbool -1)))
                     (, "<=" (concrete (tfns [tint tint] tbool -1)))
                     (, "()" (concrete (tcon "()" -1)))
-                    (, "," (generic ["k" "v"] (tfns [k v] (t, k v) -1)))
-                    (,
+                    (, "," (generic ["a" "b"] (tfns [a b] (t, a b) -1)))
+                    ;(,
                     "trace"
                         (kk
                         (tfns
@@ -940,7 +927,7 @@
                     (,
                     "string-to-float"
                         (concrete (tfns [tstring] (toption (tcon "float" -1)) -1)))
-                    (, "++" (concrete (tfns [(tlist tstring)] tstring -1)))
+                    ;(, "++" (concrete (tfns [(tlist tstring)] tstring -1)))
                     (, "map/nil" (kv (tmap k v)))
                     (, "map/set" (kv (tfns [(tmap k v) k v] (tmap k v) -1)))
                     (, "map/rm" (kv (tfns [(tmap k v) k] (tmap k v) -1)))
@@ -975,7 +962,7 @@
                     (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v") -1)))])
                 (map/from-list
                 [(, "()" (, set/nil [] (tcon "()" -1)))
-                    (, "," (, (set/from-list ["k" "v"]) [k v] (t, k v)))])
+                    (, "," (, (set/from-list ["a" "b"]) [a b] (t, a b)))])
                 (map/from-list
                 [(, "int" (, 0 set/nil))
                     (, "float" (, 0 set/nil))
