@@ -1041,10 +1041,10 @@ return $co(state)(v)
 throw new Error('Failed to match. ' + valueToString($target));
 })(f(state)));
 
-const sdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "sdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
-const stypealias = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "stypealias", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
-const sdef = (v0) => (v1) => (v2) => (v3) => ({type: "sdef", 0: v0, 1: v1, 2: v2, 3: v3})
-const sexpr = (v0) => (v1) => ({type: "sexpr", 0: v0, 1: v1})
+const tdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "tdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+const ttypealias = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "ttypealias", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+const tdef = (v0) => (v1) => (v2) => (v3) => ({type: "tdef", 0: v0, 1: v1, 2: v2, 3: v3})
+const texpr = (v0) => (v1) => ({type: "texpr", 0: v0, 1: v1})
 
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -1056,7 +1056,7 @@ const elet = (v0) => (v1) => (v2) => ({type: "elet", 0: v0, 1: v1, 2: v2})
 const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2})
 
 const quot$slexpr = (v0) => ({type: "quot/expr", 0: v0})
-const quot$slstmt = (v0) => ({type: "quot/stmt", 0: v0})
+const quot$sltop = (v0) => ({type: "quot/top", 0: v0})
 const quot$sltype = (v0) => ({type: "quot/type", 0: v0})
 const quot$slpat = (v0) => ({type: "quot/pat", 0: v0})
 const quot$slquot = (v0) => ({type: "quot/quot", 0: v0})
@@ -1319,24 +1319,24 @@ throw new Error('Failed to match. ' + valueToString($target));
 const bag$slto_list = bag$slfold((list) => (a) => cons(a)(list))(nil);
 
 const names = (stmt) => (($target) => {
-if ($target.type === "sdef") {
+if ($target.type === "tdef") {
 {
 let name = $target[0];
 let l = $target[1];
 return cons($co(name)($co(value)(l)))(nil)
 }
 }
-if ($target.type === "sexpr") {
+if ($target.type === "texpr") {
 return nil
 }
-if ($target.type === "stypealias") {
+if ($target.type === "ttypealias") {
 {
 let name = $target[0];
 let l = $target[1];
 return cons($co(name)($co(type)(l)))(nil)
 }
 }
-if ($target.type === "sdeftype") {
+if ($target.type === "tdeftype") {
 {
 let name = $target[0];
 let l = $target[1];
@@ -1501,13 +1501,13 @@ if ($target.type === "cons") {
 let one = $target[0];
 let rest = $target[1];
 return (($target) => {
-if ($target.type === "sdef") {
+if ($target.type === "tdef") {
 return split_stmts(rest)(cons(one)(sdefs))(stypes)(salias)(sexps)
 }
-if ($target.type === "sdeftype") {
+if ($target.type === "tdeftype") {
 return split_stmts(rest)(sdefs)(cons(one)(stypes))(salias)(sexps)
 }
-if ($target.type === "stypealias") {
+if ($target.type === "ttypealias") {
 {
 let name = $target[0];
 let nl = $target[1];
@@ -1516,7 +1516,7 @@ let body = $target[3];
 return split_stmts(rest)(sdefs)(stypes)(cons($co(name)($co(args)($co(body)(nl))))(salias))(sexps)
 }
 }
-if ($target.type === "sexpr") {
+if ($target.type === "texpr") {
 {
 let expr = $target[0];
 return split_stmts(rest)(sdefs)(stypes)(salias)(cons(expr)(sexps))
@@ -1987,8 +1987,8 @@ return empty
 throw new Error('Failed to match. ' + valueToString($target));
 })(expr);
 
-const stmt$slidents = (stmt) => (($target) => {
-if ($target.type === "sdef") {
+const top$slidents = (top) => (($target) => {
+if ($target.type === "tdef") {
 {
 let name = $target[0];
 let l = $target[1];
@@ -1996,13 +1996,13 @@ let body = $target[2];
 return bag$sland(one($co(name)(l)))(expr$slidents(body))
 }
 }
-if ($target.type === "sexpr") {
+if ($target.type === "texpr") {
 {
 let exp = $target[0];
 return expr$slidents(exp)
 }
 }
-if ($target.type === "stypealias") {
+if ($target.type === "ttypealias") {
 {
 let name = $target[0];
 let l = $target[1];
@@ -2011,7 +2011,7 @@ let body = $target[3];
 return bag$sland(type$slidents(body))(many(cons(one($co(name)(l)))(map(args)(one))))
 }
 }
-if ($target.type === "sdeftype") {
+if ($target.type === "tdeftype") {
 {
 let name = $target[0];
 let l = $target[1];
@@ -2021,7 +2021,7 @@ return bag$sland(many(map(constrs)(({1: {1: {0: args}, 0: l}, 0: name}) => bag$s
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(stmt);
+})(top);
 
 const type_with_free_rec = (free) => (type) => (($target) => {
 if ($target.type === "tvar") {
@@ -2106,7 +2106,7 @@ const typecheck = (v0) => (v1) => (v2) => (v3) => ({type: "typecheck", 0: v0, 1:
 const subst_to_string = (subst) => join("\n")(map(map$slto_list(subst))(({1: v, 0: k}) => `${k} : ${type_to_string_raw(v)}`));
 
 const externals_stmt = (stmt) => bag$slto_list((($target) => {
-if ($target.type === "sdeftype") {
+if ($target.type === "tdeftype") {
 {
 let string = $target[0];
 let free = $target[2];
@@ -2120,7 +2120,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(args))))(set$slfrom_list(map(free)(fst)))
 }
 }
-if ($target.type === "stypealias") {
+if ($target.type === "ttypealias") {
 {
 let name = $target[0];
 let args = $target[2];
@@ -2128,14 +2128,14 @@ let body = $target[3];
 return ((frees) => externals_type(frees)(body))(set$slfrom_list(map(args)(fst)))
 }
 }
-if ($target.type === "sdef") {
+if ($target.type === "tdef") {
 {
 let name = $target[0];
 let body = $target[2];
 return externals(set$sladd(set$slnil)(name))(body)
 }
 }
-if ($target.type === "sexpr") {
+if ($target.type === "texpr") {
 {
 let expr = $target[0];
 return externals(set$slnil)(expr)
@@ -2442,8 +2442,8 @@ return $lt_(tcon((($target) => {
 if ($target.type === "quot/expr") {
 return "expr"
 }
-if ($target.type === "quot/stmt") {
-return "stmt"
+if ($target.type === "quot/top") {
+return "top"
 }
 if ($target.type === "quot/quot") {
 return "cst"
@@ -2534,8 +2534,8 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const infer = (tenv) => (expr) => $gt$gt$eq(find_missing(tenv)(externals(set$slnil)(expr)))(({1: missing, 0: tenv}) => $gt$gt$eq(t_expr(tenv)(expr))((type) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq(report_missing(subst)(missing))((_) => $lt_(type_apply(subst)(type))))));
 
-const infer_stmt = (tenv$qu) => (stmt) => (($target) => {
-if ($target.type === "sdef") {
+const infer_top = (tenv$qu) => (top) => (($target) => {
+if ($target.type === "tdef") {
 {
 let name = $target[0];
 let nl = $target[1];
@@ -2544,7 +2544,7 @@ let l = $target[3];
 return $gt$gt$eq(idx_$gt(0))((_) => $gt$gt$eq(new_type_var(name)(l))((self) => $gt$gt$eq(record_def_$gt(nl))((_) => $gt$gt$eq($lt_(tenv$slset_type(tenv$qu)(name)($co(scheme(set$slnil)(self))(nl))))((self_bound) => $gt$gt$eq(find_missing(self_bound)(externals(set$slnil)(expr)))(({1: missing, 0: self_bound}) => $gt$gt$eq(t_expr(self_bound)(expr))((t) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq(report_missing(subst)(missing))((_) => $gt$gt$eq($lt_(type_apply(subst)(self)))((selfed) => $gt$gt$eq(unify(selfed)(t)(l))((_) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_(type_apply(subst)(t)))((t) => $gt$gt$eq(record_$gt(nl)(t)(false))((_) => $lt_(tenv$slset_type(tenv$slnil)(name)($co(generalize(tenv$qu)(t))(nl))))))))))))))))
 }
 }
-if ($target.type === "stypealias") {
+if ($target.type === "ttypealias") {
 {
 let name = $target[0];
 let nl = $target[1];
@@ -2554,14 +2554,14 @@ let l = $target[4];
 return $gt$gt$eq(record_def_$gt(nl))((_) => $gt$gt$eq(record_usages_in_type(tenv$qu)(map$slnil)(body))((_) => $lt_(tenv(map$slnil)(map$slnil)(map$slnil)(map$slset(map$slnil)(name)($co(map(args)(({0: name}) => name))($co(body)(nl)))))))
 }
 }
-if ($target.type === "sexpr") {
+if ($target.type === "texpr") {
 {
 let expr = $target[0];
 let l = $target[1];
 return $gt$gt$eq(infer(tenv$qu)(expr))((_) => $lt_(tenv$slnil))
 }
 }
-if ($target.type === "sdeftype") {
+if ($target.type === "tdeftype") {
 {
 let tname = $target[0];
 let tnl = $target[1];
@@ -2572,7 +2572,7 @@ return infer_deftype(tenv$qu)(map$slnil)(tname)(tnl)(targs)(constructors)(l)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(stmt);
+})(top);
 
 const infer_show = (tenv) => (x) => (($target) => {
 if ($target.type === "ok") {
@@ -2626,7 +2626,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(keep)))))(state_f(infer(tenv)(expr))(state$slnil));
 
 const infer_several = (tenv) => (stmts) => $gt$gt$eq(idx_$gt(0))((_) => $gt$gt$eq($lt_(map(stmts)((stmt) => (($target) => {
-if ($target.type === "sdef") {
+if ($target.type === "tdef") {
 {
 let name = $target[0];
 let nl = $target[1];
@@ -2642,7 +2642,7 @@ if ($target.type === "cons" &&
 $target[1].type === "nil") {
 {
 let one = $target[0];
-return infer_stmt(tenv)(one)
+return infer_top(tenv)(one)
 }
 }
 return $gt$gt$eq(infer_several(tenv)(stmts))((zipped) => $gt$gt$eq(map_$gt(({1: type, 0: {1: nl, 0: name}}) => record_$gt(nl)(type)(false))(zipped))((_) => $lt_(foldl(tenv$slnil)(zipped)((tenv) => ({1: type, 0: {1: nl, 0: name}}) => tenv$slset_type(tenv)(name)($co(generalize(tenv)(type))(nl))))))
@@ -2673,14 +2673,14 @@ return join("\n")(map(types)(type_to_string))
 throw new Error('Failed to match. ' + valueToString($target));
 })(run$slnil_$gt(infer_stmtss(tenv)(stmts)));
 
-const builtin_env = ((k) => ((v) => ((v2) => ((kv) => ((kk) => foldl(tenv(map$slmap((b) => $co(b)(-1))(map$slfrom_list(cons($co("+")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint))))(cons($co("-")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint))))(cons($co(">")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("<")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool))))(cons($co("!=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool))))(cons($co(">=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("<=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co("trace")(kk(tfns(cons(tapp(tcon("list")(-1))(tapp(tcon("trace-fmt")(-1))(k)(-1))(-1))(nil))(tcon("()")(-1)))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint)))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1))))))(cons($co("++")(concrete(tfns(cons(tlist(tstring))(nil))(tstring))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v)))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v)))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v)))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2))(cons(tmap(k)(v))(nil)))(tmap(k)(v2)))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v)))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(v)))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(k)))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k)))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k)))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tlist(k)))))(cons($co("set/from-list")(kk(tfns(cons(tlist(k))(nil))(tset(k)))))(cons($co("map/from-list")(kv(tfns(cons(tlist(t$co(k)(v)))(nil))(tmap(k)(v)))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(t$co(k)(v))))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v")))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring))(cons(vbl("v"))(nil)))(tstring))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v")))))(nil))))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")(tconstructor(set$slnil)(nil)(tcon("()")(-1))(-1)))(nil)))(map$slfrom_list(cons($co("int")($co(0)($co(set$slnil)(-1))))(cons($co("float")($co(0)($co(set$slnil)(-1))))(cons($co("string")($co(0)($co(set$slnil)(-1))))(cons($co("bool")($co(0)($co(set$slnil)(-1))))(cons($co("map")($co(2)($co(set$slnil)(-1))))(cons($co("set")($co(1)($co(set$slnil)(-1))))(cons($co("->")($co(2)($co(set$slnil)(-1))))(nil)))))))))(map$slnil))(cons({"0":",","1":5319,"2":{"0":{"0":"a","1":5320,"type":","},"1":{"0":{"0":"b","1":5321,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":5323,"1":{"0":{"0":{"0":"a","1":5324,"type":"tcon"},"1":{"0":{"0":"b","1":5325,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":5322,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":5316,"type":"sdeftype"})(cons({"0":"trace-fmt","1":11392,"2":{"0":{"0":"a","1":11393,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"tcolor","1":{"0":11395,"1":{"0":{"0":{"0":"string","1":11396,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11394,"type":","},"type":","},"type":","},"1":{"0":{"0":"tbold","1":{"0":11398,"1":{"0":{"0":{"0":"bool","1":11399,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11397,"type":","},"type":","},"type":","},"1":{"0":{"0":"titalic","1":{"0":11401,"1":{"0":{"0":{"0":"bool","1":11402,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11400,"type":","},"type":","},"type":","},"1":{"0":{"0":"tflash","1":{"0":11404,"1":{"0":{"0":{"0":"bool","1":11405,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11403,"type":","},"type":","},"type":","},"1":{"0":{"0":"ttext","1":{"0":11407,"1":{"0":{"0":{"0":"string","1":11408,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11406,"type":","},"type":","},"type":","},"1":{"0":{"0":"tval","1":{"0":11410,"1":{"0":{"0":{"0":"a","1":11411,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11409,"type":","},"type":","},"type":","},"1":{"0":{"0":"tloc","1":{"0":11566,"1":{"0":{"0":{"0":"int","1":11567,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11565,"type":","},"type":","},"type":","},"1":{"0":{"0":"tnamed","1":{"0":11569,"1":{"0":{"0":{"0":{"0":"trace-fmt","1":11571,"type":"tcon"},"1":{"0":"a","1":11572,"type":"tcon"},"2":11570,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"1":11568,"type":","},"type":","},"type":","},"1":{"0":{"0":"tfmted","1":{"0":11413,"1":{"0":{"0":{"0":"a","1":11414,"type":"tcon"},"1":{"0":{"0":"string","1":11415,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":11412,"type":","},"type":","},"type":","},"1":{"0":{"0":"tfmt","1":{"0":11417,"1":{"0":{"0":{"0":"a","1":11418,"type":"tcon"},"1":{"0":{"0":{"0":{"0":"->","1":11419,"type":"tcon"},"1":{"0":"a","1":11422,"type":"tcon"},"2":11419,"type":"tapp"},"1":{"0":"string","1":11423,"type":"tcon"},"2":11419,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":11416,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"4":11389,"type":"sdeftype"})(nil)))((tenv) => (stmt) => tenv$slmerge(tenv)(fst(force(type_error_$gts)(run$slnil_$gt(infer_stmtss(tenv)(cons(stmt)(nil))))))))(generic(cons("k")(nil))))(generic(cons("k")(cons("v")(nil)))))(vbl("v2")))(vbl("v")))(vbl("k"));
+const builtin_env = ((k) => ((v) => ((v2) => ((kv) => ((kk) => foldl(tenv(map$slmap((b) => $co(b)(-1))(map$slfrom_list(cons($co("+")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint))))(cons($co("-")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint))))(cons($co(">")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("<")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool))))(cons($co("!=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool))))(cons($co(">=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("<=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co("trace")(kk(tfns(cons(tapp(tcon("list")(-1))(tapp(tcon("trace-fmt")(-1))(k)(-1))(-1))(nil))(tcon("()")(-1)))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint)))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1))))))(cons($co("++")(concrete(tfns(cons(tlist(tstring))(nil))(tstring))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v)))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v)))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v)))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2))(cons(tmap(k)(v))(nil)))(tmap(k)(v2)))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v)))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(v)))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(k)))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k)))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k)))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k)))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tlist(k)))))(cons($co("set/from-list")(kk(tfns(cons(tlist(k))(nil))(tset(k)))))(cons($co("map/from-list")(kv(tfns(cons(tlist(t$co(k)(v)))(nil))(tmap(k)(v)))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(t$co(k)(v))))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v")))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring))(cons(vbl("v"))(nil)))(tstring))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v")))))(nil))))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")(tconstructor(set$slnil)(nil)(tcon("()")(-1))(-1)))(nil)))(map$slfrom_list(cons($co("int")($co(0)($co(set$slnil)(-1))))(cons($co("float")($co(0)($co(set$slnil)(-1))))(cons($co("string")($co(0)($co(set$slnil)(-1))))(cons($co("bool")($co(0)($co(set$slnil)(-1))))(cons($co("map")($co(2)($co(set$slnil)(-1))))(cons($co("set")($co(1)($co(set$slnil)(-1))))(cons($co("->")($co(2)($co(set$slnil)(-1))))(nil)))))))))(map$slnil))(cons({"0":",","1":5319,"2":{"0":{"0":"a","1":5320,"type":","},"1":{"0":{"0":"b","1":5321,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":5323,"1":{"0":{"0":{"0":"a","1":5324,"type":"tcon"},"1":{"0":{"0":"b","1":5325,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":5322,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":5316,"type":"tdeftype"})(cons({"0":"trace-fmt","1":11392,"2":{"0":{"0":"a","1":11393,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"tcolor","1":{"0":11395,"1":{"0":{"0":{"0":"string","1":11396,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11394,"type":","},"type":","},"type":","},"1":{"0":{"0":"tbold","1":{"0":11398,"1":{"0":{"0":{"0":"bool","1":11399,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11397,"type":","},"type":","},"type":","},"1":{"0":{"0":"titalic","1":{"0":11401,"1":{"0":{"0":{"0":"bool","1":11402,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11400,"type":","},"type":","},"type":","},"1":{"0":{"0":"tflash","1":{"0":11404,"1":{"0":{"0":{"0":"bool","1":11405,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11403,"type":","},"type":","},"type":","},"1":{"0":{"0":"ttext","1":{"0":11407,"1":{"0":{"0":{"0":"string","1":11408,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11406,"type":","},"type":","},"type":","},"1":{"0":{"0":"tval","1":{"0":11410,"1":{"0":{"0":{"0":"a","1":11411,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11409,"type":","},"type":","},"type":","},"1":{"0":{"0":"tloc","1":{"0":11566,"1":{"0":{"0":{"0":"int","1":11567,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":11565,"type":","},"type":","},"type":","},"1":{"0":{"0":"tnamed","1":{"0":11569,"1":{"0":{"0":{"0":{"0":"trace-fmt","1":11571,"type":"tcon"},"1":{"0":"a","1":11572,"type":"tcon"},"2":11570,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"1":11568,"type":","},"type":","},"type":","},"1":{"0":{"0":"tfmted","1":{"0":11413,"1":{"0":{"0":{"0":"a","1":11414,"type":"tcon"},"1":{"0":{"0":"string","1":11415,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":11412,"type":","},"type":","},"type":","},"1":{"0":{"0":"tfmt","1":{"0":11417,"1":{"0":{"0":{"0":"a","1":11418,"type":"tcon"},"1":{"0":{"0":{"0":{"0":"->","1":11419,"type":"tcon"},"1":{"0":"a","1":11422,"type":"tcon"},"2":11419,"type":"tapp"},"1":{"0":"string","1":11423,"type":"tcon"},"2":11419,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":11416,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"4":11389,"type":"tdeftype"})(nil)))((tenv) => (stmt) => tenv$slmerge(tenv)(fst(force(type_error_$gts)(run$slnil_$gt(infer_stmtss(tenv)(cons(stmt)(nil))))))))(generic(cons("k")(nil))))(generic(cons("k")(cons("v")(nil)))))(vbl("v2")))(vbl("v")))(vbl("k"));
 
-const several = (tenv) => (stmts) => (($target) => {
+const several = (tenv) => (tops) => (($target) => {
 if ($target.type === "nil") {
-return $lt_err(type_error("Final stmt should be an expr")(nil))
+return $lt_err(type_error("Final top should be an expr")(nil))
 }
 if ($target.type === "cons" &&
-$target[0].type === "sexpr" &&
+$target[0].type === "texpr" &&
 $target[1].type === "nil") {
 {
 let expr = $target[0][0];
@@ -2695,7 +2695,7 @@ return $gt$gt$eq(infer_stmtss(tenv)(cons(one)(nil)))(({0: tenv$qu}) => several(t
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(stmts);
+})(tops);
 
 const infer_stmts = (tenv) => (stmts) => foldl_$gt(tenv)(stmts)((tenv) => (stmt) => $gt$gt$eq(infer_stmtss(tenv)(cons(stmt)(nil)))(({1: types, 0: tenv$qu}) => $lt_(tenv$slmerge(tenv)(tenv$qu))));
 

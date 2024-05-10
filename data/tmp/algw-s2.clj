@@ -1,6 +1,8 @@
 (** ## Hindley Milner Type Inference
     Heavily based on the excellent paper [Algorithm W Step-By-Step](https://github.com/wh5a/Algorithm-W-Step-By-Step/blob/master/AlgorithmW.pdf).
-    This first version of the type checker is "vanilla algorithm w", and so won't actually be powerful enough to type check our language. We'll follow up by extending it with the ability to handle patterns, match forms, and user-defined types. **)
+    Notable differences:
+    - we're putting the "substitution list" into the state monad, which is less bug-prone and results in code that's easier to think about in my opinion
+    - because we actually will use this to self-host, we need to support pattern matching, match statements, and custom data types. This also makes the "type environment" somewhat more complex. **)
 
 (** ## Prelude **)
 
@@ -78,20 +80,21 @@
             []   (type->s type)
             vbls "forall ${(join " " vbls)} : ${(type->s type)}")))
 
-(** ## AST **)
+(** ## AST
+    again, this is the same as in the previous articles, so feel free to skip. **)
 
 (deftype prim (pint int int) (pbool bool int))
 
-(deftype stmt
-    (sdef string int expr int)
-        (sexpr expr int)
-        (sdeftype
+(deftype top
+    (tdef string int expr int)
+        (texpr expr int)
+        (tdeftype
         string
             int
             (list (, string int))
             (list (, string int (list type) int))
             int)
-        (stypealias string int (list (, string int)) type int))
+        (ttypealias string int (list (, string int)) type int))
 
 (deftype cst
     (cst/list (list cst) int)
@@ -102,7 +105,7 @@
 
 (deftype quot
     (quot/expr expr)
-        (quot/stmt stmt)
+        (quot/top top)
         (quot/type type)
         (quot/pat pat)
         (quot/quot cst))
@@ -153,8 +156,7 @@
         (tcon name _)                           name))
 
 (** ## The Type Environment
-    For now, the "type environment" just consists of the "values in scope", mapped to their types (which might be only partially inferred, still containing unresolved type variables).
-    Once we add type classes, we'll use the "type environment" to keep track of defined classes and their instances. **)
+    The "type environment" gets passed around to most of the infer/ functions, and includes global definitions as well as the types of locally-bound variables. **)
 
 (** A scheme is the way that we represent generic types (sometimes called "polytypes"). The first argument is a set of the tvar ids that are generic in the contained type. **)
 
@@ -245,7 +247,7 @@
 
 (** ## Composing substitution maps
     One very nice property of Algorithm W is that the constraints are resolved unidirectionally. In a generic "constraint solving" algorithm, the constraints must be applied repeatedly until some "fixed point" is reached, because applying one constraint might result in other constraints newly becoming applicable.
-    In Algorithm W, you only ever apply substitutions "backward": new substitutions get applied to the old substitution map, and never the other way around.
+    In Algorithm W, you only ever apply substitutions in a single direction: new substitutions get applied to the old substitution map, and never the other way around.
     🚨 This is a critical invariant. If you compose substitutions in the wrong order (as actually occurs in the "Algorithm W Step-By-Step" paper in one place 🫢) it will break the type system, resulting in incorrect inferences. One way to verify that you're doing it right is to check if new-subst has any types with tvars that have defined mappings in old-subst. If so, you're either applying them in the wrong order, or you forgot to apply the current substitution map at some step along the way.
     In our implementation, we will maintain this invariant as a consequence of system design; the composition map will live in our state monad, and so whenever we add a new map, we know which one is "newer" and which is "older". **)
 
@@ -281,8 +283,6 @@
 (** ## A State monad
     Given that we're going 100% immutable, having a State monad is really handy so you're not having to pipe state values into and out of every function. **)
 
-;(deftype (result good bad) (ok good) (err bad))
-
 (deftype (StateT state value) (StateT (fn [state] (, state value))))
 
 ((** This is our bind function. Given a (StateT state value) and a (fn [value] (StateT state value2), it produces a new StateT chaining the two things together, essentially running the second argument on the resolved value of the first argument. **)
@@ -296,7 +296,7 @@
     defn <- [x]
     (StateT (fn [state] (, state x))))
 
-((** Given a StateT and an initial state, it will "run" the contained function and give you the final result. **)
+((** Given a StateT and an initial state, this will evaluate the contained function and give you the final result. **)
     defn run-> [(StateT f) state]
     (let [(, _ result) (f state)] result))
 
@@ -325,21 +325,11 @@
         []           (<- init)
         [one ..rest] (let-> [init (foldr-> init rest f)] (f init one))))
 
-((** do-> is just like map-> except it is for functions that return (), so it doesn't need to collect the values into a list. **)
+((** do-> is just like map-> except for functions that return (), so it doesn't need to collect the values into a list. **)
     defn do-> [f arr]
     (match arr
         []           (<- ())
         [one ..rest] (let-> [() (f one) () (do-> f rest)] (<- ()))))
-
-;(defn seq-> [arr]
-    (match arr
-        []           (<- [])
-        [one ..rest] (let-> [one one rest (seq-> rest)] (<- [one ..rest]))))
-
-;(defn force [e->s result]
-    (match result
-        (ok v)  v
-        (err e) (fatal "Result Error ${(e->s e)}")))
 
 (** ## Type Inference State
     Here's where we take the StateT monad defined above and make it specific to our use case. Our StateT will contain an integer representing the "next unique ID" used for generating unique tvars, as well as the "current substitution map". **)
@@ -432,7 +422,7 @@
                            (let-> [_ (subst-> (one-subst var type))] (<- ())))))
 
 (** ## Inference
-    Here are the functions that we'll be using most often when writing the inference code (defined above, but summarized here as a refresher):
+    Here are the functions that we'll be using most often when writing the inference code (summarized here as a refresher):
     - infer/expr tenv expr - takes an expression, returns a type
     - unify t1 t2  - compares two types that need to be equivalent, and (a) if they can't be unified, throws an error, or (b) if they can be, adds the resulting substitutions to the current state
     - type/apply-> type - applies the current substitution map (from state) to the given type, which updates type variables with updated resolved types. **)
@@ -447,7 +437,7 @@
 (defn infer/quot [quot l]
     (match quot
         (quot/expr _) (tcon "expr" l)
-        (quot/stmt _) (tcon "stmt" l)
+        (quot/top _)  (tcon "top" l)
         (quot/type _) (tcon "type" l)
         (quot/pat _)  (tcon "pat" l)
         (quot/quot _) (tcon "cst" l)))
@@ -670,9 +660,7 @@
         (some (, free cargs cres)) (let-> [subst (make-subst-for-free free l)]
                                        (<- (, (map (type/apply subst) cargs) (type/apply subst cres))))))
 
-(** ## Handling Statements **)
-
-
+(** ## Adding Top-level Items to the Type Environment **)
 
 (defn add/def [tenv name nl expr l]
     (run/nil->
@@ -686,7 +674,7 @@
             (<- (tenv/with-type tenv/nil name (generalize tenv type))))))
 
 (,
-    (fn [(sdef name nl expr l)]
+    (fn [(tdef name nl expr l)]
         (let [(tenv values _ _ _) (add/def builtin-env name nl expr l)]
             (map/to-list values)))
         [(, (@! (def x 10)) [(, "x" (forall set/nil (tcon "int" 3024)))])
@@ -738,7 +726,7 @@
     (fn [x]
         (add/defs
             builtin-env
-                (map (fn [(sdef name nl body l)] (, name nl body l)) x)))
+                (map (fn [(tdef name nl body l)] (, name nl body l)) x)))
         [(,
         [(@! (defn even [x] (let [o (odd x)] (+ x 2))))
             (@! (defn odd [x] (let [e (even x)] 3)))]
@@ -827,10 +815,10 @@
 
 (defn add/stmt [tenv stmt]
     (match stmt
-        (sdef name nl expr l)            (add/def tenv name nl expr l)
-        (sexpr expr l)                   (run/nil-> (let-> [_ (infer/expr tenv expr)] (<- tenv/nil)))
-        (stypealias name _ args type _)  (add/typealias tenv name args type)
-        (sdeftype name _ args constrs l) (add/deftype tenv name args constrs l)))
+        (tdef name nl expr l)            (add/def tenv name nl expr l)
+        (texpr expr l)                   (run/nil-> (let-> [_ (infer/expr tenv expr)] (<- tenv/nil)))
+        (ttypealias name _ args type _)  (add/typealias tenv name args type)
+        (tdeftype name _ args constrs l) (add/deftype tenv name args constrs l)))
 
 (defn split-stmts [stmts]
     (loop
@@ -840,8 +828,8 @@
                 []            (, [] [] [])
                 [stmt ..rest] (let [(, defs aliases others) (recur rest)]
                                   (match stmt
-                                      (sdef name nl body l)  (, [(, name nl body l) ..defs] aliases others)
-                                      (stypealias _ _ _ _ _) (, defs [stmt ..aliases] others)
+                                      (tdef name nl body l)  (, [(, name nl body l) ..defs] aliases others)
+                                      (ttypealias _ _ _ _ _) (, defs [stmt ..aliases] others)
                                       _                      (, defs aliases [stmt ..others])))))))
 
 (defn add/stmts [tenv stmts]

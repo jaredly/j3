@@ -434,7 +434,7 @@ export function updateState(
                     // },
                     ...errors.map(([name, id]) => ({
                         type: 'error' as const,
-                        message: `Plugin ${name} (${id})`,
+                        message: `Plugin(${name}) (${id})`,
                     })),
                 );
             }

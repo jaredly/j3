@@ -10,6 +10,10 @@ for the series of artcicle
   - expressions
   ... I mean that's it, so thye could be called "definitions", but idk
 
+- [ ] the FONT is TOO SMALL
+  andd maybe just too skinny? idk, I should play around with
+  different fonts.
+
 - gotta toplevel 'em all
   - [x] Structured Editor
   - [x] Encoding
@@ -17,7 +21,9 @@ for the series of artcicle
   - [x] Bootstrap
   - [x] self-1
   - [x] parse-self
-  - [ ] type inference
+  - [x] type inference
+  - [x] parse-1-args
+  - [x] algw-fast
 
 # The Blorg Porst
 

@@ -1,7 +1,9 @@
-(** ## Algorithm W Step-By-Step
-    Notable additions:
-    - putting the subst map into the state monad, making it less likely that substs would be missed, and enabling hover-for-type. Note that, for performance reasons, infer-expr has its subst isolated from the main state monad. This is consistent with the original paper & algorithm.
-    - patterns, sum types, match, template strings **)
+(** ## More Fancy Type Inference
+    This is a more complicated version of the "Self-Hosted Type Inference" that has some nice additions
+    - it records the types of each expression, so that we can get "hover for type"
+    - it records usages of identifiers, so we can get "show all references" and "outline other instances"
+    - it uses the state monad to also report errors (with a result type) for more fine-grained error reporting
+    Note that I haven't cleaned it up nearly as much as the main tutorial documents, so I make no guarantees about readability. Included here for the sake of completeness :) **)
 
 (** ## Prelude
     some handy functions **)
@@ -96,7 +98,7 @@
 
 (deftype quot
     (quot/expr expr)
-        (quot/stmt stmt)
+        (quot/top top)
         (quot/type type)
         (quot/pat pat)
         (quot/quot cst))
@@ -146,12 +148,12 @@
         (pcon name il pats l) (many [(one (, name il)) ..(map pats pat/idents)])
         _                     empty))
 
-(defn stmt/idents [stmt]
-    (match stmt
-        (sdef name l body _)             (bag/and (one (, name l)) (expr/idents body))
-        (sexpr exp _)                    (expr/idents exp)
-        (stypealias name l args body _)  (bag/and (type/idents body) (many [(one (, name l)) ..(map args one)]))
-        (sdeftype name l args constrs _) (bag/and
+(defn top/idents [top]
+    (match top
+        (tdef name l body _)             (bag/and (one (, name l)) (expr/idents body))
+        (texpr exp _)                    (expr/idents exp)
+        (ttypealias name l args body _)  (bag/and (type/idents body) (many [(one (, name l)) ..(map args one)]))
+        (tdeftype name l args constrs _) (bag/and
                                              (many
                                                  (map
                                                      constrs
@@ -170,16 +172,16 @@
         (tapp type type int)
         (tcon string int))
 
-(deftype stmt
-    (sdeftype
+(deftype top
+    (tdeftype
         string
             int
             (list (, string int))
             (list (, string int (list type) int))
             int)
-        (stypealias string int (list (, string int)) type int)
-        (sdef string int expr int)
-        (sexpr expr int))
+        (ttypealias string int (list (, string int)) type int)
+        (tdef string int expr int)
+        (texpr expr int))
 
 (defn ,,0 [(, a _ _)] a)
 
@@ -867,7 +869,7 @@
                                      (tcon
                                          (match quot
                                              (quot/expr _) "expr"
-                                             (quot/stmt _) "stmt"
+                                             (quot/top _)  "top"
                                              (quot/quot _) "cst"
                                              (quot/type _) "type"
                                              (quot/pat _)  "pat")
@@ -1201,9 +1203,9 @@
 
 (** ## Statements (simple, no mutual dependencies) **)
 
-(defn infer-stmt [tenv' stmt]
-    (match stmt
-        (sdef name nl expr l)                     (let-> [
+(defn infer-top [tenv' top]
+    (match top
+        (tdef name nl expr l)                     (let-> [
                                                       _                      (idx-> 0)
                                                       (** Make a type variable to represent the type of the value, for recursive calls, and add it to the tenv. **)
                                                       self                   (new-type-var name l)
@@ -1224,18 +1226,18 @@
                                                       t                      (<- (type-apply subst t))
                                                       ()                     (record-> nl t false)]
                                                       (<- (tenv/set-type tenv/nil name (, (generalize tenv' t) nl))))
-        (stypealias name nl args body l)          (let-> [() (record-def-> nl) () (record-usages-in-type tenv' map/nil body)]
+        (ttypealias name nl args body l)          (let-> [() (record-def-> nl) () (record-usages-in-type tenv' map/nil body)]
                                                       (<-
                                                           (tenv
                                                               map/nil
                                                                   map/nil
                                                                   map/nil
                                                                   (map/set map/nil name (, (map args (fn [(, name _)] name)) body nl)))))
-        (sexpr expr l)                            (let-> [
+        (texpr expr l)                            (let-> [
                                                       (** this "infer" is for side-effects only **)
                                                       _ (infer tenv' expr)]
                                                       (<- tenv/nil))
-        (sdeftype tname tnl targs constructors l) (infer-deftype tenv' map/nil tname tnl targs constructors l)))
+        (tdeftype tname tnl targs constructors l) (infer-deftype tenv' map/nil tname tnl targs constructors l)))
 
 ;(force
     type-error->s
@@ -1243,7 +1245,7 @@
         (infer-stmt
             (force
                 type-error->s
-                    (run/nil-> (infer-stmt tenv/nil (@! (typealias (hello a) (, int a))))))
+                    (run/nil-> (infer-top tenv/nil (@! (typealias (hello a) (, int a))))))
                 (@! (typealias what (hello string))))))
 
 (defn map/has [map k]
@@ -1316,10 +1318,10 @@
                              (check-type-names tenv' two)
                                  false)))
 
-(defn several [tenv stmts]
-    (match stmts
-        []               (<-err (type-error "Final stmt should be an expr" []))
-        [(sexpr expr _)] (let-> [_ (idx-> 0)] (infer tenv expr))
+(defn several [tenv tops]
+    (match tops
+        []               (<-err (type-error "Final top should be an expr" []))
+        [(texpr expr _)] (let-> [_ (idx-> 0)] (infer tenv expr))
         [one ..rest]     (let-> [(, tenv' _) (infer-stmtss tenv [one])]
                              (several (tenv/merge tenv tenv') rest))))
 
@@ -1444,7 +1446,7 @@
 (defn externals-defs [stmts]
     (foldr
         empty
-            (map stmts (fn [(sdef _ _ body _)] (externals set/nil body)))
+            (map stmts (fn [(tdef _ _ body _)] (externals set/nil body)))
             bag/and))
 
 (defn find-missing [tenv externals]
@@ -1463,7 +1465,7 @@
                     _        true))
                 (map/to-list externals))))
 
-(defn infer-several-inner [bound types (, var (sdef name nl body l))]
+(defn infer-several-inner [bound types (, var (tdef name nl body l))]
     (let-> [
         subst     <-subst
         body-type (t-expr (tenv-apply subst bound) body)
@@ -1483,9 +1485,9 @@
                                    stmts
                                        (fn [stmt]
                                        (match stmt
-                                           (sdef name nl _ _) (, name nl)
+                                           (tdef name nl _ _) (, name nl)
                                            _                  (fatal "Cant infer-several with sdefs? idk maybe you can ...")))))
-        (, bound vars)     (vars-for-names (map stmts (fn [(sdef name nl _ _)] (, name nl))) tenv)
+        (, bound vars)     (vars-for-names (map stmts (fn [(tdef name nl _ _)] (, name nl))) tenv)
         (, bound2 missing) (find-missing bound (externals-defs stmts))
         types              (foldr-> [] (zip vars stmts) (infer-several-inner bound2))
         subst              <-subst
@@ -1586,7 +1588,7 @@
                                      (foldl
                                          (map salias (fn [(, name _ _ nl)] (, name nl)))
                                              stypes
-                                             (fn [names (sdeftype name nl _ _ _)] [(, name nl) ..names])))
+                                             (fn [names (tdeftype name nl _ _ _)] [(, name nl) ..names])))
         (tenv _ _ types aliases) (<- tenv')
         bound                    (<-
                                      (set/merge
@@ -1617,7 +1619,7 @@
         tenv                     (foldl->
                                      tenv
                                          stypes
-                                         (fn [tenv (sdeftype name tnl args constructors l)]
+                                         (fn [tenv (tdeftype name tnl args constructors l)]
                                          (let-> [
                                              tenv' (infer-deftype merged mutual-rec name tnl args constructors l)]
                                              (<- (tenv/merge tenv' tenv)))))
@@ -1634,19 +1636,19 @@
     (match stmts
         []           (, sdefs stypes salias sexps)
         [one ..rest] (match one
-                         (sdef _ _ _ _)                   (split-stmts rest [one ..sdefs] stypes salias sexps)
-                         (sdeftype _ _ _ _ _)             (split-stmts rest sdefs [one ..stypes] salias sexps)
-                         (stypealias name nl args body _) (split-stmts
+                         (tdef _ _ _ _)                   (split-stmts rest [one ..sdefs] stypes salias sexps)
+                         (tdeftype _ _ _ _ _)             (split-stmts rest sdefs [one ..stypes] salias sexps)
+                         (ttypealias name nl args body _) (split-stmts
                                                               rest
                                                                   sdefs
                                                                   stypes
                                                                   [(, name args body nl) ..salias]
                                                                   sexps)
-                         (sexpr expr _)                   (split-stmts rest sdefs stypes salias [expr ..sexps]))))
+                         (texpr expr _)                   (split-stmts rest sdefs stypes salias [expr ..sexps]))))
 
 (defn infer-defns [tenv stmts]
     (match stmts
-        [one] (infer-stmt tenv one)
+        [one] (infer-top tenv one)
         _     (let-> [
                   zipped (infer-several tenv stmts)
                   _      (map-> (fn [(, (, name nl) type)] (record-> nl type false)) zipped)]
@@ -1768,19 +1770,19 @@ map->
         (some v) "${v}:${(its id)}"
         _        "?:${(its id)}"))
 
-(defn run/usages [tenv stmts]
+(defn run/usages [tenv tops]
     (let [
         (, (, _ (, _ (, defns uses)) _) _) ((state-f
-                                               ;(infer-stmtss tenv stmts)
+                                               ;(infer-stmtss tenv tops)
                                                    (foldl->
                                                    tenv
-                                                       stmts
+                                                       tops
                                                        (fn [tenv stmt]
                                                        (let-> [(, nenv _) (infer-stmtss tenv [stmt])]
                                                            (<- (tenv/merge tenv nenv))))))
                                                state/nil)
         idents                             (map/from-list
-                                               (map (bag/to-list (many (map stmts stmt/idents))) rev-pair))]
+                                               (map (bag/to-list (many (map tops top/idents))) rev-pair))]
         (,
             (map defns (with-name idents))
                 (map uses (fn [(, user prov)] (, (with-name idents user) prov))))))
@@ -1789,7 +1791,7 @@ map->
     st (@!
            (match 1
                (c _) 1))]
-    (, (stmt/idents st) st))
+    (, (top/idents st) st))
 
 (,
     (run/usages builtin-env)
@@ -2072,16 +2074,16 @@ map->
 
 (defn names [stmt]
     (match stmt
-        (sdef name l _ _)                  [(, name (value) l)]
-        (sexpr _ _)                        []
-        (stypealias name l _ _ _)          [(, name (type) l)]
-        (sdeftype name l _ constructors _) [(, name (type) l)
+        (tdef name l _ _)                  [(, name (value) l)]
+        (texpr _ _)                        []
+        (ttypealias name l _ _ _)          [(, name (type) l)]
+        (tdeftype name l _ constructors _) [(, name (type) l)
                                                ..(map constructors (fn [(, name l _ _)] (, name (value) l)))]))
 
 (defn externals-stmt [stmt]
     (bag/to-list
         (match stmt
-            (sdeftype string _ free constructors _) (let [frees (set/from-list (map free fst))]
+            (tdeftype string _ free constructors _) (let [frees (set/from-list (map free fst))]
                                                         (many
                                                             (map
                                                                 constructors
@@ -2089,10 +2091,10 @@ map->
                                                                     (match args
                                                                         [] empty
                                                                         _  (many (map args (externals-type frees))))))))
-            (stypealias name _ args body _)         (let [frees (set/from-list (map args fst))]
+            (ttypealias name _ args body _)         (let [frees (set/from-list (map args fst))]
                                                         (externals-type frees body))
-            (sdef name _ body _)                    (externals (set/add set/nil name) body)
-            (sexpr expr _)                          (externals set/nil expr))))
+            (tdef name _ body _)                    (externals (set/add set/nil name) body)
+            (texpr expr _)                          (externals set/nil expr))))
 
 (bag/to-list
     (externals
@@ -2245,8 +2247,8 @@ map->
         check-stmts **)
         (inference
         tenv
-            (fn [tenv (list stmt)] tenv)
-            (fn [tenv (list stmt)]
+            (fn [tenv (list top)] tenv)
+            (fn [tenv (list top)]
             (,
                 (result (, tenv (list type)) type-error-t)
                     (list (, int type))
@@ -2262,9 +2264,9 @@ map->
     (** externals
         declared-names **)
         (analysis
-        (fn [stmt] (list (, string name-kind int)))
+        (fn [top] (list (, string name-kind int)))
             (fn [expr] (list (, string name-kind int)))
-            (fn [stmt] (list (, string name-kind int)))))
+            (fn [top] (list (, string name-kind int)))))
 
 (deftype evaluator
     (typecheck
@@ -2315,4 +2317,4 @@ map->
                 _              (none)))
             type-to-cst))
 
-24533
+22216
