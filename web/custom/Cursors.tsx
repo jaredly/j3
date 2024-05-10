@@ -26,9 +26,10 @@ export const Cursors = ({
         const got = first[first.length - 1].idx;
         const found = regs[got]?.main ?? regs[got]?.outside;
         if (found) {
-            const headerHeight = document
-                .getElementById('sticky-header')!
-                .getBoundingClientRect().height;
+            const headerHeight =
+                document
+                    .getElementById('sticky-header')!
+                    ?.getBoundingClientRect().height ?? 0;
 
             const box = found.node.getBoundingClientRect();
             if (box.top < headerHeight || box.bottom > window.innerHeight) {

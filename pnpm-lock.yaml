@@ -54,6 +54,8 @@ specifiers:
   plot: link:@types/@observablehq/plot
   react: ^18.2.0
   react-dom: ^18.2.0
+  react-router: ^6.23.0
+  react-router-dom: ^6.23.0
   sqlite-parser: ^1.0.1
   ts-jest: ^29.0.3
   ts-node: ^10.9.1
@@ -110,6 +112,8 @@ dependencies:
   object-hash: 3.0.0
   react: 18.2.0
   react-dom: 18.2.0_react@18.2.0
+  react-router: 6.23.0_react@18.2.0
+  react-router-dom: 6.23.0_biqbaboplfbrettd7655fr4n2y
   sqlite-parser: 1.0.1
   ts-jest: 29.0.3_y6ka5drt6d3hth75mbd5qgtvcm
   ts-node: 10.9.1_ihxbezjkygjz4i33cewbpe7dw4
@@ -2659,6 +2663,11 @@ packages:
 
   /@remirror/core-constants/2.0.2:
     resolution: {integrity: sha512-dyHY+sMF0ihPus3O27ODd4+agdHMEmuRdyiZJ2CCWjPV5UFmn17ZbElvk6WOGVE4rdCJKZQCrPV2BcikOMLUGQ==}
+    dev: false
+
+  /@remix-run/router/1.16.0:
+    resolution: {integrity: sha512-Quz1KOffeEf/zwkCBM3kBtH4ZoZ+pT3xIXBG4PPW/XFtDP7EGhtTiC2+gpL9GnR7+Qdet5Oa6cYSvwKYg6kN9Q==}
+    engines: {node: '>=14.0.0'}
     dev: false
 
   /@rollup/pluginutils/4.2.1:
@@ -6638,6 +6647,29 @@ packages:
       tslib: 2.5.2
       use-callback-ref: 1.3.1_kzbn2opkn2327fwg5yzwzya5o4
       use-sidecar: 1.1.2_kzbn2opkn2327fwg5yzwzya5o4
+    dev: false
+
+  /react-router-dom/6.23.0_biqbaboplfbrettd7655fr4n2y:
+    resolution: {integrity: sha512-Q9YaSYvubwgbal2c9DJKfx6hTNoBp3iJDsl+Duva/DwxoJH+OTXkxGpql4iUK2sla/8z4RpjAm6EWx1qUDuopQ==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      react: '>=16.8'
+      react-dom: '>=16.8'
+    dependencies:
+      '@remix-run/router': 1.16.0
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+      react-router: 6.23.0_react@18.2.0
+    dev: false
+
+  /react-router/6.23.0_react@18.2.0:
+    resolution: {integrity: sha512-wPMZ8S2TuPadH0sF5irFGjkNLIcRvOSaEe7v+JER8508dyJumm6XZB1u5kztlX0RVq6AzRVndzqcUh6sFIauzA==}
+    engines: {node: '>=14.0.0'}
+    peerDependencies:
+      react: '>=16.8'
+    dependencies:
+      '@remix-run/router': 1.16.0
+      react: 18.2.0
     dev: false
 
   /react-style-singleton/2.2.1_kzbn2opkn2327fwg5yzwzya5o4:
