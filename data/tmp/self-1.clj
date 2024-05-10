@@ -73,7 +73,7 @@
 
 (deftype quot
     (quot/expr expr)
-        (quot/stmt stmt)
+        (quot/top top)
         (quot/type type)
         (quot/pat pat)
         (quot/quot cst))
@@ -100,24 +100,24 @@
         (tapp type type int)
         (tcon string int))
 
-(deftype stmt
-    (sdeftype
+(deftype top
+    (tdeftype
         string
             int
             (list (, string int))
             (list (, string int (list type) int))
             int)
-        (sdef string int expr int)
-        (sexpr expr int)
-        (stypealias))
+        (tdef string int expr int)
+        (texpr expr int)
+        (ttypealias))
 
-(** ## Statements **)
+(** ## Top-level terms **)
 
-(defn compile-st [stmt]
-    (match stmt
-        (sexpr expr _)              (compile expr)
-        (sdef name _ body _)        "const ${(sanitize name)} = ${(compile body)};\n"
-        (sdeftype name _ _ cases _) (join
+(defn compile-top [top]
+    (match top
+        (texpr expr _)              (compile expr)
+        (tdef name _ body _)        "const ${(sanitize name)} = ${(compile body)};\n"
+        (tdeftype name _ _ cases _) (join
                                         "\n"
                                             (map
                                             cases
@@ -129,7 +129,7 @@
                                                                           name
                                                                               (map (indices args) (fn [i] "v${(int-to-string i)}")))]
                                                     "const ${(sanitize name)} = ${arrows}${body}"))))
-        (stypealias)                "/* type alias */"))
+        (ttypealias)                "/* type alias */"))
 
 (defn constructor-fn [name args]
     "({type: \"${name}\"${(join "" (mapi 0 args (fn [i arg] ", ${(int-to-string i)}: ${arg}")))}})")
@@ -293,14 +293,14 @@
     (fn [x] x)
         [(,
         (@! (deftype (a b) (c b)))
-            (sdeftype "a" 6438 [(, "b" 6439)] [(, "c" 6441 [(tcon "b" 6442)] 6440)] 6433))
+            (tdeftype "a" 6438 [(, "b" 6439)] [(, "c" 6441 [(tcon "b" 6442)] 6440)] 6433))
         (, (@ x) (evar "x" 6483))])
 
 (defn compile-quot [quot]
     (match quot
         (quot/quot x) (jsonify x)
         (quot/expr x) (jsonify x)
-        (quot/stmt x) (jsonify x)
+        (quot/top x)  (jsonify x)
         (quot/pat x)  (jsonify x)
         (quot/type x) (jsonify x)))
 
@@ -393,6 +393,6 @@
         (, (@ "${${"a}"}") "${a}")])
 
 (eval
-    (** compile => compile_stmt => ({type:'fns',compile: a => _ => compile(a), compile_stmt: a => _ => compile_stmt(a)}) **)
+    (** compile => compile_top => ({type:'fns',compile: a => _ => compile(a), compile_top: a => _ => compile_top(a)}) **)
         compile
-        compile-st)
+        compile-top)

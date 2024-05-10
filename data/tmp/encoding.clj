@@ -87,4 +87,5 @@
 
 (** const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])] **)
 
-(** ({valueToString, valueToNode}) **)
+(** // This node is how we bundle up these functions for the structured editor to use.
+({valueToString, valueToNode}) **)

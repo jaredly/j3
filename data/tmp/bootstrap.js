@@ -1,3 +1,5 @@
+const pair = (a, b) => ({type: ',', 0: a, 1: b})
+
 // turn a javascript array into a linked list with `cons` and `nil`.
 const list = (values) => {
   let v = nil
@@ -9,13 +11,10 @@ const list = (values) => {
 const cons = (a, b) => ({type: 'cons', 0: a, 1: b})
 const nil = {type: 'nil'}
 // unwrap a list into a javascript array
-const unwrapList = (value, at=0) => {
-  if (at > 100) debugger
-  return value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1], at+1)]
-  }
+const unwrapList = (value) => {
+  return value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])]
+}
 
-
-const pair = (a, b) => ({type: ',', 0: a, 1: b})
 
 // This will be useful for the `let` and `match` forms, where we expect a list of pairs of nodes.
 const makePairs = array => {
@@ -109,7 +108,7 @@ const parse = node => {
       let res = last.type === 'spread'
         ? parse(last.contents)
         : c.cons(parse(last), c.nil(node.loc), node.loc)
-      for (let i=node.values.length - 2; i>=0; i--) {
+      for (let i = node.values.length - 2; i >= 0; i--) {
         res = c.cons(parse(node.values[i]), res)
       }
       return res
@@ -163,7 +162,7 @@ const forms = {
   ',': (loc, ...args) => args.map(parse).reduceRight((right, left) =>
     c.app(c.evar(',', loc), list([left, right]), loc)),
   '@': (loc, inner) => ({type: 'equot', 0: {type: 'quot/expr', 0: parse(inner)}, 1: loc}),
-  '@!': (loc, inner) => ({type: 'equot', 0: {type: 'quot/stmt', 0: parseStmt(inner)}, 1: loc}),
+  '@!': (loc, inner) => ({type: 'equot', 0: {type: 'quot/top', 0: parseTop(inner)}, 1: loc}),
   '@p': (loc, inner) => ({type: 'equot', 0: {type: 'quot/pat', 0: parsePat(inner)}, 1: loc}),
   '@t': (loc, inner) => ({type: 'equot', 0: {type: 'quot/type', 0: parseType(inner)}, 1: loc}),
   // The "double quote" means that the runtime value isn't going to be an AST type, but rather
@@ -210,7 +209,7 @@ const fromNode = node => {
   if (isBlank(node)) return
   switch (node.type) {
     case 'identifier':
-      return {type: 'cst/identifier', 0: node.text, 1: node.loc}
+      return {type: 'cst/id', 0: node.text, 1: node.loc}
     case 'spread':
       const inner = fromNode(node.contents)
       return inner
@@ -341,14 +340,14 @@ const parsePat = node => {
   throw new Error('unknown pat' + JSON.stringify(node))
 }
 
-const parseStmt = (node) => {
+const parseTop = (node) => {
   if (isBlank(node)) return
   switch (node.type) {
     // Check for toplevel forms
     case 'list':
       const values = filterBlanks(node.values)
       if (values.length && values[0].type === 'identifier') {
-        const f = stmtForms[values[0].text];
+        const f = topForms[values[0].text];
         if (f) {
           const res = f(node.loc, ...values.slice(1))
           if (res) return res
@@ -357,13 +356,10 @@ const parseStmt = (node) => {
   }
   // Otherwise, it's a toplevel expression
   const inner = parse(node)
-  return inner ? {type: 'sexpr', 0: inner, 1: node.loc} : inner
+  return inner ? {type: 'texpr', 0: inner, 1: node.loc} : inner
 }
 
-const stmtForms = {
-  typealias(loc, head, tail) {
-    return {type: 'stypealias'}
-  },
+const topForms = {
   deftype(loc, head, ...tail) {
     if (!head || !tail.length) return
     // handling both `(deftype expr` (no type arg) and `(deftype (list a)` (some type args)
@@ -385,20 +381,23 @@ const stmtForms = {
       if (values.length < 1) throw new Error(`empty list`)
       return pair(values[0].text, pair(values[0].loc, pair(list(values.slice(1).map(parseType)), item.loc)))
     })
-    return {type: 'sdeftype', 0: name.head.text, 1: name.head.loc, 2: list(name.args), 3: list(constructors), 4: loc}
+    return {type: 'tdeftype', 0: name.head.text, 1: name.head.loc, 2: list(name.args), 3: list(constructors), 4: loc}
   },
   def(loc, name, value) {
     if (!name || !value) return
     if (name.type !== 'identifier') return
-    return {type: 'sdef', 0: name.text, 1: name.loc, 2: parse(value), 3: loc}
+    return {type: 'tdef', 0: name.text, 1: name.loc, 2: parse(value), 3: loc}
   },
   defn(loc, name, args, value) {
     if (!name || !args || !value) return
     if (name.type !== 'identifier' || args.type !== 'array') return
     const body = forms.fn(loc, args, value)
     if (!body) return
-    return {type: 'sdef', 0: name.text, 1: name.loc, 2: body, 3: loc}
-  }
+    return {type: 'tdef', 0: name.text, 1: name.loc, 2: body, 3: loc}
+  },
+  typealias(loc, head, tail) {
+    return {type: 'ttypealias'}
+  },
 }
 
 const evaluate = (node, scope) => {
@@ -514,14 +513,14 @@ const unescapeSlashes = (n) =>
         return m[1];
     })
 
-const evaluateStmt = (node, env) => {
+const evaluateTop = (node, env) => {
   switch (node.type) {
-    case 'sexpr': return evaluate(node[0], env)
-    case 'sdef':
+    case 'texpr': return evaluate(node[0], env)
+    case 'tdef':
       const value = evaluate(node[2], env)
       env[node[0]] = value
       return value
-    case 'sdeftype':
+    case 'tdeftype':
       const res = {}
       unwrapList(node[3]).forEach(({0: name, 1: {1: {0: args}}}) => {
         res[name] = env[name] = constrFn(name, args)
@@ -543,12 +542,12 @@ const constrFn = (name, args) => {
   return next(args)([])
 }
 
-const evalStmts = stmts => {
-  if (stmts.type !== 'array') throw new Error('need array')
-  const env = {...testEnv} // evaluateStmt might mutate the `env` so we need to make a new obj here
+const evalTops = tops => {
+  if (tops.type !== 'array') throw new Error('need array')
+  const env = {...testEnv} // evaluateTop might mutate the `env` so we need to make a new obj here
   let res
-  filterBlanks(stmts.values).forEach(stmt => {
-    res = evaluateStmt(parseStmt(stmt), env)
+  filterBlanks(tops.values).forEach(top => {
+    res = evaluateTop(parseTop(top), env)
   });
   return valueToString(res)
 }
@@ -558,11 +557,11 @@ const evalStmts = stmts => {
 // It is used to sort toplevels in the structured editor so that evaluation happens in the
 // correct dependency order, and for detecting circular dependencies (which need to be
 // evaluated as a group).
-const externals = stmt => {
-  switch (stmt.type) {
-    case 'sexpr': return externals_expr(stmt[0], [])
-    case 'sdef': return externals_expr(stmt[2], [stmt[0]])
-    case 'sdeftype': return []
+const externals = top => {
+  switch (top.type) {
+    case 'texpr': return externals_expr(top[0], [])
+    case 'tdef': return externals_expr(top[2], [top[0]])
+    case 'tdeftype': return []
   }
   return []
 }
@@ -591,11 +590,11 @@ const externals_expr = (expr, locals) => {
 // `names` is the complement to `externals`; it produces a list of all values *provided* by a given statement.
 // Once we have type checking, we'll also want to report type names produced by a statement (which will have
 // `kind: "type"`).
-const names = stmt => {
-  switch (stmt.type) {
-    case 'sexpr': return []
-    case 'sdef': return [{name: stmt[0], kind: 'value', loc: stmt[1]}]
-    case 'sdeftype': return unwrapList(stmt[3]).map(({0: name, 1: {0: loc}}) => ({name, kind: 'value', loc}))
+const names = top => {
+  switch (top.type) {
+    case 'texpr': return []
+    case 'tdef': return [{name: top[0], kind: 'value', loc: top[1]}]
+    case 'tdeftype': return unwrapList(top[3]).map(({0: name, 1: {0: loc}}) => ({name, kind: 'value', loc}))
   }
   return []
 }
@@ -614,14 +613,6 @@ const pat_names = pat => {
 
 
 const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {})
-
-const compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)`
-
-const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
-  unwrapList(ast[3]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
-}} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)`
-
-const testCompileStmt = v => compile_stmt(parseStmt(v))()
 
 // Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
 const sanitize =  (raw) => {
@@ -653,21 +644,16 @@ const sanMap = {
     '()': '$unit',
     '?': '$qe',
   };
+const kwds =
+    'case new var const let if else return super break while for default'.split(' ');
 
 
-const kwds = (() => {
-  const kwds =
-    'case new var const let if else return super break while for default';
-  const rx = [];
-  return kwds.split(' ')
-})();
-
-
-const prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString}) 
-
-return ({type: 'fns', prelude,
-  compile, compile_stmt,
-  parse_stmt: parseStmt, parse_expr: parse,
+return ({type: 'fns', prelude: makePrelude({evaluate,evaluateStmt: evaluateTop,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString}),
+  compile: ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)`,
+  compile_stmt: ast => _meta => `${ast.type === 'tdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'tdeftype' ? `const {${
+    unwrapList(ast[3]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
+  }} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)`,
+  parse_stmt: parseTop, parse_expr: parse,
   names,
   externals_stmt: externals,
   externals_expr: e => externals_expr(e, []),

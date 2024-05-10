@@ -37,13 +37,13 @@
         (elet (list (, pat expr)) expr int)
         (** The "match" expression is analogous to a switch statement from JavaScript, Swift, or Rust. It has a target expression, and a list of cases. The first pattern that matches gets evaluated. **)
         (ematch expr (list (, pat expr)))
-        (** The "quote" expression is mostly helpful for macros or if you're building a compiler. Our language doesn't have macros (yet? 😉) but we sure are building a compiler, so having full quoting support will be invaluable. In traditional lisps, the quote form is ' (such as '(a b)), but we'll be using @ for quoted expressions, @! for statements, @p for patterns, @t for types, and @@ for accessing the CST directly.
+        (** The "quote" expression is mostly helpful for macros or if you're building a compiler. Our language doesn't have macros (yet? 😉) but we sure are building a compiler, so having full quoting support will be invaluable. In traditional lisps, the quote form is ' (such as '(a b)), but we'll be using @ for quoted expressions, @! for toplevels, @p for patterns, @t for types, and @@ for accessing the CST directly.
         Basically, if we want to test out type inference, we can do (infer/expr (@ [1 2 3])), and if we want to test parsing, we can do (parse/expr (@@ [1 2 3])). **)
         (equot quot int))
 
 (deftype quot
     (quot/expr expr)
-        (quot/stmt stmt)
+        (quot/top top)
         (quot/type type)
         (quot/pat pat)
         (quot/quot cst))
@@ -81,33 +81,75 @@
 (** You'll notice there's no "function type" here. This follows the shortcut that lots of type inference papers make, skipping out on a dedicated "function" type, and instead representing it with a constructor, often called ->.
     So the type (fn [int] string) would be represented as (tapp (tapp (tcon "->") (tcon "int")) (tcon "string")). **)
 
-(** ## Statements **)
+(** ## Toplevels
+    These are our toplevel forms; value & type definitions, and toplevel expressions. **)
 
-(deftype stmt
+(deftype toplevel
     (** Defining custom types! We have the name of the type, and then a list of constructors, each with a name and a list of arguments. **)
-        (sdeftype string (list (,, string (list type) int)))
-        (** e.g. (def x 2). (defn x [a] b) gets parsed as (def x (fn [x] b)) **)
-        (sdef string expr)
-        (sexpr expr))
+        (tdeftype string (list (,, string (list type) int)))
+        (** e.g. (def x 2).
+        (defn x [a] b) gets parsed as (def x (fn [x] b)) **)
+        (tdef string expr)
+        (texpr expr))
 
 (** ## Syntax Sugar **)
 
-(** The tuple constructor , to allow tuples of any length; (, a b c) will be sugar for (, a (, b c)), (, a b c d) will desugar to (, a (, b (, c d))) and so on. This will show up when parsing types, patterns, and expressions.
+(** ## Tuples
+    Grouping multiple values **)
+
+(** The tuple constructor , is something we'll handle specially to allow tuples of any length.
+    (, a b c) is sugar for (, a (, b c)), (, a b c d) for (, a (, b (, c d))) and so on. This shows up when parsing types, patterns, and expressions.
     This is really handy for when you want to have a couple things grouped together, but don't want to go to the trouble of coming up with a name for a deftype. **)
 
-(** We've also got a simplified "do notation" to allow for "state" and "error handling" in a pure & functional language.
-    (let-> [pat init] value) is translated into continuation-passing style with >>= (pronounced "bind"):
-    (>>= init (fn [pat] value))
-    As a small example, consider the result type (deftype (result good bad) (ok good) (err bad)), similar to the one seen in Rust. If we define bind to be
-    (defn >>= [res next]
-      (match res
-        (ok value) (next value)
-        (err e) (err e))
-    Then we can use our "do notation" to handle functions that return results, and it will "bail" if ever it encounters an err. Here's an example with some simple parsing:
-    (let-> [name     (parse-name data)
-            address  (parse-address data)]
-      (<- "Hello ${name}, you live at ${address}."))
-    parse-name and parse-age both take some input data and return a (result string err-type). If both succeed, then we can proceed with constructing the welcome message, but if either fails the whole expression will evaluate to an err.
-    The <- function in this example is pronounced return (or sometimes pure); it is the function that constructs the "happy path". For results, it is trivial (def <- ok).
-    If you want to have a value bound in a let-> that isn't already wrapped in a result, you use <- there too. For example (let-> [age (<- 10)] ...). In this simple example, that let-> isn't needed, the above is equivalent to (let [age 10] ...). **)
+(** ## "Do notation" with let->
+    Making purity & immutability a little less cumbersome **)
+
+(** Because our language is fully immutable, some things can require a lot of plumbing that can really get in the way of readability. For example, in our type inference algorithm we'll need to keep track of an incrementing integer so we can produce unique ids for type variables. Without a specialized syntax, this would require passing the next-id variable into -- and out of -- almost every function, which would get really annoying. Fortunately, our friends in haskell-land have come up with a nice way of abstracting this out, called "do notation". We'll be taking inspiration from this for our let-> syntax sugar.
+    The simplest usage of let-> would be something akin to swift's try or rust's ? suffix, allowing us to have nice error handling without resorting to throwing exceptions.
+    Here's a simple parsing example, without any sugar: **)
+
+(deftype (result good bad) (ok good) (err bad))
+
+(defn parse-person [data]
+    (match (parse-name data)
+        (err reason) (err reason)
+        (ok name)    (let [greeting "Hello ${name}"]
+                         (match (parse-address data)
+                             (err reason) (err reason)
+                             (ok address) (ok "${greeting}, you live at ${address}")))))
+
+(** Because both parse-name and parse-address might fail, we have to match the results, which gets pretty messy. In contrast, here's what it looks like with let->: **)
+
+(defn parse-person [data]
+    (let-> [
+        name     (parse-name data)
+        greeting (<- "Hello ${name}")
+        address  (parse-address data)]
+        (<- "${greeting}, you live at ${address}")))
+
+(** This is much nicer! And you can imagine how the match version would get even more annoying the more things you want to parse. Now let's look at what this desugars into: **)
+
+(defn parse-person [data]
+    (>>=
+        (parse-name data)
+            (fn [name]
+            (>>=
+                (<- "Hello ${name}")
+                    (fn [greeting]
+                    (>>=
+                        (parse-address data)
+                            (fn [address] (<- "${greeting}, you live at ${address}"))))))))
+
+(** Arguably even more obtuse than the match version 😅 but that's fine because it's not the version we have to look at. The >>= operator ( > > = without ligature-smooshing) is called "bind", and roughly translates to "take this wrapped value, and run this function on the contents", and <- is my name for return (sometimes called pure), which translates to "wrap this value".
+    The reason greeting's value has to be wrapped with <- is that everything in a let-> needs to be a "wrapped value" (in this case, a result), in order for the types to make sense.
+    Here are the definitions of >>= and <- for result: **)
+
+(defn >>= [result next]
+    (match result
+        (err e)    (err e)
+        (ok value) (next value)))
+
+(def <- ok)
+
+(** So this was an example using the do-notation with the result type for handling errors, but in the "Self-Hosted Type Inference" document we'll be using a somewhat more complicated version, which will allow us the to have the illusion of mutable state :). **)
 

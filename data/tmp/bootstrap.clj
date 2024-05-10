@@ -85,7 +85,8 @@ const isBlank = n => ['blank', 'comment', 'rich-text', 'comment-node'].includes(
 const filterBlanks = values => values.filter(node => !isBlank(node)) **)
 
 (** ## Parser
-    This parser isn't super interesting (imo), so if you've seen parsers before feel free to just skip to the "Fixture tests" in each section so you can get a sense for what the transformation looks like. The actual code is quite formulaic. **)
+    This parser isn't super interesting (imo), so if you've seen parsers before feel free to just skip to the "Fixture tests" in each section so you can get a sense for what the transformation looks like. The actual code is quite formulaic.
+    (Click the [#] to the left of this block to expand the contents) **)
 
 (** ## Expressions **)
 
@@ -114,7 +115,7 @@ const filterBlanks = values => values.filter(node => !isBlank(node)) **)
 
 (deftype quot
     (quot/expr expr)
-        (quot/stmt stmt)
+        (quot/top top)
         (quot/type type)
         (quot/pat pat)
         (quot/quot cst))
@@ -215,7 +216,7 @@ const filterBlanks = values => values.filter(node => !isBlank(node)) **)
   ',': (loc, ...args) => args.map(parse).reduceRight((right, left) =>
     c.app(c.evar(',', loc), list([left, right]), loc)),
   '@': (loc, inner) => ({type: 'equot', 0: {type: 'quot/expr', 0: parse(inner)}, 1: loc}),
-  '@!': (loc, inner) => ({type: 'equot', 0: {type: 'quot/stmt', 0: parseStmt(inner)}, 1: loc}),
+  '@!': (loc, inner) => ({type: 'equot', 0: {type: 'quot/top', 0: parseTop(inner)}, 1: loc}),
   '@p': (loc, inner) => ({type: 'equot', 0: {type: 'quot/pat', 0: parsePat(inner)}, 1: loc}),
   '@t': (loc, inner) => ({type: 'equot', 0: {type: 'quot/type', 0: parseType(inner)}, 1: loc}),
   // The "double quote" means that the runtime value isn't going to be an AST type, but rather
@@ -482,16 +483,16 @@ const p = {
         (, (@ 12) (** "(pprim (pint 12 1279) 1279)" **))
         (, (@ "hi") (** '(pstr "hi" 1286)' **))])
 
-(** ## Statements **)
+(** ## Top-levels **)
 
-(** const parseStmt = (node) => {
+(** const parseTop = (node) => {
   if (isBlank(node)) return
   switch (node.type) {
     // Check for toplevel forms
     case 'list':
       const values = filterBlanks(node.values)
       if (values.length && values[0].type === 'identifier') {
-        const f = stmtForms[values[0].text];
+        const f = topForms[values[0].text];
         if (f) {
           const res = f(node.loc, ...values.slice(1))
           if (res) return res
@@ -500,13 +501,10 @@ const p = {
   }
   // Otherwise, it's a toplevel expression
   const inner = parse(node)
-  return inner ? {type: 'sexpr', 0: inner, 1: node.loc} : inner
+  return inner ? {type: 'texpr', 0: inner, 1: node.loc} : inner
 } **)
 
-(** const stmtForms = {
-  typealias(loc, head, tail) {
-    return {type: 'stypealias'}
-  },
+(** const topForms = {
   deftype(loc, head, ...tail) {
     if (!head || !tail.length) return
     // handling both `(deftype expr` (no type arg) and `(deftype (list a)` (some type args)
@@ -528,34 +526,37 @@ const p = {
       if (values.length < 1) throw new Error(`empty list`)
       return pair(values[0].text, pair(values[0].loc, pair(list(values.slice(1).map(parseType)), item.loc)))
     })
-    return {type: 'sdeftype', 0: name.head.text, 1: name.head.loc, 2: list(name.args), 3: list(constructors), 4: loc}
+    return {type: 'tdeftype', 0: name.head.text, 1: name.head.loc, 2: list(name.args), 3: list(constructors), 4: loc}
   },
   def(loc, name, value) {
     if (!name || !value) return
     if (name.type !== 'identifier') return
-    return {type: 'sdef', 0: name.text, 1: name.loc, 2: parse(value), 3: loc}
+    return {type: 'tdef', 0: name.text, 1: name.loc, 2: parse(value), 3: loc}
   },
   defn(loc, name, args, value) {
     if (!name || !args || !value) return
     if (name.type !== 'identifier' || args.type !== 'array') return
     const body = forms.fn(loc, args, value)
     if (!body) return
-    return {type: 'sdef', 0: name.text, 1: name.loc, 2: body, 3: loc}
-  }
+    return {type: 'tdef', 0: name.text, 1: name.loc, 2: body, 3: loc}
+  },
+  typealias(loc, head, tail) {
+    return {type: 'ttypealias'}
+  },
 } **)
 
 (,
-    (** v => valueToString(parseStmt(v)) **)
-        [(, (@ 1) (** "(sexpr (eprim (pint 1 238) 238) 238)" **))
+    (** v => valueToString(parseTop(v)) **)
+        [(, (@ 1) (** "(texpr (eprim (pint 1 238) 238) 238)" **))
         (,
         (@ (def hi 10))
-            (** '(sdef "hi" 253 (eprim (pint 10 254) 254) 245)' **))
+            (** '(tdef "hi" 253 (eprim (pint 10 254) 254) 245)' **))
         (,
         (@ (deftype (option a) (some a) (none)))
-            (** '(sdeftype "option" 1014 [(, "a" 1015)] [(, "some" 1017 [(tcon "a" 1018)] 1016) (, "none" 1020 [] 1019)] 1011)' **))
+            (** '(tdeftype "option" 1014 [(, "a" 1015)] [(, "some" 1017 [(tcon "a" 1018)] 1016) (, "none" 1020 [] 1019)] 1011)' **))
         (,
         (@ (defn lol [a b] (+ a b)))
-            (** '(sdef "lol" 265 (elambda [(pvar "a" 268) (pvar "b" 269)] (eapp (evar "+" 271) [(evar "a" 272) (evar "b" 273)] 270) 261) 261)' **))])
+            (** '(tdef "lol" 265 (elambda [(pvar "a" 268) (pvar "b" 269)] (eapp (evar "+" 271) [(evar "a" 272) (evar "b" 273)] 270) 261) 261)' **))])
 
 (** ## Tree-Walking Evaluator
     To evaluate our code in this bootstrap environment, we're treating the AST as a very basic "bytecode" that we're evaluating in a "virtual machine". Evaluating a program, in this paradigm, simply consists of walking each node of the tree and "reducing" it to a runtime value. **)
@@ -701,14 +702,14 @@ const unescapeSlashes = (n) =>
     (** unescapeSlashes **)
         [(, "\n" "\n") (, "\\n" "\n") (, "\\\\n" "\\n") (, "\\\\" "\\") (, "\\\n" "\\\n")])
 
-(** const evaluateStmt = (node, env) => {
+(** const evaluateTop = (node, env) => {
   switch (node.type) {
-    case 'sexpr': return evaluate(node[0], env)
-    case 'sdef':
+    case 'texpr': return evaluate(node[0], env)
+    case 'tdef':
       const value = evaluate(node[2], env)
       env[node[0]] = value
       return value
-    case 'sdeftype':
+    case 'tdeftype':
       const res = {}
       unwrapList(node[3]).forEach(({0: name, 1: {1: {0: args}}}) => {
         res[name] = env[name] = constrFn(name, args)
@@ -730,19 +731,19 @@ const constrFn = (name, args) => {
   return next(args)([])
 } **)
 
-(** const evalStmts = stmts => {
-  if (stmts.type !== 'array') throw new Error('need array')
-  const env = {...testEnv} // evaluateStmt might mutate the `env` so we need to make a new obj here
+(** const evalTops = tops => {
+  if (tops.type !== 'array') throw new Error('need array')
+  const env = {...testEnv} // evaluateTop might mutate the `env` so we need to make a new obj here
   let res
-  filterBlanks(stmts.values).forEach(stmt => {
-    res = evaluateStmt(parseStmt(stmt), env)
+  filterBlanks(tops.values).forEach(top => {
+    res = evaluateTop(parseTop(top), env)
   });
   return valueToString(res)
 }
  **)
 
 (,
-    (** evalStmts **)
+    (** evalTops **)
         [(, [0] (** "0" **))
         (, [(def n 10) n] (** "10" **))
         (, [(defn hi [x] (, x 2)) (hi 5)] (** "(, 5 2)" **))
@@ -763,23 +764,24 @@ const constrFn = (name, args) => {
             (fib- 6)]
             (** "21" **))])
 
-(** ## Analysis **)
+(** ## Analysis
+    Our structured editor requires a basic level of static analysis in order to run. Specifically, we need to know, for each "top level item", what it "requires" (i.e. imports) and what it "provides" (i.e. exports). **)
 
 (** // This function collects a list of all "external references" in a given toplevel statement.
 // It is used to sort toplevels in the structured editor so that evaluation happens in the
 // correct dependency order, and for detecting circular dependencies (which need to be
 // evaluated as a group).
-const externals = stmt => {
-  switch (stmt.type) {
-    case 'sexpr': return externals_expr(stmt[0], [])
-    case 'sdef': return externals_expr(stmt[2], [stmt[0]])
-    case 'sdeftype': return []
+const externals = top => {
+  switch (top.type) {
+    case 'texpr': return externals_expr(top[0], [])
+    case 'tdef': return externals_expr(top[2], [top[0]])
+    case 'tdeftype': return []
   }
   return []
 } **)
 
 (,
-    (** v => externals(parseStmt(v)) **)
+    (** v => externals(parseTop(v)) **)
         [(, (@ lol) (** [{"name":"lol","kind":"value","loc":620}] **))
         (, (@ (fn [(, x)] (+ x))) (** [{"name":"+","kind":"value","loc":641}] **))
         (, (@ "hi ${x}") (** [{"name":"x","kind":"value","loc":653}] **))
@@ -824,17 +826,17 @@ const externals = stmt => {
 (** // `names` is the complement to `externals`; it produces a list of all values *provided* by a given statement.
 // Once we have type checking, we'll also want to report type names produced by a statement (which will have
 // `kind: "type"`).
-const names = stmt => {
-  switch (stmt.type) {
-    case 'sexpr': return []
-    case 'sdef': return [{name: stmt[0], kind: 'value', loc: stmt[1]}]
-    case 'sdeftype': return unwrapList(stmt[3]).map(({0: name, 1: {0: loc}}) => ({name, kind: 'value', loc}))
+const names = top => {
+  switch (top.type) {
+    case 'texpr': return []
+    case 'tdef': return [{name: top[0], kind: 'value', loc: top[1]}]
+    case 'tdeftype': return unwrapList(top[3]).map(({0: name, 1: {0: loc}}) => ({name, kind: 'value', loc}))
   }
   return []
 } **)
 
 (,
-    (** v => names(parseStmt(v)) **)
+    (** v => names(parseTop(v)) **)
         [(, (@ hi) (** [] **))
         (, (@ (def x 10)) (** [{"name":"x","kind":"value","loc":714}] **))
         (,
@@ -856,12 +858,12 @@ const pat_names = pat => {
 
 (** ## Packaging it up as a Compiler for the structured editor **)
 
-(** ({type: 'fns', prelude: makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString}),
+(** ({type: 'fns', prelude: makePrelude({evaluate,evaluateStmt: evaluateTop,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString}),
   compile: ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)`,
-  compile_stmt: ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
+  compile_stmt: ast => _meta => `${ast.type === 'tdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'tdeftype' ? `const {${
     unwrapList(ast[3]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
   }} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)`,
-  parse_stmt: parseStmt, parse_expr: parse,
+  parse_stmt: parseTop, parse_expr: parse,
   names,
   externals_stmt: externals,
   externals_expr: e => externals_expr(e, []),
@@ -869,16 +871,6 @@ const pat_names = pat => {
   toNode: x => x}) **)
 
 (** const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {}) **)
-
-(** // const compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)` **)
-
-(** /* const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
-  unwrapList(ast[3]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
-}} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)` */ **)
-
-(** //const testCompileStmt = v => compile_stmt(parseStmt(v))() **)
-
-;((** testCompileStmt **) (deftype card (red) (black)))
 
 (** // Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
 const sanitize =  (raw) => {

@@ -32,7 +32,6 @@ export const Page = () => {
                 padding: 16,
             }}
         >
-            {page ?? 'no page arg'}
             <GroundUp
                 id={page + '.json'}
                 key={page}

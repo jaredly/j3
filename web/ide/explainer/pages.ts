@@ -2,6 +2,7 @@
 
 export const pages = [
     { id: 'intro', title: 'Introduction' },
+    { id: 'structured-editor', title: 'Structured Editor' },
     { id: 'encoding', title: 'Encoding' },
     { id: 'ast', title: 'Abstract Syntax Tree' },
     { id: 'bootstrap', title: 'Bootstrap Compiler' },

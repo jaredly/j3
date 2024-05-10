@@ -59,7 +59,7 @@ export const calculateLayout = (
                 hashNames,
                 map,
             );
-            if (cw === false || cw > maxWidth) {
+            if (cw === false || cw > maxWidth || parentCtx === 'let') {
                 return {
                     type: 'multiline',
                     tightFirst: 0,

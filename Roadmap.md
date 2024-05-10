@@ -6,6 +6,18 @@ for the series of artcicle
   - I love it so much
 - [ ] hrmm `stmt` is really a misnomer, and I should remove it.
   These are "toplevels".
+  - definitions
+  - expressions
+  ... I mean that's it, so thye could be called "definitions", but idk
+
+- gotta toplevel 'em all
+  - [x] Structured Editor
+  - [x] Encoding
+  - [x] AST
+  - [x] Bootstrap
+  - [ ] self-1
+  - [ ] parse-self
+  - [ ] type inference
 
 # The Blorg Porst
 
