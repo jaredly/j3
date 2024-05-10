@@ -23,13 +23,23 @@ for the series of artcicle
   - [x] quot n stuff
   - [x] get it running on everything, verify that its allgood
   - [x] hrm maybe scope should be to "forall" schemes?
-  This is the basic version
-  ok so I will do patterns and stuff, because it's not actually that much more work.
-  I neeeeed a test suite or something...
 - [ ] algw-fast.json
   - [x] executing
   - I think I probably want to do a stripped-down version first?
     Just like with the parsing & code generation.
+
+# Ok I think all the files are in decent shape
+
+now to render them! or something.
+
+We need:
+- a left sidebar, definitely
+- how to order? probably use numbers or something
+- andddd we also need to get caching working (would be nice)
+Also:
+- make a pre-rendered version without any fluff, for mobile users or whatnot
+
+And then release it? probably?
 
 
 # PLAN Higher up...

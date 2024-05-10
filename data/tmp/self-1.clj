@@ -250,6 +250,8 @@
         (, (@p arg) (some "arg"))
         (, (@p case) (some "$case"))])
 
+(def m (jsonify 1))
+
 (** ## Expressions **)
 
 (** ## String escape utils **)

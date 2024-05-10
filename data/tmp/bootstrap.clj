@@ -5,6 +5,8 @@
 (** ## Prelude
     Some basic handy functions **)
 
+(** const pair = (a, b) => ({type: ',', 0: a, 1: b}) **)
+
 (** // turn a javascript array into a linked list with `cons` and `nil`.
 const list = (values) => {
   let v = nil
@@ -16,10 +18,9 @@ const list = (values) => {
 const cons = (a, b) => ({type: 'cons', 0: a, 1: b})
 const nil = {type: 'nil'}
 // unwrap a list into a javascript array
-const unwrapList = (value, at=0) => {
-  if (at > 1000) debugger
-  return value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1], at+1)]
-  }
+const unwrapList = (value) => {
+  return value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])]
+}
  **)
 
 (,
@@ -30,8 +31,6 @@ const unwrapList = (value, at=0) => {
         (, (** [] **) (** {"type":"nil"} **))])
 
 (, (** unwrapList **) [(, (** list([1, 2, 3]) **) (** [1,2,3] **)) (, (** list([]) **) (** [] **))])
-
-(** const pair = (a, b) => ({type: ',', 0: a, 1: b}) **)
 
 (** // This will be useful for the `let` and `match` forms, where we expect a list of pairs of nodes.
 const makePairs = array => {
@@ -85,18 +84,19 @@ const unwrapTuple = (v) => [v[0], ...(v[1].type === ',' ? unwrapTuple(v[1]) : [v
 const isBlank = n => ['blank', 'comment', 'rich-text', 'comment-node'].includes(n.type)
 const filterBlanks = values => values.filter(node => !isBlank(node)) **)
 
-(** ## Parser **)
+(** ## Parser
+    This parser isn't super interesting (imo), so if you've seen parsers before feel free to just skip to the "Fixture tests" in each section so you can get a sense for what the transformation looks like. The actual code is quite formulaic. **)
 
 (** ## Expressions **)
 
 (** Let's remind ourselves what the AST looks like that we're parsing into: **)
 
 (deftype expr
-    (** the trailing int on each constructor is a unique id **)
+    (** the trailing int on each constructor is a unique id, which we can use to report located type errors, "hover for type", etc. **)
         (eprim prim int)
         (** estr: prefix, template-pairs. All strings are template strings in our language :)
         So "Hello ${world}!" would parse into
-        (estr "Hello" [(, (evar "world") "!" 1234)])
+        (estr "Hello " [(, (evar "world") "!" 1234)])
         template-pairs is a list of expression and suffix (with a unique ID for the string tacked on) **)
         (estr string (list (, expr string int)) int)
         (** evar: a variable reference! might be local or global **)
@@ -161,7 +161,7 @@ const filterBlanks = values => values.filter(node => !isBlank(node)) **)
       let res = last.type === 'spread'
         ? parse(last.contents)
         : c.cons(parse(last), c.nil(node.loc), node.loc)
-      for (let i=node.values.length - 2; i>=0; i--) {
+      for (let i = node.values.length - 2; i >= 0; i--) {
         res = c.cons(parse(node.values[i]), res)
       }
       return res
@@ -557,9 +557,8 @@ const p = {
         (@ (defn lol [a b] (+ a b)))
             (** '(sdef "lol" 265 (elambda [(pvar "a" 268) (pvar "b" 269)] (eapp (evar "+" 271) [(evar "a" 272) (evar "b" 273)] 270) 261) 261)' **))])
 
-(** ## Tree-Walking Evaluator **)
-
-(** To evaluate our code in this bootstrap environment, we're treating the AST as a very basic "bytecode" that we're evaluating in a "virtual machine". Evaluating a program, in this paradigm, simply consists of walking each node of the tree and "reducing" it to a runtime value. **)
+(** ## Tree-Walking Evaluator
+    To evaluate our code in this bootstrap environment, we're treating the AST as a very basic "bytecode" that we're evaluating in a "virtual machine". Evaluating a program, in this paradigm, simply consists of walking each node of the tree and "reducing" it to a runtime value. **)
 
 (** const evaluate = (node, scope) => {
   if (!scope) throw new Error(`evaluate called without scope`)
@@ -857,8 +856,11 @@ const pat_names = pat => {
 
 (** ## Packaging it up as a Compiler for the structured editor **)
 
-(** ({type: 'fns', prelude,
-  compile, compile_stmt,
+(** ({type: 'fns', prelude: makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString}),
+  compile: ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)`,
+  compile_stmt: ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
+    unwrapList(ast[3]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
+  }} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)`,
   parse_stmt: parseStmt, parse_expr: parse,
   names,
   externals_stmt: externals,
@@ -868,15 +870,15 @@ const pat_names = pat => {
 
 (** const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {}) **)
 
-(** const compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)` **)
+(** // const compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)` **)
 
-(** const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
+(** /* const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
   unwrapList(ast[3]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
-}} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)` **)
+}} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)` */ **)
 
-(** const testCompileStmt = v => compile_stmt(parseStmt(v))() **)
+(** //const testCompileStmt = v => compile_stmt(parseStmt(v))() **)
 
-((** testCompileStmt **) (deftype card (red) (black)))
+;((** testCompileStmt **) (deftype card (red) (black)))
 
 (** // Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
 const sanitize =  (raw) => {
@@ -892,7 +894,8 @@ const sanitize =  (raw) => {
     (** sanitize **)
         [(, "hello-world" "hello_world")
         (, "a/b/c" "a$slb$slc")
-        (, "abc$" "abc$$")])
+        (, "abc$" "abc$$")
+        (, "for" (** "$for" **))])
 
 (** const sanMap = {
     // '$$$$' gets interpreted by replaceAll as '$$', for reasons
@@ -914,17 +917,6 @@ const sanitize =  (raw) => {
     '()': '$unit',
     '?': '$qe',
   };
+const kwds =
+    'case new var const let if else return super break while for default'.split(' ');
  **)
-
-(** const kwds = (() => {
-  const kwds =
-    'case new var const let if else return super break while for default';
-  const rx = [];
-  return kwds.split(' ')
-})();
- **)
-
-(** sanitize('for') **)
-
-(** const prelude = makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString})  **)
-
