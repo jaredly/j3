@@ -251,7 +251,7 @@ const nodeName = (node: NodeResults<unknown>) => {
             arr[0].content[0].type === 'text'
         ) {
             return {
-                name: arr[0].content[0].text,
+                name: arr[0].content.map((m) => m.text).join(''),
                 loc: node.node.loc,
                 style: {
                     color: '#aaa',

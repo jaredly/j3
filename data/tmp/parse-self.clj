@@ -120,7 +120,7 @@
 
 (deftype quot
     (quot/expr expr)
-        (quot/stmt stmt)
+        (quot/top top)
         (quot/type type)
         (quot/pat pat)
         (quot/quot cst))
@@ -139,16 +139,16 @@
         (tapp type type int)
         (tcon string int))
 
-(deftype stmt
-    (stypealias string int (list (, string int)) type int)
-        (sdeftype
+(deftype top
+    (ttypealias string int (list (, string int)) type int)
+        (tdeftype
         string
             int
             (list (, string int))
             (list (, string int (list type) int))
             int)
-        (sdef string int expr int)
-        (sexpr expr int))
+        (tdef string int expr int)
+        (texpr expr int))
 
 (** ## Parsing **)
 
@@ -296,7 +296,7 @@
                                                                         (none)     (evar id l))
         (cst/list [(cst/id "@" _) body] l)                          (equot (quot/expr (parse-expr body)) l)
         (cst/list [(cst/id "@@" _) body] l)                         (equot (quot/quot body) l)
-        (cst/list [(cst/id "@!" _) body] l)                         (equot (quot/stmt (parse-stmt body)) l)
+        (cst/list [(cst/id "@!" _) body] l)                         (equot (quot/top (parse-top body)) l)
         (cst/list [(cst/id "@t" _) body] l)                         (equot (quot/type (parse-type body)) l)
         (cst/list [(cst/id "@p" _) body] l)                         (equot (quot/pat (parse-pat body)) l)
         (cst/list [(cst/id "if" _) cond yes no] l)                  (ematch
@@ -486,28 +486,28 @@
 
 (** ## Statements **)
 
-(defn parse-stmt [cst]
+(defn parse-top [cst]
     (match cst
-        (cst/list [(cst/id "def" _) (cst/id id li) value] l)                    (sdef id li (parse-expr value) l)
+        (cst/list [(cst/id "def" _) (cst/id id li) value] l)                    (tdef id li (parse-expr value) l)
         (cst/list [(cst/id "defn" a) (cst/id id li) (cst/array args b) body] c) (let [
                                                                                     body (parse-expr (cst/list [(cst/id "fn" a) (cst/array args b) body] c))]
-                                                                                    (sdef id li body c))
+                                                                                    (tdef id li body c))
         (cst/list [(cst/id "defn" _) .._] l)                                    (fatal "Invalid 'defn' ${(int-to-string l)}")
         (cst/list [(cst/id "deftype" _) head ..items] l)                        (let [
                                                                                     (, id li args) (id-with-maybe-args head)
                                                                                     constrs        (filter-some (map items parse-type-constructor))]
-                                                                                    (sdeftype id li args constrs l))
+                                                                                    (tdeftype id li args constrs l))
         (cst/list [(cst/id "deftype" _) .._] l)                                 (fatal "Invalid 'deftype' ${(int-to-string l)}")
         (cst/list [(cst/id "typealias" _) head body] l)                         (let [(, id li args) (id-with-maybe-args head)]
-                                                                                    (stypealias id li args (parse-type body) l))
-        _                                                                       (sexpr (parse-expr cst) (cst-loc cst))))
+                                                                                    (ttypealias id li args (parse-type body) l))
+        _                                                                       (texpr (parse-expr cst) (cst-loc cst))))
 
 (,
-    parse-stmt
-        [(, (@@ (def a 2)) (sdef "a" 1302 (eprim (pint 2 1303) 1303) 1300))
+    parse-top
+        [(, (@@ (def a 2)) (tdef "a" 1302 (eprim (pint 2 1303) 1303) 1300))
         (,
         (@@ (typealias hello (, int string)))
-            (stypealias
+            (ttypealias
             "hello"
                 6271
                 []
@@ -518,7 +518,7 @@
                 6269))
         (,
         (@@ (typealias (hello t) (, int t)))
-            (stypealias
+            (ttypealias
             "hello"
                 6337
                 [(, "t" 6338)]
@@ -526,7 +526,7 @@
                 6334))
         (,
         (@@ (deftype what (one int) (two bool)))
-            (sdeftype
+            (tdeftype
             "what"
                 1335
                 []
@@ -535,7 +535,7 @@
                 1333))
         (,
         (@@ (deftype (array a) (nil) (cons (array a))))
-            (sdeftype
+            (tdeftype
             "array"
                 1486
                 [(, "a" 1487)]
@@ -544,7 +544,7 @@
                 1483))
         (,
         (@@ (+ 1 2))
-            (sexpr
+            (texpr
             (eapp
                 (evar "+" 1969)
                     [(eprim (pint 1 1970) 1970) (eprim (pint 2 1971) 1971)]
@@ -552,7 +552,7 @@
                 1968))
         (,
         (@@ (defn a [m] m))
-            (sdef "a" 2051 (elambda [(pvar "m" 2055)] (evar "m" 2053) 2049) 2049))])
+            (tdef "a" 2051 (elambda [(pvar "m" 2055)] (evar "m" 2053) 2049) 2049))])
 
 (defn id-with-maybe-args [head]
     (match head
@@ -582,7 +582,9 @@
 (** ## Analysis **)
 
 (** In order for the structured editor to be able to evaluate our toplevel terms in the correct order, we need to be able to report what names are exported from a given toplevel term, and what names are external to it, i.e. dependencies. We do this much in the same way as we did in the bootstrap (js) implementation, but there's a small twist: we don't have mutability.
-    A naive way of collecting everything would be to recursively walk the tree and return a (list) of the externals, concatenating the lists from sub-nodes. This would do a ton of extra work, however, because concatenating two lists takes O(n), and you'd end up walking each sub-list many many times.
+    A naive way of collecting everything would be to recursively walk the tree and return a (list) of the externals, concatenating the lists from sub-nodes. This would do a ton of extra work, however, because concatenating two lists takes O(n), and you'd end up walking each sub-list many many times. **)
+
+(** ## A collection type with O(1) concat
     To get around this issue, we use a bag type (a kind of [difference list](https://en.wikipedia.org/wiki/Difference_list)) which allows us to join the results of sub-trees in constant time, and only at the end traverse over everything (O(n)) to produce the final list. **)
 
 (deftype (bag a) (one a) (many (list (bag a))))
@@ -609,18 +611,18 @@
     bag/to-list
         [(, (many [empty (one 1) (many [(one 2) empty]) (one 10)]) [1 2 10])])
 
+(** ## Collecting exports **)
+
 (deftype name-kind (value) (type))
 
 (typealias loced-name (, string name-kind int))
 
-(** ## Collecting exports **)
-
 (defn names [stmt]
     (match stmt
-        (sdef name l _ _)                  [(, name (value) l)]
-        (sexpr _ _)                        []
-        (stypealias name l _ _ _)          [(, name (type) l)]
-        (sdeftype name l _ constructors _) [(, name (type) l)
+        (tdef name l _ _)                  [(, name (value) l)]
+        (texpr _ _)                        []
+        (ttypealias name l _ _ _)          [(, name (type) l)]
+        (tdeftype name l _ constructors _) [(, name (type) l)
                                                ..(map
                                                constructors
                                                    (fn [arg]
@@ -707,10 +709,10 @@
         (parse-expr (@@ (one two three)))
             [(, "one" (value) 7066) (, "two" (value) 7067) (, "three" (value) 7068)])])
 
-(defn externals-stmt [stmt]
+(defn externals-top [stmt]
     (bag/to-list
         (match stmt
-            (sdeftype name _ free constructors _) (let [bound (set/from-list [name ..(map free fst)])]
+            (tdeftype name _ free constructors _) (let [bound (set/from-list [name ..(map free fst)])]
                                                       (many
                                                           (map
                                                               constructors
@@ -719,13 +721,13 @@
                                                                       (, _ _ args _) (match args
                                                                                          [] empty
                                                                                          _  (many (map args (externals-type bound)))))))))
-            (stypealias name _ args body _)       (let [bound (set/from-list [name ..(map args fst)])]
+            (ttypealias name _ args body _)       (let [bound (set/from-list [name ..(map args fst)])]
                                                       (externals-type bound body))
-            (sdef name _ body _)                  (externals (set/add set/nil name) body)
-            (sexpr expr _)                        (externals set/nil expr))))
+            (tdef name _ body _)                  (externals (set/add set/nil name) body)
+            (texpr expr _)                        (externals set/nil expr))))
 
 (,
-    (fn [x] (externals-stmt (parse-stmt x)))
+    (fn [x] (externals-top (parse-top x)))
         [(, (@@ (def x 10)) [])
         (, (@@ (deftype hi (one int))) [(, "int" (type) 16460)])
         (, (@@ (typealias lol int)) [(, "int" (type) 16480)])])
@@ -734,18 +736,18 @@
 
 (deftype parse-and-compile
     (parse-and-compile
-        (fn [cst] stmt)
+        (fn [cst] top)
             (fn [cst] expr)
-            (fn [stmt] (list loced-name))
-            (fn [stmt] (list loced-name))
+            (fn [top] (list loced-name))
+            (fn [top] (list loced-name))
             (fn [expr] (list loced-name))))
 
 ((eval
     (** ({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) =>
   ({type: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr}) **))
     (parse-and-compile
-        parse-stmt
+        parse-top
             parse-expr
             names
-            externals-stmt
+            externals-top
             (fn [expr] (bag/to-list (externals set/nil expr)))))

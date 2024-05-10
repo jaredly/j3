@@ -393,6 +393,6 @@
         (, (@ "${${"a}"}") "${a}")])
 
 (eval
-    (** compile => compile_top => ({type:'fns',compile: a => _ => compile(a), compile_top: a => _ => compile_top(a)}) **)
+    (** compile => compile_top => ({type:'fns', compile: a => _ => compile(a), compile_stmt: a => _ => compile_top(a)}) **)
         compile
         compile-top)

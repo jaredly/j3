@@ -15,8 +15,8 @@ for the series of artcicle
   - [x] Encoding
   - [x] AST
   - [x] Bootstrap
-  - [ ] self-1
-  - [ ] parse-self
+  - [x] self-1
+  - [x] parse-self
   - [ ] type inference
 
 # The Blorg Porst
