@@ -10,6 +10,7 @@ export const collectPaths = (state: NUIState) => {
     const nsPaths: Record<number, Path[]> = {};
 
     Object.keys(state.map).forEach((k) => {
+        if (+k === -1) return;
         const node = state.map[+k];
         childPaths(node).forEach(({ path, idx }) => {
             add(parentPaths, idx, { ...path, idx: +k });

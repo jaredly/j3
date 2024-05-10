@@ -37,6 +37,7 @@ const specials = [
     'defn',
     'def',
     'deftype',
+    'typealias',
     'fn',
     'match',
     'defnrec',

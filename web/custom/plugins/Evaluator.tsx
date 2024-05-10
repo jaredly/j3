@@ -3,6 +3,17 @@ import { NamespacePlugin } from '../UIState';
 import { urlForId } from '../../ide/ground-up/urlForId';
 import { Node } from '../../../src/types/cst';
 
+const buttonStyle = {
+    background: 'none',
+    border: '1px solid #333',
+    color: '#777',
+    borderRadius: 4,
+    padding: '4px 8px',
+    cursor: 'pointer',
+    marginTop: 4,
+    marginRight: 8,
+};
+
 export const evaluatorPlugin: NamespacePlugin<
     null,
     { expr: any; id: number },
@@ -29,6 +40,7 @@ export const evaluatorPlugin: NamespacePlugin<
                     node: (
                         <div>
                             <button
+                                style={buttonStyle}
                                 onClick={(evt) => {
                                     evt.stopPropagation();
                                     const name = prompt('Name to save it to');
@@ -105,6 +117,7 @@ const Saver = ({
     const [error, setError] = useState(false);
     return (
         <button
+            style={buttonStyle}
             onClick={() => {
                 setError(false);
                 setSaving(true);

@@ -70,10 +70,12 @@ export function highlightIdxs(msg: string) {
 
 export const JumpTo = ({
     children,
+    noOutline,
     loc,
 }: {
     children: ReactNode;
     loc: number;
+    noOutline?: boolean;
 }) => {
     const store = useGetStore();
     const cleanup = useRef(null as null | (() => void));
@@ -82,7 +84,7 @@ export const JumpTo = ({
     }, []);
     return (
         <span
-            className="hover"
+            className={noOutline ? '' : 'hover'}
             onMouseEnter={() => {
                 const got = store.getState().regs[loc];
                 const node = got?.main ?? got?.outside;
@@ -96,6 +98,7 @@ export const JumpTo = ({
                 const paths = collectPaths(store.getState())(loc);
                 // const path = pathForIdx(loc, store.getState());
                 if (!paths.length) return alert('nope');
+                console.log('found', paths);
                 store.dispatch({
                     type: 'select',
                     at: [{ start: paths[0] }],

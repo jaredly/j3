@@ -321,7 +321,6 @@ export function updateState(
                     one.names.forEach(({ name, kind }) => {
                         if (kind !== 'value') return;
                         try {
-                            debugger;
                             const type =
                                 state.evaluator!.inference!.typeForName(
                                     tenv,

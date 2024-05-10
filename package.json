@@ -63,6 +63,7 @@
         "ts-jest": "^29.0.3",
         "ts-node": "^10.9.1",
         "typescript": "5.4.2",
+        "victormono": "^1.5.6",
         "vite": "^4.0.4",
         "wa-sqlite": "github:rhashimoto/wa-sqlite#breaking-changes"
     },

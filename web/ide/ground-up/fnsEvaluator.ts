@@ -468,7 +468,7 @@ function assembleExternals(
             name !== 'evaluate' &&
             name !== 'evaluateStmt'
         ) {
-            debugger;
+            // debugger;
             // console.log(`missing an external!`, name);
         }
     });

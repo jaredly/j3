@@ -14,11 +14,14 @@ import { Render, RenderNNode } from './Render';
 import { CollapseState, RealizedNamespace } from './UIState';
 import { plugins } from './plugins';
 import { Store } from './store/Store';
-import { useExpanded, useGetStore } from './store/StoreCtx';
+import { useExpanded, useGetStore, useSubscribe } from './store/StoreCtx';
 import { useNamespace } from './store/useNamespace';
 import { useNode } from './store/useNode';
 import { RenderProps } from './types';
-import { RenderProduceItem } from './RenderProduceItem';
+import { JumpTo, RenderProduceItem } from './RenderProduceItem';
+import { nodeColor } from './rainbow';
+import { NodeResults } from './store/getImmediateResults';
+import 'victormono';
 
 const PluginRender = ({
     ns,
@@ -184,10 +187,109 @@ function NSTop({
                             })}
                         />
                     ))}
+                {ns.collapsed ? (
+                    <div
+                        style={{
+                            display: 'flex',
+                            marginLeft: 12,
+                            maxWidth: 800,
+                            flexWrap: 'wrap',
+                            gap: 8,
+                        }}
+                    >
+                        {ns.children.map((id, i) => (
+                            <PreviewChild id={id} key={id} store={store} />
+                        ))}
+                    </div>
+                ) : null}
             </div>
         </div>
     );
 }
+
+// const PreviewChildren = ({ idx }: { idx: number }) => {
+//     const store = useGetStore();
+//     const children = useSubscribe(
+//         () => store.getState().nsMap[idx].children,
+//         (fn) => store.onChange(`ns:${idx}`, fn),
+//         [idx],
+//     );
+//     return (
+//         <div style={{ display: 'flex' }}>
+//             {children.map((id) => (
+//                 <PreviewChild key={id} id={id} store={store} />
+//             ))}
+//         </div>
+//     );
+// };
+
+const nodeName = (node: NodeResults<unknown>) => {
+    if (!node) return;
+    if (node.parsed?.type === 'success' && node.parsed.names.length) {
+        const name = node.parsed.names[0];
+        return {
+            ...name,
+            style: {
+                color: nodeColor('identifier', name.name),
+                backgroundColor: name.kind === 'type' ? '#00101f' : '#111',
+                // fontFamily: name.kind === 'type' ? 'Victor Mono' : undefined,
+                // fontStyle: name.kind === 'type' ? 'italic' : undefined,
+            },
+        };
+    }
+    if (node.node.type === 'rich-text') {
+        const arr = node.node.contents as Array<
+            | {
+                  type: 'heading';
+                  content: Array<{ type: 'text'; text: string }>;
+              }
+            | { type: 'paragraph' }
+        >;
+        if (
+            arr.length > 0 &&
+            arr[0].type === 'heading' &&
+            arr[0].content[0].type === 'text'
+        ) {
+            return {
+                name: arr[0].content[0].text,
+                loc: node.node.loc,
+                style: {
+                    color: '#aaa',
+                    fontFamily:
+                        'Inter, "SF Pro Display", -apple-system, "system-ui"',
+                },
+            };
+        }
+    }
+};
+
+const PreviewChild = ({ id, store }: { id: number; store: Store }) => {
+    const results = useSubscribe(
+        () => store.getResults().results.nodes[id],
+        (fn) => store.onChange(`ns:${id}`, fn),
+        [id],
+    );
+    const name = nodeName(results);
+    if (!name) return null;
+    return (
+        <JumpTo noOutline loc={name.loc}>
+            <div
+                style={{
+                    cursor: 'pointer',
+                    // marginRight: 8,
+                    backgroundColor: '#111',
+                    padding: '4px 8px',
+                    borderRadius: 4,
+                    wordBreak: 'keep-all',
+                    whiteSpace: 'nowrap',
+                    ...name.style,
+                }}
+            >
+                {name.name}
+            </div>
+        </JumpTo>
+    );
+};
 
 const pathEqual = (one: Path, two: Path) => {
     return one.idx === two.idx && one.type === two.type;

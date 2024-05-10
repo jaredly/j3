@@ -119,6 +119,11 @@ const evSelect = (
                         {name}
                     </option>
                 ))}
+            {ev && (!listing || !listing.includes(ev)) ? (
+                <option value={ev} disabled>
+                    (missing) {ev}
+                </option>
+            ) : null}
         </select>
     );
 };

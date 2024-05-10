@@ -2,6 +2,10 @@
 # For Export
 
 for the series of artcicle
+- [x] collapsed things should show what's hiding
+  - I love it so much
+- [ ] hrmm `stmt` is really a misnomer, and I should remove it.
+  These are "toplevels".
 
 # The Blorg Porst
 
