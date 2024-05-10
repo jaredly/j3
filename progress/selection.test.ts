@@ -1,5 +1,4 @@
 import { parseByCharacter } from '../src/parse/parse';
-import { newCtx } from '../src/to-ast/Ctx';
 import { nodeToString, remapPos, SourceMap } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents, Map } from '../src/types/mcst';
 import { clipboardText, collectNodes } from '../src/state/clipboard';
@@ -63,6 +62,8 @@ export const posToPath = (
         const update = getKeyUpdate(
             'ArrowRight',
             map,
+            {},
+            [],
             { start: path },
             {},
             nidx,
@@ -119,7 +120,12 @@ describe('a test', () => {
                     throw new Error('could not second postopath');
                 }
 
-                const collected = collectNodes(data, firstPath, secondPath, {});
+                const collected = collectNodes(
+                    { map: data, nsMap: {}, cards: [] },
+                    firstPath,
+                    secondPath,
+                    {},
+                );
                 const printed = clipboardText([collected], {}, ' ');
                 if (printed !== output) {
                     console.log(firstPath);

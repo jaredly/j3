@@ -1,14 +1,19 @@
 // Now bringing in autocomplete and such
 
 import { getType } from '../src/get-type/get-types-new';
+import { validateExpr } from '../src/get-type/validate';
 import { getCtx } from '../src/getCtx';
 import { parseByCharacter } from '../src/parse/parse';
+import { applyUpdateMap } from '../src/state/getKeyUpdate';
 import { Ctx, newCtx } from '../src/to-ast/Ctx';
 import { nodeForType } from '../src/to-cst/nodeForType';
 import { nodeToString } from '../src/to-cst/nodeToString';
 import { errorToString } from '../src/to-cst/show-errors';
-import { Type } from '../src/types/ast';
+import { Def, DefType, Type } from '../src/types/ast';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
+import { Error } from '../src/types/types';
+import { relocify } from '../web/ide/relocify';
+import { yankInner } from '../web/ide/yankFromSandboxToLibrary';
 import { splitCase } from './test-utils';
 
 const data = `
@@ -135,34 +140,8 @@ Second type: 3.1
 (if true (hello ('Ok 10)) ('Err 1.2))
 -> [('Err 1.2) ('Ok 10)]
 
-(deftype Result<ok err> [('Ok ok) ('Err err)])
-(defn parseInt [text:string]
-    (switch (int/parse text)
-        ('Some int) ('Ok int)
-        'None ('Err ('NotAnInt text))))
-(defn mapErr<ok err err2> [value:(Result ok err) map:(fn [err] err2)]
-    (switch value
-        ('Err err) ('Err (map err))
-        x x))
-(mapErr<int ('NotAnInt string) ('LineError int string ('NotAnInt string))>
-    (parseInt "10")
-    (fn [x:('NotAnInt string)] ('LineError 10 "hi" x)))
--> [('Err ('LineError #:builtin:int #:builtin:string ('NotAnInt #:builtin:string))) ('Ok #:builtin:int)]
-
 (defn parseInt [text:string]:[('Ok int) ('Err float)] ('Ok 10))
 -> (fn [text:#:builtin:string] [('Ok #:builtin:int) ('Err #:builtin:float)])
-
-(deftype Result<ok err> [('Ok ok) ('Err err)])
-(defn parseInt [text:string]:(Result int float)
-    (switch (int/parse text)
-        ('Some int) ('Ok int)
-        'None ('Err 1.0)))
-(defn mapErr<ok err> [value:(Result ok err)]
-    (switch value
-        ('Err err) ('Err err)
-        x x))
-(mapErr (parseInt "10"))
--> [('Err #:builtin:float) ('Ok #:builtin:int)]
 
 (defn mapErr<ok> [value:((tfn [x] x) ok)] 10)
 (mapErr 10)
@@ -173,13 +152,6 @@ Second type: 3.1
         ('Some int) ('Ok int)
         'None ('Err 1.0)))
 -> (fn [text:#:builtin:string] [('Err 1.) ('Ok #:builtin:int)])
-
-(deftype Result<ok err> [('Ok ok) ('Err err)])
-(defn parseInt [text:string]:(Result int 1.0)
-    (switch (int/parse text)
-        ('Some int) ('Ok int)
-        'None ('Err 1.0)))
--> (fn [text:#:builtin:string] (#0 #:builtin:int 1.))
 
 (def fib (@loop
     (fn [x:int]:int
@@ -295,17 +267,10 @@ Found:
 ()
 Path: Hi -> body -> Return
 
-(deftype Result<ok err> [('Ok ok) ('Err err)])
-(defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
-  ('Return ('Ok v)))
-(fn [x:(@task ('Hi () ()) int)] (to-result x 10))
--> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) (#0 #:builtin:int [])))
-
-(deftype Result<ok err> [('Ok ok) ('Err err)])
-(defn task/to-result<Effects:[..] Value> [task-top:(@task [Effects] Value) v:Value]:(@task Effects Value)
+(defn to-result<Effects:[..]> [task-top:(@task [Effects] 10) v:10]:(@task Effects 10)
   ('Return v))
-(fn [x:(@task ('Hi () ()) int)] (to-result x 10))
--> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) #:builtin:int))
+(fn [x:('Return 10)] (to-result x 10))
+-> (fn [x:('Return 10)] (@task [] 10))
 
 (fn<A B> [x:A y:B] (if true x y))
 -1: This has the empty type
@@ -323,9 +288,74 @@ Second type: 'Yes
 (let [x 1] x ^b^T^b^b
 = (let x)
 0: first not array
+
 `
     .trim()
     .split('\n\n');
+
+/*
+
+// (deftype Result<ok err> [('Ok ok) ('Err err)])
+// (defn parseInt [text:string]
+//     (switch (int/parse text)
+//         ('Some int) ('Ok int)
+//         'None ('Err ('NotAnInt text))))
+// (defn mapErr<ok err err2> [value:(Result ok err) map:(fn [err] err2)]
+//     (switch value
+//         ('Err err) ('Err (map err))
+//         x x))
+// (mapErr<int ('NotAnInt string) ('LineError int string ('NotAnInt string))>
+//     (parseInt "10")
+//     (fn [x:('NotAnInt string)] ('LineError 10 "hi" x)))
+// -> [('Err ('LineError #:builtin:int #:builtin:string ('NotAnInt #:builtin:string))) ('Ok #:builtin:int)]
+
+// (deftype Result<ok err> [('Ok ok) ('Err err)])
+// (defn parseInt [text:string]:(Result int float)
+//     (switch (int/parse text)
+//         ('Some int) ('Ok int)
+//         'None ('Err 1.0)))
+// (defn mapErr<ok err> [value:(Result ok err)]
+//     (switch value
+//         ('Err err) ('Err err)
+//         x x))
+// (mapErr (parseInt "10"))
+// -> [('Err #:builtin:float) ('Ok #:builtin:int)]
+
+// (deftype Result<ok err> [('Ok ok) ('Err err)])
+// (defn parseInt [text:string]:(Result int 1.0)
+//     (switch (int/parse text)
+//         ('Some int) ('Ok int)
+//         'None ('Err 1.0)))
+// -> (fn [text:#:builtin:string] (#0 #:builtin:int 1.))
+
+// (deftype Result<ok err> [('Ok ok) ('Err err)])
+// (defn task/to-result<Effects:[..] Errors:[..] Value> [task-top:(@task [Effects ('Failure Errors)] Value) v:Value]:(@task Effects (Result Value Errors))
+//   ('Return ('Ok v)))
+// (fn [x:(@task ('Hi () ()) int)] (to-result x 10))
+// -> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) (#0 #:builtin:int [])))
+
+// (defn to-result<Effects:[..]> [task-top:(@task [Effects] 10) v:10]:(@task Effects 10)
+//   ('Return v))
+// (fn [x:(@task ('Hi () ()) 10)] (to-result x 10))
+// -> (fn [x:(@task ('Hi () ()) 10)] (@task ('Hi () ()) 10))
+
+// (deftype Result<ok err> [('Ok ok) ('Err err)])
+// (defn to-result<Effects:[..] Value> [task-top:(@task [Effects] Value) v:Value]:(@task Effects Value)
+//   ('Return v))
+// (fn [x:(@task ('Hi () ()) int)] (to-result x 10))
+// -> (fn [x:(@task ('Hi () ()) #:builtin:int)] (@task ('Hi () ()) #:builtin:int))
+
+
+
+
+
+
+
+
+*/
+
+// (defnrec mapTask<T Effects:[..] R> [values:(array T) fnz:(fn [T uint] (@task Effects R)) at:uint]:(@task Effects (array R)) (switch values [one ..rest] (let [res (! (fnz one at)) coll (! (@recur<T Effects R> rest fnz (+ at 1u)))] [res ..coll]) _ []))
+// -> (fn<T Effects:[..] R> [values:(#:builtin:array #5) fnz:(fn [#5 #:builtin:uint] (@task #7 #13)) at:#:builtin:uint] (@task #7 (#:builtin:array #13)))
 
 // ((tfn [X:[..]] X) 10)
 
@@ -378,11 +408,19 @@ Second type: 'Yes
 // (let [x (tfn [t] (fn [a:#7] #11))] (#3 10))
 // -> #:builtin:int
 
+const dedup = (arr: string[]) => {
+    const seen: { [key: string]: boolean } = {};
+    return arr.filter((k) => !seen[k] && (seen[k] = true));
+};
+
 export const typeToString = (type: Type, hashNames: Ctx['hashNames']) =>
     nodeToString(nodeForType(type, hashNames), hashNames);
 
 describe('completion and such', () => {
+    let line = 0;
     data.forEach((chunk, i) => {
+        const fname = `progress/complete.test.ts:${line + 20}`;
+        line += chunk.split('\n').length + 1;
         const only = chunk.startsWith('!!!');
         if (only) {
             chunk = chunk.slice(3);
@@ -392,33 +430,43 @@ describe('completion and such', () => {
         // const [input, expected, ...errors] = splitIndented(chunk);
         // let expectedType =
         //     errors.length && errors[0].startsWith('->') ? errors.shift() : null;
-        (skip ? it.skip : only ? it.only : it)(`${i} ${input}`, () => {
+        (skip ? it.skip : only ? it.only : it)(`${fname} ${i} ${input}`, () => {
             const ctx = newCtx();
-            const { map: data, nidx } = parseByCharacter(
+            let { map: data, nidx } = parseByCharacter(
                 input.replace(/\s+/g, ' '),
                 ctx,
             );
-            const idx = (data[-1] as ListLikeContents).values.slice(-1)[0];
+            const tops = (data[-1] as ListLikeContents).values;
+            const idx = tops[tops.length - 1];
 
-            // ctx.results.
-            // Object.entries(ctx.results.toplevel).forEach(([k, v]) => {
-            //     getType(v, ctx, { errors: ctx.results.errors, types: {} });
-            //     validateExpr(v, ctx, ctx.results.errors);
-            // });
             if (expected) {
                 expect(nodeToString(fromMCST(idx, data), null)).toEqual(
                     expected,
                 );
             }
+
             const { ctx: nctx } = getCtx(data, -1, nidx, ctx.global);
+
+            // // const errors: { [idx: number]: Error[] } = {};
+            // tops.forEach((idx) => {
+            //     const expr = nctx.results.toplevel[idx];
+            //     validateExpr(expr, nctx, nctx.results.errors);
+            //     getType(expr, nctx, {
+            //         errors: nctx.results.errors,
+            //         types: {},
+            //     });
+            // });
+
             expect(
                 Object.keys(nctx.results.errors)
                     .sort((a, b) => +a - +b)
                     .map(
                         (k) =>
-                            `${k}: ${nctx.results.errors[+k]
-                                .map((e) => errorToString(e, nctx))
-                                .join('; ')}`,
+                            `${k}: ${dedup(
+                                nctx.results.errors[+k].map((e) =>
+                                    errorToString(e, nctx),
+                                ),
+                            ).join('; ')}`,
                     )
                     .join('\n'),
             ).toEqual(errors);
@@ -431,6 +479,57 @@ describe('completion and such', () => {
                         null,
                     ),
                 ).toEqual(expectedType);
+            }
+
+            if (!errors) {
+                let ctx = nctx;
+                while (true) {
+                    const tops = (data[-1] as ListLikeContents).values;
+                    const expected: any = {};
+                    tops.forEach((idx) => (expected[idx] = expect.anything()));
+                    expect(ctx.results.toplevel).toMatchObject(expected);
+                    const first = tops.find(
+                        (idx) =>
+                            ctx.results.toplevel[idx]?.type === 'def' ||
+                            ctx.results.toplevel[idx]?.type === 'deftype',
+                    );
+                    if (first == null) {
+                        // console.log('No top left', tops);
+                        // console.log(ctx.results.toplevel);
+                        break;
+                    }
+
+                    const expr = ctx.results.toplevel[first] as Def | DefType;
+                    const result = yankInner(
+                        data,
+                        nctx,
+                        { expr, loc: first },
+                        'complete',
+                    );
+                    expect(result).toBeTruthy();
+                    data = applyUpdateMap(data, result!.update);
+                    ctx = getCtx(data, -1, nidx, {
+                        ...ctx.global,
+                        library: result!.library,
+                    }).ctx;
+
+                    const errors: { [idx: number]: Error[] } = {};
+                    (data[-1] as ListLikeContents).values.forEach((idx) => {
+                        const expr = ctx.results.toplevel[idx];
+                        if (expr) {
+                            validateExpr(expr, ctx, errors);
+                            getType(expr, ctx, {
+                                errors: errors,
+                                types: {},
+                            });
+                        }
+                    });
+                    expect(errors).toEqual({});
+
+                    if (tops.length === 1) {
+                        break;
+                    }
+                }
             }
         });
     });

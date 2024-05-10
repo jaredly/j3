@@ -1,66 +1,28 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Db } from '../../src/db/tables';
+import { getCtx } from '../../src/getCtx';
+import { selectEnd } from '../../src/state/navigate';
 import { Env, Sandbox } from '../../src/to-ast/library';
-import { useMenu } from '../custom/ByHand';
-import { Action, UIState } from '../custom/UIState';
-import { HiddenInput } from '../custom/HiddenInput';
 import { ListLikeContents } from '../../src/types/mcst';
 import { useLocalStorage } from '../Debug';
+import { useMenu } from '../custom/ByHand';
 import { Cursors } from '../custom/Cursors';
-import { Root } from '../custom/Root';
-import { Hover } from '../custom/Hover';
+import { HiddenInput } from '../custom/HiddenInput';
+import { Hover, calc } from '../custom/Hover';
 import { Menu } from '../custom/Menu';
-import { selectEnd } from '../../src/state/navigate';
-import { getCtx } from '../../src/getCtx';
-import {
-    IconButton,
-    IconBxCheck,
-    IconBxsPencil,
-    IconCancel,
-} from '../fonts/Icons';
-import { css } from '@linaria/core';
+import { Root } from '../custom/old-stuff/Root';
+import { UIState } from '../custom/UIState';
 import { IDEAction } from './IDE';
-import { updateSandboxMeta } from '../../src/db/sandbox';
-import { Db } from '../../src/db/tables';
-
-// type SandboxState = {
-//     id: string;
-//     history: HistoryItem;
-//     regs: RegMap;
-//     hover: Path[];
-//     latestResults: CompilationResults;
-// } & State;
-// const st : UIState = {}
-// type IDEState = {
-//     builtins: Builtins;
-//     library: Library;
-//     sandboxes: { [id: string]: Sandbox['meta'] };
-//     // One active sandbox at a time is fine
-//     sandbox?: SandboxState;
-//     clipboard: ClipboardItem[][];
-// };
-// export const reduce = (state: IDEState, action: Action): IDEState => {
-//     return state;
-// };
-// const getInitialState = (v: null): IDEState => {
-//     return {
-//         ...newEnv(),
-//         sandboxes: {},
-//         clipboard: [],
-//     };
-// };
+import { nilt } from '../../src/to-ast/builtins';
+import { getType } from '../../src/get-type/get-types-new';
+import { nodeToString } from '../../src/to-cst/nodeToString';
+import { nodeForType } from '../../src/to-cst/nodeForType';
+import { errorToString } from '../../src/to-cst/show-errors';
 
 export const SandboxView = ({
-    // env,
-    // sandbox,
-    db,
-    meta,
     state,
     dispatch,
 }: {
-    db: Db;
-    // env: Env;
-    // sandbox: Sandbox;
-    meta: Sandbox['meta'];
     state: UIState;
     dispatch: React.Dispatch<IDEAction>;
 }) => {
@@ -76,7 +38,7 @@ export const SandboxView = ({
             }}
         >
             <HiddenInput
-                ctx={state.ctx}
+                hashNames={state.ctx.results.hashNames}
                 state={state}
                 dispatch={dispatch}
                 menu={!state.menu?.dismissed ? menu : undefined}
@@ -96,10 +58,35 @@ export const SandboxView = ({
                 dispatch={dispatch}
                 tops={tops}
                 debug={debug}
-                ctx={state.ctx}
+                results={state.ctx.results}
+                showTop={(top) => {
+                    const got = state.ctx.results.toplevel[top];
+                    const tt = got
+                        ? got.type === 'def'
+                            ? got.ann ?? nilt
+                            : got.type === 'deftype'
+                            ? got.value
+                            : getType(got, state.ctx)
+                        : null;
+                    if (tt) {
+                        return nodeToString(
+                            nodeForType(tt, state.ctx.results.hashNames),
+                            state.ctx.results.hashNames,
+                        );
+                    }
+                    return 'no type';
+                }}
             />
-            <Cursors state={state} />
-            <Hover state={state} dispatch={dispatch} />
+            <Cursors at={state.at} regs={state.regs} />
+            {/* <Hover
+                state={state}
+                dispatch={dispatch}
+                calc={() =>
+                    calc(state, state.ctx.results, (err) =>
+                        errorToString(err, state.ctx),
+                    )
+                }
+            /> */}
             {!state.menu?.dismissed && menu?.items.length ? (
                 <Menu state={state} menu={menu} dispatch={dispatch} />
             ) : null}
@@ -115,6 +102,18 @@ export function sandboxState(sandbox: Sandbox, env: Env): UIState {
     }
     return {
         map: sandbox.map,
+        meta: {},
+        nsMap: {},
+        cards: [
+            // {
+            //     path: [],
+            //     ns: {
+            //         type: 'normal',
+            //         children: [],
+            //         top: idx,
+            //     },
+            // },
+        ],
         root: sandbox.root,
         history: sandbox.history,
         at: sandbox.history.length
@@ -128,8 +127,8 @@ export function sandboxState(sandbox: Sandbox, env: Env): UIState {
                               [
                                   {
                                       idx: -1,
-                                      at: 0,
-                                      type: 'child',
+                                      type: 'card',
+                                      card: 0,
                                   },
                               ],
                               sandbox.map,

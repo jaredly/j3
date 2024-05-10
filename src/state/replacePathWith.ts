@@ -1,3 +1,4 @@
+import { NUIState } from '../../web/custom/UIState';
 import {
     ListLikeContents,
     Map,
@@ -7,19 +8,20 @@ import {
     MCString,
     MNodeExtra,
 } from '../types/mcst';
-import { UpdateMap } from './getKeyUpdate';
+import { NsUpdateMap, UpdateMap } from './getKeyUpdate';
 import { clearAllChildren, NewThing, StateUpdate } from './getKeyUpdate';
 import { Path } from './path';
 
 export function replacePathWith(
     path: Path[],
     map: Map,
+    oldNsMap: NUIState['nsMap'],
     newThing: NewThing,
 ): StateUpdate | void {
     if (!path.length) {
         return;
     }
-    const update = replacePath(path[path.length - 1], newThing.idx, map);
+    const { update, nsMap } = replacePath(path, newThing.idx, map, oldNsMap);
     return {
         type: 'update',
         map: {
@@ -27,17 +29,44 @@ export function replacePathWith(
             ...update,
         },
         selection: path.concat(newThing.selection),
+        nsMap,
     };
 }
 
 export const replacePath = (
-    parent: Path,
+    path: Path[],
     newIdx: number,
     map: Map,
-): UpdateMap => {
+    nsMap: NUIState['nsMap'],
+): { update: UpdateMap; nsMap?: NsUpdateMap } => {
+    const parent = path[path.length - 1];
     const update: UpdateMap = {};
     const pnode = map[parent.idx];
     switch (parent.type) {
+        case 'ns': {
+            const parentNs = nsMap[parent.idx];
+            // if (parentNs.type === 'placeholder') {
+            //     throw new Error('sandbox placeholder');
+            // }
+            const nsid = parent.child;
+            const ns = nsMap[nsid];
+            // if (ns.type === 'placeholder') {
+            //     throw new Error('sandbox placeholder');
+            // }
+            return {
+                update: {},
+                nsMap: { [nsid]: { ...ns, top: newIdx } },
+            };
+        }
+        case 'ns-top':
+            const parentNs = nsMap[parent.idx];
+            // if (parentNs.type === 'placeholder') {
+            //     throw new Error('sandbox placeholder');
+            // }
+            return {
+                update: {},
+                nsMap: { [parent.idx]: { ...parentNs, top: newIdx } },
+            };
         case 'child': {
             const values = (pnode as ListLikeContents).values.slice();
             values[parent.at] = newIdx;
@@ -78,5 +107,5 @@ export const replacePath = (
                 `Can't replace parent. ${parent.type}. is this a valid place for an expr?`,
             );
     }
-    return update;
+    return { update };
 };

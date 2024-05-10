@@ -1,17 +1,48 @@
-import React, { useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { splitGraphemes } from '../../src/parse/parse';
 import { Path } from '../../src/state/path';
 import { UIState, RegMap } from './UIState';
 import { selectWithin } from './calcOffset';
+import { State } from '../../src/state/getKeyUpdate';
 
-export const Cursors = ({ state }: { state: UIState }) => {
+export const Cursors = ({
+    at,
+    regs,
+}: {
+    at: State['at'];
+    regs: UIState['regs'];
+}) => {
     const [blink, setBlink] = useState(false);
 
     const [cursorPos, setCursorPos] = useState(
         [] as ({ x: number; y: number; h: number; color?: string } | null)[],
     );
 
-    const tid = useRef(null as null | NodeJS.Timeout);
+    const tid = useRef(null as null | Timer);
+
+    useEffect(() => {
+        if (!at.length) return;
+        const first = at[0].start;
+        const got = first[first.length - 1].idx;
+        const found = regs[got]?.main ?? regs[got]?.outside;
+        if (found) {
+            const headerHeight =
+                document
+                    .getElementById('sticky-header')!
+                    ?.getBoundingClientRect().height ?? 0;
+
+            const box = found.node.getBoundingClientRect();
+            if (box.top < headerHeight || box.bottom > window.innerHeight) {
+                const dist =
+                    box.top < 0 ? -box.top : box.bottom - window.innerHeight;
+                found.node.style.scrollMarginTop = headerHeight + 'px';
+                found.node.scrollIntoView({
+                    behavior: dist > 300 ? 'smooth' : 'instant',
+                    block: 'nearest',
+                });
+            }
+        }
+    }, [at]);
 
     useLayoutEffect(() => {
         if (tid.current != null) {
@@ -24,12 +55,12 @@ export const Cursors = ({ state }: { state: UIState }) => {
             tid.current = null;
         }, 500);
         setCursorPos(
-            state.at.flatMap((at) => {
+            at.flatMap((at) => {
                 // if (at.end) {
                 //     return;
                 // }
                 const res: any = [];
-                const box = calcCursorPos(at.start, state.regs, true);
+                const box = calcCursorPos(at.end ?? at.start, regs, true);
                 if (box) {
                     res.push({
                         x: box.left,
@@ -38,21 +69,21 @@ export const Cursors = ({ state }: { state: UIState }) => {
                         color: box.color,
                     });
                 }
-                if (at.end) {
-                    const box2 = calcCursorPos(at.end, state.regs, true);
-                    if (box2) {
-                        res.push({
-                            x: box2.left,
-                            y: box2.top,
-                            h: box2.height,
-                            color: box2.color,
-                        });
-                    }
-                }
+                // if (at.end) {
+                //     const box2 = calcCursorPos(at.end, regs, true);
+                //     if (box2) {
+                //         res.push({
+                //             x: box2.left,
+                //             y: box2.top,
+                //             h: box2.height,
+                //             color: box2.color,
+                //         });
+                //     }
+                // }
                 return res;
             }),
         );
-    }, [state.at]);
+    }, [at]);
 
     return (
         <div>
@@ -79,18 +110,20 @@ export const Cursors = ({ state }: { state: UIState }) => {
     );
 };
 
-export const subRect = (
-    one: DOMRect,
-    two: DOMRect,
-    color?: string,
-): {
+export type CursorRect = {
     left: number;
     top: number;
     height: number;
     bottom: number;
     right: number;
     color?: string;
-} => {
+};
+
+export const subRect = (
+    one: DOMRect,
+    two: DOMRect,
+    color?: string,
+): CursorRect => {
     return {
         left: one.left - two.left,
         top: one.top - two.top,
@@ -107,13 +140,14 @@ export const calcCursorPos = (
     relative?: boolean,
 ): void | { left: number; top: number; height: number; color?: string } => {
     const last = fullPath[fullPath.length - 1];
+    if (last.type === 'rich-text') return;
     // const loc = pathPos(fullPath)
     const idx = last.idx;
     // const { idx, loc } = sel;
     const nodes = regs[idx];
     if (!nodes) {
         console.error('no nodes, sorry');
-        console.log(regs);
+        // console.log(regs);
         return;
     }
     try {
@@ -170,8 +204,8 @@ export const calcCursorPos = (
                                 last.at,
                             );
                             r.setStart(nodes.main.node.firstChild!, 0);
+                            r.collapse(true);
                         }
-                        r.collapse(true);
                     } else {
                         return;
                     }

@@ -1,3 +1,4 @@
+import { NUIState } from '../../web/custom/UIState';
 import { UpdateMap } from '../state/getKeyUpdate';
 import {
     accessText,
@@ -9,6 +10,7 @@ import {
     NodeContents,
     NodeExtra,
     stringText,
+    RawCode,
 } from './cst';
 
 export type MNode = MNodeContents & MNodeExtra;
@@ -43,11 +45,13 @@ export type MNodeContents =
     | ListLikeContents
     | stringText
     | RichText
+    | RawCode
     | Attachment
     | { type: 'hash'; hash: string | number }
 
     // list-like
     | { type: 'comment'; text: string }
+    | { type: 'comment-node'; contents: number }
     | MCSpread
     | MCAnnot
     | MCRecordAccess
@@ -78,6 +82,16 @@ export type WithLoc<T> = T & { loc: Loc };
 export type Map = {
     [key: number]: MNode;
 };
+export type NsMap = NUIState['nsMap'];
+
+export const layoutEqual = (one?: Layout, two?: Layout) => {
+    if (one?.type !== two?.type) return false;
+    if (one?.type === 'multiline' && two?.type === 'multiline') {
+        return one.pairs == two.pairs && one.tightFirst == two.tightFirst;
+    }
+    return true;
+};
+
 export type Layout =
     | {
           type: 'flat';
@@ -93,59 +107,68 @@ export type Layout =
           // umm I can't remember. do we need something here?
       };
 
-export const fromMNode = (node: MNodeContents, map: Map): NodeContents => {
+export const fromMNode = (
+    node: MNodeContents,
+    map: Map,
+    used?: number[],
+): NodeContents => {
     switch (node.type) {
         case 'list':
         case 'record':
         case 'array':
             return {
                 ...node,
-                values: node.values.map((child) => fromMCST(child, map)),
+                values: node.values.map((child) => fromMCST(child, map, used)),
             };
         case 'string':
             return {
                 ...node,
-                first: fromMCST(node.first, map) as stringText & NodeExtra,
+                first: fromMCST(node.first, map, used) as stringText &
+                    NodeExtra,
                 templates: node.templates.map(({ expr, suffix }) => ({
-                    expr: fromMCST(expr, map),
-                    suffix: fromMCST(suffix, map) as stringText & NodeExtra,
+                    expr: fromMCST(expr, map, used),
+                    suffix: fromMCST(suffix, map, used) as stringText &
+                        NodeExtra,
                 })),
             };
         case 'recordAccess':
             return {
                 ...node,
-                target: fromMCST(node.target, map) as Identifier & NodeExtra,
+                target: fromMCST(node.target, map, used) as Identifier &
+                    NodeExtra,
                 items: node.items.map(
-                    (idx) => fromMCST(idx, map) as accessText & NodeExtra,
+                    (idx) => fromMCST(idx, map, used) as accessText & NodeExtra,
                 ),
             };
         case 'annot':
             return {
                 ...node,
-                target: fromMCST(node.target, map),
-                annot: fromMCST(node.annot, map),
+                target: fromMCST(node.target, map, used),
+                annot: fromMCST(node.annot, map, used),
             };
         case 'tapply':
             return {
                 ...node,
-                target: fromMCST(node.target, map),
-                values: node.values.map((arg) => fromMCST(arg, map)),
+                target: fromMCST(node.target, map, used),
+                values: node.values.map((arg) => fromMCST(arg, map, used)),
             };
         case 'spread':
-            return { ...node, contents: fromMCST(node.contents, map) };
+        case 'comment-node':
+            return { ...node, contents: fromMCST(node.contents, map, used) };
         default:
             return node;
     }
 };
 
-export const fromMCST = (idx: number, map: Map): Node => {
+export const fromMCST = (idx: number, map: Map, used?: number[]): Node => {
     const node = map[idx];
     if (!node) {
         return { type: 'blank', loc: -1 };
     }
+    used?.push(idx);
     return {
         loc: node.loc,
-        ...fromMNode(node, map),
+        ...fromMNode(node, map, used),
     };
 };
 
@@ -188,6 +211,7 @@ export const toMNode = (node: NodeContents, map: UpdateMap): MNodeContents => {
                 values: node.values.map((arg) => toMCST(arg, map)),
             };
         case 'spread':
+        case 'comment-node':
             return { ...node, contents: toMCST(node.contents, map) };
         default:
             return node;

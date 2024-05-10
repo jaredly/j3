@@ -13,7 +13,11 @@ export const selectWithin = (
                 continue;
             }
             range.setStart(child, graphemes.slice(0, pos).join('').length);
-            range.collapse(true);
+            // if (pos < graphemes.length - 1) {
+            range.setEnd(child, graphemes.slice(0, pos + 1).join('').length);
+            // } else {
+            //     range.collapse(true);
+            // }
             return 0;
             // let prevPos = null;
             // let offset = 0;
@@ -47,9 +51,10 @@ export const selectWithin = (
 
 export const realOffset = (
     node: HTMLElement,
-    x: number,
+    pos: { x: number; y: number },
     off = 0,
 ): null | number => {
+    // console.log('realoffsert', node, pos, off);
     let range = new Range();
     for (let child of node.childNodes) {
         if (child.nodeName === '#text') {
@@ -59,7 +64,14 @@ export const realOffset = (
             for (let i = 0; i < graphemes.length; i++) {
                 range.setStart(child, offset);
                 range.setEnd(child, offset);
-                let dx = range.getBoundingClientRect().left - x;
+                const rb = range.getBoundingClientRect();
+                let dx = rb.left - pos.x;
+                // console.log(rb.top, rb.bottom, pos.y);
+                if (pos.y > rb.bottom) {
+                    // prevPos = dx;
+                    offset += graphemes[i].length;
+                    continue;
+                }
                 if (Math.abs(dx) < 2) {
                     return off + i;
                 }
@@ -74,7 +86,7 @@ export const realOffset = (
             }
             off += graphemes.length;
         } else {
-            const inner = realOffset(child as HTMLElement, x, off);
+            const inner = realOffset(child as HTMLElement, pos, off);
             if (inner != null) {
                 return inner;
             }
@@ -84,16 +96,19 @@ export const realOffset = (
     return null;
 };
 
-export const calcOffset = (node: HTMLSpanElement, x: number) => {
+export const calcOffset = (
+    node: HTMLSpanElement,
+    pos: { x: number; y: number },
+) => {
     if (!node.firstChild) {
         return 0;
     }
     const box = node.getBoundingClientRect();
-    if (x <= box.left) {
+    if (pos.x <= box.left) {
         return 0;
     }
 
-    const off = realOffset(node, x);
+    const off = realOffset(node, pos);
     if (off != null) {
         return off;
     }

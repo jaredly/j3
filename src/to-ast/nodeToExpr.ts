@@ -176,8 +176,10 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
             };
         }
 
+        case 'comment-node':
         case 'comment':
         case 'blank':
+        case 'raw-code':
             console.log(form);
             throw new Error(
                 `How did we get here? Comments and blanks should be filtered out: ${form.type}`,
@@ -186,7 +188,7 @@ export const nodeToExpr = (form: Node, ctx: CstCtx): Expr => {
         case 'accessText':
             throw new Error(`${form.type} shouldnt be dangling`);
         case 'rich-text':
-            return { type: 'rich-text', form, lexicalJSON: form.lexicalJSON };
+            return { type: 'rich-text', form, lexicalJSON: form.contents };
         case 'attachment':
             if (!form.file) {
                 return { type: 'unresolved', form, reason: 'empty attachment' };

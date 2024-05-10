@@ -12,13 +12,20 @@ export type Reg = (
 
 export type RenderProps = {
     debug?: boolean;
+    firstLineOnly?: boolean;
     idx: number;
-    map: Map;
-    hashNames: Ctx['hashNames'];
-    selection: UIState['at'];
-    reg: Reg;
+
+    // From NUIState
+    // map: Map;
+    // selection: UIState['at'];
+    // reg: Reg;
+
     path: Path[];
-    display: Ctx['display'];
-    errors: Ctx['errors'];
-    dispatch: React.Dispatch<Action>;
+
+    // From "compilation"
+    // hashNames: Ctx['hashNames'];
+    // display: Ctx['display'];
+    // TODO make this fancier, probably
+    // errors: { [loc: number]: string[] };
+    // dispatch: React.Dispatch<Action>;
 };

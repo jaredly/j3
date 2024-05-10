@@ -45,7 +45,8 @@ export const transformNode = (
                 path.concat({ idx, type: 'text', at: 0 }),
             );
             if (first.type !== 'stringText') {
-                throw new Error(`first not stringText`);
+                console.warn(`first not stringText`);
+                return node;
             }
             let changed = first !== node.first;
             const templates = node.templates.map((item, i) => {
@@ -81,6 +82,7 @@ export const transformNode = (
         case 'attachment':
         case 'unparsed':
         case 'rich-text':
+        case 'raw-code':
         case 'identifier':
             break;
         case 'recordAccess': {
@@ -139,6 +141,7 @@ export const transformNode = (
             node = annot !== node.annot ? { ...node, annot } : node;
             break;
         }
+        case 'comment-node':
         case 'spread': {
             const contents = transformNode(
                 node.contents,

@@ -1,29 +1,112 @@
-import { ListLikeContents, Map, MNode, MNodeExtra } from '../types/mcst';
+import { ListLikeContents, Map, MNode, MNodeExtra, NsMap } from '../types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
+import { goLeft } from './goLeftUntil';
 import {
+    Mods,
     StateChange,
     UpdateMap,
     clearAllChildren,
     maybeClearParentList,
 } from './getKeyUpdate';
 import { replacePath, replacePathWith } from './replacePathWith';
-import { idText, orderStartAndEnd, splitGraphemes } from '../parse/parse';
+import { orderStartAndEnd, pathPos, splitGraphemes } from '../parse/parse';
+import { idText } from '../parse/idText';
 import { accessText, Identifier, stringText } from '../types/cst';
 import { collectNodes } from './clipboard';
 import { Path } from './path';
 import { removeNodes } from './removeNodes';
 import { Ctx } from '../to-ast/Ctx';
 import { modChildren } from './modChildren';
+import { Card, RealizedNamespace } from '../../web/custom/UIState';
+
+// const backspacers: ((node: MNode, last:Path) => StateChange | void)[] = [
+//     (node, last) => {
+//         if (last.type === 'text' && last.at > 0) {
+//         }
+//     }
+// ]
+// /**
+//  * Backspace:
+//  * - if we're text or subtext pos > 0, it's simple
+//  */
+const withLast = (path: Path[], last: Path) => path.slice(0, -1).concat([last]);
+
+const backspaces = (
+    map: Map,
+    node: MNode,
+    path: Path[],
+): StateChange | void => {
+    switch (node.type) {
+        case 'identifier':
+        case 'comment':
+            const pos = pathPos(path, node.text);
+            if (pos === 0) {
+                if (node.type === 'comment') {
+                    if (node.text === '') {
+                        return {
+                            type: 'update',
+                            map: {
+                                [node.loc]: { type: 'blank', loc: node.loc },
+                            },
+                            selection: withLast(path, {
+                                type: 'start',
+                                idx: node.loc,
+                            }),
+                        };
+                    } else {
+                        return {
+                            type: 'select',
+                            selection: withLast(path, {
+                                type: 'start',
+                                idx: node.loc,
+                            }),
+                        };
+                    }
+                }
+                const gp = path[path.length - 2];
+                return backspaces(map, map[gp.idx], path.slice(0, -1));
+            }
+            const text = splitGraphemes(node.text);
+            if (text.length === 1) {
+                const cleared = maybeClearParentList(path.slice(0, -1), map);
+                if (cleared) return cleared;
+            }
+            text.splice(pos - 1, 1);
+            if (!text.length) {
+                return {
+                    type: 'update',
+                    map: { [node.loc]: { type: 'blank', loc: node.loc } },
+                    selection: withLast(path, { type: 'start', idx: node.loc }),
+                };
+            }
+            return {
+                type: 'update',
+                map: { [node.loc]: { ...node, text: text.join('') } },
+                selection: withLast(path, {
+                    type: 'subtext',
+                    idx: node.loc,
+                    at: pos - 1,
+                }),
+            };
+    }
+};
 
 export function handleBackspace(
     map: Map,
+    nsMap: NsMap,
     selection: { start: Path[]; end?: Path[] },
     hashNames: { [idx: number]: string },
+    cards: Card[],
+    mods?: Mods,
 ): StateChange {
     if (selection.end) {
-        const [start, end] = orderStartAndEnd(selection.start, selection.end);
-        const item = collectNodes(map, start, end, hashNames);
+        const [start, end] = orderStartAndEnd(
+            selection.start,
+            selection.end,
+            nsMap,
+        );
+        const item = collectNodes({ map, nsMap, cards }, start, end, hashNames);
         if (item.type === 'text' && item.source) {
             const node = map[item.source.idx];
             if ('text' in node || node.type === 'hash') {
@@ -32,7 +115,7 @@ export function handleBackspace(
                 const text = split
                     .slice(0, item.source.start)
                     .concat(split.slice(item.source.end));
-                if (!text.length) {
+                if (!text.length && node.type !== 'stringText') {
                     return {
                         type: 'update',
                         map: {
@@ -65,7 +148,15 @@ export function handleBackspace(
             }
         }
         if (item.type === 'nodes') {
-            return removeNodes(start, end, item.nodes, map, hashNames);
+            return removeNodes(
+                start,
+                end,
+                item.nodes,
+                map,
+                nsMap,
+                cards,
+                hashNames,
+            );
         }
     }
 
@@ -102,11 +193,91 @@ export function handleBackspace(
 
     const node = map[flast.idx];
     const atStart =
-        flast.type === 'start' || (flast.type === 'subtext' && flast.at === 0);
+        flast.type === 'start' ||
+        (flast.type === 'subtext' && flast.at === 0) ||
+        node.type === 'blank';
 
     const ppath = fullPath[fullPath.length - 2];
     const parent = map[ppath.idx];
 
+    if (
+        atStart &&
+        ppath.type === 'spread-contents' &&
+        (parent.type === 'spread' || parent.type === 'comment-node')
+    ) {
+        const up = replacePath(
+            fullPath.slice(0, -2),
+            parent.contents,
+            map,
+            nsMap,
+        );
+        if (up?.update) {
+            return {
+                type: 'update',
+                map: up.update,
+                nsMap: up.nsMap,
+                selection: [...fullPath.slice(0, -2), flast],
+            };
+        }
+    }
+
+    const gpath = fullPath[fullPath.length - 3];
+    if (ppath.type === 'ns-top' && gpath.type === 'ns' && atStart) {
+        const ns = nsMap[gpath.idx] as RealizedNamespace;
+        const children = ns.children.slice();
+        const at = children.indexOf(gpath.child);
+        if (at > 0 && map[nsMap[children[at - 1]].top].type === 'blank') {
+            const toRemove = children[at - 1];
+            children.splice(at - 1, 1);
+            return {
+                type: 'update',
+                map: { [nsMap[toRemove].top]: null },
+                selection: fullPath,
+                nsMap: {
+                    [toRemove]: null,
+                    [ns.id]: { ...ns, children },
+                },
+            };
+        }
+
+        if (node.type === 'blank') {
+            console.log('back', node);
+            const left = goLeft(selection.start, map, nsMap, cards);
+            if (!left) return;
+            const cid = children.splice(children.indexOf(gpath.child), 1)[0];
+            // STOPSHIP cleanup the thing that was removed
+            return {
+                type: 'update',
+                map: { [flast.idx]: null },
+                selection: left.selection,
+                nsMap: {
+                    [cid]: null,
+                    [ns.id]: { ...ns, children },
+                },
+            };
+        }
+    }
+
+    if (ppath.type === 'ns' && atStart) {
+        console.log('back', node);
+        const left = goLeft(selection.start, map, nsMap, cards);
+        if (!left) return;
+        const ns = nsMap[ppath.idx] as RealizedNamespace;
+        const children = ns.children.slice();
+        const cid = children.splice(children.indexOf(ppath.child), 1)[0];
+        // STOPSHIP cleanup the thing that was removed
+        return {
+            type: 'update',
+            map: { [flast.idx]: null },
+            selection: left.selection,
+            nsMap: {
+                [cid]: null,
+                [ns.id]: { ...ns, children },
+            },
+        };
+    }
+
+    // Unwrap a list or array
     if (
         ppath.type === 'child' &&
         ppath.at === 0 &&
@@ -114,7 +285,7 @@ export function handleBackspace(
         'values' in parent
     ) {
         const gpath = fullPath[fullPath.length - 3];
-        if (gpath.type === 'child') {
+        if (gpath?.type === 'child') {
             const gparent = map[gpath.idx];
             const changed = modChildren(gparent, (children) => {
                 children.splice(gpath.at, 1, ...parent.values);
@@ -124,6 +295,22 @@ export function handleBackspace(
                 map: { [gpath.idx]: changed, [ppath.idx]: null },
                 selection: [...fullPath.slice(0, -3), gpath, flast],
             };
+        }
+        if (parent.values.length === 1) {
+            const up = replacePath(
+                fullPath.slice(0, -2),
+                parent.values[0],
+                map,
+                nsMap,
+            );
+            if (up?.update) {
+                return {
+                    type: 'update',
+                    map: up.update,
+                    nsMap: up.nsMap,
+                    selection: [...fullPath.slice(0, -2), flast],
+                };
+            }
         }
     }
 
@@ -147,7 +334,7 @@ export function handleBackspace(
                     return cleared;
                 }
             }
-            return replacePathWith(fullPath.slice(0, -2), map, {
+            return replacePathWith(fullPath.slice(0, -2), map, nsMap, {
                 idx: parent.target,
                 map: !node.text
                     ? {}
@@ -229,7 +416,12 @@ export function handleBackspace(
             const cleared = maybeClearParentList(fullPath.slice(0, -2), map);
             return (
                 cleared ??
-                replacePathWith(fullPath.slice(0, -2), map, newBlank(ppath.idx))
+                replacePathWith(
+                    fullPath.slice(0, -2),
+                    map,
+                    nsMap,
+                    newBlank(ppath.idx),
+                )
             );
         }
         if (ppath.type === 'text' && ppath.at > 0) {
@@ -268,7 +460,7 @@ export function handleBackspace(
 
     if (node.type === 'tapply' && flast.type === 'end') {
         const sel = selectEnd(node.target, [], map);
-        return replacePathWith(fullPath.slice(0, -1), map, {
+        return replacePathWith(fullPath.slice(0, -1), map, nsMap, {
             idx: node.target,
             map: {},
             selection: sel ?? [],
@@ -289,6 +481,7 @@ export function handleBackspace(
         const update = replacePathWith(
             fullPath.slice(0, -1),
             map,
+            nsMap,
             newBlank(flast.idx),
         )!;
         update.map = {
@@ -301,10 +494,11 @@ export function handleBackspace(
 
     if (node.type === 'blank') {
         if (ppath.type === 'annot-annot' && parent.type === 'annot') {
-            const update = replacePath(
-                fullPath[fullPath.length - 3],
+            const { update, nsMap: upNs } = replacePath(
+                fullPath.slice(0, -2),
                 parent.target,
                 map,
+                nsMap,
             );
             const sel = selectEnd(parent.target, fullPath.slice(0, -2), map);
             if (!sel) {
@@ -318,6 +512,7 @@ export function handleBackspace(
                 type: 'update',
                 map: update,
                 selection: sel,
+                nsMap: upNs,
             };
         }
         if (ppath.type === 'expr') {
@@ -422,7 +617,12 @@ export function handleBackspace(
         const cleared = maybeClearParentList(fullPath.slice(0, -1), map);
         return (
             cleared ??
-            replacePathWith(fullPath.slice(0, -1), map, newBlank(flast.idx))
+            replacePathWith(
+                fullPath.slice(0, -1),
+                map,
+                nsMap,
+                newBlank(flast.idx),
+            )
         );
     }
 
@@ -476,12 +676,52 @@ export function handleBackspace(
         };
     }
 
+    if (node.type === 'comment' && atStart && node.text === '') {
+        return replacePathWith(
+            fullPath.slice(0, -1),
+            map,
+            nsMap,
+            newBlank(flast.idx),
+        );
+    }
+
     if (atStart) {
         const um = maybeRemovePrevBlank(fullPath, map);
         if (um) {
             return um;
         }
     }
+
+    if (
+        flast.type === 'subtext' &&
+        node.type === 'identifier' &&
+        parent &&
+        'values' in parent &&
+        ppath.type === 'child' &&
+        ppath.at > 0
+    ) {
+        const pidx = parent.values[ppath.at - 1];
+        const prev = map[pidx];
+        if (prev.type === 'identifier') {
+            const pt = splitGraphemes(prev.text);
+            const values = parent.values.slice();
+            values.splice(ppath.at, 1);
+            return {
+                type: 'update',
+                map: {
+                    [pidx]: { ...prev, text: prev.text + node.text },
+                    [ppath.idx]: { ...parent, values },
+                    [node.loc]: null,
+                },
+                selection: fullPath.slice(0, -2).concat([
+                    { type: 'child', at: ppath.at - 1, idx: ppath.idx },
+                    { type: 'subtext', at: pt.length, idx: pidx },
+                ]),
+            };
+        }
+    }
+
+    return goLeft(selection.start, map, nsMap, cards);
 }
 
 export const maybeRemovePrevBlank = (path: Path[], map: Map): StateChange => {
@@ -500,7 +740,7 @@ export const maybeRemovePrevBlank = (path: Path[], map: Map): StateChange => {
                 type: 'update',
                 map: { [gp.idx]: { ...gpnode, values } },
                 selection: path
-                    .slice(0, -1)
+                    .slice(0, -2)
                     .concat({
                         idx: gp.idx,
                         type: 'child',

@@ -1,62 +1,34 @@
+import equal from 'fast-deep-equal';
 import React from 'react';
+import { splitNamespaces } from '../../src/db/hash-tree';
 import { splitGraphemes } from '../../src/parse/parse';
+import { stringBgColor } from '../../src/state/nestedNodes/getNestedNodes';
+import { NNode } from '../../src/state/nestedNodes/NNode';
 import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
-import {
-    getNestedNodes,
-    NNode,
-    stringColor,
-} from '../../src/state/getNestedNodes';
-import { isCoveredBySelection } from './isCoveredBySelection';
+import { pathForIdx } from '../ide/ground-up/pathForIdx';
+import { Path } from '../store';
+import { RichText } from './RichText';
+import { Values } from './store/Store';
+import { useGetStore } from './store/StoreCtx';
+import { useNode } from './store/useNode';
 import { RenderProps } from './types';
-import { splitNamespaces } from '../../src/db/hash-tree';
-
-const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
-export const rainbow: string[] = ['#669'];
-for (let i = 0; i < raw.length; i += 6) {
-    rainbow.push('#' + raw.slice(i, i + 6));
-}
-
-// We'll start at depth=1, so this just rolls it one over
-rainbow.unshift(rainbow.pop()!);
-
-export function getRainbowHashColor(hash: string | number) {
-    const idx =
-        typeof hash === 'number'
-            ? Math.floor(hash * (rainbow.length / 5 - 1))
-            : parseInt(hash, 16);
-    // console.log('rainbow', hash, idx, rainbow[idx % rainbow.length]);
-    const color = rainbow[idx % rainbow.length];
-    return color;
-}
-
-const nodeColor = (type: MNode['type'], text?: string | null) => {
-    return specials.includes(text!) ? '#814d4d' : colors[type];
-};
+import { RawCode } from './RawCode';
+import { colors, getRainbowHashColor, nodeColor, rainbow } from './rainbow';
 
 const columnRecords = true;
 
-const specials = ['defn', 'def', 'deftype', 'fn', 'match', 'defnrec', 'fnrec'];
-
-export const colors: {
-    [key: string]: string;
-} = {
-    identifier: '#5bb6b7',
-    comment: '#616162',
-    tag: '#82f682',
-    number: '#8585ff', //'#4848a5',
-    string: 'yellow',
-    stringText: stringColor,
-    unparsed: 'red',
-};
-
-export const textStyle = (
+const textStyle = (
     node: MNode,
     display?: Ctx['display'][0],
 ): React.CSSProperties | undefined => {
     const color = nodeColor(
         node.type,
-        node.type === 'identifier' ? node.text : null,
+        node.type === 'identifier'
+            ? node.text
+            : node.type === 'accessText'
+            ? node.text
+            : null,
     );
     if (display?.style) {
         switch (display.style.type) {
@@ -66,7 +38,9 @@ export const textStyle = (
                 return {
                     fontStyle: 'italic',
                     fontFamily: 'serif',
-                    color: '#84a4a5',
+                    // color: '#84a4a5',
+                    color: color ?? '#84a4a5',
+                    // color: getRainbowHashColor(display.style.)
                 };
             case 'number':
                 return { color: colors['number'] };
@@ -85,28 +59,107 @@ export const textStyle = (
     }
     switch (node.type) {
         case 'identifier':
+        case 'accessText':
             return { color: color };
         case 'stringText':
-            return { color: color, whiteSpace: 'pre' };
+            return {
+                color: color,
+                whiteSpace: 'pre',
+                backgroundColor: stringBgColor,
+            };
+        case 'comment':
+            return { color: '#4eb94e' };
     }
-    return { color: 'violet' };
+    return { color: color ?? 'violet' };
 };
 
 export const Render = React.memo(
     (props: RenderProps) => {
-        const { idx, map, display, hashNames, path } = props;
-        const nnode = getNestedNodes(
-            map[idx],
-            map,
-            hashNames[idx],
-            display[idx]?.layout,
-        );
+        const values = useNode(props.idx, props.path);
+        const { node, nnode, display } = values;
+        const { idx, path } = props;
+        const store = useGetStore();
 
         if (path.length > 1000) {
             return <span>DEEP</span>;
         }
+        // console.log('render', props.idx);
+        const inner = (
+            <div
+                data-path={JSON.stringify(path)}
+                data-idx={idx}
+                style={
+                    {
+                        // backgroundColor: values.hover
+                        //     ? 'rgb(100,100,100)'
+                        //     : 'unset',
+                    }
+                }
+                // onMouseEnter={() => {
+                //     store.dispatch({ type: 'hover', path });
+                // }}
+            >
+                <RenderNNode
+                    {...props}
+                    nnode={nnode}
+                    values={values}
+                    hoverPath={path}
+                    Recurse={Render}
+                />
+            </div>
+        );
 
-        const node = map[idx];
+        if (values.meta?.trace || values.meta?.traceTop) {
+            return (
+                <span style={{ display: 'flex' }}>
+                    {props.debug ? (
+                        <span
+                            style={{
+                                opacity: 0.5,
+                                fontSize: '50%',
+                                lineHeight: '20px',
+                            }}
+                            data-display={JSON.stringify(display)}
+                        >
+                            {idx}
+                        </span>
+                    ) : null}
+                    <div
+                        style={{
+                            position: 'absolute',
+                            borderRadius: 5,
+                            width: 5,
+                            height: 5,
+                            minHeight: 0,
+                            marginLeft: -5,
+                            backgroundColor: values.meta?.traceTop
+                                ? 'red'
+                                : 'green',
+                            display: 'inline-block',
+                            cursor: values.meta.trace ? 'pointer' : '',
+                        }}
+                        onClick={() => {
+                            const formatter = prompt('formatter name:');
+                            store.dispatch({
+                                type: 'meta',
+                                meta: {
+                                    [idx]: {
+                                        ...values.meta,
+                                        trace: {
+                                            ...values.meta!.trace,
+                                            formatter,
+                                        },
+                                    },
+                                },
+                            });
+                            // props.
+                        }}
+                    ></div>
+                    {inner}
+                </span>
+            );
+        }
+
         return props.debug ? (
             <span style={{ display: 'flex' }}>
                 <span
@@ -115,11 +168,11 @@ export const Render = React.memo(
                         fontSize: '50%',
                         lineHeight: '20px',
                     }}
-                    data-display={JSON.stringify(props.display[idx])}
+                    data-display={JSON.stringify(display)}
                 >
                     {idx}
                 </span>
-                <RenderNNode {...props} nnode={nnode} />
+                {inner}
                 {node.type === 'hash' ? (
                     <span
                         style={{
@@ -133,9 +186,11 @@ export const Render = React.memo(
                 ) : null}
             </span>
         ) : (
-            <RenderNNode {...props} nnode={nnode} />
+            inner
         );
     },
+    (prev, next) => equal(prev, next),
+    // () => false,
     // (prevProps: RenderProps, nextProps: RenderProps) => {
     //     for (let key of Object.keys(prevProps)) {
     //         if (
@@ -152,20 +207,17 @@ export const Render = React.memo(
 );
 
 export const RenderNNode = (
-    props: RenderProps & { nnode: NNode },
-): JSX.Element => {
-    const { nnode, reg, idx, path, display, map, dispatch } = props;
-    const node = map[idx];
+    props: RenderProps & {
+        nnode: NNode;
+        values: Values;
+        hoverPath: Path[];
+        Recurse: React.ComponentType<RenderProps>;
+    },
+): JSX.Element | null => {
+    const { nnode, idx, path, Recurse } = props;
+    const { reg, dispatch, node, selection, errors } = props.values;
 
-    const isSelected = props.selection.some(
-        (s) =>
-            s.start[s.start.length - 1].idx === idx ||
-            (s.end && s.end[s.end.length - 1].idx === idx),
-    );
-
-    const coverageLevel = isCoveredBySelection(props.selection, path, map);
-
-    const errors = props.errors[node.loc];
+    const coverageLevel = selection?.coverage;
 
     const errorStyle = errors?.length
         ? {
@@ -189,6 +241,9 @@ export const RenderNNode = (
         case 'vert':
         case 'horiz':
         case 'inline':
+            let firstRenderable = nnode.children.findIndex((item) =>
+                ['horiz', 'vert'].includes(item.type),
+            );
             return (
                 <span
                     style={{
@@ -197,18 +252,40 @@ export const RenderNNode = (
                         flexDirection: nnode.type === 'vert' ? 'column' : 'row',
                         ...selectStyle,
                         ...errorStyle,
+                        ...(nnode.style ?? {}),
                     }}
                     ref={(node) => reg(node, idx, path, 'outside')}
-                    onMouseEnter={() => dispatch({ type: 'hover', path })}
+                    // onMouseEnter={() =>
+                    //     dispatch?.({ type: 'hover', path: props.hoverPath })
+                    // }
                 >
-                    {nnode.children.map((nnode, i) => (
+                    {/* {props.debug ? nnode.type : null} */}
+                    {(props.firstLineOnly && firstRenderable != -1
+                        ? nnode.children.slice(0, firstRenderable + 1)
+                        : nnode.children
+                    ).map((nnode, i) => (
                         <RenderNNode
                             {...props}
+                            firstLineOnly={
+                                props.firstLineOnly && firstRenderable != -1
+                            }
                             nnode={nnode}
-                            key={nnode.type === 'ref' ? 'id:' + nnode.id : i}
+                            key={
+                                nnode.type === 'ref'
+                                    ? 'id:' + nnode.id + ':' + i
+                                    : i
+                            }
                         />
                     ))}
                 </span>
+            );
+        case 'nest':
+            return (
+                <RenderNNode
+                    {...props}
+                    nnode={nnode.inner}
+                    values={{ ...props.values, node: nnode.node }}
+                />
             );
         case 'blinker':
             return (
@@ -233,6 +310,12 @@ export const RenderNNode = (
                         ...selectStyle,
                         ...errorStyle,
                     }}
+                    onMouseEnter={() =>
+                        dispatch?.({ type: 'hover', path: props.hoverPath })
+                    }
+                    onMouseLeave={() => {
+                        dispatch?.({ type: 'hover', path: [] });
+                    }}
                 >
                     {nnode.text}
                 </span>
@@ -245,26 +328,37 @@ export const RenderNNode = (
                         color:
                             nnode.color ??
                             rainbow[path.length % rainbow.length],
+                        backgroundColor: nnode.bgColor ?? undefined,
                         alignSelf:
                             nnode.at === 'end' ? 'flex-end' : 'flex-start',
-                        fontVariationSettings: isSelected ? '"wght" 900' : '',
+                        // fontVariationSettings: props.values.hover
+                        //     ? '"wght" 900'
+                        //     : '',
+                        outline: props.values.hover
+                            ? '1px solid rgba(255,255,255,0.2)'
+                            : '1px solid transparent',
+                        transition: 'ease .2s outline',
                         ...selectStyle,
                         ...errorStyle,
                     }}
                     onMouseEnter={() =>
-                        dispatch({
-                            type: 'hover',
-                            path: path.concat({ idx, type: 'start' }),
-                        })
+                        dispatch?.({ type: 'hover', path: props.hoverPath })
                     }
+                    onMouseLeave={() => {
+                        dispatch?.({ type: 'hover', path: [] });
+                    }}
                 >
                     {nnode.text}
                 </span>
             );
         case 'text': {
+            let rawText = nnode.text;
+            if (rawText.endsWith('\n')) {
+                rawText += '​';
+            }
             let body;
             if (coverageLevel?.type === 'inner') {
-                const text = splitGraphemes(nnode.text);
+                const text = splitGraphemes(rawText);
                 const start =
                     coverageLevel.start.type === 'subtext'
                         ? coverageLevel.start.at
@@ -289,13 +383,13 @@ export const RenderNNode = (
                     </>
                 );
             } else {
-                body = nnode.text;
+                body = rawText;
                 if (
-                    nnode.text.length > 1 &&
-                    (display[idx]?.style?.type === 'id' ||
-                        display[idx]?.style?.type === 'unresolved')
+                    rawText.length > 1 &&
+                    (props.values.display?.style?.type === 'id' ||
+                        props.values.display?.style?.type === 'unresolved')
                 ) {
-                    const nss = splitNamespaces(nnode.text);
+                    const nss = splitNamespaces(rawText);
                     if (nss.length) {
                         body = nss.map((n, i) =>
                             i === 0 ? (
@@ -321,19 +415,32 @@ export const RenderNNode = (
                 <span
                     ref={(node) => reg(node, idx, path)}
                     style={{
-                        ...textStyle(node, display[idx]),
+                        ...textStyle(node, props.values.display),
                         ...selectStyle,
                         ...errorStyle,
                         whiteSpace: 'pre',
+                        ...(props.values.unused
+                            ? { opacity: 0.5, fontStyle: 'italic' }
+                            : {}),
+                        ...(props.values.highlight
+                            ? { outline: '1px dashed rgba(255,255,255,0.2)' }
+                            : {}),
                     }}
                     onMouseEnter={() =>
-                        dispatch({
-                            type: 'hover',
-                            path: path.concat({ idx, at: 0, type: 'subtext' }),
-                        })
+                        dispatch?.({ type: 'hover', path: props.hoverPath })
                     }
+                    onMouseLeave={() => {
+                        dispatch?.({ type: 'hover', path: [] });
+                    }}
+                    onClick={(evt) => {
+                        if (evt.metaKey) {
+                            evt.stopPropagation();
+                            evt.preventDefault();
+                            dispatch?.({ type: 'jump-to-definition', idx });
+                        }
+                    }}
                     onDoubleClick={() => {
-                        dispatch({
+                        dispatch?.({
                             type: 'select',
                             at: [
                                 {
@@ -349,21 +456,46 @@ export const RenderNNode = (
                 </span>
             );
         }
-        case 'ref':
+        case 'raw-code': {
             return (
-                <Render
-                    map={map}
-                    display={display}
-                    errors={props.errors}
-                    dispatch={dispatch}
-                    reg={reg}
-                    hashNames={props.hashNames}
-                    idx={nnode.id}
-                    selection={props.selection}
-                    debug={props.debug}
-                    path={path.concat([{ idx, ...nnode.path }])}
+                <RawCode
+                    initial={nnode.raw}
+                    lang={nnode.lang}
+                    idx={props.idx}
+                    path={props.path}
                 />
             );
+        }
+        case 'rich-text': {
+            return (
+                <RichText
+                    initial={nnode.contents}
+                    idx={props.idx}
+                    path={props.path}
+                    reg={reg}
+                />
+            );
+        }
+        case 'ref': {
+            const child = (
+                <Recurse
+                    key={nnode.id}
+                    idx={nnode.id}
+                    debug={props.debug}
+                    path={path.concat([
+                        ...(nnode.ancestors ?? []),
+                        ...(nnode.path ? [{ idx, ...nnode.path }] : []),
+                    ])}
+                />
+            );
+            return nnode.style ? (
+                <span key={nnode.id} style={nnode.style}>
+                    {child}
+                </span>
+            ) : (
+                child
+            );
+        }
         case 'pairs':
             const oneColor = 'transparent';
             const twoColor = 'rgba(100,100,100,0.1)';
@@ -376,7 +508,9 @@ export const RenderNNode = (
                             flexDirection: 'column',
                             // gap: '0 8px',
                         }}
-                        onMouseEnter={() => dispatch({ type: 'hover', path })}
+                        // onMouseEnter={() =>
+                        //     dispatch?.({ type: 'hover', path: props.hoverPath })
+                        // }
                     >
                         {nnode.firstLine.map((node, i) => (
                             <RenderNNode {...props} nnode={node} key={i} />
@@ -430,7 +564,9 @@ export const RenderNNode = (
                         display: 'grid',
                         // gap: '0 8px'
                     }}
-                    onMouseEnter={() => dispatch({ type: 'hover', path })}
+                    // onMouseEnter={() =>
+                    //     dispatch?.({ type: 'hover', path: props.hoverPath })
+                    // }
                 >
                     {nnode.firstLine.length ? (
                         <span
@@ -496,10 +632,17 @@ export const RenderNNode = (
                     )}
                 </span>
             );
+        case 'dom':
+            if (typeof nnode.node === 'function') {
+                return nnode.node(path, idx);
+            }
+            return nnode.node;
         case 'indent':
             return (
                 <span
-                    onMouseEnter={() => dispatch({ type: 'hover', path })}
+                    // onMouseEnter={() =>
+                    //     dispatch?.({ type: 'hover', path: props.hoverPath })
+                    // }
                     style={{ display: 'inline-block', paddingLeft: 10 }}
                 >
                     <RenderNNode {...props} nnode={nnode.child} />

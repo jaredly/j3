@@ -306,11 +306,13 @@ export const expandEnumItems = (
         if (item.type === 'local') {
             const local = ctx.results.localMap.types[item.sym];
             if (!local) {
+                debugger;
                 return {
                     type: 'error',
                     error: {
                         type: 'misc',
-                        message: 'unknown local',
+                        message:
+                            'unknown local while expanding enums: ' + item.sym,
                         path,
                         form: item.form,
                     },

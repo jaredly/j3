@@ -24,7 +24,7 @@ export function handleStringText({
     const last = path[path.length - 1];
 
     let text = splitGraphemes(node.text);
-    if (key === '"' && pos === text.length) {
+    if (key === '"' && pos === text.length && text[text.length - 1] !== '\\') {
         return {
             type: 'select',
             selection: path.slice(0, -1).concat({ idx: last.idx, type: 'end' }),
@@ -48,6 +48,13 @@ export function handleStringText({
     } else {
         text.splice(pos, 0, ...input);
     }
+    // if (text[pos - 1] === '\\' && key !== 'n') {
+    //     text.splice(pos - 1, 1);
+    //     if (key === 'n') {
+    //         text[pos - 1] = '\n';
+    //     }
+    //     pos -= 1;
+    // }
     return {
         type: 'update',
         map: { [idx]: { ...node, text: text.join('') } },

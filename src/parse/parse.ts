@@ -1,57 +1,23 @@
 // hmm
+import GraphemeSplitter from 'grapheme-splitter';
+import { fixMissingReferences } from '../../web/custom/old-stuff/reduce';
 import { applyMods } from '../getCtx';
-import { layout } from '../layout';
-import { ClipboardItem, collectNodes, paste } from '../state/clipboard';
-import { applyUpdate, getKeyUpdate, Mods, State } from '../state/getKeyUpdate';
-import { Path, cmpFullPath } from '../state/path';
-import { lastName } from '../db/hash-tree';
 import { applyInferMod, infer } from '../infer/infer';
-import { AutoCompleteReplace, Ctx } from '../to-ast/Ctx';
+import { ClipboardItem } from '../state/clipboard';
+import { Mods, State, applyUpdate, getKeyUpdate } from '../state/getKeyUpdate';
+import { Path, cmpFullPath } from '../state/path';
+import { AutoCompleteReplace } from '../to-ast/Ctx';
+import { applyMenuItem } from '../to-ast/autoComplete';
 import { CompilationResults, CstCtx } from '../to-ast/library';
 import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
 import { nodeToType } from '../to-ast/nodeToType';
-import { addDef } from '../to-ast/to-ast';
 import { Node } from '../types/cst';
-import { fromMCST, Map, MNode } from '../types/mcst';
-import { applyMenuItem } from '../to-ast/autoComplete';
-import { fixMissingReferences } from '../../web/custom/reduce';
+import { Map, NsMap, fromMCST } from '../types/mcst';
 
-export const idText = (node: MNode, map: Map) => {
-    switch (node.type) {
-        case 'identifier':
-        case 'comment':
-            if (!node.text) {
-                console.log('empty node text', node);
-            }
-            return node.text;
-        case 'unparsed':
-            return node.raw;
-        case 'accessText':
-        case 'stringText':
-            return node.text;
-        case 'blank':
-            return '';
-        case 'hash':
-            if (
-                typeof node.hash === 'string' &&
-                node.hash.startsWith(':builtin:')
-            ) {
-                return lastName(node.hash.slice(':builtin:'.length));
-            }
-            if (typeof node.hash === 'number') {
-                const ref = map[node.hash];
-                if (ref?.type === 'identifier') {
-                    return ref.text;
-                }
-            }
-            return '🚨';
-    }
-};
-
-const seg = new Intl.Segmenter('en');
+const seg = new GraphemeSplitter();
 
 export const splitGraphemes = (text: string) => {
-    return [...seg.segment(text)].map((seg) => seg.segment);
+    return seg.splitGraphemes(text);
 };
 
 export const parseByCharacter = (
@@ -95,24 +61,32 @@ export const parseByCharacter = (
                 throw new Error(`need end for copy`);
             }
 
-            [start, end] = orderStartAndEnd(start, end);
+            [start, end] = orderStartAndEnd(start, end, {});
 
-            clipboard = [
-                collectNodes(
-                    state.map,
-                    start,
-                    end,
-                    ctx?.results.hashNames ?? {},
-                ),
-            ];
+            throw new Error(
+                'I dont think this code is used anymore. if so, need to use UIState pls',
+            );
+            // clipboard = [
+            //     collectNodes(state, start, end, ctx?.results.hashNames ?? {}),
+            // ];
             continue;
         }
         if (key === 'Paste') {
-            state = applyUpdate(
-                state,
-                0,
-                paste(state, ctx?.results.hashNames ?? {}, clipboard),
+            throw new Error(
+                'I dont think this code is used anymore. if so, need to use UIState pls',
             );
+
+            // state = applyUpdate(
+            //     state,
+            //     0,
+            //     paste(
+            //         state,
+            //         ctx?.results.hashNames ?? {},
+            //         clipboard,
+            //         ctx != null,
+            //     ),
+            // );
+
             continue;
         }
 
@@ -136,6 +110,8 @@ export const parseByCharacter = (
         const update = getKeyUpdate(
             key,
             state.map,
+            {},
+            [],
             state.at[0],
             ctx?.results.hashNames ?? {},
             state.nidx,
@@ -144,7 +120,7 @@ export const parseByCharacter = (
 
         const prevMap = state.map;
 
-        if (ctx && update?.autoComplete) {
+        if (ctx && update && 'autoComplete' in update && update.autoComplete) {
             state = autoCompleteIfNeeded(state, ctx.results.display);
         }
 
@@ -158,7 +134,7 @@ export const parseByCharacter = (
             // This is where the `ctx` gets updated
             if (!kind || kind === 'expr') {
                 filterComments(root.values).forEach((node) => {
-                    ctx = addDef(nodeToExpr(node, ctx!), ctx!) as CstCtx;
+                    ctx!.results.toplevel[node.loc] = nodeToExpr(node, ctx!);
                 });
             }
             if (kind === 'type') {
@@ -168,7 +144,12 @@ export const parseByCharacter = (
             state = { ...state, map: { ...state.map } };
             applyMods(ctx, state.map, state.nidx);
 
-            if ((!kind || kind === 'expr') && update?.autoComplete) {
+            if (
+                (!kind || kind === 'expr') &&
+                update &&
+                'autoComplete' in update &&
+                update?.autoComplete
+            ) {
                 // Now we do like inference, right?
                 const mods = infer(ctx, state.map);
                 Object.keys(mods).forEach((id) => {
@@ -184,7 +165,7 @@ export const parseByCharacter = (
             );
             if (fixed) {
                 filterComments(root.values).forEach((node) => {
-                    ctx = addDef(nodeToExpr(node, ctx!), ctx!) as CstCtx;
+                    ctx!.results.toplevel[node.loc] = nodeToExpr(node, ctx!);
                 });
             }
         }
@@ -197,8 +178,12 @@ export const idxSource = () => {
     return () => idx++;
 };
 
-export function orderStartAndEnd(start: Path[], end: Path[]): [Path[], Path[]] {
-    return cmpFullPath(start, end) < 0 ? [start, end] : [end, start];
+export function orderStartAndEnd(
+    start: Path[],
+    end: Path[],
+    nsMap: NsMap,
+): [Path[], Path[]] {
+    return cmpFullPath(start, end, nsMap) < 0 ? [start, end] : [end, start];
 }
 
 function determineKey(text: string[], i: number, mods: Mods) {
@@ -287,7 +272,7 @@ function initialState() {
         at: [
             {
                 start: [
-                    { idx: -1, type: 'child', at: 0 },
+                    { idx: -1, type: 'card', card: 0 },
                     { idx: top, type: 'start' },
                 ],
             },

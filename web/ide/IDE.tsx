@@ -2,7 +2,7 @@
 
 import React, { useEffect, useReducer, useState } from 'react';
 import { Env, Sandbox } from '../../src/to-ast/library';
-import { reduce } from '../custom/reduce';
+import { reduce } from '../custom/old-stuff/reduce';
 import { uiState } from '../custom/ByHand';
 import { Action, UIState } from '../custom/UIState';
 import { Namespaces } from './Namespaces';
@@ -51,7 +51,7 @@ export type IDEAction =
     | { type: 'open-sandbox'; sandbox: Sandbox }
     | { type: 'dashboard'; sandboxes: Sandbox['meta'][] };
 
-const topReduce = (state: IDEState, action: IDEAction): IDEState => {
+export const topReduce = (state: IDEState, action: IDEAction): IDEState => {
     switch (action.type) {
         case 'dashboard':
             return {
@@ -255,16 +255,8 @@ export const IDE = ({
                 <div style={{ flex: 1, overflow: 'auto' }}>
                     {state.current.type === 'sandbox' ? (
                         <SandboxView
-                            db={initial.db}
                             key={state.current.id}
                             state={state.current.state}
-                            meta={
-                                state.sandboxes.find(
-                                    (s) =>
-                                        s.id ===
-                                        (state.current as SelectedSandbox).id,
-                                )!
-                            }
                             dispatch={dispatch}
                         />
                     ) : (
@@ -351,7 +343,20 @@ const TabTitle = ({
                 <input
                     value={edit}
                     onChange={(evt) => setEdit(evt.target.value)}
-                    style={{ width: 100 }}
+                    style={{
+                        width: 200,
+                        color: 'inherit',
+                        fontFamily: 'inherit',
+                        position: 'relative',
+                        backgroundColor: '#000',
+                        padding: '4px 8px',
+                        borderRadius: 3,
+                        border: 'none',
+                        fontWeight: 'inherit',
+                        whiteSpace: 'nowrap',
+                        display: 'flex',
+                        alignItems: 'center',
+                    }}
                 />
                 <button
                     onClick={() => {

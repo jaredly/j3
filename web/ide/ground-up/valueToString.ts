@@ -1,0 +1,41 @@
+import { unwrapArray } from './round-1/parse';
+
+export const valueToString = (v: any): string => {
+    if (Array.isArray(v)) {
+        return `[${v.map(valueToString).join(', ')}]`;
+    }
+
+    if (typeof v === 'object' && v && 'type' in v) {
+        if (v.type === 'cons' || v.type === 'nil') {
+            try {
+                const un = unwrapArray(v);
+                return '[' + un.map(valueToString).join(' ') + ']';
+            } catch (err) {
+                return 'invalid list';
+            }
+        }
+
+        let args = [];
+        for (let i = 0; i in v; i++) {
+            args.push(v[i]);
+        }
+        return `(${v.type}${args
+            .map((arg) => ' ' + valueToString(arg))
+            .join('')})`;
+    }
+    if (typeof v === 'string') {
+        // if (v.includes('"') && !v.includes("'")) {
+        //     return (
+        //         "'" + JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"') + "'"
+        //     );
+        // }
+        return JSON.stringify(v);
+    }
+    if (typeof v === 'function') {
+        return '<function>';
+    }
+    if (v == null) return 'null';
+    if (v === undefined) return 'undefined';
+
+    return '' + v;
+};

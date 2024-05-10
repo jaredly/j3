@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { AutoCompleteResult } from '../../src/to-ast/Ctx';
+import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
 import {
     type ClipboardItem,
     clipboardText,
@@ -7,47 +7,69 @@ import {
 } from '../../src/state/clipboard';
 import { Path } from '../../src/state/path';
 import { clipboardPrefix, clipboardSuffix } from './ByHand';
-import { UIState, Action } from './UIState';
-import { Ctx } from '../../src/to-ast/library';
+import { Action, NUIState } from './UIState';
+import equal from 'fast-deep-equal';
+import { splitGraphemes } from '../../src/parse/parse';
+import { goRight } from '../../src/state/goRightUntil';
+import { useGetStore } from './store/StoreCtx';
+// import { Ctx } from '../../src/to-ast/library';
+
+const shouldIgnore = (el: Element | null) => {
+    if (!el) return false;
+    if (el.classList.contains('bn-editor')) return true;
+    if (el.getAttribute('contenteditable')) return true;
+};
 
 export function HiddenInput({
     state,
     dispatch,
     menu,
-    ctx,
+    hashNames,
 }: {
-    state: UIState;
+    state: NUIState;
     dispatch: React.Dispatch<Action>;
     menu?: { path: Path[]; items: AutoCompleteResult[] };
-    ctx: Ctx;
+    hashNames: { [hash: string]: string };
 }) {
     useEffect(() => {
-        if (document.activeElement !== hiddenInput.current) {
+        if (
+            document.activeElement !== hiddenInput.current &&
+            !shouldIgnore(document.activeElement)
+        ) {
+            // console.log(document.activeElement);
             hiddenInput.current?.focus();
         }
     }, [state.at]);
 
     useEffect(() => {
-        window.addEventListener(
-            'blur',
-            (evt) => {
-                setTimeout(() => {
-                    if (document.activeElement === document.body) {
-                        hiddenInput.current?.focus();
-                    }
-                }, 50);
-            },
-            true,
-        );
+        const key = (evt: KeyboardEvent) => {
+            if (evt.key === 'd' && evt.metaKey) {
+                evt.preventDefault();
+            }
+        };
+        window.addEventListener('keydown', key);
+        const fn = () => {
+            setTimeout(() => {
+                if (document.activeElement === document.body) {
+                    hiddenInput.current?.focus();
+                }
+            }, 50);
+        };
+        window.addEventListener('blur', fn, true);
+        return () => {
+            window.removeEventListener('keydown', key);
+            window.removeEventListener('blur', fn, true);
+        };
     }, []);
 
     const hiddenInput = useRef(null as null | HTMLInputElement);
+    const store = useGetStore();
 
     return (
         <input
             ref={hiddenInput}
             autoFocus
-            value="whaa"
+            value=""
             style={{
                 width: 0,
                 height: 0,
@@ -60,18 +82,20 @@ export function HiddenInput({
             }}
             onCopy={(evt) => {
                 evt.preventDefault();
-                const items = collectClipboard(
-                    state.map,
-                    state.at,
-                    ctx.results.hashNames,
-                );
+                const items = collectClipboard(state, hashNames);
                 if (!items.length) {
                     return;
                 }
 
                 dispatch({ type: 'copy', items });
 
-                const text = clipboardText(items, ctx.results.hashNames);
+                const display: Ctx['display'] = {};
+                const { results } = store.getResults();
+                Object.values(results.nodes).forEach((nodeResults) => {
+                    Object.assign(display, nodeResults.layout);
+                });
+
+                const text = clipboardText(items, display);
                 navigator.clipboard.write([
                     new ClipboardItem({
                         ['text/plain']: new Blob([text], {
@@ -93,7 +117,7 @@ export function HiddenInput({
                 evt.preventDefault();
                 const text = evt.clipboardData.getData('text/html');
                 // TODO: We should do rich copy/paste!
-                if (text && 1 < 0) {
+                if (text) {
                     const start = text.indexOf(clipboardPrefix);
                     const end = text.indexOf(clipboardSuffix);
                     if (start !== -1 && end !== -1) {
@@ -120,10 +144,140 @@ export function HiddenInput({
             }}
             onKeyDown={(evt) => {
                 if (evt.key === 'z' && (evt.metaKey || evt.ctrlKey)) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
                     return dispatch({ type: evt.shiftKey ? 'redo' : 'undo' });
                 }
 
-                if (evt.metaKey || evt.ctrlKey || evt.altKey) {
+                if (evt.key === 'Escape' && state.at.length > 0) {
+                    return dispatch({
+                        type: 'select',
+                        at: [
+                            {
+                                start: state.at[0].start,
+                            },
+                        ],
+                    });
+                }
+
+                if (evt.metaKey && evt.key === 'd') {
+                    evt.preventDefault();
+                    const sel = state.at[0];
+                    if (!sel) return;
+                    const last = sel.start[sel.start.length - 1];
+                    if (last.type !== 'subtext') return;
+                    if (sel.end) {
+                        if (last.at !== 0) return;
+                        if (sel.end.length !== sel.start.length) return;
+                        const lend = sel.end[sel.end.length - 1];
+                        if (lend.type !== 'subtext') return;
+                        if (
+                            !equal(sel.start.slice(0, -1), sel.end.slice(0, -1))
+                        )
+                            return;
+                        const node = state.map[last.idx];
+                        if (node.type !== 'identifier') return;
+                        const eme = splitGraphemes(node.text);
+                        if (lend.at !== eme.length) return;
+                        // TODO do another sel
+                        // let next = sel.start
+                        let current = state.at[state.at.length - 1].start;
+                        for (let i = 0; i < 10000; i++) {
+                            const next = goRight(
+                                current,
+                                state.map,
+                                state.nsMap,
+                                state.cards,
+                            );
+                            if (!next) return;
+                            const last =
+                                next.selection[next.selection.length - 1];
+                            const candidate = state.map[last.idx];
+                            if (
+                                candidate.type === 'identifier' &&
+                                candidate.text === node.text
+                            ) {
+                                return dispatch({
+                                    type: 'select',
+                                    at: state.at.concat([
+                                        {
+                                            start: next.selection
+                                                .slice(0, -1)
+                                                .concat([
+                                                    {
+                                                        type: 'subtext',
+                                                        idx: candidate.loc,
+                                                        at: 0,
+                                                    },
+                                                ]),
+                                            end: next.selection
+                                                .slice(0, -1)
+                                                .concat([
+                                                    {
+                                                        type: 'subtext',
+                                                        idx: candidate.loc,
+                                                        at: eme.length,
+                                                    },
+                                                ]),
+                                        },
+                                    ]),
+                                });
+                            }
+                            current = next.selection;
+                        }
+                    }
+
+                    const node = state.map[last.idx];
+                    if (node.type === 'identifier') {
+                        const text = node.text;
+                        const eme = splitGraphemes(text);
+                        return dispatch({
+                            type: 'select',
+                            at: [
+                                {
+                                    start: sel.start.slice(0, -1).concat([
+                                        {
+                                            type: 'subtext',
+                                            idx: node.loc,
+                                            at: 0,
+                                        },
+                                    ]),
+                                    end: sel.start.slice(0, -1).concat([
+                                        {
+                                            type: 'subtext',
+                                            idx: node.loc,
+                                            at: eme.length,
+                                        },
+                                    ]),
+                                },
+                            ],
+                        });
+                    }
+                }
+
+                if (evt.key === 'Alt') {
+                    const sel = state.hover[state.hover.length - 1]?.idx;
+                    const node = sel ? state.map[sel] : null;
+                    if (node?.type === 'identifier') {
+                        const num = +node.text;
+                        const got = state.regs[num];
+                        const n =
+                            got?.main?.node ??
+                            got?.outside?.node ??
+                            got?.start?.node;
+
+                        if (n) {
+                            n.style.backgroundColor = 'rgba(255,0,0,0.9)';
+                            setTimeout(() => {
+                                n.style.backgroundColor = 'unset';
+                            }, 5000);
+                        }
+                    }
+                }
+
+                if (evt.key === 'Backspace' && evt.metaKey) {
+                    // it's fine
+                } else if (evt.metaKey || evt.ctrlKey || evt.altKey) {
                     return;
                 }
 

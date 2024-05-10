@@ -1,7 +1,8 @@
 // Basic level
 
 import { validateExpr } from '../src/get-type/validate';
-import { idText, parseByCharacter, pathPos } from '../src/parse/parse';
+import { parseByCharacter, pathPos } from '../src/parse/parse';
+import { idText } from '../src/parse/idText';
 import {
     nodeToString,
     remapPos,
@@ -9,7 +10,7 @@ import {
     SourceMap,
 } from '../src/to-cst/nodeToString';
 import { fromMCST, ListLikeContents } from '../src/types/mcst';
-import { validatePath } from '../src/state/clipboard';
+import { validatePath } from '../src/state/validatePath';
 import { applyUpdate, getKeyUpdate, State } from '../src/state/getKeyUpdate';
 import { selectEnd, selectStart } from '../src/state/navigate';
 import { Path } from '../src/state/path';
@@ -219,7 +220,7 @@ id
 (())
 (list (list))
 
-((^l 
+((^l
 ( ())
 (list blank (list))
 
@@ -440,6 +441,8 @@ function doABunchOfKeys({
         const update = getKeyUpdate(
             key,
             state.map,
+            {},
+            [],
             state.at[0],
             {},
             state.nidx,

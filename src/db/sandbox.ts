@@ -91,7 +91,7 @@ export const getSandbox = async (
             }),
         );
 
-    return { meta, map, root: -1, history };
+    return { meta, map, root: -1, history, cards: [] };
 };
 
 // Updaters
@@ -182,7 +182,7 @@ export const addSandbox = async (
         await addUpdateNodes(db, id, map);
     });
 
-    return { meta, history: [], map, root: -1 };
+    return { meta, history: [], map, root: -1, cards: [] };
 };
 
 export const deleteSandbox = async (db: Db, id: string) => {

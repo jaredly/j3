@@ -95,6 +95,8 @@ export const nodeToString_ = (
                           node.hash + ''
                       ).slice(0, 10)}>`;
         }
+        case 'comment-node':
+            return `$comment-node$`;
         case 'comment':
             return `$comment$`;
         case 'rich-text':
@@ -139,6 +141,7 @@ export const nodeToString_ = (
                 )
                 .join('')}"`;
         case 'unparsed':
+        case 'raw-code':
             return node.raw;
         default:
             let _: never = node;

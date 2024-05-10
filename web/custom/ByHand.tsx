@@ -57,6 +57,7 @@ export const loadState = (raw: string): State => {
             max = Math.max(max, node.loc);
         },
     });
+    // STOPSHIP namespace ids?
     max += 1;
     return {
         nidx: () => max++,
@@ -68,10 +69,24 @@ export const loadState = (raw: string): State => {
 
 export const uiState = (state: State): UIState => {
     const idx = (state.map[-1] as ListLikeContents).values[0];
-    const at = selectEnd(idx, [{ idx: -1, type: 'child', at: 0 }], state.map)!;
+    const at = selectEnd(idx, [{ idx: -1, type: 'card', card: 0 }], state.map)!;
     return {
         nidx: state.nidx,
         root: -1,
+        nsMap: {},
+        meta: {},
+        cards: [
+            {
+                path: [],
+                // ns: {
+                //     type: 'normal',
+                //     children: [],
+                //     hash: null,
+                //     top: idx,
+                // },
+                top: -2,
+            },
+        ],
         regs: {},
         clipboard: [],
         hover: [],

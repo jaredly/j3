@@ -1,9 +1,8 @@
 import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../parse/parse';
 import { Map } from '../types/mcst';
-import { getNodes } from './getNestedNodes';
+import { getNodes } from './nestedNodes/getNodes';
 import { ONode } from './types';
-import { StateSelect } from './getKeyUpdate';
 import { Path } from './path';
 
 export const selectStart = (
@@ -43,54 +42,6 @@ export const pathChildEqual = (
     return equal(one, two);
 };
 
-export const goLeft = (path: Path[], map: Map): StateSelect | void => {
-    if (!path.length) return;
-    const last = path[path.length - 1];
-    const pnodes = getNodes(map[last.idx], map);
-
-    let prev: Path[] | null = null;
-    for (let pnode of pnodes) {
-        const ps = pathSelForNode(pnode, last.idx, 'end', map);
-        if (!ps) continue;
-        if (ps.length && pathChildEqual(ps[0], last)) {
-            return prev
-                ? { type: 'select', selection: path.slice(0, -1).concat(prev) }
-                : goLeft(path.slice(0, -1), map);
-        }
-        prev = ps;
-    }
-
-    return goLeft(path.slice(0, -1), map);
-};
-
-export const goRight = (
-    path: Path[],
-    idx: number,
-    map: Map,
-): StateSelect | void => {
-    if (!path.length) return;
-    const last = path[path.length - 1];
-
-    const pnodes = getNodes(map[last.idx], map).reverse();
-    let prev: Path[] | null = null;
-    for (let pnode of pnodes) {
-        const ps = pathSelForNode(pnode, last.idx, 'start', map);
-        if (!ps) continue;
-        if (ps.length && pathChildEqual(ps[0], last)) {
-            return prev
-                ? {
-                      type: 'select',
-                      selection: path.slice(0, -1).concat(prev),
-                  }
-                : goRight(path.slice(0, -1), last.idx, map);
-        }
-        prev = ps;
-    }
-
-    // throw new Error(`current not vound in pnodes`);
-    return goRight(path.slice(0, -1), last.idx, map);
-};
-
 export const pathSelForNode = (
     node: ONode,
     idx: number,
@@ -105,8 +56,15 @@ export const pathSelForNode = (
         case 'render':
             return [{ idx, type: loc }];
         case 'ref': {
-            const path: Path[] = [{ idx, ...node.path }];
+            if (node.ancestors) {
+                console.log('got ancestors folks');
+            }
+            const path: Path[] = [
+                ...(node.ancestors ?? []),
+                ...(node.path ? [{ idx, ...node.path }] : []),
+            ];
             const cnode = map[node.id];
+            if (!cnode) return [];
             switch (cnode.type) {
                 case 'array':
                 case 'list':

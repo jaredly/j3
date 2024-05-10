@@ -40,8 +40,12 @@ export const sexp = (node: Node): string => {
             return `(tapply ${sexp(node.target)} ${node.values
                 .map(sexp)
                 .join(' ')})`;
+        case 'comment-node':
+            return `(comment ${sexp(node.contents)})`;
         case 'comment':
             return 'comment';
+        case 'raw-code':
+            return 'raw-code';
         case 'rich-text':
             return 'rich-text';
         case 'attachment':

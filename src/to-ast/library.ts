@@ -3,22 +3,29 @@ import { Def, DefType, Expr, TVar, Type } from '../types/ast';
 import { Layout, MNode } from '../types/mcst';
 import { AutoCompleteReplace, AutoCompleteResult, Mod, NodeStyle } from './Ctx';
 import { HashedTree } from '../db/hash-tree';
-import { Cursor, StateUpdate } from '../state/getKeyUpdate';
+import { Cursor, NsUpdateMap, StateUpdate } from '../state/getKeyUpdate';
 import { UpdateMap } from '../state/getKeyUpdate';
 import { InferMod } from '../infer/infer';
+import {
+    Card,
+    MetaDataUpdateMap,
+    SandboxNamespace,
+} from '../../web/custom/UIState';
+
+export type Display = {
+    [idx: number]: {
+        style?: NodeStyle;
+        layout?: Layout;
+        autoComplete?: AutoCompleteResult[];
+    };
+};
 
 export type CompilationResults = {
     errors: Report['errors'];
     mods: { [idx: number]: InferMod };
     hashNames: { [idx: number]: string };
     globalNames: { [hash: string]: string[] };
-    display: {
-        [idx: number]: {
-            style?: NodeStyle;
-            layout?: Layout;
-            autoComplete?: AutoCompleteResult[];
-        };
-    };
+    display: Display;
     localMap: {
         terms: { [idx: number]: { name: string; type: Type } };
         types: { [idx: number]: { name: string; bound?: Type } };
@@ -96,6 +103,10 @@ export type HistoryItem = {
     id: number;
     map: UpdateMap;
     prev: UpdateMap;
+    nsMap: NsUpdateMap;
+    nsPrev: NsUpdateMap;
+    meta: MetaDataUpdateMap;
+    metaPrev: MetaDataUpdateMap;
     at: Cursor[];
     prevAt: Cursor[];
     ts: number;
@@ -120,5 +131,6 @@ export type Sandbox = {
 
     root: number;
     map: { [idx: number]: MNode };
+    cards: Card[];
     history: HistoryItem[];
 };

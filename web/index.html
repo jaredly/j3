@@ -10,6 +10,8 @@
         /> -->
         <title>j3 playground</title>
         <link rel="favorite icon" href="favicon.png" />
+        <script src="fonts/prism.js" data-manual></script>
+        <link rel="stylesheet" href="fonts/prism.css" />
         <style>
             /* ::selection {
                 background-color: rgba(255, 255, 200, 0.3);
@@ -184,8 +186,38 @@
                 outline: none !important;
             }
             pre {
+                font-family: inherit;
                 margin: 0;
                 padding: 0;
+            }
+
+            .traced::before {
+                width: 5px;
+                height: 5px;
+                background-color: green;
+                border-radius: 5px;
+                content: ' ';
+                display: inline-block;
+                margin-left: -5px;
+                position: absolute;
+            }
+
+            .bn-container a {
+                color: #aaa;
+                text-decoration-color: #777;
+            }
+
+            .bn-editor {
+                padding-inline: 8px !important;
+            }
+            .bn-editor strong {
+                font-family: monospace !important;
+            }
+
+            .bn-inline-content code {
+                font-family: Jet Brains !important;
+                font-variant-ligatures: normal;
+                color: #86b8ff;
             }
 
             .editor-container {
@@ -244,7 +276,8 @@
         </style>
     </head>
     <body>
-        <script src="./run.tsx" type="module"></script>
+        <script src="./ide/explainer/run.tsx" type="module"></script>
+        <!-- <script src="./run.tsx" type="module"></script> -->
         <div
             style="
                 font-family: Jet Brains;

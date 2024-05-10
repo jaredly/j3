@@ -17,11 +17,12 @@ const err = (
 
 export function validName(name: string) {
     return (
-        name.length > 0 &&
-        !name.includes('.') &&
-        !name.endsWith('///') &&
-        (name.endsWith('//') || !name.endsWith('/')) &&
-        !name.slice(0, -1).includes('//')
+        name === '/' ||
+        (name.length > 0 &&
+            !name.includes('.') &&
+            !name.endsWith('///') &&
+            (name.endsWith('//') || !name.endsWith('/')) &&
+            !name.slice(0, -1).includes('//'))
     );
 }
 

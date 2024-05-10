@@ -1,4 +1,3067 @@
 
+# For Export
+
+for the series of artcicle
+- [x] collapsed things should show what's hiding
+  - I love it so much
+- [ ] hrmm `stmt` is really a misnomer, and I should remove it.
+  These are "toplevels".
+
+# The Blorg Porst
+
+- [x] intro.json
+- [x] structured-editor.json
+- [x] encoding.json
+- [x] ast.json
+- [x] bootstrap.json
+- [x] self-1.json
+- [x] jcst.json
+- [x] parse-self.json
+  - [x] executing
+  - [x] trimmed & refactored the implementation
+  - [x] annotated; eh, I feel like there's not a whole ton to talk about?
+- [ ] algw-s2.json
+  - [x] split stmts
+  - [x] basic deftype idk
+  - [x] typealias why nottt
+  - [x] quot n stuff
+  - [x] get it running on everything, verify that its allgood
+  - [x] hrm maybe scope should be to "forall" schemes?
+- [ ] algw-fast.json
+  - [x] executing
+  - I think I probably want to do a stripped-down version first?
+    Just like with the parsing & code generation.
+
+# Ok I think all the files are in decent shape
+
+now to render them! or something.
+
+We need:
+- a left sidebar, definitely
+- how to order? probably use numbers or something
+- andddd we also need to get caching working (would be nice)
+Also:
+- make a pre-rendered version without any fluff, for mobile users or whatnot
+
+And then release it? probably?
+
+
+# PLAN Higher up...
+
+
+- [ ] HRM "instantiate" ... doesn't need to return the subst? I think I might be doing unnecessary work...
+  - because the whole point of instantiate is that those vbls get replaced...
+  - LOL ok so for the "pattern" whatsit, we do actually need to hang on to those instantiations.
+- [ ] I do need plugins to clue in to the `usage` dealio, so I don't think things aren't used.
+- [ ] I ... kinda want ... the inferred `type` to be displayed directly *above* the toplevel.
+  to avoid jumping, should we reserve space for everything there? Or just for toplevels with a single named export?
+
+Innn the interest of scrappiness; once we have a bare-bones `parse + compile` for self-hosting,
+let's get right to type inference.
+(Q) Should we labor through the manual tracking of the `subst` list???
+  - maybe? yeah let's go with "no" on that one. I don't really see a plus side to it.
+    but we can mention what's going on.
+(Q) Do I dare try to remove `map`, and just use a `(list (, k v))`?? not sure really.
+  - I mean, I could see what the perf implications are.
+
+- [x] get bootstrap.json AST in alignment with parse-self.json
+- [x] hrmmm let's get rid of all these `,,` and `,,,` nonsense.
+  Just do tuples like they ought to be done. `(, a b c)` is `(, a (, b c))`
+
+- [x] Rich Text spell check only enabled when the node is focused
+- [x] bootstrap should really parse into `pat`s for `let` and `fn`, it's weird to bail.
+
+- [x] right now, clip history that I save to ~500 items?
+  - bootstrap.json down to 1.2mb
+- [x] Do nice readmeeeees
+- [x] jsEvaluator, maybe don't evaluate (abc def); only if `abc` is a raw-code
+  - [x] raw-code, rendered inline, should look nice
+- [ ] I should allow a plain `:` as an identifier...
+- [ ] backspace `( abc)` with cursor after the open paren; should delete the blank. Actually all blanks.
+  - [ ] ANDDD backspace to break a list *should* create multiple namespaces if needed. PLEASE
+- [ ] drag & drop should be a lot smarter.
+  Let's have it be separate from the normal cursor drag.
+- [ ] what if a collapsed toplevel... listed the names of things declared in it?
+
+# For the Boots
+
+- [ ] I need to ... make the bootstrap parse types be the same as what self-1 is expecting. right now I'm making it worse.
+- [ ] alsooo should I be smarter about externals detections in raw js? idk
+
+COMPROMISE
+- [x] what if bootstrap.js sanitized everything??? Like that would work, right?
+- [ ] OK So nowwwww what about them builtins?
+  - self-1 has a thing with all those builtins
+    but what if it were differenttt
+    - maybe like exporting a "builtins" or something? like a prelude? I mean ... right?
+
+# QUerstion
+
+do I want ... the bootstrap, to do tree-walking evaluation, or compilation?
+compilation definitely results in faster code
+and so maybe I want to jump right to that?
+That removes some amount of bumping around, because then I can go right to a fnsEvaluator. ... right?
+
+yeahhh. but I can also include a tree-walker dealio as an example if I want?
+
+OH so fun story, it looks like maybe I'll be able to do it after all? like ...
+so I have this "prelude" that allows me to define `evaluate`.
+And then my `compile(ast)` just looks like `ast => "evaluate(${JSON.stringify(ast)})`.
+pretty slick.
+
+SO I will also need to pass in an `$env` vlb when evaluating, because I won't be taking globals
+off of the normal js scope.
+
+Q: so ... prelude. ... can it just be a raw string? If so, how would I know what values it has?
+and then ... how would I turn it into a ... "file"?
+
+`compile_stmt` .. probably wants to .. have more control?
+like, right now fnsEvaluator is doing a bunch
+like adding `return {a, b, c}` to it.
+wellllll but not having the return is helpful when we `toFile` it...
+
+hrmhrmhrm. what if I have like `compile2` and `compileStmt2` that rely on a passed-in $env instead of
+... js scope?
+
+# js in your jerd
+
+- [x] find an editor (CodeJar)
+  - [x] make a very basic bootstrap
+- [ ] find a parser for analysis (typescript?)
+- [ ] make it pretty (prism?)
+- [ ] do a type check maybee (typescript?)
+- [ ] ARH cmd-enter needs to make a new raw-codeeee
+
+- [ ] ooooh BUG, if there's a `name` that's `constructor` or `toString`, it will totally bork
+  things.
+  OH so I need to switch to `hasOwnProperty` right?
+
+soooo how would it be ... to .... allow me to ... evaluate js a little bit... yeah ok I will do that.
+so like
+'we can do a very little bit'
+-> maybeeee only toplevel (raw-code ....args)
+so that I can get the fixture test running
+
+#
+
+- [x] DEFAULT COLLAPSE MODE should be 1-line
+  with "hover to see the whole thing in a popover"
+  and then you can "pin" the output to make it take up more space.
+  That will help tremendously with the jank of moving everything around.
+  - [ ] ok there's a little shift when errors are introduced, but much much less.
+
+# I ... had a thought
+what if ... I not only make this env multi-compiler
+but also ... multi syntax?
+Like, I love my structured editor
+but how cool would it be to be able to self-host all the way down?
+That is to say, to have the javascript host be in "toplevels" (edited by codemirror probably)?
+Wouldn't that be cool?
+It would allow me to do my literate programming dealio, all the way down. Which I would definitely like.
+So I could tell the whole story in the same medium.
+
+# Can I figure out Rose?
+
+- [ ] 'labeled type' is an element of `type`
+- [ ] and would probably have a `kind` of `row`?
+- [ ] needs predicates
+  - "containment" (iscontainedby v1 v2)
+    -> expands v2 to include everything in v1? right?
+  - "combination" (combine fields1 fields2 fields3)
+    -> if all are defined, we just do checks (and unify subitems I guess)
+    -> if f3 is a variable, can just iterate fields1 and fields2
+    -> if f1 or f2 are variables, we find the different btw f1 and f3
+    -> if we have multiple variables ... then we're probably not constrained enough?
+
+QUESTION
+can I use predicates to get the `lacks` thing going?
+
+sooo there's the other way to do it
+which is with a special type constructor ... right?
+
+OK so the story is
+let's deal with type classes first, as I have a concrete implementation
+THEN once I have constraints that make sense
+AND kinds added to the lang
+I can mess with rows, using the kinds and probably also the constraints
+
+
+# Thinking more about thih
+
+- [ ] I should take a look at OutsideIn(X)
+  - oohhh so interesteing constraint: local let's can't be polymorphic anymore!! honestly I'm not super mad about it, you can always lift, bruh
+- [ ] can I change thih to put the (preds) in the state monad? Would that have any adverse effects? It seems like we're doing a lot of collecting...
+  - probably stick them in a `bag` so we're not doing endless `concat`s
+
+- [x] collapse should just hide children
+- [x] BUG changing the "output" format doesn't immediately jog the things; I need it to
+- [x] add a 'show type env' debug button. and a type_env_to_string fn
+
+OK FOLKS
+at this point, I'm ~confident that I can just slap predicates on
+
+
+#
+
+- [x] render readonly for sseearch results
+- [x] better menuuu
+- [x] "pin" a toplevel, render readonly
+- [x] okayyyy so, my traces are .. not really up to snufff. Is it that, I need to distinguish between locals and globals?
+- [x] gotta be able to delete an empty ns that's before you
+- [x] let's do hover on timeout, not on alt
+- [x] fix the longstanding issue with newlines in stringText
+- [ ] usage in plugins too pleeeease
+
+I worry ... that I've gotten algw-fast so nice
+... and then ... thih is so ... much less polished ...
+
+How .. hard will it be to add "predicates" to algw-fast?
+like, it should be doable, right? I'd much rather do that,
+than try to massage thih into shape ...
+
+Oh that's right:
+- Kinds
+and
+- Type Classes
+
+and ... I think I remember it being:
+- you can have type classes w/o HKT, but HKT doesn't make sense without type classes
+
+# So, Adding TYPE CLASSES to algw-fast
+
+- we need to keep track of `preds`, on the StateT. (it can be a `bag`)
+- type-env needs to have info on what's available.
+- StateT will also want to hang onto "... selected ... instance ... at fn call"
+- and ... schemes need to be wrapped in quals. Right?
+
+# THIH
+
+definstance, what do I need to do...
+- hook up the instance declaration
+- .. ok I need a function that will take my parsed type nonsense, and ... attach the right kinds to tcons
+
+- [ ] class-declarations need to know the types of their associated functions. that need to be implemented
+  - we could get fancy with "default implementations" but ... not at the moment.
+
+
+
+# Getting back into thih
+
+- [x] algw-err is now checking type aliases, and we need to support recursive type aliases
+- [ ] So I thikn that last thing that happened was I needed to figure out when/how
+  to deal with a definstance ... and I determined that I need to switch to a multi-pass
+  thing ... where the `kind` of a given `name` would determine which "pass" it would get
+  processed in.
+  ...
+  So, how does that play with the `tenv` that I'm producing, and caching? Is that gonna be
+  a problem?
+  mensch this is kinda involved.
+
+  wait but can I decide that `definstance`s can be late-binding?
+  I think I need to check to see if I can ditch `simplify` withouth suffering too much.
+  Can I simplify late in the game, like during compilation?
+
+- [x] clear errors for tops that stop needing processing
+
+# [x] DOCSTRINGS PLEEASE
+
+OK I've decided:
+- ~~toplevels will have a separate "slot" for docstrings~~ nope not that, see below.
+- for things that are defined inline, it'll look like
+```clj
+(deftype hello
+  ''some docstring
+  (one thing)
+  ''other docstring
+  (two otherthing))
+```
+
+oooooooooooooooooooh or what about
+like
+I could just do
+```clj
+('' some docstring
+ defn something [abc]
+  efgh)
+```
+right?
+I make the rules? Yeah honestly I don't hate it. and it allows me to not
+do a bunch of specialty stuff.
+all it'll take is a little tweak to the layout algorithm, and we're golden.
+
+
+
+#### Brainstorming
+- [ ] Noww that I've got autocomplete, and hover-for-type ... I'd really like some docstrings.
+  I feel like ... they /ought/ to go "right above" the definition ... but that's a little annoying to do,
+  from a technical perspective.... right?
+  WELLL I could just ... make it so that `nsTops` have an extra slot for documentation. Right?
+  That would ... mean that /other/ things, like ... idk type constructors ... which are defined in the middle
+  of a toplevel, wouldn't be able to go through the same channels. Is that so bad?
+  hmmm I mean ... I guess I could snoop on the result of `names`, and make a ... "slot" for each name that
+  is given.
+  So that .. the "docstring" header for a toplevel might have several "cells" in it, one for each named thing.
+  would want to make sure it's not ... too fragile though.
+  Might also be a little weird?
+  Like, the docstrings wouldn't be colocated.
+
+```clj
+(deftype hello
+  (one thing)
+  (two otherthing))
+```
+in one incarnation would look like
+```clj
+'' hello docstring
+(deftype hello
+  ''some docstring
+  (one thing)
+  ''other docstring
+  (two otherthing))
+```
+but in the "toplevels have a magic pouch" it would be
+```clj
+'' hello docstring
+'' some docstring
+'' other docstring
+(deftype hello
+  (one thing)
+  (two otherthing))
+```
+which yeah not the most ideal.
+althouuuuugh for those things, I could just have the rule be "for the loc of the name, find
+an first-child ancestor that has a prev-sibling that is a rich-text node, and use that".
+Honestly that's not too bad.
+and (ding ding ding) it allows my parser to continue to ignore rich-text and comments.
+
+# [x] Autocomplete
+
+- So, if you have a ?
+  or you ... are editing something
+
+- [ ] autocomplete with JUST globals
+  - so this would be ... living on `state`? maybe? or maybe not idk
+    could be like a `Cursor`
+
+- [x] make inference errors much more specific
+- [x] do an autocomplete, when the cursor is on a `missing` type error.
+- [ ] maybe like shift-space to trigger the autocompleter on a non-missing?
+
+# [ ] Autocomplete with locals pls?
+
+# [x] Cache the most recent successful "type" response for a given top, and use that if we're failing. That'll make things much nicer.
+
+# [x] Parse but better
+
+parse_stmt2
+parse_expr2
+comin atcha
+
+# Things I'm doin
+
+- [x] search restultsss
+  - [x] simplify results
+  - [x] Show the name of the definition that a result comes from
+- [x] search for a string (within STRINGs y'all. yes please.)
+  - hmm
+- [x] cmd+p should bring up the jump to
+- [x] cmd+p should show types
+- [ ] autocompleeeete
+  - my errors should get more specific
+    - (type error)
+    - (missing error; (, loc expected-type autocomplete-options))
+    - (depends on something that has an error)
+  - ... I also want a way to indicate to the type checker...
+    "this term exists, but has a type error so you can't rely on it...
+    ... this is what it's type used to be, so use that"
+- [x] alsoooo parse errors shouldn't tank the whole thing.
+  - which meeeeeans I want the parser to have a monad, which meeeeans
+    that either I need the bootstrap parser to understand let-> (I don't)
+    or I really should set up an intermediate parser that's much simpler in
+    needs.
+
+
+# [x] Highlight Usages n stuff
+
+So what's the big idea.
+Probably ... something on state?
+on a timeout...
+
+ayyyyyy
+maybe a timeout at some point, idk? it's pretty cool.
+
+- [x] CommandPalette -> showww the usages, in a little bit of context!
+
+# Effects
+
+(arg1, arg2) => {
+  !doSomething()
+  somethingElse
+}
+
+/// does that work???
+(arg1, arg2) => handlers => {
+  handlers.doSomething(() => {
+    somethingElse
+  })
+}
+
+
+- [x] valueToString / typeToString...
+  - [x] typeToCst let's goooo
+  very nice.
+
+
+I WOUUULD really like ... to have the notion of "commits".
+And then ... the ability to show "these things have changed".
+probably an "autocommit if everything's green"? And then
+manual commits to "name" what has changed.
+
+
+
+
+## a tweet?
+
+
+Jerd is a result of asking the question: What if instead of first writing a language and then
+a structured editor, I first write the editor, and then the language?
+
+# Unused, let's make it really great!
+
+- [x] types! also get in on the unused action.
+
+
+# Tests I need to write
+
+- [x] something about making sure `unused` highlighting actually propagates correctly. What is up with that.
+- [ ] something around "introducing errors" into a term, and then ... propagating things ... idk
+  - [ ] deleting a term (or making it so a term no longer exports a name) should be reflected in downstream
+    tops
+
+# NightTime Thoughts
+
+- [ ] find-in-page - should have a right sidebar overlay thihng that shows the results in-context
+  (2 lines above & below?)
+- [ ] ALSO multi-select, if there are selections that are off-screen, show them in a little toast? that would be rad
+- [ ] to enable this, have a *cache* of `pathsForIdx`, which ought to be pretty simple to update?
+- [ ] search results will have the top path be `type:search-result` instead of `type:card`, and hovery deals will
+  have `type:hover` ... although hm the hovery deal is a little weird because we *do* want the selection to
+  show up ... hm ok, maybe the hovers are readonly? and pretend to have the same ~path as where the selection is?
+  yeah let's do that.
+- ALSO multiselect, theselection highlight should be orange instead of blue
+- [x] ALSO let's really do "highlight all usages of the current identifier" pleeease and thank you.
+- [x] ALSO have a command palette thing that's "rename", and what it does is multiselect all usages, which is great
+- [ ] type checker exports a "phases" thing, (array (, int (array string))) - indicating the phase numbers ... and the "kinds" that get processed during that phase.
+- [ ] LocedName `kind` shouldn't be hardcoded in js anywhere. Just cue off of what the evaluator gives you.
+  - cmd-p = jump to, pleease. Also indicate the `kind` of the thing you're jumping to.
+- [ ] maintain a "jump history", that you can pull up just like search results (it'll show a +/- 2 lines context)
+- [ ] maybe prune all but the last hour of changes? That oughta be enough, for nowwwww
+
+# Noww that
+
+now that parse-1-args can do better javascript output...
+... and ... well the thing is, I was hoping it would speed things up. it hasn't really.
+So what's my new plan of action?
+
+
+## THIH Type Classes Type Checking
+
+in order for thih type classes to type check, I need
+
+- parse can return multiple statements. This shouldn't be hard,,, because I'm mostly abstracted
+  over the return value of parse. instead of `stmt` it returns `[stmt]` and js is none the wiser.
+  is that real?
+
+> [x] we're doing `compile` instead of `compile_stmt` for sexpr's currently.
+> [x] we're checking the meta of the expr's loc, don't introspect that
+  - [ ] when really `traceTop` should probably be a property of the NS
+- [x] compile_stmt ... should it ... like ok, if there are no 'names', do we just assume 'this is an expr'?
+  seems like we probably could. lets try it.
+
+Ok, so with `parse` returning multiple statements,
+do we...
+
+do a multi-pass thing?
+How do we determine which pass ... we're on?
+
+just because parse can return mutliple things
+doesn't mean the deps are different for each .. at least at tthe moment.
+
+
+So thinking of the super-group story,
+when you call `externals`
+orrr rather `parse`?
+it returns a list of stmts, along with ... their ... hmm.
+wait.
+
+ok no, it returns `(, stmt (array number))`.
+and the `array number` indicates *which passes* this stmt should be
+... involved in ...
+
+so for a given pass, you ... need a separate dependency sort. ...
+which is fine.
+
+and then you go through and call `infer_stmts3` with .. the
+stmt, and the pass #, and ... then ...
+
+it'll be like
+```
+(match pass
+  0 (infer-classes-and-types stmts)
+  1 (infer-definstances stmts)
+  2 (infer-defns stmts)
+  3 (infer-exprs stmts))
+```
+
+And that should be enough, right?
+then we'll get around to needing to do cache invalidation
+based on type-informed dependencies. which we'll need to resolve
+in order to know how to compile type classes in the first place.
+
+SIDE NOTE should I just get rid of `infer_stmt` altogether? We don't really need it, right?
+
+# Hm
+
+OK ALSO so the current thing ... let's bring the `parsing` into the web worker, that's gonna be important.
+
+....
+
+also...
+
+maybe I should get `record`s going in the algw language ... it would definitely make interacting with
+javascript easier. And, also arrays? like that shouldn't be super hard, right?
+then I can do `list->array` and stuff.
+anddddd it would be really cool to autogen `to-json` and `from-json` for all deftypes.
+
+Anyway, the more I self-host, the more importand performance will be...
+and so we get to (jst), which can be much better optimized!
+
+- [x] ok so the way I layout strings is really quite silly.
+
+
+
+- [ ] Random idea: if there's a type error,
+  what about highlighting (or displaying somehow) all usages
+  of the function that has a problem?
+
+
+
+
+I can't rememebr when it was, but I was also thinking about unquoting.
+like `(@@ (one @(two)))`, where "two" would be unquoted. has some symmetry with `${}`.
+
+
+# Thinking about type classes
+
+the "what order to I process these in" question is ... not simple.
+
+a `definstance` might depend on other `definstance`s.
+We don't know what it might depend on until we do the type checking of the instance functions.
+
+BUT
+
+we need to be able to sort out dependency order without doing type checking.
+...
+SO
+
+we might need to do ... things ... in 2 passes.
+first pass, collect all the `definstance` declarations, *assume* the functions type check,
+and add them to the class-env.
+
+Then go through, type check everything.
+
+I can think of 2 ways to do this.
+
+(1) allow `top`s to export *multiple things* that have *different dependency details*.
+  conceptually, we could call it (top) => [stmt] instead of (top) => stmt.
+  this has several things going for it.
+
+  (definstance (pretty c) {a b c d})
+  would turn insto
+  (sdefinstance (pretty c) loc)
+  and
+  (sdefinstance-methods loc {a b c d})
+
+  ALL usages of `pretty` would ... rely on ... the .. hrm.
+  ok would have like a pseudo-dep ... that encompasses ...
+  all of the `sdefinstance`s of `pretty`?
+  that seems complicated.
+
+  and then...
+  how do we ensure that we're compiling `sdefinstance-methods` ... before any
+  `evaluations` that need to happen?
+
+(2) ok any way you slice it I think we'll need to support mult-stmt outputs.
+  but another thing to think about is having "multiple super-groups" that we can sort
+  things into, both for the purpose of type checking and possibly also compilation.
+
+  If we just say
+  "first super-group => all (defclass)es and (deftype)s and (defalias)es"
+  "second super-group => all (definstance)s"
+  "third super-group => all (definstance-methods) and (def)s" - because they can depend on each other
+  "fourth super-group => all (expr)s and (plugin)s"
+
+(3) ALTERNATIVELY
+  we could add *more passes* than just "parse -> typecheck -> compile"
+  like, there could be a "classcheck" pass, that ignores everything but the (defclass) and (definstance)s.
+  and then (typecheck)ing the (definstance)s just checks the instance methods.
+  would that ... allow the current dependency determinations to remain unchanged?
+  That would be quite nice.
+
+oooh recompilation ... also needs to ... be aware of things.
+that is to say: If the implementation of a typeclass instance changes,
+we need to ... re-run anything that used that implementation.
+
+Actually this touches on something that has been bothering me.
+IF I can modify `compilation` so I know whether a variable reference is a `global` or a `local`,
+then I can get away with recompiling much less, because references to globals will be dynamic.
+This would be nice.
+
+ANYWAYS, what I mean to say is this:
+- we can have a rough first-pass dependency analysis that works for type checking
+- but then we need the type-checking pass to produce extra dependency information, needed for
+  evaluation.
+
+(4) And most mostestly:
+
+So, what if ... I self-host even harder?
+That is to say, what if I bring more of the ... `updateState`
+into the lang.
+
+This would allow me to ... do macros! In a way that wouldn't require the js side to know about macros.
+
+because macros require ... interleaving of parsing and execution.
+
+like
+(parse everything), and macros become `(emacro string cst)` and `(tmacro string cst)`
+and then
+(dependency analysis) partitioning into "macros and things needed by macros"
+and then
+(type check & compile the macros)
+and then
+(run the macros on the things that needed expansion)
+and then
+(type check & compile everything else)
+
+
+
+# The Next Things (thih)
+
+Ok, now that 4 day sidetrack is done (web workers + algw-fast + unused)
+we can get back to thih!
+Namely, we need to be able to define instances and type classes.
+So that I can actually verify that things are working.
+
+OH AUTOCOMPLETE
+
+ALSO WHAT ABOUT SEARCH
+gotta be able to do document search
+not just relying on the browser.
+
+IT WOULD BE NICE
+to simplify types for display, by subbing out type aliases.
+What are the changes ... of that being at all fast?
+I guess ... I could do it on-demand?
+might not be the worst
+could prolly do it for a single type <20ms, but doing it for all
+hovers would be way too much.
+
+
+BUT ALSO
+wouldn't it be nice
+to be able to PIN a toplevel to the bottom of the screen
+as reference.
+probably in readonly mode?
+
+BUT ALSO
+it would be cool to be able to...
+"copy this `(typedef` as a `match` ..."
+
+- [x] BUT ALSO type hover on a tcon should show me the types of the arguments pleeeease
+
+I REEEALY want a "jump back"liness
+
+# Another thing (serialize to CST pls)
+
+Let's have our parsers be able to serialize as well! Why not?!?
+Thennn I could actually do normal sourcemaps, which would be very interesting.
+BUT the more ~important reason is so that I can display types and such much nicer,
+which highlighting.
+
+# AND another thing (template strings with functions)
+
+Doooo I think it would be interesting to do real template strings... like html`abc`?
+In a typeclasses world it actually becomes very interesting.
+it would have the signature `a b . (first: string, rest: (array (, a string))) => b`
+and if it wanted to, it could have a type class constraint on `a` waiiiit no that's not real.
+that would be heterogenous. unless you had like gadts or something.
+hrmhrmhrm ok so maybe what I would want is for it to have the type
+`{ show: TCLS a => a -> b, tpl: (string (array (, b string))) -> c }`
+and then
+html`abc ${def} g`
+would turn into `html.tpl("abc", [(, html.show(def) " g")])`
+
+Ok, so I first need records, right?
+
+BECAUSE wouldn't it be cool to be able to:
+
+errmsg`the node ${somenode} at ${loc} has a problem`
+and it would first type-class-coerce `somenode` into the serialized(cst) version?
+So that I could display it all pretty in the UI? Seems like it would be fun.
+
+# AW_FAST
+
+ok so I'll try to ... do less composing.
+even less.
+
+- [x] get the bun tests to check the embedded fixture tests tooo
+- [x] type-args.json, get the errors to be type-error
+- [x] What a ride!! Now algw is fast :)
+
+# SLowwwwwwww
+
+wow is it like, a lot slower now that I'm tracking usages?
+nope. algw-subst is just that slow.
+
+my guess: It's because of all the unnecessary (compose-subst)ing that I'm doing.
+b/c like 2s to 8s is huuuge
+
+- ok dropping the (compose-subst) invariant helpeddd took off .75s
+  from algw-subst -> algw-subst
+- [ ] BUG the NSDragger doesn't update when errors are no longer there
+
+WOWWWWWWW that's crazy, just making the inner-loop of `unify-inner` opt out of the `subst`ing makes
+it soooo much faster, even faster than type-args??? what is happening.
+LOL ok, it got a lot faster because it was broken 😂
+
+ok, so the unify trick was one bit, now we need to maybe try some more?
+
+Verification = type-args `defn externals` -- does `(, bag bound)` have usable types, or no?
+
+# BUGGY - rm top node
+
+- need to report that a node isn't there anymore...
+
+# Bootstrap chain
+
+parse-1-args
+type-args
+
+# ERROR
+
+TOP BUGS
+- [x] WHY the double-eval right off?
+  might be a `debug` or something? or `evaluator` loding somehow
+- [x] AGH why is my name deduping not working??
+- [x] why parse errors keep stacking? so annoyinggg
+- [x] the 'sorround' stuff not working
+- [x] duplicate names - where am I tracking that?
+- [x] duplicate tracing isn't working on the very first time? Wieerrrd
+- [x] duplicate tracing needs to check cached tops!! (adding a (def y) *before* another (def y) doesn't indicate error)
+- [x] OK SO I actually, let's just clear out the "parsed" duplicates thing.
+- [x] Can I get `hover the defined name` to work???? please???
+  - yeah I think what I want is, in addition to the `(array (, loc type))` report, we also
+    report `usage`s. which would be ... `(array (, client provider))`, but idx's.
+
+- missing should autocomplete
+-
+
+
+- [x] JUMP TO next error... should be doable right?
+
+
+NEXT STEPS for reporting usages & uses
+- [x] tenv/type needs to report the `idx` as well.
+- [x] and then ... we can get down to business.
+
+
+- [x] ohhhhhh traces aren't going to be working yet, right?
+  - yeah Sendable has to inclue `TraceMap`
+
+
+- [ ] 💡 might be cool to be able to "save/restore" the `meta` map of traces ... so that I can e.g. have a set of traces
+  that I use to debug a certain thing... idk if that's necessary tho 🤷
+
+
+### [ ] THIH Hover
+
+- [x] 'destroy is not a function" wen 'jump to lolz' in simple.json ...
+- [x] first render, errors arent showing up? (oh its because I'm not rerendering on worker message receipt)
+- [x] first run, values arent being propagated or something?
+- [x] type & error hovers
+- [x] show a spinner when the worker is ... working.
+- [x] show types of defns n stuff pleassee
+- [ ] it would be ... quite nice ... to ... incrementally send back updates.
+- [x] ok why the heck is it taking 1.5 seconds to save? lol it was 30mb
+- [x] UHM Let's do some indication of `unused` variables!
+- [x] and "highlight usages of the currently selected ident" would be super nice
+
+- [ ] tbh now that inference & stuff is async, the caching issue is somehwat less. Would still be
+  great to nail down ofc.
+    anddd we should move parsing to the worker, so that I only have to cache one thing.
+
+- [ ] THIH gotta report hoverssss
+
+- [x] lol skip intermediate requests, for reals
+
+ok lol thih is sooo big. let's maybe compress it?
+
+
+#
+
+Future papers to port:
+https://twitter.com/jaredforsyth/status/1709041488032645395
+https://twitter.com/welltypedwitch/status/1709129585613328657
+https://twitter.com/TimWhiting14/status/1780046115662135350
+
+# More Perf
+
+whyyy is it taking 30ms to just change a single thing.
+
+# Web in the Workers
+
+- [x] `calculateInitialState` and `updateState` have a ton in common.
+  We should be able to merge them quite easily.
+- [x] THEENNNN we can get down to business, to hook up type inference.
+- [x] anddd plugins! Gotta get our fixture tests back up
+- [ ] and then, please, yes lets do CACHING of the type infos.
+- [ ] oH and our immediateResults arent being cached either at the moment,
+  gotta fix that too. Don't need to re-parse everything all the time.
+- [ ] CACHEs should include the ID of the evaluator,
+  and evaluator IDs should include like a `timestamp` (file save) time.
+  AND cache should have a timestamp that needs to match the `state` in order
+  for it to be valid.
+- [ ] let's punt parsing over the bridge into the worker. we don't actually use
+  it, and it will be nice to not need an evaluator in the main thread.
+
+
+- [x] why is it saying that namespaces need updating
+
+# ImmediateResults
+
+- [x] ok, we do gotta treat `immediateResults` as immutable, I think... right?
+  ORR I need to do a much more fine-grained approach to "changed" tracking, of individual nodes.
+  So that I can know "did the error state update for this node" etc.
+  - [x] OK yeah, in getImmediateResults track all the nodes that need to be re-rendered. Should be fine
+    - layout
+    - parse errors or not
+
+
+- [x] why are we relayouting these other nodes that aren't really needing a rerender?
+  - maybe I need a `layoutEqual` function
+- [x] don't rerender NSTops if I don't need to.
+- [x] next up: drop `NUIResults`
+- [x] then, let's do some Web Workers!
+
+
+
+## Ergh
+
+I gotta put stuff into a WebWorker...
+
+What does that mean?
+What am I putting into the web worker?
+- type inference (infer_stmts2)
+- compilation probably
+- and evaluation? I guess?
+- yeah that's probably wise.
+
+hrm ok this seems like it might be a little bit ... involved.
+is it weird that I want two webworkers?
+One for "changes to this whatsit"
+and one for "doing all the changes across the board"
+
+
+
+So ...
+on change,
+we find `tops` that changed,
+send the new infos to the web worker(s)
+
+ugh ok this is going to be ... a big change.
+
+Can i really deal with all that asynchrony?
+
+
+
+>>>>
+>>>>>>>>
+>>>>>>>>>>>
+>>>>>>>>>
+>>>>>>
+>>>
+>
+
+Alrighty.
+
+`getResults ...
+
+
+
+
+
+
+
+
+
+
+
+## Implementing type classes
+
+- [ ] CAN I assume, that type class predicates will always have a simple variable as the left-hand thing?
+  `toHnf` implies that I might have `(a b) E ord` where `a` is a type variable of kind `* -> *`.
+  But I'm not sure how to make...
+  AHA
+  `(defn nested-pred [x] (< (return "")))` produces a `(b string) E ord` constraint.
+  ... not sure how to provide that proof, but here we are.
+
+  so ... yeah that identifier I use for a given predicate should probably be `idx` or something,
+  not the gen number, or the name of the type variable. It could be the `index into the preds list`, I guess?
+  hmmmm.
+
+SO WHen I'm collapsing predicates, I need to remember "how to get there from here".
+So I know how to transform the simplified predicate into the complex version.
+
+
+BUT FIRST
+
+I do need to get "hover for type" working.
+
+
+## TYPE CLASSES - they type check, its great
+
+- [x] INSTANTIATE THE TYPECLASSES IN ADD_INST
+
+
+
+
+
+
+
+Thinking my way through type class instances...
+
+When choosing an instance ...
+BTW strings should just turn into `show-pretty`, instead of doing
+the custom "pretty" dealio.
+  - ... eh, maybe I don't want to mess.
+  - anyway... I need ... to be able to know ... what ... instances are being used.
+    not to mention, what instances are wanted by a function call.
+
+    hello: num a => (fn [a] int)
+
+    hello(numCls)(a) => int
+    ...
+    .....
+    .......
+
+    SO
+    I need ... to be able to know:
+    - at function definitino (lambda) time,
+      what are the type classes in play
+    - at function call (eapp) time,
+      what did we get resolved to
+    <- these should get plopped on the state monad.
+    right next to the assumps that we're accumulating.
+    We'll call that critical info.
+
+
+
+## CACHING the type information:
+
+results without `env` is 1.7mb for THIH.
+hrm actually what I probably want
+is to persist `ResultsCache`, sans `.results`.
+That would be super nice.
+That does mean that the `lastEvaluator` would need to
+use a `serializable key` instead of the evaluator itself.
+But thats easy to do.
+
+
+- [x] lastEvaluator should be a `key` instead of the real thing
+- [x] when saving, save the cache
+- [x] when loading, load the cache
+- [x] How to bust? Do "disableEvaluation". Nice.
+
+
+## Next steps for thih:
+
+- [x] return schemes not types
+  - `type-to-string` needs to ... know about quals. and preds.
+  - so like ... ok yeah the thing we retunr should be the ... scheme, not the type.
+- [x] why do I keep getting "kinds dont match" for toplevel exprs? (oh it was caching, and my EQ was === not structure)
+- [x] ok we really need to better convert toplevel defns.
+  - [x] WHICH MEANS its args type, people. lambda (array pat) expr, yes please and thank you.
+  - [x] WHICH we can now do, because we're colocating the parser. Love to see it.
+- [x] lambda args ... finished? What's the other thing?
+- [x] oh, eapp. Let's do that too.
+- [ ] definstance...probably
+- [ ] and then I can do `defclass` and `definstance`
+
+
+
+
+
+## Lookin in to perf stuff
+
+- [x] WHY does "type"ing have a 100ms constant overhead?
+  WOWZZ for parse-1-args, its an 800ms constant overhead
+  Ahah, I was always re-typing all Plugins. lol bad move.
+
+- [x] ok, now that the "constant overhead for re-typing everything" is in much better shape,
+  I can probably let go of perf for a minute?
+
+- [ ] so, algw-subst vs type-args ... it's like 3x slower :( sad day. I guess its doing a lot more?
+  alsoo ... it's like fundamentally a less efficient algorithm. because its
+  using a bunch of subst stuff that it doesn't actually need, right?
+  like, things that it cant possibly use.
+  should I try to make it more efficient?
+  - [ ] nah, I mean maybe I can work on that for THIH? Because that's the one that's more ... pressing?
+  - Yeah, because: now that the Plugins issue is out of the way,
+    update after editing is down to <100ms.
+    Even though initial load takes 8s 😬.
+    OH HERE's a Q:
+    Can I also cache ... the type infos?
+    Like I really should be able to, right?
+    the type env is just jsonnnn I think.
+    That would be super nice actually.
+    - RES without
+
+...
+
+So ... thikning about THIH.
+It's bascially:
+algw + kinds + type classes.
+
+Now, type classes probably don't make a ton of sense without kinds
+BUT
+you can just add kinds first, right? What would that look like.
+
+```clj
+(deftype (mywhat a:(* -> *))
+  (lol (a int))
+  (who (a float)))
+```
+
+
+## Hover for Type please and thank you
+
+- [x] ONLY SHOW HOVER IF ALT KEY IS PRESSED
+
+- [x] basic hover for type, boring text
+- [x] gotta cache those
+- [ ] I want ... probably a way to indicate 'here are expressions that *should* have types',
+  so that I can highlight them not having types if there was a type error.
+  .. yeah. So like, in the case of a type error, we call `data['expression_locs']`
+  so we can know all of the things that ought to have a type. love it.
+- [ ] Alsoooo let's get a lot more fancy with our type rendering.
+  What I want... is
+- [ ] render type errors more inline, pleeeease
+
+## algw-subst?
+
+it ... seems to be mega slow
+
+this is the part where I want to do some actual
+CLI tests, making sure the bootstrap process is locked down,
+and also for performance comparisons.
+
+
+- [x] get a test file running, doing the ... bootstrap chain
+- [x] indicate how long it takes
+- [ ] have them ... run their plugins too? Yeah.
+  - so that tests run. and then ...
+- [ ] and ... it looks like algw-subst isn't actually really slow??
+
+## [x] Drag and Drop!!!
+not perfect, but passable??
+
+let's drag and drop baby. gotta have it.
+
+- [x] HOVER Should highlight the parens
+  - it's ... not perfect, for sure ... but it's pretty ok? I guess?
+
+- [ ] TODO, `normalizeSelections` is a huge pain, I should just calculate once whether we're "reversed",
+  and store that as an attribute on the cursor. `start, end, reversed`
+
+
+- [x] cmd+click should select the whole thing
+  - oh nice
+- [x] cmd+drag should drag
+  - [x] show the drag dest, lets abuse multicursor :D :D :D
+  - [x] now make it drop... like its a spot
+
+# What are things even cslled
+
+LOLok
+
+  (parse-1-args.json)
+- parse-1-args.js for the parser (includes (, 1 2 3) -> (, 1 (, 2 3)) and (fn [a b c] d))
+  (type-args.json)
+- type-args.js ^ is type-1-do + the args
+
+and algw-subst is type-1-do + the args + we're changing a whole bunch of stuff.
+
+# Type Inference n stuff plans:
+
+so what we want to report, from `infer-stmts2`
+- hover: (map int (array type))
+- annotate: (map int type)
+  -> this is how we get "inferred annotations" for things like
+    - let values...
+    - function parameters...
+    - def whatsits
+  - so, these could get suuuper chatty, especially if I don't do a good
+    job of ..shrinking them? like reverse-typealiasing.
+    which shouldn't be too onerous, ... but
+    anyway.
+
+ALSO
+ERRORS
+should be of the form
+(, string (array (, string int)))
+that is to say, an informative message, and then
+a list of "some text" and "loc" pairs.
+I think that's the best strategy.
+
+- [x] STEP 1 - make the change in algw-subst
+- [ ] STEP 2 - get the typescript backend on board!!! with the goodness
+  - [x] OH ok so I do want (lambdas) and (apps) to have array arguments. lets stop messing around.
+
+
+ALSO
+types should have not just one loc, but ideally multiple? ... so we can track herkunft.
+but maybe I'll find even better things.
+
+#
+
+- [x] let-> should drop >>= (mapped to ti-then) in everywhere. thanks
+- [x] thih working!
+- [ ] gotta get deftype n stuff for thih going, so I can actually try it out.
+
+- [x] Algorithm W, this time with a state monad
+- [ ] DO I want to put non-(values) stuff into the monad? Or keep them on tenv...
+- [ ] ok let's have the state monad keep track of all ... inferred types... by loc.
+
+
+- [ ] WAAAAIT why am I tracking the "at" of ns paths????? STOOPPPPP ITTTTT
+
+
+UGH the caching logic for getResults is so convoluted. :(
+
+
+# type-1-cache =>
+
+
+// Here's what we got folks
+
+infer_stmts = [tenv stmts] tenv
+add_stmt = [tenv tenv] tenv
+infer = [tenv expr] type
+externals_stmt = [stmt] (list locedname)
+externals_expr [expr] (list locedname)
+names = [stmt] (list locedname)
+type_to_string [type] string
+get_type [tenv string] (option type)
+
+
+
+
+
+
+THIH
+
+I really need ... type aliases. pleeease.
+- [x] ok ... it's almost working? but not quite
+- [x] ALSO lets get mutually recursive types to be
+  evaluated at the same time.
+  Which means externals needs to start returning `types depended on`.
+  and ...
+
+- [x] I want a "display" attribute on nstop
+
+- [x] gotta be able to ...spread in front of a thing
+
+- [x] allow you to "turn off" the output... probably by setting 'display' to 'none'...
+
+- [ ] get a test going to actually verify that my "self-hosting" chain is contiguous.
+  I've been playing fast and loose.
+
+I REALLLY want to be able to drag things around
+
+- [ ] I kindof want "collapse" to be ternary.
+  - first level (just hide ns children)
+  - second level (hide ns children & only render an uneditable summary)
+
+- [x] type checking, let's infer the types of missing externals
+  so we can make it much nicer to work with.
+
+
+- [x] ok my good folks, its time for "extract this chunk"
+  - which means, our little power-bar is going to get an upgrade, because woof it needs it
+
+  - hrm
+  - so ...
+    yeah, let's try to get fancy, why not?
+    we'll need some ... (include)liness.
+
+
+## THIH
+
+- [ ] potential issue: when I type multiple things together in the same bindgroup,
+  I lose typeclasses somehow?
+
+
+## Wish List
+
+- [x] "jump to named thing" from the cmd palette
+- [ ] "show type of thing at loc"
+
+
+## What's the next step here?
+
+Looks like cached evaluation is working, from what I can tell.
+type-1-cache is winning.
+
+- [ ] CLIPBOARD copy namespacesssss pleassee
+
+
+
+
+
+## Doing a check on all the nodes
+
+- wrapping doesn't work
+  - annot (:)
+  - tapply (<>)
+  - ; comment
+- a:b and a<b> doesn't work on an NS
+
+
+
+
+##
+
+Backspace vs cmd backspace
+- so... cmd-backspace would be the new backspace
+
+
+- [x] getResults
+  - recalc compilation when self changes
+  - recalc type when self or dep types change
+    - soo ... do I need a closer handle on `type env`?
+    - like, two different functions for "calculate type" and "add type to env"? probably.
+  - recalc value when self or deps change
+
+- [ ] I need to ensure that going from 'error' to 'not error' works
+- [x] changing the name of the thing doesn't update the type somehow
+  - so, if "names" changes, redo stuff
+- [x] disallow multiple names with the same name
+
+- [x] PLUGINS should still render even if there are type errors.
+  maybe just don't do type inference on plugins?
+  at least for nowwwww
+
+- [x] ok, so now we're just doing addStatements ... all the time.
+- [x] now that we have dependency information, and such:
+  - the `fnsEvaluator` env should actually be the values, instead of
+    a list of strings to be compiled.
+    We can now know what things to inject, and we know we're doing it in the right order.
+- [x] gotta have FullEvaluator expose a 'inferTypes' thing
+- [x] so we can start caching the type inference of stuff
+  - [x] anddddd if a dependency has a TYPE ERROR .. then we definitely can
+    bail on doing evaluations.
+    SHOULD WE in that case just keep using the cached values? Might as well, right?
+- [x] THE FIRST run, isn't working quite
+
+Ok, so how bout the `Evaluator` plugin config
+be responsible for providing the javascript
+involved in bridging the gap?
+like, translating the names and such.
+That would be quite nice.
+
+
+# How to be demo-ready
+
+- [x] need better perf on large documents (I think it's that I'm not memoizing toplevels)
+  - [x] dont recalc on hovers
+  - [x] ns Keyed on just ID (not path) so I can reuse much more
+  - [x] make sure cover selection is owkring
+- [x] need a `trace` function that can be accessed in-line
+
+- [ ] includeee
+
+# Getting tupled-builtins
+
+OK so
+so far I've been slurging the envs of the compiler and the runtime
+which is bad mojo
+now that they have different calling conventions.
+SO
+
+- [ ] give the runtime a different set of builtins from the compiler
+- [ ] make tuply builtins ... it would be nice, to have the builtins be written normally, and then converted for the calling
+  convention at issue.
+
+
+- [ ] ergh, ok so in the tuplified version, we can't just have ...
+  (deftype (, a b) (, a b))
+  because it gets weird.
+  SO this means, that `,` has to be EITHER:
+  - special cased where it's a no-op, and a call to a builtin, OR
+  - it gets its own AST node??? naw. can't be.
+
+
+
+
+Conceptually
+is it a little weird
+that, as far as types go
+most constructors get one thing
+but tuples get too?
+
+hrm yeah I think to really make it make sense,
+I'll want a `ttuple a b l` and then constructors
+need only to have a single argument.
+[SPOIILERS: NOPE]
+
+
+- etup a b
+- ptup a b
+- pcon a
+
+But the big news for compilation is: If I want to do flattening
+(where (lol a b c) is {type: 'lol', 0: a, 1: b, 2: c}) THEN
+I need type information at compile time.
+Which is not something I've needed so far.
+
+Q: Should I produce a whole 'typed-ast'?
+
+```
+(deftype expr
+    (eprim prim int)
+    (estr string (array (,, expr string int)) int)
+    (evar string int)
+    (elambda string int expr int)
+    (eapp expr expr int)
+    (elet pat expr expr int)
+    (ematch expr (array (, pat expr)) int))
+```
+
+but, like for each of these things, with the way
+type resolution goes, I won't know what the fully
+resolved type of a given thing is, until I've done all of the
+substitutions.
+
+would it be as simple as
+
+```
+(deftype (expr child)
+    (eprim prim int)
+    (estr string (array (,, child string int)) int)
+    (evar string int)
+    (elambda string int child int)
+    (eapp child child int)
+    (elet pat child child int)
+    (ematch child (array (, pat child)) int))
+
+(deftype plain (plain (expr plain)))
+(deftype typed (typed type (expr typed)))
+```
+
+Yeah ok, so that's how to make the AST be able to carry types.
+BUT that still leaves us with the problem of: "at what point
+is a given type fully realized"?
+
+
+but ... I guess I can ... hang on to the `subst` that I finally get,
+and then do a `apply that subst to the whole tree`?
+Yeah I guess.
+
+
+OK FOLKS
+I'm really going to make `(include "somefile")` a thing, I mean let's just do it.
+
+Alsoooo how about macros? yay or nay?
+
+like, the thread macros might be fun?
+
+
+
+
+
+
+
+
+
+
+
+# WRITE A BLOG POST ABOUT CURRYING
+
+Let's talk about auto-currying
+
+(a, b) => c === (a) => (b) => c
+
+Nice things:
+If you have a function like (map fn list)
+and a function like (defn do-something [a b item] ...)
+where the final argument to do-something is the items of a list, you can do
+`(map (do-something a b) my-list)`. Isn't that nice!
+Much nicer than `(map (fn [x] (do-something a b x) my-list))`
+Of course, it requires that the item in question is in fact the final argument of `do-something`.
+Oh it's not? Well now we get to the wonderful world of "making programs really hard to read"!
+Also known as point-free?
+So you have a generic function that can take `(f a b c)` and turn it into `(f b c a)` or whatnot
+so that `a` can be the last argument.
+Really, I hate it.
+
+
+- [ ] need a way to ... tell ... the whatsit that our builtins should use a different calling convention.
+
+"parse-and-compile-2" = "can tell you to turn off the incessent loc sourcemapping numbers"
+but ... also ... might as well have it be "builtins should use tuples" right?
+
+ugh ok I'm just tired. Will sleep now.
+
+BUT
+
+next step is:
+
+
+# TWO TRACING THINGS
+
+- one, we want to report types of all expressions (oh but we'll need the final subst? probably? so maybe collecting a map is really the way to go... yeah it is, let's try to be immutable)
+- then have a `trace` function that will alow you to change the bgcolor of an ID, or show a bubble, or attach a piece
+  of text, or just show a general message. (console/log essentially)
+- THEN when "top trace" is set, it'll record those, and like update the UI n stuff.
+  ALSO you can like "scrub through" the trace ... seeing it animated. Yeah that would be very cool.
+
+# OK
+
+- So NSTOPs should indicate if we've got errors anywhere
+- ALSO ... test failures?? hrmm 🤔
+  - yeah I need a way to
+
+OH
+- [ ] NEED exhaustiveness checking, thanks
+
+- [ ] I should really add a gut-check in the `compose-subst` to verify that I'm combining them in the
+  correct order. e.g. that nothing in (earlier) needs to be applied to (later)
+
+# Currying
+
+IS IT a problem, for
+(, a b ..())
+to be different from
+(, a b)
+?
+
+Ok, so I think the more ... theoretically pure version ...
+is to always have a `()` at the end, and I think I have a better shot of
+making that work. Once it's figured out, I can try to get fancy.
+
+
+ARGH I changed too many things at once.
+
+Turning off sourcemaps is nice, but annoying that it requires editor-side changes.
+
+AND
+
+making lambdas take patterns, also nice, but too mcuh I dare say.
+
+
+
+
+# Ideas about currying
+
+WHAT IF
+fn args are always tuples
+(, a b c) has type (, a (, b (, c ())))
+
+andd
+
+(, 1 2 ..) has type (, int (, int 'a))
+
+So
+
+(f a b c)
+
+is the same as
+
+(f ..(, a b c))
+
+is the same as
+
+(f a ..(, b c))
+
+and
+
+(f a ..) infers f as having type (fn (, a ?) r) and returns (fn ? r)
+
+ooh it's so ... clean!
+
+it also ... seems like ... it could open us up to a world where you
+could pass in a record instead?
+
+
+SOOOO WHAT ABOUT
+passing in a single argument.
+and receiving a single argument.
+is it just like "it's a one-tuple, deal with it"? Is that ... necessary?
+
+(f (, 1 ()))
+
+(fn [x] y) -> (fn (, x ()) y)
+(fn [a b] c) -> (fn (, a b) c) -> (fn (, a (, b ())) c)
+
+(fn [a b] c) ... I do really like this better. and it's not being used?? right??
+(fn (, a b) c)
+
+OH Querstion. What about (fn (, a ..b) c) ? That has type ... (fn (, a b) c), where be could be anything?
+which, idk good luck matching on that...
+yeah I don't think varargs is really gonna be a thing.
+
+(, a) -> (, a ())
+(, a ..b) -> (, a b)
+(, a b) -> (, a (, b ()))
+
+(any way)
+
+ooooh hrmmmmmm ok so... here's the sticky point:
+
+(f a ..) -> (fn [x] (f a ..x)) -> (fn [x] (f (, a x)))
+
+IF f is defined as (fn [a b] (+ a b)) for example
+then it's (fn [(, a (, b ()))]) ... right?
+in which case
+
+(let [g (f a ..)] (g 2))
+-> (g 2) would need to turn into (g (, 2 ())) NOT just being plain ol' (g 2)
+🤔
+HOWEVER, who says I need to end it with a `nil`? ... like ... no-one?
+
+CAN I
+
+(fn [a b] c) -> (fn (, a b) c)
+(fn [a b c] d) -> (fn (, a (, b c)) d)
+...
+somehow I suspect it ... wont actually work, or something?
+like
+idk I would imagine that the inference doesn't mesh that way.
+
+BUT
+whos to say I can't try? Might as well I guess, because it would be nice for
+single-arg functions to just behave normally.
+
+
+
+
+
+...
+
+OH OH also, for the "I want to pass arguments on to my child" you could do
+(fn [a b ..c] (some-other ..c)) .. right?
+
+...
+
+
+
+ok back to the single-argument function.
+
+(myfun x) -> ??? -> (myfun x). Right?
+so like ... single argument invocation is the default
+and multi-arg (invocation & matching) is syntax sugar.
+
+(myfun x y) -> (myfun (, x (, y ())))
+(myfun x y ..z) -> (myfun (, x (, y z)))
+
+
+Now, potentially, the cool (?) thing will be
+that I think we can get away with this not touching the type-checker at all?
+which would be rad.
+
+
+# GRAND MASTER PLAN
+
+- [x] comment-out an ID
+- [x] cmd-click already my goodness
+- [ ] FIX SCROLLING so we don't hide behind the top bar ... how to do it. Probably have the bottom thing scroll
+  instead of making the top thing sticky.
+- [ ] TRACE TYPES THANKS
+  - game plan: keep the tracer on `tenv'`
+  - then do the tracing
+  - add `type` info to the `result` of a node
+  - IF an identifier node *DOES NOT* have a type, ... maybe like underline it?
+    That can be a way to track down when typing failed, right? Seems legit.
+    Alsooo this will allow me to track the progress of type checking, reporting how the types changed over time ...
+- [ ] then ... hm ... oh that's right, ONWARD with my plan to change the parser to TUPLE_RUN_FUNCTIONS. Yes please.
+
+
+## USABILITY STUFF
+
+ The current type checker is functional, but (1) only reports a single error
+ and (2) can't tell me where it came from.
+
+ STEP 1 is to track a bunch more loc's so we can tell where things came from.
+ STEP 2 would be to stop using exceptions, but that might mean I need to add like ...
+ ... monads? or applicatives? something.
+
+
+So, things I definitely want in a language, which are lacking from this particular one:
+
+- let's not auto-curry.
+
+# ???????????
+
+WHAT IFFF
+
+ok so what would it be like
+if I did type inference on a given term
+and just "held all externals as variable"?
+Would that be super weird?
+Like, then the ... re-type-checking would be ... more cacheable, right?
+b/c I could just unify the externals with the inferred types of the externals.
+...
+OK so I'm guessing that type errors would be worse? hrm.
+
+# UX Things
+
+- [x] select multiple adjacent, and do a wrap. pleeeeeease
+
+# Tracing, with style
+
+- [x] I want to be able to attach a ... formatter ... to a trace.
+- [x] and this formatter should be in-world.
+- [ ] so right now I just have a fn name, but it would be better to do
+  an arbitrary node. Which would mean ... allowing a ... root path .... that's
+  not a `card`. That should be just fine, right? I mean navigation would have to
+  fall back to dom-position-based (BTW why am I not doing that as a fallback in other places? ...)
+
+# Planning the Blog Posts / tutorials
+
+1) js parser + compiler
+2) j3 compiler
+3) j3 parser
+4) improvements to AST for nicer DX
+5) j3 type checker (HM)
+6) add "match" support, and type constructors
+7) support single-definition toplevel recursion
+8) support multi-definition recursion, this will require doing dependency analysis.
+  - YAYYYY love it
+9) type-definition (multiple) recursion
+  - will require dependency analysis to flag whether a name is a type or a value
+  - ummm is there anything more complicated than that?
+  - well ok this will enable verification of type definitions, which I'm not really doing just yet
+
+ONCE WE HAVE THAT
+...
+What's the next step?
+profit???
+
+Like, I could write up a whole blog post about it.
+
+
+# Back to inference for a sec
+
+STEP 1
+- bring back the `file to js` stuff
+- have the server report a listing of available `.js` files
+
+So `nil` should have type `array a`, right?
+sounds legit
+
+Ok, it ~looks like we have generic type constructors working?
+
+# Plansies
+
+sooooo
+The source of the problem is multitudinous:
+- having separate files is definitely not the endgame
+- so everything needs to be in a single database
+- BUT I want to be able to load only part of the database, because it'll be big.
+  so: not loading the full history, not loading all definitions.
+- AND undo/redo needs to make sense in a world where I'm loading up some definitions,
+  editing them (possibly moving nodes between definitions), and then in another session
+  loading up one of the definitions but not the other ones, and wanting to do "UNDO"s on it,
+  or at least time travel.
+
+SO THE PLAN
+- each "toplevel" is ... its own .... database, roughly speaking.
+  has its own map, with its own IDs (nidx, etc). Because keeping IDs unique when only partially
+  loading the state sounds terrible.
+- ALSO they have their own history list. so every toplevel, has a unique history stack.
+  doing "undo" in an editor session, we look for the "most recent change" among all the loaded toplevels.
+BUT ALSO
+- there's an "editor state history stack", which records the pulling up & closing out of ... namespace roots(?)
+  and like the creation of namespaces, the moving of namespaces.
+  ugh I should probably be calling these things toplevels instead of namespaces.
+
+each toplevel is like its own git branch, conceptually.
+
+um anyway, to prepare for this, I would want to:
+- refactor the getKeyUpdate logic to be less ... fragmented? idk
+-
+
+
+# OK FOlks now it's time to do ...
+TYPE CHECKING OK
+
+
+# TRACES
+once again, I am at the mercy
+
+So
+
+(1) have a `traces` list(?) that indicates a list of LOCs that are my tracy boys
+herm I mean I guess I could just use the meta. because, I can have multiple.
+it ... feels more ephemeral than that though? idk, maybe it's fine.
+(like I wouldn't want it in the undo stack? Is that weird? I'll leave it in, it's fine.)
+because I can have multiple things I'm tracing, ya know.
+
+OK
+Also, relatedly, probably, it would be very nice to be able to say
+"trace this /function call/" by which I mean trace all the args for me.
+And so I could, if I wanted to, and the args were all serializable, I could
+say "pop this trace out into the editor, so I can .. play with it" yes indeed.
+You could even like make fixture tests out of it.
+
+
+OOOH META CAN BE USED TO MANUALLY MULTILINE.
+
+ALSO meta can be used to say "hey this ~array of lists, let's do table view my dawg"
+I mean, tables could even have ... hrm ... like ... ok so it could have, "view functions" applied to them. hrm.
+
+# BUGS
+- [x] let's select a rich-text, ya know
+- [x] ok at least we can delete rich texts
+- [ ] OOH OOH, cmd-backspace to delete the whole word? maybe? idk
+  and then normal backspace won't delete a whole list or things
+- [x] NEWNODEAFTER from the Fixture plugin isn't working now
+
+# NExt step:
+- [x] history collapsing, really now
+- [x] fix the history regression, probably by checking timestamps on the most recent history item.
+  - OK I think a size check is sufficient. It looks like it's just a weird interaction between
+    my state loading/saving, and HMR. So it won't impact a production build.
+
+
+# RICH TEXT NODES
+
+we already have a rich-text, for what it might be worth.
+'' ya know
+- [x] so rich, such text
+
+- [x] oof I really need to trim down my stored files. Like, maybe do aggressive history item collapsing?
+  - [x] FIRST Basic history collapsing, where all changes to the same node that have fewer than 200ms between them just get collapsed.
+    - ALSO ~all adjacent changes to a rich-text just get collapsed ... because I don't have a more memory-performant way of storing changes to them. Although it's definitely possible.
+  - [ ] SECOND Aggressive collapsing that maybe only triggers once the state gets larger than (idk) 3mb or something
+    - Could be "by namespace". Like, going back (1000 changes) or (1 day) or (3mb), whichever is ... more ...
+      we collapse all changes that happen within a given namespace together into one historyitem.
+    - Yeah I like that quite a lot.
+
+Ok, so type constructors.
+Could I just do
+```
+evar - [string int] - expr
+cons - [a] - (array a)
+; OK so
+tconfig = (tconfig (set string) (array type) type)
+tenv = (tenv (map string scheme) (map string tconfig) (map string (set string)))
+```
+I'll ... need to ... hang on to ... the free variables.
+
+# Literate literating. Pretty please.
+
+This will require:
+- ordering things by dependencies, so we don't get out of order issues.
+  This will also allow us to do ~minimal compilations, and only update "results" that need updating.
+
+### STEP 1
+Make a Node type that is "rich text". It can be flagged as either a comment, or something that should be ... ... ... represented as actually a thing.
+I might want to Store as [blocknote_json] or whatever, and then have it represented as either (a) a comment (b) markdown or (c) some in-universe rich representation like unison has. And that would be selectable on the node, I should think.
+
+RELATED a little bit, I want to be able to `;` comment out any arbitrary node.
+Like, would that mean that `;` comments become obsolete? Or ...
+Maybe `;;` two semis means "old and boring comment", whereas `;` is just a "this can comment something out".
+
+anddd
+
+how do I trigger a rich text node? maybe ''? idk sounds fine to me.
+
+
+- [ ] DRAG and DROP any arbitrary node pleeeeease and thank you.
+  Would it be just like 'press a key'? Hm yeah I like that. alt+click? sure
+
+##
+
+- [x] I want let to be recursible
+- [ ] meta changes appear to not be triggering a save?
+- [ ] errors change not triggering a rerender
+- [x] BUG backspace on empty comment not working
+- [x] FEAT please let me split an identifier, I need it desperately.
+- [x] FEAT ok backspace to join identifier
+
+- [x] cmd-D to multicursor, you love to see it
+- [ ] subtle highlight things that are the same?
+- [x] select & type, replaces the selected. FINALLY
+- [x] MULTI EDIT YALL
+
+letsss do a little multicursor?
+
+##
+
+DID I ... do it wrong?
+Is `ns` like ... the wrong ... thing
+oh wait no. It is important that it be different. I'm pretty sure.
+
+
+
+# Source Mappppppp
+
+- add comments
+- then we can do whatsit
+- [x] ok also, I want to be able to /comment out/ a node, like clojure.
+
+- [ ] Fixtures, let's be able to reorder them by dragging
+- [ ] HOVER PAIRS pleeeeease
+
+
+So now that i'm tracking the info, and even compiling it in ...
+I want to ... be able to mark ... a certain NSTop as the "trace focus". Right?
+and so, when executing this one, we'll turn traces on, and collect the stuff, and even like
+
+anddd probably allow you to hover a tracer, and have it render out everything it saw.
+Yes that sounds great.
+
+# TRACE
+I'm done not having insight
+when I could have it so *easy
+
+PLAN:
+- the ... compiler ... gets a map ...
+  and any expr might want to be wrapped.
+
+(@@' abc) -> gives you (, (@@ abc) (map of any traces))
+
+META:
+- trace?
+- (also) we can do a `coverage` dealio
+
+# Typeings!
+
+I think perf is in a reasonable spot.
+Now let's do Algo-W step-by-step!
+For that it looks like I'll want:
+- maps! I mean I don't *neeed* them strictly, but it would be nice.
+anddd sets? like why not, right?
+
+```
+(set/nil)
+(set/add s k)
+(set/rm s k)
+(set/merge a b)
+(set/diff a b)
+
+(map/nil)
+(map/add m k v)
+(map/get m k)
+(map/merge a b)
+```
+
+# N4xt up
+
+- [x] perff ok so I'm still doing ... too much stuff
+  - [x] ah ok, so I'm doing getResults on everything.
+    OK folks. Here's the story.
+    - [x] First off, gotta not do new results for selection changes.
+    - [x] for betters, we'll need to ... debounce ... the getResults. ok y'all.
+
+- [ ]
+
+- [x] perfff only render what changes, for crying out loud
+  - So, have a `Context` to access a `store`, that keeps track of the current `state`
+    and has listeners for nodes and stuff
+- [x] BUG WHY does edit not work
+  - AHHH hrmm.
+  - So, I think it's the fact that we're doing useEffect, and it's happening too late.
+  - Yeah, we're delayed.
+  - Soooo options:
+    - have the Cursors do a jitter if it can't be in the place at one time,
+      wait a sec to try again.
+      - that might make my auto-find-a-valid-pos code be weird. Will have to tie it in.
+
+  - [x] ah hah hah hah
+    yes folks. here we are.
+    instead of React.useReducer
+    NAILED IT. So good.
+
+- [x] INNER SEL we needs it
+- [ ] TRACE ok so I think what I want is for it to be *separate* from the AST
+  because having e.g. the capacity to drop a trace on literally anything (e.g. a pattern)
+  would complicate things a ton.
+  So, a compiler would just have access to a `map` (ok so we need `map`s) that would tell you
+  whether a given `loc` had a `trace` on it.
+  which means my parser needs to be preserving locs? yes that's what it means. Should be quick.
+- [x] Let's get self-2 (or parse-1) working as an Evaluator, that can then save the .js to disk.
+
+- [ ] attt some point, I'd like to represent the JS AST so I can do some optimizing passes? idk could be fun
+
+# Grand Plan
+
+1. [x] basic bootstrap, bare bones AST
+2. [x] (self-1) basic self-compile, same AST
+3. [x] (self-2) self-compile the self-compile (no code change prolly)
+4. [x] (parse-1) self-parse, no real error handling or source mapping
+  - [x] Need to do a `generate CST -> jCST` person
+  - yassss now we have destructuring of fn arguments baked into the parser! which is nice.
+
+- [ ] add basic fallthrough cases everywhere.
+- [x] use parse-1 as an evaluator
+- [ ] start ... into typing? yeah that sounds about right.
+  pleease give us some type checking. we needs it badly.
+  also autocomplete, right?
+
+
+PROBLEM render memo, looks like.
+
+
+(equot ...)
+... do I have the capacity to do a ...
+
+
+WHAT IF
+I ... do some imports?
+
+...
+?. Once we have effects, orr maybe just basic monads,
+
+
+- [ ] BUG paste with strings with `${}` doesn't work right! Need to fix the lexer
+- [ ] BUG paste "\\\\" doesn't close correctly. Need to check the number of '\\' and only
+  block closure if it's odd.
+
+ok so what if, you could like "tag" a toplevel definition.
+with an arbitrary tag like ":parser".
+And then there was .. a macro or something, to say
+"grab me the array of definitions that match this tag".
+That would be pretty dope actually? I think?
+it would want to be namespaced
+and probably ...
+
+
+
+
+OK so I would love to have fancy automatic (type-checked)
+magic for a `(@matcher (@ (if :cond :yes :no)))` kind of thing,
+that produces a function
+`(fn [node] [None (Some {cond Node yes Node no Node})])`
+
+anyway
+that'll have to come later
+I mean
+maybe I'll
+...
+hrm
+ok so I do need type checking at some point
+anddd gotta be nominal types until I get structural
+so that's a little vexing.
+
+ohwait
+I could do
+
+`(@matcher (@ (if :cond :yes :no)) (fn [cond yes no] (tif cond yes no)))`
+That won't require custom types n stuff.
+Ok so it's somewhat approachable.
+
+but yeah, first I need to move the parser to jerd
+yeah.
+
+
+
+
+
+
+
+Ok, so I want to be able to use `if`s.
+
+Which means.
+I need to be able to change the AST
+which means
+I need to do the parsing in - universe
+which means
+I need to autogen translation code, and syntax, for the CST
+
+right?
+
+`export type tapply = {type: 'tapply', target: Node, values: Node[]}`
+becomes
+`(cst/tapply node (array node))`
+->
+`{type: 'cst/apply', 0: node.target, 1: wrapArray(nodes.values)}`
+right?
+
+also, string|number => is just string.
+
+
+
+
+
+
+
+
+
+
+------------
+
+
+- [x] BUG backspace on the output of a fixture puts us in a BAD path, where deleting the (, )
+  tuple deletes more than it should.
+- [x] FEAT space after an output should add a fixture, thanks.
+
+
+Thinking about translating sum types into GLSL
+as long as it's non-recursive, and doesn't have
+arrays, we're good? I think?
+oh so I should think more about fixed-length arrays.
+because they can be quite useful.
+So, functionally they can be similar to a tuple-type,
+right? Like a little bit?
+Except that you can't really `map` over a tuple type...
+
+
+
+
+
+- [x] backspace at start deletes the NS
+
+- [x] goLeft should accept a `regs` map to determine valid positions
+- [x] Ok folks, navigation (left/right) is looking quite nice. We can give accurate
+  paths, and we keep going left/right until we get somewhere good.
+  Now, there is the little matter of being able to get to selections that don't go anywhere.
+  - [x] I still need to put something in for that.
+  BUT
+  - [x] the bigger UX thing is: I want to press "enter" after an "output", and produce a new
+    line of fixtures. How hard can that be?
+
+
+
+
+
+- save the compiled result of a thing to disk as well,
+  so that we don't have to do the full bootstrap chain
+  when wanting to use something as an evaluator
+- we'll probably need to do a CST conversion to make it
+  legible in the runtime, however we slice it, because I don't
+  want to be prevented from using the attribute `type` ...
+  right? well, I guess once we go full structural, that won't be
+  a problem anymore? Except, we'll need to do a conversion then as well.
+
+
+# Pluginss
+
+- [ ] editing all the places needs to work, including:
+  - [ ] delete the test case
+  - delete any thing
+  - goLeft
+  - goRight
+  - if navigating gets us to a place that doesn't have a rendered node,
+    switch the selection up the chain until we find something that works.
+- [ ]
+
+# Fixture plugin
+
+- [ ] Full experience:
+  - [ ] case with no expected should have a button to adopt the output
+
+- [x] BUG space at the start of a node results in the WRONG PATH
+
+# Switching Evaluatorss
+
+So, it seems like I might want
+to be able to switch between "evaluators" for a given sandbox document.
+Yeah, I might want that very much.
+So, I can develop a dealio in one tab
+and then use it in another.
+
+yess that sounds good.
+
+
+- init () -> Env
+-
+
+
+Ok, now that I have an evaluator ... I can
+do my plugin dealio?
+
+
+
+
+
+
+
+- [x] hover to show errors pls
+- [ ] can't delete a spread???
+- [ ]
+
+Test
+Cases
+let's talk about it.
+
+So basic normal idea is: have expressions that are children of a definition or whatnot.
+and you can choose to display them in a certain way
+
+Buuuut then I was thinking
+what iff
+especially for a function with lots of exit points
+what if I had like
+a "trace test"
+which had
+
+(def compile [expr]
+  (match expr
+    abc def
+    (evar name)
+      (@trace-test
+        (sanitize name) ; the real impl
+        [
+          (, (compile (@ lol)) "lol")
+          (, (compile (@ a-b-c)) "a_b_c")
+        ]
+      )
+    ghi jkl
+  )
+)
+
+So, I kinda
+want to be able to put named tracers
+on things
+and then have like a "compile with tracing"
+which would give you access to like this trace context
+and things would put info on the trace context
+with the names
+and you could specify whether it's a "last write wins"
+trace, or a "append to array" trace, or a "keyed" trace
+(with lrw or array for contents)
+
+anyway then `(@trace-type some-fn)` would give you the
+struct type of the trace. And the struct would be
+keyed by the hash of the function that produced the trace,
+probably.
+`{(hash some-fn): {name-1: value, name-2: [v1, v2]}}`
+
+Anyway, then you could also do `(@trace (some-invocation))`
+and it would give you the trace for that invocation.
+Probably the trace object would also have the `result`
+on it?? That's what I think.
+
+So you could make a little visualizer dealio. That takes the trace
+and visualizes it. That would be the bomb.
+
+OK but let's think about the test case table
+would be super nice.
+Is there something special going on here?
+It would just be like
+[(, a b) (, c d) (, e f)] under the hood, right? `(array (, input output))`?
+OR `(array (, input (matcher output)))`? Not sure how that would look.
+
+oh, a `(matcher T)` is `(T) -> bool`, right? or rather `(T) -> [(Ok) (Error string)]`.
+So that's fine.
+
+OK, but then, how do we decide to render it as a table?
+Do we just inspect it, notice that it's a literal list of tuples, and allow that to
+be a renderer?
+
+So then, actually, any list of tuples could be rendered as a table, right?
+Ok but the catch here, is we're *executing* it in a special way. No longer
+just passing the whole thing to `compile`, but instead
+walking through it, running the one side ...
+OH
+but
+yeah ok, in this case I do want to pass the values to the thing, right?
+so
+```js
+(, (fn [input] output) (array (, input output)))
+```
+Which would be rendered with like
+[ the thing to run ]
+[ input | output ]
+[ input | output ]
+[ input | output ]
+[ input | output ]
+[ input | output ]
+
+Yeah, that makes sense, right?
+
+So, we've got a `slash` item called `test cases`
+And that toplevel then gets a whatsit
+where we know it's going to be rendered by the certain plugin dealio.
+
+And the plugin gets to decide how to render it.
+And also defer to normal rendering for child cells.
+
+Would it fit within NNode structure? Or work outside of it?
+
+OK yeah it would probably be best to work within NNodes. Maybe extend the
+type a little to allow for fancier drawing n such.
+And have a "black hole" nnode type, for e.g. a wisywig markdown editor?
+But yeah, having a `box` NNode type that allows you to do some styling...
+seems like that ought to work just fine.
+
+###
+
+- [x] left hover
+- [x] oh gotta get undo under control
+- [x] arghhhhh okkk okk I'll cave, we can do id-based cards and namespaces. I agree that indexes are the worst. alright already.
+- [x] redo nested drag
+- [x] do a thing to verify that we're not missing any nodes
+- [ ] figure out how to mark the tests in the NSssssliness
+  - maybe a "render" attribute of a RealizedNamespace?
+- [ ] goLeft and goRight need to know more about namespaces
+- [ ] backspace at the start of a namespace currently deletes that namespace. which is bad.
+- [x] teach serializeFile a little about namespaces
+- [ ] ok we still have a huge perf issue though
+- [x] make it so when you type `(def)` it doesn't torch everything
+
+
+# Night thoughts
+
+- [x] cards
+- [x] make it so you can make more namespace dealios
+- [x] space/enter to create new NS entry
+- [x] backspace to delete one
+- [ ] hmm selecting... across ... namespaces ... probably shouldn't do itemwise selection.
+  but tbh it's fine for the moment? maybe?
+
+- [ ] drag anddd whatsitttt with a handle on the left
+
+- [x] ahhhh waittttt
+  I forgot that I was adding two layers, not just one.
+  we have cards, and then we have namespaces
+  anddd I actually wanted all of this nonsense to be inside of a namespace.
+  not in all separate cards
+  this is madness.
+  - [x] ok, fixed that at least
+
+So
+I want a little tree
+with expressions as children of definitions
+and, sure, definitions as children of ... Headings / text blocks
+do I have a reason to say that Headings / text blocks should be anything other than ... expressions?
+yeah, I think I do. Anything that's a parent should be named. So that the names can form an addressable namespace.
+Ok next question. How is this ... naming ... represented?
+Sorry, I mean .. .this treeliness. And do we have a way of preventing duplicate names?
+I think name duplication can be tracked & resolved separately.
+
+Andddd maybe it's ok to have a ... set of "toplevel ids"
+and then a separate structure ... indicating where toplevel ids live.
+with nodes
+and such.
+
+
+
+
+
+
+Ok do the editor, I want it to be a tree
+And expressions also live in that tree
+Like you can make some repl evals the children of a defn. And then your can mark them as "test cases".
+Anyway so your like editing UI can have just one root and children, or your can pull something out to be it's own root
+Also when expanding a thing that has children, it first just shows things collapsed. So names of defns, status of test cases. Probably test cases status would be shown recursive too.
+Test cases have "matchers". The simplest is just "equal to this expected"
+But there could be more complex, e.g. fuzzy equals on floats, or ignoring certain fields.
+You can also have a ... "Showcase". Which isn't a test case, necessarily. And might display in interesting ways.
+
+
+Space in the middle of a token needs to split it.
+Also I need vim normal mode. And git commits maybe.
+Paste isn't totally working, need to check on that.
+Also the renderNodeToString needs to escape a little more.
+
+
+
+- [ ] the perf is currently terrible. Who's fault is that?
+  - RenderNNode...
+    - I want a RenderRoot that
+    - takes the map
+    - and makes listeners n stuff
+
+- [ ] what abouttt having `..` as the final argument to function application mean "this is partial"??? hmmmmm??
+- [ ] verify that pasting in the whole contents of a file parses like I expect
+  - so like, a test.
+
+# Next up:
+- [ ] save to a ~literate format
+- [ ] hmm do I want to get tests going already?
+
+
+# So, pasting...
+I think I want to do a little bit of pre lexing
+yeah that's nice.
+
+OK so a weird issue, is that
+
+
+ok so now I have all of these things, and frankly I want them
+to collapse
+
+oh hey I could just do that.
+
+> Pasting into a string, should just be flat
+
+# SELF_HOSTING
+
+We're hosting some kind of self, that's for sure.
+So the bootstrap runner is running the code, and we are successfully
+executing the bootstrap!
+Annd now we've got the full wrap, it looks like.
+
+
+Checkpoint 1: we can self-host compile, with some external builtins
+(We might want to have some pre-steps to this, where we start with a truly basic AST? idk)
+like just the lambda calculus. But then we need to add in algebraic data types & pattern matching to actually represent the current code that we have.
+Yeah so it's like, we're executing this on some test files, fibbonacci function and such.
+And then we beef it up to handle matches. Love it.
+
+Ok, so next step is:
+let's get going on the web interface, why am I slumming it with the cli
+
+andddd let's make a little web server to persist these because we can't rely on localstorage.
+
+AND THEN:
+make type inference a thing
+
+AND THEN FINALLY:
+let's get labels into these typedefs
+
+```clj
+(deftype expr
+  (eprim :prim prim)
+  (evar :id string)
+  (elambda :id string :body expr)
+  (eapp :fn expr :arg expr)
+  (elet :id string :init expr :body expr)
+  (ematch :target expr :cases (, pat expr))
+)
+
+(deftype prim
+  (pstr string)
+  (pint int)
+  (pbool bool)
+)
+
+(deftype (, a b) (, a b)) ; equivalent to (, :0 a :1 b)
+
+(deftype stmt
+  (sdeftype
+    :name string
+    :constructors
+      (array (, string (array
+        ; if this string is "", then it's anonymous
+        ; ohh wait nvm we'll say if string is a number
+        ; like "1" or "0" then it can be used in anonymous
+        ; mode.
+        (, string type)))))
+  (sdefn :name string :value expr)
+  (sexpr expr)
+)
+```
+
+
+
+# Ok, so one idea: making a massive tutorial dealio
+"Type inference from the ground up" or some such
+where we're making a succession of type inference algorithms
+using only the features made available by the algorithm of the current section.
+Such that we are self-hosting, if you will.
+
+Sooo it looks like I would probably want, the ability to do anonymous
+a little bit if I want.
+
+
+
+
+# Thoughts from eyg conversation
+
+- do I want to lean into "code is ship-aroundable"?
+- Effect types! Color lines of code based on what effects they do
+
+multiple syntaxes??
+but then: lambda-calcuilus wasm
+"getting started guide is write your own interpreter"
+
+
+
+
+# Reading through this slide deck
+https://www.irif.fr/~gc/slides/sigpl19-slides.pdf
+on polymorphism and such.
+
+CAN we represent EXTENSIBLE RECORDS as TYPECLASSES?
+I mean probably not rite
+
+{x 1} has type x_int w/ an instance of getX that returns int??
+{x 1 y 2} has type x_int_y_int
+lol yeah this is probably no good.
+
+oh hey, this is nice: an algorithm for determining whether two types have a subtype
+relation, in the presence of recursive types: http://lucacardelli.name/Papers/SRT.pdf
+
+
+oooh types for elixir? https://arxiv.org/abs/2306.06391
+and an example: https://typex.fly.dev/
+hm maybe not all that useful.
+
+
+
+
+Set Theoretic Types for Polymorphic Variants
+https://www.cduce.org/ocaml/bi
+
+
+
+
+
+
+
+# Visualize and compare!!!!
+
+- [ ] ok so I need to normalize the Expr representation at least, so that I can visualize them
+  - or just make another mapper, that's fine
+
+ok um so instead of all that
+
+what if I just have things be totally linear
+and then
+render stuff above where they are.
+
+
+
+
+# Howww do I do recursive polymorphic variants?
+def something I need.
+prolly should check out roc's type inference, see if I can grab it
+
+# This slide deck sounds interesting, maybe?
+https://www.cs.ox.ac.uk/ralf.hinze/WG2.8/27/slides/jacques.pdf
+
+
+# So
+we have polymorphic variants
+and records
+
+
+given that mini actually supports
+a bunch more stuff
+and like probably recursive types? I hope?
+
+
+
+
+# More things
+
+https://dl.acm.org/doi/10.1145/3009837.3009882 - Polymorphism, subtyping, and type inference in MLsub
+because subtyping! I'm very interested.
+
+
+Polymorphic Type Inference for Dynamic Languages
+- https://www.irif.fr/~gc/papers/dynlang.pdf
+- online: https://poly-dl.github.io/poly-dl/
+- so they present the recursive definition for `flatten` as taking *300ms* to type check, which, like
+  that seems like a very long time.
+```ml
+let rec flatten x = match x with
+| [] -> []
+| h :: t -> concat ( flatten h ) ( flatten t )
+| _ -> [ x ]
+```
+this is not a large function.
+
+[Luau](https://github.com/Roblox/luau/tree/master) structural types, and subtyping, and inference.
+might be interesting to look into.
+
+# Ooh this looks like it has both record & variant extensibility
+
+https://github.com/willtim/Expresso
+
+
+
+# Projects to look through and maybe copy
+
+- https://github.com/Steell/DynamicStatic
+  - type inference prototype. Supports subtypes, type unions, function overloads, and recursive types.
+- https://github.com/ameerwasi001/CzariScript
+  - type system that supports subtype inference with parametric polymorphism, classes, objects, and single inheritance
+- https://github.com/Storyyeller/cubiml-demo
+  - tagged unions, records, mutual recursion
+- https://bitbucket.org/structural-types/polyte/src/master/
+  - "parametric polymorphic subtyping"?
+- https://www.normalesup.org/~simonet/soft/dalton/index.html
+  - type inference with structural subtyping
+- https://github.com/CrowdHailer/eyg-lang/tree/main
+  - lots of good things, including algebraic effects
+- https://kyagrd.github.io/mininax/
+- https://kyagrd.github.io/tiper/
+  - type inference via prolog rules!
+- https://github.com/Ekdohibs/joujou
+  - algebraic effects and handlers with multishot continuations, and a static type system with inference of types and effects, with subtyping.
+- https://web.cecs.pdx.edu/~mpj/thih/thih.pdf
+  - typeclasssessssss
+
+
+
+
+
+# Practical type inference for arbitrary-rank types
+
+https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/putting.pdf
+
+this was recommended as a very accessible paper about type inference.
+and here's a great description of how to read type inference rules:
+https://cohost.org/prophet/post/2248211-how-to-read-inferenc
+
+# "Essence of ML Type Inference"
+
+https://pauillac.inria.fr/~fpottier/publis/emlti-final.pdf
+http://cristal.inria.fr/attapl/ - download here
+docs https://yrg.gitlab.io/homepage/static/public/mini/
+
+https://www.cs.tufts.edu/comp/150FP/archive/francois-pottier/hmx.pdf
+
+
+
+.......
+
+
+soooo how to trace the solving step stuff? hrm.
+
+
+
+# Applicative something?
+https://gallium.inria.fr/~fpottier/slides/fpottier-2014-09-icfp.pdf
+
+https://gitlab.inria.fr/fpottier/inferno/-/tree/master/
+https://dl.acm.org/doi/10.1145/2628136.2628145
+
+
+# Check out the PL Zoo
+https://plzoo.andrej.com/
+
+
+# Ki Yung Ahn
+
+https://github.com/kyagrd/mininax/tree/master
+
+hmmmm what about prolog as the inference engine?
+https://kyagrd.github.io/tiper/
+
+
+
+# Parametric subtyping
+
+https://bitbucket.org/structural-types/polyte/src/master/src/
+https://arxiv.org/pdf/2307.13661.pdf
+
+# HM(X)
+https://www.cs.tufts.edu/~nr/cs257/archive/martin-odersky/hmx.pdf
+
+ok I kinda want to try hm(x).
+update, did try it, at least porting https://github.com/naominitel/hmx/tree/master
+which is great
+nowwww I want to try to add subtyping, but that will require
+me understanding the actual paper I think.
+b/c the paper proposes SHM(X) which should support
+subtyping. Right?
+
+# Structural Subtyping - Simonet
+https://people.csail.mit.edu/kostas/papers/subtyping6.pdf
+https://www.normalesup.org/~simonet/research/index.html
+https://www.normalesup.org/~simonet/publis/simonet-aplas03.pdf
+https://www.normalesup.org/~simonet/soft/dalton/index.html
+
+
+# Let's try this
+https://www.cambridge.org/core/services/aop-cambridge-core/content/view/S0956796800000113
+
+# Wand? With polymorphic let?
+<!-- eh, if it cant do subtypes I'm not really interested -->
+https://www.cs.uwyo.edu/~jlc/papers/CIE_2008.pdf
+https://github.com/Javyre/wand-plus/blob/master/src/wand-plus.lisp
+https://github.com/mrandri19/Wand87-A-Simple-Algorithm-and-Proof-for-Type-Inference/blob/master/inference.ml
+
+# cubiml
+https://github.com/Storyyeller/cubiml-demo
+https://www.cs.tufts.edu/~nr/cs257/archive/stephen-dolan/thesis.pdf
+
+# Other things
+https://www.cl.cam.ac.uk/teaching/1415/L28/type-inference.pdf
+
+# Coercive structural subtyping??
+https://www21.in.tum.de/~traytel/papers/aplas11-coercions/coercions.pdf
+hmm this is interesting. adding coersions so you can then use normal HM.
+
+# Algorithm J : The Explanation
+
+So I should go through algorithm j
+and ... make a description for it?
+lol or like an interactive explanation?
+that would catch on like anything. ppl would love it.
+
+--> Ok, so algo j is super nice and sweet, buuuut it doesn't do subtyping.
+Q: Can I coerce it into making subtyping work?
+A: I should probably understand it better before I try that.
+
+b/c I want records, and enums, and both of those want structural subtyping.
+
+# Branch: infer-more
+So, we want a test dealio,
+where we don't actually have `Ctx` at all, right?
+This'll need a new UIState, I think.
+
+
+- [x] get us the hovers pls
+- [x] make some tests for alg-j
+  - [x] catching errors
+  - [x] testing features
+- [ ] then see how many of the features that I want I can add
+  - [ ] array literals
+  - [ ] record types & literals
+  - [ ] enumsssss is there anything fancy there? unification is a little more interesting maybe?
+  - [ ] how do all of these things interact with non-explicit type variables?
+    - maybe it would be like a linter thing, once you've written the stuff, and it's like
+      "this vbl is free, do you want to make an explicit dealio for it?"
+  - [ ] can I haz type variable bounds?
+- [ ] like, for looping n stuff it'd have to have explicit types I think
+  - so, would need @loop:t? maybe? would be nice to not need it...
+
+
+
+
+
+
+
+---
+
+Random naming ideas:
+- choux
+  - ooh it's actually free on npm? wow
+- flora (although floralang is like some film director?)
+- mala (bad in latin, spanish)
+- mori (memento mori)
+
+
+
+
+
+
+------------------------------------
+
+
+
+I'm back to the conundrum
+of
+how to make my task thing
+work better
+idk
+like
+can it be less of a magic
+e.g. representable through macros
+or something.
+
+```clj
+(hi 10)
+(#hi 10)
+; what
+
+(@task ('log string ()) ())
+->
+(@loop [('Return ()) ('log string (fn [()] @recur))])
+
+(@task [('is-available string (Result bool ['UnableToCheck]))
+        ('log string ())
+        ('Failure [('InvalidLine string)
+                  ('NameIsTaken string)
+                  ('NotAnInt string)
+                  ('NotABool string)])]
+  Person)
+
+(@loop [('is-available string (fn [(Result bool ['UnableToCheck])] @recur))
+        ('log string (fn [()] @recur))
+        ('Failure [('InvalidLine string)
+                  ('NameIsTaken string)
+                  ('NotAnInt string)
+                  ('NotABool string)] ())
+        ('Return Person)])
+
+; BUT once expanded into @loop/@recor, merging is more complicated,
+; or rather merging doesn't merge the @recur's.
+
+(@loop [('Return ()) ('log string (fn [()] @recur))])
+
+(@loop ((tfn [t] [('Return ()) ('log string (fn [()] t))]) @recur))
+(@loop [('Return ()) ('log string (fn [()] @recur))])
+
+(@loop [
+  ((tfn [t] [('is-available string (fn [(Result bool ['UnableToCheck])] t))]) @recur)
+  ((tfn [t] [('log string (fn [()] t))]) @recur)
+])
+
+; SOOO WHAT does this do for us?
+; I think it allows us to treat things as more opaque, right?
+; Like I don't have to reach in there and fiddle with a @recur
+; I'm just adding things.
+; SOOOO is there a function (or macro I guess tbh)
+; that would take
+
+[
+  (tfn [t] [('is-available string (fn [(Result bool ['UnableToCheck])] t))])
+  (tfn [t] [('log string (fn [()] t))])
+]
+
+; and produce
+
+(@loop [
+  ((tfn [t] [('is-available string (fn [(Result bool ['UnableToCheck])] t))]) @recur)
+  ((tfn [t] [('log string (fn [()] t))]) @recur)
+])
+
+; ?
+; Importantly, I hope,
+; one of the items could be a type variable,
+; and it like would be fine.
+; that is to say
+; (Effects @recur)
+; assssslongggg as I have `kinds` though.
+; because Effects would need to be of kindd * -> [..] amiright.
+; although honestly could I do a bound that is a tfunction type?
+; ???
+; seems like a possibility, right?
+
+(defn task/to-result<Effects:[..] Errors:[..] Value> [
+    task-top:(@task [Effects ('Failure Errors)] Value)
+]:(@task Effects (Result Value Errors))
+
+  ((fnrec [task:(@task [Effects ('Failure Errors)] Value)]:(@task Effects (Result Value Errors))
+    (switch task
+      ('Failure error) ('Return ('Err error))
+      ('Return value) ('Return ('Ok value))
+      otherwise (withHandler<Effects Value
+                    ('Failure Errors) (Result Value Errors)> otherwise @recur)))
+task-top))
+
+; ok so under the new system:
+
+(defn task/to-result<Effects:(tfn [t:[..]] [..])
+                     Errors:(tfn [t:[..]] [..]) Value> [
+    task-top:(@task [Effects ('Failure Errors)] Value)
+]:(@task Effects (Result Value Errors)))
+
+; honestly I'd probably define a type like
+
+(deftype taskArg (tfn [t:[..]] [..]))
+
+; adnddd is there a way to make the other thing easier as well?
+
+(deftype task-single
+  (tfn [??? input output]
+    (tfn [t:[..]] [(??? input (fn [output] t))])))
+
+; lol ok this is where we just want a macro, right?
+; although do we really need it? Perhaps. When we're
+; specifying an arg for to-result maybe?
+; although, bear in mind that the argument
+; for to-result is currently (and ideally)
+; inferred. From the type of the first argument.
+; soooo we still need a way of un-wrapping the effect,
+; right?
+;
+; Anyway, the unwrapping ... would need to handle the loop/recur, right?
+;
+;
+; So, one issue with that...
+; is that I would be allowing a tfn as an item of a union
+; which isn't a tag or union. hmm.
+
+
+(task-single 'log string ())
+
+(defmacro task [arg1 arg2]
+  `(@loop )
+)
+
+(@loop ((tfn [t] [('Return ()) ('log string (fn [()] t))]) @recur))
+
+```
+
+
+
+------------------
+
+So, how were things broken up again?
+
+I had this editor dealio, that is working
+with a mostly-lisp representation.
+Anddddd then I have a ... parser? From the lispy
+into a TAST or somethign?
+
+CST = lispydeal
+AST = typed, real talk
+
+and I have functions to convert a given dealio
+from CST to AST and back
+
+honestly I wonder if I could simplify the CST
+to be like
+- parened left='[' right=']'
+
+and it's like
+how hard is this anyway
+anyways
+um
+
+
+
+---------------
+
+1u +1 1.1
+"ø ${10}" #x01abcd
+
+int/uint/float
+bool/string/bytes
+
+(array Value L=uint)
+(map Key Value)
+
+texture (? maybe just in glsl world? idk)
+
+
+
+uint is the type
+0...
+int is the type
+...
+float is the type
+...f
+
+(range [Inf (Int int)] [Inf (Int int)])
+(urange uint [Inf (UInt uint)])
+(frange [Inf (Float float)] [Inf (Float float)])
+
+--> you know, having these `range` `frange` and `urange` types
+could work out ok. I'd just need to set up
+rules for how they are subtypes of int / uint / float
+b/c it would be far weirder for a random record type
+to be a subtype of int.
+
+anyway, so type syntax of
+0..1 would be kinda nice
+lol also runtime syntax letsbehonest
+
+[q: do we mess with having unions of ints and ranges and stuff? hrmmm. no. not at the moment at least]
+
+
+
+Literal Types
+- identifier
+- number
+- bool
+- string
+
+- builtin "name"
+  - int/uint/float/bool/string/bytes/any/none
+
+- (t t t)           // apply
+- (T t t)           // tag
+- [t t t t ...]     // union
+- (@loop @recur)    // recursion
+- (@task t t)       // task...
+- (fn [a:t b:t] t)  // fn
+- (tfn [a b:t] t)   // tfn
+- {name t nother t} // record
+
+~math types~
+- a + b
+- a - b
+
+
+(so, I want a system where I know, as well as I can,
+the type of the thing expected under the cursor)
+
+
+
+
+
+
+
+
+
+
+
+
+
+- apply T ...T
+- tag "name" ...T
+- union ...T ?open
+- task T T
+- fn ...name:T Body
+- tfn ...name:?T Body
+
+
+
+
+
+
+## Things I could cut out
+
+- bool could be [True False]
+
+
+
+
+
+
+
+
+
+
+
+
+# Ok so a roadmap
+
+- [ ] so, in the sandbox ... you can skip the prefix, right?
+- [ ] oooh ok, so when you're editiing something, I want everything from the same
+  namespace to be in a box together. That's a great solution.
+- [ ] a sandbox can have namespace shortcuts (aliases)
+  -> and those aliases can be taken into account
+
+So, my architecture at the moment is really geared toward maybe too much caching.
+Would I build it differently if I knew from the start that I didn't really need (or want)
+to cache within a given sandbox...
+
+
+Things I think about:
+
+- algebraic types are cool
+- is there a way to desugar
+  and resugar
+in such a way?
+that type inference is simpler?
+easier?
+idk.
+
+Also, my effects system requires a cheat.
+it requires a type macro that can't be expressed
+in the type system itself
+even accounting for loop/recur types.
+
+isss there a way to ... expand ... everything out ...
+such that type inference is trivial?
+
+
+
+
+
+
+
+
+---
+
+Hmm what am I doing with this?
+
+
+
+# Macros and such
+
+So, unison just released a feature, "structured find & replace"
+
+```
+incrementAndEtaReduce x f =
+  @rewrite
+    term x + 1 ==> Nat.increment x
+    term (arg -> f arg) ==> f
+
+eitherToOptional e a =
+  @rewrite
+    term Left e ==> None
+    term Right a ==> Some a
+    case Left e ==> None
+    case Right a ==> Some a
+    signature e a . Either e a ==> Optional a
+```
+
+So that's kinda cool, but I'd rather have
+a little less magic
+
+```clj
+(defn incRule [sym]
+  (let [x (sym "x") y (sym "y")]
+    {find `(+ `x 1)
+    replace `(Nat.increment `x)}))
+; ok, so how to stay pure
+; right
+; like ... maybe I just use .. a special syntax idk
+; ok so passing in a `sym` function is maybe the way?
+```
+
+hrmm
+so, the "we need a way to bind stuff" is definitely
+a question.
+I guess I could use an effect as well.
+
+```clj
+(defn incRule []
+  (let [x (! sym "x")
+        y (! sym "y")]
+    {find `(+ `x 1)
+    replace `(Nat.increment `x)}))
+```
+
+And then ... we just need a "sym" AST node.
+and then we're good? I think?
+
+I can have a `rewrite` function that takes
+a `AST` and an `array (fn [] (@task [('Sym string AST)] {find AST replace AST})` and then rewrites??
+
+So, I'll want to import the AST whatsits ...
+... and like think about libraries and sandboxes some more
+
+What can I think of as a good little macro example?
+
+
+
+
+
+
+# WebGL Stuff
+https://github.com/oframe/ogl
+
+# TESTS FOR YANKING
+
+- because my dealio obvs isn't working all the time
+- [x] in complete.test, maybe just yank everything? and verify that everything still works?
+  - so, start with a fresh library each time
+- [ ] now fix the yanks that don't work
+
+hrmmmmmmmmm so
+expandEnumItems ; I've got a `local type`, but ...
+it's from a ~global item, so the local type isn't mapped.
+I would ... want to ... like poison "local" types from global
+items, because I shouldn't be able to reference them, right?
+
+What's a simple test for it?
+
+
+
+
+Ok, so `tryToInferTypeArgs` is trying to access localMap
+but this map isn't local.
+so
+how do we deal with that.
+
+
+
+
+
+
+
 # Context-sensitive refactors
 
 - [ ] `(tfn [...] (fn` -> `(fn<...>` and back
@@ -9,7 +3072,7 @@
 
 - [ ] trying to get `yank` to cover all the bases.
   I should probably write some tests??
-- [x] deleting the whole of a node should delete it 
+- [x] deleting the whole of a node should delete it
 - [x] rename a sandboxy
 - [ ] [library] on hover of a thing, show the thing in like a popover
 - [ ] on click of a thing, drop it on in to the dealio
@@ -621,7 +3684,7 @@ https://twitter.com/jaredforsyth/status/1538179622004834307
 
 - So the `state` ... needs a library, that's been prepopulated with builtins, and also it needs builtins, and a sandbox.
 
-WAAIT 
+WAAIT
 ok
 so
 my ctx
@@ -676,7 +3739,7 @@ ALSO local (`let`s) can't do namespaces. off-limits folks.
 
 - [x] Decide what data structure is holding my builtins
 - [ ] make a code to prepopulate the library with builtins
-- [ ] 
+- [ ]
 
 ok so the library keeps good track of namespaces, which I like.
 
@@ -728,7 +3791,7 @@ yeah actually any fanciness in namespaces is all for nought, because they are ju
 MEANING
 I need a different kind of definition? That is a "something fun"?
 naw
-I think I'll justtttt 
+I think I'll justtttt
 yeah actually.
 So the "sugar" part of things
 would happen in auto-creating `(def one onetwo.one)` if you want.
@@ -880,7 +3943,7 @@ in contrast to the sandbox that you're working in.
   I want to change `Ctx` to have that nameLookup on it.
   - alsooo when pasting, we need to de-hashify locals
     if they're no longer in scope
-  - 
+  -
 
 - [ ] BUG (backspace on a '.' when the target is a hash, doesn't select correctly, because it doesn't know how "long" the text of the hashed is.)
 
@@ -1533,7 +4596,7 @@ ALSO let's do normal mode.
 - [ ] but RECURSION is a big deal too. and maybe the firster deal
 
 - [ ] I kindof want tests
-  - [ ] 
+  - [ ]
 
 ## SO TESTS
 
@@ -1697,7 +4760,7 @@ keyboards:
 
 - [ ] and, dot.things
   - so for this, you can have .one.two or one.two.three
-  - 
+  -
 
 - [ ] I should autocomplete 'def/defn/deftype'
 
@@ -1707,7 +4770,7 @@ keyboards:
 # Very next stuff
 
 - [x] adding an argument (space?) to a function that's not resolved, should resolve it?
-  - So, this is like ... "when you space off of a thing, that you have just modified probably(??)", it might 
+  - So, this is like ... "when you space off of a thing, that you have just modified probably(??)", it might
     - like (== 1)
     - is it right when it gets parsed as a 1? And like, if you then change it to a `1.`, does it re-evaluate the whole thing?
     I guess that could be fine.
@@ -1926,7 +4989,7 @@ although that doesn't sound terrible 🤔
 
 - [ ] flag duplicate identifiers?
 - [ ] update the annotation to match the pattern
-  - [ ] 
+  - [ ]
 - [x] auto-add :1 sym hashes to patterny things
 
 - [ ] oooops ok so localMap is only valid for the given toplevel
@@ -1979,7 +5042,7 @@ although that doesn't sound terrible 🤔
 - [ ] autocomplete shouldn't know about things /below/ the current sandboxy whatsit.
   I think this means that in the sandbox, I have to make a new sub-ctx each time.
 - [ ] write tests that feed some code character-by-character to my editor stack, to make sure things work ok
-- [ ] write tests that create a tree node-by-node, 
+- [ ] write tests that create a tree node-by-node,
 
 - [x] OK time for layout to not be in .map
 - [x] now that we're locking down hashes, need
@@ -2348,7 +5411,7 @@ what other thing can hide? probably macros? or like watchers?
 - [x] move the web UI over to the new type checking and valdiation
 
 - [x] ok, so changing a node needs to remove the previous dealio, so it's not hanging around
-  - 
+  -
 
 
 - [x] hmmmmmm I think this is a listener issue?
