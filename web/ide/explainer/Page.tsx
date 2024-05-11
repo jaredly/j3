@@ -81,6 +81,10 @@ export const Page = () => {
         [page],
     );
 
+    const pidx = pages.findIndex((p) => p.id === page);
+    const next =
+        pidx !== -1 && pidx < pages.length - 1 ? pages[pidx + 1] : null;
+
     return (
         <div
             style={{
@@ -93,6 +97,35 @@ export const Page = () => {
                 listing={[]}
                 save={(state) => save({ state })}
                 initial={{ state: { ...data, at: [] }, evaluator }}
+                footer={
+                    next ? (
+                        <div
+                            style={{
+                                display: 'flex',
+                                justifyContent: 'center',
+                                maxWidth: 1000,
+                            }}
+                        >
+                            <Link
+                                to={'../' + next.id}
+                                style={{
+                                    textDecoration: 'none',
+                                    cursor: 'pointer',
+                                    // padding: '8px 16px',
+                                    borderRadius: 8,
+                                    backgroundColor: '#cc99cd',
+                                    padding: '8px 16px',
+                                    color: 'black',
+                                    fontWeight: '600',
+                                    fontSize: '24px',
+                                    fontFamily: 'Inter',
+                                }}
+                            >
+                                Next up: {next.title}
+                            </Link>
+                        </div>
+                    ) : null
+                }
             />
             {hasChanged ? (
                 <div

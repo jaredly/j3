@@ -15,6 +15,6 @@
     I plan to do an implementation of some other algorithms as well, including HM(X) and OutsideIn(X). If y'all have any suggestions of other algorithms I should look into, let me know!
     I'm also interested in exploring other compilation targets, such as wasm, go, and glsl.
     
-    And there's plenty to do around making the structured editor ready for general consumption :)
+    And there's plenty to do around making the structured editor ready for general consumption :) The source for all of this lives in a [pretty messy github repository](https://github.com/jaredly/j3).
     
-    Cheers **)
+    Cheers 🎉 **)

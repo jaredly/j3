@@ -70,7 +70,9 @@ export const GroundUp = ({
     initial,
     save,
     listing,
+    footer,
 }: {
+    footer?: React.ReactNode;
     id: string;
     initial: {
         state: NUIState;
@@ -124,7 +126,7 @@ export const GroundUp = ({
             style={{
                 padding: 16,
                 cursor: 'text',
-                paddingBottom: 300,
+                paddingBottom: 600,
             }}
         >
             <WithStore store={store}>
@@ -145,6 +147,7 @@ export const GroundUp = ({
                     />
                 ))}
             </WithStore>
+            {footer}
             <DebugCard
                 debug={debug}
                 setDebug={setDebug}

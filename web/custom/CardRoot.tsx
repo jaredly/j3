@@ -42,10 +42,7 @@ export function CardRoot({
 
     return (
         <div
-            style={{
-                overflow: 'auto',
-                paddingBottom: 300,
-            }}
+            style={{}}
             {...dragProps}
             onMouseDown={(evt) => {
                 if (evt.metaKey) return;
