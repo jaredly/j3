@@ -92,6 +92,24 @@ export const Page = () => {
                 padding: 16,
             }}
         >
+            <div
+                style={{
+                    position: 'fixed',
+                    bottom: 40,
+                    left: -80,
+                    width: 300,
+                    textAlign: 'center',
+                    // right: 0,
+                    backgroundColor: 'red',
+                    transform: 'rotate(45deg)',
+                    zIndex: 100,
+                    fontWeight: 'bold',
+                    fontFamily: 'Inter',
+                    fontSize: 50,
+                }}
+            >
+                BETA
+            </div>
             <GroundUp
                 id={page + '.json'}
                 key={page}

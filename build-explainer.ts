@@ -60,3 +60,4 @@ files.forEach((name) => {
 mkdirSync('./web/dist/fonts');
 copyFileSync('./web/fonts/prism.css', './web/dist/fonts/prism.css');
 copyFileSync('./web/fonts/prism.js', './web/dist/fonts/prism.js');
+copyFileSync('./web/dist/index.html', './web/dist/200.html');
