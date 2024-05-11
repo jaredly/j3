@@ -170,7 +170,11 @@ export const Outside = () => {
     );
 };
 
-const onlyLast = <T,>(fn: (arg: T) => void, time: number, longTime: number) => {
+export const onlyLast = <T,>(
+    fn: (arg: T) => void,
+    time: number,
+    longTime: number,
+) => {
     let last = Date.now();
     let tid: Timer | null = null;
     return (arg: T) => {
