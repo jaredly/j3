@@ -21,6 +21,17 @@ for the series of artcicle
   - [ ] it would be nice to have a sticky header too
   - [ ] and a collapsible table of contents at the top...
 
+# Static Rednder
+
+- [x] basic setup
+- [ ] show namespaces nested, with `<details>`
+- [ ] show productitems
+- [ ] do a "table of contents" at the top
+- [ ] get the right font
+
+
+#
+
 - gotta toplevel 'em all
   - [x] Structured Editor
   - [x] Encoding
