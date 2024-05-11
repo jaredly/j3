@@ -75,9 +75,15 @@
 
 (deftype (option a) (some a) (none))
 
-(defn snd [tuple] (let [(, _ v) tuple] v))
+(defn snd [tuple]
+    (let [
+        (, _ v) tuple]
+        v))
 
-(defn fst [tuple] (let [(, v _) tuple] v))
+(defn fst [tuple]
+    (let [
+        (, v _) tuple]
+        v))
 
 (defn replaces [target repl]
     (match repl
@@ -309,13 +315,18 @@
                                                                         (parse-expr target)
                                                                             (map
                                                                             (pairs cases)
-                                                                                (fn [case] (let [(, pat expr) case] (, (parse-pat pat) (parse-expr expr)))))
+                                                                                (fn [case]
+                                                                                (let [
+                                                                                    (, pat expr) case]
+                                                                                    (, (parse-pat pat) (parse-expr expr)))))
                                                                             l)
         (cst/list [(cst/id "let" _) (cst/array inits _) body] l)    (elet
                                                                         (map
                                                                             (pairs inits)
                                                                                 (fn [pair]
-                                                                                (let [(, pat value) pair] (, (parse-pat pat) (parse-expr value)))))
+                                                                                (let [
+                                                                                    (, pat value) pair]
+                                                                                    (, (parse-pat pat) (parse-expr value)))))
                                                                             (parse-expr body)
                                                                             l)
         (** This is our "do-notation" let form.
@@ -324,7 +335,8 @@
                                                                         (parse-expr body)
                                                                             (pairs inits)
                                                                             (fn [body init]
-                                                                            (let [(, pat value) init]
+                                                                            (let [
+                                                                                (, pat value) init]
                                                                                 (eapp
                                                                                     (evar ">>=" el)
                                                                                         [(parse-expr value) (elambda [(parse-pat pat)] body l)]
@@ -433,14 +445,21 @@
                 2995))
         (, (@@ abc) (evar "abc" 1200))
         (,
-        (@@ (let [a 1 b 2] a))
+        (@@
+            (let [
+                a 1
+                b 2]
+                a))
             (elet
             [(, (pvar "a" 4456) (eprim (pint 1 4457) 4457))
                 (, (pvar "b" 4458) (eprim (pint 2 4459) 4459))]
                 (evar "a" 4460)
                 4453))
         (,
-        (@@ (let-> [v hi] v2))
+        (@@
+            (let-> [
+                v hi]
+                v2))
             (eapp
             (evar ">>=" 6213)
                 [(evar "hi" 6216) (elambda [(pvar "v" 6215)] (evar "v2" 6217) 6212)]
@@ -468,10 +487,16 @@
         (@@ (int-to-string 23))
             (eapp (evar "int-to-string" 1615) [(eprim (pint 23 1616) 1616)] 1614))
         (,
-        (@@ (let [x 2] x))
+        (@@
+            (let [
+                x 2]
+                x))
             (elet [(, (pvar "x" 1679) (eprim (pint 2 1680) 1680))] (evar "x" 1681) 1676))
         (,
-        (@@ (let [(, a b) (, 2 3)] 1))
+        (@@
+            (let [
+                (, a b) (, 2 3)]
+                1))
             (elet
             [(,
                 (pcon "," 1792 [(pvar "a" 1794) (pvar "b" 1795)] 1792)
@@ -498,7 +523,8 @@
                                                                                     constrs        (filter-some (map items parse-type-constructor))]
                                                                                     (tdeftype id li args constrs l))
         (cst/list [(cst/id "deftype" _) .._] l)                                 (fatal "Invalid 'deftype' ${(int-to-string l)}")
-        (cst/list [(cst/id "typealias" _) head body] l)                         (let [(, id li args) (id-with-maybe-args head)]
+        (cst/list [(cst/id "typealias" _) head body] l)                         (let [
+                                                                                    (, id li args) (id-with-maybe-args head)]
                                                                                     (ttypealias id li args (parse-type body) l))
         _                                                                       (texpr (parse-expr cst) (cst-loc cst))))
 
@@ -653,13 +679,19 @@
                                            (map
                                            bindings
                                                (fn [arg]
-                                               (let [(, pat init) arg]
+                                               (let [
+                                                   (, pat init) arg]
                                                    (bag/and (pat-externals pat) (externals bound init)))))
                                            bag/and)
                                        (externals
                                        (foldl
                                            bound
-                                               (map bindings (fn [arg] (let [(, pat _) arg] (pat-bound pat))))
+                                               (map
+                                               bindings
+                                                   (fn [arg]
+                                                   (let [
+                                                       (, pat _) arg]
+                                                       (pat-bound pat))))
                                                set/merge)
                                            body))
         (eapp target args _)   (bag/and
@@ -712,7 +744,8 @@
 (defn externals-top [stmt]
     (bag/to-list
         (match stmt
-            (tdeftype name _ free constructors _) (let [bound (set/from-list [name ..(map free fst)])]
+            (tdeftype name _ free constructors _) (let [
+                                                      bound (set/from-list [name ..(map free fst)])]
                                                       (many
                                                           (map
                                                               constructors
@@ -721,7 +754,8 @@
                                                                       (, _ _ args _) (match args
                                                                                          [] empty
                                                                                          _  (many (map args (externals-type bound)))))))))
-            (ttypealias name _ args body _)       (let [bound (set/from-list [name ..(map args fst)])]
+            (ttypealias name _ args body _)       (let [
+                                                      bound (set/from-list [name ..(map args fst)])]
                                                       (externals-type bound body))
             (tdef name _ body _)                  (externals (set/add set/nil name) body)
             (texpr expr _)                        (externals set/nil expr))))

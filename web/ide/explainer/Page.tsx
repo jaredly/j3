@@ -8,6 +8,7 @@ import { AnyEnv } from '../ground-up/FullEvalator';
 import { loadEvaluator } from '../ground-up/loadEv';
 import lf from 'localforage';
 import { onlyLast } from '../ground-up/Outside';
+import { loadState } from '../ground-up/reduce';
 
 type Data = {
     page: string;
@@ -18,11 +19,11 @@ type Data = {
 
 const key = (page: string) => 'explainer:' + page;
 
-const loadState = async (page: string) => {
+const fetchState = async (page: string) => {
     const cached = await lf.getItem(key(page));
     if (cached != null && typeof cached === 'string') {
         try {
-            return { data: JSON.parse(cached), dirty: true };
+            return { data: loadState(JSON.parse(cached)), dirty: true };
         } catch (err) {
             // ignoring
         }
@@ -31,7 +32,7 @@ const loadState = async (page: string) => {
     const data: NUIState = await res.json();
     data.history = [];
     data.at = [];
-    return { data, dirty: false };
+    return { data: loadState(data), dirty: false };
 };
 
 const saveState = async (page: string, state: NUIState) => {
@@ -40,7 +41,7 @@ const saveState = async (page: string, state: NUIState) => {
 
 export const pageLoader: LoaderFunction = async (args): Promise<Data> => {
     const page = args.params.page ?? pages[0].id;
-    const { data, dirty } = await loadState(page);
+    const { data, dirty } = await fetchState(page);
 
     const evaluator = await new Promise<AnyEnv | null>((res) =>
         loadEvaluator(data.evaluator, (ev) => res(ev)),

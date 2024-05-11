@@ -3,8 +3,13 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { NUIState } from './web/custom/UIState';
 
-const [_, __, inp, out] = process.argv;
+let [_, __, ...files] = process.argv;
+// if (!out) out = inp;
 
-const data: NUIState = JSON.parse(readFileSync(inp, 'utf8'));
-data.history = data.history.slice(-500)
-writeFileSync(out, JSON.stringify(data));
+files.forEach((name) => {
+    console.log(`for`, name);
+    const data: NUIState = JSON.parse(readFileSync(name, 'utf8'));
+    // data.history = data.history.slice(-500);
+    data.history = [];
+    writeFileSync(name, JSON.stringify(data));
+});

@@ -48,6 +48,13 @@
         (quot/pat pat)
         (quot/quot cst))
 
+(deftype cst
+    (cst/list (list cst) int)
+        (cst/array (list cst) int)
+        (cst/spread cst int)
+        (cst/id string int)
+        (cst/string string (list (, cst string int)) int))
+
 (** ## Patterns
     Sometimes referred to as l-values (things that can go on the "left hand of an assignment"), patterns show up as function arguments, the left side of a let binding, or in match cases.  **)
 
@@ -84,9 +91,9 @@
 (** ## Toplevels
     These are our toplevel forms; value & type definitions, and toplevel expressions. **)
 
-(deftype toplevel
+(deftype top
     (** Defining custom types! We have the name of the type, and then a list of constructors, each with a name and a list of arguments. **)
-        (tdeftype string (list (,, string (list type) int)))
+        (tdeftype string (list (, string (list type) int)))
         (** e.g. (def x 2).
         (defn x [a] b) gets parsed as (def x (fn [x] b)) **)
         (tdef string expr)
@@ -113,14 +120,15 @@
 (defn parse-person [data]
     (match (parse-name data)
         (err reason) (err reason)
-        (ok name)    (let [greeting "Hello ${name}"]
+        (ok name)    (let [
+                         greeting "Hello ${name}"]
                          (match (parse-address data)
                              (err reason) (err reason)
                              (ok address) (ok "${greeting}, you live at ${address}")))))
 
 (** Because both parse-name and parse-address might fail, we have to match the results, which gets pretty messy. In contrast, here's what it looks like with let->: **)
 
-(defn parse-person [data]
+(defn parse-person2 [data]
     (let-> [
         name     (parse-name data)
         greeting (<- "Hello ${name}")
@@ -129,7 +137,7 @@
 
 (** This is much nicer! And you can imagine how the match version would get even more annoying the more things you want to parse. Now let's look at what this desugars into: **)
 
-(defn parse-person [data]
+(defn parse-person3 [data]
     (>>=
         (parse-name data)
             (fn [name]
@@ -152,4 +160,12 @@
 (def <- ok)
 
 (** So this was an example using the do-notation with the result type for handling errors, but in the "Self-Hosted Type Inference" document we'll be using a somewhat more complicated version, which will allow us the to have the illusion of mutable state :). **)
+
+
+
+(defn parse-address [data] ;  some parsing (ok "earth"))
+
+(defn parse-name [data] ;  do something (ok "olive"))
+
+(, parse-person parse-person2 parse-person3)
 

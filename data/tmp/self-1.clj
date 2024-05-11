@@ -169,7 +169,8 @@
         (pprim prim _)       (, ["${target} === ${(compile-prim prim)}"] [])
         (pstr str _)         (, ["${target} === \"${str}\""] [])
         (pvar name _)        (, [] ["let ${(sanitize name)} = ${target};"])
-        (pcon name _ args _) (let [(, check assign) (pat-loop-list target args 0)]
+        (pcon name _ args _) (let [
+                                 (, check assign) (pat-loop-list target args 0)]
                                  (, ["${target}.type === \"${name}\"" ..check] assign))))
 
 (,
@@ -348,7 +349,8 @@
                                     cases (map
                                               cases
                                                   (fn [case]
-                                                  (let [(, pat body) case]
+                                                  (let [
+                                                      (, pat body) case]
                                                       (compile-pat pat "$target" "return ${(compile body)}"))))
                                     ]
                                     "(($target) => {\n${(join "\n" cases)}\nthrow new Error('Failed to match. ' + valueToString($target));\n})(${(compile target)})")))
@@ -374,13 +376,24 @@
             "any")
         (, (@ "a${2}b") "a2b")
         (, (@ ((fn [a] (+ a 2)) 21)) 23)
-        (, (@ (let [one 1 two 2] (+ 1 2))) 3)
+        (,
+        (@
+            (let [
+                one 1
+                two 2]
+                (+ 1 2)))
+            3)
         (,
         (@
             (match 2
                 2 1))
             1)
-        (, (@ (let [a/b 2] a/b)) 2)
+        (,
+        (@
+            (let [
+                a/b 2]
+                a/b))
+            2)
         (,
         (@
             (match true

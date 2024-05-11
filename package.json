@@ -8,6 +8,15 @@
         "plot": "link:@types/@observablehq/plot",
         "vitest": "^0.34.5"
     },
+    "scripts": {
+        "start": "esbuild --bundle src/run.ts --platform=node --sourcemap=inline > ok.js && node --enable-source-maps ok.js ./examples/basic.clj; rm -f ok.js",
+        "server": "bun --hot run server.ts",
+        "web": "vite web --port 8224 --config vite.config.js",
+        "build-web": "vite build web --config vite.config.js",
+        "make-walk": "cd ../j2; yarn tx ../j3/src/types/ast.ts ../j3/src/types/walk-ast.ts",
+        "gram": "node ./make-grammar.js",
+        "test": "jest"
+    },
     "type": "module",
     "dependencies": {
         "@babel/core": "^7.20.12",
@@ -70,14 +79,5 @@
         "victormono": "^1.5.6",
         "vite": "^4.0.4",
         "wa-sqlite": "github:rhashimoto/wa-sqlite#breaking-changes"
-    },
-    "scripts": {
-        "start": "esbuild --bundle src/run.ts --platform=node --sourcemap=inline > ok.js && node --enable-source-maps ok.js ./examples/basic.clj; rm -f ok.js",
-        "server": "bun --hot run server.ts",
-        "web": "vite web --port 8224 --config vite.config.js",
-        "build-web": "vite build web --config vite.config.js",
-        "make-walk": "cd ../j2; yarn tx ../j3/src/types/ast.ts ../j3/src/types/walk-ast.ts",
-        "gram": "node ./make-grammar.js",
-        "test": "jest"
     }
 }
