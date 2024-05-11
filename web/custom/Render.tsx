@@ -15,6 +15,9 @@ import { useNode } from './store/useNode';
 import { RenderProps } from './types';
 import { RawCode } from './RawCode';
 import { colors, getRainbowHashColor, nodeColor, rainbow } from './rainbow';
+import { useCreateBlockNote } from '@blocknote/react';
+import { BlockNoteEditor } from '@blocknote/core';
+import { blockToHtml } from '../ide/ground-up/blockToText';
 
 const columnRecords = true;
 
@@ -457,6 +460,22 @@ export const RenderNNode = (
             );
         }
         case 'raw-code': {
+            if (props.values.static) {
+                // @ts-ignore
+                const html = Prism.highlight(
+                    nnode.raw,
+                    // @ts-ignore
+                    Prism.languages.javascript,
+                    'javascript',
+                );
+
+                return (
+                    <pre>
+                        <code dangerouslySetInnerHTML={{ __html: html }} />
+                    </pre>
+                );
+            }
+
             return (
                 <RawCode
                     initial={nnode.raw}
@@ -467,14 +486,31 @@ export const RenderNNode = (
             );
         }
         case 'rich-text': {
-            return (
-                <RichText
-                    initial={nnode.contents}
-                    idx={props.idx}
-                    path={props.path}
-                    reg={reg}
-                />
-            );
+            if (props.values.static) {
+                const html = nnode.contents.map(blockToHtml).join('\n');
+                return (
+                    <div
+                        className="bn-container"
+                        style={{
+                            fontFamily: 'Merriweather',
+                            fontWeight: 200,
+                            backgroundColor: 'rgb(31, 31, 31)',
+                            padding: '8px 16px',
+                            borderRadius: 8,
+                        }}
+                        dangerouslySetInnerHTML={{ __html: html }}
+                    />
+                );
+            } else {
+                return (
+                    <RichText
+                        initial={nnode.contents}
+                        idx={props.idx}
+                        path={props.path}
+                        reg={reg}
+                    />
+                );
+            }
         }
         case 'ref': {
             const child = (

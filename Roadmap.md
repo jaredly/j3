@@ -10,9 +10,16 @@ for the series of artcicle
   - expressions
   ... I mean that's it, so thye could be called "definitions", but idk
 
-- [ ] the FONT is TOO SMALL
+- [x] the FONT is TOO SMALL
   andd maybe just too skinny? idk, I should play around with
   different fonts.
+- [ ] Nowwww let's do some static rendering my good folks
+  and when I say static
+  I mean static.
+  - [ ] THIS MEANS no javascript
+    IT ALSO MEANS hm I can use the `detail` whatsit to get expand/collapse, right? <details><summary>thing</summary>more things</details>
+  - [ ] it would be nice to have a sticky header too
+  - [ ] and a collapsible table of contents at the top...
 
 - gotta toplevel 'em all
   - [x] Structured Editor

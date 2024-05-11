@@ -2,7 +2,7 @@
 
 (** What's cool about this compiler?
     - self-hosted! the compiler will be written in itself.
-    - full type inference! We'll start with basic Hindley Milner, and work our way up to type classes, polymorphic row types, and more!
+    - full type inference! We'll start with basic Hindley Milner, and (eventually) work our way up to type classes, polymorphic row types, and more!
     - pure + functional, with (eventually) algebraic effects!
     - structured editing! The editor for our language won't be "plain text in a file", but rather an editor that knows about the structure of the program. Our compiler will hook into this to provide lots of nice things, including hover-for-type, inline error reporting, refactoring, and more!
     In fact, we'll be building a series of compilers, gradually getting more feature-rich, and correspondingly more fun to use.

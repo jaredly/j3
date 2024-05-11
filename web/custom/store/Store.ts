@@ -187,6 +187,7 @@ export type Values = {
     errors?: string[];
     unused: boolean;
     highlight: boolean;
+    static?: boolean;
 
     reg: Reg;
     selection?: {

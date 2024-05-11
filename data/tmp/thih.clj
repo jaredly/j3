@@ -1,3 +1,6 @@
+(** ## Typing Haskell in Haskell
+    This is a mega-document, comprising of the parser, compiler, and type-checker. I could definitely do more work to organize it & make it pretty, but I'm not sure that I will; the [Self-Hosted Type Inference](./algw-s2) document is much better organized, and I believe it won't be too hard to take the things I learned from this implementation and add type classes (via predicates) to that one. **)
+
 (** ## Prelude **)
 
 (defn list/get [arr i]
@@ -129,9 +132,15 @@
         [one two ..rest] [(, one two) ..(pairs rest)]
         _                (fatal "Pairs given odd number ${(valueToString list)}")))
 
-(defn snd [tuple] (let [(, _ v) tuple] v))
+(defn snd [tuple]
+    (let [
+        (, _ v) tuple]
+        v))
 
-(defn fst [tuple] (let [(, v _) tuple] v))
+(defn fst [tuple]
+    (let [
+        (, v _) tuple]
+        v))
 
 (defn zip [one two]
     (match (, one two)
@@ -147,7 +156,8 @@
 (defn partition [arr test]
     (match arr
         []           (, [] [])
-        [one ..rest] (let [(, yes no) (partition rest test)]
+        [one ..rest] (let [
+                         (, yes no) (partition rest test)]
                          (if (test one)
                              (, [one ..yes] no)
                                  (, yes [one ..no])))))
@@ -354,7 +364,8 @@
     (match type
         (tvar (tyvar name kind) _) "(var ${name} ${(kind->s kind)})"
         (tapp target arg _)        (match (type->fn type)
-                                       (, [] _)        (let [(, target args) (unwrap-tapp target [arg])]
+                                       (, [] _)        (let [
+                                                           (, target args) (unwrap-tapp target [arg])]
                                                            "(${(type->s' show-kind target)} ${(join " " (map (type->s' show-kind) args))})")
                                        (, args result) "(fn [${(join " " (map (type->s' show-kind) args))}] ${(type->s' show-kind result)})")
         (tcon (tycon "[]" _) _)    "list"
@@ -573,7 +584,10 @@
         (cst/string first templates l)                              (estr
                                                                         first
                                                                             (map
-                                                                            (fn [tpl] (let [(, expr string l) tpl] (,, (parse-expr expr) string l)))
+                                                                            (fn [tpl]
+                                                                                (let [
+                                                                                    (, expr string l) tpl]
+                                                                                    (,, (parse-expr expr) string l)))
                                                                                 templates)
                                                                             l)
         (cst/id id l)                                               (match (string-to-int id)
@@ -595,14 +609,18 @@
         (cst/list [(cst/id "match" _) target ..cases] l)            (ematch
                                                                         (parse-expr target)
                                                                             (map
-                                                                            (fn [case] (let [(, pat expr) case] (, (parse-pat pat) (parse-expr expr))))
+                                                                            (fn [case]
+                                                                                (let [
+                                                                                    (, pat expr) case]
+                                                                                    (, (parse-pat pat) (parse-expr expr))))
                                                                                 (pairs cases))
                                                                             l)
         (cst/list [(cst/id "let" _) (cst/array inits _) body] l)    (foldr
                                                                         (parse-expr body)
                                                                             (pairs inits)
                                                                             (fn [body init]
-                                                                            (let [(, pat value) init]
+                                                                            (let [
+                                                                                (, pat value) init]
                                                                                 (match pat
                                                                                     (cst/id name l) (elet (, [] [[(, name [(, [] (parse-expr value))])]]) body l)
                                                                                     _               (ematch (parse-expr value) [(, (parse-pat pat) body)] l)))))
@@ -620,7 +638,8 @@
                                                                         (parse-expr body)
                                                                             (pairs inits)
                                                                             (fn [body init]
-                                                                            (let [(, pat value) init]
+                                                                            (let [
+                                                                                (, pat value) init]
                                                                                 (eapp (parse-expr value) [(elambda [(parse-pat pat)] body l)] l))))
         (cst/list [(cst/id "let" _) .._] l)                         (fatal "Invalid 'let' ${(int-to-string l)}")
         (cst/list [target ..args] l)                                (match args
@@ -691,13 +710,20 @@
                 11993))
         (, (@@ abc) (evar "abc" 12029))
         (,
-        (@@ (let [a 1 b 2] a))
+        (@@
+            (let [
+                a 1
+                b 2]
+                a))
             (elet
             (, [] [[(, "a" [(, [] (eprim (pint 1 12043) 12043))])]])
                 (elet (, [] [[(, "b" [(, [] (eprim (pint 2 12045) 12045))])]]) (evar "a" 12046) 12044)
                 12042))
         (,
-        (@@ (let-> [v hi] v2))
+        (@@
+            (let-> [
+                v hi]
+                v2))
             (eapp
             (evar "hi" 12090)
                 [(elambda [(pvar "v" 12089)] (evar "v2" 12091) 12086)]
@@ -730,10 +756,16 @@
                 [(eprim (pint 23 12267) 12267)]
                 12265))
         (,
-        (@@ (let [x 2] x))
+        (@@
+            (let [
+                x 2]
+                x))
             (elet (, [] [[(, "x" [(, [] (eprim (pint 2 12291) 12291))])]]) (evar "x" 12292) 12290))
         (,
-        (@@ (let [(, a b) (, 2 3)] 1))
+        (@@
+            (let [
+                (, a b) (, 2 3)]
+                1))
             (ematch
             (eapp
                 (evar "," 12325)
@@ -781,7 +813,9 @@
     (match arr
         []           (fatal "empty splitlast")
         [one]        (, [] one)
-        [one ..rest] (let [(, more last) (splitlast rest)] (, [one ..more] last))))
+        [one ..rest] (let [
+                         (, more last) (splitlast rest)]
+                         (, [one ..more] last))))
 
 (defn fix-kinds [kind type]
     (match type
@@ -1076,7 +1110,8 @@
         [[one ..rest] ..lists] [one ..(concat [rest ..lists])]))
 
 (defn compile [expr trace]
-    (let [loc (expr-loc expr)]
+    (let [
+        loc (expr-loc expr)]
         (trace-wrap
             loc
                 trace
@@ -1088,7 +1123,8 @@
                                                              (mapr
                                                              tpls
                                                                  (fn [item]
-                                                                 (let [(,, expr suffix l) item]
+                                                                 (let [
+                                                                     (,, expr suffix l) item]
                                                                      "${${(compile expr trace)}}${(escape-string (unescapeString suffix))}"))))}`")
                 (eprim prim l)                (match prim
                                                   (pint int _)     (int-to-string int)
@@ -1111,7 +1147,8 @@
                                                       (fn [body (, name [(, [] init)])]
                                                       "(function let_${(its l)}() {const ${(sanitize name)} = ${(compile init trace)};\n${("return ${body}"
                                                           ;(compile-pat pat "$target" "return ${body}" trace))};\nthrow new Error('let pattern not matched. ' + valueToString($target));\n})()"))
-                (eapp fn args l)              (let [args (join ")(" (map (fn [arg] (compile arg trace)) args))]
+                (eapp fn args l)              (let [
+                                                  args (join ")(" (map (fn [arg] (compile arg trace)) args))]
                                                   (match fn
                                                       (elambda _ _ _) "(${(compile fn trace)})(${args})"
                                                       _               "${(compile fn trace)}(${args})"))
@@ -1120,7 +1157,8 @@
                                                       (mapr
                                                       cases
                                                           (fn [case]
-                                                          (let [(, pat body) case]
+                                                          (let [
+                                                              (, pat body) case]
                                                               (compile-pat pat "$target" "return ${(compile body trace)}" trace)))))}\nthrow new Error('failed to match ' + jsonify($target) + '. Loc: ${(its l)}');\n})(${(compile target trace)})"))))
 
 (compile
@@ -1131,9 +1169,21 @@
             )
         map/nil)
 
-(parse-expr (@@ (let [a 1 b 2] (+ a b))))
+(parse-expr
+    (@@
+        (let [
+            a 1
+            b 2]
+            (+ a b))))
 
-(compile (parse-expr (@@ (let [a 1 b 2] (+ a b)))) map/nil)
+(compile
+    (parse-expr
+        (@@
+            (let [
+                a 1
+                b 2]
+                (+ a b))))
+        map/nil)
 
 (compile (parse-expr (@@ ((fn [a] (+ a 2)) 21))) map/nil)
 
@@ -1150,14 +1200,27 @@
         (, (@@ (jsonify (+ 2 3))) "5")
         (, (@@ "a${2}b") "a2b")
         (, (@@ (jsonify ((fn [a] (+ a 2)) 21))) "23")
-        (, (@@ (jsonify (let [one 1 two 2] (+ 1 2)))) "3")
+        (,
+        (@@
+            (jsonify
+                (let [
+                    one 1
+                    two 2]
+                    (+ 1 2))))
+            "3")
         (,
         (@@
             (jsonify
                 (match 2
                     2 1)))
             "1")
-        (, (@@ (jsonify (let [a/b 2] a/b))) "2")
+        (,
+        (@@
+            (jsonify
+                (let [
+                    a/b 2]
+                    a/b)))
+            "2")
         (,
         (@@
             (jsonify
@@ -1190,7 +1253,8 @@
                                                              (mapr
                                                              cases
                                                                  (fn [case]
-                                                                 (let [(,,, name2 nl args l) case]
+                                                                 (let [
+                                                                     (,,, name2 nl args l) case]
                                                                      (join
                                                                          ""
                                                                              ["const "
@@ -1464,7 +1528,8 @@
     - preds is a list of predicates that need to be hold in order for the instance to exist
     - p **)
     defn add-inst [preconditions inst-pred (class-env classes defaults)]
-    (let [(isin class-name _) inst-pred]
+    (let [
+        (isin class-name _) inst-pred]
         (match (map/get classes class-name)
             (none)                              (fatal
                                                     "no class '${class-name}' found, when trying to add instance. Known classes: ${(join ", " (map/keys classes))}")
@@ -1560,7 +1625,8 @@
     (if (in-hnf p)
         (ok [p])
             (match (by-inst ce p)
-            (none)    (let [(isin name type) p]
+            (none)    (let [
+                          (isin name type) p]
                           (err
                               (,
                                   "Can't find an instance for class '${name}' for type ${(type->s type)}"
@@ -1635,7 +1701,9 @@
     (StateT (fn [state] (, state (result value err)))))
 
 (defn run-> [(StateT f) state]
-    (let [(, state result) (f state)] (, state result)))
+    (let [
+        (, state result) (f state)]
+        (, state result)))
 
 (defn state-f [(StateT f)] f)
 
@@ -1657,17 +1725,26 @@
 (defn map-> [f arr]
     (match arr
         []           (<- [])
-        [one ..rest] (let-> [one (f one) rest (map-> f rest)] (<- [one ..rest]))))
+        [one ..rest] (let-> [
+                         one  (f one)
+                         rest (map-> f rest)]
+                         (<- [one ..rest]))))
 
 (defn do-> [f arr]
     (match arr
         []           (<- ())
-        [one ..rest] (let-> [() (f one) () (do-> f rest)] (<- ()))))
+        [one ..rest] (let-> [
+                         () (f one)
+                         () (do-> f rest)]
+                         (<- ()))))
 
 (defn seq-> [arr]
     (match arr
         []           (<- [])
-        [one ..rest] (let-> [one one rest (seq-> rest)] (<- [one ..rest]))))
+        [one ..rest] (let-> [
+                         one  one
+                         rest (seq-> rest)]
+                         (<- [one ..rest]))))
 
 (defn ok-> [result]
     (match result
@@ -1682,12 +1759,16 @@
 (defn foldl-> [init values f]
     (match values
         []           (<- init)
-        [one ..rest] (let-> [one (f init one)] (foldl-> one rest f))))
+        [one ..rest] (let-> [
+                         one (f init one)]
+                         (foldl-> one rest f))))
 
 (defn foldr-> [init values f]
     (match values
         []           (<- init)
-        [one ..rest] (let-> [init (foldr-> init rest f)] (f init one))))
+        [one ..rest] (let-> [
+                         init (foldr-> init rest f)]
+                         (f init one))))
 
 (** ## Type inference state **)
 
@@ -1702,12 +1783,21 @@
         (, int (list (, int type)) type-env (map tyvar type) (list pred))
             value))
 
-(def <-idx (let-> [(, idx _) <-state] (<- idx)))
+(def <-idx
+    (let-> [
+        (, idx _) <-state]
+        (<- idx)))
 
 (defn idx-> [idx]
-    (let-> [(, _ rest) <-state _ (state-> (, idx rest))] (<- ())))
+    (let-> [
+        (, _ rest) <-state
+        _          (state-> (, idx rest))]
+        (<- ())))
 
-(def <-types (let-> [(, _ types _) <-state] (<- types)))
+(def <-types
+    (let-> [
+        (, _ types _) <-state]
+        (<- types)))
 
 (defn record-> [loc type]
     (let-> [
@@ -1715,12 +1805,21 @@
         _                  (state-> (, idx [(, loc type) ..types] rest))]
         (<- ())))
 
-(def <-tenv (let-> [(, _ _ tenv _) <-state] (<- tenv)))
+(def <-tenv
+    (let-> [
+        (, _ _ tenv _) <-state]
+        (<- tenv)))
 
 (defn tenv-> [tenv]
-    (let-> [(, a b _ d) <-state _ (state-> (, a b tenv d))] (<- ())))
+    (let-> [
+        (, a b _ d) <-state
+        _           (state-> (, a b tenv d))]
+        (<- ())))
 
-(def <-subst (let-> [(, _ _ _ subst _) <-state] (<- subst)))
+(def <-subst
+    (let-> [
+        (, _ _ _ subst _) <-state]
+        (<- subst)))
 
 (defn subst-> [new-subst]
     (let-> [
@@ -1728,10 +1827,16 @@
         _                             (state-> (, idx types tenv (compose-subst new-subst subst) rest))]
         (<- ())))
 
-(def <-preds (let-> [(, _ _ _ _ preds) <-state] (<- preds)))
+(def <-preds
+    (let-> [
+        (, _ _ _ _ preds) <-state]
+        (<- preds)))
 
 (defn reset-preds-> [preds]
-    (let-> [(, a b c d old) <-state _ (state-> (, a b c d preds))] (<- old)))
+    (let-> [
+        (, a b c d old) <-state
+        _               (state-> (, a b c d preds))]
+        (<- old)))
 
 (defn preds-> [preds]
     (let-> [
@@ -1747,7 +1852,7 @@
 
 (def ti-return <-)
 
-(** ## Monad alert **)
+(** ## Applying the State monad to type inference **)
 
 (deftype type-env
     ; (type...constructors) name => type 
@@ -1777,8 +1882,13 @@
 (defn sequence [tis]
     (match tis
         []           (<- [])
-        [one]        (let-> [res one] (<- [res]))
-        [one ..rest] (let-> [res one rest (sequence rest)] (<- [res ..rest]))))
+        [one]        (let-> [
+                         res one]
+                         (<- [res]))
+        [one ..rest] (let-> [
+                         res  one
+                         rest (sequence rest)]
+                         (<- [res ..rest]))))
 
 (defn unify [t1 t2]
     (let-> [
@@ -1801,10 +1911,16 @@
 
 (def get-subst <-subst)
 
-(def next-idx (let-> [nidx <-idx _ (idx-> (+ nidx 1))] (<- nidx)))
+(def next-idx
+    (let-> [
+        nidx <-idx
+        _    (idx-> (+ nidx 1))]
+        (<- nidx)))
 
 (defn new-tvar [kind]
-    (let-> [nidx <-idx _ (idx-> (+ nidx 1))]
+    (let-> [
+        nidx <-idx
+        _    (idx-> (+ nidx 1))]
         (<- (tvar (tyvar (enumId nidx) kind) -1))))
 
 (defn subst->s [subst]
@@ -1820,10 +1936,15 @@
         (err e) (err e)))
 
 (defn fresh-inst [(forall ks qt)]
-    (let-> [ts (map-> new-tvar ks)] (<- (inst/qual ts inst/type qt))))
+    (let-> [
+        ts (map-> new-tvar ks)]
+        (<- (inst/qual ts inst/type qt))))
 
 (defn fresh-inst-rec [scheme]
-    (let-> [(=> preds t) (fresh-inst scheme) () (pred-list-> preds)] (<- t)))
+    (let-> [
+        (=> preds t) (fresh-inst scheme)
+        ()           (pred-list-> preds)]
+        (<- t)))
 
 (defn inst/type [types type]
     (match type
@@ -1848,26 +1969,42 @@
 (defn infer/prim [prim]
     (match prim
         (pbool _ _)  (<- tbool)
-        (pfloat _ _) (let-> [v (new-tvar star) () (preds-> (one (isin "floating" v) ))] (<- v))
-        (pint _ _)   (let-> [v (new-tvar star) () (preds-> (one (isin "num" v) ))] (<- v))))
+        (pfloat _ _) (let-> [
+                         v  (new-tvar star)
+                         () (preds-> (one (isin "floating" v) ))]
+                         (<- v))
+        (pint _ _)   (let-> [
+                         v  (new-tvar star)
+                         () (preds-> (one (isin "num" v) ))]
+                         (<- v))))
 
 (defn infer/pats [pats]
-    (let-> [psasts (map-> infer/pat pats)]
-        (let [as (concat (map (fn [(, as' _)] as') psasts)) ts (map (fn [(, _ t)] t) psasts)]
+    (let-> [
+        psasts (map-> infer/pat pats)]
+        (let [
+            as (concat (map (fn [(, as' _)] as') psasts))
+            ts (map (fn [(, _ t)] t) psasts)]
             (<- (, as ts)))))
 
 (defn get-constructor [name l]
-    (let-> [tenv <-tenv]
+    (let-> [
+        tenv <-tenv]
         (match (tenv/constr tenv name)
             (none)        (<-err (, "Unknown constructor" [(, l name)]))
             (some scheme) (<- scheme))))
 
 (defn infer/pat [pat]
     (match pat
-        (pvar name l)          (let-> [v (new-tvar star)] (<- (, [(!>! name (to-scheme v))] v)))
-        (pany l)               (let-> [v (new-tvar star)] (<- (, [] v)))
+        (pvar name l)          (let-> [
+                                   v (new-tvar star)]
+                                   (<- (, [(!>! name (to-scheme v))] v)))
+        (pany l)               (let-> [
+                                   v (new-tvar star)]
+                                   (<- (, [] v)))
         ; (pas name inner l)
-        (pprim prim l)         (let-> [t (infer/prim prim)] (<- (, [] t)))
+        (pprim prim l)         (let-> [
+                                   t (infer/prim prim)]
+                                   (<- (, [] t)))
         (pcon name patterns l) (let-> [
                                    scheme    (get-constructor name l)
                                    (, as ts) (infer/pats patterns)
@@ -1879,11 +2016,16 @@
 (defn unzip [list]
     (match list
         []               (, [] [])
-        [(, a b) ..rest] (let [(, left right) (unzip rest)] (, [a ..left] [b ..right]))))
+        [(, a b) ..rest] (let [
+                             (, left right) (unzip rest)]
+                             (, [a ..left] [b ..right]))))
 
 (defn infer/expr [ce as expr]
     (match expr
-        (evar name l)            (let-> [sc (ok-> (find-scheme name as l)) t (fresh-inst-rec sc)] (<- t))
+        (evar name l)            (let-> [
+                                     sc (ok-> (find-scheme name as l))
+                                     t  (fresh-inst-rec sc)]
+                                     (<- t))
         (estr first templates l) (let-> [
                                      types  (map-> (infer/expr ce as) (map (fn [(,, expr _ _)] expr) templates))
                                      types' (map->
@@ -1927,7 +2069,8 @@
     (let-> [
         (, as' ts) (infer/pats pats)
         body       (infer/expr ce (concat [as' as]) body)]
-        (let [res-type (foldr body ts (fn [res arg] (tfn arg res)))]
+        (let [
+            res-type (foldr body ts (fn [res arg] (tfn arg res)))]
             (<- res-type))))
 
 (defn infer/alts [ce as alts t]
@@ -1951,7 +2094,8 @@
             gs  (without (set/to-list (type/tv t')) fs tyvar=)
             sc' (quantify gs (=> qs' t'))
             ps' (filter (fn [x] (not (entail ce qs' x))) (preds/apply subst preds))]
-            (let-> [(, ds rs) ((split ce fs gs ps'))]
+            (let-> [
+                (, ds rs) ((split ce fs gs ps'))]
                 (if (!= sc sc')
                     (<-err (, "signature too general" []))
                         (match rs
@@ -1959,7 +2103,8 @@
                         _  (<-err (, "context too weak" []))))))))
 
 (defn infer/impls [class-env assumps bindings]
-    (let-> [type-vars ((map-> (fn [_] (new-tvar star)) bindings))]
+    (let-> [
+        type-vars ((map-> (fn [_] (new-tvar star)) bindings))]
         (let [
             identifiers (map fst bindings)
             scs         (map toScheme type-vars)
@@ -1993,7 +2138,9 @@
                                 scs' (<- (map (fn [x] (quantify gs' (=> [] x))) ts'))
                                 ()   (pred-list-> (concat [ds rs]))]
                                 (<- (zipWith !>! identifiers scs')))
-                                (let-> [scs' (<- (map (fn [x] (quantify gs (=> rs x))) ts')) () (pred-list-> ds)]
+                                (let-> [
+                                scs' (<- (map (fn [x] (quantify gs (=> rs x))) ts'))
+                                ()   (pred-list-> ds)]
                                 (<- (zipWith !>! identifiers scs'))))))))))
 
 (defn infer/binding-group [class-env as (, explicit implicits)]
@@ -2014,7 +2161,9 @@
 (defn infer/seq [ti ce as assumptions]
     (match assumptions
         []         (<- [])
-        [bs ..bss] (let-> [as' (ti ce as bs) as'' (infer/seq ti ce (concat [as' as]) bss)]
+        [bs ..bss] (let-> [
+                       as'  (ti ce as bs)
+                       as'' (infer/seq ti ce (concat [as' as]) bss)]
                        (<- (concat [as'' as'])))))
 
 (defn run/tenv-> [tenv ti] (run-> ti (, 0 [] tenv map/nil empty)))
@@ -2445,7 +2594,14 @@
                 (, _ true)  2))
             "it: int")
         (** Shadowing **)
-        (, (@@ (let [a 2] (let [a "hi"] a))) "it: string")
+        (,
+        (@@
+            (let [
+                a 2]
+                (let [
+                    a "hi"]
+                    a)))
+            "it: string")
         (,
         (@@ (fn [x] (return (, 2 x))))
             "it: a *; b (*->*); c *; c ∈ num; b ∈ monad; (fn [a] (b (, c a)))")
@@ -2501,11 +2657,13 @@ filter
         (stypealias name nl args type l)       (<- full-env/nil)
         (sdeftype name nl args constructors l) (infer-deftype (,,, name nl args constructors))
         (sdefinstance _ _ _ _ _ _)             (infer-sinst ce assumps stmt)
-        (sexpr body l)                         (let-> [_ (infer/program ce assumps [(, [] [[(, "it" [(, [] body)])]])])]
+        (sexpr body l)                         (let-> [
+                                                   _ (infer/program ce assumps [(, [] [[(, "it" [(, [] body)])]])])]
                                                    (<- full-env/nil))))
 
 (defn infer [ce assumps body]
-    (let-> [assumps (infer/program ce assumps [(, [] [[(, "it" [(, [] body)])]])])]
+    (let-> [
+        assumps (infer/program ce assumps [(, [] [[(, "it" [(, [] body)])]])])]
         (match (filter (fn [(!>! n _)] (= n "it")) assumps)
             [(!>! n scheme)] (<- scheme)
             _                (<-err (, "No type found (for 'it')" [])))))
@@ -2583,15 +2741,21 @@ filter
                 [(,,, "empty" 2 [] 39) (,,, "one" 4 [(tcon (tycon "a" star) 5)] 6)])))
 
 (defn foldl-ok-> [init values f]
-    (let [<- ok >>= ok>>=]
+    (let [
+        <-  ok
+        >>= ok>>=]
         (match values
             []           (<- init)
-            [one ..rest] (let-> [one (f init one)] (foldl-ok-> one rest f)))))
+            [one ..rest] (let-> [
+                             one (f init one)]
+                             (foldl-ok-> one rest f)))))
 
 (defn foldl-ok-fst-> [init init2 values f f2]
     (match values
         []           (, (ok init) init2)
-        [one ..rest] (let [(, result snd) (f init one) snd (f2 snd init2)]
+        [one ..rest] (let [
+                         (, result snd) (f init one)
+                         snd            (f2 snd init2)]
                          (match result
                              (ok v)  (foldl-ok-fst-> v snd rest f f2)
                              (err e) (, (err e) snd)))))
@@ -2640,7 +2804,8 @@ filter
                     map/nil))))
 
 ;(defn infer-types [full aliases deftypes]
-    (let [names (map (fn [(,, name args type)] name) aliases)]
+    (let [
+        names (map (fn [(,, name args type)] name) aliases)]
         (foldl (foldl full aliases infer-alias) deftypes infer-deftype)))
 
 ;(defn infer-stypes [tenv' stypes salias]
@@ -2710,10 +2875,15 @@ filter
                     (filter (fn [(!>! n _)] (set/has names n)) assumps)))))
 
 (defn map-ok-> [f items]
-    (let [>>= ok>>= <- ok]
+    (let [
+        >>= ok>>=
+        <-  ok]
         (match items
             []           (<- [])
-            [one ..rest] (let-> [one (f one) rest (map-ok-> f rest)] (<- [one ..rest])))))
+            [one ..rest] (let-> [
+                             one  (f one)
+                             rest (map-ok-> f rest)]
+                             (<- [one ..rest])))))
 
 (defn split-stmts [stmts sdefs stypes salias sexps sinst]
     (match stmts
@@ -2783,7 +2953,9 @@ filter
 (defn find-free [type]
     (match type
         (tcon (tycon name kind) l) (one (,, name l kind))
-        _                          (let [args (tfn-args type [])] (many (map find-free args)))))
+        _                          (let [
+                                       args (tfn-args type [])]
+                                       (many (map find-free args)))))
 
 (defn replace-free [free type]
     (match type
@@ -2977,7 +3149,8 @@ foldl
 (defn group->ss [group]
     (match group
         (gtext text)          [text]
-        (ggroup header items) (let [contents (concat (map group->ss items))]
+        (ggroup header items) (let [
+                                  contents (concat (map group->ss items))]
                                   (match contents
                                       [] []
                                       _  [header ..contents]))))
@@ -3209,7 +3382,8 @@ foldl
 (defn externals-stmt [stmt]
     (bag/to-list
         (match stmt
-            (sdeftype string int free constructors l) (let [frees (set/from-list (map fst free))]
+            (sdeftype string int free constructors l) (let [
+                                                          frees (set/from-list (map fst free))]
                                                           (many
                                                               (map
                                                                   (fn [(,,, name l args _)]
@@ -3220,7 +3394,8 @@ foldl
             (sdefinstance name nl type preds items l) (bag/and
                                                           (one (,, name (tcls) nl))
                                                               (many (map (fn [(,, name nl fn)] (externals set/nil fn)) items)))
-            (stypealias name nl args body l)          (let [frees (set/from-list (map fst args))]
+            (stypealias name nl args body l)          (let [
+                                                          frees (set/from-list (map fst args))]
                                                           (externals-type frees body))
             (sdef name nl body l)                     (externals (set/add set/nil name) body)
             (sexpr expr l)                            (externals set/nil expr))))

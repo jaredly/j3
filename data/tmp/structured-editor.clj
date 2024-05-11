@@ -1,4 +1,4 @@
-(** ## Structure Editor
+(** ## Structured Editor
     A bit about this editor environment **)
 
 (** ## About the editor **)

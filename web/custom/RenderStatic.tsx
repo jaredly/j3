@@ -35,6 +35,7 @@ export const RenderStatic = ({
             nnode={top}
             values={{
                 display: {},
+                static: true,
                 highlight: false,
                 meta: {},
                 nnode: top,

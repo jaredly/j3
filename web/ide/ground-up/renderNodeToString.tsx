@@ -1,9 +1,9 @@
-import { Block } from '@blocknote/core';
 import { NNode } from '../../../src/state/nestedNodes/NNode';
 import { getNestedNodes } from '../../../src/state/nestedNodes/getNestedNodes';
 import { Display } from '../../../src/to-ast/library';
 import { Map } from '../../../src/types/mcst';
 import { white } from './white';
+import { blockToText } from './blockToText';
 
 export const renderNodeToString = (
     top: number,
@@ -21,42 +21,6 @@ export const renderNodeToString = (
         display[top]?.layout,
     );
     return renderNNode(nnode, map, left, display);
-};
-
-const styledToText = (
-    st: Extract<
-        Extract<Block, { type: 'paragraph' }>['content'],
-        { concat: any }
-    >[0],
-): string => {
-    switch (st.type) {
-        case 'text':
-            return st.text;
-        case 'link':
-            return `[${st.content.map(styledToText).join('')}](${st.href})`;
-    }
-};
-
-const blockToText = (block: Block<any>): string => {
-    switch (block.type) {
-        case 'paragraph':
-        case 'heading':
-        case 'bulletListItem':
-            const prefix =
-                block.type === 'heading'
-                    ? '## '
-                    : block.type === 'bulletListItem'
-                    ? '- '
-                    : '';
-            const children = block.children.map(blockToText).join('\n');
-            const suffix = children ? '\n\n' + children : '';
-            const c = block.content;
-            if (Array.isArray(c)) {
-                return prefix + c.map(styledToText).join('') + suffix;
-            }
-            return prefix + `[paragraph content ${JSON.stringify(c)}]${suffix}`;
-    }
-    return `cannot convert ${JSON.stringify(block)}`;
 };
 
 export const renderNNode = (
