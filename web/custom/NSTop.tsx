@@ -338,7 +338,7 @@ const RenderProduce = ({
         }
     }, [value]);
 
-    const maxHeight = 40;
+    const maxHeight = 45;
 
     // HACK (maybe) to only show inferred type if tehre's only one of them...
     const numTypes = value.filter(

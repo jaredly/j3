@@ -18,6 +18,7 @@ const shouldIgnore = (el: Element | null) => {
     if (!el) return false;
     if (el.classList.contains('bn-editor')) return true;
     if (el.getAttribute('contenteditable')) return true;
+    if (el.nodeName === 'INPUT') return true;
 };
 
 export function HiddenInput({
@@ -36,7 +37,7 @@ export function HiddenInput({
             document.activeElement !== hiddenInput.current &&
             !shouldIgnore(document.activeElement)
         ) {
-            // console.log(document.activeElement);
+            console.log('stealing focus', document.activeElement);
             hiddenInput.current?.focus();
         }
     }, [state.at]);

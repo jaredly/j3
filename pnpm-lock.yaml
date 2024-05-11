@@ -6,8 +6,11 @@ specifiers:
   '@babel/preset-react': ^7.22.3
   '@babel/preset-typescript': ^7.21.5
   '@babel/types': ^7.20.7
-  '@blocknote/core': ^0.12.0
-  '@blocknote/react': ^0.12.0
+  '@blocknote/ariakit': 0.13.2
+  '@blocknote/core': 0.13.2
+  '@blocknote/mantine': 0.13.2
+  '@blocknote/react': 0.13.2
+  '@fontsource/merriweather': ^5.0.13
   '@lexical/clipboard': ^0.8.1
   '@lexical/code': ^0.8.1
   '@lexical/html': ^0.8.1
@@ -71,8 +74,11 @@ dependencies:
   '@babel/preset-react': 7.22.3_@babel+core@7.20.12
   '@babel/preset-typescript': 7.21.5_@babel+core@7.20.12
   '@babel/types': 7.20.7
-  '@blocknote/core': 0.12.0
-  '@blocknote/react': 0.12.0_tpsz7u7bmbnzt2ngwu7gsy4bqu
+  '@blocknote/ariakit': 0.13.2_2vbzhxr7rvynsgvnsdksh5ndne
+  '@blocknote/core': 0.13.2
+  '@blocknote/mantine': 0.13.2_tpsz7u7bmbnzt2ngwu7gsy4bqu
+  '@blocknote/react': 0.13.2_2vbzhxr7rvynsgvnsdksh5ndne
+  '@fontsource/merriweather': 5.0.13
   '@lexical/clipboard': 0.8.1_lexical@0.8.1
   '@lexical/code': 0.8.1_lexical@0.8.1
   '@lexical/html': 0.8.1_lexical@0.8.1
@@ -140,6 +146,34 @@ packages:
     dependencies:
       '@jridgewell/gen-mapping': 0.1.1
       '@jridgewell/trace-mapping': 0.3.17
+    dev: false
+
+  /@ariakit/core/0.4.6:
+    resolution: {integrity: sha512-L2WIZZlxDs611m3YLSv2xvJyQrkkVQJlxn8Y4DlI1G65VLTEH7hysw3RYUNdXsl0gP6S20id3zBMJCHT9BCRcg==}
+    dev: false
+
+  /@ariakit/react-core/0.4.6_biqbaboplfbrettd7655fr4n2y:
+    resolution: {integrity: sha512-2Ca327IzSOxQEd3gEr59JJj0y8fXDMLYd+948wyOzIsk2/yoTnA4+R7Vhs361w3KzOjBQM44KmnNL7ckBMtT0w==}
+    peerDependencies:
+      react: ^17.0.0 || ^18.0.0
+      react-dom: ^17.0.0 || ^18.0.0
+    dependencies:
+      '@ariakit/core': 0.4.6
+      '@floating-ui/dom': 1.6.3
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+      use-sync-external-store: 1.2.2_react@18.2.0
+    dev: false
+
+  /@ariakit/react/0.4.6_biqbaboplfbrettd7655fr4n2y:
+    resolution: {integrity: sha512-7lZQew9n+nxswgJ5aL87xo42I+t3A8gWzaxIIZY+c58SLCASh1IdDkGLhGPcyhmXWRIjs/8L1h6cMbRMEBrtJQ==}
+    peerDependencies:
+      react: ^17.0.0 || ^18.0.0
+      react-dom: ^17.0.0 || ^18.0.0
+    dependencies:
+      '@ariakit/react-core': 0.4.6_biqbaboplfbrettd7655fr4n2y
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
     dev: false
 
   /@babel/code-frame/7.18.6:
@@ -1683,8 +1717,24 @@ packages:
     resolution: {integrity: sha512-0hYQ8SB4Db5zvZB4axdMHGwEaQjkZzFjQiN9LVYvIFB2nSUHW9tYpxWriPrWDASIxiaXax83REcLxuSdnGPZtw==}
     dev: false
 
-  /@blocknote/core/0.12.0:
-    resolution: {integrity: sha512-i36FSzex46hQ2+r1BHtJam7U1sQ1lDeIx1+rB8vonn4DHpyqb3joeGNNUkAimQm4hlDJDIhT0vXO+tp4fB8hQQ==}
+  /@blocknote/ariakit/0.13.2_2vbzhxr7rvynsgvnsdksh5ndne:
+    resolution: {integrity: sha512-YZB5D1ly4W5tM69Mlzx+/415zYUiTOwDsIc6p3aQr2GkfEgzeZfmEchssvzJ9dmijQztn/oyYJyx4/zp1ZgkEg==}
+    peerDependencies:
+      react: ^18
+      react-dom: ^18
+    dependencies:
+      '@ariakit/react': 0.4.6_biqbaboplfbrettd7655fr4n2y
+      '@blocknote/core': 0.13.2
+      '@blocknote/react': 0.13.2_2vbzhxr7rvynsgvnsdksh5ndne
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+    transitivePeerDependencies:
+      - '@tiptap/pm'
+      - supports-color
+    dev: false
+
+  /@blocknote/core/0.13.2:
+    resolution: {integrity: sha512-HthOOI22YLMWc6lL/+xniJh4ujldwOkOKAZRUbVf8+PPFqMpbuOaNwRlmUfwG0YB4W0+YHFpgnhiYuo4t1NEdA==}
     dependencies:
       '@tiptap/core': 2.2.4_@tiptap+pm@2.2.4
       '@tiptap/extension-bold': 2.2.4_@tiptap+core@2.2.4
@@ -1729,17 +1779,35 @@ packages:
       - supports-color
     dev: false
 
-  /@blocknote/react/0.12.0_tpsz7u7bmbnzt2ngwu7gsy4bqu:
-    resolution: {integrity: sha512-qlRRN9/NOkr6rbXGzX6cv53Hc4ic+piry7BLyzaBcFvd2a3BaeodlEUGYCGKJS9QlQWa0qA+iee8vtEz+1qcQw==}
+  /@blocknote/mantine/0.13.2_tpsz7u7bmbnzt2ngwu7gsy4bqu:
+    resolution: {integrity: sha512-kMARgF+PrJxaKX73fXBicWEUCpkdBXqU+a2hrLhA347YcbEu80+5Gn1u3o6IJ0WsYCZT6cWM/IpzgOzaEpF7mA==}
     peerDependencies:
       react: ^18
       react-dom: ^18
     dependencies:
-      '@blocknote/core': 0.12.0
-      '@floating-ui/react': 0.26.9_biqbaboplfbrettd7655fr4n2y
+      '@blocknote/core': 0.13.2
+      '@blocknote/react': 0.13.2_2vbzhxr7rvynsgvnsdksh5ndne
       '@mantine/core': 7.6.2_tblmtj4tot4sibyphayhgn4hu4
       '@mantine/hooks': 7.6.2_react@18.2.0
       '@mantine/utils': 6.0.21_react@18.2.0
+      react: 18.2.0
+      react-dom: 18.2.0_react@18.2.0
+      react-icons: 4.12.0_react@18.2.0
+      use-prefers-color-scheme: 1.1.3_react@18.2.0
+    transitivePeerDependencies:
+      - '@tiptap/pm'
+      - '@types/react'
+      - supports-color
+    dev: false
+
+  /@blocknote/react/0.13.2_2vbzhxr7rvynsgvnsdksh5ndne:
+    resolution: {integrity: sha512-QD6sfg1IUsxgsDQ1rOMQ1pYwXQf9AU1gRwt1jyXpJpl5mKJmoZRVKdsDAUwcZcseVGJaX8WSmlOaEhwNWqcrqQ==}
+    peerDependencies:
+      react: ^18
+      react-dom: ^18
+    dependencies:
+      '@blocknote/core': 0.13.2
+      '@floating-ui/react': 0.26.9_biqbaboplfbrettd7655fr4n2y
       '@tiptap/core': 2.2.4_@tiptap+pm@2.2.4
       '@tiptap/react': 2.2.4_tcsaypi4apg5ublcrwunveqyse
       lodash.merge: 4.6.2
@@ -1749,7 +1817,6 @@ packages:
       use-prefers-color-scheme: 1.1.3_react@18.2.0
     transitivePeerDependencies:
       - '@tiptap/pm'
-      - '@types/react'
       - supports-color
     dev: false
 
@@ -1985,6 +2052,10 @@ packages:
 
   /@floating-ui/utils/0.2.1:
     resolution: {integrity: sha512-9TANp6GPoMtYzQdt54kfAyMmz1+osLlXdg2ENroU7zzrtflTLrrC/lgrIfaSe+Wu0b89GKccT7vxXA0MoAIO+Q==}
+    dev: false
+
+  /@fontsource/merriweather/5.0.13:
+    resolution: {integrity: sha512-V/UsU+5yceDICBUJJXWCT+6xf5YpLIVUHfUjBQ+NNbllIhe3zaVZ1f3t5+fNKwvBzKBDa3RNMCofAdW7uzw08Q==}
     dev: false
 
   /@istanbuljs/load-nyc-config/1.1.0:
@@ -6707,6 +6778,7 @@ packages:
   /react-remove-scroll-bar/2.3.5_kzbn2opkn2327fwg5yzwzya5o4:
     resolution: {integrity: sha512-3cqjOqg6s0XbOjWvmasmqHch+RLxIEk2r/70rzGXuz3iIGQsQheEQyqYCBb5EECoD01Vo2SIbDqW4paLeLTASw==}
     engines: {node: '>=10'}
+    deprecated: please update to the following version as this contains a bug (https://github.com/theKashey/react-remove-scroll-bar/issues/57)
     peerDependencies:
       '@types/react': ^16.8.0 || ^17.0.0 || ^18.0.0
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
@@ -7712,6 +7784,14 @@ packages:
       detect-node-es: 1.1.0
       react: 18.2.0
       tslib: 2.5.2
+    dev: false
+
+  /use-sync-external-store/1.2.2_react@18.2.0:
+    resolution: {integrity: sha512-PElTlVMwpblvbNqQ82d2n6RjStvdSoNe9FG28kNfz3WiXilJm4DdNkEzRhCZuIDwY8U08WVihhGR5iRqAwfDiw==}
+    peerDependencies:
+      react: ^16.8.0 || ^17.0.0 || ^18.0.0
+    dependencies:
+      react: 18.2.0
     dev: false
 
   /util-deprecate/1.0.2:

@@ -13,6 +13,7 @@ import { AnyEnv } from './getResults';
 import { Message, Sendable, ToPage } from '../worker/worker';
 import { calcChangedNodes } from './calcChangedNodes';
 import { collectPaths, pathForIdx } from '../../ide/ground-up/pathForIdx';
+import equal from 'fast-deep-equal';
 // import Worker from '../worker?worker'
 
 export const useSyncStore = (
@@ -279,7 +280,7 @@ export const setupSyncStore = (
             });
 
             evtListeners.all.forEach((f) => f(state));
-            if (state.at !== lastState.at) {
+            if (!equal(state.at, lastState.at)) {
                 evtListeners.selection.forEach((f) => f(state));
             }
             if (state.map !== lastState.map) {
