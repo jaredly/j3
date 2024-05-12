@@ -1,4 +1,11 @@
 
+# Feedback and such
+
+- [ ] make a glossary!
+- [ ] I want to be able to put definition tooltips everywhere. in the rich-text
+- [ ]
+
+
 # For Export
 
 for the series of artcicle
