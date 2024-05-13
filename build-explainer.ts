@@ -1,4 +1,10 @@
-import { mkdirSync, readFileSync, writeFileSync, copyFileSync } from 'fs';
+import {
+    mkdirSync,
+    readFileSync,
+    writeFileSync,
+    copyFileSync,
+    existsSync,
+} from 'fs';
 import { NUIState } from './web/custom/UIState';
 
 const files = `
@@ -58,7 +64,9 @@ files.forEach((name) => {
     }
 });
 
-mkdirSync('./web/dist/fonts');
-copyFileSync('./web/fonts/prism.css', './web/dist/fonts/prism.css');
-copyFileSync('./web/fonts/prism.js', './web/dist/fonts/prism.js');
-copyFileSync('./web/dist/index.html', './web/dist/200.html');
+if (!existsSync('./web/dist/fonts')) {
+    mkdirSync('./web/dist/fonts');
+    copyFileSync('./web/fonts/prism.css', './web/dist/fonts/prism.css');
+    copyFileSync('./web/fonts/prism.js', './web/dist/fonts/prism.js');
+    copyFileSync('./web/dist/index.html', './web/dist/200.html');
+}

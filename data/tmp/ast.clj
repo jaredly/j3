@@ -1,7 +1,7 @@
 (** ## Abstract Syntax Tree **)
 
 (** Once we have our runtime encoding (primitives, functions, and algebraic data types), we need to decide on an Abstract Syntax Tree. Once again we'll keep the list relatively short, with the goal of "the simplest language that's still nice to use".
-    Note: If any of this feels confusing, jump over to the [Syntax Cheatsheet](/syntax-cheatcheet) to see concrete examples. **)
+    Note: If any of this feels confusing, jump over to the [Syntax Cheatsheet](/syntax-cheatsheet) to see concrete examples. **)
 
 (** Utility Types **)
 
