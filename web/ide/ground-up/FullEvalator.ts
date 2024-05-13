@@ -28,7 +28,7 @@ export type InferenceError =
       }
     | {
           type: 'missing';
-          missing: { name: string; loc: number; type: Node }[];
+          missing: { name: string; loc: number; type: Node | null }[];
       }
     | {
           type: 'nested';

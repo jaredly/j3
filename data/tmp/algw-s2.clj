@@ -82,12 +82,6 @@
         (some x) x
         _        (fatal "Option is None")))
 
-(def scheme->s
-    (fn [(forall vbls type)]
-        (match (set/to-list vbls)
-            []   (type->s type)
-            vbls "forall ${(join " " vbls)} : ${(type->s type)}")))
-
 (** ## AST
     again, this is the same as in the previous articles, so feel free to skip. **)
 
@@ -158,12 +152,40 @@
 
 (def tint (tcon "int" -1))
 
+(defn scheme->s [(forall vbls type)]
+    (match (set/to-list vbls)
+        []   (type->s type)
+        vbls "forall ${(join " " vbls)} : ${(type->s type)}"))
+
 (defn type->s [type]
     (match type
         (tvar name _)                           name
         (tapp (tapp (tcon "->" _) arg _) res _) "(fn [${(type->s arg)}] ${(type->s res)})"
         (tapp target arg _)                     "(${(type->s target)} ${(type->s arg)})"
         (tcon name _)                           name))
+
+(defn scheme->cst [(forall vbls type)] (type->cst type))
+
+(defn target-and-args [type coll]
+    (match type
+        (tapp target arg _) (target-and-args target [arg ..coll])
+        _                   (, type coll)))
+
+(defn fn-args-and-body [type]
+    (match type
+        (tapp (tapp (tcon "->" _) arg _) res _) (let [(, args res) (fn-args-and-body res)] (, [arg ..args] res))
+        _                                       (, [] type)))
+
+(defn type->cst [type]
+    (match type
+        (tvar name l)                       (cst/id name l)
+        (tcon name l)                       (cst/id name l)
+        (tapp (tapp (tcon "->" _) _ _) _ l) (let [(, args res) (fn-args-and-body type)]
+                                                (cst/list
+                                                    [(cst/id "fn" l) (cst/array (map type->cst args) l) (type->cst res)]
+                                                        l))
+        (tapp _ _ l)                        (let [(, name args) (target-and-args type [])]
+                                                (cst/list [(type->cst name) ..(map type->cst args)] l))))
 
 (** ## The Type Environment
     The "type environment" gets passed around to most of the infer/ functions, and includes global definitions as well as the types of locally-bound variables. **)
@@ -362,13 +384,26 @@
 (** ## Type Inference State
     Here's where we take the StateT monad defined above and make it specific to our use case. Our StateT will contain an integer representing the "next unique ID" used for generating unique tvars, as well as the "current substitution map". **)
 
-(typealias (State value) (StateT (, int (map string type)) string))
+(typealias
+    (State value)
+        (StateT
+        (,
+            int
+                (map string type)
+                (list
+                (** (type) at (location) with a flag to indicate whether it should be presented without applying substitutions **)
+                    (, type int bool))
+                (** List of locations that are "declarations" (whether local or global) **)
+                (list int)
+                (** Recording all of the "usages" (, usage-loc declaration-loc) **)
+                (list (, int int)))
+            string))
 
 (** ## Type Error type **)
 
 (deftype type-error-t
     (terr string (list (, string int)))
-        (ttypes type type)
+        (ttypes scheme scheme)
         (twrap type-error-t type-error-t)
         (tmissing (list (, string int))))
 
@@ -380,7 +415,8 @@
 
 (defn <-missing [name loc] (<-err* (tmissing [(, name loc)])))
 
-(defn <-mismatch [t1 t2] (<-err* (ttypes t1 t2)))
+(defn <-mismatch [t1 t2]
+    (<-err* (ttypes (forall set/nil t1) (forall set/nil t2))))
 
 (defn type-error->s [err]
     (match err
@@ -390,7 +426,7 @@
                                      (map
                                      (fn [(, name loc)] "\n - ${name} (${(int-to-string loc)})")
                                          missing))}"
-        (ttypes t1 t2)       "Incompatible types: ${(type->s t1)} and ${(type->s t2)}"
+        (ttypes t1 t2)       "Incompatible types: ${(scheme->s t1)} and ${(scheme->s t2)}"
         (terr message names) "${message}${(join
                                  ""
                                      (map (fn [(, name loc)] "\n - ${name} (${(int-to-string loc)})") names))}"))
@@ -400,35 +436,59 @@
         (ok v)  v
         (err e) (fatal "Result is err ${(type-error->s e)}")))
 
-(def state/nil (, 0 map/nil))
+(** ## Recording information for the editor to display **)
+
+((** This gives us "hover for type". We record a type and the associated loc, and store it on the state. After everything is finished, we go through this list of types, applying the final substitution map to each, and then hand them over to the editor. dont-subst is a flag that means don't apply the substitution map; this allows us to present both the generic and type-applied versions of generic functions. **)
+    defn record-type-> [type loc dont-subst]
+    (let-> [
+        (, idx subst types decls usages) <-state
+        _                                (state->
+                                             (, idx subst [(, type loc dont-subst) ..types] decls usages))]
+        (<- ())))
+
+((** This is for recording all of the identifiers that are "declarations". The editor can then match it against all reported "usages" to find variables that are unused. **)
+    defn record-decl-> [loc]
+    (let-> [
+        (, i s t decls u) <-state
+        _                 (state-> (, i s t [loc ..decls] u))]
+        (<- ())))
+
+((** Here we record a usage; whether of a type or value, including the location where it was used, and the location where it was declared. **)
+    defn record-usage-> [usage decl]
+    (let-> [
+        (, i s t d usages) <-state
+        _                  (state-> (, i s t d [(, usage decl) ..usages]))]
+        (<- ())))
+
+(def state/nil (, 0 map/nil [] [] []))
 
 (defn run/nil-> [st] (run-> st state/nil))
 
 (def <-next-idx
     (let-> [
-        (, idx subst) <-state
-        _             (state-> (, (+ idx 1) subst))]
+        (, idx subst records) <-state
+        _                     (state-> (, (+ idx 1) subst records))]
         (<- idx)))
 
-(def <-subst (let-> [(, _ subst) <-state] (<- subst)))
+(def <-subst (let-> [(, _ subst _) <-state] (<- subst)))
 
 (defn subst-> [new-subst]
     (let-> [
-        (, idx subst) <-state
-        _             (state-> (, idx (compose-subst new-subst subst)))]
+        (, idx subst records) <-state
+        _                     (state-> (, idx (compose-subst new-subst subst) records))]
         (<- ())))
 
 ((** This overwrites the substitution map (without composing), returning the old substitution map. It is used for isolating a section of the algorithm, for performance reasons. **)
     defn subst-reset-> [new-subst]
     (let-> [
-        (, idx old-subst) <-state
-        _                 (state-> (, idx new-subst))]
+        (, idx old-subst records) <-state
+        _                         (state-> (, idx new-subst records))]
         (<- old-subst)))
 
 (def reset-state->
     (let-> [
-        (, _ _) <-state
-        _       (state-> (, 0 map/nil))]
+        (, _ _ records) <-state
+        _               (state-> (, 0 map/nil records))]
         (<- ())))
 
 (** These are monadified versions of the */apply functions from above; they "apply the current substitution". **)
@@ -469,7 +529,8 @@
 (defn unify [t1 t2 l]
     (map-err->
         (unify-inner t1 t2 l)
-            (fn [inner] (err (twrap (ttypes t1 t2) inner)))))
+            (fn [inner]
+            (err (twrap (ttypes (forall set/nil t1) (forall set/nil t2)) inner)))))
 
 (defn unify-inner [t1 t2 l]
     (match (, t1 t2)
@@ -672,29 +733,41 @@
             (err
             (twrap
                 (ttypes
-                    (tapp
-                        (tapp (tcon "->" 4820) (tcon "int" 4822) 4820)
-                            (tvar "result:5" 4820)
-                            4820)
-                        (tapp
-                        (tapp (tcon "->" 4823) (tcon "bool" 4825) 4823)
-                            (tvar "result:6" 4823)
-                            4823))
-                    (ttypes (tcon "int" 4822) (tcon "bool" 4825)))))
+                    (forall
+                        (map/from-list [])
+                            (tapp
+                            (tapp (tcon "->" 4820) (tcon "int" 4822) 4820)
+                                (tvar "result:5" 4820)
+                                4820))
+                        (forall
+                        (map/from-list [])
+                            (tapp
+                            (tapp (tcon "->" 4823) (tcon "bool" 4825) 4823)
+                                (tvar "result:6" 4823)
+                                4823)))
+                    (ttypes
+                    (forall (map/from-list []) (tcon "int" 4822))
+                        (forall (map/from-list []) (tcon "bool" 4825))))))
         (,
         (@ (fn [arg] (let [(, id _) arg] (, (id 2) (id true)))))
             (err
             (twrap
                 (ttypes
-                    (tapp
-                        (tapp (tcon "->" 4847) (tcon "int" 4849) 4847)
-                            (tvar "result:9" 4847)
-                            4847)
-                        (tapp
-                        (tapp (tcon "->" 4850) (tcon "bool" 4852) 4850)
-                            (tvar "result:10" 4850)
-                            4850))
-                    (ttypes (tcon "int" 4849) (tcon "bool" 4852)))))
+                    (forall
+                        (map/from-list [])
+                            (tapp
+                            (tapp (tcon "->" 4847) (tcon "int" 4849) 4847)
+                                (tvar "result:9" 4847)
+                                4847))
+                        (forall
+                        (map/from-list [])
+                            (tapp
+                            (tapp (tcon "->" 4850) (tcon "bool" 4852) 4850)
+                                (tvar "result:10" 4850)
+                                4850)))
+                    (ttypes
+                    (forall (map/from-list []) (tcon "int" 4849))
+                        (forall (map/from-list []) (tcon "bool" 4852))))))
         (, (@ ((fn [x] x) 2)) (ok (tcon "int" 4866)))
         (, (@ (let [a 2] (let [a true] a))) (ok (tcon "bool" 9716)))
         (,
@@ -724,8 +797,12 @@
                 2 2))
             (err
             (twrap
-                (ttypes (tcon "int" 5145) (tcon "bool" 5143))
-                    (ttypes (tcon "int" 5145) (tcon "bool" 5143)))))
+                (ttypes
+                    (forall (map/from-list []) (tcon "int" 5145))
+                        (forall (map/from-list []) (tcon "bool" 5143)))
+                    (ttypes
+                    (forall (map/from-list []) (tcon "int" 5145))
+                        (forall (map/from-list []) (tcon "bool" 5143))))))
         (,
         (@
             (fn [x]
@@ -746,8 +823,12 @@
         (@ "hi ${1}")
             (err
             (twrap
-                (ttypes (tcon "int" 6850) (tcon "string" 6848))
-                    (ttypes (tcon "int" 6850) (tcon "string" 6848)))))])
+                (ttypes
+                    (forall (map/from-list []) (tcon "int" 6850))
+                        (forall (map/from-list []) (tcon "string" 6848)))
+                    (ttypes
+                    (forall (map/from-list []) (tcon "int" 6850))
+                        (forall (map/from-list []) (tcon "string" 6848))))))])
 
 (** ## Patterns **)
 
@@ -1227,7 +1308,7 @@
                                               (fn [env stmt]
                                               (let-> [env' (add/stmt (tenv/merge tenv env) stmt)]
                                                   (<- (tenv/merge env env')))))
-        types                         (map-> (infer/expr final) exprs)]
+        types                         (map-> (infer/expr (tenv/merge tenv final)) exprs)]
         (<- (, final types))))
 
 (,
@@ -1391,23 +1472,46 @@
 
 (** ## Exporting for the structured editor **)
 
+(defn infer-stmts2 [env stmts]
+    (let [
+        (, (, _ subst types decls usages) result) (state-f (add/stmts env stmts) state/nil)]
+        (,
+            (match result
+                (err e)             (err e)
+                (ok (, tenv types)) (ok (, tenv (map (forall set/nil) types))))
+                (map
+                (fn [(, t l dont-apply)]
+                    (if dont-apply
+                        (, l (forall set/nil t))
+                            (, l (forall set/nil (type/apply subst t)))))
+                    types)
+                decls
+                usages)))
+
+(defn infer-expr2 [env expr]
+    (let [
+        (, (, _ subst types decls usages) result) (state-f (infer/expr env expr) state/nil)]
+        (,
+            (match result
+                (ok t)  (ok (forall set/nil t))
+                (err e) (err e))
+                (map
+                (fn [(, t l dont-apply)]
+                    (if dont-apply
+                        (, l (forall set/nil t))
+                            (, l (forall set/nil (type/apply subst t)))))
+                    types)
+                decls
+                usages)))
+
 (eval
-    (** env_nil => add_stmt => get_type => type_to_string => infer_stmts2 => infer2 =>
-  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, infer_stmts2, infer2})
+    (** env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts2 => infer2 =>
+  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts2, infer2})
  **)
         builtin-env
         tenv/merge
         tenv/resolve
         scheme->s
-        (fn [env stmts]
-        (let [(, (, _ _) result) (state-f (add/stmts env stmts) state/nil)]
-            (, result [] [] [])))
-        (fn [env expr]
-        (let [(, _ result) (state-f (infer/expr env expr) state/nil)]
-            (,
-                (match result
-                    (ok t)  (ok (forall set/nil t))
-                    (err e) (err e))
-                    []
-                    []
-                    []))))
+        scheme->cst
+        infer-stmts2
+        infer-expr2)

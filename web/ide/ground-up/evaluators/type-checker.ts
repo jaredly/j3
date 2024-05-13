@@ -12,6 +12,16 @@ import {
 } from '../round-1/parse';
 import { Infer, TypeChecker } from './interface';
 
+const unwrapTuple2or3 = <a, b extends { type: string }, c>(
+    v: tuple<a, b> | tuple3<a, b, c>,
+): [a, b, c | null] => {
+    if (v[1].type === ',') {
+        return [v[0], (v[1] as tuple<b, c>)[0], (v[1] as tuple<b, c>)[1]];
+    } else {
+        return [v[0], v[1] as b, null];
+    }
+};
+
 type Type = { _type: 1 };
 type Stmt = { _stmt: 1 };
 type Expr = { _expr: 1 };
@@ -98,7 +108,7 @@ type terr<Type> =
       }
     | {
           type: 'tmissing';
-          0: arr<tuple3<string, number, Type>>;
+          0: arr<tuple3<string, number, Type> | tuple<string, number>>;
       };
 
 type InferExpr2<Type> = {
@@ -242,11 +252,13 @@ function parseTerr(
         return {
             type: 'missing',
             missing: unwrapArray(result[0])
-                .map(unwrapTuple3)
-                .map(([name, loc, type]) => ({
+                .map(unwrapTuple2or3 as any)
+                .map(([name, loc, type]: any) => ({
                     loc,
                     name,
-                    type: fixDuplicateLocs(fromJCST(type_to_cst(type))),
+                    type: type
+                        ? fixDuplicateLocs(fromJCST(type_to_cst(type)))
+                        : null,
                 })),
         };
     }
