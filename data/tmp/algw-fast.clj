@@ -1874,7 +1874,7 @@ map->
                                 (fn [pat] [(pattern-to-ex-pattern tenv (, pat target-type))])))]
         (if (is-exhaustive tenv matrix)
             (<- ())
-                (fatal "Match not exhaustive ${(int-to-string l)}"))))
+                (<-err (type-error "Match not exhaustive" [(, "match" l)])))))
 
 (deftype ex-pattern
     (** The "any" pattern here also includes pvar, because it doesn't place any constraints on the value. **)
@@ -1890,6 +1890,7 @@ map->
     (match pattern
         (pvar _ _)            (ex/any)
         (pany _)              (ex/any)
+        (pstr str _)          (ex/constructor str "string" [])
         (pprim (pint v _) _)  (ex/constructor (int-to-string v) "int" [])
         (pprim (pbool v _) _) (ex/constructor
                                   (if v
@@ -2022,7 +2023,8 @@ map->
                 (ex/constructor _ id _) (match gid
                                             (none)     (some id)
                                             (some oid) (if (!= oid id)
-                                                           (fatal
+                                                           (** This shouldn't happen, because it would already have triggered a type error. **)
+                                                               (fatal
                                                                "Constructors with different group IDs in the same position.")
                                                                (some id)))
                 _                       gid))))

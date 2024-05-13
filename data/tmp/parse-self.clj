@@ -36,7 +36,8 @@
 (defn zip [one two]
     (match (, one two)
         (, [] [])               []
-        (, [o ..one] [t ..two]) [(, o t) ..(zip one two)]))
+        (, [o ..one] [t ..two]) [(, o t) ..(zip one two)]
+        _                       (fatal "Unbalanced zip")))
 
 (defn rev [arr col]
     (match arr
@@ -173,6 +174,7 @@
                                                                    (map items parse-type)
                                                                        (fn [items recur]
                                                                        (match items
+                                                                           []           (fatal "Empty tuple type")
                                                                            [one]        one
                                                                            [one two]    (tapp (tapp (tcon "," nl) one al) two al)
                                                                            [one ..rest] (tapp (tapp (tcon "," nl) one al) (recur rest) al))))
