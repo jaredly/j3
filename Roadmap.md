@@ -6,6 +6,12 @@
 - [x] ugh the jumping around is so bad. I need a better thing for that.
   - maybe just with rich text dealios? Yeah, like if it's rich-text, just don't.
 
+- [ ] bottom status bar - to show the # of errors and let you tab between them
+- [ ] also bottom status bar: "track changes!" you can probably turn it on or off, but if it's on, then it will have a map on `state` that is like `changesMap` and it will contain the previous version of each MNode that gets modified while track changes is on.
+  THIS WAY I can be like "I'll make a new version of (our type inference algorithm), but with [nicer error behavior]", and have it be reasonable to look through.
+  .. ALSO: do I want .. to be able to like ... show a "PR" view, of just the changes, somehow? In a little bit of context?
+- [ ] hrm search results need to ... simplify again. Maybe harder now that we're doing ReadOnlyRender instead of StaticRender
+- [ ] fixture tests - clicking the new output shouldn't "paste" it hsould just replace the stuff.
 
 # For Export
 

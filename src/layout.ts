@@ -59,7 +59,11 @@ export const calculateLayout = (
                 hashNames,
                 map,
             );
-            if (cw === false || cw > maxWidth || parentCtx === 'let') {
+            if (
+                cw === false ||
+                cw > maxWidth ||
+                (parentCtx === 'let' && node.values.length > 2)
+            ) {
                 return {
                     type: 'multiline',
                     tightFirst: 0,
@@ -98,9 +102,7 @@ export const calculateLayout = (
                 cw === false ||
                 cw > maxWidth ||
                 // (firstName === 'let' && node.values.length > 2) ||
-                firstName === 'switch' ||
-                firstName === 'match' ||
-                firstName === 'if'
+                (firstName && alwaysMulti.includes(firstName))
             ) {
                 return {
                     type: 'multiline',
@@ -230,6 +232,8 @@ const tightFirsts: { [key: string]: number } = {
     '<>': 2,
     '->': 2,
 };
+
+const alwaysMulti = ['switch', 'match', 'if', 'deftype'];
 
 function howTight(item?: Map[0]) {
     if (item?.type === 'identifier') {

@@ -1,13 +1,16 @@
 (** ## Abstract Syntax Tree **)
 
 (** Once we have our runtime encoding (primitives, functions, and algebraic data types), we need to decide on an Abstract Syntax Tree. Once again we'll keep the list relatively short, with the goal of "the simplest language that's still nice to use".
-    Note: If any of this feels confusing, jump over to the Syntax Cheatsheet to see concrete examples. **)
+    Note: If any of this feels confusing, jump over to the [Syntax Cheatsheet](/syntax-cheatcheet) to see concrete examples. **)
 
 (** Utility Types **)
 
-(deftype (list a) (nil) (cons a (list a)))
+(deftype (list a)
+    (nil)
+        (cons a (list a)))
 
-(deftype (, a b) (, a b))
+(deftype (, a b)
+    (, a b))
 
 (** ## Type Definitions **)
 
@@ -18,7 +21,9 @@
 (** ## Primitives
     We break out primitives into their own type, because they apply both to patterns and expressions. **)
 
-(deftype prim (pint int int) (pbool bool int))
+(deftype prim
+    (pint int int)
+        (pbool bool int))
 
 (** ## Expressions
     Expressions make up the bulk of the code you'll be writing: variable references, function definitions, function calls, etc. -- even if and let (in contrast to imperative languages such as JavaScript, where those would be statements). **)
@@ -95,11 +100,14 @@
 
 (deftype top
     (** Defining custom types! We have the name of the type, and then a list of constructors, each with a name and a list of arguments. **)
-        (tdeftype string (list (, string (list type) int)))
+        (tdeftype string int (list (, string (list type) int)) int)
         (** e.g. (def x 2).
         (defn x [a] b) gets parsed as (def x (fn [x] b)) **)
-        (tdef string expr)
-        (texpr expr))
+        (tdef string expr int)
+        (** A toplevel expression **)
+        (texpr expr int)
+        (** A type alias e.g. (typealias names (list string)) **)
+        (ttypealias string int (list string) type int))
 
 (** ## Syntax Sugar **)
 
@@ -117,13 +125,14 @@
     The simplest usage of let-> would be something akin to swift's try or rust's ? suffix, allowing us to have nice error handling without resorting to throwing exceptions.
     Here's a simple parsing example, without any sugar: **)
 
-(deftype (result good bad) (ok good) (err bad))
+(deftype (result good bad)
+    (ok good)
+        (err bad))
 
 (defn parse-person [data]
     (match (parse-name data)
         (err reason) (err reason)
-        (ok name)    (let [
-                         greeting "Hello ${name}"]
+        (ok name)    (let [greeting "Hello ${name}"]
                          (match (parse-address data)
                              (err reason) (err reason)
                              (ok address) (ok "${greeting}, you live at ${address}")))))

@@ -607,7 +607,7 @@ export const RenderNNode = (
                     {nnode.firstLine.length ? (
                         <span
                             style={{
-                                gridColumn: '1/3',
+                                gridColumn: '1/4',
                                 paddingLeft: 4,
                                 // backgroundColor: 'red',
                                 display: 'flex',
@@ -624,7 +624,7 @@ export const RenderNNode = (
                                   <span
                                       key={i}
                                       style={{
-                                          gridColumn: '1/3',
+                                          gridColumn: '1/4',
                                           paddingLeft: 4,
                                           //   backgroundColor:
                                           //       i % 2 == 0 ? oneColor : twoColor,
