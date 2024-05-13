@@ -344,7 +344,8 @@
                                                items
                                                (fold/either
                                                (fold/get snd (fold/expr fx))
-                                                   (fold/get spread/inner (fold/expr fx)))))
+                                                   (fold/get spread/inner (fold/expr fx))))
+                _                      (fatal "cant fold this expr"))
                 expr)))
 
 (defn fold/get [get f init value] (f init (get value)))
@@ -476,7 +477,8 @@
 (defn make-lets [params args l]
     (match (, params args)
         (, [] [])                       []
-        (, [one ..params] [two ..args]) [(j/let one two l) ..(make-lets params args l)]))
+        (, [one ..params] [two ..args]) [(j/let one two l) ..(make-lets params args l)]
+        _                               (fatal "invalid lets")))
 
 (defn call-at-end [items]
     (match items
@@ -773,7 +775,8 @@
                                         (none)     (empty)
                                         (some pat) (pat-names/j pat))
                                         items
-                                        (fn [bag (, name item)] (bag/and bag (pat-names/j item))))))
+                                        (fn [bag (, name item)] (bag/and bag (pat-names/j item))))
+        _                       (fatal "Cant get pat names/j")))
 
 (let [
     p (force-opt (pat->j/pat (run/nil-> (parse-pat (@@ (what hi ho here))))))]
@@ -1096,6 +1099,7 @@
 
 (defn tapps [items l]
     (match items
+        []           (fatal "empty tapps")
         [one]        one
         [one ..rest] (tapp (tapps rest l) one l)))
 
@@ -1118,6 +1122,7 @@
                                                                                   items
                                                                                       (fn [items recur]
                                                                                       (match items
+                                                                                          []           (fatal "invalid empty tuple")
                                                                                           [one]        one
                                                                                           [one ..rest] (tapp (tapp (tcon "," cl) one l) (recur rest) l))))))
         (cst/list items l)                                            (let-> [items (map-> parse-type items)] (<- (tapps (rev items []) l)))
@@ -1266,7 +1271,8 @@
                                                                         target (parse-expr target)
                                                                         args   (map-> parse-expr args)]
                                                                         (<- (eapp target args l)))
-        (cst/array args l)                                          (parse-array args l)))
+        (cst/array args l)                                          (parse-array args l)
+        _                                                           (<-err (, (cst-loc cst) "Unable to parse") (evar "()" (cst-loc cst)))))
 
 (defn parse-tuple [args il l]
     (match args
@@ -1456,7 +1462,8 @@
         (, name nl args) (<-
                              (match name
                                  (cst/id name nl)                       (, name nl [])
-                                 (cst/list [(cst/id name nl) ..args] _) (, name nl args)))
+                                 (cst/list [(cst/id name nl) ..args] _) (, name nl args)
+                                 _                                      (fatal "cant parse type alias")))
         args             (foldr->
                              []
                                  args
@@ -1498,7 +1505,8 @@
         (cst/list [(cst/id "defn" _) .._] l)                                     (<-err (, l "Invalid 'defn'") (sunit l))
         (cst/list [(cst/id "deftype" _) name ..items] l)                         (match name
                                                                                      (cst/id id li)                       (mk-deftype id li [] items l)
-                                                                                     (cst/list [(cst/id id li) ..args] _) (mk-deftype id li args items l))
+                                                                                     (cst/list [(cst/id id li) ..args] _) (mk-deftype id li args items l)
+                                                                                     _                                    (fatal "Cant parse deftype"))
         (cst/list [(cst/id "deftype" _) .._] l)                                  (<-err (, l "Invalid deftype") (sunit l))
         (cst/list [(cst/id "typealias" _) name body] l)                          (parse-typealias name body l)
         _                                                                        (let-> [expr (parse-expr cst)] (<- (texpr expr (cst-loc cst))))))
@@ -1964,6 +1972,111 @@ dot
             (tdef name _ body _)                    (externals (set/add set/nil name) body)
             (texpr expr _)                          (externals set/nil expr))))
 
+(** ## Collecting declarations and usages **)
+
+(** This is still experimental, but will probably replace both the "collecting dependencies" and "collecting exports" above. It has the added benefit of folding in local usage tracking as well. **)
+
+(deftype reported-name
+    (local int (use-or-decl int))
+        (global string name-kind int (use-or-decl ())))
+
+(deftype (use-or-decl a)
+    (usage a)
+        (decl))
+
+(defn top/names [top]
+    (match top
+        (tdef name l body _)                  (bag/and
+                                                  (one (global name (value) l (decl)))
+                                                      (expr/names (map/from-list [(, name l)]) body))
+        (texpr body _)                        (expr/names map/nil body)
+        (ttypealias name l free body _)       (bag/and
+                                                  (one (global name (type) l (decl)))
+                                                      (type/names (map/from-list free) body))
+        (tdeftype name l free constructors _) (foldl
+                                                  (one (global name (type) l (decl)))
+                                                      (map
+                                                      constructors
+                                                          (fn [(, name l args _)]
+                                                          (foldl
+                                                              (one (global name (value) l (decl)))
+                                                                  (map args (type/names (map/from-list free)))
+                                                                  bag/and)))
+                                                      bag/and)))
+
+(defn expr/names [bound expr]
+    (match expr
+        (evar name l)           (match (map/get bound name)
+                                    (some dl) (one (local l (usage dl)))
+                                    (none)    (one (global name (value) l (usage ()))))
+        (eprim _ _)             empty
+        (equot _ _)             empty
+        (eapp target args _)    (foldl
+                                    (expr/names bound target)
+                                        (map args (expr/names bound))
+                                        bag/and)
+        (elambda args body _)   (let [
+                                    (, bound' names) (foldl (, [] empty) (map args pat/names) bound-and-names)]
+                                    (bag/and
+                                        names
+                                            (expr/names (map/merge bound (map/from-list bound')) body)))
+        (elet bindings body _)  (loop
+                                    (, bindings bound empty)
+                                        (fn [(, bindings bound names) recur]
+                                        (match bindings
+                                            []                    (bag/and names (expr/names bound body))
+                                            [(, pat expr) ..rest] (let [
+                                                                      (, bound' names') (pat/names pat)
+                                                                      bound             (map/merge bound (map/from-list bound'))
+                                                                      names             (bag/and names names')]
+                                                                      (recur (, rest bound (bag/and names (expr/names bound expr))))))))
+        (ematch target cases _) (foldl
+                                    (expr/names bound target)
+                                        (map
+                                        cases
+                                            (fn [(, pat body)]
+                                            (let [
+                                                (, bound' names') (pat/names pat)
+                                                bound             (map/merge bound (map/from-list bound'))]
+                                                (bag/and names' (expr/names bound body)))))
+                                        bag/and)
+        (estr _ tpls _)         (many (map tpls (fn [(, expr _ _)] (expr/names bound expr))))))
+
+(defn pat/names [pat]
+    (match pat
+        (pany _)              (, [] empty)
+        (pvar name l)         (, [(, name l)] (one (local l (decl))))
+        (pprim _ _)           (, [] empty)
+        (pstr _ _)            (, [] empty)
+        (pcon name nl args l) (foldl
+                                  (, [] (one (global name (type) l (usage ()))))
+                                      (map args pat/names)
+                                      bound-and-names)))
+
+(def bound-and-names
+    (fn [(, bound names) (, bound' names')]
+        (, (concat [bound bound']) (bag/and names names'))))
+
+(defn type/names [free body]
+    (match body
+        (tvar name l)       (match (map/get free name)
+                                (some dl) (one (local l (usage dl)))
+                                _         empty)
+        (tcon name l)       (one (global name (type) l (usage ())))
+        (tapp target arg _) (bag/and (type/names free target) (type/names free arg))))
+
+(,
+    (fn [top] (bag/to-list (top/names top)))
+        [(, (@! hi) [(global "hi" (value) 18614 (usage ()))])
+        (, (@! (let [x 10] x)) [(local 18649 (decl)) (local 18650 (usage 18649))])
+        (,
+        (@!
+            (match 10
+                a (+ 2 a)))
+            [(local 18673 (decl))
+            (global "+" (value) 18675 (usage ()))
+            (local 18678 (usage 18673))])])
+
 (** ## Export **)
 
 (typealias parse-error (, int string))
@@ -1983,7 +2096,7 @@ dot
             (fn [int top] (list (, string int)))))
 
 ((eval
-    "({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at})")
+    "({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names})")
     (parse-and-compile
         (fn [top] (state-f (parse-top top) state/nil))
             (fn [expr] (state-f (parse-expr expr) state/nil))
@@ -2002,4 +2115,5 @@ dot
             (fn [tl top]
             (match (locals-at-top empty tl top)
                 (some v) (bag/to-list v)
-                _        []))))
+                _        [])))
+        top/names)

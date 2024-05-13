@@ -14,6 +14,8 @@ let value = {type: "value"}
 let type = {type: "type"}
 let loop = (v) => (f) => f(v)((nv) => loop(nv)(f))
 
+let usage = (v0) => ({type: "usage", 0: v0})
+let decl = {type: "decl"}
 let nil = {type: "nil"}
 let cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 let pany = (v0) => ({type: "pany", 0: v0})
@@ -323,6 +325,35 @@ return res;
 throw new Error('match fail 17526:' + JSON.stringify($target))
 })(v))
 let empty = many(nil)
+let local = (v0) => (v1) => ({type: "local", 0: v0, 1: v1})
+let global = (v0) => (v1) => (v2) => (v3) => ({type: "global", 0: v0, 1: v1, 2: v2, 3: v3})
+let type$slnames = (free) => (body) => (($target) => {
+if ($target.type === "tvar") {
+let name = $target[0];
+let l = $target[1];
+{
+let $target = map$slget(free)(name);
+if ($target.type === "some") {
+let dl = $target[0];
+return one(local(l)(usage(dl)))
+} ;
+return empty;
+throw new Error('match fail 18221:' + JSON.stringify($target))
+}
+} ;
+if ($target.type === "tcon") {
+let name = $target[0];
+let l = $target[1];
+return one(global(name)(type)(l)(usage($unit)))
+} ;
+if ($target.type === "tapp") {
+let target = $target[0];
+let arg = $target[1];
+return bag$sland(type$slnames(free)(target))(type$slnames(free)(arg))
+} ;
+throw new Error('match fail 18209:' + JSON.stringify($target))
+})(body)
+let bound_and_names = ({"1": names, "0": bound}) => ({"1": names$qu, "0": bound$qu}) => $co(concat(cons(bound)(cons(bound$qu)(nil))))(bag$sland(names)(names$qu))
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
@@ -742,6 +773,30 @@ return none
 return fatal("Invalid type constructor");
 throw new Error('match fail 17464:' + JSON.stringify($target))
 })(constr)
+let pat$slnames = (pat) => (($target) => {
+if ($target.type === "pany") {
+return $co(nil)(empty)
+} ;
+if ($target.type === "pvar") {
+let name = $target[0];
+let l = $target[1];
+return $co(cons($co(name)(l))(nil))(one(local(l)(decl)))
+} ;
+if ($target.type === "pprim") {
+return $co(nil)(empty)
+} ;
+if ($target.type === "pstr") {
+return $co(nil)(empty)
+} ;
+if ($target.type === "pcon") {
+let name = $target[0];
+let nl = $target[1];
+let args = $target[2];
+let l = $target[3];
+return foldl($co(nil)(one(global(name)(type)(l)(usage($unit)))))(map(args)(pat$slnames))(bound_and_names)
+} ;
+throw new Error('match fail 18284:' + JSON.stringify($target))
+})(pat)
 let parse_top = (cst) => (($target) => {
 if ($target.type === "cst/list") {
 if ($target[0].type === "cons") {
@@ -1167,4 +1222,119 @@ throw new Error('match fail 963:' + JSON.stringify($target))
 })(cst)
 
 let parse_template = (templates) => map(templates)(({"1": {"1": l, "0": string}, "0": expr}) => $co(parse_expr(expr))($co(string)(l)))
-return eval("({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) =>\n  ({type: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr})")(parse_and_compile(parse_top)(parse_expr)(names)(externals_top)((expr) => bag$slto_list(externals(set$slnil)(expr))))
+let expr$slnames = (bound) => (expr) => (($target) => {
+if ($target.type === "evar") {
+let name = $target[0];
+let l = $target[1];
+{
+let $target = map$slget(bound)(name);
+if ($target.type === "some") {
+let dl = $target[0];
+return one(local(l)(usage(dl)))
+} ;
+if ($target.type === "none") {
+return one(global(name)(value)(l)(usage($unit)))
+} ;
+throw new Error('match fail 18137:' + JSON.stringify($target))
+}
+} ;
+if ($target.type === "eprim") {
+return empty
+} ;
+if ($target.type === "equot") {
+return empty
+} ;
+if ($target.type === "eapp") {
+let target = $target[0];
+let args = $target[1];
+return foldl(expr$slnames(bound)(target))(map(args)(expr$slnames(bound)))(bag$sland)
+} ;
+if ($target.type === "elambda") {
+let args = $target[0];
+let body = $target[1];
+{
+let {"1": names, "0": bound$qu} = foldl($co(nil)(empty))(map(args)(pat$slnames))(bound_and_names);
+return bag$sland(names)(expr$slnames(map$slmerge(bound)(map$slfrom_list(bound$qu)))(body))
+}
+} ;
+if ($target.type === "elet") {
+let bindings = $target[0];
+let body = $target[1];
+return loop($co(bindings)($co(bound)(empty)))(({"1": {"1": names, "0": bound}, "0": bindings}) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return bag$sland(names)(expr$slnames(bound)(body))
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === ",") {
+let pat = $target[0][0];
+let expr = $target[0][1];
+let rest = $target[1];
+{
+let {"1": names$qu, "0": bound$qu} = pat$slnames(pat);
+{
+let bound$0 = bound;
+{
+let bound = map$slmerge(bound$0)(map$slfrom_list(bound$qu));
+{
+let names$0 = names;
+{
+let names = bag$sland(names$0)(names$qu);
+return recur($co(rest)($co(bound)(bag$sland(names)(expr$slnames(bound)(expr)))))
+}
+}
+}
+}
+}
+} 
+} ;
+throw new Error('match fail 18453:' + JSON.stringify($target))
+})(bindings))
+} ;
+if ($target.type === "ematch") {
+let target = $target[0];
+let cases = $target[1];
+return foldl(expr$slnames(bound)(target))(map(cases)(({"1": body, "0": pat}) => {
+let {"1": names$qu, "0": bound$qu} = pat$slnames(pat);
+{
+let bound$0 = bound;
+{
+let bound = map$slmerge(bound$0)(map$slfrom_list(bound$qu));
+return bag$sland(names$qu)(expr$slnames(bound)(body))
+}
+}
+}))(bag$sland)
+} ;
+if ($target.type === "estr") {
+let tpls = $target[1];
+return many(map(tpls)(({"0": expr}) => expr$slnames(bound)(expr)))
+} ;
+throw new Error('match fail 18130:' + JSON.stringify($target))
+})(expr)
+let top$slnames = (top) => (($target) => {
+if ($target.type === "tdef") {
+let name = $target[0];
+let l = $target[1];
+let body = $target[2];
+return bag$sland(one(global(name)(value)(l)(decl)))(expr$slnames(map$slfrom_list(cons($co(name)(l))(nil)))(body))
+} ;
+if ($target.type === "texpr") {
+let body = $target[0];
+return expr$slnames(map$slnil)(body)
+} ;
+if ($target.type === "ttypealias") {
+let name = $target[0];
+let l = $target[1];
+let free = $target[2];
+let body = $target[3];
+return bag$sland(one(global(name)(type)(l)(decl)))(type$slnames(map$slfrom_list(free))(body))
+} ;
+if ($target.type === "tdeftype") {
+let name = $target[0];
+let l = $target[1];
+let free = $target[2];
+let constructors = $target[3];
+return foldl(one(global(name)(type)(l)(decl)))(map(constructors)(({"1": {"1": {"0": args}, "0": l}, "0": name}) => foldl(one(global(name)(value)(l)(decl)))(map(args)(type$slnames(map$slfrom_list(free))))(bag$sland)))(bag$sland)
+} ;
+throw new Error('match fail 17947:' + JSON.stringify($target))
+})(top)
+return eval("({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) => all_names =>\n  ({type: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr, all_names})")(parse_and_compile(parse_top)(parse_expr)(names)(externals_top)((expr) => bag$slto_list(externals(set$slnil)(expr))))(top$slnames)

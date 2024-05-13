@@ -1,4 +1,6 @@
 
+- [ ] use all_names on the editor-end
+
 # Sprucing algw-s2 up to be the thing we always wanted
 
 - [x] <-err basic

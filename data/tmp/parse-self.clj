@@ -874,11 +874,12 @@
             (fn [expr] (list loced-name))))
 
 ((eval
-    (** ({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) =>
-  ({type: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr}) **))
+    (** ({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) => all_names =>
+  ({type: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr, all_names}) **))
     (parse-and-compile
         parse-top
             parse-expr
             names
             externals-top
-            (fn [expr] (bag/to-list (externals set/nil expr)))))
+            (fn [expr] (bag/to-list (externals set/nil expr))))
+        top/names)
