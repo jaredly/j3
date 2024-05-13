@@ -81,10 +81,15 @@ export const runFixtures = async (fixtures: Fixture[]) => {
                     if (names.length) {
                         console.log(names);
                     } else {
-                        group.tops.map((t) =>
+                        group.tops.forEach((t) =>
                             console.log(nodeToString(worker.nodes[t].node, {})),
                         );
                     }
+                    group.tops.forEach((t) => {
+                        worker.results?.tops[t].produce.forEach((item) => {
+                            console.log(JSON.stringify(item));
+                        });
+                    });
                     throw new Error(`group ${key} typeFailed!`);
                 }
             });
