@@ -950,6 +950,13 @@ const pat_names = pat => {
         return {type: last === ']' ? 'array' : last === ')' ? 'list' : 'record', values, loc: start}
       case '"':
         return readString()
+      case '.':
+        if (text[i + 1] === '.') {
+          const loc = i
+          i += 2;
+          const inner = read()
+          return {type: 'spread', contents: inner, loc}
+        }
       default: {
         let start = i;
         for (; i < text.length && !stops.includes(text[i]); i++) {}
@@ -973,7 +980,10 @@ const pat_names = pat => {
             (** {"type":"record","values":[{"type":"identifier","text":"a","loc":1}],"loc":0} **))
         (,
         "(defn x [a] (+ a 2))"
-            (** {"type":"list","values":[{"type":"identifier","text":"defn","loc":1},{"type":"identifier","text":"x","loc":6},{"type":"array","values":[{"type":"identifier","text":"a","loc":9}],"loc":8},{"type":"list","values":[{"type":"identifier","text":"+","loc":13},{"type":"identifier","text":"a","loc":15},{"type":"identifier","text":"2","loc":17}],"loc":12}],"loc":0} **))])
+            (** {"type":"list","values":[{"type":"identifier","text":"defn","loc":1},{"type":"identifier","text":"x","loc":6},{"type":"array","values":[{"type":"identifier","text":"a","loc":9}],"loc":8},{"type":"list","values":[{"type":"identifier","text":"+","loc":13},{"type":"identifier","text":"a","loc":15},{"type":"identifier","text":"2","loc":17}],"loc":12}],"loc":0} **))
+        (,
+        "[a ..b]"
+            (** {"type":"array","values":[{"type":"identifier","text":"a","loc":1},{"type":"spread","contents":{"type":"identifier","text":"b","loc":5},"loc":3}],"loc":0} **))])
 
 (** ## Packaging it up as a Compiler for the structured editor **)
 
