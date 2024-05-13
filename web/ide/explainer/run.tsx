@@ -1,7 +1,6 @@
 import React from 'react';
-import { useEffect, useState } from 'react';
-import ReactDOM, { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createRoot } from 'react-dom/client';
+import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
 
 window.root =
