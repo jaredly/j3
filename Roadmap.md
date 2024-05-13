@@ -3,7 +3,8 @@
 
 - [ ] make a glossary!
 - [ ] I want to be able to put definition tooltips everywhere. in the rich-text
-- [ ]
+- [x] ugh the jumping around is so bad. I need a better thing for that.
+  - maybe just with rich text dealios? Yeah, like if it's rich-text, just don't.
 
 
 # For Export

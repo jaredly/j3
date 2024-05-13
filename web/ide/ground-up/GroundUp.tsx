@@ -157,8 +157,8 @@ export const GroundUp = ({
                 id={id}
                 size={size}
             />
-            <Cursors at={state.at} regs={state.regs} />
             <WithStore store={store}>
+                <Cursors at={state.at} regs={state.regs} />
                 <Hover />
                 <CommandPalette setSearchResults={setSearchResults} />
                 {searchResults ? (

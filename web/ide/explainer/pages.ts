@@ -5,6 +5,7 @@ export const pages = [
     { id: 'structured-editor', title: 'Structured Editor' },
     { id: 'encoding', title: 'Encoding' },
     { id: 'ast', title: 'Abstract Syntax Tree' },
+    { id: 'syntax-cheatsheet', title: 'Syntax Cheatsheet' },
     { id: 'bootstrap', title: 'Bootstrap Compiler' },
     { id: 'playground', title: 'A Playground' },
     { id: 'self-1', title: 'Self-Hosted Code Generation' },

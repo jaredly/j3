@@ -12,8 +12,8 @@
     we'll use native javascript functions as well
     algebraic data types
     
-    Like enums from Rust or Swift, or TypeScript's tagged unions. To keep things simple, we'll omit labels from the arguments.
-    These will be encoded as an object with a type attribute for the constructor name, and with the arguments addressed by their index in the constructor. So (evar "abc" 123) will be encoded as {type: "evar", 0: "abc", 1: 123}.
+    Like enums from Rust or Swift, or TypeScript's tagged unions.
+    These will be encoded as an object with a type attribute for the constructor name, and with the arguments addressed by their index in the constructor. So (evar "abc" 123) will be encoded as {type: "evar", 0: "abc", 1: 123}. Accessing the values will be done by destructuring (with a let or match).
     
     And that's all we need! Notably we won't have arrays (but we will have linked lists w/ cons and nil), or objects, or even floats for now.
     We'll now define a couple of utility functions that the structured editor will make use of: valueToNode and valueToString. This will allow the editor to display & manipulate the values that result from running code written in our language.

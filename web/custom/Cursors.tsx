@@ -4,6 +4,7 @@ import { Path } from '../../src/state/path';
 import { UIState, RegMap } from './UIState';
 import { selectWithin } from './calcOffset';
 import { State } from '../../src/state/getKeyUpdate';
+import { useGetStore } from './store/StoreCtx';
 
 export const Cursors = ({
     at,
@@ -18,12 +19,18 @@ export const Cursors = ({
         [] as ({ x: number; y: number; h: number; color?: string } | null)[],
     );
 
+    const store = useGetStore();
+
     const tid = useRef(null as null | Timer);
 
     useEffect(() => {
         if (!at.length) return;
         const first = at[0].start;
         const got = first[first.length - 1].idx;
+        const node = store.getState().map[got];
+        if (node?.type === 'rich-text') {
+            return; // don't jump around for rich text
+        }
         const found = regs[got]?.main ?? regs[got]?.outside;
         if (found) {
             const headerHeight =

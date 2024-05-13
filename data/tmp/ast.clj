@@ -1,6 +1,7 @@
 (** ## Abstract Syntax Tree **)
 
-(** Once we have our runtime encoding (primitives, functions, and algebraic data types), we need to decide on an Abstract Syntax Tree. Once again we'll keep the list relatively short, with the goal of "the simplest language that's still nice to use". **)
+(** Once we have our runtime encoding (primitives, functions, and algebraic data types), we need to decide on an Abstract Syntax Tree. Once again we'll keep the list relatively short, with the goal of "the simplest language that's still nice to use".
+    Note: If any of this feels confusing, jump over to the Syntax Cheatsheet to see concrete examples. **)
 
 (** Utility Types **)
 
@@ -23,8 +24,9 @@
     Expressions make up the bulk of the code you'll be writing: variable references, function definitions, function calls, etc. -- even if and let (in contrast to imperative languages such as JavaScript, where those would be statements). **)
 
 (deftype expr
-    (eprim prim int)
-        (** A string! It doesn't get lumped in with the primitives, because it might have embedded expressions. This is inspired by JavaScript's template strings and swift's string interpolations. The first string is the "prefix", and if the string contains no interpolations, then the second list will be empty. Otherwise, it will contain a list of pairs, first the expression, and then the string suffix.
+    (** Primitives, not much to see here. **)
+        (eprim prim int)
+        (** estr is a string literal. It doesn't get lumped in with the primitives, because it might have embedded expressions. This is inspired by JavaScript's template strings and swift's string interpolations. The first string is the "prefix", and if the string contains no interpolations, then the second list will be empty. Otherwise, it will contain a list of pairs, first the expression, and then the string suffix.
         So "Hello ${world}!" would parse into (estr "Hello" [(, (evar "world") "!")]) **)
         (estr string (list (, expr string int)) int)
         (** a variable reference! might be local or global. **)
