@@ -441,26 +441,25 @@
 ((** This gives us "hover for type". We record a type and the associated loc, and store it on the state. After everything is finished, we go through this list of types, applying the final substitution map to each, and then hand them over to the editor. dont-subst is a flag that means don't apply the substitution map; this allows us to present both the generic and type-applied versions of generic functions. **)
     defn record-type-> [type loc dont-subst]
     (let-> [
-        (, idx subst types decls usages) <-state
-        _                                (state->
-                                             (, idx subst [(, type loc dont-subst) ..types] decls usages))]
+        (, idx subst types) <-state
+        _                   (state-> (, idx subst [(, type loc dont-subst) ..types]))]
         (<- ())))
 
-((** This is for recording all of the identifiers that are "declarations". The editor can then match it against all reported "usages" to find variables that are unused. **)
+;((** This is for recording all of the identifiers that are "declarations". The editor can then match it against all reported "usages" to find variables that are unused. **)
     defn record-decl-> [loc]
     (let-> [
         (, i s t decls u) <-state
         _                 (state-> (, i s t [loc ..decls] u))]
         (<- ())))
 
-((** Here we record a usage; whether of a type or value, including the location where it was used, and the location where it was declared. **)
+;((** Here we record a usage; whether of a type or value, including the location where it was used, and the location where it was declared. **)
     defn record-usage-> [usage decl]
     (let-> [
         (, i s t d usages) <-state
         _                  (state-> (, i s t d [(, usage decl) ..usages]))]
         (<- ())))
 
-(def state/nil (, 0 map/nil [] [] []))
+(def state/nil (, 0 map/nil []))
 
 (defn run/nil-> [st] (run-> st state/nil))
 
@@ -603,14 +602,17 @@
         (ematch _ _ l)  l
         (elet _ _ l)    l))
 
+(defn record-if-generic [(forall free t) l]
+    (match (set/to-list free)
+        [] (<- ())
+        (** If the variable we've found is generic, we want to record the type "pre-specialization" so we can show that on hover as well. **)
+        _  (record-type-> t l true)))
+
 (defn infer/expr-inner [tenv expr]
     (match expr
         (evar name l)                            (match (tenv/resolve tenv name)
                                                      (none)        (<-missing name l)
-                                                     (some scheme) (let-> [
-                                                                       (forall _ t) (<- scheme)
-                                                                       ()           (record-type-> t l true)]
-                                                                       (instantiate scheme l)))
+                                                     (some scheme) (let-> [() (record-if-generic scheme l)] (instantiate scheme l)))
         (eprim prim _)                           (<- (infer/prim prim))
         (equot quot l)                           (<- (infer/quot quot l))
         (estr _ templates l)                     (let-> [
@@ -1494,7 +1496,7 @@
 
 (defn infer-stmts2 [env stmts]
     (let [
-        (, (, _ subst types decls usages) result) (state-f (add/stmts env stmts) state/nil)]
+        (, (, _ subst types) result) (state-f (add/stmts env stmts) state/nil)]
         (,
             (match result
                 (err e)             (err e)
@@ -1505,12 +1507,12 @@
                         (, l (forall set/nil t))
                             (, l (forall set/nil (type/apply subst t)))))
                     types)
-                decls
-                usages)))
+                []
+                [])))
 
 (defn infer-expr2 [env expr]
     (let [
-        (, (, _ subst types decls usages) result) (state-f (infer/expr env expr) state/nil)]
+        (, (, _ subst types) result) (state-f (infer/expr env expr) state/nil)]
         (,
             (match result
                 (ok t)  (ok (forall set/nil t))
@@ -1521,8 +1523,8 @@
                         (, l (forall set/nil t))
                             (, l (forall set/nil (type/apply subst t)))))
                     types)
-                decls
-                usages)))
+                []
+                [])))
 
 (eval
     (** env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts2 => infer2 =>

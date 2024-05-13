@@ -6,9 +6,17 @@
 - [ ] Infer the missing items ... ahead of time?
   ok yeas I guess this is instrumental in enabling autocomplete. So I should definitely do it.
   eye meanss it's not 100% the thing. like it's definitely a neat trick walking stick.
-- [ ] OK but the more important thing
+- [x] OK but the more important thing
   is hover for type.
-  and also usages, lets not forget that.
+- [ ] and also usages, lets not forget that.
+  Soooo do these really need to be ... ... tracked in the type inference dealio?
+  Can't it be done a lot ... cheaper ... by a different analysis thing?
+  🤔
+  and the kicker is, we'd really like usage tracking to still work, even when there's a type error.
+  NOW in some future moment, when we have type classes, the "resolved instance" might be something a little more involved. but that's definitely future.
+  ok, so usage is gonna be a separate thing.
+
+
 
 # Feedback and such
 

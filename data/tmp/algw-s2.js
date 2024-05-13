@@ -218,7 +218,7 @@ let reset_state_$gt = $gt$gt$eq($lt_state)(({"1": {"1": records}}) => $gt$gt$eq(
 let $lt_next_idx = $gt$gt$eq($lt_state)(({"1": {"1": records, "0": subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx + 1)($co(subst)(records))))((_1548) => $lt_(idx)))
 let subst_$gt = (new_subst) => $gt$gt$eq($lt_state)(({"1": {"1": records, "0": subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx)($co(compose_subst(new_subst)(subst))(records))))((_1578) => $lt_($unit)))
 let subst_reset_$gt = (new_subst) => $gt$gt$eq($lt_state)(({"1": {"1": records, "0": old_subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx)($co(new_subst)(records))))((_1610) => $lt_(old_subst)))
-let state$slnil = $co(0)($co(map$slnil)($co(nil)($co(nil)(nil))))
+let state$slnil = $co(0)($co(map$slnil)(nil))
 let run$slnil_$gt = (st) => run_$gt(st)(state$slnil)
 let new_type_var = (name) => (l) => $gt$gt$eq($lt_next_idx)((nidx) => $lt_(tvar(`${name}:${int_to_string(nidx)}`)(l)))
 let make_subst_for_free = (vars) => (l) => $gt$gt$eq(map_$gt((id) => $gt$gt$eq(new_type_var(id)(l))((new_var) => $lt_($co(id)(new_var))))(set$slto_list(vars)))((mapping) => $lt_(map$slfrom_list(mapping)))
@@ -575,9 +575,7 @@ return $co(state)(ok(v))
 throw new Error('match fail 12357:' + JSON.stringify($target))
 })(f(state)))
 let state_f = ({"0": f}) => f
-let record_type_$gt = (type) => (loc) => (dont_subst) => $gt$gt$eq($lt_state)(({"1": {"1": {"1": {"1": usages, "0": decls}, "0": types}, "0": subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx)($co(subst)($co(cons($co(type)($co(loc)(dont_subst)))(types))($co(decls)(usages))))))((_12816) => $lt_($unit)))
-let record_decl_$gt = (loc) => $gt$gt$eq($lt_state)(({"1": {"1": {"1": {"1": u, "0": decls}, "0": t}, "0": s}, "0": i}) => $gt$gt$eq(state_$gt($co(i)($co(s)($co(t)($co(cons(loc)(decls))(u))))))((_12872) => $lt_($unit)))
-let record_usage_$gt = (usage) => (decl) => $gt$gt$eq($lt_state)(({"1": {"1": {"1": {"1": usages, "0": d}, "0": t}, "0": s}, "0": i}) => $gt$gt$eq(state_$gt($co(i)($co(s)($co(t)($co(d)(cons($co(usage)(decl))(usages)))))))((_12911) => $lt_($unit)))
+let record_type_$gt = (type) => (loc) => (dont_subst) => $gt$gt$eq($lt_state)(({"1": {"1": types, "0": subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx)($co(subst)(cons($co(type)($co(loc)(dont_subst)))(types)))))((_12816) => $lt_($unit)))
 let target_and_args = (type) => (coll) => (($target) => {
 if ($target.type === "tapp") {
 let target = $target[0];
@@ -608,6 +606,13 @@ return $co(cons(arg)(args))(res)
 return $co(nil)(type);
 throw new Error('match fail 13154:' + JSON.stringify($target))
 })(type)
+let record_if_generic = ({"1": t, "0": free}) => (l) => (($target) => {
+if ($target.type === "nil") {
+return $lt_($unit)
+} ;
+return record_type_$gt(t)(l)(true);
+throw new Error('match fail 13752:' + JSON.stringify($target))
+})(set$slto_list(free))
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -1276,7 +1281,7 @@ return $lt_missing(name)(l)
 } ;
 if ($target.type === "some") {
 let scheme = $target[0];
-return $gt$gt$eq($lt_(scheme))(({"1": t}) => $gt$gt$eq(record_type_$gt(t)(l)(true))((_13680) => instantiate(scheme)(l)))
+return $gt$gt$eq(record_if_generic(scheme)(l))((_13680) => instantiate(scheme)(l))
 } ;
 throw new Error('match fail 2272:' + JSON.stringify($target))
 }
@@ -1417,7 +1422,7 @@ let infer$slexpr = (tenv) => (expr) => $gt$gt$eq(subst_reset_$gt(map$slnil))((ol
 let add$sldefs = (tenv) => (defns) => $gt$gt$eq(reset_state_$gt)((_3545) => $gt$gt$eq($lt_(map(({"0": name}) => name)(defns)))((names) => $gt$gt$eq($lt_(map(({"1": {"1": {"1": l}}}) => l)(defns)))((locs) => $gt$gt$eq(map_$gt(({"1": {"0": nl}, "0": name}) => new_type_var(name)(nl))(defns))((vbls) => $gt$gt$eq($lt_(foldl(tenv)(zip(names)(map(forall(set$slnil))(vbls)))((tenv) => ({"1": vbl, "0": name}) => tenv$slwith_type(tenv)(name)(vbl))))((bound_env) => $gt$gt$eq(map_$gt(({"1": {"1": {"0": expr}}}) => infer$slexpr(bound_env)(expr))(defns))((types) => $gt$gt$eq(map_$gt(type$slapply_$gt)(vbls))((vbls) => $gt$gt$eq(do_$gt(({"1": {"1": loc, "0": type}, "0": vbl}) => unify(vbl)(type)(loc))(zip(vbls)(zip(types)(locs))))((_3545) => $gt$gt$eq(map_$gt(type$slapply_$gt)(types))((types) => $lt_(foldl(tenv$slnil)(zip(names)(types))((tenv) => ({"1": type, "0": name}) => tenv$slwith_type(tenv)(name)(generalize(tenv)(type)))))))))))))
 let add$sldef = (tenv) => (name) => (nl) => (expr) => (l) => $gt$gt$eq(new_type_var(name)(nl))((self) => $gt$gt$eq($lt_(tenv$slwith_type(tenv)(name)(forall(set$slnil)(self))))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(expr))((type) => $gt$gt$eq(type$slapply_$gt(self))((self) => $gt$gt$eq(unify(self)(type)(l))((_5246) => $gt$gt$eq(type$slapply_$gt(type))((type) => $lt_(tenv$slwith_type(tenv$slnil)(name)(generalize(tenv)(type)))))))))
 let infer_expr2 = (env) => (expr) => {
-let {"1": result, "0": {"1": {"1": {"1": {"1": usages, "0": decls}, "0": types}, "0": subst}}} = state_f(infer$slexpr(env)(expr))(state$slnil);
+let {"1": result, "0": {"1": {"1": types, "0": subst}}} = state_f(infer$slexpr(env)(expr))(state$slnil);
 return $co((($target) => {
 if ($target.type === "ok") {
 let t = $target[0];
@@ -1434,7 +1439,7 @@ return $co(l)(forall(set$slnil)(t))
 } ;
 return $co(l)(forall(set$slnil)(type$slapply(subst)(t)));
 throw new Error('match fail 13537:' + JSON.stringify($target))
-})(dont_apply))(types))($co(decls)(usages)))
+})(dont_apply))(types))($co(nil)(nil)))
 }
 let add$slstmt = (tenv) => (stmt) => (($target) => {
 if ($target.type === "tdef") {
@@ -1468,7 +1473,7 @@ let add$slstmts = (tenv) => (stmts) => $gt$gt$eq($lt_(split_stmts(stmts)))(({"1"
 let benv_with_tuple = tenv$slmerge(builtin_env)(fst(err_to_fatal(run$slnil_$gt(add$slstmts(builtin_env)(cons({"0":",","1":11705,"2":{"0":{"0":"a","1":11706,"type":","},"1":{"0":{"0":"b","1":11707,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":11709,"1":{"0":{"0":{"0":"a","1":11710,"type":"tcon"},"1":{"0":{"0":"b","1":11711,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":11708,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":11702,"type":"tdeftype"})(nil))))))
 let benv_with_pair = tenv$slmerge(builtin_env)(fst(err_to_fatal(run$slnil_$gt(add$slstmts(builtin_env)(cons({"0":",","1":12710,"2":{"0":{"0":"a","1":12711,"type":","},"1":{"0":{"0":"b","1":12712,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":12714,"1":{"0":{"0":{"0":"a","1":12715,"type":"tcon"},"1":{"0":{"0":"b","1":12716,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12713,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":12707,"type":"tdeftype"})(cons({"0":"list","1":12722,"2":{"0":{"0":"a","1":12723,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"nil","1":{"0":12725,"1":{"0":{"type":"nil"},"1":12724,"type":","},"type":","},"type":","},"1":{"0":{"0":"cons","1":{"0":12727,"1":{"0":{"0":{"0":"a","1":12728,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":12730,"type":"tcon"},"1":{"0":"a","1":12731,"type":"tcon"},"2":12729,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12726,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":12719,"type":"tdeftype"})(nil)))))))
 let infer_stmts2 = (env) => (stmts) => {
-let {"1": result, "0": {"1": {"1": {"1": {"1": usages, "0": decls}, "0": types}, "0": subst}}} = state_f(add$slstmts(env)(stmts))(state$slnil);
+let {"1": result, "0": {"1": {"1": types, "0": subst}}} = state_f(add$slstmts(env)(stmts))(state$slnil);
 return $co((($target) => {
 if ($target.type === "err") {
 let e = $target[0];
@@ -1488,6 +1493,6 @@ return $co(l)(forall(set$slnil)(t))
 } ;
 return $co(l)(forall(set$slnil)(type$slapply(subst)(t)));
 throw new Error('match fail 12961:' + JSON.stringify($target))
-})(dont_apply))(types))($co(decls)(usages)))
+})(dont_apply))(types))($co(nil)(nil)))
 }
 return eval("env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts2 => infer2 =>\n  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts2, infer2})\n")(builtin_env)(tenv$slmerge)(tenv$slresolve)(scheme_$gts)(scheme_$gtcst)(infer_stmts2)(infer_expr2)
