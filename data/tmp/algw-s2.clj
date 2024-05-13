@@ -588,112 +588,129 @@
         old  (subst-reset-> map/nil)
         type (infer/expr-inner tenv expr)
         new  (subst-reset-> old)
-        ()   (subst-> new)]
+        ()   (subst-> new)
+        ()   (record-type-> type (expr-loc expr) false)]
         (<- type)))
+
+(defn expr-loc [expr]
+    (match expr
+        (evar _ l)      l
+        (eprim _ l)     l
+        (equot _ l)     l
+        (estr _ _ l)    l
+        (elambda _ _ l) l
+        (eapp _ _ l)    l
+        (ematch _ _ l)  l
+        (elet _ _ l)    l))
 
 (defn infer/expr-inner [tenv expr]
     (match expr
-        (evar name l)                           (match (tenv/resolve tenv name)
-                                                    (none)        (<-missing name l)
-                                                    (some scheme) (instantiate scheme l))
-        (eprim prim _)                          (<- (infer/prim prim))
-        (equot quot l)                          (<- (infer/quot quot l))
-        (estr _ templates l)                    (let-> [
-                                                    () (do->
-                                                           (** For the "templates" of a template string, the expressions need to have type "string". **)
-                                                               (fn [(, expr _ _)]
-                                                               (let-> [
-                                                                   t  (infer/expr tenv expr)
-                                                                   () (unify t (tcon "string" l) l)]
-                                                                   (<- ())))
-                                                               templates)]
-                                                    (<- (tcon "string" l)))
+        (evar name l)                            (match (tenv/resolve tenv name)
+                                                     (none)        (<-missing name l)
+                                                     (some scheme) (let-> [
+                                                                       (forall _ t) (<- scheme)
+                                                                       ()           (record-type-> t l true)]
+                                                                       (instantiate scheme l)))
+        (eprim prim _)                           (<- (infer/prim prim))
+        (equot quot l)                           (<- (infer/quot quot l))
+        (estr _ templates l)                     (let-> [
+                                                     () (do->
+                                                            (** For the "templates" of a template string, the expressions need to have type "string". **)
+                                                                (fn [(, expr _ _)]
+                                                                (let-> [
+                                                                    t  (infer/expr tenv expr)
+                                                                    () (unify t (tcon "string" l) l)]
+                                                                    (<- ())))
+                                                                templates)]
+                                                     (<- (tcon "string" l)))
         (** For lambdas (fn [name] body)
             - create a type variable to represent the type of the argument
             - add the type variable to the typing environment
             - infer the body, using the augmented environment
             - apply any resulting substitutions to our arg variable **)
-        (elambda [(pvar arg al)] body l)        (let-> [
-                                                    arg-type  (new-type-var arg al)
-                                                    bound-env (<- (tenv/with-type tenv arg (forall set/nil arg-type)))
-                                                    body-type (infer/expr bound-env body)
-                                                    arg-type  (type/apply-> arg-type)]
-                                                    (<- (tfn arg-type body-type l)))
+        (elambda [(pvar arg al)] body l)         (let-> [
+                                                     arg-type  (new-type-var arg al)
+                                                     ()        (record-type-> arg-type al false)
+                                                     bound-env (<- (tenv/with-type tenv arg (forall set/nil arg-type)))
+                                                     body-type (infer/expr bound-env body)
+                                                     arg-type  (type/apply-> arg-type)]
+                                                     (<- (tfn arg-type body-type l)))
         (** With more complex patterns (that aren't just a variable name), there might be multiple "names" that need to get added to the type environment, so those are returned as the scope map, along with a type for the argument.
             Other than that, it's the same as the simple case. **)
-        (elambda [pat] body l)                  (let-> [
-                                                    (, arg-type scope) (infer/pattern tenv pat)
-                                                    bound-env          (<- (tenv/with-scope tenv scope))
-                                                    body-type          (infer/expr bound-env body)
-                                                    arg-type           (type/apply-> arg-type)]
-                                                    (<- (tfn arg-type body-type l)))
+        (elambda [pat] body l)                   (let-> [
+                                                     (, arg-type scope) (infer/pattern tenv pat)
+                                                     bound-env          (<- (tenv/with-scope tenv scope))
+                                                     body-type          (infer/expr bound-env body)
+                                                     arg-type           (type/apply-> arg-type)]
+                                                     (<- (tfn arg-type body-type l)))
         (** This isn't necessarily the most efficient way to handle curried arguments, but imo it makes the above inference algorithm cleaner & more understandable, as you only have to think about one argument at a time. **)
-        (elambda [one ..rest] body l)           (infer/expr tenv (elambda [one] (elambda rest body l) l))
-        (elambda [] body l)                     (<-err "No args to lambda")
+        (elambda [one ..rest] body l)            (infer/expr tenv (elambda [one] (elambda rest body l) l))
+        (elambda [] body l)                      (<-err "No args to lambda")
         (** Function application (target arg)
             - create a type variable to represent the return value of the function application
             - infer the target type
             - infer the arg type, using substitutions from the target. Q: Could this be done the other way around -- infer the arg first, and then the target? A: Yes, I believe it could! I have tested it, and the resulting algorithm was able to correctly type check our whole compiler, as well as pass all the tests in this file. The only difference would be that function call arguments would be checked last-to-first instead of first-to-last. So if you have a type error in two arguments of a function call, the later error would be reported instead of the former.
             - unify the inferred target type with the function type produced by our inferred argument type and our result variable.
             - the substitutions from the unification is then applied to the result type variable, giving us the overall type of the expression **)
-        (eapp target [arg] l)                   (let-> [
-                                                    result-var  (new-type-var "result" l)
-                                                    target-type (infer/expr tenv target)
-                                                    arg-tenv    (tenv/apply-> tenv)
-                                                    arg-type    (infer/expr arg-tenv arg)
-                                                    target-type (type/apply-> target-type)
-                                                    _           (unify target-type (tfn arg-type result-var l) l)]
-                                                    (type/apply-> result-var))
+        (eapp target [arg] l)                    (let-> [
+                                                     result-var  (new-type-var "result" l)
+                                                     target-type (infer/expr tenv target)
+                                                     arg-tenv    (tenv/apply-> tenv)
+                                                     arg-type    (infer/expr arg-tenv arg)
+                                                     target-type (type/apply-> target-type)
+                                                     _           (unify target-type (tfn arg-type result-var l) l)]
+                                                     (type/apply-> result-var))
         (** Same story here as for the lambdas. Splitting things out like this allows us to look at one argument at a time. **)
-        (eapp target [one ..rest] l)            (infer/expr tenv (eapp (eapp target [one] l) rest l))
-        (eapp target [] l)                      (infer/expr tenv target)
+        (eapp target [one ..rest] l)             (infer/expr tenv (eapp (eapp target [one] l) rest l))
+        (eapp target [] l)                       (infer/expr tenv target)
         (** Let: simple version, where the pattern is just a pvar
             - infer the type of the value being bound
             - apply any subst that we learned from inferring the value to our type environment, producing a new tenv
             - generalize the inferred type! This is where we get let polymorphism; the inferred type is allowed to have "free" type variables. If we didn't generalize here, then let would not be polymorphic.
             - infer the type of the body, using the tenv that has the name bound to the generalized inferred type **)
-        (elet [(, (pvar name _) value)] body _) (let-> [
-                                                    value-type  (infer/expr tenv value)
-                                                    applied-env (tenv/apply-> tenv)
-                                                    scheme      (<- (generalize applied-env value-type))
-                                                    bound-env   (<- (tenv/with-type applied-env name scheme))]
-                                                    (infer/expr bound-env body))
+        (elet [(, (pvar name nl) value)] body _) (let-> [
+                                                     value-type  (infer/expr tenv value)
+                                                     ()          (record-type-> value-type nl false)
+                                                     applied-env (tenv/apply-> tenv)
+                                                     scheme      (<- (generalize applied-env value-type))
+                                                     bound-env   (<- (tenv/with-type applied-env name scheme))]
+                                                     (infer/expr bound-env body))
         (** For non-pvar patterns, it's almost exactly the same, but we don't allow produced type variables to be generic. If we did, things like (fn [x] (let [(, a b) x] a) would return an "unbound" type variable: it would be inferred as forall a, b; a -> b. **)
-        (elet [(, pat value)] body l)           (let-> [
-                                                    (, type scope) (infer/pattern tenv pat)
-                                                    value-type     (infer/expr tenv value)
-                                                    ()             (unify type value-type l)
-                                                    scope          (scope/apply-> scope)
-                                                    bound-env      (<- (tenv/with-scope tenv scope))
-                                                    body-type      (infer/expr bound-env body)]
-                                                    (<- body-type))
-        (elet [one ..more] body l)              (infer/expr tenv (elet [one] (elet more body l) l))
-        (elet [] body l)                        (<-err "No bindings in let")
+        (elet [(, pat value)] body l)            (let-> [
+                                                     (, type scope) (infer/pattern tenv pat)
+                                                     value-type     (infer/expr tenv value)
+                                                     ()             (unify type value-type l)
+                                                     scope          (scope/apply-> scope)
+                                                     bound-env      (<- (tenv/with-scope tenv scope))
+                                                     body-type      (infer/expr bound-env body)]
+                                                     (<- body-type))
+        (elet [one ..more] body l)               (infer/expr tenv (elet [one] (elet more body l) l))
+        (elet [] body l)                         (<-err "No bindings in let")
         (** match expressions! Like let, but with a little more book-keeping. **)
-        (ematch target cases l)                 (let-> [
-                                                    target-type (infer/expr tenv target)
-                                                    result-type (new-type-var "match result" l)
-                                                    (** Handle each case, collecting all of the resulting types of the bodies. **)
-                                                    all-results (map->
-                                                                    (fn [(, pat body)]
-                                                                        (let-> [
-                                                                            (, type scope) (infer/pattern tenv pat)
-                                                                            ()             (unify type target-type l)
-                                                                            scope          (scope/apply-> scope)
-                                                                            bound-env      (<- (tenv/with-scope tenv scope))]
-                                                                            (infer/expr bound-env body)))
-                                                                        cases)
-                                                    (** Unify all of the result types together **)
-                                                    ()          (do->
-                                                                    (fn [one-result]
-                                                                        (let-> [subst <-subst]
-                                                                            (unify
-                                                                                (type/apply subst one-result)
-                                                                                    (type/apply subst result-type)
-                                                                                    l)))
-                                                                        all-results)
-                                                    ()          (check-exhaustiveness tenv target-type (map fst cases) l)]
-                                                    (type/apply-> result-type))))
+        (ematch target cases l)                  (let-> [
+                                                     target-type (infer/expr tenv target)
+                                                     result-type (new-type-var "match result" l)
+                                                     (** Handle each case, collecting all of the resulting types of the bodies. **)
+                                                     all-results (map->
+                                                                     (fn [(, pat body)]
+                                                                         (let-> [
+                                                                             (, type scope) (infer/pattern tenv pat)
+                                                                             ()             (unify type target-type l)
+                                                                             scope          (scope/apply-> scope)
+                                                                             bound-env      (<- (tenv/with-scope tenv scope))]
+                                                                             (infer/expr bound-env body)))
+                                                                         cases)
+                                                     (** Unify all of the result types together **)
+                                                     ()          (do->
+                                                                     (fn [one-result]
+                                                                         (let-> [subst <-subst]
+                                                                             (unify
+                                                                                 (type/apply subst one-result)
+                                                                                     (type/apply subst result-type)
+                                                                                     l)))
+                                                                         all-results)
+                                                     ()          (check-exhaustiveness tenv target-type (map fst cases) l)]
+                                                     (type/apply-> result-type))))
 
 (def benv-with-tuple
     (tenv/merge
@@ -835,7 +852,9 @@
 ((** Here we are producing (1) a type for the pattern, and (2) a "scope" mapping of names to type variables. **)
     defn infer/pattern [tenv pattern]
     (match pattern
-        (pvar name l)         (let-> [v (new-type-var name l)]
+        (pvar name l)         (let-> [
+                                  v  (new-type-var name l)
+                                  () (record-type-> v l false)]
                                   (<- (, v (map/from-list [(, name (forall set/nil v))]))))
         (pany l)              (let-> [v (new-type-var "any" l)] (<- (, v map/nil)))
         (pstr _ l)            (<- (, (tcon "string" l) map/nil))
@@ -849,6 +868,7 @@
             cannot convert {"id":"9de5a662-ca3d-422b-aef1-a621140eebaa","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"merge all the sub scopes together","styles":{}}],"children":[]} **)
         (pcon name _ args l)  (let-> [
                                   (, cargs cres)       (instantiate-tcon tenv name l)
+                                  ()                   (record-type-> (tfns cargs cres l) l false)
                                   sub-patterns         (map-> (infer/pattern tenv) args)
                                   (, arg-types scopes) (<- (unzip sub-patterns))
                                   ()                   (do->
