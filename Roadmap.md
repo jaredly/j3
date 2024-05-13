@@ -1,4 +1,15 @@
 
+# Sprucing algw-s2 up to be the thing we always wanted
+
+- [x] <-err basic
+- [x] <-err with all the types
+- [ ] Infer the missing items ... ahead of time?
+  ok yeas I guess this is instrumental in enabling autocomplete. So I should definitely do it.
+  eye meanss it's not 100% the thing. like it's definitely a neat trick walking stick.
+- [ ] OK but the more important thing
+  is hover for type.
+  and also usages, lets not forget that.
+
 # Feedback and such
 
 - [ ] make a glossary!

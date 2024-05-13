@@ -242,7 +242,7 @@ export function updateState(
                     const err = result.err;
                     locedErrors(err).forEach(({ loc, text }) => {
                         add(
-                            state.results!.tops[topForLoc[loc]].errors,
+                            state.results!.tops[topForLoc[loc]]?.errors ?? {},
                             loc,
                             text,
                         );
