@@ -552,7 +552,10 @@ const p = {
         (@ (def hi 10))
             (** '(tdef "hi" 253 (eprim (pint 10 254) 254) 245)' **))
         (,
-        (@ (deftype (option a) (some a) (none)))
+        (@
+            (deftype (option a)
+                (some a)
+                    (none)))
             (** '(tdeftype "option" 1014 [(, "a" 1015)] [(, "some" 1017 [(tcon "a" 1018)] 1016) (, "none" 1020 [] 1019)] 1011)' **))
         (,
         (@ (defn lol [a b] (+ a b)))
@@ -753,9 +756,22 @@ const constrFn = (name, args) => {
             (some v) v
             _        5)]
             (** "10" **))
-        (, [(deftype lots (lol a b c)) (lol 1 true "hi")] (** '(lol 1 true "hi")' **))
-        (, [(deftype a (com, 1 2)) (com, 1 2)] (** "(com, 1 2)" **))
-        (, [(deftype (list a) (cons a (list a)) (nil)) [1 2]] (** "[1 2]" **))
+        (,
+        [(deftype lots
+            (lol a b c))
+            (lol 1 true "hi")]
+            (** '(lol 1 true "hi")' **))
+        (,
+        [(deftype a
+            (com, 1 2))
+            (com, 1 2)]
+            (** "(com, 1 2)" **))
+        (,
+        [(deftype (list a)
+            (cons a (list a))
+                (nil))
+            [1 2]]
+            (** "[1 2]" **))
         (,
         [(defn fib- [x]
             (if (< x 1)
@@ -840,7 +856,10 @@ const names = top => {
         [(, (@ hi) (** [] **))
         (, (@ (def x 10)) (** [{"name":"x","kind":"value","loc":714}] **))
         (,
-        (@ (deftype (option x) (some x) (none)))
+        (@
+            (deftype (option x)
+                (some x)
+                    (none)))
             (** [{"name":"some","kind":"value","loc":730},{"name":"none","kind":"value","loc":733}] **))])
 
 (** // Produce a list of names that are bound when the pattern matches successfully.
@@ -855,6 +874,106 @@ const pat_names = pat => {
   return []
 }
  **)
+
+(** ## (Bonus) Reader
+    We don't need a reader in this environment, because the structured editor is working at the level of the CST node, but if you're following along & implementing this in another language outside of the structured editor, you're going to need a reader to turn an input string into a CST node. **)
+
+(** const reader = (text) => {
+  let i = 0;
+  const pairs = {'[': ']', '{': '}', '(': ')'}
+  const skipWhite = () => {
+    while (i < text.length && text[i].match(/\s/)) i++;
+    return (i >= text.length)
+  }
+  
+  const readString = () => {
+    const loc = i;
+    i++;
+    let first = ''
+    let current = ''
+    let templates = []
+    
+    const next = () => {
+      if (!templates.length) {
+        first = current
+      } else {
+        templates[templates.length - 1].suffix = current
+      }
+      current = ''
+    }
+    
+    for (; i < text.length; i++) {
+      if (text[i] === '"') break
+      if (text[i] === '\\') {
+        current += text[i]
+        i++
+      }
+      if (text[i] === '$' && text[i + 1] === '{') {
+        next()
+        i += 2;
+        templates.push({
+          expr: read(),
+          suffix: '',
+          loc: i,
+        })
+        if (text[i] !== '}') throw new Error('unmatched } in template string');
+        continue
+      }
+      current += text[i]
+      // console.log('a', current, text[i])
+    }
+    next()
+    return {first, templates, type: 'string', loc}
+  }
+    
+  const stops = `]}) \t\n`
+  const read = () => {
+    if (skipWhite()) return
+    switch (text[i]) {
+      case '[':
+      case '{':
+      case '(':
+        const start = i
+        const last = pairs[text[i]];
+        i+=1;
+        const values = [];
+        while (true) {
+          const next = read(text)
+          if (!next) break
+          values.push(next)
+        }
+        skipWhite()
+        if (i >= text.length || text[i] !== last) {
+          throw new Error(`Expected ${last}: ${text[i]}`)
+        }
+        i++
+        return {type: last === ']' ? 'array' : last === ')' ? 'list' : 'record', values, loc: start}
+      case '"':
+        return readString()
+      default: {
+        let start = i;
+        for (; i < text.length && !stops.includes(text[i]); i++) {}
+        if (start === i) return
+        return {type: 'identifier', text: text.slice(start, i), loc: start}
+      }
+    }
+  }
+  return read()
+} **)
+
+(,
+    (** reader **)
+        [(, "12" (** {"type":"identifier","text":"12","loc":0} **))
+        (,
+        "\"ab${abc}def\""
+            (** {"first":"ab","templates":[{"expr":{"type":"identifier","text":"abc","loc":5},"suffix":"def","loc":8}],"type":"string","loc":0} **))
+        (, "[]" (** {"type":"array","values":[],"loc":0} **))
+        (,
+        "{a}"
+            (** {"type":"record","values":[{"type":"identifier","text":"a","loc":1}],"loc":0} **))
+        (,
+        "(defn x [a] (+ a 2))"
+            (** {"type":"list","values":[{"type":"identifier","text":"defn","loc":1},{"type":"identifier","text":"x","loc":6},{"type":"array","values":[{"type":"identifier","text":"a","loc":9}],"loc":8},{"type":"list","values":[{"type":"identifier","text":"+","loc":13},{"type":"identifier","text":"a","loc":15},{"type":"identifier","text":"2","loc":17}],"loc":12}],"loc":0} **))])
 
 (** ## Packaging it up as a Compiler for the structured editor **)
 

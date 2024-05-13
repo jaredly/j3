@@ -28,7 +28,7 @@ export const Cursors = ({
         const first = at[0].start;
         const got = first[first.length - 1].idx;
         const node = store.getState().map[got];
-        if (node?.type === 'rich-text') {
+        if (node?.type === 'rich-text' || node?.type === 'raw-code') {
             return; // don't jump around for rich text
         }
         const found = regs[got]?.main ?? regs[got]?.outside;

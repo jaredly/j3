@@ -3,7 +3,7 @@ import { Action, MetaDataMap, NamespacePlugin } from '../UIState';
 import { NNode } from '../../../src/state/nestedNodes/NNode';
 import equal from 'fast-deep-equal';
 import { Path } from '../../store';
-import { fromMCST } from '../../../src/types/mcst';
+import { fromMCST, toMCST } from '../../../src/types/mcst';
 import { newNodeAfter, newNodeBefore } from '../../../src/state/newNodeBefore';
 import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
 import { useGetStore } from '../store/StoreCtx';
@@ -12,6 +12,8 @@ import { Data, Expr, parse, findLastIndex, LineFixture } from './Data';
 import { valueToString } from '../../ide/ground-up/valueToString';
 import { Node } from '../../../src/types/cst';
 import { valueToNode } from '../../ide/ground-up/bootstrap';
+import { UpdateMap } from '../../../src/state/getKeyUpdate';
+import { reLoc } from '../../../src/state/clipboard';
 
 export const fixturePlugin: NamespacePlugin<any, Data<Expr>, any> = {
     id: 'fixture',
@@ -270,38 +272,49 @@ function StatusMessage({
                     // So ... we want .... the .. evaluator? to tell us, how to turn a [value]
                     // into a [CST]. Right? Seems about right.
                     console.log(res.found);
-                    dispatch({
-                        type: 'select',
-                        at: [
-                            {
-                                start: [
-                                    {
-                                        type: 'start',
-                                        idx: item.output!.node.loc,
-                                    },
-                                ],
-                                end: [
-                                    { type: 'end', idx: item.output!.node.loc },
-                                ],
-                            },
-                        ],
-                    });
+                    // dispatch({
+                    //     type: 'select',
+                    //     at: [
+                    //         {
+                    //             start: [
+                    //                 {
+                    //                     type: 'start',
+                    //                     idx: item.output!.node.loc,
+                    //                 },
+                    //             ],
+                    //             end: [
+                    //                 { type: 'end', idx: item.output!.node.loc },
+                    //             ],
+                    //         },
+                    //     ],
+                    // });
                     const node = valueToNode(res.found);
-                    dispatch({
-                        type: 'paste',
-                        items: [
-                            node == null
-                                ? {
-                                      type: 'text',
-                                      trusted: false,
-                                      text: valueToString(res.found),
-                                  }
-                                : {
-                                      type: 'nodes',
-                                      nodes: [node],
-                                  },
-                        ],
-                    });
+                    if (node) {
+                        const fixed = reLoc(node, store.getState().nidx);
+                        fixed.loc = item.output!.node.loc;
+                        const map: UpdateMap = {};
+                        toMCST(fixed, map);
+                        dispatch({
+                            type: 'update',
+                            map,
+                            selection: store.getState().at[0].start,
+                        });
+                    }
+                    // dispatch({
+                    //     type: 'paste',
+                    //     items: [
+                    //         node == null
+                    //             ? {
+                    //                   type: 'text',
+                    //                   trusted: false,
+                    //                   text: valueToString(res.found),
+                    //               }
+                    //             : {
+                    //                   type: 'nodes',
+                    //                   nodes: [node],
+                    //               },
+                    //     ],
+                    // });
                 }}
             >
                 {valueToString(results[item.input.node.loc]?.found)}
