@@ -2610,6 +2610,7 @@ map->
                     [(, "int" (, 0 set/nil -1))
                         (, "float" (, 0 set/nil -1))
                         (, "string" (, 0 set/nil -1))
+                        (, "()" (, 0 set/nil -1))
                         (, "bool" (, 0 set/nil -1))
                         (, "map" (, 2 set/nil -1))
                         (, "set" (, 1 set/nil -1))

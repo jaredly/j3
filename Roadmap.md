@@ -16,6 +16,14 @@
   NOW in some future moment, when we have type classes, the "resolved instance" might be something a little more involved. but that's definitely future.
   ok, so usage is gonna be a separate thing.
 
+  yeah suffice it to say, it'll be its own thing. Maybe even in the same breath as `externals`?
+  Might as well. Ok, so instead of `names` and `externals`, we have one thing to rule them all, and it's
+  `usages`
+  - (usage/local decl l)
+  - (usage/global name (kind) l)
+  - (decl/local l)
+  - (decl/global name (kind) l)
+
 
 
 # Feedback and such

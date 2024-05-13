@@ -22,10 +22,14 @@
         []           []
         [one ..rest] [(f i one) ..(mapi (+ 1 i) rest f)]))
 
+(deftype (, a b)
+    (, a b))
+
 (defn zip [one two]
     (match (, one two)
         (, [] [])               []
-        (, [o ..one] [t ..two]) [(, o t) ..(zip one two)]))
+        (, [o ..one] [t ..two]) [(, o t) ..(zip one two)]
+        _                       (fatal "Mismatched lists to zip")))
 
 (defn rev [arr col]
     (match arr
@@ -1098,7 +1102,7 @@
 (defn parse-type [type]
     (match type
         (cst/id id l)                                                 (<- (tcon id l))
-        (cst/list [] l)                                               (<-err (, l "(parse-type) with empty list") (tcon "()" l))
+        (cst/list [] l)                                               (<- (tcon "()" l))
         (cst/list [(cst/id "fn" _) (cst/array args _) body ..rest] l) (let-> [
                                                                           body (parse-type body)
                                                                           args (map-> parse-type args)

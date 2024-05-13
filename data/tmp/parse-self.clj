@@ -758,6 +758,111 @@
             [(, "int" (type) 16460)])
         (, (@@ (typealias lol int)) [(, "int" (type) 16480)])])
 
+(** ## Collecting declarations and usages **)
+
+(** This is still experimental, but will probably replace both the "collecting dependencies" and "collecting exports" above. It has the added benefit of folding in local usage tracking as well. **)
+
+(deftype reported-name
+    (local int (use-or-decl int))
+        (global string name-kind int (use-or-decl ())))
+
+(deftype (use-or-decl a)
+    (usage a)
+        (decl))
+
+(defn top/names [top]
+    (match top
+        (tdef name l body _)                  (bag/and
+                                                  (one (global name (value) l (decl)))
+                                                      (expr/names (map/from-list [(, name l)]) body))
+        (texpr body _)                        (expr/names map/nil body)
+        (ttypealias name l free body _)       (bag/and
+                                                  (one (global name (type) l (decl)))
+                                                      (type/names (map/from-list free) body))
+        (tdeftype name l free constructors _) (foldl
+                                                  (one (global name (type) l (decl)))
+                                                      (map
+                                                      constructors
+                                                          (fn [(, name l args _)]
+                                                          (foldl
+                                                              (one (global name (value) l (decl)))
+                                                                  (map args (type/names (map/from-list free)))
+                                                                  bag/and)))
+                                                      bag/and)))
+
+(defn expr/names [bound expr]
+    (match expr
+        (evar name l)           (match (map/get bound name)
+                                    (some dl) (one (local l (usage dl)))
+                                    (none)    (one (global name (value) l (usage ()))))
+        (eprim _ _)             empty
+        (equot _ _)             empty
+        (eapp target args _)    (foldl
+                                    (expr/names bound target)
+                                        (map args (expr/names bound))
+                                        bag/and)
+        (elambda args body _)   (let [
+                                    (, bound' names) (foldl (, [] empty) (map args pat/names) bound-and-names)]
+                                    (bag/and
+                                        names
+                                            (expr/names (map/merge bound (map/from-list bound')) body)))
+        (elet bindings body _)  (loop
+                                    (, bindings bound empty)
+                                        (fn [(, bindings bound names) recur]
+                                        (match bindings
+                                            []                    (bag/and names (expr/names bound body))
+                                            [(, pat expr) ..rest] (let [
+                                                                      (, bound' names') (pat/names pat)
+                                                                      bound             (map/merge bound (map/from-list bound'))
+                                                                      names             (bag/and names names')]
+                                                                      (recur (, rest bound (bag/and names (expr/names bound expr))))))))
+        (ematch target cases _) (foldl
+                                    (expr/names bound target)
+                                        (map
+                                        cases
+                                            (fn [(, pat body)]
+                                            (let [
+                                                (, bound' names') (pat/names pat)
+                                                bound             (map/merge bound (map/from-list bound'))]
+                                                (bag/and names' (expr/names bound body)))))
+                                        bag/and)
+        (estr _ tpls _)         (many (map tpls (fn [(, expr _ _)] (expr/names bound expr))))))
+
+(defn pat/names [pat]
+    (match pat
+        (pany _)              (, [] empty)
+        (pvar name l)         (, [(, name l)] (one (local l (decl))))
+        (pprim _ _)           (, [] empty)
+        (pstr _ _)            (, [] empty)
+        (pcon name nl args l) (foldl
+                                  (, [] (one (global name (type) l (usage ()))))
+                                      (map args pat/names)
+                                      bound-and-names)))
+
+(def bound-and-names
+    (fn [(, bound names) (, bound' names')]
+        (, (concat [bound bound']) (bag/and names names'))))
+
+(defn type/names [free body]
+    (match body
+        (tvar name l)       (match (map/get free name)
+                                (some dl) (one (local l (usage dl)))
+                                _         empty)
+        (tcon name l)       (one (global name (type) l (usage ())))
+        (tapp target arg _) (bag/and (type/names free target) (type/names free arg))))
+
+(,
+    (fn [top] (bag/to-list (top/names top)))
+        [(, (@! hi) [(global "hi" (value) 18614 (usage ()))])
+        (, (@! (let [x 10] x)) [(local 18649 (decl)) (local 18650 (usage 18649))])
+        (,
+        (@!
+            (match 10
+                a (+ 2 a)))
+            [(local 18673 (decl))
+            (global "+" (value) 18675 (usage ()))
+            (local 18678 (usage 18673))])])
+
 (** ## Exporting for the structured editor **)
 
 (deftype parse-and-compile

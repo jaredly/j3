@@ -2903,7 +2903,7 @@ if ($target.type === "cst/list" &&
 $target[0].type === "nil") {
 {
 let l = $target[1];
-return $lt_err($co(l)("(parse-type) with empty list"))(tcon("()")(l))
+return $lt_(tcon("()")(l))
 }
 }
 if ($target.type === "cst/list" &&

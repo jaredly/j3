@@ -90,6 +90,9 @@ export const valueToNode = (v: any): Node => {
             loc: -1,
         };
     }
+    if (v === null) {
+        return { type: 'list', values: [], loc: -1 };
+    }
     return {
         type: 'list',
         values: [
