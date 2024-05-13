@@ -516,6 +516,7 @@
                                                     (<- (tfn arg-type body-type l)))
         (** This isn't necessarily the most efficient way to handle curried arguments, but imo it makes the above inference algorithm cleaner & more understandable, as you only have to think about one argument at a time. **)
         (elambda [one ..rest] body l)           (infer/expr tenv (elambda [one] (elambda rest body l) l))
+        (elambda [] body l)                     (fatal "No args to lambda")
         (** Function application (target arg)
             - create a type variable to represent the return value of the function application
             - infer the target type
@@ -554,6 +555,7 @@
                                                     body-type      (infer/expr bound-env body)]
                                                     (<- body-type))
         (elet [one ..more] body l)              (infer/expr tenv (elet [one] (elet more body l) l))
+        (elet [] body l)                        (fatal "No bindings in let")
         (** match expressions! Like let, but with a little more book-keeping. **)
         (ematch target cases l)                 (let-> [
                                                     target-type (infer/expr tenv target)
@@ -734,6 +736,7 @@
     (match pattern
         (pvar _ _)            (ex/any)
         (pany _)              (ex/any)
+        (pstr str _)          (ex/constructor str "string" [])
         (pprim (pint v _) _)  (ex/constructor (int-to-string v) "int" [])
         (pprim (pbool v _) _) (ex/constructor
                                   (if v
@@ -840,6 +843,7 @@
 
 (defn specialize-row [constructor arity row]
     (match row
+        []                                    (fatal "Can't specialize an empty row.")
         [(ex/any) ..rest]                     [(concat [(any-list arity) rest])]
         [(ex/constructor name _ args) ..rest] (if (= name constructor)
                                                   [(concat [args rest])]
@@ -1091,7 +1095,8 @@
                               (some (, free type)) (let [subst (map/from-list (zip free args))]
                                                        (type/resolve-aliases aliases (type/apply subst type)))
                               _                    (foldl target args (fn [a b] (tapp a b l))))
-            (tvar _ l)    (foldl target args (fn [a b] (tapp a b l))))))
+            (tvar _ l)    (foldl target args (fn [a b] (tapp a b l)))
+            _             target)))
 
 (defn type/unroll-app [type]
     (match type

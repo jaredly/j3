@@ -972,7 +972,7 @@
         (** Let: simple version, where the pattern is just a pvar
             - infer the type of the value being bound
             - generalize the inferred type! This is where we get let polymorphism; the inferred type is allowed to have "free" type variables. If we didn't generalize here, then let would not be polymorphic.
-            - apply any subst that we learned from inferring the value to our type environment, producing a new tenv (?) Seems like this ought to be equivalent to doing tenv-apply to tenv and then adding the name. It's impossible for the value-subst to produce ... something that would apply to the value-type, right??? right??
+            - apply any subst that we learned from inferring the value to our type environment, producing a new tenv.
             - infer the type of the body, using the tenv that has both the name bound to the generalized inferred type, as well as any substitutions that resulted from inferring the type of the bound value.
             - compose the substitutions from the body with those from the value **)
         ;(elet (pvar name nl) value body l)
@@ -1997,6 +1997,7 @@ map->
 
 (defn specialize-row [constructor arity row]
     (match row
+        []                                    (fatal "Can't specialize an empty row")
         [(ex/any) ..rest]                     [(concat (any-list arity) rest)]
         [(ex/constructor name _ args) ..rest] (if (= name constructor)
                                                   [(concat args rest)]
@@ -2235,7 +2236,8 @@ map->
                                             (map bindings (fn [(, pat init)] "${(pat->s pat)} ${(expr->s init)}")))}]\n  ${(expr->s body)})"
         (ematch expr cases int)     "(match ${(expr->s expr)}\n  ${(join
                                         "\n  "
-                                            (map cases (fn [(, pat body)] "${(pat->s pat)}t${(expr->s body)}")))}"))
+                                            (map cases (fn [(, pat body)] "${(pat->s pat)}t${(expr->s body)}")))}"
+        (equot _ _)                 "(equot ...)"))
 
 (defn prim->s [prim]
     (match prim
@@ -2722,5 +2724,3 @@ map->
                 (some (, v _)) (some (scheme/type v))
                 _              (none)))
             type-to-cst))
-
-22216

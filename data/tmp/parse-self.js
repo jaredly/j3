@@ -260,6 +260,7 @@ return cons($co(o)(t))(zip(one)(two))
 } 
 } 
 } ;
+return fatal("Unbalanced zip");
 throw new Error('match fail 15967:' + JSON.stringify($target))
 })($co(one)(two))
 let get_id = (x) => (($target) => {
@@ -375,6 +376,9 @@ let nl = $target[0][0][1];
 let items = $target[0][1];
 let al = $target[1];
 return loop(map(items)(parse_type))((items) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return fatal("Empty tuple type")
+} ;
 if ($target.type === "cons") {
 let one = $target[0];
 if ($target[1].type === "nil") {

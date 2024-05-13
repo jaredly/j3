@@ -1008,6 +1008,9 @@ return $co(cons(arg)(args))(free)
 let specialized_matrix = (constructor) => (arity) => (matrix) => concat$ti(map(matrix)(specialize_row(constructor)(arity)))
 
 let specialize_row = (constructor) => (arity) => (row) => (($target) => {
+if ($target.type === "nil") {
+return fatal("Can't specialize an empty row")
+} ;
 if ($target.type === "cons") {
 if ($target[0].type === "ex/any") {
 let rest = $target[1];
@@ -1799,6 +1802,10 @@ return ex$slany
 if ($target.type === "pany") {
 return ex$slany
 } ;
+if ($target.type === "pstr") {
+let str = $target[0];
+return ex$slconstructor(str)("string")(nil)
+} ;
 if ($target.type === "pprim") {
 if ($target[0].type === "pint") {
 let v = $target[0][0];
@@ -2063,7 +2070,7 @@ let tenv_free = ({"0": types}) => foldr(set$slnil)(map(map$slvalues(types))(({"0
 let tenv_apply = (subst) => ({"3": alias, "2": names, "1": cons, "0": types}) => tenv(map$slmap(({"1": l, "0": s}) => $co(scheme_apply(subst)(s))(l))(types))(cons)(names)(alias)
 let generalize = (tenv) => (t) => scheme(set$sldiff(type_free(t))(tenv_free(tenv)))(t)
 let new_type_var = (prefix) => (l) => $gt$gt$eq($lt_idx)((nidx) => $gt$gt$eq(idx_$gt(nidx + 1))((_16872) => $lt_(tvar(`${prefix}:${its(nidx)}`)(l))))
-let basic = tenv(map$slfrom_list(cons($co("+")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("-")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("()")($co(scheme(set$slnil)(tcon("()")(-1)))(-1)))(cons($co(",")($co(scheme(set$slfrom_list(cons("a")(cons("b")(nil))))(tfn(tvar("a")(-1))(tfn(tvar("b")(-1))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1))(-1)))(-1)))(nil))))))(map$slfrom_list(cons($co(",")(tconstructor(cons("a")(cons("b")(nil)))(cons(tvar("a")(-1))(cons(tvar("b")(-1))(nil)))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1)))(nil)))(map$slfrom_list(cons($co("int")($co(0)($co(set$slnil)(-1))))(cons($co("string")($co(0)($co(set$slnil)(-1))))(cons($co("bool")($co(0)($co(set$slnil)(-1))))(nil)))))(map$slnil)
+let basic = tenv(map$slfrom_list(cons($co("+")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("-")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("()")($co(scheme(set$slnil)(tcon("()")(-1)))(-1)))(cons($co(",")($co(scheme(set$slfrom_list(cons("a")(cons("b")(nil))))(tfn(tvar("a")(-1))(tfn(tvar("b")(-1))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1))(-1)))(-1)))(nil))))))(map$slfrom_list(cons($co(",")(tconstructor(cons("a")(cons("b")(nil)))(cons(tvar("a")(-1))(cons(tvar("b")(-1))(nil)))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1)))(nil)))(map$slfrom_list(cons($co("int")($co(0)($co(set$slnil)(-1))))(cons($co("string")($co(0)($co(set$slnil)(-1))))(cons($co("bool")($co(0)($co(set$slnil)(-1))))(cons($co(",")($co(2)($co(set$slfrom_list(cons(",")(nil)))(-1))))(nil))))))(map$slnil)
 let typecheck = (v0) => (v1) => (v2) => (v3) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3})
 let subst_to_string = (subst) => join("\n")(map(map$slto_list(subst))(({"1": v, "0": k}) => `${k} : ${type_to_string_raw(v)}`))
 let externals = (bound) => (expr) => (($target) => {
@@ -2262,6 +2269,9 @@ let cases = $target[1];
 let int = $target[2];
 return `(match ${expr_$gts(expr)}\n  ${join("\n  ")(map(cases)(({"1": body, "0": pat}) => `${pat_$gts(pat)}	${expr_$gts(body)}`))}`
 } ;
+if ($target.type === "equot") {
+return "(equot ...)"
+} ;
 throw new Error('match fail 18473:' + JSON.stringify($target))
 })(expr)
 let pat_name = (pat) => new_type_var((($target) => {
@@ -2414,7 +2424,7 @@ let check_exhaustiveness = (tenv) => (target_type) => (patterns) => (l) => $gt$g
 if ($target === true) {
 return $lt_($unit)
 } ;
-return fatal(`Match not exhaustive ${int_to_string(l)}`);
+return $lt_err(type_error("Match not exhaustive")(cons($co("match")(l))(nil)));
 throw new Error('match fail 24950:' + JSON.stringify($target))
 })(is_exhaustive(tenv)(matrix))))
 let unify_inner = (t1) => (t2) => (l) => (($target) => {
@@ -2611,7 +2621,7 @@ if ($target.type === "ematch") {
 let target = $target[0];
 let cases = $target[1];
 let l = $target[2];
-return $gt$gt$eq(new_type_var("match-res")(l))((result_var) => $gt$gt$eq(t_expr(tenv)(target))((target_type) => $gt$gt$eq(foldl_$gt($co(target_type)(result_var))(cases)(({"1": result, "0": target_type}) => ({"1": body, "0": pat}) => $gt$gt$eq(pat_and_body(tenv)(pat)(body)(target_type)(false))((body) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq(unify(type_apply(subst)(result))(body)(l))((_10271) => $gt$gt$eq($lt_subst)((subst) => $lt_($co(type_apply(subst)(target_type))(type_apply(subst)(result)))))))))(({"1": result_type}) => $lt_(result_type))))
+return $gt$gt$eq(new_type_var("match-res")(l))((result_var) => $gt$gt$eq(t_expr(tenv)(target))((target_type) => $gt$gt$eq(foldl_$gt($co(target_type)(result_var))(cases)(({"1": result, "0": target_type}) => ({"1": body, "0": pat}) => $gt$gt$eq(pat_and_body(tenv)(pat)(body)(target_type)(false))((body) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq(unify(type_apply(subst)(result))(body)(l))((_10271) => $gt$gt$eq($lt_subst)((subst) => $lt_($co(type_apply(subst)(target_type))(type_apply(subst)(result)))))))))(({"1": result_type}) => $gt$gt$eq(check_exhaustiveness(tenv)(target_type)(map(cases)(fst))(l))((_2252) => $lt_(result_type)))))
 } ;
 return $lt_err(type_error("Expression not supported (?)")(cons($co(expr_$gts(expr))(expr_loc(expr)))(nil)));
 throw new Error('match fail 1664:' + JSON.stringify($target))

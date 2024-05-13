@@ -414,7 +414,7 @@ const t$co = (a) => (b) => tapp(tapp(tcon(",")(-1))(a)(-1))(b)(-1);
 
 const tstring = tcon("string")(-1);
 
-const builtin_env = ((k) => ((v) => ((v2) => ((kv) => ((kk) => ((a) => ((b) => tenv(map$slfrom_list(cons($co("+")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint)(-1))))(cons($co("-")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint)(-1))))(cons($co(">")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("<")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool)(-1))))(cons($co("!=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool)(-1))))(cons($co(">=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("<=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co(",")(generic(cons("a")(cons("b")(nil)))(tfns(cons(a)(cons(b)(nil)))(t$co(a)(b))(-1))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring)(-1))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint))(-1))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1)))(-1))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v))(-1))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v))(-1))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v))(-1))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2)(-1))(cons(tmap(k)(v))(nil)))(tmap(k)(v2))(-1))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v))(-1))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(v))(-1))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(k))(-1))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool)(-1))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tlist(k))(-1))))(cons($co("set/from-list")(kk(tfns(cons(tlist(k))(nil))(tset(k))(-1))))(cons($co("map/from-list")(kv(tfns(cons(tlist(t$co(k)(v)))(nil))(tmap(k)(v))(-1))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(t$co(k)(v)))(-1))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring)(-1))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring)(-1))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v"))(-1))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring)(-1))(cons(vbl("v"))(nil)))(tstring)(-1))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring)(-1))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v"))(-1))))(nil))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")($co(set$slnil)($co(nil)(tcon("()")(-1)))))(cons($co(",")($co(set$slfrom_list(cons("a")(cons("b")(nil))))($co(cons(a)(cons(b)(nil)))(t$co(a)(b)))))(nil))))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("float")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(cons($co("map")($co(2)(set$slnil)))(cons($co("set")($co(1)(set$slnil)))(cons($co("->")($co(2)(set$slnil)))(nil)))))))))(map$slnil))(vbl("b")))(vbl("a")))(generic(cons("k")(nil))))(generic(cons("k")(cons("v")(nil)))))(vbl("v2")))(vbl("v")))(vbl("k"));
+const builtin_env = ((k) => ((v) => ((v2) => ((kv) => ((kk) => ((a) => ((b) => tenv(map$slfrom_list(cons($co("+")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint)(-1))))(cons($co("-")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint)(-1))))(cons($co(">")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("<")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool)(-1))))(cons($co("!=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool)(-1))))(cons($co(">=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("<=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co(",")(generic(cons("a")(cons("b")(nil)))(tfns(cons(a)(cons(b)(nil)))(t$co(a)(b))(-1))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring)(-1))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint))(-1))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1)))(-1))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v))(-1))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v))(-1))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v))(-1))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2)(-1))(cons(tmap(k)(v))(nil)))(tmap(k)(v2))(-1))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v))(-1))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(v))(-1))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(k))(-1))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool)(-1))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tlist(k))(-1))))(cons($co("set/from-list")(kk(tfns(cons(tlist(k))(nil))(tset(k))(-1))))(cons($co("map/from-list")(kv(tfns(cons(tlist(t$co(k)(v)))(nil))(tmap(k)(v))(-1))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(t$co(k)(v)))(-1))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring)(-1))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring)(-1))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v"))(-1))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring)(-1))(cons(vbl("v"))(nil)))(tstring)(-1))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring)(-1))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v"))(-1))))(nil))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")($co(nil)($co(nil)(tcon("()")(-1)))))(cons($co(",")($co(cons("a")(cons("b")(nil)))($co(cons(a)(cons(b)(nil)))(t$co(a)(b)))))(nil))))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("float")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(cons($co("map")($co(2)(set$slnil)))(cons($co("set")($co(1)(set$slnil)))(cons($co("->")($co(2)(set$slnil)))(nil)))))))))(map$slnil))(vbl("b")))(vbl("a")))(generic(cons("k")(nil))))(generic(cons("k")(cons("v")(nil)))))(vbl("v2")))(vbl("v")))(vbl("k"));
 
 const concat = (lists) => (($target) => {
 if ($target.type === "nil") {
@@ -463,6 +463,118 @@ return `forall ${join(" ")(vbls)} : ${type_$gts(type)}`
 throw new Error('Failed to match. ' + valueToString($target));
 })(set$slto_list(vbls));
 
+const ex$slany = ({type: "ex/any"})
+const ex$slconstructor = (v0) => (v1) => (v2) => ({type: "ex/constructor", 0: v0, 1: v1, 2: v2})
+const ex$slor = (v0) => (v1) => ({type: "ex/or", 0: v0, 1: v1})
+const tcon_and_args = (type) => (coll) => (l) => (($target) => {
+if ($target.type === "tvar") {
+return fatal(`Type not resolved ${int_to_string(l)}`)
+}
+if ($target.type === "tcon") {
+{
+let name = $target[0];
+return $co(name)(coll)
+}
+}
+if ($target.type === "tapp") {
+{
+let target = $target[0];
+let arg = $target[1];
+return tcon_and_args(target)(cons(arg)(coll))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(type);
+
+const any_list = (arity) => loop(arity)((arity) => (recur) => (($target) => {
+if ($target === true) {
+return nil
+}
+return cons(ex$slany)(recur(_(arity)(1)))
+throw new Error('Failed to match. ' + valueToString($target));
+})($eq(0)(arity)));
+
+const any = (f) => (lst) => (($target) => {
+if ($target.type === "nil") {
+return false
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return (($target) => {
+if ($target === true) {
+return true
+}
+return any(f)(rest)
+throw new Error('Failed to match. ' + valueToString($target));
+})(f(one))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(lst);
+
+const default_matrix = (matrix) => concat(map((row) => (($target) => {
+if ($target.type === "cons" &&
+$target[0].type === "ex/any") {
+{
+let rest = $target[1];
+return cons(rest)(nil)
+}
+}
+if ($target.type === "cons" &&
+$target[0].type === "ex/or") {
+{
+let left = $target[0][0];
+let right = $target[0][1];
+let rest = $target[1];
+return default_matrix(cons(cons(left)(rest))(cons(cons(right)(rest))(nil)))
+}
+}
+return nil
+throw new Error('Failed to match. ' + valueToString($target));
+})(row))(matrix));
+
+const fold_ex_pat = (init) => (pat) => (f) => (($target) => {
+if ($target.type === "ex/or") {
+{
+let left = $target[0];
+let right = $target[1];
+return f(f(init)(left))(right)
+}
+}
+return f(init)(pat)
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat);
+
+const group_constructors = (tenv) => (gid) => (($target) => {
+if ($target === "int") {
+return nil
+}
+if ($target === "bool") {
+return cons("true")(cons("false")(nil))
+}
+if ($target === "string") {
+return nil
+}
+return (({2: types}) => (($target) => {
+if ($target.type === "none") {
+return fatal(`Unknown type name ${gid}`)
+}
+if ($target.type === "some" &&
+$target[0].type === ",") {
+{
+let names = $target[0][1];
+return set$slto_list(names)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(types)(gid)))(tenv)
+throw new Error('Failed to match. ' + valueToString($target));
+})(gid);
+
+const fold_ex_pats = (init) => (pats) => (f) => foldl(init)(pats)((init) => (pat) => fold_ex_pat(init)(pat)(f));
+
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -482,6 +594,47 @@ const tdef = (v0) => (v1) => (v2) => (v3) => ({type: "tdef", 0: v0, 1: v1, 2: v2
 const texpr = (v0) => (v1) => ({type: "texpr", 0: v0, 1: v1})
 const tdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "tdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
 const ttypealias = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "ttypealias", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+const specialized_matrix = (constructor) => (arity) => (matrix) => concat(map(specialize_row(constructor)(arity))(matrix));
+
+
+const specialize_row = (constructor) => (arity) => (row) => (($target) => {
+if ($target.type === "nil") {
+return fatal("Can't specialize an empty row.")
+}
+if ($target.type === "cons" &&
+$target[0].type === "ex/any") {
+{
+let rest = $target[1];
+return cons(concat(cons(any_list(arity))(cons(rest)(nil))))(nil)
+}
+}
+if ($target.type === "cons" &&
+$target[0].type === "ex/constructor") {
+{
+let name = $target[0][0];
+let args = $target[0][2];
+let rest = $target[1];
+return (($target) => {
+if ($target === true) {
+return cons(concat(cons(args)(cons(rest)(nil))))(nil)
+}
+return nil
+throw new Error('Failed to match. ' + valueToString($target));
+})($eq(name)(constructor))
+}
+}
+if ($target.type === "cons" &&
+$target[0].type === "ex/or") {
+{
+let left = $target[0][0];
+let right = $target[0][1];
+let rest = $target[1];
+return specialized_matrix(constructor)(arity)(cons(cons(left)(rest))(cons(cons(right)(rest))(nil)))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(row);
+
 const tenv$slfree = ({0: values}) => foldr(set$slnil)(map(scheme$slfree)(map$slvalues(values)))(set$slmerge);
 
 const type$slapply = (subst) => (type) => (($target) => {
@@ -558,7 +711,7 @@ $target[0][1].type === ",") {
 let free = $target[0][0];
 let cargs = $target[0][1][0];
 let cres = $target[0][1][1];
-return $gt$gt$eq(make_subst_for_free(free)(l))((subst) => $lt_($co(map(type$slapply(subst))(cargs))(type$slapply(subst)(cres))))
+return $gt$gt$eq(make_subst_for_free(set$slfrom_list(free))(l))((subst) => $lt_($co(map(type$slapply(subst))(cargs))(type$slapply(subst)(cres))))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -627,6 +780,89 @@ return tcon("cst")(l)
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(quot);
+
+const pattern_to_ex_pattern = (tenv) => ({1: type, 0: pattern}) => (($target) => {
+if ($target.type === "pvar") {
+return ex$slany
+}
+if ($target.type === "pany") {
+return ex$slany
+}
+if ($target.type === "pstr") {
+{
+let str = $target[0];
+return ex$slconstructor(str)("string")(nil)
+}
+}
+if ($target.type === "pprim" &&
+$target[0].type === "pint") {
+{
+let v = $target[0][0];
+return ex$slconstructor(int_to_string(v))("int")(nil)
+}
+}
+if ($target.type === "pprim" &&
+$target[0].type === "pbool") {
+{
+let v = $target[0][0];
+return ex$slconstructor((($target) => {
+if ($target === true) {
+return "true"
+}
+return "false"
+throw new Error('Failed to match. ' + valueToString($target));
+})(v))("bool")(nil)
+}
+}
+if ($target.type === "pcon") {
+{
+let name = $target[0];
+let args = $target[2];
+let l = $target[3];
+return (({1: targs, 0: tname}) => (({1: tcons}) => (({1: {1: cres, 0: cargs}, 0: free_names}) => ((subst) => ex$slconstructor(name)(tname)(map(pattern_to_ex_pattern(tenv))(zip(args)(map(type$slapply(subst))(cargs)))))(map$slfrom_list(zip(free_names)(targs))))((($target) => {
+if ($target.type === "none") {
+return fatal(`Unknown type constructor ${name}`)
+}
+if ($target.type === "some") {
+{
+let v = $target[0];
+return v
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(tcons)(name))))(tenv))(tcon_and_args(type)(nil)(l))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(pattern);
+
+const find_gid = (heads) => fold_ex_pats(none)(heads)((gid) => (pat) => (($target) => {
+if ($target.type === "ex/constructor") {
+{
+let id = $target[1];
+return (($target) => {
+if ($target.type === "none") {
+return some(id)
+}
+if ($target.type === "some") {
+{
+let oid = $target[0];
+return (($target) => {
+if ($target === true) {
+return fatal("Constructors with different group IDs in the same position.")
+}
+return some(id)
+throw new Error('Failed to match. ' + valueToString($target));
+})($ex$eq(oid)(id))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(gid)
+}
+}
+return gid
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat));
 
 const scheme$slapply = (subst) => ({1: type, 0: vbls}) => forall(vbls)(type$slapply(map_without(subst)(vbls))(type));
 
@@ -751,6 +987,7 @@ let l = $target[1];
 return foldl(target)(args)((a) => (b) => tapp(a)(b)(l))
 }
 }
+return target
 throw new Error('Failed to match. ' + valueToString($target));
 })(target))(map(type$slresolve_aliases(aliases))(reverse(map(fst)(args)))))(type$slunroll_app(type));
 
@@ -760,11 +997,172 @@ const scope$slapply_$gt = apply_$gt(scope$slapply);
 
 const scheme$slapply_$gt = apply_$gt(scheme$slapply);
 
+const args_if_complete = (tenv) => (matrix) => ((heads) => ((gid) => (($target) => {
+if ($target.type === "none") {
+return map$slnil
+}
+if ($target.type === "some") {
+{
+let gid = $target[0];
+return ((found) => (($target) => {
+if ($target.type === "nil") {
+return map$slnil
+}
+{
+let constrs = $target;
+return loop(constrs)((constrs) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return found
+}
+if ($target.type === "cons") {
+{
+let id = $target[0];
+let rest = $target[1];
+return (($target) => {
+if ($target.type === "none") {
+return map$slnil
+}
+if ($target.type === "some") {
+return recur(rest)
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(found)(id))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(constrs))
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(group_constructors(tenv)(gid)))(map$slfrom_list(fold_ex_pats(nil)(heads)((found) => (head) => (($target) => {
+if ($target.type === "ex/constructor") {
+{
+let id = $target[0];
+let args = $target[2];
+return cons($co(id)(length(args)))(found)
+}
+}
+return found
+throw new Error('Failed to match. ' + valueToString($target));
+})(head))))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(gid))(find_gid(heads)))(map((row) => (($target) => {
+if ($target.type === "nil") {
+return fatal("is-complete called with empty row")
+}
+if ($target.type === "cons") {
+{
+let head = $target[0];
+return head
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(row))(matrix));
+
 const tenv$slapply = (subst) => ({3: aliases, 2: types, 1: tcons, 0: values}) => tenv(scope$slapply(subst)(values))(tcons)(types)(aliases);
 
 const tenv$slapply_$gt = apply_$gt(tenv$slapply);
 
-const add$sldeftype = ({3: aliases, 2: types, 1: tcons}) => (name) => (args) => (constrs) => (l) => ((free) => ((res) => ((parsed_constrs) => tenv(map$slfrom_list(map(({1: {1: {1: res, 0: args}, 0: free}, 0: name}) => $co(name)(forall(free)(tfns(args)(res)(l))))(parsed_constrs)))(map$slfrom_list(parsed_constrs))(map$slset(map$slnil)(name)($co(length(args))(set$slfrom_list(map(fst)(constrs)))))(map$slnil))(map(({1: {1: {0: args}}, 0: name}) => ((args) => ((args) => $co(name)($co(free)($co(args)(res))))(map(type$slresolve_aliases(aliases))(args)))(map(type$slcon_to_var(free))(args)))(constrs)))(foldl(tcon(name)(l))(args)((inner) => ({1: l, 0: name}) => tapp(inner)(tvar(name)(l))(l))))(set$slfrom_list(map(fst)(args)));
+const add$sldeftype = ({3: aliases, 2: types, 1: tcons}) => (name) => (args) => (constrs) => (l) => ((free) => ((free_set) => ((res) => ((parsed_constrs) => tenv(map$slfrom_list(map(({1: {1: {1: res, 0: args}, 0: free}, 0: name}) => $co(name)(forall(set$slfrom_list(free))(tfns(args)(res)(l))))(parsed_constrs)))(map$slfrom_list(parsed_constrs))(map$slset(map$slnil)(name)($co(length(args))(set$slfrom_list(map(fst)(constrs)))))(map$slnil))(map(({1: {1: {0: args}}, 0: name}) => ((args) => ((args) => $co(name)($co(free)($co(args)(res))))(map(type$slresolve_aliases(aliases))(args)))(map(type$slcon_to_var(free_set))(args)))(constrs)))(foldl(tcon(name)(l))(args)((inner) => ({1: l, 0: name}) => tapp(inner)(tvar(name)(l))(l))))(set$slfrom_list(free)))(map(fst)(args));
+
+const is_useful = (tenv) => (matrix) => (row) => ((head_and_rest) => (($target) => {
+if ($target.type === "none") {
+return false
+}
+if ($target.type === "some" &&
+$target[0].type === ",") {
+{
+let head = $target[0][0];
+let rest = $target[0][1];
+return (($target) => {
+if ($target.type === "ex/constructor") {
+{
+let id = $target[0];
+let args = $target[2];
+return is_useful(tenv)(specialized_matrix(id)(length(args))(matrix))(concat(cons(args)(cons(rest)(nil))))
+}
+}
+if ($target.type === "ex/any") {
+return (($target) => {
+if ($target.type === "nil") {
+return (($target) => {
+if ($target.type === "nil") {
+return true
+}
+{
+let defaults = $target;
+return is_useful(tenv)(defaults)(rest)
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(default_matrix(matrix))
+}
+{
+let alts = $target;
+return any(({1: alt, 0: id}) => is_useful(tenv)(specialized_matrix(id)(alt)(matrix))(concat(cons(any_list(alt))(cons(rest)(nil)))))(alts)
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slto_list(args_if_complete(tenv)(matrix)))
+}
+if ($target.type === "ex/or") {
+{
+let left = $target[0];
+let right = $target[1];
+return (($target) => {
+if ($target === true) {
+return true
+}
+return is_useful(tenv)(matrix)(cons(right)(rest))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_useful(tenv)(matrix)(cons(left)(rest)))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(head)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(head_and_rest))((($target) => {
+if ($target.type === "nil") {
+return none
+}
+if ($target.type === "cons" &&
+$target[0].type === "nil") {
+return none
+}
+if ($target.type === "cons") {
+return (($target) => {
+if ($target.type === "nil") {
+return none
+}
+if ($target.type === "cons") {
+{
+let head = $target[0];
+let rest = $target[1];
+return some($co(head)(rest))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(row)
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(matrix));
+
+const is_exhaustive = (tenv) => (matrix) => (($target) => {
+if ($target === true) {
+return false
+}
+return true
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_useful(tenv)(matrix)(cons(ex$slany)(nil)));
+
+const check_exhaustiveness = (tenv) => (target_type) => (patterns) => (l) => $gt$gt$eq(type$slapply_$gt(target_type))((target_type) => $gt$gt$eq($lt_(map((pat) => cons(pattern_to_ex_pattern(tenv)($co(pat)(target_type)))(nil))(patterns)))((matrix) => (($target) => {
+if ($target === true) {
+return $lt_($unit)
+}
+return fatal(`Match not exhaustive ${int_to_string(l)}`)
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_exhaustive(tenv)(matrix))));
 
 const infer$slexpr_inner = (tenv) => (expr) => (($target) => {
 if ($target.type === "evar") {
@@ -837,6 +1235,14 @@ let l = $target[2];
 return infer$slexpr(tenv)(elambda(cons(one)(nil))(elambda(rest)(body)(l))(l))
 }
 }
+if ($target.type === "elambda" &&
+$target[0].type === "nil") {
+{
+let body = $target[1];
+let l = $target[2];
+return fatal("No args to lambda")
+}
+}
 if ($target.type === "eapp" &&
 $target[1].type === "cons" &&
 $target[1][1].type === "nil") {
@@ -899,12 +1305,20 @@ let l = $target[2];
 return infer$slexpr(tenv)(elet(cons(one)(nil))(elet(more)(body)(l))(l))
 }
 }
+if ($target.type === "elet" &&
+$target[0].type === "nil") {
+{
+let body = $target[1];
+let l = $target[2];
+return fatal("No bindings in let")
+}
+}
 if ($target.type === "ematch") {
 {
 let target = $target[0];
 let cases = $target[1];
 let l = $target[2];
-return $gt$gt$eq(infer$slexpr(tenv)(target))((target_type) => $gt$gt$eq(new_type_var("match result")(l))((result_type) => $gt$gt$eq(map_$gt(({1: body, 0: pat}) => $gt$gt$eq(infer$slpattern(tenv)(pat))(({1: scope, 0: type}) => $gt$gt$eq(unify(type)(target_type)(l))((_) => $gt$gt$eq(scope$slapply_$gt(scope))((scope) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => infer$slexpr(bound_env)(body))))))(cases))((all_results) => $gt$gt$eq(do_$gt((one_result) => $gt$gt$eq($lt_subst)((subst) => unify(type$slapply(subst)(one_result))(type$slapply(subst)(result_type))(l)))(all_results))((_) => type$slapply_$gt(result_type)))))
+return $gt$gt$eq(infer$slexpr(tenv)(target))((target_type) => $gt$gt$eq(new_type_var("match result")(l))((result_type) => $gt$gt$eq(map_$gt(({1: body, 0: pat}) => $gt$gt$eq(infer$slpattern(tenv)(pat))(({1: scope, 0: type}) => $gt$gt$eq(unify(type)(target_type)(l))((_) => $gt$gt$eq(scope$slapply_$gt(scope))((scope) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => infer$slexpr(bound_env)(body))))))(cases))((all_results) => $gt$gt$eq(do_$gt((one_result) => $gt$gt$eq($lt_subst)((subst) => unify(type$slapply(subst)(one_result))(type$slapply(subst)(result_type))(l)))(all_results))((_) => $gt$gt$eq(check_exhaustiveness(tenv)(target_type)(map(fst)(cases))(l))((_) => type$slapply_$gt(result_type))))))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
