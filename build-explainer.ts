@@ -39,6 +39,7 @@ structured-editor.json
 thih.clj
 thih.js
 thih.json
+syntax-cheatsheet.json
 `
     .trim()
     .split('\n');

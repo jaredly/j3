@@ -22,9 +22,7 @@ false
 
 "Hello ${name}"
 
-(** Note that, unlike javascript, the expressions you put inside a string must themselves be of type string, otherwise you'll get a type error: **)
-
-"Hello ${10}"
+(** Note that, unlike javascript, the expressions you put inside a string must themselves be of type string, otherwise you'll get a type error. **)
 
 "Hello ${(int-to-string 10)}"
 
