@@ -2917,7 +2917,8 @@ $target[0][1][1].type === "cons") {
 let args = $target[0][1][0][0];
 let body = $target[0][1][1][0];
 let rest = $target[0][1][1][1];
-return $gt$gt$eq(parse_type(body))((body) => $gt$gt$eq(map_$gt(parse_type)(args))((args) => $gt$gt$eq(do_$gt(unexpected("extra item in type"))(rest))((_) => $lt_(foldl(body)(rev(args)(nil))((body) => (arg) => tapp(tapp(tcon("->")(-1))(arg)(-1))(body)(-1))))))
+let l = $target[1];
+return $gt$gt$eq(parse_type(body))((body) => $gt$gt$eq(map_$gt(parse_type)(args))((args) => $gt$gt$eq(do_$gt(unexpected("extra item in type"))(rest))((_) => $lt_(foldl(body)(rev(args)(nil))((body) => (arg) => tapp(tapp(tcon("->")(l))(arg)(l))(body)(l))))))
 }
 }
 if ($target.type === "cst/list" &&
