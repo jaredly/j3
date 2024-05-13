@@ -1008,7 +1008,8 @@
                                                                    subst <-subst
                                                                    _     (unify (type-apply subst result) body l)
                                                                    subst <-subst]
-                                                                   (<- (, (type-apply subst target-type) (type-apply subst result))))))]
+                                                                   (<- (, (type-apply subst target-type) (type-apply subst result))))))
+                                     ()                (check-exhaustiveness tenv target-type (map cases fst) l)]
                                      (<- result-type))
         _                        (<-err
                                      (type-error
@@ -1146,7 +1147,8 @@
             (map/from-list
             [(, "int" (, 0 set/nil -1))
                 (, "string" (, 0 set/nil -1))
-                (, "bool" (, 0 set/nil -1))])
+                (, "bool" (, 0 set/nil -1))
+                (, "," (, 2 (set/from-list [","]) -1))])
             map/nil))
 
 (run/record (infer basic (@ (+ 2 3))))
@@ -1158,7 +1160,8 @@
         basic
             (@
             (match 1
-                1 1))))
+                1 1
+                _ 0))))
 
 (defn type-error->s [err]
     (match err
@@ -1205,7 +1208,8 @@
         (,
         (@
             (match 1
-                1 1))
+                1 1
+                _ 0))
             "int")
         ; Exploration
         (, (@ (let [mid (, 1 (fn [x] x))] mid)) "(, int (fn [a] a))")
