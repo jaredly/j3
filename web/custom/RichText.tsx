@@ -13,6 +13,8 @@ import { Reg } from './types';
 import { useAutoFocus } from './useAutoFocus';
 import { MNode } from '../../src/types/mcst';
 
+import { makeTrackChanges } from './makeTrackChanges';
+
 export const RichText = ({
     initial,
     // onChange,
@@ -32,10 +34,12 @@ export const RichText = ({
 }) => {
     // const state = useNode
     const store = useGetStore();
+    const tc = React.useMemo(() => makeTrackChanges(store, idx), []);
     // Creates a new editor instance.
     const editor = useCreateBlockNote({
         placeholders: { default: '...' },
         initialContent: initial,
+        _tiptapOptions: { extensions: tc ? [tc as any] : [] },
     });
     React.useMemo(() => {
         const configured = editor._tiptapEditor.extensionManager.extensions;
@@ -106,10 +110,10 @@ export const RichText = ({
             style={{
                 minWidth: 400,
                 maxWidth: 1000,
-                outline:
-                    trackChanges !== undefined
-                        ? '1px solid rgb(20,155,20)'
-                        : undefined,
+                // outline:
+                //     trackChanges !== undefined
+                //         ? '1px solid rgb(20,155,20)'
+                //         : undefined,
             }}
             className="rich-text"
             // ref={node}

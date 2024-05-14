@@ -3,7 +3,7 @@
     Notable differences:
     - we're putting the "substitution list" into the state monad, which is less bug-prone and results in code that's easier to think about in my opinion
     - because we actually will use this to self-host, we need to support pattern matching, match statements, and custom data types. This also makes the "type environment" somewhat more complex.
-    This document extends the "Self-Hosted Type Inference" document, adding Monadic Error Handling and "Hover for Type" functionality. **)
+    This document extends the [Self-Hosted Type Inference](/algw-s2) document, adding Monadic Error Handling and "Hover for Type" functionality. Changes are highlighted in green, and you can hover any changed node to see the previous version. Sections with subordinate changes have their handle (in the left gutter) outlined in green as well. **)
 
 (** ## Prelude **)
 
@@ -469,29 +469,29 @@
 
 (def <-next-idx
     (let-> [
-        (, idx subst records) <-state
-        _                     (state-> (, (+ idx 1) subst records))]
+        (, idx subst types) <-state
+        _                   (state-> (, (+ idx 1) subst types))]
         (<- idx)))
 
 (def <-subst (let-> [(, _ subst _) <-state] (<- subst)))
 
 (defn subst-> [new-subst]
     (let-> [
-        (, idx subst records) <-state
-        _                     (state-> (, idx (compose-subst new-subst subst) records))]
+        (, idx subst types) <-state
+        _                   (state-> (, idx (compose-subst new-subst subst) types))]
         (<- ())))
 
 ((** This overwrites the substitution map (without composing), returning the old substitution map. It is used for isolating a section of the algorithm, for performance reasons. **)
     defn subst-reset-> [new-subst]
     (let-> [
-        (, idx old-subst records) <-state
-        _                         (state-> (, idx new-subst records))]
+        (, idx old-subst types) <-state
+        _                       (state-> (, idx new-subst types))]
         (<- old-subst)))
 
 (def reset-state->
     (let-> [
-        (, _ _ records) <-state
-        _               (state-> (, 0 map/nil records))]
+        (, _ _ types) <-state
+        _             (state-> (, 0 map/nil types))]
         (<- ())))
 
 (** These are monadified versions of the */apply functions from above; they "apply the current substitution". **)

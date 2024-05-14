@@ -69,7 +69,10 @@ export const NSDragger = ({
                 cursor: 'pointer',
                 marginRight: 12,
                 color: hover || cm ? 'white' : '#444',
-                opacity: hover || cm || errs || ns.collapsed === true ? 1 : 0.6,
+                opacity:
+                    hover || cm || errs || trackChange || ns.collapsed === true
+                        ? 1
+                        : 0.6,
                 transition: '.2s ease opacity',
                 position: 'relative',
                 width: 30,
@@ -95,9 +98,11 @@ export const NSDragger = ({
         >
             <span
                 style={{
-                    outline: trackChange
-                        ? '2px dotted rgb(50 100 30)'
-                        : undefined,
+                    // outline: trackChange
+                    //     ? '2px dotted rgb(50 100 30)'
+                    //     : undefined,
+                    backgroundColor: trackChange ? 'rgb(20 36 20)' : undefined,
+                    borderRadius: 3,
                 }}
             >
                 [

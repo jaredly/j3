@@ -14,7 +14,7 @@ ok this is cool
 
 - [x] hover lookin fresh
 - [x] got to indicate in the "collapse" dealio that there are changed children
-- [ ] add a command balette thing to allow clearing of 'trackChanges' prev.
+- [x] add a command balette thing to allow clearing of 'trackChanges' prev.
 - [ ] deleting a top shoudl delete the stuff
   - and it should invalidate things that depended on it
   - changing a name should do that tooooo

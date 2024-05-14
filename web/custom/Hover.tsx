@@ -142,7 +142,7 @@ export const Hover = ({}: {}) => {
                                     ? 'Type'
                                     : f.contents.node
                                     ? 'Previous Version'
-                                    : 'Node was added'}
+                                    : 'This Node was added'}
                             </div>
                         ) : null}
                         {f.contents.type === 'text' ? (

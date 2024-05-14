@@ -3,6 +3,12 @@ import { NUIState } from '../web/custom/UIState';
 import equal from 'fast-deep-equal';
 
 const [_, __, source, sink, message] = process.argv;
+if (!sink) {
+    const state1: NUIState = JSON.parse(readFileSync(source, 'utf-8'));
+    delete state1.trackChanges;
+    writeFileSync(source, JSON.stringify(state1));
+    process.exit(0);
+}
 if (!source || !sink || !message) {
     console.log('Need: source sink message');
     process.exit(2);

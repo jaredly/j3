@@ -46,6 +46,7 @@
         "@linaria/react": "^4.3.8",
         "@linaria/vite": "^4.2.11",
         "@observablehq/plot": "^0.6.11",
+        "@tiptap/core": "^2.4.0",
         "@tiptap/pm": "^2",
         "@types/babel__generator": "^7.6.4",
         "@types/jest": "^29.2.5",
