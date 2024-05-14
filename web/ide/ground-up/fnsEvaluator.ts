@@ -117,7 +117,7 @@ export const fnsEvaluator = (
                     return;
                 }
                 const result = this.addStatements(
-                    group.map((g) => ({ stmt: g.stmt, allNames: g.allNames })),
+                    group.map((g) => ({ stmt: g.stmt, names: g.allNames })),
                     env,
                     {},
                     {},
