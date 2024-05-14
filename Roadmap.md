@@ -1,5 +1,15 @@
 
-- [ ] use all_names on the editor-end
+- [x] use all_names on the editor-end
+- [ ] use the `usages` from all_names on the editor end of things
+- [ ] ditch the usage tracking from algw-fast
+- [ ] figure out what I want to do with algw-s2 now that it has been ... fancied up.
+
+OOOOOH OK
+SO
+WHAT IF
+you could *switch between versions*. Yes let's do that.
+so we can really get a feel for the difference.
+maybe most relevant on the "playground" page?
 
 # Sprucing algw-s2 up to be the thing we always wanted
 

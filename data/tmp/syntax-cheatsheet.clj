@@ -66,6 +66,18 @@ false
     y (+ y 2)]
     y)
 
+(** ## Global bindings with def **)
+
+(def age 10)
+
+(+ age 2)
+
+(** Feel free to define things "out of order"; they will be evaluated in the correct dependency order. **)
+
+(plus21 2)
+
+(def plus21 (+ 21))
+
 (** ## Custom types with deftype **)
 
 (** deftype is the way to define new custom types, similar to type X = in TypeScript, the data X declaration in Haskell, or enum X { } in Rust and Swift.
@@ -99,7 +111,8 @@ false
 
 (match "hi"
     "ho" 2
-    "hi" 10)
+    "hi" 10
+    _    15)
 
 (match 10
     0 "is zero"
@@ -122,3 +135,42 @@ false
 (report-age (some 10))
 
 (report-age (none))
+
+(** ## Quoting **)
+
+(** "Quoting" allows us to get at the AST (or CST) at "runtime", so that we can test out our own parser and compiler :) **)
+
+(** @ is for parsing expressions **)
+
+(@ 1)
+
+(@ (, 1 "2 ${a}"))
+
+(** @! is for toplevels **)
+
+(@! (def x 10))
+
+(@!
+    (deftype (option a)
+        (some a)
+            (none)))
+
+(** @t is for types **)
+
+(@t int)
+
+(@t (list bool))
+
+(** @p is for patterns **)
+
+(@p _)
+
+(@p a)
+
+(@p [a 2 ..rest])
+
+(** @@ is for the CST **)
+
+(@@ abc)
+
+(@@ [a "b" {a b} ..cd])

@@ -99,6 +99,7 @@ export const RichText = ({
     // Renders the editor instance using a React component.
     return (
         <BlockNoteView
+            // @ts-ignore
             style={{ minWidth: 400, maxWidth: 1000 }}
             className="rich-text"
             // ref={node}
