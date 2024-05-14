@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { splitGraphemes } from '../../src/parse/parse';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Path } from '../../src/state/path';
 import { UIState, RegMap } from './UIState';
 import { selectWithin } from './calcOffset';

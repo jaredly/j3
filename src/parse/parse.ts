@@ -1,5 +1,4 @@
 // hmm
-import GraphemeSplitter from 'grapheme-splitter';
 import { fixMissingReferences } from '../../web/custom/old-stuff/reduce';
 import { applyMods } from '../getCtx';
 import { applyInferMod, infer } from '../infer/infer';
@@ -13,12 +12,7 @@ import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
 import { nodeToType } from '../to-ast/nodeToType';
 import { Node } from '../types/cst';
 import { Map, NsMap, fromMCST } from '../types/mcst';
-
-const seg = new GraphemeSplitter();
-
-export const splitGraphemes = (text: string) => {
-    return seg.splitGraphemes(text);
-};
+import { splitGraphemes } from './splitGraphemes';
 
 export const parseByCharacter = (
     rawText: string,

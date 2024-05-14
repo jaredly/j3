@@ -9,7 +9,7 @@ import { Path } from '../../src/state/path';
 import { clipboardPrefix, clipboardSuffix } from './ByHand';
 import { Action, NUIState } from './UIState';
 import equal from 'fast-deep-equal';
-import { splitGraphemes } from '../../src/parse/parse';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { goRight } from '../../src/state/goRightUntil';
 import { useGetStore } from './store/StoreCtx';
 // import { Ctx } from '../../src/to-ast/library';

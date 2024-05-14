@@ -1,7 +1,7 @@
 import { Map, MNode, MNodeExtra } from '../types/mcst';
 import { stringText } from '../types/cst';
 import { StateChange, StateUpdate } from './getKeyUpdate';
-import { splitGraphemes } from '../parse/parse';
+import { splitGraphemes } from '../parse/splitGraphemes';
 import { Path } from './path';
 
 export function handleStringText({

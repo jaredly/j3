@@ -1,4 +1,4 @@
-import { splitGraphemes } from '../../src/parse/parse';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 
 export const selectWithin = (
     node: HTMLElement,

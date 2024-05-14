@@ -1,7 +1,7 @@
 import equal from 'fast-deep-equal';
 import React from 'react';
 import { splitNamespaces } from '../../src/db/hash-tree';
-import { splitGraphemes } from '../../src/parse/parse';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { stringBgColor } from '../../src/state/nestedNodes/getNestedNodes';
 import { NNode } from '../../src/state/nestedNodes/NNode';
 import { Ctx } from '../../src/to-ast/Ctx';
