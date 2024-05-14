@@ -1,3 +1,4 @@
+import { traverseMCST } from '../../src/types/mcst';
 import { NUIState, RealizedNamespace } from './UIState';
 import { ImmediateResults } from './store/getImmediateResults';
 import { WorkerResults } from './store/useSyncStore';
@@ -40,4 +41,30 @@ export const hasErrors = (
     return ns.children.some((id) =>
         hasErrors(id, state, { results, workerResults }),
     );
+};
+
+const topHasChanges = (id: number, state: NUIState) => {
+    if (!state.trackChanges) return false;
+    const top = state.map[id];
+    let hasChanges = false;
+    traverseMCST(id, state.map, (id) => {
+        if (hasChanges) return;
+        if (state.trackChanges!.previous[id] !== undefined) {
+            hasChanges = true;
+        }
+    });
+    return hasChanges;
+};
+
+export const hasTrackedChanges = (nsid: number, state: NUIState) => {
+    const ns = state.nsMap[nsid];
+    if (topHasChanges(ns.top, state)) {
+        return true;
+    }
+    for (let child of ns.children) {
+        if (hasTrackedChanges(child, state)) {
+            return true;
+        }
+    }
+    return false;
 };

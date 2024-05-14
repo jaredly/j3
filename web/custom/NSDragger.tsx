@@ -5,7 +5,7 @@ import { isAncestor } from './CardRoot';
 import { Drag } from './NsReg';
 import { NSMenu } from './NSMenu';
 import { useGetStore, useSubscribe } from './store/StoreCtx';
-import { hasErrors } from './hasErrors';
+import { hasErrors, hasTrackedChanges } from './hasErrors';
 
 export const NSDragger = ({
     ns,
@@ -39,6 +39,12 @@ export const NSDragger = ({
     const errs = useSubscribe(
         () => hasErrors(ns.id, store.getState(), store.getResults()),
         (fn) => store.on('results', fn),
+        [ns.id],
+    );
+
+    const trackChange = useSubscribe(
+        () => hasTrackedChanges(ns.id, store.getState()),
+        (fn) => store.on('map', fn),
         [ns.id],
     );
 
@@ -87,17 +93,25 @@ export const NSDragger = ({
                 })
             }
         >
-            [
-            {ns.collapsed === true ? (
-                <span style={{ color: errs ? 'red' : '#aaa' }}>
-                    {ns.children.length}
-                </span>
-            ) : errs ? (
-                '🚨'
-            ) : (
-                '⋯'
-            )}
-            ]
+            <span
+                style={{
+                    outline: trackChange
+                        ? '2px dotted rgb(50 100 30)'
+                        : undefined,
+                }}
+            >
+                [
+                {ns.collapsed === true ? (
+                    <span style={{ color: errs ? 'red' : '#aaa' }}>
+                        {ns.children.length}
+                    </span>
+                ) : errs ? (
+                    '🚨'
+                ) : (
+                    '⋯'
+                )}
+                ]
+            </span>
             {cm ? (
                 <NSMenu mref={mref} setCM={setCM} ns={ns} setPin={setPin} />
             ) : null}

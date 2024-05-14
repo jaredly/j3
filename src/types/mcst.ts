@@ -107,6 +107,58 @@ export type Layout =
           // umm I can't remember. do we need something here?
       };
 
+export const traverseMNode = (
+    node: MNodeContents,
+    map: Map,
+    fn: (id: number) => void,
+) => {
+    switch (node.type) {
+        case 'list':
+        case 'record':
+        case 'array':
+            node.values.forEach((child) => traverseMCST(child, map, fn));
+            return;
+        case 'string':
+            traverseMCST(node.first, map, fn);
+            node.templates.forEach(({ expr, suffix }) => {
+                traverseMCST(expr, map, fn);
+                traverseMCST(suffix, map, fn);
+            });
+            return;
+        case 'recordAccess':
+            traverseMCST(node.target, map, fn);
+            node.items.forEach(
+                (idx) => traverseMCST(idx, map, fn) as accessText & NodeExtra,
+            );
+            return;
+        case 'annot':
+            traverseMCST(node.target, map, fn);
+            traverseMCST(node.annot, map, fn);
+            return;
+        case 'tapply':
+            traverseMCST(node.target, map, fn);
+            node.values.forEach((arg) => traverseMCST(arg, map, fn));
+            return;
+        case 'spread':
+        case 'comment-node':
+            traverseMCST(node.contents, map, fn);
+            return;
+    }
+};
+
+export const traverseMCST = (
+    idx: number,
+    map: Map,
+    fn: (id: number) => void,
+) => {
+    const node = map[idx];
+    if (!node) {
+        return { type: 'blank', loc: -1 };
+    }
+    fn(idx);
+    traverseMNode(node, map, fn);
+};
+
 export const fromMNode = (
     node: MNodeContents,
     map: Map,

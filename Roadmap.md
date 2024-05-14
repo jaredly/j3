@@ -12,6 +12,14 @@ ok this is cool
   - // for atoms, if you /changed/, do a sub-highlight thing on your changes probably?
   - for atoms, if you are changed or new, and your parent is /not new/, then do an outline or underline or something.
 
+- [x] hover lookin fresh
+- [x] got to indicate in the "collapse" dealio that there are changed children
+- [ ] add a command balette thing to allow clearing of 'trackChanges' prev.
+- [ ] deleting a top shoudl delete the stuff
+  - and it should invalidate things that depended on it
+  - changing a name should do that tooooo
+
+
 #
 
 - [x] use all_names on the editor-end

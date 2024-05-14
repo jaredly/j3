@@ -227,10 +227,11 @@ function calculateHovers(
             const prev = state.trackChanges.previous[next.loc];
             // A change!
             if (prev !== undefined) {
-                const parent = state.hover[i - i].idx;
+                // const parent = state.hover[i - i].idx;
                 if (
-                    prev !== null ||
-                    state.trackChanges.previous[parent] !== null
+                    true
+                    // prev !== null
+                    // || state.trackChanges.previous[last.idx] !== null
                 ) {
                     hovers.push({
                         idx: next.loc,
@@ -251,8 +252,8 @@ function calculateHovers(
                             // backgroundColor: 'rgb(36 20 20)',
                         },
                     });
+                    break;
                 }
-                break;
             }
         }
     }

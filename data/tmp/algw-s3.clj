@@ -726,8 +726,6 @@
                                                      ()                          (check-exhaustiveness tenv target-type (map fst cases) l)]
                                                      (type/apply-> result-type))))
 
-;
-
 (,
     (fn [x] (run/nil-> (infer/expr benv-with-pair x)))
         [(, (@ 10) (ok (tcon "int" 4512)))
