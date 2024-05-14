@@ -7,6 +7,8 @@ import { FullEvalator, Produce } from './FullEvalator';
 import { findTops } from './findTops';
 import { slash } from './round-1/bootstrap';
 import { sanitize } from './round-1/sanitize';
+import { AllNames } from './evaluators/interface';
+import { blankAllNames } from './evaluators/analyze';
 
 const evalWith = (text: string, values: Record<string, any>, args: Node[]) => {
     const res = new Function(`{${Object.keys(values).join(',')}}`, text)(
@@ -54,31 +56,66 @@ export const jsEvaluator: FullEvalator<
         };
     },
     analysis: {
-        names(stmt) {
-            if (stmt.type === 'cst' || stmt.type == 'raw-call') return [];
-            return getNames(stmt.raw).map((name) => ({
-                name,
-                kind: 'value',
-                loc: stmt.loc,
-            }));
-        },
-        externalsStmt(stmt) {
-            if (stmt.type === 'cst') return [];
+        allNames(stmt) {
+            const res: AllNames = {
+                global: { declarations: [], usages: [] },
+                local: { declarations: [], usages: [] },
+            };
+            // if (stmt.type === 'cst' || stmt.type == 'raw-call') return res;
+            if (stmt.type === 'cst') return res;
+            if (stmt.type === 'raw') {
+                res.global.declarations = getNames(stmt.raw).map((name) => ({
+                    name,
+                    kind: 'value',
+                    loc: stmt.loc,
+                }));
+            }
+
             const match = [...stmt.raw.matchAll(/^(\w+)\s*=/g)][0];
             const text = match ? stmt.raw.slice(match[0].length) : stmt.raw;
-            return [...text.matchAll(/\w+/g)].map((m) => ({
+            res.global.usages = [...text.matchAll(/\w+/g)].map((m) => ({
                 kind: 'value',
                 name: m[0],
                 loc: -1,
             }));
+
+            return res;
         },
-        externalsExpr(expr) {
-            if (typeof expr === 'string' || expr.type === 'cst') return [];
-            return [...expr.raw.matchAll(/\w+/g)].map((m) => ({
+        // names(stmt) {
+        //     if (stmt.type === 'cst' || stmt.type == 'raw-call') return [];
+        //     return getNames(stmt.raw).map((name) => ({
+        //         name,
+        //         kind: 'value',
+        //         loc: stmt.loc,
+        //     }));
+        // },
+        // externalsStmt(stmt) {
+        //     if (stmt.type === 'cst') return [];
+        //     const match = [...stmt.raw.matchAll(/^(\w+)\s*=/g)][0];
+        //     const text = match ? stmt.raw.slice(match[0].length) : stmt.raw;
+        //     return [...text.matchAll(/\w+/g)].map((m) => ({
+        //         kind: 'value',
+        //         name: m[0],
+        //         loc: -1,
+        //     }));
+        // },
+        // externalsExpr(expr) {
+        //     if (typeof expr === 'string' || expr.type === 'cst') return [];
+        //     return [...expr.raw.matchAll(/\w+/g)].map((m) => ({
+        //         kind: 'value',
+        //         name: m[0],
+        //         loc: -1,
+        //     }));
+        // },
+        allNamesExpr(expr) {
+            const res = blankAllNames();
+            if (typeof expr === 'string' || expr.type === 'cst') return res;
+            res.global.usages = [...expr.raw.matchAll(/\w+/g)].map((m) => ({
                 kind: 'value',
                 name: m[0],
                 loc: -1,
             }));
+            return res;
         },
         stmtSize(stmt) {
             if (stmt.type === 'raw' || stmt.type === 'raw-call') {
@@ -197,7 +234,7 @@ export const jsEvaluator: FullEvalator<
         }
         return { expr: stmt, errors };
     },
-    evaluate(expr, env, meta) {
+    evaluate(expr, allNames, env, meta) {
         if (typeof expr === 'string') {
             return expr;
         }
@@ -211,7 +248,7 @@ export const jsEvaluator: FullEvalator<
         const display: Record<number, Produce> = {};
         const values: Record<string, any> = {};
         const entries = Object.entries(stmts)
-            .map(([key, stmt]) => {
+            .map(([key, { stmt }]) => {
                 if (stmt.type === 'cst') {
                     display[+key] = displayResult
                         ? displayResult(stmt.cst)

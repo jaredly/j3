@@ -115,24 +115,24 @@ export const bootstrap: FullEvalator<
     valueToString,
     valueToNode,
     analysis: {
-        externalsStmt(stmt) {
-            switch (stmt.type) {
-                case 'sdef': {
-                    const res: LocedName[] = [];
-                    dependencies(stmt[1], [], res);
-                    return res;
-                }
-                case 'sexpr': {
-                    const res: LocedName[] = [];
-                    dependencies(stmt[0], [], res);
-                    return res;
-                }
-                case 'sdeftype': {
-                    //
-                }
-            }
-            return [];
-        },
+        // externalsStmt(stmt) {
+        //     switch (stmt.type) {
+        //         case 'sdef': {
+        //             const res: LocedName[] = [];
+        //             dependencies(stmt[1], [], res);
+        //             return res;
+        //         }
+        //         case 'sexpr': {
+        //             const res: LocedName[] = [];
+        //             dependencies(stmt[0], [], res);
+        //             return res;
+        //         }
+        //         case 'sdeftype': {
+        //             //
+        //         }
+        //     }
+        //     return [];
+        // },
         stmtSize() {
             return null;
         },
@@ -142,24 +142,30 @@ export const bootstrap: FullEvalator<
         typeSize() {
             return null;
         },
-        externalsExpr(expr) {
-            const res: LocedName[] = [];
-            dependencies(expr, [], res);
-            return res;
+        allNames(stmt) {
+            throw new Error('i dont think Im using this bootstrap anymore');
         },
-        names(stmt) {
-            switch (stmt.type) {
-                case 'sdef':
-                    return [{ name: stmt[0], kind: 'value', loc: stmt.loc }];
-                case 'sdeftype':
-                    return unwrapArray(stmt[1]).map((m) => ({
-                        name: m[0],
-                        kind: 'value',
-                        loc: stmt.loc,
-                    }));
-            }
-            return [];
+        allNamesExpr(stmt) {
+            throw new Error('i dont think Im using this bootstrap anymore');
         },
+        // externalsExpr(expr) {
+        //     const res: LocedName[] = [];
+        //     dependencies(expr, [], res);
+        //     return res;
+        // },
+        // names(stmt) {
+        //     switch (stmt.type) {
+        //         case 'sdef':
+        //             return [{ name: stmt[0], kind: 'value', loc: stmt.loc }];
+        //         case 'sdeftype':
+        //             return unwrapArray(stmt[1]).map((m) => ({
+        //                 name: m[0],
+        //                 kind: 'value',
+        //                 loc: stmt.loc,
+        //             }));
+        //     }
+        //     return [];
+        // },
     },
     parse(node) {
         const ctx: Ctx = { errors: {}, display: {} };
@@ -183,7 +189,7 @@ export const bootstrap: FullEvalator<
             ),
         };
     },
-    evaluate(expr, env) {
+    evaluate(expr, _, env) {
         return evalExpr(expr, env.values);
     },
     setTracing(idx) {},
@@ -191,7 +197,7 @@ export const bootstrap: FullEvalator<
         const display: Record<number, Produce> = {};
         const values: Record<string, any> = {};
         Object.keys(stmts).forEach((id) => {
-            const stmt = stmts[+id];
+            const { stmt } = stmts[+id];
             switch (stmt.type) {
                 case 'sdef': {
                     try {

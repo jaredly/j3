@@ -4,6 +4,7 @@ import { NUIResults } from './Store';
 import { LocedName } from './sortTops';
 import { Node } from '../../../src/types/cst';
 import { AnyEnv } from './getResults';
+import { AllNames } from '../../ide/ground-up/evaluators/interface';
 
 export type ResultsCache<Stmt> = {
     run: number;
@@ -28,8 +29,7 @@ export type ResultsCache<Stmt> = {
     };
     deps?: {
         [top: number]: {
-            names: LocedName[];
-            deps: LocedName[];
+            allNames: AllNames;
             duplicate?: boolean;
         };
     };
@@ -61,14 +61,16 @@ export type DepsOrNoDeps =
     | {
           type: 'nodeps';
           id: number;
-          names?: null;
-          deps?: null;
+          //   names?: null;
+          //   deps?: null;
+          allNames?: AllNames;
       }
     | {
           type: 'deps';
           id: number;
-          names: LocedName[];
-          deps: LocedName[];
+          allNames: AllNames;
+          //   names: LocedName[];
+          //   deps: LocedName[];
       };
 
 export type ChangesMap = {

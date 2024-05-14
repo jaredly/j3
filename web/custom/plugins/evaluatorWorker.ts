@@ -1,3 +1,4 @@
+import { blankAllNames } from '../../ide/ground-up/evaluators/analyze';
 import { WorkerPlugin } from '../UIState';
 import { add } from '../worker/add';
 
@@ -19,7 +20,7 @@ export const evaluatorWorker: WorkerPlugin<
         errors.forEach(([k, v]) => add(errors_, k, v));
         return {
             parsed: { expr, id: node.loc },
-            deps: evaluator.analysis?.externalsExpr(expr) ?? [],
+            allNames: evaluator.analysis?.allNamesExpr(expr) ?? blankAllNames(),
         };
     },
     infer(parsed, evaluator, tenv) {

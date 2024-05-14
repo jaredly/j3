@@ -3965,4 +3965,4 @@ return bag$slto_list(v)
 }
 return nil
 throw new Error('Failed to match. ' + valueToString($target));
-})(locals_at_top(empty)(tl)(top))))(top$slnames)
+})(locals_at_top(empty)(tl)(top))))((top) => bag$slto_list(top$slnames(top)))

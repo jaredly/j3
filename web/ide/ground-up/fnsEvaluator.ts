@@ -8,7 +8,13 @@ import { Errors, FullEvalator, ProduceItem } from './FullEvalator';
 import { valueToNode } from './bootstrap';
 import { builtins } from './builtins';
 import { Env, Expr, Stmt, Type } from './evaluators/analyze';
-import { Analyze, Compiler, Parser, TypeChecker } from './evaluators/interface';
+import {
+    AllNames,
+    Analyze,
+    Compiler,
+    Parser,
+    TypeChecker,
+} from './evaluators/interface';
 import { findTops } from './findTops';
 import { FnsEnv, TraceMap, sanitizedEnv, withTracing } from './loadEv';
 import { sanitize } from './round-1/sanitize';
@@ -71,7 +77,7 @@ export const fnsEvaluator = (
             }
 
             const errors: Errors = {};
-            const allNames: LocedName[] = [];
+            const allDeclarations: LocedName[] = [];
             let ret: null | string = null;
             const tops = findTops(state);
             const sorted = depSort(
@@ -92,8 +98,9 @@ export const fnsEvaluator = (
                             top,
                             node,
                             stmt,
-                            names: this.analysis!.names(stmt),
-                            deps: this.analysis!.externalsStmt(stmt),
+                            allNames: this.analysis!.allNames(stmt),
+                            // names: this.analysis!.names(stmt),
+                            // deps: this.analysis!.externalsStmt(stmt),
                         };
                     })
                     .filter(filterNulls),
@@ -101,13 +108,16 @@ export const fnsEvaluator = (
 
             sorted.forEach((group) => {
                 if (
-                    group.every((item) => item.names.length === 0) &&
+                    group.every(
+                        (item) =>
+                            item.allNames.global.declarations.length === 0,
+                    ) &&
                     group[0].top.top !== target
                 ) {
                     return;
                 }
                 const result = this.addStatements(
-                    group.map((g) => g.stmt),
+                    group.map((g) => ({ stmt: g.stmt, allNames: g.allNames })),
                     env,
                     {},
                     {},
@@ -123,9 +133,9 @@ export const fnsEvaluator = (
                 }
                 env.js.push((result as any).js);
                 env = result.env;
-                allNames.push(
+                allDeclarations.push(
                     ...group
-                        .flatMap(({ names }) => names)
+                        .flatMap(({ allNames }) => allNames.global.declarations)
                         .filter((n) => n.kind === 'value'),
                 );
             });
@@ -139,7 +149,7 @@ export const fnsEvaluator = (
                 env.js.push(`return ${ret}`);
             } else {
                 env.js.push(
-                    `return {type: 'fns', ${allNames
+                    `return {type: 'fns', ${allDeclarations
                         .map(({ name }) => sanitize(name))
                         .sort()
                         .join(', ')}}`,
@@ -159,30 +169,29 @@ export const fnsEvaluator = (
         ) {
             const display: { [key: number]: ProduceItem[] } = {};
             // const values: Record<string, any> = {};
-            let names: LocedName[] | null = null;
-            if (analyze) {
-                try {
-                    names = Object.values(stmts)
-                        .flatMap((stmt) => analyze.names(stmt))
-                        .filter((n) => n.kind === 'value');
-                } catch (err) {
-                    console.error(`cant get names`, err);
-                    Object.keys(stmts).forEach((k) => {
-                        display[+k] = [
-                            {
-                                type: 'error',
-                                message:
-                                    'Error while getting stmt names ' +
-                                    (err as Error).message,
-                            },
-                        ];
-                    });
-                }
-            }
+            // let names: LocedName[] | null = null;
+            // if (analyze) {
+            //     try {
+            //         names = Object.values(stmts)
+            //             .flatMap((stmt) => analyze.names(stmt))
+            //             .filter((n) => n.kind === 'value');
+            //     } catch (err) {
+            //         console.error(`cant get names`, err);
+            //         Object.keys(stmts).forEach((k) => {
+            //             display[+k] = [
+            //                 {
+            //                     type: 'error',
+            //                     message:
+            //                         'Error while getting stmt names ' +
+            //                         (err as Error).message,
+            //                 },
+            //             ];
+            //         });
+            //     }
+            // }
 
             const res = compileStmt(
                 compiler,
-                analyze,
                 san,
                 Object.values(stmts),
                 env,
@@ -190,7 +199,6 @@ export const fnsEvaluator = (
                 trace,
                 displayResult,
                 top,
-                names,
                 debugShowJs,
             );
 
@@ -213,12 +221,11 @@ export const fnsEvaluator = (
             }
         },
 
-        evaluate(expr, env, meta) {
+        evaluate(expr, allNames, env, meta) {
             const mm = prepareMeta(meta);
 
             const externals =
-                analyze
-                    ?.externalsExpr(expr)
+                allNames.global.usages
                     .filter((n) => n.kind === 'value')
                     .map((n) => n.name) ?? [];
             const { needed, values } = assembleExternals(externals, env, san);
@@ -257,15 +264,14 @@ export const fnsEvaluator = (
 
 const compileStmt = (
     compiler: Compiler<Stmt, Expr>,
-    analyzer: undefined | Analyze<Stmt, Expr, Type>,
     san: any,
-    stmts: Stmt[],
+    stmts: { stmt: Stmt; names?: AllNames }[],
     env: FnsEnv,
     meta: MetaDataMap,
     traceMap: TraceMap,
     renderValue: (v: any) => ProduceItem[] = (v) => [valueToString(v)],
     top: number,
-    namedValues?: null | LocedName[],
+    // namedValues?: null | LocedName[],
     debugShowJs?: boolean,
 ): {
     env: any;
@@ -273,18 +279,13 @@ const compileStmt = (
     values: Record<string, any>;
     js?: string;
 } => {
-    let externals: string[] = [];
-    if (analyzer) {
-        try {
-            externals = stmts
-                .flatMap((stmt) => analyzer.externalsStmt(stmt))
-                .filter((n) => n.kind === 'value')
-                .map((n) => n.name);
-        } catch (err) {
-            console.error('Unable to calculate externals');
-            console.error(err);
-        }
-    }
+    const externals = stmts
+        .flatMap((stmt) => stmt.names?.global.usages ?? [])
+        .filter((n) => n.kind === 'value')
+        .map((n) => n.name);
+    const namedValues = stmts
+        .flatMap((s) => s.names?.global.declarations ?? [])
+        .filter((n) => n.kind === 'value');
     const { needed, values } = assembleExternals(
         externals,
         env,
@@ -294,7 +295,7 @@ const compileStmt = (
 
     let jss;
     try {
-        jss = stmts.map((stmt) => compiler.compileStmt(stmt, meta));
+        jss = stmts.map(({ stmt }) => compiler.compileStmt(stmt, meta));
     } catch (err) {
         console.error(err);
         return {

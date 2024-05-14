@@ -20,6 +20,7 @@ import {
 import { LocedName } from './store/sortTops';
 import { TraceMap } from '../ide/ground-up/loadEv';
 import { displayFunctionIds } from './store/displayFunction';
+import { AllNames } from '../ide/ground-up/evaluators/interface';
 
 export type MetaData = {
     trace?: {
@@ -198,7 +199,7 @@ export type WorkerPlugin<Results, Parsed, Options> = {
         node: Node,
         errors: Errors,
         evaluator: FullEvalator<any, any, any>,
-    ): { parsed: Parsed; deps: LocedName[] } | null;
+    ): { parsed: Parsed; allNames: AllNames } | null;
     infer(
         parsed: Parsed,
         evaluator: FullEvalator<any, any, any>,

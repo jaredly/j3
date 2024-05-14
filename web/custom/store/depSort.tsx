@@ -1,3 +1,4 @@
+import { AllNames } from '../../ide/ground-up/evaluators/interface';
 import { filterNulls } from '../old-stuff/filterNulls';
 import { LocedName } from './sortTops';
 import { unique } from './unique';
@@ -5,14 +6,15 @@ import { unique } from './unique';
 export const depSort = <T,>(
     nodes: ({
         id: number;
-        names: LocedName[];
-        deps: LocedName[];
+        // names: LocedName[];
+        // deps: LocedName[];
+        allNames?: AllNames;
         hidden?: boolean;
     } & T)[],
 ) => {
     const idForName: { [name: string]: number } = {};
     nodes.forEach((node) =>
-        node.names.forEach(
+        node.allNames?.global.declarations.forEach(
             ({ name, kind }) => (idForName[name + ' ' + kind] = node.id),
         ),
     );
@@ -24,11 +26,11 @@ export const depSort = <T,>(
 
     let hasDeps = false;
     nodes.forEach((node) => {
-        if (node.deps.length) hasDeps = true;
+        if (node.allNames?.global.usages.length) hasDeps = true;
         edges[node.id] = unique(
-            node.deps
+            node.allNames?.global.usages
                 .map(({ name, kind }) => idForName[name + ' ' + kind])
-                .filter(filterNulls),
+                .filter(filterNulls) ?? [],
         );
         edges[node.id].forEach((id) => {
             if (!back[id]) {

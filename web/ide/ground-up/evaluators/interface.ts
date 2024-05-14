@@ -10,10 +10,26 @@ export type Parser<Stmt, Expr, SimpleNode> = {
     parseExpr(node: Node): { expr: null | Expr; errors: [number, string][] };
 };
 
+export type AllNames = {
+    global: {
+        declarations: LocedName[];
+        usages: LocedName[];
+    };
+    local: {
+        declarations: number[];
+        usages: {
+            loc: number;
+            decl: number;
+        }[];
+    };
+};
+
 export type Analyze<Stmt, Expr, Type> = {
-    names(stmt: Stmt): LocedName[];
-    externalsStmt(stmt: Stmt): LocedName[];
-    externalsExpr(expr: Expr): LocedName[];
+    allNames(stmt: Stmt): AllNames;
+    allNamesExpr(expr: Expr): AllNames;
+    // names(stmt: Stmt): LocedName[];
+    // externalsStmt(stmt: Stmt): LocedName[];
+    // externalsExpr(expr: Expr): LocedName[];
     stmtSize(stmt: Stmt): number | null;
     exprSize(expr: Expr): number | null;
     typeSize(type: Type): number | null;

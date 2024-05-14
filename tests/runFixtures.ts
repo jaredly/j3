@@ -75,7 +75,7 @@ export const runFixtures = async (fixtures: Fixture[]) => {
                     const names = group.tops.flatMap((t) => {
                         const p = worker.nodes[t].parsed;
                         return p?.type === 'success'
-                            ? p.names.map((n) => n.name)
+                            ? p.allNames?.global.declarations.map((n) => n.name)
                             : [];
                     });
                     if (names.length) {

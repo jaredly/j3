@@ -16,15 +16,13 @@ export const nodeToSortable = (node: NodeResults<any>): Sortable | null => {
     if (node.parsed?.type === 'plugin') {
         return {
             id: node.ns.id,
-            deps: node.parsed.deps,
-            names: [],
+            allNames: node.parsed.allNames,
             isPlugin: true,
         };
     } else if (node.parsed?.type === 'success') {
         return {
             id: node.ns.id,
-            deps: node.parsed.deps,
-            names: node.parsed.names,
+            allNames: node.parsed.allNames,
             isPlugin: false,
         };
     } else {

@@ -2067,15 +2067,15 @@ dot
 
 (,
     (fn [top] (bag/to-list (top/names top)))
-        [(, (@! hi) [(global "hi" (value) 18614 (usage ()))])
-        (, (@! (let [x 10] x)) [(local 18649 (decl)) (local 18650 (usage 18649))])
+        [(, (@! hi) [(global "hi" (value) 19959 (usage ()))])
+        (, (@! (let [x 10] x)) [(local 19978 (decl)) (local 19980 (usage 19978))])
         (,
         (@!
             (match 10
                 a (+ 2 a)))
-            [(local 18673 (decl))
-            (global "+" (value) 18675 (usage ()))
-            (local 18678 (usage 18673))])])
+            [(local 20000 (decl))
+            (global "+" (value) 20002 (usage ()))
+            (local 20004 (usage 20000))])])
 
 (** ## Export **)
 
@@ -2116,4 +2116,4 @@ dot
             (match (locals-at-top empty tl top)
                 (some v) (bag/to-list v)
                 _        [])))
-        top/names)
+        (fn [top] (bag/to-list (top/names top))))

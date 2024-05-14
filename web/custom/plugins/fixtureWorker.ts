@@ -4,6 +4,8 @@ import { WorkerPlugin } from '../UIState';
 import { LocedName } from '../store/sortTops';
 import { Data, Expr, parse, parseExpr } from './Data';
 import { valueToString } from '../../ide/ground-up/valueToString';
+import { AllNames } from '../../ide/ground-up/evaluators/interface';
+import { blankAllNames } from '../../ide/ground-up/evaluators/analyze';
 
 export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
     test: (node: Node) => {
@@ -29,9 +31,13 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
     // },
 
     parse(node, errors, evaluator) {
-        const deps: LocedName[] = [];
-        const parsed = parse(node, parseExpr(evaluator, errors, deps));
-        return parsed ? { parsed, deps } : null;
+        // const deps: LocedName[] = [];
+        const allNames: AllNames = {
+            global: { declarations: [], usages: [] },
+            local: { usages: [], declarations: [] },
+        };
+        const parsed = parse(node, parseExpr(evaluator, errors, allNames));
+        return parsed ? { parsed, allNames } : null;
     },
 
     getErrors(results: {
@@ -60,7 +66,13 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
     process(data, meta, evaluator, traces, env) {
         const setTracing = (idx: number | null) =>
             evaluator.setTracing(idx, traces, env);
-        const evaluate = (expr: Expr) => evaluator.evaluate(expr, env, meta);
+        const evaluate = (expr: Expr) =>
+            evaluator.evaluate(
+                expr,
+                evaluator.analysis?.allNamesExpr(expr) ?? blankAllNames(),
+                env,
+                meta,
+            );
 
         let test: null | Function = null;
         const results: {

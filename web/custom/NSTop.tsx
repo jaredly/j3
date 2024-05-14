@@ -225,8 +225,11 @@ function NSTop({
 
 const nodeName = (node: NodeResults<unknown>) => {
     if (!node) return;
-    if (node.parsed?.type === 'success' && node.parsed.names.length) {
-        const name = node.parsed.names[0];
+    if (
+        node.parsed?.type === 'success' &&
+        node.parsed.allNames?.global.declarations.length
+    ) {
+        const name = node.parsed.allNames.global.declarations[0];
         return {
             ...name,
             style: {

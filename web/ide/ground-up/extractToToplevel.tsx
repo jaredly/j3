@@ -36,7 +36,7 @@ export function extractToToplevel(
     if (!stmt) {
         throw new Error(`no stmt`);
     }
-    const topExternals = ev.analysis.externalsStmt(stmt);
+    const topExternals = ev.analysis.allNames(stmt).global.usages;
     const extMap: Record<string, true> = {};
     topExternals.forEach((ex) => (extMap[ex.name] = true));
 
@@ -49,8 +49,10 @@ export function extractToToplevel(
 
     const externals = unique(
         ev.analysis
-            .externalsStmt(parsed)
-            .filter((ex) => !extMap[ex.name] && ex.kind === 'value')
+            .allNames(parsed)
+            .global.usages.filter(
+                (ex) => !extMap[ex.name] && ex.kind === 'value',
+            )
             .map((n) => n.name),
     );
 

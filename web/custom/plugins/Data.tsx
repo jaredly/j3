@@ -4,6 +4,9 @@ import { Path } from '../../store';
 import { Errors } from '../../ide/ground-up/FullEvalator';
 import { AnyEnv } from '../store/getResults';
 import { LocedName } from '../store/sortTops';
+import { AllNames } from '../../ide/ground-up/evaluators/interface';
+import { assignAllNames } from '../../ide/ground-up/evaluators/analyze';
+import { add } from '../worker/add';
 
 type RefNode = Extract<NNode, { type: 'ref' }> & { path: Path };
 export type LineFixture<Expr> = {
@@ -50,10 +53,14 @@ const parseTuple = (node: Node) => {
 };
 
 export const parseExpr =
-    (evaluator: AnyEnv, errors_: Errors, deps: LocedName[]) => (node: Node) => {
+    (evaluator: AnyEnv, errors_: Errors, allNames: AllNames) =>
+    (node: Node) => {
         const { expr, errors } = evaluator.parseExpr(node);
-        if (expr) {
-            deps.push(...(evaluator.analysis?.externalsExpr(expr) ?? []));
+        errors.forEach(([loc, text]) => {
+            add(errors_, loc, text);
+        });
+        if (expr && evaluator.analysis?.allNamesExpr) {
+            assignAllNames(allNames, evaluator.analysis.allNamesExpr(expr));
         }
         return expr;
     };

@@ -1,5 +1,6 @@
 import { Node } from '../../../src/types/cst';
 import { ProduceItem } from '../../ide/ground-up/FullEvalator';
+import { AllNames } from '../../ide/ground-up/evaluators/interface';
 import { TraceMap } from '../../ide/ground-up/loadEv';
 import { jcst } from '../../ide/ground-up/round-1/j-cst';
 import { ImmediateResults } from '../store/getImmediateResults';
@@ -11,8 +12,8 @@ type Env = { values: { [key: string]: any } };
 
 export type Sortable = {
     id: number;
-    names: LocedName[];
-    deps: LocedName[];
+    // names: LocedName[]; deps: LocedName[];
+    allNames?: AllNames;
     isPlugin: boolean;
 };
 

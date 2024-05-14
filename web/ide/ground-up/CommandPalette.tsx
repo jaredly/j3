@@ -578,7 +578,7 @@ function getJumpToResult(store: Store): SuperCommand {
             const res = results.workerResults.nodes[top.ns.id]?.produce?.filter(
                 (p) => typeof p !== 'string' && p.type === 'type',
             ) as Extract<ProduceItem, { type: 'type' }>[];
-            node.parsed.names.forEach((name) => {
+            node.parsed.allNames?.global.declarations.forEach((name) => {
                 const t =
                     name.kind === 'value'
                         ? res?.find((prod) => prod.name === name.name)

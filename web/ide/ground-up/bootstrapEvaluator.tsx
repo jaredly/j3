@@ -25,7 +25,13 @@ export const bootstrapEvaluator = (
     let benv = bootstrap.init();
     data.stmts.forEach((stmt: stmt & { loc: number }) => {
         if (stmt.type === 'sexpr') return;
-        const res = bootstrap.addStatements({ [0]: stmt }, benv, {}, {}, -1);
+        const res = bootstrap.addStatements(
+            { [0]: { stmt } },
+            benv,
+            {},
+            {},
+            -1,
+        );
         benv = res.env;
     });
     const san = sanitizedEnv(benv.values);
@@ -39,7 +45,7 @@ export const bootstrapEvaluator = (
         valueToString,
         valueToNode,
         setTracing(idx, traceMap) {},
-        addStatements(stmts: Record<number, stmt>, env) {
+        addStatements(stmts: Record<number, { stmt: stmt }>, env) {
             const display: Record<number, Produce> = {};
             const values: Record<string, any> = {};
             let js: string[] = [];
@@ -54,7 +60,7 @@ export const bootstrapEvaluator = (
                 .join(',')}}`;
 
             Object.keys(stmts).forEach((loc) => {
-                const stmt = stmts[+loc];
+                const { stmt } = stmts[+loc];
 
                 if (stmt.type === 'sdef' || stmt.type === 'sdeftype') {
                     let raw;
@@ -158,7 +164,7 @@ export const bootstrapEvaluator = (
                 let res;
                 try {
                     res = this.addStatements(
-                        { [0]: parsed },
+                        { [0]: { stmt: parsed } },
                         env,
                         {},
                         {},
@@ -210,7 +216,7 @@ export const bootstrapEvaluator = (
             };
         },
 
-        evaluate(expr, env) {
+        evaluate(expr, allNames, env) {
             const valArgs = Object.keys(env.values).map(
                 (name) => [name, sanitize(name)] as const,
             );

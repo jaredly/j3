@@ -33,8 +33,9 @@ export function sortTopsWithDeps<Stmt>(
                           ? {
                                 type: 'deps' as const,
                                 id: top,
-                                names: cache.deps[top].names,
-                                deps: cache.deps[top].deps,
+                                // names: cache.deps[top].names,
+                                // deps: cache.deps[top].deps,
+                                allNames: cache.deps[top].allNames,
                             }
                           : null;
                   })
@@ -81,7 +82,7 @@ export function parseNodesAndDeps<
                 // );
                 Object.assign(results.display, cache.nodes[top.top].display);
 
-                if (cache.deps?.[top.top]?.names) {
+                if (cache.deps?.[top.top]?.allNames) {
                     registerNames(cache, top.top, results, idForName);
                 }
                 if (!cache.nodes[top.top].parsed) {
@@ -114,7 +115,7 @@ export function parseNodesAndDeps<
             )
         ) {
             Object.assign(results.display, cache.nodes[top.top].display);
-            if (cache.deps?.[top.top]?.names) {
+            if (cache.deps?.[top.top]?.allNames) {
                 registerNames(cache, top.top, results, idForName);
             }
 
@@ -153,9 +154,9 @@ export function parseNodesAndDeps<
 
         if (stmt && evaluator.analysis) {
             if (changes[top.top].stmt) {
-                const names = evaluator.analysis.names(stmt);
-                const deps = evaluator.analysis.externalsStmt(stmt);
-                cache.deps![top.top] = { names, deps };
+                const allNames = evaluator.analysis.allNames(stmt);
+                // const deps = evaluator.analysis.externalsStmt(stmt);
+                cache.deps![top.top] = { allNames };
                 registerNames(cache, top.top, results, idForName);
             }
         }

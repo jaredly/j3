@@ -83,8 +83,8 @@ export const ShowSearchResults = ({
                 const parsed = r2.nodes[ns]?.parsed;
                 let container;
                 if (parsed?.type === 'success') {
-                    const names = parsed.names;
-                    container = names.length ? names[0].name : '<eval>';
+                    const names = parsed.allNames?.global.declarations;
+                    container = names?.length ? names[0].name : '<eval>';
                 } else if (parsed?.type === 'plugin') {
                     container = '<plugin>';
                 } else {

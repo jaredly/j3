@@ -14,12 +14,14 @@ import { AnyEnv } from './getResults';
 import { Sendable } from '../worker/worker';
 import { workerPlugins } from '../plugins/worker';
 import { errorsListToMap } from './parseNodesAndDeps';
+import { AllNames } from '../../ide/ground-up/evaluators/interface';
 
 export type SuccessParsed<Stmt> = {
     type: 'success';
     stmt: Stmt;
-    names: LocedName[];
-    deps: LocedName[];
+    // names: LocedName[];
+    // deps: LocedName[];
+    allNames?: AllNames;
     size: null | number;
     errors: [number, string][];
     // duplicates?: LocedName[];
@@ -30,7 +32,8 @@ export type PluginParsed = {
     parsed: any;
     // for now, plugins can't produce definitions...
     // but they do have deps.
-    deps: LocedName[];
+    // deps: LocedName[];
+    allNames?: AllNames;
     size: null | number;
 };
 
@@ -232,8 +235,8 @@ export const getImmediateResults = (
     results.jumpToName = { value: {}, type: {}, tcls: {} };
     for (let top of tops) {
         const parsed = results.nodes[top.ns.id].parsed;
-        if (parsed?.type === 'success') {
-            for (let name of parsed.names) {
+        if (parsed?.type === 'success' && parsed.allNames) {
+            for (let name of parsed.allNames.global.declarations) {
                 if (results.jumpToName[name.kind][name.name]) {
                     nodeChanges[name.loc] = top.ns.id;
                     // if (!parsed.duplicates) {
@@ -279,7 +282,7 @@ const getParsed = (
             return {
                 type: 'plugin',
                 parsed: result.parsed,
-                deps: result.deps,
+                allNames: result.allNames,
                 size: null,
             };
         }
@@ -294,13 +297,17 @@ const getParsed = (
         } else {
             // OK we're maybe duplicating this work, sometimes.
             // but I'm fine with it.
-            const deps = evaluator?.analysis?.externalsStmt(stmt) ?? [];
-            const names = evaluator?.analysis?.names(stmt) ?? [];
+
+            // const deps = evaluator?.analysis?.externalsStmt(stmt) ?? [];
+            // const names = evaluator?.analysis?.names(stmt) ?? [];
+            const allNames = evaluator?.analysis?.allNames(stmt);
+
             return {
                 type: 'success',
                 stmt,
-                deps,
-                names,
+                // deps,
+                // names,
+                allNames,
                 size: evaluator.analysis?.stmtSize(stmt) ?? null,
                 errors,
             };

@@ -41,7 +41,7 @@ export const registerNames = (
     results: NUIResults,
     idForName: { [name: string]: number },
 ) => {
-    for (let name of cache.deps![top].names) {
+    for (let name of cache.deps![top].allNames.global.declarations) {
         results.jumpToName[name.name] = name.loc;
         if (name.kind === 'value') {
             if (idForName[name.name] != null) {

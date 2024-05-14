@@ -137,6 +137,7 @@ export const calculateLayout = (
                 ? { type: 'multiline', pos, tightFirst: 0, cw: 0 }
                 : { type: 'flat', width: node.text.length + 1, pos };
         case 'raw-code':
+            if (!node.raw) node.raw = '';
             // return pos === 0 //node.raw.includes('\n')
             //     ? { type: 'multiline', pos, tightFirst: 0, cw: 0 }
             return { type: 'flat', width: node.raw.length + 1, pos };
