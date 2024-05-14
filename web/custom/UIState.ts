@@ -291,6 +291,7 @@ export type RegMap = {
 export type Action =
     | { type: 'undo' }
     | { type: 'redo' }
+    | { type: 'clear-changes'; ids: number[] }
     | { type: 'yank'; expr: DefType | Def; loc: number }
     | { type: 'jump-to-definition'; idx: number }
     | { type: 'highlight' }

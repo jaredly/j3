@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as React from 'react';
 import { Action, NUIState, RegMap } from '../../custom/UIState';
-import { Map } from '../../../src/types/mcst';
+import { Map, traverseMCST } from '../../../src/types/mcst';
 import { Path } from '../../store';
 import { findTops } from './findTops';
 import { CombinedResults, Store } from '../../custom/store/Store';
@@ -514,6 +514,25 @@ const getCommands = (
                 });
             },
         });
+
+        if (state.trackChanges?.previous[idx] !== undefined) {
+            const toClear = [idx];
+            traverseMCST(idx, state.map, (id) => {
+                if (state.trackChanges!.previous[id] !== undefined) {
+                    toClear.push(id);
+                }
+            });
+            commands.push({
+                type: 'plain',
+                title: 'Clear trackChanges for this node & all children',
+                action() {
+                    dispatch({
+                        type: 'clear-changes',
+                        ids: toClear,
+                    });
+                },
+            });
+        }
     }
 
     return commands;

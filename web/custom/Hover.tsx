@@ -123,18 +123,24 @@ export const Hover = ({}: {}) => {
                             ...f.style,
                         }}
                     >
-                        {f.contents.type === 'change' ? (
+                        {f.contents.type === 'change' ||
+                        f.contents.type === 'type' ? (
                             <div
                                 style={{
                                     // fontWeight: 'bold',
                                     fontSize: '80%',
                                     fontFamily: 'Inter',
-                                    backgroundColor: 'rgb(36 20 20)',
+                                    backgroundColor:
+                                        f.contents.type === 'change'
+                                            ? 'rgb(36 20 20)'
+                                            : 'rgb(20 20 36)',
                                     padding: '4px 8px',
                                     color: '#aaa',
                                 }}
                             >
-                                {f.contents.node
+                                {f.contents.type === 'type'
+                                    ? 'Type'
+                                    : f.contents.node
                                     ? 'Previous Version'
                                     : 'Node was added'}
                             </div>

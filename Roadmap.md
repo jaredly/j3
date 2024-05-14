@@ -18,6 +18,8 @@ ok this is cool
 - [ ] deleting a top shoudl delete the stuff
   - and it should invalidate things that depended on it
   - changing a name should do that tooooo
+- [ ] it's weird to report "change" info at a higher level than the "type" info that's coming up ...
+- [ ]
 
 
 #

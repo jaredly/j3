@@ -268,6 +268,29 @@ export const setupSyncStore = (
                 );
             }
 
+            if (
+                state.trackChanges &&
+                state.trackChanges !== lastState.trackChanges
+            ) {
+                Object.keys(state.trackChanges.previous).forEach((k) => {
+                    if (
+                        state.trackChanges!.previous[+k] !==
+                        lastState.trackChanges?.previous[+k]
+                    ) {
+                        nodeChanges[+k] = results.topForLoc[+k];
+                    }
+                });
+                if (lastState.trackChanges?.previous) {
+                    Object.keys(lastState.trackChanges.previous).forEach(
+                        (k) => {
+                            if (!(k in state.trackChanges!.previous)) {
+                                nodeChanges[+k] = results.topForLoc[+k];
+                            }
+                        },
+                    );
+                }
+            }
+
             Object.keys(nodeChanges).forEach((id) => {
                 nodeListeners[id]?.forEach((f) =>
                     f(

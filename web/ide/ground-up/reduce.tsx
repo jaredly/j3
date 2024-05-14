@@ -582,6 +582,18 @@ export const reduce = (
     if (action.type === 'highlight') {
         return { ...state, highlight: calcHighlight(state, usages) };
     }
+    if (action.type === 'clear-changes') {
+        if (!state.trackChanges) return state;
+        const tc: NUIState['trackChanges'] = {
+            ...state.trackChanges,
+            previous: { ...state.trackChanges.previous },
+        };
+        action.ids.forEach((id) => {
+            delete tc.previous[id];
+        });
+
+        return { ...state, trackChanges: tc };
+    }
     // console.time('actionToUpdate');
     const update = actionToUpdate(state, action);
     // console.timeEnd('actionToUpdate');

@@ -38,11 +38,6 @@
         (, [one ..rest] [two ..trest]) [(, one two) ..(zip rest trest)]
         _                              (fatal "Cant zip lists of unequal length")))
 
-(fn [x]
-    (match x
-        []            0
-        [(, a b) .._] 0))
-
 (defn unzip [zipped]
     (match zipped
         []               (, [] [])
