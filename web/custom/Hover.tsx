@@ -97,7 +97,7 @@ export const Hover = ({}: {}) => {
                     top: box.bottom + 5,
                     left: box.left,
                     pointerEvents: 'none',
-                    padding: 8,
+                    // padding: 8,
                     // maxHeight: 500,
                     overflow: 'auto',
                     zIndex: 1000,
@@ -116,27 +116,43 @@ export const Hover = ({}: {}) => {
                                 ? {
                                       borderTop:
                                           '1px solid rgba(200,200,200,0.4)',
-                                      marginTop: 4,
-                                      paddingTop: 4,
+                                      //   marginTop: 4,
+                                      //   paddingTop: 4,
                                   }
                                 : undefined),
                             ...f.style,
                         }}
                     >
+                        {f.contents.type === 'change' ? (
+                            <div
+                                style={{
+                                    // fontWeight: 'bold',
+                                    fontSize: '80%',
+                                    fontFamily: 'Inter',
+                                    backgroundColor: 'rgb(36 20 20)',
+                                    padding: '4px 8px',
+                                    color: '#aaa',
+                                }}
+                            >
+                                {f.contents.node
+                                    ? 'Previous Version'
+                                    : 'Node was added'}
+                            </div>
+                        ) : null}
                         {f.contents.type === 'text' ? (
-                            f.contents.text
+                            <div style={{ padding: 8 }}>{f.contents.text}</div>
                         ) : f.contents.node ? (
-                            <RenderStatic
-                                node={f.contents.node}
-                                parent={
-                                    f.contents.type === 'change'
-                                        ? f.contents.parent
-                                        : undefined
-                                }
-                            />
-                        ) : (
-                            'Node was added'
-                        )}
+                            <div style={{ padding: 8 }}>
+                                <RenderStatic
+                                    node={f.contents.node}
+                                    parent={
+                                        f.contents.type === 'change'
+                                            ? f.contents.parent
+                                            : undefined
+                                    }
+                                />
+                            </div>
+                        ) : null}
                     </div>
                 ))}
             </div>
@@ -198,7 +214,17 @@ function calculateHovers(
         for (let i = state.hover.length - 1; i >= 0; i--) {
             const last = state.hover[i];
             if (last.type === 'ns' || last.type === 'card') break;
-            const prev = state.trackChanges.previous[last.idx];
+
+            const node = state.map[last.idx];
+            let next;
+            try {
+                next = advancePath(state.hover[i], node, state, true);
+            } catch (err) {
+                continue;
+            }
+            if (!next) break;
+
+            const prev = state.trackChanges.previous[next.loc];
             // A change!
             if (prev !== undefined) {
                 const parent = state.hover[i - i].idx;
@@ -207,7 +233,7 @@ function calculateHovers(
                     state.trackChanges.previous[parent] !== null
                 ) {
                     hovers.push({
-                        idx: last.idx,
+                        idx: next.loc,
                         contents: {
                             type: 'change',
                             node: prev
@@ -217,12 +243,12 @@ function calculateHovers(
                                   })
                                 : null,
                             parent:
-                                prev && getIsLet(state, state.hover[i - 1].idx)
+                                prev && getIsLet(state, last.idx)
                                     ? 'let'
                                     : undefined,
                         },
                         style: {
-                            backgroundColor: 'rgb(36 20 20)',
+                            // backgroundColor: 'rgb(36 20 20)',
                         },
                     });
                 }
