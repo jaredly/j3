@@ -5,6 +5,7 @@ import {
     Mods,
     StateChange,
     StateUpdate,
+    UpdateMap,
 } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { Def, DefType, Node } from '../../src/types/ast';
@@ -53,6 +54,11 @@ export type NUIState = {
     nsMap: { [key: number]: RealizedNamespace };
     meta: MetaDataMap;
     evaluator?: string | string[] | null;
+
+    trackChanges?: {
+        previous: UpdateMap;
+        message: string;
+    };
     // config?: {
     //     evaluator: string,
     //     // info ... about ... what kind of evaluator I would be.

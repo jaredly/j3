@@ -11,7 +11,7 @@
     "scripts": {
         "start": "esbuild --bundle src/run.ts --platform=node --sourcemap=inline > ok.js && node --enable-source-maps ok.js ./examples/basic.clj; rm -f ok.js",
         "server": "bun --hot run server.ts",
-        "explainer": "npm run build-web; bun build-explainer.ts; cd web/dist; surge . compiler.jaredforsyth.com",
+        "explainer": "npm run build-web; bun tools/build-explainer.ts; cd web/dist; surge . compiler.jaredforsyth.com",
         "web": "vite web --port 8224 --config vite.config.js",
         "build-web": "vite build web --config vite.config.js",
         "make-walk": "cd ../j2; yarn tx ../j3/src/types/ast.ts ../j3/src/types/walk-ast.ts",
