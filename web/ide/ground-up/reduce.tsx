@@ -26,7 +26,7 @@ import {
 } from '../../custom/old-stuff/reduce';
 import { filterNulls } from '../../custom/old-stuff/filterNulls';
 import { verticalMove } from '../../custom/verticalMove';
-import { newResults } from '../Test';
+import { newResults } from '../newResults';
 import { Algo, Trace } from '../infer/types';
 import { findTops, verifyPath } from './findTops';
 import { evalExpr } from './round-1/bootstrap';

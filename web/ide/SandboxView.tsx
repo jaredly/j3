@@ -11,7 +11,6 @@ import { HiddenInput } from '../custom/HiddenInput';
 import { Menu } from '../custom/Menu';
 import { Root } from '../custom/old-stuff/Root';
 import { UIState } from '../custom/UIState';
-import { IDEAction } from './IDE';
 import { nilt } from '../../src/to-ast/builtins';
 import { getType } from '../../src/get-type/get-types-new';
 import { nodeToString } from '../../src/to-cst/nodeToString';
@@ -23,7 +22,7 @@ export const SandboxView = ({
     dispatch,
 }: {
     state: UIState;
-    dispatch: React.Dispatch<IDEAction>;
+    dispatch: React.Dispatch<any>;
 }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const tops = (state.map[state.root] as ListLikeContents).values;

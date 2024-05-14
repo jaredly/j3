@@ -9,7 +9,6 @@ import {
 import { Db } from '../../src/db/tables';
 import { HashedTree } from '../../src/db/hash-tree';
 import { addDefinitions, addNamespaces } from '../../src/db/library';
-import { IDEState } from './IDE';
 import { UpdateMap } from '../../src/state/getKeyUpdate';
 
 // so
@@ -135,62 +134,62 @@ export function collectDatabaseChanges(
     return changes;
 }
 
-export function usePersistStateChanges(db: Db, state: IDEState) {
-    const enqueueChanges = useMemo(() => {
-        let allChanges: DBUpdate[] = [];
-        let waiting = false;
+// export function usePersistStateChanges(db: Db, state: IDEState) {
+//     const enqueueChanges = useMemo(() => {
+//         let allChanges: DBUpdate[] = [];
+//         let waiting = false;
 
-        const tick = () => {
-            if (waiting) return;
-            let toApply = allChanges;
-            allChanges = [];
-            waiting = true;
-            applyChanges(db, toApply).then(
-                () => {
-                    waiting = false;
-                    // Trampoline it up
-                    if (allChanges.length) {
-                        tick();
-                    }
-                },
-                (err) => {
-                    console.error(err);
-                    allChanges = toApply.concat(allChanges);
-                    waiting = false;
-                    // Don't loop, but try again the next time?
-                },
-            );
-        };
+//         const tick = () => {
+//             if (waiting) return;
+//             let toApply = allChanges;
+//             allChanges = [];
+//             waiting = true;
+//             applyChanges(db, toApply).then(
+//                 () => {
+//                     waiting = false;
+//                     // Trampoline it up
+//                     if (allChanges.length) {
+//                         tick();
+//                     }
+//                 },
+//                 (err) => {
+//                     console.error(err);
+//                     allChanges = toApply.concat(allChanges);
+//                     waiting = false;
+//                     // Don't loop, but try again the next time?
+//                 },
+//             );
+//         };
 
-        return (changes: DBUpdate[]) => {
-            allChanges.push(...changes);
-            tick();
-        };
-    }, []);
+//         return (changes: DBUpdate[]) => {
+//             allChanges.push(...changes);
+//             tick();
+//         };
+//     }, []);
 
-    const lastPersisted = useRef(state);
-    useEffect(() => {
-        const last = lastPersisted.current;
-        lastPersisted.current = state;
+//     const lastPersisted = useRef(state);
+//     useEffect(() => {
+//         const last = lastPersisted.current;
+//         lastPersisted.current = state;
 
-        // ummmmm we'll have to handle asynchrony, right?
-        if (
-            last.current.type === 'sandbox' &&
-            state.current.type === 'sandbox'
-        ) {
-            if (last.current.id !== state.current.id) {
-                return;
-            }
-            const changes = collectDatabaseChanges(
-                last.current.state,
-                state.current.state,
-                state.current.id,
-            );
-            if (!changes.length) {
-                return;
-            }
-            // console.log('got changes', changes);
-            enqueueChanges(changes);
-        }
-    }, [state]);
-}
+//         // ummmmm we'll have to handle asynchrony, right?
+//         if (
+//             last.current.type === 'sandbox' &&
+//             state.current.type === 'sandbox'
+//         ) {
+//             if (last.current.id !== state.current.id) {
+//                 return;
+//             }
+//             const changes = collectDatabaseChanges(
+//                 last.current.state,
+//                 state.current.state,
+//                 state.current.id,
+//             );
+//             if (!changes.length) {
+//                 return;
+//             }
+//             // console.log('got changes', changes);
+//             enqueueChanges(changes);
+//         }
+//     }, [state]);
+// }
