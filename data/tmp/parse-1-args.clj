@@ -832,7 +832,7 @@
 
 (defn trace-pat [pat trace]
     (let [names (bag/to-list (pat-names-loc pat))]
-        (foldl
+        (foldr
             []
                 names
                 (fn [stmts (, name loc)]
@@ -843,7 +843,8 @@
                                         (j/var "$trace" -1)
                                             [(j/prim (j/int loc -1) -1) (j/raw (jsonify info) -1) (j/var name -1)]
                                             -1)
-                                        -1)])))))
+                                        -1)
+                                    ..stmts])))))
 
 (defn maybe-trace [loc trace expr]
     (match (map/get trace loc)

@@ -10,6 +10,9 @@
     (some a)
         (none))
 
+(deftype (, a b)
+    (, a b))
+
 (deftype (list a)
     (cons a (list a))
         (nil))
@@ -33,6 +36,11 @@
         (, [] [])                      []
         (, [one ..rest] [two ..trest]) [(, one two) ..(zip rest trest)]
         _                              (fatal "Cant zip lists of unequal length")))
+
+(fn [x]
+    (match x
+        []            0
+        [(, a b) .._] 0))
 
 (defn unzip [zipped]
     (match zipped
@@ -690,31 +698,34 @@
         (elet [] body l)                         (<-err "No bindings in let")
         (** match expressions! Like let, but with a little more book-keeping. **)
         (ematch target cases l)                  (let-> [
-                                                     target-type (infer/expr tenv target)
-                                                     result-type (new-type-var "match result" l)
+                                                     target-type                 (infer/expr tenv target)
+                                                     result-type                 (new-type-var "match result" l)
                                                      (** Handle each case, collecting all of the resulting types of the bodies. **)
-                                                     all-results (map->
-                                                                     (fn [(, pat body)]
-                                                                         (let-> [
-                                                                             (, type scope) (infer/pattern tenv pat)
-                                                                             ()             (unify type target-type l)
-                                                                             scope          (scope/apply-> scope)
-                                                                             bound-env      (<- (tenv/with-scope tenv scope))]
-                                                                             (infer/expr bound-env body)))
-                                                                         cases)
+                                                     (, target-type all-results) (foldl->
+                                                                                     (, target-type [])
+                                                                                         cases
+                                                                                         (fn [(, target-type results) (, pat body)]
+                                                                                         (let-> [
+                                                                                             (, type scope) (infer/pattern tenv pat)
+                                                                                             ()             (unify type target-type l)
+                                                                                             scope          (scope/apply-> scope)
+                                                                                             bound-env      (<- (tenv/with-scope tenv scope))
+                                                                                             body-type      (infer/expr bound-env body)
+                                                                                             target-type    (type/apply-> target-type)]
+                                                                                             (<- (, target-type [body-type ..results])))))
                                                      (** Unify all of the result types together **)
-                                                     ()          (do->
-                                                                     (fn [one-result]
-                                                                         (let-> [subst <-subst]
-                                                                             (unify
-                                                                                 (type/apply subst one-result)
-                                                                                     (type/apply subst result-type)
-                                                                                     l)))
-                                                                         all-results)
-                                                     ()          (check-exhaustiveness tenv target-type (map fst cases) l)]
+                                                     ()                          (do->
+                                                                                     (fn [one-result]
+                                                                                         (let-> [subst <-subst]
+                                                                                             (unify
+                                                                                                 (type/apply subst one-result)
+                                                                                                     (type/apply subst result-type)
+                                                                                                     l)))
+                                                                                         (reverse all-results))
+                                                     ()                          (check-exhaustiveness tenv target-type (map fst cases) l)]
                                                      (type/apply-> result-type))))
 
-(def benv-with-tuple
+;(def benv-with-tuple
     (tenv/merge
         builtin-env
             (fst
@@ -727,7 +738,7 @@
                                 (, a b)))]))))))
 
 (,
-    (fn [x] (run/nil-> (infer/expr benv-with-tuple x)))
+    (fn [x] (run/nil-> (infer/expr benv-with-pair x)))
         [(, (@ 10) (ok (tcon "int" 4512)))
         (, (@ hi) (err (tmissing [(, "hi" 4531)])))
         (, (@ (let [x 10] x)) (ok (tcon "int" 4547)))
@@ -847,7 +858,24 @@
                         (forall (map/from-list []) (tcon "string" 6848)))
                     (ttypes
                     (forall (map/from-list []) (tcon "int" 6850))
-                        (forall (map/from-list []) (tcon "string" 6848))))))])
+                        (forall (map/from-list []) (tcon "string" 6848))))))
+        (,
+        (@
+            (fn [x]
+                (match x
+                    []            0
+                    [(, a b) .._] 0)))
+            (ok
+            (tapp
+                (tapp
+                    (tcon "->" 13860)
+                        (tapp
+                        (tcon "list" 12719)
+                            (tapp (tapp (tcon "," -1) (tvar "a:4" 13870) -1) (tvar "b:5" 13870) -1)
+                            12723)
+                        13860)
+                    (tcon "int" 13868)
+                    13860)))])
 
 (** ## Patterns **)
 
@@ -995,7 +1023,8 @@
 
 (defn tcon-and-args [type coll l]
     (match type
-        (tvar _ _)          (fatal "Type not resolved ${(int-to-string l)}")
+        (tvar _ _)          (fatal
+                                "Type not resolved ${(int-to-string l)} it is a tvar at heart. ${(jsonify type)} ${(jsonify coll)}")
         (tcon name _)       (, name coll)
         (tapp target arg _) (tcon-and-args target [arg ..coll] l)))
 

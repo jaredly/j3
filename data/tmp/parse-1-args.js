@@ -1858,14 +1858,14 @@ return otherwise
 throw new Error('Failed to match. ' + valueToString($target));
 })(f(expr));
 
-const trace_pat = (pat) => (trace) => ((names) => foldl(nil)(names)((stmts) => ({1: loc, 0: name}) => (($target) => {
+const trace_pat = (pat) => (trace) => ((names) => foldr(nil)(names)((stmts) => ({1: loc, 0: name}) => (($target) => {
 if ($target.type === "none") {
 return stmts
 }
 if ($target.type === "some") {
 {
 let info = $target[0];
-return cons(j$slsexpr(j$slapp(j$slvar("\$trace")(-1))(cons(j$slprim(j$slint(loc)(-1))(-1))(cons(j$slraw(jsonify(info))(-1))(cons(j$slvar(name)(-1))(nil))))(-1))(-1))(nil)
+return cons(j$slsexpr(j$slapp(j$slvar("\$trace")(-1))(cons(j$slprim(j$slint(loc)(-1))(-1))(cons(j$slraw(jsonify(info))(-1))(cons(j$slvar(name)(-1))(nil))))(-1))(-1))(stmts)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));

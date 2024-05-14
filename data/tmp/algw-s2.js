@@ -2,7 +2,6 @@ let pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1})
 let pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1})
 let some = (v0) => ({type: "some", 0: v0})
 let none = {type: "none"}
-let fst = ({"0": a}) => a
 let loop = (v) => (f) => f(v)((nv) => loop(nv)(f))
 let force = (x) => (($target) => {
 if ($target.type === "some") {
@@ -14,6 +13,7 @@ throw new Error('match fail 9781:' + JSON.stringify($target))
 })(x)
 let ok = (v0) => ({type: "ok", 0: v0})
 let err = (v0) => ({type: "err", 0: v0})
+let $co = (v0) => (v1) => ({type: ",", 0: v0, 1: v1})
 let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 let tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 let tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
@@ -318,6 +318,7 @@ return $co(cons(a)(one))(cons(b)(two))
 } ;
 throw new Error('match fail 4207:' + JSON.stringify($target))
 })(zipped)
+let fst = ({"0": a}) => a
 let length = (v) => (($target) => {
 if ($target.type === "nil") {
 return 0
@@ -462,7 +463,7 @@ throw new Error('match fail 6284:' + JSON.stringify($target))
 })(set$slto_list(vbls))
 let tcon_and_args = (type) => (coll) => (l) => (($target) => {
 if ($target.type === "tvar") {
-return fatal(`Type not resolved ${int_to_string(l)}`)
+return fatal(`Type not resolved ${int_to_string(l)} it is a tvar at heart. ${jsonify(type)} ${jsonify(coll)}`)
 } ;
 if ($target.type === "tcon") {
 let name = $target[0];
@@ -1413,7 +1414,7 @@ if ($target.type === "ematch") {
 let target = $target[0];
 let cases = $target[1];
 let l = $target[2];
-return $gt$gt$eq(infer$slexpr(tenv)(target))((target_type) => $gt$gt$eq(new_type_var("match result")(l))((result_type) => $gt$gt$eq(map_$gt(({"1": body, "0": pat}) => $gt$gt$eq(infer$slpattern(tenv)(pat))(({"1": scope, "0": type}) => $gt$gt$eq(unify(type)(target_type)(l))((_4989) => $gt$gt$eq(scope$slapply_$gt(scope))((scope) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => infer$slexpr(bound_env)(body))))))(cases))((all_results) => $gt$gt$eq(do_$gt((one_result) => $gt$gt$eq($lt_subst)((subst) => unify(type$slapply(subst)(one_result))(type$slapply(subst)(result_type))(l)))(all_results))((_4960) => $gt$gt$eq(check_exhaustiveness(tenv)(target_type)(map(fst)(cases))(l))((_4960) => type$slapply_$gt(result_type))))))
+return $gt$gt$eq(infer$slexpr(tenv)(target))((target_type) => $gt$gt$eq(new_type_var("match result")(l))((result_type) => $gt$gt$eq(foldl_$gt($co(target_type)(nil))(cases)(({"1": results, "0": target_type}) => ({"1": body, "0": pat}) => $gt$gt$eq(infer$slpattern(tenv)(pat))(({"1": scope, "0": type}) => $gt$gt$eq(unify(type)(target_type)(l))((_13904) => $gt$gt$eq(scope$slapply_$gt(scope))((scope) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(target_type))((target_type) => $lt_($co(target_type)(cons(body_type)(results)))))))))))(({"1": all_results, "0": target_type}) => $gt$gt$eq(do_$gt((one_result) => $gt$gt$eq($lt_subst)((subst) => unify(type$slapply(subst)(one_result))(type$slapply(subst)(result_type))(l)))(reverse(all_results)))((_4960) => $gt$gt$eq(check_exhaustiveness(tenv)(target_type)(map(fst)(cases))(l))((_4960) => type$slapply_$gt(result_type))))))
 } ;
 throw new Error('match fail 2253:' + JSON.stringify($target))
 })(expr)
@@ -1470,7 +1471,6 @@ return $lt_(add$sldeftype(tenv)(name)(args)(constrs)(l))
 throw new Error('match fail 2876:' + JSON.stringify($target))
 })(stmt)
 let add$slstmts = (tenv) => (stmts) => $gt$gt$eq($lt_(split_stmts(stmts)))(({"1": {"1": {"1": others, "0": exprs}, "0": aliases}, "0": defs}) => $gt$gt$eq(add$sldefs(tenv)(defs))((denv) => $gt$gt$eq(foldl_$gt(denv)(concat(cons(aliases)(cons(others)(nil))))((env) => (stmt) => $gt$gt$eq(add$slstmt(tenv$slmerge(tenv)(env))(stmt))((env$qu) => $lt_(tenv$slmerge(env)(env$qu)))))((final) => $gt$gt$eq(map_$gt(infer$slexpr(tenv$slmerge(tenv)(final)))(exprs))((types) => $lt_($co(final)(types))))))
-let benv_with_tuple = tenv$slmerge(builtin_env)(fst(err_to_fatal(run$slnil_$gt(add$slstmts(builtin_env)(cons({"0":",","1":11705,"2":{"0":{"0":"a","1":11706,"type":","},"1":{"0":{"0":"b","1":11707,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":11709,"1":{"0":{"0":{"0":"a","1":11710,"type":"tcon"},"1":{"0":{"0":"b","1":11711,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":11708,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":11702,"type":"tdeftype"})(nil))))))
 let benv_with_pair = tenv$slmerge(builtin_env)(fst(err_to_fatal(run$slnil_$gt(add$slstmts(builtin_env)(cons({"0":",","1":12710,"2":{"0":{"0":"a","1":12711,"type":","},"1":{"0":{"0":"b","1":12712,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":12714,"1":{"0":{"0":{"0":"a","1":12715,"type":"tcon"},"1":{"0":{"0":"b","1":12716,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12713,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":12707,"type":"tdeftype"})(cons({"0":"list","1":12722,"2":{"0":{"0":"a","1":12723,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"nil","1":{"0":12725,"1":{"0":{"type":"nil"},"1":12724,"type":","},"type":","},"type":","},"1":{"0":{"0":"cons","1":{"0":12727,"1":{"0":{"0":{"0":"a","1":12728,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":12730,"type":"tcon"},"1":{"0":"a","1":12731,"type":"tcon"},"2":12729,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12726,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":12719,"type":"tdeftype"})(nil)))))))
 let infer_stmts2 = (env) => (stmts) => {
 let {"1": result, "0": {"1": {"1": types, "0": subst}}} = state_f(add$slstmts(env)(stmts))(state$slnil);
