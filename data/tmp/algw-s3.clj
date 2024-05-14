@@ -2,7 +2,8 @@
     Heavily based on the excellent paper [Algorithm W Step-By-Step](https://github.com/wh5a/Algorithm-W-Step-By-Step/blob/master/AlgorithmW.pdf).
     Notable differences:
     - we're putting the "substitution list" into the state monad, which is less bug-prone and results in code that's easier to think about in my opinion
-    - because we actually will use this to self-host, we need to support pattern matching, match statements, and custom data types. This also makes the "type environment" somewhat more complex. **)
+    - because we actually will use this to self-host, we need to support pattern matching, match statements, and custom data types. This also makes the "type environment" somewhat more complex.
+    This document extends the "Self-Hosted Type Inference" document, adding Monadic Error Handling and "Hover for Type" functionality. **)
 
 (** ## Prelude **)
 
@@ -725,17 +726,7 @@
                                                      ()                          (check-exhaustiveness tenv target-type (map fst cases) l)]
                                                      (type/apply-> result-type))))
 
-;(def benv-with-tuple
-    (tenv/merge
-        builtin-env
-            (fst
-            (err-to-fatal
-                (run/nil->
-                    (add/stmts
-                        builtin-env
-                            [(@!
-                            (deftype (, a b)
-                                (, a b)))]))))))
+;
 
 (,
     (fn [x] (run/nil-> (infer/expr benv-with-pair x)))

@@ -28,6 +28,7 @@ export type Sortable = {
 
 export type HoverContents =
     | { type: 'type'; node: Node }
+    | { type: 'change'; node: Node | null; parent?: 'let' }
     | { type: 'text'; text: string }; // | {type: 'error'};
 
 export type AsyncResults = {

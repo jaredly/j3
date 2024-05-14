@@ -11,7 +11,6 @@ import { CompilationResults, Ctx, Env } from '../../src/to-ast/library';
 import { ListLikeContents, fromMCST } from '../../src/types/mcst';
 import { Cursors } from '../custom/Cursors';
 import { HiddenInput } from '../custom/HiddenInput';
-import { Hover, calc } from '../custom/Hover';
 import { Root } from '../custom/old-stuff/Root';
 import { Action, NUIState, UpdatableAction } from '../custom/UIState';
 import {

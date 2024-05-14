@@ -11,7 +11,7 @@ export const blockToHtml = (block: Block<any>): string => {
         : `[paragraph content ${JSON.stringify(c)}]`;
     switch (block.type) {
         case 'paragraph':
-            return `<p>${content}</p>` + children;
+            return `<p style="margin: 0; padding: 0">${content}</p>` + children;
         case 'heading':
             return `<h1>${content}</h1>` + children;
         case 'numberedListItem':

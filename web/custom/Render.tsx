@@ -86,18 +86,62 @@ export const Render = React.memo(
         if (path.length > 1000) {
             return <span>DEEP</span>;
         }
+
+        let changeKind = null;
+        if (values.trackChanges !== undefined) {
+            if (values.trackChanges === null) {
+                changeKind = 'new';
+            } else if (
+                values.trackChanges.type !== node.type ||
+                node.type === 'identifier'
+            ) {
+                changeKind = 'new';
+            } else if (values.trackChanges) {
+                changeKind = 'change';
+            }
+        }
+        const isMultiLine = display.layout?.type === 'multiline';
+
         // console.log('render', props.idx);
+        // display.layout?.type
         const inner = (
             <div
                 data-path={JSON.stringify(path)}
                 data-idx={idx}
-                style={
-                    {
-                        // backgroundColor: values.hover
-                        //     ? 'rgb(100,100,100)'
-                        //     : 'unset',
+                style={{
+                    backgroundColor: isMultiLine
+                        ? changeKind === 'new'
+                            ? 'rgb(10, 20, 10)'
+                            : changeKind
+                            ? 'rgb(7 22 7)'
+                            : undefined
+                        : undefined,
+                    textDecoration:
+                        !isMultiLine && changeKind
+                            ? 'underline dotted rgb(20, 136, 30)'
+                            : undefined,
+                    textUnderlineOffset: 2,
+                    border:
+                        isMultiLine && changeKind // && changeKind === 'new'
+                            ? '2px dotted rgb(20 136 30)'
+                            : undefined,
+                    // border:
+                    //     values.trackChanges === null &&
+                    //     display.layout?.type === 'multiline'
+                    //         ? '1px solid rgb(100, 150, 100)'
+                    //         : undefined,
+                }}
+                onMouseMove={(evt) => {
+                    // Prevent parents from doing this same thing
+                    evt.stopPropagation();
+                    const hover = store.getState().hover;
+                    if (!hover.find((p) => p.idx === idx)) {
+                        store.dispatch({ type: 'hover', path });
                     }
-                }
+                }}
+                onMouseLeave={() => {
+                    store.dispatch({ type: 'hover', path: [] });
+                }}
                 // onMouseEnter={() => {
                 //     store.dispatch({ type: 'hover', path });
                 // }}
@@ -470,7 +514,7 @@ export const RenderNNode = (
                 );
 
                 return (
-                    <pre>
+                    <pre style={{ padding: '4px 8px', margin: 0 }}>
                         <code dangerouslySetInnerHTML={{ __html: html }} />
                     </pre>
                 );
@@ -495,8 +539,9 @@ export const RenderNNode = (
                             fontFamily: 'Merriweather',
                             fontWeight: 200,
                             backgroundColor: 'rgb(31, 31, 31)',
-                            padding: '8px 16px',
+                            padding: '2px 4px',
                             borderRadius: 8,
+                            margin: 0,
                         }}
                         dangerouslySetInnerHTML={{ __html: html }}
                     />
@@ -505,6 +550,7 @@ export const RenderNNode = (
                 return (
                     <RichText
                         initial={nnode.contents}
+                        trackChanges={props.values.trackChanges}
                         idx={props.idx}
                         path={props.path}
                         reg={reg}
@@ -656,6 +702,9 @@ export const RenderNNode = (
                                       style={{
                                           gridColumn: '2',
                                           paddingLeft: 8,
+                                          display: 'flex',
+                                          flexDirection: 'row',
+                                          justifyContent: 'flex-start',
                                           //   backgroundColor:
                                           //       i % 2 == 0 ? oneColor : twoColor,
                                           //   position: 'relative',

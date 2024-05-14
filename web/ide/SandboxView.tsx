@@ -8,7 +8,6 @@ import { useLocalStorage } from '../Debug';
 import { useMenu } from '../custom/ByHand';
 import { Cursors } from '../custom/Cursors';
 import { HiddenInput } from '../custom/HiddenInput';
-import { Hover, calc } from '../custom/Hover';
 import { Menu } from '../custom/Menu';
 import { Root } from '../custom/old-stuff/Root';
 import { UIState } from '../custom/UIState';

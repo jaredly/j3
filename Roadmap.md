@@ -1,4 +1,19 @@
 
+# Track Changes
+
+ok this is cool
+
+- if this node didn't exist before, but does now, set its trackChanges to "new"
+- if it was modified but did exist, set it to "changed"
+  - hm but probably only if the `type` didn't chagne. if It did change, treat it as `new`
+- THEN:
+  - for containers, if you /changed/ do a light background highlight
+  - for containers, if you're /new/ and your parent is /not/, then do an outline
+  - // for atoms, if you /changed/, do a sub-highlight thing on your changes probably?
+  - for atoms, if you are changed or new, and your parent is /not new/, then do an outline or underline or something.
+
+#
+
 - [x] use all_names on the editor-end
 - [ ] use the `usages` from all_names on the editor end of things
 - [ ] ditch the usage tracking from algw-fast

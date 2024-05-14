@@ -12,19 +12,21 @@ import { useNode } from './store/useNode';
 
 export const RenderStatic = ({
     node,
-    path,
+    // path,
     display,
+    parent,
 }: {
     node: Node;
-    path?: Path[];
+    // path?: Path[];
     display?: Display;
+    parent?: 'let';
 }) => {
     const { map, root, top } = useMemo(() => {
         const map: Map = {};
         const root = toMCST(node, map);
         const myDisplay: Display = display ?? {};
         if (!display) {
-            layout(root, 0, map, myDisplay, {});
+            layout(root, 0, map, myDisplay, {}, false, parent);
         }
         const top = getDeepNestedNodes(map[root], map, myDisplay);
         return { map, root, top, display };

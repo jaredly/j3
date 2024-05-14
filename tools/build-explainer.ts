@@ -5,7 +5,7 @@ import {
     copyFileSync,
     existsSync,
 } from 'fs';
-import { NUIState } from './web/custom/UIState';
+import { NUIState } from '../web/custom/UIState';
 
 const files = `
 algw-fast.js

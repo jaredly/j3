@@ -1,66 +1,62 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Ctx } from '../../src/to-ast/library';
 import { nodeForType } from '../../src/to-cst/nodeForType';
 import { nodeToString } from '../../src/to-cst/nodeToString';
+import { nodesEqual } from '../../src/types/cst';
 import type { Error } from '../../src/types/types';
 import { advancePath } from '../ide/ground-up/findTops';
-import { CursorRect, subRect } from './Cursors';
-import { NUIState, UIState } from './UIState';
-import { useGetStore, useSubscribe } from './store/StoreCtx';
-import { WorkerResults } from './store/useSyncStore';
-import { unique } from './store/unique';
-import { HoverContents } from './worker/types';
-import { renderNNode } from '../ide/ground-up/renderNodeToString';
-import { getNestedNodes } from '../../src/state/nestedNodes/getNestedNodes';
-import { Map, toMCST } from '../../src/types/mcst';
-import { Node, nodesEqual } from '../../src/types/cst';
+import { subRect } from './Cursors';
 import { RenderStatic } from './RenderStatic';
+import { NUIState, UIState } from './UIState';
 import { CombinedResults } from './store/Store';
+import { useGetStore, useSubscribe } from './store/StoreCtx';
+import { HoverContents } from './worker/types';
+import { fromMCST } from '../../src/types/mcst';
 
-export const getRegNode = (idx: number, regs: UIState['regs']) => {
+const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];
     return got?.main?.node ?? got?.outside?.node ?? got?.start?.node;
 };
 
-export const calc = (
-    state: NUIState,
-    results: Ctx['results'],
-    errorToString: (err: Error) => void,
-) => {
-    let found: { idx: number; text: string }[] = [];
-    for (let i = state.hover.length - 1; i >= 0; i--) {
-        let idx = state.hover[i].idx;
-        if (idx === -1) continue;
-        if (results.errors[idx]?.length) {
-            found.push({
-                idx,
-                text: results.errors[idx]
-                    .map((err) => errorToString(err))
-                    .join('\n'),
-            });
-        }
-    }
-    const last = state.hover[state.hover.length - 1]?.idx;
-    if (last != null) {
-        const style = results.display[last]?.style;
-        if (
-            (style?.type === 'id' ||
-                style?.type === 'id-decl' ||
-                style?.type === 'tag') &&
-            style.ann
-        ) {
-            found.push({
-                idx: last,
-                text: nodeToString(
-                    nodeForType(style.ann, results.hashNames),
-                    results.hashNames,
-                ),
-            });
-        }
-    }
+// export const calc = (
+//     state: NUIState,
+//     results: Ctx['results'],
+//     errorToString: (err: Error) => void,
+// ) => {
+//     let found: { idx: number; text: string }[] = [];
+//     for (let i = state.hover.length - 1; i >= 0; i--) {
+//         let idx = state.hover[i].idx;
+//         if (idx === -1) continue;
+//         if (results.errors[idx]?.length) {
+//             found.push({
+//                 idx,
+//                 text: results.errors[idx]
+//                     .map((err) => errorToString(err))
+//                     .join('\n'),
+//             });
+//         }
+//     }
+//     const last = state.hover[state.hover.length - 1]?.idx;
+//     if (last != null) {
+//         const style = results.display[last]?.style;
+//         if (
+//             (style?.type === 'id' ||
+//                 style?.type === 'id-decl' ||
+//                 style?.type === 'tag') &&
+//             style.ann
+//         ) {
+//             found.push({
+//                 idx: last,
+//                 text: nodeToString(
+//                     nodeForType(style.ann, results.hashNames),
+//                     results.hashNames,
+//                 ),
+//             });
+//         }
+//     }
 
-    return found;
-};
+//     return found;
+// };
 
 type StyleProp = NonNullable<React.ComponentProps<'div'>['style']>;
 
@@ -129,8 +125,17 @@ export const Hover = ({}: {}) => {
                     >
                         {f.contents.type === 'text' ? (
                             f.contents.text
+                        ) : f.contents.node ? (
+                            <RenderStatic
+                                node={f.contents.node}
+                                parent={
+                                    f.contents.type === 'change'
+                                        ? f.contents.parent
+                                        : undefined
+                                }
+                            />
                         ) : (
-                            <RenderStatic node={f.contents.node} />
+                            'Node was added'
                         )}
                     </div>
                 ))}
@@ -187,6 +192,44 @@ function calculateHovers(
 
     const ns = state.hover.find((p) => p.type === 'ns-top');
     if (!ns) return [];
+
+    // Changes!
+    if (state.trackChanges) {
+        for (let i = state.hover.length - 1; i >= 0; i--) {
+            const last = state.hover[i];
+            if (last.type === 'ns' || last.type === 'card') break;
+            const prev = state.trackChanges.previous[last.idx];
+            // A change!
+            if (prev !== undefined) {
+                const parent = state.hover[i - i].idx;
+                if (
+                    prev !== null ||
+                    state.trackChanges.previous[parent] !== null
+                ) {
+                    hovers.push({
+                        idx: last.idx,
+                        contents: {
+                            type: 'change',
+                            node: prev
+                                ? fromMCST(prev.loc, {
+                                      ...state.map,
+                                      ...state.trackChanges.previous,
+                                  })
+                                : null,
+                            parent:
+                                prev && getIsLet(state, state.hover[i - 1].idx)
+                                    ? 'let'
+                                    : undefined,
+                        },
+                        style: {
+                            backgroundColor: 'rgb(36 20 20)',
+                        },
+                    });
+                }
+                break;
+            }
+        }
+    }
 
     // Check errors
     for (let i = state.hover.length - 1; i >= 0; i--) {
@@ -281,7 +324,7 @@ function calculateHovers(
                     ) {
                         continue;
                     }
-                } else {
+                } else if (item.type === 'type') {
                     if (
                         hovers.some(
                             (h) =>
@@ -298,4 +341,18 @@ function calculateHovers(
         }
     }
     return hovers;
+}
+function getIsLet(state: NUIState, parentIdx: number) {
+    const parent = state.map[parentIdx];
+    let isLet = false;
+    if (parent?.type === 'list' && parent.values.length > 0) {
+        const first = state.map[parent.values[0]];
+        if (
+            first.type === 'identifier' &&
+            (first.text === 'let' || first.text === 'let->')
+        ) {
+            isLet = true;
+        }
+    }
+    return isLet;
 }

@@ -11,15 +11,18 @@ import { Path } from '../store';
 import { useGetStore, useSubscribe } from './store/StoreCtx';
 import { Reg } from './types';
 import { useAutoFocus } from './useAutoFocus';
+import { MNode } from '../../src/types/mcst';
 
 export const RichText = ({
     initial,
     // onChange,
     // onSelect,
+    trackChanges,
     path,
     idx,
     reg,
 }: {
+    trackChanges?: MNode | null;
     initial: any;
     // onChange: (v: any) => void;
     // onSelect: (v: any) => void;
@@ -100,7 +103,14 @@ export const RichText = ({
     return (
         <BlockNoteView
             // @ts-ignore
-            style={{ minWidth: 400, maxWidth: 1000 }}
+            style={{
+                minWidth: 400,
+                maxWidth: 1000,
+                outline:
+                    trackChanges !== undefined
+                        ? '1px solid rgb(20,155,20)'
+                        : undefined,
+            }}
             className="rich-text"
             // ref={node}
             editor={editor}
