@@ -16,6 +16,9 @@
     (cons a (list a))
         (nil))
 
+(deftype (, a b)
+    (, a b))
+
 (defn at [arr i default_]
     (match arr
         []           default_
