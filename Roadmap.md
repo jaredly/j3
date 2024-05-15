@@ -1,4 +1,13 @@
 
+# Thinking about row types and tagged unions.
+
+... so, I didn't realize it, but Roc doesn't have record extension. Just record update. I imagine this makes the type system much simpler to implement.
+such records would *not* be able to represent Effect handlers, at least in the way I've envisioned it.
+... so maybe the scoped labels approach is fine? hmmm.
+hmmmmmm ok so disallowing record spread does make memory representation a ton simpler. well .... hmm idk maybe not. I mean, if you have an open record, you don't know. But they probably monomorphize that all away.
+but then, if you're already there, then extending records shouldn't be a problem either.
+
+
 # Pre Alg W
 
 I should prooobably do a "pre algw" document that is *without generics*. Right? ... would we still have type variables?
@@ -2644,10 +2653,12 @@ https://github.com/willtim/Expresso
 
 - https://github.com/Steell/DynamicStatic
   - type inference prototype. Supports subtypes, type unions, function overloads, and recursive types.
+    -> ehhh this looks really suspect. I feel like function overloads would obscure a ton of type errors
 - https://github.com/ameerwasi001/CzariScript
   - type system that supports subtype inference with parametric polymorphism, classes, objects, and single inheritance
 - https://github.com/Storyyeller/cubiml-demo
   - tagged unions, records, mutual recursion
+    -> hrmmm the fact that it doesn't permit type classes is maybe a dealbreaker for me.
 - https://bitbucket.org/structural-types/polyte/src/master/
   - "parametric polymorphic subtyping"?
 - https://www.normalesup.org/~simonet/soft/dalton/index.html

@@ -131,6 +131,7 @@
 
 (deftype prim
     (pint int int)
+        (pfloat float int)
         (pbool bool int))
 
 (deftype top
@@ -202,9 +203,9 @@
             (map (fn [(oloc l i)] "${(int-to-string l)}@${(int-to-string i)}") locs))}) ")
 
 (defn scheme->s [(forall vbls (=> preds type))]
-    "${(join "" (map pred->s preds))}${(match (set/to-list vbls)
-        []   (type->s type)
-        vbls "forall ${(join " " vbls)} : ${(type->s type)}")}")
+    "${(match (set/to-list vbls)
+        []   ""
+        vbls "forall ${(join " " vbls)} : ")}${(join "" (map pred->s preds))}${(type->s type)}")
 
 (defn type->s [type]
     (match type
@@ -676,8 +677,15 @@
 
 (defn infer/prim [prim]
     (match prim
-        (pint _ l)  (tcon "int" l)
-        (pbool _ l) (tcon "bool" l)))
+        (pint _ l)   (let-> [
+                         tv (new-type-var "number" l)
+                         () (preds-> (one (isin tv "number" [(oloc l 0)])))]
+                         (<- tv))
+        (pfloat _ l) (let-> [
+                         tv (new-type-var "floating" l)
+                         () (preds-> (one (isin tv "floating" [(oloc l 0)])))]
+                         (<- tv))
+        (pbool _ l)  (<- (tcon "bool" l))))
 
 (defn infer/quot [quot l]
     (match quot
@@ -722,7 +730,7 @@
         (evar name l)                            (match (tenv/resolve tenv name)
                                                      (none)        (<-missing name l)
                                                      (some scheme) (let-> [() (record-if-generic scheme l)] (instantiate scheme l)))
-        (eprim prim _)                           (<- (infer/prim prim))
+        (eprim prim _)                           (infer/prim prim)
         (equot quot l)                           (<- (infer/quot quot l))
         (estr _ templates l)                     (let-> [
                                                      () (do->
@@ -829,12 +837,16 @@
 
 (,
     (fn [x] (run/nil-> (infer/expr benv-with-pair x)))
-        [(, (@ 10) (ok (tcon "int" 4512)))
+        [(, (@ 10) (ok (tvar "number:0" 4512)))
         (, (@ hi) (err (tmissing [(, "hi" 4531)])))
-        (, (@ (let [x 10] x)) (ok (tcon "int" 4547)))
+        (, (@ (let [x 10] x)) (ok (tvar "number:0:1" 4548)))
         (,
         (@ (, 1 2))
-            (ok (tapp (tapp (tcon "," -1) (tcon "int" 4561) -1) (tcon "int" 4562) -1)))
+            (ok
+            (tapp
+                (tapp (tcon "," -1) (tvar "number:4" 4561) -1)
+                    (tvar "number:5" 4562)
+                    -1)))
         (,
         (@ (fn [x] (let [(, a b) x] a)))
             (ok
@@ -847,56 +859,50 @@
                     4689)))
         (,
         (@ (let [id (fn [x] x)] (, (id 2) (id true))))
-            (ok (tapp (tapp (tcon "," -1) (tcon "int" 4761) -1) (tcon "bool" 4764) -1)))
+            (ok
+            (tapp
+                (tapp (tcon "," -1) (tvar "result:5" 4759) -1)
+                    (tcon "bool" 4764)
+                    -1)))
         (,
         (@ (fn [id] (, (id 2) (id true))))
-            (err
-            (twrap
-                (ttypes
-                    (forall
-                        (map/from-list [])
-                            (=>
-                            []
-                                (tapp
-                                (tapp (tcon "->" 4820) (tcon "int" 4822) 4820)
-                                    (tvar "result:5" 4820)
-                                    4820)))
-                        (forall
-                        (map/from-list [])
-                            (=>
-                            []
-                                (tapp
-                                (tapp (tcon "->" 4823) (tcon "bool" 4825) 4823)
-                                    (tvar "result:6" 4823)
-                                    4823))))
-                    (ttypes
-                    (forall (map/from-list []) (=> [] (tcon "int" 4822)))
-                        (forall (map/from-list []) (=> [] (tcon "bool" 4825)))))))
+            (ok
+            (tapp
+                (tapp
+                    (tcon "->" 4814)
+                        (tapp
+                        (tapp (tcon "->" 4820) (tcon "bool" 4825) 4820)
+                            (tvar "result:7" 4823)
+                            4820)
+                        4814)
+                    (tapp
+                    (tapp (tcon "," -1) (tvar "result:7" 4823) -1)
+                        (tvar "result:7" 4823)
+                        -1)
+                    4814)))
         (,
         (@ (fn [arg] (let [(, id _) arg] (, (id 2) (id true)))))
-            (err
-            (twrap
-                (ttypes
-                    (forall
-                        (map/from-list [])
-                            (=>
-                            []
+            (ok
+            (tapp
+                (tapp
+                    (tcon "->" 4833)
+                        (tapp
+                        (tapp
+                            (tcon "," -1)
                                 (tapp
-                                (tapp (tcon "->" 4847) (tcon "int" 4849) 4847)
-                                    (tvar "result:9" 4847)
-                                    4847)))
-                        (forall
-                        (map/from-list [])
-                            (=>
-                            []
-                                (tapp
-                                (tapp (tcon "->" 4850) (tcon "bool" 4852) 4850)
-                                    (tvar "result:10" 4850)
-                                    4850))))
-                    (ttypes
-                    (forall (map/from-list []) (=> [] (tcon "int" 4849)))
-                        (forall (map/from-list []) (=> [] (tcon "bool" 4852)))))))
-        (, (@ ((fn [x] x) 2)) (ok (tcon "int" 4866)))
+                                (tapp (tcon "->" 4847) (tcon "bool" 4852) 4847)
+                                    (tvar "result:11" 4850)
+                                    4847)
+                                -1)
+                            (tvar "b:2" 4840)
+                            -1)
+                        4833)
+                    (tapp
+                    (tapp (tcon "," -1) (tvar "result:11" 4850) -1)
+                        (tvar "result:11" 4850)
+                        -1)
+                    4833)))
+        (, (@ ((fn [x] x) 2)) (ok (tvar "result:0" 4860)))
         (, (@ (let [a 2] (let [a true] a))) (ok (tcon "bool" 9716)))
         (,
         (@
@@ -914,15 +920,19 @@
             (tapp
                 (tapp
                     (tcon "->" 5085)
-                        (tapp (tapp (tcon "," -1) (tcon "int" 5094) -1) (tcon "int" 11381) -1)
+                        (tapp
+                        (tapp (tcon "," -1) (tcon "int" 5094) -1)
+                            (tvar "match result:1" 5089)
+                            -1)
                         5085)
-                    (tcon "int" 11381)
+                    (tvar "match result:1" 5089)
                     5085)))
         (,
         (@
             (match 1
                 1 true
-                2 2))
+                2 2
+                _ ))
             (err
             (twrap
                 (ttypes
@@ -980,31 +990,32 @@
 ((** Here we are producing (1) a type for the pattern, and (2) a "scope" mapping of names to type variables. **)
     defn infer/pattern [tenv pattern]
     (match pattern
-        (pvar name l)         (let-> [
-                                  v  (new-type-var name l)
-                                  () (record-type-> v l false)]
-                                  (<- (, v (map/from-list [(, name (forall set/nil (=> [] v)))]))))
-        (pany l)              (let-> [v (new-type-var "any" l)] (<- (, v map/nil)))
-        (pstr _ l)            (<- (, (tcon "string" l) map/nil))
-        (pprim (pbool _ _) l) (<- (, (tcon "bool" l) map/nil))
-        (pprim (pint _ _) l)  (<- (, (tcon "int" l) map/nil))
+        (pvar name l)          (let-> [
+                                   v  (new-type-var name l)
+                                   () (record-type-> v l false)]
+                                   (<- (, v (map/from-list [(, name (forall set/nil (=> [] v)))]))))
+        (pany l)               (let-> [v (new-type-var "any" l)] (<- (, v map/nil)))
+        (pstr _ l)             (<- (, (tcon "string" l) map/nil))
+        (pprim (pbool _ _) l)  (<- (, (tcon "bool" l) map/nil))
+        (pprim (pint _ _) l)   (<- (, (tcon "int" l) map/nil))
+        (pprim (pfloat _ _) l) (<- (, (tcon "float" l) map/nil))
         (** This is the only really complex case.
             cannot convert {"id":"8dc25efa-f2e6-431d-b516-a2dcbec00fec","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"instantiate the type constructor","styles":{}}],"children":[]}
             cannot convert {"id":"fbc62acd-aa18-4fde-9aaf-f465cc5b0860","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"infer the types for the pattern arguments","styles":{}}],"children":[]}
             cannot convert {"id":"d4cdaae3-0b80-4226-9b11-306ff6533ea4","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"unify the pattern types with the expected constructor types","styles":{}}],"children":[]}
             cannot convert {"id":"5631b441-770a-402c-b026-d53be33aa320","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"apply any substitutions to the type constructor's \"result\" type","styles":{}}],"children":[]}
             cannot convert {"id":"9de5a662-ca3d-422b-aef1-a621140eebaa","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"merge all the sub scopes together","styles":{}}],"children":[]} **)
-        (pcon name _ args l)  (let-> [
-                                  (, cargs cres)       (instantiate-tcon tenv name l)
-                                  ()                   (record-type-> (tfns cargs cres l) l false)
-                                  sub-patterns         (map-> (infer/pattern tenv) args)
-                                  (, arg-types scopes) (<- (unzip sub-patterns))
-                                  ()                   (do->
-                                                           (fn [(, ptype ctype)] (unify ptype ctype l))
-                                                               (zip arg-types cargs))
-                                  cres                 (type/apply-> cres)
-                                  scope                (<- (foldl map/nil scopes map/merge))]
-                                  (<- (, cres scope)))))
+        (pcon name _ args l)   (let-> [
+                                   (, cargs cres)       (instantiate-tcon tenv name l)
+                                   ()                   (record-type-> (tfns cargs cres l) l false)
+                                   sub-patterns         (map-> (infer/pattern tenv) args)
+                                   (, arg-types scopes) (<- (unzip sub-patterns))
+                                   ()                   (do->
+                                                            (fn [(, ptype ctype)] (unify ptype ctype l))
+                                                                (zip arg-types cargs))
+                                   cres                 (type/apply-> cres)
+                                   scope                (<- (foldl map/nil scopes map/merge))]
+                                   (<- (, cres scope)))))
 
 ((** This looks up a type constructor definition, and replaces any free variables in the arguments & result type with fresh type variables. **)
     defn instantiate-tcon [(tenv _ tcons _ _) name l]
@@ -1047,30 +1058,31 @@
 
 (defn pattern-to-ex-pattern [tenv (, pattern type)]
     (match pattern
-        (pvar _ _)            (ex/any)
-        (pany _)              (ex/any)
-        (pstr str _)          (ex/constructor str "string" [])
-        (pprim (pint v _) _)  (ex/constructor (int-to-string v) "int" [])
-        (pprim (pbool v _) _) (ex/constructor
-                                  (if v
-                                      "true"
-                                          "false")
-                                      "bool"
-                                      [])
-        (pcon name _ args l)  (let [
-                                  (, tname targs)           (tcon-and-args type [] l)
-                                  (tenv _ tcons _ _)        tenv
-                                  (, free-names cargs cres) (match (map/get tcons name)
-                                                                (none)   (fatal "Unknown type constructor ${name}")
-                                                                (some v) v)
-                                  ;  do we need to assert that `cres` is the same as `type`? At this point it should be moot...
-                                  subst                     (map/from-list (zip free-names targs))]
-                                  (ex/constructor
-                                      name
-                                          tname
-                                          (map
-                                          (pattern-to-ex-pattern tenv)
-                                              (zip args (map (type/apply subst) cargs)))))))
+        (pvar _ _)             (ex/any)
+        (pany _)               (ex/any)
+        (pstr str _)           (ex/constructor str "string" [])
+        (pprim (pint v _) _)   (ex/constructor (int-to-string v) "int" [])
+        (pprim (pfloat v _) _) (ex/constructor (jsonify v) "float" [])
+        (pprim (pbool v _) _)  (ex/constructor
+                                   (if v
+                                       "true"
+                                           "false")
+                                       "bool"
+                                       [])
+        (pcon name _ args l)   (let [
+                                   (, tname targs)           (tcon-and-args type [] l)
+                                   (tenv _ tcons _ _)        tenv
+                                   (, free-names cargs cres) (match (map/get tcons name)
+                                                                 (none)   (fatal "Unknown type constructor ${name}")
+                                                                 (some v) v)
+                                   ;  do we need to assert that `cres` is the same as `type`? At this point it should be moot...
+                                   subst                     (map/from-list (zip free-names targs))]
+                                   (ex/constructor
+                                       name
+                                           tname
+                                           (map
+                                           (pattern-to-ex-pattern tenv)
+                                               (zip args (map (type/apply subst) cargs)))))))
 
 (pattern-to-ex-pattern
     (err-to-fatal
@@ -1576,8 +1588,7 @@
         b  (vbl "b")]
         (tenv
             (map/from-list
-                [(, "+" (concrete (tfns [tint tint] tint -1)))
-                    (, "-" (concrete (tfns [tint tint] tint -1)))
+                [(, "-" (concrete (tfns [tint tint] tint -1)))
                     (, ">" (concrete (tfns [tint tint] tbool -1)))
                     (, "<" (concrete (tfns [tint tint] tbool -1)))
                     (, "=" (generic ["k"] (tfns [k k] tbool -1)))
@@ -1585,7 +1596,7 @@
                     (, ">=" (concrete (tfns [tint tint] tbool -1)))
                     (, "<=" (concrete (tfns [tint tint] tbool -1)))
                     (,
-                    "+!"
+                    "+"
                         (forall (set/from-list ["a"]) (=> [(isin a "number" [])] (tfns [a a] a -1))))
                     (,
                     "show"
