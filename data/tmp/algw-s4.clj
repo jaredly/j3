@@ -56,6 +56,13 @@
         []           []
         [one ..rest] [(f one) ..(map f rest)]))
 
+(defn mapi [f values] (mapi-inner 0 f values))
+
+(defn mapi-inner [i f values]
+    (match values
+        []           []
+        [one ..rest] [(f i one) ..(mapi-inner (+ i 1) f rest)]))
+
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
 
 (defn fst [(, a _)] a)
@@ -189,8 +196,10 @@
 
 (def tint (tcon "int" -1))
 
-(defn pred->s [(isin type cls l)]
-    "(isin ${(type->s type)} \"${cls}\" ${(int-to-string l)}) ")
+(defn pred->s [(isin type cls locs)]
+    "(isin ${(type->s type)} \"${cls}\" ${(join
+        " "
+            (map (fn [(oloc l i)] "${(int-to-string l)}@${(int-to-string i)}") locs))}) ")
 
 (defn scheme->s [(forall vbls (=> preds type))]
     "${(join "" (map pred->s preds))}${(match (set/to-list vbls)
@@ -232,13 +241,17 @@
 (** A "predicate" is another term for a constraint, at least in this context. The first predicate we'll define is a "type is in class" predicate. This means that the type variables can only be instantiated with types that result in there being a matching instance defined for that class.
     Later on, we'll also probably be leaning on predicates for implementing polymorphic record types (row polymorphism). **)
 
+((** This represents a loc that has an index associated with it. We will use it to determine what order to pass "instance maps" to a function that has type class arguments, in the case that we need to pass in multiple. **)
+    deftype ordered-location
+    (oloc int int))
+
 (deftype predicate
     (** type is "in" the class identified by the given name. e.g. (isin (tvar a) "number") . The final int is used by the code generator to associate the type class constraint with the variable reference that produced it. **)
-        (isin type string int))
+        (isin type string (list ordered-location)))
 
-((** Overwrite the loc attribute of a predicate. Used when instantiating the scheme of a referenced variable. **)
-    defn predicate/reloc [l (isin type cls _)]
-    (isin type cls l))
+((** Overwrite the loc attribute of a predicate. Used when instantiating the scheme of a referenced variable. The i represents the index in the list of predicates from the scheme where it originated. **)
+    defn predicate/reloc [l i (isin type cls _)]
+    (isin type cls [(oloc l i)]))
 
 (** The qualified type is used to associate a list of predicates with whatever is inside. In practice, the "thing inside" will either be:
     cannot convert {"id":"91fc8a1b-1479-4d77-822c-70f027d3c02a","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"a ","styles":{}},{"type":"text","text":"type","styles":{"code":true}},{"type":"text","text":", as in ","styles":{}},{"type":"text","text":"(=> [(isin (tvar a) \"number\")] (fn [(tvar a)] string))","styles":{"code":true}},{"type":"text","text":", which describes the function type from a generic variable ","styles":{}},{"type":"text","text":"a","styles":{"code":true}},{"type":"text","text":" to ","styles":{}},{"type":"text","text":"string","styles":{"code":true}},{"type":"text","text":", where ","styles":{}},{"type":"text","text":"a","styles":{"code":true}},{"type":"text","text":" must be a member of the type class ","styles":{}},{"type":"text","text":"number","styles":{"code":true}},{"type":"text","text":".","styles":{}}],"children":[]}
@@ -607,7 +620,7 @@
     (let-> [
         subst        (make-subst-for-free vars l)
         (=> preds t) (<- (qual/apply type/apply subst qual))
-        ()           (preds-> (many (map (dot one (predicate/reloc l)) preds)))]
+        ()           (preds-> (many (map one (mapi (predicate/reloc l) preds))))]
         (<- t)))
 
 (defn dot [f g n] (f (g n)))
@@ -1573,15 +1586,13 @@
                     (, "<=" (concrete (tfns [tint tint] tbool -1)))
                     (,
                     "+!"
-                        (forall (set/from-list ["a"]) (=> [(isin a "number" 0)] (tfns [a a] a -1))))
+                        (forall (set/from-list ["a"]) (=> [(isin a "number" [])] (tfns [a a] a -1))))
                     (,
                     "show"
-                        (forall (set/from-list ["a"]) (=> [(isin a "show" 0)] (tfns [a] tstring -1))))
+                        (forall (set/from-list ["a"]) (=> [(isin a "show" [])] (tfns [a] tstring -1))))
                     (,
                     "show/pretty"
-                        (forall
-                        (set/from-list ["a"])
-                            (=> [(isin a "pretty" 0)] (tfns [a] tstring -1))))
+                        (forall (set/from-list ["a"]) (=> [(isin a "pretty" [])] (tfns [a] tstring -1))))
                     (, "()" (concrete (tcon "()" -1)))
                     (, "," (generic ["a" "b"] (tfns [a b] (t, a b) -1)))
                     ;(,

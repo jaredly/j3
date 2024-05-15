@@ -46,6 +46,9 @@ thih.clj
 thih.js
 thih.json
 syntax-cheatsheet.json
+type-classes.json
+algw-s4.json
+algw-s3.json
 `
     .trim()
     .split('\n');
