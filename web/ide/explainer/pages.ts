@@ -11,11 +11,11 @@ export const pages = [
     { id: 'self-1', title: 'Self-Hosted Code Generation' },
     { id: 'parse-self', title: 'Self-Hosted Parser' },
     { id: 'algw-s2', title: 'Self-Hosted Type Inference' },
-    { id: 'algw-s3', title: 'Improving the type inference' },
+    { id: 'algw-s3', title: 'Improving the Type Inference' },
+    { id: 'next', title: "What's Next?" },
     { id: 'type-classes', title: "Let's talk about Type Classes" },
     { id: 'algw-s4', title: 'Inferring Type Classes' },
     // { id: 'parse-tc', title: 'Parsing Type Classes' },
-    { id: 'next', title: "What's Next?" },
     // { id: 'parse-1-args', title: 'More Fancy Parser & Code Generator' },
     // { id: 'algw-fast', title: 'More Fancy Type Inference' },
 ];

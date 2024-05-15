@@ -5,6 +5,13 @@ I should prooobably do a "pre algw" document that is *without generics*. Right? 
 Yeah I guess we would...
 Anyway, might be helpful as a stepping stone.
 
+
+# GADT thoughts
+
+https://blog.polybdenum.com/2024/03/03/what-are-gadts-and-why-do-they-make-type-inference-sad.html
+https://blog.janestreet.com/why-gadts-matter-for-performance/
+https://wiki.haskell.org/GADTs_for_dummies
+
 # THIH Type Classes
 
 Things to think about:

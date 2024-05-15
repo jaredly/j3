@@ -1,9 +1,11 @@
 (** ## Type Inference with Type Classes
-    Expanding our algorithm with predicates, based on the fantastic paper [Typing Haskell in Haskell](https://web.cecs.pdx.edu/~mpj/thih/thih.pdf). We'll do this in a couple of steps:
-    - add predicates, with the IsIn predicate for indicating that a type "is in" a class.
-    - modify our code generation with knowledge about the concrete types at function definitions and callsites, so we know what "instance maps" to pass around.
+    Under construction
+    Here we'll be expanding our algorithm with predicates, based on the fantastic paper [Typing Haskell in Haskell](https://web.cecs.pdx.edu/~mpj/thih/thih.pdf). We'll break this up into a couple of steps:
+    - add the concept of predicates to the algorithm, with the IsIn predicate for indicating that a type "is in" a class. The scheme type which previously held "a set of free variables" and "a type" will be changed to contain a qualified type, that is a type with an associated list of predicates. When instantiating a value with a polymorphic type (when a variable reference is encountered), we will add any predicates we find to the State monad, and at the end of inferring a toplevel definition (tdef) we will collect any predicates that relate to free variables and include them in the inferred type of the definition. The top-level inference algorithm will also hand over all predicates (including those that don't relate to free variables, such as (isin (tcon "int") "number")) up to the structured editor, for use in the code generation step.
+    - modify our code generation with knowledge about the concrete types at function definitions and call-sites, so we know what "instance maps" to pass around. If we add a little bit of location information to our predicate type, we'll be able to use the "list of predicates encountered while inferring a definition" as sufficient information to do our compilation.
+    - add defclass and definstance to our AST, parser, code generator, and type checker, allowing for user-defined classes and instances.
     - add kinds to type variables and type constructors, which will enable us to define type classes on "Higher Kinded Types", unlocking the proper definition of Monad, and letting us use our "do notation" (let->) in a more general way (not locked into a single definition of >>= and <-).
-    - add defclass and definstance to our AST, parser, code generator, and type checker, allowing for user-defined classes and instances. **)
+    Changes from the previous version highlighted in green. **)
 
 (** ## Prelude **)
 

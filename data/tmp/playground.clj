@@ -1,5 +1,5 @@
 (** ## A Playground
-    for trying out the language. **)
+    for trying out the language. Play around with it! **)
 
 (+ 1 2)
 
