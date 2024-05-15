@@ -1677,7 +1677,8 @@
 (defn scheme/tv [(forall ks qt)] (qual/tv qt type/tv))
 
 (defn quantify [vs qt]
-    (let [
+    (** vs' is the list of type variables present in qt that are also present in vs. **)
+        (let [
         vs'   (filter (fn [v] (any (tyvar= v) vs)) (set/to-list (qual/tv qt type/tv)))
         ks    (map tyvar/kind vs')
         subst (map/from-list (mapi (fn [v i] (, v (tgen i -1))) 0 vs'))]
@@ -2083,21 +2084,24 @@
                 pss ((sequence (zipWith (infer/alts class-env as') altss type-vars)))
                 s   <-subst]
                 (let [
-                    ps' (preds/apply s (concat pss))
-                    ts' (map (type/apply s) type-vars)
-                    fs  (set/to-list
-                            (foldl
-                                set/nil
-                                    (map (assump/apply s) assumps)
-                                    (fn [res assumps] (set/merge res (assump/tv assumps)))))
-                    vss (map type/tv ts')
-                    gs  (without (set/to-list (foldr1 set/merge vss)) fs tyvar=)]
+                    ps'           (preds/apply s (concat pss))
+                    ts'           (map (type/apply s) type-vars)
+                    free-in-scope (set/to-list
+                                      (foldl
+                                          set/nil
+                                              (map (assump/apply s) assumps)
+                                              (fn [res assumps] (set/merge res (assump/tv assumps)))))
+                    vss           (map type/tv ts')
+                    gs            (without
+                                      (set/to-list (foldr1 set/merge vss))
+                                          free-in-scope
+                                          tyvar=)]
                     (let-> [
                         (, ds rs) ((** This intersect call is the part that makes it so that, if you have multiple bindings in a group,
                                       the only variables that can have typeclass constraints are ones that appear in every binding. **)
                                       (split
                                       class-env
-                                          fs
+                                          free-in-scope
                                           (foldr1 (intersect tyvar=) (map set/to-list vss))
                                           ps')
                                       )]

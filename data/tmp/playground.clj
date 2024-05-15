@@ -3,6 +3,22 @@
 
 (+ 1 2)
 
+show
+
+show/pretty
+
+(defn both [x] (, (+! x x) (show x)))
+
+(defn moth [x] (, (+! x x) (+! 1)))
+
+(defn ad [x] (+! x))
+
+(both 10)
+
+(show 10)
+
+(show/pretty (, 1 2))
+
 (def name "Zinnia")
 
 "Hello ${name}"
@@ -14,7 +30,9 @@
 
 (fib 5)
 
-(deftype (list a) (cons a (list a)) (nil))
+(deftype (list a)
+    (cons a (list a))
+        (nil))
 
 (defn map [f lst]
     (match lst

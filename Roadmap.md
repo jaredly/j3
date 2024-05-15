@@ -1,4 +1,39 @@
 
+# Pre Alg W
+
+I should prooobably do a "pre algw" document that is *without generics*. Right? ... would we still have type variables?
+Yeah I guess we would...
+Anyway, might be helpful as a stepping stone.
+
+# THIH Type Classes
+
+Things to think about:
+https://terbium.io/2021/02/traits-typeclasses/
+
+ok, so thinking about how we end up passing around the "instance maps" for things ... what if the predicate (isin type string) had a third argument, that is ... like a `(option int)`, that would get filled in with a reference to the ... location of the instance definition? hrmmm.
+
+Ok so the thing that will happen, is we'll get "the type of this function call is XYZ", with some type variables, that may have constriaints on them that exist in the "global predicates list".
+-> andddd so it's not really that the function call has predicates, it's that the variables in the function type have predicates.
+Anyways.
+Those predicates, they need resolvin.
+
+I'll need to sit down with this once I have the inference actually happening. And do a concrete example.
+
+OK SO yeah, I'm pretty sure: when we introduce a predicate, it *exists* because it was attached to some global value.
+SO, when we bring it into the world, we need to /tag/ it with the /loc/ of that variable reference, so that at runtime,
+we can replace `show` with `show($int$show)` or something like that. prefill in the relevant instance.
+
+
+OOOHK, so:
+- (defn x [a] (show a))
+  -> has predicate (isin a:12 "show") <- a:12 is the `tvar` name
+  -> gets generated as:
+    `const x = ($a_12_show) => (a) => show($a_12_show)(a)`
+  lovin it
+
+- [ ] STOPSHIP: only attach predicates that have type variables that are free in the declaration!!!
+  this makes sense now.
+
 # Track Changes
 
 ok this is cool

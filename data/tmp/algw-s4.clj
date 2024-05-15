@@ -1,5 +1,9 @@
 (** ## Type Inference with Type Classes
-    Expanding our algorithm with predicates, based on the fantastic paper [Typing Haskell in Haskell](https://web.cecs.pdx.edu/~mpj/thih/thih.pdf). The basic idea is that, in addition to  **)
+    Expanding our algorithm with predicates, based on the fantastic paper [Typing Haskell in Haskell](https://web.cecs.pdx.edu/~mpj/thih/thih.pdf). We'll do this in a couple of steps:
+    - add predicates, with the IsIn predicate for indicating that a type "is in" a class.
+    - modify our code generation with knowledge about the concrete types at function definitions and callsites, so we know what "instance maps" to pass around.
+    - add kinds to type variables and type constructors, which will enable us to define type classes on "Higher Kinded Types", unlocking the proper definition of Monad, and letting us use our "do notation" (let->) in a more general way (not locked into a single definition of >>= and <-).
+    - add defclass and definstance to our AST, parser, code generator, and type checker, allowing for user-defined classes and instances. **)
 
 (** ## Prelude **)
 
@@ -82,6 +86,37 @@
         (some x) x
         _        (fatal "Option is None")))
 
+(defn list= [a' b' eq]
+    (match (, a' b')
+        (, [one ..rest] [two ..rest']) (if (eq one two)
+                                           (list= rest rest' eq)
+                                               false)
+        _                              false))
+
+(** bag, a collection type with O(1) concatenation **)
+
+(deftype (bag a)
+    (one a)
+        (many (list (bag a))))
+
+(def empty (many []))
+
+(defn bag/and [first second]
+    (match (, first second)
+        (, (many []) a)         a
+        (, a (many []))         a
+        (, (many [a]) (many b)) (many [a ..b])
+        (, a (many b))          (many [a ..b])
+        _                       (many [first second])))
+
+(defn bag/fold [f init bag]
+    (match bag
+        (many [])    init
+        (one v)      (f init v)
+        (many items) (foldr init items (bag/fold f))))
+
+(defn bag/to-list [bag] (bag/fold (fn [list one] [one ..list]) [] bag))
+
 (** ## AST
     again, this is the same as in the previous articles, so feel free to skip. **)
 
@@ -152,10 +187,13 @@
 
 (def tint (tcon "int" -1))
 
-(defn scheme->s [(forall vbls type)]
-    (match (set/to-list vbls)
+(defn pred->s [(isin type cls l)]
+    "(isin ${(type->s type)} \"${cls}\" ${(int-to-string l)}) ")
+
+(defn scheme->s [(forall vbls (=> preds type))]
+    "${(join "" (map pred->s preds))}${(match (set/to-list vbls)
         []   (type->s type)
-        vbls "forall ${(join " " vbls)} : ${(type->s type)}"))
+        vbls "forall ${(join " " vbls)} : ${(type->s type)}")}")
 
 (defn type->s [type]
     (match type
@@ -164,7 +202,7 @@
         (tapp target arg _)                     "(${(type->s target)} ${(type->s arg)})"
         (tcon name _)                           name))
 
-(defn scheme->cst [(forall vbls type)] (type->cst type))
+(defn scheme->cst [(forall _ (=> _ type))] (type->cst type))
 
 (defn target-and-args [type coll]
     (match type
@@ -187,13 +225,43 @@
         (tapp _ _ l)                        (let [(, name args) (target-and-args type [])]
                                                 (cst/list [(type->cst name) ..(map type->cst args)] l))))
 
+(** ## "Type Predicates" **)
+
+(** A "predicate" is another term for a constraint, at least in this context. The first predicate we'll define is a "type is in class" predicate. This means that the type variables can only be instantiated with types that result in there being a matching instance defined for that class.
+    Later on, we'll also probably be leaning on predicates for implementing polymorphic record types (row polymorphism). **)
+
+(deftype predicate
+    (** type is "in" the class identified by the given name. e.g. (isin (tvar a) "number") . The final int is used by the code generator to associate the type class constraint with the variable reference that produced it. **)
+        (isin type string int))
+
+((** Overwrite the loc attribute of a predicate. Used when instantiating the scheme of a referenced variable. **)
+    defn predicate/reloc [l (isin type cls _)]
+    (isin type cls l))
+
+(** The qualified type is used to associate a list of predicates with whatever is inside. In practice, the "thing inside" will either be:
+    cannot convert {"id":"91fc8a1b-1479-4d77-822c-70f027d3c02a","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"a ","styles":{}},{"type":"text","text":"type","styles":{"code":true}},{"type":"text","text":", as in ","styles":{}},{"type":"text","text":"(=> [(isin (tvar a) \"number\")] (fn [(tvar a)] string))","styles":{"code":true}},{"type":"text","text":", which describes the function type from a generic variable ","styles":{}},{"type":"text","text":"a","styles":{"code":true}},{"type":"text","text":" to ","styles":{}},{"type":"text","text":"string","styles":{"code":true}},{"type":"text","text":", where ","styles":{}},{"type":"text","text":"a","styles":{"code":true}},{"type":"text","text":" must be a member of the type class ","styles":{}},{"type":"text","text":"number","styles":{"code":true}},{"type":"text","text":".","styles":{}}],"children":[]}
+    cannot convert {"id":"d5752e34-e259-4b82-ac40-d338f8c0850f","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"a ","styles":{}},{"type":"text","text":"predicate","styles":{"code":true}},{"type":"text","text":", describing type class instances that are conditional. e.g. ","styles":{}},{"type":"text","text":"(=> [(isin (tvar a) \"show\")] (isin (list (tvar a)) \"show\"))","styles":{"code":true}},{"type":"text","text":" indicates that if a given type is in the ","styles":{}},{"type":"text","text":"show","styles":{"code":true}},{"type":"text","text":" class, then a ","styles":{}},{"type":"text","text":"list","styles":{"code":true}},{"type":"text","text":" of that type is also in ","styles":{}},{"type":"text","text":"show","styles":{"code":true}},{"type":"text","text":".","styles":{}}],"children":[]} **)
+
+(deftype (qualified t)
+    (=> (list predicate) t))
+
+(defn qual= [(=> preds t) (=> preds' t') t=]
+    (if (list= preds preds' pred=)
+        (t= t t')
+            false))
+
+(defn pred= [(isin type id _) (isin type' id' _)]
+    (if (= id id')
+        (type= type type')
+            false))
+
 (** ## The Type Environment
     The "type environment" gets passed around to most of the infer/ functions, and includes global definitions as well as the types of locally-bound variables. **)
 
 (** A scheme is the way that we represent generic types (sometimes called "polytypes"). The first argument is a set of the tvar ids that are generic in the contained type. **)
 
 (deftype scheme
-    (forall (set string) type))
+    (forall (set string) (qualified type)))
 
 (deftype tenv
     (tenv
@@ -235,16 +303,24 @@
         (tcon _ _)   set/nil
         (tapp a b _) (set/merge (type/free a) (type/free b))))
 
+(defn qual/free [(=> predicates contents) contents/free]
+    (foldl
+        (contents/free contents)
+            (map predicate/free predicates)
+            set/merge))
+
+(defn predicate/free [(isin type _ _)] (type/free type))
+
 (defn scheme/free [(forall vbls type)]
-    (set/diff (type/free type) vbls))
+    (set/diff (qual/free type type/free) vbls))
 
 (defn tenv/free [(tenv values _ _ _)]
     (foldr set/nil (map scheme/free (map/values values)) set/merge))
 
 (,
     (fn [a] (set/to-list (scheme/free a)))
-        [(, (forall (set/from-list ["a"]) (tvar "a" -1)) [])
-        (, (forall (set/from-list []) (tvar "a" -1)) ["a"])])
+        [(, (forall (set/from-list ["a"]) (=> [] (tvar "a" -1))) [])
+        (, (forall (set/from-list []) (=> [] (tvar "a" -1))) ["a"])])
 
 (** ## Applying type substitutions
     A core notion of Hindley-Milner's "Algorithm W" is the "substitution map". It contains a mapping from a type variable to a "replacement type". Applying the substitution map to a type consists of finding all tvars in a type that have a replacement defined in the map, and making that substitution. **)
@@ -265,9 +341,19 @@
         (tapp (tcon "list" -1) (tvar "a" -1) -1)
             (tapp (tcon "list" -1) (tcon "int" -1) -1))])
 
-(defn scheme/apply [subst (forall vbls type)]
+(defn scheme/apply [subst (forall vbls qualified-type)]
     (** When applying a substitution map to a scheme, we ignore all mappings of variables in the free set for that scheme. **)
-        (forall vbls (type/apply (map-without subst vbls) type)))
+        (forall
+        vbls
+            (qual/apply type/apply (map-without subst vbls) qualified-type)))
+
+(defn qual/apply [contents/apply subst (=> predicates contents)]
+    (=>
+        (map (predicate/apply subst) predicates)
+            (contents/apply subst contents)))
+
+(defn predicate/apply [subst (isin type cls l)]
+    (isin (type/apply subst type) cls l))
 
 ((** As an optimization, we could segregate the type environment into "values with unresolved type variables" and "values without", or even set up a lookup table from "tvar id" to "names of values that contain that tvar". For now though, we'll do the simple thing of just always iterating over everything in scope.
     A simpler (and very reasonable) optimization would be to split the tenv into "global terms" and "local terms", because global terms are not allowed to have unresolved type variables, and local terms tend to be relatively small in number.
@@ -310,8 +396,8 @@
 (** ## Generalizing
     Once we have inferred the type for a named value (either at the top level, or in a let), we "lock in" the polymorphism with generalize. This consists of finding any type variables that only exist in our current type (not in the broader scope), and setting them as the "free set" of our forall. **)
 
-(defn generalize [tenv t]
-    (forall (set/diff (type/free t) (tenv/free tenv)) t))
+(defn generalize [tenv qual]
+    (forall (set/diff (qual/free qual type/free) (tenv/free tenv)) qual))
 
 (** ## A State monad
     Given that we're going 100% immutable, having a State monad is really handy so you're not having to pipe state values into and out of every function. **)
@@ -389,7 +475,10 @@
         (StateT
         (,
             int
+                (** Subst **)
                 (map string type)
+                (** Current predicates **)
+                (bag predicate)
                 (list
                 (** (type) at (location) with a flag to indicate whether it should be presented without applying substitutions **)
                     (, type int bool))
@@ -416,7 +505,7 @@
 (defn <-missing [name loc] (<-err* (tmissing [(, name loc)])))
 
 (defn <-mismatch [t1 t2]
-    (<-err* (ttypes (forall set/nil t1) (forall set/nil t2))))
+    (<-err* (ttypes (forall set/nil (=> [] t1)) (forall set/nil (=> [] t2)))))
 
 (defn type-error->s [err]
     (match err
@@ -441,40 +530,26 @@
 ((** This gives us "hover for type". We record a type and the associated loc, and store it on the state. After everything is finished, we go through this list of types, applying the final substitution map to each, and then hand them over to the editor. dont-subst is a flag that means don't apply the substitution map; this allows us to present both the generic and type-applied versions of generic functions. **)
     defn record-type-> [type loc dont-subst]
     (let-> [
-        (, idx subst types) <-state
-        _                   (state-> (, idx subst [(, type loc dont-subst) ..types]))]
+        (, idx subst preds types) <-state
+        _                         (state-> (, idx subst preds [(, type loc dont-subst) ..types]))]
         (<- ())))
 
-;((** This is for recording all of the identifiers that are "declarations". The editor can then match it against all reported "usages" to find variables that are unused. **)
-    defn record-decl-> [loc]
-    (let-> [
-        (, i s t decls u) <-state
-        _                 (state-> (, i s t [loc ..decls] u))]
-        (<- ())))
-
-;((** Here we record a usage; whether of a type or value, including the location where it was used, and the location where it was declared. **)
-    defn record-usage-> [usage decl]
-    (let-> [
-        (, i s t d usages) <-state
-        _                  (state-> (, i s t d [(, usage decl) ..usages]))]
-        (<- ())))
-
-(def state/nil (, 0 map/nil []))
+(def state/nil (, 0 map/nil empty []))
 
 (defn run/nil-> [st] (run-> st state/nil))
 
 (def <-next-idx
     (let-> [
-        (, idx subst types) <-state
-        _                   (state-> (, (+ idx 1) subst types))]
+        (, idx subst preds types) <-state
+        _                         (state-> (, (+ idx 1) subst preds types))]
         (<- idx)))
 
 (def <-subst (let-> [(, _ subst _) <-state] (<- subst)))
 
 (defn subst-> [new-subst]
     (let-> [
-        (, idx subst types) <-state
-        _                   (state-> (, idx (compose-subst new-subst subst) types))]
+        (, idx subst preds types) <-state
+        _                         (state-> (, idx (compose-subst new-subst subst) preds types))]
         (<- ())))
 
 ((** This overwrites the substitution map (without composing), returning the old substitution map. It is used for isolating a section of the algorithm, for performance reasons. **)
@@ -484,10 +559,18 @@
         _                       (state-> (, idx new-subst types))]
         (<- old-subst)))
 
+(defn preds-> [preds]
+    (let-> [
+        (, idx subst current types) <-state
+        _                           (state-> (, idx subst (bag/and preds current) types))]
+        (<- ())))
+
+(def <-preds (let-> [(, _ _ preds _) <-state] (<- preds)))
+
 (def reset-state->
     (let-> [
-        (, _ _ types) <-state
-        _             (state-> (, 0 map/nil types))]
+        (, _ _ _ types) <-state
+        _               (state-> (, 0 map/nil empty types))]
         (<- ())))
 
 (** These are monadified versions of the */apply functions from above; they "apply the current substitution". **)
@@ -497,6 +580,8 @@
 (def tenv/apply-> (apply-> tenv/apply))
 
 (def type/apply-> (apply-> type/apply))
+
+(def qualt/apply-> (apply-> (qual/apply type/apply)))
 
 (def scope/apply-> (apply-> scope/apply))
 
@@ -516,8 +601,14 @@
                         (set/to-list vars))]
         (<- (map/from-list mapping))))
 
-(defn instantiate [(forall vars t) l]
-    (let-> [subst (make-subst-for-free vars l)] (<- (type/apply subst t))))
+(defn instantiate [(forall vars qual) l]
+    (let-> [
+        subst        (make-subst-for-free vars l)
+        (=> preds t) (<- (qual/apply type/apply subst qual))
+        ()           (preds-> (many (map (dot one (predicate/reloc l)) preds)))]
+        (<- t)))
+
+(defn dot [f g n] (f (g n)))
 
 (** ## Unification
     Because our type-language is so simple, unification is quite straightforward. If we come across a tvar, we treat whatever's on the other side as its substitution; otherwise we recurse.
@@ -529,7 +620,10 @@
     (map-err->
         (unify-inner t1 t2 l)
             (fn [inner]
-            (err (twrap (ttypes (forall set/nil t1) (forall set/nil t2)) inner)))))
+            (err
+                (twrap
+                    (ttypes (forall set/nil (=> [] t1)) (forall set/nil (=> [] t2)))
+                        inner)))))
 
 (defn unify-inner [t1 t2 l]
     (match (, t1 t2)
@@ -602,7 +696,7 @@
         (ematch _ _ l)  l
         (elet _ _ l)    l))
 
-(defn record-if-generic [(forall free t) l]
+(defn record-if-generic [(forall free (=> _ t)) l]
     (match (set/to-list free)
         [] (<- ())
         (** If the variable we've found is generic, we want to record the type "pre-specialization" so we can show that on hover as well. **)
@@ -633,7 +727,7 @@
         (elambda [(pvar arg al)] body l)         (let-> [
                                                      arg-type  (new-type-var arg al)
                                                      ()        (record-type-> arg-type al false)
-                                                     bound-env (<- (tenv/with-type tenv arg (forall set/nil arg-type)))
+                                                     bound-env (<- (tenv/with-type tenv arg (forall set/nil (=> [] arg-type))))
                                                      body-type (infer/expr bound-env body)
                                                      arg-type  (type/apply-> arg-type)]
                                                      (<- (tfn arg-type body-type l)))
@@ -674,7 +768,8 @@
                                                      value-type  (infer/expr tenv value)
                                                      ()          (record-type-> value-type nl false)
                                                      applied-env (tenv/apply-> tenv)
-                                                     scheme      (<- (generalize applied-env value-type))
+                                                     (** Note that here we are not allowing let bound variables to have type class constraints. This is a restriction we could lift in the future, and follow THIH's approach of allowing predicates if the value is a elambda literal. **)
+                                                     scheme      (<- (generalize applied-env (=> [] value-type)))
                                                      bound-env   (<- (tenv/with-type applied-env name scheme))]
                                                      (infer/expr bound-env body))
         (** For non-pvar patterns, it's almost exactly the same, but we don't allow produced type variables to be generic. If we did, things like (fn [x] (let [(, a b) x] a) would return an "unbound" type variable: it would be inferred as forall a, b; a -> b. **)
@@ -745,19 +840,23 @@
                 (ttypes
                     (forall
                         (map/from-list [])
-                            (tapp
-                            (tapp (tcon "->" 4820) (tcon "int" 4822) 4820)
-                                (tvar "result:5" 4820)
-                                4820))
+                            (=>
+                            []
+                                (tapp
+                                (tapp (tcon "->" 4820) (tcon "int" 4822) 4820)
+                                    (tvar "result:5" 4820)
+                                    4820)))
                         (forall
                         (map/from-list [])
-                            (tapp
-                            (tapp (tcon "->" 4823) (tcon "bool" 4825) 4823)
-                                (tvar "result:6" 4823)
-                                4823)))
+                            (=>
+                            []
+                                (tapp
+                                (tapp (tcon "->" 4823) (tcon "bool" 4825) 4823)
+                                    (tvar "result:6" 4823)
+                                    4823))))
                     (ttypes
-                    (forall (map/from-list []) (tcon "int" 4822))
-                        (forall (map/from-list []) (tcon "bool" 4825))))))
+                    (forall (map/from-list []) (=> [] (tcon "int" 4822)))
+                        (forall (map/from-list []) (=> [] (tcon "bool" 4825)))))))
         (,
         (@ (fn [arg] (let [(, id _) arg] (, (id 2) (id true)))))
             (err
@@ -765,19 +864,23 @@
                 (ttypes
                     (forall
                         (map/from-list [])
-                            (tapp
-                            (tapp (tcon "->" 4847) (tcon "int" 4849) 4847)
-                                (tvar "result:9" 4847)
-                                4847))
+                            (=>
+                            []
+                                (tapp
+                                (tapp (tcon "->" 4847) (tcon "int" 4849) 4847)
+                                    (tvar "result:9" 4847)
+                                    4847)))
                         (forall
                         (map/from-list [])
-                            (tapp
-                            (tapp (tcon "->" 4850) (tcon "bool" 4852) 4850)
-                                (tvar "result:10" 4850)
-                                4850)))
+                            (=>
+                            []
+                                (tapp
+                                (tapp (tcon "->" 4850) (tcon "bool" 4852) 4850)
+                                    (tvar "result:10" 4850)
+                                    4850))))
                     (ttypes
-                    (forall (map/from-list []) (tcon "int" 4849))
-                        (forall (map/from-list []) (tcon "bool" 4852))))))
+                    (forall (map/from-list []) (=> [] (tcon "int" 4849)))
+                        (forall (map/from-list []) (=> [] (tcon "bool" 4852)))))))
         (, (@ ((fn [x] x) 2)) (ok (tcon "int" 4866)))
         (, (@ (let [a 2] (let [a true] a))) (ok (tcon "bool" 9716)))
         (,
@@ -808,11 +911,11 @@
             (err
             (twrap
                 (ttypes
-                    (forall (map/from-list []) (tcon "int" 5145))
-                        (forall (map/from-list []) (tcon "bool" 5143)))
+                    (forall (map/from-list []) (=> [] (tcon "int" 5145)))
+                        (forall (map/from-list []) (=> [] (tcon "bool" 5143))))
                     (ttypes
-                    (forall (map/from-list []) (tcon "int" 5145))
-                        (forall (map/from-list []) (tcon "bool" 5143))))))
+                    (forall (map/from-list []) (=> [] (tcon "int" 5145)))
+                        (forall (map/from-list []) (=> [] (tcon "bool" 5143)))))))
         (,
         (@
             (fn [x]
@@ -834,11 +937,11 @@
             (err
             (twrap
                 (ttypes
-                    (forall (map/from-list []) (tcon "int" 6850))
-                        (forall (map/from-list []) (tcon "string" 6848)))
+                    (forall (map/from-list []) (=> [] (tcon "int" 6850)))
+                        (forall (map/from-list []) (=> [] (tcon "string" 6848))))
                     (ttypes
-                    (forall (map/from-list []) (tcon "int" 6850))
-                        (forall (map/from-list []) (tcon "string" 6848))))))
+                    (forall (map/from-list []) (=> [] (tcon "int" 6850)))
+                        (forall (map/from-list []) (=> [] (tcon "string" 6848)))))))
         (,
         (@
             (fn [x]
@@ -865,7 +968,7 @@
         (pvar name l)         (let-> [
                                   v  (new-type-var name l)
                                   () (record-type-> v l false)]
-                                  (<- (, v (map/from-list [(, name (forall set/nil v))]))))
+                                  (<- (, v (map/from-list [(, name (forall set/nil (=> [] v)))]))))
         (pany l)              (let-> [v (new-type-var "any" l)] (<- (, v map/nil)))
         (pstr _ l)            (<- (, (tcon "string" l) map/nil))
         (pprim (pbool _ _) l) (<- (, (tcon "bool" l) map/nil))
@@ -1156,36 +1259,48 @@
 (defn add/def [tenv name nl expr l]
     (let-> [
         self      (new-type-var name nl)
-        bound-env (<- (tenv/with-type tenv name (forall set/nil self)))
+        bound-env (<- (tenv/with-type tenv name (forall set/nil (=> [] self))))
         type      (infer/expr bound-env expr)
         self      (type/apply-> self)
         ()        (unify self type l)
-        type      (type/apply-> type)]
-        (<- (tenv/with-type tenv/nil name (generalize tenv type)))))
+        type      (type/apply-> type)
+        subst     <-subst
+        preds     <-preds]
+        (<-
+            (tenv/with-type
+                tenv/nil
+                    name
+                    (generalize
+                    tenv
+                        (=> (map (predicate/apply subst) (bag/to-list preds)) type))))))
 
 (,
     (fn [(tdef name nl expr l)]
         (let [
             (tenv values _ _ _) (err-to-fatal (run/nil-> (add/def builtin-env name nl expr l)))]
             (map/to-list values)))
-        [(, (@! (def x 10)) [(, "x" (forall set/nil (tcon "int" 3024)))])
+        [(, (@! (def x 10)) [(, "x" (forall (map/from-list []) (=> [] (tcon "int" 3024))))])
         (,
         (@! (defn id [x] x))
             [(,
             "id"
                 (forall
                 (set/from-list ["x:1"])
-                    (tapp
-                    (tapp (tcon "->" 3044) (tvar "x:1" 3048) 3044)
-                        (tvar "x:1" 3048)
-                        3044)))])
+                    (=>
+                    []
+                        (tapp
+                        (tapp (tcon "->" 3044) (tvar "x:1" 3048) 3044)
+                            (tvar "x:1" 3048)
+                            3044))))])
         (,
         (@! (defn rec [x] (let [m (rec x)] (+ x m))))
             [(,
             "rec"
                 (forall
                 (map/from-list [])
-                    (tapp (tapp (tcon "->" 3146) (tcon "int" -1) 3146) (tcon "int" -1) 3146)))])])
+                    (=>
+                    []
+                        (tapp (tapp (tcon "->" 3146) (tcon "int" -1) 3146) (tcon "int" -1) 3146))))])])
 
 (** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
 
@@ -1198,20 +1313,28 @@
         bound-env (<-
                       (foldl
                           tenv
-                              (zip names (map (forall set/nil) vbls))
+                              (zip names (map (forall set/nil) (map (=> []) vbls)))
                               (fn [tenv (, name vbl)] (tenv/with-type tenv name vbl))))
         types     (map-> (fn [(, _ _ expr _)] (infer/expr bound-env expr)) defns)
         vbls      (map-> type/apply-> vbls)
         ()        (do->
                       (fn [(, vbl type loc)] (unify vbl type loc))
                           (zip vbls (zip types locs)))
-        types     (map-> type/apply-> types)]
+        types     (map-> type/apply-> types)
+        subst     <-subst
+        preds     <-preds]
         (<-
             (foldl
                 tenv/nil
                     (zip names types)
                     (fn [tenv (, name type)]
-                    (tenv/with-type tenv name (generalize tenv type)))))))
+                    (** TODO: determine what predicates apply to this type, and drop them in there? **)
+                        (tenv/with-type
+                        tenv
+                            name
+                            (generalize
+                            tenv
+                                (=> (map (predicate/apply subst) (bag/to-list preds)) type))))))))
 
 (,
     (fn [x]
@@ -1229,18 +1352,22 @@
                     "odd"
                         (forall
                         (map/from-list [])
-                            (tapp
-                            (tapp (tcon "->" 3821) (tcon "int" -1) 3821)
-                                (tcon "int" 3834)
-                                3821)))
+                            (=>
+                            []
+                                (tapp
+                                (tapp (tcon "->" 3821) (tcon "int" -1) 3821)
+                                    (tcon "int" 3834)
+                                    3821))))
                     (,
                     "even"
                         (forall
                         (map/from-list [])
-                            (tapp (tapp (tcon "->" 3776) (tcon "int" -1) 3776) (tcon "int" -1) 3776)))])
-                map/nil
-                map/nil
-                map/nil))])
+                            (=>
+                            []
+                                (tapp (tapp (tcon "->" 3776) (tcon "int" -1) 3776) (tcon "int" -1) 3776))))])
+                (map/from-list [])
+                (map/from-list [])
+                (map/from-list [])))])
 
 (defn add/typealias [(tenv values tcons types aliases) name args type]
     (tenv
@@ -1274,7 +1401,7 @@
             (map/from-list
                 (map
                     (fn [(, name (, free args res))]
-                        (, name (forall (set/from-list free) (tfns args res l))))
+                        (, name (forall (set/from-list free) (=> [] (tfns args res l)))))
                         parsed-constrs))
                 (map/from-list parsed-constrs)
                 (map/set
@@ -1413,9 +1540,9 @@
 
 (defn tset [arg] (tapp (tcon "set" -1) arg -1))
 
-(defn concrete [t] (forall set/nil t))
+(defn concrete [t] (forall set/nil (=> [] t)))
 
-(defn generic [vbls t] (forall (set/from-list vbls) t))
+(defn generic [vbls t] (forall (set/from-list vbls) (=> [] t)))
 
 (defn vbl [k] (tvar k -1))
 
@@ -1442,6 +1569,17 @@
                     (, "!=" (generic ["k"] (tfns [k k] tbool -1)))
                     (, ">=" (concrete (tfns [tint tint] tbool -1)))
                     (, "<=" (concrete (tfns [tint tint] tbool -1)))
+                    (,
+                    "+!"
+                        (forall (set/from-list ["a"]) (=> [(isin a "number" 0)] (tfns [a a] a -1))))
+                    (,
+                    "show"
+                        (forall (set/from-list ["a"]) (=> [(isin a "show" 0)] (tfns [a] tstring -1))))
+                    (,
+                    "show/pretty"
+                        (forall
+                        (set/from-list ["a"])
+                            (=> [(isin a "pretty" 0)] (tfns [a] tstring -1))))
                     (, "()" (concrete (tcon "()" -1)))
                     (, "," (generic ["a" "b"] (tfns [a b] (t, a b) -1)))
                     ;(,
@@ -1505,32 +1643,41 @@
 
 (defn infer-stmts2 [env stmts]
     (let [
-        (, (, _ subst types) result) (state-f (add/stmts env stmts) state/nil)]
+        (, (, _ subst preds types) result) (state-f (add/stmts env stmts) state/nil)]
         (,
             (match result
                 (err e)             (err e)
-                (ok (, tenv types)) (ok (, tenv (map (forall set/nil) types))))
+                (ok (, tenv types)) (ok
+                                        (,
+                                            tenv
+                                                (map
+                                                (forall set/nil)
+                                                    (map (=> (map (predicate/apply subst) (bag/to-list preds))) types)))))
                 (map
                 (fn [(, t l dont-apply)]
                     (if dont-apply
-                        (, l (forall set/nil t))
-                            (, l (forall set/nil (type/apply subst t)))))
+                        (, l (forall set/nil (=> [] t)))
+                            (** Hmm I probably should go through ... and determine what predicates apply to the given type? Maybe? **)
+                            (, l (forall set/nil (=> (bag/to-list preds) (type/apply subst t))))))
                     types)
                 []
                 [])))
 
 (defn infer-expr2 [env expr]
     (let [
-        (, (, _ subst types) result) (state-f (infer/expr env expr) state/nil)]
+        (, (, _ subst preds types) result) (state-f (infer/expr env expr) state/nil)]
         (,
             (match result
-                (ok t)  (ok (forall set/nil t))
+                (ok t)  (ok
+                            (forall
+                                set/nil
+                                    (=> (map (predicate/apply subst) (bag/to-list preds)) t)))
                 (err e) (err e))
                 (map
                 (fn [(, t l dont-apply)]
                     (if dont-apply
-                        (, l (forall set/nil t))
-                            (, l (forall set/nil (type/apply subst t)))))
+                        (, l (forall set/nil (=> [] t)))
+                            (, l (forall set/nil (=> [] (type/apply subst t))))))
                     types)
                 []
                 [])))

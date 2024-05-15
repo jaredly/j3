@@ -21,7 +21,13 @@ Also livelits, good stuff.
 
 
 - https://enso.org/language
-- 
+-
 
 
 
+
+https://www.shadertoy.com/view/XfKSzV
+https://www.shadertoy.com/view/XfyXRV
+
+
+https://ocamlverse.net/content/future_ocaml.html
