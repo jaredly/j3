@@ -865,6 +865,8 @@
 
 (** ## Exporting for the structured editor **)
 
+(** This is a peek under the hood as to how the code in these documents gets "handed off" to the structured editor for use as an evaluator for other documents. It's not really necessary for you to understand it, and it's disabled here in the publicly hosted editor anyway. **)
+
 (deftype parse-and-compile
     (parse-and-compile
         (fn [cst] top)

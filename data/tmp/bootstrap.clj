@@ -987,6 +987,8 @@ const pat_names = pat => {
 
 (** ## Packaging it up as a Compiler for the structured editor **)
 
+(** This is a peek under the hood as to how the code in these documents gets "handed off" to the structured editor for use as an evaluator for other documents. It's not really necessary for you to understand it, and it's disabled here in the publicly hosted editor anyway. **)
+
 (** ({type: 'fns', prelude: makePrelude({evaluate,evaluateStmt: evaluateTop,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString}),
   compile: ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)`,
   compile_stmt: ast => _meta => `${ast.type === 'tdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'tdeftype' ? `const {${

@@ -693,6 +693,43 @@ throw new Error('match fail 17250:' + JSON.stringify($target))
 } ;
 throw new Error('match fail 17229:' + JSON.stringify($target))
 })(type)
+let type_to_js_id = (type) => (($target) => {
+if ($target.type === "tvar") {
+let name = $target[0];
+return sanitize(name)
+} ;
+if ($target.type === "tcon") {
+let name = $target[0];
+return sanitize(name)
+} ;
+if ($target.type === "tapp") {
+let target = $target[0];
+let arg = $target[1];
+return `${type_to_js_id(target)}\$app\$${type_to_js_id(arg)}`
+} ;
+throw new Error('match fail 17641:' + JSON.stringify($target))
+})(type)
+let put_in_place = (ordered) => (value) => (idx) => (($target) => {
+if ($target.type === "nil") {
+return cons($co(value)(idx))(nil)
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === ",") {
+let ov = $target[0][0];
+let oidx = $target[0][1];
+let rest = $target[1];
+{
+let $target = idx < oidx;
+if ($target === true) {
+return cons($co(value)(idx))(cons($co(ov)(oidx))(rest))
+} ;
+return cons($co(ov)(oidx))(put_in_place(rest)(value)(idx));
+throw new Error('match fail 17728:' + JSON.stringify($target))
+}
+} 
+} ;
+throw new Error('match fail 17710:' + JSON.stringify($target))
+})(ordered)
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -1132,6 +1169,7 @@ throw new Error('match fail 16835:' + JSON.stringify($target))
 throw new Error('match fail 16816:' + JSON.stringify($target))
 })(right))
 let pred_contains = (free) => ({"2": loc, "1": cls, "0": type}) => type$slmatches_free(free)(type)
+let name_for_instance = (type) => (cls) => `\$_inst_${type_to_js_id(type)}\$${cls}`
 let terr = (v0) => (v1) => ({type: "terr", 0: v0, 1: v1})
 let ttypes = (v0) => (v1) => ({type: "ttypes", 0: v0, 1: v1})
 let twrap = (v0) => (v1) => ({type: "twrap", 0: v0, 1: v1})
@@ -1288,6 +1326,25 @@ let $lt_missing = (name) => (loc) => $lt_err$ti(tmissing(cons($co(name)(loc))(ni
 let $lt_mismatch = (t1) => (t2) => $lt_err$ti(ttypes(forall(set$slnil)($eq$gt(nil)(t1)))(forall(set$slnil)($eq$gt(nil)(t2))))
 let scheme_$gtcst = ({"1": {"1": type}}) => type_$gtcst(type)
 let with_preds = (preds) => ({"1": {"1": type, "0": p2}, "0": free}) => forall(free)($eq$gt(concat(cons(p2)(cons(filter(pred_contains(free))(preds))(nil))))(type))
+let organize_predicates = (preds) => map$slmap((ol) => mapi((i) => ({"1": idx, "0": v}) => (($target) => {
+if ($target === true) {
+return fatal(`predicates out of order somehow: ${int_to_string(i)} ${int_to_string(idx)}`)
+} ;
+return v;
+throw new Error('match fail 17784:' + JSON.stringify($target))
+})($ex$eq(i)(idx)))(ol))(foldl(map$slnil)(preds)((by_loc) => ({"2": locs, "1": cls, "0": type}) => {
+let instance_name = name_for_instance(type)(cls);
+return foldl(by_loc)(locs)((by_loc) => ({"1": idx, "0": loc}) => (($target) => {
+if ($target.type === "none") {
+return map$slset(by_loc)(loc)(cons($co(instance_name)(idx))(nil))
+} ;
+if ($target.type === "some") {
+let current = $target[0];
+return map$slset(by_loc)(loc)(put_in_place(current)(instance_name)(idx))
+} ;
+throw new Error('match fail 17599:' + JSON.stringify($target))
+})(map$slget(by_loc)(loc)))
+}))
 let tenv$slapply = (subst) => ({"4": typeclasses, "3": aliases, "2": types, "1": tcons, "0": values}) => tenv(scope$slapply(subst)(values))(tcons)(types)(aliases)(typeclasses)
 let var_bind = ($var) => (type) => (l) => (($target) => {
 if ($target.type === "tvar") {
@@ -1738,6 +1795,6 @@ return $co(l)(forall(set$slnil)($eq$gt(nil)(t)))
 } ;
 return $co(l)(forall(set$slnil)($eq$gt(nil)(type$slapply(subst)(t))));
 throw new Error('match fail 12961:' + JSON.stringify($target))
-})(dont_apply))(types))(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))
+})(dont_apply))(types))(organize_predicates(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds))))))
 }
 return eval("env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts3 => infer2 =>\n  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts3, infer2})\n")(builtin_env)(tenv$slmerge)(tenv$slresolve)(scheme_$gts)(scheme_$gtcst)(infer_stmts3)(infer_expr2)

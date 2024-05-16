@@ -343,7 +343,7 @@ const compileStmt = (
             try {
                 result = fn(values);
             } catch (err) {
-                debugger;
+                // debugger;
                 return {
                     env,
                     display: [
@@ -382,7 +382,7 @@ const compileStmt = (
                     display.push(`<null>`);
                 }
             } catch (err) {
-                debugger;
+                // debugger;
                 return {
                     env,
                     display: [

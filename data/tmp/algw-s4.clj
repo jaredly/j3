@@ -1757,7 +1757,51 @@
                 map/nil
                 map/nil)))
 
+(defn name-for-instance [type cls]
+    "$_inst_${(type-to-js-id type)}$${cls}")
+
+(defn type-to-js-id [type]
+    (match type
+        (tvar name _)       (sanitize name)
+        (tcon name _)       (sanitize name)
+        (tapp target arg _) "${(type-to-js-id target)}$app$${(type-to-js-id arg)}"))
+
+(type-to-js-id (tvar "a:12" 1))
+
+(defn put-in-place [ordered value idx]
+    (match ordered
+        []                   [(, value idx)]
+        [(, ov oidx) ..rest] (if (< idx oidx)
+                                 [(, value idx) (, ov oidx) ..rest]
+                                     [(, ov oidx) ..(put-in-place rest value idx)])))
+
+(defn organize-predicates [preds]
+    (** So, here we want to: make a map from idx to (the list of ... the names of ... the instances). Which means, I want a way to turn a type into a javascript-ready variable name. **)
+        (map/map
+        (fn [ol]
+            (mapi
+                (fn [i (, v idx)]
+                    (if (!= i idx)
+                        (fatal
+                            "predicates out of order somehow: ${(int-to-string i)} ${(int-to-string idx)}")
+                            v))
+                    ol))
+            (foldl
+            map/nil
+                preds
+                (fn [by-loc (isin type cls locs)]
+                (let [instance-name (name-for-instance type cls)]
+                    (foldl
+                        by-loc
+                            locs
+                            (fn [by-loc (oloc loc idx)]
+                            (match (map/get by-loc loc)
+                                (none)         (map/set by-loc loc [(, instance-name idx)])
+                                (some current) (map/set by-loc loc (put-in-place current instance-name idx))))))))))
+
 (** ## Exporting for the structured editor **)
+
+(** This is a peek under the hood as to how the code in these documents gets "handed off" to the structured editor for use as an evaluator for other documents. It's not really necessary for you to understand it, and it's disabled here in the publicly hosted editor anyway. **)
 
 (defn infer-stmts3 [env stmts]
     (let [
@@ -1773,8 +1817,9 @@
                             (** Hmm I probably should go through ... and determine what predicates apply to the given type? Maybe? **)
                             (, l (forall set/nil (=> [] (type/apply subst t))))))
                     types)
+                (organize-predicates
                 (predicate/combine
-                (map (predicate/apply subst) (bag/to-list preds))))))
+                    (map (predicate/apply subst) (bag/to-list preds)))))))
 
 (defn infer-expr2 [env expr]
     (let [

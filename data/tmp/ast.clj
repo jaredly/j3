@@ -5,11 +5,15 @@
 
 (** Utility Types **)
 
-(deftype (list a)
+(** These are two types we'll be using all over the place, including in the AST. They're defined here for reference. **)
+
+((** A basic linked list **)
+    deftype (list a)
     (nil)
         (cons a (list a)))
 
-(deftype (, a b)
+((** Our handy tuple type. Remember that n-ary tuples get desugared into pairs, so (, a b c) is really (, a (, b c)). **)
+    deftype (, a b)
     (, a b))
 
 (** ## Type Definitions **)
@@ -108,75 +112,4 @@
         (texpr expr int)
         (** A type alias e.g. (typealias names (list string)) **)
         (ttypealias string int (list string) type int))
-
-(** ## Syntax Sugar **)
-
-(** ## Tuples
-    Grouping multiple values **)
-
-(** The tuple constructor , is something we'll handle specially to allow tuples of any length.
-    (, a b c) is sugar for (, a (, b c)), (, a b c d) for (, a (, b (, c d))) and so on. This shows up when parsing types, patterns, and expressions.
-    This is really handy for when you want to have a couple things grouped together, but don't want to go to the trouble of coming up with a name for a deftype. **)
-
-(** ## "Do notation" with let->
-    Making purity & immutability a little less cumbersome **)
-
-(** Because our language is fully immutable, some things can require a lot of plumbing that can really get in the way of readability. For example, in our type inference algorithm we'll need to keep track of an incrementing integer so we can produce unique ids for type variables. Without a specialized syntax, this would require passing the next-id variable into -- and out of -- almost every function, which would get really annoying. Fortunately, our friends in haskell-land have come up with a nice way of abstracting this out, called "do notation". We'll be taking inspiration from this for our let-> syntax sugar.
-    The simplest usage of let-> would be something akin to swift's try or rust's ? suffix, allowing us to have nice error handling without resorting to throwing exceptions.
-    Here's a simple parsing example, without any sugar: **)
-
-(deftype (result good bad)
-    (ok good)
-        (err bad))
-
-(defn parse-person [data]
-    (match (parse-name data)
-        (err reason) (err reason)
-        (ok name)    (let [greeting "Hello ${name}"]
-                         (match (parse-address data)
-                             (err reason) (err reason)
-                             (ok address) (ok "${greeting}, you live at ${address}")))))
-
-(** Because both parse-name and parse-address might fail, we have to match the results, which gets pretty messy. In contrast, here's what it looks like with let->: **)
-
-(defn parse-person2 [data]
-    (let-> [
-        name     (parse-name data)
-        greeting (<- "Hello ${name}")
-        address  (parse-address data)]
-        (<- "${greeting}, you live at ${address}")))
-
-(** This is much nicer! And you can imagine how the match version would get even more annoying the more things you want to parse. Now let's look at what this desugars into: **)
-
-(defn parse-person3 [data]
-    (>>=
-        (parse-name data)
-            (fn [name]
-            (>>=
-                (<- "Hello ${name}")
-                    (fn [greeting]
-                    (>>=
-                        (parse-address data)
-                            (fn [address] (<- "${greeting}, you live at ${address}"))))))))
-
-(** Arguably even more obtuse than the match version 😅 but that's fine because it's not the version we have to look at. The >>= operator ( > > = without ligature-smooshing) is called "bind", and roughly translates to "take this wrapped value, and run this function on the contents", and <- is my name for return (sometimes called pure), which translates to "wrap this value".
-    The reason greeting's value has to be wrapped with <- is that everything in a let-> needs to be a "wrapped value" (in this case, a result), in order for the types to make sense.
-    Here are the definitions of >>= and <- for result: **)
-
-(defn >>= [result next]
-    (match result
-        (err e)    (err e)
-        (ok value) (next value)))
-
-(def <- ok)
-
-(** So this was an example using the do-notation with the result type for handling errors, but in the "Self-Hosted Type Inference" document we'll be using a somewhat more complicated version, which will allow us the to have the illusion of mutable state :). **)
-
-
-
-(defn parse-address [data] ;  some parsing (ok "earth"))
-
-(defn parse-name [data] ;  do something (ok "olive"))
-
-(, parse-person parse-person2 parse-person3)
 

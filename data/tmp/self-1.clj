@@ -409,6 +409,10 @@
         (, (@ "${${1}") "${1")
         (, (@ "${${"a}"}") "${a}")])
 
+(** Packaging the code generation for the structured editor **)
+
+(** This is a peek under the hood as to how the code in these documents gets "handed off" to the structured editor for use as an evaluator for other documents. It's not really necessary for you to understand it, and it's disabled here in the publicly hosted editor anyway. **)
+
 (eval
     (** compile => compile_top => ({type:'fns',  compile: a => _ => compile(a), compile_stmt: a => _ => compile_top(a)}) **)
         compile

@@ -30,20 +30,21 @@
 (** ## The Concrete Syntax Tree **)
 
 (** Let's familiarize ourselves with the kinds of syntax we'll be working with: the "Concrete Syntax Tree". The "evaluator" for this page is set to REPR, which simply outputs the JSON representation of the CST for a given toplevel term.
-    Here's the TypeScript type of a CST node (abbreviated to include only the variants that our parser will be concerned with). **)
+    Here's the TypeScript type of a CST node (slightly abbreviated to include only the variants that our parser will be concerned with): **)
 
 (** type Node =
 | {type: 'identifier', text: string, loc: number} // abc, 123, a-b%c@, >=, >>=
-| {type: 'list', values: Node[], loc: number}
-| {type: 'array', values: Node[], loc: number}
-| {type: 'string', first: {type: 'stringText', text: string, loc: number},
+| {type: 'list', values: Node[], loc: number} // (a list of things)
+| {type: 'array', values: Node[], loc: number} // [a square bracket list of things]
+| {type: 'string', // "A ${string} with ${interpolations}"
+    first: {type: 'stringText', text: string, loc: number},
     templates: {expr: Node, suffix: {type: 'stringText', text: string, loc: number}},
     loc: number}
 // I've made the probably-controversial decision of using only a two-dot ellipsis for
 // spreads. This allows for a more fluid editing experience in my opinion (otherwise,
 // two dots would just be invalid syntax, and who wants that). The single dot is
 // reserved for bare-attribute syntax, once our language supports records of some sort.
-| {type: 'spread', contents: Node, loc: number}
+| {type: 'spread', contents: Node, loc: number} // ..spread [a list ..spreaded]
 
 // this here is a "raw code" type node, which is, sadly, just a big ol' text string,
 // no structured editor goodness here. These will allow us to write the bootstrapping
@@ -51,6 +52,6 @@
 // self-hosting land.
 | {type: 'raw-code', raw: string, loc: number} **)
 
-(** And here's some structured code! Feel free to play around with it; everything on this page is editable. **)
+(** And here's an example of some structured code! Feel free to play around with it; everything on this page is editable. **)
 
 (hello "world ${abc}!" 12 [..b])
