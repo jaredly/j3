@@ -27,61 +27,41 @@ type Stmt = { _stmt: 1 };
 type Expr = { _expr: 1 };
 type Env = { _env: 1 };
 
-export const advancedInfer = (fns: {
+export const infer2 = (fns: {
     infer_stmts2: (env: Env) => (stmts: arr<Stmt>) => InferStmts2<Env, Type>;
+    // infer_stmts3?: (env: Env) => (stmts: arr<Stmt>) => InferStmts3<Env, Type>;
     infer2: (env: Env) => (expr: Expr) => InferExpr2<Type>;
     type_to_cst: (type: Type) => jcst;
 }): Infer<Env, Stmt, Expr, Type> => ({
     infer(stmts, env) {
-        const result: InferStmts2<Env, Type> = fns['infer_stmts2'](env)(
+        return inferStmts2(fns, env, stmts);
+    },
+    inferExpr(expr, env) {
+        return inferExpr2(fns, env, expr);
+    },
+});
+
+export const infer3 = (fns: {
+    infer_stmts3: (env: Env) => (stmts: arr<Stmt>) => InferStmts3<Env, Type>;
+    infer2: (env: Env) => (expr: Expr) => InferExpr2<Type>;
+    type_to_cst: (type: Type) => jcst;
+}): Infer<Env, Stmt, Expr, Type> => ({
+    infer(stmts, env) {
+        const result: InferStmts2<Env, Type> = fns.infer_stmts3(env)(
             wrapArray(stmts),
         );
         return {
-            result:
-                result[0].type === 'ok'
-                    ? {
-                          type: 'ok',
-                          value: {
-                              env: result[0][0][0],
-                              types: unwrapArray(result[0][0][1]),
-                          },
-                      }
-                    : {
-                          type: 'err',
-                          err: parseTerr(fns.type_to_cst, result[0][0]),
-                      },
+            result: inferResult(result, fns.type_to_cst),
             typesAndLocs: unwrapArray(result[1][0]).map((tal) => ({
                 loc: tal[0],
                 type: tal[1],
             })),
-            usages: getUsages(result[1][1]),
+            usages: {},
+            codeGenData: result[1][1],
         };
     },
     inferExpr(expr, env) {
-        let result: InferExpr2<Type>;
-        try {
-            result = fns.infer2(env)(expr);
-        } catch (err) {
-            return {
-                result: { type: 'err', err: { type: 'missing', missing: [] } },
-                typesAndLocs: [],
-                usages: {},
-            };
-        }
-        return {
-            typesAndLocs: unwrapArray(result[1][0]).map((res) => ({
-                loc: res[0],
-                type: res[1],
-            })),
-            result:
-                result[0].type === 'ok'
-                    ? { type: 'ok', value: result[0][0] }
-                    : {
-                          type: 'err',
-                          err: parseTerr(fns.type_to_cst, result[0][0]),
-                      },
-            usages: getUsages(result[1][1]),
-        };
+        return inferExpr2(fns, env, expr);
     },
 });
 
@@ -130,6 +110,18 @@ type InferStmts2<Env, Type> = {
         type: ',';
         0: arr<tuple<number, Type>>;
         1: tuple<arr<number>, arr<tuple<number, number>>>;
+    };
+};
+
+type InferStmts3<Env, Type> = {
+    type: ',';
+    0:
+        | { type: 'ok'; 0: tuple<Env, arr<Type>> }
+        | { type: 'err'; 0: terr<Type> };
+    1: {
+        type: ',';
+        0: arr<tuple<number, Type>>;
+        1: any;
     };
 };
 
@@ -243,6 +235,83 @@ const getUsages = (data: InferExpr2<any>[1][1]) => {
     });
     return usages;
 };
+
+function inferExpr2(
+    fns: {
+        infer2: (env: Env) => (expr: Expr) => InferExpr2<Type>;
+        type_to_cst: (type: Type) => jcst;
+    },
+    env: Env,
+    expr: Expr,
+): ReturnType<Infer<any, any, any, any>['inferExpr']> {
+    let result: InferExpr2<Type>;
+    try {
+        result = fns.infer2(env)(expr);
+    } catch (err) {
+        return {
+            result: { type: 'err', err: { type: 'missing', missing: [] } },
+            typesAndLocs: [],
+            usages: {},
+        };
+    }
+    return {
+        typesAndLocs: unwrapArray(result[1][0]).map((res) => ({
+            loc: res[0],
+            type: res[1],
+        })),
+        result:
+            result[0].type === 'ok'
+                ? { type: 'ok', value: result[0][0] }
+                : {
+                      type: 'err',
+                      err: parseTerr(fns.type_to_cst, result[0][0]),
+                  },
+        usages: getUsages(result[1][1]),
+    };
+}
+
+function inferStmts2(
+    fns: {
+        infer_stmts2: (
+            env: Env,
+        ) => (stmts: arr<Stmt>) => InferStmts2<Env, Type>;
+        type_to_cst: (type: Type) => jcst;
+    },
+    env: Env,
+    stmts: Stmt[],
+): ReturnType<Infer<any, any, any, any>['infer']> {
+    const result: InferStmts2<Env, Type> = fns.infer_stmts2(env)(
+        wrapArray(stmts),
+    );
+    return {
+        result: inferResult(result, fns.type_to_cst),
+        typesAndLocs: unwrapArray(result[1][0]).map((tal) => ({
+            loc: tal[0],
+            type: tal[1],
+        })),
+        usages: getUsages(result[1][1]),
+    };
+}
+
+function inferResult(
+    result: InferStmts2<Env, Type>,
+    type_to_cst: (type: Type) => jcst,
+):
+    | { type: 'err'; err: InferenceError }
+    | { type: 'ok'; value: { env: any; types: any[] } } {
+    return result[0].type === 'ok'
+        ? {
+              type: 'ok',
+              value: {
+                  env: result[0][0][0],
+                  types: unwrapArray(result[0][0][1]),
+              },
+          }
+        : {
+              type: 'err',
+              err: parseTerr(type_to_cst, result[0][0]),
+          };
+}
 
 function parseTerr(
     type_to_cst: (t: any) => jcst,

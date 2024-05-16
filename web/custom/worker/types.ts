@@ -62,6 +62,7 @@ export type AsyncResults = {
             changed: boolean;
             tops: number[];
             tenv: Tenv | null;
+            codeGenData?: any;
             traces: TraceMap;
             typeFailed: boolean;
         }

@@ -287,6 +287,7 @@ export function updateState(
                 const types = res.result.value.types;
 
                 state.results.groups[groupKey].tenv = res.result.value.env;
+                state.results.groups[groupKey].codeGenData = res.codeGenData;
                 tenv = state.evaluator.inference.addTypes(
                     tenv,
                     res.result.value.env,

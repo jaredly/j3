@@ -250,6 +250,36 @@
     (** type is "in" the class identified by the given name. e.g. (isin (tvar a) "number") . The final int is used by the code generator to associate the type class constraint with the variable reference that produced it. **)
         (isin type string (list ordered-location)))
 
+(defn predicate= [(isin t1 s1 _) (isin t2 s2 _)]
+    (if (= s1 s2)
+        (type= t1 t2)
+            false))
+
+(defn predicate/combine [preds]
+    (loop
+        (, [] preds)
+            (fn [(, left right) recur]
+            (match right
+                []           left
+                [one ..rest] (recur
+                                 (,
+                                     (loop
+                                         left
+                                             (fn [left recur]
+                                             (match left
+                                                 []            [one]
+                                                 [lone ..rest] (match (predicate/merge one lone)
+                                                                   (some merged) [merged ..rest]
+                                                                   (none)        [lone ..(recur rest)]))))
+                                         rest))))))
+
+(defn predicate/merge [(isin t1 s1 l1) (isin t2 s2 l2)]
+    (if (= s1 s2)
+        (if (type= t1 t2)
+            (some (isin t1 s2 (concat [l1 l2])))
+                (none))
+            none))
+
 ((** Overwrite the loc attribute of a predicate. Used when instantiating the scheme of a referenced variable. The i represents the index in the list of predicates from the scheme where it originated. **)
     defn predicate/reloc [l i (isin type cls _)]
     (isin type cls [(oloc l i)]))
@@ -288,24 +318,41 @@
             (** Data types (# free variables, constructor names) **)
             (map string (, int (set string)))
             (** Type aliases **)
-            (map string (, (list string) type))))
+            (map string (, (list string) type))
+            (** Type Classes! (, (list of super classes) (instances) (class methods)) **)
+            (map
+            string
+                (, (list string) (list (qualified predicate)) (list (, string scheme))))))
 
-(defn tenv/merge [(tenv v1 c1 t1 a1) (tenv v2 c2 t2 a2)]
+(defn tenv/merge [(tenv v1 c1 t1 a1 tc1) (tenv v2 c2 t2 a2 tc2)]
     (tenv
         (map/merge v1 v2)
             (map/merge c1 c2)
             (map/merge t1 t2)
-            (map/merge a1 a2)))
+            (map/merge a1 a2)
+            (foldl
+            tc1
+                (map/to-list tc2)
+                (fn [tc (, name (, supers insts fns))]
+                (match (map/get tc name)
+                    (none)                (map/set tc name (, supers insts fns))
+                    (some (, _ insts' _)) (map/set tc name (, supers (concat [insts insts']) fns)))))))
 
-(def tenv/nil (tenv map/nil map/nil map/nil map/nil))
+(def tenv/nil (tenv map/nil map/nil map/nil map/nil map/nil))
 
-(defn tenv/with-type [(tenv values tcons types aliases) name scheme]
-    (tenv (map/set values name scheme) tcons types aliases))
+(defn tenv/with-type [(tenv values tcons types aliases typeclasses) name scheme]
+    (tenv
+        (map/set values name scheme)
+            tcons
+            types
+            aliases
+            typeclasses))
 
-(defn tenv/with-scope [(tenv values tcons types aliases) scope]
-    (tenv (map/merge scope values) tcons types aliases))
+(defn tenv/with-scope [(tenv values tcons types aliases typeclasses) scope]
+    (tenv (map/merge scope values) tcons types aliases typeclasses))
 
-(defn tenv/resolve [(tenv values _ _ _) name] (map/get values name))
+(defn tenv/resolve [(tenv values _ _ _ _) name]
+    (map/get values name))
 
 (** ## Finding "free" type variables
     The */free functions are about finding unbound type variables (that aren't bound by a containing forall).
@@ -319,6 +366,14 @@
         (tcon _ _)   set/nil
         (tapp a b _) (set/merge (type/free a) (type/free b))))
 
+(defn type/matches-free [free type]
+    (match type
+        (tvar id _)  (set/has free id)
+        (tcon _ _)   false
+        (tapp a b _) (if (type/matches-free free b)
+                         true
+                             (type/matches-free free a))))
+
 (defn qual/free [(=> predicates contents) contents/free]
     (foldl
         (contents/free contents)
@@ -330,7 +385,7 @@
 (defn scheme/free [(forall vbls type)]
     (set/diff (qual/free type type/free) vbls))
 
-(defn tenv/free [(tenv values _ _ _)]
+(defn tenv/free [(tenv values _ _ _ _)]
     (foldr set/nil (map scheme/free (map/values values)) set/merge))
 
 (,
@@ -374,8 +429,13 @@
 ((** As an optimization, we could segregate the type environment into "values with unresolved type variables" and "values without", or even set up a lookup table from "tvar id" to "names of values that contain that tvar". For now though, we'll do the simple thing of just always iterating over everything in scope.
     A simpler (and very reasonable) optimization would be to split the tenv into "global terms" and "local terms", because global terms are not allowed to have unresolved type variables, and local terms tend to be relatively small in number.
     These optimizations would also speed up tenv/free considerably. **)
-    defn tenv/apply [subst (tenv values tcons types aliases)]
-    (tenv (scope/apply subst values) tcons types aliases))
+    defn tenv/apply [subst (tenv values tcons types aliases typeclasses)]
+    (tenv
+        (scope/apply subst values)
+            tcons
+            types
+            aliases
+            typeclasses))
 
 (defn scope/apply [subst scope]
     (map/map (scheme/apply subst) scope))
@@ -578,7 +638,7 @@
 (defn preds-> [preds]
     (let-> [
         (, idx subst current types) <-state
-        _                           (state-> (, idx subst (bag/and preds current) types))]
+        _                           (state-> (, idx subst (bag/and (many (map one preds)) current) types))]
         (<- ())))
 
 (def <-preds (let-> [(, _ _ preds _) <-state] (<- preds)))
@@ -621,7 +681,7 @@
     (let-> [
         subst        (make-subst-for-free vars l)
         (=> preds t) (<- (qual/apply type/apply subst qual))
-        ()           (preds-> (many (map one (mapi (predicate/reloc l) preds))))]
+        ()           (preds-> (mapi (predicate/reloc l) preds))]
         (<- t)))
 
 (defn dot [f g n] (f (g n)))
@@ -679,11 +739,11 @@
     (match prim
         (pint _ l)   (let-> [
                          tv (new-type-var "number" l)
-                         () (preds-> (one (isin tv "number" [(oloc l 0)])))]
+                         () (preds-> [(isin tv "number" [(oloc l 0)])])]
                          (<- tv))
         (pfloat _ l) (let-> [
                          tv (new-type-var "floating" l)
-                         () (preds-> (one (isin tv "floating" [(oloc l 0)])))]
+                         () (preds-> [(isin tv "floating" [(oloc l 0)])])]
                          (<- tv))
         (pbool _ l)  (<- (tcon "bool" l))))
 
@@ -837,15 +897,15 @@
 
 (,
     (fn [x] (run/nil-> (infer/expr benv-with-pair x)))
-        [(, (@ 10) (ok (tvar "number:0" 4512)))
+        [(, (@ "a") (ok (tcon "string" 4512)))
         (, (@ hi) (err (tmissing [(, "hi" 4531)])))
-        (, (@ (let [x 10] x)) (ok (tvar "number:0:1" 4548)))
+        (, (@ (let [x "a"] x)) (ok (tcon "string" 4547)))
         (,
-        (@ (, 1 2))
+        (@ (, "a" "a"))
             (ok
             (tapp
-                (tapp (tcon "," -1) (tvar "number:4" 4561) -1)
-                    (tvar "number:5" 4562)
+                (tapp (tcon "," -1) (tcon "string" 4561) -1)
+                    (tcon "string" 4562)
                     -1)))
         (,
         (@ (fn [x] (let [(, a b) x] a)))
@@ -931,21 +991,20 @@
         (@
             (match 1
                 1 true
-                2 2
-                _ ))
+                2 ""))
             (err
             (twrap
                 (ttypes
-                    (forall (map/from-list []) (=> [] (tcon "int" 5145)))
+                    (forall (map/from-list []) (=> [] (tcon "string" 5145)))
                         (forall (map/from-list []) (=> [] (tcon "bool" 5143))))
                     (ttypes
-                    (forall (map/from-list []) (=> [] (tcon "int" 5145)))
+                    (forall (map/from-list []) (=> [] (tcon "string" 5145)))
                         (forall (map/from-list []) (=> [] (tcon "bool" 5143)))))))
         (,
         (@
             (fn [x]
                 (match x
-                    (, 2 _) 10
+                    (, 2 _) 1
                     (, m _) m)))
             (ok
             (tapp
@@ -953,26 +1012,26 @@
                     (tcon "->" 6436)
                         (tapp (tapp (tcon "," -1) (tcon "int" 6446) -1) (tvar "b:3" 6444) -1)
                         6436)
-                    (tcon "int" 6447)
+                    (tcon "int" 6446)
                     6436)))
         (, (@ (@ hi)) (ok (tcon "expr" 6701)))
         (, (@ "hi") (ok (tcon "string" 6785)))
         (,
-        (@ "hi ${1}")
+        (@ "hi ${true}")
             (err
             (twrap
                 (ttypes
-                    (forall (map/from-list []) (=> [] (tcon "int" 6850)))
+                    (forall (map/from-list []) (=> [] (tcon "bool" 6850)))
                         (forall (map/from-list []) (=> [] (tcon "string" 6848))))
                     (ttypes
-                    (forall (map/from-list []) (=> [] (tcon "int" 6850)))
+                    (forall (map/from-list []) (=> [] (tcon "bool" 6850)))
                         (forall (map/from-list []) (=> [] (tcon "string" 6848)))))))
         (,
         (@
             (fn [x]
                 (match x
-                    []            0
-                    [(, a b) .._] 0)))
+                    []            true
+                    [(, a b) .._] true)))
             (ok
             (tapp
                 (tapp
@@ -982,7 +1041,7 @@
                             (tapp (tapp (tcon "," -1) (tvar "a:4" 13870) -1) (tvar "b:5" 13870) -1)
                             12723)
                         13860)
-                    (tcon "int" 13868)
+                    (tcon "bool" 13868)
                     13860)))])
 
 (** ## Patterns **)
@@ -1018,7 +1077,7 @@
                                    (<- (, cres scope)))))
 
 ((** This looks up a type constructor definition, and replaces any free variables in the arguments & result type with fresh type variables. **)
-    defn instantiate-tcon [(tenv _ tcons _ _) name l]
+    defn instantiate-tcon [(tenv _ tcons _ _ _) name l]
     (match (map/get tcons name)
         (none)                     (<-err "Unknown type constructor: ${name}")
         (some (, free cargs cres)) (let-> [subst (make-subst-for-free (set/from-list free) l)]
@@ -1071,7 +1130,7 @@
                                        [])
         (pcon name _ args l)   (let [
                                    (, tname targs)           (tcon-and-args type [] l)
-                                   (tenv _ tcons _ _)        tenv
+                                   (tenv _ tcons _ _ _)      tenv
                                    (, free-names cargs cres) (match (map/get tcons name)
                                                                  (none)   (fatal "Unknown type constructor ${name}")
                                                                  (some v) v)
@@ -1213,7 +1272,7 @@
         "int"    []
         "bool"   ["true" "false"]
         "string" []
-        _        (let [(tenv _ _ types _) tenv]
+        _        (let [(tenv _ _ types _ _) tenv]
                      (match (map/get types gid)
                          (none)             (fatal "Unknown type name ${gid}")
                          (some (, _ names)) (set/to-list names)))))
@@ -1306,7 +1365,15 @@
         (let [
             (tenv values _ _ _) (err-to-fatal (run/nil-> (add/def builtin-env name nl expr l)))]
             (map/to-list values)))
-        [(, (@! (def x 10)) [(, "x" (forall (map/from-list []) (=> [] (tcon "int" 3024))))])
+        [(,
+        (@! (def x 10))
+            [(,
+            "x"
+                (forall
+                (set/from-list ["number:1"])
+                    (=>
+                    [(isin (tvar "number:1" 3024) "number" [(oloc 3024 0)])]
+                        (tvar "number:1" 3024))))])
         (,
         (@! (defn id [x] x))
             [(,
@@ -1324,12 +1391,30 @@
             [(,
             "rec"
                 (forall
-                (map/from-list [])
+                (set/from-list ["result:3"])
                     (=>
-                    []
-                        (tapp (tapp (tcon "->" 3146) (tcon "int" -1) 3146) (tcon "int" -1) 3146))))])])
+                    [(isin (tvar "result:3" 3428) "number" [(oloc 3429 0)])]
+                        (tapp
+                        (tapp (tcon "->" 3146) (tvar "result:3" 3428) 3146)
+                            (tvar "result:3" 3428)
+                            3146))))])])
 
 (** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
+
+(defn with-preds [preds (forall free (=> p2 type))]
+    (forall
+        free
+            (=> (concat [p2 (filter (pred-contains free) preds)]) type)))
+
+(defn filter [f lst]
+    (match lst
+        []           []
+        [one ..rest] (if (f one)
+                         [one ..(filter f rest)]
+                             (filter f rest))))
+
+(defn pred-contains [free (isin type cls loc)]
+    (type/matches-free free type))
 
 (defn add/defs [tenv defns]
     (let-> [
@@ -1349,7 +1434,10 @@
                           (zip vbls (zip types locs)))
         types     (map-> type/apply-> types)
         subst     <-subst
-        preds     <-preds]
+        preds     <-preds
+        preds     (<-
+                      (predicate/combine
+                          (map (predicate/apply subst) (bag/to-list preds))))]
         (<-
             (foldl
                 tenv/nil
@@ -1359,9 +1447,7 @@
                         (tenv/with-type
                         tenv
                             name
-                            (generalize
-                            tenv
-                                (=> (map (predicate/apply subst) (bag/to-list preds)) type))))))))
+                            (with-preds preds (generalize tenv (=> [] type)))))))))
 
 (,
     (fn [x]
@@ -1378,25 +1464,30 @@
                 [(,
                     "odd"
                         (forall
-                        (map/from-list [])
+                        (set/from-list ["result:4" "number:10"])
                             (=>
-                            []
+                            [(isin (tvar "number:10" 3834) "number" [(oloc 3834 0)])
+                                (isin (tvar "result:4" 3904) "number" [(oloc 3789 0) (oloc 3906 0)])]
                                 (tapp
-                                (tapp (tcon "->" 3821) (tcon "int" -1) 3821)
-                                    (tcon "int" 3834)
+                                (tapp (tcon "->" 3821) (tvar "result:4" 3904) 3821)
+                                    (tvar "number:10" 3834)
                                     3821))))
                     (,
                     "even"
                         (forall
-                        (map/from-list [])
+                        (set/from-list ["result:4"])
                             (=>
-                            []
-                                (tapp (tapp (tcon "->" 3776) (tcon "int" -1) 3776) (tcon "int" -1) 3776))))])
+                            [(isin (tvar "result:4" 3904) "number" [(oloc 3789 0) (oloc 3906 0)])]
+                                (tapp
+                                (tapp (tcon "->" 3776) (tvar "result:4" 3904) 3776)
+                                    (tvar "result:4" 3904)
+                                    3776))))])
+                (map/from-list [])
                 (map/from-list [])
                 (map/from-list [])
                 (map/from-list [])))])
 
-(defn add/typealias [(tenv values tcons types aliases) name args type]
+(defn add/typealias [(tenv values tcons types aliases typeclasses) name args type]
     (tenv
         map/nil
             map/nil
@@ -1407,9 +1498,10 @@
                 name
                 (,
                 (map fst args)
-                    (type/con-to-var (set/from-list (map fst args)) type)))))
+                    (type/con-to-var (set/from-list (map fst args)) type)))
+            map/nil))
 
-(defn add/deftype [(tenv _ tcons types aliases) name args constrs l]
+(defn add/deftype [(tenv _ tcons types aliases _) name args constrs l]
     (let [
         free           (map fst args)
         free-set       (set/from-list free)
@@ -1435,6 +1527,7 @@
                 map/nil
                     name
                     (, (length args) (set/from-list (map fst constrs))))
+                map/nil
                 map/nil)))
 
 (defn type/con-to-var [vars type]
@@ -1661,31 +1754,27 @@
                     (, "map" (, 2 set/nil))
                     (, "set" (, 1 set/nil))
                     (, "->" (, 2 set/nil))])
+                map/nil
                 map/nil)))
 
 (** ## Exporting for the structured editor **)
 
-(defn infer-stmts2 [env stmts]
+(defn infer-stmts3 [env stmts]
     (let [
         (, (, _ subst preds types) result) (state-f (add/stmts env stmts) state/nil)]
         (,
             (match result
                 (err e)             (err e)
-                (ok (, tenv types)) (ok
-                                        (,
-                                            tenv
-                                                (map
-                                                (forall set/nil)
-                                                    (map (=> (map (predicate/apply subst) (bag/to-list preds))) types)))))
+                (ok (, tenv types)) (ok (, tenv (map (forall set/nil) (map (=> []) types)))))
                 (map
                 (fn [(, t l dont-apply)]
                     (if dont-apply
                         (, l (forall set/nil (=> [] t)))
                             (** Hmm I probably should go through ... and determine what predicates apply to the given type? Maybe? **)
-                            (, l (forall set/nil (=> (bag/to-list preds) (type/apply subst t))))))
+                            (, l (forall set/nil (=> [] (type/apply subst t))))))
                     types)
-                []
-                [])))
+                (predicate/combine
+                (map (predicate/apply subst) (bag/to-list preds))))))
 
 (defn infer-expr2 [env expr]
     (let [
@@ -1707,13 +1796,13 @@
                 [])))
 
 (eval
-    (** env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts2 => infer2 =>
-  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts2, infer2})
+    (** env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts3 => infer2 =>
+  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts3, infer2})
  **)
         builtin-env
         tenv/merge
         tenv/resolve
         scheme->s
         scheme->cst
-        infer-stmts2
+        infer-stmts3
         infer-expr2)

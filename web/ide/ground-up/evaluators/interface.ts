@@ -46,6 +46,7 @@ export type Infer<Env, Stmt, Expr, Type> = {
             | { type: 'ok'; value: { env: Env; types: Type[] } };
         typesAndLocs: { loc: number; type: Type }[];
         usages: Record<number, number[]>;
+        codeGenData?: any;
     };
     inferExpr(
         expr: Expr,

@@ -13,9 +13,10 @@ import { basicParser, recoveringParser } from './evaluators/parsers';
 import { compiler } from './evaluators/compiler';
 import { Expr, Stmt, analyzer } from './evaluators/analyze';
 import {
-    advancedInfer,
+    infer2,
     basicInfer,
     typeChecker,
+    infer3,
 } from './evaluators/type-checker';
 import { jsEvaluator } from './jsEvaluator';
 
@@ -135,7 +136,9 @@ export const evaluatorFromText = (
                 : undefined;
         const infer =
             data['infer_stmts2'] && data['infer2']
-                ? advancedInfer(data)
+                ? infer2(data)
+                : data['infer_stmts3'] && data['infer2']
+                ? infer3(data)
                 : data['infer_stmts'] && data['infer']
                 ? basicInfer(data)
                 : undefined;

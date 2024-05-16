@@ -23,6 +23,19 @@ https://wiki.haskell.org/GADTs_for_dummies
 
 # THIH Type Classes
 
+type
+classes
+
+-> we're reporting the predicates
+-> for non-function types, we need to resolve things so it can actually compile
+-> for function types ... we're not really going to execute it anyway right? i mean ... what would be the point.
+
+
+
+
+
+
+
 Things to think about:
 https://terbium.io/2021/02/traits-typeclasses/
 

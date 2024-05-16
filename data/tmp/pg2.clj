@@ -1,4 +1,4 @@
-(** ## A Playground
+(** ## A Type Classes Playground
     for trying out the language. Play around with it! **)
 
 (+ 1 2)
@@ -8,6 +8,8 @@
 (+ 2)
 
 +
+
+(def count 23)
 
 show
 
