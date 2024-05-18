@@ -17,6 +17,36 @@ let err = (v0) => ({type: "err", 0: v0})
 let $co = (v0) => (v1) => ({type: ",", 0: v0, 1: v1})
 let dot = (f) => (g) => (n) => f(g(n))
 let oloc = (v0) => (v1) => ({type: "oloc", 0: v0, 1: v1})
+let not = (x) => (($target) => {
+if ($target === true) {
+return false
+} ;
+return true;
+throw new Error('match fail 19310:' + JSON.stringify($target))
+})(x)
+let ok$gt$gt$eq = (value) => (next) => (($target) => {
+if ($target.type === "ok") {
+let v = $target[0];
+return next(v)
+} ;
+if ($target.type === "err") {
+let e = $target[0];
+return err(e)
+} ;
+throw new Error('match fail 19812:' + JSON.stringify($target))
+})(value)
+let snd = ({"1": s}) => s
+let class_env$slclasses = ({"1": {"0": classes}}) => classes
+let none_to = (v) => (opt) => (($target) => {
+if ($target.type === "none") {
+return v
+} ;
+if ($target.type === "some") {
+let m = $target[0];
+return m
+} ;
+throw new Error('match fail 20685:' + JSON.stringify($target))
+})(opt)
 let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 let tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 let tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
@@ -730,6 +760,199 @@ throw new Error('match fail 17728:' + JSON.stringify($target))
 } ;
 throw new Error('match fail 17710:' + JSON.stringify($target))
 })(ordered)
+let default_types = cons(tint)(cons(tcon("unit")(-1))(nil))
+let reset_preds_$gt = (preds) => $gt$gt$eq($lt_state)(({"1": {"1": {"1": types}, "0": subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx)($co(subst)($co(preds)(types)))))((_17900) => $lt_($unit)))
+let find_matching_instance = nil
+let by_super = (classes) => (pred) => {
+let {"2": locs, "1": cls, "0": t} = pred;
+{
+let {"0": supers} = (($target) => {
+if ($target.type === "some") {
+let s = $target[0];
+return s
+} ;
+return fatal(`Unknown class '${cls}' in predicate [by-super]`);
+throw new Error('match fail 18266:' + JSON.stringify($target))
+})(map$slget(classes)(cls));
+return cons(pred)(concat(map((i$qu) => by_super(classes)(isin(t)(i$qu)(locs)))(supers)))
+}
+}
+let find_some = (f) => (arr) => (($target) => {
+if ($target.type === "nil") {
+return none
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+{
+let $target = f(one);
+if ($target.type === "some") {
+let v = $target[0];
+return some(v)
+} ;
+return find_some(f)(rest);
+throw new Error('match fail 18618:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 18608:' + JSON.stringify($target))
+})(arr)
+let all = (f) => (items) => (($target) => {
+if ($target.type === "nil") {
+return true
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+{
+let $target = f(one);
+if ($target === true) {
+return all(f)(rest)
+} ;
+return false;
+throw new Error('match fail 18860:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 18851:' + JSON.stringify($target))
+})(items)
+let ambiguities = (known_variables) => (preds) => {
+let vbls_in_preds = foldl(set$slnil)(map(predicate$slfree)(preds))(set$slmerge);
+{
+let unaccounted_for_variables = set$sldiff(vbls_in_preds)(known_variables);
+return map((v) => $co(v)(filter((pred) => any($eq(v))(set$slto_list(predicate$slfree(pred))))(preds)))(set$slto_list(unaccounted_for_variables))
+}
+}
+let joinor = (sep) => ($default) => (items) => (($target) => {
+if ($target.type === "nil") {
+return $default
+} ;
+return join(sep)(items);
+throw new Error('match fail 19156:' + JSON.stringify($target))
+})(items)
+let is_empty = (x) => (($target) => {
+if ($target.type === "nil") {
+return true
+} ;
+return false;
+throw new Error('match fail 19174:' + JSON.stringify($target))
+})(x)
+let every = (lst) => (f) => (($target) => {
+if ($target.type === "nil") {
+return true
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+{
+let $target = f(one);
+if ($target === true) {
+return every(rest)(f)
+} ;
+return false;
+throw new Error('match fail 19336:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 19323:' + JSON.stringify($target))
+})(lst)
+let numClasses = cons("number")(cons("integral")(cons("floating")(cons("fractional")(cons("real")(cons("realfloat")(cons("realfrac")(nil)))))))
+let stdClasses = cons("eq")(cons("ord")(cons("show")(cons("read")(cons("pretty")(cons("bounded")(cons("enum")(cons("ix")(cons("functor")(cons("monad")(cons("monadplus")(numClasses)))))))))))
+let head = (lst) => (($target) => {
+if ($target.type === "nil") {
+return fatal("empty list")
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+return one
+} ;
+throw new Error('match fail 19407:' + JSON.stringify($target))
+})(lst)
+let type$slhnf = (type) => (($target) => {
+if ($target.type === "tvar") {
+return true
+} ;
+if ($target.type === "tcon") {
+return false
+} ;
+if ($target.type === "tapp") {
+let t = $target[0];
+return type$slhnf(t)
+} ;
+throw new Error('match fail 19510:' + JSON.stringify($target))
+})(type)
+let in_hnf = ({"0": t}) => type$slhnf(t)
+let preds_$gts = dot(join("\n"))(map(pred_$gts))
+let sc_entail = (ce) => (ps) => (p) => any(any(pred$eq(p)))(map(by_super(ce))(ps))
+let map$slok = (f) => (arr) => (($target) => {
+if ($target.type === "nil") {
+return ok(nil)
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+{
+let $target = f(one);
+if ($target.type === "ok") {
+let val = $target[0];
+{
+let $target = map$slok(f)(rest);
+if ($target.type === "ok") {
+let rest = $target[0];
+return ok(cons(val)(rest))
+} ;
+if ($target.type === "err") {
+let e = $target[0];
+return err(e)
+} ;
+throw new Error('match fail 19777:' + JSON.stringify($target))
+}
+} ;
+if ($target.type === "err") {
+let e = $target[0];
+return err(e)
+} ;
+throw new Error('match fail 19769:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 19758:' + JSON.stringify($target))
+})(arr)
+let partition = (arr) => (test) => (($target) => {
+if ($target.type === "nil") {
+return $co(nil)(nil)
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+{
+let {"1": no, "0": yes} = partition(rest)(test);
+{
+let $target = test(one);
+if ($target === true) {
+return $co(cons(one)(yes))(no)
+} ;
+return $co(yes)(cons(one)(no));
+throw new Error('match fail 19891:' + JSON.stringify($target))
+}
+}
+} ;
+throw new Error('match fail 19868:' + JSON.stringify($target))
+})(arr)
+let contains = (arr) => (item) => (item$eq) => (($target) => {
+if ($target.type === "nil") {
+return false
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+{
+let $target = item$eq(one)(item);
+if ($target === true) {
+return true
+} ;
+return contains(rest)(item)(item$eq);
+throw new Error('match fail 20018:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 20009:' + JSON.stringify($target))
+})(arr)
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -914,7 +1137,19 @@ let kk = generic(cons("k")(nil));
 let a = vbl("a");
 {
 let b = vbl("b");
-return tenv(map$slfrom_list(cons($co("-")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint)(-1))))(cons($co(">")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("<")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool)(-1))))(cons($co("!=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool)(-1))))(cons($co(">=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("<=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("+")(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("number")(nil))(nil))(tfns(cons(a)(cons(a)(nil)))(a)(-1)))))(cons($co("show")(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("show")(nil))(nil))(tfns(cons(a)(nil))(tstring)(-1)))))(cons($co("show/pretty")(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("pretty")(nil))(nil))(tfns(cons(a)(nil))(tstring)(-1)))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co(",")(generic(cons("a")(cons("b")(nil)))(tfns(cons(a)(cons(b)(nil)))(t$co(a)(b))(-1))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring)(-1))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint))(-1))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1)))(-1))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v))(-1))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v))(-1))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v))(-1))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2)(-1))(cons(tmap(k)(v))(nil)))(tmap(k)(v2))(-1))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v))(-1))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(v))(-1))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(k))(-1))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool)(-1))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tlist(k))(-1))))(cons($co("set/from-list")(kk(tfns(cons(tlist(k))(nil))(tset(k))(-1))))(cons($co("map/from-list")(kv(tfns(cons(tlist(t$co(k)(v)))(nil))(tmap(k)(v))(-1))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(t$co(k)(v)))(-1))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring)(-1))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring)(-1))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v"))(-1))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring)(-1))(cons(vbl("v"))(nil)))(tstring)(-1))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring)(-1))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v"))(-1))))(nil))))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")($co(nil)($co(nil)(tcon("()")(-1)))))(cons($co(",")($co(cons("a")(cons("b")(nil)))($co(cons(a)(cons(b)(nil)))(t$co(a)(b)))))(nil))))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("float")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(cons($co("map")($co(2)(set$slnil)))(cons($co("set")($co(1)(set$slnil)))(cons($co("->")($co(2)(set$slnil)))(nil)))))))))(map$slnil)(map$slnil)
+{
+let num2 = forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("number")(nil))(nil))(tfns(cons(a)(cons(a)(nil)))(a)(-1)));
+{
+let ord2 = forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("ord")(nil))(nil))(tfns(cons(a)(cons(a)(nil)))(tbool)(-1)));
+{
+let eq2 = forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("eq")(nil))(nil))(tfns(cons(a)(cons(a)(nil)))(tbool)(-1)));
+{
+let inst = (t) => (cls) => $eq$gt(nil)(isin(t)(cls)(nil));
+return tenv(map$slfrom_list(cons($co("-")(num2))(cons($co(">")(ord2))(cons($co("<")(ord2))(cons($co("=")(eq2))(cons($co("!=")(eq2))(cons($co(">=")(ord2))(cons($co("<=")(ord2))(cons($co("pi")(concrete(tcon("float")(-1))))(cons($co("+")(num2))(cons($co("show")(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("show")(nil))(nil))(tfns(cons(a)(nil))(tstring)(-1)))))(cons($co("show/pretty")(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("pretty")(nil))(nil))(tfns(cons(a)(nil))(tstring)(-1)))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co(",")(generic(cons("a")(cons("b")(nil)))(tfns(cons(a)(cons(b)(nil)))(t$co(a)(b))(-1))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring)(-1))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint))(-1))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1)))(-1))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v))(-1))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v))(-1))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v))(-1))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2)(-1))(cons(tmap(k)(v))(nil)))(tmap(k)(v2))(-1))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v))(-1))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(v))(-1))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(k))(-1))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool)(-1))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tlist(k))(-1))))(cons($co("set/from-list")(kk(tfns(cons(tlist(k))(nil))(tset(k))(-1))))(cons($co("map/from-list")(kv(tfns(cons(tlist(t$co(k)(v)))(nil))(tmap(k)(v))(-1))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(t$co(k)(v)))(-1))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring)(-1))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring)(-1))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v"))(-1))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring)(-1))(cons(vbl("v"))(nil)))(tstring)(-1))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring)(-1))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v"))(-1))))(nil)))))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")($co(nil)($co(nil)(tcon("()")(-1)))))(cons($co(",")($co(cons("a")(cons("b")(nil)))($co(cons(a)(cons(b)(nil)))(t$co(a)(b)))))(nil))))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("float")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(cons($co("map")($co(2)(set$slnil)))(cons($co("set")($co(1)(set$slnil)))(cons($co("->")($co(2)(set$slnil)))(nil)))))))))(map$slnil)(map$slfrom_list(cons($co("number")($co(nil)($co(cons(inst(tint)("number"))(cons(inst(tcon("float")(-1))("number"))(nil)))(nil))))(cons($co("ord")($co(nil)($co(cons(inst(tint)("ord"))(cons(inst(tcon("float")(-1))("ord"))(nil)))(nil))))(cons($co("eq")($co(nil)($co(cons(inst(tint)("eq"))(cons(inst(tcon("float")(-1))("eq"))(cons(inst(tbool)("eq"))(nil))))(nil))))(cons($co("floating")($co(nil)($co(cons($eq$gt(nil)(isin(tcon("float")(-1))("floating")(nil)))(nil))(nil))))(cons($co("show")($co(nil)($co(cons(inst(tint)("show"))(cons(inst(tstring)("show"))(cons(inst(tbool)("show"))(cons(inst(tcon("float")(-1))("show"))(nil)))))(nil))))(nil)))))))
+}
+}
+}
+}
 }
 }
 }
@@ -1170,6 +1405,21 @@ throw new Error('match fail 16816:' + JSON.stringify($target))
 })(right))
 let pred_contains = (free) => ({"2": loc, "1": cls, "0": type}) => type$slmatches_free(free)(type)
 let name_for_instance = (type) => (cls) => `\$_inst_${type_to_js_id(type)}\$${cls}`
+let merge = (s1) => (s2) => (l) => {
+let agree = all((v) => $eq(type$slapply(s1)(tvar(v)(l)))(type$slapply(s2)(tvar(v)(l))))(set$slto_list(set$sloverlap(set$slfrom_list(map$slkeys(s1)))(set$slfrom_list(map$slkeys(s2)))));
+{
+let $target = agree;
+if ($target === true) {
+return map$slmerge(s1)(s2)
+} ;
+return fatal("merge failed");
+throw new Error('match fail 18832:' + JSON.stringify($target))
+}
+}
+let tss_$gts = (tss) => joinor("\n")("no tss")(map(dot(joinor("; ")("[empty]"))(map(type_$gts)))(tss))
+let vps_$gts = (vps) => joinor("\n")("no vps")(map(({"1": preds, "0": a}) => `${a} is in predicates: ${join(";")(map(pred_$gts)(preds))}`)(vps))
+let without = (base) => (remove) => (x$eq) => filter((x) => not(contains(remove)(x)(x$eq)))(base)
+let pred_$gtcst = ({"1": name, "0": t}) => cst$sllist(cons(cst$slid("isin")(-1))(cons(type_$gtcst(t))(cons(cst$slstring("name")(nil)(-1))(nil))))(-1)
 let terr = (v0) => (v1) => ({type: "terr", 0: v0, 1: v1})
 let ttypes = (v0) => (v1) => ({type: "ttypes", 0: v0, 1: v1})
 let twrap = (v0) => (v1) => ({type: "twrap", 0: v0, 1: v1})
@@ -1324,15 +1574,19 @@ throw new Error('match fail 12111:' + JSON.stringify($target))
 let $lt_err = (x) => $lt_err$ti(terr(x)(nil))
 let $lt_missing = (name) => (loc) => $lt_err$ti(tmissing(cons($co(name)(loc))(nil)))
 let $lt_mismatch = (t1) => (t2) => $lt_err$ti(ttypes(forall(set$slnil)($eq$gt(nil)(t1)))(forall(set$slnil)($eq$gt(nil)(t2))))
-let scheme_$gtcst = ({"1": {"1": type}}) => type_$gtcst(type)
-let with_preds = (preds) => ({"1": {"1": type, "0": p2}, "0": free}) => forall(free)($eq$gt(concat(cons(p2)(cons(filter(pred_contains(free))(preds))(nil))))(type))
-let organize_predicates = (preds) => map$slmap((ol) => mapi((i) => ({"1": idx, "0": v}) => (($target) => {
-if ($target === true) {
-return fatal(`predicates out of order somehow: ${int_to_string(i)} ${int_to_string(idx)}`)
+let scheme_$gtcst = ({"1": {"1": type, "0": preds}}) => {
+let t = type_$gtcst(type);
+{
+let $target = preds;
+if ($target.type === "nil") {
+return t
 } ;
-return v;
-throw new Error('match fail 17784:' + JSON.stringify($target))
-})($ex$eq(i)(idx)))(ol))(foldl(map$slnil)(preds)((by_loc) => ({"2": locs, "1": cls, "0": type}) => {
+return cst$sllist(cons(cst$slid("=>")(-1))(cons(cst$slarray(map(pred_$gtcst)(preds))(-1))(cons(t)(nil))))(-1);
+throw new Error('match fail 20712:' + JSON.stringify($target))
+}
+}
+let with_preds = (preds) => ({"1": {"1": type, "0": p2}, "0": free}) => forall(free)($eq$gt(concat(cons(p2)(cons(filter(pred_contains(free))(preds))(nil))))(type))
+let organize_predicates = (preds) => map$slmap((ol) => mapi((i) => ({"1": idx, "0": v}) => v)(ol))(foldl(map$slnil)(preds)((by_loc) => ({"2": locs, "1": cls, "0": type}) => {
 let instance_name = name_for_instance(type)(cls);
 return foldl(by_loc)(locs)((by_loc) => ({"1": idx, "0": loc}) => (($target) => {
 if ($target.type === "none") {
@@ -1345,6 +1599,82 @@ return map$slset(by_loc)(loc)(put_in_place(current)(instance_name)(idx))
 throw new Error('match fail 17599:' + JSON.stringify($target))
 })(map$slget(by_loc)(loc)))
 }))
+let type_match = (t1) => (t2) => (($target) => {
+if ($target.type === ",") {
+if ($target[0].type === "tapp") {
+let l = $target[0][0];
+let r = $target[0][1];
+let loc = $target[0][2];
+if ($target[1].type === "tapp") {
+let l$qu = $target[1][0];
+let r$qu = $target[1][1];
+{
+let $target = type_match(l)(l$qu);
+if ($target.type === "ok") {
+let sl = $target[0];
+{
+let $target = type_match(r)(r$qu);
+if ($target.type === "ok") {
+let sr = $target[0];
+return ok(merge(sl)(sr)(loc))
+} ;
+{
+let err = $target;
+return err
+};
+throw new Error('match fail 18670:' + JSON.stringify($target))
+}
+} ;
+{
+let err = $target;
+return err
+};
+throw new Error('match fail 18661:' + JSON.stringify($target))
+}
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "tvar") {
+let u = $target[0][0];
+let t = $target[1];
+return ok(map$slset(map$slnil)(u)(t))
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "tcon") {
+let tc1 = $target[0][0];
+if ($target[1].type === "tcon") {
+let tc2 = $target[1][0];
+{
+let $target = $eq(tc1)(tc2);
+if ($target === true) {
+return ok(map$slnil)
+} ;
+return err($co(`Unable to match types ${tc1} and ${tc2}`)(nil));
+throw new Error('match fail 18742:' + JSON.stringify($target))
+}
+} 
+} 
+} ;
+return err($co(`Unable to match ${type_$gts(t1)} vs ${type_$gts(t2)}`)(nil));
+throw new Error('match fail 18643:' + JSON.stringify($target))
+})($co(t1)(t2))
+let ok_$gt = (result) => (($target) => {
+if ($target.type === "ok") {
+let v = $target[0];
+return $lt_(v)
+} ;
+if ($target.type === "err") {
+let e = $target[0];
+return $lt_err(e)
+} ;
+throw new Error('match fail 19842:' + JSON.stringify($target))
+})(result)
+let run_and_preds = (statet) => {
+let {"1": result, "0": {"1": {"1": {"1": types, "0": preds}, "0": subst}, "0": idx}} = state_f(statet)(state$slnil);
+return $co(err_to_fatal(result))(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds))))
+}
 let tenv$slapply = (subst) => ({"4": typeclasses, "3": aliases, "2": types, "1": tcons, "0": values}) => tenv(scope$slapply(subst)(values))(tcons)(types)(aliases)(typeclasses)
 let var_bind = ($var) => (type) => (l) => (($target) => {
 if ($target.type === "tvar") {
@@ -1469,6 +1799,118 @@ throw new Error('match fail 10381:' + JSON.stringify($target))
 throw new Error('match fail 11090:' + JSON.stringify($target))
 }
 }
+let by_inst = (classes) => (pred) => {
+let {"2": locs, "1": cls, "0": t} = pred;
+{
+let {"1": {"0": insts}} = (($target) => {
+if ($target.type === "some") {
+let s = $target[0];
+return s
+} ;
+return fatal(`Unknown class '${cls}' in predicate [by-inst]`);
+throw new Error('match fail 18324:' + JSON.stringify($target))
+})(map$slget(classes)(cls));
+return find_some(({"1": {"1": cls2, "0": t2}, "0": ps}) => (($target) => {
+if ($target === true) {
+return none
+} ;
+{
+let $target = type_match(t2)(t);
+if ($target.type === "err") {
+return none
+} ;
+if ($target.type === "ok") {
+let subst = $target[0];
+return some(map(predicate$slapply(subst))(ps))
+} ;
+throw new Error('match fail 18350:' + JSON.stringify($target))
+};
+throw new Error('match fail 18878:' + JSON.stringify($target))
+})($ex$eq(cls)(cls2)))(insts)
+}
+}
+let entail = (classes) => (predicates) => (predicate) => (($target) => {
+if ($target === true) {
+return true
+} ;
+{
+let $target = by_inst(classes)(predicate);
+if ($target.type === "none") {
+return false
+} ;
+if ($target.type === "some") {
+let qs = $target[0];
+return all(entail(classes)(predicates))(qs)
+} ;
+throw new Error('match fail 18396:' + JSON.stringify($target))
+};
+throw new Error('match fail 18380:' + JSON.stringify($target))
+})(any(any(pred$eq(predicate)))(map(by_super(classes))(predicates)))
+let candidates = (classes) => ({"1": qs, "0": v}) => {
+let is = map(({"1": i}) => i)(qs);
+{
+let ts = map(({"0": t}) => t)(qs);
+{
+let $target = not(every(cons(all(type$eq(tvar(v)(-1)))(ts))(cons(any((x) => any($eq(x))(numClasses))(is))(cons(all((x) => any($eq(x))(stdClasses))(is))(nil))))((x) => x));
+if ($target === true) {
+return nil
+} ;
+return filter((t$qu) => all(entail(classes)(nil))(map((i) => isin(t$qu)(i)(nil))(is)))(default_types);
+throw new Error('match fail 19224:' + JSON.stringify($target))
+}
+}
+}
+let simplify_inner = (ce) => (rs) => (preds) => (($target) => {
+if ($target.type === "nil") {
+return rs
+} ;
+if ($target.type === "cons") {
+let p = $target[0];
+let ps = $target[1];
+{
+let $target = entail(ce)(concat(cons(rs)(cons(ps)(nil))))(p);
+if ($target === true) {
+return simplify_inner(ce)(rs)(ps)
+} ;
+return simplify_inner(ce)(cons(p)(rs))(ps);
+throw new Error('match fail 19649:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 19640:' + JSON.stringify($target))
+})(preds)
+let simplify = (ce) => simplify_inner(ce)(nil)
+let to_hnfs = (ce) => (ps) => (($target) => {
+if ($target.type === "err") {
+let e = $target[0];
+return err(e)
+} ;
+if ($target.type === "ok") {
+let v = $target[0];
+return ok(concat(v))
+} ;
+throw new Error('match fail 19558:' + JSON.stringify($target))
+})(map$slok(to_hnf(ce))(ps))
+
+let to_hnf = (ce) => (p) => (($target) => {
+if ($target === true) {
+return ok(cons(p)(nil))
+} ;
+{
+let $target = by_inst(ce)(p);
+if ($target.type === "none") {
+{
+let {"1": name, "0": type} = p;
+return err(`Can't find an instance for class '${name}' for type ${type_$gts(type)}`)
+}
+} ;
+if ($target.type === "some") {
+let ps = $target[0];
+return to_hnfs(ce)(ps)
+} ;
+throw new Error('match fail 19596:' + JSON.stringify($target))
+};
+throw new Error('match fail 19587:' + JSON.stringify($target))
+})(in_hnf(p))
 let unify_inner = (t1) => (t2) => (l) => (($target) => {
 if ($target.type === ",") {
 if ($target[0].type === "tvar") {
@@ -1526,6 +1968,33 @@ return true;
 throw new Error('match fail 10333:' + JSON.stringify($target))
 })(is_useful(tenv)(matrix)(cons(ex$slany)(nil)))
 let unify = (t1) => (t2) => (l) => map_err_$gt(unify_inner(t1)(t2)(l))((inner) => err(twrap(ttypes(forall(set$slnil)($eq$gt(nil)(t1)))(forall(set$slnil)($eq$gt(nil)(t2))))(inner)))
+let with_defaults = (f) => (ce) => (known_variables) => (predicates) => {
+let vps = ambiguities(known_variables)(predicates);
+{
+let tss = map(candidates(ce))(vps);
+{
+let $target = any(is_empty)(tss);
+if ($target === true) {
+return err(`Cannot resolve ambiguities: ${vps_$gts(vps)} defaults for variables: ${tss_$gts(tss)} with known variables: ${join("; ")(set$slto_list(known_variables))}`)
+} ;
+return ok(f(vps)(map(head)(tss)));
+throw new Error('match fail 18982:' + JSON.stringify($target))
+}
+}
+}
+let reduce = (ce) => (ps) => (($target) => {
+if ($target.type === "ok") {
+let qs = $target[0];
+return ok(simplify(ce)(qs))
+} ;
+if ($target.type === "err") {
+let e = $target[0];
+return err(e)
+} ;
+throw new Error('match fail 19703:' + JSON.stringify($target))
+})(to_hnfs(ce)(ps))
+let defaulted_preds = with_defaults((vps) => (ts) => concat(map(snd)(vps)))
+let default_subst = with_defaults((vps) => (ts) => map$slfrom_list(zip(map(fst)(vps))(ts)))
 let infer$slpattern = (tenv) => (pattern) => (($target) => {
 if ($target.type === "pvar") {
 let name = $target[0];
@@ -1573,6 +2042,7 @@ return $lt_($unit)
 return $lt_err(`Match not exhaustive ${int_to_string(l)}`);
 throw new Error('match fail 9861:' + JSON.stringify($target))
 })(is_exhaustive(tenv)(matrix))))
+let split = (ce) => (free_in_scope) => (value_tyvars) => (ps) => $gt$gt$eq(ok_$gt(reduce(ce)(ps)))((ps$qu) => $gt$gt$eq($lt_(partition(ps$qu)(({"2": locs, "1": name, "0": type}) => every(set$slto_list(type$slfree(type)))((x) => any($eq(x))(free_in_scope)))))(({"1": rs, "0": ds}) => $gt$gt$eq(ok_$gt(defaulted_preds(ce)(set$slfrom_list(concat(cons(free_in_scope)(cons(value_tyvars)(nil)))))(rs)))((rs$qu) => $gt$gt$eq(ok_$gt(default_subst(ce)(set$slfrom_list(concat(cons(free_in_scope)(cons(value_tyvars)(nil)))))(rs)))((subst) => $lt_($co(ds)($co(without(rs)(rs$qu)(pred$eq))($co(map(predicate$slapply(subst))(rs$qu))(subst))))))))
 let infer$slexpr_inner = (tenv) => (expr) => (($target) => {
 if ($target.type === "evar") {
 let name = $target[0];
@@ -1722,7 +2192,7 @@ throw new Error('match fail 2253:' + JSON.stringify($target))
 })(expr)
 
 let infer$slexpr = (tenv) => (expr) => $gt$gt$eq(subst_reset_$gt(map$slnil))((old) => $gt$gt$eq(infer$slexpr_inner(tenv)(expr))((type) => $gt$gt$eq(subst_reset_$gt(old))(($new) => $gt$gt$eq(subst_$gt($new))((_2977) => $gt$gt$eq(record_type_$gt(type)(expr_loc(expr))(false))((_2977) => $lt_(type))))))
-let add$sldefs = (tenv) => (defns) => $gt$gt$eq(reset_state_$gt)((_3545) => $gt$gt$eq($lt_(map(({"0": name}) => name)(defns)))((names) => $gt$gt$eq($lt_(map(({"1": {"1": {"1": l}}}) => l)(defns)))((locs) => $gt$gt$eq(map_$gt(({"1": {"0": nl}, "0": name}) => new_type_var(name)(nl))(defns))((vbls) => $gt$gt$eq($lt_(foldl(tenv)(zip(names)(map(forall(set$slnil))(map($eq$gt(nil))(vbls))))((tenv) => ({"1": vbl, "0": name}) => tenv$slwith_type(tenv)(name)(vbl))))((bound_env) => $gt$gt$eq(map_$gt(({"1": {"1": {"0": expr}}}) => infer$slexpr(bound_env)(expr))(defns))((types) => $gt$gt$eq(map_$gt(type$slapply_$gt)(vbls))((vbls) => $gt$gt$eq(do_$gt(({"1": {"1": loc, "0": type}, "0": vbl}) => unify(vbl)(type)(loc))(zip(vbls)(zip(types)(locs))))((_3545) => $gt$gt$eq(map_$gt(type$slapply_$gt)(types))((types) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_preds)((preds) => $gt$gt$eq($lt_(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))((preds) => $lt_(foldl(tenv$slnil)(zip(names)(types))((tenv) => ({"1": type, "0": name}) => tenv$slwith_type(tenv)(name)(with_preds(preds)(generalize(tenv)($eq$gt(nil)(type))))))))))))))))))
+let add$sldefs = (tenv) => (defns) => $gt$gt$eq(reset_state_$gt)((_3545) => $gt$gt$eq($lt_(map(({"0": name}) => name)(defns)))((names) => $gt$gt$eq($lt_(map(({"1": {"1": {"1": l}}}) => l)(defns)))((locs) => $gt$gt$eq(map_$gt(({"1": {"0": nl}, "0": name}) => new_type_var(name)(nl))(defns))((vbls) => $gt$gt$eq($lt_(foldl(tenv)(zip(names)(map(forall(set$slnil))(map($eq$gt(nil))(vbls))))((tenv) => ({"1": vbl, "0": name}) => tenv$slwith_type(tenv)(name)(vbl))))((bound_env) => $gt$gt$eq(map_$gt(({"1": {"1": {"0": expr}}}) => infer$slexpr(bound_env)(expr))(defns))((types) => $gt$gt$eq(map_$gt(type$slapply_$gt)(vbls))((vbls) => $gt$gt$eq(do_$gt(({"1": {"1": loc, "0": type}, "0": vbl}) => unify(vbl)(type)(loc))(zip(vbls)(zip(types)(locs))))((_3545) => $gt$gt$eq(map_$gt(type$slapply_$gt)(types))((types) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_preds)((preds) => $gt$gt$eq($lt_(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))((preds) => $gt$gt$eq($lt_(tenv))(({"4": class_env}) => $gt$gt$eq(split(class_env)(nil)(set$slto_list(foldl(set$slnil)(map(type$slfree)(types))(set$slmerge)))(preds))(({"1": {"1": {"1": subst2, "0": defaulted_preds}, "0": other_preds}, "0": free_preds}) => $gt$gt$eq(preds_$gt(defaulted_preds))((_3545) => $gt$gt$eq(subst_$gt(subst2))((_3545) => $gt$gt$eq($lt_(map(type$slapply(subst2))(types)))((types) => $lt_(foldl(tenv$slnil)(zip(names)(types))((tenv) => ({"1": type, "0": name}) => tenv$slwith_type(tenv)(name)(with_preds(other_preds)(generalize(tenv)($eq$gt(nil)(type)))))))))))))))))))))))
 let add$sldef = (tenv) => (name) => (nl) => (expr) => (l) => $gt$gt$eq(new_type_var(name)(nl))((self) => $gt$gt$eq($lt_(tenv$slwith_type(tenv)(name)(forall(set$slnil)($eq$gt(nil)(self)))))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(expr))((type) => $gt$gt$eq(type$slapply_$gt(self))((self) => $gt$gt$eq(unify(self)(type)(l))((_5246) => $gt$gt$eq(type$slapply_$gt(type))((type) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_preds)((preds) => $lt_(tenv$slwith_type(tenv$slnil)(name)(generalize(tenv)($eq$gt(map(predicate$slapply(subst))(bag$slto_list(preds)))(type))))))))))))
 let infer_expr2 = (env) => (expr) => {
 let {"1": result, "0": {"1": {"1": {"1": types, "0": preds}, "0": subst}}} = state_f(infer$slexpr(env)(expr))(state$slnil);
@@ -1744,6 +2214,7 @@ return $co(l)(forall(set$slnil)($eq$gt(nil)(type$slapply(subst)(t))));
 throw new Error('match fail 13537:' + JSON.stringify($target))
 })(dont_apply))(types))($co(nil)(nil)))
 }
+let add$slexpr = (tenv) => (expr) => $gt$gt$eq(infer$slexpr(tenv)(expr))((t) => $gt$gt$eq($lt_preds)((preds) => $gt$gt$eq($lt_(tenv))(({"4": class_env}) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))((preds) => $gt$gt$eq(split(class_env)(nil)(nil)(preds))(({"1": {"1": {"1": subst2, "0": defaulted_preds}, "0": other_preds}, "0": free_preds}) => $gt$gt$eq(preds_$gt(defaulted_preds))((_17856) => $gt$gt$eq(subst_$gt(subst2))((_17856) => $lt_(type$slapply(subst2)(t))))))))))
 let add$slstmt = (tenv) => (stmt) => (($target) => {
 if ($target.type === "tdef") {
 let name = $target[0];
@@ -1772,10 +2243,25 @@ return $lt_(add$sldeftype(tenv)(name)(args)(constrs)(l))
 } ;
 throw new Error('match fail 2876:' + JSON.stringify($target))
 })(stmt)
-let add$slstmts = (tenv) => (stmts) => $gt$gt$eq($lt_(split_stmts(stmts)))(({"1": {"1": {"1": others, "0": exprs}, "0": aliases}, "0": defs}) => $gt$gt$eq(add$sldefs(tenv)(defs))((denv) => $gt$gt$eq(foldl_$gt(denv)(concat(cons(aliases)(cons(others)(nil))))((env) => (stmt) => $gt$gt$eq(add$slstmt(tenv$slmerge(tenv)(env))(stmt))((env$qu) => $lt_(tenv$slmerge(env)(env$qu)))))((final) => $gt$gt$eq(map_$gt(infer$slexpr(tenv$slmerge(tenv)(final)))(exprs))((types) => $lt_($co(final)(types))))))
+let add$slstmts = (tenv) => (stmts) => $gt$gt$eq($lt_(split_stmts(stmts)))(({"1": {"1": {"1": others, "0": exprs}, "0": aliases}, "0": defs}) => $gt$gt$eq(add$sldefs(tenv)(defs))((denv) => $gt$gt$eq(foldl_$gt(denv)(concat(cons(aliases)(cons(others)(nil))))((env) => (stmt) => $gt$gt$eq(add$slstmt(tenv$slmerge(tenv)(env))(stmt))((env$qu) => $lt_(tenv$slmerge(env)(env$qu)))))((final) => $gt$gt$eq(map_$gt(add$slexpr(tenv$slmerge(tenv)(final)))(exprs))((types) => $lt_($co(final)(types))))))
 let benv_with_pair = tenv$slmerge(builtin_env)(fst(err_to_fatal(run$slnil_$gt(add$slstmts(builtin_env)(cons({"0":",","1":12710,"2":{"0":{"0":"a","1":12711,"type":","},"1":{"0":{"0":"b","1":12712,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":12714,"1":{"0":{"0":{"0":"a","1":12715,"type":"tcon"},"1":{"0":{"0":"b","1":12716,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12713,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":12707,"type":"tdeftype"})(cons({"0":"list","1":12722,"2":{"0":{"0":"a","1":12723,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"nil","1":{"0":12725,"1":{"0":{"type":"nil"},"1":12724,"type":","},"type":","},"type":","},"1":{"0":{"0":"cons","1":{"0":12727,"1":{"0":{"0":{"0":"a","1":12728,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":12730,"type":"tcon"},"1":{"0":"a","1":12731,"type":"tcon"},"2":12729,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12726,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":12719,"type":"tdeftype"})(nil)))))))
 let infer_stmts3 = (env) => (stmts) => {
 let {"1": result, "0": {"1": {"1": {"1": types, "0": preds}, "0": subst}}} = state_f(add$slstmts(env)(stmts))(state$slnil);
+{
+let preds$0 = preds;
+{
+let preds = predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds$0)));
+{
+let preds_by_vbl = foldl(map$slnil)(preds)((map) => (pred) => foldl(map)(set$slto_list(predicate$slfree(pred)))((map) => (v) => (($target) => {
+if ($target.type === "none") {
+return map$slset(map)(v)(cons(pred)(nil))
+} ;
+if ($target.type === "some") {
+let preds = $target[0];
+return map$slset(map)(v)(cons(pred)(preds))
+} ;
+throw new Error('match fail 20629:' + JSON.stringify($target))
+})(map$slget(map)(v))));
 return $co((($target) => {
 if ($target.type === "err") {
 let e = $target[0];
@@ -1793,8 +2279,11 @@ throw new Error('match fail 13208:' + JSON.stringify($target))
 if ($target === true) {
 return $co(l)(forall(set$slnil)($eq$gt(nil)(t)))
 } ;
-return $co(l)(forall(set$slnil)($eq$gt(nil)(type$slapply(subst)(t))));
+return $co(l)(forall(set$slnil)($eq$gt(predicate$slcombine(concat(map(dot(none_to(nil))(map$slget(preds_by_vbl)))(set$slto_list(type$slfree(t))))))(type$slapply(subst)(t))));
 throw new Error('match fail 12961:' + JSON.stringify($target))
-})(dont_apply))(types))(organize_predicates(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds))))))
+})(dont_apply))(types))(organize_predicates(preds)))
+}
+}
+}
 }
 return eval("env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts3 => infer2 =>\n  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts3, infer2})\n")(builtin_env)(tenv$slmerge)(tenv$slresolve)(scheme_$gts)(scheme_$gtcst)(infer_stmts3)(infer_expr2)

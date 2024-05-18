@@ -307,6 +307,12 @@ export function updateState(
 
                 state.results.groups[groupKey].typeFailed = false;
                 group.forEach((one) => {
+                    if (res.codeGenData) {
+                        state.results!.tops[one.id].produce.push(
+                            JSON.stringify(res.codeGenData),
+                        );
+                    }
+
                     types.forEach((type) => {
                         try {
                             const text =

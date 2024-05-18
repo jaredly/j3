@@ -102,6 +102,20 @@
                                                false)
         _                              false))
 
+(defn find-some [f arr]
+    (match arr
+        []           (none)
+        [one ..rest] (match (f one)
+                         (some v) (some v)
+                         _        (find-some f rest))))
+
+(defn all [f items]
+    (match items
+        []           true
+        [one ..rest] (if (f one)
+                         (all f rest)
+                             false)))
+
 (** bag, a collection type with O(1) concatenation **)
 
 (deftype (bag a)
@@ -214,7 +228,14 @@
         (tapp target arg _)                     "(${(type->s target)} ${(type->s arg)})"
         (tcon name _)                           name))
 
-(defn scheme->cst [(forall _ (=> _ type))] (type->cst type))
+(defn scheme->cst [(forall _ (=> preds type))]
+    (let [t (type->cst type)]
+        (match preds
+            [] t
+            _  (cst/list [(cst/id "=>" -1) (cst/array (map pred->cst preds) -1) t] -1))))
+
+(defn pred->cst [(isin t name _)]
+    (cst/list [(cst/id "isin" -1) (type->cst t) (cst/string "name" [] -1)] -1))
 
 (defn target-and-args [type coll]
     (match type
@@ -639,6 +660,12 @@
     (let-> [
         (, idx subst current types) <-state
         _                           (state-> (, idx subst (bag/and (many (map one preds)) current) types))]
+        (<- ())))
+
+(defn reset-preds-> [preds]
+    (let-> [
+        (, idx subst _ types) <-state
+        _                     (state-> (, idx subst preds types))]
         (<- ())))
 
 (def <-preds (let-> [(, _ _ preds _) <-state] (<- preds)))
@@ -1340,6 +1367,441 @@
                                                                     true
                                                                         (is-useful tenv matrix [right ..rest]))))))
 
+(** ## Type Class Resolution **)
+
+(** ## Converting Types into JavaScript identifiers **)
+
+(defn name-for-instance [type cls]
+    "$_inst_${(type-to-js-id type)}$${cls}")
+
+(defn type-to-js-id [type]
+    (match type
+        (tvar name _)       (sanitize name)
+        (tcon name _)       (sanitize name)
+        (tapp target arg _) "${(type-to-js-id target)}$app$${(type-to-js-id arg)}"))
+
+(type-to-js-id (tvar "a:12" 1))
+
+(** ## Producing the data we'll need for code generation **)
+
+(defn put-in-place [ordered value idx]
+    (match ordered
+        []                   [(, value idx)]
+        [(, ov oidx) ..rest] (if (< idx oidx)
+                                 [(, value idx) (, ov oidx) ..rest]
+                                     [(, ov oidx) ..(put-in-place rest value idx)])))
+
+(put-in-place [] "a" 1)
+
+(,
+    (fn [x] (foldl [] x (fn [ord (, a b)] (put-in-place ord a b))))
+        [(, [(, "a" 1)] [(, "a" 1)])
+        (, [(, "a" 1) (, "b" 2)] [(, "a" 1) (, "b" 2)])
+        (, [(, "a" 0) (, "b" 1)] [(, "a" 0) (, "b" 1)])
+        (, [(, "b" 1) (, "a" 0)] [(, "a" 0) (, "b" 1)])
+        (, [(, "a" 0) (, "c" 2) (, "b" 1)] [(, "a" 0) (, "b" 1) (, "c" 2)])])
+
+(defn organize-predicates [preds]
+    (** So, here we want to: make a map from idx to (the list of ... the names of ... the instances). Which means, I want a way to turn a type into a javascript-ready variable name. **)
+        (map/map
+        (fn [ol]
+            (mapi
+                (fn [i (, v idx)]
+                    (if (!= i idx)
+                        (fatal
+                            "predicates out of order somehow: ${(int-to-string i)} ${(int-to-string idx)}")
+                            v))
+                    ol))
+            (foldl
+            map/nil
+                preds
+                (fn [by-loc (isin type cls locs)]
+                (let [instance-name (name-for-instance type cls)]
+                    (foldl
+                        by-loc
+                            locs
+                            (fn [by-loc (oloc loc idx)]
+                            (match (map/get by-loc loc)
+                                (none)         (map/set by-loc loc [(, instance-name idx)])
+                                (some current) (map/set by-loc loc (put-in-place current instance-name idx))))))))))
+
+(** ## Stuff from thih I'm still figuring out **)
+
+(** ## Simplification **)
+
+(defn type/hnf [type]
+    (match type
+        (tvar _ _)   true
+        (tcon _ _)   false
+        (tapp t _ _) (type/hnf t)))
+
+(defn in-hnf [(isin t _ _)] (type/hnf t))
+
+(defn to-hnfs [ce ps]
+    (match (map/ok (to-hnf ce) ps)
+        (err e) (err e)
+        (ok v)  (ok (concat v))))
+
+(defn map/ok [f arr]
+    (match arr
+        []           (ok [])
+        [one ..rest] (match (f one)
+                         (ok val) (match (map/ok f rest)
+                                      (ok rest) (ok [val ..rest])
+                                      (err e)   (err e))
+                         (err e)  (err e))))
+
+(defn to-hnf [ce p]
+    (if (in-hnf p)
+        (ok [p])
+            (match (by-inst ce p)
+            (none)    (let [(isin type name _) p]
+                          (err
+                              "Can't find an instance for class '${name}' for type ${(type->s type)}"))
+            (some ps) (to-hnfs ce ps))))
+
+(defn simplify-inner [ce rs preds]
+    (match preds
+        []       rs
+        [p ..ps] (if (entail ce (concat [rs ps]) p)
+                     (simplify-inner ce rs ps)
+                         (simplify-inner ce [p ..rs] ps))))
+
+(defn simplify [ce] (simplify-inner ce []))
+
+(def preds->s (dot (join "\n") (map pred->s)))
+
+(defn reduce [ce ps]
+    (match (to-hnfs ce ps)
+        (ok qs) (ok (simplify ce qs))
+        (err e) (err e)))
+
+(defn sc-entail [ce ps p] (any (any (pred= p)) (map (by-super ce) ps)))
+
+(defn merge [s1 s2 l]
+    (let [
+        agree (all
+                  (fn [v] (= (type/apply s1 (tvar v l)) (type/apply s2 (tvar v l))))
+                      (set/to-list
+                      (set/overlap
+                          (set/from-list (map/keys s1))
+                              (set/from-list (map/keys s2)))))]
+        (if agree
+            (map/merge s1 s2)
+                (fatal "merge failed"))))
+
+(defn type-match [t1 t2]
+    (** We're trying to find a substitution that will turn t1 into t2. This is the one-way version of unify. **)
+        (match (, t1 t2)
+        (, (tapp l r loc) (tapp l' r' _)) (match (type-match l l')
+                                              (ok sl) (match (type-match r r')
+                                                          (ok sr) (ok (merge sl sr loc))
+                                                          err     err)
+                                              err     err)
+        (, (tvar u _) t)                  (ok (map/set map/nil u t))
+        (, (tcon tc1 _) (tcon tc2 _))     (if (= tc1 tc2)
+                                              (ok map/nil)
+                                                  (err (, "Unable to match types ${tc1} and ${tc2}" [])))
+        _                                 (err (, "Unable to match ${(type->s t1)} vs ${(type->s t2)}" []))))
+
+((** An ambiguity occurs when there is a type variable in a predicate that isn't constrained by the input or output of a value (generally happens due to a numeric literal that's only used in a type-class context). **)
+    defn ambiguities [known-variables preds]
+    (let [
+        vbls-in-preds             (foldl set/nil (map predicate/free preds) set/merge)
+        unaccounted-for-variables (set/diff vbls-in-preds known-variables)]
+        (map
+            (fn [v]
+                (,
+                    v
+                        (filter (fn [pred] (any (= v) (set/to-list (predicate/free pred)))) preds)))
+                (set/to-list unaccounted-for-variables))))
+
+(defn joinor [sep default items]
+    (match items
+        [] default
+        _  (join sep items)))
+
+(defn tss->s [tss]
+    (joinor
+        "\n"
+            "no tss"
+            (map (dot (joinor "; " "[empty]") (map type->s)) tss)))
+
+(defn vps->s [vps]
+    (joinor
+        "\n"
+            "no vps"
+            (map
+            (fn [(, a preds)]
+                "${a} is in predicates: ${(join ";" (map pred->s preds))}")
+                vps)))
+
+(defn is-empty [x]
+    (match x
+        [] true
+        _  false))
+
+(defn not [x]
+    (if x
+        false
+            true))
+
+(defn every [lst f]
+    (match lst
+        []           true
+        [one ..rest] (if (f one)
+                         (every rest f)
+                             false)))
+
+(def numClasses
+    ["number"
+        "integral"
+        "floating"
+        "fractional"
+        "real"
+        "realfloat"
+        "realfrac"])
+
+(def stdClasses
+    ["eq"
+        "ord"
+        "show"
+        "read"
+        "pretty"
+        "bounded"
+        "enum"
+        "ix"
+        "functor"
+        "monad"
+        "monadplus"
+        ..numClasses])
+
+(defn candidates [classes (, v qs)]
+    (let [
+        is (map (fn [(isin _ i _)] i) qs)
+        ts (map (fn [(isin t _ _)] t) qs)]
+        (if (not
+            (every
+                [(all (type= (tvar v -1)) ts)
+                    (any (fn [x] (any (= x) numClasses)) is)
+                    (all (fn [x] (any (= x) stdClasses)) is)]
+                    (fn [x] x)))
+            []
+                (filter
+                (fn [t'] (all (entail classes []) (map (fn [i] (isin t' i [])) is)))
+                    default-types))))
+
+(defn head [lst]
+    (match lst
+        []        (fatal "empty list")
+        [one .._] one))
+
+(defn snd [(, _ s)] s)
+
+(def defaulted-preds
+    (with-defaults (fn [vps ts] (concat (map snd vps)))))
+
+(def default-subst
+    (with-defaults (fn [vps ts] (map/from-list (zip (map fst vps) ts)))))
+
+(defn with-defaults [f ce known-variables predicates]
+    (let [
+        vps (ambiguities known-variables predicates)
+        tss (map (candidates ce) vps)]
+        (if (any is-empty tss)
+            (err
+                "Cannot resolve ambiguities: ${(vps->s vps)} defaults for variables: ${(tss->s tss)} with known variables: ${(join "; " (set/to-list known-variables))}")
+                (ok (f vps (map head tss))))))
+
+(defn by-super [classes pred]
+    (** I still don't really know what the point of super-types is. **)
+        (let [
+        (isin t cls locs) pred
+        (, supers _)      (match (map/get classes cls)
+                              (some s) s
+                              _        (fatal "Unknown class '${cls}' in predicate [by-super]"))]
+        [pred
+            ..(concat (map (fn [i'] (by-super classes (isin t i' locs))) supers))]))
+
+(defn by-inst [classes pred]
+    (let [
+        (isin t cls locs) pred
+        (, _ insts _)     (match (map/get classes cls)
+                              (some s) s
+                              _        (fatal "Unknown class '${cls}' in predicate [by-inst]"))]
+        (find-some
+            (fn [(=> ps (isin t2 cls2 _))]
+                (if (!= cls cls2)
+                    (none)
+                        (match (type-match t2 t)
+                        (err _)    (none)
+                        (ok subst) (some (map (predicate/apply subst) ps)))))
+                insts)))
+
+(defn entail [classes predicates predicate]
+    (if (any (any (pred= predicate)) (map (by-super classes) predicates))
+        true
+            (match (by-inst classes predicate)
+            (none)    false
+            (some qs) (all (entail classes predicates) qs))))
+
+(defn ok>>= [value next]
+    (match value
+        (ok v)  (next v)
+        (err e) (err e)))
+
+(defn ok-> [result]
+    (match result
+        (ok v)  (<- v)
+        (err e) (<-err e)))
+
+(defn partition [arr test]
+    (match arr
+        []           (, [] [])
+        [one ..rest] (let [(, yes no) (partition rest test)]
+                         (if (test one)
+                             (, [one ..yes] no)
+                                 (, yes [one ..no])))))
+
+(defn class-env/classes [(, _ classes _)] classes)
+
+(defn without [base remove x=]
+    (filter (fn [x] (not (contains remove x x=))) base))
+
+(defn contains [arr item item=]
+    (match arr
+        []           false
+        [one ..rest] (if (item= one item)
+                         true
+                             (contains rest item item=))))
+
+(defn split [ce free-in-scope value-tyvars ps]
+    (let-> [
+        ps'       (ok-> (reduce ce ps))
+        (, ds rs) (<-
+                      (partition
+                          ps'
+                              (fn [(isin type name locs)]
+                              (every (set/to-list (type/free type)) (fn [x] (any (= x) free-in-scope))))))
+        rs'       (ok->
+                      (defaulted-preds
+                          ce
+                              (set/from-list (concat [free-in-scope value-tyvars]))
+                              rs))
+        subst     (ok->
+                      (default-subst
+                          ce
+                              (set/from-list (concat [free-in-scope value-tyvars]))
+                              rs))]
+        (<-
+            (,
+                ds
+                    (without rs rs' pred= )
+                    (map (predicate/apply subst) rs')
+                    subst))))
+
+(def default-types [tint (tcon "unit" -1)])
+
+(defn find-matching-instance [instances type] )
+
+;(defn find-applicable-default [tv type instances]
+    (loop
+        default-types
+            (fn [types recur]
+            (match types
+                []           (fatal
+                                 "Unable to find an appicable default type for type variable ${tv}")
+                [one ..rest] (let [subst (map/set map/nil tv one)]
+                                 (match (find-matching-instance instances (type/apply subst type))
+                                     (none)      (recur rest)
+                                     (some inst) subst))))))
+
+;(defn defaulted-preds [preds (tenv _ _ _ _ classes)]
+    (let [
+        (, subst preds) (foldl
+                            (, map/nil [])
+                                preds
+                                (fn [(, subst res) (isin type cls locs)]
+                                (match (map/get classes cls)
+                                    (none)                              (fatal "Unknown class ${cls}")
+                                    (some (, supers instances methods)) (let [type (type/apply subst type)]
+                                                                            (match (set/to-list (type/free type))
+                                                                                []   (, subst [(isin type cls locs) ..res])
+                                                                                free (let [
+                                                                                         nsubst (foldl
+                                                                                                    subst
+                                                                                                        free
+                                                                                                        (fn [subst tv]
+                                                                                                        (let [d-subst (find-applicable-default tv type instances)]
+                                                                                                            (compose-subst d-subst subst))))]
+                                                                                         (, nsubst))
+                                                                                ;  now we go through and ... try assigning the type to one of our defaults.)))))]
+        (many (map one preds))))
+
+(defn add/expr [tenv expr]
+    (let-> [
+        t                                                 (infer/expr tenv expr)
+        preds                                             <-preds
+        (tenv _ _ _ _ class-env)                          (<- tenv)
+        subst                                             <-subst
+        preds                                             (<-
+                                                              (predicate/combine
+                                                                  (map (predicate/apply subst) (bag/to-list preds))))
+        (** toplevel expressions shouldn't have any predicates that don't get defaulted away. **)
+        (, free-preds other-preds defaulted-preds subst2) (split class-env [] [] preds)
+        _                                                 (preds-> defaulted-preds)
+        _                                                 (subst-> subst2)
+        ;_
+        ;(reset-preds->
+            (many (map one (map (predicate/apply subst2) preds)))
+                ;(bag/and (many (map one other-preds)) (many (map one free-preds))))]
+        (<- (type/apply subst2 t))))
+
+(,
+    (fn [x]
+        (let [
+            (, (, _ subst preds _) res) (state-f (add/expr builtin-env x) state/nil)]
+            (,
+                res
+                    (predicate/combine
+                    (map (predicate/apply subst) (bag/to-list preds)))))
+            )
+        [(, (@ "hi") (, (ok (tcon "string" 17838)) []))
+        (,
+        (@ show)
+            (,
+            (err
+                (terr
+                    "Cannot resolve ambiguities: a:0 is in predicates: (isin a:0 \"show\" 20535@0)  defaults for variables: [empty] with known variables: "
+                        []))
+                [(isin (tvar "a:0" 20535) "show" [(oloc 20535 0)])]))
+        (,
+        (@ +)
+            (,
+            (ok
+                (tapp
+                    (tapp (tcon "->" -1) (tcon "int" -1) -1)
+                        (tapp (tapp (tcon "->" -1) (tcon "int" -1) -1) (tcon "int" -1) -1)
+                        -1))
+                [(isin (tcon "int" -1) "number" [(oloc 20264 0) (oloc 20264 0)])]))
+        (,
+        (@ (fn [x] (+ 2 x)))
+            (,
+            (ok
+                (tapp
+                    (tapp (tcon "->" 17995) (tcon "int" -1) 17995)
+                        (tcon "int" -1)
+                        17995))
+                [(isin
+                (tcon "int" -1)
+                    "number"
+                    [(oloc 18000 0) (oloc 18001 0) (oloc 18000 0) (oloc 18001 0)])]))
+        (,
+        (@ 1)
+            (,
+            (ok (tcon "int" -1))
+                [(isin (tcon "int" -1) "number" [(oloc 17846 0) (oloc 17846 0)])]))])
+
 (** ## Adding Top-level Items to the Type Environment **)
 
 (defn add/def [tenv name nl expr l]
@@ -1418,26 +1880,35 @@
 
 (defn add/defs [tenv defns]
     (let-> [
-        ()        (reset-state->)
-        names     (<- (map (fn [(, name _)] name) defns))
-        locs      (<- (map (fn [(, _ _ _ l)] l) defns))
-        vbls      (map-> (fn [(, name nl _)] (new-type-var name nl)) defns)
-        bound-env (<-
-                      (foldl
-                          tenv
-                              (zip names (map (forall set/nil) (map (=> []) vbls)))
-                              (fn [tenv (, name vbl)] (tenv/with-type tenv name vbl))))
-        types     (map-> (fn [(, _ _ expr _)] (infer/expr bound-env expr)) defns)
-        vbls      (map-> type/apply-> vbls)
-        ()        (do->
-                      (fn [(, vbl type loc)] (unify vbl type loc))
-                          (zip vbls (zip types locs)))
-        types     (map-> type/apply-> types)
-        subst     <-subst
-        preds     <-preds
-        preds     (<-
-                      (predicate/combine
-                          (map (predicate/apply subst) (bag/to-list preds))))]
+        ()                                                (reset-state->)
+        names                                             (<- (map (fn [(, name _)] name) defns))
+        locs                                              (<- (map (fn [(, _ _ _ l)] l) defns))
+        vbls                                              (map-> (fn [(, name nl _)] (new-type-var name nl)) defns)
+        bound-env                                         (<-
+                                                              (foldl
+                                                                  tenv
+                                                                      (zip names (map (forall set/nil) (map (=> []) vbls)))
+                                                                      (fn [tenv (, name vbl)] (tenv/with-type tenv name vbl))))
+        types                                             (map-> (fn [(, _ _ expr _)] (infer/expr bound-env expr)) defns)
+        vbls                                              (map-> type/apply-> vbls)
+        ()                                                (do->
+                                                              (fn [(, vbl type loc)] (unify vbl type loc))
+                                                                  (zip vbls (zip types locs)))
+        types                                             (map-> type/apply-> types)
+        subst                                             <-subst
+        preds                                             <-preds
+        preds                                             (<-
+                                                              (predicate/combine
+                                                                  (map (predicate/apply subst) (bag/to-list preds))))
+        (tenv _ _ _ _ class-env)                          (<- tenv)
+        (, free-preds other-preds defaulted-preds subst2) (split
+                                                              class-env
+                                                                  []
+                                                                  (set/to-list (foldl set/nil (map type/free types) set/merge))
+                                                                  preds)
+        _                                                 (preds-> defaulted-preds)
+        _                                                 (subst-> subst2)
+        types                                             (<- (map (type/apply subst2) types))]
         (<-
             (foldl
                 tenv/nil
@@ -1447,45 +1918,89 @@
                         (tenv/with-type
                         tenv
                             name
-                            (with-preds preds (generalize tenv (=> [] type)))))))))
+                            (with-preds other-preds (generalize tenv (=> [] type)))))))))
+
+(defn run-and-preds [statet]
+    (let [(, (, idx subst preds types) result) (state-f statet state/nil)]
+        (,
+            (err-to-fatal result)
+                (predicate/combine
+                (map (predicate/apply subst) (bag/to-list preds))))))
 
 (,
     (fn [x]
-        (err-to-fatal
-            (run/nil->
-                (add/defs
-                    builtin-env
-                        (map (fn [(tdef name nl body l)] (, name nl body l)) x)))))
+        (run-and-preds
+            (add/defs
+                builtin-env
+                    (map (fn [(tdef name nl body l)] (, name nl body l)) x))))
         [(,
-        [(@! (defn even [x] (let [o (odd x)] (+ x 2))))
-            (@! (defn odd [x] (let [e (even x)] 3)))]
+        [(@!
+            (defn even [x]
+                (if (= x 0)
+                    true
+                        (odd (- x 1)))))
+            (@!
+            (defn odd [x]
+                (if (= x 1)
+                    true
+                        (even (- x 1)))))]
+            (,
             (tenv
-            (map/from-list
-                [(,
-                    "odd"
-                        (forall
-                        (set/from-list ["result:4" "number:10"])
-                            (=>
-                            [(isin (tvar "number:10" 3834) "number" [(oloc 3834 0)])
-                                (isin (tvar "result:4" 3904) "number" [(oloc 3789 0) (oloc 3906 0)])]
-                                (tapp
-                                (tapp (tcon "->" 3821) (tvar "result:4" 3904) 3821)
-                                    (tvar "number:10" 3834)
-                                    3821))))
-                    (,
-                    "even"
-                        (forall
-                        (set/from-list ["result:4"])
-                            (=>
-                            [(isin (tvar "result:4" 3904) "number" [(oloc 3789 0) (oloc 3906 0)])]
-                                (tapp
-                                (tapp (tcon "->" 3776) (tvar "result:4" 3904) 3776)
-                                    (tvar "result:4" 3904)
-                                    3776))))])
-                (map/from-list [])
-                (map/from-list [])
-                (map/from-list [])
-                (map/from-list [])))])
+                (map/from-list
+                    [(,
+                        "odd"
+                            (forall
+                            (set/from-list ["number:18"])
+                                (=>
+                                [(isin (tvar "number:18" 22622) "eq" [(oloc 22620 0)])
+                                    (isin
+                                    (tvar "number:18" 22622)
+                                        "number"
+                                        [(oloc 22604 0) (oloc 22606 0) (oloc 22622 0)])]
+                                    (tapp
+                                    (tapp (tcon "->" 3821) (tvar "number:18" 22622) 3821)
+                                        (tcon "bool" 22623)
+                                        3821))))
+                        (,
+                        "even"
+                            (forall
+                            (set/from-list ["number:6"])
+                                (=>
+                                [(isin (tvar "number:6" 22598) "eq" [(oloc 22596 0)])
+                                    (isin
+                                    (tvar "number:6" 22598)
+                                        "number"
+                                        [(oloc 22598 0) (oloc 22627 0) (oloc 22629 0)])]
+                                    (tapp
+                                    (tapp (tcon "->" 3776) (tvar "number:6" 22598) 3776)
+                                        (tcon "bool" 22599)
+                                        3776))))])
+                    (map/from-list [])
+                    (map/from-list [])
+                    (map/from-list [])
+                    (map/from-list []))
+                [(isin
+                (tvar "number:6" 22598)
+                    "number"
+                    [(oloc 22598 0) (oloc 22627 0) (oloc 22629 0)])
+                (isin
+                (tvar "number:18" 22622)
+                    "number"
+                    [(oloc 22604 0) (oloc 22606 0) (oloc 22622 0)])
+                (isin (tvar "number:18" 22622) "eq" [(oloc 22620 0)])
+                (isin (tvar "number:6" 22598) "eq" [(oloc 22596 0)])]))
+        (,
+        [(@! (def lol (show 10)))]
+            (,
+            (tenv
+                (map/from-list
+                    [(, "lol" (forall (map/from-list []) (=> [] (tcon "string" -1))))])
+                    (map/from-list [])
+                    (map/from-list [])
+                    (map/from-list [])
+                    (map/from-list []))
+                [(isin (tcon "int" -1) "show" [(oloc 21268 0) (oloc 21268 0)])
+                (isin (tcon "int" -1) "number" [(oloc 21269 0) (oloc 21269 0)])]))])
 
 (defn add/typealias [(tenv values tcons types aliases typeclasses) name args type]
     (tenv
@@ -1586,7 +2101,7 @@
                                               (fn [env stmt]
                                               (let-> [env' (add/stmt (tenv/merge tenv env) stmt)]
                                                   (<- (tenv/merge env env')))))
-        types                         (map-> (infer/expr (tenv/merge tenv final)) exprs)]
+        types                         (map-> (add/expr (tenv/merge tenv final)) exprs)]
         (<- (, final types))))
 
 (,
@@ -1672,25 +2187,28 @@
 
 (def builtin-env
     (let [
-        k  (vbl "k")
-        v  (vbl "v")
-        v2 (vbl "v2")
-        kv (generic ["k" "v"])
-        kk (generic ["k"])
-        a  (vbl "a")
-        b  (vbl "b")]
+        k    (vbl "k")
+        v    (vbl "v")
+        v2   (vbl "v2")
+        kv   (generic ["k" "v"])
+        kk   (generic ["k"])
+        a    (vbl "a")
+        b    (vbl "b")
+        num2 (forall (set/from-list ["a"]) (=> [(isin a "number" [])] (tfns [a a] a -1)))
+        ord2 (forall (set/from-list ["a"]) (=> [(isin a "ord" [])] (tfns [a a] tbool -1)))
+        eq2  (forall (set/from-list ["a"]) (=> [(isin a "eq" [])] (tfns [a a] tbool -1)))
+        inst (fn [t cls] (=> [] (isin t cls [])))]
         (tenv
             (map/from-list
-                [(, "-" (concrete (tfns [tint tint] tint -1)))
-                    (, ">" (concrete (tfns [tint tint] tbool -1)))
-                    (, "<" (concrete (tfns [tint tint] tbool -1)))
-                    (, "=" (generic ["k"] (tfns [k k] tbool -1)))
-                    (, "!=" (generic ["k"] (tfns [k k] tbool -1)))
-                    (, ">=" (concrete (tfns [tint tint] tbool -1)))
-                    (, "<=" (concrete (tfns [tint tint] tbool -1)))
-                    (,
-                    "+"
-                        (forall (set/from-list ["a"]) (=> [(isin a "number" [])] (tfns [a a] a -1))))
+                [(, "-" num2)
+                    (, ">" ord2)
+                    (, "<" ord2)
+                    (, "=" eq2)
+                    (, "!=" eq2)
+                    (, ">=" ord2)
+                    (, "<=" ord2)
+                    (, "pi" (concrete (tcon "float" -1)))
+                    (, "+" num2)
                     (,
                     "show"
                         (forall (set/from-list ["a"]) (=> [(isin a "show" [])] (tfns [a] tstring -1))))
@@ -1755,57 +2273,49 @@
                     (, "set" (, 1 set/nil))
                     (, "->" (, 2 set/nil))])
                 map/nil
-                map/nil)))
-
-(defn name-for-instance [type cls]
-    "$_inst_${(type-to-js-id type)}$${cls}")
-
-(defn type-to-js-id [type]
-    (match type
-        (tvar name _)       (sanitize name)
-        (tcon name _)       (sanitize name)
-        (tapp target arg _) "${(type-to-js-id target)}$app$${(type-to-js-id arg)}"))
-
-(type-to-js-id (tvar "a:12" 1))
-
-(defn put-in-place [ordered value idx]
-    (match ordered
-        []                   [(, value idx)]
-        [(, ov oidx) ..rest] (if (< idx oidx)
-                                 [(, value idx) (, ov oidx) ..rest]
-                                     [(, ov oidx) ..(put-in-place rest value idx)])))
-
-(defn organize-predicates [preds]
-    (** So, here we want to: make a map from idx to (the list of ... the names of ... the instances). Which means, I want a way to turn a type into a javascript-ready variable name. **)
-        (map/map
-        (fn [ol]
-            (mapi
-                (fn [i (, v idx)]
-                    (if (!= i idx)
-                        (fatal
-                            "predicates out of order somehow: ${(int-to-string i)} ${(int-to-string idx)}")
-                            v))
-                    ol))
-            (foldl
-            map/nil
-                preds
-                (fn [by-loc (isin type cls locs)]
-                (let [instance-name (name-for-instance type cls)]
-                    (foldl
-                        by-loc
-                            locs
-                            (fn [by-loc (oloc loc idx)]
-                            (match (map/get by-loc loc)
-                                (none)         (map/set by-loc loc [(, instance-name idx)])
-                                (some current) (map/set by-loc loc (put-in-place current instance-name idx))))))))))
+                (map/from-list
+                (** If/when I support superclasses, I'll need to add something to oloc indicating the original class that was requested at the point of use. So that we don't loose that information. **)
+                    [(, "number" (, [] [(inst tint "number") (inst (tcon "float" -1) "number")] []))
+                    (, "ord" (, [] [(inst tint "ord") (inst (tcon "float" -1) "ord")] []))
+                    (,
+                    "eq"
+                        (, [] [(inst tint "eq") (inst (tcon "float" -1) "eq") (inst tbool "eq")] []))
+                    (, "floating" (, [] [(=> [] (isin (tcon "float" -1) "floating" []))] []))
+                    (,
+                    "show"
+                        (,
+                        []
+                            [(inst tint "show")
+                            (inst tstring "show")
+                            (inst tbool "show")
+                            (inst (tcon "float" -1) "show")]
+                            []))]))))
 
 (** ## Exporting for the structured editor **)
 
 (** This is a peek under the hood as to how the code in these documents gets "handed off" to the structured editor for use as an evaluator for other documents. It's not really necessary for you to understand it, and it's disabled here in the publicly hosted editor anyway. **)
 
+(defn none-to [v opt]
+    (match opt
+        (none)   v
+        (some m) m))
+
 (defn infer-stmts3 [env stmts]
     (let [
-        (, (, _ subst preds types) result) (state-f (add/stmts env stmts) state/nil)]
+        (, (, _ subst preds types) result) (state-f (add/stmts env stmts) state/nil)
+        preds                              (predicate/combine
+                                               (map (predicate/apply subst) (bag/to-list preds)))
+        preds-by-vbl                       (foldl
+                                               map/nil
+                                                   preds
+                                                   (fn [map pred]
+                                                   (foldl
+                                                       map
+                                                           (set/to-list (predicate/free pred))
+                                                           (fn [map v]
+                                                           (match (map/get map v)
+                                                               (none)       (map/set map v [pred])
+                                                               (some preds) (map/set map v [pred ..preds]))))))]
         (,
             (match result
                 (err e)             (err e)
@@ -1815,11 +2325,19 @@
                     (if dont-apply
                         (, l (forall set/nil (=> [] t)))
                             (** Hmm I probably should go through ... and determine what predicates apply to the given type? Maybe? **)
-                            (, l (forall set/nil (=> [] (type/apply subst t))))))
+                            (,
+                            l
+                                (forall
+                                set/nil
+                                    (=>
+                                    (predicate/combine
+                                        (concat
+                                            (map
+                                                (dot (none-to []) (map/get preds-by-vbl))
+                                                    (set/to-list (type/free t)))))
+                                        (type/apply subst t))))))
                     types)
-                (organize-predicates
-                (predicate/combine
-                    (map (predicate/apply subst) (bag/to-list preds)))))))
+                (organize-predicates preds))))
 
 (defn infer-expr2 [env expr]
     (let [

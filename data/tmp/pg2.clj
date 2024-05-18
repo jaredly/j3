@@ -11,6 +11,14 @@
 
 (def count 23)
 
+(def lol (show 23))
+
+count
+
+pi
+
+(+ pi count)
+
 show
 
 (defn x [y] (show y))

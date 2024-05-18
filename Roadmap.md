@@ -1,4 +1,12 @@
 
+
+- [ ] ENXT UP: record-if-generic should include predicates! thnxxxx
+  - which means we need to recording (qual type) instead of (type), which sounds fine
+    -> should we also be recording the full (scheme)? MMAYBebe
+
+- [ ] setPointerCapture and elementFromPoint
+
+
 # Thinking about row types and tagged unions.
 
 ... so, I didn't realize it, but Roc doesn't have record extension. Just record update. I imagine this makes the type system much simpler to implement.

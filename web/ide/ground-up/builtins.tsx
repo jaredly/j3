@@ -35,6 +35,7 @@ export function builtins() {
         '>=': (a: number) => (b: number) => a >= b,
         '=': (a: number) => (b: number) => equal(a, b),
         '!=': (a: number) => (b: number) => !equal(a, b),
+        pi: Math.PI,
         unescapeString: slash,
         'show-pretty': (v: any) => JSON.stringify(v),
         show: (v: any) => JSON.stringify(v),
@@ -127,7 +128,8 @@ export function builtins() {
         // 'set/from-list': (a: arr<any>) => a,
 
         'set/nil': [],
-        'set/add': (s: any[]) => (v: any) => [v, ...s],
+        'set/add': (s: any[]) => (v: any) =>
+            [v, ...s.filter((m) => !equal(v, m))],
         'set/has': (s: any[]) => (v: any) => s.includes(v),
         'set/rm': (s: any[]) => (v: any) => s.filter((i) => !equal(i, v)),
         // NOTE this is only working for primitives
@@ -138,7 +140,16 @@ export function builtins() {
         'set/overlap': (a: any[]) => (b: any[]) =>
             a.filter((x) => b.some((y) => equal(y, x))),
         'set/to-list': wrapArray,
-        'set/from-list': unwrapArray,
+        'set/from-list': (s: arr<any>) => {
+            const res: any[] = [];
+            unwrapArray(s).forEach((item) => {
+                if (res.some((m) => equal(item, m))) {
+                    return;
+                }
+                res.push(item);
+            });
+            return res;
+        },
 
         'map/from-list': (a: arr<{ type: ','; 0: any; 1: any }>) =>
             unwrapArray(a).map((i) => [i[0], i[1]]),

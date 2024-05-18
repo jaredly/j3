@@ -1422,7 +1422,7 @@
                 (isin "ord" (tvar (tyvar "b" star) -1))]
                 (isin "ord" (mkpair (tvar (tyvar "a" star) -1) (tvar (tyvar "b" star) -1))))]))
 
-((** class-env (map class-name (, supers instances) (default-types)
+((** class-env (map class-name (, supers instances class-methods) (default-types)
      **)
     deftype class-env
     (class-env
@@ -1455,8 +1455,6 @@
     (class-env cls (concat [defaults new-defaults])))
 
 (def class-env/nil (class-env map/nil []))
-
-(def class-env/std (class-env ))
 
 (defn supers [(class-env classes _) id]
     (match (map/get classes id)
@@ -1568,6 +1566,15 @@
             (isin "ord" (tvar (tyvar "b" star) -1))]
             (isin "ord" (mkpair (tvar (tyvar "a" star) -1) (tvar (tyvar "b" star) -1))))])
 
+(def builtin-env
+    (apply-transformers
+        example-insts
+            (add-prelude-classes initial-env)))
+
+(by-super builtin-env (isin "num" tint))
+
+(by-inst builtin-env (isin "num" tint))
+
 (defn by-super [ce pred]
     (** I still don't really know what the point of super-types is. **)
         (let [
@@ -1577,15 +1584,6 @@
                                  (some s) s
                                  _        (fatal "Unknown class '${i}' in predicate [by-super]"))]
         [pred ..(concat (map (fn [i'] (by-super ce (isin i' t))) got))]))
-
-(def builtin-env
-    (apply-transformers
-        example-insts
-            (add-prelude-classes initial-env)))
-
-(by-super builtin-env (isin "num" tint))
-
-(by-inst builtin-env (isin "num" tint))
 
 (defn by-inst [(class-env classes _) pred]
     (let [
