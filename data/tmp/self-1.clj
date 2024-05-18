@@ -38,7 +38,7 @@
         (cons a (list a)))
 
 (deftype (, a b)
-    (, a bl))
+    (, a b))
 
 (defn concat [lsts]
     (match lsts

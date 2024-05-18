@@ -15,6 +15,9 @@
 
 (** Yes I am committing many point-free crimes in this prelude; map should have the function as the first argument, foldr's function should have the arguments flipped, etc. This is just how it works in my head 🙃. **)
 
+(deftype (, a b)
+    (, a b))
+
 (defn join [sep items]
     (match items
         []           ""

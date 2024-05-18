@@ -1968,9 +1968,9 @@ map->
         (@t (hi a b (c d)))
             (,
             "hi"
-                [(tcon "a" 10046)
-                (tcon "b" 10047)
-                (tapp (tcon "c" 10049) (tcon "d" 10050) 10048)]))])
+                [(tcon "a" 25344)
+                (tcon "b" 25345)
+                (tapp (tcon "c" 25347) (tcon "d" 25348) 25346)]))])
 
 (defn any-list [arity]
     (loop

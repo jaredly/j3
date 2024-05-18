@@ -10,6 +10,7 @@ import { calculateInitialState } from '../web/custom/worker/calculateInitialStat
 import { Fixture } from './bootstrap.test';
 import { jsEvaluator } from '../web/ide/ground-up/jsEvaluator';
 import { nodeToString } from '../src/to-cst/nodeToString';
+import { writeFileSync } from 'fs';
 
 export const runFixtures = async (fixtures: Fixture[]) => {
     const evaluators: { [key: number]: string } = {};
@@ -110,6 +111,13 @@ export const runFixtures = async (fixtures: Fixture[]) => {
             });
             console.timeEnd('worker');
         } catch (err) {
+            if (Array.isArray(evaluator)) {
+                evaluator.forEach((id, i) => {
+                    console.log(`writing ${id} to $ev_${i}.js`);
+                    writeFileSync(`$ev_${i}.js`, evaluators[id]);
+                });
+            }
+            // evaluator
             console.log(`Failed while doing ${id} : ${name}`);
             console.warn(`worker failed`, (err as Error).message);
             console.error(err);

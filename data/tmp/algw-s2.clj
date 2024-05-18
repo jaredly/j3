@@ -558,29 +558,56 @@
         (elet [] body l)                        (fatal "No bindings in let")
         (** match expressions! Like let, but with a little more book-keeping. **)
         (ematch target cases l)                 (let-> [
-                                                    target-type (infer/expr tenv target)
-                                                    result-type (new-type-var "match result" l)
+                                                    target-type        (infer/expr tenv target)
+                                                    result-type        (new-type-var "match result" l)
+                                                    ;(, _ result-type)
+                                                    ;(foldl->
+                                                        (, target-type result-type)
+                                                            cases
+                                                            (fn [(, target-type result) (, pat body)]
+                                                            (let-> [
+                                                                body  (pat-and-body tenv pat body target-type false)
+                                                                subst <-subst
+                                                                _     (unify (type-apply subst result) body l)
+                                                                subst <-subst]
+                                                                (<- (, (type-apply subst target-type) (type-apply subst result))))))
                                                     (** Handle each case, collecting all of the resulting types of the bodies. **)
-                                                    all-results (map->
-                                                                    (fn [(, pat body)]
-                                                                        (let-> [
-                                                                            (, type scope) (infer/pattern tenv pat)
-                                                                            ()             (unify type target-type l)
-                                                                            scope          (scope/apply-> scope)
-                                                                            bound-env      (<- (tenv/with-scope tenv scope))]
-                                                                            (infer/expr bound-env body)))
-                                                                        cases)
+                                                    (, _ final-result) (foldl->
+                                                                           (, target-type result-type)
+                                                                               cases
+                                                                               (fn [(, target-type result) (, pat body)]
+                                                                               (let-> [
+                                                                                   (, type scope) (infer/pattern tenv pat)
+                                                                                   ()             (unify type target-type l)
+                                                                                   scope          (scope/apply-> scope)
+                                                                                   body-type      (infer/expr (tenv/with-scope tenv scope) body)
+                                                                                   subst          <-subst
+                                                                                   _              (unify (type/apply subst result) body-type l)
+                                                                                   subst          <-subst]
+                                                                                   (<- (, (type/apply subst target-type) (type/apply subst result))))))
+                                                    ;all-results
+                                                    ;(map->
+                                                        (fn [(, pat body)]
+                                                            (let-> [
+                                                                (, type scope) (infer/pattern tenv pat)
+                                                                ()             (unify type target-type l)
+                                                                scope          (scope/apply-> scope)
+                                                                bound-env      (<- (tenv/with-scope tenv scope))]
+                                                                (infer/expr bound-env body)))
+                                                            cases)
                                                     (** Unify all of the result types together **)
-                                                    ()          (do->
-                                                                    (fn [one-result]
-                                                                        (let-> [subst <-subst]
-                                                                            (unify
-                                                                                (type/apply subst one-result)
-                                                                                    (type/apply subst result-type)
-                                                                                    l)))
-                                                                        all-results)
-                                                    ()          (check-exhaustiveness tenv target-type (map fst cases) l)]
-                                                    (type/apply-> result-type))))
+                                                    ;()
+                                                    ;(do->
+                                                        (fn [one-result]
+                                                            (let-> [subst <-subst]
+                                                                (unify
+                                                                    (type/apply subst one-result)
+                                                                        (type/apply subst result-type)
+                                                                        l)))
+                                                            all-results)
+                                                    target             (type/apply-> target-type)
+                                                    ()                 (check-exhaustiveness tenv target (map fst cases) l)]
+                                                    (<- final-result))))
 
 (,
     (errorToString
@@ -644,8 +671,9 @@
         (@
             (match 1
                 1 true
-                2 2))
-            "Fatal runtime: Incompatible concrete types: int (5145) vs bool (5143)")
+                2 2
+                _ 3))
+            "Fatal runtime: Incompatible concrete types: bool (5143) vs int (5145)")
         (,
         (@
             (fn [x]
@@ -797,11 +825,13 @@
                         [(ex/any) (ex/constructor "nil" "list" [])])])]))
         (,
         (, (@p (, 2 b)) (@t (, 1 2)))
-            (ex/constructor "," "," [(ex/constructor "2" "int" []) (ex/any)]))])
+            (ex/constructor "," "," [(ex/constructor "2" "int" []) (ex/any)]))
+        (,  )])
 
 (defn tcon-and-args [type coll l]
     (match type
-        (tvar _ _)          (fatal "Type not resolved ${(int-to-string l)}")
+        (tvar _ _)          (fatal
+                                "Type not resolved ${(int-to-string l)} ${(jsonify type)} ${(jsonify coll)}")
         (tcon name _)       (, name coll)
         (tapp target arg _) (tcon-and-args target [arg ..coll] l)))
 
