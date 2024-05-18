@@ -1372,7 +1372,8 @@
 (** ## Converting Types into JavaScript identifiers **)
 
 (defn name-for-instance [type cls]
-    "$_inst_${(type-to-js-id type)}$${cls}")
+    "${(type->s type)} < ${cls}"
+        ;("$_inst_${(type-to-js-id type)}$${cls}"))
 
 (defn type-to-js-id [type]
     (match type
@@ -1954,8 +1955,7 @@
                             (forall
                             (set/from-list ["number:18"])
                                 (=>
-                                [(isin (tvar "number:18" 22622) "eq" [(oloc 22620 0)])
-                                    (isin
+                                [(isin
                                     (tvar "number:18" 22622)
                                         "number"
                                         [(oloc 22604 0) (oloc 22606 0) (oloc 22622 0)])]
@@ -1968,8 +1968,7 @@
                             (forall
                             (set/from-list ["number:6"])
                                 (=>
-                                [(isin (tvar "number:6" 22598) "eq" [(oloc 22596 0)])
-                                    (isin
+                                [(isin
                                     (tvar "number:6" 22598)
                                         "number"
                                         [(oloc 22598 0) (oloc 22627 0) (oloc 22629 0)])]
@@ -2286,13 +2285,20 @@
                     (, "->" (, 2 set/nil))])
                 map/nil
                 (map/from-list
-                (** If/when I support superclasses, I'll need to add something to oloc indicating the original class that was requested at the point of use. So that we don't loose that information. **)
-                    [(, "number" (, [] [(inst tint "number") (inst (tcon "float" -1) "number")] []))
-                    (, "ord" (, [] [(inst tint "ord") (inst (tcon "float" -1) "ord")] []))
+                [(,
+                    "number"
+                        (, ["ord" "eq"] [(inst tint "number") (inst (tcon "float" -1) "number")] []))
+                    (, "ord" (, ["eq"] [(inst tint "ord") (inst (tcon "float" -1) "ord")] []))
                     (,
                     "eq"
                         (, [] [(inst tint "eq") (inst (tcon "float" -1) "eq") (inst tbool "eq")] []))
                     (, "floating" (, [] [(=> [] (isin (tcon "float" -1) "floating" []))] []))
+                    (,
+                    "pretty"
+                        (,
+                        []
+                            [(inst tint "pretty") (inst tstring "pretty") (inst tbool "pretty")]
+                            []))
                     (,
                     "show"
                         (,

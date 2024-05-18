@@ -875,6 +875,141 @@ const pat_names = pat => {
 }
  **)
 
+(** ## Builtins
+    There are a number of primitives that we'll have implemented in JavaScript, such as arithmetic operators, low-level parsers, and some other things that will help with performance a little bit. **)
+
+(** const builtins = `
+function equal(a, b) {
+    if (a === b) return true;
+
+    if (a && b && typeof a == 'object' && typeof b == 'object') {
+        var length, i, keys;
+        if (Array.isArray(a)) {
+            length = a.length;
+            if (length != b.length) return false;
+            for (i = length; i-- !== 0; ) if (!equal(a[i], b[i])) return false;
+            return true;
+        }
+
+        keys = Object.keys(a);
+        length = keys.length;
+        if (length !== Object.keys(b).length) return false;
+
+        for (i = length; i-- !== 0; ) {
+            if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
+        }
+
+        for (i = length; i-- !== 0; ) {
+            var key = keys[i];
+
+            if (!equal(a[key], b[key])) return false;
+        }
+
+        return true;
+    }
+
+    // true if both NaN, false otherwise
+    return a !== a && b !== b;
+}
+
+function unescapeString(n) {
+    if (n == null || !n.replaceAll) {
+        debugger;
+        return '';
+    }
+    return n.replaceAll(/\\\\./g, (m) => {
+        if (m[1] === 'n') {
+            return '\\n';
+        }
+        if (m[1] === 't') {
+            return '\\t';
+        }
+        if (m[1] === 'r') {
+            return '\\r';
+        }
+        return m[1];
+    });
+}
+
+function unwrapList(v) {
+    return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])];
+}
+
+function wrapList(v) {
+    let res = { type: 'nil' };
+    for (let i = v.length - 1; i >= 0; i--) {
+        res = { type: 'cons', 0: v[i], 1: res };
+    }
+    return res;
+}
+
+return {
+    '+': (a) => (b) => a + b,
+    '-': (a) => (b) => a - b,
+    '<': (a) => (b) => a < b,
+    '<=': (a) => (b) => a <= b,
+    '>': (a) => (b) => a > b,
+    '>=': (a) => (b) => a >= b,
+    '=': (a) => (b) => equal(a, b),
+    '!=': (a) => (b) => !equal(a, b),
+    pi: Math.PI,
+    unescapeString,
+    equal,
+    'int-to-string': (a) => a.toString(),
+    'string-to-int': (a) => {
+        const v = Number(a);
+        return Number.isInteger(v) ? { type: 'some', 0: v } : { type: 'nil' };
+    },
+    // maps
+    'map/nil': [],
+    'map/set': (map) => (key) => (value) =>
+        [[key, value], ...map.filter((i) => i[0] !== key)],
+    'map/rm': (map) => (key) => map.filter((i) => !equal(i[0], key)),
+    'map/get': (map) => (key) => {
+        const found = map.find((i) => equal(i[0], key));
+        return found ? { type: 'some', 0: found } : { type: 'none' };
+    },
+    'map/map': (fn) => (map) => map.map(([k, v]) => [k, fn(v)]),
+    'map/merge': (one) => (two) =>
+        [...one, ...two.filter(([key]) => !one.find((a) => equal(a, key)))],
+    'map/values': (map) => wrapList(map.map((item) => i[1])),
+    'map/keys': (map) => wrapList(map.map((item) => i[0])),
+    'map/from-list': (list) =>
+        unwrapList(list).map((pair) => [pair[0], pair[1]]),
+    'map/to-list': (map) =>
+        wrapList(map.map(([key, value]) => ({ type: ',', 0: key, 1: value }))),
+
+    // sets
+    'set/nil': [],
+    'set/add': (s) => (v) => [v, ...s.filter((m) => !equal(v, m))],
+    'set/has': (s) => (v) => s.includes(v),
+    'set/rm': (s) => (v) => s.filter((i) => !equal(i, v)),
+    // NOTE this is only working for primitives
+    'set/diff': (a) => (b) => a.filter((i) => !b.some((j) => equal(i, j))),
+    'set/merge': (a) => (b) =>
+        [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],
+    'set/overlap': (a) => (b) => a.filter((x) => b.some((y) => equal(y, x))),
+    'set/to-list': wrapList,
+    'set/from-list': (s) => {
+        const res = [];
+        unwrapList(s).forEach((item) => {
+            if (res.some((m) => equal(item, m))) {
+                return;
+            }
+            res.push(item);
+        });
+        return res;
+    },
+
+    // Various debugging stuff
+    jsonfiy: (v) => JSON.stringify(v) ?? 'undefined',
+    fatal: (message) => {
+        throw new Error(\`Fatal runtime: \${message}\`);
+    },
+};
+
+`; **)
+
 (** ## (Bonus) Reader
     We don't need a reader in this environment, because the structured editor is working at the level of the CST node, but if you're following along & implementing this in another language outside of the structured editor, you're going to need a reader to turn an input string into a CST node. **)
 
@@ -999,6 +1134,7 @@ const pat_names = pat => {
   externals_stmt: externals,
   externals_expr: e => externals_expr(e, []),
   fromNode: x => x,
+  builtins,
   toNode: x => x}) **)
 
 (** const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {}) **)

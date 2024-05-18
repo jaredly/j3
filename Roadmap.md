@@ -45,6 +45,12 @@ classes
   which will be great. I assume `compile2` will take ... whatever the type checker came up with.
 
 
+hrmmmm sooo I think I need `builtins` to not be just in a file. it needs to come out into the world.
+-> defined in javascript
+-> special thing, where we parse it specially. Yeah, it's just a string, it's got `consts`, and we figure it out. Good dealio.
+-> NOTE that I'll still have `equal` be fast-deep-equal probably.
+
+
 
 
 
