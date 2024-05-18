@@ -297,7 +297,7 @@
 (defn predicate/merge [(isin t1 s1 l1) (isin t2 s2 l2)]
     (if (= s1 s2)
         (if (type= t1 t2)
-            (some (isin t1 s2 (concat [l1 l2])))
+            (some (isin t1 s2 (set/to-list (set/from-list (concat [l1 l2])))))
                 (none))
             none))
 
@@ -1783,7 +1783,7 @@
                     (tapp (tcon "->" -1) (tcon "int" -1) -1)
                         (tapp (tapp (tcon "->" -1) (tcon "int" -1) -1) (tcon "int" -1) -1)
                         -1))
-                [(isin (tcon "int" -1) "number" [(oloc 20264 0) (oloc 20264 0)])]))
+                [(isin (tcon "int" -1) "number" [(oloc 20264 0)])]))
         (,
         (@ (fn [x] (+ 2 x)))
             (,
@@ -1792,15 +1792,10 @@
                     (tapp (tcon "->" 17995) (tcon "int" -1) 17995)
                         (tcon "int" -1)
                         17995))
-                [(isin
-                (tcon "int" -1)
-                    "number"
-                    [(oloc 18000 0) (oloc 18001 0) (oloc 18000 0) (oloc 18001 0)])]))
+                [(isin (tcon "int" -1) "number" [(oloc 18000 0) (oloc 18001 0)])]))
         (,
         (@ 1)
-            (,
-            (ok (tcon "int" -1))
-                [(isin (tcon "int" -1) "number" [(oloc 17846 0) (oloc 17846 0)])]))])
+            (, (ok (tcon "int" -1)) [(isin (tcon "int" -1) "number" [(oloc 17846 0)])]))])
 
 (** ## Adding Top-level Items to the Type Environment **)
 
@@ -1904,7 +1899,14 @@
         (, free-preds other-preds defaulted-preds subst2) (split
                                                               class-env
                                                                   []
+                                                                  (if (all
+                                                                  (fn [(, _ _ body _)]
+                                                                      (match body
+                                                                          (elambda _ _ _) true
+                                                                          _               false))
+                                                                      defns)
                                                                   (set/to-list (foldl set/nil (map type/free types) set/merge))
+                                                                      [])
                                                                   preds)
         _                                                 (preds-> defaulted-preds)
         _                                                 (subst-> subst2)
@@ -1999,8 +2001,18 @@
                     (map/from-list [])
                     (map/from-list [])
                     (map/from-list []))
-                [(isin (tcon "int" -1) "show" [(oloc 21268 0) (oloc 21268 0)])
-                (isin (tcon "int" -1) "number" [(oloc 21269 0) (oloc 21269 0)])]))])
+                [(isin (tcon "int" -1) "show" [(oloc 21268 0)])
+                (isin (tcon "int" -1) "number" [(oloc 21269 0)])]))
+        (,
+        [(@! (def hi 3))]
+            (,
+            (tenv
+                (map/from-list [(, "hi" (forall (map/from-list []) (=> [] (tcon "int" -1))))])
+                    (map/from-list [])
+                    (map/from-list [])
+                    (map/from-list [])
+                    (map/from-list []))
+                [(isin (tcon "int" -1) "number" [(oloc 23780 0)])]))])
 
 (defn add/typealias [(tenv values tcons types aliases typeclasses) name args type]
     (tenv

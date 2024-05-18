@@ -674,7 +674,7 @@ if ($target === true) {
 {
 let $target = type$eq(t1)(t2);
 if ($target === true) {
-return some(isin(t1)(s2)(concat(cons(l1)(cons(l2)(nil)))))
+return some(isin(t1)(s2)(set$slto_list(set$slfrom_list(concat(cons(l1)(cons(l2)(nil)))))))
 } ;
 return none;
 throw new Error('match fail 16906:' + JSON.stringify($target))
@@ -1586,7 +1586,13 @@ throw new Error('match fail 20712:' + JSON.stringify($target))
 }
 }
 let with_preds = (preds) => ({"1": {"1": type, "0": p2}, "0": free}) => forall(free)($eq$gt(concat(cons(p2)(cons(filter(pred_contains(free))(preds))(nil))))(type))
-let organize_predicates = (preds) => map$slmap((ol) => mapi((i) => ({"1": idx, "0": v}) => v)(ol))(foldl(map$slnil)(preds)((by_loc) => ({"2": locs, "1": cls, "0": type}) => {
+let organize_predicates = (preds) => map$slmap((ol) => mapi((i) => ({"1": idx, "0": v}) => (($target) => {
+if ($target === true) {
+return fatal(`predicates out of order somehow: ${int_to_string(i)} ${int_to_string(idx)}`)
+} ;
+return v;
+throw new Error('match fail 17784:' + JSON.stringify($target))
+})($ex$eq(i)(idx)))(ol))(foldl(map$slnil)(preds)((by_loc) => ({"2": locs, "1": cls, "0": type}) => {
 let instance_name = name_for_instance(type)(cls);
 return foldl(by_loc)(locs)((by_loc) => ({"1": idx, "0": loc}) => (($target) => {
 if ($target.type === "none") {
@@ -2192,7 +2198,19 @@ throw new Error('match fail 2253:' + JSON.stringify($target))
 })(expr)
 
 let infer$slexpr = (tenv) => (expr) => $gt$gt$eq(subst_reset_$gt(map$slnil))((old) => $gt$gt$eq(infer$slexpr_inner(tenv)(expr))((type) => $gt$gt$eq(subst_reset_$gt(old))(($new) => $gt$gt$eq(subst_$gt($new))((_2977) => $gt$gt$eq(record_type_$gt(type)(expr_loc(expr))(false))((_2977) => $lt_(type))))))
-let add$sldefs = (tenv) => (defns) => $gt$gt$eq(reset_state_$gt)((_3545) => $gt$gt$eq($lt_(map(({"0": name}) => name)(defns)))((names) => $gt$gt$eq($lt_(map(({"1": {"1": {"1": l}}}) => l)(defns)))((locs) => $gt$gt$eq(map_$gt(({"1": {"0": nl}, "0": name}) => new_type_var(name)(nl))(defns))((vbls) => $gt$gt$eq($lt_(foldl(tenv)(zip(names)(map(forall(set$slnil))(map($eq$gt(nil))(vbls))))((tenv) => ({"1": vbl, "0": name}) => tenv$slwith_type(tenv)(name)(vbl))))((bound_env) => $gt$gt$eq(map_$gt(({"1": {"1": {"0": expr}}}) => infer$slexpr(bound_env)(expr))(defns))((types) => $gt$gt$eq(map_$gt(type$slapply_$gt)(vbls))((vbls) => $gt$gt$eq(do_$gt(({"1": {"1": loc, "0": type}, "0": vbl}) => unify(vbl)(type)(loc))(zip(vbls)(zip(types)(locs))))((_3545) => $gt$gt$eq(map_$gt(type$slapply_$gt)(types))((types) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_preds)((preds) => $gt$gt$eq($lt_(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))((preds) => $gt$gt$eq($lt_(tenv))(({"4": class_env}) => $gt$gt$eq(split(class_env)(nil)(set$slto_list(foldl(set$slnil)(map(type$slfree)(types))(set$slmerge)))(preds))(({"1": {"1": {"1": subst2, "0": defaulted_preds}, "0": other_preds}, "0": free_preds}) => $gt$gt$eq(preds_$gt(defaulted_preds))((_3545) => $gt$gt$eq(subst_$gt(subst2))((_3545) => $gt$gt$eq($lt_(map(type$slapply(subst2))(types)))((types) => $lt_(foldl(tenv$slnil)(zip(names)(types))((tenv) => ({"1": type, "0": name}) => tenv$slwith_type(tenv)(name)(with_preds(other_preds)(generalize(tenv)($eq$gt(nil)(type)))))))))))))))))))))))
+let add$sldefs = (tenv) => (defns) => $gt$gt$eq(reset_state_$gt)((_3545) => $gt$gt$eq($lt_(map(({"0": name}) => name)(defns)))((names) => $gt$gt$eq($lt_(map(({"1": {"1": {"1": l}}}) => l)(defns)))((locs) => $gt$gt$eq(map_$gt(({"1": {"0": nl}, "0": name}) => new_type_var(name)(nl))(defns))((vbls) => $gt$gt$eq($lt_(foldl(tenv)(zip(names)(map(forall(set$slnil))(map($eq$gt(nil))(vbls))))((tenv) => ({"1": vbl, "0": name}) => tenv$slwith_type(tenv)(name)(vbl))))((bound_env) => $gt$gt$eq(map_$gt(({"1": {"1": {"0": expr}}}) => infer$slexpr(bound_env)(expr))(defns))((types) => $gt$gt$eq(map_$gt(type$slapply_$gt)(vbls))((vbls) => $gt$gt$eq(do_$gt(({"1": {"1": loc, "0": type}, "0": vbl}) => unify(vbl)(type)(loc))(zip(vbls)(zip(types)(locs))))((_3545) => $gt$gt$eq(map_$gt(type$slapply_$gt)(types))((types) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_preds)((preds) => $gt$gt$eq($lt_(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))((preds) => $gt$gt$eq($lt_(tenv))(({"4": class_env}) => $gt$gt$eq(split(class_env)(nil)((($target) => {
+if ($target === true) {
+return set$slto_list(foldl(set$slnil)(map(type$slfree)(types))(set$slmerge))
+} ;
+return nil;
+throw new Error('match fail 23745:' + JSON.stringify($target))
+})(all(({"1": {"1": {"0": body}}}) => (($target) => {
+if ($target.type === "elambda") {
+return true
+} ;
+return false;
+throw new Error('match fail 23759:' + JSON.stringify($target))
+})(body))(defns)))(preds))(({"1": {"1": {"1": subst2, "0": defaulted_preds}, "0": other_preds}, "0": free_preds}) => $gt$gt$eq(preds_$gt(defaulted_preds))((_3545) => $gt$gt$eq(subst_$gt(subst2))((_3545) => $gt$gt$eq($lt_(map(type$slapply(subst2))(types)))((types) => $lt_(foldl(tenv$slnil)(zip(names)(types))((tenv) => ({"1": type, "0": name}) => tenv$slwith_type(tenv)(name)(with_preds(other_preds)(generalize(tenv)($eq$gt(nil)(type)))))))))))))))))))))))
 let add$sldef = (tenv) => (name) => (nl) => (expr) => (l) => $gt$gt$eq(new_type_var(name)(nl))((self) => $gt$gt$eq($lt_(tenv$slwith_type(tenv)(name)(forall(set$slnil)($eq$gt(nil)(self)))))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(expr))((type) => $gt$gt$eq(type$slapply_$gt(self))((self) => $gt$gt$eq(unify(self)(type)(l))((_5246) => $gt$gt$eq(type$slapply_$gt(type))((type) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_preds)((preds) => $lt_(tenv$slwith_type(tenv$slnil)(name)(generalize(tenv)($eq$gt(map(predicate$slapply(subst))(bag$slto_list(preds)))(type))))))))))))
 let infer_expr2 = (env) => (expr) => {
 let {"1": result, "0": {"1": {"1": {"1": types, "0": preds}, "0": subst}}} = state_f(infer$slexpr(env)(expr))(state$slnil);

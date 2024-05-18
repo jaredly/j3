@@ -2,7 +2,7 @@
 
 - [ ] ENXT UP: record-if-generic should include predicates! thnxxxx
   - which means we need to recording (qual type) instead of (type), which sounds fine
-    -> should we also be recording the full (scheme)? MMAYBebe
+    -> should we also be recording the full (scheme)? MMAYBeb
 
 - [ ] setPointerCapture and elementFromPoint
 
@@ -37,6 +37,12 @@ classes
 -> we're reporting the predicates
 -> for non-function types, we need to resolve things so it can actually compile
 -> for function types ... we're not really going to execute it anyway right? i mean ... what would be the point.
+
+- [x] predicates now default. cant say I totally grok the algorithm, but it seems to be doing it right
+- [x] I probably shouldn't allow toplevel consts to have numeric nonsense in them ... because how do you actually specialize that?
+  and does it just mean that ... the reference ... yeah ok I'm gonna say we drop it.
+- [ ] codegen now needs to use that infos for good news!
+  which will be great. I assume `compile2` will take ... whatever the type checker came up with.
 
 
 
