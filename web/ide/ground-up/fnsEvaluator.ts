@@ -31,12 +31,20 @@ export const fnsEvaluator = (
     compiler: Compiler<Stmt, Expr>,
     analyze: undefined | Analyze<Stmt, Expr, Type>,
     typeCheck: undefined | TypeChecker<Env, Stmt, Expr, Type>,
-    san: any,
+    // san: any,
 ): FullEvalator<FnsEnv, Stmt, Expr, Env, Type> | null => {
+    const san: any = {};
     return {
         id,
         init() {
-            const values = sanitizedEnv(builtins());
+            const values = {};
+            if (compiler.builtins) {
+                const env = new Function(compiler.builtins)();
+                Object.assign(values, sanitizedEnv(env), env);
+            } else {
+                console.warn(`using baked-in builtins`);
+                Object.assign(values, sanitizedEnv(builtins()));
+            }
             if (compiler.prelude) {
                 const total = preludeText(compiler);
                 Object.assign(values, new Function(total)());
@@ -68,6 +76,13 @@ export const fnsEvaluator = (
                 throw new Error(`toFile requires analysis`);
             }
             let env = this.init();
+            env.js.push('const $env = {}');
+
+            if (compiler.builtins) {
+                env.js.push(
+                    `const $builtins = (() => {${compiler.builtins}})();\nObject.assign($env, $builtins);`,
+                );
+            }
 
             if (compiler.prelude) {
                 const total = preludeText(compiler);

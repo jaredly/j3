@@ -111,12 +111,12 @@ export const runFixtures = async (fixtures: Fixture[]) => {
             });
             console.timeEnd('worker');
         } catch (err) {
-            if (Array.isArray(evaluator)) {
-                evaluator.forEach((id, i) => {
-                    console.log(`writing ${id} to $ev_${i}.js`);
-                    writeFileSync(`$ev_${i}.js`, evaluators[id]);
-                });
-            }
+            // if (Array.isArray(evaluator)) {
+            //     evaluator.forEach((id, i) => {
+            //         console.log(`writing ${id} to $ev_${i}.js`);
+            //         writeFileSync(`$ev_${i}.js`, evaluators[id]);
+            //     });
+            // }
             // evaluator
             console.log(`Failed while doing ${id} : ${name}`);
             console.warn(`worker failed`, (err as Error).message);

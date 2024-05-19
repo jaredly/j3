@@ -953,13 +953,22 @@ return {
     '=': (a) => (b) => equal(a, b),
     '!=': (a) => (b) => !equal(a, b),
     pi: Math.PI,
+    'replace-all': a => b => c => a.replaceAll(b, c),
+    eval: source => {
+      return new Function('', 'return ' + source)()//ctx);
+    },
+    'eval-with': ctx => source => {
+      const args = '{' + Object.keys(ctx).join(',') + '}'
+      return new Function(args, 'return ' + source)(ctx);
+    },
     unescapeString,
     equal,
     'int-to-string': (a) => a.toString(),
     'string-to-int': (a) => {
         const v = Number(a);
-        return Number.isInteger(v) ? { type: 'some', 0: v } : { type: 'nil' };
+        return Number.isInteger(v) ? { type: 'some', 0: v } : { type: 'none' };
     },
+
     // maps
     'map/nil': [],
     'map/set': (map) => (key) => (value) =>
@@ -1002,7 +1011,7 @@ return {
     },
 
     // Various debugging stuff
-    jsonfiy: (v) => JSON.stringify(v) ?? 'undefined',
+    jsonify: (v) => JSON.stringify(v) ?? 'undefined',
     fatal: (message) => {
         throw new Error(\`Fatal runtime: \${message}\`);
     },
@@ -1171,6 +1180,8 @@ const sanitize =  (raw) => {
     '/': '$sl',
     ';': '$semi',
     '@': '$at',
+    ':': '$cl',
+    '#': '$ha',
     '!': '$ex',
     '|': '$bar',
     '()': '$unit',

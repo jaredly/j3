@@ -6,10 +6,12 @@ export type MetaList = [number, MetaData['trace']][];
 
 export const compiler = (fns: {
     prelude?: Record<string, string>;
+    builtins?: string;
     compile: (e: Expr) => (meta: MetaList) => string;
     compile_stmt: (s: Stmt) => (meta: MetaList) => string;
 }): Compiler<Stmt, Expr> => ({
     prelude: fns.prelude,
+    builtins: fns.builtins,
     compileExpr(expr, meta) {
         const mm = prepareMeta(meta);
         return fns.compile(expr)(mm);

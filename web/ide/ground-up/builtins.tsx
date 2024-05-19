@@ -25,6 +25,7 @@ const concat = <A,>(a: arr<A>, b: arr<A>): arr<A> => {
 };
 
 export function builtins() {
+    console.log('doing a builtins', new Error().stack);
     let env = {
         // Math
         '+': (a: number) => (b: number) => a + b,

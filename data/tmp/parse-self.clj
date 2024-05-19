@@ -726,6 +726,14 @@
         (pcon name nl args l) (bag/and (one (, name (value) nl)) (many (map args pat-externals)))
         _                     empty))
 
+(parse-expr (@@ hi))
+
+(@@ hi)
+
+(@ hi)
+
+
+
 (,
     (fn [x] (bag/to-list (externals (set/from-list ["+" "-" "cons" "nil"]) x)))
         [(, (parse-expr (@@ hi)) [(, "hi" (value) 7036)])

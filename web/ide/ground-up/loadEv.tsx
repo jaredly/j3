@@ -36,23 +36,24 @@ export const evaluatorFromText = (
     id: string,
     texts: string[],
 ): FullEvalator<{ values: { [key: string]: any } }, Stmt, Expr> | null => {
-    const benv = { ...builtins(), ...traceEnv() };
-    const san = sanitizedEnv(benv);
-    const envArgs =
-        '{$env,' +
-        Object.keys(san)
-            .filter((n) => sanitize(n) === n)
-            .join(', ') +
-        '}';
+    // const benv = { ...builtins(), ...traceEnv() };
+    // const san = sanitizedEnv(benv);
+    // const envArgs =
+    //     '{$env,' +
+    //     Object.keys(san)
+    //         .filter((n) => sanitize(n) === n)
+    //         .join(', ') +
+    //     '}';
 
     let data: any = {};
     for (let text of texts) {
         let result;
         try {
-            result = new Function(envArgs, '{' + text + '}')({
-                ...san,
-                $env: benv,
-            });
+            result = new Function('{' + text + '}')();
+            // result = new Function(envArgs, '{' + text + '}')({
+            //     ...san,
+            //     $env: benv,
+            // });
         } catch (err) {
             console.error(err);
             return null;
@@ -163,7 +164,8 @@ export const evaluatorFromText = (
         }
 
         // console.log('going for it', data);
-        return fnsEvaluator(id, parser, comp, ann, typeCheck, san);
+        return fnsEvaluator(id, parser, comp, ann, typeCheck);
+        // return fnsEvaluator(id, parser, comp, ann, typeCheck, san);
     }
 
     if (data.type === 'bootstrap') {

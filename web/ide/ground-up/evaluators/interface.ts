@@ -71,6 +71,7 @@ export type TypeChecker<Env, Stmt, Expr, Type> = {
 
 export type Compiler<Stmt, Expr> = {
     prelude?: Record<string, string>;
+    builtins?: string;
     compileStmt(stmt: Stmt, meta: MetaDataMap): string;
     compileExpr(expr: Expr, meta: MetaDataMap): string;
 };

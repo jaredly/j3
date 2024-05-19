@@ -1,4 +1,6 @@
 
+OK so long-term plan, it would be great for the host environment not to need to know about `sanitize`...right?
+
 
 - [ ] ENXT UP: record-if-generic should include predicates! thnxxxx
   - which means we need to recording (qual type) instead of (type), which sounds fine
