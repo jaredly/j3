@@ -689,8 +689,7 @@ return {
     pi: Math.PI,
     'replace-all': a => b => c => a.replaceAll(b, c),
     eval: source => {
-      const args = ''; // '{' + Object.keys(ctx).join(',') + '}'
-      return new Function(args, 'return ' + source)()//ctx);
+      return new Function('', 'return ' + source)()//ctx);
     },
     'eval-with': ctx => source => {
       const args = '{' + Object.keys(ctx).join(',') + '}'

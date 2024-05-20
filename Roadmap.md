@@ -8,6 +8,11 @@ OK so long-term plan, it would be great for the host environment not to need to 
 
 - [ ] setPointerCapture and elementFromPoint
 
+# Builtins self-hosted
+
+.. something's not working?
+.. I mean, I think my `toFile` needs a litte more of something ...
+
 
 # Thinking about row types and tagged unions.
 

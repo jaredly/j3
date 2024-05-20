@@ -305,7 +305,7 @@ export const getKeyUpdate = (
         return;
     }
 
-    if (key === 'Backspace') {
+    if (key === 'Backspace' || key === 'Delete') {
         return handleBackspace(map, nsMap, selection, hashNames, cards, mods);
     }
 
