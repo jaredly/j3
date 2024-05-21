@@ -13,12 +13,13 @@ export const compileFixture = (
     evaluator: AnyEnv,
     options: never,
 ) => {
+    const typeInfo = []; // STOPSHIP typeInfo
     const parsed = parse(node, parseExpr(evaluator, {}, blankAllNames()));
     if (!parsed) throw new Error(`cant compile fixture tests, unable to parse`);
     if (!parsed.test?.expr) throw new Error(`no test`);
     // STOPSHIP: pass type info for real
     return `{
-    const test = ${evaluator.compile(parsed.test?.expr, null, {})};
+    const test = ${evaluator.compile(parsed.test?.expr, typeInfo, {})};
     ${parsed.fixtures
         .map((item, i) => {
             if (item.type === 'unknown') return '';

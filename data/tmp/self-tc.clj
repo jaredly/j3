@@ -661,10 +661,11 @@ replace-all
     (** compile => compile_top => builtins => ({
   type:'fns',
   compile: a => _ => compile([])(a),
-  compile2: a => preds => trace => compile(preds)(a),
+  compile2: a => preds => trace => compile(preds ?? [])(a),
   compile_stmt: a => trace => compile_top([])(a),
-  compile_stmt2: a => preds => trace => compile_top(preds)(a),
+  compile_stmt2: a => preds => trace => compile_top(preds ?? [])(a),
   builtins,
+  prelude: {$type_class_insts: '{}'}
 }) **)
         compile
         compile-top

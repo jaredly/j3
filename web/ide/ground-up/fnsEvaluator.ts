@@ -48,7 +48,7 @@ export const fnsEvaluator = (
                 Object.assign(values, sanitizedEnv(builtins()));
             }
             if (compiler.prelude) {
-                const total = preludeText(compiler);
+                const total = preludeText(compiler.prelude);
                 Object.assign(values, new Function(total)());
             }
             // console.log('doing a values', values);
@@ -97,7 +97,7 @@ export const fnsEvaluator = (
             }
 
             if (compiler.prelude) {
-                const total = preludeText(compiler);
+                const total = preludeText(compiler.prelude);
                 env.js.push(
                     `const $prelude = (() => {${total}})();\nObject.assign($env, $prelude);`,
                 );
@@ -157,7 +157,7 @@ export const fnsEvaluator = (
                 const result = this.addStatements(
                     group.map((g) => ({ stmt: g.stmt, names: g.allNames })),
                     env,
-                    null,
+                    [], // STOPSHIP hrm
                     {},
                     {},
                     group[0].top.top,
@@ -208,18 +208,18 @@ export const fnsEvaluator = (
             debugShowJs,
         ) {
             const display: { [key: number]: ProduceItem[] } = {};
-            const res = compileStmt(
+            const res = compileStmt({
                 compiler,
                 san,
-                Object.values(stmts),
+                stmts: Object.values(stmts),
                 typeInfo,
                 env,
                 meta,
-                trace,
-                displayResult,
+                traceMap: trace,
+                renderValue: displayResult,
                 top,
                 debugShowJs,
-            );
+            });
 
             Object.keys(stmts).forEach((id) => {
                 if (display[+id]) {
@@ -281,19 +281,30 @@ export const fnsEvaluator = (
     };
 };
 
-const compileStmt = (
-    compiler: Compiler<Stmt, Expr>,
-    san: any,
-    stmts: { stmt: Stmt; names?: AllNames }[],
-    typeInfo: TypeInfo,
-    env: FnsEnv,
-    meta: MetaDataMap,
-    traceMap: TraceMap,
-    renderValue: (v: any) => ProduceItem[] = (v) => [valueToString(v)],
-    top: number,
+const compileStmt = ({
+    compiler,
+    san,
+    stmts,
+    typeInfo,
+    env,
+    meta,
+    traceMap,
+    renderValue = (v) => [valueToString(v)],
+    top,
+    debugShowJs,
+}: {
+    compiler: Compiler<Stmt, Expr>;
+    san: any;
+    stmts: { stmt: Stmt; names?: AllNames }[];
+    typeInfo: TypeInfo;
+    env: FnsEnv;
+    meta: MetaDataMap;
+    traceMap: TraceMap;
+    renderValue?: (v: any) => ProduceItem[];
+    top: number;
     // namedValues?: null | LocedName[],
-    debugShowJs?: boolean,
-): {
+    debugShowJs?: boolean;
+}): {
     env: any;
     display: ProduceItem[];
     values: Record<string, any>;
@@ -446,12 +457,11 @@ const compileStmt = (
     }
 };
 
-function preludeText(compiler: Compiler<Stmt, Expr>) {
-    const text = Object.entries(compiler.prelude!)
+function preludeText(prelude: Record<string, string>) {
+    const text = Object.entries(prelude)
         .map(([name, defn]) => `const ${name} = ${defn};`)
         .join('\n\n');
-    const total =
-        text + `\nreturn {${Object.keys(compiler.prelude!).join(',')}}`;
+    const total = text + `\nreturn {${Object.keys(prelude).join(',')}}`;
     return total;
 }
 
