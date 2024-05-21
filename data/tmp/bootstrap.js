@@ -665,6 +665,40 @@ function unescapeString(n) {
     });
 }
 
+ const sanMap = {
+    // '$$$$' gets interpreted by replaceAll as '$$', for reasons
+    $: '$$$$',
+    '-': '_',
+    '+': '$pl',
+    '*': '$ti',
+    '=': '$eq',
+    '>': '$gt',
+    '<': '$lt',
+    "'": '$qu',
+    '"': '$dq',
+    ',': '$co',
+    '/': '$sl',
+    ';': '$semi',
+    '@': '$at',
+    ':': '$cl',
+    '#': '$ha',
+    '!': '$ex',
+    '|': '$bar',
+    '()': '$unit',
+    '?': '$qe',
+  };
+ const kwds =
+    'case new var const let if else return super break while for default'.split(' ');
+
+// Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
+function sanitize(raw) {
+    for (let [key, val] of Object.entries(sanMap)) {
+        raw = raw.replaceAll(key, val);
+    }
+    if (kwds.includes(raw)) return '$' + raw
+    return raw
+}
+
 function unwrapList(v) {
     return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])];
 }
@@ -676,6 +710,45 @@ function wrapList(v) {
     }
     return res;
 }
+
+ const valueToString = (v) => {
+    if (Array.isArray(v)) {
+        return \`[\${v.map(valueToString).join(', ')}]\`;
+    }
+    if (typeof v === 'object' && v && 'type' in v) {
+        if (v.type === 'cons' || v.type === 'nil') {
+            const un = unwrapList(v);
+            return '[' + un.map(valueToString).join(' ') + ']';
+        }
+
+        let args = [];
+        for (let i = 0; i in v; i++) {
+            args.push(v[i]);
+        }
+        return \`(\${v.type}\${args
+            .map((arg) => ' ' + valueToString(arg))
+            .join('')})\`;
+    }
+    if (typeof v === 'string') {
+        if (v.includes('"') && !v.includes("'")) {
+            return (
+                "'" + JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"') + "'"
+            );
+        }
+        return JSON.stringify(v);
+    }
+    if (typeof v === 'function') {
+        return '<function>';
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+      return '' + v;
+    }
+
+    if (v == null) {
+      return \`Unexpected \${v}\`;
+    }
+    return '' + v;
+}; 
 
 return {
     '+': (a) => (b) => a + b,
@@ -689,13 +762,15 @@ return {
     pi: Math.PI,
     'replace-all': a => b => c => a.replaceAll(b, c),
     eval: source => {
-      return new Function('', 'return ' + source)()//ctx);
+      return new Function('', 'return ' + source)();
     },
     'eval-with': ctx => source => {
       const args = '{' + Object.keys(ctx).join(',') + '}'
       return new Function(args, 'return ' + source)(ctx);
     },
+    valueToString,
     unescapeString,
+    sanitize,
     equal,
     'int-to-string': (a) => a.toString(),
     'string-to-int': (a) => {
@@ -710,7 +785,7 @@ return {
     'map/rm': (map) => (key) => map.filter((i) => !equal(i[0], key)),
     'map/get': (map) => (key) => {
         const found = map.find((i) => equal(i[0], key));
-        return found ? { type: 'some', 0: found } : { type: 'none' };
+        return found ? { type: 'some', 0: found[1] } : { type: 'none' };
     },
     'map/map': (fn) => (map) => map.map(([k, v]) => [k, fn(v)]),
     'map/merge': (one) => (two) =>
@@ -881,7 +956,7 @@ const kwds =
     'case new var const let if else return super break while for default'.split(' ');
 
 
-return ({type: 'fns', prelude: makePrelude({evaluate,evaluateStmt: evaluateTop,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString}),
+return ({type: 'fns', prelude: makePrelude({evaluate,evaluateStmt: evaluateTop,unwrapList,constrFn,sanMap,evalPat,kwds,unescapeSlashes,valueToString}),
   compile: ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)`,
   compile_stmt: ast => _meta => `${ast.type === 'tdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'tdeftype' ? `const {${
     unwrapList(ast[3]).map(c => `"${c[0]}": ${sanitize(c[0])}`)

@@ -81,27 +81,26 @@ const fixtures: Fixture[] = [
         file: 'l1-tests.json',
         evaluator: [0.1, 1.1, 1],
     },
-    // // The self-compile-to-js
-    // {
-    //     id: 2,
-    //     name: 'bootstrapped-self -> self-1',
-    //     file: 'self-1.json',
-    //     evaluator: [0.1, 1.1, 1],
-    // },
-    // {
-    //     id: 2.1,
-    //     name: 'bootstrapped-self -> parse-self',
-    //     file: 'parse-self.json',
-    //     evaluator: [0.1, 1.1, 1],
-    // },
-    // // Using the self-js
-    // {
-    //     id: 3,
-    //     name: 'selfed-self -> self-1',
-    //     file: 'self-1.json',
-    //     evaluator: [0.1, 2.1, 2],
-    // },
-    /*
+    // The self-compile-to-js
+    {
+        id: 2,
+        name: 'bootstrapped-self -> self-1',
+        file: 'self-1.json',
+        evaluator: [0.1, 1.1, 1],
+    },
+    {
+        id: 2.1,
+        name: 'bootstrapped-self -> parse-self',
+        file: 'parse-self.json',
+        evaluator: [0.1, 1.1, 1],
+    },
+    // Using the self-js
+    {
+        id: 3,
+        name: 'selfed-self -> self-1',
+        file: 'self-1.json',
+        evaluator: [0.1, 2.1, 2],
+    },
     {
         id: 3.1,
         name: 'selfed-self -> parse-self',
@@ -190,7 +189,6 @@ const fixtures: Fixture[] = [
     //     file: 'parse-self.json',
     //     evaluator: [3],
     // },
-    */
 ];
 
 test(`run self-1.json`, async () => {

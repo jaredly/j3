@@ -603,6 +603,8 @@
         (some message) (fatal message)
         _              (map/merge (map/map (type-apply new-subst) old-subst) new-subst)))
 
+(compose-subst "" map/nil map/nil)
+
 (def demo-new-subst
     (map/from-list [(, "a" (tcon "a-mapped" -1)) (, "b" (tvar "c" -1))]))
 

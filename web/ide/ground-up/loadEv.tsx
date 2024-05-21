@@ -26,7 +26,11 @@ export const loadEv = async (
     ids: string[],
 ): Promise<null | FullEvalator<any, any, any>> => {
     const res = await Promise.all(
-        ids.map((id) => fetch(jsUrl(id)).then((res) => res.text())),
+        ids.map((id) =>
+            fetch(jsUrl(id))
+                .then((res) => res.text())
+                .then((text) => ({ id, text })),
+        ),
     );
 
     return evaluatorFromText(ids.join(':'), res);
@@ -34,7 +38,7 @@ export const loadEv = async (
 
 export const evaluatorFromText = (
     id: string,
-    texts: string[],
+    texts: { id: string; text: string }[],
 ): FullEvalator<{ values: { [key: string]: any } }, Stmt, Expr> | null => {
     // const benv = { ...builtins(), ...traceEnv() };
     // const san = sanitizedEnv(benv);
@@ -46,7 +50,7 @@ export const evaluatorFromText = (
     //     '}';
 
     let data: any = {};
-    for (let text of texts) {
+    for (let { text, id } of texts) {
         let result;
         try {
             result = new Function('{' + text + '}')();
@@ -55,6 +59,7 @@ export const evaluatorFromText = (
             //     $env: benv,
             // });
         } catch (err) {
+            console.log(`Failed to evaluate ${id}`);
             console.error(err);
             return null;
         }

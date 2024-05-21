@@ -27,7 +27,10 @@ export const runFixtures = async (fixtures: Fixture[]) => {
                 ? jsEvaluator
                 : evaluatorFromText(
                       `some ev for ${evaluator.join(' ')}`,
-                      evaluator.map((id) => evaluators[id]),
+                      evaluator.map((id) => ({
+                          id: '' + id,
+                          text: evaluators[id],
+                      })),
                   );
 
         if (!ev) {

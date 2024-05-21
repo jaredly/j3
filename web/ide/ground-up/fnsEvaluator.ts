@@ -79,8 +79,14 @@ export const fnsEvaluator = (
             env.js.push('const $env = {}');
 
             if (compiler.builtins) {
+                const builtins = new Function(compiler.builtins)();
                 env.js.push(
                     `const $builtins = (() => {${compiler.builtins}})();\nObject.assign($env, $builtins);`,
+                );
+                env.js.push(
+                    `const {${Object.keys(builtins)
+                        .map((k) => `${JSON.stringify(k)}: ${sanitize(k)}`)
+                        .join(', ')}} = $builtins;`,
                 );
             }
 
