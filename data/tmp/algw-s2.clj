@@ -1303,6 +1303,9 @@
                     (, "valueToString" (generic ["v"] (tfns [(vbl "v")] tstring -1)))
                     (, "eval" (generic ["v"] (tfns [(tcon "string" -1)] (vbl "v") -1)))
                     (,
+                    "eval-with"
+                        (generic ["ctx" "v"] (tfns [(tcon "ctx" -1) (tcon "string" -1)] (vbl "v") -1)))
+                    (,
                     "errorToString"
                         (generic ["v"] (tfns [(tfns [(vbl "v")] tstring -1) (vbl "v")] tstring -1)))
                     (, "sanitize" (concrete (tfns [tstring] tstring -1)))
