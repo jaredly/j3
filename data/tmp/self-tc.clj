@@ -37,6 +37,9 @@
     (nil)
         (cons a (list a)))
 
+(deftype (, a b)
+    (, a b))
+
 (defn concat [lsts]
     (match lsts
         []                    []

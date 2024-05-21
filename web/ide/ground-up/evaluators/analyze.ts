@@ -100,7 +100,7 @@ export const analyzer = (fns: {
 }): Analyze<Stmt, Expr, Type> => ({
     allNamesExpr(expr) {
         const res = blankAllNames();
-        if (fns.all_names_expr) {
+        if (fns.all_names_expr && 1 > 2) {
             try {
                 unwrapArray(fns.all_names_expr(expr)).forEach(
                     handleAllNames(res),
