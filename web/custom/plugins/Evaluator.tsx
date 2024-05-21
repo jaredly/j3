@@ -29,8 +29,7 @@ export const evaluatorPlugin: NamespacePlugin<
     // So... I want a way to send a message to the worker.
 
     render({ id }, results, store, ns) {
-        const options: string | null =
-            typeof ns.plugin === 'string' ? null : ns.plugin?.options;
+        const options: string | null = ns.plugin?.options;
         return {
             type: 'vert',
             children: [

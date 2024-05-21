@@ -515,7 +515,7 @@ const sanMap = {
     '?': '$qe',
   };
 const kwds =
-    'case new var const let if else return super break while for default'.split(' ');
+    'case new var const let if else return super break while for default eval'.split(' ');
 
 // Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
 function sanitize(raw) {
@@ -576,6 +576,14 @@ return {
     'eval-with': ctx => source => {
       const args = '{' + Object.keys(ctx).join(',') + '}'
       return new Function(args, 'return ' + source)(ctx);
+    },
+    $unit: null,
+    errorToString: f => arg => {
+      try {
+        return f(arg)
+      } catch (err) {
+        return err.message;
+      }
     },
     valueToString,
     unescapeString,

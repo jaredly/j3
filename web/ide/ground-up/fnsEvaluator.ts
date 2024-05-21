@@ -1,6 +1,8 @@
 import { fromMCST } from '../../../src/types/mcst';
 import { MetaDataMap } from '../../custom/UIState';
 import { filterNulls } from '../../custom/old-stuff/filterNulls';
+import { plugins } from '../../custom/plugins';
+import { workerPlugins } from '../../custom/plugins/worker';
 import { depSort } from '../../custom/store/depSort';
 import { LocedName } from '../../custom/store/sortTops';
 import { unique } from '../../custom/store/unique';
@@ -55,6 +57,10 @@ export const fnsEvaluator = (
         // TODO: allow customization
         valueToString,
         valueToNode,
+
+        compile(expr, meta) {
+            return compiler.compileExpr(expr, meta);
+        },
 
         // @ts-ignore
         // _data: data,
@@ -128,6 +134,17 @@ export const fnsEvaluator = (
             );
 
             sorted.forEach((group) => {
+                if (group.length === 1 && group[0].top.ns.plugin) {
+                    const config = group[0].top.ns.plugin;
+                    const plugin = workerPlugins[config.id];
+                    if (plugin.compile) {
+                        env.js.push(
+                            plugin.compile(group[0].node, this, config.options),
+                        );
+                        return;
+                    }
+                    // here we have some tests!
+                }
                 if (
                     group.every(
                         (item) =>

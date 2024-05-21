@@ -14,6 +14,9 @@
     (cons a (list a))
         (nil))
 
+(deftype (, a b)
+    (, a b))
+
 (defn foldr [init items f]
     (match items
         []           init

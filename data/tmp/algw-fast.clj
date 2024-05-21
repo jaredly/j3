@@ -1384,6 +1384,8 @@
         [one ..rest]     (let-> [(, tenv' _) (infer-stmtss tenv [one])]
                              (several (tenv/merge tenv tenv') rest))))
 
+(@! (typealias (list a) (lol n a)))
+
 (,
     (fn [x]
         (match (run/nil-> (several basic x))
@@ -2161,6 +2163,8 @@ map->
            (match 1
                (c _) 1))]
     (, (top/idents st) st))
+
+(@! (typealias a 10))
 
 (,
     (run/usages builtin-env)

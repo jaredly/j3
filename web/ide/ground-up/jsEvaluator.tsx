@@ -233,6 +233,21 @@ export const jsEvaluator: FullEvalator<
         }
         return { expr: stmt, errors };
     },
+    compile(expr, meta) {
+        if (typeof expr === 'string') {
+            return JSON.stringify(expr);
+        }
+        if (expr.type === 'cst') {
+            return JSON.stringify(expr.cst);
+        }
+        if (expr.args.length) {
+            return (
+                `(${expr.raw})` +
+                expr.args.map((arg) => `(${JSON.stringify(arg)})`).join('')
+            );
+        }
+        return expr.raw;
+    },
     evaluate(expr, allNames, env, meta) {
         if (typeof expr === 'string') {
             return expr;

@@ -541,7 +541,15 @@ const p = {
     return {type: 'tdef', 0: name.text, 1: name.loc, 2: body, 3: loc}
   },
   typealias(loc, head, tail) {
-    return {type: 'ttypealias'}
+    let name, args;
+    if (head.type === 'identifier') {
+      name = head
+      args = []
+    } else if (head.type === 'list' && head.values.length >= 1 && head.values[0].type === 'identifier') {
+      name = head.values[0]
+      args = head.values.slice(1).map(n => pair(n.text, n.loc));
+    }
+    return {type: 'ttypealias', 0: name.text, 1: name.loc, 2: list(args), 3: parseType(tail), 4: loc}
   },
 } **)
 
@@ -559,7 +567,13 @@ const p = {
             (** '(tdeftype "option" 1014 [(, "a" 1015)] [(, "some" 1017 [(tcon "a" 1018)] 1016) (, "none" 1020 [] 1019)] 1011)' **))
         (,
         (@ (defn lol [a b] (+ a b)))
-            (** '(tdef "lol" 265 (elambda [(pvar "a" 268) (pvar "b" 269)] (eapp (evar "+" 271) [(evar "a" 272) (evar "b" 273)] 270) 261) 261)' **))])
+            (** '(tdef "lol" 265 (elambda [(pvar "a" 268) (pvar "b" 269)] (eapp (evar "+" 271) [(evar "a" 272) (evar "b" 273)] 270) 261) 261)' **))
+        (,
+        (@ (typealias (lol a) (list a n)))
+            (** '(ttypealias "lol" 1934 [(, "a" 1935)] (tapp (tapp (tcon "list" 1937) (tcon "a" 1938) 1936) (tcon "n" 1939) 1936) 1929)' **))
+        (,
+        (@ (typealias lol (list int)))
+            (** '(ttypealias "lol" 1947 [] (tapp (tcon "list" 1949) (tcon "int" 1950) 1948) 1945)' **))])
 
 (** ## Tree-Walking Evaluator
     To evaluate our code in this bootstrap environment, we're treating the AST as a very basic "bytecode" that we're evaluating in a "virtual machine". Evaluating a program, in this paradigm, simply consists of walking each node of the tree and "reducing" it to a runtime value. **)
@@ -946,6 +960,7 @@ function unescapeString(n) {
     '/': '$sl',
     ';': '$semi',
     '@': '$at',
+    '.': '$do',
     ':': '$cl',
     '#': '$ha',
     '!': '$ex',
@@ -954,7 +969,7 @@ function unescapeString(n) {
     '?': '$qe',
   };
  const kwds =
-    'case new var const let if else return super break while for default'.split(' ');
+    'case new var const let if else return super break while for default eval'.split(' ');
 
 // Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
 function sanitize(raw) {
@@ -1025,6 +1040,7 @@ return {
     '>=': (a) => (b) => a >= b,
     '=': (a) => (b) => equal(a, b),
     '!=': (a) => (b) => !equal(a, b),
+    $unit: null,
     pi: Math.PI,
     'replace-all': a => b => c => a.replaceAll(b, c),
     eval: source => {
@@ -1033,6 +1049,13 @@ return {
     'eval-with': ctx => source => {
       const args = '{' + Object.keys(ctx).join(',') + '}'
       return new Function(args, 'return ' + source)(ctx);
+    },
+    errorToString: f => arg => {
+      try {
+        return f(arg)
+      } catch (err) {
+        return err.message;
+      }
     },
     valueToString,
     unescapeString,
@@ -1221,6 +1244,8 @@ return {
   builtins,
   toNode: x => x}) **)
 
+zx
+
 (** const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {}) **)
 
 (** // Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
@@ -1250,6 +1275,7 @@ const sanitize =  (raw) => {
     '>': '$gt',
     '<': '$lt',
     "'": '$qu',
+    '.': '$do',
     '"': '$dq',
     ',': '$co',
     '/': '$sl',
@@ -1263,5 +1289,5 @@ const sanitize =  (raw) => {
     '?': '$qe',
   };
 const kwds =
-    'case new var const let if else return super break while for default'.split(' ');
+    'case new var const let if else return super break while for default eval'.split(' ');
  **)

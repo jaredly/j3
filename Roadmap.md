@@ -1,4 +1,16 @@
 
+# For debugging more stuffs
+
+-> the Save Evaluator plugin type
+  -> have an option to include fixture tests, for nicer debugginggg
+  -> alsoo have an option to like "produce a cli" ya know. instead of "return {}"
+
+
+
+
+
+##
+
 OK so long-term plan, it would be great for the host environment not to need to know about `sanitize`...right?
 
 

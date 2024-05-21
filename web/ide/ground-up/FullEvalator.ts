@@ -76,6 +76,7 @@ export type FullEvalator<
     };
     setTracing(idx: number | null, traceMap: TraceMap, env: Env): void;
     evaluate(expr: Expr, allNames: AllNames, env: Env, meta: MetaDataMap): any;
+    compile(expr: Expr, meta: MetaDataMap): string;
     toFile(
         state: NUIState,
         target?: number,

@@ -114,6 +114,9 @@ export const bootstrap: FullEvalator<
     },
     valueToString,
     valueToNode,
+    compile(expr, meta) {
+        throw new Error(`bootstrap eval cant compile`);
+    },
     analysis: {
         // externalsStmt(stmt) {
         //     switch (stmt.type) {

@@ -111,5 +111,5 @@
         (** A toplevel expression **)
         (texpr expr int)
         (** A type alias e.g. (typealias names (list string)) **)
-        (ttypealias string int (list string) type int))
+        (ttypealias string int (list (, string int)) type int))
 

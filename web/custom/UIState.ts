@@ -14,6 +14,7 @@ import { NNode } from '../../src/state/nestedNodes/NNode';
 import { Map, NsMap } from '../../src/types/mcst';
 import { NUIResults, Store } from './store/Store';
 import {
+    AnyEnv,
     Errors,
     FullEvalator,
     InferenceError,
@@ -201,6 +202,7 @@ export type RealizedNamespace = {
 
 export type WorkerPlugin<Results, Parsed, Options> = {
     test(node: Node): boolean;
+    compile?(node: Node, evaluator: AnyEnv, options: Options): string;
     parse(
         node: Node,
         errors: Errors,

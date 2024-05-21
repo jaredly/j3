@@ -396,7 +396,15 @@ const topForms = {
     return {type: 'tdef', 0: name.text, 1: name.loc, 2: body, 3: loc}
   },
   typealias(loc, head, tail) {
-    return {type: 'ttypealias'}
+    let name, args;
+    if (head.type === 'identifier') {
+      name = head
+      args = []
+    } else if (head.type === 'list' && head.values.length >= 1 && head.values[0].type === 'identifier') {
+      name = head.values[0]
+      args = head.values.slice(1).map(n => pair(n.text, n.loc));
+    }
+    return {type: 'ttypealias', 0: name.text, 1: name.loc, 2: list(args), 3: parseType(tail), 4: loc}
   },
 }
 
@@ -680,6 +688,7 @@ function unescapeString(n) {
     '/': '$sl',
     ';': '$semi',
     '@': '$at',
+    '.': '$do',
     ':': '$cl',
     '#': '$ha',
     '!': '$ex',
@@ -688,7 +697,7 @@ function unescapeString(n) {
     '?': '$qe',
   };
  const kwds =
-    'case new var const let if else return super break while for default'.split(' ');
+    'case new var const let if else return super break while for default eval'.split(' ');
 
 // Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
 function sanitize(raw) {
@@ -759,6 +768,7 @@ return {
     '>=': (a) => (b) => a >= b,
     '=': (a) => (b) => equal(a, b),
     '!=': (a) => (b) => !equal(a, b),
+    $unit: null,
     pi: Math.PI,
     'replace-all': a => b => c => a.replaceAll(b, c),
     eval: source => {
@@ -767,6 +777,13 @@ return {
     'eval-with': ctx => source => {
       const args = '{' + Object.keys(ctx).join(',') + '}'
       return new Function(args, 'return ' + source)(ctx);
+    },
+    errorToString: f => arg => {
+      try {
+        return f(arg)
+      } catch (err) {
+        return err.message;
+      }
     },
     valueToString,
     unescapeString,
@@ -940,6 +957,7 @@ const sanMap = {
     '>': '$gt',
     '<': '$lt',
     "'": '$qu',
+    '.': '$do',
     '"': '$dq',
     ',': '$co',
     '/': '$sl',
@@ -953,7 +971,7 @@ const sanMap = {
     '?': '$qe',
   };
 const kwds =
-    'case new var const let if else return super break while for default'.split(' ');
+    'case new var const let if else return super break while for default eval'.split(' ');
 
 
 return ({type: 'fns', prelude: makePrelude({evaluate,evaluateStmt: evaluateTop,unwrapList,constrFn,sanMap,evalPat,kwds,unescapeSlashes,valueToString}),

@@ -6,11 +6,48 @@ import { Data, Expr, parse, parseExpr } from './Data';
 import { valueToString } from '../../ide/ground-up/valueToString';
 import { AllNames } from '../../ide/ground-up/evaluators/interface';
 import { blankAllNames } from '../../ide/ground-up/evaluators/analyze';
+import { AnyEnv } from '../store/getResults';
+
+export const compileFixture = (
+    node: Node,
+    evaluator: AnyEnv,
+    options: never,
+) => {
+    const parsed = parse(node, parseExpr(evaluator, {}, blankAllNames()));
+    if (!parsed) throw new Error(`cant compile fixture tests, unable to parse`);
+    if (!parsed.test?.expr) throw new Error(`no test`);
+    return `{
+    const test = ${evaluator.compile(parsed.test?.expr, {})};
+    ${parsed.fixtures
+        .map((item, i) => {
+            if (item.type === 'unknown') return '';
+            if (!item.input?.expr && !item.output?.expr) return '';
+            if (!item.input?.expr)
+                throw new Error(`no input on line ${i} (${node.loc})`);
+            if (!item.output?.expr)
+                throw new Error(`no output on line ${i} (${node.loc})`);
+            return `
+    const in_${i} = ${evaluator.compile(item.input.expr, {})};
+    const mod_${i} = test(in_${i});
+    const out_${i} = ${evaluator.compile(item.output.expr, {})};
+    if (!equal(mod_${i}, out_${i})) {
+        console.log(mod_${i});
+        console.log(out_${i});
+        throw new Error(\`Fixture test (${
+            node.loc
+        }) failing ${i}. Not equal.\`);
+    }
+    `;
+        })
+        .join('\n')}
+}`;
+};
 
 export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
     test: (node: Node) => {
         return parse(node, (node) => undefined) != null;
     },
+    compile: compileFixture,
     infer(parsed, evaluator) {
         return {
             result: { type: 'ok', value: null },

@@ -41,6 +41,9 @@ export const bootstrapEvaluator = (
         init() {
             return { values: bootstrap.init().values, source: [] };
         },
+        compile(expr, meta) {
+            throw new Error('bootstrap eval cant compile');
+        },
         analysis: bootstrap.analysis,
         valueToString,
         valueToNode,
