@@ -11,7 +11,7 @@ import { HiddenInput } from '../custom/HiddenInput';
 import { Menu } from '../custom/Menu';
 import { Root } from '../custom/old-stuff/Root';
 import { UIState } from '../custom/UIState';
-import { nilt } from '../../src/to-ast/builtins';
+import { nilt } from '../../src/to-ast/old-builtins';
 import { getType } from '../../src/get-type/get-types-new';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodeForType } from '../../src/to-cst/nodeForType';

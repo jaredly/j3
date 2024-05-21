@@ -592,7 +592,7 @@ return {
     'int-to-string': (a) => a.toString(),
     'string-to-int': (a) => {
         const v = Number(a);
-        return Number.isInteger(v) ? { type: 'some', 0: v } : { type: 'none' };
+        return Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' };
     },
     'string-to-float': (a) => {
         const v = Number(a);
@@ -643,7 +643,7 @@ return {
     // Various debugging stuff
     jsonify: (v) => JSON.stringify(v) ?? 'undefined',
     fatal: (message) => {
-        throw new Error(\`Fatal runtime: \${message}\`);
+        throw new Error(`Fatal runtime: ${message}`);
     },
 } **))
 

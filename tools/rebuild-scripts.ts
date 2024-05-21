@@ -7,16 +7,8 @@ import { jsEvaluator } from '../web/ide/ground-up/jsEvaluator';
 import { evaluatorFromText } from '../web/ide/ground-up/loadEv';
 import { join } from 'path';
 
-const selfCombo = ['self-1.json', 'parse-self.json', 'jcst.json'];
-
 // A key premise here is that the evaluator should *not* influence the runtime behavior, only (potentially) the performance.
 // with type-classes, that might no longer be the case...
-// const scriptsToBuild = {
-//     'bootstrap.json': ':javascript:',
-//     'jcst.json': ':javascript:',
-//     'self-1.json': ['bootstrap.json', selfCombo],
-//     'parse-self.json': ['bootstrap.json', selfCombo]
-// };
 
 const findSavePlugin = (state: NUIState) => {
     for (let id of Object.keys(state.nsMap)) {
@@ -29,6 +21,7 @@ const findSavePlugin = (state: NUIState) => {
     }
 };
 
+const selfCombo = ['self-1.json', 'parse-self.json', 'jcst.json'];
 const toBuild = [
     { file: 'bootstrap.json', ev: ':javascript:' },
     { file: 'jcst.json', ev: ':javascript:' },
@@ -68,9 +61,8 @@ const getEvaluators = (builder: (typeof toBuild)[0]['ev']) => {
 
 toBuild.forEach(({ file, ev, dest }) => {
     const evaluator = getEvaluators(ev);
-    const state: NUIState = JSON.parse(
-        readFileSync(join(__dirname, '../data/tmp/', file), 'utf-8'),
-    );
+    const source = join(__dirname, '../data/tmp/', file);
+    const state: NUIState = JSON.parse(readFileSync(source, 'utf-8'));
     const save = findSavePlugin(state);
     if (!save) {
         throw new Error(`no save ${file}`);

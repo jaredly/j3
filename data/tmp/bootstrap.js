@@ -792,7 +792,11 @@ return {
     'int-to-string': (a) => a.toString(),
     'string-to-int': (a) => {
         const v = Number(a);
-        return Number.isInteger(v) ? { type: 'some', 0: v } : { type: 'none' };
+        return Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' };
+    },
+    'string-to-float': (a) => {
+        const v = Number(a);
+        return Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' };
     },
 
     // maps

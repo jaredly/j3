@@ -328,8 +328,8 @@ const fromNode = node => {
 (** // Expects a node of type 'identifier' and if it's an int or true/false, returns
 // the appropriate `prim`
 const parsePrim = node => {
-  const v = +node.text
-  if (v + '' === node.text && Math.floor(v) === v) {
+  const v = Number(node.text)
+  if (v + '' === node.text && Number.isInteger(v)) {
     return c.prim(c.int(v, node.loc), node.loc)
   }
   if (node.text === 'true' || node.text === 'false') {
@@ -1064,7 +1064,11 @@ return {
     'int-to-string': (a) => a.toString(),
     'string-to-int': (a) => {
         const v = Number(a);
-        return Number.isInteger(v) ? { type: 'some', 0: v } : { type: 'none' };
+        return Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' };
+    },
+    'string-to-float': (a) => {
+        const v = Number(a);
+        return Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' };
     },
 
     // maps

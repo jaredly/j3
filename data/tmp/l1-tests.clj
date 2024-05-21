@@ -28,6 +28,8 @@
 
 (defn id [x] x)
 
+(string-to-float "1.2")
+
 (** ## Builtins **)
 
 (,
@@ -52,6 +54,8 @@
         (, (int-to-string 23) "23")
         (, (string-to-int "23") (some 23))
         (, (string-to-int "23a") (none))
+        (, (string-to-int "23.1") (none))
+        (, (string-to-int "23.0") (none))
         (, (jsonify (some 2)) "{\"0\":2,\"type\":\"some\"}")])
 
 (** Maps **)

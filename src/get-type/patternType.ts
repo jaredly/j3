@@ -1,4 +1,4 @@
-import { blank, none } from '../to-ast/builtins';
+import { blank, none } from '../to-ast/old-builtins';
 import { Ctx } from '../to-ast/library';
 import { err } from '../to-ast/nodeToPattern';
 import { Pattern, Type } from '../types/ast';

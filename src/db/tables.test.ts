@@ -1,6 +1,6 @@
 // lets go
 
-import { nilt } from '../to-ast/builtins';
+import { nilt } from '../to-ast/old-builtins';
 import { Library, Sandbox } from '../to-ast/library';
 import {
     Flat,

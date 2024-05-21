@@ -1,5 +1,5 @@
 import { blank, nilt } from '../to-ast/Ctx';
-import { any, fileLazy, imageFileLazy, none } from '../to-ast/builtins';
+import { any, fileLazy, imageFileLazy, none } from '../to-ast/old-builtins';
 import { Expr, Local, Node, Pattern, TRecord, Type } from '../types/ast';
 import { matchesType } from './matchesType';
 import {

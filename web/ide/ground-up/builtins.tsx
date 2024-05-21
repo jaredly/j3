@@ -2,7 +2,7 @@ import { MetaData } from '../../custom/UIState';
 import { valueToString } from './valueToString';
 import { slash } from './round-1/bootstrap';
 import { sanitize } from './round-1/sanitize';
-import { arr, unwrapArray, wrapArray } from './round-1/parse';
+import { arr, unwrapArray as unwrapList, wrapArray } from './round-1/parse';
 import { Trace } from './loadEv';
 import equal from 'fast-deep-equal';
 
@@ -73,7 +73,8 @@ export function builtins() {
         //     (b: b) =>
         //     (c: c) =>
         //     (d: d) => ({ type: ',,,', 0: a, 1: b, 2: c, 3: d }),
-        '++': (items: arr<string>) => unwrapArray(items).join(''),
+        '++': (items: arr<string>) => unwrapList(items).join(''),
+
         'map/nil': [],
         'map/set': (m: [any, any][]) => (k: any) => (v: any) =>
             [[k, v], ...m.filter((i) => i[0] !== k)],
@@ -92,6 +93,35 @@ export function builtins() {
             [...a, ...b.filter((item) => !a.find((a) => equal(a[0], item[0])))],
         'map/values': (m: [any, any][]) => wrapArray(m.map((i) => i[1])),
         'map/keys': (m: [any, any][]) => wrapArray(m.map((i) => i[0])),
+
+        'set/nil': [],
+        'set/add': (s: any[]) => (v: any) =>
+            [v, ...s.filter((m) => !equal(v, m))],
+        'set/has': (s: any[]) => (v: any) => s.includes(v),
+        'set/rm': (s: any[]) => (v: any) => s.filter((i) => !equal(i, v)),
+        // NOTE this is only working for primitives
+        'set/diff': (a: any[]) => (b: any[]) =>
+            a.filter((i) => !b.some((j) => equal(i, j))),
+        'set/merge': (a: any[]) => (b: any[]) =>
+            [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],
+        'set/overlap': (a: any[]) => (b: any[]) =>
+            a.filter((x) => b.some((y) => equal(y, x))),
+        'set/to-list': wrapArray,
+        'set/from-list': (s: arr<any>) => {
+            const res: any[] = [];
+            unwrapList(s).forEach((item) => {
+                if (res.some((m) => equal(item, m))) {
+                    return;
+                }
+                res.push(item);
+            });
+            return res;
+        },
+
+        'map/from-list': (a: arr<{ type: ','; 0: any; 1: any }>) =>
+            unwrapList(a).map((i) => [i[0], i[1]]),
+        'map/to-list': (a: [any, any][]) =>
+            wrapArray(a.map(([k, v]) => ({ type: ',', 0: k, 1: v }))),
 
         // 'set/nil': { type: 'nil' },
         // 'set/add': (s: arr<any>) => (v: any) => ({ type: 'cons', 0: v, 1: s }),
@@ -128,34 +158,6 @@ export function builtins() {
         // 'set/to-list': (a: arr<any>) => a,
         // 'set/from-list': (a: arr<any>) => a,
 
-        'set/nil': [],
-        'set/add': (s: any[]) => (v: any) =>
-            [v, ...s.filter((m) => !equal(v, m))],
-        'set/has': (s: any[]) => (v: any) => s.includes(v),
-        'set/rm': (s: any[]) => (v: any) => s.filter((i) => !equal(i, v)),
-        // NOTE this is only working for primitives
-        'set/diff': (a: any[]) => (b: any[]) =>
-            a.filter((i) => !b.some((j) => equal(i, j))),
-        'set/merge': (a: any[]) => (b: any[]) =>
-            [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],
-        'set/overlap': (a: any[]) => (b: any[]) =>
-            a.filter((x) => b.some((y) => equal(y, x))),
-        'set/to-list': wrapArray,
-        'set/from-list': (s: arr<any>) => {
-            const res: any[] = [];
-            unwrapArray(s).forEach((item) => {
-                if (res.some((m) => equal(item, m))) {
-                    return;
-                }
-                res.push(item);
-            });
-            return res;
-        },
-
-        'map/from-list': (a: arr<{ type: ','; 0: any; 1: any }>) =>
-            unwrapArray(a).map((i) => [i[0], i[1]]),
-        'map/to-list': (a: [any, any][]) =>
-            wrapArray(a.map(([k, v]) => ({ type: ',', 0: k, 1: v }))),
         // unwrapArray(a).map((i) => [i[0], i[1]]),
         jsonify: (m: any) => JSON.stringify(m),
         // Meta stuff
@@ -182,7 +184,7 @@ export function builtins() {
             <T, A>(init: T) =>
             (items: arr<A>) =>
             (f: (res: T) => (item: A) => T) =>
-                unwrapArray(items).reduce((a, b) => f(a)(b), init),
+                unwrapList(items).reduce((a, b) => f(a)(b), init),
         // Debug
         fatal: (v: string) => {
             throw new Error(`Fatal runtime: ${v}`);
@@ -211,7 +213,7 @@ export const traceEnv = () => {
             return value;
         },
         trace: (things: arr<Trace>) => {
-            tracer?.(unwrapArray(things));
+            tracer?.(unwrapList(things));
         },
     };
 };
