@@ -29,6 +29,7 @@ const toBuild = [
     { file: 'parse-self.json', ev: 'bootstrap.json' },
     { file: 'self-1.json', ev: selfCombo, dest: 'self-1.js' },
     { file: 'parse-self.json', ev: selfCombo, dest: 'parse-self.js' },
+    { file: 'algw-s2.json', ev: selfCombo, dest: 'algw-s2.js' },
 ];
 
 // const evCache: {[key: string]: AnyEnv} = {}

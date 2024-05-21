@@ -8,7 +8,7 @@ import { LocedName } from '../../custom/store/sortTops';
 import { unique } from '../../custom/store/unique';
 import { Errors, FullEvalator, ProduceItem } from './FullEvalator';
 import { valueToNode } from './bootstrap';
-import { builtins } from './builtins';
+import { builtins, traceEnv } from './builtins';
 import { Env, Expr, Stmt, Type } from './evaluators/analyze';
 import {
     AllNames,
@@ -35,7 +35,7 @@ export const fnsEvaluator = (
     typeCheck: undefined | TypeChecker<Env, Stmt, Expr, Type>,
     // san: any,
 ): FullEvalator<FnsEnv, Stmt, Expr, Env, Type> | null => {
-    const san: any = {};
+    const san: any = traceEnv();
     return {
         id,
         init() {
