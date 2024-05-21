@@ -81,6 +81,14 @@ const fixtures: Fixture[] = [
         file: 'l1-tests.json',
         evaluator: [0.1, 1.1, 1],
     },
+
+    {
+        id: 1.3,
+        name: 'bootstrap -> algw-fast',
+        file: 'algw-fast.json',
+        evaluator: [0],
+    },
+
     // The self-compile-to-js
     {
         id: 2,

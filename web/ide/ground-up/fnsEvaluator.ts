@@ -354,7 +354,7 @@ const compileStmt = (
         values.$env = {};
         needed.forEach((name) => {
             const got = values[sanitize(name)];
-            if (got) {
+            if (got !== undefined) {
                 values.$env[name] = got;
             }
         });
@@ -370,7 +370,7 @@ const compileStmt = (
                     display: [
                         {
                             type: 'error',
-                            message: `JS Evaluation Error: ${
+                            message: `JS Evaluation Error (def): ${
                                 (err as Error).message
                             }\n${js}\nDeps: ${needed.join(',')}`,
                         },
@@ -409,10 +409,11 @@ const compileStmt = (
                     display: [
                         {
                             type: 'error',
-                            message: `JS Evaluation Error: ${
+                            message: `JS Evaluation Error (expr): ${
                                 (err as Error).message
                             }\n${js}\nDeps: ${needed.join(',')}`,
                         },
+                        { type: 'pre', text: JSON.stringify(values) },
                     ],
                     values: {},
                 };

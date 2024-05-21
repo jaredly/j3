@@ -771,7 +771,7 @@ return {
     valueToString,
     unescapeString,
     sanitize,
-    equal,
+    equal: a => b => equal(a, b),
     'int-to-string': (a) => a.toString(),
     'string-to-int': (a) => {
         const v = Number(a);
@@ -789,9 +789,9 @@ return {
     },
     'map/map': (fn) => (map) => map.map(([k, v]) => [k, fn(v)]),
     'map/merge': (one) => (two) =>
-        [...one, ...two.filter(([key]) => !one.find((a) => equal(a, key)))],
-    'map/values': (map) => wrapList(map.map((item) => i[1])),
-    'map/keys': (map) => wrapList(map.map((item) => i[0])),
+        [...one, ...two.filter(([key]) => !one.find(([a]) => equal(a, key)))],
+    'map/values': (map) => wrapList(map.map((item) => item[1])),
+    'map/keys': (map) => wrapList(map.map((item) => item[0])),
     'map/from-list': (list) =>
         unwrapList(list).map((pair) => [pair[0], pair[1]]),
     'map/to-list': (map) =>
