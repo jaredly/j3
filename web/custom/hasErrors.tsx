@@ -58,6 +58,7 @@ const topHasChanges = (id: number, state: NUIState) => {
 
 export const hasTrackedChanges = (nsid: number, state: NUIState) => {
     const ns = state.nsMap[nsid];
+    if (!ns) return false;
     if (topHasChanges(ns.top, state)) {
         return true;
     }

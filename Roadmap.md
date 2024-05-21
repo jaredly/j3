@@ -1,5 +1,6 @@
 
 WHYYY are we all kinds of slow all of the sudden?
+ahaha ok it was because we were doing bootstrappings
 
 
 # For debugging more stuffs

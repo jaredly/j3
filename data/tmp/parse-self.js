@@ -1,6 +1,5 @@
 const $env = {}
-const $builtins = (() => {
-function equal(a, b) {
+const $builtins = (() => {function equal(a, b) {
     if (a === b) return true;
 
     if (a && b && typeof a == 'object' && typeof b == 'object') {
@@ -64,6 +63,73 @@ function wrapList(v) {
     return res;
 }
 
+const sanMap = {
+    // '$$$$' gets interpreted by replaceAll as '$$', for reasons
+    $: '$$$$',
+    '-': '_',
+    '+': '$pl',
+    '*': '$ti',
+    '=': '$eq',
+    '>': '$gt',
+    '<': '$lt',
+    "'": '$qu',
+    '"': '$dq',
+    ',': '$co',
+    '/': '$sl',
+    ';': '$semi',
+    '@': '$at',
+    ':': '$cl',
+    '#': '$ha',
+    '!': '$ex',
+    '|': '$bar',
+    '()': '$unit',
+    '?': '$qe',
+  };
+const kwds =
+    'case new var const let if else return super break while for default eval'.split(' ');
+
+// Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
+function sanitize(raw) {
+    for (let [key, val] of Object.entries(sanMap)) {
+        raw = raw.replaceAll(key, val);
+    }
+    if (kwds.includes(raw)) return '$' + raw
+    return raw
+}
+
+const valueToString = (v) => {
+    if (Array.isArray(v)) {
+        return `[${v.map(valueToString).join(', ')}]`;
+    }
+    if (typeof v === 'object' && v && 'type' in v) {
+        if (v.type === 'cons' || v.type === 'nil') {
+            const un = unwrapList(v);
+            return '[' + un.map(valueToString).join(' ') + ']';
+        }
+
+        let args = [];
+        for (let i = 0; i in v; i++) {
+            args.push(v[i]);
+        }
+        return `(${v.type}${args
+            .map((arg) => ' ' + valueToString(arg))
+            .join('')})`;
+    }
+    if (typeof v === 'string') {
+        if (v.includes('"') && !v.includes("'")) {
+            return (
+                "'" + JSON.stringify(v).slice(1, -1).replace(/\"/g, '"') + "'"
+            );
+        }
+        return JSON.stringify(v);
+    }
+    if (typeof v === 'function') {
+        return '<function>';
+    }
+
+    return '' + v;
+};
+
 return {
     '+': (a) => (b) => a + b,
     '-': (a) => (b) => a - b,
@@ -76,18 +142,32 @@ return {
     pi: Math.PI,
     'replace-all': a => b => c => a.replaceAll(b, c),
     eval: source => {
-      return new Function('', 'return ' + source)()//ctx);
+      return new Function('', 'return ' + source)();
     },
     'eval-with': ctx => source => {
       const args = '{' + Object.keys(ctx).join(',') + '}'
       return new Function(args, 'return ' + source)(ctx);
     },
+    $unit: null,
+    errorToString: f => arg => {
+      try {
+        return f(arg)
+      } catch (err) {
+        return err.message;
+      }
+    },
+    valueToString,
     unescapeString,
-    equal,
+    sanitize,
+    equal: a => b => equal(a, b),
     'int-to-string': (a) => a.toString(),
     'string-to-int': (a) => {
         const v = Number(a);
         return Number.isInteger(v) ? { type: 'some', 0: v } : { type: 'none' };
+    },
+    'string-to-float': (a) => {
+        const v = Number(a);
+        return Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' };
     },
 
     // maps
@@ -97,13 +177,13 @@ return {
     'map/rm': (map) => (key) => map.filter((i) => !equal(i[0], key)),
     'map/get': (map) => (key) => {
         const found = map.find((i) => equal(i[0], key));
-        return found ? { type: 'some', 0: found } : { type: 'none' };
+        return found ? { type: 'some', 0: found[1] } : { type: 'none' };
     },
     'map/map': (fn) => (map) => map.map(([k, v]) => [k, fn(v)]),
     'map/merge': (one) => (two) =>
-        [...one, ...two.filter(([key]) => !one.find((a) => equal(a, key)))],
-    'map/values': (map) => wrapList(map.map((item) => i[1])),
-    'map/keys': (map) => wrapList(map.map((item) => i[0])),
+        [...one, ...two.filter(([key]) => !one.find(([a]) => equal(a, key)))],
+    'map/values': (map) => wrapList(map.map((item) => item[1])),
+    'map/keys': (map) => wrapList(map.map((item) => item[0])),
     'map/from-list': (list) =>
         unwrapList(list).map((pair) => [pair[0], pair[1]]),
     'map/to-list': (map) =>
@@ -136,11 +216,9 @@ return {
     fatal: (message) => {
         throw new Error(`Fatal runtime: ${message}`);
     },
-};
-
-})();
+}})();
 Object.assign($env, $builtins);
-const {$pl, _, $lt, $lt$eq, $gt, $gt$eq, $eq, $ex$eq, pi, replace_all, eval, eval_with, unescapeString, equal, int_to_string, string_to_int, map$slnil, map$slset, map$slrm, map$slget, map$slmap, map$slmerge, map$slvalues, map$slkeys, map$slfrom_list, map$slto_list, set$slnil, set$sladd, set$slhas, set$slrm, set$sldiff, set$slmerge, set$sloverlap, set$slto_list, set$slfrom_list, jsonify, fatal} = $builtins;
+const {"+": $pl, "-": _, "<": $lt, "<=": $lt$eq, ">": $gt, ">=": $gt$eq, "=": $eq, "!=": $ex$eq, "pi": pi, "replace-all": replace_all, "eval": $eval, "eval-with": eval_with, "$unit": $unit, "errorToString": errorToString, "valueToString": valueToString, "unescapeString": unescapeString, "sanitize": sanitize, "equal": equal, "int-to-string": int_to_string, "string-to-int": string_to_int, "string-to-float": string_to_float, "map/nil": map$slnil, "map/set": map$slset, "map/rm": map$slrm, "map/get": map$slget, "map/map": map$slmap, "map/merge": map$slmerge, "map/values": map$slvalues, "map/keys": map$slkeys, "map/from-list": map$slfrom_list, "map/to-list": map$slto_list, "set/nil": set$slnil, "set/add": set$sladd, "set/has": set$slhas, "set/rm": set$slrm, "set/diff": set$sldiff, "set/merge": set$slmerge, "set/overlap": set$sloverlap, "set/to-list": set$slto_list, "set/from-list": set$slfrom_list, "jsonify": jsonify, "fatal": fatal} = $builtins;
 const $prelude = (() => {const evaluate = (node, scope) => {
   if (!scope) throw new Error(`evaluate called without scope`)
   switch (node.type) {
@@ -227,15 +305,7 @@ const constrFn = (name, args) => {
   return next(args)([])
 };
 
-const sanitize = (raw) => {
-    for (let [key, val] of Object.entries(sanMap)) {
-        raw = raw.replaceAll(key, val);
-    }
-    if (kwds.includes(raw)) return '$' + raw
-    return raw
-};
-
-const sanMap = {"$":"$$$$","-":"_","+":"$pl","*":"$ti","=":"$eq",">":"$gt","<":"$lt","'":"$qu","\"":"$dq",",":"$co","/":"$sl",";":"$semi","@":"$at",":":"$cl","#":"$ha","!":"$ex","|":"$bar","()":"$unit","?":"$qe"};
+const sanMap = {"$":"$$$$","-":"_","+":"$pl","*":"$ti","=":"$eq",">":"$gt","<":"$lt","'":"$qu",".":"$do","\"":"$dq",",":"$co","/":"$sl",";":"$semi","@":"$at",":":"$cl","#":"$ha","!":"$ex","|":"$bar","()":"$unit","?":"$qe"};
 
 const evalPat = (node, v) => {
   switch (node.type) {
@@ -261,7 +331,7 @@ const evalPat = (node, v) => {
   throw new Error(`Unexpected pat ${JSON.stringify(node)}`)
 };
 
-const kwds = ["case","new","var","const","let","if","else","return","super","break","while","for","default"];
+const kwds = ["case","new","var","const","let","if","else","return","super","break","while","for","default","eval"];
 
 const unescapeSlashes = (n) =>
     n.replaceAll(/\\./g, (m) => {
@@ -310,61 +380,1951 @@ const valueToString = (v) => {
 
     return '' + v;
 };
-return {evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString}})();
+return {evaluate,evaluateStmt,unwrapList,constrFn,sanMap,evalPat,kwds,unescapeSlashes,valueToString}})();
 Object.assign($env, $prelude);
-const {"nil": nil,"cons": cons} = $env.evaluateStmt({"0":"list","1":17,"2":{"0":{"0":"a","1":18,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"nil","1":{"0":20,"1":{"0":{"type":"nil"},"1":19,"type":","},"type":","},"type":","},"1":{"0":{"0":"cons","1":{"0":22,"1":{"0":{"0":{"0":"a","1":23,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":25,"type":"tcon"},"1":{"0":"a","1":26,"type":"tcon"},"2":24,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":21,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":13,"type":"tdeftype"}, $env)
-const {"eprim": eprim,"estr": estr,"evar": evar,"equot": equot,"elambda": elambda,"eapp": eapp,"elet": elet,"ematch": ematch} = $env.evaluateStmt({"0":"expr","1":30,"2":{"type":"nil"},"3":{"0":{"0":"eprim","1":{"0":32,"1":{"0":{"0":{"0":"prim","1":33,"type":"tcon"},"1":{"0":{"0":"int","1":3478,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":31,"type":","},"type":","},"type":","},"1":{"0":{"0":"estr","1":{"0":1000,"1":{"0":{"0":{"0":"string","1":1001,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":1003,"type":"tcon"},"1":{"0":{"0":{"0":",","1":1005,"type":"tcon"},"1":{"0":"expr","1":1006,"type":"tcon"},"2":1004,"type":"tapp"},"1":{"0":{"0":{"0":",","1":1005,"type":"tcon"},"1":{"0":"string","1":1007,"type":"tcon"},"2":1004,"type":"tapp"},"1":{"0":"int","1":3479,"type":"tcon"},"2":1004,"type":"tapp"},"2":1004,"type":"tapp"},"2":1002,"type":"tapp"},"1":{"0":{"0":"int","1":3480,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":999,"type":","},"type":","},"type":","},"1":{"0":{"0":"evar","1":{"0":35,"1":{"0":{"0":{"0":"string","1":36,"type":"tcon"},"1":{"0":{"0":"int","1":3481,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":34,"type":","},"type":","},"type":","},"1":{"0":{"0":"equot","1":{"0":3061,"1":{"0":{"0":{"0":"quot","1":3062,"type":"tcon"},"1":{"0":{"0":"int","1":3482,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":3060,"type":","},"type":","},"type":","},"1":{"0":{"0":"elambda","1":{"0":38,"1":{"0":{"0":{"0":{"0":"list","1":39,"type":"tcon"},"1":{"0":"pat","1":8352,"type":"tcon"},"2":8351,"type":"tapp"},"1":{"0":{"0":"expr","1":40,"type":"tcon"},"1":{"0":{"0":"int","1":3484,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":37,"type":","},"type":","},"type":","},"1":{"0":{"0":"eapp","1":{"0":42,"1":{"0":{"0":{"0":"expr","1":43,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":44,"type":"tcon"},"1":{"0":"expr","1":8354,"type":"tcon"},"2":8353,"type":"tapp"},"1":{"0":{"0":"int","1":3485,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":41,"type":","},"type":","},"type":","},"1":{"0":{"0":"elet","1":{"0":4318,"1":{"0":{"0":{"0":{"0":"list","1":8358,"type":"tcon"},"1":{"0":{"0":{"0":",","1":4319,"type":"tcon"},"1":{"0":"pat","1":8356,"type":"tcon"},"2":8355,"type":"tapp"},"1":{"0":"expr","1":4321,"type":"tcon"},"2":8355,"type":"tapp"},"2":8357,"type":"tapp"},"1":{"0":{"0":"expr","1":4322,"type":"tcon"},"1":{"0":{"0":"int","1":4323,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":4317,"type":","},"type":","},"type":","},"1":{"0":{"0":"ematch","1":{"0":51,"1":{"0":{"0":{"0":"expr","1":52,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":54,"type":"tcon"},"1":{"0":{"0":{"0":",","1":56,"type":"tcon"},"1":{"0":"pat","1":57,"type":"tcon"},"2":55,"type":"tapp"},"1":{"0":"expr","1":58,"type":"tcon"},"2":55,"type":"tapp"},"2":53,"type":"tapp"},"1":{"0":{"0":"int","1":3487,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":50,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"4":27,"type":"tdeftype"}, $env)
-const {"pint": pint,"pbool": pbool} = $env.evaluateStmt({"0":"prim","1":62,"2":{"type":"nil"},"3":{"0":{"0":"pint","1":{"0":67,"1":{"0":{"0":{"0":"int","1":68,"type":"tcon"},"1":{"0":{"0":"int","1":3488,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":66,"type":","},"type":","},"type":","},"1":{"0":{"0":"pbool","1":{"0":70,"1":{"0":{"0":{"0":"bool","1":71,"type":"tcon"},"1":{"0":{"0":"int","1":3489,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":69,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":59,"type":"tdeftype"}, $env)
-const {"pany": pany,"pvar": pvar,"pcon": pcon,"pstr": pstr,"pprim": pprim} = $env.evaluateStmt({"0":"pat","1":75,"2":{"type":"nil"},"3":{"0":{"0":"pany","1":{"0":77,"1":{"0":{"0":{"0":"int","1":3490,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":76,"type":","},"type":","},"type":","},"1":{"0":{"0":"pvar","1":{"0":79,"1":{"0":{"0":{"0":"string","1":80,"type":"tcon"},"1":{"0":{"0":"int","1":3491,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":78,"type":","},"type":","},"type":","},"1":{"0":{"0":"pcon","1":{"0":85,"1":{"0":{"0":{"0":"string","1":86,"type":"tcon"},"1":{"0":{"0":"int","1":16347,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":88,"type":"tcon"},"1":{"0":"pat","1":89,"type":"tcon"},"2":87,"type":"tapp"},"1":{"0":{"0":"int","1":3493,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":84,"type":","},"type":","},"type":","},"1":{"0":{"0":"pstr","1":{"0":3305,"1":{"0":{"0":{"0":"string","1":3306,"type":"tcon"},"1":{"0":{"0":"int","1":3494,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":3304,"type":","},"type":","},"type":","},"1":{"0":{"0":"pprim","1":{"0":558,"1":{"0":{"0":{"0":"prim","1":559,"type":"tcon"},"1":{"0":{"0":"int","1":3495,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":557,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"4":72,"type":"tdeftype"}, $env)
-const {"tvar": tvar,"tapp": tapp,"tcon": tcon} = $env.evaluateStmt({"0":"type","1":93,"2":{"type":"nil"},"3":{"0":{"0":"tvar","1":{"0":95,"1":{"0":{"0":{"0":"string","1":96,"type":"tcon"},"1":{"0":{"0":"int","1":3496,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":94,"type":","},"type":","},"type":","},"1":{"0":{"0":"tapp","1":{"0":98,"1":{"0":{"0":{"0":"type","1":99,"type":"tcon"},"1":{"0":{"0":"type","1":100,"type":"tcon"},"1":{"0":{"0":"int","1":3497,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":97,"type":","},"type":","},"type":","},"1":{"0":{"0":"tcon","1":{"0":102,"1":{"0":{"0":{"0":"string","1":103,"type":"tcon"},"1":{"0":{"0":"int","1":3498,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":101,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"4":90,"type":"tdeftype"}, $env)
-const {"ttypealias": ttypealias,"tdeftype": tdeftype,"tdef": tdef,"texpr": texpr} = $env.evaluateStmt({"0":"top","1":107,"2":{"type":"nil"},"3":{"0":{"0":"ttypealias","1":{"0":6253,"1":{"0":{"0":{"0":"string","1":6254,"type":"tcon"},"1":{"0":{"0":"int","1":6256,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":6258,"type":"tcon"},"1":{"0":{"0":{"0":",","1":6260,"type":"tcon"},"1":{"0":"string","1":6261,"type":"tcon"},"2":6259,"type":"tapp"},"1":{"0":"int","1":6262,"type":"tcon"},"2":6259,"type":"tapp"},"2":6257,"type":"tapp"},"1":{"0":{"0":"type","1":6263,"type":"tcon"},"1":{"0":{"0":"int","1":6301,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":6252,"type":","},"type":","},"type":","},"1":{"0":{"0":"tdeftype","1":{"0":109,"1":{"0":{"0":{"0":"string","1":110,"type":"tcon"},"1":{"0":{"0":"int","1":3954,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":5008,"type":"tcon"},"1":{"0":{"0":{"0":",","1":5009,"type":"tcon"},"1":{"0":"string","1":5012,"type":"tcon"},"2":5011,"type":"tapp"},"1":{"0":"int","1":5013,"type":"tcon"},"2":5011,"type":"tapp"},"2":5007,"type":"tapp"},"1":{"0":{"0":{"0":"list","1":112,"type":"tcon"},"1":{"0":{"0":{"0":",","1":114,"type":"tcon"},"1":{"0":"string","1":115,"type":"tcon"},"2":113,"type":"tapp"},"1":{"0":{"0":{"0":",","1":114,"type":"tcon"},"1":{"0":"int","1":3502,"type":"tcon"},"2":113,"type":"tapp"},"1":{"0":{"0":{"0":",","1":114,"type":"tcon"},"1":{"0":{"0":"list","1":117,"type":"tcon"},"1":{"0":"type","1":118,"type":"tcon"},"2":116,"type":"tapp"},"2":113,"type":"tapp"},"1":{"0":"int","1":3503,"type":"tcon"},"2":113,"type":"tapp"},"2":113,"type":"tapp"},"2":113,"type":"tapp"},"2":111,"type":"tapp"},"1":{"0":{"0":"int","1":3500,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":108,"type":","},"type":","},"type":","},"1":{"0":{"0":"tdef","1":{"0":120,"1":{"0":{"0":{"0":"string","1":121,"type":"tcon"},"1":{"0":{"0":"int","1":3504,"type":"tcon"},"1":{"0":{"0":"expr","1":122,"type":"tcon"},"1":{"0":{"0":"int","1":3501,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":119,"type":","},"type":","},"type":","},"1":{"0":{"0":"texpr","1":{"0":124,"1":{"0":{"0":{"0":"expr","1":125,"type":"tcon"},"1":{"0":{"0":"int","1":4948,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":123,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"4":104,"type":"tdeftype"}, $env)
-const join = $env.evaluateStmt({"0":"join","1":135,"2":{"0":{"0":{"0":"sep","1":137,"type":"pvar"},"1":{"0":{"0":"items","1":138,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"items","1":141,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":142,"2":{"type":"nil"},"3":142,"type":"pcon"},"1":{"0":"","1":{"type":"nil"},"2":143,"type":"estr"},"type":","},"1":{"0":{"0":{"0":"cons","1":145,"2":{"0":{"0":"one","1":146,"type":"pvar"},"1":{"0":{"0":"rest","1":147,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":145,"type":"pcon"},"1":{"0":{"0":"rest","1":153,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":154,"2":{"type":"nil"},"3":154,"type":"pcon"},"1":{"0":"one","1":155,"type":"evar"},"type":","},"1":{"0":{"0":{"0":156,"type":"pany"},"1":{"0":"","1":{"0":{"0":{"0":"one","1":7401,"type":"evar"},"1":{"0":"","1":7402,"type":","},"type":","},"1":{"0":{"0":{"0":"sep","1":7403,"type":"evar"},"1":{"0":"","1":7404,"type":","},"type":","},"1":{"0":{"0":{"0":{"0":"join","1":7407,"type":"evar"},"1":{"0":{"0":"sep","1":7409,"type":"evar"},"1":{"0":{"0":"rest","1":7410,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7405,"type":"eapp"},"1":{"0":"","1":7406,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":7399,"type":"estr"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":151,"type":"ematch"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":139,"type":"ematch"},"2":132,"type":"elambda"},"3":132,"type":"tdef"}, $env)
-const mapi = $env.evaluateStmt({"0":"mapi","1":224,"2":{"0":{"0":{"0":"i","1":226,"type":"pvar"},"1":{"0":{"0":"values","1":227,"type":"pvar"},"1":{"0":{"0":"f","1":228,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"values","1":231,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":232,"2":{"type":"nil"},"3":232,"type":"pcon"},"1":{"0":"nil","1":233,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cons","1":234,"2":{"0":{"0":"one","1":235,"type":"pvar"},"1":{"0":{"0":"rest","1":236,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":234,"type":"pcon"},"1":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":"f","1":242,"type":"evar"},"1":{"0":{"0":"i","1":243,"type":"evar"},"1":{"0":{"0":"one","1":244,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":241,"type":"eapp"},"1":{"0":{"0":{"0":"mapi","1":249,"type":"evar"},"1":{"0":{"0":{"0":"+","1":251,"type":"evar"},"1":{"0":{"0":{"0":1,"1":252,"type":"pint"},"1":252,"type":"eprim"},"1":{"0":{"0":"i","1":253,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":250,"type":"eapp"},"1":{"0":{"0":"rest","1":254,"type":"evar"},"1":{"0":{"0":"f","1":255,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":245,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":229,"type":"ematch"},"2":221,"type":"elambda"},"3":221,"type":"tdef"}, $env)
-const snd = $env.evaluateStmt({"0":"snd","1":530,"2":{"0":{"0":{"0":"tuple","1":532,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":537,"2":{"0":{"0":538,"type":"pany"},"1":{"0":{"0":"v","1":539,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":536,"type":"pcon"},"1":{"0":"tuple","1":540,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"v","1":541,"type":"evar"},"2":533,"type":"elet"},"2":527,"type":"elambda"},"3":527,"type":"tdef"}, $env)
-const fst = $env.evaluateStmt({"0":"fst","1":545,"2":{"0":{"0":{"0":"tuple","1":547,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":552,"2":{"0":{"0":"v","1":553,"type":"pvar"},"1":{"0":{"0":554,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":551,"type":"pcon"},"1":{"0":"tuple","1":555,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"v","1":556,"type":"evar"},"2":548,"type":"elet"},"2":542,"type":"elambda"},"3":542,"type":"tdef"}, $env)
-const {"cst/list": cst$sllist,"cst/array": cst$slarray,"cst/spread": cst$slspread,"cst/id": cst$slid,"cst/string": cst$slstring} = $env.evaluateStmt({"0":"cst","1":569,"2":{"type":"nil"},"3":{"0":{"0":"cst/list","1":{"0":571,"1":{"0":{"0":{"0":{"0":"list","1":573,"type":"tcon"},"1":{"0":"cst","1":574,"type":"tcon"},"2":572,"type":"tapp"},"1":{"0":{"0":"int","1":575,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":570,"type":","},"type":","},"type":","},"1":{"0":{"0":"cst/array","1":{"0":577,"1":{"0":{"0":{"0":{"0":"list","1":579,"type":"tcon"},"1":{"0":"cst","1":580,"type":"tcon"},"2":578,"type":"tapp"},"1":{"0":{"0":"int","1":581,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":576,"type":","},"type":","},"type":","},"1":{"0":{"0":"cst/spread","1":{"0":3507,"1":{"0":{"0":{"0":"cst","1":3508,"type":"tcon"},"1":{"0":{"0":"int","1":3509,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":3506,"type":","},"type":","},"type":","},"1":{"0":{"0":"cst/id","1":{"0":583,"1":{"0":{"0":{"0":"string","1":584,"type":"tcon"},"1":{"0":{"0":"int","1":585,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":582,"type":","},"type":","},"type":","},"1":{"0":{"0":"cst/string","1":{"0":587,"1":{"0":{"0":{"0":"string","1":588,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":590,"type":"tcon"},"1":{"0":{"0":{"0":",","1":592,"type":"tcon"},"1":{"0":"cst","1":593,"type":"tcon"},"2":591,"type":"tapp"},"1":{"0":{"0":{"0":",","1":592,"type":"tcon"},"1":{"0":"string","1":594,"type":"tcon"},"2":591,"type":"tapp"},"1":{"0":"int","1":595,"type":"tcon"},"2":591,"type":"tapp"},"2":591,"type":"tapp"},"2":589,"type":"tapp"},"1":{"0":{"0":"int","1":596,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":586,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"4":566,"type":"tdeftype"}, $env)
-const {"some": some,"none": none} = $env.evaluateStmt({"0":"option","1":1039,"2":{"0":{"0":"a","1":1040,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"some","1":{"0":1042,"1":{"0":{"0":{"0":"a","1":1043,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":1041,"type":","},"type":","},"type":","},"1":{"0":{"0":"none","1":{"0":1045,"1":{"0":{"type":"nil"},"1":1044,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":1033,"type":"tdeftype"}, $env)
-const replaces = $env.evaluateStmt({"0":"replaces","1":2097,"2":{"0":{"0":{"0":"target","1":2099,"type":"pvar"},"1":{"0":{"0":"repl","1":2100,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"repl","1":2103,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":2104,"2":{"type":"nil"},"3":2104,"type":"pcon"},"1":{"0":"target","1":2105,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cons","1":2106,"2":{"0":{"0":"one","1":2107,"type":"pvar"},"1":{"0":{"0":"rest","1":2108,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2106,"type":"pcon"},"1":{"0":{"0":"one","1":2114,"type":"evar"},"1":{"0":{"0":{"0":",","1":2116,"2":{"0":{"0":"find","1":2117,"type":"pvar"},"1":{"0":{"0":"nw","1":2118,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2115,"type":"pcon"},"1":{"0":{"0":"replaces","1":2120,"type":"evar"},"1":{"0":{"0":{"0":"replace-all","1":2122,"type":"evar"},"1":{"0":{"0":"target","1":2123,"type":"evar"},"1":{"0":{"0":"find","1":2124,"type":"evar"},"1":{"0":{"0":"nw","1":2125,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":2121,"type":"eapp"},"1":{"0":{"0":"rest","1":2126,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":2119,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"2":2112,"type":"ematch"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":2101,"type":"ematch"},"2":2094,"type":"elambda"},"3":2094,"type":"tdef"}, $env)
-const rev = $env.evaluateStmt({"0":"rev","1":5380,"2":{"0":{"0":{"0":"arr","1":5382,"type":"pvar"},"1":{"0":{"0":"col","1":5383,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"arr","1":5386,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":5387,"2":{"type":"nil"},"3":5387,"type":"pcon"},"1":{"0":"col","1":5388,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cons","1":5389,"2":{"0":{"0":"one","1":5390,"type":"pvar"},"1":{"0":{"0":"nil","1":5389,"2":{"type":"nil"},"3":5389,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5389,"type":"pcon"},"1":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"one","1":5392,"type":"evar"},"1":{"0":{"0":"col","1":5393,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cons","1":5397,"2":{"0":{"0":"one","1":5398,"type":"pvar"},"1":{"0":{"0":"rest","1":5399,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5397,"type":"pcon"},"1":{"0":{"0":"rev","1":5404,"type":"evar"},"1":{"0":{"0":"rest","1":5405,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"one","1":5407,"type":"evar"},"1":{"0":{"0":"col","1":5408,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":5403,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":5384,"type":"ematch"},"2":5377,"type":"elambda"},"3":5377,"type":"tdef"}, $env)
-const {"parse-and-compile": parse_and_compile} = $env.evaluateStmt({"0":"parse-and-compile","1":5731,"2":{"type":"nil"},"3":{"0":{"0":"parse-and-compile","1":{"0":5733,"1":{"0":{"0":{"0":{"0":{"0":"->","1":5734,"type":"tcon"},"1":{"0":"cst","1":5737,"type":"tcon"},"2":5734,"type":"tapp"},"1":{"0":"top","1":5738,"type":"tcon"},"2":5734,"type":"tapp"},"1":{"0":{"0":{"0":{"0":"->","1":5739,"type":"tcon"},"1":{"0":"cst","1":5742,"type":"tcon"},"2":5739,"type":"tapp"},"1":{"0":"expr","1":5743,"type":"tcon"},"2":5739,"type":"tapp"},"1":{"0":{"0":{"0":{"0":"->","1":6456,"type":"tcon"},"1":{"0":"top","1":6459,"type":"tcon"},"2":6456,"type":"tapp"},"1":{"0":{"0":"list","1":6461,"type":"tcon"},"1":{"0":"loced-name","1":6462,"type":"tcon"},"2":6460,"type":"tapp"},"2":6456,"type":"tapp"},"1":{"0":{"0":{"0":{"0":"->","1":6476,"type":"tcon"},"1":{"0":"top","1":6479,"type":"tcon"},"2":6476,"type":"tapp"},"1":{"0":{"0":"list","1":6481,"type":"tcon"},"1":{"0":"loced-name","1":6482,"type":"tcon"},"2":6480,"type":"tapp"},"2":6476,"type":"tapp"},"1":{"0":{"0":{"0":{"0":"->","1":8156,"type":"tcon"},"1":{"0":"expr","1":8159,"type":"tcon"},"2":8156,"type":"tapp"},"1":{"0":{"0":"list","1":8161,"type":"tcon"},"1":{"0":"loced-name","1":8162,"type":"tcon"},"2":8160,"type":"tapp"},"2":8156,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":5732,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":5488,"type":"tdeftype"}, $env)
-const foldl = $env.evaluateStmt({"0":"foldl","1":5858,"2":{"0":{"0":{"0":"init","1":5860,"type":"pvar"},"1":{"0":{"0":"items","1":5861,"type":"pvar"},"1":{"0":{"0":"f","1":5862,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"items","1":5865,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":5866,"2":{"type":"nil"},"3":5866,"type":"pcon"},"1":{"0":"init","1":5867,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cons","1":5868,"2":{"0":{"0":"one","1":5869,"type":"pvar"},"1":{"0":{"0":"rest","1":5870,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5868,"type":"pcon"},"1":{"0":{"0":"foldl","1":5875,"type":"evar"},"1":{"0":{"0":{"0":"f","1":5877,"type":"evar"},"1":{"0":{"0":"init","1":5878,"type":"evar"},"1":{"0":{"0":"one","1":5879,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":5876,"type":"eapp"},"1":{"0":{"0":"rest","1":5880,"type":"evar"},"1":{"0":{"0":"f","1":5881,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":5874,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":5863,"type":"ematch"},"2":5855,"type":"elambda"},"3":5855,"type":"tdef"}, $env)
-const map = $env.evaluateStmt({"0":"map","1":5885,"2":{"0":{"0":{"0":"values","1":5887,"type":"pvar"},"1":{"0":{"0":"f","1":5888,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"values","1":5891,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":5892,"2":{"type":"nil"},"3":5892,"type":"pcon"},"1":{"0":"nil","1":5893,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cons","1":5894,"2":{"0":{"0":"one","1":5895,"type":"pvar"},"1":{"0":{"0":"rest","1":5896,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5894,"type":"pcon"},"1":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":"f","1":5902,"type":"evar"},"1":{"0":{"0":"one","1":5903,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":5901,"type":"eapp"},"1":{"0":{"0":{"0":"map","1":5908,"type":"evar"},"1":{"0":{"0":"rest","1":5909,"type":"evar"},"1":{"0":{"0":"f","1":5910,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":5904,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":5889,"type":"ematch"},"2":5882,"type":"elambda"},"3":5882,"type":"tdef"}, $env)
-const foldr = $env.evaluateStmt({"0":"foldr","1":5915,"2":{"0":{"0":{"0":"init","1":5917,"type":"pvar"},"1":{"0":{"0":"items","1":5918,"type":"pvar"},"1":{"0":{"0":"f","1":5919,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"items","1":5922,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":5923,"2":{"type":"nil"},"3":5923,"type":"pcon"},"1":{"0":"init","1":5924,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cons","1":5925,"2":{"0":{"0":"one","1":5926,"type":"pvar"},"1":{"0":{"0":"rest","1":5927,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5925,"type":"pcon"},"1":{"0":{"0":"f","1":5932,"type":"evar"},"1":{"0":{"0":{"0":"foldr","1":5934,"type":"evar"},"1":{"0":{"0":"init","1":5935,"type":"evar"},"1":{"0":{"0":"rest","1":5936,"type":"evar"},"1":{"0":{"0":"f","1":5937,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":5933,"type":"eapp"},"1":{"0":{"0":"one","1":5938,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":5931,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":5920,"type":"ematch"},"2":5912,"type":"elambda"},"3":5912,"type":"tdef"}, $env)
-const {"value": value,"type": type} = $env.evaluateStmt({"0":"name-kind","1":6470,"2":{"type":"nil"},"3":{"0":{"0":"value","1":{"0":6472,"1":{"0":{"type":"nil"},"1":6471,"type":","},"type":","},"type":","},"1":{"0":{"0":"type","1":{"0":6474,"1":{"0":{"type":"nil"},"1":6473,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":6467,"type":"tdeftype"}, $env)
-const {"one": one,"many": many} = $env.evaluateStmt({"0":"bag","1":6553,"2":{"0":{"0":"a","1":6554,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"one","1":{"0":6556,"1":{"0":{"0":{"0":"a","1":6557,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":6555,"type":","},"type":","},"type":","},"1":{"0":{"0":"many","1":{"0":6559,"1":{"0":{"0":{"0":{"0":"list","1":6561,"type":"tcon"},"1":{"0":{"0":"bag","1":6563,"type":"tcon"},"1":{"0":"a","1":6564,"type":"tcon"},"2":6562,"type":"tapp"},"2":6560,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"1":6558,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":6548,"type":"tdeftype"}, $env)
-const bag$slfold = $env.evaluateStmt({"0":"bag/fold","1":6626,"2":{"0":{"0":{"0":"f","1":6628,"type":"pvar"},"1":{"0":{"0":"init","1":6629,"type":"pvar"},"1":{"0":{"0":"bag","1":6630,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"bag","1":6633,"type":"evar"},"1":{"0":{"0":{"0":"many","1":6635,"2":{"0":{"0":"nil","1":17576,"2":{"type":"nil"},"3":17576,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"3":6634,"type":"pcon"},"1":{"0":"init","1":6636,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"one","1":6638,"2":{"0":{"0":"v","1":6639,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"3":6637,"type":"pcon"},"1":{"0":{"0":"f","1":6641,"type":"evar"},"1":{"0":{"0":"init","1":6642,"type":"evar"},"1":{"0":{"0":"v","1":6643,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6640,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"many","1":6645,"2":{"0":{"0":"items","1":6646,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"3":6644,"type":"pcon"},"1":{"0":{"0":"foldr","1":6648,"type":"evar"},"1":{"0":{"0":"init","1":6649,"type":"evar"},"1":{"0":{"0":"items","1":6650,"type":"evar"},"1":{"0":{"0":{"0":"bag/fold","1":6652,"type":"evar"},"1":{"0":{"0":"f","1":6653,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6651,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6647,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6631,"type":"ematch"},"2":6624,"type":"elambda"},"3":6624,"type":"tdef"}, $env)
-const bag$slto_list = $env.evaluateStmt({"0":"bag/to-list","1":6684,"2":{"0":{"0":{"0":"bag","1":6686,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"bag/fold","1":7334,"type":"evar"},"1":{"0":{"0":{"0":{"0":"list","1":7338,"type":"pvar"},"1":{"0":{"0":"one","1":7339,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"one","1":7341,"type":"evar"},"1":{"0":{"0":"list","1":7342,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"2":7335,"type":"elambda"},"1":{"0":{"0":"nil","1":7352,"type":"evar"},"1":{"0":{"0":"bag","1":7351,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6687,"type":"eapp"},"2":6682,"type":"elambda"},"3":6682,"type":"tdef"}, $env)
-const pat_bound = $env.evaluateStmt({"0":"pat-bound","1":6759,"2":{"0":{"0":{"0":"pat","1":6761,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"pat","1":6764,"type":"evar"},"1":{"0":{"0":{"0":"pany","1":6766,"2":{"0":{"0":6767,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"3":6765,"type":"pcon"},"1":{"0":"set/nil","1":6768,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"pvar","1":6770,"2":{"0":{"0":"name","1":6771,"type":"pvar"},"1":{"0":{"0":6772,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6769,"type":"pcon"},"1":{"0":{"0":"set/add","1":6774,"type":"evar"},"1":{"0":{"0":"set/nil","1":6775,"type":"evar"},"1":{"0":{"0":"name","1":6776,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6773,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"pcon","1":6778,"2":{"0":{"0":6779,"type":"pany"},"1":{"0":{"0":16354,"type":"pany"},"1":{"0":{"0":"args","1":6780,"type":"pvar"},"1":{"0":{"0":6781,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":6777,"type":"pcon"},"1":{"0":{"0":"foldl","1":6783,"type":"evar"},"1":{"0":{"0":"set/nil","1":6784,"type":"evar"},"1":{"0":{"0":"args","1":6785,"type":"evar"},"1":{"0":{"0":{"0":{"0":"bound","1":6789,"type":"pvar"},"1":{"0":{"0":"arg","1":6790,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"set/merge","1":6792,"type":"evar"},"1":{"0":{"0":"bound","1":6793,"type":"evar"},"1":{"0":{"0":{"0":"pat-bound","1":6795,"type":"evar"},"1":{"0":{"0":"arg","1":6796,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6794,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6791,"type":"eapp"},"2":6786,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6782,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"pstr","1":6798,"2":{"0":{"0":6799,"type":"pany"},"1":{"0":{"0":6800,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6797,"type":"pcon"},"1":{"0":"set/nil","1":6801,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"pprim","1":6803,"2":{"0":{"0":6804,"type":"pany"},"1":{"0":{"0":6805,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6802,"type":"pcon"},"1":{"0":"set/nil","1":6806,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6762,"type":"ematch"},"2":6757,"type":"elambda"},"3":6757,"type":"tdef"}, $env)
-const {"quot/expr": quot$slexpr,"quot/top": quot$sltop,"quot/type": quot$sltype,"quot/pat": quot$slpat,"quot/quot": quot$slquot} = $env.evaluateStmt({"0":"quot","1":8334,"2":{"type":"nil"},"3":{"0":{"0":"quot/expr","1":{"0":8337,"1":{"0":{"0":{"0":"expr","1":8338,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":8335,"type":","},"type":","},"type":","},"1":{"0":{"0":"quot/top","1":{"0":8340,"1":{"0":{"0":{"0":"top","1":8341,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":8339,"type":","},"type":","},"type":","},"1":{"0":{"0":"quot/type","1":{"0":8343,"1":{"0":{"0":{"0":"type","1":8344,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":8342,"type":","},"type":","},"type":","},"1":{"0":{"0":"quot/pat","1":{"0":8346,"1":{"0":{"0":{"0":"pat","1":8347,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":8345,"type":","},"type":","},"type":","},"1":{"0":{"0":"quot/quot","1":{"0":8349,"1":{"0":{"0":{"0":"cst","1":8350,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":8348,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"4":8331,"type":"tdeftype"}, $env)
-const concat = $env.evaluateStmt({"0":"concat","1":12413,"2":{"0":{"0":{"0":"lists","1":12415,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"lists","1":12418,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":12419,"2":{"type":"nil"},"3":12419,"type":"pcon"},"1":{"0":"nil","1":12420,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cons","1":12421,"2":{"0":{"0":"nil","1":12422,"2":{"type":"nil"},"3":12422,"type":"pcon"},"1":{"0":{"0":"rest","1":12423,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12421,"type":"pcon"},"1":{"0":{"0":"concat","1":12428,"type":"evar"},"1":{"0":{"0":"rest","1":12429,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":12427,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cons","1":12430,"2":{"0":{"0":"cons","1":12431,"2":{"0":{"0":"one","1":12432,"type":"pvar"},"1":{"0":{"0":"rest","1":12433,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12431,"type":"pcon"},"1":{"0":{"0":"other","1":12437,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12430,"type":"pcon"},"1":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"one","1":12440,"type":"evar"},"1":{"0":{"0":{"0":"concat","1":12445,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"rest","1":12447,"type":"evar"},"1":{"0":{"0":"other","1":12448,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":12441,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":12416,"type":"ematch"},"2":12410,"type":"elambda"},"3":12410,"type":"tdef"}, $env)
-const loop = $env.evaluateStmt({"0":"loop","1":16534,"2":{"0":{"0":{"0":"v","1":16536,"type":"pvar"},"1":{"0":{"0":"f","1":16537,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"f","1":16539,"type":"evar"},"1":{"0":{"0":"v","1":16540,"type":"evar"},"1":{"0":{"0":{"0":{"0":"nv","1":16544,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"loop","1":16546,"type":"evar"},"1":{"0":{"0":"nv","1":16547,"type":"evar"},"1":{"0":{"0":"f","1":16548,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16545,"type":"eapp"},"2":16541,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16538,"type":"eapp"},"2":16531,"type":"elambda"},"3":16531,"type":"tdef"}, $env)
-const cst_loc = $env.evaluateStmt({"0":"cst-loc","1":17420,"2":{"0":{"0":{"0":"cst","1":17422,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"cst","1":4951,"type":"evar"},"1":{"0":{"0":{"0":"cst/list","1":4953,"2":{"0":{"0":4954,"type":"pany"},"1":{"0":{"0":"l","1":4955,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4952,"type":"pcon"},"1":{"0":"l","1":4956,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cst/id","1":4958,"2":{"0":{"0":4959,"type":"pany"},"1":{"0":{"0":"l","1":4960,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4957,"type":"pcon"},"1":{"0":"l","1":4961,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cst/array","1":4963,"2":{"0":{"0":4964,"type":"pany"},"1":{"0":{"0":"l","1":4965,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4962,"type":"pcon"},"1":{"0":"l","1":4966,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cst/string","1":4968,"2":{"0":{"0":4969,"type":"pany"},"1":{"0":{"0":4973,"type":"pany"},"1":{"0":{"0":"l","1":4970,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":4967,"type":"pcon"},"1":{"0":"l","1":4971,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cst/spread","1":5003,"2":{"0":{"0":5004,"type":"pany"},"1":{"0":{"0":"l","1":5005,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5002,"type":"pcon"},"1":{"0":"l","1":5006,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":4949,"type":"ematch"},"2":17418,"type":"elambda"},"3":17418,"type":"tdef"}, $env)
-const filter_some = $env.evaluateStmt({"0":"filter-some","1":17513,"2":{"0":{"0":{"0":"items","1":17515,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"foldr","1":17518,"type":"evar"},"1":{"0":{"0":"nil","1":17519,"type":"evar"},"1":{"0":{"0":"items","1":17520,"type":"evar"},"1":{"0":{"0":{"0":{"0":"res","1":17524,"type":"pvar"},"1":{"0":{"0":"v","1":17525,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"v","1":17528,"type":"evar"},"1":{"0":{"0":{"0":"some","1":17530,"2":{"0":{"0":"v","1":17531,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"3":17529,"type":"pcon"},"1":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"v","1":17533,"type":"evar"},"1":{"0":{"0":"res","1":17534,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":17538,"type":"pany"},"1":{"0":"res","1":17539,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17526,"type":"ematch"},"2":17521,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":17516,"type":"eapp"},"2":17510,"type":"elambda"},"3":17510,"type":"tdef"}, $env)
-const empty = $env.evaluateStmt({"0":"empty","1":17571,"2":{"0":{"0":"many","1":17573,"type":"evar"},"1":{"0":{"0":"nil","1":17574,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17572,"type":"eapp"},"3":17568,"type":"tdef"}, $env)
-const {"local": local,"global": global} = $env.evaluateStmt({"0":"reported-name","1":18739,"2":{"type":"nil"},"3":{"0":{"0":"local","1":{"0":18741,"1":{"0":{"0":{"0":"int","1":18742,"type":"tcon"},"1":{"0":{"0":{"0":"use-or-decl","1":18744,"type":"tcon"},"1":{"0":"int","1":18745,"type":"tcon"},"2":18743,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":18740,"type":","},"type":","},"type":","},"1":{"0":{"0":"global","1":{"0":18747,"1":{"0":{"0":{"0":"string","1":18748,"type":"tcon"},"1":{"0":{"0":"name-kind","1":18749,"type":"tcon"},"1":{"0":{"0":"int","1":18750,"type":"tcon"},"1":{"0":{"0":{"0":"use-or-decl","1":18752,"type":"tcon"},"1":{"0":"()","1":18753,"type":"tcon"},"2":18751,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":18746,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":18737,"type":"tdeftype"}, $env)
-const {"usage": usage,"decl": decl} = $env.evaluateStmt({"0":"use-or-decl","1":18758,"2":{"0":{"0":"a","1":18759,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"usage","1":{"0":18761,"1":{"0":{"0":{"0":"a","1":18762,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":18760,"type":","},"type":","},"type":","},"1":{"0":{"0":"decl","1":{"0":18764,"1":{"0":{"type":"nil"},"1":18763,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":18755,"type":"tdeftype"}, $env)
-const {",": $co} = $env.evaluateStmt({"0":",","1":19394,"2":{"0":{"0":"a","1":19395,"type":","},"1":{"0":{"0":"b","1":19396,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":19398,"1":{"0":{"0":{"0":"a","1":19399,"type":"tcon"},"1":{"0":{"0":"b","1":19400,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":19397,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":19390,"type":"tdeftype"}, $env)
-const parse_type = $env.evaluateStmt({"0":"parse-type","1":864,"2":{"0":{"0":{"0":"type","1":866,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"type","1":869,"type":"evar"},"1":{"0":{"0":{"0":"cst/id","1":871,"2":{"0":{"0":"id","1":872,"type":"pvar"},"1":{"0":{"0":"l","1":873,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":870,"type":"pcon"},"1":{"0":{"0":"tcon","1":875,"type":"evar"},"1":{"0":{"0":"id","1":876,"type":"evar"},"1":{"0":{"0":"l","1":3997,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":874,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":5576,"2":{"0":{"0":"cons","1":5577,"2":{"0":{"0":"cst/id","1":5579,"2":{"0":{"0":"fn","1":5580,"type":"pstr"},"1":{"0":{"0":5582,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5578,"type":"pcon"},"1":{"0":{"0":"cons","1":5577,"2":{"0":{"0":"cst/array","1":5584,"2":{"0":{"0":"args","1":5585,"type":"pvar"},"1":{"0":{"0":5586,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5583,"type":"pcon"},"1":{"0":{"0":"cons","1":5577,"2":{"0":{"0":"body","1":5587,"type":"pvar"},"1":{"0":{"0":"nil","1":5577,"2":{"type":"nil"},"3":5577,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5577,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5577,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5577,"type":"pcon"},"1":{"0":{"0":"l","1":5854,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5575,"type":"pcon"},"1":{"0":{"0":"foldl","1":5589,"type":"evar"},"1":{"0":{"0":{"0":"parse-type","1":5591,"type":"evar"},"1":{"0":{"0":"body","1":5592,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":5590,"type":"eapp"},"1":{"0":{"0":{"0":"rev","1":5593,"type":"evar"},"1":{"0":{"0":"args","1":5692,"type":"evar"},"1":{"0":{"0":"nil","1":5693,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":5691,"type":"eapp"},"1":{"0":{"0":{"0":{"0":"body","1":5597,"type":"pvar"},"1":{"0":{"0":"arg","1":5599,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"tapp","1":5601,"type":"evar"},"1":{"0":{"0":{"0":"tapp","1":5603,"type":"evar"},"1":{"0":{"0":{"0":"tcon","1":5605,"type":"evar"},"1":{"0":{"0":"->","1":{"type":"nil"},"2":5606,"type":"estr"},"1":{"0":{"0":"l","1":5608,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":5604,"type":"eapp"},"1":{"0":{"0":{"0":"parse-type","1":5610,"type":"evar"},"1":{"0":{"0":"arg","1":5611,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":5609,"type":"eapp"},"1":{"0":{"0":"l","1":5612,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":5602,"type":"eapp"},"1":{"0":{"0":"body","1":5613,"type":"evar"},"1":{"0":{"0":"l","1":5614,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":5600,"type":"eapp"},"2":5594,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":5588,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":16515,"2":{"0":{"0":"cons","1":16516,"2":{"0":{"0":"cst/id","1":16518,"2":{"0":{"0":",","1":16519,"type":"pstr"},"1":{"0":{"0":"nl","1":16521,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":16517,"type":"pcon"},"1":{"0":{"0":"items","1":16522,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":16516,"type":"pcon"},"1":{"0":{"0":"al","1":16684,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":16514,"type":"pcon"},"1":{"0":{"0":"loop","1":16549,"type":"evar"},"1":{"0":{"0":{"0":"map","1":16550,"type":"evar"},"1":{"0":{"0":"items","1":16573,"type":"evar"},"1":{"0":{"0":"parse-type","1":16574,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16572,"type":"eapp"},"1":{"0":{"0":{"0":{"0":"items","1":16554,"type":"pvar"},"1":{"0":{"0":"recur","1":16558,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"items","1":16557,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":17891,"2":{"type":"nil"},"3":17891,"type":"pcon"},"1":{"0":{"0":"fatal","1":17893,"type":"evar"},"1":{"0":{"0":"Empty tuple type","1":{"type":"nil"},"2":17894,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":17892,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cons","1":17679,"2":{"0":{"0":"one","1":17680,"type":"pvar"},"1":{"0":{"0":"nil","1":17679,"2":{"type":"nil"},"3":17679,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17679,"type":"pcon"},"1":{"0":"one","1":17681,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cons","1":16559,"2":{"0":{"0":"one","1":16560,"type":"pvar"},"1":{"0":{"0":"cons","1":16559,"2":{"0":{"0":"two","1":16561,"type":"pvar"},"1":{"0":{"0":"nil","1":16559,"2":{"type":"nil"},"3":16559,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":16559,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":16559,"type":"pcon"},"1":{"0":{"0":"tapp","1":16563,"type":"evar"},"1":{"0":{"0":{"0":"tapp","1":16565,"type":"evar"},"1":{"0":{"0":{"0":"tcon","1":16567,"type":"evar"},"1":{"0":{"0":",","1":{"type":"nil"},"2":16568,"type":"estr"},"1":{"0":{"0":"nl","1":16570,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16566,"type":"eapp"},"1":{"0":{"0":"one","1":16571,"type":"evar"},"1":{"0":{"0":"al","1":16575,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":16564,"type":"eapp"},"1":{"0":{"0":"two","1":16576,"type":"evar"},"1":{"0":{"0":"al","1":16577,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":16562,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cons","1":16578,"2":{"0":{"0":"one","1":16579,"type":"pvar"},"1":{"0":{"0":"rest","1":16580,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":16578,"type":"pcon"},"1":{"0":{"0":"tapp","1":16588,"type":"evar"},"1":{"0":{"0":{"0":"tapp","1":16590,"type":"evar"},"1":{"0":{"0":{"0":"tcon","1":16592,"type":"evar"},"1":{"0":{"0":",","1":{"type":"nil"},"2":16593,"type":"estr"},"1":{"0":{"0":"nl","1":16595,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16591,"type":"eapp"},"1":{"0":{"0":"one","1":16596,"type":"evar"},"1":{"0":{"0":"al","1":16598,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":16589,"type":"eapp"},"1":{"0":{"0":{"0":"recur","1":16600,"type":"evar"},"1":{"0":{"0":"rest","1":16601,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":16599,"type":"eapp"},"1":{"0":{"0":"al","1":16602,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":16587,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":16555,"type":"ematch"},"2":16551,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16526,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":878,"2":{"0":{"0":"items","1":879,"type":"pvar"},"1":{"0":{"0":"l","1":880,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":877,"type":"pcon"},"1":{"0":{"0":"loop","1":16746,"type":"evar"},"1":{"0":{"0":{"0":"rev","1":16777,"type":"evar"},"1":{"0":{"0":{"0":"map","1":16748,"type":"evar"},"1":{"0":{"0":"items","1":16749,"type":"evar"},"1":{"0":{"0":"parse-type","1":16750,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16747,"type":"eapp"},"1":{"0":{"0":"nil","1":16778,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16776,"type":"eapp"},"1":{"0":{"0":{"0":{"0":"items","1":16754,"type":"pvar"},"1":{"0":{"0":"recur","1":16755,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"items","1":16758,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":16759,"2":{"0":{"0":"one","1":16760,"type":"pvar"},"1":{"0":{"0":"nil","1":16759,"2":{"type":"nil"},"3":16759,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":16759,"type":"pcon"},"1":{"0":"one","1":16761,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cons","1":16762,"2":{"0":{"0":"one","1":16763,"type":"pvar"},"1":{"0":{"0":"rest","1":16764,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":16762,"type":"pcon"},"1":{"0":{"0":"tapp","1":16769,"type":"evar"},"1":{"0":{"0":{"0":"recur","1":16772,"type":"evar"},"1":{"0":{"0":"rest","1":16773,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":16771,"type":"eapp"},"1":{"0":{"0":"one","1":16775,"type":"evar"},"1":{"0":{"0":"l","1":16774,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":16768,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"nil","1":17707,"2":{"type":"nil"},"3":17707,"type":"pcon"},"1":{"0":{"0":"tcon","1":17713,"type":"evar"},"1":{"0":{"0":"()","1":{"type":"nil"},"2":17714,"type":"estr"},"1":{"0":{"0":"l","1":17716,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17712,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":16756,"type":"ematch"},"2":16751,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16745,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":3137,"type":"pany"},"1":{"0":{"0":"fatal","1":3139,"type":"evar"},"1":{"0":{"0":"(parse-type) Invalid type ","1":{"0":{"0":{"0":{"0":"valueToString","1":3144,"type":"evar"},"1":{"0":{"0":"type","1":3145,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3142,"type":"eapp"},"1":{"0":"","1":3143,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":3140,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":3138,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":867,"type":"ematch"},"2":692,"type":"elambda"},"3":692,"type":"tdef"}, $env)
-const pairs = $env.evaluateStmt({"0":"pairs","1":1687,"2":{"0":{"0":{"0":"list","1":1689,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"list","1":1692,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":1712,"2":{"type":"nil"},"3":1712,"type":"pcon"},"1":{"0":"nil","1":1713,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"cons","1":1693,"2":{"0":{"0":"one","1":1694,"type":"pvar"},"1":{"0":{"0":"cons","1":1693,"2":{"0":{"0":"two","1":1695,"type":"pvar"},"1":{"0":{"0":"rest","1":1696,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1693,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1693,"type":"pcon"},"1":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":",","1":1701,"type":"evar"},"1":{"0":{"0":"one","1":1703,"type":"evar"},"1":{"0":{"0":"two","1":1705,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":1701,"type":"eapp"},"1":{"0":{"0":{"0":"pairs","1":1710,"type":"evar"},"1":{"0":{"0":"rest","1":1711,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":1706,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":3150,"type":"pany"},"1":{"0":{"0":"fatal","1":3152,"type":"evar"},"1":{"0":{"0":"Pairs given odd number ","1":{"0":{"0":{"0":{"0":"valueToString","1":3157,"type":"evar"},"1":{"0":{"0":"list","1":3158,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3155,"type":"eapp"},"1":{"0":"","1":3156,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":3153,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":3151,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":1690,"type":"ematch"},"2":1684,"type":"elambda"},"3":1684,"type":"tdef"}, $env)
-const parse_pat = $env.evaluateStmt({"0":"parse-pat","1":1724,"2":{"0":{"0":{"0":"pat","1":1726,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"pat","1":1730,"type":"evar"},"1":{"0":{"0":{"0":"cst/id","1":1743,"2":{"0":{"0":"_","1":1744,"type":"pstr"},"1":{"0":{"0":"l","1":1746,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1742,"type":"pcon"},"1":{"0":{"0":"pany","1":1748,"type":"evar"},"1":{"0":{"0":"l","1":3641,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":1747,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/id","1":4243,"2":{"0":{"0":"true","1":4244,"type":"pstr"},"1":{"0":{"0":"l","1":4246,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4242,"type":"pcon"},"1":{"0":{"0":"pprim","1":4248,"type":"evar"},"1":{"0":{"0":{"0":"pbool","1":4250,"type":"evar"},"1":{"0":{"0":{"0":true,"1":4251,"type":"pbool"},"1":4251,"type":"eprim"},"1":{"0":{"0":"l","1":4252,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":4249,"type":"eapp"},"1":{"0":{"0":"l","1":4253,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":4247,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/id","1":5843,"2":{"0":{"0":"false","1":5844,"type":"pstr"},"1":{"0":{"0":"l","1":5846,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5842,"type":"pcon"},"1":{"0":{"0":"pprim","1":5848,"type":"evar"},"1":{"0":{"0":{"0":"pbool","1":5850,"type":"evar"},"1":{"0":{"0":{"0":false,"1":5851,"type":"pbool"},"1":5851,"type":"eprim"},"1":{"0":{"0":"l","1":5852,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":5849,"type":"eapp"},"1":{"0":{"0":"l","1":5853,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":5847,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/string","1":3286,"2":{"0":{"0":"first","1":3287,"type":"pvar"},"1":{"0":{"0":"nil","1":3300,"2":{"type":"nil"},"3":3300,"type":"pcon"},"1":{"0":{"0":"l","1":3301,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":3284,"type":"pcon"},"1":{"0":{"0":"pstr","1":3302,"type":"evar"},"1":{"0":{"0":"first","1":3303,"type":"evar"},"1":{"0":{"0":"l","1":3642,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3285,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/id","1":1732,"2":{"0":{"0":"id","1":1733,"type":"pvar"},"1":{"0":{"0":"l","1":1736,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1731,"type":"pcon"},"1":{"0":{"0":{"0":"string-to-int","1":3027,"type":"evar"},"1":{"0":{"0":"id","1":3031,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3026,"type":"eapp"},"1":{"0":{"0":{"0":"some","1":3033,"2":{"0":{"0":"int","1":3034,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"3":3032,"type":"pcon"},"1":{"0":{"0":"pprim","1":3036,"type":"evar"},"1":{"0":{"0":{"0":"pint","1":3038,"type":"evar"},"1":{"0":{"0":"int","1":3039,"type":"evar"},"1":{"0":{"0":"l","1":3643,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3037,"type":"eapp"},"1":{"0":{"0":"l","1":3644,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3035,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":3040,"type":"pany"},"1":{"0":{"0":"pvar","1":1738,"type":"evar"},"1":{"0":{"0":"id","1":1739,"type":"evar"},"1":{"0":{"0":"l","1":3645,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":1737,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3019,"type":"ematch"},"type":","},"1":{"0":{"0":{"0":"cst/array","1":3342,"2":{"0":{"0":"nil","1":3343,"2":{"type":"nil"},"3":3343,"type":"pcon"},"1":{"0":{"0":"l","1":3344,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3340,"type":"pcon"},"1":{"0":{"0":"pcon","1":3348,"type":"evar"},"1":{"0":{"0":"nil","1":{"type":"nil"},"2":3349,"type":"estr"},"1":{"0":{"0":"l","1":16348,"type":"evar"},"1":{"0":{"0":"nil","1":3351,"type":"evar"},"1":{"0":{"0":"l","1":3646,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":3341,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/array","1":3378,"2":{"0":{"0":"cons","1":3380,"2":{"0":{"0":"cst/spread","1":3384,"2":{"0":{"0":"inner","1":3385,"type":"pvar"},"1":{"0":{"0":3386,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3383,"type":"pcon"},"1":{"0":{"0":"nil","1":3380,"2":{"type":"nil"},"3":3380,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3380,"type":"pcon"},"1":{"0":{"0":3382,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3377,"type":"pcon"},"1":{"0":{"0":"parse-pat","1":3387,"type":"evar"},"1":{"0":{"0":"inner","1":3388,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3379,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/array","1":3353,"2":{"0":{"0":"cons","1":3355,"2":{"0":{"0":"one","1":3356,"type":"pvar"},"1":{"0":{"0":"rest","1":3357,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3355,"type":"pcon"},"1":{"0":{"0":"l","1":3361,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3352,"type":"pcon"},"1":{"0":{"0":"pcon","1":3362,"type":"evar"},"1":{"0":{"0":"cons","1":{"type":"nil"},"2":3363,"type":"estr"},"1":{"0":{"0":"l","1":16349,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":"parse-pat","1":3367,"type":"evar"},"1":{"0":{"0":"one","1":3368,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3366,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":3365,"type":"evar"},"1":{"0":{"0":{"0":"parse-pat","1":3370,"type":"evar"},"1":{"0":{"0":{"0":"cst/array","1":3372,"type":"evar"},"1":{"0":{"0":"rest","1":3373,"type":"evar"},"1":{"0":{"0":"l","1":3374,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3371,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":3369,"type":"eapp"},"1":{"0":{"0":"nil","1":3365,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3365,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"0":{"0":"l","1":4263,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":3354,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":9165,"2":{"0":{"0":"nil","1":9166,"2":{"type":"nil"},"3":9166,"type":"pcon"},"1":{"0":{"0":"l","1":9167,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":9164,"type":"pcon"},"1":{"0":{"0":"pcon","1":9169,"type":"evar"},"1":{"0":{"0":"()","1":{"type":"nil"},"2":9170,"type":"estr"},"1":{"0":{"0":"l","1":16350,"type":"evar"},"1":{"0":{"0":"nil","1":9173,"type":"evar"},"1":{"0":{"0":"l","1":9172,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":9168,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":7760,"2":{"0":{"0":"cons","1":7761,"2":{"0":{"0":"cst/id","1":7763,"2":{"0":{"0":",","1":7764,"type":"pstr"},"1":{"0":{"0":"il","1":7766,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7762,"type":"pcon"},"1":{"0":{"0":"args","1":7767,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7761,"type":"pcon"},"1":{"0":{"0":"l","1":7771,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7759,"type":"pcon"},"1":{"0":{"0":"loop","1":17725,"type":"evar"},"1":{"0":{"0":"args","1":17762,"type":"evar"},"1":{"0":{"0":{"0":{"0":"items","1":17766,"type":"pvar"},"1":{"0":{"0":"recur","1":17767,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"items","1":17729,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":17768,"2":{"0":{"0":"one","1":17769,"type":"pvar"},"1":{"0":{"0":"nil","1":17768,"2":{"type":"nil"},"3":17768,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17768,"type":"pcon"},"1":{"0":{"0":"parse-pat","1":17771,"type":"evar"},"1":{"0":{"0":"one","1":17772,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17770,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"nil","1":17730,"2":{"type":"nil"},"3":17730,"type":"pcon"},"1":{"0":{"0":"pcon","1":17732,"type":"evar"},"1":{"0":{"0":",","1":{"type":"nil"},"2":17733,"type":"estr"},"1":{"0":{"0":"l","1":17735,"type":"evar"},"1":{"0":{"0":"nil","1":17736,"type":"evar"},"1":{"0":{"0":"il","1":17737,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":17731,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cons","1":17743,"2":{"0":{"0":"one","1":17744,"type":"pvar"},"1":{"0":{"0":"rest","1":17746,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17743,"type":"pcon"},"1":{"0":{"0":"pcon","1":17748,"type":"evar"},"1":{"0":{"0":",","1":{"type":"nil"},"2":17749,"type":"estr"},"1":{"0":{"0":"l","1":17751,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":"parse-pat","1":17754,"type":"evar"},"1":{"0":{"0":"one","1":17755,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17753,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":17752,"type":"evar"},"1":{"0":{"0":{"0":"recur","1":17757,"type":"evar"},"1":{"0":{"0":"rest","1":17758,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17756,"type":"eapp"},"1":{"0":{"0":"nil","1":17752,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17752,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"0":{"0":"l","1":17761,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":17747,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":17727,"type":"ematch"},"2":17763,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17724,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":1804,"2":{"0":{"0":"cons","1":1805,"2":{"0":{"0":"cst/id","1":1807,"2":{"0":{"0":"name","1":1809,"type":"pvar"},"1":{"0":{"0":"il","1":1810,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1806,"type":"pcon"},"1":{"0":{"0":"rest","1":1811,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1805,"type":"pcon"},"1":{"0":{"0":"l","1":1815,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1740,"type":"pcon"},"1":{"0":{"0":"pcon","1":1817,"type":"evar"},"1":{"0":{"0":"name","1":1818,"type":"evar"},"1":{"0":{"0":"il","1":16351,"type":"evar"},"1":{"0":{"0":{"0":"map","1":1820,"type":"evar"},"1":{"0":{"0":"rest","1":1821,"type":"evar"},"1":{"0":{"0":"parse-pat","1":1822,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":1819,"type":"eapp"},"1":{"0":{"0":"l","1":3647,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":1816,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":3159,"type":"pany"},"1":{"0":{"0":"fatal","1":3161,"type":"evar"},"1":{"0":{"0":"Invalid pattern: ","1":{"0":{"0":{"0":{"0":"valueToString","1":3166,"type":"evar"},"1":{"0":{"0":"pat","1":3167,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3164,"type":"eapp"},"1":{"0":"","1":3165,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":3162,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":3160,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":1727,"type":"ematch"},"2":1721,"type":"elambda"},"3":1721,"type":"tdef"}, $env)
-const bag$sland = $env.evaluateStmt({"0":"bag/and","1":6569,"2":{"0":{"0":{"0":"first","1":6571,"type":"pvar"},"1":{"0":{"0":"second","1":6572,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":{"0":",","1":6575,"type":"evar"},"1":{"0":{"0":"first","1":6577,"type":"evar"},"1":{"0":{"0":"second","1":6578,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6575,"type":"eapp"},"1":{"0":{"0":{"0":",","1":6580,"2":{"0":{"0":"many","1":6582,"2":{"0":{"0":"nil","1":17567,"2":{"type":"nil"},"3":17567,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"3":6581,"type":"pcon"},"1":{"0":{"0":"a","1":6583,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6579,"type":"pcon"},"1":{"0":"a","1":6584,"type":"evar"},"type":","},"1":{"0":{"0":{"0":",","1":6586,"2":{"0":{"0":"a","1":6587,"type":"pvar"},"1":{"0":{"0":"many","1":6589,"2":{"0":{"0":"nil","1":17575,"2":{"type":"nil"},"3":17575,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"3":6588,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6585,"type":"pcon"},"1":{"0":"a","1":6590,"type":"evar"},"type":","},"1":{"0":{"0":{"0":",","1":6592,"2":{"0":{"0":"many","1":6594,"2":{"0":{"0":"cons","1":6595,"2":{"0":{"0":"a","1":6596,"type":"pvar"},"1":{"0":{"0":"nil","1":6595,"2":{"type":"nil"},"3":6595,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6595,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"3":6593,"type":"pcon"},"1":{"0":{"0":"many","1":6598,"2":{"0":{"0":"b","1":6599,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"3":6597,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6591,"type":"pcon"},"1":{"0":{"0":"many","1":6601,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"a","1":6603,"type":"evar"},"1":{"0":{"0":"b","1":6605,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":6600,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":",","1":6607,"2":{"0":{"0":"a","1":6608,"type":"pvar"},"1":{"0":{"0":"many","1":6610,"2":{"0":{"0":"b","1":6611,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"3":6609,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6606,"type":"pcon"},"1":{"0":{"0":"many","1":6613,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"a","1":6615,"type":"evar"},"1":{"0":{"0":"b","1":6617,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":6612,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":6618,"type":"pany"},"1":{"0":{"0":"many","1":6620,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"first","1":6622,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":6621,"type":"evar"},"1":{"0":{"0":"second","1":6623,"type":"evar"},"1":{"0":{"0":"nil","1":6621,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6621,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":6619,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6573,"type":"ematch"},"2":6567,"type":"elambda"},"3":6567,"type":"tdef"}, $env)
-const pat_externals = $env.evaluateStmt({"0":"pat-externals","1":6809,"2":{"0":{"0":{"0":"pat","1":6811,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"pat","1":6814,"type":"evar"},"1":{"0":{"0":{"0":"pcon","1":6817,"2":{"0":{"0":"name","1":6818,"type":"pvar"},"1":{"0":{"0":"nl","1":16355,"type":"pvar"},"1":{"0":{"0":"args","1":6819,"type":"pvar"},"1":{"0":{"0":"l","1":6820,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":6816,"type":"pcon"},"1":{"0":{"0":"bag/and","1":6822,"type":"evar"},"1":{"0":{"0":{"0":"one","1":6824,"type":"evar"},"1":{"0":{"0":{"0":",","1":6825,"type":"evar"},"1":{"0":{"0":"name","1":6827,"type":"evar"},"1":{"0":{"0":{"0":",","1":6825,"type":"evar"},"1":{"0":{"0":{"0":"value","1":6829,"type":"evar"},"1":{"type":"nil"},"2":6828,"type":"eapp"},"1":{"0":{"0":"nl","1":6830,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6825,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6825,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":6823,"type":"eapp"},"1":{"0":{"0":{"0":"many","1":6832,"type":"evar"},"1":{"0":{"0":{"0":"map","1":6834,"type":"evar"},"1":{"0":{"0":"args","1":6835,"type":"evar"},"1":{"0":{"0":"pat-externals","1":6836,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6833,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":6831,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6821,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":6837,"type":"pany"},"1":{"0":"empty","1":6838,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6812,"type":"ematch"},"2":6807,"type":"elambda"},"3":6807,"type":"tdef"}, $env)
-const externals = $env.evaluateStmt({"0":"externals","1":6841,"2":{"0":{"0":{"0":"bound","1":6843,"type":"pvar"},"1":{"0":{"0":"expr","1":6844,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"expr","1":6847,"type":"evar"},"1":{"0":{"0":{"0":"evar","1":6849,"2":{"0":{"0":"name","1":6850,"type":"pvar"},"1":{"0":{"0":"l","1":6851,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6848,"type":"pcon"},"1":{"0":{"0":{"0":"set/has","1":6855,"type":"evar"},"1":{"0":{"0":"bound","1":6856,"type":"evar"},"1":{"0":{"0":"name","1":6857,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6854,"type":"eapp"},"1":{"0":{"0":{"0":{"0":true,"1":7451,"type":"pbool"},"1":7451,"type":"pprim"},"1":{"0":"empty","1":6858,"type":"evar"},"type":","},"1":{"0":{"0":{"0":7452,"type":"pany"},"1":{"0":{"0":"one","1":6860,"type":"evar"},"1":{"0":{"0":{"0":",","1":6861,"type":"evar"},"1":{"0":{"0":"name","1":6863,"type":"evar"},"1":{"0":{"0":{"0":",","1":6861,"type":"evar"},"1":{"0":{"0":{"0":"value","1":6865,"type":"evar"},"1":{"type":"nil"},"2":6864,"type":"eapp"},"1":{"0":{"0":"l","1":6866,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6861,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6861,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":6859,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6852,"type":"ematch"},"type":","},"1":{"0":{"0":{"0":"eprim","1":6868,"2":{"0":{"0":6869,"type":"pany"},"1":{"0":{"0":6870,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6867,"type":"pcon"},"1":{"0":"empty","1":6871,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"estr","1":6873,"2":{"0":{"0":6874,"type":"pany"},"1":{"0":{"0":"templates","1":6875,"type":"pvar"},"1":{"0":{"0":6876,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":6872,"type":"pcon"},"1":{"0":{"0":"many","1":6878,"type":"evar"},"1":{"0":{"0":{"0":"map","1":6880,"type":"evar"},"1":{"0":{"0":"templates","1":6881,"type":"evar"},"1":{"0":{"0":{"0":{"0":"arg","1":7420,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"arg","1":7413,"type":"evar"},"1":{"0":{"0":{"0":",","1":7416,"2":{"0":{"0":"expr","1":7417,"type":"pvar"},"1":{"0":{"0":",","1":7416,"2":{"0":{"0":7418,"type":"pany"},"1":{"0":{"0":7419,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7415,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7415,"type":"pcon"},"1":{"0":{"0":"externals","1":6891,"type":"evar"},"1":{"0":{"0":"bound","1":6892,"type":"evar"},"1":{"0":{"0":"expr","1":6893,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6890,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"2":7411,"type":"ematch"},"2":6882,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6879,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":6877,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"equot","1":6895,"2":{"0":{"0":6896,"type":"pany"},"1":{"0":{"0":6897,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6894,"type":"pcon"},"1":{"0":"empty","1":6898,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"elambda","1":6920,"2":{"0":{"0":"pats","1":6921,"type":"pvar"},"1":{"0":{"0":"body","1":6923,"type":"pvar"},"1":{"0":{"0":6924,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":6919,"type":"pcon"},"1":{"0":{"0":"bag/and","1":8035,"type":"evar"},"1":{"0":{"0":{"0":"foldl","1":9140,"type":"evar"},"1":{"0":{"0":"empty","1":9141,"type":"evar"},"1":{"0":{"0":{"0":"map","1":8037,"type":"evar"},"1":{"0":{"0":"pats","1":9142,"type":"evar"},"1":{"0":{"0":"pat-externals","1":9143,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8036,"type":"eapp"},"1":{"0":{"0":"bag/and","1":9144,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":9139,"type":"eapp"},"1":{"0":{"0":{"0":"externals","1":6926,"type":"evar"},"1":{"0":{"0":{"0":"foldl","1":9135,"type":"evar"},"1":{"0":{"0":"bound","1":6929,"type":"evar"},"1":{"0":{"0":{"0":"map","1":8039,"type":"evar"},"1":{"0":{"0":"pats","1":9136,"type":"evar"},"1":{"0":{"0":"pat-bound","1":9137,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6930,"type":"eapp"},"1":{"0":{"0":"set/merge","1":9138,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6927,"type":"eapp"},"1":{"0":{"0":"body","1":6931,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6925,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8034,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"elet","1":6933,"2":{"0":{"0":"bindings","1":9095,"type":"pvar"},"1":{"0":{"0":"body","1":6936,"type":"pvar"},"1":{"0":{"0":6937,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":6932,"type":"pcon"},"1":{"0":{"0":"bag/and","1":6939,"type":"evar"},"1":{"0":{"0":{"0":"foldl","1":9097,"type":"evar"},"1":{"0":{"0":"empty","1":9098,"type":"evar"},"1":{"0":{"0":{"0":"map","1":9101,"type":"evar"},"1":{"0":{"0":"bindings","1":9102,"type":"evar"},"1":{"0":{"0":{"0":{"0":"arg","1":9209,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":9205,"2":{"0":{"0":"pat","1":9206,"type":"pvar"},"1":{"0":{"0":"init","1":9207,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":9204,"type":"pcon"},"1":{"0":"arg","1":9208,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"bag/and","1":9112,"type":"evar"},"1":{"0":{"0":{"0":"pat-externals","1":9114,"type":"evar"},"1":{"0":{"0":"pat","1":9115,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":9113,"type":"eapp"},"1":{"0":{"0":{"0":"externals","1":9117,"type":"evar"},"1":{"0":{"0":"bound","1":9118,"type":"evar"},"1":{"0":{"0":"init","1":9119,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":9116,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":9111,"type":"eapp"},"2":9201,"type":"elet"},"2":9103,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":9099,"type":"eapp"},"1":{"0":{"0":"bag/and","1":9121,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":9096,"type":"eapp"},"1":{"0":{"0":{"0":"externals","1":6950,"type":"evar"},"1":{"0":{"0":{"0":"foldl","1":6952,"type":"evar"},"1":{"0":{"0":"bound","1":6953,"type":"evar"},"1":{"0":{"0":{"0":"map","1":9123,"type":"evar"},"1":{"0":{"0":"bindings","1":9124,"type":"evar"},"1":{"0":{"0":{"0":{"0":"arg","1":9200,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":9196,"2":{"0":{"0":"pat","1":9197,"type":"pvar"},"1":{"0":{"0":9198,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":9195,"type":"pcon"},"1":{"0":"arg","1":9199,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"pat-bound","1":6955,"type":"evar"},"1":{"0":{"0":"pat","1":6956,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6954,"type":"eapp"},"2":9192,"type":"elet"},"2":9125,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":9122,"type":"eapp"},"1":{"0":{"0":"set/merge","1":9133,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6951,"type":"eapp"},"1":{"0":{"0":"body","1":6957,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6949,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6938,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"eapp","1":6959,"2":{"0":{"0":"target","1":6960,"type":"pvar"},"1":{"0":{"0":"args","1":6961,"type":"pvar"},"1":{"0":{"0":6962,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":6958,"type":"pcon"},"1":{"0":{"0":"bag/and","1":6964,"type":"evar"},"1":{"0":{"0":{"0":"externals","1":6966,"type":"evar"},"1":{"0":{"0":"bound","1":6967,"type":"evar"},"1":{"0":{"0":"target","1":6968,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6965,"type":"eapp"},"1":{"0":{"0":{"0":"foldl","1":9088,"type":"evar"},"1":{"0":{"0":"empty","1":9089,"type":"evar"},"1":{"0":{"0":{"0":"map","1":9090,"type":"evar"},"1":{"0":{"0":"args","1":9093,"type":"evar"},"1":{"0":{"0":{"0":"externals","1":6970,"type":"evar"},"1":{"0":{"0":"bound","1":6971,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6969,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":9092,"type":"eapp"},"1":{"0":{"0":"bag/and","1":9094,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":9087,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6963,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"ematch","1":6974,"2":{"0":{"0":"expr","1":6975,"type":"pvar"},"1":{"0":{"0":"cases","1":6976,"type":"pvar"},"1":{"0":{"0":6977,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":6973,"type":"pcon"},"1":{"0":{"0":"bag/and","1":6979,"type":"evar"},"1":{"0":{"0":{"0":"externals","1":6981,"type":"evar"},"1":{"0":{"0":"bound","1":6982,"type":"evar"},"1":{"0":{"0":"expr","1":6983,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6980,"type":"eapp"},"1":{"0":{"0":{"0":"foldl","1":6985,"type":"evar"},"1":{"0":{"0":"empty","1":6986,"type":"evar"},"1":{"0":{"0":"cases","1":6987,"type":"evar"},"1":{"0":{"0":{"0":{"0":"bag","1":6991,"type":"pvar"},"1":{"0":{"0":"arg","1":6992,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"arg","1":7423,"type":"evar"},"1":{"0":{"0":{"0":",","1":7426,"2":{"0":{"0":"pat","1":7427,"type":"pvar"},"1":{"0":{"0":"body","1":7428,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7425,"type":"pcon"},"1":{"0":{"0":"bag/and","1":6997,"type":"evar"},"1":{"0":{"0":{"0":"bag/and","1":6999,"type":"evar"},"1":{"0":{"0":"bag","1":7000,"type":"evar"},"1":{"0":{"0":{"0":"pat-externals","1":7002,"type":"evar"},"1":{"0":{"0":"pat","1":7003,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":7001,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6998,"type":"eapp"},"1":{"0":{"0":{"0":"externals","1":7005,"type":"evar"},"1":{"0":{"0":{"0":"set/merge","1":7007,"type":"evar"},"1":{"0":{"0":"bound","1":7008,"type":"evar"},"1":{"0":{"0":{"0":"pat-bound","1":7010,"type":"evar"},"1":{"0":{"0":"pat","1":7011,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":7009,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7006,"type":"eapp"},"1":{"0":{"0":"body","1":7012,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7004,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6996,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"2":7421,"type":"ematch"},"2":6988,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6984,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6978,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6845,"type":"ematch"},"2":6839,"type":"elambda"},"3":6839,"type":"tdef"}, $env)
-const externals_type = $env.evaluateStmt({"0":"externals-type","1":7105,"2":{"0":{"0":{"0":"bound","1":7107,"type":"pvar"},"1":{"0":{"0":"t","1":7108,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"t","1":7111,"type":"evar"},"1":{"0":{"0":{"0":"tvar","1":7113,"2":{"0":{"0":7114,"type":"pany"},"1":{"0":{"0":7115,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7112,"type":"pcon"},"1":{"0":"empty","1":7116,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"tcon","1":7118,"2":{"0":{"0":"name","1":7119,"type":"pvar"},"1":{"0":{"0":"l","1":7120,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7117,"type":"pcon"},"1":{"0":{"0":{"0":"set/has","1":7124,"type":"evar"},"1":{"0":{"0":"bound","1":7125,"type":"evar"},"1":{"0":{"0":"name","1":7126,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7123,"type":"eapp"},"1":{"0":{"0":{"0":{"0":true,"1":7488,"type":"pbool"},"1":7488,"type":"pprim"},"1":{"0":"empty","1":7127,"type":"evar"},"type":","},"1":{"0":{"0":{"0":7489,"type":"pany"},"1":{"0":{"0":"one","1":7129,"type":"evar"},"1":{"0":{"0":{"0":",","1":7130,"type":"evar"},"1":{"0":{"0":"name","1":7132,"type":"evar"},"1":{"0":{"0":{"0":",","1":7130,"type":"evar"},"1":{"0":{"0":{"0":"type","1":7134,"type":"evar"},"1":{"type":"nil"},"2":16803,"type":"eapp"},"1":{"0":{"0":"l","1":7135,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7130,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7130,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":7128,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7121,"type":"ematch"},"type":","},"1":{"0":{"0":{"0":"tapp","1":7137,"2":{"0":{"0":"one","1":7138,"type":"pvar"},"1":{"0":{"0":"two","1":7139,"type":"pvar"},"1":{"0":{"0":7140,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":7136,"type":"pcon"},"1":{"0":{"0":"bag/and","1":7142,"type":"evar"},"1":{"0":{"0":{"0":"externals-type","1":7144,"type":"evar"},"1":{"0":{"0":"bound","1":7145,"type":"evar"},"1":{"0":{"0":"one","1":7146,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7143,"type":"eapp"},"1":{"0":{"0":{"0":"externals-type","1":7148,"type":"evar"},"1":{"0":{"0":"bound","1":7149,"type":"evar"},"1":{"0":{"0":"two","1":7150,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7147,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7141,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":7109,"type":"ematch"},"2":7103,"type":"elambda"},"3":7103,"type":"tdef"}, $env)
-const names = $env.evaluateStmt({"0":"names","1":7153,"2":{"0":{"0":{"0":"stmt","1":7155,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"stmt","1":7158,"type":"evar"},"1":{"0":{"0":{"0":"tdef","1":7160,"2":{"0":{"0":"name","1":7161,"type":"pvar"},"1":{"0":{"0":"l","1":7162,"type":"pvar"},"1":{"0":{"0":7163,"type":"pany"},"1":{"0":{"0":7164,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":7159,"type":"pcon"},"1":{"0":{"0":"cons","1":7165,"type":"evar"},"1":{"0":{"0":{"0":",","1":7166,"type":"evar"},"1":{"0":{"0":"name","1":7168,"type":"evar"},"1":{"0":{"0":{"0":",","1":7166,"type":"evar"},"1":{"0":{"0":{"0":"value","1":7170,"type":"evar"},"1":{"type":"nil"},"2":7169,"type":"eapp"},"1":{"0":{"0":"l","1":7171,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7166,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7166,"type":"eapp"},"1":{"0":{"0":"nil","1":7165,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7165,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"texpr","1":7173,"2":{"0":{"0":7174,"type":"pany"},"1":{"0":{"0":7175,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7172,"type":"pcon"},"1":{"0":"nil","1":7176,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"ttypealias","1":7178,"2":{"0":{"0":"name","1":7179,"type":"pvar"},"1":{"0":{"0":"l","1":7180,"type":"pvar"},"1":{"0":{"0":7181,"type":"pany"},"1":{"0":{"0":7182,"type":"pany"},"1":{"0":{"0":7183,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":7177,"type":"pcon"},"1":{"0":{"0":"cons","1":7184,"type":"evar"},"1":{"0":{"0":{"0":",","1":7185,"type":"evar"},"1":{"0":{"0":"name","1":7187,"type":"evar"},"1":{"0":{"0":{"0":",","1":7185,"type":"evar"},"1":{"0":{"0":{"0":"type","1":7189,"type":"evar"},"1":{"type":"nil"},"2":7188,"type":"eapp"},"1":{"0":{"0":"l","1":7190,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7185,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7185,"type":"eapp"},"1":{"0":{"0":"nil","1":7184,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7184,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"tdeftype","1":7192,"2":{"0":{"0":"name","1":7193,"type":"pvar"},"1":{"0":{"0":"l","1":7194,"type":"pvar"},"1":{"0":{"0":7195,"type":"pany"},"1":{"0":{"0":"constructors","1":7196,"type":"pvar"},"1":{"0":{"0":7197,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":7191,"type":"pcon"},"1":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":",","1":7199,"type":"evar"},"1":{"0":{"0":"name","1":7201,"type":"evar"},"1":{"0":{"0":{"0":",","1":7199,"type":"evar"},"1":{"0":{"0":{"0":"type","1":7203,"type":"evar"},"1":{"type":"nil"},"2":7202,"type":"eapp"},"1":{"0":{"0":"l","1":7204,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7199,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7199,"type":"eapp"},"1":{"0":{"0":{"0":"map","1":7207,"type":"evar"},"1":{"0":{"0":"constructors","1":7208,"type":"evar"},"1":{"0":{"0":{"0":{"0":"arg","1":7439,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"arg","1":7431,"type":"evar"},"1":{"0":{"0":{"0":",","1":7434,"2":{"0":{"0":"name","1":7435,"type":"pvar"},"1":{"0":{"0":",","1":7434,"2":{"0":{"0":"l","1":7436,"type":"pvar"},"1":{"0":{"0":",","1":7434,"2":{"0":{"0":7437,"type":"pany"},"1":{"0":{"0":7438,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7433,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7433,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7433,"type":"pcon"},"1":{"0":{"0":",","1":7218,"type":"evar"},"1":{"0":{"0":"name","1":7220,"type":"evar"},"1":{"0":{"0":{"0":",","1":7218,"type":"evar"},"1":{"0":{"0":{"0":"value","1":7222,"type":"evar"},"1":{"type":"nil"},"2":7221,"type":"eapp"},"1":{"0":{"0":"l","1":7223,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7218,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7218,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"2":7429,"type":"ematch"},"2":7209,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7206,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":7156,"type":"ematch"},"2":7151,"type":"elambda"},"3":7151,"type":"tdef"}, $env)
-const externals_top = $env.evaluateStmt({"0":"externals-top","1":7226,"2":{"0":{"0":{"0":"stmt","1":7228,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"bag/to-list","1":7230,"type":"evar"},"1":{"0":{"0":{"0":"stmt","1":7233,"type":"evar"},"1":{"0":{"0":{"0":"tdeftype","1":7235,"2":{"0":{"0":"name","1":7236,"type":"pvar"},"1":{"0":{"0":7237,"type":"pany"},"1":{"0":{"0":"free","1":7238,"type":"pvar"},"1":{"0":{"0":"constructors","1":7239,"type":"pvar"},"1":{"0":{"0":7240,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":7234,"type":"pcon"},"1":{"0":{"0":{"0":{"0":"bound","1":7244,"type":"pvar"},"1":{"0":{"0":"set/from-list","1":7246,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"name","1":17578,"type":"evar"},"1":{"0":{"0":{"0":"map","1":7248,"type":"evar"},"1":{"0":{"0":"free","1":7249,"type":"evar"},"1":{"0":{"0":"fst","1":7250,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7247,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":7245,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"many","1":7252,"type":"evar"},"1":{"0":{"0":{"0":"map","1":7254,"type":"evar"},"1":{"0":{"0":"constructors","1":7255,"type":"evar"},"1":{"0":{"0":{"0":{"0":"constructor","1":7450,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"constructor","1":7442,"type":"evar"},"1":{"0":{"0":{"0":",","1":7445,"2":{"0":{"0":7446,"type":"pany"},"1":{"0":{"0":",","1":7445,"2":{"0":{"0":7447,"type":"pany"},"1":{"0":{"0":",","1":7445,"2":{"0":{"0":"args","1":7448,"type":"pvar"},"1":{"0":{"0":7449,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7444,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7444,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7444,"type":"pcon"},"1":{"0":{"0":"args","1":7267,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":7268,"2":{"type":"nil"},"3":7268,"type":"pcon"},"1":{"0":"empty","1":7269,"type":"evar"},"type":","},"1":{"0":{"0":{"0":7270,"type":"pany"},"1":{"0":{"0":"many","1":7272,"type":"evar"},"1":{"0":{"0":{"0":"map","1":7274,"type":"evar"},"1":{"0":{"0":"args","1":7275,"type":"evar"},"1":{"0":{"0":{"0":"externals-type","1":7277,"type":"evar"},"1":{"0":{"0":"bound","1":7278,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":7276,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7273,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":7271,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7265,"type":"ematch"},"type":","},"1":{"type":"nil"},"type":"cons"},"2":7440,"type":"ematch"},"2":7256,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7253,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":7251,"type":"eapp"},"2":7241,"type":"elet"},"type":","},"1":{"0":{"0":{"0":"ttypealias","1":7280,"2":{"0":{"0":"name","1":7281,"type":"pvar"},"1":{"0":{"0":7282,"type":"pany"},"1":{"0":{"0":"args","1":7283,"type":"pvar"},"1":{"0":{"0":"body","1":7284,"type":"pvar"},"1":{"0":{"0":7285,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":7279,"type":"pcon"},"1":{"0":{"0":{"0":{"0":"bound","1":7289,"type":"pvar"},"1":{"0":{"0":"set/from-list","1":7291,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"name","1":17582,"type":"evar"},"1":{"0":{"0":{"0":"map","1":7293,"type":"evar"},"1":{"0":{"0":"args","1":7294,"type":"evar"},"1":{"0":{"0":"fst","1":7295,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7292,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":7290,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"externals-type","1":7297,"type":"evar"},"1":{"0":{"0":"bound","1":7298,"type":"evar"},"1":{"0":{"0":"body","1":7299,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7296,"type":"eapp"},"2":7286,"type":"elet"},"type":","},"1":{"0":{"0":{"0":"tdef","1":7301,"2":{"0":{"0":"name","1":7302,"type":"pvar"},"1":{"0":{"0":7303,"type":"pany"},"1":{"0":{"0":"body","1":7304,"type":"pvar"},"1":{"0":{"0":7305,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":7300,"type":"pcon"},"1":{"0":{"0":"externals","1":7307,"type":"evar"},"1":{"0":{"0":{"0":"set/add","1":7309,"type":"evar"},"1":{"0":{"0":"set/nil","1":7310,"type":"evar"},"1":{"0":{"0":"name","1":7311,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7308,"type":"eapp"},"1":{"0":{"0":"body","1":7312,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7306,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"texpr","1":7314,"2":{"0":{"0":"expr","1":7315,"type":"pvar"},"1":{"0":{"0":7316,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7313,"type":"pcon"},"1":{"0":{"0":"externals","1":7318,"type":"evar"},"1":{"0":{"0":"set/nil","1":7319,"type":"evar"},"1":{"0":{"0":"expr","1":7320,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7317,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":7231,"type":"ematch"},"1":{"type":"nil"},"type":"cons"},"2":7229,"type":"eapp"},"2":7224,"type":"elambda"},"3":7224,"type":"tdef"}, $env)
-const zip = $env.evaluateStmt({"0":"zip","1":15963,"2":{"0":{"0":{"0":"one","1":15965,"type":"pvar"},"1":{"0":{"0":"two","1":15966,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":{"0":",","1":15969,"type":"evar"},"1":{"0":{"0":"one","1":15971,"type":"evar"},"1":{"0":{"0":"two","1":15972,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":15969,"type":"eapp"},"1":{"0":{"0":{"0":",","1":15974,"2":{"0":{"0":"nil","1":15975,"2":{"type":"nil"},"3":15975,"type":"pcon"},"1":{"0":{"0":"nil","1":15976,"2":{"type":"nil"},"3":15976,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":15973,"type":"pcon"},"1":{"0":"nil","1":15977,"type":"evar"},"type":","},"1":{"0":{"0":{"0":",","1":15979,"2":{"0":{"0":"cons","1":15980,"2":{"0":{"0":"o","1":15981,"type":"pvar"},"1":{"0":{"0":"one","1":15986,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":15980,"type":"pcon"},"1":{"0":{"0":"cons","1":15990,"2":{"0":{"0":"t","1":15991,"type":"pvar"},"1":{"0":{"0":"two","1":15992,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":15990,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":15978,"type":"pcon"},"1":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":",","1":15997,"type":"evar"},"1":{"0":{"0":"o","1":15999,"type":"evar"},"1":{"0":{"0":"t","1":16000,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":15997,"type":"eapp"},"1":{"0":{"0":{"0":"zip","1":16005,"type":"evar"},"1":{"0":{"0":"one","1":16006,"type":"evar"},"1":{"0":{"0":"two","1":16007,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16001,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":17896,"type":"pany"},"1":{"0":{"0":"fatal","1":17898,"type":"evar"},"1":{"0":{"0":"Unbalanced zip","1":{"type":"nil"},"2":17899,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":17897,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":15967,"type":"ematch"},"2":15960,"type":"elambda"},"3":15960,"type":"tdef"}, $env)
-const get_id = $env.evaluateStmt({"0":"get-id","1":17374,"2":{"0":{"0":{"0":"x","1":17376,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"x","1":6382,"type":"evar"},"1":{"0":{"0":{"0":"cst/id","1":6384,"2":{"0":{"0":"name","1":6385,"type":"pvar"},"1":{"0":{"0":"l","1":6386,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6383,"type":"pcon"},"1":{"0":{"0":",","1":6387,"type":"evar"},"1":{"0":{"0":"name","1":6389,"type":"evar"},"1":{"0":{"0":"l","1":6390,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6387,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":6391,"type":"pany"},"1":{"0":{"0":"fatal","1":6393,"type":"evar"},"1":{"0":{"0":"type argument must be identifier","1":{"type":"nil"},"2":6394,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":6392,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6380,"type":"ematch"},"2":17372,"type":"elambda"},"3":17372,"type":"tdef"}, $env)
-const id_with_maybe_args = $env.evaluateStmt({"0":"id-with-maybe-args","1":17383,"2":{"0":{"0":{"0":"head","1":17385,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"head","1":17316,"type":"evar"},"1":{"0":{"0":{"0":"cst/id","1":17319,"2":{"0":{"0":"id","1":17320,"type":"pvar"},"1":{"0":{"0":"li","1":17321,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17318,"type":"pcon"},"1":{"0":{"0":",","1":17322,"type":"evar"},"1":{"0":{"0":"id","1":17324,"type":"evar"},"1":{"0":{"0":{"0":",","1":17322,"type":"evar"},"1":{"0":{"0":"li","1":17326,"type":"evar"},"1":{"0":{"0":"nil","1":17325,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17322,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17322,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":17330,"2":{"0":{"0":"cons","1":17331,"2":{"0":{"0":"cst/id","1":17333,"2":{"0":{"0":"id","1":17334,"type":"pvar"},"1":{"0":{"0":"li","1":17335,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17332,"type":"pcon"},"1":{"0":{"0":"args","1":17337,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17331,"type":"pcon"},"1":{"0":{"0":17338,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17329,"type":"pcon"},"1":{"0":{"0":",","1":17339,"type":"evar"},"1":{"0":{"0":"id","1":17341,"type":"evar"},"1":{"0":{"0":{"0":",","1":17339,"type":"evar"},"1":{"0":{"0":"li","1":17342,"type":"evar"},"1":{"0":{"0":{"0":"map","1":17343,"type":"evar"},"1":{"0":{"0":"args","1":17508,"type":"evar"},"1":{"0":{"0":"get-id","1":17509,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17507,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17339,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17339,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":17344,"type":"pany"},"1":{"0":{"0":"fatal","1":17346,"type":"evar"},"1":{"0":{"0":"Invalid type constructor","1":{"type":"nil"},"2":17347,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":17345,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":17314,"type":"ematch"},"2":17381,"type":"elambda"},"3":17381,"type":"tdef"}, $env)
-const parse_type_constructor = $env.evaluateStmt({"0":"parse-type-constructor","1":17455,"2":{"0":{"0":{"0":"constr","1":17457,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"constr","1":17466,"type":"evar"},"1":{"0":{"0":{"0":"cst/list","1":17468,"2":{"0":{"0":"cons","1":17469,"2":{"0":{"0":"cst/id","1":17471,"2":{"0":{"0":"name","1":17472,"type":"pvar"},"1":{"0":{"0":"ni","1":17473,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17470,"type":"pcon"},"1":{"0":{"0":"args","1":17475,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17469,"type":"pcon"},"1":{"0":{"0":"l","1":17476,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17467,"type":"pcon"},"1":{"0":{"0":"some","1":17500,"type":"evar"},"1":{"0":{"0":{"0":",","1":17478,"type":"evar"},"1":{"0":{"0":"name","1":17480,"type":"evar"},"1":{"0":{"0":{"0":",","1":17478,"type":"evar"},"1":{"0":{"0":"ni","1":17481,"type":"evar"},"1":{"0":{"0":{"0":",","1":17478,"type":"evar"},"1":{"0":{"0":{"0":"map","1":17483,"type":"evar"},"1":{"0":{"0":"args","1":17484,"type":"evar"},"1":{"0":{"0":"parse-type","1":17485,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17482,"type":"eapp"},"1":{"0":{"0":"l","1":17486,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17478,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17478,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17478,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":17499,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":17490,"2":{"0":{"0":"nil","1":17491,"2":{"type":"nil"},"3":17491,"type":"pcon"},"1":{"0":{"0":"l","1":17492,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17489,"type":"pcon"},"1":{"0":"none","1":17493,"type":"evar"},"type":","},"1":{"0":{"0":{"0":17494,"type":"pany"},"1":{"0":{"0":"fatal","1":17496,"type":"evar"},"1":{"0":{"0":"Invalid type constructor","1":{"type":"nil"},"2":17497,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":17495,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":17464,"type":"ematch"},"2":17452,"type":"elambda"},"3":17452,"type":"tdef"}, $env)
-const bound_and_names = $env.evaluateStmt({"0":"bound-and-names","1":19217,"2":{"0":{"0":{"0":",","1":19222,"2":{"0":{"0":"bound","1":19223,"type":"pvar"},"1":{"0":{"0":"names","1":19224,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19221,"type":"pcon"},"1":{"0":{"0":",","1":19226,"2":{"0":{"0":"bound'","1":19227,"type":"pvar"},"1":{"0":{"0":"names'","1":19228,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19225,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":",","1":19229,"type":"evar"},"1":{"0":{"0":{"0":"concat","1":19232,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":"bound","1":19234,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":19233,"type":"evar"},"1":{"0":{"0":"bound'","1":19235,"type":"evar"},"1":{"0":{"0":"nil","1":19233,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19233,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":19231,"type":"eapp"},"1":{"0":{"0":{"0":"bag/and","1":19237,"type":"evar"},"1":{"0":{"0":"names","1":19238,"type":"evar"},"1":{"0":{"0":"names'","1":19239,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19236,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19229,"type":"eapp"},"2":19218,"type":"elambda"},"3":19215,"type":"tdef"}, $env)
-const type$slnames = $env.evaluateStmt({"0":"type/names","1":19243,"2":{"0":{"0":{"0":"free","1":19245,"type":"pvar"},"1":{"0":{"0":"body","1":19246,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"body","1":19249,"type":"evar"},"1":{"0":{"0":{"0":"tvar","1":19251,"2":{"0":{"0":"name","1":19252,"type":"pvar"},"1":{"0":{"0":"l","1":19253,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19250,"type":"pcon"},"1":{"0":{"0":{"0":"map/get","1":19257,"type":"evar"},"1":{"0":{"0":"free","1":19258,"type":"evar"},"1":{"0":{"0":"name","1":19259,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19256,"type":"eapp"},"1":{"0":{"0":{"0":"some","1":19261,"2":{"0":{"0":"dl","1":19262,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"3":19260,"type":"pcon"},"1":{"0":{"0":"one","1":19264,"type":"evar"},"1":{"0":{"0":{"0":"local","1":19266,"type":"evar"},"1":{"0":{"0":"l","1":19267,"type":"evar"},"1":{"0":{"0":{"0":"usage","1":19269,"type":"evar"},"1":{"0":{"0":"dl","1":19270,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":19268,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19265,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":19263,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":19271,"type":"pany"},"1":{"0":"empty","1":19272,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19254,"type":"ematch"},"type":","},"1":{"0":{"0":{"0":"tcon","1":19274,"2":{"0":{"0":"name","1":19275,"type":"pvar"},"1":{"0":{"0":"l","1":19276,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19273,"type":"pcon"},"1":{"0":{"0":"one","1":19278,"type":"evar"},"1":{"0":{"0":{"0":"global","1":19280,"type":"evar"},"1":{"0":{"0":"name","1":19281,"type":"evar"},"1":{"0":{"0":{"0":"type","1":19283,"type":"evar"},"1":{"type":"nil"},"2":19282,"type":"eapp"},"1":{"0":{"0":"l","1":19284,"type":"evar"},"1":{"0":{"0":{"0":"usage","1":19286,"type":"evar"},"1":{"0":{"0":"()","1":19287,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":19285,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":19279,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":19277,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"tapp","1":19289,"2":{"0":{"0":"target","1":19290,"type":"pvar"},"1":{"0":{"0":"arg","1":19291,"type":"pvar"},"1":{"0":{"0":19292,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":19288,"type":"pcon"},"1":{"0":{"0":"bag/and","1":19294,"type":"evar"},"1":{"0":{"0":{"0":"type/names","1":19296,"type":"evar"},"1":{"0":{"0":"free","1":19297,"type":"evar"},"1":{"0":{"0":"target","1":19298,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19295,"type":"eapp"},"1":{"0":{"0":{"0":"type/names","1":19300,"type":"evar"},"1":{"0":{"0":"free","1":19301,"type":"evar"},"1":{"0":{"0":"arg","1":19302,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19299,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19293,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":19247,"type":"ematch"},"2":19241,"type":"elambda"},"3":19241,"type":"tdef"}, $env)
-const parse_top = $env.evaluateStmt({"0":"parse-top","1":602,"2":{"0":{"0":{"0":"cst","1":604,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"cst","1":608,"type":"evar"},"1":{"0":{"0":{"0":"cst/list","1":787,"2":{"0":{"0":"cons","1":790,"2":{"0":{"0":"cst/id","1":794,"2":{"0":{"0":"def","1":795,"type":"pstr"},"1":{"0":{"0":797,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":793,"type":"pcon"},"1":{"0":{"0":"cons","1":790,"2":{"0":{"0":"cst/id","1":799,"2":{"0":{"0":"id","1":800,"type":"pvar"},"1":{"0":{"0":"li","1":801,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":798,"type":"pcon"},"1":{"0":{"0":"cons","1":790,"2":{"0":{"0":"value","1":802,"type":"pvar"},"1":{"0":{"0":"nil","1":790,"2":{"type":"nil"},"3":790,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":790,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":790,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":790,"type":"pcon"},"1":{"0":{"0":"l","1":1386,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":786,"type":"pcon"},"1":{"0":{"0":"tdef","1":948,"type":"evar"},"1":{"0":{"0":"id","1":949,"type":"evar"},"1":{"0":{"0":"li","1":3940,"type":"evar"},"1":{"0":{"0":{"0":"parse-expr","1":951,"type":"evar"},"1":{"0":{"0":"value","1":952,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":950,"type":"eapp"},"1":{"0":{"0":"l","1":3941,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":789,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":2007,"2":{"0":{"0":"cons","1":2008,"2":{"0":{"0":"cst/id","1":2011,"2":{"0":{"0":"defn","1":2012,"type":"pstr"},"1":{"0":{"0":"a","1":2014,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2009,"type":"pcon"},"1":{"0":{"0":"cons","1":2008,"2":{"0":{"0":"cst/id","1":2016,"2":{"0":{"0":"id","1":2017,"type":"pvar"},"1":{"0":{"0":"li","1":2018,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2015,"type":"pcon"},"1":{"0":{"0":"cons","1":2008,"2":{"0":{"0":"cst/array","1":2020,"2":{"0":{"0":"args","1":2021,"type":"pvar"},"1":{"0":{"0":"b","1":2022,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2019,"type":"pcon"},"1":{"0":{"0":"cons","1":2008,"2":{"0":{"0":"body","1":2023,"type":"pvar"},"1":{"0":{"0":"nil","1":2008,"2":{"type":"nil"},"3":2008,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2008,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2008,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2008,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2008,"type":"pcon"},"1":{"0":{"0":"c","1":2024,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2006,"type":"pcon"},"1":{"0":{"0":{"0":{"0":"body","1":17427,"type":"pvar"},"1":{"0":{"0":"parse-expr","1":17430,"type":"evar"},"1":{"0":{"0":{"0":"cst/list","1":17432,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":"cst/id","1":17435,"type":"evar"},"1":{"0":{"0":"fn","1":{"type":"nil"},"2":17436,"type":"estr"},"1":{"0":{"0":"a","1":17438,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17434,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":"cst/array","1":17440,"type":"evar"},"1":{"0":{"0":"args","1":17441,"type":"evar"},"1":{"0":{"0":"b","1":17442,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17439,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":17433,"type":"evar"},"1":{"0":{"0":"body","1":17443,"type":"evar"},"1":{"0":{"0":"nil","1":17433,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17433,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"0":{"0":"c","1":17444,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17431,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":17429,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"tdef","1":2025,"type":"evar"},"1":{"0":{"0":"id","1":2026,"type":"evar"},"1":{"0":{"0":"li","1":3955,"type":"evar"},"1":{"0":{"0":"body","1":2027,"type":"evar"},"1":{"0":{"0":"c","1":3956,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":2010,"type":"eapp"},"2":17424,"type":"elet"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":6079,"2":{"0":{"0":"cons","1":6080,"2":{"0":{"0":"cst/id","1":6082,"2":{"0":{"0":"defn","1":6083,"type":"pstr"},"1":{"0":{"0":6085,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6081,"type":"pcon"},"1":{"0":{"0":6086,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6080,"type":"pcon"},"1":{"0":{"0":"l","1":6091,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6077,"type":"pcon"},"1":{"0":{"0":"fatal","1":6092,"type":"evar"},"1":{"0":{"0":"Invalid 'defn' ","1":{"0":{"0":{"0":{"0":"int-to-string","1":6097,"type":"evar"},"1":{"0":{"0":"l","1":6098,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6095,"type":"eapp"},"1":{"0":"","1":6096,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":6093,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":6078,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":810,"2":{"0":{"0":"cons","1":813,"2":{"0":{"0":"cst/id","1":815,"2":{"0":{"0":"deftype","1":816,"type":"pstr"},"1":{"0":{"0":1389,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":814,"type":"pcon"},"1":{"0":{"0":"cons","1":813,"2":{"0":{"0":"head","1":17306,"type":"pvar"},"1":{"0":{"0":"items","1":822,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":813,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":813,"type":"pcon"},"1":{"0":{"0":"l","1":1387,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":609,"type":"pcon"},"1":{"0":{"0":{"0":{"0":",","1":17311,"2":{"0":{"0":"id","1":17312,"type":"pvar"},"1":{"0":{"0":",","1":17311,"2":{"0":{"0":"li","1":17327,"type":"pvar"},"1":{"0":{"0":"args","1":17313,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17310,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17310,"type":"pcon"},"1":{"0":{"0":"id-with-maybe-args","1":17378,"type":"evar"},"1":{"0":{"0":"head","1":17380,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17379,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"constrs","1":17559,"type":"pvar"},"1":{"0":{"0":"filter-some","1":17562,"type":"evar"},"1":{"0":{"0":{"0":"map","1":17564,"type":"evar"},"1":{"0":{"0":"items","1":17565,"type":"evar"},"1":{"0":{"0":"parse-type-constructor","1":17566,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17563,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":17561,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"tdeftype","1":17548,"type":"evar"},"1":{"0":{"0":"id","1":17549,"type":"evar"},"1":{"0":{"0":"li","1":17550,"type":"evar"},"1":{"0":{"0":"args","1":17551,"type":"evar"},"1":{"0":{"0":"constrs","1":17552,"type":"evar"},"1":{"0":{"0":"l","1":17558,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":17547,"type":"eapp"},"2":17307,"type":"elet"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":17351,"2":{"0":{"0":"cons","1":17352,"2":{"0":{"0":"cst/id","1":17354,"2":{"0":{"0":"deftype","1":17355,"type":"pstr"},"1":{"0":{"0":17357,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17353,"type":"pcon"},"1":{"0":{"0":17359,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17352,"type":"pcon"},"1":{"0":{"0":"l","1":17360,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17350,"type":"pcon"},"1":{"0":{"0":"fatal","1":17362,"type":"evar"},"1":{"0":{"0":"Invalid 'deftype' ","1":{"0":{"0":{"0":{"0":"int-to-string","1":17366,"type":"evar"},"1":{"0":{"0":"l","1":17367,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17365,"type":"eapp"},"1":{"0":"","1":17368,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":17363,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":17361,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":6279,"2":{"0":{"0":"cons","1":6280,"2":{"0":{"0":"cst/id","1":6282,"2":{"0":{"0":"typealias","1":6283,"type":"pstr"},"1":{"0":{"0":6285,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6281,"type":"pcon"},"1":{"0":{"0":"cons","1":6280,"2":{"0":{"0":"head","1":17388,"type":"pvar"},"1":{"0":{"0":"cons","1":6280,"2":{"0":{"0":"body","1":6290,"type":"pvar"},"1":{"0":{"0":"nil","1":6280,"2":{"type":"nil"},"3":6280,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6280,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6280,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6280,"type":"pcon"},"1":{"0":{"0":"l","1":6298,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6276,"type":"pcon"},"1":{"0":{"0":{"0":{"0":",","1":17393,"2":{"0":{"0":"id","1":17394,"type":"pvar"},"1":{"0":{"0":",","1":17393,"2":{"0":{"0":"li","1":17395,"type":"pvar"},"1":{"0":{"0":"args","1":17396,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17392,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17392,"type":"pcon"},"1":{"0":{"0":"id-with-maybe-args","1":17399,"type":"evar"},"1":{"0":{"0":"head","1":17400,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17397,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"ttypealias","1":6291,"type":"evar"},"1":{"0":{"0":"id","1":6292,"type":"evar"},"1":{"0":{"0":"li","1":6293,"type":"evar"},"1":{"0":{"0":"args","1":6294,"type":"evar"},"1":{"0":{"0":{"0":"parse-type","1":6296,"type":"evar"},"1":{"0":{"0":"body","1":6297,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6295,"type":"eapp"},"1":{"0":{"0":"l","1":6299,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6277,"type":"eapp"},"2":17389,"type":"elet"},"type":","},"1":{"0":{"0":{"0":953,"type":"pany"},"1":{"0":{"0":"texpr","1":3171,"type":"evar"},"1":{"0":{"0":{"0":"parse-expr","1":955,"type":"evar"},"1":{"0":{"0":"cst","1":956,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":954,"type":"eapp"},"1":{"0":{"0":{"0":"cst-loc","1":17415,"type":"evar"},"1":{"0":{"0":"cst","1":17417,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17416,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3170,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":606,"type":"ematch"},"2":599,"type":"elambda"},"3":599,"type":"tdef"}, $env)
+const nil = ({type: "nil"})
+const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
+const pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1})
+const pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1})
+const pany = (v0) => ({type: "pany", 0: v0})
+const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
+const pcon = (v0) => (v1) => (v2) => (v3) => ({type: "pcon", 0: v0, 1: v1, 2: v2, 3: v3})
+const pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1})
+const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1})
+const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
+const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
+const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
+const join = (sep) => (items) => (($target) => {
+if ($target.type === "nil") {
+return ""
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return (($target) => {
+if ($target.type === "nil") {
+return one
+}
+return `${one}${sep}${join(sep)(rest)}`
+throw new Error('Failed to match. ' + valueToString($target));
+})(rest)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(items);
 
-const parse_expr = $env.evaluateStmt({"0":"parse-expr","1":960,"2":{"0":{"0":{"0":"cst","1":962,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"cst","1":965,"type":"evar"},"1":{"0":{"0":{"0":"cst/id","1":973,"2":{"0":{"0":"true","1":975,"type":"pstr"},"1":{"0":{"0":"l","1":977,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":972,"type":"pcon"},"1":{"0":{"0":"eprim","1":978,"type":"evar"},"1":{"0":{"0":{"0":"pbool","1":980,"type":"evar"},"1":{"0":{"0":{"0":true,"1":981,"type":"pbool"},"1":981,"type":"eprim"},"1":{"0":{"0":"l","1":3511,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":979,"type":"eapp"},"1":{"0":{"0":"l","1":3510,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":974,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/id","1":983,"2":{"0":{"0":"false","1":984,"type":"pstr"},"1":{"0":{"0":"l","1":986,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":982,"type":"pcon"},"1":{"0":{"0":"eprim","1":989,"type":"evar"},"1":{"0":{"0":{"0":"pbool","1":991,"type":"evar"},"1":{"0":{"0":{"0":false,"1":992,"type":"pbool"},"1":992,"type":"eprim"},"1":{"0":{"0":"l","1":3512,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":990,"type":"eapp"},"1":{"0":{"0":"l","1":3513,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":987,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/string","1":995,"2":{"0":{"0":"first","1":996,"type":"pvar"},"1":{"0":{"0":"templates","1":997,"type":"pvar"},"1":{"0":{"0":"l","1":998,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":993,"type":"pcon"},"1":{"0":{"0":"estr","1":1008,"type":"evar"},"1":{"0":{"0":"first","1":1009,"type":"evar"},"1":{"0":{"0":{"0":"parse-template","1":17878,"type":"evar"},"1":{"0":{"0":"templates","1":17880,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17879,"type":"eapp"},"1":{"0":{"0":"l","1":3514,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":994,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/id","1":967,"2":{"0":{"0":"id","1":968,"type":"pvar"},"1":{"0":{"0":"l","1":969,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":966,"type":"pcon"},"1":{"0":{"0":{"0":"string-to-int","1":1056,"type":"evar"},"1":{"0":{"0":"id","1":1057,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":1055,"type":"eapp"},"1":{"0":{"0":{"0":"some","1":1059,"2":{"0":{"0":"int","1":1060,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"3":1058,"type":"pcon"},"1":{"0":{"0":"eprim","1":1062,"type":"evar"},"1":{"0":{"0":{"0":"pint","1":1064,"type":"evar"},"1":{"0":{"0":"int","1":1065,"type":"evar"},"1":{"0":{"0":"l","1":3535,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":1063,"type":"eapp"},"1":{"0":{"0":"l","1":3536,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":1061,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"none","1":1067,"2":{"type":"nil"},"3":1066,"type":"pcon"},"1":{"0":{"0":"evar","1":1069,"type":"evar"},"1":{"0":{"0":"id","1":1071,"type":"evar"},"1":{"0":{"0":"l","1":3537,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":1068,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":970,"type":"ematch"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":3069,"2":{"0":{"0":"cons","1":3071,"2":{"0":{"0":"cst/id","1":3073,"2":{"0":{"0":"@","1":3074,"type":"pstr"},"1":{"0":{"0":3076,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3072,"type":"pcon"},"1":{"0":{"0":"cons","1":3071,"2":{"0":{"0":"body","1":3077,"type":"pvar"},"1":{"0":{"0":"nil","1":3071,"2":{"type":"nil"},"3":3071,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3071,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3071,"type":"pcon"},"1":{"0":{"0":"l","1":3078,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3068,"type":"pcon"},"1":{"0":{"0":"equot","1":3079,"type":"evar"},"1":{"0":{"0":{"0":"quot/expr","1":8413,"type":"evar"},"1":{"0":{"0":{"0":"parse-expr","1":3081,"type":"evar"},"1":{"0":{"0":"body","1":3082,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3080,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":8412,"type":"eapp"},"1":{"0":{"0":"l","1":3548,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3070,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":3092,"2":{"0":{"0":"cons","1":3093,"2":{"0":{"0":"cst/id","1":3095,"2":{"0":{"0":"@@","1":3096,"type":"pstr"},"1":{"0":{"0":3098,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3094,"type":"pcon"},"1":{"0":{"0":"cons","1":3093,"2":{"0":{"0":"body","1":3099,"type":"pvar"},"1":{"0":{"0":"nil","1":3093,"2":{"type":"nil"},"3":3093,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3093,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3093,"type":"pcon"},"1":{"0":{"0":"l","1":3100,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3090,"type":"pcon"},"1":{"0":{"0":"equot","1":8415,"type":"evar"},"1":{"0":{"0":{"0":"quot/quot","1":3101,"type":"evar"},"1":{"0":{"0":"body","1":3102,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3091,"type":"eapp"},"1":{"0":{"0":"l","1":8416,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8414,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":5111,"2":{"0":{"0":"cons","1":5112,"2":{"0":{"0":"cst/id","1":5116,"2":{"0":{"0":"@!","1":5117,"type":"pstr"},"1":{"0":{"0":5119,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5115,"type":"pcon"},"1":{"0":{"0":"cons","1":5112,"2":{"0":{"0":"body","1":5120,"type":"pvar"},"1":{"0":{"0":"nil","1":5112,"2":{"type":"nil"},"3":5112,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5112,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5112,"type":"pcon"},"1":{"0":{"0":"l","1":5121,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5110,"type":"pcon"},"1":{"0":{"0":"equot","1":8418,"type":"evar"},"1":{"0":{"0":{"0":"quot/top","1":5122,"type":"evar"},"1":{"0":{"0":{"0":"parse-top","1":5124,"type":"evar"},"1":{"0":{"0":"body","1":5125,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":5123,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":5114,"type":"eapp"},"1":{"0":{"0":"l","1":8419,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8417,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":5293,"2":{"0":{"0":"cons","1":5294,"2":{"0":{"0":"cst/id","1":5296,"2":{"0":{"0":"@t","1":5297,"type":"pstr"},"1":{"0":{"0":5299,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5295,"type":"pcon"},"1":{"0":{"0":"cons","1":5294,"2":{"0":{"0":"body","1":5300,"type":"pvar"},"1":{"0":{"0":"nil","1":5294,"2":{"type":"nil"},"3":5294,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5294,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5294,"type":"pcon"},"1":{"0":{"0":"l","1":5301,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5291,"type":"pcon"},"1":{"0":{"0":"equot","1":8421,"type":"evar"},"1":{"0":{"0":{"0":"quot/type","1":5302,"type":"evar"},"1":{"0":{"0":{"0":"parse-type","1":5305,"type":"evar"},"1":{"0":{"0":"body","1":5306,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":5303,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":5292,"type":"eapp"},"1":{"0":{"0":"l","1":8424,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8420,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":5310,"2":{"0":{"0":"cons","1":5311,"2":{"0":{"0":"cst/id","1":5313,"2":{"0":{"0":"@p","1":5314,"type":"pstr"},"1":{"0":{"0":5316,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5312,"type":"pcon"},"1":{"0":{"0":"cons","1":5311,"2":{"0":{"0":"body","1":5317,"type":"pvar"},"1":{"0":{"0":"nil","1":5311,"2":{"type":"nil"},"3":5311,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5311,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5311,"type":"pcon"},"1":{"0":{"0":"l","1":5318,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":5309,"type":"pcon"},"1":{"0":{"0":"equot","1":8423,"type":"evar"},"1":{"0":{"0":{"0":"quot/pat","1":5320,"type":"evar"},"1":{"0":{"0":{"0":"parse-pat","1":5322,"type":"evar"},"1":{"0":{"0":"body","1":5323,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":5321,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":5319,"type":"eapp"},"1":{"0":{"0":"l","1":8425,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8422,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":4574,"2":{"0":{"0":"cons","1":4576,"2":{"0":{"0":"cst/id","1":4578,"2":{"0":{"0":"if","1":4579,"type":"pstr"},"1":{"0":{"0":4581,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4577,"type":"pcon"},"1":{"0":{"0":"cons","1":4576,"2":{"0":{"0":"cond","1":4582,"type":"pvar"},"1":{"0":{"0":"cons","1":4576,"2":{"0":{"0":"yes","1":4583,"type":"pvar"},"1":{"0":{"0":"cons","1":4576,"2":{"0":{"0":"no","1":4584,"type":"pvar"},"1":{"0":{"0":"nil","1":4576,"2":{"type":"nil"},"3":4576,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4576,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4576,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4576,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4576,"type":"pcon"},"1":{"0":{"0":"l","1":4585,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4573,"type":"pcon"},"1":{"0":{"0":"ematch","1":4586,"type":"evar"},"1":{"0":{"0":{"0":"parse-expr","1":4588,"type":"evar"},"1":{"0":{"0":"cond","1":4589,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":4587,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":",","1":4591,"type":"evar"},"1":{"0":{"0":{"0":"pprim","1":4594,"type":"evar"},"1":{"0":{"0":{"0":"pbool","1":4598,"type":"evar"},"1":{"0":{"0":{"0":true,"1":4599,"type":"pbool"},"1":4599,"type":"eprim"},"1":{"0":{"0":"l","1":4600,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":4597,"type":"eapp"},"1":{"0":{"0":"l","1":4601,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":4593,"type":"eapp"},"1":{"0":{"0":{"0":"parse-expr","1":4603,"type":"evar"},"1":{"0":{"0":"yes","1":4604,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":4602,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":4591,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":4590,"type":"evar"},"1":{"0":{"0":{"0":",","1":4605,"type":"evar"},"1":{"0":{"0":{"0":"pany","1":4608,"type":"evar"},"1":{"0":{"0":"l","1":4609,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":4607,"type":"eapp"},"1":{"0":{"0":{"0":"parse-expr","1":4611,"type":"evar"},"1":{"0":{"0":"no","1":4612,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":4610,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":4605,"type":"eapp"},"1":{"0":{"0":"nil","1":4590,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":4590,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"0":{"0":"l","1":4613,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":4575,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":1074,"2":{"0":{"0":"cons","1":1075,"2":{"0":{"0":"cst/id","1":1077,"2":{"0":{"0":"fn","1":1078,"type":"pstr"},"1":{"0":{"0":1080,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1076,"type":"pcon"},"1":{"0":{"0":"cons","1":1075,"2":{"0":{"0":"cst/array","1":1082,"2":{"0":{"0":"args","1":1083,"type":"pvar"},"1":{"0":{"0":1084,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1081,"type":"pcon"},"1":{"0":{"0":"cons","1":1075,"2":{"0":{"0":"body","1":1085,"type":"pvar"},"1":{"0":{"0":"nil","1":1075,"2":{"type":"nil"},"3":1075,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1075,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1075,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1075,"type":"pcon"},"1":{"0":{"0":"b","1":1086,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1072,"type":"pcon"},"1":{"0":{"0":"elambda","1":1213,"type":"evar"},"1":{"0":{"0":{"0":"map","1":8409,"type":"evar"},"1":{"0":{"0":"args","1":8410,"type":"evar"},"1":{"0":{"0":"parse-pat","1":8411,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8408,"type":"eapp"},"1":{"0":{"0":{"0":"parse-expr","1":1215,"type":"evar"},"1":{"0":{"0":"body","1":1216,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":1214,"type":"eapp"},"1":{"0":{"0":"b","1":1217,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":1073,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":6057,"2":{"0":{"0":"cons","1":6058,"2":{"0":{"0":"cst/id","1":6061,"2":{"0":{"0":"fn","1":6062,"type":"pstr"},"1":{"0":{"0":6064,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6059,"type":"pcon"},"1":{"0":{"0":6066,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6058,"type":"pcon"},"1":{"0":{"0":"l","1":6065,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6055,"type":"pcon"},"1":{"0":{"0":"fatal","1":6070,"type":"evar"},"1":{"0":{"0":"Invalid 'fn' ","1":{"0":{"0":{"0":{"0":"int-to-string","1":6075,"type":"evar"},"1":{"0":{"0":"l","1":6076,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6073,"type":"eapp"},"1":{"0":"","1":6074,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":6071,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":6060,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":2948,"2":{"0":{"0":"cons","1":2949,"2":{"0":{"0":"cst/id","1":2951,"2":{"0":{"0":"match","1":2952,"type":"pstr"},"1":{"0":{"0":2954,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2950,"type":"pcon"},"1":{"0":{"0":"cons","1":2949,"2":{"0":{"0":"target","1":2955,"type":"pvar"},"1":{"0":{"0":"cases","1":2957,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2949,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2949,"type":"pcon"},"1":{"0":{"0":"l","1":2961,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2946,"type":"pcon"},"1":{"0":{"0":"ematch","1":2962,"type":"evar"},"1":{"0":{"0":{"0":"parse-expr","1":2964,"type":"evar"},"1":{"0":{"0":"target","1":2965,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":2963,"type":"eapp"},"1":{"0":{"0":{"0":"map","1":2967,"type":"evar"},"1":{"0":{"0":{"0":"pairs","1":2969,"type":"evar"},"1":{"0":{"0":"cases","1":2970,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":2968,"type":"eapp"},"1":{"0":{"0":{"0":{"0":"case","1":2974,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":2979,"2":{"0":{"0":"pat","1":2980,"type":"pvar"},"1":{"0":{"0":"expr","1":2981,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2978,"type":"pcon"},"1":{"0":"case","1":3000,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":",","1":2982,"type":"evar"},"1":{"0":{"0":{"0":"parse-pat","1":2985,"type":"evar"},"1":{"0":{"0":"pat","1":2986,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":2984,"type":"eapp"},"1":{"0":{"0":{"0":"parse-expr","1":2988,"type":"evar"},"1":{"0":{"0":"expr","1":2989,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":2987,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":2982,"type":"eapp"},"2":2975,"type":"elet"},"2":2971,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":2966,"type":"eapp"},"1":{"0":{"0":"l","1":3601,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":2947,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":1629,"2":{"0":{"0":"cons","1":1631,"2":{"0":{"0":"cst/id","1":1633,"2":{"0":{"0":"let","1":1634,"type":"pstr"},"1":{"0":{"0":1636,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1632,"type":"pcon"},"1":{"0":{"0":"cons","1":1631,"2":{"0":{"0":"cst/array","1":1638,"2":{"0":{"0":"inits","1":1639,"type":"pvar"},"1":{"0":{"0":1640,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1637,"type":"pcon"},"1":{"0":{"0":"cons","1":1631,"2":{"0":{"0":"body","1":1641,"type":"pvar"},"1":{"0":{"0":"nil","1":1631,"2":{"type":"nil"},"3":1631,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1631,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1631,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1631,"type":"pcon"},"1":{"0":{"0":"l","1":1642,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1627,"type":"pcon"},"1":{"0":{"0":"elet","1":8371,"type":"evar"},"1":{"0":{"0":{"0":"map","1":8373,"type":"evar"},"1":{"0":{"0":{"0":"pairs","1":8375,"type":"evar"},"1":{"0":{"0":"inits","1":8376,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":8374,"type":"eapp"},"1":{"0":{"0":{"0":{"0":"pair","1":8386,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":8391,"2":{"0":{"0":"pat","1":8392,"type":"pvar"},"1":{"0":{"0":"value","1":8393,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":8390,"type":"pcon"},"1":{"0":"pair","1":8394,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":",","1":8395,"type":"evar"},"1":{"0":{"0":{"0":"parse-pat","1":8398,"type":"evar"},"1":{"0":{"0":"pat","1":8400,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":8397,"type":"eapp"},"1":{"0":{"0":{"0":"parse-expr","1":8402,"type":"evar"},"1":{"0":{"0":"value","1":8403,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":8401,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8395,"type":"eapp"},"2":8387,"type":"elet"},"2":8377,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8372,"type":"eapp"},"1":{"0":{"0":{"0":"parse-expr","1":8405,"type":"evar"},"1":{"0":{"0":"body","1":8406,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":8404,"type":"eapp"},"1":{"0":{"0":"l","1":8407,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":8370,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":6143,"2":{"0":{"0":"cons","1":6144,"2":{"0":{"0":"cst/id","1":6146,"2":{"0":{"0":"let->","1":6147,"type":"pstr"},"1":{"0":{"0":"el","1":6149,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6145,"type":"pcon"},"1":{"0":{"0":"cons","1":6144,"2":{"0":{"0":"cst/array","1":6151,"2":{"0":{"0":"inits","1":6152,"type":"pvar"},"1":{"0":{"0":6153,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6150,"type":"pcon"},"1":{"0":{"0":"cons","1":6144,"2":{"0":{"0":"body","1":6154,"type":"pvar"},"1":{"0":{"0":"nil","1":6144,"2":{"type":"nil"},"3":6144,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6144,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6144,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6144,"type":"pcon"},"1":{"0":{"0":"l","1":6155,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6141,"type":"pcon"},"1":{"0":{"0":"foldr","1":6156,"type":"evar"},"1":{"0":{"0":{"0":"parse-expr","1":6158,"type":"evar"},"1":{"0":{"0":"body","1":6159,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6157,"type":"eapp"},"1":{"0":{"0":{"0":"pairs","1":6161,"type":"evar"},"1":{"0":{"0":"inits","1":6162,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6160,"type":"eapp"},"1":{"0":{"0":{"0":{"0":"body","1":6166,"type":"pvar"},"1":{"0":{"0":"init","1":6167,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":6172,"2":{"0":{"0":"pat","1":6173,"type":"pvar"},"1":{"0":{"0":"value","1":6174,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6171,"type":"pcon"},"1":{"0":"init","1":6175,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"eapp","1":6178,"type":"evar"},"1":{"0":{"0":{"0":"evar","1":7847,"type":"evar"},"1":{"0":{"0":">>=","1":{"type":"nil"},"2":7848,"type":"estr"},"1":{"0":{"0":"el","1":7850,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7846,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":"parse-expr","1":6180,"type":"evar"},"1":{"0":{"0":"value","1":6181,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6179,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":8367,"type":"evar"},"1":{"0":{"0":{"0":"elambda","1":6183,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":8368,"type":"evar"},"1":{"0":{"0":{"0":"parse-pat","1":7851,"type":"evar"},"1":{"0":{"0":"pat","1":7852,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6184,"type":"eapp"},"1":{"0":{"0":"nil","1":8368,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8368,"type":"eapp"},"1":{"0":{"0":"body","1":6187,"type":"evar"},"1":{"0":{"0":"l","1":6204,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6182,"type":"eapp"},"1":{"0":{"0":"nil","1":8367,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8367,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"0":{"0":"l","1":6203,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6176,"type":"eapp"},"2":6168,"type":"elet"},"2":6163,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":6142,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":6033,"2":{"0":{"0":"cons","1":6034,"2":{"0":{"0":"cst/id","1":6036,"2":{"0":{"0":"let","1":6037,"type":"pstr"},"1":{"0":{"0":6039,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6035,"type":"pcon"},"1":{"0":{"0":6041,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6034,"type":"pcon"},"1":{"0":{"0":"l","1":6045,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":6032,"type":"pcon"},"1":{"0":{"0":"fatal","1":6047,"type":"evar"},"1":{"0":{"0":"Invalid 'let' ","1":{"0":{"0":{"0":{"0":"int-to-string","1":6050,"type":"evar"},"1":{"0":{"0":"l","1":6054,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6052,"type":"eapp"},"1":{"0":"","1":6051,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":6048,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":6046,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":7536,"2":{"0":{"0":"cons","1":7537,"2":{"0":{"0":"cst/id","1":7539,"2":{"0":{"0":",","1":7540,"type":"pstr"},"1":{"0":{"0":"il","1":7542,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7538,"type":"pcon"},"1":{"0":{"0":"args","1":7543,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7537,"type":"pcon"},"1":{"0":{"0":"l","1":7547,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7535,"type":"pcon"},"1":{"0":{"0":"loop","1":17786,"type":"evar"},"1":{"0":{"0":"args","1":17787,"type":"evar"},"1":{"0":{"0":{"0":{"0":"args","1":17791,"type":"pvar"},"1":{"0":{"0":"recur","1":17792,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"args","1":17795,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":17796,"2":{"type":"nil"},"3":17796,"type":"pcon"},"1":{"0":{"0":"evar","1":17798,"type":"evar"},"1":{"0":{"0":",","1":{"type":"nil"},"2":17799,"type":"estr"},"1":{"0":{"0":"il","1":17801,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17797,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cons","1":17802,"2":{"0":{"0":"one","1":17803,"type":"pvar"},"1":{"0":{"0":"nil","1":17802,"2":{"type":"nil"},"3":17802,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17802,"type":"pcon"},"1":{"0":{"0":"parse-expr","1":17805,"type":"evar"},"1":{"0":{"0":"one","1":17806,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17804,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cons","1":17807,"2":{"0":{"0":"one","1":17808,"type":"pvar"},"1":{"0":{"0":"rest","1":17809,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17807,"type":"pcon"},"1":{"0":{"0":"eapp","1":17814,"type":"evar"},"1":{"0":{"0":{"0":"evar","1":17816,"type":"evar"},"1":{"0":{"0":",","1":{"type":"nil"},"2":17817,"type":"estr"},"1":{"0":{"0":"il","1":17819,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17815,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":"parse-expr","1":17822,"type":"evar"},"1":{"0":{"0":"one","1":17823,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17821,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":17820,"type":"evar"},"1":{"0":{"0":{"0":"recur","1":17826,"type":"evar"},"1":{"0":{"0":"rest","1":17827,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17824,"type":"eapp"},"1":{"0":{"0":"nil","1":17820,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17820,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"0":{"0":"l","1":17828,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":17813,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":17793,"type":"ematch"},"2":17788,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17785,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":7550,"2":{"0":{"0":"nil","1":7551,"2":{"type":"nil"},"3":7551,"type":"pcon"},"1":{"0":{"0":"l","1":7552,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":7549,"type":"pcon"},"1":{"0":{"0":"evar","1":7554,"type":"evar"},"1":{"0":{"0":"()","1":{"type":"nil"},"2":7555,"type":"estr"},"1":{"0":{"0":"l","1":7557,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":7553,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/list","1":1568,"2":{"0":{"0":"cons","1":1569,"2":{"0":{"0":"target","1":1570,"type":"pvar"},"1":{"0":{"0":"args","1":1571,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1569,"type":"pcon"},"1":{"0":{"0":"l","1":3744,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1567,"type":"pcon"},"1":{"0":{"0":"eapp","1":1587,"type":"evar"},"1":{"0":{"0":{"0":"parse-expr","1":1588,"type":"evar"},"1":{"0":{"0":"target","1":8363,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":8362,"type":"eapp"},"1":{"0":{"0":{"0":"map","1":8360,"type":"evar"},"1":{"0":{"0":"args","1":8361,"type":"evar"},"1":{"0":{"0":"parse-expr","1":1590,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8359,"type":"eapp"},"1":{"0":{"0":"l","1":3745,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":1586,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cst/array","1":3213,"2":{"0":{"0":"args","1":3214,"type":"pvar"},"1":{"0":{"0":"l","1":3680,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3211,"type":"pcon"},"1":{"0":{"0":"loop","1":17831,"type":"evar"},"1":{"0":{"0":"args","1":17832,"type":"evar"},"1":{"0":{"0":{"0":{"0":"args","1":17836,"type":"pvar"},"1":{"0":{"0":"recur","1":17837,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"args","1":17840,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":17841,"2":{"type":"nil"},"3":17841,"type":"pcon"},"1":{"0":{"0":"evar","1":17843,"type":"evar"},"1":{"0":{"0":"nil","1":{"type":"nil"},"2":17844,"type":"estr"},"1":{"0":{"0":"l","1":17846,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17842,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cons","1":17847,"2":{"0":{"0":"cst/spread","1":17849,"2":{"0":{"0":"inner","1":17850,"type":"pvar"},"1":{"0":{"0":17851,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17848,"type":"pcon"},"1":{"0":{"0":"nil","1":17847,"2":{"type":"nil"},"3":17847,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17847,"type":"pcon"},"1":{"0":{"0":"parse-expr","1":17853,"type":"evar"},"1":{"0":{"0":"inner","1":17854,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17852,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cons","1":17855,"2":{"0":{"0":"one","1":17856,"type":"pvar"},"1":{"0":{"0":"rest","1":17857,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":17855,"type":"pcon"},"1":{"0":{"0":"eapp","1":17862,"type":"evar"},"1":{"0":{"0":{"0":"evar","1":17864,"type":"evar"},"1":{"0":{"0":"cons","1":{"type":"nil"},"2":17865,"type":"estr"},"1":{"0":{"0":"l","1":17867,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17863,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":"parse-expr","1":17870,"type":"evar"},"1":{"0":{"0":"one","1":17871,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17869,"type":"eapp"},"1":{"0":{"0":{"0":"cons","1":17868,"type":"evar"},"1":{"0":{"0":{"0":"recur","1":17874,"type":"evar"},"1":{"0":{"0":"rest","1":17875,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":17872,"type":"eapp"},"1":{"0":{"0":"nil","1":17868,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17868,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"0":{"0":"l","1":17877,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":17861,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":17838,"type":"ematch"},"2":17833,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":17830,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":17775,"type":"pany"},"1":{"0":{"0":"fatal","1":17777,"type":"evar"},"1":{"0":{"0":"Invalid expression","1":{"type":"nil"},"2":17778,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":17776,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":963,"type":"ematch"},"2":957,"type":"elambda"},"3":957,"type":"tdef"}, $env)
+const mapi = (i) => (values) => (f) => (($target) => {
+if ($target.type === "nil") {
+return nil
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return cons(f(i)(one))(mapi($pl(1)(i))(rest)(f))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(values);
 
-const parse_template = $env.evaluateStmt({"0":"parse-template","1":17884,"2":{"0":{"0":{"0":"templates","1":17886,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"map","1":1011,"type":"evar"},"1":{"0":{"0":"templates","1":1012,"type":"evar"},"1":{"0":{"0":{"0":{"0":",","1":16404,"2":{"0":{"0":"expr","1":16405,"type":"pvar"},"1":{"0":{"0":",","1":16404,"2":{"0":{"0":"string","1":16406,"type":"pvar"},"1":{"0":{"0":"l","1":16407,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1016,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":1016,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":",","1":1025,"type":"evar"},"1":{"0":{"0":{"0":"parse-expr","1":1028,"type":"evar"},"1":{"0":{"0":"expr","1":1029,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":1027,"type":"eapp"},"1":{"0":{"0":{"0":",","1":1025,"type":"evar"},"1":{"0":{"0":"string","1":1030,"type":"evar"},"1":{"0":{"0":"l","1":3516,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":1025,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":1025,"type":"eapp"},"2":1013,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":1010,"type":"eapp"},"2":17882,"type":"elambda"},"3":17882,"type":"tdef"}, $env)
-const pat$slnames = $env.evaluateStmt({"0":"pat/names","1":19140,"2":{"0":{"0":{"0":"pat","1":19142,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"pat","1":19145,"type":"evar"},"1":{"0":{"0":{"0":"pany","1":19147,"2":{"0":{"0":19148,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"3":19146,"type":"pcon"},"1":{"0":{"0":",","1":19149,"type":"evar"},"1":{"0":{"0":"nil","1":19151,"type":"evar"},"1":{"0":{"0":"empty","1":19152,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19149,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"pvar","1":19154,"2":{"0":{"0":"name","1":19155,"type":"pvar"},"1":{"0":{"0":"l","1":19156,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19153,"type":"pcon"},"1":{"0":{"0":",","1":19157,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":19159,"type":"evar"},"1":{"0":{"0":{"0":",","1":19160,"type":"evar"},"1":{"0":{"0":"name","1":19162,"type":"evar"},"1":{"0":{"0":"l","1":19163,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19160,"type":"eapp"},"1":{"0":{"0":"nil","1":19159,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19159,"type":"eapp"},"1":{"0":{"0":{"0":"one","1":19165,"type":"evar"},"1":{"0":{"0":{"0":"local","1":19167,"type":"evar"},"1":{"0":{"0":"l","1":19168,"type":"evar"},"1":{"0":{"0":{"0":"decl","1":19170,"type":"evar"},"1":{"type":"nil"},"2":19169,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19166,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":19164,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19157,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"pprim","1":19172,"2":{"0":{"0":19173,"type":"pany"},"1":{"0":{"0":19174,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19171,"type":"pcon"},"1":{"0":{"0":",","1":19175,"type":"evar"},"1":{"0":{"0":"nil","1":19177,"type":"evar"},"1":{"0":{"0":"empty","1":19178,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19175,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"pstr","1":19180,"2":{"0":{"0":19181,"type":"pany"},"1":{"0":{"0":19182,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19179,"type":"pcon"},"1":{"0":{"0":",","1":19183,"type":"evar"},"1":{"0":{"0":"nil","1":19185,"type":"evar"},"1":{"0":{"0":"empty","1":19186,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19183,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"pcon","1":19188,"2":{"0":{"0":"name","1":19189,"type":"pvar"},"1":{"0":{"0":"nl","1":19190,"type":"pvar"},"1":{"0":{"0":"args","1":19191,"type":"pvar"},"1":{"0":{"0":"l","1":19192,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":19187,"type":"pcon"},"1":{"0":{"0":"foldl","1":19194,"type":"evar"},"1":{"0":{"0":{"0":",","1":19195,"type":"evar"},"1":{"0":{"0":"nil","1":19197,"type":"evar"},"1":{"0":{"0":{"0":"one","1":19199,"type":"evar"},"1":{"0":{"0":{"0":"global","1":19201,"type":"evar"},"1":{"0":{"0":"name","1":19202,"type":"evar"},"1":{"0":{"0":{"0":"type","1":19204,"type":"evar"},"1":{"type":"nil"},"2":19203,"type":"eapp"},"1":{"0":{"0":"l","1":19205,"type":"evar"},"1":{"0":{"0":{"0":"usage","1":19207,"type":"evar"},"1":{"0":{"0":"()","1":19208,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":19206,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":19200,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":19198,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19195,"type":"eapp"},"1":{"0":{"0":{"0":"map","1":19210,"type":"evar"},"1":{"0":{"0":"args","1":19211,"type":"evar"},"1":{"0":{"0":"pat/names","1":19212,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19209,"type":"eapp"},"1":{"0":{"0":"bound-and-names","1":19213,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":19193,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":19143,"type":"ematch"},"2":19138,"type":"elambda"},"3":19138,"type":"tdef"}, $env)
-const expr$slnames = $env.evaluateStmt({"0":"expr/names","1":18891,"2":{"0":{"0":{"0":"bound","1":18893,"type":"pvar"},"1":{"0":{"0":"expr","1":18894,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"expr","1":18897,"type":"evar"},"1":{"0":{"0":{"0":"evar","1":18899,"2":{"0":{"0":"name","1":18900,"type":"pvar"},"1":{"0":{"0":"l","1":18901,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":18898,"type":"pcon"},"1":{"0":{"0":{"0":"map/get","1":18905,"type":"evar"},"1":{"0":{"0":"bound","1":18906,"type":"evar"},"1":{"0":{"0":"name","1":18907,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18904,"type":"eapp"},"1":{"0":{"0":{"0":"some","1":18909,"2":{"0":{"0":"dl","1":18910,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"3":18908,"type":"pcon"},"1":{"0":{"0":"one","1":18912,"type":"evar"},"1":{"0":{"0":{"0":"local","1":18914,"type":"evar"},"1":{"0":{"0":"l","1":18915,"type":"evar"},"1":{"0":{"0":{"0":"usage","1":18917,"type":"evar"},"1":{"0":{"0":"dl","1":18918,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":18916,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18913,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":18911,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"none","1":18920,"2":{"type":"nil"},"3":18919,"type":"pcon"},"1":{"0":{"0":"one","1":18922,"type":"evar"},"1":{"0":{"0":{"0":"global","1":18924,"type":"evar"},"1":{"0":{"0":"name","1":18925,"type":"evar"},"1":{"0":{"0":{"0":"value","1":18927,"type":"evar"},"1":{"type":"nil"},"2":18926,"type":"eapp"},"1":{"0":{"0":"l","1":18928,"type":"evar"},"1":{"0":{"0":{"0":"usage","1":18930,"type":"evar"},"1":{"0":{"0":"()","1":18931,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":18929,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":18923,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":18921,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18902,"type":"ematch"},"type":","},"1":{"0":{"0":{"0":"eprim","1":18933,"2":{"0":{"0":18934,"type":"pany"},"1":{"0":{"0":18935,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":18932,"type":"pcon"},"1":{"0":"empty","1":18936,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"equot","1":18938,"2":{"0":{"0":18939,"type":"pany"},"1":{"0":{"0":18940,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":18937,"type":"pcon"},"1":{"0":"empty","1":18941,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"eapp","1":18943,"2":{"0":{"0":"target","1":18944,"type":"pvar"},"1":{"0":{"0":"args","1":18945,"type":"pvar"},"1":{"0":{"0":18946,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":18942,"type":"pcon"},"1":{"0":{"0":"foldl","1":18948,"type":"evar"},"1":{"0":{"0":{"0":"expr/names","1":18950,"type":"evar"},"1":{"0":{"0":"bound","1":18951,"type":"evar"},"1":{"0":{"0":"target","1":18952,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18949,"type":"eapp"},"1":{"0":{"0":{"0":"map","1":18954,"type":"evar"},"1":{"0":{"0":"args","1":18955,"type":"evar"},"1":{"0":{"0":{"0":"expr/names","1":18957,"type":"evar"},"1":{"0":{"0":"bound","1":18958,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":18956,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18953,"type":"eapp"},"1":{"0":{"0":"bag/and","1":18959,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":18947,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"elambda","1":18961,"2":{"0":{"0":"args","1":18962,"type":"pvar"},"1":{"0":{"0":"body","1":18963,"type":"pvar"},"1":{"0":{"0":18964,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":18960,"type":"pcon"},"1":{"0":{"0":{"0":{"0":",","1":18969,"2":{"0":{"0":"bound'","1":18970,"type":"pvar"},"1":{"0":{"0":"names","1":18971,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":18968,"type":"pcon"},"1":{"0":{"0":"foldl","1":18973,"type":"evar"},"1":{"0":{"0":{"0":",","1":18974,"type":"evar"},"1":{"0":{"0":"nil","1":18976,"type":"evar"},"1":{"0":{"0":"empty","1":18977,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18974,"type":"eapp"},"1":{"0":{"0":{"0":"map","1":18979,"type":"evar"},"1":{"0":{"0":"args","1":18980,"type":"evar"},"1":{"0":{"0":"pat/names","1":18981,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18978,"type":"eapp"},"1":{"0":{"0":"bound-and-names","1":18982,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":18972,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"bag/and","1":18984,"type":"evar"},"1":{"0":{"0":"names","1":18985,"type":"evar"},"1":{"0":{"0":{"0":"expr/names","1":18987,"type":"evar"},"1":{"0":{"0":{"0":"map/merge","1":18989,"type":"evar"},"1":{"0":{"0":"bound","1":18990,"type":"evar"},"1":{"0":{"0":{"0":"map/from-list","1":18992,"type":"evar"},"1":{"0":{"0":"bound'","1":18993,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":18991,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18988,"type":"eapp"},"1":{"0":{"0":"body","1":18994,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18986,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18983,"type":"eapp"},"2":18965,"type":"elet"},"type":","},"1":{"0":{"0":{"0":"elet","1":18996,"2":{"0":{"0":"bindings","1":18997,"type":"pvar"},"1":{"0":{"0":"body","1":18998,"type":"pvar"},"1":{"0":{"0":18999,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":18995,"type":"pcon"},"1":{"0":{"0":"loop","1":19001,"type":"evar"},"1":{"0":{"0":{"0":",","1":19002,"type":"evar"},"1":{"0":{"0":"bindings","1":19004,"type":"evar"},"1":{"0":{"0":{"0":",","1":19002,"type":"evar"},"1":{"0":{"0":"bound","1":19005,"type":"evar"},"1":{"0":{"0":"empty","1":19006,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19002,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19002,"type":"eapp"},"1":{"0":{"0":{"0":{"0":",","1":19011,"2":{"0":{"0":"bindings","1":19012,"type":"pvar"},"1":{"0":{"0":",","1":19011,"2":{"0":{"0":"bound","1":19013,"type":"pvar"},"1":{"0":{"0":"names","1":19014,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19010,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19010,"type":"pcon"},"1":{"0":{"0":"recur","1":19015,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"bindings","1":19018,"type":"evar"},"1":{"0":{"0":{"0":"nil","1":19019,"2":{"type":"nil"},"3":19019,"type":"pcon"},"1":{"0":{"0":"bag/and","1":19021,"type":"evar"},"1":{"0":{"0":"names","1":19022,"type":"evar"},"1":{"0":{"0":{"0":"expr/names","1":19024,"type":"evar"},"1":{"0":{"0":"bound","1":19025,"type":"evar"},"1":{"0":{"0":"body","1":19026,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19023,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19020,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"cons","1":19027,"2":{"0":{"0":",","1":19029,"2":{"0":{"0":"pat","1":19030,"type":"pvar"},"1":{"0":{"0":"expr","1":19031,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19028,"type":"pcon"},"1":{"0":{"0":"rest","1":19033,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19027,"type":"pcon"},"1":{"0":{"0":{"0":{"0":",","1":19038,"2":{"0":{"0":"bound'","1":19039,"type":"pvar"},"1":{"0":{"0":"names'","1":19040,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19037,"type":"pcon"},"1":{"0":{"0":"pat/names","1":19042,"type":"evar"},"1":{"0":{"0":"pat","1":19043,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":19041,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"bound","1":19044,"type":"pvar"},"1":{"0":{"0":"map/merge","1":19046,"type":"evar"},"1":{"0":{"0":"bound","1":19047,"type":"evar"},"1":{"0":{"0":{"0":"map/from-list","1":19049,"type":"evar"},"1":{"0":{"0":"bound'","1":19050,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":19048,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19045,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"names","1":19051,"type":"pvar"},"1":{"0":{"0":"bag/and","1":19053,"type":"evar"},"1":{"0":{"0":"names","1":19054,"type":"evar"},"1":{"0":{"0":"names'","1":19055,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19052,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"recur","1":19057,"type":"evar"},"1":{"0":{"0":{"0":",","1":19058,"type":"evar"},"1":{"0":{"0":"rest","1":19060,"type":"evar"},"1":{"0":{"0":{"0":",","1":19058,"type":"evar"},"1":{"0":{"0":"bound","1":19061,"type":"evar"},"1":{"0":{"0":{"0":"bag/and","1":19063,"type":"evar"},"1":{"0":{"0":"names","1":19064,"type":"evar"},"1":{"0":{"0":{"0":"expr/names","1":19066,"type":"evar"},"1":{"0":{"0":"bound","1":19067,"type":"evar"},"1":{"0":{"0":"expr","1":19068,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19065,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19062,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19058,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19058,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":19056,"type":"eapp"},"2":19034,"type":"elet"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19016,"type":"ematch"},"2":19007,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19000,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"ematch","1":19070,"2":{"0":{"0":"target","1":19071,"type":"pvar"},"1":{"0":{"0":"cases","1":19072,"type":"pvar"},"1":{"0":{"0":19073,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":19069,"type":"pcon"},"1":{"0":{"0":"foldl","1":19075,"type":"evar"},"1":{"0":{"0":{"0":"expr/names","1":19077,"type":"evar"},"1":{"0":{"0":"bound","1":19078,"type":"evar"},"1":{"0":{"0":"target","1":19079,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19076,"type":"eapp"},"1":{"0":{"0":{"0":"map","1":19081,"type":"evar"},"1":{"0":{"0":"cases","1":19082,"type":"evar"},"1":{"0":{"0":{"0":{"0":",","1":19087,"2":{"0":{"0":"pat","1":19088,"type":"pvar"},"1":{"0":{"0":"body","1":19089,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19086,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":19094,"2":{"0":{"0":"bound'","1":19095,"type":"pvar"},"1":{"0":{"0":"names'","1":19096,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19093,"type":"pcon"},"1":{"0":{"0":"pat/names","1":19098,"type":"evar"},"1":{"0":{"0":"pat","1":19099,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":19097,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"bound","1":19100,"type":"pvar"},"1":{"0":{"0":"map/merge","1":19102,"type":"evar"},"1":{"0":{"0":"bound","1":19103,"type":"evar"},"1":{"0":{"0":{"0":"map/from-list","1":19105,"type":"evar"},"1":{"0":{"0":"bound'","1":19106,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":19104,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19101,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":"bag/and","1":19108,"type":"evar"},"1":{"0":{"0":"names'","1":19109,"type":"evar"},"1":{"0":{"0":{"0":"expr/names","1":19111,"type":"evar"},"1":{"0":{"0":"bound","1":19112,"type":"evar"},"1":{"0":{"0":"body","1":19113,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19110,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19107,"type":"eapp"},"2":19090,"type":"elet"},"2":19083,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19080,"type":"eapp"},"1":{"0":{"0":"bag/and","1":19114,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":19074,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"estr","1":19116,"2":{"0":{"0":19117,"type":"pany"},"1":{"0":{"0":"tpls","1":19118,"type":"pvar"},"1":{"0":{"0":19119,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":19115,"type":"pcon"},"1":{"0":{"0":"many","1":19121,"type":"evar"},"1":{"0":{"0":{"0":"map","1":19123,"type":"evar"},"1":{"0":{"0":"tpls","1":19124,"type":"evar"},"1":{"0":{"0":{"0":{"0":",","1":19129,"2":{"0":{"0":"expr","1":19130,"type":"pvar"},"1":{"0":{"0":",","1":19129,"2":{"0":{"0":19131,"type":"pany"},"1":{"0":{"0":19132,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19128,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":19128,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"expr/names","1":19134,"type":"evar"},"1":{"0":{"0":"bound","1":19135,"type":"evar"},"1":{"0":{"0":"expr","1":19136,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19133,"type":"eapp"},"2":19125,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":19122,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":19120,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":18895,"type":"ematch"},"2":18889,"type":"elambda"},"3":18889,"type":"tdef"}, $env)
-const top$slnames = $env.evaluateStmt({"0":"top/names","1":18768,"2":{"0":{"0":{"0":"top","1":18770,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"top","1":18773,"type":"evar"},"1":{"0":{"0":{"0":"tdef","1":18775,"2":{"0":{"0":"name","1":18776,"type":"pvar"},"1":{"0":{"0":"l","1":18777,"type":"pvar"},"1":{"0":{"0":"body","1":18778,"type":"pvar"},"1":{"0":{"0":18779,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":18774,"type":"pcon"},"1":{"0":{"0":"bag/and","1":18781,"type":"evar"},"1":{"0":{"0":{"0":"one","1":18783,"type":"evar"},"1":{"0":{"0":{"0":"global","1":18785,"type":"evar"},"1":{"0":{"0":"name","1":18786,"type":"evar"},"1":{"0":{"0":{"0":"value","1":18788,"type":"evar"},"1":{"type":"nil"},"2":18787,"type":"eapp"},"1":{"0":{"0":"l","1":18789,"type":"evar"},"1":{"0":{"0":{"0":"decl","1":18791,"type":"evar"},"1":{"type":"nil"},"2":18790,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":18784,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":18782,"type":"eapp"},"1":{"0":{"0":{"0":"expr/names","1":18793,"type":"evar"},"1":{"0":{"0":{"0":"map/from-list","1":18795,"type":"evar"},"1":{"0":{"0":{"0":"cons","1":18796,"type":"evar"},"1":{"0":{"0":{"0":",","1":18797,"type":"evar"},"1":{"0":{"0":"name","1":18799,"type":"evar"},"1":{"0":{"0":"l","1":18800,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18797,"type":"eapp"},"1":{"0":{"0":"nil","1":18796,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18796,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":18794,"type":"eapp"},"1":{"0":{"0":"body","1":18801,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18792,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18780,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"texpr","1":18803,"2":{"0":{"0":"body","1":18804,"type":"pvar"},"1":{"0":{"0":18805,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":18802,"type":"pcon"},"1":{"0":{"0":"expr/names","1":18807,"type":"evar"},"1":{"0":{"0":"map/nil","1":18808,"type":"evar"},"1":{"0":{"0":"body","1":18809,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18806,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"ttypealias","1":18811,"2":{"0":{"0":"name","1":18812,"type":"pvar"},"1":{"0":{"0":"l","1":18813,"type":"pvar"},"1":{"0":{"0":"free","1":18814,"type":"pvar"},"1":{"0":{"0":"body","1":18815,"type":"pvar"},"1":{"0":{"0":18816,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":18810,"type":"pcon"},"1":{"0":{"0":"bag/and","1":18818,"type":"evar"},"1":{"0":{"0":{"0":"one","1":18820,"type":"evar"},"1":{"0":{"0":{"0":"global","1":18822,"type":"evar"},"1":{"0":{"0":"name","1":18823,"type":"evar"},"1":{"0":{"0":{"0":"type","1":18825,"type":"evar"},"1":{"type":"nil"},"2":18824,"type":"eapp"},"1":{"0":{"0":"l","1":18826,"type":"evar"},"1":{"0":{"0":{"0":"decl","1":18828,"type":"evar"},"1":{"type":"nil"},"2":18827,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":18821,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":18819,"type":"eapp"},"1":{"0":{"0":{"0":"type/names","1":18830,"type":"evar"},"1":{"0":{"0":{"0":"map/from-list","1":18832,"type":"evar"},"1":{"0":{"0":"free","1":18833,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":18831,"type":"eapp"},"1":{"0":{"0":"body","1":18834,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18829,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18817,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"tdeftype","1":18836,"2":{"0":{"0":"name","1":18837,"type":"pvar"},"1":{"0":{"0":"l","1":18838,"type":"pvar"},"1":{"0":{"0":"free","1":18839,"type":"pvar"},"1":{"0":{"0":"constructors","1":18840,"type":"pvar"},"1":{"0":{"0":18841,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"3":18835,"type":"pcon"},"1":{"0":{"0":"foldl","1":18843,"type":"evar"},"1":{"0":{"0":{"0":"one","1":18845,"type":"evar"},"1":{"0":{"0":{"0":"global","1":18847,"type":"evar"},"1":{"0":{"0":"name","1":18848,"type":"evar"},"1":{"0":{"0":{"0":"type","1":18850,"type":"evar"},"1":{"type":"nil"},"2":18849,"type":"eapp"},"1":{"0":{"0":"l","1":18851,"type":"evar"},"1":{"0":{"0":{"0":"decl","1":18853,"type":"evar"},"1":{"type":"nil"},"2":18852,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":18846,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":18844,"type":"eapp"},"1":{"0":{"0":{"0":"map","1":18855,"type":"evar"},"1":{"0":{"0":"constructors","1":18856,"type":"evar"},"1":{"0":{"0":{"0":{"0":",","1":18861,"2":{"0":{"0":"name","1":18862,"type":"pvar"},"1":{"0":{"0":",","1":18861,"2":{"0":{"0":"l","1":18863,"type":"pvar"},"1":{"0":{"0":",","1":18861,"2":{"0":{"0":"args","1":18864,"type":"pvar"},"1":{"0":{"0":18865,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":18860,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":18860,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":18860,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"foldl","1":18867,"type":"evar"},"1":{"0":{"0":{"0":"one","1":18869,"type":"evar"},"1":{"0":{"0":{"0":"global","1":18871,"type":"evar"},"1":{"0":{"0":"name","1":18872,"type":"evar"},"1":{"0":{"0":{"0":"value","1":18874,"type":"evar"},"1":{"type":"nil"},"2":18873,"type":"eapp"},"1":{"0":{"0":"l","1":18875,"type":"evar"},"1":{"0":{"0":{"0":"decl","1":18877,"type":"evar"},"1":{"type":"nil"},"2":18876,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":18870,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":18868,"type":"eapp"},"1":{"0":{"0":{"0":"map","1":18879,"type":"evar"},"1":{"0":{"0":"args","1":18880,"type":"evar"},"1":{"0":{"0":{"0":"type/names","1":18882,"type":"evar"},"1":{"0":{"0":{"0":"map/from-list","1":18884,"type":"evar"},"1":{"0":{"0":"free","1":18885,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":18883,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":18881,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18878,"type":"eapp"},"1":{"0":{"0":"bag/and","1":18886,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":18866,"type":"eapp"},"2":18857,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":18854,"type":"eapp"},"1":{"0":{"0":"bag/and","1":18887,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":18842,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":18771,"type":"ematch"},"2":18766,"type":"elambda"},"3":18766,"type":"tdef"}, $env)
-return $env.evaluateStmt({"0":{"0":{"0":{"0":"eval","1":6452,"type":"evar"},"1":{"0":{"0":"({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) => all_names =>\n  ({type: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr, all_names})","1":{"type":"nil"},"2":6454,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":6453,"type":"eapp"},"1":{"0":{"0":{"0":"parse-and-compile","1":5765,"type":"evar"},"1":{"0":{"0":"parse-top","1":5766,"type":"evar"},"1":{"0":{"0":"parse-expr","1":5767,"type":"evar"},"1":{"0":{"0":"names","1":6487,"type":"evar"},"1":{"0":{"0":"externals-top","1":6488,"type":"evar"},"1":{"0":{"0":{"0":{"0":"expr","1":8149,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"bag/to-list","1":8151,"type":"evar"},"1":{"0":{"0":{"0":"externals","1":8153,"type":"evar"},"1":{"0":{"0":"set/nil","1":8154,"type":"evar"},"1":{"0":{"0":"expr","1":8155,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8152,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":8150,"type":"eapp"},"2":8146,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"2":5763,"type":"eapp"},"1":{"0":{"0":"top/names","1":18729,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6451,"type":"eapp"},"1":6451,"type":"texpr"}, $env)
+const some = (v0) => ({type: "some", 0: v0})
+const none = ({type: "none"})
+const rev = (arr) => (col) => (($target) => {
+if ($target.type === "nil") {
+return col
+}
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return cons(one)(col)
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return rev(rest)(cons(one)(col))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arr);
+
+const foldl = (init) => (items) => (f) => (($target) => {
+if ($target.type === "nil") {
+return init
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return foldl(f(init)(one))(rest)(f)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(items);
+
+const map = (values) => (f) => (($target) => {
+if ($target.type === "nil") {
+return nil
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return cons(f(one))(map(rest)(f))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(values);
+
+const foldr = (init) => (items) => (f) => (($target) => {
+if ($target.type === "nil") {
+return init
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return f(foldr(init)(rest)(f))(one)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(items);
+
+const value = ({type: "value"})
+const type = ({type: "type"})
+const one = (v0) => ({type: "one", 0: v0})
+const many = (v0) => ({type: "many", 0: v0})
+const bag$slfold = (f) => (init) => (bag) => (($target) => {
+if ($target.type === "many" &&
+$target[0].type === "nil") {
+return init
+}
+if ($target.type === "one") {
+{
+let v = $target[0];
+return f(init)(v)
+}
+}
+if ($target.type === "many") {
+{
+let items = $target[0];
+return foldr(init)(items)(bag$slfold(f))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(bag);
+
+const bag$slto_list = (bag) => bag$slfold((list) => (one) => cons(one)(list))(nil)(bag);
+
+const pat_bound = (pat) => (($target) => {
+if ($target.type === "pany") {
+return set$slnil
+}
+if ($target.type === "pvar") {
+{
+let name = $target[0];
+return set$sladd(set$slnil)(name)
+}
+}
+if ($target.type === "pcon") {
+{
+let args = $target[2];
+return foldl(set$slnil)(args)((bound) => (arg) => set$slmerge(bound)(pat_bound(arg)))
+}
+}
+if ($target.type === "pstr") {
+return set$slnil
+}
+if ($target.type === "pprim") {
+return set$slnil
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat);
+
+const concat = (lists) => (($target) => {
+if ($target.type === "nil") {
+return nil
+}
+if ($target.type === "cons" &&
+$target[0].type === "nil") {
+{
+let rest = $target[1];
+return concat(rest)
+}
+}
+if ($target.type === "cons" &&
+$target[0].type === "cons") {
+{
+let one = $target[0][0];
+let rest = $target[0][1];
+let other = $target[1];
+return cons(one)(concat(cons(rest)(other)))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(lists);
+
+const loop = (v) => (f) => f(v)((nv) => loop(nv)(f));
+
+const filter_some = (items) => foldr(nil)(items)((res) => (v) => (($target) => {
+if ($target.type === "some") {
+{
+let v = $target[0];
+return cons(v)(res)
+}
+}
+return res
+throw new Error('Failed to match. ' + valueToString($target));
+})(v));
+
+const empty = many(nil);
+
+const usage = (v0) => ({type: "usage", 0: v0})
+const decl = ({type: "decl"})
+const $co = (v0) => (v1) => ({type: ",", 0: v0, 1: v1})
+const snd = (tuple) => (({1: v}) => v)(tuple);
+
+const fst = (tuple) => (({0: v}) => v)(tuple);
+
+const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
+const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
+const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1})
+const cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
+const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
+const parse_type = (type) => (($target) => {
+if ($target.type === "cst/id") {
+{
+let id = $target[0];
+let l = $target[1];
+return tcon(id)(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "fn" &&
+$target[0][1].type === "cons" &&
+$target[0][1][0].type === "cst/array" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][1].type === "nil") {
+{
+let args = $target[0][1][0][0];
+let body = $target[0][1][1][0];
+let l = $target[1];
+return foldl(parse_type(body))(rev(args)(nil))((body) => (arg) => tapp(tapp(tcon("->")(l))(parse_type(arg))(l))(body)(l))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === ",") {
+{
+let nl = $target[0][0][1];
+let items = $target[0][1];
+let al = $target[1];
+return loop(map(items)(parse_type))((items) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return fatal("Empty tuple type")
+}
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return one
+}
+}
+if ($target.type === "cons" &&
+$target[1].type === "cons" &&
+$target[1][1].type === "nil") {
+{
+let one = $target[0];
+let two = $target[1][0];
+return tapp(tapp(tcon(",")(nl))(one)(al))(two)(al)
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return tapp(tapp(tcon(",")(nl))(one)(al))(recur(rest))(al)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(items))
+}
+}
+if ($target.type === "cst/list") {
+{
+let items = $target[0];
+let l = $target[1];
+return loop(rev(map(items)(parse_type))(nil))((items) => (recur) => (($target) => {
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return one
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return tapp(recur(rest))(one)(l)
+}
+}
+if ($target.type === "nil") {
+return tcon("()")(l)
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(items))
+}
+}
+return fatal(`(parse-type) Invalid type ${valueToString(type)}`)
+throw new Error('Failed to match. ' + valueToString($target));
+})(type);
+
+const pairs = (list) => (($target) => {
+if ($target.type === "nil") {
+return nil
+}
+if ($target.type === "cons" &&
+$target[1].type === "cons") {
+{
+let one = $target[0];
+let two = $target[1][0];
+let rest = $target[1][1];
+return cons($co(one)(two))(pairs(rest))
+}
+}
+return fatal(`Pairs given odd number ${valueToString(list)}`)
+throw new Error('Failed to match. ' + valueToString($target));
+})(list);
+
+const parse_pat = (pat) => (($target) => {
+if ($target.type === "cst/id" &&
+$target[0] === "_") {
+{
+let l = $target[1];
+return pany(l)
+}
+}
+if ($target.type === "cst/id" &&
+$target[0] === "true") {
+{
+let l = $target[1];
+return pprim(pbool(true)(l))(l)
+}
+}
+if ($target.type === "cst/id" &&
+$target[0] === "false") {
+{
+let l = $target[1];
+return pprim(pbool(false)(l))(l)
+}
+}
+if ($target.type === "cst/string" &&
+$target[1].type === "nil") {
+{
+let first = $target[0];
+let l = $target[2];
+return pstr(first)(l)
+}
+}
+if ($target.type === "cst/id") {
+{
+let id = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target.type === "some") {
+{
+let int = $target[0];
+return pprim(pint(int)(l))(l)
+}
+}
+return pvar(id)(l)
+throw new Error('Failed to match. ' + valueToString($target));
+})(string_to_int(id))
+}
+}
+if ($target.type === "cst/array" &&
+$target[0].type === "nil") {
+{
+let l = $target[1];
+return pcon("nil")(l)(nil)(l)
+}
+}
+if ($target.type === "cst/array" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/spread" &&
+$target[0][1].type === "nil") {
+{
+let inner = $target[0][0][0];
+return parse_pat(inner)
+}
+}
+if ($target.type === "cst/array" &&
+$target[0].type === "cons") {
+{
+let one = $target[0][0];
+let rest = $target[0][1];
+let l = $target[1];
+return pcon("cons")(l)(cons(parse_pat(one))(cons(parse_pat(cst$slarray(rest)(l)))(nil)))(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "nil") {
+{
+let l = $target[1];
+return pcon("()")(l)(nil)(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === ",") {
+{
+let il = $target[0][0][1];
+let args = $target[0][1];
+let l = $target[1];
+return loop(args)((items) => (recur) => (($target) => {
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return parse_pat(one)
+}
+}
+if ($target.type === "nil") {
+return pcon(",")(l)(nil)(il)
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return pcon(",")(l)(cons(parse_pat(one))(cons(recur(rest))(nil)))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(items))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id") {
+{
+let name = $target[0][0][0];
+let il = $target[0][0][1];
+let rest = $target[0][1];
+let l = $target[1];
+return pcon(name)(il)(map(rest)(parse_pat))(l)
+}
+}
+return fatal(`Invalid pattern: ${valueToString(pat)}`)
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat);
+
+const replaces = (target) => (repl) => (($target) => {
+if ($target.type === "nil") {
+return target
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return (($target) => {
+if ($target.type === ",") {
+{
+let find = $target[0];
+let nw = $target[1];
+return replaces(replace_all(target)(find)(nw))(rest)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(one)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(repl);
+
+{
+    const test = parse_type;
+    
+    const in_0 = {"0":{"0":{"0":"hi","1":5527,"type":"cst/id"},"1":{"0":{"0":"ho","1":5528,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":5526,"type":"cst/list"};
+    const mod_0 = test(in_0);
+    const out_0 = tapp(tcon("hi")(5527))(tcon("ho")(5528))(5526);
+    if (!equal(mod_0, out_0)) {
+        console.log(mod_0);
+        console.log(out_0);
+        throw new Error(`Fixture test (5529) failing 0. Not equal.`);
+    }
+    
+
+    const in_1 = {"0":{"0":{"0":"fn","1":5556,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"x","1":5558,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"1":5557,"type":"cst/array"},"1":{"0":{"0":"y","1":5559,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":5555,"type":"cst/list"};
+    const mod_1 = test(in_1);
+    const out_1 = tapp(tapp(tcon("->")(5555))(tcon("x")(5558))(5555))(tcon("y")(5559))(5555);
+    if (!equal(mod_1, out_1)) {
+        console.log(mod_1);
+        console.log(out_1);
+        throw new Error(`Fixture test (5529) failing 1. Not equal.`);
+    }
+    
+
+    const in_2 = {"0":{"0":{"0":"fn","1":5686,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"a","1":5688,"type":"cst/id"},"1":{"0":{"0":"b","1":5689,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":5687,"type":"cst/array"},"1":{"0":{"0":"c","1":5690,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":5685,"type":"cst/list"};
+    const mod_2 = test(in_2);
+    const out_2 = tapp(tapp(tcon("->")(5685))(tcon("a")(5688))(5685))(tapp(tapp(tcon("->")(5685))(tcon("b")(5689))(5685))(tcon("c")(5690))(5685))(5685);
+    if (!equal(mod_2, out_2)) {
+        console.log(mod_2);
+        console.log(out_2);
+        throw new Error(`Fixture test (5529) failing 2. Not equal.`);
+    }
+    
+
+    const in_3 = {"0":{"0":{"0":",","1":16610,"type":"cst/id"},"1":{"0":{"0":"a","1":16611,"type":"cst/id"},"1":{"0":{"0":"b","1":16612,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16609,"type":"cst/list"};
+    const mod_3 = test(in_3);
+    const out_3 = tapp(tapp(tcon(",")(16610))(tcon("a")(16611))(16609))(tcon("b")(16612))(16609);
+    if (!equal(mod_3, out_3)) {
+        console.log(mod_3);
+        console.log(out_3);
+        throw new Error(`Fixture test (5529) failing 3. Not equal.`);
+    }
+    
+
+    const in_4 = {"0":{"0":{"0":",","1":16640,"type":"cst/id"},"1":{"0":{"0":"a","1":16643,"type":"cst/id"},"1":{"0":{"0":"b","1":16644,"type":"cst/id"},"1":{"0":{"0":"c","1":16645,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16639,"type":"cst/list"};
+    const mod_4 = test(in_4);
+    const out_4 = tapp(tapp(tcon(",")(16640))(tcon("a")(16643))(16639))(tapp(tapp(tcon(",")(16640))(tcon("b")(16644))(16639))(tcon("c")(16645))(16639))(16639);
+    if (!equal(mod_4, out_4)) {
+        console.log(mod_4);
+        console.log(out_4);
+        throw new Error(`Fixture test (5529) failing 4. Not equal.`);
+    }
+    
+}
+const bag$sland = (first) => (second) => (($target) => {
+if ($target.type === "," &&
+$target[0].type === "many" &&
+$target[0][0].type === "nil") {
+{
+let a = $target[1];
+return a
+}
+}
+if ($target.type === "," &&
+$target[1].type === "many" &&
+$target[1][0].type === "nil") {
+{
+let a = $target[0];
+return a
+}
+}
+if ($target.type === "," &&
+$target[0].type === "many" &&
+$target[0][0].type === "cons" &&
+$target[0][0][1].type === "nil" &&
+$target[1].type === "many") {
+{
+let a = $target[0][0][0];
+let b = $target[1][0];
+return many(cons(a)(b))
+}
+}
+if ($target.type === "," &&
+$target[1].type === "many") {
+{
+let a = $target[0];
+let b = $target[1][0];
+return many(cons(a)(b))
+}
+}
+return many(cons(first)(cons(second)(nil)))
+throw new Error('Failed to match. ' + valueToString($target));
+})($co(first)(second));
+
+{
+    const test = bag$slto_list;
+    
+    const in_0 = many(cons(empty)(cons(one(1))(cons(many(cons(one(2))(cons(empty)(nil))))(cons(one(10))(nil)))));
+    const mod_0 = test(in_0);
+    const out_0 = cons(1)(cons(2)(cons(10)(nil)));
+    if (!equal(mod_0, out_0)) {
+        console.log(mod_0);
+        console.log(out_0);
+        throw new Error(`Fixture test (6730) failing 0. Not equal.`);
+    }
+    
+}
+const pat_externals = (pat) => (($target) => {
+if ($target.type === "pcon") {
+{
+let name = $target[0];
+let nl = $target[1];
+let args = $target[2];
+let l = $target[3];
+return bag$sland(one($co(name)($co(value)(nl))))(many(map(args)(pat_externals)))
+}
+}
+return empty
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat);
+
+const externals_type = (bound) => (t) => (($target) => {
+if ($target.type === "tvar") {
+return empty
+}
+if ($target.type === "tcon") {
+{
+let name = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target === true) {
+return empty
+}
+return one($co(name)($co(type)(l)))
+throw new Error('Failed to match. ' + valueToString($target));
+})(set$slhas(bound)(name))
+}
+}
+if ($target.type === "tapp") {
+{
+let one = $target[0];
+let two = $target[1];
+return bag$sland(externals_type(bound)(one))(externals_type(bound)(two))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(t);
+
+const zip = (one) => (two) => (($target) => {
+if ($target.type === "," &&
+$target[0].type === "nil" &&
+$target[1].type === "nil") {
+return nil
+}
+if ($target.type === "," &&
+$target[0].type === "cons" &&
+$target[1].type === "cons") {
+{
+let o = $target[0][0];
+let one = $target[0][1];
+let t = $target[1][0];
+let two = $target[1][1];
+return cons($co(o)(t))(zip(one)(two))
+}
+}
+return fatal("Unbalanced zip")
+throw new Error('Failed to match. ' + valueToString($target));
+})($co(one)(two));
+
+{
+    const test = parse_pat;
+    
+    const in_0 = {"0":"1","1":16818,"type":"cst/id"};
+    const mod_0 = test(in_0);
+    const out_0 = pprim(pint(1)(16818))(16818);
+    if (!equal(mod_0, out_0)) {
+        console.log(mod_0);
+        console.log(out_0);
+        throw new Error(`Fixture test (16808) failing 0. Not equal.`);
+    }
+    
+
+    const in_1 = {"0":"a","1":16824,"type":"cst/id"};
+    const mod_1 = test(in_1);
+    const out_1 = pvar("a")(16824);
+    if (!equal(mod_1, out_1)) {
+        console.log(mod_1);
+        console.log(out_1);
+        throw new Error(`Fixture test (16808) failing 1. Not equal.`);
+    }
+    
+
+    const in_2 = {"0":"_","1":16830,"type":"cst/id"};
+    const mod_2 = test(in_2);
+    const out_2 = pany(16830);
+    if (!equal(mod_2, out_2)) {
+        console.log(mod_2);
+        console.log(out_2);
+        throw new Error(`Fixture test (16808) failing 2. Not equal.`);
+    }
+    
+
+    const in_3 = {"0":{"0":{"0":"some","1":16853,"type":"cst/id"},"1":{"0":{"0":"v","1":16854,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":16852,"type":"cst/list"};
+    const mod_3 = test(in_3);
+    const out_3 = pcon("some")(16853)(cons(pvar("v")(16854))(nil))(16852);
+    if (!equal(mod_3, out_3)) {
+        console.log(mod_3);
+        console.log(out_3);
+        throw new Error(`Fixture test (16808) failing 3. Not equal.`);
+    }
+    
+
+    const in_4 = {"0":{"type":"nil"},"1":16872,"type":"cst/array"};
+    const mod_4 = test(in_4);
+    const out_4 = pcon("nil")(16872)(nil)(16872);
+    if (!equal(mod_4, out_4)) {
+        console.log(mod_4);
+        console.log(out_4);
+        throw new Error(`Fixture test (16808) failing 4. Not equal.`);
+    }
+    
+
+    const in_5 = {"0":{"0":{"0":"1","1":16886,"type":"cst/id"},"1":{"0":{"0":"2","1":16887,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":16885,"type":"cst/array"};
+    const mod_5 = test(in_5);
+    const out_5 = pcon("cons")(16885)(cons(pprim(pint(1)(16886))(16886))(cons(pcon("cons")(16885)(cons(pprim(pint(2)(16887))(16887))(cons(pcon("nil")(16885)(nil)(16885))(nil)))(16885))(nil)))(16885);
+    if (!equal(mod_5, out_5)) {
+        console.log(mod_5);
+        console.log(out_5);
+        throw new Error(`Fixture test (16808) failing 5. Not equal.`);
+    }
+    
+
+    const in_6 = {"0":{"0":{"0":"1","1":17004,"type":"cst/id"},"1":{"0":{"0":{"0":"b","1":17005,"type":"cst/id"},"1":17008,"type":"cst/spread"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":17003,"type":"cst/array"};
+    const mod_6 = test(in_6);
+    const out_6 = pcon("cons")(17003)(cons(pprim(pint(1)(17004))(17004))(cons(pvar("b")(17005))(nil)))(17003);
+    if (!equal(mod_6, out_6)) {
+        console.log(mod_6);
+        console.log(out_6);
+        throw new Error(`Fixture test (16808) failing 6. Not equal.`);
+    }
+    
+
+    const in_7 = {"0":{"0":{"0":",","1":16929,"type":"cst/id"},"1":{"0":{"0":"1","1":16930,"type":"cst/id"},"1":{"0":{"0":"2","1":16931,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16928,"type":"cst/list"};
+    const mod_7 = test(in_7);
+    const out_7 = pcon(",")(16928)(cons(pprim(pint(1)(16930))(16930))(cons(pprim(pint(2)(16931))(16931))(nil)))(16928);
+    if (!equal(mod_7, out_7)) {
+        console.log(mod_7);
+        console.log(out_7);
+        throw new Error(`Fixture test (16808) failing 7. Not equal.`);
+    }
+    
+
+    const in_8 = {"0":{"0":{"0":",","1":16959,"type":"cst/id"},"1":{"0":{"0":"1","1":16960,"type":"cst/id"},"1":{"0":{"0":"2","1":16961,"type":"cst/id"},"1":{"0":{"0":"3","1":16962,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16958,"type":"cst/list"};
+    const mod_8 = test(in_8);
+    const out_8 = pcon(",")(16958)(cons(pprim(pint(1)(16960))(16960))(cons(pcon(",")(16958)(cons(pprim(pint(2)(16961))(16961))(cons(pprim(pint(3)(16962))(16962))(nil)))(16958))(nil)))(16958);
+    if (!equal(mod_8, out_8)) {
+        console.log(mod_8);
+        console.log(out_8);
+        throw new Error(`Fixture test (16808) failing 8. Not equal.`);
+    }
+    
+}
+const get_id = (x) => (($target) => {
+if ($target.type === "cst/id") {
+{
+let name = $target[0];
+let l = $target[1];
+return $co(name)(l)
+}
+}
+return fatal("type argument must be identifier")
+throw new Error('Failed to match. ' + valueToString($target));
+})(x);
+
+const id_with_maybe_args = (head) => (($target) => {
+if ($target.type === "cst/id") {
+{
+let id = $target[0];
+let li = $target[1];
+return $co(id)($co(li)(nil))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id") {
+{
+let id = $target[0][0][0];
+let li = $target[0][0][1];
+let args = $target[0][1];
+return $co(id)($co(li)(map(args)(get_id)))
+}
+}
+return fatal("Invalid type constructor")
+throw new Error('Failed to match. ' + valueToString($target));
+})(head);
+
+const cst_loc = (cst) => (($target) => {
+if ($target.type === "cst/list") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "cst/id") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "cst/array") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "cst/string") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "cst/spread") {
+{
+let l = $target[1];
+return l
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(cst);
+
+const parse_type_constructor = (constr) => (($target) => {
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id") {
+{
+let name = $target[0][0][0];
+let ni = $target[0][0][1];
+let args = $target[0][1];
+let l = $target[1];
+return some($co(name)($co(ni)($co(map(args)(parse_type))(l))))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "nil") {
+{
+let l = $target[1];
+return none
+}
+}
+return fatal("Invalid type constructor")
+throw new Error('Failed to match. ' + valueToString($target));
+})(constr);
+
+/* type alias */
+const local = (v0) => (v1) => ({type: "local", 0: v0, 1: v1})
+const global = (v0) => (v1) => (v2) => (v3) => ({type: "global", 0: v0, 1: v1, 2: v2, 3: v3})
+const bound_and_names = ({1: names, 0: bound}) => ({1: names$qu, 0: bound$qu}) => $co(concat(cons(bound)(cons(bound$qu)(nil))))(bag$sland(names)(names$qu));
+
+const type$slnames = (free) => (body) => (($target) => {
+if ($target.type === "tvar") {
+{
+let name = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target.type === "some") {
+{
+let dl = $target[0];
+return one(local(l)(usage(dl)))
+}
+}
+return empty
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(free)(name))
+}
+}
+if ($target.type === "tcon") {
+{
+let name = $target[0];
+let l = $target[1];
+return one(global(name)(type)(l)(usage($unit)))
+}
+}
+if ($target.type === "tapp") {
+{
+let target = $target[0];
+let arg = $target[1];
+return bag$sland(type$slnames(free)(target))(type$slnames(free)(arg))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(body);
+
+const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
+const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
+const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
+const equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1})
+const elambda = (v0) => (v1) => (v2) => ({type: "elambda", 0: v0, 1: v1, 2: v2})
+const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2})
+const elet = (v0) => (v1) => (v2) => ({type: "elet", 0: v0, 1: v1, 2: v2})
+const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2})
+
+const quot$slexpr = (v0) => ({type: "quot/expr", 0: v0})
+const quot$sltop = (v0) => ({type: "quot/top", 0: v0})
+const quot$sltype = (v0) => ({type: "quot/type", 0: v0})
+const quot$slpat = (v0) => ({type: "quot/pat", 0: v0})
+const quot$slquot = (v0) => ({type: "quot/quot", 0: v0})
+
+const ttypealias = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "ttypealias", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+const tdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "tdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+const tdef = (v0) => (v1) => (v2) => (v3) => ({type: "tdef", 0: v0, 1: v1, 2: v2, 3: v3})
+const texpr = (v0) => (v1) => ({type: "texpr", 0: v0, 1: v1})
+const parse_top = (cst) => (($target) => {
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "def" &&
+$target[0][1].type === "cons" &&
+$target[0][1][0].type === "cst/id" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][1].type === "nil") {
+{
+let id = $target[0][1][0][0];
+let li = $target[0][1][0][1];
+let value = $target[0][1][1][0];
+let l = $target[1];
+return tdef(id)(li)(parse_expr(value))(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "defn" &&
+$target[0][1].type === "cons" &&
+$target[0][1][0].type === "cst/id" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][0].type === "cst/array" &&
+$target[0][1][1][1].type === "cons" &&
+$target[0][1][1][1][1].type === "nil") {
+{
+let a = $target[0][0][1];
+let id = $target[0][1][0][0];
+let li = $target[0][1][0][1];
+let args = $target[0][1][1][0][0];
+let b = $target[0][1][1][0][1];
+let body = $target[0][1][1][1][0];
+let c = $target[1];
+return ((body) => tdef(id)(li)(body)(c))(parse_expr(cst$sllist(cons(cst$slid("fn")(a))(cons(cst$slarray(args)(b))(cons(body)(nil))))(c)))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "defn") {
+{
+let l = $target[1];
+return fatal(`Invalid 'defn' ${int_to_string(l)}`)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "deftype" &&
+$target[0][1].type === "cons") {
+{
+let head = $target[0][1][0];
+let items = $target[0][1][1];
+let l = $target[1];
+return (({1: {1: args, 0: li}, 0: id}) => ((constrs) => tdeftype(id)(li)(args)(constrs)(l))(filter_some(map(items)(parse_type_constructor))))(id_with_maybe_args(head))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "deftype") {
+{
+let l = $target[1];
+return fatal(`Invalid 'deftype' ${int_to_string(l)}`)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "typealias" &&
+$target[0][1].type === "cons" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][1].type === "nil") {
+{
+let head = $target[0][1][0];
+let body = $target[0][1][1][0];
+let l = $target[1];
+return (({1: {1: args, 0: li}, 0: id}) => ttypealias(id)(li)(args)(parse_type(body))(l))(id_with_maybe_args(head))
+}
+}
+return texpr(parse_expr(cst))(cst_loc(cst))
+throw new Error('Failed to match. ' + valueToString($target));
+})(cst);
+
+
+const parse_expr = (cst) => (($target) => {
+if ($target.type === "cst/id" &&
+$target[0] === "true") {
+{
+let l = $target[1];
+return eprim(pbool(true)(l))(l)
+}
+}
+if ($target.type === "cst/id" &&
+$target[0] === "false") {
+{
+let l = $target[1];
+return eprim(pbool(false)(l))(l)
+}
+}
+if ($target.type === "cst/string") {
+{
+let first = $target[0];
+let templates = $target[1];
+let l = $target[2];
+return estr(first)(parse_template(templates))(l)
+}
+}
+if ($target.type === "cst/id") {
+{
+let id = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target.type === "some") {
+{
+let int = $target[0];
+return eprim(pint(int)(l))(l)
+}
+}
+if ($target.type === "none") {
+return evar(id)(l)
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(string_to_int(id))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "@" &&
+$target[0][1].type === "cons" &&
+$target[0][1][1].type === "nil") {
+{
+let body = $target[0][1][0];
+let l = $target[1];
+return equot(quot$slexpr(parse_expr(body)))(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "@@" &&
+$target[0][1].type === "cons" &&
+$target[0][1][1].type === "nil") {
+{
+let body = $target[0][1][0];
+let l = $target[1];
+return equot(quot$slquot(body))(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "@!" &&
+$target[0][1].type === "cons" &&
+$target[0][1][1].type === "nil") {
+{
+let body = $target[0][1][0];
+let l = $target[1];
+return equot(quot$sltop(parse_top(body)))(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "@t" &&
+$target[0][1].type === "cons" &&
+$target[0][1][1].type === "nil") {
+{
+let body = $target[0][1][0];
+let l = $target[1];
+return equot(quot$sltype(parse_type(body)))(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "@p" &&
+$target[0][1].type === "cons" &&
+$target[0][1][1].type === "nil") {
+{
+let body = $target[0][1][0];
+let l = $target[1];
+return equot(quot$slpat(parse_pat(body)))(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "if" &&
+$target[0][1].type === "cons" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][1].type === "cons" &&
+$target[0][1][1][1][1].type === "nil") {
+{
+let cond = $target[0][1][0];
+let yes = $target[0][1][1][0];
+let no = $target[0][1][1][1][0];
+let l = $target[1];
+return ematch(parse_expr(cond))(cons($co(pprim(pbool(true)(l))(l))(parse_expr(yes)))(cons($co(pany(l))(parse_expr(no)))(nil)))(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "fn" &&
+$target[0][1].type === "cons" &&
+$target[0][1][0].type === "cst/array" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][1].type === "nil") {
+{
+let args = $target[0][1][0][0];
+let body = $target[0][1][1][0];
+let b = $target[1];
+return elambda(map(args)(parse_pat))(parse_expr(body))(b)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "fn") {
+{
+let l = $target[1];
+return fatal(`Invalid 'fn' ${int_to_string(l)}`)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "match" &&
+$target[0][1].type === "cons") {
+{
+let target = $target[0][1][0];
+let cases = $target[0][1][1];
+let l = $target[1];
+return ematch(parse_expr(target))(map(pairs(cases))(($case) => (({1: expr, 0: pat}) => $co(parse_pat(pat))(parse_expr(expr)))($case)))(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "let" &&
+$target[0][1].type === "cons" &&
+$target[0][1][0].type === "cst/array" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][1].type === "nil") {
+{
+let inits = $target[0][1][0][0];
+let body = $target[0][1][1][0];
+let l = $target[1];
+return elet(map(pairs(inits))((pair) => (({1: value, 0: pat}) => $co(parse_pat(pat))(parse_expr(value)))(pair)))(parse_expr(body))(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "let->" &&
+$target[0][1].type === "cons" &&
+$target[0][1][0].type === "cst/array" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][1].type === "nil") {
+{
+let el = $target[0][0][1];
+let inits = $target[0][1][0][0];
+let body = $target[0][1][1][0];
+let l = $target[1];
+return foldr(parse_expr(body))(pairs(inits))((body) => (init) => (({1: value, 0: pat}) => eapp(evar(">>=")(el))(cons(parse_expr(value))(cons(elambda(cons(parse_pat(pat))(nil))(body)(l))(nil)))(l))(init))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "let") {
+{
+let l = $target[1];
+return fatal(`Invalid 'let' ${int_to_string(l)}`)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === ",") {
+{
+let il = $target[0][0][1];
+let args = $target[0][1];
+let l = $target[1];
+return loop(args)((args) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return evar(",")(il)
+}
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return parse_expr(one)
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return eapp(evar(",")(il))(cons(parse_expr(one))(cons(recur(rest))(nil)))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(args))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "nil") {
+{
+let l = $target[1];
+return evar("()")(l)
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons") {
+{
+let target = $target[0][0];
+let args = $target[0][1];
+let l = $target[1];
+return eapp(parse_expr(target))(map(args)(parse_expr))(l)
+}
+}
+if ($target.type === "cst/array") {
+{
+let args = $target[0];
+let l = $target[1];
+return loop(args)((args) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return evar("nil")(l)
+}
+if ($target.type === "cons" &&
+$target[0].type === "cst/spread" &&
+$target[1].type === "nil") {
+{
+let inner = $target[0][0];
+return parse_expr(inner)
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return eapp(evar("cons")(l))(cons(parse_expr(one))(cons(recur(rest))(nil)))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(args))
+}
+}
+return fatal("Invalid expression")
+throw new Error('Failed to match. ' + valueToString($target));
+})(cst);
+
+
+const parse_template = (templates) => map(templates)(({1: {1: l, 0: string}, 0: expr}) => $co(parse_expr(expr))($co(string)(l)));
+
+{
+    const test = parse_top;
+    
+    const in_0 = {"0":{"0":{"0":"def","1":1301,"type":"cst/id"},"1":{"0":{"0":"a","1":1302,"type":"cst/id"},"1":{"0":{"0":"2","1":1303,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1300,"type":"cst/list"};
+    const mod_0 = test(in_0);
+    const out_0 = tdef("a")(1302)(eprim(pint(2)(1303))(1303))(1300);
+    if (!equal(mod_0, out_0)) {
+        console.log(mod_0);
+        console.log(out_0);
+        throw new Error(`Fixture test (684) failing 0. Not equal.`);
+    }
+    
+
+    const in_1 = {"0":{"0":{"0":"typealias","1":6270,"type":"cst/id"},"1":{"0":{"0":"hello","1":6271,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":",","1":6273,"type":"cst/id"},"1":{"0":{"0":"int","1":6274,"type":"cst/id"},"1":{"0":{"0":"string","1":6275,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":6272,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":6269,"type":"cst/list"};
+    const mod_1 = test(in_1);
+    const out_1 = ttypealias("hello")(6271)(nil)(tapp(tapp(tcon(",")(6273))(tcon("int")(6274))(6272))(tcon("string")(6275))(6272))(6269);
+    if (!equal(mod_1, out_1)) {
+        console.log(mod_1);
+        console.log(out_1);
+        throw new Error(`Fixture test (684) failing 1. Not equal.`);
+    }
+    
+
+    const in_2 = {"0":{"0":{"0":"typealias","1":6335,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"hello","1":6337,"type":"cst/id"},"1":{"0":{"0":"t","1":6338,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":6336,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":",","1":6340,"type":"cst/id"},"1":{"0":{"0":"int","1":6341,"type":"cst/id"},"1":{"0":{"0":"t","1":6342,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":6339,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":6334,"type":"cst/list"};
+    const mod_2 = test(in_2);
+    const out_2 = ttypealias("hello")(6337)(cons($co("t")(6338))(nil))(tapp(tapp(tcon(",")(6340))(tcon("int")(6341))(6339))(tcon("t")(6342))(6339))(6334);
+    if (!equal(mod_2, out_2)) {
+        console.log(mod_2);
+        console.log(out_2);
+        throw new Error(`Fixture test (684) failing 2. Not equal.`);
+    }
+    
+
+    const in_3 = {"0":{"0":{"0":"deftype","1":1334,"type":"cst/id"},"1":{"0":{"0":"what","1":1335,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"one","1":1337,"type":"cst/id"},"1":{"0":{"0":"int","1":1338,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":1336,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"two","1":1340,"type":"cst/id"},"1":{"0":{"0":"bool","1":1341,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":1339,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1333,"type":"cst/list"};
+    const mod_3 = test(in_3);
+    const out_3 = tdeftype("what")(1335)(nil)(cons($co("one")($co(1337)($co(cons(tcon("int")(1338))(nil))(1336))))(cons($co("two")($co(1340)($co(cons(tcon("bool")(1341))(nil))(1339))))(nil)))(1333);
+    if (!equal(mod_3, out_3)) {
+        console.log(mod_3);
+        console.log(out_3);
+        throw new Error(`Fixture test (684) failing 3. Not equal.`);
+    }
+    
+
+    const in_4 = {"0":{"0":{"0":"deftype","1":1484,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"array","1":1486,"type":"cst/id"},"1":{"0":{"0":"a","1":1487,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":1485,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"nil","1":1489,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"1":1488,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"cons","1":1491,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"array","1":1493,"type":"cst/id"},"1":{"0":{"0":"a","1":1494,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":1492,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":1490,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1483,"type":"cst/list"};
+    const mod_4 = test(in_4);
+    const out_4 = tdeftype("array")(1486)(cons($co("a")(1487))(nil))(cons($co("nil")($co(1489)($co(nil)(1488))))(cons($co("cons")($co(1491)($co(cons(tapp(tcon("array")(1493))(tcon("a")(1494))(1492))(nil))(1490))))(nil)))(1483);
+    if (!equal(mod_4, out_4)) {
+        console.log(mod_4);
+        console.log(out_4);
+        throw new Error(`Fixture test (684) failing 4. Not equal.`);
+    }
+    
+
+    const in_5 = {"0":{"0":{"0":"+","1":1969,"type":"cst/id"},"1":{"0":{"0":"1","1":1970,"type":"cst/id"},"1":{"0":{"0":"2","1":1971,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1968,"type":"cst/list"};
+    const mod_5 = test(in_5);
+    const out_5 = texpr(eapp(evar("+")(1969))(cons(eprim(pint(1)(1970))(1970))(cons(eprim(pint(2)(1971))(1971))(nil)))(1968))(1968);
+    if (!equal(mod_5, out_5)) {
+        console.log(mod_5);
+        console.log(out_5);
+        throw new Error(`Fixture test (684) failing 5. Not equal.`);
+    }
+    
+
+    const in_6 = {"0":{"0":{"0":"defn","1":2050,"type":"cst/id"},"1":{"0":{"0":"a","1":2051,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"m","1":2055,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"1":2052,"type":"cst/array"},"1":{"0":{"0":"m","1":2053,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":2049,"type":"cst/list"};
+    const mod_6 = test(in_6);
+    const out_6 = tdef("a")(2051)(elambda(cons(pvar("m")(2055))(nil))(evar("m")(2053))(2049))(2049);
+    if (!equal(mod_6, out_6)) {
+        console.log(mod_6);
+        console.log(out_6);
+        throw new Error(`Fixture test (684) failing 6. Not equal.`);
+    }
+    
+}
+{
+    const test = parse_expr;
+    
+    const in_0 = {"0":"true","1":1163,"type":"cst/id"};
+    const mod_0 = test(in_0);
+    const out_0 = eprim(pbool(true)(1163))(1163);
+    if (!equal(mod_0, out_0)) {
+        console.log(mod_0);
+        console.log(out_0);
+        throw new Error(`Fixture test (1111) failing 0. Not equal.`);
+    }
+    
+
+    const in_1 = {"0":{"0":{"0":",","1":7621,"type":"cst/id"},"1":{"0":{"0":"1","1":7622,"type":"cst/id"},"1":{"0":{"0":"2","1":7623,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":7620,"type":"cst/list"};
+    const mod_1 = test(in_1);
+    const out_1 = eapp(evar(",")(7621))(cons(eprim(pint(1)(7622))(7622))(cons(eprim(pint(2)(7623))(7623))(nil)))(7620);
+    if (!equal(mod_1, out_1)) {
+        console.log(mod_1);
+        console.log(out_1);
+        throw new Error(`Fixture test (1111) failing 1. Not equal.`);
+    }
+    
+
+    const in_2 = {"0":{"0":{"0":",","1":7531,"type":"cst/id"},"1":{"0":{"0":"1","1":7532,"type":"cst/id"},"1":{"0":{"0":"2","1":7533,"type":"cst/id"},"1":{"0":{"0":"3","1":7534,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":7530,"type":"cst/list"};
+    const mod_2 = test(in_2);
+    const out_2 = eapp(evar(",")(7531))(cons(eprim(pint(1)(7532))(7532))(cons(eapp(evar(",")(7531))(cons(eprim(pint(2)(7533))(7533))(cons(eprim(pint(3)(7534))(7534))(nil)))(7530))(nil)))(7530);
+    if (!equal(mod_2, out_2)) {
+        console.log(mod_2);
+        console.log(out_2);
+        throw new Error(`Fixture test (1111) failing 2. Not equal.`);
+    }
+    
+
+    const in_3 = {"0":{"0":{"0":"match","1":7783,"type":"cst/id"},"1":{"0":{"0":"1","1":7784,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":",","1":7786,"type":"cst/id"},"1":{"0":{"0":"1","1":7787,"type":"cst/id"},"1":{"0":{"0":"2","1":7788,"type":"cst/id"},"1":{"0":{"0":"3","1":7790,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":7785,"type":"cst/list"},"1":{"0":{"0":"1","1":7791,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":7782,"type":"cst/list"};
+    const mod_3 = test(in_3);
+    const out_3 = ematch(eprim(pint(1)(7784))(7784))(cons($co(pcon(",")(7785)(cons(pprim(pint(1)(7787))(7787))(cons(pcon(",")(7785)(cons(pprim(pint(2)(7788))(7788))(cons(pprim(pint(3)(7790))(7790))(nil)))(7785))(nil)))(7785))(eprim(pint(1)(7791))(7791)))(nil))(7782);
+    if (!equal(mod_3, out_3)) {
+        console.log(mod_3);
+        console.log(out_3);
+        throw new Error(`Fixture test (1111) failing 3. Not equal.`);
+    }
+    
+
+    const in_4 = {"0":{"0":{"0":"1","1":3402,"type":"cst/id"},"1":{"0":{"0":{"0":"b","1":3403,"type":"cst/id"},"1":3406,"type":"cst/spread"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":3401,"type":"cst/array"};
+    const mod_4 = test(in_4);
+    const out_4 = eapp(evar("cons")(3401))(cons(eprim(pint(1)(3402))(3402))(cons(evar("b")(3403))(nil)))(3401);
+    if (!equal(mod_4, out_4)) {
+        console.log(mod_4);
+        console.log(out_4);
+        throw new Error(`Fixture test (1111) failing 4. Not equal.`);
+    }
+    
+
+    const in_5 = {"0":"hi","1":{"type":"nil"},"2":1177,"type":"cst/string"};
+    const mod_5 = test(in_5);
+    const out_5 = estr("hi")(nil)(1177);
+    if (!equal(mod_5, out_5)) {
+        console.log(mod_5);
+        console.log(out_5);
+        throw new Error(`Fixture test (1111) failing 5. Not equal.`);
+    }
+    
+
+    const in_6 = {"0":{"0":{"0":"@t","1":5332,"type":"cst/id"},"1":{"0":{"0":"a","1":5333,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":5331,"type":"cst/list"};
+    const mod_6 = test(in_6);
+    const out_6 = equot(quot$sltype(tcon("a")(5333)))(5331);
+    if (!equal(mod_6, out_6)) {
+        console.log(mod_6);
+        console.log(out_6);
+        throw new Error(`Fixture test (1111) failing 6. Not equal.`);
+    }
+    
+
+    const in_7 = {"0":{"0":{"0":"@t","1":5362,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"a","1":5364,"type":"cst/id"},"1":{"0":{"0":"b","1":5365,"type":"cst/id"},"1":{"0":{"0":"c","1":5366,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":5363,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":5360,"type":"cst/list"};
+    const mod_7 = test(in_7);
+    const out_7 = equot(quot$sltype(tapp(tapp(tcon("a")(5364))(tcon("b")(5365))(5363))(tcon("c")(5366))(5363)))(5360);
+    if (!equal(mod_7, out_7)) {
+        console.log(mod_7);
+        console.log(out_7);
+        throw new Error(`Fixture test (1111) failing 7. Not equal.`);
+    }
+    
+
+    const in_8 = {"0":{"0":{"0":"@p","1":5348,"type":"cst/id"},"1":{"0":{"0":"_","1":5349,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":5346,"type":"cst/list"};
+    const mod_8 = test(in_8);
+    const out_8 = equot(quot$slpat(pany(5349)))(5346);
+    if (!equal(mod_8, out_8)) {
+        console.log(mod_8);
+        console.log(out_8);
+        throw new Error(`Fixture test (1111) failing 8. Not equal.`);
+    }
+    
+
+    const in_9 = {"0":{"0":{"0":"if","1":4620,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"=","1":4622,"type":"cst/id"},"1":{"0":{"0":"a","1":4623,"type":"cst/id"},"1":{"0":{"0":"b","1":4624,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":4621,"type":"cst/list"},"1":{"0":{"0":"a","1":4625,"type":"cst/id"},"1":{"0":{"0":"b","1":4626,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":4619,"type":"cst/list"};
+    const mod_9 = test(in_9);
+    const out_9 = ematch(eapp(evar("=")(4622))(cons(evar("a")(4623))(cons(evar("b")(4624))(nil)))(4621))(cons($co(pprim(pbool(true)(4619))(4619))(evar("a")(4625)))(cons($co(pany(4619))(evar("b")(4626)))(nil)))(4619);
+    if (!equal(mod_9, out_9)) {
+        console.log(mod_9);
+        console.log(out_9);
+        throw new Error(`Fixture test (1111) failing 9. Not equal.`);
+    }
+    
+
+    const in_10 = {"0":"a","1":{"0":{"0":{"0":"1","1":3610,"type":"cst/id"},"1":{"0":"b","1":3611,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":3608,"type":"cst/string"};
+    const mod_10 = test(in_10);
+    const out_10 = estr("a")(cons($co(eprim(pint(1)(3610))(3610))($co("b")(3611)))(nil))(3608);
+    if (!equal(mod_10, out_10)) {
+        console.log(mod_10);
+        console.log(out_10);
+        throw new Error(`Fixture test (1111) failing 10. Not equal.`);
+    }
+    
+
+    const in_11 = {"0":{"0":{"0":"1","1":3239,"type":"cst/id"},"1":{"0":{"0":"2","1":3240,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":3238,"type":"cst/array"};
+    const mod_11 = test(in_11);
+    const out_11 = eapp(evar("cons")(3238))(cons(eprim(pint(1)(3239))(3239))(cons(eapp(evar("cons")(3238))(cons(eprim(pint(2)(3240))(3240))(cons(evar("nil")(3238))(nil)))(3238))(nil)))(3238);
+    if (!equal(mod_11, out_11)) {
+        console.log(mod_11);
+        console.log(out_11);
+        throw new Error(`Fixture test (1111) failing 11. Not equal.`);
+    }
+    
+
+    const in_12 = {"0":"12","1":1188,"type":"cst/id"};
+    const mod_12 = test(in_12);
+    const out_12 = eprim(pint(12)(1188))(1188);
+    if (!equal(mod_12, out_12)) {
+        console.log(mod_12);
+        console.log(out_12);
+        throw new Error(`Fixture test (1111) failing 12. Not equal.`);
+    }
+    
+
+    const in_13 = {"0":{"0":{"0":"match","1":2996,"type":"cst/id"},"1":{"0":{"0":"2","1":2997,"type":"cst/id"},"1":{"0":{"0":"1","1":2998,"type":"cst/id"},"1":{"0":{"0":"2","1":2999,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":2995,"type":"cst/list"};
+    const mod_13 = test(in_13);
+    const out_13 = ematch(eprim(pint(2)(2997))(2997))(cons($co(pprim(pint(1)(2998))(2998))(eprim(pint(2)(2999))(2999)))(nil))(2995);
+    if (!equal(mod_13, out_13)) {
+        console.log(mod_13);
+        console.log(out_13);
+        throw new Error(`Fixture test (1111) failing 13. Not equal.`);
+    }
+    
+
+    const in_14 = {"0":"abc","1":1200,"type":"cst/id"};
+    const mod_14 = test(in_14);
+    const out_14 = evar("abc")(1200);
+    if (!equal(mod_14, out_14)) {
+        console.log(mod_14);
+        console.log(out_14);
+        throw new Error(`Fixture test (1111) failing 14. Not equal.`);
+    }
+    
+
+    const in_15 = {"0":{"0":{"0":"let","1":4454,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"a","1":4456,"type":"cst/id"},"1":{"0":{"0":"1","1":4457,"type":"cst/id"},"1":{"0":{"0":"b","1":4458,"type":"cst/id"},"1":{"0":{"0":"2","1":4459,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":4455,"type":"cst/array"},"1":{"0":{"0":"a","1":4460,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":4453,"type":"cst/list"};
+    const mod_15 = test(in_15);
+    const out_15 = elet(cons($co(pvar("a")(4456))(eprim(pint(1)(4457))(4457)))(cons($co(pvar("b")(4458))(eprim(pint(2)(4459))(4459)))(nil)))(evar("a")(4460))(4453);
+    if (!equal(mod_15, out_15)) {
+        console.log(mod_15);
+        console.log(out_15);
+        throw new Error(`Fixture test (1111) failing 15. Not equal.`);
+    }
+    
+
+    const in_16 = {"0":{"0":{"0":"let->","1":6213,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"v","1":6215,"type":"cst/id"},"1":{"0":{"0":"hi","1":6216,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":6214,"type":"cst/array"},"1":{"0":{"0":"v2","1":6217,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":6212,"type":"cst/list"};
+    const mod_16 = test(in_16);
+    const out_16 = eapp(evar(">>=")(6213))(cons(evar("hi")(6216))(cons(elambda(cons(pvar("v")(6215))(nil))(evar("v2")(6217))(6212))(nil)))(6212);
+    if (!equal(mod_16, out_16)) {
+        console.log(mod_16);
+        console.log(out_16);
+        throw new Error(`Fixture test (1111) failing 16. Not equal.`);
+    }
+    
+
+    const in_17 = {"0":{"0":{"0":"fn","1":1236,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"a","1":1238,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"1":1237,"type":"cst/array"},"1":{"0":{"0":"1","1":1239,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1235,"type":"cst/list"};
+    const mod_17 = test(in_17);
+    const out_17 = elambda(cons(pvar("a")(1238))(nil))(eprim(pint(1)(1239))(1239))(1235);
+    if (!equal(mod_17, out_17)) {
+        console.log(mod_17);
+        console.log(out_17);
+        throw new Error(`Fixture test (1111) failing 17. Not equal.`);
+    }
+    
+
+    const in_18 = {"0":{"0":{"0":"fn","1":1254,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"a","1":1256,"type":"cst/id"},"1":{"0":{"0":"b","1":1257,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":1255,"type":"cst/array"},"1":{"0":{"0":"2","1":1258,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1253,"type":"cst/list"};
+    const mod_18 = test(in_18);
+    const out_18 = elambda(cons(pvar("a")(1256))(cons(pvar("b")(1257))(nil)))(eprim(pint(2)(1258))(1258))(1253);
+    if (!equal(mod_18, out_18)) {
+        console.log(mod_18);
+        console.log(out_18);
+        throw new Error(`Fixture test (1111) failing 18. Not equal.`);
+    }
+    
+
+    const in_19 = {"0":{"0":{"0":"fn","1":1909,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":{"0":{"0":",","1":1912,"type":"cst/id"},"1":{"0":{"0":"a","1":1913,"type":"cst/id"},"1":{"0":{"0":"b","1":1914,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1911,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"1":1910,"type":"cst/array"},"1":{"0":{"0":"a","1":1915,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1908,"type":"cst/list"};
+    const mod_19 = test(in_19);
+    const out_19 = elambda(cons(pcon(",")(1911)(cons(pvar("a")(1913))(cons(pvar("b")(1914))(nil)))(1911))(nil))(evar("a")(1915))(1908);
+    if (!equal(mod_19, out_19)) {
+        console.log(mod_19);
+        console.log(out_19);
+        throw new Error(`Fixture test (1111) failing 19. Not equal.`);
+    }
+    
+
+    const in_20 = {"0":{"0":{"0":"+","1":1519,"type":"cst/id"},"1":{"0":{"0":"1","1":1520,"type":"cst/id"},"1":{"0":{"0":"2","1":1521,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1288,"type":"cst/list"};
+    const mod_20 = test(in_20);
+    const out_20 = eapp(evar("+")(1519))(cons(eprim(pint(1)(1520))(1520))(cons(eprim(pint(2)(1521))(1521))(nil)))(1288);
+    if (!equal(mod_20, out_20)) {
+        console.log(mod_20);
+        console.log(out_20);
+        throw new Error(`Fixture test (1111) failing 20. Not equal.`);
+    }
+    
+
+    const in_21 = {"0":{"0":{"0":"int-to-string","1":1615,"type":"cst/id"},"1":{"0":{"0":"23","1":1616,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":1614,"type":"cst/list"};
+    const mod_21 = test(in_21);
+    const out_21 = eapp(evar("int-to-string")(1615))(cons(eprim(pint(23)(1616))(1616))(nil))(1614);
+    if (!equal(mod_21, out_21)) {
+        console.log(mod_21);
+        console.log(out_21);
+        throw new Error(`Fixture test (1111) failing 21. Not equal.`);
+    }
+    
+
+    const in_22 = {"0":{"0":{"0":"let","1":1677,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"x","1":1679,"type":"cst/id"},"1":{"0":{"0":"2","1":1680,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":1678,"type":"cst/array"},"1":{"0":{"0":"x","1":1681,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1676,"type":"cst/list"};
+    const mod_22 = test(in_22);
+    const out_22 = elet(cons($co(pvar("x")(1679))(eprim(pint(2)(1680))(1680)))(nil))(evar("x")(1681))(1676);
+    if (!equal(mod_22, out_22)) {
+        console.log(mod_22);
+        console.log(out_22);
+        throw new Error(`Fixture test (1111) failing 22. Not equal.`);
+    }
+    
+
+    const in_23 = {"0":{"0":{"0":"let","1":1790,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":{"0":{"0":",","1":1793,"type":"cst/id"},"1":{"0":{"0":"a","1":1794,"type":"cst/id"},"1":{"0":{"0":"b","1":1795,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1792,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":",","1":1797,"type":"cst/id"},"1":{"0":{"0":"2","1":1798,"type":"cst/id"},"1":{"0":{"0":"3","1":1799,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1796,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":1791,"type":"cst/array"},"1":{"0":{"0":"1","1":1800,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":1789,"type":"cst/list"};
+    const mod_23 = test(in_23);
+    const out_23 = elet(cons($co(pcon(",")(1792)(cons(pvar("a")(1794))(cons(pvar("b")(1795))(nil)))(1792))(eapp(evar(",")(1797))(cons(eprim(pint(2)(1798))(1798))(cons(eprim(pint(3)(1799))(1799))(nil)))(1796)))(nil))(eprim(pint(1)(1800))(1800))(1789);
+    if (!equal(mod_23, out_23)) {
+        console.log(mod_23);
+        console.log(out_23);
+        throw new Error(`Fixture test (1111) failing 23. Not equal.`);
+    }
+    
+
+    const in_24 = {"0":{"0":{"0":"@@","1":3109,"type":"cst/id"},"1":{"0":{"0":"1","1":3110,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":3108,"type":"cst/list"};
+    const mod_24 = test(in_24);
+    const out_24 = equot(quot$slquot(cst$slid("1")(3110)))(3108);
+    if (!equal(mod_24, out_24)) {
+        console.log(mod_24);
+        console.log(out_24);
+        throw new Error(`Fixture test (1111) failing 24. Not equal.`);
+    }
+    
+
+    const in_25 = {"0":{"0":{"0":"@","1":3123,"type":"cst/id"},"1":{"0":{"0":"1","1":3124,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":3122,"type":"cst/list"};
+    const mod_25 = test(in_25);
+    const out_25 = equot(quot$slexpr(eprim(pint(1)(3124))(3124)))(3122);
+    if (!equal(mod_25, out_25)) {
+        console.log(mod_25);
+        console.log(out_25);
+        throw new Error(`Fixture test (1111) failing 25. Not equal.`);
+    }
+    
+}
+const parse_and_compile = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "parse-and-compile", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+const externals = (bound) => (expr) => (($target) => {
+if ($target.type === "evar") {
+{
+let name = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target === true) {
+return empty
+}
+return one($co(name)($co(value)(l)))
+throw new Error('Failed to match. ' + valueToString($target));
+})(set$slhas(bound)(name))
+}
+}
+if ($target.type === "eprim") {
+return empty
+}
+if ($target.type === "estr") {
+{
+let templates = $target[1];
+return many(map(templates)((arg) => (($target) => {
+if ($target.type === "," &&
+$target[1].type === ",") {
+{
+let expr = $target[0];
+return externals(bound)(expr)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arg)))
+}
+}
+if ($target.type === "equot") {
+return empty
+}
+if ($target.type === "elambda") {
+{
+let pats = $target[0];
+let body = $target[1];
+return bag$sland(foldl(empty)(map(pats)(pat_externals))(bag$sland))(externals(foldl(bound)(map(pats)(pat_bound))(set$slmerge))(body))
+}
+}
+if ($target.type === "elet") {
+{
+let bindings = $target[0];
+let body = $target[1];
+return bag$sland(foldl(empty)(map(bindings)((arg) => (({1: init, 0: pat}) => bag$sland(pat_externals(pat))(externals(bound)(init)))(arg)))(bag$sland))(externals(foldl(bound)(map(bindings)((arg) => (({0: pat}) => pat_bound(pat))(arg)))(set$slmerge))(body))
+}
+}
+if ($target.type === "eapp") {
+{
+let target = $target[0];
+let args = $target[1];
+return bag$sland(externals(bound)(target))(foldl(empty)(map(args)(externals(bound)))(bag$sland))
+}
+}
+if ($target.type === "ematch") {
+{
+let expr = $target[0];
+let cases = $target[1];
+return bag$sland(externals(bound)(expr))(foldl(empty)(cases)((bag) => (arg) => (($target) => {
+if ($target.type === ",") {
+{
+let pat = $target[0];
+let body = $target[1];
+return bag$sland(bag$sland(bag)(pat_externals(pat)))(externals(set$slmerge(bound)(pat_bound(pat)))(body))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arg)))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(expr);
+
+{
+    const test = (x) => bag$slto_list(externals(set$slfrom_list(cons("+")(cons("-")(cons("cons")(cons("nil")(nil))))))(x));
+    
+    const in_0 = parse_expr({"0":"hi","1":7036,"type":"cst/id"});
+    const mod_0 = test(in_0);
+    const out_0 = cons($co("hi")($co(value)(7036)))(nil);
+    if (!equal(mod_0, out_0)) {
+        console.log(mod_0);
+        console.log(out_0);
+        throw new Error(`Fixture test (7013) failing 0. Not equal.`);
+    }
+    
+
+    const in_1 = parse_expr({"0":{"0":{"0":"1","1":7050,"type":"cst/id"},"1":{"0":{"0":"2","1":7051,"type":"cst/id"},"1":{"0":{"0":"c","1":7052,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":7049,"type":"cst/array"});
+    const mod_1 = test(in_1);
+    const out_1 = cons($co("c")($co(value)(7052)))(nil);
+    if (!equal(mod_1, out_1)) {
+        console.log(mod_1);
+        console.log(out_1);
+        throw new Error(`Fixture test (7013) failing 1. Not equal.`);
+    }
+    
+
+    const in_2 = parse_expr({"0":{"0":{"0":"one","1":7066,"type":"cst/id"},"1":{"0":{"0":"two","1":7067,"type":"cst/id"},"1":{"0":{"0":"three","1":7068,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":7065,"type":"cst/list"});
+    const mod_2 = test(in_2);
+    const out_2 = cons($co("one")($co(value)(7066)))(cons($co("two")($co(value)(7067)))(cons($co("three")($co(value)(7068)))(nil)));
+    if (!equal(mod_2, out_2)) {
+        console.log(mod_2);
+        console.log(out_2);
+        throw new Error(`Fixture test (7013) failing 2. Not equal.`);
+    }
+    
+}
+const names = (stmt) => (($target) => {
+if ($target.type === "tdef") {
+{
+let name = $target[0];
+let l = $target[1];
+return cons($co(name)($co(value)(l)))(nil)
+}
+}
+if ($target.type === "texpr") {
+return nil
+}
+if ($target.type === "ttypealias") {
+{
+let name = $target[0];
+let l = $target[1];
+return cons($co(name)($co(type)(l)))(nil)
+}
+}
+if ($target.type === "tdeftype") {
+{
+let name = $target[0];
+let l = $target[1];
+let constructors = $target[3];
+return cons($co(name)($co(type)(l)))(map(constructors)((arg) => (($target) => {
+if ($target.type === "," &&
+$target[1].type === "," &&
+$target[1][1].type === ",") {
+{
+let name = $target[0];
+let l = $target[1][0];
+return $co(name)($co(value)(l))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arg)))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(stmt);
+
+const externals_top = (stmt) => bag$slto_list((($target) => {
+if ($target.type === "tdeftype") {
+{
+let name = $target[0];
+let free = $target[2];
+let constructors = $target[3];
+return ((bound) => many(map(constructors)((constructor) => (($target) => {
+if ($target.type === "," &&
+$target[1].type === "," &&
+$target[1][1].type === ",") {
+{
+let args = $target[1][1][0];
+return (($target) => {
+if ($target.type === "nil") {
+return empty
+}
+return many(map(args)(externals_type(bound)))
+throw new Error('Failed to match. ' + valueToString($target));
+})(args)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(constructor))))(set$slfrom_list(cons(name)(map(free)(fst))))
+}
+}
+if ($target.type === "ttypealias") {
+{
+let name = $target[0];
+let args = $target[2];
+let body = $target[3];
+return ((bound) => externals_type(bound)(body))(set$slfrom_list(cons(name)(map(args)(fst))))
+}
+}
+if ($target.type === "tdef") {
+{
+let name = $target[0];
+let body = $target[2];
+return externals(set$sladd(set$slnil)(name))(body)
+}
+}
+if ($target.type === "texpr") {
+{
+let expr = $target[0];
+return externals(set$slnil)(expr)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(stmt));
+
+{
+    const test = (x) => externals_top(parse_top(x));
+    
+    const in_0 = {"0":{"0":{"0":"def","1":16446,"type":"cst/id"},"1":{"0":{"0":"x","1":16447,"type":"cst/id"},"1":{"0":{"0":"10","1":16448,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16434,"type":"cst/list"};
+    const mod_0 = test(in_0);
+    const out_0 = nil;
+    if (!equal(mod_0, out_0)) {
+        console.log(mod_0);
+        console.log(out_0);
+        throw new Error(`Fixture test (16417) failing 0. Not equal.`);
+    }
+    
+
+    const in_1 = {"0":{"0":{"0":"deftype","1":16456,"type":"cst/id"},"1":{"0":{"0":"hi","1":16457,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"one","1":16459,"type":"cst/id"},"1":{"0":{"0":"int","1":16460,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":16458,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16455,"type":"cst/list"};
+    const mod_1 = test(in_1);
+    const out_1 = cons($co("int")($co(type)(16460)))(nil);
+    if (!equal(mod_1, out_1)) {
+        console.log(mod_1);
+        console.log(out_1);
+        throw new Error(`Fixture test (16417) failing 1. Not equal.`);
+    }
+    
+
+    const in_2 = {"0":{"0":{"0":"typealias","1":16478,"type":"cst/id"},"1":{"0":{"0":"lol","1":16479,"type":"cst/id"},"1":{"0":{"0":"int","1":16480,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16474,"type":"cst/list"};
+    const mod_2 = test(in_2);
+    const out_2 = cons($co("int")($co(type)(16480)))(nil);
+    if (!equal(mod_2, out_2)) {
+        console.log(mod_2);
+        console.log(out_2);
+        throw new Error(`Fixture test (16417) failing 2. Not equal.`);
+    }
+    
+}
+const pat$slnames = (pat) => (($target) => {
+if ($target.type === "pany") {
+return $co(nil)(empty)
+}
+if ($target.type === "pvar") {
+{
+let name = $target[0];
+let l = $target[1];
+return $co(cons($co(name)(l))(nil))(one(local(l)(decl)))
+}
+}
+if ($target.type === "pprim") {
+return $co(nil)(empty)
+}
+if ($target.type === "pstr") {
+return $co(nil)(empty)
+}
+if ($target.type === "pcon") {
+{
+let name = $target[0];
+let nl = $target[1];
+let args = $target[2];
+let l = $target[3];
+return foldl($co(nil)(one(global(name)(type)(l)(usage($unit)))))(map(args)(pat$slnames))(bound_and_names)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat);
+
+const expr$slnames = (bound) => (expr) => (($target) => {
+if ($target.type === "evar") {
+{
+let name = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target.type === "some") {
+{
+let dl = $target[0];
+return one(local(l)(usage(dl)))
+}
+}
+if ($target.type === "none") {
+return one(global(name)(value)(l)(usage($unit)))
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(bound)(name))
+}
+}
+if ($target.type === "eprim") {
+return empty
+}
+if ($target.type === "equot") {
+return empty
+}
+if ($target.type === "eapp") {
+{
+let target = $target[0];
+let args = $target[1];
+return foldl(expr$slnames(bound)(target))(map(args)(expr$slnames(bound)))(bag$sland)
+}
+}
+if ($target.type === "elambda") {
+{
+let args = $target[0];
+let body = $target[1];
+return (({1: names, 0: bound$qu}) => bag$sland(names)(expr$slnames(map$slmerge(bound)(map$slfrom_list(bound$qu)))(body)))(foldl($co(nil)(empty))(map(args)(pat$slnames))(bound_and_names))
+}
+}
+if ($target.type === "elet") {
+{
+let bindings = $target[0];
+let body = $target[1];
+return loop($co(bindings)($co(bound)(empty)))(({1: {1: names, 0: bound}, 0: bindings}) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return bag$sland(names)(expr$slnames(bound)(body))
+}
+if ($target.type === "cons" &&
+$target[0].type === ",") {
+{
+let pat = $target[0][0];
+let expr = $target[0][1];
+let rest = $target[1];
+return (({1: names$qu, 0: bound$qu}) => ((bound) => ((names) => recur($co(rest)($co(bound)(bag$sland(names)(expr$slnames(bound)(expr))))))(bag$sland(names)(names$qu)))(map$slmerge(bound)(map$slfrom_list(bound$qu))))(pat$slnames(pat))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(bindings))
+}
+}
+if ($target.type === "ematch") {
+{
+let target = $target[0];
+let cases = $target[1];
+return foldl(expr$slnames(bound)(target))(map(cases)(({1: body, 0: pat}) => (({1: names$qu, 0: bound$qu}) => ((bound) => bag$sland(names$qu)(expr$slnames(bound)(body)))(map$slmerge(bound)(map$slfrom_list(bound$qu))))(pat$slnames(pat))))(bag$sland)
+}
+}
+if ($target.type === "estr") {
+{
+let tpls = $target[1];
+return many(map(tpls)(({0: expr}) => expr$slnames(bound)(expr)))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(expr);
+
+const top$slnames = (top) => (($target) => {
+if ($target.type === "tdef") {
+{
+let name = $target[0];
+let l = $target[1];
+let body = $target[2];
+return bag$sland(one(global(name)(value)(l)(decl)))(expr$slnames(map$slfrom_list(cons($co(name)(l))(nil)))(body))
+}
+}
+if ($target.type === "texpr") {
+{
+let body = $target[0];
+return expr$slnames(map$slnil)(body)
+}
+}
+if ($target.type === "ttypealias") {
+{
+let name = $target[0];
+let l = $target[1];
+let free = $target[2];
+let body = $target[3];
+return bag$sland(one(global(name)(type)(l)(decl)))(type$slnames(map$slfrom_list(free))(body))
+}
+}
+if ($target.type === "tdeftype") {
+{
+let name = $target[0];
+let l = $target[1];
+let free = $target[2];
+let constructors = $target[3];
+return foldl(one(global(name)(type)(l)(decl)))(map(constructors)(({1: {1: {0: args}, 0: l}, 0: name}) => foldl(one(global(name)(value)(l)(decl)))(map(args)(type$slnames(map$slfrom_list(free))))(bag$sland)))(bag$sland)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(top);
+
+return $eval("({0: parse_stmt,  1: parse_expr, 2: names, 3: externals_stmt, 4: externals_expr}) => all_names =>\n  ({type: 'fns', parse_stmt, parse_expr, names, externals_stmt, externals_expr, all_names})")(parse_and_compile(parse_top)(parse_expr)(names)(externals_top)((expr) => bag$slto_list(externals(set$slnil)(expr))))(top$slnames)
