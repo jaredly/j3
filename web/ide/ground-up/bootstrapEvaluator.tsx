@@ -28,6 +28,7 @@ export const bootstrapEvaluator = (
         const res = bootstrap.addStatements(
             { [0]: { stmt } },
             benv,
+            null,
             {},
             {},
             -1,
@@ -169,6 +170,7 @@ export const bootstrapEvaluator = (
                     res = this.addStatements(
                         { [0]: { stmt: parsed } },
                         env,
+                        null,
                         {},
                         {},
                         top.top,

@@ -9,7 +9,7 @@ import { unique } from '../../custom/store/unique';
 import { Errors, FullEvalator, ProduceItem } from './FullEvalator';
 import { valueToNode } from './bootstrap';
 import { builtins, traceEnv } from './builtins';
-import { Env, Expr, Stmt, Type } from './evaluators/analyze';
+import { Env, Expr, Stmt, Type, TypeInfo } from './evaluators/analyze';
 import {
     AllNames,
     Analyze,
@@ -58,8 +58,8 @@ export const fnsEvaluator = (
         valueToString,
         valueToNode,
 
-        compile(expr, meta) {
-            return compiler.compileExpr(expr, meta);
+        compile(expr, typeInfo, meta) {
+            return compiler.compileExpr(expr, typeInfo, meta);
         },
 
         // @ts-ignore
@@ -157,6 +157,7 @@ export const fnsEvaluator = (
                 const result = this.addStatements(
                     group.map((g) => ({ stmt: g.stmt, names: g.allNames })),
                     env,
+                    null,
                     {},
                     {},
                     group[0].top.top,
@@ -199,6 +200,7 @@ export const fnsEvaluator = (
         addStatements(
             stmts,
             env,
+            typeInfo,
             meta,
             trace,
             top,
@@ -206,32 +208,11 @@ export const fnsEvaluator = (
             debugShowJs,
         ) {
             const display: { [key: number]: ProduceItem[] } = {};
-            // const values: Record<string, any> = {};
-            // let names: LocedName[] | null = null;
-            // if (analyze) {
-            //     try {
-            //         names = Object.values(stmts)
-            //             .flatMap((stmt) => analyze.names(stmt))
-            //             .filter((n) => n.kind === 'value');
-            //     } catch (err) {
-            //         console.error(`cant get names`, err);
-            //         Object.keys(stmts).forEach((k) => {
-            //             display[+k] = [
-            //                 {
-            //                     type: 'error',
-            //                     message:
-            //                         'Error while getting stmt names ' +
-            //                         (err as Error).message,
-            //                 },
-            //             ];
-            //         });
-            //     }
-            // }
-
             const res = compileStmt(
                 compiler,
                 san,
                 Object.values(stmts),
+                typeInfo,
                 env,
                 meta,
                 trace,
@@ -259,7 +240,7 @@ export const fnsEvaluator = (
             }
         },
 
-        evaluate(expr, allNames, env, meta) {
+        evaluate(expr, allNames, typeInfo, env, meta) {
             const mm = prepareMeta(meta);
 
             const externals =
@@ -277,7 +258,7 @@ export const fnsEvaluator = (
             });
 
             try {
-                const js = compiler.compileExpr(expr, meta);
+                const js = compiler.compileExpr(expr, typeInfo, meta);
                 const fn = new Function(
                     needed.length
                         ? `{$env,${needed.map(sanitize).join(', ')}}`
@@ -304,6 +285,7 @@ const compileStmt = (
     compiler: Compiler<Stmt, Expr>,
     san: any,
     stmts: { stmt: Stmt; names?: AllNames }[],
+    typeInfo: TypeInfo,
     env: FnsEnv,
     meta: MetaDataMap,
     traceMap: TraceMap,
@@ -333,7 +315,9 @@ const compileStmt = (
 
     let jss;
     try {
-        jss = stmts.map(({ stmt }) => compiler.compileStmt(stmt, meta));
+        jss = stmts.map(({ stmt }) =>
+            compiler.compileStmt(stmt, typeInfo, meta),
+        );
     } catch (err) {
         console.error(err);
         return {

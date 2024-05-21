@@ -16,8 +16,9 @@ export const compileFixture = (
     const parsed = parse(node, parseExpr(evaluator, {}, blankAllNames()));
     if (!parsed) throw new Error(`cant compile fixture tests, unable to parse`);
     if (!parsed.test?.expr) throw new Error(`no test`);
+    // STOPSHIP: pass type info for real
     return `{
-    const test = ${evaluator.compile(parsed.test?.expr, {})};
+    const test = ${evaluator.compile(parsed.test?.expr, null, {})};
     ${parsed.fixtures
         .map((item, i) => {
             if (item.type === 'unknown') return '';
@@ -27,9 +28,9 @@ export const compileFixture = (
             if (!item.output?.expr)
                 throw new Error(`no output on line ${i} (${node.loc})`);
             return `
-    const in_${i} = ${evaluator.compile(item.input.expr, {})};
+    const in_${i} = ${evaluator.compile(item.input.expr, null, {})};
     const mod_${i} = test(in_${i});
-    const out_${i} = ${evaluator.compile(item.output.expr, {})};
+    const out_${i} = ${evaluator.compile(item.output.expr, null, {})};
     if (!equal(mod_${i}, out_${i})) {
         console.log(mod_${i});
         console.log(out_${i});
@@ -107,6 +108,7 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
             evaluator.evaluate(
                 expr,
                 evaluator.analysis?.allNamesExpr(expr) ?? blankAllNames(),
+                null, // STOPSHIP type info here
                 env,
                 meta,
             );

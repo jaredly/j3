@@ -490,6 +490,7 @@ export function updateState(
         const added = state.evaluator.addStatements(
             stmts,
             env,
+            state.results.groups[groupKey].codeGenData,
             meta,
             state.results.groups[groupKey].traces,
             nodes[group[0].id].ns.top,

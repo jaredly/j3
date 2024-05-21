@@ -258,7 +258,7 @@ export const jsEvaluator: FullEvalator<
         return evalWith('return ' + expr.raw, env.values, expr.args);
     },
     setTracing() {},
-    addStatements(stmts, env, _, __, ___, displayResult) {
+    addStatements(stmts, env, _0, _, __, ___, displayResult) {
         const display: Record<number, Produce> = {};
         const values: Record<string, any> = {};
         const entries = Object.entries(stmts)

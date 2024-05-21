@@ -47,6 +47,7 @@ export type FullEvalator<
     Expr,
     TypeEnv = any,
     Type = any,
+    TypeInfo = any,
 > = {
     id: string;
     init(): Env;
@@ -62,7 +63,7 @@ export type FullEvalator<
     addStatements(
         stmts: { [key: number]: { stmt: Stmt; names?: AllNames } },
         env: Env,
-        // tenv: TypeEnv,
+        typeInfo: TypeInfo,
         meta: MetaDataMap,
         trace: TraceMap,
         top: number,
@@ -75,8 +76,14 @@ export type FullEvalator<
         js?: string;
     };
     setTracing(idx: number | null, traceMap: TraceMap, env: Env): void;
-    evaluate(expr: Expr, allNames: AllNames, env: Env, meta: MetaDataMap): any;
-    compile(expr: Expr, meta: MetaDataMap): string;
+    evaluate(
+        expr: Expr,
+        allNames: AllNames,
+        typeInfo: TypeInfo,
+        env: Env,
+        meta: MetaDataMap,
+    ): any;
+    compile(expr: Expr, typeInfo: TypeInfo, meta: MetaDataMap): string;
     toFile(
         state: NUIState,
         target?: number,

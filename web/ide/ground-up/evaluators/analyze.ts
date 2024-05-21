@@ -9,6 +9,7 @@ import {
 } from '../round-1/parse';
 import { AllNames, Analyze } from './interface';
 
+export type TypeInfo = { _type_info: 1 };
 export type Stmt = { _stmt: 1 };
 export type Expr = { _expr: 1 };
 export type Type = { _type: 1 };

@@ -2,6 +2,7 @@ import { Node } from '../../../../src/types/cst';
 import { MetaDataMap } from '../../../custom/UIState';
 import { LocedName } from '../../../custom/store/sortTops';
 import { InferenceError } from '../FullEvalator';
+import { TypeInfo } from './analyze';
 
 export type Parser<Stmt, Expr, SimpleNode> = {
     toNode(node: SimpleNode): Node;
@@ -72,6 +73,6 @@ export type TypeChecker<Env, Stmt, Expr, Type> = {
 export type Compiler<Stmt, Expr> = {
     prelude?: Record<string, string>;
     builtins?: string;
-    compileStmt(stmt: Stmt, meta: MetaDataMap): string;
-    compileExpr(expr: Expr, meta: MetaDataMap): string;
+    compileStmt(stmt: Stmt, codeGenData: TypeInfo, meta: MetaDataMap): string;
+    compileExpr(expr: Expr, codeGenData: TypeInfo, meta: MetaDataMap): string;
 };

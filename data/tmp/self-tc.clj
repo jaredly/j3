@@ -520,6 +520,8 @@ return {
 
 (defn fix-slashes [str] (escape-string (unescapeString str)))
 
+replace-all
+
 (,
     fix-slashes
         [(, "\n" "\\n") (, "\\n" "\\n") (, "\\\n" "\\\\\\n") (, "\"" "\\\"")])
@@ -575,7 +577,13 @@ return {
                                            ]
                                            "`${(fix-slashes first)}${(join "" tpls)}`"))
         (eprim prim _)          (compile-prim prim)
-        (evar name _)           (sanitize name)
+        (evar name loc)         (match (map/get ctx loc)
+                                    (none)   (sanitize name)
+                                    (some v) (foldl
+                                                 (sanitize name)
+                                                     v
+                                                     (fn [body type-class]
+                                                     "${body}($type_class_insts[${(jsonify type-class)}])")))
         (equot inner _)         (compile-quot inner)
         (** Curried functions **)
         (elambda pats body _)   (foldr
@@ -604,6 +612,10 @@ return {
                                                       (compile-pat pat "$target" "return ${(compile ctx body)}"))))
                                     ]
                                     "(($target) => {\n${(join "\n" cases)}\nthrow new Error('Failed to match. ' + valueToString($target));\n})(${(compile ctx target)})")))
+
+(compile
+    (map/from-list [(, 10 ["int < number"])])
+        (eapp (evar "+" 10) [(eprim (pint 1 0) 0)] 0))
 
 (compile
     map/nil
@@ -646,6 +658,14 @@ return {
         (, (@ "${${"a}"}") "${a}")])
 
 (eval
-    (** compile => compile_top => ({type:'fns',  compile: a => _ => compile(a), compile_stmt: a => preds => trace => compile_top(preds)(a)}) **)
+    (** compile => compile_top => builtins => ({
+  type:'fns',
+  compile: a => _ => compile([])(a),
+  compile2: a => preds => trace => compile(preds)(a),
+  compile_stmt: a => trace => compile_top([])(a),
+  compile_stmt2: a => preds => trace => compile_top(preds)(a),
+  builtins,
+}) **)
         compile
-        compile-top)
+        compile-top
+        builtins)

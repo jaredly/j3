@@ -149,6 +149,13 @@ return {
       return new Function(args, 'return ' + source)(ctx);
     },
     $unit: null,
+    errorToString: f => arg => {
+      try {
+        return f(arg)
+      } catch (err) {
+        return err.message;
+      }
+    },
     valueToString,
     unescapeString,
     sanitize,
@@ -156,7 +163,11 @@ return {
     'int-to-string': (a) => a.toString(),
     'string-to-int': (a) => {
         const v = Number(a);
-        return Number.isInteger(v) ? { type: 'some', 0: v } : { type: 'none' };
+        return Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' };
+    },
+    'string-to-float': (a) => {
+        const v = Number(a);
+        return Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' };
     },
 
     // maps
@@ -207,185 +218,12 @@ return {
     },
 }})();
 Object.assign($env, $builtins);
-const {"+": $pl, "-": _, "<": $lt, "<=": $lt$eq, ">": $gt, ">=": $gt$eq, "=": $eq, "!=": $ex$eq, "pi": pi, "replace-all": replace_all, "eval": $eval, "eval-with": eval_with, "$unit": $unit, "valueToString": valueToString, "unescapeString": unescapeString, "sanitize": sanitize, "equal": equal, "int-to-string": int_to_string, "string-to-int": string_to_int, "map/nil": map$slnil, "map/set": map$slset, "map/rm": map$slrm, "map/get": map$slget, "map/map": map$slmap, "map/merge": map$slmerge, "map/values": map$slvalues, "map/keys": map$slkeys, "map/from-list": map$slfrom_list, "map/to-list": map$slto_list, "set/nil": set$slnil, "set/add": set$sladd, "set/has": set$slhas, "set/rm": set$slrm, "set/diff": set$sldiff, "set/merge": set$slmerge, "set/overlap": set$sloverlap, "set/to-list": set$slto_list, "set/from-list": set$slfrom_list, "jsonify": jsonify, "fatal": fatal} = $builtins;
-const $prelude = (() => {const evaluate = (node, scope) => {
-  if (!scope) throw new Error(`evaluate called without scope`)
-  switch (node.type) {
-    // For primitives, we trivially produce the contained value
-    case 'eprim':
-      return node[0][0]
-    // For strings, we need to handle escapes correctly (e.g. the AST node will have "a\\n", which needs to become "a\n" at runtime) and evaluate
-    // any contained template expressions
-    case 'estr':
-      return unescapeSlashes(node[0]) + unwrapList(node[1]).map(({0: exp, 1: {0: suf}}) => evaluate(exp, scope) + unescapeSlashes(suf)).join('')
-    // For variables, we look up the name in the `scope` map that we pass everywhere.
-    // We use `sanitize` for compatability with the structured editor environment, which expects variable names to be valid javascript names.
-    case 'evar':
-      var name = node[0]
-      if (name === '()') return null
-      if (!Object.hasOwn(scope, name)) {
-        throw new Error(`Variable not in scope: ${name} (${node[1]}). ${Object.keys(scope).join(', ')}`)
-      }
-      return scope[name]
-    // For lambdas, we're producing an arrow function that accepts the right number of (curried) arguments, matches each provided value with the
-    // corresponding pattern, and then evaluates the body with the `scope` map having all of the resulting bindings.
-    // Note that auto-currying means that `(fn [a b] c)` becomes `a => b => c` instead of `(a, b) => c`.
-    case 'elambda':
-      return unwrapList(node[0]).reduceRight((body, arg) => scope => v => body({...scope, ...evalPat(arg, v)}), scope => evaluate(node[1], scope))(scope)
-    // Application is also curried, so we need to loop through the arguments list so that `(eapp t [a b])` becomes `t(a)(b)`.
-    case 'eapp':
-      return unwrapList(node[1]).reduce((f, arg) => f(evaluate(arg, scope)), evaluate(node[0], scope))
-    // For `let`, we go through each binding, evaluate the provided `init` against the pattern, and add any bindings to the scope.
-    // We're doing the evaluations in *series* instead of *parallel* to allow later bindings to refer to previous ones.
-    // so you can do `(let [a 2 b (+ a 4)] b)` and have it evaluate correctly.
-    // Note that this method doesn't allow for self-recursion in let bindings. We'll relax that restriction in the self-hosted compiler.
-    case 'elet':
-      const inner = unwrapList(node[0]).reduce((scope, {0: pat, 1: init}) => {
-        const value = evaluate(init, scope)
-        const match = evalPat(pat, value)
-        if (match == null) throw new Error(`let pattern didnt't match! ${JSON.stringify(value)} vs ${valueToString(pat)}`)
-        return {...scope, ...match}
-      }, scope)
-      return evaluate(node[1], inner)
-    // Match walks through each case, checks to see if the patterns matches the value, and if it does, evaluates the body with any bindings from that
-    // pattern added onto the scope.
-    // If no cases match, we throw an error.
-    case 'ematch':
-      const target = evaluate(node[0], scope)
-      for (let {0: pat, 1: body} of unwrapList(node[1])) {
-        const got = evalPat(pat, target)
-        if (got) {
-          return evaluate(body, {...scope, ...got})
-        }
-      }
-      throw new Error(`match failed (${node[2]}): ${JSON.stringify(target)} - ${JSON.stringify(node[0])}`)
-    // `equot` trivially produces the contained data structure; whether it's CST or AST.
-    case 'equot':
-      return node[0][0]
-  }
-  throw new Error(`cant evaluatoe ${node.type}`)
-};
-
-const evaluateStmt = (node, env) => {
-  switch (node.type) {
-    case 'texpr': return evaluate(node[0], env)
-    case 'tdef':
-      const value = evaluate(node[2], env)
-      env[node[0]] = value
-      return value
-    case 'tdeftype':
-      const res = {}
-      unwrapList(node[3]).forEach(({0: name, 1: {1: {0: args}}}) => {
-        res[name] = env[name] = constrFn(name, args)
-      })
-      return res
-  }
-};
-
-const unwrapList = (value) => {
-  return value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])]
-};
-
-const constrFn = (name, args) => {
-  const next = (args) => {
-    if (args.type === 'nil') return values => ({type: name, ...values})
-    return values => arg => next(args[1])([...values, arg])
-  }
-  return next(args)([])
-};
-
-const sanMap = {"$":"$$$$","-":"_","+":"$pl","*":"$ti","=":"$eq",">":"$gt","<":"$lt","'":"$qu",".":"$do","\"":"$dq",",":"$co","/":"$sl",";":"$semi","@":"$at",":":"$cl","#":"$ha","!":"$ex","|":"$bar","()":"$unit","?":"$qe"};
-
-const evalPat = (node, v) => {
-  switch (node.type) {
-    case 'pany': return {}
-    case 'pprim': return v === node[0][0] ? {} : null
-    case 'pstr': return v === node[0]
-    case 'pvar':
-      return {[node[0]]: v}
-    case 'pcon':
-      if (node[0] === '()') return v === null ? {} : null
-      if (v.type === node[0]) {
-        const args = unwrapList(node[2])
-        const scope = {}
-        for (let i=0; i<args.length; i++) {
-          const sub = evalPat(args[i], v[i])
-          if (!sub) return null
-          Object.assign(scope, sub)
-        }
-        return scope
-      }
-      return null
-  }
-  throw new Error(`Unexpected pat ${JSON.stringify(node)}`)
-};
-
-const kwds = ["case","new","var","const","let","if","else","return","super","break","while","for","default","eval"];
-
-const unescapeSlashes = (n) =>
-    n.replaceAll(/\\./g, (m) => {
-        if (m[1] === 'n') {
-            return '\n';
-        }
-        if (m[1] === 't') {
-            return '\t';
-        }
-        if (m[1] === 'r') {
-            return '\r';
-        }
-        return m[1];
-    });
-
-const valueToString = (v) => {
-    if (typeof v === 'object' && v && 'type' in v) {
-        if (v.type === 'cons' || v.type === 'nil') {
-            const un = unwrapList(v);
-            return '[' + un.map(valueToString).join(' ') + ']';
-        }
-        if (v.type === ',') {
-            const items = unwrapTuple(v);
-            return `(, ${items.map(valueToString).join(' ')})`
-        }
-
-        let args = [];
-        for (let i = 0; i in v; i++) {
-            args.push(v[i]);
-        }
-        return `(${v.type}${args
-            .map((arg) => ' ' + valueToString(arg))
-            .join('')})`;
-    }
-    if (typeof v === 'string') {
-        if (v.includes('"') && !v.includes("'")) {
-            return (
-                "'" + JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"') + "'"
-            );
-        }
-        return JSON.stringify(v);
-    }
-    if (typeof v === 'function') {
-        return '<function>';
-    }
-
-    return '' + v;
-};
-return {evaluate,evaluateStmt,unwrapList,constrFn,sanMap,evalPat,kwds,unescapeSlashes,valueToString}})();
-Object.assign($env, $prelude);
-const scheme = (v0) => (v1) => ({type: "scheme", 0: v0, 1: v1})
+const {"+": $pl, "-": _, "<": $lt, "<=": $lt$eq, ">": $gt, ">=": $gt$eq, "=": $eq, "!=": $ex$eq, "pi": pi, "replace-all": replace_all, "eval": $eval, "eval-with": eval_with, "$unit": $unit, "errorToString": errorToString, "valueToString": valueToString, "unescapeString": unescapeString, "sanitize": sanitize, "equal": equal, "int-to-string": int_to_string, "string-to-int": string_to_int, "string-to-float": string_to_float, "map/nil": map$slnil, "map/set": map$slset, "map/rm": map$slrm, "map/get": map$slget, "map/map": map$slmap, "map/merge": map$slmerge, "map/values": map$slvalues, "map/keys": map$slkeys, "map/from-list": map$slfrom_list, "map/to-list": map$slto_list, "set/nil": set$slnil, "set/add": set$sladd, "set/has": set$slhas, "set/rm": set$slrm, "set/diff": set$sldiff, "set/merge": set$slmerge, "set/overlap": set$sloverlap, "set/to-list": set$slto_list, "set/from-list": set$slfrom_list, "jsonify": jsonify, "fatal": fatal} = $builtins;
 const pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1})
 const pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1})
-const pany = (v0) => ({type: "pany", 0: v0})
-const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
-const pcon = (v0) => (v1) => (v2) => (v3) => ({type: "pcon", 0: v0, 1: v1, 2: v2, 3: v3})
-const pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1})
-const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1})
 const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
-const tdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "tdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
-const ttypealias = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "ttypealias", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
-const tdef = (v0) => (v1) => (v2) => (v3) => ({type: "tdef", 0: v0, 1: v1, 2: v2, 3: v3})
-const texpr = (v0) => (v1) => ({type: "texpr", 0: v0, 1: v1})
 const type_free = (type) => (($target) => {
 if ($target.type === "tvar") {
 {
@@ -405,66 +243,6 @@ return set$slmerge(type_free(a))(type_free(b))
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(type);
-
-const type_apply = (subst) => (type) => (($target) => {
-if ($target.type === "tvar") {
-{
-let n = $target[0];
-return (($target) => {
-if ($target.type === "none") {
-return type
-}
-if ($target.type === "some") {
-{
-let t = $target[0];
-return t
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(subst)(n))
-}
-}
-if ($target.type === "tapp") {
-{
-let a = $target[0];
-let b = $target[1];
-let c = $target[2];
-return tapp(type_apply(subst)(a))(type_apply(subst)(b))(c)
-}
-}
-return type
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const scheme_free = ({1: type, 0: vbls}) => set$sldiff(type_free(type))(vbls);
-
-const foldl = (init) => (items) => (f) => (($target) => {
-if ($target.type === "nil") {
-return init
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return foldl(f(init)(one))(rest)(f)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(items);
-
-const foldr = (init) => (items) => (f) => (($target) => {
-if ($target.type === "nil") {
-return init
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return f(foldr(init)(rest)(f))(one)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(items);
 
 const t_prim = (prim) => (($target) => {
 if ($target.type === "pint") {
@@ -486,21 +264,6 @@ const tfn = (a) => (b) => (l) => tapp(tapp(tcon("->")(l))(a)(l))(b)(l);
 
 const tint = tcon("int")(-1);
 
-const map_without = (map) => (set) => foldr(map)(set$slto_list(set))(map$slrm);
-
-const tenv = (v0) => (v1) => (v2) => (v3) => ({type: "tenv", 0: v0, 1: v1, 2: v2, 3: v3})
-const tconstructor = (v0) => (v1) => (v2) => (v3) => ({type: "tconstructor", 0: v0, 1: v1, 2: v2, 3: v3})
-const tenv$sltype = ({0: types}) => (key) => map$slget(types)(key);
-
-const tenv$slcon = ({1: cons}) => (key) => map$slget(cons)(key);
-
-const tenv$slnames = ({2: names}) => (key) => map$slget(names)(key);
-
-const tenv$slset_type = ({3: alias, 2: names, 1: cons, 0: types}) => (k) => (v) => tenv(map$slset(types)(k)(v))(cons)(names)(alias);
-
-const tenv$slnil = tenv(map$slnil)(map$slnil)(map$slnil)(map$slnil);
-
-const typecheck = (v0) => (v1) => (v2) => (v3) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3})
 const type_with_free = (type) => (free) => (($target) => {
 if ($target.type === "tvar") {
 return type
@@ -531,89 +294,8 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const tbool = tcon("bool")(-1);
 
-const at = (arr) => (i) => (default_) => (($target) => {
-if ($target.type === "nil") {
-return default_
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return (($target) => {
-if ($target === true) {
-return one
-}
-return at(rest)(_(i)(1))(default_)
-throw new Error('Failed to match. ' + valueToString($target));
-})($eq(i)(0))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
-
-const join = (sep) => (arr) => (($target) => {
-if ($target.type === "nil") {
-return ""
-}
-if ($target.type === "cons" &&
-$target[1].type === "nil") {
-{
-let one = $target[0];
-return one
-}
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return `${one}${sep}${join(sep)(rest)}`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
-
 const some = (v0) => ({type: "some", 0: v0})
 const none = ({type: "none"})
-const one = (v0) => ({type: "one", 0: v0})
-const many = (v0) => ({type: "many", 0: v0})
-const empty = ({type: "empty"})
-const pat_names = (pat) => (($target) => {
-if ($target.type === "pany") {
-return set$slnil
-}
-if ($target.type === "pvar") {
-{
-let name = $target[0];
-let l = $target[1];
-return set$sladd(set$slnil)(name)
-}
-}
-if ($target.type === "pcon") {
-{
-let name = $target[0];
-let il = $target[1];
-let args = $target[2];
-let l = $target[3];
-return foldl(set$slnil)(args)((bound) => (arg) => set$slmerge(bound)(pat_names(arg)))
-}
-}
-if ($target.type === "pstr") {
-{
-let string = $target[0];
-let int = $target[1];
-return set$slnil
-}
-}
-if ($target.type === "pprim") {
-{
-let prim = $target[0];
-let int = $target[1];
-return set$slnil
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(pat);
-
 const type_loc = (type) => (($target) => {
 if ($target.type === "tvar") {
 {
@@ -640,37 +322,15 @@ const tstring = tcon("string")(-1);
 
 const tmap = (k) => (v) => tapp(tapp(tcon("map")(-1))(k)(-1))(v)(-1);
 
-const tfns = (args) => (result) => foldr(result)(args)((result) => (arg) => tfn(arg)(result)(-1));
-
 const toption = (arg) => tapp(tcon("option")(-1))(arg)(-1);
 
 const tlist = (arg) => tapp(tcon("list")(-1))(arg)(-1);
-
-const concrete = (t) => scheme(set$slnil)(t);
-
-const generic = (vbls) => (t) => scheme(set$slfrom_list(vbls))(t);
 
 const vbl = (k) => tvar(k)(-1);
 
 const tset = (arg) => tapp(tcon("set")(-1))(arg)(-1);
 
 const t$co = (a) => (b) => tapp(tapp(tcon(",")(-1))(a)(-1))(b)(-1);
-
-const scheme$sltype = ({1: type}) => type;
-
-const len = (arr) => (($target) => {
-if ($target.type === "nil") {
-return 0
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return $pl(1)(len(rest))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
 
 const its = int_to_string;
 
@@ -697,92 +357,6 @@ return tcon(name)(loc)
 throw new Error('Failed to match. ' + valueToString($target));
 })(type);
 
-const expr_loc = (expr) => (($target) => {
-if ($target.type === "estr") {
-{
-let l = $target[2];
-return l
-}
-}
-if ($target.type === "eprim") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "evar") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "equot") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "elambda") {
-{
-let l = $target[2];
-return l
-}
-}
-if ($target.type === "elet") {
-{
-let l = $target[2];
-return l
-}
-}
-if ($target.type === "eapp") {
-{
-let l = $target[2];
-return l
-}
-}
-if ($target.type === "ematch") {
-{
-let l = $target[2];
-return l
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(expr);
-
-const pat_loc = (pat) => (($target) => {
-if ($target.type === "pany") {
-{
-let l = $target[0];
-return l
-}
-}
-if ($target.type === "pprim") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "pstr") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "pvar") {
-{
-let l = $target[1];
-return l
-}
-}
-if ($target.type === "pcon") {
-{
-let l = $target[3];
-return l
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(pat);
-
 const and_loc = (locs) => (l) => (s) => (($target) => {
 if ($target === true) {
 return `${s}:${(($target) => {
@@ -807,14 +381,8 @@ const tloc = (v0) => ({type: "tloc", 0: v0})
 const tnamed = (v0) => (v1) => ({type: "tnamed", 0: v0, 1: v1})
 const tfmted = (v0) => (v1) => ({type: "tfmted", 0: v0, 1: v1})
 const tfmt = (v0) => (v1) => ({type: "tfmt", 0: v0, 1: v1})
-const tenv$slmerge = ({3: alias, 2: types, 1: constructors, 0: values}) => ({3: nalias, 2: ntypes, 1: ncons, 0: nvalues}) => tenv(map$slmerge(values)(nvalues))(map$slmerge(constructors)(ncons))(map$slmerge(types)(ntypes))(map$slmerge(alias)(nalias));
-
-const inference = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => ({type: "inference", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5})
-const analysis = (v0) => (v1) => (v2) => ({type: "analysis", 0: v0, 1: v1, 2: v2})
 const value = ({type: "value"})
 const type = ({type: "type"})
-const apply_tuple = (f) => ({1: b, 0: a}) => f(a)(b);
-
 const has_free = (type) => (name) => (($target) => {
 if ($target.type === "tvar") {
 {
@@ -841,26 +409,6 @@ throw new Error('Failed to match. ' + valueToString($target));
 throw new Error('Failed to match. ' + valueToString($target));
 })(type);
 
-const any = (values) => (f) => (($target) => {
-if ($target.type === "nil") {
-return false
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return (($target) => {
-if ($target === true) {
-return true
-}
-return any(rest)(f)
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(one))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(values);
-
 const map$slhas = (map) => (k) => (($target) => {
 if ($target.type === "some") {
 return true
@@ -868,10 +416,6 @@ return true
 return false
 throw new Error('Failed to match. ' + valueToString($target));
 })(map$slget(map)(k));
-
-const tenv$slalias = ({3: alias}) => alias;
-
-const fst = ({0: a}) => a;
 
 const replace_in_type = (subst) => (type) => (($target) => {
 if ($target.type === "tvar") {
@@ -904,39 +448,10 @@ return tapp(replace_in_type(subst)(one))(replace_in_type(subst)(two))(l)
 throw new Error('Failed to match. ' + valueToString($target));
 })(type);
 
-const bag$slfold = (f) => (init) => (bag) => (($target) => {
-if ($target.type === "empty") {
-return init
-}
-if ($target.type === "one") {
-{
-let v = $target[0];
-return f(init)(v)
-}
-}
-if ($target.type === "many") {
-{
-let items = $target[0];
-return foldr(init)(items)(bag$slfold(f))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(bag);
-
-const tenv$slvalues = ({0: values}) => values;
-
 const dot = (a) => (b) => (c) => a(b(c));
 
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 const nil = ({type: "nil"})
-const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
-const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
-const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1})
-const cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
-const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
-const StateT = (v0) => ({type: "StateT", 0: v0})
-const run_$gt = ({0: f}) => (state) => (({1: result}) => result)(f(state));
-
 const ok = (v0) => ({type: "ok", 0: v0})
 const err = (v0) => ({type: "err", 0: v0})
 const force = (e_$gts) => (result) => (($target) => {
@@ -954,8 +469,6 @@ return fatal(`Result Error ${e_$gts(e)}`)
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(result);
-
-const state_f = ({0: f}) => f;
 
 const prim_$gts = (prim) => (($target) => {
 if ($target.type === "pint") {
@@ -993,30 +506,7 @@ return cons(value)(values)
 throw new Error('Failed to match. ' + valueToString($target));
 })(map$slget(map)(arg)));
 
-const terr = (v0) => (v1) => ({type: "terr", 0: v0, 1: v1})
-const ttypes = (v0) => (v1) => ({type: "ttypes", 0: v0, 1: v1})
-const twrap = (v0) => (v1) => ({type: "twrap", 0: v0, 1: v1})
-const tmissing = (v0) => ({type: "tmissing", 0: v0})
-const type_error = (message) => (loced_items) => terr(message)(loced_items);
-
-const quot$slexpr = (v0) => ({type: "quot/expr", 0: v0})
-const quot$sltop = (v0) => ({type: "quot/top", 0: v0})
-const quot$sltype = (v0) => ({type: "quot/type", 0: v0})
-const quot$slpat = (v0) => ({type: "quot/pat", 0: v0})
-const quot$slquot = (v0) => ({type: "quot/quot", 0: v0})
-const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
-const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
-const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
-const equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1})
-const elambda = (v0) => (v1) => (v2) => ({type: "elambda", 0: v0, 1: v1, 2: v2})
-const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2})
-const elet = (v0) => (v1) => (v2) => ({type: "elet", 0: v0, 1: v1, 2: v2})
-const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2})
-const scheme$slt = ({1: t}) => t;
-
 const debug_invariant = false;
-
-const $co$co0 = ({0: a}) => a;
 
 const with_name = (map) => (id) => (($target) => {
 if ($target.type === "some") {
@@ -1069,63 +559,6 @@ return f(init)(pat)
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
 
-const fold_ex_pats = (init) => (pats) => (f) => foldl(init)(pats)((init) => (pat) => fold_ex_pat(init)(pat)(f));
-
-const find_gid = (heads) => fold_ex_pats(none)(heads)((gid) => (pat) => (($target) => {
-if ($target.type === "ex/constructor") {
-{
-let id = $target[1];
-return (($target) => {
-if ($target.type === "none") {
-return some(id)
-}
-if ($target.type === "some") {
-{
-let oid = $target[0];
-return (($target) => {
-if ($target === true) {
-return fatal("Constructors with different group IDs in the same position.")
-}
-return some(id)
-throw new Error('Failed to match. ' + valueToString($target));
-})($ex$eq(oid)(id))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(gid)
-}
-}
-return gid
-throw new Error('Failed to match. ' + valueToString($target));
-})(pat));
-
-const group_constructors = (tenv) => (gid) => (($target) => {
-if ($target === "int") {
-return nil
-}
-if ($target === "bool") {
-return cons("true")(cons("false")(nil))
-}
-if ($target === "string") {
-return nil
-}
-return (({2: types}) => (($target) => {
-if ($target.type === "none") {
-return fatal(`Unknown type name ${gid}`)
-}
-if ($target.type === "some" &&
-$target[0].type === "," &&
-$target[0][1].type === ",") {
-{
-let names = $target[0][1][0];
-return set$slto_list(names)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(types)(gid)))(tenv)
-throw new Error('Failed to match. ' + valueToString($target));
-})(gid);
-
 const concat$ti = (lists) => (($target) => {
 if ($target.type === "nil") {
 return nil
@@ -1163,9 +596,43 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(lst);
 
 const $co = (v0) => (v1) => ({type: ",", 0: v0, 1: v1})
-const scheme_apply = (subst) => ({1: type, 0: vbls}) => scheme(vbls)(type_apply(map_without(subst)(vbls))(type));
+const scheme = (v0) => (v1) => ({type: "scheme", 0: v0, 1: v1})
+const pany = (v0) => ({type: "pany", 0: v0})
+const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
+const pcon = (v0) => (v1) => (v2) => (v3) => ({type: "pcon", 0: v0, 1: v1, 2: v2, 3: v3})
+const pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1})
+const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1})
+const type_apply = (subst) => (type) => (($target) => {
+if ($target.type === "tvar") {
+{
+let n = $target[0];
+return (($target) => {
+if ($target.type === "none") {
+return type
+}
+if ($target.type === "some") {
+{
+let t = $target[0];
+return t
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(subst)(n))
+}
+}
+if ($target.type === "tapp") {
+{
+let a = $target[0];
+let b = $target[1];
+let c = $target[2];
+return tapp(type_apply(subst)(a))(type_apply(subst)(b))(c)
+}
+}
+return type
+throw new Error('Failed to match. ' + valueToString($target));
+})(type);
 
-const tenv$slrm = ({3: alias, 2: names, 1: cons, 0: types}) => ($var) => tenv(map$slrm(types)($var))(cons)(names)(alias);
+const scheme_free = ({1: type, 0: vbls}) => set$sldiff(type_free(type))(vbls);
 
 const map = (values) => (f) => (($target) => {
 if ($target.type === "nil") {
@@ -1195,9 +662,35 @@ return cons(f(i)(one))(mapi($pl(1)(i))(rest)(f))
 throw new Error('Failed to match. ' + valueToString($target));
 })(values);
 
-const tenv_apply = (subst) => ({3: alias, 2: names, 1: cons, 0: types}) => tenv(map$slmap(({1: l, 0: s}) => $co(scheme_apply(subst)(s))(l))(types))(cons)(names)(alias);
+const foldl = (init) => (items) => (f) => (($target) => {
+if ($target.type === "nil") {
+return init
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return foldl(f(init)(one))(rest)(f)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(items);
 
-const basic = tenv(map$slfrom_list(cons($co("+")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("-")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("()")($co(scheme(set$slnil)(tcon("()")(-1)))(-1)))(cons($co(",")($co(scheme(set$slfrom_list(cons("a")(cons("b")(nil))))(tfn(tvar("a")(-1))(tfn(tvar("b")(-1))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1))(-1)))(-1)))(nil))))))(map$slfrom_list(cons($co(",")(tconstructor(cons("a")(cons("b")(nil)))(cons(tvar("a")(-1))(cons(tvar("b")(-1))(nil)))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1)))(nil)))(map$slfrom_list(cons($co("int")($co(0)($co(set$slnil)(-1))))(cons($co("string")($co(0)($co(set$slnil)(-1))))(cons($co("bool")($co(0)($co(set$slnil)(-1))))(cons($co(",")($co(2)($co(set$slfrom_list(cons(",")(nil)))(-1))))(nil))))))(map$slnil);
+const foldr = (init) => (items) => (f) => (($target) => {
+if ($target.type === "nil") {
+return init
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return f(foldr(init)(rest)(f))(one)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(items);
+
+const map_without = (map) => (set) => foldr(map)(set$slto_list(set))(map$slrm);
 
 const demo_new_subst = map$slfrom_list(cons($co("a")(tcon("a-mapped")(-1)))(cons($co("b")(tvar("c")(-1)))(nil)));
 
@@ -1224,6 +717,7 @@ const demo_new_subst = map$slfrom_list(cons($co("a")(tcon("a-mapped")(-1)))(cons
     }
     
 }
+const tconstructor = (v0) => (v1) => (v2) => (v3) => ({type: "tconstructor", 0: v0, 1: v1, 2: v2, 3: v3})
 const zip = (one) => (two) => (($target) => {
 if ($target.type === "," &&
 $target[0].type === "nil" &&
@@ -1245,6 +739,26 @@ return nil
 throw new Error('Failed to match. ' + valueToString($target));
 })($co(one)(two));
 
+const at = (arr) => (i) => (default_) => (($target) => {
+if ($target.type === "nil") {
+return default_
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return (($target) => {
+if ($target === true) {
+return one
+}
+return at(rest)(_(i)(1))(default_)
+throw new Error('Failed to match. ' + valueToString($target));
+})($eq(i)(0))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arr);
+
 const letters = cons("a")(cons("b")(cons("c")(cons("d")(cons("e")(cons("f")(cons("g")(cons("h")(cons("i")(cons("j")(cons("k")(cons("l")(cons("m")(cons("n")(cons("o")(nil)))))))))))))));
 
 const unwrap_fn = (t) => (($target) => {
@@ -1261,6 +775,27 @@ return (({1: res, 0: args}) => $co(cons(a)(args))(res))(unwrap_fn(b))
 return $co(nil)(t)
 throw new Error('Failed to match. ' + valueToString($target));
 })(t);
+
+const join = (sep) => (arr) => (($target) => {
+if ($target.type === "nil") {
+return ""
+}
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return one
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return `${one}${sep}${join(sep)(rest)}`
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arr);
 
 const rev = (arr) => (col) => (($target) => {
 if ($target.type === "nil") {
@@ -1295,6 +830,9 @@ return $co(t)(nil)
 throw new Error('Failed to match. ' + valueToString($target));
 })(t);
 
+const one = (v0) => ({type: "one", 0: v0})
+const many = (v0) => ({type: "many", 0: v0})
+const empty = ({type: "empty"})
 const bag$sland = (first) => (second) => (($target) => {
 if ($target.type === "," &&
 $target[0].type === "empty") {
@@ -1333,6 +871,43 @@ return many(cons(first)(cons(second)(nil)))
 throw new Error('Failed to match. ' + valueToString($target));
 })($co(first)(second));
 
+const pat_names = (pat) => (($target) => {
+if ($target.type === "pany") {
+return set$slnil
+}
+if ($target.type === "pvar") {
+{
+let name = $target[0];
+let l = $target[1];
+return set$sladd(set$slnil)(name)
+}
+}
+if ($target.type === "pcon") {
+{
+let name = $target[0];
+let il = $target[1];
+let args = $target[2];
+let l = $target[3];
+return foldl(set$slnil)(args)((bound) => (arg) => set$slmerge(bound)(pat_names(arg)))
+}
+}
+if ($target.type === "pstr") {
+{
+let string = $target[0];
+let int = $target[1];
+return set$slnil
+}
+}
+if ($target.type === "pprim") {
+{
+let prim = $target[0];
+let int = $target[1];
+return set$slnil
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat);
+
 const externals_type = (bound) => (t) => (($target) => {
 if ($target.type === "tvar") {
 return empty
@@ -1360,8 +935,6 @@ return bag$sland(externals_type(bound)(one))(externals_type(bound)(two))
 throw new Error('Failed to match. ' + valueToString($target));
 })(t);
 
-const bag$slto_list = bag$slfold((list) => (a) => cons(a)(list))(nil);
-
 const concat = (one) => (two) => (($target) => {
 if ($target.type === "nil") {
 return two
@@ -1383,48 +956,6 @@ return cons(one)(concat(rest)(two))
 throw new Error('Failed to match. ' + valueToString($target));
 })(one);
 
-{
-    const test = bag$slto_list;
-    
-    const in_0 = many(cons(empty)(cons(one(1))(cons(many(cons(one(2))(cons(empty)(nil))))(cons(one(10))(nil)))));
-    const mod_0 = test(in_0);
-    const out_0 = cons(1)(cons(2)(cons(10)(nil)));
-    if (!equal(mod_0, out_0)) {
-        console.log(mod_0);
-        console.log(out_0);
-        throw new Error(`Fixture test (7494) failing 0. Not equal.`);
-    }
-    
-}
-const names = (stmt) => (($target) => {
-if ($target.type === "tdef") {
-{
-let name = $target[0];
-let l = $target[1];
-return cons($co(name)($co(value)(l)))(nil)
-}
-}
-if ($target.type === "texpr") {
-return nil
-}
-if ($target.type === "ttypealias") {
-{
-let name = $target[0];
-let l = $target[1];
-return cons($co(name)($co(type)(l)))(nil)
-}
-}
-if ($target.type === "tdeftype") {
-{
-let name = $target[0];
-let l = $target[1];
-let constructors = $target[3];
-return cons($co(name)($co(type)(l)))(map(constructors)(({1: {0: l}, 0: name}) => $co(name)($co(value)(l))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(stmt);
-
 const filter = (f) => (list) => (($target) => {
 if ($target.type === "nil") {
 return nil
@@ -1444,6 +975,62 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(list);
+
+const tfns = (args) => (result) => foldr(result)(args)((result) => (arg) => tfn(arg)(result)(-1));
+
+const concrete = (t) => scheme(set$slnil)(t);
+
+const generic = (vbls) => (t) => scheme(set$slfrom_list(vbls))(t);
+
+const scheme$sltype = ({1: type}) => type;
+
+const len = (arr) => (($target) => {
+if ($target.type === "nil") {
+return 0
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return $pl(1)(len(rest))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arr);
+
+const pat_loc = (pat) => (($target) => {
+if ($target.type === "pany") {
+{
+let l = $target[0];
+return l
+}
+}
+if ($target.type === "pprim") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "pstr") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "pvar") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "pcon") {
+{
+let l = $target[3];
+return l
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat);
 
 const pat_to_string = (pat) => (($target) => {
 if ($target.type === "pany") {
@@ -1508,45 +1095,27 @@ throw new Error('Failed to match. ' + valueToString($target));
     }
     
 }
-const tenv$slset_constructors = ({3: alias, 2: names, 1: cons, 0: types}) => (name) => (vbls) => (ncons) => (loc) => tenv(types)(map$slmerge(cons)(ncons))(map$slset(names)(name)($co(vbls)($co(set$slfrom_list(map$slkeys(ncons)))(loc))))(alias);
+const apply_tuple = (f) => ({1: b, 0: a}) => f(a)(b);
 
-const check_type_names = (tenv$qu) => (type) => (($target) => {
-if ($target.type === "tvar") {
-return true
+const any = (values) => (f) => (($target) => {
+if ($target.type === "nil") {
+return false
 }
-if ($target.type === "tcon") {
-{
-let name = $target[0];
-return (({3: alias, 2: types}) => (($target) => {
-if ($target === true) {
-return true
-}
-return (($target) => {
-if ($target === true) {
-return true
-}
-return fatal(`Unknown type ${name}`)
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slhas(alias)(name))
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slhas(types)(name)))(tenv$qu)
-}
-}
-if ($target.type === "tapp") {
+if ($target.type === "cons") {
 {
 let one = $target[0];
-let two = $target[1];
+let rest = $target[1];
 return (($target) => {
 if ($target === true) {
-return check_type_names(tenv$qu)(two)
+return true
 }
-return false
+return any(rest)(f)
 throw new Error('Failed to match. ' + valueToString($target));
-})(check_type_names(tenv$qu)(one))
+})(f(one))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(type);
+})(values);
 
 const extract_type_call = (type) => (args) => (($target) => {
 if ($target.type === "tapp") {
@@ -1561,46 +1130,7 @@ return $co(type)(args)
 throw new Error('Failed to match. ' + valueToString($target));
 })(type);
 
-const split_stmts = (stmts) => (sdefs) => (stypes) => (salias) => (sexps) => (($target) => {
-if ($target.type === "nil") {
-return $co(sdefs)($co(stypes)($co(salias)(sexps)))
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return (($target) => {
-if ($target.type === "tdef") {
-return split_stmts(rest)(cons(one)(sdefs))(stypes)(salias)(sexps)
-}
-if ($target.type === "tdeftype") {
-return split_stmts(rest)(sdefs)(cons(one)(stypes))(salias)(sexps)
-}
-if ($target.type === "ttypealias") {
-{
-let name = $target[0];
-let nl = $target[1];
-let args = $target[2];
-let body = $target[3];
-return split_stmts(rest)(sdefs)(stypes)(cons($co(name)($co(args)($co(body)(nl))))(salias))(sexps)
-}
-}
-if ($target.type === "texpr") {
-{
-let expr = $target[0];
-return split_stmts(rest)(sdefs)(stypes)(salias)(cons(expr)(sexps))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(one)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(stmts);
-
-const tenv$sladd_alias = ({3: aliases, 2: c, 1: b, 0: a}) => (name) => ({1: {1: l, 0: body}, 0: args}) => tenv(a)(b)(c)(map$slset(aliases)(name)($co(args)($co(body)(l))));
-
-const tenv$sladd_builtin_type = ({3: d, 2: names, 1: b, 0: a}) => ({1: args, 0: name}) => tenv(a)(b)(map$slset(names)(name)($co(args)($co(set$slnil)(-1))))(d);
+const fst = ({0: a}) => a;
 
 const pat_externals = (pat) => (($target) => {
 if ($target.type === "pcon") {
@@ -1616,6 +1146,25 @@ return empty
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
 
+const bag$slfold = (f) => (init) => (bag) => (($target) => {
+if ($target.type === "empty") {
+return init
+}
+if ($target.type === "one") {
+{
+let v = $target[0];
+return f(init)(v)
+}
+}
+if ($target.type === "many") {
+{
+let items = $target[0];
+return foldr(init)(items)(bag$slfold(f))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(bag);
+
 const find_missing_names = (values) => (ex) => ((externals) => filter(({1: loc, 0: name}) => (($target) => {
 if ($target.type === "some") {
 return false
@@ -1624,43 +1173,17 @@ return true
 throw new Error('Failed to match. ' + valueToString($target));
 })(map$slget(values)(name)))(map$slto_list(externals)))(bag$slfold((ext) => ({1: {1: l}, 0: name}) => map$slset(ext)(name)(l))(map$slnil)(ex));
 
-const $gt$gt$eq = ({0: f}) => (next) => StateT((state) => (($target) => {
-if ($target.type === "," &&
-$target[1].type === "err") {
-{
-let state = $target[0];
-let e = $target[1][0];
-return $co(state)(err(e))
-}
-}
-if ($target.type === "," &&
-$target[1].type === "ok") {
-{
-let state = $target[0];
-let value = $target[1][0];
-return state_f(next(value))(state)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(state)));
+const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
+const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
+const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1})
+const cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
+const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
+const StateT = (v0) => ({type: "StateT", 0: v0})
+const run_$gt = ({0: f}) => (state) => (({1: result}) => result)(f(state));
 
 const $lt_ = (x) => StateT((state) => $co(state)(ok(x)));
 
 const $lt_err = (e) => StateT((state) => $co(state)(err(e)));
-
-const map_$gt = (f) => (arr) => (($target) => {
-if ($target.type === "nil") {
-return $lt_(nil)
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return $gt$gt$eq(f(one))((one) => $gt$gt$eq(map_$gt(f)(rest))((rest) => $lt_(cons(one)(rest))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
 
 const ok_$gt = (result) => (($target) => {
 if ($target.type === "ok") {
@@ -1678,104 +1201,15 @@ return $lt_err(e)
 throw new Error('Failed to match. ' + valueToString($target));
 })(result);
 
-const seq_$gt = (arr) => (($target) => {
-if ($target.type === "nil") {
-return $lt_(nil)
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return $gt$gt$eq(one)((one) => $gt$gt$eq(seq_$gt(rest))((rest) => $lt_(cons(one)(rest))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
-
 const $lt_state = StateT((state) => $co(state)(ok(state)));
 
-const foldl_$gt = (init) => (values) => (f) => (($target) => {
-if ($target.type === "nil") {
-return $lt_(init)
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return $gt$gt$eq(f(init)(one))((one) => foldl_$gt(one)(rest)(f))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(values);
-
-const foldr_$gt = (init) => (values) => (f) => (($target) => {
-if ($target.type === "nil") {
-return $lt_(init)
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return $gt$gt$eq(foldr_$gt(init)(rest)(f))((init) => f(init)(one))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(values);
-
 const state_$gt = (v) => StateT((old) => $co(v)(ok(old)));
+
+const state_f = ({0: f}) => f;
 
 const state$slnil = $co(0)($co($co(nil)($co(nil)(nil)))(map$slnil));
 
 const run$slnil_$gt = (st) => run_$gt(st)(state$slnil);
-
-const record_$gt = (loc) => (type) => (keep) => $gt$gt$eq($lt_state)(({1: {1: subst, 0: {1: usages, 0: types}}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co($co(cons($co(loc)($co(type)(keep)))(types))(usages))(subst))))((_) => $lt_($unit)));
-
-const $lt_types = $gt$gt$eq($lt_state)(({1: {0: types}}) => $lt_(types));
-
-const $lt_subst = $gt$gt$eq($lt_state)(({1: {1: subst}}) => $lt_(subst));
-
-const apply_$gt = (f) => (tenv) => $gt$gt$eq($lt_subst)((subst) => $lt_(f(subst)(tenv)));
-
-const type$slapply_$gt = apply_$gt(type_apply);
-
-const pats_by_loc = (pat) => (($target) => {
-if ($target.type === "pany") {
-{
-let int = $target[0];
-return empty
-}
-}
-if ($target.type === "pvar") {
-{
-let string = $target[0];
-let int = $target[1];
-return one($co(int)(evar(string)(int)))
-}
-}
-if ($target.type === "pcon") {
-{
-let string = $target[0];
-let pats = $target[2];
-let int = $target[3];
-return foldl(empty)(map(pats)(pats_by_loc))(bag$sland)
-}
-}
-if ($target.type === "pstr") {
-{
-let string = $target[0];
-let int = $target[1];
-return empty
-}
-}
-if ($target.type === "pprim") {
-{
-let prim = $target[0];
-let int = $target[1];
-return empty
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(pat);
 
 const pat_$gts = (pat) => (($target) => {
 if ($target.type === "pany") {
@@ -1816,48 +1250,15 @@ return prim_$gts(prim)
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
 
-const expr_to_string = (expr) => (($target) => {
-if ($target.type === "evar") {
-{
-let n = $target[0];
-return n
-}
-}
-if ($target.type === "elambda") {
-{
-let pats = $target[0];
-let b = $target[1];
-return `(fn [${join(" ")(map(pats)(pat_to_string))}] ${expr_to_string(b)})`
-}
-}
-if ($target.type === "eapp") {
-{
-let a = $target[0];
-let args = $target[1];
-return `(${expr_to_string(a)} ${join(" ")(map(args)(expr_to_string))})`
-}
-}
-if ($target.type === "eprim" &&
-$target[0].type === "pint") {
-{
-let n = $target[0][0];
-return int_to_string(n)
-}
-}
-if ($target.type === "ematch") {
-{
-let t = $target[0];
-let cases = $target[1];
-return `(match ${expr_to_string(t)} ${join("\n")(map(cases)(({1: b, 0: a}) => `${pat_to_string(a)} ${expr_to_string(b)}`))}`
-}
-}
-return "??"
-throw new Error('Failed to match. ' + valueToString($target));
-})(expr);
+const terr = (v0) => (v1) => ({type: "terr", 0: v0, 1: v1})
+const ttypes = (v0) => (v1) => ({type: "ttypes", 0: v0, 1: v1})
+const twrap = (v0) => (v1) => ({type: "twrap", 0: v0, 1: v1})
+const tmissing = (v0) => ({type: "tmissing", 0: v0})
+const type_error = (message) => (loced_items) => terr(message)(loced_items);
 
-const record_usage_$gt = (loc) => (provider) => $gt$gt$eq($lt_state)(({1: {1: subst, 0: {1: {1: usages, 0: defs}, 0: types}}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co($co(types)($co(defs)(cons($co(loc)(provider))(usages))))(subst))))((_) => $lt_($unit)));
-
-const record_def_$gt = (loc) => $gt$gt$eq($lt_state)(({1: {1: subst, 0: {1: {1: usages, 0: defs}, 0: types}}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co($co(types)($co(cons(loc)(defs))(usages)))(subst))))((_) => $lt_($unit)));
+/* type alias */
+/* type alias */
+const scheme$slt = ({1: t}) => t;
 
 const type$eq = (one) => (two) => (($target) => {
 if ($target.type === "," &&
@@ -1907,133 +1308,7 @@ return $co(loc)(type_apply(subst)(type))
 throw new Error('Failed to match. ' + valueToString($target));
 })(keep));
 
-const subst_reset_$gt = (new_subst) => $gt$gt$eq($lt_state)(({1: {1: subst, 0: types}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co(types)(new_subst))))((_) => $lt_(subst)));
-
-const do_$gt = (f) => (arr) => (($target) => {
-if ($target.type === "nil") {
-return $lt_($unit)
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return $gt$gt$eq(f(one))((_) => $gt$gt$eq(do_$gt(f)(rest))((_) => $lt_($unit)))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
-
-const externals_type_record = (bound) => (t) => (($target) => {
-if ($target.type === "tvar") {
-return $lt_(empty)
-}
-if ($target.type === "tcon") {
-{
-let name = $target[0];
-let l = $target[1];
-return (($target) => {
-if ($target.type === "some") {
-{
-let pl = $target[0];
-return $gt$gt$eq(record_usage_$gt(l)(pl))((_) => $lt_(empty))
-}
-}
-return $lt_(one($co(name)($co(type)(l))))
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(bound)(name))
-}
-}
-if ($target.type === "tapp") {
-{
-let one = $target[0];
-let two = $target[1];
-return $gt$gt$eq(externals_type_record(bound)(one))((one) => $gt$gt$eq(externals_type_record(bound)(two))((two) => $lt_(bag$sland(one)(two))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(t);
-
-const record_local_tcon_usages = (locals) => (tenv) => (t) => (($target) => {
-if ($target.type === "tvar") {
-return $lt_($unit)
-}
-if ($target.type === "tcon") {
-{
-let name = $target[0];
-let l = $target[1];
-return (($target) => {
-if ($target.type === "some") {
-{
-let pl = $target[0];
-return record_usage_$gt(l)(pl)
-}
-}
-return $lt_($unit)
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(locals)(name))
-}
-}
-if ($target.type === "tapp") {
-{
-let one = $target[0];
-let two = $target[1];
-return $gt$gt$eq(record_local_tcon_usages(locals)(tenv)(one))((_) => $gt$gt$eq(record_local_tcon_usages(locals)(tenv)(two))((_) => $lt_($unit)))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(t);
-
-const record_usages_in_type = (tenv) => (rec) => (type) => (({3: alias, 2: tdefs, 0: types}) => (($target) => {
-if ($target.type === "tcon") {
-{
-let name = $target[0];
-let l = $target[1];
-return (($target) => {
-if ($target.type === "some" &&
-$target[0].type === "," &&
-$target[0][1].type === ",") {
-{
-let al = $target[0][1][1];
-return record_usage_$gt(l)(al)
-}
-}
-return (($target) => {
-if ($target.type === "some" &&
-$target[0].type === "," &&
-$target[0][1].type === ",") {
-{
-let loc = $target[0][1][1];
-return record_usage_$gt(l)(loc)
-}
-}
-return (($target) => {
-if ($target.type === "some") {
-{
-let loc = $target[0];
-return record_usage_$gt(l)(loc)
-}
-}
-return $lt_err(type_error("Unbound type")(cons($co(name)(l))(nil)))
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(rec)(name))
-return ((nope) => $lt_($unit))(name)
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(tdefs)(name))
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(alias)(name))
-}
-}
-if ($target.type === "tapp") {
-{
-let one = $target[0];
-let two = $target[1];
-let l = $target[2];
-return $gt$gt$eq(record_usages_in_type(tenv)(rec)(one))((_) => $gt$gt$eq(record_usages_in_type(tenv)(rec)(two))((_) => $lt_($unit)))
-}
-}
-return $lt_($unit)
-throw new Error('Failed to match. ' + valueToString($target));
-})(type))(tenv);
+const $co$co0 = ({0: a}) => a;
 
 const pat$slidents = (pat) => (($target) => {
 if ($target.type === "pvar") {
@@ -2082,37 +1357,6 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(type);
 
 const rev_pair = ({1: b, 0: a}) => $co(b)(a);
-
-const type_with_free_rec = (free) => (type) => (($target) => {
-if ($target.type === "tvar") {
-return $lt_(type)
-}
-if ($target.type === "tcon") {
-{
-let s = $target[0];
-let l = $target[1];
-return (($target) => {
-if ($target.type === "some") {
-{
-let fl = $target[0];
-return $gt$gt$eq(record_usage_$gt(l)(fl))((_) => $lt_(tvar(s)(l)))
-}
-}
-return $lt_(type)
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(free)(s))
-}
-}
-if ($target.type === "tapp") {
-{
-let a = $target[0];
-let b = $target[1];
-let l = $target[2];
-return $gt$gt$eq(type_with_free_rec(free)(a))((a) => $gt$gt$eq(type_with_free_rec(free)(b))((b) => $lt_(tapp(a)(b)(l))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
 
 const err$gt$gt$eq = ({0: f}) => (next) => StateT((state) => (($target) => {
 if ($target.type === "," &&
@@ -2187,69 +1431,55 @@ return nil
 throw new Error('Failed to match. ' + valueToString($target));
 })(row)));
 
-const args_if_complete = (tenv) => (matrix) => ((heads) => ((gid) => (($target) => {
-if ($target.type === "none") {
-return map$slnil
-}
-if ($target.type === "some") {
-{
-let gid = $target[0];
-return ((found) => (($target) => {
-if ($target.type === "nil") {
-return map$slnil
-}
-{
-let constrs = $target;
-return loop(constrs)((constrs) => (recur) => (($target) => {
-if ($target.type === "nil") {
-return found
-}
-if ($target.type === "cons") {
-{
-let id = $target[0];
-let rest = $target[1];
-return (($target) => {
-if ($target.type === "none") {
-return map$slnil
-}
-if ($target.type === "some") {
-return recur(rest)
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(found)(id))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(constrs))
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(group_constructors(tenv)(gid)))(map$slfrom_list(fold_ex_pats(nil)(heads)((found) => (head) => (($target) => {
+const fold_ex_pats = (init) => (pats) => (f) => foldl(init)(pats)((init) => (pat) => fold_ex_pat(init)(pat)(f));
+
+const find_gid = (heads) => fold_ex_pats(none)(heads)((gid) => (pat) => (($target) => {
 if ($target.type === "ex/constructor") {
 {
-let id = $target[0];
-let args = $target[2];
-return cons($co(id)(length(args)))(found)
+let id = $target[1];
+return (($target) => {
+if ($target.type === "none") {
+return some(id)
 }
-}
-return found
-throw new Error('Failed to match. ' + valueToString($target));
-})(head))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(gid))(find_gid(heads)))(map(matrix)((row) => (($target) => {
-if ($target.type === "nil") {
-return fatal("is-complete called with empty row")
-}
-if ($target.type === "cons") {
+if ($target.type === "some") {
 {
-let head = $target[0];
-return head
+let oid = $target[0];
+return (($target) => {
+if ($target === true) {
+return fatal("Constructors with different group IDs in the same position.")
+}
+return some(id)
+throw new Error('Failed to match. ' + valueToString($target));
+})($ex$eq(oid)(id))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(row)));
+})(gid)
+}
+}
+return gid
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat));
 
+const tdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "tdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+const ttypealias = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "ttypealias", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+const tdef = (v0) => (v1) => (v2) => (v3) => ({type: "tdef", 0: v0, 1: v1, 2: v2, 3: v3})
+const texpr = (v0) => (v1) => ({type: "texpr", 0: v0, 1: v1})
+
+const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
+const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
+const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
+const equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1})
+const elambda = (v0) => (v1) => (v2) => ({type: "elambda", 0: v0, 1: v1, 2: v2})
+const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2})
+const elet = (v0) => (v1) => (v2) => ({type: "elet", 0: v0, 1: v1, 2: v2})
+const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2})
+
+const quot$slexpr = (v0) => ({type: "quot/expr", 0: v0})
+const quot$sltop = (v0) => ({type: "quot/top", 0: v0})
+const quot$sltype = (v0) => ({type: "quot/type", 0: v0})
+const quot$slpat = (v0) => ({type: "quot/pat", 0: v0})
+const quot$slquot = (v0) => ({type: "quot/quot", 0: v0})
 const tts_inner = (t) => (free) => (locs) => (($target) => {
 if ($target.type === "tvar") {
 {
@@ -2441,9 +1671,18 @@ return specialized_matrix(constructor)(arity)(cons(cons(left)(rest))(cons(cons(r
 throw new Error('Failed to match. ' + valueToString($target));
 })(row);
 
-const tenv_free = ({0: types}) => foldr(set$slnil)(map(map$slvalues(types))(({0: s}) => scheme_free(s)))(set$slmerge);
+const scheme_apply = (subst) => ({1: type, 0: vbls}) => scheme(vbls)(type_apply(map_without(subst)(vbls))(type));
 
-const generalize = (tenv) => (t) => scheme(set$sldiff(type_free(t))(tenv_free(tenv)))(t);
+const tenv = (v0) => (v1) => (v2) => (v3) => ({type: "tenv", 0: v0, 1: v1, 2: v2, 3: v3})
+const tenv$sltype = ({0: types}) => (key) => map$slget(types)(key);
+
+const tenv$slcon = ({1: cons}) => (key) => map$slget(cons)(key);
+
+const tenv$slnames = ({2: names}) => (key) => map$slget(names)(key);
+
+const tenv$slset_type = ({3: alias, 2: names, 1: cons, 0: types}) => (k) => (v) => tenv(map$slset(types)(k)(v))(cons)(names)(alias);
+
+const tenv$slnil = tenv(map$slnil)(map$slnil)(map$slnil)(map$slnil);
 
 const type_to_string = (t) => (({0: text}) => text)(tts_inner(t)($co(some(map$slnil))(0))(false));
 
@@ -2581,44 +1820,49 @@ throw new Error('Failed to match. ' + valueToString($target));
 throw new Error('Failed to match. ' + valueToString($target));
 })(expr);
 
-const externals_stmt = (stmt) => bag$slto_list((($target) => {
-if ($target.type === "tdeftype") {
+const bag$slto_list = bag$slfold((list) => (a) => cons(a)(list))(nil);
+
 {
-let string = $target[0];
-let free = $target[2];
-let constructors = $target[3];
-return ((frees) => many(map(constructors)(({1: {1: {0: args}, 0: l}, 0: name}) => (($target) => {
-if ($target.type === "nil") {
-return empty
+    const test = bag$slto_list;
+    
+    const in_0 = many(cons(empty)(cons(one(1))(cons(many(cons(one(2))(cons(empty)(nil))))(cons(one(10))(nil)))));
+    const mod_0 = test(in_0);
+    const out_0 = cons(1)(cons(2)(cons(10)(nil)));
+    if (!equal(mod_0, out_0)) {
+        console.log(mod_0);
+        console.log(out_0);
+        throw new Error(`Fixture test (7494) failing 0. Not equal.`);
+    }
+    
 }
-return many(map(args)(externals_type(frees)))
-throw new Error('Failed to match. ' + valueToString($target));
-})(args))))(set$slfrom_list(map(free)(fst)))
+const names = (stmt) => (($target) => {
+if ($target.type === "tdef") {
+{
+let name = $target[0];
+let l = $target[1];
+return cons($co(name)($co(value)(l)))(nil)
 }
+}
+if ($target.type === "texpr") {
+return nil
 }
 if ($target.type === "ttypealias") {
 {
 let name = $target[0];
-let args = $target[2];
-let body = $target[3];
-return ((frees) => externals_type(frees)(body))(set$slfrom_list(map(args)(fst)))
+let l = $target[1];
+return cons($co(name)($co(type)(l)))(nil)
 }
 }
-if ($target.type === "tdef") {
+if ($target.type === "tdeftype") {
 {
 let name = $target[0];
-let body = $target[2];
-return externals(set$sladd(set$slnil)(name))(body)
-}
-}
-if ($target.type === "texpr") {
-{
-let expr = $target[0];
-return externals(set$slnil)(expr)
+let l = $target[1];
+let constructors = $target[3];
+return cons($co(name)($co(type)(l)))(map(constructors)(({1: {0: l}, 0: name}) => $co(name)($co(value)(l))))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(stmt));
+})(stmt);
 
 const show_types = (names) => ({0: types}) => ((names) => map(filter(({1: v, 0: k}) => set$slhas(names)(k))(map$slto_list(types)))(({1: {1: l, 0: {1: type, 0: free}}, 0: name}) => (($target) => {
 if ($target.type === "nil") {
@@ -2637,6 +1881,62 @@ const show_subst = (subst) => join("\n")(map(map$slto_list(subst))(({1: type, 0:
 
 const show_substs = (substs) => join("\n::\n")(map(substs)(show_subst));
 
+const expr_loc = (expr) => (($target) => {
+if ($target.type === "estr") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "eprim") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "evar") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "equot") {
+{
+let l = $target[1];
+return l
+}
+}
+if ($target.type === "elambda") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "elet") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "eapp") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "ematch") {
+{
+let l = $target[2];
+return l
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(expr);
+
+const tenv$slmerge = ({3: alias, 2: types, 1: constructors, 0: values}) => ({3: nalias, 2: ntypes, 1: ncons, 0: nvalues}) => tenv(map$slmerge(values)(nvalues))(map$slmerge(constructors)(ncons))(map$slmerge(types)(ntypes))(map$slmerge(alias)(nalias));
+
+const inference = (v0) => (v1) => (v2) => (v3) => (v4) => (v5) => ({type: "inference", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4, 5: v5})
+const analysis = (v0) => (v1) => (v2) => ({type: "analysis", 0: v0, 1: v1, 2: v2})
 const check_invariant = (place) => (new_subst) => (old_subst) => foldl(none)(map$slkeys(old_subst))((current) => (key) => (($target) => {
 if ($target.type === "some") {
 {
@@ -2667,44 +1967,88 @@ throw new Error('Failed to match. ' + valueToString($target));
 throw new Error('Failed to match. ' + valueToString($target));
 })(current));
 
-const subst_aliases = (alias) => (type) => $gt$gt$eq($lt_(extract_type_call(type)(nil)))(({1: args, 0: base}) => $gt$gt$eq(map_$gt(({1: l, 0: arg}) => $gt$gt$eq(subst_aliases(alias)(arg))((arg) => $lt_($co(arg)(l))))(args))((args) => (($target) => {
+const tenv$slset_constructors = ({3: alias, 2: names, 1: cons, 0: types}) => (name) => (vbls) => (ncons) => (loc) => tenv(types)(map$slmerge(cons)(ncons))(map$slset(names)(name)($co(vbls)($co(set$slfrom_list(map$slkeys(ncons)))(loc))))(alias);
+
+const check_type_names = (tenv$qu) => (type) => (($target) => {
+if ($target.type === "tvar") {
+return true
+}
 if ($target.type === "tcon") {
 {
 let name = $target[0];
-let l = $target[1];
+return (({3: alias, 2: types}) => (($target) => {
+if ($target === true) {
+return true
+}
 return (($target) => {
-if ($target.type === "some" &&
-$target[0].type === "," &&
-$target[0][1].type === ",") {
+if ($target === true) {
+return true
+}
+return fatal(`Unknown type ${name}`)
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slhas(alias)(name))
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slhas(types)(name)))(tenv$qu)
+}
+}
+if ($target.type === "tapp") {
 {
-let names = $target[0][0];
-let subst = $target[0][1][0];
-let al = $target[0][1][1];
+let one = $target[0];
+let two = $target[1];
 return (($target) => {
 if ($target === true) {
-return $lt_err(type_error(`Wrong number of args given to alias ${name}: expected ${its(len(names))}, given ${its(len(args))}.`)(cons($co(name)(l))(nil)))
+return check_type_names(tenv$qu)(two)
 }
-return $gt$gt$eq($lt_((($target) => {
-if ($target === true) {
-return subst
-}
-return replace_in_type(map$slfrom_list(zip(names)(map(args)(fst))))(subst)
+return false
 throw new Error('Failed to match. ' + valueToString($target));
-})($eq(len(names))(0))))((subst) => subst_aliases(alias)(subst))
+})(check_type_names(tenv$qu)(one))
+}
+}
 throw new Error('Failed to match. ' + valueToString($target));
-})($ex$eq(len(names))(len(args)))
-}
-}
-return $lt_(foldl(base)(args)((target) => ({1: l, 0: arg}) => tapp(target)(arg)(l)))
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(alias)(name))
-}
-}
-return $lt_(foldl(base)(args)((target) => ({1: l, 0: arg}) => tapp(target)(arg)(l)))
-throw new Error('Failed to match. ' + valueToString($target));
-})(base)));
+})(type);
 
-const infer_deftype = (tenv$qu) => (mutual_rec) => (tname) => (tnl) => (targs) => (constructors) => (l) => $gt$gt$eq($lt_(map(constructors)(({0: name}) => name)))((names) => $gt$gt$eq(record_def_$gt(tnl))((_) => $gt$gt$eq(foldl_$gt(tcon(tname)(tnl))(targs)((body) => ({1: al, 0: arg}) => $gt$gt$eq(record_def_$gt(al))((_) => $lt_(tapp(body)(tvar(arg)(al))(l)))))((final) => $gt$gt$eq($lt_(map$slfrom_list(targs)))((free_map) => $gt$gt$eq($lt_(set$slfrom_list(map$slkeys(free_map))))((free_set) => $gt$gt$eq(foldl_$gt($co(map$slnil)(map$slnil))(constructors)(({1: cons, 0: values}) => ({1: {1: {1: l, 0: args}, 0: nl}, 0: name}) => $gt$gt$eq(map_$gt(type_with_free_rec(free_map))(args))((args) => $gt$gt$eq(do_$gt(record_usages_in_type(tenv$qu)(mutual_rec))(args))((_) => $gt$gt$eq(record_def_$gt(nl))((_) => $gt$gt$eq(map_$gt(subst_aliases(tenv$slalias(tenv$qu)))(args))((args) => $lt_($co(map$slset(values)(name)($co(scheme(set$slfrom_list(map$slkeys(free_map)))(foldr(final)(args)((body) => (arg) => tfn(arg)(body)(l))))(nl)))(map$slset(cons)(name)(tconstructor(map(targs)(fst))(args)(final)(nl))))))))))(({1: cons, 0: values}) => $lt_(tenv(values)(cons)(map$slset(map$slnil)(tname)($co(len(targs))($co(set$slfrom_list(names))(tnl))))(map$slnil))))))));
+const tenv$slalias = ({3: alias}) => alias;
+
+const split_stmts = (stmts) => (sdefs) => (stypes) => (salias) => (sexps) => (($target) => {
+if ($target.type === "nil") {
+return $co(sdefs)($co(stypes)($co(salias)(sexps)))
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return (($target) => {
+if ($target.type === "tdef") {
+return split_stmts(rest)(cons(one)(sdefs))(stypes)(salias)(sexps)
+}
+if ($target.type === "tdeftype") {
+return split_stmts(rest)(sdefs)(cons(one)(stypes))(salias)(sexps)
+}
+if ($target.type === "ttypealias") {
+{
+let name = $target[0];
+let nl = $target[1];
+let args = $target[2];
+let body = $target[3];
+return split_stmts(rest)(sdefs)(stypes)(cons($co(name)($co(args)($co(body)(nl))))(salias))(sexps)
+}
+}
+if ($target.type === "texpr") {
+{
+let expr = $target[0];
+return split_stmts(rest)(sdefs)(stypes)(salias)(cons(expr)(sexps))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(one)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(stmts);
+
+const tenv$sladd_alias = ({3: aliases, 2: c, 1: b, 0: a}) => (name) => ({1: {1: l, 0: body}, 0: args}) => tenv(a)(b)(c)(map$slset(aliases)(name)($co(args)($co(body)(l))));
+
+const tenv$sladd_builtin_type = ({3: d, 2: names, 1: b, 0: a}) => ({1: args, 0: name}) => tenv(a)(b)(map$slset(names)(name)($co(args)($co(set$slnil)(-1))))(d);
 
 const externals_list = (x) => bag$slto_list(externals(set$slnil)(x));
 
@@ -2718,6 +2062,8 @@ return (({0: text}) => $lt_err(tmissing(map(zip(missing)(map(missing_vars)(type_
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(missing_vars);
+
+const tenv$slvalues = ({0: values}) => values;
 
 const externals_defs = (stmts) => foldr(empty)(map(stmts)(({2: body}) => externals(set$slnil)(body)))(bag$sland);
 
@@ -2734,7 +2080,7 @@ const externals_defs = (stmts) => foldr(empty)(map(stmts)(({2: body}) => externa
     }
     
 
-    const in_1 = {"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":1,"1":16142,"type":"pint"},"1":16142,"type":"eprim"},"1":{"0":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":2,"1":16143,"type":"pint"},"1":16143,"type":"eprim"},"1":{"0":{"0":{"0":"cons","1":16141,"type":"evar"},"1":{"0":{"0":"c","1":16144,"type":"evar"},"1":{"0":{"0":"nil","1":16141,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16141,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"};
+    const in_1 = {"0":{"0":"cons","1":16141,"type":"evar"},"1":{"0":{"0":{"0":1,"1":16142,"type":"pint"},"1":16142,"type":"eprim"},"1":{"0":{"0":{"0":"cons","1":16141,"type":"evar"},"1":{"0":{"0":{"0":2,"1":16143,"type":"pint"},"1":16143,"type":"eprim"},"1":{"0":{"0":{"0":"cons","1":16141,"type":"evar"},"1":{"0":{"0":"c","1":16144,"type":"evar"},"1":{"0":{"0":"nil","1":16141,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16141,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16141,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":16141,"type":"eapp"};
     const mod_1 = test(in_1);
     const out_1 = cons($co("c")($co(value)(16144)))(nil);
     if (!equal(mod_1, out_1)) {
@@ -2764,58 +2110,135 @@ const externals_defs = (stmts) => foldr(empty)(map(stmts)(({2: body}) => externa
     }
     
 }
+/* type alias */
+const $gt$gt$eq = ({0: f}) => (next) => StateT((state) => (($target) => {
+if ($target.type === "," &&
+$target[1].type === "err") {
+{
+let state = $target[0];
+let e = $target[1][0];
+return $co(state)(err(e))
+}
+}
+if ($target.type === "," &&
+$target[1].type === "ok") {
+{
+let state = $target[0];
+let value = $target[1][0];
+return state_f(next(value))(state)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(f(state)));
+
+const map_$gt = (f) => (arr) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(nil)
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(f(one))((one) => $gt$gt$eq(map_$gt(f)(rest))((rest) => $lt_(cons(one)(rest))))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arr);
+
+const seq_$gt = (arr) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(nil)
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(one)((one) => $gt$gt$eq(seq_$gt(rest))((rest) => $lt_(cons(one)(rest))))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arr);
+
 const $lt_idx = $gt$gt$eq($lt_state)(({0: idx}) => $lt_(idx));
 
 const idx_$gt = (idx) => $gt$gt$eq($lt_state)(({1: {1: c, 0: b}}) => $gt$gt$eq(state_$gt($co(idx)($co(b)(c))))((_) => $lt_($unit)));
 
-const run$slrecord = (st) => run_$gt($gt$gt$eq(st)((value) => $gt$gt$eq($lt_types)((types) => $lt_($co(value)(types)))))(state$slnil);
+const foldl_$gt = (init) => (values) => (f) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(init)
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(f(init)(one))((one) => foldl_$gt(one)(rest)(f))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(values);
 
-const tenv$slapply_$gt = apply_$gt(tenv_apply);
+const foldr_$gt = (init) => (values) => (f) => (($target) => {
+if ($target.type === "nil") {
+return $lt_(init)
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(foldr_$gt(init)(rest)(f))((init) => f(init)(one))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(values);
 
-const things_by_loc = (expr) => bag$sland(one($co(expr_loc(expr))(expr)))((($target) => {
-if ($target.type === "estr") {
+const record_$gt = (loc) => (type) => (keep) => $gt$gt$eq($lt_state)(({1: {1: subst, 0: {1: usages, 0: types}}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co($co(cons($co(loc)($co(type)(keep)))(types))(usages))(subst))))((_) => $lt_($unit)));
+
+const $lt_types = $gt$gt$eq($lt_state)(({1: {0: types}}) => $lt_(types));
+
+const $lt_subst = $gt$gt$eq($lt_state)(({1: {1: subst}}) => $lt_(subst));
+
+const apply_$gt = (f) => (tenv) => $gt$gt$eq($lt_subst)((subst) => $lt_(f(subst)(tenv)));
+
+const type$slapply_$gt = apply_$gt(type_apply);
+
+const pats_by_loc = (pat) => (($target) => {
+if ($target.type === "pany") {
+{
+let int = $target[0];
+return empty
+}
+}
+if ($target.type === "pvar") {
 {
 let string = $target[0];
-let templates = $target[1];
-let int = $target[2];
-return foldl(empty)(map(templates)(({0: expr}) => things_by_loc(expr)))(bag$sland)
+let int = $target[1];
+return one($co(int)(evar(string)(int)))
 }
 }
-if ($target.type === "elambda") {
+if ($target.type === "pcon") {
 {
-let pats = $target[0];
-let expr = $target[1];
-let int = $target[2];
-return bag$sland(foldl(empty)(map(pats)(pats_by_loc))(bag$sland))(things_by_loc(expr))
+let string = $target[0];
+let pats = $target[2];
+let int = $target[3];
+return foldl(empty)(map(pats)(pats_by_loc))(bag$sland)
 }
 }
-if ($target.type === "eapp") {
+if ($target.type === "pstr") {
 {
-let target = $target[0];
-let args = $target[1];
-let int = $target[2];
-return bag$sland(things_by_loc(target))(foldl(empty)(map(args)(things_by_loc))(bag$sland))
-}
-}
-if ($target.type === "elet") {
-{
-let bindings = $target[0];
-let body = $target[1];
-let int = $target[2];
-return bag$sland(foldl(empty)(map(bindings)(({1: init, 0: pat}) => bag$sland(pats_by_loc(pat))(things_by_loc(init))))(bag$sland))(things_by_loc(body))
-}
-}
-if ($target.type === "ematch") {
-{
-let expr = $target[0];
-let cases = $target[1];
-let int = $target[2];
-return bag$sland(things_by_loc(expr))(foldl(empty)(map(cases)(({1: expr, 0: pat}) => things_by_loc(expr)))(bag$sland))
-}
-}
+let string = $target[0];
+let int = $target[1];
 return empty
+}
+}
+if ($target.type === "pprim") {
+{
+let prim = $target[0];
+let int = $target[1];
+return empty
+}
+}
 throw new Error('Failed to match. ' + valueToString($target));
-})(expr));
+})(pat);
 
 const expr_$gts = (expr) => (($target) => {
 if ($target.type === "eprim") {
@@ -2908,6 +2331,177 @@ return `${message}${join("")(map(names)(({1: loc, 0: name}) => `\n - ${name} (${
 throw new Error('Failed to match. ' + valueToString($target));
 })(err);
 
+const expr_to_string = (expr) => (($target) => {
+if ($target.type === "evar") {
+{
+let n = $target[0];
+return n
+}
+}
+if ($target.type === "elambda") {
+{
+let pats = $target[0];
+let b = $target[1];
+return `(fn [${join(" ")(map(pats)(pat_to_string))}] ${expr_to_string(b)})`
+}
+}
+if ($target.type === "eapp") {
+{
+let a = $target[0];
+let args = $target[1];
+return `(${expr_to_string(a)} ${join(" ")(map(args)(expr_to_string))})`
+}
+}
+if ($target.type === "eprim" &&
+$target[0].type === "pint") {
+{
+let n = $target[0][0];
+return int_to_string(n)
+}
+}
+if ($target.type === "ematch") {
+{
+let t = $target[0];
+let cases = $target[1];
+return `(match ${expr_to_string(t)} ${join("\n")(map(cases)(({1: b, 0: a}) => `${pat_to_string(a)} ${expr_to_string(b)}`))}`
+}
+}
+return "??"
+throw new Error('Failed to match. ' + valueToString($target));
+})(expr);
+
+const record_usage_$gt = (loc) => (provider) => $gt$gt$eq($lt_state)(({1: {1: subst, 0: {1: {1: usages, 0: defs}, 0: types}}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co($co(types)($co(defs)(cons($co(loc)(provider))(usages))))(subst))))((_) => $lt_($unit)));
+
+const record_def_$gt = (loc) => $gt$gt$eq($lt_state)(({1: {1: subst, 0: {1: {1: usages, 0: defs}, 0: types}}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co($co(types)($co(cons(loc)(defs))(usages)))(subst))))((_) => $lt_($unit)));
+
+const subst_reset_$gt = (new_subst) => $gt$gt$eq($lt_state)(({1: {1: subst, 0: types}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co(types)(new_subst))))((_) => $lt_(subst)));
+
+const do_$gt = (f) => (arr) => (($target) => {
+if ($target.type === "nil") {
+return $lt_($unit)
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq(f(one))((_) => $gt$gt$eq(do_$gt(f)(rest))((_) => $lt_($unit)))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arr);
+
+const externals_type_record = (bound) => (t) => (($target) => {
+if ($target.type === "tvar") {
+return $lt_(empty)
+}
+if ($target.type === "tcon") {
+{
+let name = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target.type === "some") {
+{
+let pl = $target[0];
+return $gt$gt$eq(record_usage_$gt(l)(pl))((_) => $lt_(empty))
+}
+}
+return $lt_(one($co(name)($co(type)(l))))
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(bound)(name))
+}
+}
+if ($target.type === "tapp") {
+{
+let one = $target[0];
+let two = $target[1];
+return $gt$gt$eq(externals_type_record(bound)(one))((one) => $gt$gt$eq(externals_type_record(bound)(two))((two) => $lt_(bag$sland(one)(two))))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(t);
+
+const record_local_tcon_usages = (locals) => (tenv) => (t) => (($target) => {
+if ($target.type === "tvar") {
+return $lt_($unit)
+}
+if ($target.type === "tcon") {
+{
+let name = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target.type === "some") {
+{
+let pl = $target[0];
+return record_usage_$gt(l)(pl)
+}
+}
+return $lt_($unit)
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(locals)(name))
+}
+}
+if ($target.type === "tapp") {
+{
+let one = $target[0];
+let two = $target[1];
+return $gt$gt$eq(record_local_tcon_usages(locals)(tenv)(one))((_) => $gt$gt$eq(record_local_tcon_usages(locals)(tenv)(two))((_) => $lt_($unit)))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(t);
+
+const record_usages_in_type = (tenv) => (rec) => (type) => (({3: alias, 2: tdefs, 0: types}) => (($target) => {
+if ($target.type === "tcon") {
+{
+let name = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target.type === "some" &&
+$target[0].type === "," &&
+$target[0][1].type === ",") {
+{
+let al = $target[0][1][1];
+return record_usage_$gt(l)(al)
+}
+}
+return (($target) => {
+if ($target.type === "some" &&
+$target[0].type === "," &&
+$target[0][1].type === ",") {
+{
+let loc = $target[0][1][1];
+return record_usage_$gt(l)(loc)
+}
+}
+return (($target) => {
+if ($target.type === "some") {
+{
+let loc = $target[0];
+return record_usage_$gt(l)(loc)
+}
+}
+return $lt_err(type_error("Unbound type")(cons($co(name)(l))(nil)))
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(rec)(name))
+return ((nope) => $lt_($unit))(name)
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(tdefs)(name))
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(alias)(name))
+}
+}
+if ($target.type === "tapp") {
+{
+let one = $target[0];
+let two = $target[1];
+let l = $target[2];
+return $gt$gt$eq(record_usages_in_type(tenv)(rec)(one))((_) => $gt$gt$eq(record_usages_in_type(tenv)(rec)(two))((_) => $lt_($unit)))
+}
+}
+return $lt_($unit)
+throw new Error('Failed to match. ' + valueToString($target));
+})(type))(tenv);
+
 const type_to_cst = (t) => (({0: cst}) => cst)(ttc_inner(t)($co(some(map$slnil))(0)));
 
 const expr$slidents = (expr) => (($target) => {
@@ -2992,6 +2586,37 @@ return bag$sland(many(map(constrs)(({1: {1: {0: args}, 0: l}, 0: name}) => bag$s
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(top);
+
+const type_with_free_rec = (free) => (type) => (($target) => {
+if ($target.type === "tvar") {
+return $lt_(type)
+}
+if ($target.type === "tcon") {
+{
+let s = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target.type === "some") {
+{
+let fl = $target[0];
+return $gt$gt$eq(record_usage_$gt(l)(fl))((_) => $lt_(tvar(s)(l)))
+}
+}
+return $lt_(type)
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(free)(s))
+}
+}
+if ($target.type === "tapp") {
+{
+let a = $target[0];
+let b = $target[1];
+let l = $target[2];
+return $gt$gt$eq(type_with_free_rec(free)(a))((a) => $gt$gt$eq(type_with_free_rec(free)(b))((b) => $lt_(tapp(a)(b)(l))))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(type);
 
 const tdefs_$gts = (tdefs) => (constructors) => map(map$slto_list(tdefs))(({1: {1: {1: loc, 0: cnames}, 0: num_args}, 0: name}) => `\n - ${name}${join("")(map(set$slto_list(cnames))((cname) => `\n   - ${cname} ${(($target) => {
 if ($target.type === "none") {
@@ -3120,6 +2745,96 @@ throw new Error('Failed to match. ' + valueToString($target));
 throw new Error('Failed to match. ' + valueToString($target));
 })(pattern);
 
+const group_constructors = (tenv) => (gid) => (($target) => {
+if ($target === "int") {
+return nil
+}
+if ($target === "bool") {
+return cons("true")(cons("false")(nil))
+}
+if ($target === "string") {
+return nil
+}
+return (({2: types}) => (($target) => {
+if ($target.type === "none") {
+return fatal(`Unknown type name ${gid}`)
+}
+if ($target.type === "some" &&
+$target[0].type === "," &&
+$target[0][1].type === ",") {
+{
+let names = $target[0][1][0];
+return set$slto_list(names)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(types)(gid)))(tenv)
+throw new Error('Failed to match. ' + valueToString($target));
+})(gid);
+
+const args_if_complete = (tenv) => (matrix) => ((heads) => ((gid) => (($target) => {
+if ($target.type === "none") {
+return map$slnil
+}
+if ($target.type === "some") {
+{
+let gid = $target[0];
+return ((found) => (($target) => {
+if ($target.type === "nil") {
+return map$slnil
+}
+{
+let constrs = $target;
+return loop(constrs)((constrs) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return found
+}
+if ($target.type === "cons") {
+{
+let id = $target[0];
+let rest = $target[1];
+return (($target) => {
+if ($target.type === "none") {
+return map$slnil
+}
+if ($target.type === "some") {
+return recur(rest)
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(found)(id))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(constrs))
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(group_constructors(tenv)(gid)))(map$slfrom_list(fold_ex_pats(nil)(heads)((found) => (head) => (($target) => {
+if ($target.type === "ex/constructor") {
+{
+let id = $target[0];
+let args = $target[2];
+return cons($co(id)(length(args)))(found)
+}
+}
+return found
+throw new Error('Failed to match. ' + valueToString($target));
+})(head))))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(gid))(find_gid(heads)))(map(matrix)((row) => (($target) => {
+if ($target.type === "nil") {
+return fatal("is-complete called with empty row")
+}
+if ($target.type === "cons") {
+{
+let head = $target[0];
+return head
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(row)));
+
 const is_useful = (tenv) => (matrix) => (row) => ((head_and_rest) => (($target) => {
 if ($target.type === "none") {
 return false
@@ -3202,6 +2917,8 @@ throw new Error('Failed to match. ' + valueToString($target));
 throw new Error('Failed to match. ' + valueToString($target));
 })(matrix));
 
+const tenv$slrm = ({3: alias, 2: names, 1: cons, 0: types}) => ($var) => tenv(map$slrm(types)($var))(cons)(names)(alias);
+
 const compose_subst = (place) => (new_subst) => (old_subst) => (($target) => {
 if ($target.type === "some") {
 {
@@ -3219,26 +2936,176 @@ return none
 throw new Error('Failed to match. ' + valueToString($target));
 })(debug_invariant));
 
+const tenv_free = ({0: types}) => foldr(set$slnil)(map(map$slvalues(types))(({0: s}) => scheme_free(s)))(set$slmerge);
+
+const tenv_apply = (subst) => ({3: alias, 2: names, 1: cons, 0: types}) => tenv(map$slmap(({1: l, 0: s}) => $co(scheme_apply(subst)(s))(l))(types))(cons)(names)(alias);
+
+const generalize = (tenv) => (t) => scheme(set$sldiff(type_free(t))(tenv_free(tenv)))(t);
+
 const new_type_var = (prefix) => (l) => $gt$gt$eq($lt_idx)((nidx) => $gt$gt$eq(idx_$gt($pl(nidx)(1)))((_) => $lt_(tvar(`${prefix}:${its(nidx)}`)(l))));
 
+const basic = tenv(map$slfrom_list(cons($co("+")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("-")($co(scheme(set$slnil)(tfn(tint)(tfn(tint)(tint)(-1))(-1)))(-1)))(cons($co("()")($co(scheme(set$slnil)(tcon("()")(-1)))(-1)))(cons($co(",")($co(scheme(set$slfrom_list(cons("a")(cons("b")(nil))))(tfn(tvar("a")(-1))(tfn(tvar("b")(-1))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1))(-1)))(-1)))(nil))))))(map$slfrom_list(cons($co(",")(tconstructor(cons("a")(cons("b")(nil)))(cons(tvar("a")(-1))(cons(tvar("b")(-1))(nil)))(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))(-1)))(nil)))(map$slfrom_list(cons($co("int")($co(0)($co(set$slnil)(-1))))(cons($co("string")($co(0)($co(set$slnil)(-1))))(cons($co("bool")($co(0)($co(set$slnil)(-1))))(cons($co(",")($co(2)($co(set$slfrom_list(cons(",")(nil)))(-1))))(nil))))))(map$slnil);
+
+{
+    const test = (x) => map$slto_list(compose_subst("test")(demo_new_subst)(map$slfrom_list(x)));
+    
+
+    const in_1 = cons($co("x")(tvar("a")(-1)))(nil);
+    const mod_1 = test(in_1);
+    const out_1 = cons($co("x")(tcon("a-mapped")(-1)))(cons($co("a")(tcon("a-mapped")(-1)))(cons($co("b")(tvar("c")(-1)))(nil)));
+    if (!equal(mod_1, out_1)) {
+        console.log(mod_1);
+        console.log(out_1);
+        throw new Error(`Fixture test (2704) failing 1. Not equal.`);
+    }
+    
+
+
+    const in_3 = cons($co("a")(tvar("b")(-1)))(nil);
+    const mod_3 = test(in_3);
+    const out_3 = cons($co("a")(tvar("c")(-1)))(cons($co("b")(tvar("c")(-1)))(nil));
+    if (!equal(mod_3, out_3)) {
+        console.log(mod_3);
+        console.log(out_3);
+        throw new Error(`Fixture test (2704) failing 3. Not equal.`);
+    }
+    
+}
+const typecheck = (v0) => (v1) => (v2) => (v3) => ({type: "typecheck", 0: v0, 1: v1, 2: v2, 3: v3})
 const subst_to_string = (subst) => join("\n")(map(map$slto_list(subst))(({1: v, 0: k}) => `${k} : ${type_to_string_raw(v)}`));
 
-const infer_stypes = (tenv$qu) => (stypes) => (salias) => $gt$gt$eq($lt_(foldl(map(salias)(({1: {1: {1: nl}}, 0: name}) => $co(name)(nl)))(stypes)((names) => ({1: nl, 0: name}) => cons($co(name)(nl))(names))))((names) => $gt$gt$eq($lt_(tenv$qu))(({3: aliases, 2: types}) => $gt$gt$eq($lt_(set$slmerge(set$slfrom_list(map$slkeys(types)))(set$slmerge(set$slfrom_list(map(names)(fst)))(set$slfrom_list(map$slkeys(aliases))))))((bound) => $gt$gt$eq($lt_(map$slfrom_list(names)))((mutual_rec) => $gt$gt$eq(foldl_$gt(tenv$slnil)(salias)((tenv) => ({1: {1: {1: nl, 0: body}, 0: args}, 0: name}) => (($target) => {
-if ($target.type === "nil") {
-return $gt$gt$eq(record_def_$gt(nl))((_) => $gt$gt$eq(record_local_tcon_usages(map$slfrom_list(args))(tenv)(body))((_) => $gt$gt$eq(record_usages_in_type(tenv$qu)(map$slmerge(map$slfrom_list(args))(mutual_rec))(body))((_) => $lt_(tenv$sladd_alias(tenv)(name)($co(map(args)(fst))($co(body)(nl)))))))
-}
+const externals_stmt = (stmt) => bag$slto_list((($target) => {
+if ($target.type === "tdeftype") {
 {
-let unbound = $target;
-return $lt_err(type_error("Unbound types")(map(unbound)(({1: {1: l}, 0: name}) => $co(name)(l))))
+let string = $target[0];
+let free = $target[2];
+let constructors = $target[3];
+return ((frees) => many(map(constructors)(({1: {1: {0: args}, 0: l}, 0: name}) => (($target) => {
+if ($target.type === "nil") {
+return empty
+}
+return many(map(args)(externals_type(frees)))
+throw new Error('Failed to match. ' + valueToString($target));
+})(args))))(set$slfrom_list(map(free)(fst)))
+}
+}
+if ($target.type === "ttypealias") {
+{
+let name = $target[0];
+let args = $target[2];
+let body = $target[3];
+return ((frees) => externals_type(frees)(body))(set$slfrom_list(map(args)(fst)))
+}
+}
+if ($target.type === "tdef") {
+{
+let name = $target[0];
+let body = $target[2];
+return externals(set$sladd(set$slnil)(name))(body)
+}
+}
+if ($target.type === "texpr") {
+{
+let expr = $target[0];
+return externals(set$slnil)(expr)
+}
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(bag$slto_list(externals_type(set$slmerge(bound)(set$slfrom_list(map(args)(fst))))(body)))))((tenv) => $gt$gt$eq($lt_(tenv$slmerge(tenv)(tenv$qu)))((merged) => $gt$gt$eq(foldl_$gt(tenv)(stypes)((tenv) => ({4: l, 3: constructors, 2: args, 1: tnl, 0: name}) => $gt$gt$eq(infer_deftype(merged)(mutual_rec)(name)(tnl)(args)(constructors)(l))((tenv$qu) => $lt_(tenv$slmerge(tenv$qu)(tenv)))))((tenv) => $gt$gt$eq($lt_(tenv$slmerge(tenv)(tenv$qu)))((tenv$qu) => $lt_(tenv)))))))));
+})(stmt));
+
+const subst_aliases = (alias) => (type) => $gt$gt$eq($lt_(extract_type_call(type)(nil)))(({1: args, 0: base}) => $gt$gt$eq(map_$gt(({1: l, 0: arg}) => $gt$gt$eq(subst_aliases(alias)(arg))((arg) => $lt_($co(arg)(l))))(args))((args) => (($target) => {
+if ($target.type === "tcon") {
+{
+let name = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target.type === "some" &&
+$target[0].type === "," &&
+$target[0][1].type === ",") {
+{
+let names = $target[0][0];
+let subst = $target[0][1][0];
+let al = $target[0][1][1];
+return (($target) => {
+if ($target === true) {
+return $lt_err(type_error(`Wrong number of args given to alias ${name}: expected ${its(len(names))}, given ${its(len(args))}.`)(cons($co(name)(l))(nil)))
+}
+return $gt$gt$eq($lt_((($target) => {
+if ($target === true) {
+return subst
+}
+return replace_in_type(map$slfrom_list(zip(names)(map(args)(fst))))(subst)
+throw new Error('Failed to match. ' + valueToString($target));
+})($eq(len(names))(0))))((subst) => subst_aliases(alias)(subst))
+throw new Error('Failed to match. ' + valueToString($target));
+})($ex$eq(len(names))(len(args)))
+}
+}
+return $lt_(foldl(base)(args)((target) => ({1: l, 0: arg}) => tapp(target)(arg)(l)))
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(alias)(name))
+}
+}
+return $lt_(foldl(base)(args)((target) => ({1: l, 0: arg}) => tapp(target)(arg)(l)))
+throw new Error('Failed to match. ' + valueToString($target));
+})(base)));
+
+const infer_deftype = (tenv$qu) => (mutual_rec) => (tname) => (tnl) => (targs) => (constructors) => (l) => $gt$gt$eq($lt_(map(constructors)(({0: name}) => name)))((names) => $gt$gt$eq(record_def_$gt(tnl))((_) => $gt$gt$eq(foldl_$gt(tcon(tname)(tnl))(targs)((body) => ({1: al, 0: arg}) => $gt$gt$eq(record_def_$gt(al))((_) => $lt_(tapp(body)(tvar(arg)(al))(l)))))((final) => $gt$gt$eq($lt_(map$slfrom_list(targs)))((free_map) => $gt$gt$eq($lt_(set$slfrom_list(map$slkeys(free_map))))((free_set) => $gt$gt$eq(foldl_$gt($co(map$slnil)(map$slnil))(constructors)(({1: cons, 0: values}) => ({1: {1: {1: l, 0: args}, 0: nl}, 0: name}) => $gt$gt$eq(map_$gt(type_with_free_rec(free_map))(args))((args) => $gt$gt$eq(do_$gt(record_usages_in_type(tenv$qu)(mutual_rec))(args))((_) => $gt$gt$eq(record_def_$gt(nl))((_) => $gt$gt$eq(map_$gt(subst_aliases(tenv$slalias(tenv$qu)))(args))((args) => $lt_($co(map$slset(values)(name)($co(scheme(set$slfrom_list(map$slkeys(free_map)))(foldr(final)(args)((body) => (arg) => tfn(arg)(body)(l))))(nl)))(map$slset(cons)(name)(tconstructor(map(targs)(fst))(args)(final)(nl))))))))))(({1: cons, 0: values}) => $lt_(tenv(values)(cons)(map$slset(map$slnil)(tname)($co(len(targs))($co(set$slfrom_list(names))(tnl))))(map$slnil))))))));
 
 const vars_for_names = (names) => (tenv) => foldr_$gt($co(tenv)(nil))(names)(({1: vars, 0: tenv}) => ({1: loc, 0: name}) => $gt$gt$eq(new_type_var(name)(loc))((self) => $lt_($co(tenv$slset_type(tenv)(name)($co(scheme(set$slnil)(self))(loc)))(cons(self)(vars)))));
 
 const find_missing = (tenv) => (externals) => $gt$gt$eq($lt_(find_missing_names(tenv$slvalues(tenv))(externals)))((missing_names) => $gt$gt$eq(vars_for_names(missing_names)(tenv))(({1: missing_vars, 0: tenv}) => $lt_($co(tenv)($co(missing_names)(missing_vars)))));
 
+const run$slrecord = (st) => run_$gt($gt$gt$eq(st)((value) => $gt$gt$eq($lt_types)((types) => $lt_($co(value)(types)))))(state$slnil);
+
 const subst_$gt = (new_subst) => $gt$gt$eq($lt_state)(({1: {1: subst, 0: types}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co(types)(compose_subst("")(new_subst)(subst)))))((_) => $lt_($unit)));
+
+const tenv$slapply_$gt = apply_$gt(tenv_apply);
+
+const things_by_loc = (expr) => bag$sland(one($co(expr_loc(expr))(expr)))((($target) => {
+if ($target.type === "estr") {
+{
+let string = $target[0];
+let templates = $target[1];
+let int = $target[2];
+return foldl(empty)(map(templates)(({0: expr}) => things_by_loc(expr)))(bag$sland)
+}
+}
+if ($target.type === "elambda") {
+{
+let pats = $target[0];
+let expr = $target[1];
+let int = $target[2];
+return bag$sland(foldl(empty)(map(pats)(pats_by_loc))(bag$sland))(things_by_loc(expr))
+}
+}
+if ($target.type === "eapp") {
+{
+let target = $target[0];
+let args = $target[1];
+let int = $target[2];
+return bag$sland(things_by_loc(target))(foldl(empty)(map(args)(things_by_loc))(bag$sland))
+}
+}
+if ($target.type === "elet") {
+{
+let bindings = $target[0];
+let body = $target[1];
+let int = $target[2];
+return bag$sland(foldl(empty)(map(bindings)(({1: init, 0: pat}) => bag$sland(pats_by_loc(pat))(things_by_loc(init))))(bag$sland))(things_by_loc(body))
+}
+}
+if ($target.type === "ematch") {
+{
+let expr = $target[0];
+let cases = $target[1];
+let int = $target[2];
+return bag$sland(things_by_loc(expr))(foldl(empty)(map(cases)(({1: expr, 0: pat}) => things_by_loc(expr)))(bag$sland))
+}
+}
+return empty
+throw new Error('Failed to match. ' + valueToString($target));
+})(expr));
 
 const pat_name = (pat) => new_type_var((($target) => {
 if ($target.type === "pvar") {
@@ -3285,6 +3152,17 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(set$slhas(type_free(type))($var))
 throw new Error('Failed to match. ' + valueToString($target));
 })(type);
+
+const infer_stypes = (tenv$qu) => (stypes) => (salias) => $gt$gt$eq($lt_(foldl(map(salias)(({1: {1: {1: nl}}, 0: name}) => $co(name)(nl)))(stypes)((names) => ({1: nl, 0: name}) => cons($co(name)(nl))(names))))((names) => $gt$gt$eq($lt_(tenv$qu))(({3: aliases, 2: types}) => $gt$gt$eq($lt_(set$slmerge(set$slfrom_list(map$slkeys(types)))(set$slmerge(set$slfrom_list(map(names)(fst)))(set$slfrom_list(map$slkeys(aliases))))))((bound) => $gt$gt$eq($lt_(map$slfrom_list(names)))((mutual_rec) => $gt$gt$eq(foldl_$gt(tenv$slnil)(salias)((tenv) => ({1: {1: {1: nl, 0: body}, 0: args}, 0: name}) => (($target) => {
+if ($target.type === "nil") {
+return $gt$gt$eq(record_def_$gt(nl))((_) => $gt$gt$eq(record_local_tcon_usages(map$slfrom_list(args))(tenv)(body))((_) => $gt$gt$eq(record_usages_in_type(tenv$qu)(map$slmerge(map$slfrom_list(args))(mutual_rec))(body))((_) => $lt_(tenv$sladd_alias(tenv)(name)($co(map(args)(fst))($co(body)(nl)))))))
+}
+{
+let unbound = $target;
+return $lt_err(type_error("Unbound types")(map(unbound)(({1: {1: l}, 0: name}) => $co(name)(l))))
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(bag$slto_list(externals_type(set$slmerge(bound)(set$slfrom_list(map(args)(fst))))(body)))))((tenv) => $gt$gt$eq($lt_(tenv$slmerge(tenv)(tenv$qu)))((merged) => $gt$gt$eq(foldl_$gt(tenv)(stypes)((tenv) => ({4: l, 3: constructors, 2: args, 1: tnl, 0: name}) => $gt$gt$eq(infer_deftype(merged)(mutual_rec)(name)(tnl)(args)(constructors)(l))((tenv$qu) => $lt_(tenv$slmerge(tenv$qu)(tenv)))))((tenv) => $gt$gt$eq($lt_(tenv$slmerge(tenv)(tenv$qu)))((tenv$qu) => $lt_(tenv)))))))));
 
 const check_exhaustiveness = (tenv) => (target_type) => (patterns) => (l) => $gt$gt$eq(type$slapply_$gt(target_type))((target_type) => $gt$gt$eq($lt_(map(patterns)((pat) => cons(pattern_to_ex_pattern(tenv)($co(pat)(target_type)))(nil))))((matrix) => (($target) => {
 if ($target === true) {
@@ -3632,6 +3510,301 @@ return type_apply(subst)(type)
 throw new Error('Failed to match. ' + valueToString($target));
 })(keep)))))(state_f(infer(tenv)(expr))(state$slnil));
 
+{
+    const test = infer_show(basic);
+    
+    const in_0 = {"0":"+","1":2179,"type":"evar"};
+    const mod_0 = test(in_0);
+    const out_0 = "(fn [int int] int)";
+    if (!equal(mod_0, out_0)) {
+        console.log(mod_0);
+        console.log(out_0);
+        throw new Error(`Fixture test (2159) failing 0. Not equal.`);
+    }
+    
+
+    const in_1 = {"0":"","1":{"type":"nil"},"2":6881,"type":"estr"};
+    const mod_1 = test(in_1);
+    const out_1 = "string";
+    if (!equal(mod_1, out_1)) {
+        console.log(mod_1);
+        console.log(out_1);
+        throw new Error(`Fixture test (2159) failing 1. Not equal.`);
+    }
+    
+
+    const in_2 = {"0":"hi ","1":{"0":{"0":{"0":"ho","1":{"type":"nil"},"2":6894,"type":"estr"},"1":{"0":"","1":6892,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":6889,"type":"estr"};
+    const mod_2 = test(in_2);
+    const out_2 = "string";
+    if (!equal(mod_2, out_2)) {
+        console.log(mod_2);
+        console.log(out_2);
+        throw new Error(`Fixture test (2159) failing 2. Not equal.`);
+    }
+    
+
+    const in_3 = {"0":{"0":{"0":"x","1":6907,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":"hi ","1":{"0":{"0":{"0":"x","1":6910,"type":"evar"},"1":{"0":"","1":6911,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":6908,"type":"estr"},"2":6904,"type":"elambda"};
+    const mod_3 = test(in_3);
+    const out_3 = "(fn [string] string)";
+    if (!equal(mod_3, out_3)) {
+        console.log(mod_3);
+        console.log(out_3);
+        throw new Error(`Fixture test (2159) failing 3. Not equal.`);
+    }
+    
+
+    const in_4 = {"0":{"0":{"0":{"0":"a","1":2295,"type":"pvar"},"1":{"0":{"0":1,"1":2296,"type":"pint"},"1":2296,"type":"eprim"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"a","1":2297,"type":"evar"},"2":2292,"type":"elet"};
+    const mod_4 = test(in_4);
+    const out_4 = "int";
+    if (!equal(mod_4, out_4)) {
+        console.log(mod_4);
+        console.log(out_4);
+        throw new Error(`Fixture test (2159) failing 4. Not equal.`);
+    }
+    
+
+    const in_5 = {"0":{"0":{"0":{"0":"x","1":19764,"type":"pvar"},"1":{"0":"()","1":19765,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"x","1":19766,"type":"evar"},"2":19759,"type":"elet"};
+    const mod_5 = test(in_5);
+    const out_5 = "()";
+    if (!equal(mod_5, out_5)) {
+        console.log(mod_5);
+        console.log(out_5);
+        throw new Error(`Fixture test (2159) failing 5. Not equal.`);
+    }
+    
+
+    const in_6 = {"0":{"0":{"0":{"0":",","1":2337,"2":{"0":{"0":"a","1":2339,"type":"pvar"},"1":{"0":{"0":"b","1":2340,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":2337,"type":"pcon"},"1":{"0":{"0":",","1":2342,"type":"evar"},"1":{"0":{"0":{"0":21,"1":2343,"type":"pint"},"1":2343,"type":"eprim"},"1":{"0":{"0":{"0":true,"1":3854,"type":"pbool"},"1":3854,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":2341,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":",","1":2345,"type":"evar"},"1":{"0":{"0":"a","1":3758,"type":"evar"},"1":{"0":{"0":"b","1":3759,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3756,"type":"eapp"},"2":2334,"type":"elet"};
+    const mod_6 = test(in_6);
+    const out_6 = "(, int bool)";
+    if (!equal(mod_6, out_6)) {
+        console.log(mod_6);
+        console.log(out_6);
+        throw new Error(`Fixture test (2159) failing 6. Not equal.`);
+    }
+    
+
+    const in_7 = {"0":{"0":{"0":"a","1":10137,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"a","1":10139,"type":"evar"},"1":{"0":{"0":{"0":",","1":10140,"2":{"0":{"0":"a","1":10142,"type":"pvar"},"1":{"0":{"0":"b","1":10143,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":10140,"type":"pcon"},"1":{"0":"a","1":10144,"type":"evar"},"type":","},"1":{"0":{"0":{"0":10145,"type":"pany"},"1":{"0":{"0":1,"1":10146,"type":"pint"},"1":10146,"type":"eprim"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":10136,"type":"ematch"},"2":10126,"type":"elambda"};
+    const mod_7 = test(in_7);
+    const out_7 = "(fn [(, int a)] int)";
+    if (!equal(mod_7, out_7)) {
+        console.log(mod_7);
+        console.log(out_7);
+        throw new Error(`Fixture test (2159) failing 7. Not equal.`);
+    }
+    
+
+    const in_8 = {"0":{"0":123,"1":2188,"type":"pint"},"1":2188,"type":"eprim"};
+    const mod_8 = test(in_8);
+    const out_8 = "int";
+    if (!equal(mod_8, out_8)) {
+        console.log(mod_8);
+        console.log(out_8);
+        throw new Error(`Fixture test (2159) failing 8. Not equal.`);
+    }
+    
+
+    const in_9 = {"0":{"0":{"0":"a","1":2220,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":"a","1":2221,"type":"evar"},"2":2217,"type":"elambda"};
+    const mod_9 = test(in_9);
+    const out_9 = "(fn [a] a)";
+    if (!equal(mod_9, out_9)) {
+        console.log(mod_9);
+        console.log(out_9);
+        throw new Error(`Fixture test (2159) failing 9. Not equal.`);
+    }
+    
+
+    const in_10 = {"0":{"0":{"0":"a","1":2231,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"+","1":2233,"type":"evar"},"1":{"0":{"0":{"0":2,"1":2234,"type":"pint"},"1":2234,"type":"eprim"},"1":{"0":{"0":"a","1":2235,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":2232,"type":"eapp"},"2":2228,"type":"elambda"};
+    const mod_10 = test(in_10);
+    const out_10 = "(fn [int] int)";
+    if (!equal(mod_10, out_10)) {
+        console.log(mod_10);
+        console.log(out_10);
+        throw new Error(`Fixture test (2159) failing 10. Not equal.`);
+    }
+    
+
+    const in_11 = {"0":{"0":{"0":{"0":",","1":11076,"2":{"0":{"0":"a","1":11078,"type":"pvar"},"1":{"0":{"0":11079,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":11076,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"a","1":11081,"type":"evar"},"1":{"0":{"0":{"0":2,"1":11082,"type":"pint"},"1":11082,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":11080,"type":"eapp"},"2":11073,"type":"elambda"},"1":{"0":{"0":{"0":",","1":11084,"type":"evar"},"1":{"0":{"0":{"0":1,"1":11085,"type":"pint"},"1":11085,"type":"eprim"},"1":{"0":{"0":{"0":2,"1":11086,"type":"pint"},"1":11086,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":11083,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":11072,"type":"eapp"};
+    const mod_11 = test(in_11);
+    const out_11 = "Incompatible types: (fn [int] a) and int";
+    if (!equal(mod_11, out_11)) {
+        console.log(mod_11);
+        console.log(out_11);
+        throw new Error(`Fixture test (2159) failing 11. Not equal.`);
+    }
+    
+
+    const in_12 = {"0":{"0":{"0":",","1":11095,"2":{"0":{"0":"a","1":11097,"type":"pvar"},"1":{"0":{"0":11098,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":11095,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"a","1":11100,"type":"evar"},"1":{"0":{"0":{"0":2,"1":11101,"type":"pint"},"1":11101,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":11099,"type":"eapp"},"2":11092,"type":"elambda"};
+    const mod_12 = test(in_12);
+    const out_12 = "(fn [(, (fn [int] a) b)] a)";
+    if (!equal(mod_12, out_12)) {
+        console.log(mod_12);
+        console.log(out_12);
+        throw new Error(`Fixture test (2159) failing 12. Not equal.`);
+    }
+    
+
+    const in_13 = {"0":{"0":{"0":1,"1":2244,"type":"pint"},"1":2244,"type":"eprim"},"1":{"0":{"0":{"0":{"0":1,"1":2245,"type":"pint"},"1":2245,"type":"pprim"},"1":{"0":{"0":1,"1":2246,"type":"pint"},"1":2246,"type":"eprim"},"type":","},"1":{"0":{"0":{"0":26111,"type":"pany"},"1":{"0":{"0":0,"1":26112,"type":"pint"},"1":26112,"type":"eprim"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":2242,"type":"ematch"};
+    const mod_13 = test(in_13);
+    const out_13 = "int";
+    if (!equal(mod_13, out_13)) {
+        console.log(mod_13);
+        console.log(out_13);
+        throw new Error(`Fixture test (2159) failing 13. Not equal.`);
+    }
+    
+
+
+    const in_15 = {"0":{"0":{"0":{"0":"mid","1":3214,"type":"pvar"},"1":{"0":{"0":",","1":3216,"type":"evar"},"1":{"0":{"0":{"0":1,"1":3217,"type":"pint"},"1":3217,"type":"eprim"},"1":{"0":{"0":{"0":{"0":"x","1":3221,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":"x","1":3222,"type":"evar"},"2":3218,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3215,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"mid","1":3223,"type":"evar"},"2":3209,"type":"elet"};
+    const mod_15 = test(in_15);
+    const out_15 = "(, int (fn [a] a))";
+    if (!equal(mod_15, out_15)) {
+        console.log(mod_15);
+        console.log(out_15);
+        throw new Error(`Fixture test (2159) failing 15. Not equal.`);
+    }
+    
+
+    const in_16 = {"0":{"0":{"0":{"0":",","1":3874,"2":{"0":{"0":"a","1":3885,"type":"pvar"},"1":{"0":{"0":"b","1":3886,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3874,"type":"pcon"},"1":{"0":{"0":",","1":3876,"type":"evar"},"1":{"0":{"0":{"0":1,"1":3877,"type":"pint"},"1":3877,"type":"eprim"},"1":{"0":{"0":{"0":{"0":"x","1":3881,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":"x","1":3882,"type":"evar"},"2":3878,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3875,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"n","1":3887,"type":"pvar"},"1":{"0":{"0":"b","1":3889,"type":"evar"},"1":{"0":{"0":{"0":2,"1":3890,"type":"pint"},"1":3890,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":3888,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":"b","1":3883,"type":"evar"},"2":3871,"type":"elet"};
+    const mod_16 = test(in_16);
+    const out_16 = "(fn [a] a)";
+    if (!equal(mod_16, out_16)) {
+        console.log(mod_16);
+        console.log(out_16);
+        throw new Error(`Fixture test (2159) failing 16. Not equal.`);
+    }
+    
+
+    const in_17 = {"0":{"0":{"0":{"0":"m","1":4105,"type":"pvar"},"1":{"0":{"0":",","1":4107,"type":"evar"},"1":{"0":{"0":{"0":1,"1":4108,"type":"pint"},"1":4108,"type":"eprim"},"1":{"0":{"0":{"0":{"0":"x","1":4112,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":"x","1":4113,"type":"evar"},"2":4109,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":4106,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":",","1":4114,"2":{"0":{"0":"a","1":4116,"type":"pvar"},"1":{"0":{"0":"b","1":4117,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4114,"type":"pcon"},"1":{"0":"m","1":4118,"type":"evar"},"type":","},"1":{"0":{"0":{"0":"z","1":4120,"type":"pvar"},"1":{"0":{"0":"b","1":4122,"type":"evar"},"1":{"0":{"0":{"0":2,"1":4123,"type":"pint"},"1":4123,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":4121,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":{"0":{"0":",","1":4125,"type":"evar"},"1":{"0":{"0":"m","1":4126,"type":"evar"},"1":{"0":{"0":"b","1":4127,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":4124,"type":"eapp"},"2":4098,"type":"elet"};
+    const mod_17 = test(in_17);
+    const out_17 = "(, (, int (fn [a] a)) (fn [b] b))";
+    if (!equal(mod_17, out_17)) {
+        console.log(mod_17);
+        console.log(out_17);
+        throw new Error(`Fixture test (2159) failing 17. Not equal.`);
+    }
+    
+
+    const in_18 = {"0":{"0":{"0":"n","1":3925,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":3902,"2":{"0":{"0":"a","1":3904,"type":"pvar"},"1":{"0":{"0":"b","1":3905,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":3902,"type":"pcon"},"1":{"0":{"0":",","1":3907,"type":"evar"},"1":{"0":{"0":{"0":1,"1":3908,"type":"pint"},"1":3908,"type":"eprim"},"1":{"0":{"0":{"0":{"0":"x","1":3912,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":"n","1":3913,"type":"evar"},"2":3909,"type":"elambda"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":3906,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"m","1":3914,"type":"pvar"},"1":{"0":{"0":"n","1":3916,"type":"evar"},"1":{"0":{"0":{"0":2,"1":3917,"type":"pint"},"1":3917,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":3915,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":"b","1":3918,"type":"evar"},"2":3899,"type":"elet"},"2":3919,"type":"elambda"};
+    const mod_18 = test(in_18);
+    const out_18 = "(fn [(fn [int] a) b int] a)";
+    if (!equal(mod_18, out_18)) {
+        console.log(mod_18);
+        console.log(out_18);
+        throw new Error(`Fixture test (2159) failing 18. Not equal.`);
+    }
+    
+
+
+    const in_20 = {"0":{"0":{"0":{"0":"id","1":3047,"type":"pvar"},"1":{"0":{"0":{"0":"x","1":3051,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":"x","1":3052,"type":"evar"},"2":3048,"type":"elambda"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"id","1":3053,"type":"evar"},"2":3042,"type":"elet"};
+    const mod_20 = test(in_20);
+    const out_20 = "(fn [a] a)";
+    if (!equal(mod_20, out_20)) {
+        console.log(mod_20);
+        console.log(out_20);
+        throw new Error(`Fixture test (2159) failing 20. Not equal.`);
+    }
+    
+
+    const in_21 = {"0":{"0":{"0":{"0":"id","1":3063,"type":"pvar"},"1":{"0":{"0":{"0":"x","1":3067,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":"x","1":3068,"type":"evar"},"2":3064,"type":"elambda"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"id","1":3071,"type":"evar"},"1":{"0":{"0":"id","1":3072,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3070,"type":"eapp"},"2":3060,"type":"elet"};
+    const mod_21 = test(in_21);
+    const out_21 = "(fn [a] a)";
+    if (!equal(mod_21, out_21)) {
+        console.log(mod_21);
+        console.log(out_21);
+        throw new Error(`Fixture test (2159) failing 21. Not equal.`);
+    }
+    
+
+    const in_22 = {"0":{"0":{"0":{"0":"id","1":3082,"type":"pvar"},"1":{"0":{"0":{"0":"x","1":3086,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":"y","1":3090,"type":"pvar"},"1":{"0":"x","1":3091,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"y","1":3092,"type":"evar"},"2":3087,"type":"elet"},"2":3083,"type":"elambda"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"id","1":3094,"type":"evar"},"1":{"0":{"0":"id","1":3095,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3093,"type":"eapp"},"2":3079,"type":"elet"};
+    const mod_22 = test(in_22);
+    const out_22 = "(fn [a] a)";
+    if (!equal(mod_22, out_22)) {
+        console.log(mod_22);
+        console.log(out_22);
+        throw new Error(`Fixture test (2159) failing 22. Not equal.`);
+    }
+    
+
+    const in_23 = {"0":{"0":{"0":{"0":"id","1":3980,"type":"pvar"},"1":{"0":{"0":{"0":"x","1":3984,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":"y","1":3988,"type":"pvar"},"1":{"0":"x","1":3989,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"y","1":3990,"type":"evar"},"2":3985,"type":"elet"},"2":3981,"type":"elambda"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"id","1":3991,"type":"evar"},"2":3977,"type":"elet"};
+    const mod_23 = test(in_23);
+    const out_23 = "(fn [a] a)";
+    if (!equal(mod_23, out_23)) {
+        console.log(mod_23);
+        console.log(out_23);
+        throw new Error(`Fixture test (2159) failing 23. Not equal.`);
+    }
+    
+
+    const in_24 = {"0":{"0":{"0":"x","1":4049,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":"y","1":4058,"type":"pvar"},"1":{"0":"x","1":4059,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"y","1":4060,"type":"evar"},"2":4050,"type":"elet"},"2":4046,"type":"elambda"};
+    const mod_24 = test(in_24);
+    const out_24 = "(fn [a] a)";
+    if (!equal(mod_24, out_24)) {
+        console.log(mod_24);
+        console.log(out_24);
+        throw new Error(`Fixture test (2159) failing 24. Not equal.`);
+    }
+    
+
+    const in_25 = {"0":{"0":{"0":"x","1":4070,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":4074,"2":{"0":{"0":"a","1":4076,"type":"pvar"},"1":{"0":{"0":"b","1":4077,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":4074,"type":"pcon"},"1":{"0":{"0":",","1":4079,"type":"evar"},"1":{"0":{"0":{"0":1,"1":4080,"type":"pint"},"1":4080,"type":"eprim"},"1":{"0":{"0":"x","1":4081,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":4078,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"b","1":4082,"type":"evar"},"2":4071,"type":"elet"},"2":4067,"type":"elambda"};
+    const mod_25 = test(in_25);
+    const out_25 = "(fn [a] a)";
+    if (!equal(mod_25, out_25)) {
+        console.log(mod_25);
+        console.log(out_25);
+        throw new Error(`Fixture test (2159) failing 25. Not equal.`);
+    }
+    
+
+    const in_26 = {"0":{"0":{"0":"x","1":12188,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":",","1":12190,"type":"evar"},"1":{"0":{"0":{"0":"x","1":12192,"type":"evar"},"1":{"0":{"0":{"0":1,"1":12193,"type":"pint"},"1":12193,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":12191,"type":"eapp"},"1":{"0":{"0":{"0":"x","1":12195,"type":"evar"},"1":{"0":{"0":"1","1":{"type":"nil"},"2":12197,"type":"estr"},"1":{"type":"nil"},"type":"cons"},"2":12194,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":12189,"type":"eapp"},"2":12183,"type":"elambda"};
+    const mod_26 = test(in_26);
+    const out_26 = "Incompatible type constructors\n - int (12195)\n - string (12197)";
+    if (!equal(mod_26, out_26)) {
+        console.log(mod_26);
+        console.log(out_26);
+        throw new Error(`Fixture test (2159) failing 26. Not equal.`);
+    }
+    
+
+    const in_27 = {"0":{"0":{"0":{"0":"id","1":3105,"type":"pvar"},"1":{"0":{"0":{"0":"x","1":3109,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":"y","1":3113,"type":"pvar"},"1":{"0":"x","1":3114,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"y","1":3115,"type":"evar"},"2":3110,"type":"elet"},"2":3106,"type":"elambda"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":"id","1":3118,"type":"evar"},"1":{"0":{"0":"id","1":3119,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3117,"type":"eapp"},"1":{"0":{"0":{"0":2,"1":3120,"type":"pint"},"1":3120,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":3116,"type":"eapp"},"2":3102,"type":"elet"};
+    const mod_27 = test(in_27);
+    const out_27 = "int";
+    if (!equal(mod_27, out_27)) {
+        console.log(mod_27);
+        console.log(out_27);
+        throw new Error(`Fixture test (2159) failing 27. Not equal.`);
+    }
+    
+
+    const in_28 = {"0":{"0":{"0":{"0":"id","1":3130,"type":"pvar"},"1":{"0":{"0":{"0":"x","1":3134,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"x","1":3136,"type":"evar"},"1":{"0":{"0":"x","1":3137,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":3135,"type":"eapp"},"2":3131,"type":"elambda"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"id","1":3138,"type":"evar"},"2":3127,"type":"elet"};
+    const mod_28 = test(in_28);
+    const out_28 = "Cycle found while unifying type with type variable\n - (fn [x:1] res:2) (3135)\n - x:1 (3136)";
+    if (!equal(mod_28, out_28)) {
+        console.log(mod_28);
+        console.log(out_28);
+        throw new Error(`Fixture test (2159) failing 28. Not equal.`);
+    }
+    
+
+    const in_29 = {"0":{"0":{"0":"m","1":3147,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":"y","1":3151,"type":"pvar"},"1":{"0":"m","1":3153,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":"x","1":3156,"type":"pvar"},"1":{"0":{"0":"y","1":3161,"type":"evar"},"1":{"0":{"0":{"0":true,"1":3162,"type":"pbool"},"1":3162,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":3160,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":"x","1":3157,"type":"evar"},"2":3152,"type":"elet"},"2":3148,"type":"elet"},"2":3144,"type":"elambda"};
+    const mod_29 = test(in_29);
+    const out_29 = "(fn [(fn [bool] a)] a)";
+    if (!equal(mod_29, out_29)) {
+        console.log(mod_29);
+        console.log(out_29);
+        throw new Error(`Fixture test (2159) failing 29. Not equal.`);
+    }
+    
+
+    const in_30 = {"0":{"0":{"0":2,"1":3170,"type":"pint"},"1":3170,"type":"eprim"},"1":{"0":{"0":{"0":2,"1":3171,"type":"pint"},"1":3171,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":3169,"type":"eapp"};
+    const mod_30 = test(in_30);
+    const out_30 = "Incompatible types: int and (fn [int] a)";
+    if (!equal(mod_30, out_30)) {
+        console.log(mod_30);
+        console.log(out_30);
+        throw new Error(`Fixture test (2159) failing 30. Not equal.`);
+    }
+    
+}
 const infer_several = (tenv) => (stmts) => $gt$gt$eq(idx_$gt(0))((_) => $gt$gt$eq($lt_(map(stmts)((stmt) => (($target) => {
 if ($target.type === "tdef") {
 {
@@ -3661,7 +3834,7 @@ return cons(type_error_$gts(e))(nil)
 throw new Error('Failed to match. ' + valueToString($target));
 })(run$slnil_$gt(infer_several(basic)(x)));
     
-    const in_0 = cons({"0":"even","1":8449,"2":{"0":{"0":{"0":"x","1":8451,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"odd","1":8453,"type":"evar"},"1":{"0":{"0":{"0":"-","1":8455,"type":"evar"},"1":{"0":{"0":"x","1":8456,"type":"evar"},"1":{"0":{"0":{"0":1,"1":8457,"type":"pint"},"1":8457,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8454,"type":"eapp"},"1":{"0":{"0":"x","1":8458,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8452,"type":"eapp"},"2":8447,"type":"elambda"},"3":8447,"type":"tdef"})(cons({"0":"odd","1":8463,"2":{"0":{"0":{"0":"x","1":8465,"type":"pvar"},"1":{"0":{"0":"y","1":8466,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":"","1":{"0":{"0":{"0":{"0":"even","1":8468,"type":"evar"},"1":{"0":{"0":"x","1":8469,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":8467,"type":"eapp"},"1":{"0":"","1":8645,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":8643,"type":"estr"},"2":8461,"type":"elambda"},"3":8461,"type":"tdef"})(cons({"0":"what","1":8474,"2":{"0":{"0":{"0":"a","1":8476,"type":"pvar"},"1":{"0":{"0":"b","1":8477,"type":"pvar"},"1":{"0":{"0":"c","1":8478,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":{"0":{"0":",","1":8479,"type":"evar"},"1":{"0":{"0":{"0":"even","1":8482,"type":"evar"},"1":{"0":{"0":"a","1":8483,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":8481,"type":"eapp"},"1":{"0":{"0":{"0":"odd","1":8485,"type":"evar"},"1":{"0":{"0":"b","1":8486,"type":"evar"},"1":{"0":{"0":"c","1":8487,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8484,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8479,"type":"eapp"},"2":8472,"type":"elambda"},"3":8472,"type":"tdef"})(nil)));
+    const in_0 = cons({"0":"even","1":8449,"2":{"0":{"0":{"0":"x","1":8451,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"odd","1":8453,"type":"evar"},"1":{"0":{"0":{"0":"-","1":8455,"type":"evar"},"1":{"0":{"0":"x","1":8456,"type":"evar"},"1":{"0":{"0":{"0":1,"1":8457,"type":"pint"},"1":8457,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8454,"type":"eapp"},"1":{"0":{"0":"x","1":8458,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8452,"type":"eapp"},"2":8447,"type":"elambda"},"3":8447,"type":"tdef"})(cons({"0":"odd","1":8463,"2":{"0":{"0":{"0":"x","1":8465,"type":"pvar"},"1":{"0":{"0":"y","1":8466,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":"","1":{"0":{"0":{"0":{"0":"even","1":8468,"type":"evar"},"1":{"0":{"0":"x","1":8469,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":8467,"type":"eapp"},"1":{"0":"","1":8645,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":8643,"type":"estr"},"2":8461,"type":"elambda"},"3":8461,"type":"tdef"})(cons({"0":"what","1":8474,"2":{"0":{"0":{"0":"a","1":8476,"type":"pvar"},"1":{"0":{"0":"b","1":8477,"type":"pvar"},"1":{"0":{"0":"c","1":8478,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":{"0":{"0":",","1":8480,"type":"evar"},"1":{"0":{"0":{"0":"even","1":8482,"type":"evar"},"1":{"0":{"0":"a","1":8483,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":8481,"type":"eapp"},"1":{"0":{"0":{"0":"odd","1":8485,"type":"evar"},"1":{"0":{"0":"b","1":8486,"type":"evar"},"1":{"0":{"0":"c","1":8487,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8484,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":8479,"type":"eapp"},"2":8472,"type":"elambda"},"3":8472,"type":"tdef"})(nil)));
     const mod_0 = test(in_0);
     const out_0 = cons("(fn [int] string)")(cons("(fn [int int] string)")(cons("(fn [int int int] (, string string))")(nil)));
     if (!equal(mod_0, out_0)) {
@@ -3786,7 +3959,7 @@ const infer_stmts = (tenv) => (stmts) => foldl_$gt(tenv)(stmts)((tenv) => (stmt)
     }
     
 
-    const in_3 = cons({"type":"ttypealias"})(cons({"type":"ttypealias"})(nil));
+    const in_3 = cons({"0":"a","1":22279,"2":{"type":"nil"},"3":{"0":"int","1":22280,"type":"tcon"},"4":22275,"type":"ttypealias"})(cons({"0":"b","1":22289,"2":{"type":"nil"},"3":{"0":"a","1":22290,"type":"tcon"},"4":22285,"type":"ttypealias"})(nil));
     const mod_3 = test(in_3);
     const out_3 = $co(cons("b:22289")(cons("a:22279")(nil)))(cons($co("a:22290")(22279))(cons($co("int:22280")(-1))(nil)));
     if (!equal(mod_3, out_3)) {
@@ -3796,7 +3969,7 @@ const infer_stmts = (tenv) => (stmts) => foldl_$gt(tenv)(stmts)((tenv) => (stmt)
     }
     
 
-    const in_4 = cons({"type":"ttypealias"})(cons({"0":"c","1":22305,"2":{"type":"nil"},"3":{"0":{"0":"b","1":{"0":22307,"1":{"0":{"0":{"0":"a","1":22308,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":22306,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":22303,"type":"tdeftype"})(nil));
+    const in_4 = cons({"0":"a","1":22299,"2":{"type":"nil"},"3":{"0":"int","1":22300,"type":"tcon"},"4":22297,"type":"ttypealias"})(cons({"0":"c","1":22305,"2":{"type":"nil"},"3":{"0":{"0":"b","1":{"0":22307,"1":{"0":{"0":{"0":"a","1":22308,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":22306,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":22303,"type":"tdeftype"})(nil));
     const mod_4 = test(in_4);
     const out_4 = $co(cons("b:22307")(cons("c:22305")(cons("a:22299")(nil))))(cons($co("a:22308")(22299))(cons($co("int:22300")(-1))(nil)));
     if (!equal(mod_4, out_4)) {
@@ -3806,7 +3979,7 @@ const infer_stmts = (tenv) => (stmts) => foldl_$gt(tenv)(stmts)((tenv) => (stmt)
     }
     
 
-    const in_5 = cons({"0":"a","1":23281,"2":{"type":"nil"},"3":{"0":{"0":"b","1":{"0":23283,"1":{"0":{"type":"nil"},"1":23282,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":23279,"type":"tdeftype"})(cons({"type":"ttypealias"})(nil));
+    const in_5 = cons({"0":"a","1":23281,"2":{"type":"nil"},"3":{"0":{"0":"b","1":{"0":23283,"1":{"0":{"type":"nil"},"1":23282,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":23279,"type":"tdeftype"})(cons({"0":"c","1":23288,"2":{"type":"nil"},"3":{"0":"a","1":23289,"type":"tcon"},"4":23286,"type":"ttypealias"})(nil));
     const mod_5 = test(in_5);
     const out_5 = $co(cons("c:23288")(cons("b:23283")(cons("a:23281")(nil))))(cons($co("a:23289")(23281))(nil));
     if (!equal(mod_5, out_5)) {
@@ -3849,7 +4022,7 @@ const infer_stmts = (tenv) => (stmts) => foldl_$gt(tenv)(stmts)((tenv) => (stmt)
     }
     
 
-    const in_1 = cons({"type":"ttypealias"})(cons({"type":"ttypealias"})(cons({"0":"expr","1":24424,"2":{"type":"nil"},"3":{"0":{"0":"ea","1":{"0":24426,"1":{"0":{"type":"nil"},"1":24425,"type":","},"type":","},"type":","},"1":{"0":{"0":"eb","1":{"0":24428,"1":{"0":{"0":{"0":"a","1":24429,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":24427,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":24422,"type":"tdeftype"})(cons({"0":{"0":{"0":"eb","1":24435,"type":"evar"},"1":{"0":{"0":{"0":",","1":24436,"type":"evar"},"1":{"0":{"0":{"0":1,"1":24438,"type":"pint"},"1":24438,"type":"eprim"},"1":{"0":{"0":{"0":"ea","1":24442,"type":"evar"},"1":{"type":"nil"},"2":24439,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":24436,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":24434,"type":"eapp"},"1":24434,"type":"texpr"})(nil))));
+    const in_1 = cons({"0":"a","1":24414,"2":{"type":"nil"},"3":{"0":{"0":{"0":",","1":24416,"type":"tcon"},"1":{"0":"int","1":24417,"type":"tcon"},"2":24415,"type":"tapp"},"1":{"0":"expr","1":24418,"type":"tcon"},"2":24415,"type":"tapp"},"4":24410,"type":"ttypealias"})(cons({"0":"b","1":24447,"2":{"type":"nil"},"3":{"0":{"0":{"0":",","1":24449,"type":"tcon"},"1":{"0":"int","1":24450,"type":"tcon"},"2":24448,"type":"tapp"},"1":{"0":"a","1":24451,"type":"tcon"},"2":24448,"type":"tapp"},"4":24445,"type":"ttypealias"})(cons({"0":"expr","1":24424,"2":{"type":"nil"},"3":{"0":{"0":"ea","1":{"0":24426,"1":{"0":{"type":"nil"},"1":24425,"type":","},"type":","},"type":","},"1":{"0":{"0":"eb","1":{"0":24428,"1":{"0":{"0":{"0":"a","1":24429,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":24427,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":24422,"type":"tdeftype"})(cons({"0":{"0":{"0":"eb","1":24435,"type":"evar"},"1":{"0":{"0":{"0":",","1":24437,"type":"evar"},"1":{"0":{"0":{"0":1,"1":24438,"type":"pint"},"1":24438,"type":"eprim"},"1":{"0":{"0":{"0":"ea","1":24442,"type":"evar"},"1":{"type":"nil"},"2":24439,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":24436,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":24434,"type":"eapp"},"1":24434,"type":"texpr"})(nil))));
     const mod_1 = test(in_1);
     const out_1 = "expr";
     if (!equal(mod_1, out_1)) {
@@ -3886,7 +4059,7 @@ throw new Error('Failed to match. ' + valueToString($target));
     }
     
 
-    const in_1 = cons({"0":"what","1":6536,"2":{"0":{"0":{"0":"f","1":6538,"type":"pvar"},"1":{"0":{"0":"a","1":6539,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":{"0":true,"1":6542,"type":"pbool"},"1":6542,"type":"eprim"},"1":{"0":{"0":{"0":{"0":true,"1":6540,"type":"pbool"},"1":6540,"type":"pprim"},"1":{"0":{"0":"f","1":6544,"type":"evar"},"1":{"0":{"0":{"0":"what","1":6546,"type":"evar"},"1":{"0":{"0":"f","1":6547,"type":"evar"},"1":{"0":{"0":"a","1":6548,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6545,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":6543,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":6540,"type":"pany"},"1":{"0":{"0":"f","1":6550,"type":"evar"},"1":{"0":{"0":"a","1":6551,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6549,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"ematch"},"2":6534,"type":"elambda"},"3":6534,"type":"tdef"})(cons({"0":{"0":"what","1":6704,"type":"evar"},"1":6704,"type":"texpr"})(nil));
+    const in_1 = cons({"0":"what","1":6536,"2":{"0":{"0":{"0":"f","1":6538,"type":"pvar"},"1":{"0":{"0":"a","1":6539,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":{"0":true,"1":6542,"type":"pbool"},"1":6542,"type":"eprim"},"1":{"0":{"0":{"0":{"0":true,"1":6540,"type":"pbool"},"1":6540,"type":"pprim"},"1":{"0":{"0":"f","1":6544,"type":"evar"},"1":{"0":{"0":{"0":"what","1":6546,"type":"evar"},"1":{"0":{"0":"f","1":6547,"type":"evar"},"1":{"0":{"0":"a","1":6548,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6545,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"2":6543,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":6540,"type":"pany"},"1":{"0":{"0":"f","1":6550,"type":"evar"},"1":{"0":{"0":"a","1":6551,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"2":6549,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6540,"type":"ematch"},"2":6534,"type":"elambda"},"3":6534,"type":"tdef"})(cons({"0":{"0":"what","1":6704,"type":"evar"},"1":6704,"type":"texpr"})(nil));
     const mod_1 = test(in_1);
     const out_1 = "(fn [(fn [a] a) a] a)";
     if (!equal(mod_1, out_1)) {
@@ -3916,7 +4089,7 @@ throw new Error('Failed to match. ' + valueToString($target));
     }
     
 
-    const in_4 = cons({"0":{"0":{"0":",","1":6641,"type":"evar"},"1":{"0":{"0":{"0":1,"1":6643,"type":"pint"},"1":6643,"type":"eprim"},"1":{"0":{"0":{"0":2,"1":6644,"type":"pint"},"1":6644,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6641,"type":"eapp"},"1":6641,"type":"texpr"})(nil);
+    const in_4 = cons({"0":{"0":{"0":",","1":6642,"type":"evar"},"1":{"0":{"0":{"0":1,"1":6643,"type":"pint"},"1":6643,"type":"eprim"},"1":{"0":{"0":{"0":2,"1":6644,"type":"pint"},"1":6644,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":6641,"type":"eapp"},"1":6641,"type":"texpr"})(nil);
     const mod_4 = test(in_4);
     const out_4 = "(, int int)";
     if (!equal(mod_4, out_4)) {
@@ -3926,7 +4099,7 @@ throw new Error('Failed to match. ' + valueToString($target));
     }
     
 
-    const in_5 = cons({"0":"rev","1":9806,"2":{"0":{"0":{"0":"a","1":9808,"type":"pvar"},"1":{"0":{"0":"b","1":9809,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":"a","1":9810,"type":"evar"},"2":9804,"type":"elambda"},"3":9804,"type":"tdef"})(cons({"0":{"0":{"0":{"0":{"0":"a","1":9819,"type":"pvar"},"1":{"0":{"0":"rev","1":9821,"type":"evar"},"1":{"0":{"0":{"0":1,"1":9822,"type":"pint"},"1":9822,"type":"eprim"},"1":{"0":{"0":{"0":1,"1":9825,"type":"pint"},"1":9825,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":9820,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"b","1":9826,"type":"pvar"},"1":{"0":{"0":"rev","1":9828,"type":"evar"},"1":{"0":{"0":"a","1":{"type":"nil"},"2":9829,"type":"estr"},"1":{"0":{"0":{"0":1,"1":9834,"type":"pint"},"1":9834,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":9827,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":",","1":9835,"type":"evar"},"1":{"0":{"0":"a","1":9837,"type":"evar"},"1":{"0":{"0":"b","1":9838,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":9835,"type":"eapp"},"2":9816,"type":"elet"},"1":9816,"type":"texpr"})(nil));
+    const in_5 = cons({"0":"rev","1":9806,"2":{"0":{"0":{"0":"a","1":9808,"type":"pvar"},"1":{"0":{"0":"b","1":9809,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":"a","1":9810,"type":"evar"},"2":9804,"type":"elambda"},"3":9804,"type":"tdef"})(cons({"0":{"0":{"0":{"0":{"0":"a","1":9819,"type":"pvar"},"1":{"0":{"0":"rev","1":9821,"type":"evar"},"1":{"0":{"0":{"0":1,"1":9822,"type":"pint"},"1":9822,"type":"eprim"},"1":{"0":{"0":{"0":1,"1":9825,"type":"pint"},"1":9825,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":9820,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"b","1":9826,"type":"pvar"},"1":{"0":{"0":"rev","1":9828,"type":"evar"},"1":{"0":{"0":"a","1":{"type":"nil"},"2":9829,"type":"estr"},"1":{"0":{"0":{"0":1,"1":9834,"type":"pint"},"1":9834,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":9827,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":",","1":9836,"type":"evar"},"1":{"0":{"0":"a","1":9837,"type":"evar"},"1":{"0":{"0":"b","1":9838,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":9835,"type":"eapp"},"2":9816,"type":"elet"},"1":9816,"type":"texpr"})(nil));
     const mod_5 = test(in_5);
     const out_5 = "(, int string)";
     if (!equal(mod_5, out_5)) {
@@ -3936,7 +4109,7 @@ throw new Error('Failed to match. ' + valueToString($target));
     }
     
 
-    const in_6 = cons({"0":"what-t","1":10022,"2":{"0":{"0":"a","1":10023,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"what","1":{"0":10025,"1":{"0":{"0":{"0":"a","1":10026,"type":"tcon"},"1":{"0":{"0":{"0":"what-t","1":10051,"type":"tcon"},"1":{"0":"a","1":10052,"type":"tcon"},"2":10050,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":10024,"type":","},"type":","},"type":","},"1":{"0":{"0":"one","1":{"0":10065,"1":{"0":{"0":{"0":"a","1":10066,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":10053,"type":","},"type":","},"type":","},"1":{"0":{"0":"no","1":{"0":10068,"1":{"0":{"type":"nil"},"1":10067,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"4":10019,"type":"tdeftype"})(cons({"0":{"0":{"0":{"0":{"0":"a","1":10041,"type":"pvar"},"1":{"0":{"0":"what","1":10043,"type":"evar"},"1":{"0":{"0":{"0":1,"1":10044,"type":"pint"},"1":10044,"type":"eprim"},"1":{"0":{"0":{"0":"no","1":10084,"type":"evar"},"1":{"type":"nil"},"2":10055,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":10042,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"b","1":10045,"type":"pvar"},"1":{"0":{"0":"what","1":10074,"type":"evar"},"1":{"0":{"0":"a","1":{"type":"nil"},"2":10075,"type":"estr"},"1":{"0":{"0":{"0":"no","1":10083,"type":"evar"},"1":{"type":"nil"},"2":10077,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":10046,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":",","1":10029,"type":"evar"},"1":{"0":{"0":"a","1":10031,"type":"evar"},"1":{"0":{"0":"b","1":10034,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":10029,"type":"eapp"},"2":10038,"type":"elet"},"1":10038,"type":"texpr"})(nil));
+    const in_6 = cons({"0":"what-t","1":10022,"2":{"0":{"0":"a","1":10023,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"what","1":{"0":10025,"1":{"0":{"0":{"0":"a","1":10026,"type":"tcon"},"1":{"0":{"0":{"0":"what-t","1":10051,"type":"tcon"},"1":{"0":"a","1":10052,"type":"tcon"},"2":10050,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":10024,"type":","},"type":","},"type":","},"1":{"0":{"0":"one","1":{"0":10065,"1":{"0":{"0":{"0":"a","1":10066,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":10053,"type":","},"type":","},"type":","},"1":{"0":{"0":"no","1":{"0":10068,"1":{"0":{"type":"nil"},"1":10067,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"4":10019,"type":"tdeftype"})(cons({"0":{"0":{"0":{"0":{"0":"a","1":10041,"type":"pvar"},"1":{"0":{"0":"what","1":10043,"type":"evar"},"1":{"0":{"0":{"0":1,"1":10044,"type":"pint"},"1":10044,"type":"eprim"},"1":{"0":{"0":{"0":"no","1":10084,"type":"evar"},"1":{"type":"nil"},"2":10055,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":10042,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":"b","1":10045,"type":"pvar"},"1":{"0":{"0":"what","1":10074,"type":"evar"},"1":{"0":{"0":"a","1":{"type":"nil"},"2":10075,"type":"estr"},"1":{"0":{"0":{"0":"no","1":10083,"type":"evar"},"1":{"type":"nil"},"2":10077,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":10046,"type":"eapp"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":{"0":{"0":",","1":10030,"type":"evar"},"1":{"0":{"0":"a","1":10031,"type":"evar"},"1":{"0":{"0":"b","1":10034,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":10029,"type":"eapp"},"2":10038,"type":"elet"},"1":10038,"type":"texpr"})(nil));
     const mod_6 = test(in_6);
     const out_6 = "(, (what-t int) (what-t string))";
     if (!equal(mod_6, out_6)) {
@@ -3946,7 +4119,7 @@ throw new Error('Failed to match. ' + valueToString($target));
     }
     
 
-    const in_7 = cons({"0":"list","1":12400,"2":{"0":{"0":"a","1":12401,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"cons","1":{"0":12403,"1":{"0":{"0":{"0":"a","1":12404,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":12406,"type":"tcon"},"1":{"0":"a","1":12407,"type":"tcon"},"2":12405,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12402,"type":","},"type":","},"type":","},"1":{"0":{"0":"nil","1":{"0":12409,"1":{"0":{"type":"nil"},"1":12408,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":12397,"type":"tdeftype"})(cons({"0":{"0":{"0":{"0":"zip","1":12359,"type":"pvar"},"1":{"0":{"0":"one","1":12410,"type":"pvar"},"1":{"0":{"0":"two","1":12360,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":{"0":{"0":{"0":",","1":12363,"type":"evar"},"1":{"0":{"0":"one","1":12365,"type":"evar"},"1":{"0":{"0":"two","1":12366,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":12363,"type":"eapp"},"1":{"0":{"0":{"0":",","1":12368,"2":{"0":{"0":"nil","1":12369,"2":{"type":"nil"},"3":12369,"type":"pcon"},"1":{"0":{"0":"nil","1":12370,"2":{"type":"nil"},"3":12370,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12367,"type":"pcon"},"1":{"0":"nil","1":12371,"type":"evar"},"type":","},"1":{"0":{"0":{"0":",","1":12373,"2":{"0":{"0":"cons","1":12374,"2":{"0":{"0":"a","1":12375,"type":"pvar"},"1":{"0":{"0":"one","1":12377,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12374,"type":"pcon"},"1":{"0":{"0":"cons","1":12378,"2":{"0":{"0":"b","1":12379,"type":"pvar"},"1":{"0":{"0":"two","1":12381,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12378,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12372,"type":"pcon"},"1":{"0":{"0":"cons","1":-1,"type":"evar"},"1":{"0":{"0":{"0":",","1":12383,"type":"evar"},"1":{"0":{"0":"a","1":12385,"type":"evar"},"1":{"0":{"0":"b","1":12386,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":12383,"type":"eapp"},"1":{"0":{"0":{"0":"zip","1":12389,"type":"evar"},"1":{"0":{"0":"one","1":12390,"type":"evar"},"1":{"0":{"0":"two","1":12391,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":12388,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":-1,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":12392,"type":"pany"},"1":{"0":"nil","1":12393,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":12361,"type":"ematch"},"2":12356,"type":"elambda"},"1":12356,"type":"texpr"})(nil));
+    const in_7 = cons({"0":"list","1":12400,"2":{"0":{"0":"a","1":12401,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"cons","1":{"0":12403,"1":{"0":{"0":{"0":"a","1":12404,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":12406,"type":"tcon"},"1":{"0":"a","1":12407,"type":"tcon"},"2":12405,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12402,"type":","},"type":","},"type":","},"1":{"0":{"0":"nil","1":{"0":12409,"1":{"0":{"type":"nil"},"1":12408,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":12397,"type":"tdeftype"})(cons({"0":{"0":{"0":{"0":"zip","1":12359,"type":"pvar"},"1":{"0":{"0":"one","1":12410,"type":"pvar"},"1":{"0":{"0":"two","1":12360,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":{"0":{"0":{"0":",","1":12364,"type":"evar"},"1":{"0":{"0":"one","1":12365,"type":"evar"},"1":{"0":{"0":"two","1":12366,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":12363,"type":"eapp"},"1":{"0":{"0":{"0":",","1":12367,"2":{"0":{"0":"nil","1":12369,"2":{"type":"nil"},"3":12369,"type":"pcon"},"1":{"0":{"0":"nil","1":12370,"2":{"type":"nil"},"3":12370,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12367,"type":"pcon"},"1":{"0":"nil","1":12371,"type":"evar"},"type":","},"1":{"0":{"0":{"0":",","1":12372,"2":{"0":{"0":"cons","1":12374,"2":{"0":{"0":"a","1":12375,"type":"pvar"},"1":{"0":{"0":"one","1":12377,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12374,"type":"pcon"},"1":{"0":{"0":"cons","1":12378,"2":{"0":{"0":"b","1":12379,"type":"pvar"},"1":{"0":{"0":"two","1":12381,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12378,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12372,"type":"pcon"},"1":{"0":{"0":"cons","1":12382,"type":"evar"},"1":{"0":{"0":{"0":",","1":12384,"type":"evar"},"1":{"0":{"0":"a","1":12385,"type":"evar"},"1":{"0":{"0":"b","1":12386,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":12383,"type":"eapp"},"1":{"0":{"0":{"0":"zip","1":12389,"type":"evar"},"1":{"0":{"0":"one","1":12390,"type":"evar"},"1":{"0":{"0":"two","1":12391,"type":"evar"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":12388,"type":"eapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"2":12382,"type":"eapp"},"type":","},"1":{"0":{"0":{"0":12392,"type":"pany"},"1":{"0":"nil","1":12393,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"2":12361,"type":"ematch"},"2":12356,"type":"elambda"},"1":12356,"type":"texpr"})(nil));
     const mod_7 = test(in_7);
     const out_7 = "(fn [(fn [(list a) (list b)] (list (, a b))) (list a) (list b)] (list (, a b)))";
     if (!equal(mod_7, out_7)) {
@@ -3956,7 +4129,7 @@ throw new Error('Failed to match. ' + valueToString($target));
     }
     
 
-    const in_8 = cons({"type":"ttypealias"})(cons({"0":"what","1":13259,"2":{"type":"nil"},"3":{"0":{"0":"whatok","1":{"0":13263,"1":{"0":{"0":{"0":"hello","1":13264,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":13262,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":13257,"type":"tdeftype"})(cons({"0":{"0":"whatok","1":13267,"type":"evar"},"1":13267,"type":"texpr"})(nil)));
+    const in_8 = cons({"0":"hello","1":13251,"2":{"type":"nil"},"3":{"0":"int","1":13252,"type":"tcon"},"4":13249,"type":"ttypealias"})(cons({"0":"what","1":13259,"2":{"type":"nil"},"3":{"0":{"0":"whatok","1":{"0":13263,"1":{"0":{"0":{"0":"hello","1":13264,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":13262,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":13257,"type":"tdeftype"})(cons({"0":{"0":"whatok","1":13267,"type":"evar"},"1":13267,"type":"texpr"})(nil)));
     const mod_8 = test(in_8);
     const out_8 = "(fn [int] what)";
     if (!equal(mod_8, out_8)) {
@@ -3966,7 +4139,7 @@ throw new Error('Failed to match. ' + valueToString($target));
     }
     
 
-    const in_9 = cons({"0":",","1":15023,"2":{"0":{"0":"a","1":15024,"type":","},"1":{"0":{"0":"b","1":15025,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":15027,"1":{"0":{"0":{"0":"a","1":15028,"type":"tcon"},"1":{"0":{"0":"b","1":15029,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":15026,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":15020,"type":"tdeftype"})(cons({"type":"ttypealias"})(cons({"0":"what","1":13601,"2":{"type":"nil"},"3":{"0":{"0":"name","1":{"0":13603,"1":{"0":{"0":{"0":{"0":"hello","1":13604,"type":"tcon"},"1":{"0":"string","1":13610,"type":"tcon"},"2":13609,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"1":13602,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":13598,"type":"tdeftype"})(cons({"0":{"0":{"0":"name","1":13608,"type":"evar"},"1":{"type":"nil"},"2":13841,"type":"eapp"},"1":13841,"type":"texpr"})(nil))));
+    const in_9 = cons({"0":",","1":15023,"2":{"0":{"0":"a","1":15024,"type":","},"1":{"0":{"0":"b","1":15025,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":15027,"1":{"0":{"0":{"0":"a","1":15028,"type":"tcon"},"1":{"0":{"0":"b","1":15029,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":15026,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":15020,"type":"tdeftype"})(cons({"0":"hello","1":13589,"2":{"0":{"0":"a","1":13590,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":{"0":",","1":13592,"type":"tcon"},"1":{"0":"int","1":13593,"type":"tcon"},"2":13591,"type":"tapp"},"1":{"0":"a","1":13922,"type":"tcon"},"2":13591,"type":"tapp"},"4":13586,"type":"ttypealias"})(cons({"0":"what","1":13601,"2":{"type":"nil"},"3":{"0":{"0":"name","1":{"0":13603,"1":{"0":{"0":{"0":{"0":"hello","1":13604,"type":"tcon"},"1":{"0":"string","1":13610,"type":"tcon"},"2":13609,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"1":13602,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":13598,"type":"tdeftype"})(cons({"0":{"0":{"0":"name","1":13608,"type":"evar"},"1":{"type":"nil"},"2":13841,"type":"eapp"},"1":13841,"type":"texpr"})(nil))));
     const mod_9 = test(in_9);
     const out_9 = "(fn [(, int string)] what)";
     if (!equal(mod_9, out_9)) {
@@ -3976,7 +4149,7 @@ throw new Error('Failed to match. ' + valueToString($target));
     }
     
 
-    const in_10 = cons({"0":",","1":15036,"2":{"0":{"0":"a","1":15037,"type":","},"1":{"0":{"0":"b","1":15038,"type":","},"1":{"0":{"0":"c","1":15039,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":15040,"1":{"0":{"0":{"0":"a","1":15041,"type":"tcon"},"1":{"0":{"0":"b","1":15042,"type":"tcon"},"1":{"0":{"0":"c","1":15043,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":15034,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":15032,"type":"tdeftype"})(cons({"type":"ttypealias"})(cons({"type":"ttypealias"})(cons({"0":"what","1":14009,"2":{"type":"nil"},"3":{"0":{"0":"name","1":{"0":14011,"1":{"0":{"0":{"0":{"0":"hello","1":14013,"type":"tcon"},"1":{"0":"bool","1":14014,"type":"tcon"},"2":14012,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"1":14010,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":14006,"type":"tdeftype"})(cons({"0":{"0":"name","1":14020,"type":"evar"},"1":14020,"type":"texpr"})(nil)))));
+    const in_10 = cons({"0":",","1":15036,"2":{"0":{"0":"a","1":15037,"type":","},"1":{"0":{"0":"b","1":15038,"type":","},"1":{"0":{"0":"c","1":15039,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":15040,"1":{"0":{"0":{"0":"a","1":15041,"type":"tcon"},"1":{"0":{"0":"b","1":15042,"type":"tcon"},"1":{"0":{"0":"c","1":15043,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":15034,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":15032,"type":"tdeftype"})(cons({"0":"id","1":15050,"2":{"type":"nil"},"3":{"0":"string","1":15051,"type":"tcon"},"4":15048,"type":"ttypealias"})(cons({"0":"hello","1":13995,"2":{"0":{"0":"a","1":13996,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":{"0":",","1":13998,"type":"tcon"},"1":{"0":"int","1":13999,"type":"tcon"},"2":13997,"type":"tapp"},"1":{"0":{"0":{"0":",","1":13998,"type":"tcon"},"1":{"0":"id","1":14000,"type":"tcon"},"2":13997,"type":"tapp"},"1":{"0":"a","1":14015,"type":"tcon"},"2":13997,"type":"tapp"},"2":13997,"type":"tapp"},"4":13992,"type":"ttypealias"})(cons({"0":"what","1":14009,"2":{"type":"nil"},"3":{"0":{"0":"name","1":{"0":14011,"1":{"0":{"0":{"0":{"0":"hello","1":14013,"type":"tcon"},"1":{"0":"bool","1":14014,"type":"tcon"},"2":14012,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"1":14010,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":14006,"type":"tdeftype"})(cons({"0":{"0":"name","1":14020,"type":"evar"},"1":14020,"type":"texpr"})(nil)))));
     const mod_10 = test(in_10);
     const out_10 = "(fn [(, int string bool)] what)";
     if (!equal(mod_10, out_10)) {
@@ -4030,7 +4203,7 @@ throw new Error('Failed to match. ' + valueToString($target));
     }
     
 }
-$eval("({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: type_to_string, 2: get_type, 3: type_to_cst\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, type_to_string, get_type, type_to_cst \n }) ")(typecheck(inference(builtin_env)((tenv) => (stmts) => fst(force(type_error_$gts)(run$slnil_$gt(infer_stmtss(tenv)(stmts)))))(infer_stmts2)(tenv$slmerge)((tenv) => (expr) => force(type_error_$gts)(run$slnil_$gt(infer(tenv)(expr))))((tenv) => (expr) => (({1: result, 0: {1: {1: subst, 0: {1: usage_record, 0: types}}}}) => $co(result)($co(applied_types(types)(subst))(usage_record)))(state_f(infer(tenv)(expr))(state$slnil))))(type_to_string)((tenv) => (name) => (($target) => {
+return $eval("({0: {0:  env_nil, 1: infer_stmts, 2: infer_stmts2,  3: add_stmt,  4: infer, 5: infer2},\n  1: type_to_string, 2: get_type, 3: type_to_cst\n }) => ({type: 'fns',\n   env_nil, infer_stmts, infer_stmts2, add_stmt, infer, infer2, type_to_string, get_type, type_to_cst \n }) ")(typecheck(inference(builtin_env)((tenv) => (stmts) => fst(force(type_error_$gts)(run$slnil_$gt(infer_stmtss(tenv)(stmts)))))(infer_stmts2)(tenv$slmerge)((tenv) => (expr) => force(type_error_$gts)(run$slnil_$gt(infer(tenv)(expr))))((tenv) => (expr) => (({1: result, 0: {1: {1: subst, 0: {1: usage_record, 0: types}}}}) => $co(result)($co(applied_types(types)(subst))(usage_record)))(state_f(infer(tenv)(expr))(state$slnil))))(type_to_string)((tenv) => (name) => (($target) => {
 if ($target.type === "some" &&
 $target[0].type === ",") {
 {
