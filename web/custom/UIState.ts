@@ -227,6 +227,7 @@ export type WorkerPlugin<Results, Parsed, Options> = {
         traces: TraceMap,
         env: any,
         options: Options,
+        typeEnv: any,
     ): Results;
     getErrors(results: Results): [string, number][];
 };

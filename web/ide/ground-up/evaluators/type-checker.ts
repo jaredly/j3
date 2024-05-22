@@ -10,6 +10,7 @@ import {
     unwrapTuple3,
     wrapArray,
 } from '../round-1/parse';
+import { TypeInfo } from './analyze';
 import { Infer, TypeChecker } from './interface';
 
 const unwrapTuple2or3 = <a, b extends { type: string }, c>(
@@ -43,13 +44,11 @@ export const infer2 = (fns: {
 
 export const infer3 = (fns: {
     infer_stmts3: (env: Env) => (stmts: arr<Stmt>) => InferStmts3<Env, Type>;
-    infer2: (env: Env) => (expr: Expr) => InferExpr2<Type>;
+    infer3: (env: Env) => (expr: Expr) => InferExpr3<Type, TypeInfo>;
     type_to_cst: (type: Type) => jcst;
 }): Infer<Env, Stmt, Expr, Type> => ({
     infer(stmts, env) {
-        const result: InferStmts2<Env, Type> = fns.infer_stmts3(env)(
-            wrapArray(stmts),
-        );
+        const result = fns.infer_stmts3(env)(wrapArray(stmts));
         return {
             result: inferResult(result, fns.type_to_cst),
             typesAndLocs: unwrapArray(result[1][0]).map((tal) => ({
@@ -61,7 +60,22 @@ export const infer3 = (fns: {
         };
     },
     inferExpr(expr, env) {
-        return inferExpr2(fns, env, expr);
+        const result = fns.infer3(env)(expr);
+        return {
+            typesAndLocs: unwrapArray(result[1][0]).map((res) => ({
+                loc: res[0],
+                type: res[1],
+            })),
+            result:
+                result[0].type === 'ok'
+                    ? { type: 'ok', value: result[0][0] }
+                    : {
+                          type: 'err',
+                          err: parseTerr(fns.type_to_cst, result[0][0]),
+                      },
+            usages: [],
+            codeGenData: result[1][1],
+        };
     },
 });
 
@@ -98,6 +112,16 @@ type InferExpr2<Type> = {
         type: ',';
         0: arr<tuple<number, Type>>;
         1: tuple<arr<number>, arr<tuple<number, number>>>;
+    };
+};
+
+type InferExpr3<Type, CodeGenInfo> = {
+    type: ',';
+    0: { type: 'ok'; 0: Type } | { type: 'err'; 0: terr<Type> };
+    1: {
+        type: ',';
+        0: arr<tuple<number, Type>>;
+        1: CodeGenInfo;
     };
 };
 

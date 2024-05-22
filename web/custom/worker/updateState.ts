@@ -206,9 +206,10 @@ export function updateState(
      *   and something is changed ...
      *   ok, I can reset the tops, I guess.
      */
+    let tenv: any = null;
     if (state.evaluator.inference) {
         // TODO
-        let tenv = state.evaluator.inference.init();
+        tenv = state.evaluator.inference.init();
         for (let group of sorted) {
             const groupKey = group.map((g) => g.id).join(';');
             // This does "deep" change propagation
@@ -438,6 +439,7 @@ export function updateState(
                 state.results.groups[groupKey].traces,
                 env,
                 node.ns.plugin!.options,
+                tenv,
             );
             state.results.tops[group[0].id].pluginResults = results;
             const errors = plugin.getErrors(results);

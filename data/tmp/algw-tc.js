@@ -2838,11 +2838,11 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 const add$sldef = (tenv) => (name) => (nl) => (expr) => (l) => $gt$gt$eq(new_type_var(name)(nl))((self) => $gt$gt$eq($lt_(tenv$slwith_type(tenv)(name)(forall(set$slnil)($eq$gt(nil)(self)))))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(expr))((type) => $gt$gt$eq(type$slapply_$gt(self))((self) => $gt$gt$eq(unify(self)(type)(l))((_) => $gt$gt$eq(type$slapply_$gt(type))((type) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_preds)((preds) => $lt_(tenv$slwith_type(tenv$slnil)(name)(generalize(tenv)($eq$gt(map(predicate$slapply(subst))(bag$slto_list(preds)))(type))))))))))));
 
-const infer_expr2 = (env) => (expr) => (({1: result, 0: {1: {1: {1: types, 0: preds}, 0: subst}}}) => $co((($target) => {
+const infer_expr3 = (env) => (expr) => (({1: result, 0: {1: {1: {1: types, 0: preds}, 0: subst}}}) => ((preds) => $co((($target) => {
 if ($target.type === "ok") {
 {
 let t = $target[0];
-return ok(forall(set$slnil)($eq$gt(map(predicate$slapply(subst))(bag$slto_list(preds)))(t)))
+return ok(forall(set$slnil)($eq$gt(preds)(t)))
 }
 }
 if ($target.type === "err") {
@@ -2858,7 +2858,7 @@ return $co(l)(forall(set$slnil)($eq$gt(nil)(t)))
 }
 return $co(l)(forall(set$slnil)($eq$gt(nil)(type$slapply(subst)(t))))
 throw new Error('Failed to match. ' + valueToString($target));
-})(dont_apply))(types))($co(nil)(nil))))(state_f(infer$slexpr(env)(expr))(state$slnil));
+})(dont_apply))(types))(organize_predicates(preds))))(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))(state_f(infer$slexpr(env)(expr))(state$slnil));
 
 const add$slexpr = (tenv) => (expr) => $gt$gt$eq(infer$slexpr(tenv)(expr))((t) => $gt$gt$eq($lt_preds)((preds) => $gt$gt$eq($lt_(tenv))(({4: class_env}) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))((preds) => $gt$gt$eq(split(class_env)(nil)(nil)(preds))(({1: {1: {1: subst2, 0: defaulted_preds}, 0: other_preds}, 0: free_preds}) => $gt$gt$eq(preds_$gt(defaulted_preds))((_) => $gt$gt$eq(subst_$gt(subst2))((_) => $lt_(type$slapply(subst2)(t))))))))));
 
@@ -3274,4 +3274,4 @@ throw new Error('Failed to match. ' + valueToString($target));
     }
     
 }
-return $eval("env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts3 => infer2 =>\n  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts3, infer2})\n")(builtin_env)(tenv$slmerge)(tenv$slresolve)(scheme_$gts)(scheme_$gtcst)(infer_stmts3)(infer_expr2)
+return $eval("env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts3 => infer3 =>\n  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts3, infer3})\n")(builtin_env)(tenv$slmerge)(tenv$slresolve)(scheme_$gts)(scheme_$gtcst)(infer_stmts3)(infer_expr3)

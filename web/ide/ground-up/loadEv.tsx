@@ -143,7 +143,7 @@ export const evaluatorFromText = (
         const infer =
             data['infer_stmts2'] && data['infer2']
                 ? infer2(data)
-                : data['infer_stmts3'] && data['infer2']
+                : data['infer_stmts3'] && data['infer3']
                 ? infer3(data)
                 : data['infer_stmts'] && data['infer']
                 ? basicInfer(data)

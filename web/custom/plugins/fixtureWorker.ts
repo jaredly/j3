@@ -17,6 +17,10 @@ export const compileFixture = (
     const parsed = parse(node, parseExpr(evaluator, {}, blankAllNames()));
     if (!parsed) throw new Error(`cant compile fixture tests, unable to parse`);
     if (!parsed.test?.expr) throw new Error(`no test`);
+
+    // STOPSHIP: get the type env...
+    const info = evaluator.inference?.inferExpr(parsed.test.expr, null);
+
     // STOPSHIP: pass type info for real
     return `{
     const test = ${evaluator.compile(parsed.test?.expr, typeInfo, {})};
@@ -93,7 +97,7 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
                 ]);
             }
             if (res.expected === undefined) {
-                errors.push([`No "expected" value for fixture test`, k]);
+                errors.push([`No "expected" value for fixture test`, +k]);
             }
             if (res.error) {
                 errors.push([res.error, +k]);
@@ -102,17 +106,19 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
         return errors;
     },
 
-    process(data, meta, evaluator, traces, env) {
+    process(data, meta, evaluator, traces, env, _options, tenv) {
         const setTracing = (idx: number | null) =>
             evaluator.setTracing(idx, traces, env);
-        const evaluate = (expr: Expr) =>
-            evaluator.evaluate(
+        const evaluate = (expr: Expr) => {
+            const t = evaluator.inference?.inferExpr(expr, tenv);
+            return evaluator.evaluate(
                 expr,
                 evaluator.analysis?.allNamesExpr(expr) ?? blankAllNames(),
-                null, // STOPSHIP type info here
+                t?.codeGenData,
                 env,
                 meta,
             );
+        };
 
         let test: null | Function = null;
         const results: {
@@ -188,6 +194,9 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
 };
 
 const ensureSendable = (x: any) => {
+    if (typeof x === 'function') {
+        throw new Error(`Cannot send function ${x + ''}`);
+    }
     try {
         structuredClone(x);
     } catch (_) {

@@ -2357,15 +2357,14 @@
                     types)
                 (organize-predicates preds))))
 
-(defn infer-expr2 [env expr]
+(defn infer-expr3 [env expr]
     (let [
-        (, (, _ subst preds types) result) (state-f (infer/expr env expr) state/nil)]
+        (, (, _ subst preds types) result) (state-f (infer/expr env expr) state/nil)
+        preds                              (predicate/combine
+                                               (map (predicate/apply subst) (bag/to-list preds)))]
         (,
             (match result
-                (ok t)  (ok
-                            (forall
-                                set/nil
-                                    (=> (map (predicate/apply subst) (bag/to-list preds)) t)))
+                (ok t)  (ok (forall set/nil (=> preds t)))
                 (err e) (err e))
                 (map
                 (fn [(, t l dont-apply)]
@@ -2373,12 +2372,11 @@
                         (, l (forall set/nil (=> [] t)))
                             (, l (forall set/nil (=> [] (type/apply subst t))))))
                     types)
-                []
-                [])))
+                (organize-predicates preds))))
 
 (eval
-    (** env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts3 => infer2 =>
-  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts3, infer2})
+    (** env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts3 => infer3 =>
+  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts3, infer3})
  **)
         builtin-env
         tenv/merge
@@ -2386,4 +2384,4 @@
         scheme->s
         scheme->cst
         infer-stmts3
-        infer-expr2)
+        infer-expr3)

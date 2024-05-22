@@ -55,6 +55,7 @@ export type Infer<Env, Stmt, Expr, Type> = {
     ): {
         typesAndLocs: { loc: number; type: Type }[];
         usages: Record<number, number[]>;
+        codeGenData?: any;
         result:
             | { type: 'err'; err: InferenceError }
             | { type: 'ok'; value: Type };
