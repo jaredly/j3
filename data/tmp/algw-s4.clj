@@ -2291,7 +2291,15 @@
                     (, "ord" (, ["eq"] [(inst tint "ord") (inst (tcon "float" -1) "ord")] []))
                     (,
                     "eq"
-                        (, [] [(inst tint "eq") (inst (tcon "float" -1) "eq") (inst tbool "eq")] []))
+                        (,
+                        []
+                            [(inst tint "eq")
+                            (inst (tcon "float" -1) "eq")
+                            (inst tbool "eq")
+                            (=>
+                            [(isin (tvar "a" -1) "eq" []) (isin (tvar "b" -1) "eq" [])]
+                                (isin (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1) "eq" []))]
+                            []))
                     (, "floating" (, [] [(=> [] (isin (tcon "float" -1) "floating" []))] []))
                     (,
                     "pretty"

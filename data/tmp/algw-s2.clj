@@ -157,12 +157,39 @@
 
 (def tint (tcon "int" -1))
 
-(defn type->s [type]
+(** ## Type to String, simple version **)
+
+(defn type->s-simple [type]
     (match type
         (tvar name _)                           name
-        (tapp (tapp (tcon "->" _) arg _) res _) "(fn [${(type->s arg)}] ${(type->s res)})"
-        (tapp target arg _)                     "(${(type->s target)} ${(type->s arg)})"
+        (tapp (tapp (tcon "->" _) arg _) res _) "(fn [${(type->s-simple arg)}] ${(type->s-simple res)})"
+        (tapp target arg _)                     "(${(type->s-simple target)} ${(type->s-simple arg)})"
         (tcon name _)                           name))
+
+(** ## Type to string, complex version **)
+
+(defn type->s [type]
+    (match type
+        (tvar name _)                       name
+        (tapp (tapp (tcon "->" _) _ _) _ _) (let [(, args result) (unwrap-fn type)]
+                                                "(fn [${(join " " (map type->s args))}] ${(type->s result)})")
+        (tapp _ _ _)                        (let [(, target args) (unwrap-app type [])]
+                                                "(${(type->s target)} ${(join " " (map type->s args))})")
+        (tcon name _)                       name))
+
+(defn unwrap-fn [t]
+    (match t
+        (tapp (tapp (tcon "->" _) a _) b _) (let [(, args res) (unwrap-fn b)] (, [a ..args] res))
+        _                                   (, [] t)))
+
+(defn unwrap-app [t args]
+    (match t
+        (tapp a b _) (unwrap-app a [b ..args])
+        _            (, t args)))
+
+(,
+    type->s
+        [(, (@t (fn [a b c] d)) "(fn [a b c] d)") (, (@t (, a b)) "(, a b)")])
 
 (** ## The Type Environment
     The "type environment" gets passed around to most of the infer/ functions, and includes global definitions as well as the types of locally-bound variables. **)
@@ -513,6 +540,7 @@
             Other than that, it's the same as the simple case. **)
         (elambda [pat] body l)                  (let-> [
                                                     (, arg-type scope) (infer/pattern tenv pat)
+                                                    scope              (scope/apply-> scope)
                                                     bound-env          (<- (tenv/with-scope tenv scope))
                                                     body-type          (infer/expr bound-env body)
                                                     arg-type           (type/apply-> arg-type)]
@@ -612,19 +640,17 @@
                                                     ()                 (check-exhaustiveness tenv target (map fst cases) l)]
                                                     (<- final-result))))
 
+(def env-with-pair
+    (tenv/merge
+        builtin-env
+            (add/stmts
+            builtin-env
+                [(@!
+                (deftype (, a b)
+                    (, a b)))])))
+
 (,
-    (errorToString
-        (fn [x]
-            (run/nil->
-                (infer/expr
-                    (tenv/merge
-                        builtin-env
-                            (add/stmts
-                            builtin-env
-                                [(@!
-                                (deftype (, a b)
-                                    (, a b)))]))
-                        x))))
+    (errorToString (fn [x] (run/nil-> (infer/expr env-with-pair x))))
         [(, (@ 10) (tcon "int" 4512))
         (, (@ hi) "Fatal runtime: Variable not found in scope: hi")
         (, (@ (let [x 10] x)) (tcon "int" 4547))
@@ -694,11 +720,58 @@
         (, (@ "hi") (tcon "string" 6785))
         (,
         (@ "hi ${1}")
-            "Fatal runtime: Incompatible concrete types: int (6850) vs string (6848)")])
+            "Fatal runtime: Incompatible concrete types: int (6850) vs string (6848)")
+        (,
+        (@ (fn [x] (let [(, a _) x] (a 2))))
+            (tapp
+            (tapp
+                (tcon "->" 11941)
+                    (tapp
+                    (tapp
+                        (tcon "," -1)
+                            (tapp
+                            (tapp (tcon "->" 11955) (tcon "int" 11957) 11955)
+                                (tvar "result:5" 11955)
+                                11955)
+                            -1)
+                        (tvar "b:2" 11950)
+                        -1)
+                    11941)
+                (tvar "result:5" 11955)
+                11941))
+        (,
+        (@ (fn [(, a _)] (a 2)))
+            (tapp
+            (tapp
+                (tcon "->" 12016)
+                    (tapp
+                    (tapp
+                        (tcon "," -1)
+                            (tapp
+                            (tapp (tcon "->" 12024) (tcon "int" 12026) 12024)
+                                (tvar "result:4" 12024)
+                                12024)
+                            -1)
+                        (tvar "b:1" 12020)
+                        -1)
+                    12016)
+                (tvar "result:4" 12024)
+                12016))])
+
+(,
+    (errorToString
+        (fn [x] (type->s (run/nil-> (infer/expr env-with-pair x)))))
+        [(,
+        (@ (fn [x] (let [(, a _) x] (a 2))))
+            "(fn [(, (fn [int] result:5) b:2)] result:5)")
+        (,
+        (@ (fn [(, a _)] (a 2)))
+            "(fn [(, (fn [int] result:4) b:1)] result:4)")])
 
 (** ## Patterns **)
 
-((** Here we are producing (1) a type for the pattern, and (2) a "scope" mapping of names to type variables. **)
+((** Here we are producing (1) a type for the pattern, and (2) a "scope" mapping of names to type variables.
+    Note You need to run scope/apply-> on the resulting scope in order for inference to work correctly. **)
     defn infer/pattern [tenv pattern]
     (match pattern
         (pvar name l)         (let-> [v (new-type-var name l)]
@@ -1206,7 +1279,7 @@
                     (elet bindgroup expr int)))]
                 [(@! (defn x [(elet b _ _)] b))]]
                 "x")
-            "(fn [expr] ((, (list pat)) expr))")
+            "(fn [expr] (, (list pat) expr))")
         (,
         (,
             [[(@! (typealias (a b) (, int b)))
@@ -1216,7 +1289,7 @@
                         (blue)
                         (green (a bool))))]]
                 "green")
-            "(fn [((, int) bool)] hi)")
+            "(fn [(, int bool)] hi)")
         ])
 
 (** ## Type Environment populated with Builtins **)

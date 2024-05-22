@@ -18,6 +18,14 @@
 (deftype (, a b)
     (, a b))
 
+(= (, 2 3) (, 3 4))
+
+(= true false)
+
+(= (some 1))
+
+(= (, 2 (some 2)))
+
 (show 1)
 
 (show pi)

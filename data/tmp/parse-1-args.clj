@@ -81,6 +81,10 @@
 
 (defn fst [tuple] (let [(, v _) tuple] v))
 
+(deftype (list a)
+    (nil)
+        (cons a (list a)))
+
 (defn replaces [target repl]
     (match repl
         []           target
@@ -95,10 +99,6 @@
         (cst/spread cst int)
         (cst/id string int)
         (cst/string string (list (, cst string int)) int))
-
-(deftype (list a)
-    (nil)
-        (cons a (list a)))
 
 (deftype quot
     (quot/expr expr)

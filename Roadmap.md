@@ -7,10 +7,62 @@ parse-self
 The road to full type classes
 - [x] start plumbing typeInfo
 - [x] get some tests working
-- [ ] get plugins passing typeInfo
+- [x] get plugins passing typeInfo
 - [ ] get toFile passing typeInfo
+  -> hrm lower priority
 
 
+Type Classesssss
+
+- So, we've got "very basic type class info" passing in just fine.
+HOWEVER. With type variables, we're definitely not making it happen.
+
+`$type_class_insts["(, int int) < eq"]`
+-> probably needs to be something like:
+`$type_class_insts["(, a b) < eq"]($type_class_insts["int < eq"], $type_class_insts["int < eq"])`
+
+right?
+
+
+
+
+#
+
+algw-s2 INFERENCE BUG
+
+in thih, `run/tenv->` should have inferred that there's an `int` in state!!! why does it not>?
+
+oooof ok `run->` is also busted. too many type varibles.
+
+## OK we're not unwrapping things right.
+
+```clj
+(deftype (wrap a)
+    (wrap (fn [int] a)))
+(deftype (wrap2 a)
+    (wrap2 (fn [a] int)))
+(defn unwrap [(wrap f) a] (f a))
+(defn unwrap2 [(wrap2 f) a] (f a))
+
+; GOOD
+(defn x [y]
+    (match y
+        (wrap2 f) (f 3)))
+; GOOD
+(defn x' [y] (let [(wrap2 f) y] (f 3)))
+; BAD
+(defn x'' [(wrap2 f)] (f 3))
+```
+
+We're missing a step, something that needs to be unified with the other.
+
+OOOH ok so, match is wroking.
+
+even ~simpler, using only ~builtins
+```clj
+(defn n [(, a b)] (a 2))
+(defn n' [x] (let [(, a b) x] (a 2)))
+```
 
 
 

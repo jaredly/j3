@@ -318,39 +318,6 @@ const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
 const pcon = (v0) => (v1) => (v2) => (v3) => ({type: "pcon", 0: v0, 1: v1, 2: v2, 3: v3})
 const pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1})
 const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1})
-const type_$gts = (type) => (($target) => {
-if ($target.type === "tvar") {
-{
-let name = $target[0];
-return name
-}
-}
-if ($target.type === "tapp" &&
-$target[0].type === "tapp" &&
-$target[0][0].type === "tcon" &&
-$target[0][0][0] === "->") {
-{
-let arg = $target[0][1];
-let res = $target[1];
-return `(fn [${type_$gts(arg)}] ${type_$gts(res)})`
-}
-}
-if ($target.type === "tapp") {
-{
-let target = $target[0];
-let arg = $target[1];
-return `(${type_$gts(target)} ${type_$gts(arg)})`
-}
-}
-if ($target.type === "tcon") {
-{
-let name = $target[0];
-return name
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
 const tfns = (args) => (body) => (l) => foldr(body)(args)((body) => (arg) => tfn(arg)(body)(l));
 
 const tint = tcon("int")(-1);
@@ -473,17 +440,6 @@ return fatal("Option is None")
 throw new Error('Failed to match. ' + valueToString($target));
 })(x);
 
-const scheme_$gts = ({1: type, 0: vbls}) => (($target) => {
-if ($target.type === "nil") {
-return type_$gts(type)
-}
-{
-let vbls = $target;
-return `forall ${join(" ")(vbls)} : ${type_$gts(type)}`
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(set$slto_list(vbls));
-
 const ex$slany = ({type: "ex/any"})
 const ex$slconstructor = (v0) => (v1) => (v2) => ({type: "ex/constructor", 0: v0, 1: v1, 2: v2})
 const ex$slor = (v0) => (v1) => ({type: "ex/or", 0: v0, 1: v1})
@@ -551,6 +507,66 @@ throw new Error('Failed to match. ' + valueToString($target));
 const fold_ex_pats = (init) => (pats) => (f) => foldl(init)(pats)((init) => (pat) => fold_ex_pat(init)(pat)(f));
 
 const $co = (v0) => (v1) => ({type: ",", 0: v0, 1: v1})
+const unwrap_fn = (t) => (($target) => {
+if ($target.type === "tapp" &&
+$target[0].type === "tapp" &&
+$target[0][0].type === "tcon" &&
+$target[0][0][0] === "->") {
+{
+let a = $target[0][1];
+let b = $target[1];
+return (({1: res, 0: args}) => $co(cons(a)(args))(res))(unwrap_fn(b))
+}
+}
+return $co(nil)(t)
+throw new Error('Failed to match. ' + valueToString($target));
+})(t);
+
+const unwrap_app = (t) => (args) => (($target) => {
+if ($target.type === "tapp") {
+{
+let a = $target[0];
+let b = $target[1];
+return unwrap_app(a)(cons(b)(args))
+}
+}
+return $co(t)(args)
+throw new Error('Failed to match. ' + valueToString($target));
+})(t);
+
+const type_$gts_simple = (type) => (($target) => {
+if ($target.type === "tvar") {
+{
+let name = $target[0];
+return name
+}
+}
+if ($target.type === "tapp" &&
+$target[0].type === "tapp" &&
+$target[0][0].type === "tcon" &&
+$target[0][0][0] === "->") {
+{
+let arg = $target[0][1];
+let res = $target[1];
+return `(fn [${type_$gts_simple(arg)}] ${type_$gts_simple(res)})`
+}
+}
+if ($target.type === "tapp") {
+{
+let target = $target[0];
+let arg = $target[1];
+return `(${type_$gts_simple(target)} ${type_$gts_simple(arg)})`
+}
+}
+if ($target.type === "tcon") {
+{
+let name = $target[0];
+return name
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(type);
+
 const specialized_matrix = (constructor) => (arity) => (matrix) => concat(map(specialize_row(constructor)(arity))(matrix));
 
 
@@ -830,6 +846,31 @@ const cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
 const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
 const tenv$slnil = tenv(map$slnil)(map$slnil)(map$slnil)(map$slnil);
 
+const type_$gts = (type) => (($target) => {
+if ($target.type === "tvar") {
+{
+let name = $target[0];
+return name
+}
+}
+if ($target.type === "tapp" &&
+$target[0].type === "tapp" &&
+$target[0][0].type === "tcon" &&
+$target[0][0][0] === "->") {
+return (({1: result, 0: args}) => `(fn [${join(" ")(map(type_$gts)(args))}] ${type_$gts(result)})`)(unwrap_fn(type))
+}
+if ($target.type === "tapp") {
+return (({1: args, 0: target}) => `(${type_$gts(target)} ${join(" ")(map(type_$gts)(args))})`)(unwrap_app(type)(nil))
+}
+if ($target.type === "tcon") {
+{
+let name = $target[0];
+return name
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(type);
+
 const zip = (one) => (two) => (($target) => {
 if ($target.type === "," &&
 $target[0].type === "nil" &&
@@ -919,6 +960,17 @@ const builtin_env = ((k) => ((v) => ((v2) => ((kv) => ((kk) => ((a) => ((b) => t
 
 const tenv$slwith_scope = ({3: aliases, 2: types, 1: tcons, 0: values}) => (scope) => tenv(map$slmerge(scope)(values))(tcons)(types)(aliases);
 
+const scheme_$gts = ({1: type, 0: vbls}) => (($target) => {
+if ($target.type === "nil") {
+return type_$gts(type)
+}
+{
+let vbls = $target;
+return `forall ${join(" ")(vbls)} : ${type_$gts(type)}`
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(set$slto_list(vbls));
+
 const tcon_and_args = (type) => (coll) => (l) => (($target) => {
 if ($target.type === "tvar") {
 return fatal(`Type not resolved ${int_to_string(l)} ${jsonify(type)} ${jsonify(coll)}`)
@@ -1006,6 +1058,29 @@ throw new Error('Failed to match. ' + valueToString($target));
 throw new Error('Failed to match. ' + valueToString($target));
 })(gid);
 
+{
+    const test = type_$gts;
+    
+    const in_0 = {"0":{"0":{"0":"->","1":11886,"type":"tcon"},"1":{"0":"a","1":11889,"type":"tcon"},"2":11886,"type":"tapp"},"1":{"0":{"0":{"0":"->","1":11886,"type":"tcon"},"1":{"0":"b","1":11890,"type":"tcon"},"2":11886,"type":"tapp"},"1":{"0":{"0":{"0":"->","1":11886,"type":"tcon"},"1":{"0":"c","1":11891,"type":"tcon"},"2":11886,"type":"tapp"},"1":{"0":"d","1":11892,"type":"tcon"},"2":11886,"type":"tapp"},"2":11886,"type":"tapp"},"2":11886,"type":"tapp"};
+    const mod_0 = test(in_0);
+    const out_0 = "(fn [a b c] d)";
+    if (!equal(mod_0, out_0)) {
+        console.log(mod_0);
+        console.log(out_0);
+        throw new Error(`Fixture test (11877) failing 0. Not equal.`);
+    }
+    
+
+    const in_1 = {"0":{"0":{"0":",","1":11902,"type":"tcon"},"1":{"0":"a","1":11903,"type":"tcon"},"2":11901,"type":"tapp"},"1":{"0":"b","1":11904,"type":"tcon"},"2":11901,"type":"tapp"};
+    const mod_1 = test(in_1);
+    const out_1 = "(, a b)";
+    if (!equal(mod_1, out_1)) {
+        console.log(mod_1);
+        console.log(out_1);
+        throw new Error(`Fixture test (11877) failing 1. Not equal.`);
+    }
+    
+}
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -1538,7 +1613,7 @@ $target[0][1].type === "nil") {
 let pat = $target[0][0];
 let body = $target[1];
 let l = $target[2];
-return $gt$gt$eq(infer$slpattern(tenv)(pat))(({1: scope, 0: arg_type}) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(arg_type))((arg_type) => $lt_(tfn(arg_type)(body_type)(l))))))
+return $gt$gt$eq(infer$slpattern(tenv)(pat))(({1: scope, 0: arg_type}) => $gt$gt$eq(scope$slapply_$gt(scope))((scope) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(arg_type))((arg_type) => $lt_(tfn(arg_type)(body_type)(l)))))))
 }
 }
 if ($target.type === "elambda" &&
@@ -1757,7 +1832,7 @@ const add$slstmts = (tenv) => (stmts) => (({1: {1: others, 0: aliases}, 0: defs}
 
     const in_2 = $co(cons(cons({"0":"alt","1":8595,"2":{"type":"nil"},"3":{"0":{"0":{"0":",","1":8597,"type":"tcon"},"1":{"0":{"0":"list","1":8599,"type":"tcon"},"1":{"0":"pat","1":8600,"type":"tcon"},"2":8598,"type":"tapp"},"2":8596,"type":"tapp"},"1":{"0":"expr","1":8601,"type":"tcon"},"2":8596,"type":"tapp"},"4":8593,"type":"ttypealias"})(cons({"0":"bindgroup","1":8623,"2":{"type":"nil"},"3":{"0":"alt","1":8629,"type":"tcon"},"4":8621,"type":"ttypealias"})(cons({"0":"expr","1":8636,"2":{"type":"nil"},"3":{"0":{"0":"elet","1":{"0":8691,"1":{"0":{"0":{"0":"bindgroup","1":8692,"type":"tcon"},"1":{"0":{"0":"expr","1":8693,"type":"tcon"},"1":{"0":{"0":"int","1":8694,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":8690,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":8634,"type":"tdeftype"})(nil))))(cons(cons({"0":"x","1":8733,"2":{"0":{"0":{"0":"elet","1":8736,"2":{"0":{"0":"b","1":8737,"type":"pvar"},"1":{"0":{"0":8738,"type":"pany"},"1":{"0":{"0":8739,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"3":8735,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"1":{"0":"b","1":8740,"type":"evar"},"2":8731,"type":"elambda"},"3":8731,"type":"tdef"})(nil))(nil)))("x");
     const mod_2 = test(in_2);
-    const out_2 = "(fn [expr] ((, (list pat)) expr))";
+    const out_2 = "(fn [expr] (, (list pat) expr))";
     if (!equal(mod_2, out_2)) {
         console.log(mod_2);
         console.log(out_2);
@@ -1767,7 +1842,7 @@ const add$slstmts = (tenv) => (stmts) => (({1: {1: others, 0: aliases}, 0: defs}
 
     const in_3 = $co(cons(cons({"0":"a","1":9826,"2":{"0":{"0":"b","1":9827,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":{"0":",","1":9829,"type":"tcon"},"1":{"0":"int","1":9830,"type":"tcon"},"2":9828,"type":"tapp"},"1":{"0":"b","1":9831,"type":"tcon"},"2":9828,"type":"tapp"},"4":9823,"type":"ttypealias"})(cons({"0":"hi","1":9836,"2":{"type":"nil"},"3":{"0":{"0":"red","1":{"0":9838,"1":{"0":{"0":{"0":"int","1":9839,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":9837,"type":","},"type":","},"type":","},"1":{"0":{"0":"blue","1":{"0":9841,"1":{"0":{"type":"nil"},"1":9840,"type":","},"type":","},"type":","},"1":{"0":{"0":"green","1":{"0":9843,"1":{"0":{"0":{"0":{"0":"a","1":9845,"type":"tcon"},"1":{"0":"bool","1":9846,"type":"tcon"},"2":9844,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"1":9842,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"4":9834,"type":"tdeftype"})(nil)))(nil))("green");
     const mod_3 = test(in_3);
-    const out_3 = "(fn [((, int) bool)] hi)";
+    const out_3 = "(fn [(, int bool)] hi)";
     if (!equal(mod_3, out_3)) {
         console.log(mod_3);
         console.log(out_3);
@@ -1800,8 +1875,33 @@ const add$slstmts = (tenv) => (stmts) => (({1: {1: others, 0: aliases}, 0: defs}
     
 
 }
+const env_with_pair = tenv$slmerge(builtin_env)(add$slstmts(builtin_env)(cons({"0":",","1":12044,"2":{"0":{"0":"a","1":12045,"type":","},"1":{"0":{"0":"b","1":12046,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":12048,"1":{"0":{"0":{"0":"a","1":12049,"type":"tcon"},"1":{"0":{"0":"b","1":12050,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12047,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":12041,"type":"tdeftype"})(nil)));
+
 {
-    const test = errorToString((x) => run$slnil_$gt(infer$slexpr(tenv$slmerge(builtin_env)(add$slstmts(builtin_env)(cons({"0":",","1":11395,"2":{"0":{"0":"a","1":11396,"type":","},"1":{"0":{"0":"b","1":11397,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":11399,"1":{"0":{"0":{"0":"a","1":11400,"type":"tcon"},"1":{"0":{"0":"b","1":11401,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":11398,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":11391,"type":"tdeftype"})(nil))))(x)));
+    const test = errorToString((x) => type_$gts(run$slnil_$gt(infer$slexpr(env_with_pair)(x))));
+    
+    const in_0 = {"0":{"0":{"0":"x","1":12099,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":12103,"2":{"0":{"0":"a","1":12105,"type":"pvar"},"1":{"0":{"0":12106,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12103,"type":"pcon"},"1":{"0":"x","1":12107,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"a","1":12109,"type":"evar"},"1":{"0":{"0":{"0":2,"1":12110,"type":"pint"},"1":12110,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":12108,"type":"eapp"},"2":12100,"type":"elet"},"2":12096,"type":"elambda"};
+    const mod_0 = test(in_0);
+    const out_0 = "(fn [(, (fn [int] result:5) b:2)] result:5)";
+    if (!equal(mod_0, out_0)) {
+        console.log(mod_0);
+        console.log(out_0);
+        throw new Error(`Fixture test (12051) failing 0. Not equal.`);
+    }
+    
+
+    const in_1 = {"0":{"0":{"0":",","1":12079,"2":{"0":{"0":"a","1":12081,"type":"pvar"},"1":{"0":{"0":12082,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12079,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"a","1":12084,"type":"evar"},"1":{"0":{"0":{"0":2,"1":12085,"type":"pint"},"1":12085,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":12083,"type":"eapp"},"2":12076,"type":"elambda"};
+    const mod_1 = test(in_1);
+    const out_1 = "(fn [(, (fn [int] result:4) b:1)] result:4)";
+    if (!equal(mod_1, out_1)) {
+        console.log(mod_1);
+        console.log(out_1);
+        throw new Error(`Fixture test (12051) failing 1. Not equal.`);
+    }
+    
+}
+{
+    const test = errorToString((x) => run$slnil_$gt(infer$slexpr(env_with_pair)(x)));
     
     const in_0 = {"0":{"0":10,"1":4512,"type":"pint"},"1":4512,"type":"eprim"};
     const mod_0 = test(in_0);
@@ -1970,6 +2070,26 @@ const add$slstmts = (tenv) => (stmts) => (({1: {1: others, 0: aliases}, 0: defs}
         console.log(mod_16);
         console.log(out_16);
         throw new Error(`Fixture test (4501) failing 16. Not equal.`);
+    }
+    
+
+    const in_17 = {"0":{"0":{"0":"x","1":11944,"type":"pvar"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":{"0":{"0":",","1":11950,"2":{"0":{"0":"a","1":11952,"type":"pvar"},"1":{"0":{"0":11953,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":11950,"type":"pcon"},"1":{"0":"x","1":11954,"type":"evar"},"type":","},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"a","1":11956,"type":"evar"},"1":{"0":{"0":{"0":2,"1":11957,"type":"pint"},"1":11957,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":11955,"type":"eapp"},"2":11945,"type":"elet"},"2":11941,"type":"elambda"};
+    const mod_17 = test(in_17);
+    const out_17 = tapp(tapp(tcon("->")(11941))(tapp(tapp(tcon(",")(-1))(tapp(tapp(tcon("->")(11955))(tcon("int")(11957))(11955))(tvar("result:5")(11955))(11955))(-1))(tvar("b:2")(11950))(-1))(11941))(tvar("result:5")(11955))(11941);
+    if (!equal(mod_17, out_17)) {
+        console.log(mod_17);
+        console.log(out_17);
+        throw new Error(`Fixture test (4501) failing 17. Not equal.`);
+    }
+    
+
+    const in_18 = {"0":{"0":{"0":",","1":12020,"2":{"0":{"0":"a","1":12022,"type":"pvar"},"1":{"0":{"0":12023,"type":"pany"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":12020,"type":"pcon"},"1":{"type":"nil"},"type":"cons"},"1":{"0":{"0":"a","1":12025,"type":"evar"},"1":{"0":{"0":{"0":2,"1":12026,"type":"pint"},"1":12026,"type":"eprim"},"1":{"type":"nil"},"type":"cons"},"2":12024,"type":"eapp"},"2":12016,"type":"elambda"};
+    const mod_18 = test(in_18);
+    const out_18 = tapp(tapp(tcon("->")(12016))(tapp(tapp(tcon(",")(-1))(tapp(tapp(tcon("->")(12024))(tcon("int")(12026))(12024))(tvar("result:4")(12024))(12024))(-1))(tvar("b:1")(12020))(-1))(12016))(tvar("result:4")(12024))(12016);
+    if (!equal(mod_18, out_18)) {
+        console.log(mod_18);
+        console.log(out_18);
+        throw new Error(`Fixture test (4501) failing 18. Not equal.`);
     }
     
 }
