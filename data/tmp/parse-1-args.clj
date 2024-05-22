@@ -593,7 +593,7 @@
 
 (defn pat-arg [ctx pat]
     (match pat
-        (j/pvar name l)           (sanitize name)
+        (j/pvar name l)           name
         (j/parray items spread l) "[${(join ", " (map items (pat-arg ctx)))}${(match spread
                                       (some s) "...${(pat-arg ctx s)}"
                                       (none)   "")}]"
@@ -628,7 +628,7 @@
                                                       (fn [item]
                                                       (let [(, expr suffix l) item]
                                                           "${${(j/compile ctx expr)}}${(escape-string (unescapeString suffix))}"))))}`")
-        (j/var name l)             (sanitize name)
+        (j/var name l)             name
         (j/attr target attr l)     "${(j/paren-expr ctx target)}.${(sanitize attr)}"
         (j/index target idx l)     "${(j/paren-expr ctx target)}[${(j/compile ctx idx)}]"
         (j/tern cond yes no l)     "${(j/paren-expr ctx cond)} ? ${(j/paren-expr ctx yes)} : ${(j/paren-expr ctx no)}"
@@ -655,7 +655,7 @@
 (defn pat->j/pat [pat]
     (match pat
         (pany l)              none
-        (pvar name l)         (some (j/pvar name l))
+        (pvar name l)         (some (j/pvar (sanitize name) l))
         (pcon name il args l) (match (foldl
                                   (, 0 [])
                                       args
@@ -693,7 +693,7 @@
                                                           none
                                                           l)])
         (pstr str l)          [(j/if (j/bin "===" target (j/str str [] l) l) (j/block inner) none l)]
-        (pvar name l)         [(j/let (j/pvar name l) target l) ..inner]
+        (pvar name l)         [(j/let (j/pvar (sanitize name) l) target l) ..inner]
         (pcon name nl args l) [(j/if
                                   (j/bin "===" (j/attr target "type" l) (j/str name [] l) l)
                                       (j/block (pat-loop/j target args 0 inner l trace))
@@ -841,7 +841,9 @@
                     (some info) [(j/sexpr
                                     (j/app
                                         (j/var "$trace" -1)
-                                            [(j/prim (j/int loc -1) -1) (j/raw (jsonify info) -1) (j/var name -1)]
+                                            [(j/prim (j/int loc -1) -1)
+                                            (j/raw (jsonify info) -1)
+                                            (j/var (sanitize name) -1)]
                                             -1)
                                         -1)
                                     ..stmts])))))
@@ -857,14 +859,14 @@
 (defn compile-top/j [top trace]
     (match top
         (texpr expr l)                      [(j/sexpr (compile/j expr trace) l)]
-        (tdef name nl body l)               [(j/let (j/pvar name nl) (compile/j body trace) l)]
+        (tdef name nl body l)               [(j/let (j/pvar (sanitize name) nl) (compile/j body trace) l)]
         (ttypealias name _ _ _ _)           []
         (tdeftype name nl type-arg cases l) (map
                                                 cases
                                                     (fn [case]
                                                     (let [(, name2 nl args l) case]
                                                         (j/let
-                                                            (j/pvar name2 nl)
+                                                            (j/pvar (sanitize name2) nl)
                                                                 (foldr
                                                                 (j/obj
                                                                     [(left (, "type" (j/str name2 [] nl)))
@@ -908,7 +910,7 @@
             (eprim prim l)                  (match prim
                                                 (pint int pl)   (j/prim (j/int int pl) l)
                                                 (pbool bool pl) (j/prim (j/bool bool pl) l))
-            (evar name l)                   (j/var name l)
+            (evar name l)                   (j/var (sanitize name) l)
             (equot inner l)                 (j/raw (quot/jsonify inner) l)
             (elambda pats body l)           (foldr
                                                 ; gotta trace the args
@@ -1088,13 +1090,7 @@
                 2    3)}")
             "1")
         (, (@@  "`${1}") "`1")
-        (, (@@ "${${1}") "${1")
-        (,
-        (@@
-            "${(match [1]
-                []      []
-                [a ..b] a)}")
-            "1")])
+        (, (@@ "${${1}") "${1")])
 
 (** ## Builtins
     There are a number of primitives that we'll have implemented in JavaScript, such as arithmetic operators, low-level parsers, and some other things that will help with performance a little bit. **)
@@ -1204,7 +1200,7 @@ const sanMap = {
     '?': '$qe',
   };
 const kwds =
-    'case new var const let if else return super break while for default'.split(' ');
+    'case new var const let if else return super break while for default eval'.split(' ');
 
 // Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
 function sanitize(raw) {
@@ -1266,14 +1262,26 @@ return {
       const args = '{' + Object.keys(ctx).join(',') + '}'
       return new Function(args, 'return ' + source)(ctx);
     },
+    $unit: null,
+    errorToString: f => arg => {
+      try {
+        return f(arg)
+      } catch (err) {
+        return err.message;
+      }
+    },
     valueToString,
     unescapeString,
     sanitize,
-    equal,
+    equal: a => b => equal(a, b),
     'int-to-string': (a) => a.toString(),
     'string-to-int': (a) => {
         const v = Number(a);
-        return Number.isInteger(v) ? { type: 'some', 0: v } : { type: 'none' };
+        return Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' };
+    },
+    'string-to-float': (a) => {
+        const v = Number(a);
+        return Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' };
     },
 
     // maps
@@ -1283,13 +1291,13 @@ return {
     'map/rm': (map) => (key) => map.filter((i) => !equal(i[0], key)),
     'map/get': (map) => (key) => {
         const found = map.find((i) => equal(i[0], key));
-        return found ? { type: 'some', 0: found } : { type: 'none' };
+        return found ? { type: 'some', 0: found[1] } : { type: 'none' };
     },
     'map/map': (fn) => (map) => map.map(([k, v]) => [k, fn(v)]),
     'map/merge': (one) => (two) =>
-        [...one, ...two.filter(([key]) => !one.find((a) => equal(a, key)))],
-    'map/values': (map) => wrapList(map.map((item) => i[1])),
-    'map/keys': (map) => wrapList(map.map((item) => i[0])),
+        [...one, ...two.filter(([key]) => !one.find(([a]) => equal(a, key)))],
+    'map/values': (map) => wrapList(map.map((item) => item[1])),
+    'map/keys': (map) => wrapList(map.map((item) => item[0])),
     'map/from-list': (list) =>
         unwrapList(list).map((pair) => [pair[0], pair[1]]),
     'map/to-list': (map) =>
@@ -1320,7 +1328,7 @@ return {
     // Various debugging stuff
     jsonify: (v) => JSON.stringify(v) ?? 'undefined',
     fatal: (message) => {
-        throw new Error(\`Fatal runtime: \${message}\`);
+        throw new Error(`Fatal runtime: ${message}`);
     },
 } **))
 
@@ -2278,7 +2286,7 @@ dot
         (pprim _ _)           (, [] empty)
         (pstr _ _)            (, [] empty)
         (pcon name nl args l) (foldl
-                                  (, [] (one (global name (type) l (usage ()))))
+                                  (, [] (one (global name (value) l (usage ()))))
                                       (map args pat/names)
                                       bound-and-names)))
 
@@ -2325,7 +2333,7 @@ dot
             (fn [int top] (list (, string int)))))
 
 ((eval
-    "({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names})")
+    "({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => builtins => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names, builtins})")
     (parse-and-compile
         (fn [top] (state-f (parse-top top) state/nil))
             (fn [expr] (state-f (parse-expr expr) state/nil))
@@ -2345,4 +2353,5 @@ dot
             (match (locals-at-top empty tl top)
                 (some v) (bag/to-list v)
                 _        [])))
-        (fn [top] (bag/to-list (top/names top))))
+        (fn [top] (bag/to-list (top/names top)))
+        builtins)

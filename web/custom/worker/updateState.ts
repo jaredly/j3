@@ -178,14 +178,7 @@ export function updateState(
                     changes: { results: true },
                     errors: {},
                     hover: {},
-                    produce: one.allNames
-                        ? [
-                              {
-                                  type: 'pre',
-                                  text: showAllNames(one.allNames),
-                              },
-                          ]
-                        : [],
+                    produce: [],
                     values: {},
                     usages: {},
                 };
@@ -316,9 +309,10 @@ export function updateState(
                 state.results.groups[groupKey].typeFailed = false;
                 group.forEach((one) => {
                     if (res.codeGenData) {
-                        state.results!.tops[one.id].produce.push(
-                            JSON.stringify(res.codeGenData),
-                        );
+                        state.results!.tops[one.id].produce.push({
+                            type: 'pre',
+                            text: JSON.stringify(res.codeGenData, null, 2),
+                        });
                     }
 
                     types.forEach((type) => {

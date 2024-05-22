@@ -2,13 +2,14 @@
 
 (** Here we're doing essentially the same things as bootstrap, but we have the advantages of rich pattern-matching, so we can do
     (match node
-        (cst/list [(cst/id "def" _) (cst/id name _) body] _) ...)  
+        (cst/list [(cst/id "def" _) (cst/id name _) body] _) ...  
     instead of
     if (node.type === 'list' &&
-        node.values.length === 3 &&
-        node[0].type === 'identifier' &&
-        node[0].text === 'def' &&
-        node[1].type === 'identifier') { 
+        node.values.length === 3 &&
+        node[0].type === 'identifier' &&
+        node[0].text === 'def' &&
+        node[1].type === 'identifier') {
+       ... 
     Isn't it great? **)
 
 (** ## Prelude **)

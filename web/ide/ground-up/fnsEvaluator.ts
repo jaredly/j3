@@ -519,15 +519,16 @@ function assembleExternals({
     // .filter((n) => sanitize(n) === n);
     const values: Record<string, any> = {};
     needed.forEach((name) => {
+        const s = name === '$trace' ? '$trace' : sanitize(name);
         if (env.values[name] == null) {
-            if (san[sanitize(name)]) {
-                values[sanitize(name)] = san[sanitize(name)];
+            if (san[s]) {
+                values[s] = san[s];
             }
         } else {
-            values[sanitize(name)] = env.values[name];
+            values[s] = env.values[name];
         }
         if (
-            values[sanitize(name)] === undefined &&
+            values[s] === undefined &&
             name !== 'evaluate' &&
             name !== 'evaluateStmt'
         ) {

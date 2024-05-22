@@ -1718,6 +1718,8 @@
         (** toplevel expressions shouldn't have any predicates that don't get defaulted away. **)
         (, free-preds other-preds defaulted-preds subst2) (split class-env [] [] preds)
         _                                                 (preds-> defaulted-preds)
+        _                                                 (preds-> free-preds)
+        _                                                 (preds-> other-preds)
         _                                                 (subst-> subst2)]
         (<- (type/apply subst2 t))))
 
@@ -1759,7 +1761,23 @@
                 [(isin (tcon "int" -1) "number" [(oloc 18000 0) (oloc 18001 0)])]))
         (,
         (@ 1)
-            (, (ok (tcon "int" -1)) [(isin (tcon "int" -1) "number" [(oloc 17846 0)])]))])
+            (, (ok (tcon "int" -1)) [(isin (tcon "int" -1) "number" [(oloc 17846 0)])]))
+        (,
+        (@ (= (, 1 2)))
+            (,
+            (ok
+                (tapp
+                    (tapp
+                        (tcon "->" -1)
+                            (tapp (tapp (tcon "," -1) (tcon "int" -1) -1) (tcon "int" -1) -1)
+                            -1)
+                        (tcon "bool" -1)
+                        -1))
+                [(isin (tcon "int" -1) "number" [(oloc 24172 0) (oloc 24173 0)])
+                (isin
+                (tapp (tapp (tcon "," -1) (tcon "int" -1) -1) (tcon "int" -1) -1)
+                    "eq"
+                    [(oloc 24169 0)])]))])
 
 (** ## Adding Top-level Items to the Type Environment **)
 

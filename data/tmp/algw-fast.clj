@@ -2609,6 +2609,9 @@ map->
                             (, "valueToString" (generic ["v"] (tfns [(vbl "v")] tstring)))
                             (, "eval" (generic ["v"] (tfns [(tcon "string" -1)] (vbl "v"))))
                             (,
+                            "eval-with"
+                                (generic ["ctx" "v"] (tfns [(vbl "ctx") (tcon "string" -1)] (vbl "v"))))
+                            (,
                             "errorToString"
                                 (generic ["v"] (tfns [(tfns [(vbl "v")] tstring) (vbl "v")] tstring)))
                             (, "sanitize" (concrete (tfns [tstring] tstring)))
