@@ -86,7 +86,8 @@ export type FullEvalator<
     compile(expr: Expr, typeInfo: TypeInfo, meta: MetaDataMap): string;
     toFile(
         state: NUIState,
-        target?: number,
+        target: number | null,
+        includePlugins: boolean,
     ): {
         js: string;
         // errors: Errors

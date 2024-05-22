@@ -78,7 +78,7 @@ export const fnsEvaluator = (
             return parser.parseExpr(node);
         },
 
-        toFile(state, target) {
+        toFile(state, target, includePlugins) {
             if (!this.analysis) {
                 throw new Error(`toFile requires analysis`);
             }
@@ -134,17 +134,27 @@ export const fnsEvaluator = (
                     .filter(filterNulls),
             );
 
+            const typeEnv = typeCheck?.init();
+
             sorted.forEach((group) => {
-                if (group.length === 1 && group[0].top.ns.plugin) {
+                if (
+                    group.length === 1 &&
+                    group[0].top.ns.plugin &&
+                    includePlugins
+                ) {
                     const config = group[0].top.ns.plugin;
                     const plugin = workerPlugins[config.id];
                     if (plugin.compile) {
                         env.js.push(
-                            plugin.compile(group[0].node, this, config.options),
+                            plugin.compile(
+                                group[0].node,
+                                this,
+                                config.options,
+                                typeEnv as any,
+                            ),
                         );
                         return;
                     }
-                    // here we have some tests!
                 }
                 if (
                     group.every(

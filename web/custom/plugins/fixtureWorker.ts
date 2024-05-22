@@ -7,23 +7,25 @@ import { valueToString } from '../../ide/ground-up/valueToString';
 import { AllNames } from '../../ide/ground-up/evaluators/interface';
 import { blankAllNames } from '../../ide/ground-up/evaluators/analyze';
 import { AnyEnv } from '../store/getResults';
+import { TypeEnv } from '../../ide/infer/algw-cr/types';
 
 export const compileFixture = (
     node: Node,
     evaluator: AnyEnv,
     options: never,
+    tenv: TypeEnv,
 ) => {
-    const typeInfo = []; // STOPSHIP typeInfo
+    // const typeInfo = []; // STOPSHIP typeInfo
     const parsed = parse(node, parseExpr(evaluator, {}, blankAllNames()));
     if (!parsed) throw new Error(`cant compile fixture tests, unable to parse`);
     if (!parsed.test?.expr) throw new Error(`no test`);
 
     // STOPSHIP: get the type env...
-    const info = evaluator.inference?.inferExpr(parsed.test.expr, null);
+    const info = evaluator.inference?.inferExpr(parsed.test.expr, tenv);
 
     // STOPSHIP: pass type info for real
     return `{
-    const test = ${evaluator.compile(parsed.test?.expr, typeInfo, {})};
+    const test = ${evaluator.compile(parsed.test?.expr, info?.codeGenData, {})};
     ${parsed.fixtures
         .map((item, i) => {
             if (item.type === 'unknown') return '';

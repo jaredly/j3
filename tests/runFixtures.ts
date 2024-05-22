@@ -40,7 +40,7 @@ export const runFixtures = async (fixtures: Fixture[]) => {
                 )}`,
             );
         }
-        let tid;
+        let tid = null;
         Object.keys(state.nsMap).forEach((id) => {
             const ns = state.nsMap[+id] as RealizedNamespace;
             if (typeof ns.plugin === 'string') {
@@ -52,7 +52,7 @@ export const runFixtures = async (fixtures: Fixture[]) => {
 
         try {
             console.time('toFile');
-            const result = ev.toFile(state, tid);
+            const result = ev.toFile(state, tid, true);
             console.timeEnd('toFile');
             console.log(`js size ${result.js.length}`);
             evaluators[+id] = result.js;

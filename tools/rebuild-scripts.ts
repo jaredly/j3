@@ -70,7 +70,7 @@ toBuild.forEach(({ file, ev, dest }) => {
     }
 
     console.time('toFile ' + file + ' ' + evaluator.id);
-    const text = evaluator.toFile(state, save.top);
+    const text = evaluator.toFile(state, save.top, false);
     console.timeEnd('toFile ' + file + ' ' + evaluator.id);
     if (dest) {
         console.log(`Writing evaluator to ${dest}`);

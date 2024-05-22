@@ -23,6 +23,7 @@ import { LocedName } from './store/sortTops';
 import { TraceMap } from '../ide/ground-up/loadEv';
 import { displayFunctionIds } from './store/displayFunction';
 import { AllNames } from '../ide/ground-up/evaluators/interface';
+import { TypeEnv } from '../ide/infer/algw-cr/types';
 
 export type MetaData = {
     trace?: {
@@ -202,7 +203,12 @@ export type RealizedNamespace = {
 
 export type WorkerPlugin<Results, Parsed, Options> = {
     test(node: Node): boolean;
-    compile?(node: Node, evaluator: AnyEnv, options: Options): string;
+    compile?(
+        node: Node,
+        evaluator: AnyEnv,
+        options: Options,
+        tenv: TypeEnv,
+    ): string;
     parse(
         node: Node,
         errors: Errors,

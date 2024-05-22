@@ -78,6 +78,8 @@ export const evaluatorPlugin: NamespacePlugin<
                                             text = ev.toFile!(
                                                 store.getState(),
                                                 id,
+                                                // Here's the way to indicate that we should include plugins
+                                                false,
                                             ).js;
                                         } catch (err) {
                                             console.error(err);
