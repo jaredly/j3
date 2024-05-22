@@ -1,5 +1,5 @@
 import { NUIState, RealizedNamespace } from '../web/custom/UIState';
-import { bootstrap } from '../web/ide/ground-up/bootstrap';
+// import { bootstrap } from '../web/ide/ground-up/bootstrap';
 import { evaluatorFromText } from '../web/ide/ground-up/loadEv';
 import { join } from 'path';
 import {
@@ -22,7 +22,7 @@ export const runFixtures = async (fixtures: Fixture[]) => {
         ).json();
         const ev =
             evaluator === null
-                ? bootstrap
+                ? null
                 : evaluator === ':javascript:'
                 ? jsEvaluator
                 : evaluatorFromText(

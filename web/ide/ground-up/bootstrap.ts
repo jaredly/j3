@@ -1,6 +1,6 @@
 import { fromMCST } from '../../../src/types/mcst';
 import { NUIState } from '../../custom/UIState';
-import { builtins, traceEnv } from './builtins';
+import { traceEnv } from './builtins';
 import { extractBuiltins } from './extractBuiltins';
 import { addTypeConstructors } from './addTypeConstructors';
 import { findTops } from './findTops';
@@ -103,14 +103,14 @@ export const valueToNode = (v: any): Node => {
     };
 };
 
-export const bootstrap: FullEvalator<
+const bootstrap: FullEvalator<
     { values: { [key: string]: any } },
     stmt & { loc: number },
     expr
 > = {
     id: 'bootstrap',
     init: () => {
-        return { values: { ...builtins(), ...traceEnv() } };
+        return { values: { ...traceEnv() } };
     },
     valueToString,
     valueToNode,

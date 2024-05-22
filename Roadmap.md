@@ -23,65 +23,11 @@ HOWEVER. With type variables, we're definitely not making it happen.
 
 right?
 
-
-
-
-#
-
-algw-s2 INFERENCE BUG
-
-in thih, `run/tenv->` should have inferred that there's an `int` in state!!! why does it not>?
-
-oooof ok `run->` is also busted. too many type varibles.
-
-## OK we're not unwrapping things right.
-
-```clj
-(deftype (wrap a)
-    (wrap (fn [int] a)))
-(deftype (wrap2 a)
-    (wrap2 (fn [a] int)))
-(defn unwrap [(wrap f) a] (f a))
-(defn unwrap2 [(wrap2 f) a] (f a))
-
-; GOOD
-(defn x [y]
-    (match y
-        (wrap2 f) (f 3)))
-; GOOD
-(defn x' [y] (let [(wrap2 f) y] (f 3)))
-; BAD
-(defn x'' [(wrap2 f)] (f 3))
-```
-
-We're missing a step, something that needs to be unified with the other.
-
-OOOH ok so, match is wroking.
-
-even ~simpler, using only ~builtins
-```clj
-(defn n [(, a b)] (a 2))
-(defn n' [x] (let [(, a b) x] (a 2)))
-```
-
-
-
-#
-
-- [x] WHYYY are we all kinds of slow all of the sudden?
-      ahaha ok it was because we were doing bootstrappings
-
-
-
 # For debugging more stuffs
 
 -> the Save Evaluator plugin type
   -> have an option to include fixture tests, for nicer debugginggg
   -> alsoo have an option to like "produce a cli" ya know. instead of "return {}"
-
-
-
-
 
 ##
 

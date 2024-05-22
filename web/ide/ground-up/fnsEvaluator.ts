@@ -8,7 +8,7 @@ import { LocedName } from '../../custom/store/sortTops';
 import { unique } from '../../custom/store/unique';
 import { Errors, FullEvalator, ProduceItem } from './FullEvalator';
 import { valueToNode } from './bootstrap';
-import { builtins, traceEnv } from './builtins';
+import { traceEnv } from './builtins';
 import { Env, Expr, Stmt, Type, TypeInfo } from './evaluators/analyze';
 import {
     AllNames,
@@ -44,8 +44,9 @@ export const fnsEvaluator = (
                 const env = new Function(compiler.builtins)();
                 Object.assign(values, sanitizedEnv(env), env);
             } else {
-                console.warn(`using baked-in builtins`);
-                Object.assign(values, sanitizedEnv(builtins()));
+                console.warn('No builtins from compiler');
+                // console.warn(`using baked-in builtins`);
+                // Object.assign(values, sanitizedEnv(builtins()));
             }
             if (compiler.prelude) {
                 const total = preludeText(compiler.prelude);

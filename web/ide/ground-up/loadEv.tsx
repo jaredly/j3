@@ -1,13 +1,13 @@
 import { repr } from './Evaluators';
-import { bootstrap } from './bootstrap';
+// import { bootstrap } from './bootstrap';
 import { FullEvalator } from './FullEvalator';
 import { expr, stmt } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';
 import { NUIState } from '../../custom/UIState';
 import { urlForId } from './urlForId';
-import { bootstrapEvaluator } from './bootstrapEvaluator';
+// import { bootstrapEvaluator } from './bootstrapEvaluator';
 import { fnsEvaluator } from './fnsEvaluator';
-import { Tracer, builtins, traceEnv } from './builtins';
+import { Tracer, traceEnv } from './builtins';
 import { valueToString } from './valueToString';
 import { basicParser, recoveringParser } from './evaluators/parsers';
 import { compiler } from './evaluators/compiler';
@@ -173,9 +173,9 @@ export const evaluatorFromText = (
         // return fnsEvaluator(id, parser, comp, ann, typeCheck, san);
     }
 
-    if (data.type === 'bootstrap') {
-        return bootstrapEvaluator(id, data) as FullEvalator<any, any, any>;
-    }
+    // if (data.type === 'bootstrap') {
+    //     return bootstrapEvaluator(id, data) as FullEvalator<any, any, any>;
+    // }
 
     console.log(id, 'no data sorry??', data.type);
 
@@ -258,8 +258,8 @@ export const loadEvaluator = (
 ) => {
     if (typeof ev === 'string') {
         switch (ev) {
-            case ':bootstrap:':
-                return fn(bootstrap, false);
+            // case ':bootstrap:':
+            //     return fn(bootstrap, false);
             case ':js:':
                 return fn(jsEvaluator, false);
             case ':repr:':
