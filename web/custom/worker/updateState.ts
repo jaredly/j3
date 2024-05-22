@@ -178,7 +178,14 @@ export function updateState(
                     changes: { results: true },
                     errors: {},
                     hover: {},
-                    produce: [],
+                    produce: one.allNames
+                        ? [
+                              {
+                                  type: 'pre',
+                                  text: showAllNames(one.allNames),
+                              },
+                          ]
+                        : [],
                     values: {},
                     usages: {},
                 };
@@ -564,3 +571,20 @@ function showExecOrder(
         ).join(', ')}`,
     );
 }
+
+const showAllNames = (allNames: AllNames) => {
+    return [
+        ...(allNames.global.declarations.length || allNames.global.usages.length
+            ? ['G']
+            : []),
+        ...allNames.global.declarations.map((d) => d.kind + ':' + d.name),
+        ...(allNames.global.usages.length ? ['U'] : []),
+        ...allNames.global.usages.map((d) => d.kind + ':' + d.name),
+        ...(allNames.global.declarations.length || allNames.local.usages.length
+            ? ['L']
+            : []),
+        ...allNames.local.declarations,
+        ...(allNames.local.usages.length ? ['U'] : []),
+        ...allNames.local.usages.map((u) => u.decl + ':' + u.loc),
+    ].join(' ');
+};

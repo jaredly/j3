@@ -101,7 +101,7 @@ export const analyzer = (fns: {
 }): Analyze<Stmt, Expr, Type> => ({
     allNamesExpr(expr) {
         const res = blankAllNames();
-        if (fns.all_names_expr && 1 > 2) {
+        if (fns.all_names_expr) {
             try {
                 unwrapArray(fns.all_names_expr(expr)).forEach(
                     handleAllNames(res),
@@ -119,9 +119,10 @@ export const analyzer = (fns: {
             global: { declarations: [], usages: [] },
             local: { declarations: [], usages: [] },
         };
-        if (fns.all_names && 1 > 2) {
+        if (fns.all_names) {
             try {
-                unwrapArray(fns.all_names(stmt)).forEach(handleAllNames(res));
+                const nms = fns.all_names(stmt);
+                unwrapArray(nms).forEach(handleAllNames(res));
             } catch (err) {
                 console.warn(err);
             }

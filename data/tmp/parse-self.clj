@@ -846,7 +846,7 @@
         (pprim _ _)           (, [] empty)
         (pstr _ _)            (, [] empty)
         (pcon name nl args l) (foldl
-                                  (, [] (one (global name (type) l (usage ()))))
+                                  (, [] (one (global name (value) l (usage ()))))
                                       (map args pat/names)
                                       bound-and-names)))
 
@@ -895,4 +895,4 @@
             names
             externals-top
             (fn [expr] (bag/to-list (externals set/nil expr))))
-        top/names)
+        (fn [top] (bag/to-list (top/names top))))

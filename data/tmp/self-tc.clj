@@ -684,7 +684,7 @@ replace-all
       Object.entries({
         'int < number': {},
         'int < show': {show: i => i.toString()},
-        'float < show': {show: i => i.toFixed(4)},
+        'float < show': {show: i => i.toString()},
       }).map(([key, value]) => (
         `${JSON.stringify(key)}: ${fnsObj(value)},`
       )).join('')

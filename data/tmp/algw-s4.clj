@@ -1426,9 +1426,21 @@
                                 (none)         (map/set by-loc loc [(, instance-name idx)])
                                 (some current) (map/set by-loc loc (put-in-place current instance-name idx))))))))))
 
+(defn map/ok [f arr]
+    (match arr
+        []           (ok [])
+        [one ..rest] (match (f one)
+                         (ok val) (match (map/ok f rest)
+                                      (ok rest) (ok [val ..rest])
+                                      (err e)   (err e))
+                         (err e)  (err e))))
+
 (** ## Stuff from thih I'm still figuring out **)
 
 (** ## Simplification **)
+
+(** ## Head Normal Form
+     **)
 
 (defn type/hnf [type]
     (match type
@@ -1442,15 +1454,6 @@
     (match (map/ok (to-hnf ce) ps)
         (err e) (err e)
         (ok v)  (ok (concat v))))
-
-(defn map/ok [f arr]
-    (match arr
-        []           (ok [])
-        [one ..rest] (match (f one)
-                         (ok val) (match (map/ok f rest)
-                                      (ok rest) (ok [val ..rest])
-                                      (err e)   (err e))
-                         (err e)  (err e))))
 
 (defn to-hnf [ce p]
     (if (in-hnf p)
@@ -1703,42 +1706,6 @@
 
 (def default-types [tint (tcon "unit" -1)])
 
-;(defn find-matching-instance [instances type] 111)
-
-;(defn find-applicable-default [tv type instances]
-    (loop
-        default-types
-            (fn [types recur]
-            (match types
-                []           (fatal
-                                 "Unable to find an appicable default type for type variable ${tv}")
-                [one ..rest] (let [subst (map/set map/nil tv one)]
-                                 (match (find-matching-instance instances (type/apply subst type))
-                                     (none)      (recur rest)
-                                     (some inst) subst))))))
-
-;(defn defaulted-preds [preds (tenv _ _ _ _ classes)]
-    (let [
-        (, subst preds) (foldl
-                            (, map/nil [])
-                                preds
-                                (fn [(, subst res) (isin type cls locs)]
-                                (match (map/get classes cls)
-                                    (none)                              (fatal "Unknown class ${cls}")
-                                    (some (, supers instances methods)) (let [type (type/apply subst type)]
-                                                                            (match (set/to-list (type/free type))
-                                                                                []   (, subst [(isin type cls locs) ..res])
-                                                                                free (let [
-                                                                                         nsubst (foldl
-                                                                                                    subst
-                                                                                                        free
-                                                                                                        (fn [subst tv]
-                                                                                                        (let [d-subst (find-applicable-default tv type instances)]
-                                                                                                            (compose-subst d-subst subst))))]
-                                                                                         (, nsubst))
-                                                                                ;  now we go through and ... try assigning the type to one of our defaults.)))))]
-        (many (map one preds))))
-
 (defn add/expr [tenv expr]
     (let-> [
         t                                                 (infer/expr tenv expr)
@@ -1751,11 +1718,7 @@
         (** toplevel expressions shouldn't have any predicates that don't get defaulted away. **)
         (, free-preds other-preds defaulted-preds subst2) (split class-env [] [] preds)
         _                                                 (preds-> defaulted-preds)
-        _                                                 (subst-> subst2)
-        ;_
-        ;(reset-preds->
-            (many (map one (map (predicate/apply subst2) preds)))
-                ;(bag/and (many (map one other-preds)) (many (map one free-preds))))]
+        _                                                 (subst-> subst2)]
         (<- (type/apply subst2 t))))
 
 (,
