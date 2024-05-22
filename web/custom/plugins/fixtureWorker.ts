@@ -84,9 +84,6 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
     }) {
         const errors: [string, number][] = [];
         for (let [k, res] of Object.entries(results)) {
-            if (res.error) {
-                errors.push([res.error, +k]);
-            }
             if (!equal(res.expected, res.found)) {
                 errors.push([
                     `Fixture test not equal ${valueToString(
@@ -96,7 +93,10 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
                 ]);
             }
             if (res.expected === undefined) {
-                errors.push([`No "expected" value for fixture test`, +k]);
+                errors.push([`No "expected" value for fixture test`, k]);
+            }
+            if (res.error) {
+                errors.push([res.error, +k]);
             }
         }
         return errors;
@@ -140,7 +140,7 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
                         };
                     }
                 });
-                return { results };
+                return results;
             }
             if (typeof test !== 'function')
                 return {

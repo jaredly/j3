@@ -248,7 +248,7 @@ export const jsEvaluator: FullEvalator<
         }
         return expr.raw;
     },
-    evaluate(expr, allNames, env, meta) {
+    evaluate(expr, allNames, typeInfo, env, meta) {
         if (typeof expr === 'string') {
             return expr;
         }
