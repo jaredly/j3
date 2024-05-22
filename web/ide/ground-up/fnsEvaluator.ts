@@ -162,12 +162,13 @@ export const fnsEvaluator = (
                     {},
                     group[0].top.top,
                 );
-                if (
-                    group[0].top.top === target &&
-                    'js' in result &&
-                    typeof result.js === 'string'
-                ) {
-                    ret = result.js;
+                if (group[0].top.top === target) {
+                    if ('js' in result && typeof result.js === 'string') {
+                        ret = result.js;
+                    } else {
+                        console.error(`result for target top doesnt have js`);
+                        console.log(result);
+                    }
                     return;
                 }
                 env.js.push((result as any).js);
@@ -180,7 +181,10 @@ export const fnsEvaluator = (
             });
 
             if (target != null && ret == null) {
-                console.log(target, sorted);
+                console.log(
+                    target,
+                    sorted.filter((t) => t[0].top.top === target),
+                );
                 debugger;
                 throw new Error(`tagtet wasnt a toplevel ${target}`);
             }
@@ -247,7 +251,12 @@ export const fnsEvaluator = (
                 allNames.global.usages
                     .filter((n) => n.kind === 'value')
                     .map((n) => n.name) ?? [];
-            const { needed, values } = assembleExternals(externals, env, san);
+            const { needed, values } = assembleExternals({
+                externals,
+                env,
+                san,
+                preludes: compiler.prelude ? Object.keys(compiler.prelude) : [],
+            });
             // console.log(`doing evaluate`, needed, values);
             values.$env = {};
             needed.forEach((name) => {
@@ -317,12 +326,13 @@ const compileStmt = ({
     const namedValues = stmts
         .flatMap((s) => s.names?.global.declarations ?? [])
         .filter((n) => n.kind === 'value');
-    const { needed, values } = assembleExternals(
+    const { needed, values } = assembleExternals({
         externals,
         env,
         san,
-        namedValues,
-    );
+        names: namedValues,
+        preludes: compiler.prelude ? Object.keys(compiler.prelude) : [],
+    });
 
     let jss;
     try {
@@ -465,12 +475,19 @@ function preludeText(prelude: Record<string, string>) {
     return total;
 }
 
-function assembleExternals(
-    externals: string[],
-    env: FnsEnv,
-    san: any,
-    names?: null | LocedName[],
-) {
+function assembleExternals({
+    externals,
+    env,
+    san,
+    names,
+    preludes,
+}: {
+    externals: string[];
+    env: FnsEnv;
+    san: any;
+    names?: null | LocedName[];
+    preludes: string[];
+}) {
     const provided = names?.map((obj) => obj.name) ?? [];
     const needed = unique(
         externals.concat([
@@ -480,8 +497,9 @@ function assembleExternals(
             // lol HACK HACK would be great to remove.
             // and have the evaluator define what globals needs to
             // be "implicitly required" for evaluation.
-            'evaluateStmt',
-            'evaluate',
+            // 'evaluateStmt',
+            // 'evaluate',
+            ...preludes,
         ]),
     ).filter(
         // Skip recursive self-calls

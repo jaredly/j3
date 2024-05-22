@@ -143,7 +143,7 @@ function NSTop({
                                 <PluginRender
                                     ns={ns}
                                     key={ns.top}
-                                    debug={false}
+                                    debug={debug.ids}
                                     idx={ns.top}
                                     // firstLineOnly={ns.collapsed}
                                     path={path.concat([

@@ -267,7 +267,7 @@
 (def builtins-for-eval
     ((eval
         (** builtins => sanitize => {
-  const san = {}
+  const san = {$type_class_insts: {}}
   Object.keys(builtins).forEach(k => san[sanitize(k)] = builtins[k])
   return san
 } **)
@@ -414,14 +414,15 @@ const valueToString = (v) => {
 };
 
 return {
-    '+': (a) => (b) => a + b,
-    '-': (a) => (b) => a - b,
-    '<': (a) => (b) => a < b,
-    '<=': (a) => (b) => a <= b,
-    '>': (a) => (b) => a > b,
-    '>=': (a) => (b) => a >= b,
-    '=': (a) => (b) => equal(a, b),
-    '!=': (a) => (b) => !equal(a, b),
+    '+': _ => (a) => (b) => a + b,
+    '-': _ => (a) => (b) => a - b,
+    '<': _ => (a) => (b) => a < b,
+    '<=': _ => (a) => (b) => a <= b,
+    '>': _ => (a) => (b) => a > b,
+    '>=': _ => (a) => (b) => a >= b,
+    '=': _ => (a) => (b) => equal(a, b),
+    '!=': _ => (a) => (b) => !equal(a, b),
+    show: inst => v => inst.show(v),
     pi: Math.PI,
     'replace-all': a => b => c => a.replaceAll(b, c),
     eval: source => {
@@ -626,7 +627,14 @@ replace-all
                     "no"))))
 
 (,
-    (fn [v] (eval-with-builtins (compile map/nil v)))
+    (fn [v]
+        (eval-with-builtins
+            (compile
+                (map/from-list
+                    [(, 3597 ["int < number"])
+                        (, 3685 ["int < number"])
+                        (, 3702 ["int < number"])])
+                    v)))
         [(, (@ 1) 1)
         (, (@ "hello") "hello")
         (, (@ (+ 2 3)) 5)
@@ -658,15 +666,31 @@ replace-all
         (, (@ "${${"a}"}") "${a}")])
 
 (eval
-    (** compile => compile_top => builtins => ({
+    (** compile => compile_top => builtins => {
+  const fnsObj = obj => `{${
+    Object.entries(obj).map(([key, value]) => (
+      `${JSON.stringify(key)}: ${value + ''},`
+    )).join('')
+  }}`
+  return {
   type:'fns',
   compile: a => _ => compile([])(a),
   compile2: a => preds => trace => compile(preds ?? [])(a),
   compile_stmt: a => trace => compile_top([])(a),
   compile_stmt2: a => preds => trace => compile_top(preds ?? [])(a),
   builtins,
-  prelude: {$type_class_insts: '{}'}
-}) **)
+  prelude: {
+    $type_class_insts: `{${
+      Object.entries({
+        'int < number': {},
+        'int < show': {show: i => i.toString()},
+        'float < show': {show: i => i.toFixed(4)},
+      }).map(([key, value]) => (
+        `${JSON.stringify(key)}: ${fnsObj(value)},`
+      )).join('')
+    }}`
+  }}
+} **)
         compile
         compile-top
         builtins)

@@ -4,6 +4,12 @@
 self-tc
 parse-self
 
+The road to full type classes
+- [x] start plumbing typeInfo
+- [x] get some tests working
+- [ ] get plugins passing typeInfo
+- [ ] get toFile passing typeInfo
+
 
 
 
