@@ -6,6 +6,7 @@ import {
     existsSync,
 } from 'fs';
 import { NUIState } from '../web/custom/UIState';
+import { pages } from '../web/ide/explainer/pages';
 
 const files = `
 toc.json
@@ -54,6 +55,13 @@ algw-s3.json
 `
     .trim()
     .split('\n');
+
+pages.forEach((page) => {
+    const file = page.id + '.json';
+    if (!files.includes(file)) {
+        files.push(file);
+    }
+});
 
 mkdirSync(`./web/dist/data/tmp`, { recursive: true });
 files.forEach((name) => {

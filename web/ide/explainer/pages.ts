@@ -17,6 +17,8 @@ export const pages = [
     { id: 'type-classes', title: "Let's talk about Type Classes" },
     { id: 'algw-s4', title: 'Inferring Type Classes' },
     { id: 'self-tc', title: 'Codegen for Type Classes' },
+    { id: 'parse-tc', title: 'Parsing for Type Classes' },
+    { id: 'l2-tests', title: 'Tests for L2' },
     // { id: 'parse-1-args', title: 'More Fancy Parser & Code Generator' },
     // { id: 'algw-fast', title: 'More Fancy Type Inference' },
 ];

@@ -590,6 +590,7 @@ return {
     sanitize,
     equal: a => b => equal(a, b),
     'int-to-string': (a) => a.toString(),
+    'float-to-string': a => a.toString(),
     'string-to-int': (a) => {
         const v = Number(a);
         return Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' };

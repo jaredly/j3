@@ -2579,6 +2579,7 @@ map->
                                         (tcon "()" -1))))
                             (, "unescapeString" (concrete (tfns [tstring] tstring)))
                             (, "int-to-string" (concrete (tfns [tint] tstring)))
+                            (, "float-to-string" (concrete (tfns [(tcon "float" -1)] tstring)))
                             (, "string-to-int" (concrete (tfns [tstring] (toption tint))))
                             (,
                             "string-to-float"

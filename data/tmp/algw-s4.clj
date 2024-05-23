@@ -1819,7 +1819,7 @@
                         subst
                         resolved)))))
 
-(def default-types [tint (tcon "unit" -1)])
+(def default-types [tint (tcon "float" -1) (tcon "unit" -1)])
 
 (defn add/expr [tenv expr]
     (let-> [
@@ -2454,7 +2454,7 @@
                             [(isin (tvar "a" -1) "eq" []) (isin (tvar "b" -1) "eq" [])]
                                 (isin (tapp (tapp (tcon "," -1) (tvar "a" -1) -1) (tvar "b" -1) -1) "eq" []))]
                             []))
-                    (, "floating" (, [] [(=> [] (isin (tcon "float" -1) "floating" []))] []))
+                    (, "floating" (, ["ord" "eq"] [(inst (tcon "float" -1) "floating")] []))
                     (,
                     "pretty"
                         (,

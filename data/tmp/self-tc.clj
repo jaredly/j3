@@ -93,6 +93,7 @@
 
 (deftype prim
     (pint int int)
+        (pfloat float int)
         (pbool bool int))
 
 (deftype pat
@@ -443,6 +444,7 @@ return {
     sanitize,
     equal: a => b => equal(a, b),
     'int-to-string': (a) => a.toString(),
+    'float-to-string': (a) => a.toString(),
     'string-to-int': (a) => {
         const v = Number(a);
         return Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' };
@@ -558,10 +560,11 @@ replace-all
 
 (defn compile-prim [prim]
     (match prim
-        (pint int _)   (int-to-string int)
-        (pbool bool _) (match bool
-                           true  "true"
-                           false "false")))
+        (pint int _)     (int-to-string int)
+        (pfloat float _) (float-to-string float)
+        (pbool bool _)   (match bool
+                             true  "true"
+                             false "false")))
 
 (deftype type-class-info
     (tc-vbl string string)

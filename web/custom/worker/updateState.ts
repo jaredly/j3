@@ -290,10 +290,6 @@ export function updateState(
                 state.results.groups[groupKey].tenv = res.result.value.env;
                 state.results.groups[groupKey].codeGenData =
                     res.result.value.codeGenData;
-                const codeGenData = res.result.value.codeGenData;
-                // if (res.codeGenData) {
-                //     console.log('cgd', res.codeGenData);
-                // }
                 tenv = state.evaluator.inference.addTypes(
                     tenv,
                     res.result.value.env,
@@ -310,6 +306,7 @@ export function updateState(
 
                 state.results.groups[groupKey].typeFailed = false;
                 group.forEach((one) => {
+                    // const codeGenData = res.result.value.codeGenData;
                     // if (codeGenData) {
                     //     state.results!.tops[one.id].produce.push({
                     //         type: 'pre',
