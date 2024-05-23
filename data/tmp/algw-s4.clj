@@ -1440,7 +1440,15 @@
 (** ## Simplification **)
 
 (** ## Head Normal Form
-     **)
+    A type in "head-normal form" is either a type variable, or a type application with a type variable as the target. So 'a or ('a int), but not int or (list 'a). (I'm using the single-quote here to visually distinguish type variables from normal type constructors).
+    Let's consider a class environment that has two instances defined:
+    (isin int "eq") and (=> [(isin 'a "eq") (isin 'b "eq")] (isin (, 'a 'b) "eq")). The first instance indicates that type int is an instance of the type class eq (things that can be "equalled", with = or !=).
+    The second instance indicates that if you have two types 'a and 'b that are both instances  of the type class eq, then the tuple type (, 'a 'b) is also an instance of type class eq. Said another way, it means that we have a "type class instance definition" that can produce instances of the tuple type for eq, as long as you can provide the instances for both of the type arguments.
+    Let's look for a moment on the compilation side of things. When compiling (= 1 2), with the numeric literals interpreted as ints, we'll want to inject a type class dictionary as the first argument, something like $instances["int < eq"]. This will allow the implementation of = to know how to perform equality checks on the arguments.
+    For the tuple case, it's rather more complicated. (= (, 1 2) (, 3 4)) also needs a type class dictionary, but the instance for eq for tuples takes as arguments the type class dictionaries for its type variables. It could look something like this: $instances["(, a b) < eq"]($instances["int < eq"], $instances["int < eq"]).
+    
+    At the end of type inference, however, we have a predicate that looks like (isin (, int int) "eq"). How do we get from there to what we want?
+    This is where reduce comes in. **)
 
 (defn type/hnf [type]
     (match type

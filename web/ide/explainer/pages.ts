@@ -2,6 +2,7 @@
 
 export const pages = [
     { id: 'intro', title: 'Introduction' },
+    { id: 'toc', title: 'Table of Contents' },
     { id: 'structured-editor', title: 'Structured Editor' },
     { id: 'syntax-cheatsheet', title: 'Syntax Cheatsheet' },
     { id: 'encoding', title: 'Encoding' },

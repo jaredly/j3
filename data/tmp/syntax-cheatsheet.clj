@@ -104,6 +104,11 @@ false
 
 (checkbox true)
 
+(** This tuple type is a type we'll be using throughout the tutorial **)
+
+(deftype (, a b)
+    (, a b))
+
 (** A very common type is the "optional" (called "Maybe" in haskell). It has a type variable and two constructors, and is used in places where in JavaScript or other places you might have a "nullable" value. **)
 
 (deftype (option a)
