@@ -44,10 +44,12 @@ export type Infer<Env, Stmt, Expr, Type> = {
     ): {
         result:
             | { type: 'err'; err: InferenceError }
-            | { type: 'ok'; value: { env: Env; types: Type[] } };
+            | {
+                  type: 'ok';
+                  value: { env: Env; types: Type[]; codeGenData?: any };
+              };
         typesAndLocs: { loc: number; type: Type }[];
         usages: Record<number, number[]>;
-        codeGenData?: any;
     };
     inferExpr(
         expr: Expr,
@@ -55,10 +57,9 @@ export type Infer<Env, Stmt, Expr, Type> = {
     ): {
         typesAndLocs: { loc: number; type: Type }[];
         usages: Record<number, number[]>;
-        codeGenData?: any;
         result:
             | { type: 'err'; err: InferenceError }
-            | { type: 'ok'; value: Type };
+            | { type: 'ok'; value: { type: Type; codeGenData?: any } };
     };
 };
 

@@ -288,7 +288,9 @@ export function updateState(
                 const types = res.result.value.types;
 
                 state.results.groups[groupKey].tenv = res.result.value.env;
-                state.results.groups[groupKey].codeGenData = res.codeGenData;
+                state.results.groups[groupKey].codeGenData =
+                    res.result.value.codeGenData;
+                const codeGenData = res.result.value.codeGenData;
                 // if (res.codeGenData) {
                 //     console.log('cgd', res.codeGenData);
                 // }
@@ -308,12 +310,12 @@ export function updateState(
 
                 state.results.groups[groupKey].typeFailed = false;
                 group.forEach((one) => {
-                    if (res.codeGenData) {
-                        state.results!.tops[one.id].produce.push({
-                            type: 'pre',
-                            text: JSON.stringify(res.codeGenData, null, 2),
-                        });
-                    }
+                    // if (codeGenData) {
+                    //     state.results!.tops[one.id].produce.push({
+                    //         type: 'pre',
+                    //         text: JSON.stringify(codeGenData),
+                    //     });
+                    // }
 
                     types.forEach((type) => {
                         try {

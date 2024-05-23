@@ -22,10 +22,12 @@ export const compileFixture = (
 
     // STOPSHIP: get the type env...
     const info = evaluator.inference?.inferExpr(parsed.test.expr, tenv);
+    const codeGen =
+        info?.result.type === 'ok' ? info.result.value.codeGenData : undefined;
 
     // STOPSHIP: pass type info for real
     return `{
-    const test = ${evaluator.compile(parsed.test?.expr, info?.codeGenData, {})};
+    const test = ${evaluator.compile(parsed.test?.expr, codeGen, {})};
     ${parsed.fixtures
         .map((item, i) => {
             if (item.type === 'unknown') return '';
@@ -116,7 +118,9 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
             return evaluator.evaluate(
                 expr,
                 evaluator.analysis?.allNamesExpr(expr) ?? blankAllNames(),
-                t?.codeGenData,
+                t?.result.type === 'ok'
+                    ? t.result.value.codeGenData
+                    : undefined,
                 env,
                 meta,
             );

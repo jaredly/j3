@@ -418,8 +418,8 @@ return {
     '<=': _ => (a) => (b) => a <= b,
     '>': _ => (a) => (b) => a > b,
     '>=': _ => (a) => (b) => a >= b,
-    '=': _ => (a) => (b) => equal(a, b),
-    '!=': _ => (a) => (b) => !equal(a, b),
+    '=': tc => (a) => (b) => tc.eq(a)(b),
+    '!=': tc => (a) => (b) => !tc.eq(a)(b),
     show: inst => v => inst.show(v),
     pi: Math.PI,
     'replace-all': a => b => c => a.replaceAll(b, c),
@@ -563,6 +563,21 @@ replace-all
                            true  "true"
                            false "false")))
 
+(deftype type-class-info
+    (tc-vbl string string)
+        (tc-con string string (list type-class-info)))
+
+(defn tc-exp [type cls args]
+    (foldl
+        "$type_class_insts[\"${type} < ${cls}\"]"
+            args
+            (fn [target arg] "${target}(${arg})")))
+
+(defn compile-tci [info]
+    (match info
+        (tc-vbl type cls)      (tc-exp type cls [])
+        (tc-con type cls args) (tc-exp type cls (map args compile-tci))))
+
 (defn compile [ctx expr]
     (match expr
         (** Simple strings are compiled as "" normal js strings, and template strings are compiled with back-ticks. **)
@@ -581,8 +596,7 @@ replace-all
                                     (some v) (foldl
                                                  (sanitize name)
                                                      v
-                                                     (fn [body type-class]
-                                                     "${body}($type_class_insts[${(jsonify type-class)}])")))
+                                                     (fn [body type-class] "${body}(${(compile-tci type-class)})")))
         (equot inner _)         (compile-quot inner)
         (** Curried functions **)
         (elambda pats body _)   (foldr
@@ -613,7 +627,7 @@ replace-all
                                     "(($target) => {\n${(join "\n" cases)}\nthrow new Error('Failed to match. ' + valueToString($target));\n})(${(compile ctx target)})")))
 
 (compile
-    (map/from-list [(, 10 ["int < number"])])
+    (map/from-list [(, 10 [(tc-con "int" "number" [])])])
         (eapp (evar "+" 10) [(eprim (pint 1 0) 0)] 0))
 
 (compile
@@ -629,9 +643,9 @@ replace-all
         (eval-with-builtins
             (compile
                 (map/from-list
-                    [(, 3597 ["int < number"])
-                        (, 3685 ["int < number"])
-                        (, 3702 ["int < number"])])
+                    [(, 3597 [(tc-con "int" "number" [])])
+                        (, 3685 [(tc-con "int" "number" [])])
+                        (, 3702 [(tc-con "int" "number" [])])])
                     v)))
         [(, (@ 1) 1)
         (, (@ "hello") "hello")
@@ -665,7 +679,7 @@ replace-all
 
 (eval
     (** compile => compile_top => builtins => {
-  const fnsObj = obj => `{${
+  const fnsObj = obj => typeof obj === 'function' ? '' + obj : `{${
     Object.entries(obj).map(([key, value]) => (
       `${JSON.stringify(key)}: ${value + ''},`
     )).join('')
@@ -683,6 +697,12 @@ replace-all
         'int < number': {},
         'int < show': {show: i => i.toString()},
         'float < show': {show: i => i.toString()},
+        '(, a b) < eq': a => b => ({eq: l => r => a.eq(l[0])(r[0]) && b.eq(l[1])(r[1])}),
+        'int < eq': {eq: l => r => l === r},
+        'float < eq': {eq: l => r => l === r},
+        'bool < eq': {eq: l => r => l === r},
+        '(option a) < eq': a => ({eq: l => r => l.type !== r.type ? false : (
+          l.type === 'none' ? true : a.eq(l[0])(r[0]))}),
       }).map(([key, value]) => (
         `${JSON.stringify(key)}: ${fnsObj(value)},`
       )).join('')

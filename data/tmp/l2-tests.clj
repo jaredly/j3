@@ -18,13 +18,17 @@
 (deftype (, a b)
     (, a b))
 
-(= (, 2 3) (, 3 4))
+(= (, true false) (, true false))
 
 (= true false)
 
-(= (some 1))
+(= 2 2)
 
-(= (, 2 (some 2)))
+(= (some 1) none)
+
+(= (some 2) (some 2))
+
+(= (, 2 (some 2)) (, 2 (some 2)))
 
 (show 1)
 
@@ -49,6 +53,8 @@
 (defn id [x] x)
 
 (string-to-float "1.2")
+
+(= 3)
 
 (** ## Builtins **)
 

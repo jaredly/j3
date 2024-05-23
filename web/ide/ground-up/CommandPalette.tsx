@@ -445,16 +445,11 @@ const getCommands = (
                         .highlight!.map((idx): Cursor | null => {
                             const paths = pathFor(idx);
                             if (!paths.length) return null;
+                            const path = paths[0];
                             // throw new Error(`no path for ${idx}`);
                             return {
-                                start: [
-                                    ...paths[0].slice(0, -1),
-                                    { type: 'start', idx },
-                                ],
-                                end: [
-                                    ...paths[0].slice(0, -1),
-                                    { type: 'end', idx },
-                                ],
+                                start: [...paths[0], { type: 'start', idx }],
+                                end: [...paths[0], { type: 'end', idx }],
                             };
                         })
                         .filter(filterNulls),

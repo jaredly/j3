@@ -219,2543 +219,2485 @@ return {
 }})();
 Object.assign($env, $builtins);
 const {"+": $pl, "-": _, "<": $lt, "<=": $lt$eq, ">": $gt, ">=": $gt$eq, "=": $eq, "!=": $ex$eq, "pi": pi, "replace-all": replace_all, "eval": $eval, "eval-with": eval_with, "$unit": $unit, "errorToString": errorToString, "valueToString": valueToString, "unescapeString": unescapeString, "sanitize": sanitize, "equal": equal, "int-to-string": int_to_string, "string-to-int": string_to_int, "string-to-float": string_to_float, "map/nil": map$slnil, "map/set": map$slset, "map/rm": map$slrm, "map/get": map$slget, "map/map": map$slmap, "map/merge": map$slmerge, "map/values": map$slvalues, "map/keys": map$slkeys, "map/from-list": map$slfrom_list, "map/to-list": map$slto_list, "set/nil": set$slnil, "set/add": set$sladd, "set/has": set$slhas, "set/rm": set$slrm, "set/diff": set$sldiff, "set/merge": set$slmerge, "set/overlap": set$sloverlap, "set/to-list": set$slto_list, "set/from-list": set$slfrom_list, "jsonify": jsonify, "fatal": fatal} = $builtins;
-const pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1})
-const pfloat = (v0) => (v1) => ({type: "pfloat", 0: v0, 1: v1})
-const pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1})
-const some = (v0) => ({type: "some", 0: v0})
-const none = ({type: "none"})
-const loop = (v) => (f) => f(v)((nv) => loop(nv)(f));
-
-const force = (x) => (($target) => {
+let pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1})
+let pfloat = (v0) => (v1) => ({type: "pfloat", 0: v0, 1: v1})
+let pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1})
+let some = (v0) => ({type: "some", 0: v0})
+let none = {type: "none"}
+let loop = (v) => (f) => f(v)((nv) => loop(nv)(f))
+let force = (x) => (($target) => {
 if ($target.type === "some") {
-{
 let x = $target[0];
 return x
-}
-}
-return fatal("Option is None")
-throw new Error('Failed to match. ' + valueToString($target));
-})(x);
-
-const ok = (v0) => ({type: "ok", 0: v0})
-const err = (v0) => ({type: "err", 0: v0})
-const $co = (v0) => (v1) => ({type: ",", 0: v0, 1: v1})
-const dot = (f) => (g) => (n) => f(g(n));
-
-const oloc = (v0) => (v1) => ({type: "oloc", 0: v0, 1: v1})
-const not = (x) => (($target) => {
+} ;
+return fatal("Option is None");
+throw new Error('match fail 9781:' + JSON.stringify($target))
+})(x)
+let ok = (v0) => ({type: "ok", 0: v0})
+let err = (v0) => ({type: "err", 0: v0})
+let $co = (v0) => (v1) => ({type: ",", 0: v0, 1: v1})
+let dot = (f) => (g) => (n) => f(g(n))
+let oloc = (v0) => (v1) => ({type: "oloc", 0: v0, 1: v1})
+let not = (x) => (($target) => {
 if ($target === true) {
 return false
-}
-return true
-throw new Error('Failed to match. ' + valueToString($target));
-})(x);
-
-const ok$gt$gt$eq = (value) => (next) => (($target) => {
+} ;
+return true;
+throw new Error('match fail 19310:' + JSON.stringify($target))
+})(x)
+let ok$gt$gt$eq = (value) => (next) => (($target) => {
 if ($target.type === "ok") {
-{
 let v = $target[0];
 return next(v)
-}
-}
+} ;
 if ($target.type === "err") {
-{
 let e = $target[0];
 return err(e)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(value);
-
-const snd = ({1: s}) => s;
-
-const class_env$slclasses = ({1: {0: classes}}) => classes;
-
-const none_to = (v) => (opt) => (($target) => {
+} ;
+throw new Error('match fail 19812:' + JSON.stringify($target))
+})(value)
+let snd = ({"1": s}) => s
+let none_to = (v) => (opt) => (($target) => {
 if ($target.type === "none") {
 return v
-}
+} ;
 if ($target.type === "some") {
-{
 let m = $target[0];
 return m
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(opt);
-
-const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
-const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
-const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
-const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
-const nil = ({type: "nil"})
-const pany = (v0) => ({type: "pany", 0: v0})
-const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
-const pcon = (v0) => (v1) => (v2) => (v3) => ({type: "pcon", 0: v0, 1: v1, 2: v2, 3: v3})
-const pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1})
-const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1})
-const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
-const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
-const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1})
-const cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
-const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
-const ex$slany = ({type: "ex/any"})
-const ex$slconstructor = (v0) => (v1) => (v2) => ({type: "ex/constructor", 0: v0, 1: v1, 2: v2})
-const ex$slor = (v0) => (v1) => ({type: "ex/or", 0: v0, 1: v1})
-const one = (v0) => ({type: "one", 0: v0})
-const many = (v0) => ({type: "many", 0: v0})
-const type$eq = (one) => (two) => (($target) => {
-if ($target.type === "," &&
-$target[0].type === "tvar" &&
-$target[1].type === "tvar") {
-{
+} ;
+throw new Error('match fail 20685:' + JSON.stringify($target))
+})(opt)
+let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
+let tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
+let tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
+let cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
+let nil = {type: "nil"}
+let pany = (v0) => ({type: "pany", 0: v0})
+let pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
+let pcon = (v0) => (v1) => (v2) => (v3) => ({type: "pcon", 0: v0, 1: v1, 2: v2, 3: v3})
+let pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1})
+let pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1})
+let cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
+let cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
+let cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1})
+let cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
+let cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
+let ex$slany = {type: "ex/any"}
+let ex$slconstructor = (v0) => (v1) => (v2) => ({type: "ex/constructor", 0: v0, 1: v1, 2: v2})
+let ex$slor = (v0) => (v1) => ({type: "ex/or", 0: v0, 1: v1})
+let one = (v0) => ({type: "one", 0: v0})
+let many = (v0) => ({type: "many", 0: v0})
+let tc_vbl = (v0) => (v1) => ({type: "tc-vbl", 0: v0, 1: v1})
+let tc_con = (v0) => (v1) => (v2) => ({type: "tc-con", 0: v0, 1: v1, 2: v2})
+let type$eq = (one) => (two) => (($target) => {
+if ($target.type === ",") {
+if ($target[0].type === "tvar") {
 let id = $target[0][0];
+if ($target[1].type === "tvar") {
 let id$qu = $target[1][0];
 return $eq(id)(id$qu)
-}
-}
-if ($target.type === "," &&
-$target[0].type === "tapp" &&
-$target[1].type === "tapp") {
-{
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "tapp") {
 let target = $target[0][0];
 let arg = $target[0][1];
+if ($target[1].type === "tapp") {
 let target$qu = $target[1][0];
 let arg$qu = $target[1][1];
-return (($target) => {
+{
+let $target = type$eq(target)(target$qu);
 if ($target === true) {
 return type$eq(arg)(arg$qu)
+} ;
+return false;
+throw new Error('match fail 240:' + JSON.stringify($target))
 }
-return false
-throw new Error('Failed to match. ' + valueToString($target));
-})(type$eq(target)(target$qu))
-}
-}
-if ($target.type === "," &&
-$target[0].type === "tcon" &&
-$target[1].type === "tcon") {
-{
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "tcon") {
 let name = $target[0][0];
+if ($target[1].type === "tcon") {
 let name$qu = $target[1][0];
 return $eq(name)(name$qu)
-}
-}
-return false
-throw new Error('Failed to match. ' + valueToString($target));
-})($co(one)(two));
-
-const type$slfree = (type) => (($target) => {
+} 
+} 
+} ;
+return false;
+throw new Error('match fail 208:' + JSON.stringify($target))
+})($co(one)(two))
+let type$slfree = (type) => (($target) => {
 if ($target.type === "tvar") {
-{
 let id = $target[0];
 return set$sladd(set$slnil)(id)
-}
-}
+} ;
 if ($target.type === "tcon") {
 return set$slnil
-}
+} ;
 if ($target.type === "tapp") {
-{
 let a = $target[0];
 let b = $target[1];
 return set$slmerge(type$slfree(a))(type$slfree(b))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const foldr = (init) => (items) => (f) => (($target) => {
+} ;
+throw new Error('match fail 324:' + JSON.stringify($target))
+})(type)
+let foldr = (init) => (items) => (f) => (($target) => {
 if ($target.type === "nil") {
 return init
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
 return f(foldr(init)(rest)(f))(one)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(items);
-
-const map = (f) => (values) => (($target) => {
+} ;
+throw new Error('match fail 428:' + JSON.stringify($target))
+})(items)
+let map = (f) => (values) => (($target) => {
 if ($target.type === "nil") {
 return nil
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
 return cons(f(one))(map(f)(rest))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(values);
-
-const type$slapply = (subst) => (type) => (($target) => {
+} ;
+throw new Error('match fail 477:' + JSON.stringify($target))
+})(values)
+let type$slapply = (subst) => (type) => (($target) => {
 if ($target.type === "tvar") {
-{
 let id = $target[0];
-return (($target) => {
+{
+let $target = map$slget(subst)(id);
 if ($target.type === "none") {
 return type
-}
+} ;
 if ($target.type === "some") {
-{
 let t = $target[0];
 return t
+} ;
+throw new Error('match fail 565:' + JSON.stringify($target))
 }
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(subst)(id))
-}
-}
+} ;
 if ($target.type === "tapp") {
-{
 let target = $target[0];
 let arg = $target[1];
 let loc = $target[2];
 return tapp(type$slapply(subst)(target))(type$slapply(subst)(arg))(loc)
+} ;
+return type;
+throw new Error('match fail 558:' + JSON.stringify($target))
+})(type)
+let map_without = (map) => (set) => foldr(map)(set$slto_list(set))(map$slrm)
+let compose_subst = (new_subst) => (old_subst) => map$slmerge(map$slmap(type$slapply(new_subst))(old_subst))(new_subst)
+let demo_new_subst = map$slfrom_list(cons($co("a")(tcon("a-mapped")(-1)))(cons($co("b")(tvar("c")(-1)))(nil)))
+let StateT = (v0) => ({type: "StateT", 0: v0})
+let run_$gt = ({"0": f}) => (state) => {
+let {"1": result} = f(state);
+return result
 }
-}
-return type
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const map_without = (map) => (set) => foldr(map)(set$slto_list(set))(map$slrm);
-
-const compose_subst = (new_subst) => (old_subst) => map$slmerge(map$slmap(type$slapply(new_subst))(old_subst))(new_subst);
-
-const demo_new_subst = map$slfrom_list(cons($co("a")(tcon("a-mapped")(-1)))(cons($co("b")(tvar("c")(-1)))(nil)));
-
-const StateT = (v0) => ({type: "StateT", 0: v0})
-const run_$gt = ({0: f}) => (state) => (({1: result}) => result)(f(state));
-
-const $gt$gt$eq = ({0: f}) => (next) => StateT((state) => (($target) => {
-if ($target.type === "," &&
-$target[1].type === "err") {
-{
+let $gt$gt$eq = ({"0": f}) => (next) => StateT((state) => (($target) => {
+if ($target.type === ",") {
 let state = $target[0];
+if ($target[1].type === "err") {
 let e = $target[1][0];
 return $co(state)(err(e))
-}
-}
-if ($target.type === "," &&
-$target[1].type === "ok") {
-{
+} 
+} ;
+if ($target.type === ",") {
 let state = $target[0];
+if ($target[1].type === "ok") {
 let v = $target[1][0];
-return (({0: fnext}) => fnext(state))(next(v))
+{
+let {"0": fnext} = next(v);
+return fnext(state)
 }
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(state)));
-
-const $lt_ = (x) => StateT((state) => $co(state)(ok(x)));
-
-const $lt_state = StateT((state) => $co(state)(ok(state)));
-
-const state_$gt = (v) => StateT((old) => $co(v)(ok(old)));
-
-const map_$gt = (f) => (arr) => (($target) => {
+} 
+} ;
+throw new Error('match fail 11500:' + JSON.stringify($target))
+})(f(state)))
+let $lt_ = (x) => StateT((state) => $co(state)(ok(x)))
+let $lt_state = StateT((state) => $co(state)(ok(state)))
+let state_$gt = (v) => StateT((old) => $co(v)(ok(old)))
+let map_$gt = (f) => (arr) => (($target) => {
 if ($target.type === "nil") {
 return $lt_(nil)
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
 return $gt$gt$eq(f(one))((one) => $gt$gt$eq(map_$gt(f)(rest))((rest) => $lt_(cons(one)(rest))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
-
-const do_$gt = (f) => (arr) => (($target) => {
+} ;
+throw new Error('match fail 1224:' + JSON.stringify($target))
+})(arr)
+let do_$gt = (f) => (arr) => (($target) => {
 if ($target.type === "nil") {
 return $lt_($unit)
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
-return $gt$gt$eq(f(one))((_) => $gt$gt$eq(do_$gt(f)(rest))((_) => $lt_($unit)))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
-
-const foldl_$gt = (init) => (values) => (f) => (($target) => {
+return $gt$gt$eq(f(one))((_1271) => $gt$gt$eq(do_$gt(f)(rest))((_1271) => $lt_($unit)))
+} ;
+throw new Error('match fail 1260:' + JSON.stringify($target))
+})(arr)
+let foldl_$gt = (init) => (values) => (f) => (($target) => {
 if ($target.type === "nil") {
 return $lt_(init)
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
 return $gt$gt$eq(f(init)(one))((one) => foldl_$gt(one)(rest)(f))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(values);
-
-const foldr_$gt = (init) => (values) => (f) => (($target) => {
+} ;
+throw new Error('match fail 1372:' + JSON.stringify($target))
+})(values)
+let foldr_$gt = (init) => (values) => (f) => (($target) => {
 if ($target.type === "nil") {
 return $lt_(init)
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
 return $gt$gt$eq(foldr_$gt(init)(rest)(f))((init) => f(init)(one))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(values);
-
-const $lt_subst = $gt$gt$eq($lt_state)(({1: {0: subst}}) => $lt_(subst));
-
-const $lt_next_idx = $gt$gt$eq($lt_state)(({1: {1: {1: types, 0: preds}, 0: subst}, 0: idx}) => $gt$gt$eq(state_$gt($co($pl(idx)(1))($co(subst)($co(preds)(types)))))((_) => $lt_(idx)));
-
-const subst_$gt = (new_subst) => $gt$gt$eq($lt_state)(({1: {1: {1: types, 0: preds}, 0: subst}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co(compose_subst(new_subst)(subst))($co(preds)(types)))))((_) => $lt_($unit)));
-
-const subst_reset_$gt = (new_subst) => $gt$gt$eq($lt_state)(({1: {1: types, 0: old_subst}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co(new_subst)(types))))((_) => $lt_(old_subst)));
-
-const new_type_var = (name) => (l) => $gt$gt$eq($lt_next_idx)((nidx) => $lt_(tvar(`${name}:${int_to_string(nidx)}`)(l)));
-
-const make_subst_for_free = (vars) => (l) => $gt$gt$eq(map_$gt((id) => $gt$gt$eq(new_type_var(id)(l))((new_var) => $lt_($co(id)(new_var))))(set$slto_list(vars)))((mapping) => $lt_(map$slfrom_list(mapping)));
-
-const one_subst = ($var) => (type) => map$slfrom_list(cons($co($var)(type))(nil));
-
-const apply_$gt = (f) => (arg) => $gt$gt$eq($lt_subst)((subst) => $lt_(f(subst)(arg)));
-
-const type$slapply_$gt = apply_$gt(type$slapply);
-
-const tfn = (arg) => (body) => (l) => tapp(tapp(tcon("->")(l))(arg)(l))(body)(l);
-
-const foldl = (init) => (items) => (f) => (($target) => {
+} ;
+throw new Error('match fail 1404:' + JSON.stringify($target))
+})(values)
+let $lt_subst = $gt$gt$eq($lt_state)(({"1": {"0": subst}}) => $lt_(subst))
+let $lt_next_idx = $gt$gt$eq($lt_state)(({"1": {"1": {"1": types, "0": preds}, "0": subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx + 1)($co(subst)($co(preds)(types)))))((_1548) => $lt_(idx)))
+let subst_$gt = (new_subst) => $gt$gt$eq($lt_state)(({"1": {"1": {"1": types, "0": preds}, "0": subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx)($co(compose_subst(new_subst)(subst))($co(preds)(types)))))((_1578) => $lt_($unit)))
+let subst_reset_$gt = (new_subst) => $gt$gt$eq($lt_state)(({"1": {"1": types, "0": old_subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx)($co(new_subst)(types))))((_1610) => $lt_(old_subst)))
+let new_type_var = (name) => (l) => $gt$gt$eq($lt_next_idx)((nidx) => $lt_(tvar(`${name}:${int_to_string(nidx)}`)(l)))
+let make_subst_for_free = (vars) => (l) => $gt$gt$eq(map_$gt((id) => $gt$gt$eq(new_type_var(id)(l))((new_var) => $lt_($co(id)(new_var))))(set$slto_list(vars)))((mapping) => $lt_(map$slfrom_list(mapping)))
+let one_subst = ($var) => (type) => map$slfrom_list(cons($co($var)(type))(nil))
+let apply_$gt = (f) => (arg) => $gt$gt$eq($lt_subst)((subst) => $lt_(f(subst)(arg)))
+let type$slapply_$gt = apply_$gt(type$slapply)
+let tfn = (arg) => (body) => (l) => tapp(tapp(tcon("->")(l))(arg)(l))(body)(l)
+let foldl = (init) => (items) => (f) => (($target) => {
 if ($target.type === "nil") {
 return init
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
 return foldl(f(init)(one))(rest)(f)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(items);
-
-const type_$gts = (type) => (($target) => {
+} ;
+throw new Error('match fail 2500:' + JSON.stringify($target))
+})(items)
+let type_$gts_simple = (type) => (($target) => {
 if ($target.type === "tvar") {
-{
 let name = $target[0];
 return name
-}
-}
-if ($target.type === "tapp" &&
-$target[0].type === "tapp" &&
-$target[0][0].type === "tcon" &&
-$target[0][0][0] === "->") {
-{
+} ;
+if ($target.type === "tapp") {
+if ($target[0].type === "tapp") {
+if ($target[0][0].type === "tcon") {
+if ($target[0][0][0] === "->") {
 let arg = $target[0][1];
 let res = $target[1];
-return `(fn [${type_$gts(arg)}] ${type_$gts(res)})`
-}
-}
+return `(fn [${type_$gts_simple(arg)}] ${type_$gts_simple(res)})`
+} 
+} 
+} 
+} ;
 if ($target.type === "tapp") {
-{
 let target = $target[0];
 let arg = $target[1];
-return `(${type_$gts(target)} ${type_$gts(arg)})`
-}
-}
+return `(${type_$gts_simple(target)} ${type_$gts_simple(arg)})`
+} ;
 if ($target.type === "tcon") {
-{
 let name = $target[0];
 return name
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const tfns = (args) => (body) => (l) => foldr(body)(args)((body) => (arg) => tfn(arg)(body)(l));
-
-const tint = tcon("int")(-1);
-
-const zip = (one) => (two) => (($target) => {
-if ($target.type === "," &&
-$target[0].type === "nil" &&
-$target[1].type === "nil") {
+} ;
+throw new Error('match fail 3224:' + JSON.stringify($target))
+})(type)
+let tfns = (args) => (body) => (l) => foldr(body)(args)((body) => (arg) => tfn(arg)(body)(l))
+let tint = tcon("int")(-1)
+let zip = (one) => (two) => (($target) => {
+if ($target.type === ",") {
+if ($target[0].type === "nil") {
+if ($target[1].type === "nil") {
 return nil
-}
-if ($target.type === "," &&
-$target[0].type === "cons" &&
-$target[1].type === "cons") {
-{
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "cons") {
 let one = $target[0][0];
 let rest = $target[0][1];
+if ($target[1].type === "cons") {
 let two = $target[1][0];
 let trest = $target[1][1];
 return cons($co(one)(two))(zip(rest)(trest))
-}
-}
-return fatal("Cant zip lists of unequal length")
-throw new Error('Failed to match. ' + valueToString($target));
-})($co(one)(two));
-
-const unzip = (zipped) => (($target) => {
+} 
+} 
+} ;
+return fatal("Cant zip lists of unequal length");
+throw new Error('match fail 3621:' + JSON.stringify($target))
+})($co(one)(two))
+let unzip = (zipped) => (($target) => {
 if ($target.type === "nil") {
 return $co(nil)(nil)
-}
-if ($target.type === "cons" &&
-$target[0].type === ",") {
-{
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === ",") {
 let a = $target[0][0];
 let b = $target[0][1];
 let rest = $target[1];
-return (({1: two, 0: one}) => $co(cons(a)(one))(cons(b)(two)))(unzip(rest))
+{
+let {"1": two, "0": one} = unzip(rest);
+return $co(cons(a)(one))(cons(b)(two))
 }
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(zipped);
-
-const fst = ({0: a}) => a;
-
-const length = (v) => (($target) => {
+} 
+} ;
+throw new Error('match fail 4207:' + JSON.stringify($target))
+})(zipped)
+let fst = ({"0": a}) => a
+let length = (v) => (($target) => {
 if ($target.type === "nil") {
 return 0
-}
+} ;
 if ($target.type === "cons") {
-{
 let rest = $target[1];
-return $pl(1)(length(rest))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(v);
-
-const type$slcon_to_var = (vars) => (type) => (($target) => {
+return 1 + length(rest)
+} ;
+throw new Error('match fail 5562:' + JSON.stringify($target))
+})(v)
+let type$slcon_to_var = (vars) => (type) => (($target) => {
 if ($target.type === "tvar") {
 return type
-}
+} ;
 if ($target.type === "tcon") {
-{
 let name = $target[0];
 let l = $target[1];
-return (($target) => {
+{
+let $target = set$slhas(vars)(name);
 if ($target === true) {
 return tvar(name)(l)
+} ;
+return type;
+throw new Error('match fail 5640:' + JSON.stringify($target))
 }
-return type
-throw new Error('Failed to match. ' + valueToString($target));
-})(set$slhas(vars)(name))
-}
-}
+} ;
 if ($target.type === "tapp") {
-{
 let a = $target[0];
 let b = $target[1];
 let l = $target[2];
 return tapp(type$slcon_to_var(vars)(a))(type$slcon_to_var(vars)(b))(l)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const type$slunroll_app = (type) => (($target) => {
+} ;
+throw new Error('match fail 5625:' + JSON.stringify($target))
+})(type)
+let type$slunroll_app = (type) => (($target) => {
 if ($target.type === "tapp") {
-{
 let target = $target[0];
 let arg = $target[1];
 let l = $target[2];
-return (({1: inner, 0: target}) => $co(target)(cons($co(arg)(l))(inner)))(type$slunroll_app(target))
+{
+let target$$0 = target;
+{
+let {"1": inner, "0": target} = type$slunroll_app(target$$0);
+return $co(target)(cons($co(arg)(l))(inner))
 }
 }
-return $co(type)(nil)
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const reverse = (lst) => loop($co(lst)(nil))(({1: coll, 0: lst}) => (recur) => (($target) => {
+} ;
+return $co(type)(nil);
+throw new Error('match fail 5764:' + JSON.stringify($target))
+})(type)
+let reverse = (lst) => loop($co(lst)(nil))(({"1": coll, "0": lst}) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return coll
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
 return recur($co(rest)(cons(one)(coll)))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(lst));
-
-const join = (sep) => (lst) => (($target) => {
+} ;
+throw new Error('match fail 5895:' + JSON.stringify($target))
+})(lst))
+let join = (sep) => (lst) => (($target) => {
 if ($target.type === "nil") {
 return ""
-}
-if ($target.type === "cons" &&
-$target[1].type === "nil") {
-{
-let one = $target[0];
-return one
-}
-}
+} ;
 if ($target.type === "cons") {
-{
+let one = $target[0];
+if ($target[1].type === "nil") {
+return one
+} 
+} ;
+if ($target.type === "cons") {
 let one = $target[0];
 let rest = $target[1];
 return `${one}${sep}${join(sep)(rest)}`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(lst);
-
-const tbool = tcon("bool")(-1);
-
-const tmap = (k) => (v) => tapp(tapp(tcon("map")(-1))(k)(-1))(v)(-1);
-
-const toption = (arg) => tapp(tcon("option")(-1))(arg)(-1);
-
-const tlist = (arg) => tapp(tcon("list")(-1))(arg)(-1);
-
-const tset = (arg) => tapp(tcon("set")(-1))(arg)(-1);
-
-const vbl = (k) => tvar(k)(-1);
-
-const t$co = (a) => (b) => tapp(tapp(tcon(",")(-1))(a)(-1))(b)(-1);
-
-const tstring = tcon("string")(-1);
-
-const concat = (lists) => (($target) => {
+} ;
+throw new Error('match fail 6314:' + JSON.stringify($target))
+})(lst)
+let tbool = tcon("bool")(-1)
+let tmap = (k) => (v) => tapp(tapp(tcon("map")(-1))(k)(-1))(v)(-1)
+let toption = (arg) => tapp(tcon("option")(-1))(arg)(-1)
+let tlist = (arg) => tapp(tcon("list")(-1))(arg)(-1)
+let tset = (arg) => tapp(tcon("set")(-1))(arg)(-1)
+let vbl = (k) => tvar(k)(-1)
+let t$co = (a) => (b) => tapp(tapp(tcon(",")(-1))(a)(-1))(b)(-1)
+let tstring = tcon("string")(-1)
+let concat = (lists) => (($target) => {
 if ($target.type === "nil") {
 return nil
-}
-if ($target.type === "cons" &&
-$target[0].type === "nil") {
-{
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "nil") {
 let rest = $target[1];
 return concat(rest)
-}
-}
-if ($target.type === "cons" &&
-$target[0].type === "cons") {
-{
+} 
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "cons") {
 let one = $target[0][0];
 let rest = $target[0][1];
 let lists = $target[1];
 return cons(one)(concat(cons(rest)(lists)))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(lists);
-
-const tcon_and_args = (type) => (coll) => (l) => (($target) => {
+} 
+} ;
+throw new Error('match fail 9447:' + JSON.stringify($target))
+})(lists)
+let tcon_and_args = (type) => (coll) => (l) => (($target) => {
 if ($target.type === "tvar") {
 return fatal(`Type not resolved ${int_to_string(l)} it is a tvar at heart. ${jsonify(type)} ${jsonify(coll)}`)
-}
+} ;
 if ($target.type === "tcon") {
-{
 let name = $target[0];
 return $co(name)(coll)
-}
-}
+} ;
 if ($target.type === "tapp") {
-{
 let target = $target[0];
 let arg = $target[1];
 return tcon_and_args(target)(cons(arg)(coll))(l)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const any_list = (arity) => loop(arity)((arity) => (recur) => (($target) => {
+} ;
+throw new Error('match fail 9950:' + JSON.stringify($target))
+})(type)
+let any_list = (arity) => loop(arity)((arity) => (recur) => (($target) => {
 if ($target === true) {
 return nil
-}
-return cons(ex$slany)(recur(_(arity)(1)))
-throw new Error('Failed to match. ' + valueToString($target));
-})($eq(0)(arity)));
-
-const any = (f) => (lst) => (($target) => {
+} ;
+return cons(ex$slany)(recur(arity - 1));
+throw new Error('match fail 11350:' + JSON.stringify($target))
+})($eq(0)(arity)))
+let any = (f) => (lst) => (($target) => {
 if ($target.type === "nil") {
 return false
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
-return (($target) => {
+{
+let $target = f(one);
 if ($target === true) {
 return true
+} ;
+return any(f)(rest);
+throw new Error('match fail 10481:' + JSON.stringify($target))
 }
-return any(f)(rest)
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(one))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(lst);
-
-const default_matrix = (matrix) => concat(map((row) => (($target) => {
-if ($target.type === "cons" &&
-$target[0].type === "ex/any") {
-{
+} ;
+throw new Error('match fail 10466:' + JSON.stringify($target))
+})(lst)
+let default_matrix = (matrix) => concat(map((row) => (($target) => {
+if ($target.type === "cons") {
+if ($target[0].type === "ex/any") {
 let rest = $target[1];
 return cons(rest)(nil)
-}
-}
-if ($target.type === "cons" &&
-$target[0].type === "ex/or") {
-{
+} 
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "ex/or") {
 let left = $target[0][0];
 let right = $target[0][1];
 let rest = $target[1];
 return default_matrix(cons(cons(left)(rest))(cons(cons(right)(rest))(nil)))
-}
-}
-return nil
-throw new Error('Failed to match. ' + valueToString($target));
-})(row))(matrix));
-
-const fold_ex_pat = (init) => (pat) => (f) => (($target) => {
+} 
+} ;
+return nil;
+throw new Error('match fail 10531:' + JSON.stringify($target))
+})(row))(matrix))
+let fold_ex_pat = (init) => (pat) => (f) => (($target) => {
 if ($target.type === "ex/or") {
-{
 let left = $target[0];
 let right = $target[1];
 return f(f(init)(left))(right)
-}
-}
-return f(init)(pat)
-throw new Error('Failed to match. ' + valueToString($target));
-})(pat);
-
-const fold_ex_pats = (init) => (pats) => (f) => foldl(init)(pats)((init) => (pat) => fold_ex_pat(init)(pat)(f));
-
-const $lt_err$ti = (x) => StateT((state) => $co(state)(err(x)));
-
-const map_err_$gt = ({0: f}) => (next) => StateT((state) => (($target) => {
-if ($target.type === "," &&
-$target[1].type === "err") {
-{
+} ;
+return f(init)(pat);
+throw new Error('match fail 10758:' + JSON.stringify($target))
+})(pat)
+let fold_ex_pats = (init) => (pats) => (f) => foldl(init)(pats)((init) => (pat) => fold_ex_pat(init)(pat)(f))
+let $lt_err$ti = (x) => StateT((state) => $co(state)(err(x)))
+let map_err_$gt = ({"0": f}) => (next) => StateT((state) => (($target) => {
+if ($target.type === ",") {
 let state = $target[0];
+if ($target[1].type === "err") {
 let e = $target[1][0];
 return $co(state)(next(e))
-}
-}
-if ($target.type === "," &&
-$target[1].type === "ok") {
-{
+} 
+} ;
+if ($target.type === ",") {
 let state = $target[0];
+if ($target[1].type === "ok") {
 let v = $target[1][0];
 return $co(state)(ok(v))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(state)));
-
-const state_f = ({0: f}) => f;
-
-const record_type_$gt = (type) => (loc) => (dont_subst) => $gt$gt$eq($lt_state)(({1: {1: {1: types, 0: preds}, 0: subst}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co(subst)($co(preds)(cons($co(type)($co(loc)(dont_subst)))(types))))))((_) => $lt_($unit)));
-
-const target_and_args = (type) => (coll) => (($target) => {
+} 
+} ;
+throw new Error('match fail 12357:' + JSON.stringify($target))
+})(f(state)))
+let state_f = ({"0": f}) => f
+let record_type_$gt = (type) => (loc) => (dont_subst) => $gt$gt$eq($lt_state)(({"1": {"1": {"1": types, "0": preds}, "0": subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx)($co(subst)($co(preds)(cons($co(type)($co(loc)(dont_subst)))(types))))))((_12816) => $lt_($unit)))
+let target_and_args = (type) => (coll) => (($target) => {
 if ($target.type === "tapp") {
-{
 let target = $target[0];
 let arg = $target[1];
 return target_and_args(target)(cons(arg)(coll))
-}
-}
-return $co(type)(coll)
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const fn_args_and_body = (type) => (($target) => {
-if ($target.type === "tapp" &&
-$target[0].type === "tapp" &&
-$target[0][0].type === "tcon" &&
-$target[0][0][0] === "->") {
-{
+} ;
+return $co(type)(coll);
+throw new Error('match fail 13102:' + JSON.stringify($target))
+})(type)
+let fn_args_and_body = (type) => (($target) => {
+if ($target.type === "tapp") {
+if ($target[0].type === "tapp") {
+if ($target[0][0].type === "tcon") {
+if ($target[0][0][0] === "->") {
 let arg = $target[0][1];
 let res = $target[1];
-return (({1: res, 0: args}) => $co(cons(arg)(args))(res))(fn_args_and_body(res))
-}
-}
-return $co(nil)(type)
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const isin = (v0) => (v1) => (v2) => ({type: "isin", 0: v0, 1: v1, 2: v2})
-const $eq$gt = (v0) => (v1) => ({type: "=>", 0: v0, 1: v1})
-const list$eq = (a$qu) => (b$qu) => (eq) => (($target) => {
-if ($target.type === "," &&
-$target[0].type === "cons" &&
-$target[1].type === "cons") {
 {
+let res$$0 = res;
+{
+let {"1": res, "0": args} = fn_args_and_body(res$$0);
+return $co(cons(arg)(args))(res)
+}
+}
+} 
+} 
+} 
+} ;
+return $co(nil)(type);
+throw new Error('match fail 13154:' + JSON.stringify($target))
+})(type)
+let isin = (v0) => (v1) => (v2) => ({type: "isin", 0: v0, 1: v1, 2: v2})
+let $eq$gt = (v0) => (v1) => ({type: "=>", 0: v0, 1: v1})
+let list$eq = (a$qu) => (b$qu) => (eq) => (($target) => {
+if ($target.type === ",") {
+if ($target[0].type === "cons") {
 let one = $target[0][0];
 let rest = $target[0][1];
+if ($target[1].type === "cons") {
 let two = $target[1][0];
 let rest$qu = $target[1][1];
-return (($target) => {
+{
+let $target = eq(one)(two);
 if ($target === true) {
 return list$eq(rest)(rest$qu)(eq)
+} ;
+return false;
+throw new Error('match fail 14093:' + JSON.stringify($target))
 }
-return false
-throw new Error('Failed to match. ' + valueToString($target));
-})(eq(one)(two))
-}
-}
-return false
-throw new Error('Failed to match. ' + valueToString($target));
-})($co(a$qu)(b$qu));
-
-const pred$eq = ({1: id, 0: type}) => ({1: id$qu, 0: type$qu}) => (($target) => {
+} 
+} 
+} ;
+return false;
+throw new Error('match fail 14077:' + JSON.stringify($target))
+})($co(a$qu)(b$qu))
+let pred$eq = ({"1": id, "0": type}) => ({"1": id$qu, "0": type$qu}) => (($target) => {
 if ($target === true) {
 return type$eq(type)(type$qu)
-}
-return false
-throw new Error('Failed to match. ' + valueToString($target));
-})($eq(id)(id$qu));
-
-const predicate$slfree = ({0: type}) => type$slfree(type);
-
-const predicate$slapply = (subst) => ({2: l, 1: cls, 0: type}) => isin(type$slapply(subst)(type))(cls)(l);
-
-const pred_$gts = ({2: locs, 1: cls, 0: type}) => `(isin ${type_$gts(type)} \"${cls}\" ${join(" ")(map(({1: i, 0: l}) => `${int_to_string(l)}@${int_to_string(i)}`)(locs))}) `;
-
-const empty = many(nil);
-
-const bag$sland = (first) => (second) => (($target) => {
-if ($target.type === "," &&
-$target[0].type === "many" &&
-$target[0][0].type === "nil") {
-{
+} ;
+return false;
+throw new Error('match fail 14158:' + JSON.stringify($target))
+})($eq(id)(id$qu))
+let predicate$slfree = ({"0": type}) => type$slfree(type)
+let predicate$slapply = (subst) => ({"2": l, "1": cls, "0": type}) => isin(type$slapply(subst)(type))(cls)(l)
+let empty = many(nil)
+let bag$sland = (first) => (second) => (($target) => {
+if ($target.type === ",") {
+if ($target[0].type === "many") {
+if ($target[0][0].type === "nil") {
 let a = $target[1];
 return a
-}
-}
-if ($target.type === "," &&
-$target[1].type === "many" &&
-$target[1][0].type === "nil") {
-{
+} 
+} 
+} ;
+if ($target.type === ",") {
 let a = $target[0];
+if ($target[1].type === "many") {
+if ($target[1][0].type === "nil") {
 return a
-}
-}
-if ($target.type === "," &&
-$target[0].type === "many" &&
-$target[0][0].type === "cons" &&
-$target[0][0][1].type === "nil" &&
-$target[1].type === "many") {
-{
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "many") {
+if ($target[0][0].type === "cons") {
 let a = $target[0][0][0];
+if ($target[0][0][1].type === "nil") {
+if ($target[1].type === "many") {
 let b = $target[1][0];
 return many(cons(a)(b))
-}
-}
-if ($target.type === "," &&
-$target[1].type === "many") {
-{
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === ",") {
 let a = $target[0];
+if ($target[1].type === "many") {
 let b = $target[1][0];
 return many(cons(a)(b))
-}
-}
-return many(cons(first)(cons(second)(nil)))
-throw new Error('Failed to match. ' + valueToString($target));
-})($co(first)(second));
-
-const bag$slfold = (f) => (init) => (bag) => (($target) => {
-if ($target.type === "many" &&
-$target[0].type === "nil") {
+} 
+} ;
+return many(cons(first)(cons(second)(nil)));
+throw new Error('match fail 14387:' + JSON.stringify($target))
+})($co(first)(second))
+let bag$slfold = (f) => (init) => (bag) => (($target) => {
+if ($target.type === "many") {
+if ($target[0].type === "nil") {
 return init
-}
+} 
+} ;
 if ($target.type === "one") {
-{
 let v = $target[0];
 return f(init)(v)
-}
-}
+} ;
 if ($target.type === "many") {
-{
 let items = $target[0];
 return foldr(init)(items)(bag$slfold(f))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(bag);
-
-const bag$slto_list = (bag) => bag$slfold((list) => (one) => cons(one)(list))(nil)(bag);
-
-const $lt_preds = $gt$gt$eq($lt_state)(({1: {1: {0: preds}}}) => $lt_(preds));
-
-const predicate$slreloc = (l) => (i) => ({1: cls, 0: type}) => isin(type)(cls)(cons(oloc(l)(i))(nil));
-
-const mapi_inner = (i) => (f) => (values) => (($target) => {
+} ;
+throw new Error('match fail 14447:' + JSON.stringify($target))
+})(bag)
+let bag$slto_list = (bag) => bag$slfold((list) => (one) => cons(one)(list))(nil)(bag)
+let $lt_preds = $gt$gt$eq($lt_state)(({"1": {"1": {"0": preds}}}) => $lt_(preds))
+let predicate$slreloc = (l) => (i) => ({"1": cls, "0": type}) => isin(type)(cls)(cons(oloc(l)(i))(nil))
+let mapi_inner = (i) => (f) => (values) => (($target) => {
 if ($target.type === "nil") {
 return nil
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
-return cons(f(i)(one))(mapi_inner($pl(i)(1))(f)(rest))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(values);
-
-const predicate$eq = ({1: s1, 0: t1}) => ({1: s2, 0: t2}) => (($target) => {
+return cons(f(i)(one))(mapi_inner(i + 1)(f)(rest))
+} ;
+throw new Error('match fail 15302:' + JSON.stringify($target))
+})(values)
+let predicate$eq = ({"1": s1, "0": t1}) => ({"1": s2, "0": t2}) => (($target) => {
 if ($target === true) {
 return type$eq(t1)(t2)
-}
-return false
-throw new Error('Failed to match. ' + valueToString($target));
-})($eq(s1)(s2));
-
-const predicate$slmerge = ({2: l1, 1: s1, 0: t1}) => ({2: l2, 1: s2, 0: t2}) => (($target) => {
+} ;
+return false;
+throw new Error('match fail 16868:' + JSON.stringify($target))
+})($eq(s1)(s2))
+let predicate$slmerge = ({"2": l1, "1": s1, "0": t1}) => ({"2": l2, "1": s2, "0": t2}) => (($target) => {
 if ($target === true) {
-return (($target) => {
+{
+let $target = type$eq(t1)(t2);
 if ($target === true) {
 return some(isin(t1)(s2)(set$slto_list(set$slfrom_list(concat(cons(l1)(cons(l2)(nil)))))))
+} ;
+return none;
+throw new Error('match fail 16906:' + JSON.stringify($target))
 }
-return none
-throw new Error('Failed to match. ' + valueToString($target));
-})(type$eq(t1)(t2))
-}
-return none
-throw new Error('Failed to match. ' + valueToString($target));
-})($eq(s1)(s2));
-
-const filter = (f) => (lst) => (($target) => {
+} ;
+return none;
+throw new Error('match fail 16888:' + JSON.stringify($target))
+})($eq(s1)(s2))
+let filter = (f) => (lst) => (($target) => {
 if ($target.type === "nil") {
 return nil
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
-return (($target) => {
+{
+let $target = f(one);
 if ($target === true) {
 return cons(one)(filter(f)(rest))
+} ;
+return filter(f)(rest);
+throw new Error('match fail 17190:' + JSON.stringify($target))
 }
-return filter(f)(rest)
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(one))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(lst);
-
-const type$slmatches_free = (free) => (type) => (($target) => {
+} ;
+throw new Error('match fail 17179:' + JSON.stringify($target))
+})(lst)
+let type$slmatches_free = (free) => (type) => (($target) => {
 if ($target.type === "tvar") {
-{
 let id = $target[0];
 return set$slhas(free)(id)
-}
-}
+} ;
 if ($target.type === "tcon") {
 return false
-}
+} ;
 if ($target.type === "tapp") {
-{
 let a = $target[0];
 let b = $target[1];
-return (($target) => {
+{
+let $target = type$slmatches_free(free)(b);
 if ($target === true) {
 return true
+} ;
+return type$slmatches_free(free)(a);
+throw new Error('match fail 17250:' + JSON.stringify($target))
 }
-return type$slmatches_free(free)(a)
-throw new Error('Failed to match. ' + valueToString($target));
-})(type$slmatches_free(free)(b))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const name_for_instance = (type) => (cls) => `${type_$gts(type)} < ${cls}`;
-
-const type_to_js_id = (type) => (($target) => {
+} ;
+throw new Error('match fail 17229:' + JSON.stringify($target))
+})(type)
+let type_to_js_id = (type) => (($target) => {
 if ($target.type === "tvar") {
-{
 let name = $target[0];
 return sanitize(name)
-}
-}
+} ;
 if ($target.type === "tcon") {
-{
 let name = $target[0];
 return sanitize(name)
-}
-}
+} ;
 if ($target.type === "tapp") {
-{
 let target = $target[0];
 let arg = $target[1];
 return `${type_to_js_id(target)}\$app\$${type_to_js_id(arg)}`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const put_in_place = (ordered) => (value) => (idx) => (($target) => {
+} ;
+throw new Error('match fail 17641:' + JSON.stringify($target))
+})(type)
+let put_in_place = (ordered) => (value) => (idx) => (($target) => {
 if ($target.type === "nil") {
 return cons($co(value)(idx))(nil)
-}
-if ($target.type === "cons" &&
-$target[0].type === ",") {
-{
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === ",") {
 let ov = $target[0][0];
 let oidx = $target[0][1];
 let rest = $target[1];
-return (($target) => {
+{
+let $target = idx < oidx;
 if ($target === true) {
 return cons($co(value)(idx))(cons($co(ov)(oidx))(rest))
+} ;
+return cons($co(ov)(oidx))(put_in_place(rest)(value)(idx));
+throw new Error('match fail 17728:' + JSON.stringify($target))
 }
-return cons($co(ov)(oidx))(put_in_place(rest)(value)(idx))
-throw new Error('Failed to match. ' + valueToString($target));
-})($lt(idx)(oidx))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(ordered);
-
-const default_types = cons(tint)(cons(tcon("unit")(-1))(nil));
-
-const reset_preds_$gt = (preds) => $gt$gt$eq($lt_state)(({1: {1: {1: types}, 0: subst}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co(subst)($co(preds)(types)))))((_) => $lt_($unit)));
-
-const by_super = (classes) => (pred) => (({2: locs, 1: cls, 0: t}) => (({0: supers}) => cons(pred)(concat(map((i$qu) => by_super(classes)(isin(t)(i$qu)(locs)))(supers))))((($target) => {
-if ($target.type === "some") {
+} 
+} ;
+throw new Error('match fail 17710:' + JSON.stringify($target))
+})(ordered)
+let default_types = cons(tint)(cons(tcon("unit")(-1))(nil))
+let reset_preds_$gt = (preds) => $gt$gt$eq($lt_state)(({"1": {"1": {"1": types}, "0": subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx)($co(subst)($co(preds)(types)))))((_17900) => $lt_($unit)))
+let expand_with_super_classes = (classes) => (pred) => {
+let {"2": locs, "1": cls, "0": t} = pred;
 {
+let {"0": supers} = (($target) => {
+if ($target.type === "some") {
 let s = $target[0];
 return s
+} ;
+return fatal(`Unknown class '${cls}' in predicate [by-super]`);
+throw new Error('match fail 18266:' + JSON.stringify($target))
+})(map$slget(classes)(cls));
+return cons(pred)(concat(map(($super) => expand_with_super_classes(classes)(isin(t)($super)(locs)))(supers)))
 }
 }
-return fatal(`Unknown class '${cls}' in predicate [by-super]`)
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(classes)(cls))))(pred);
-
-const find_some = (f) => (arr) => (($target) => {
+let find_some = (f) => (arr) => (($target) => {
 if ($target.type === "nil") {
 return none
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
-return (($target) => {
-if ($target.type === "some") {
 {
+let $target = f(one);
+if ($target.type === "some") {
 let v = $target[0];
 return some(v)
+} ;
+return find_some(f)(rest);
+throw new Error('match fail 18618:' + JSON.stringify($target))
 }
-}
-return find_some(f)(rest)
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(one))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
-
-const all = (f) => (items) => (($target) => {
+} ;
+throw new Error('match fail 18608:' + JSON.stringify($target))
+})(arr)
+let all = (f) => (items) => (($target) => {
 if ($target.type === "nil") {
 return true
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
-return (($target) => {
+{
+let $target = f(one);
 if ($target === true) {
 return all(f)(rest)
+} ;
+return false;
+throw new Error('match fail 18860:' + JSON.stringify($target))
 }
-return false
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(one))
+} ;
+throw new Error('match fail 18851:' + JSON.stringify($target))
+})(items)
+let ambiguities = (known_variables) => (preds) => {
+let vbls_in_preds = foldl(set$slnil)(map(predicate$slfree)(preds))(set$slmerge);
+{
+let unaccounted_for_variables = set$sldiff(vbls_in_preds)(known_variables);
+return map((v) => $co(v)(filter((pred) => any($eq(v))(set$slto_list(predicate$slfree(pred))))(preds)))(set$slto_list(unaccounted_for_variables))
 }
 }
-throw new Error('Failed to match. ' + valueToString($target));
-})(items);
-
-const ambiguities = (known_variables) => (preds) => ((vbls_in_preds) => ((unaccounted_for_variables) => map((v) => $co(v)(filter((pred) => any($eq(v))(set$slto_list(predicate$slfree(pred))))(preds)))(set$slto_list(unaccounted_for_variables)))(set$sldiff(vbls_in_preds)(known_variables)))(foldl(set$slnil)(map(predicate$slfree)(preds))(set$slmerge));
-
-const joinor = (sep) => ($default) => (items) => (($target) => {
+let joinor = (sep) => ($default) => (items) => (($target) => {
 if ($target.type === "nil") {
 return $default
-}
-return join(sep)(items)
-throw new Error('Failed to match. ' + valueToString($target));
-})(items);
-
-const is_empty = (x) => (($target) => {
+} ;
+return join(sep)(items);
+throw new Error('match fail 19156:' + JSON.stringify($target))
+})(items)
+let is_empty = (x) => (($target) => {
 if ($target.type === "nil") {
 return true
-}
-return false
-throw new Error('Failed to match. ' + valueToString($target));
-})(x);
-
-const every = (lst) => (f) => (($target) => {
+} ;
+return false;
+throw new Error('match fail 19174:' + JSON.stringify($target))
+})(x)
+let every = (lst) => (f) => (($target) => {
 if ($target.type === "nil") {
 return true
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
-return (($target) => {
+{
+let $target = f(one);
 if ($target === true) {
 return every(rest)(f)
+} ;
+return false;
+throw new Error('match fail 19336:' + JSON.stringify($target))
 }
-return false
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(one))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(lst);
-
-const numClasses = cons("number")(cons("integral")(cons("floating")(cons("fractional")(cons("real")(cons("realfloat")(cons("realfrac")(nil)))))));
-
-const stdClasses = cons("eq")(cons("ord")(cons("show")(cons("read")(cons("pretty")(cons("bounded")(cons("enum")(cons("ix")(cons("functor")(cons("monad")(cons("monadplus")(numClasses)))))))))));
-
-const head = (lst) => (($target) => {
+} ;
+throw new Error('match fail 19323:' + JSON.stringify($target))
+})(lst)
+let numClasses = cons("number")(cons("integral")(cons("floating")(cons("fractional")(cons("real")(cons("realfloat")(cons("realfrac")(nil)))))))
+let stdClasses = cons("eq")(cons("ord")(cons("show")(cons("read")(cons("pretty")(cons("bounded")(cons("enum")(cons("ix")(cons("functor")(cons("monad")(cons("monadplus")(numClasses)))))))))))
+let head = (lst) => (($target) => {
 if ($target.type === "nil") {
 return fatal("empty list")
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 return one
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(lst);
-
-const type$slhnf = (type) => (($target) => {
+} ;
+throw new Error('match fail 19407:' + JSON.stringify($target))
+})(lst)
+let type$slhas_variable_head = (type) => (($target) => {
 if ($target.type === "tvar") {
 return true
-}
+} ;
 if ($target.type === "tcon") {
 return false
-}
+} ;
 if ($target.type === "tapp") {
-{
-let t = $target[0];
-return type$slhnf(t)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const in_hnf = ({0: t}) => type$slhnf(t);
-
-const preds_$gts = dot(join("\n"))(map(pred_$gts));
-
-const sc_entail = (ce) => (ps) => (p) => any(any(pred$eq(p)))(map(by_super(ce))(ps));
-
-const map$slok = (f) => (arr) => (($target) => {
+let target = $target[0];
+return type$slhas_variable_head(target)
+} ;
+throw new Error('match fail 19510:' + JSON.stringify($target))
+})(type)
+let predicate$slhas_variable_head = ({"0": type}) => type$slhas_variable_head(type)
+let sc_entail = (ce) => (ps) => (p) => any(any(pred$eq(p)))(map(expand_with_super_classes(ce))(ps))
+let map$slok = (f) => (arr) => (($target) => {
 if ($target.type === "nil") {
 return ok(nil)
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
-return (($target) => {
-if ($target.type === "ok") {
 {
+let $target = f(one);
+if ($target.type === "ok") {
 let val = $target[0];
-return (($target) => {
-if ($target.type === "ok") {
 {
+let $target = map$slok(f)(rest);
+if ($target.type === "ok") {
 let rest = $target[0];
 return ok(cons(val)(rest))
-}
-}
+} ;
 if ($target.type === "err") {
-{
 let e = $target[0];
 return err(e)
+} ;
+throw new Error('match fail 19777:' + JSON.stringify($target))
 }
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slok(f)(rest))
-}
-}
+} ;
 if ($target.type === "err") {
-{
 let e = $target[0];
 return err(e)
+} ;
+throw new Error('match fail 19769:' + JSON.stringify($target))
 }
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(f(one))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
-
-const partition = (arr) => (test) => (($target) => {
+} ;
+throw new Error('match fail 19758:' + JSON.stringify($target))
+})(arr)
+let partition = (list) => (test) => (($target) => {
 if ($target.type === "nil") {
 return $co(nil)(nil)
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
-return (({1: no, 0: yes}) => (($target) => {
+{
+let {"1": no, "0": yes} = partition(rest)(test);
+{
+let $target = test(one);
 if ($target === true) {
 return $co(cons(one)(yes))(no)
+} ;
+return $co(yes)(cons(one)(no));
+throw new Error('match fail 19891:' + JSON.stringify($target))
 }
-return $co(yes)(cons(one)(no))
-throw new Error('Failed to match. ' + valueToString($target));
-})(test(one)))(partition(rest)(test))
 }
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
-
-const contains = (arr) => (item) => (item$eq) => (($target) => {
+} ;
+throw new Error('match fail 19868:' + JSON.stringify($target))
+})(list)
+let contains = (list) => (item) => (item$eq) => (($target) => {
 if ($target.type === "nil") {
 return false
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
-return (($target) => {
+{
+let $target = item$eq(one)(item);
 if ($target === true) {
 return true
+} ;
+return contains(rest)(item)(item$eq);
+throw new Error('match fail 20018:' + JSON.stringify($target))
 }
-return contains(rest)(item)(item$eq)
-throw new Error('Failed to match. ' + valueToString($target));
-})(item$eq(one)(item))
+} ;
+throw new Error('match fail 20009:' + JSON.stringify($target))
+})(list)
+let unwrap_fn = (t) => (($target) => {
+if ($target.type === "tapp") {
+if ($target[0].type === "tapp") {
+if ($target[0][0].type === "tcon") {
+if ($target[0][0][0] === "->") {
+let a = $target[0][1];
+let b = $target[1];
+{
+let {"1": res, "0": args} = unwrap_fn(b);
+return $co(cons(a)(args))(res)
 }
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(arr);
+} 
+} 
+} 
+} ;
+return $co(nil)(t);
+throw new Error('match fail 24746:' + JSON.stringify($target))
+})(t)
+let unwrap_app = (t) => (args) => (($target) => {
+if ($target.type === "tapp") {
+let a = $target[0];
+let b = $target[1];
+return unwrap_app(a)(cons(b)(args))
+} ;
+return $co(t)(args);
+throw new Error('match fail 24791:' + JSON.stringify($target))
+})(t)
+let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
+let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
+let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
+let equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1})
+let elambda = (v0) => (v1) => (v2) => ({type: "elambda", 0: v0, 1: v1, 2: v2})
+let eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2})
+let elet = (v0) => (v1) => (v2) => ({type: "elet", 0: v0, 1: v1, 2: v2})
+let ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2})
 
-const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
-const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
-const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
-const equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1})
-const elambda = (v0) => (v1) => (v2) => ({type: "elambda", 0: v0, 1: v1, 2: v2})
-const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2})
-const elet = (v0) => (v1) => (v2) => ({type: "elet", 0: v0, 1: v1, 2: v2})
-const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2})
+let quot$slexpr = (v0) => ({type: "quot/expr", 0: v0})
+let quot$sltop = (v0) => ({type: "quot/top", 0: v0})
+let quot$sltype = (v0) => ({type: "quot/type", 0: v0})
+let quot$slpat = (v0) => ({type: "quot/pat", 0: v0})
+let quot$slquot = (v0) => ({type: "quot/quot", 0: v0})
 
-const quot$slexpr = (v0) => ({type: "quot/expr", 0: v0})
-const quot$sltop = (v0) => ({type: "quot/top", 0: v0})
-const quot$sltype = (v0) => ({type: "quot/type", 0: v0})
-const quot$slpat = (v0) => ({type: "quot/pat", 0: v0})
-const quot$slquot = (v0) => ({type: "quot/quot", 0: v0})
+let tdef = (v0) => (v1) => (v2) => (v3) => ({type: "tdef", 0: v0, 1: v1, 2: v2, 3: v3})
+let texpr = (v0) => (v1) => ({type: "texpr", 0: v0, 1: v1})
+let tdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "tdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+let ttypealias = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "ttypealias", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+let specialized_matrix = (constructor) => (arity) => (matrix) => concat(map(specialize_row(constructor)(arity))(matrix))
 
-const tdef = (v0) => (v1) => (v2) => (v3) => ({type: "tdef", 0: v0, 1: v1, 2: v2, 3: v3})
-const texpr = (v0) => (v1) => ({type: "texpr", 0: v0, 1: v1})
-const tdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "tdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
-const ttypealias = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "ttypealias", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
-const specialized_matrix = (constructor) => (arity) => (matrix) => concat(map(specialize_row(constructor)(arity))(matrix));
-
-
-const specialize_row = (constructor) => (arity) => (row) => (($target) => {
+let specialize_row = (constructor) => (arity) => (row) => (($target) => {
 if ($target.type === "nil") {
 return fatal("Can't specialize an empty row.")
-}
-if ($target.type === "cons" &&
-$target[0].type === "ex/any") {
-{
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "ex/any") {
 let rest = $target[1];
 return cons(concat(cons(any_list(arity))(cons(rest)(nil))))(nil)
-}
-}
-if ($target.type === "cons" &&
-$target[0].type === "ex/constructor") {
-{
+} 
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "ex/constructor") {
 let name = $target[0][0];
 let args = $target[0][2];
 let rest = $target[1];
-return (($target) => {
+{
+let $target = $eq(name)(constructor);
 if ($target === true) {
 return cons(concat(cons(args)(cons(rest)(nil))))(nil)
+} ;
+return nil;
+throw new Error('match fail 10596:' + JSON.stringify($target))
 }
-return nil
-throw new Error('Failed to match. ' + valueToString($target));
-})($eq(name)(constructor))
-}
-}
-if ($target.type === "cons" &&
-$target[0].type === "ex/or") {
-{
+} 
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "ex/or") {
 let left = $target[0][0];
 let right = $target[0][1];
 let rest = $target[1];
 return specialized_matrix(constructor)(arity)(cons(cons(left)(rest))(cons(cons(right)(rest))(nil)))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(row);
+} 
+} ;
+throw new Error('match fail 10573:' + JSON.stringify($target))
+})(row)
+let resolved_pred = (v0) => (v1) => (v2) => ({type: "resolved-pred", 0: v0, 1: v1, 2: v2})
+let variable_head = (v0) => ({type: "variable-head", 0: v0})
+let forall = (v0) => (v1) => ({type: "forall", 0: v0, 1: v1})
+let tenv = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "tenv", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+let tenv$slwith_type = ({"4": typeclasses, "3": aliases, "2": types, "1": tcons, "0": values}) => (name) => (scheme) => tenv(map$slset(values)(name)(scheme))(tcons)(types)(aliases)(typeclasses)
 
-const forall = (v0) => (v1) => ({type: "forall", 0: v0, 1: v1})
-const tenv = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "tenv", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
-const tenv$slwith_type = ({4: typeclasses, 3: aliases, 2: types, 1: tcons, 0: values}) => (name) => (scheme) => tenv(map$slset(values)(name)(scheme))(tcons)(types)(aliases)(typeclasses);
-
-/* type alias */
-const reset_state_$gt = $gt$gt$eq($lt_state)(({1: {1: {1: types}}}) => $gt$gt$eq(state_$gt($co(0)($co(map$slnil)($co(empty)(types)))))((_) => $lt_($unit)));
-
-const state$slnil = $co(0)($co(map$slnil)($co(empty)(nil)));
-
-const run$slnil_$gt = (st) => run_$gt(st)(state$slnil);
-
-const tenv$slresolve = ({0: values}) => (name) => map$slget(values)(name);
-
-const tenv$slnil = tenv(map$slnil)(map$slnil)(map$slnil)(map$slnil)(map$slnil);
-
-const add$sltypealias = ({4: typeclasses, 3: aliases, 2: types, 1: tcons, 0: values}) => (name) => (args) => (type) => tenv(map$slnil)(map$slnil)(map$slnil)(map$slset(map$slnil)(name)($co(map(fst)(args))(type$slcon_to_var(set$slfrom_list(map(fst)(args)))(type))))(map$slnil);
-
-const type$slresolve_aliases = (aliases) => (type) => (({1: args, 0: target}) => ((args) => (($target) => {
-if ($target.type === "tcon") {
+let reset_state_$gt = $gt$gt$eq($lt_state)(({"1": {"1": {"1": types}}}) => $gt$gt$eq(state_$gt($co(0)($co(map$slnil)($co(empty)(types)))))((_1524) => $lt_($unit)))
+let state$slnil = $co(0)($co(map$slnil)($co(empty)(nil)))
+let run$slnil_$gt = (st) => run_$gt(st)(state$slnil)
+let tenv$slresolve = ({"0": values}) => (name) => map$slget(values)(name)
+let tenv$slnil = tenv(map$slnil)(map$slnil)(map$slnil)(map$slnil)(map$slnil)
+let add$sltypealias = ({"4": typeclasses, "3": aliases, "2": types, "1": tcons, "0": values}) => (name) => (args) => (type) => tenv(map$slnil)(map$slnil)(map$slnil)(map$slset(map$slnil)(name)($co(map(fst)(args))(type$slcon_to_var(set$slfrom_list(map(fst)(args)))(type))))(map$slnil)
+let type$slresolve_aliases = (aliases) => (type) => {
+let {"1": args, "0": target} = type$slunroll_app(type);
 {
+let args$$0 = args;
+{
+let args = map(type$slresolve_aliases(aliases))(reverse(map(fst)(args$$0)));
+{
+let $target = target;
+if ($target.type === "tcon") {
 let name = $target[0];
 let l = $target[1];
-return (($target) => {
-if ($target.type === "some" &&
-$target[0].type === ",") {
 {
+let $target = map$slget(aliases)(name);
+if ($target.type === "some") {
+if ($target[0].type === ",") {
 let free = $target[0][0];
 let type = $target[0][1];
-return ((subst) => type$slresolve_aliases(aliases)(type$slapply(subst)(type)))(map$slfrom_list(zip(free)(args)))
-}
-}
-return foldl(target)(args)((a) => (b) => tapp(a)(b)(l))
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(aliases)(name))
-}
-}
-if ($target.type === "tvar") {
 {
+let subst = map$slfrom_list(zip(free)(args));
+return type$slresolve_aliases(aliases)(type$slapply(subst)(type))
+}
+} 
+} ;
+return foldl(target)(args)((a) => (b) => tapp(a)(b)(l));
+throw new Error('match fail 5813:' + JSON.stringify($target))
+}
+} ;
+if ($target.type === "tvar") {
 let l = $target[1];
 return foldl(target)(args)((a) => (b) => tapp(a)(b)(l))
+} ;
+return target;
+throw new Error('match fail 5806:' + JSON.stringify($target))
 }
 }
-return target
-throw new Error('Failed to match. ' + valueToString($target));
-})(target))(map(type$slresolve_aliases(aliases))(reverse(map(fst)(args)))))(type$slunroll_app(type));
-
-const split_stmts = (stmts) => loop(stmts)((stmts) => (recur) => (($target) => {
+}
+}
+let split_stmts = (stmts) => loop(stmts)((stmts) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return $co(nil)($co(nil)($co(nil)(nil)))
-}
+} ;
 if ($target.type === "cons") {
-{
 let stmt = $target[0];
 let rest = $target[1];
-return (({1: {1: {1: others, 0: exprs}, 0: aliases}, 0: defs}) => (($target) => {
-if ($target.type === "tdef") {
 {
+let {"1": {"1": {"1": others, "0": exprs}, "0": aliases}, "0": defs} = recur(rest);
+{
+let $target = stmt;
+if ($target.type === "tdef") {
 let name = $target[0];
 let nl = $target[1];
 let body = $target[2];
 let l = $target[3];
 return $co(cons($co(name)($co(nl)($co(body)(l))))(defs))($co(aliases)($co(exprs)(others)))
-}
-}
+} ;
 if ($target.type === "ttypealias") {
 return $co(defs)($co(cons(stmt)(aliases))($co(exprs)(others)))
-}
+} ;
 if ($target.type === "texpr") {
-{
 let expr = $target[0];
 let l = $target[1];
 return $co(defs)($co(aliases)($co(cons(expr)(exprs))(others)))
+} ;
+return $co(defs)($co(aliases)($co(exprs)(cons(stmt)(others))));
+throw new Error('match fail 6045:' + JSON.stringify($target))
 }
 }
-return $co(defs)($co(aliases)($co(exprs)(cons(stmt)(others))))
-throw new Error('Failed to match. ' + valueToString($target));
-})(stmt))(recur(rest))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(stmts));
-
-const tenv$slmerge = ({4: tc1, 3: a1, 2: t1, 1: c1, 0: v1}) => ({4: tc2, 3: a2, 2: t2, 1: c2, 0: v2}) => tenv(map$slmerge(v1)(v2))(map$slmerge(c1)(c2))(map$slmerge(t1)(t2))(map$slmerge(a1)(a2))(foldl(tc1)(map$slto_list(tc2))((tc) => ({1: {1: {1: fns, 0: insts}, 0: supers}, 0: name}) => (($target) => {
+} ;
+throw new Error('match fail 6012:' + JSON.stringify($target))
+})(stmts))
+let tenv$slmerge = ({"4": tc1, "3": a1, "2": t1, "1": c1, "0": v1}) => ({"4": tc2, "3": a2, "2": t2, "1": c2, "0": v2}) => tenv(map$slmerge(v1)(v2))(map$slmerge(c1)(c2))(map$slmerge(t1)(t2))(map$slmerge(a1)(a2))(foldl(tc1)(map$slto_list(tc2))((tc) => ({"1": {"1": {"1": fns, "0": insts}, "0": supers}, "0": name}) => (($target) => {
 if ($target.type === "none") {
 return map$slset(tc)(name)($co(supers)($co(insts)(fns)))
-}
-if ($target.type === "some" &&
-$target[0].type === "," &&
-$target[0][1].type === ",") {
-{
+} ;
+if ($target.type === "some") {
+if ($target[0].type === ",") {
+if ($target[0][1].type === ",") {
 let insts$qu = $target[0][1][0];
 return map$slset(tc)(name)($co(supers)($co(concat(cons(insts)(cons(insts$qu)(nil))))(fns)))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(tc)(name))));
-
-const infer$slquot = (quot) => (l) => (($target) => {
+} 
+} 
+} ;
+throw new Error('match fail 16700:' + JSON.stringify($target))
+})(map$slget(tc)(name))))
+let infer$slquot = (quot) => (l) => (($target) => {
 if ($target.type === "quot/expr") {
 return tcon("expr")(l)
-}
+} ;
 if ($target.type === "quot/top") {
 return tcon("top")(l)
-}
+} ;
 if ($target.type === "quot/type") {
 return tcon("type")(l)
-}
+} ;
 if ($target.type === "quot/pat") {
 return tcon("pat")(l)
-}
+} ;
 if ($target.type === "quot/quot") {
 return tcon("cst")(l)
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(quot);
-
-const concrete = (t) => forall(set$slnil)($eq$gt(nil)(t));
-
-const generic = (vbls) => (t) => forall(set$slfrom_list(vbls))($eq$gt(nil)(t));
-
-const builtin_env = ((k) => ((v) => ((v2) => ((kv) => ((kk) => ((a) => ((b) => ((num2) => ((ord2) => ((eq2) => ((inst) => tenv(map$slfrom_list(cons($co("-")(num2))(cons($co(">")(ord2))(cons($co("<")(ord2))(cons($co("=")(eq2))(cons($co("!=")(eq2))(cons($co(">=")(ord2))(cons($co("<=")(ord2))(cons($co("pi")(concrete(tcon("float")(-1))))(cons($co("+")(num2))(cons($co("show")(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("show")(nil))(nil))(tfns(cons(a)(nil))(tstring)(-1)))))(cons($co("show/pretty")(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("pretty")(nil))(nil))(tfns(cons(a)(nil))(tstring)(-1)))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co(",")(generic(cons("a")(cons("b")(nil)))(tfns(cons(a)(cons(b)(nil)))(t$co(a)(b))(-1))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring)(-1))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint))(-1))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1)))(-1))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v))(-1))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v))(-1))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v))(-1))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2)(-1))(cons(tmap(k)(v))(nil)))(tmap(k)(v2))(-1))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v))(-1))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(v))(-1))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(k))(-1))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool)(-1))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tlist(k))(-1))))(cons($co("set/from-list")(kk(tfns(cons(tlist(k))(nil))(tset(k))(-1))))(cons($co("map/from-list")(kv(tfns(cons(tlist(t$co(k)(v)))(nil))(tmap(k)(v))(-1))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(t$co(k)(v)))(-1))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring)(-1))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring)(-1))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v"))(-1))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring)(-1))(cons(vbl("v"))(nil)))(tstring)(-1))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring)(-1))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v"))(-1))))(nil)))))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")($co(nil)($co(nil)(tcon("()")(-1)))))(cons($co(",")($co(cons("a")(cons("b")(nil)))($co(cons(a)(cons(b)(nil)))(t$co(a)(b)))))(nil))))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("float")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(cons($co("map")($co(2)(set$slnil)))(cons($co("set")($co(1)(set$slnil)))(cons($co("->")($co(2)(set$slnil)))(nil)))))))))(map$slnil)(map$slfrom_list(cons($co("number")($co(cons("ord")(cons("eq")(nil)))($co(cons(inst(tint)("number"))(cons(inst(tcon("float")(-1))("number"))(nil)))(nil))))(cons($co("ord")($co(cons("eq")(nil))($co(cons(inst(tint)("ord"))(cons(inst(tcon("float")(-1))("ord"))(nil)))(nil))))(cons($co("eq")($co(nil)($co(cons(inst(tint)("eq"))(cons(inst(tcon("float")(-1))("eq"))(cons(inst(tbool)("eq"))(cons($eq$gt(cons(isin(tvar("a")(-1))("eq")(nil))(cons(isin(tvar("b")(-1))("eq")(nil))(nil)))(isin(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))("eq")(nil)))(nil)))))(nil))))(cons($co("floating")($co(nil)($co(cons($eq$gt(nil)(isin(tcon("float")(-1))("floating")(nil)))(nil))(nil))))(cons($co("pretty")($co(nil)($co(cons(inst(tint)("pretty"))(cons(inst(tstring)("pretty"))(cons(inst(tbool)("pretty"))(nil))))(nil))))(cons($co("show")($co(nil)($co(cons(inst(tint)("show"))(cons(inst(tstring)("show"))(cons(inst(tbool)("show"))(cons(inst(tcon("float")(-1))("show"))(nil)))))(nil))))(nil)))))))))((t) => (cls) => $eq$gt(nil)(isin(t)(cls)(nil))))(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("eq")(nil))(nil))(tfns(cons(a)(cons(a)(nil)))(tbool)(-1)))))(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("ord")(nil))(nil))(tfns(cons(a)(cons(a)(nil)))(tbool)(-1)))))(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("number")(nil))(nil))(tfns(cons(a)(cons(a)(nil)))(a)(-1)))))(vbl("b")))(vbl("a")))(generic(cons("k")(nil))))(generic(cons("k")(cons("v")(nil)))))(vbl("v2")))(vbl("v")))(vbl("k"));
-
-const tenv$slwith_scope = ({4: typeclasses, 3: aliases, 2: types, 1: tcons, 0: values}) => (scope) => tenv(map$slmerge(scope)(values))(tcons)(types)(aliases)(typeclasses);
-
-const scheme_$gts = ({1: {1: type, 0: preds}, 0: vbls}) => `${(($target) => {
-if ($target.type === "nil") {
-return ""
-}
+} ;
+throw new Error('match fail 6714:' + JSON.stringify($target))
+})(quot)
+let concrete = (t) => forall(set$slnil)($eq$gt(nil)(t))
+let generic = (vbls) => (t) => forall(set$slfrom_list(vbls))($eq$gt(nil)(t))
+let builtin_env = (() => {
+let k = vbl("k");
 {
-let vbls = $target;
-return `forall ${join(" ")(vbls)} : `
+let v = vbl("v");
+{
+let v2 = vbl("v2");
+{
+let kv = generic(cons("k")(cons("v")(nil)));
+{
+let kk = generic(cons("k")(nil));
+{
+let a = vbl("a");
+{
+let b = vbl("b");
+{
+let num2 = forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("number")(nil))(nil))(tfns(cons(a)(cons(a)(nil)))(a)(-1)));
+{
+let ord2 = forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("ord")(nil))(nil))(tfns(cons(a)(cons(a)(nil)))(tbool)(-1)));
+{
+let eq2 = forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("eq")(nil))(nil))(tfns(cons(a)(cons(a)(nil)))(tbool)(-1)));
+{
+let inst = (t) => (cls) => $eq$gt(nil)(isin(t)(cls)(nil));
+return tenv(map$slfrom_list(cons($co("-")(num2))(cons($co(">")(ord2))(cons($co("<")(ord2))(cons($co("=")(eq2))(cons($co("!=")(eq2))(cons($co(">=")(ord2))(cons($co("<=")(ord2))(cons($co("pi")(concrete(tcon("float")(-1))))(cons($co("+")(num2))(cons($co("show")(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("show")(nil))(nil))(tfns(cons(a)(nil))(tstring)(-1)))))(cons($co("show/pretty")(forall(set$slfrom_list(cons("a")(nil)))($eq$gt(cons(isin(a)("pretty")(nil))(nil))(tfns(cons(a)(nil))(tstring)(-1)))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co(",")(generic(cons("a")(cons("b")(nil)))(tfns(cons(a)(cons(b)(nil)))(t$co(a)(b))(-1))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring)(-1))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint))(-1))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1)))(-1))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v))(-1))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v))(-1))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v))(-1))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2)(-1))(cons(tmap(k)(v))(nil)))(tmap(k)(v2))(-1))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v))(-1))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(v))(-1))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(k))(-1))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool)(-1))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tlist(k))(-1))))(cons($co("set/from-list")(kk(tfns(cons(tlist(k))(nil))(tset(k))(-1))))(cons($co("map/from-list")(kv(tfns(cons(tlist(t$co(k)(v)))(nil))(tmap(k)(v))(-1))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(t$co(k)(v)))(-1))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring)(-1))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring)(-1))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v"))(-1))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring)(-1))(cons(vbl("v"))(nil)))(tstring)(-1))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring)(-1))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v"))(-1))))(nil)))))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")($co(nil)($co(nil)(tcon("()")(-1)))))(cons($co(",")($co(cons("a")(cons("b")(nil)))($co(cons(a)(cons(b)(nil)))(t$co(a)(b)))))(nil))))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("float")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(cons($co("map")($co(2)(set$slnil)))(cons($co("set")($co(1)(set$slnil)))(cons($co("->")($co(2)(set$slnil)))(nil)))))))))(map$slnil)(map$slfrom_list(cons($co("number")($co(cons("ord")(cons("eq")(nil)))($co(cons(inst(tint)("number"))(cons(inst(tcon("float")(-1))("number"))(nil)))(nil))))(cons($co("ord")($co(cons("eq")(nil))($co(cons(inst(tint)("ord"))(cons(inst(tcon("float")(-1))("ord"))(nil)))(nil))))(cons($co("eq")($co(nil)($co(cons(inst(tint)("eq"))(cons(inst(tcon("float")(-1))("eq"))(cons(inst(tbool)("eq"))(cons($eq$gt(cons(isin(tvar("a")(-1))("eq")(nil))(nil))(isin(tapp(tcon("option")(-1))(tvar("a")(-1))(-1))("eq")(nil)))(cons($eq$gt(cons(isin(tvar("a")(-1))("eq")(nil))(cons(isin(tvar("b")(-1))("eq")(nil))(nil)))(isin(tapp(tapp(tcon(",")(-1))(tvar("a")(-1))(-1))(tvar("b")(-1))(-1))("eq")(nil)))(nil))))))(nil))))(cons($co("floating")($co(nil)($co(cons($eq$gt(nil)(isin(tcon("float")(-1))("floating")(nil)))(nil))(nil))))(cons($co("pretty")($co(nil)($co(cons(inst(tint)("pretty"))(cons(inst(tstring)("pretty"))(cons(inst(tbool)("pretty"))(nil))))(nil))))(cons($co("show")($co(nil)($co(cons(inst(tint)("show"))(cons(inst(tstring)("show"))(cons(inst(tbool)("show"))(cons(inst(tcon("float")(-1))("show"))(nil)))))(nil))))(nil))))))))
 }
-throw new Error('Failed to match. ' + valueToString($target));
-})(set$slto_list(vbls))}${join("")(map(pred_$gts)(preds))}${type_$gts(type)}`;
-
-const pattern_to_ex_pattern = (tenv) => ({1: type, 0: pattern}) => (($target) => {
+}
+}
+}
+}
+}
+}
+}
+}
+}
+})()
+let tenv$slwith_scope = ({"4": typeclasses, "3": aliases, "2": types, "1": tcons, "0": values}) => (scope) => tenv(map$slmerge(scope)(values))(tcons)(types)(aliases)(typeclasses)
+let pattern_to_ex_pattern = (tenv) => ({"1": type, "0": pattern}) => (($target) => {
 if ($target.type === "pvar") {
 return ex$slany
-}
+} ;
 if ($target.type === "pany") {
 return ex$slany
-}
+} ;
 if ($target.type === "pstr") {
-{
 let str = $target[0];
 return ex$slconstructor(str)("string")(nil)
-}
-}
-if ($target.type === "pprim" &&
-$target[0].type === "pint") {
-{
+} ;
+if ($target.type === "pprim") {
+if ($target[0].type === "pint") {
 let v = $target[0][0];
 return ex$slconstructor(int_to_string(v))("int")(nil)
-}
-}
-if ($target.type === "pprim" &&
-$target[0].type === "pfloat") {
-{
+} 
+} ;
+if ($target.type === "pprim") {
+if ($target[0].type === "pfloat") {
 let v = $target[0][0];
 return ex$slconstructor(jsonify(v))("float")(nil)
-}
-}
-if ($target.type === "pprim" &&
-$target[0].type === "pbool") {
-{
+} 
+} ;
+if ($target.type === "pprim") {
+if ($target[0].type === "pbool") {
 let v = $target[0][0];
 return ex$slconstructor((($target) => {
 if ($target === true) {
 return "true"
-}
-return "false"
-throw new Error('Failed to match. ' + valueToString($target));
+} ;
+return "false";
+throw new Error('match fail 10204:' + JSON.stringify($target))
 })(v))("bool")(nil)
-}
-}
+} 
+} ;
 if ($target.type === "pcon") {
-{
 let name = $target[0];
 let args = $target[2];
 let l = $target[3];
-return (({1: targs, 0: tname}) => (({1: tcons}) => (({1: {1: cres, 0: cargs}, 0: free_names}) => ((subst) => ex$slconstructor(name)(tname)(map(pattern_to_ex_pattern(tenv))(zip(args)(map(type$slapply(subst))(cargs)))))(map$slfrom_list(zip(free_names)(targs))))((($target) => {
+{
+let {"1": targs, "0": tname} = tcon_and_args(type)(nil)(l);
+{
+let {"1": tcons} = tenv;
+{
+let {"1": {"1": cres, "0": cargs}, "0": free_names} = (($target) => {
 if ($target.type === "none") {
 return fatal(`Unknown type constructor ${name}`)
-}
+} ;
 if ($target.type === "some") {
-{
 let v = $target[0];
 return v
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(tcons)(name))))(tenv))(tcon_and_args(type)(nil)(l))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(pattern);
-
-const find_gid = (heads) => fold_ex_pats(none)(heads)((gid) => (pat) => (($target) => {
-if ($target.type === "ex/constructor") {
+} ;
+throw new Error('match fail 10109:' + JSON.stringify($target))
+})(map$slget(tcons)(name));
 {
+let subst = map$slfrom_list(zip(free_names)(targs));
+return ex$slconstructor(name)(tname)(map(pattern_to_ex_pattern(tenv))(zip(args)(map(type$slapply(subst))(cargs))))
+}
+}
+}
+}
+} ;
+throw new Error('match fail 9888:' + JSON.stringify($target))
+})(pattern)
+let find_gid = (heads) => fold_ex_pats(none)(heads)((gid) => (pat) => (($target) => {
+if ($target.type === "ex/constructor") {
 let id = $target[1];
-return (($target) => {
+{
+let $target = gid;
 if ($target.type === "none") {
 return some(id)
-}
+} ;
 if ($target.type === "some") {
-{
 let oid = $target[0];
-return (($target) => {
+{
+let $target = $ex$eq(oid)(id);
 if ($target === true) {
 return fatal("Constructors with different group IDs in the same position.")
+} ;
+return some(id);
+throw new Error('match fail 10809:' + JSON.stringify($target))
 }
-return some(id)
-throw new Error('Failed to match. ' + valueToString($target));
-})($ex$eq(oid)(id))
+} ;
+throw new Error('match fail 10798:' + JSON.stringify($target))
 }
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(gid)
-}
-}
-return gid
-throw new Error('Failed to match. ' + valueToString($target));
-})(pat));
-
-const group_constructors = (tenv) => (gid) => (($target) => {
+} ;
+return gid;
+throw new Error('match fail 10790:' + JSON.stringify($target))
+})(pat))
+let group_constructors = (tenv) => (gid) => (($target) => {
 if ($target === "int") {
 return nil
-}
+} ;
 if ($target === "bool") {
 return cons("true")(cons("false")(nil))
-}
+} ;
 if ($target === "string") {
 return nil
-}
-return (({2: types}) => (($target) => {
+} ;
+{
+let {"2": types} = tenv;
+{
+let $target = map$slget(types)(gid);
 if ($target.type === "none") {
 return fatal(`Unknown type name ${gid}`)
-}
-if ($target.type === "some" &&
-$target[0].type === ",") {
-{
+} ;
+if ($target.type === "some") {
+if ($target[0].type === ",") {
 let names = $target[0][1];
 return set$slto_list(names)
+} 
+} ;
+throw new Error('match fail 10915:' + JSON.stringify($target))
 }
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(types)(gid)))(tenv)
-throw new Error('Failed to match. ' + valueToString($target));
-})(gid);
-
-const type_$gtcst = (type) => (($target) => {
+};
+throw new Error('match fail 10888:' + JSON.stringify($target))
+})(gid)
+let type_$gtcst = (type) => (($target) => {
 if ($target.type === "tvar") {
-{
 let name = $target[0];
 let l = $target[1];
 return cst$slid(name)(l)
-}
-}
+} ;
 if ($target.type === "tcon") {
-{
 let name = $target[0];
 let l = $target[1];
 return cst$slid(name)(l)
-}
-}
-if ($target.type === "tapp" &&
-$target[0].type === "tapp" &&
-$target[0][0].type === "tcon" &&
-$target[0][0][0] === "->") {
-{
-let l = $target[2];
-return (({1: res, 0: args}) => cst$sllist(cons(cst$slid("fn")(l))(cons(cst$slarray(map(type_$gtcst)(args))(l))(cons(type_$gtcst(res))(nil))))(l))(fn_args_and_body(type))
-}
-}
+} ;
 if ($target.type === "tapp") {
-{
+if ($target[0].type === "tapp") {
+if ($target[0][0].type === "tcon") {
+if ($target[0][0][0] === "->") {
 let l = $target[2];
-return (({1: args, 0: name}) => cst$sllist(cons(type_$gtcst(name))(map(type_$gtcst)(args)))(l))(target_and_args(type)(nil))
+{
+let {"1": res, "0": args} = fn_args_and_body(type);
+return cst$sllist(cons(cst$slid("fn")(l))(cons(cst$slarray(map(type_$gtcst)(args))(l))(cons(type_$gtcst(res))(nil))))(l)
 }
+} 
+} 
+} 
+} ;
+if ($target.type === "tapp") {
+let l = $target[2];
+{
+let {"1": args, "0": name} = target_and_args(type)(nil);
+return cst$sllist(cons(type_$gtcst(name))(map(type_$gtcst)(args)))(l)
 }
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const expr_loc = (expr) => (($target) => {
+} ;
+throw new Error('match fail 13013:' + JSON.stringify($target))
+})(type)
+let expr_loc = (expr) => (($target) => {
 if ($target.type === "evar") {
-{
 let l = $target[1];
 return l
-}
-}
+} ;
 if ($target.type === "eprim") {
-{
 let l = $target[1];
 return l
-}
-}
+} ;
 if ($target.type === "equot") {
-{
 let l = $target[1];
 return l
-}
-}
+} ;
 if ($target.type === "estr") {
-{
 let l = $target[2];
 return l
-}
-}
+} ;
 if ($target.type === "elambda") {
-{
 let l = $target[2];
 return l
-}
-}
+} ;
 if ($target.type === "eapp") {
-{
 let l = $target[2];
 return l
-}
-}
+} ;
 if ($target.type === "ematch") {
-{
 let l = $target[2];
 return l
-}
-}
+} ;
 if ($target.type === "elet") {
-{
 let l = $target[2];
 return l
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(expr);
-
-const record_if_generic = ({1: {1: t}, 0: free}) => (l) => (($target) => {
+} ;
+throw new Error('match fail 13630:' + JSON.stringify($target))
+})(expr)
+let record_if_generic = ({"1": {"1": t}, "0": free}) => (l) => (($target) => {
 if ($target.type === "nil") {
 return $lt_($unit)
-}
-return record_type_$gt(t)(l)(true)
-throw new Error('Failed to match. ' + valueToString($target));
-})(set$slto_list(free));
-
-const qual$eq = ({1: t, 0: preds}) => ({1: t$qu, 0: preds$qu}) => (t$eq) => (($target) => {
+} ;
+return record_type_$gt(t)(l)(true);
+throw new Error('match fail 13752:' + JSON.stringify($target))
+})(set$slto_list(free))
+let qual$eq = ({"1": t, "0": preds}) => ({"1": t$qu, "0": preds$qu}) => (t$eq) => (($target) => {
 if ($target === true) {
 return t$eq(t)(t$qu)
-}
-return false
-throw new Error('Failed to match. ' + valueToString($target));
-})(list$eq(preds)(preds$qu)(pred$eq));
-
-const qual$slfree = ({1: contents, 0: predicates}) => (contents$slfree) => foldl(contents$slfree(contents))(map(predicate$slfree)(predicates))(set$slmerge);
-
-const qual$slapply = (contents$slapply) => (subst) => ({1: contents, 0: predicates}) => $eq$gt(map(predicate$slapply(subst))(predicates))(contents$slapply(subst)(contents));
-
-const preds_$gt = (preds) => $gt$gt$eq($lt_state)(({1: {1: {1: types, 0: current}, 0: subst}, 0: idx}) => $gt$gt$eq(state_$gt($co(idx)($co(subst)($co(bag$sland(many(map(one)(preds)))(current))(types)))))((_) => $lt_($unit)));
-
-const qualt$slapply_$gt = apply_$gt(qual$slapply(type$slapply));
-
-const mapi = (f) => (values) => mapi_inner(0)(f)(values);
-
-const predicate$slcombine = (preds) => loop($co(nil)(preds))(({1: right, 0: left}) => (recur) => (($target) => {
+} ;
+return false;
+throw new Error('match fail 14056:' + JSON.stringify($target))
+})(list$eq(preds)(preds$qu)(pred$eq))
+let qual$slfree = ({"1": contents, "0": predicates}) => (contents$slfree) => foldl(contents$slfree(contents))(map(predicate$slfree)(predicates))(set$slmerge)
+let qual$slapply = (contents$slapply) => (subst) => ({"1": contents, "0": predicates}) => $eq$gt(map(predicate$slapply(subst))(predicates))(contents$slapply(subst)(contents))
+let preds_$gt = (preds) => $gt$gt$eq($lt_state)(({"1": {"1": {"1": types, "0": current}, "0": subst}, "0": idx}) => $gt$gt$eq(state_$gt($co(idx)($co(subst)($co(bag$sland(many(map(one)(preds)))(current))(types)))))((_14329) => $lt_($unit)))
+let qualt$slapply_$gt = apply_$gt(qual$slapply(type$slapply))
+let mapi = (f) => (values) => mapi_inner(0)(f)(values)
+let predicate$slcombine = (preds) => loop($co(nil)(preds))(({"1": right, "0": left}) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return left
-}
+} ;
 if ($target.type === "cons") {
-{
 let one = $target[0];
 let rest = $target[1];
 return recur($co(loop(left)((left) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return cons(one)(nil)
-}
+} ;
 if ($target.type === "cons") {
-{
 let lone = $target[0];
 let rest = $target[1];
-return (($target) => {
-if ($target.type === "some") {
 {
+let $target = predicate$slmerge(one)(lone);
+if ($target.type === "some") {
 let merged = $target[0];
 return cons(merged)(rest)
-}
-}
+} ;
 if ($target.type === "none") {
 return cons(lone)(recur(rest))
+} ;
+throw new Error('match fail 16847:' + JSON.stringify($target))
 }
-throw new Error('Failed to match. ' + valueToString($target));
-})(predicate$slmerge(one)(lone))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
+} ;
+throw new Error('match fail 16835:' + JSON.stringify($target))
 })(left)))(rest))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(right));
-
-const pred_contains = (free) => ({2: loc, 1: cls, 0: type}) => type$slmatches_free(free)(type);
-
-const organize_predicates = (preds) => map$slmap((ol) => mapi((i) => ({1: idx, 0: v}) => (($target) => {
-if ($target === true) {
-return fatal(`predicates out of order somehow: ${int_to_string(i)} ${int_to_string(idx)}`)
-}
-return v
-throw new Error('Failed to match. ' + valueToString($target));
-})($ex$eq(i)(idx)))(ol))(foldl(map$slnil)(preds)((by_loc) => ({2: locs, 1: cls, 0: type}) => ((instance_name) => foldl(by_loc)(locs)((by_loc) => ({1: idx, 0: loc}) => (($target) => {
-if ($target.type === "none") {
-return map$slset(by_loc)(loc)(cons($co(instance_name)(idx))(nil))
-}
-if ($target.type === "some") {
+} ;
+throw new Error('match fail 16816:' + JSON.stringify($target))
+})(right))
+let pred_contains = (free) => ({"2": loc, "1": cls, "0": type}) => type$slmatches_free(free)(type)
+let merge_substitutions = (s1) => (s2) => (l) => {
+let all_agree = all((v) => $eq(type$slapply(s1)(tvar(v)(l)))(type$slapply(s2)(tvar(v)(l))))(set$slto_list(set$sloverlap(set$slfrom_list(map$slkeys(s1)))(set$slfrom_list(map$slkeys(s2)))));
 {
-let current = $target[0];
-return map$slset(by_loc)(loc)(put_in_place(current)(instance_name)(idx))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(by_loc)(loc))))(name_for_instance(type)(cls))));
-
-const merge = (s1) => (s2) => (l) => ((agree) => (($target) => {
+let $target = all_agree;
 if ($target === true) {
 return map$slmerge(s1)(s2)
+} ;
+return fatal("merge failed");
+throw new Error('match fail 18832:' + JSON.stringify($target))
 }
-return fatal("merge failed")
-throw new Error('Failed to match. ' + valueToString($target));
-})(agree))(all((v) => $eq(type$slapply(s1)(tvar(v)(l)))(type$slapply(s2)(tvar(v)(l))))(set$slto_list(set$sloverlap(set$slfrom_list(map$slkeys(s1)))(set$slfrom_list(map$slkeys(s2))))));
-
-const tss_$gts = (tss) => joinor("\n")("no tss")(map(dot(joinor("; ")("[empty]"))(map(type_$gts)))(tss));
-
-const vps_$gts = (vps) => joinor("\n")("no vps")(map(({1: preds, 0: a}) => `${a} is in predicates: ${join(";")(map(pred_$gts)(preds))}`)(vps));
-
-const without = (base) => (remove) => (x$eq) => filter((x) => not(contains(remove)(x)(x$eq)))(base);
-
-const pred_$gtcst = ({1: name, 0: t}) => cst$sllist(cons(cst$slid("isin")(-1))(cons(type_$gtcst(t))(cons(cst$slstring("name")(nil)(-1))(nil))))(-1);
-
-const terr = (v0) => (v1) => ({type: "terr", 0: v0, 1: v1})
-const ttypes = (v0) => (v1) => ({type: "ttypes", 0: v0, 1: v1})
-const twrap = (v0) => (v1) => ({type: "twrap", 0: v0, 1: v1})
-const tmissing = (v0) => ({type: "tmissing", 0: v0})
-const scheme$slfree = ({1: type, 0: vbls}) => set$sldiff(qual$slfree(type)(type$slfree))(vbls);
-
-const tenv$slfree = ({0: values}) => foldr(set$slnil)(map(scheme$slfree)(map$slvalues(values)))(set$slmerge);
-
-const scheme$slapply = (subst) => ({1: qualified_type, 0: vbls}) => forall(vbls)(qual$slapply(type$slapply)(map_without(subst)(vbls))(qualified_type));
-
-const generalize = (tenv) => (qual) => forall(set$sldiff(qual$slfree(qual)(type$slfree))(tenv$slfree(tenv)))(qual);
-
-const instantiate = ({1: qual, 0: vars}) => (l) => $gt$gt$eq(make_subst_for_free(vars)(l))((subst) => $gt$gt$eq($lt_(qual$slapply(type$slapply)(subst)(qual)))(({1: t, 0: preds}) => $gt$gt$eq(preds_$gt(mapi(predicate$slreloc(l))(preds)))((_) => $lt_(t))));
-
-const infer$slprim = (prim) => (($target) => {
+}
+let without = (base) => (remove) => (x$eq) => filter((x) => not(contains(remove)(x)(x$eq)))(base)
+let pred_$gtcst = ({"1": name, "0": t}) => cst$sllist(cons(cst$slid("isin")(-1))(cons(type_$gtcst(t))(cons(cst$slstring("name")(nil)(-1))(nil))))(-1)
+let get_variable_heads = (resolved) => (($target) => {
+if ($target.type === "variable-head") {
+let pred = $target[0];
+return one(pred)
+} ;
+if ($target.type === "resolved-pred") {
+let args = $target[2];
+return many(map(get_variable_heads)(args))
+} ;
+throw new Error('match fail 24462:' + JSON.stringify($target))
+})(resolved)
+let type_$gts = (type) => (($target) => {
+if ($target.type === "tvar") {
+let name = $target[0];
+return name
+} ;
+if ($target.type === "tapp") {
+if ($target[0].type === "tapp") {
+if ($target[0][0].type === "tcon") {
+if ($target[0][0][0] === "->") {
+{
+let {"1": result, "0": args} = unwrap_fn(type);
+return `(fn [${join(" ")(map(type_$gts)(args))}] ${type_$gts(result)})`
+}
+} 
+} 
+} 
+} ;
+if ($target.type === "tapp") {
+{
+let {"1": args, "0": target} = unwrap_app(type)(nil);
+return `(${type_$gts(target)} ${join(" ")(map(type_$gts)(args))})`
+}
+} ;
+if ($target.type === "tcon") {
+let name = $target[0];
+return name
+} ;
+throw new Error('match fail 24658:' + JSON.stringify($target))
+})(type)
+let resolved_pred$slapply = (subst) => (res) => (($target) => {
+if ($target.type === "variable-head") {
+let pred = $target[0];
+return variable_head(predicate$slapply(subst)(pred))
+} ;
+if ($target.type === "resolved-pred") {
+let type = $target[0];
+let predicate = $target[1];
+let args = $target[2];
+return resolved_pred(type)(predicate$slapply(subst)(predicate))(map(resolved_pred$slapply(subst))(args))
+} ;
+throw new Error('match fail 25964:' + JSON.stringify($target))
+})(res)
+let resolved_for_codegen = (res) => (($target) => {
+if ($target.type === "variable-head") {
+if ($target[0].type === "isin") {
+let type = $target[0][0];
+let cls = $target[0][1];
+let locs = $target[0][2];
+return tc_vbl(type_$gts(type))(cls)
+} 
+} ;
+if ($target.type === "resolved-pred") {
+let type = $target[0];
+if ($target[1].type === "isin") {
+let cls = $target[1][1];
+let locs = $target[1][2];
+let args = $target[2];
+return tc_con(type_$gts(type))(cls)(map(resolved_for_codegen)(args))
+} 
+} ;
+throw new Error('match fail 26046:' + JSON.stringify($target))
+})(res)
+let resolved_locs = (res) => (($target) => {
+if ($target.type === "variable-head") {
+if ($target[0].type === "isin") {
+let locs = $target[0][2];
+return locs
+} 
+} ;
+if ($target.type === "resolved-pred") {
+if ($target[1].type === "isin") {
+let locs = $target[1][2];
+return locs
+} 
+} ;
+throw new Error('match fail 26104:' + JSON.stringify($target))
+})(res)
+let terr = (v0) => (v1) => ({type: "terr", 0: v0, 1: v1})
+let ttypes = (v0) => (v1) => ({type: "ttypes", 0: v0, 1: v1})
+let twrap = (v0) => (v1) => ({type: "twrap", 0: v0, 1: v1})
+let tmissing = (v0) => ({type: "tmissing", 0: v0})
+let scheme$slfree = ({"1": type, "0": vbls}) => set$sldiff(qual$slfree(type)(type$slfree))(vbls)
+let tenv$slfree = ({"0": values}) => foldr(set$slnil)(map(scheme$slfree)(map$slvalues(values)))(set$slmerge)
+let scheme$slapply = (subst) => ({"1": qualified_type, "0": vbls}) => forall(vbls)(qual$slapply(type$slapply)(map_without(subst)(vbls))(qualified_type))
+let generalize = (tenv) => (qual) => forall(set$sldiff(qual$slfree(qual)(type$slfree))(tenv$slfree(tenv)))(qual)
+let instantiate = ({"1": qual, "0": vars}) => (l) => $gt$gt$eq(make_subst_for_free(vars)(l))((subst) => $gt$gt$eq($lt_(qual$slapply(type$slapply)(subst)(qual)))(({"1": t, "0": preds}) => $gt$gt$eq(preds_$gt(mapi(predicate$slreloc(l))(preds)))((_1869) => $lt_(t))))
+let infer$slprim = (prim) => (($target) => {
 if ($target.type === "pint") {
-{
 let l = $target[1];
-return $gt$gt$eq(new_type_var("number")(l))((tv) => $gt$gt$eq(preds_$gt(cons(isin(tv)("number")(cons(oloc(l)(0))(nil)))(nil)))((_) => $lt_(tv)))
-}
-}
+return $gt$gt$eq(new_type_var("number")(l))((tv) => $gt$gt$eq(preds_$gt(cons(isin(tv)("number")(cons(oloc(l)(0))(nil)))(nil)))((_15373) => $lt_(tv)))
+} ;
 if ($target.type === "pfloat") {
-{
 let l = $target[1];
-return $gt$gt$eq(new_type_var("floating")(l))((tv) => $gt$gt$eq(preds_$gt(cons(isin(tv)("floating")(cons(oloc(l)(0))(nil)))(nil)))((_) => $lt_(tv)))
-}
-}
+return $gt$gt$eq(new_type_var("floating")(l))((tv) => $gt$gt$eq(preds_$gt(cons(isin(tv)("floating")(cons(oloc(l)(0))(nil)))(nil)))((_15402) => $lt_(tv)))
+} ;
 if ($target.type === "pbool") {
-{
 let l = $target[1];
 return $lt_(tcon("bool")(l))
+} ;
+throw new Error('match fail 2221:' + JSON.stringify($target))
+})(prim)
+let add$sldeftype = ({"3": aliases, "2": types, "1": tcons}) => (name) => (args) => (constrs) => (l) => {
+let free = map(fst)(args);
+{
+let free_set = set$slfrom_list(free);
+{
+let res = foldl(tcon(name)(l))(args)((inner) => ({"1": l, "0": name}) => tapp(inner)(tvar(name)(l))(l));
+{
+let parsed_constrs = map(({"1": {"1": {"0": args}}, "0": name}) => {
+let args$$0 = args;
+{
+let args = map(type$slcon_to_var(free_set))(args$$0);
+{
+let args$$0 = args;
+{
+let args = map(type$slresolve_aliases(aliases))(args$$0);
+return $co(name)($co(free)($co(args)(res)))
 }
 }
-throw new Error('Failed to match. ' + valueToString($target));
-})(prim);
-
-const add$sldeftype = ({3: aliases, 2: types, 1: tcons}) => (name) => (args) => (constrs) => (l) => ((free) => ((free_set) => ((res) => ((parsed_constrs) => tenv(map$slfrom_list(map(({1: {1: {1: res, 0: args}, 0: free}, 0: name}) => $co(name)(forall(set$slfrom_list(free))($eq$gt(nil)(tfns(args)(res)(l)))))(parsed_constrs)))(map$slfrom_list(parsed_constrs))(map$slset(map$slnil)(name)($co(length(args))(set$slfrom_list(map(fst)(constrs)))))(map$slnil)(map$slnil))(map(({1: {1: {0: args}}, 0: name}) => ((args) => ((args) => $co(name)($co(free)($co(args)(res))))(map(type$slresolve_aliases(aliases))(args)))(map(type$slcon_to_var(free_set))(args)))(constrs)))(foldl(tcon(name)(l))(args)((inner) => ({1: l, 0: name}) => tapp(inner)(tvar(name)(l))(l))))(set$slfrom_list(free)))(map(fst)(args));
-
-const scope$slapply = (subst) => (scope) => map$slmap(scheme$slapply(subst))(scope);
-
-const scope$slapply_$gt = apply_$gt(scope$slapply);
-
-const scheme$slapply_$gt = apply_$gt(scheme$slapply);
-
-const args_if_complete = (tenv) => (matrix) => ((heads) => ((gid) => (($target) => {
+}
+})(constrs);
+return tenv(map$slfrom_list(map(({"1": {"1": {"1": res, "0": args}, "0": free}, "0": name}) => $co(name)(forall(set$slfrom_list(free))($eq$gt(nil)(tfns(args)(res)(l)))))(parsed_constrs)))(map$slfrom_list(parsed_constrs))(map$slset(map$slnil)(name)($co(length(args))(set$slfrom_list(map(fst)(constrs)))))(map$slnil)(map$slnil)
+}
+}
+}
+}
+let scope$slapply = (subst) => (scope) => map$slmap(scheme$slapply(subst))(scope)
+let scope$slapply_$gt = apply_$gt(scope$slapply)
+let scheme$slapply_$gt = apply_$gt(scheme$slapply)
+let args_if_complete = (tenv) => (matrix) => {
+let heads = map((row) => (($target) => {
+if ($target.type === "nil") {
+return fatal("is-complete called with empty row")
+} ;
+if ($target.type === "cons") {
+let head = $target[0];
+return head
+} ;
+throw new Error('match fail 10688:' + JSON.stringify($target))
+})(row))(matrix);
+{
+let gid = find_gid(heads);
+{
+let $target = gid;
 if ($target.type === "none") {
 return map$slnil
-}
+} ;
 if ($target.type === "some") {
-{
 let gid = $target[0];
-return ((found) => (($target) => {
+{
+let found = map$slfrom_list(fold_ex_pats(nil)(heads)((found) => (head) => (($target) => {
+if ($target.type === "ex/constructor") {
+let id = $target[0];
+let args = $target[2];
+return cons($co(id)(length(args)))(found)
+} ;
+return found;
+throw new Error('match fail 11013:' + JSON.stringify($target))
+})(head)));
+{
+let $target = group_constructors(tenv)(gid);
 if ($target.type === "nil") {
 return map$slnil
-}
+} ;
 {
 let constrs = $target;
 return loop(constrs)((constrs) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return found
-}
+} ;
 if ($target.type === "cons") {
-{
 let id = $target[0];
 let rest = $target[1];
-return (($target) => {
+{
+let $target = map$slget(found)(id);
 if ($target.type === "none") {
 return map$slnil
-}
+} ;
 if ($target.type === "some") {
 return recur(rest)
+} ;
+throw new Error('match fail 10952:' + JSON.stringify($target))
 }
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(found)(id))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
+} ;
+throw new Error('match fail 10864:' + JSON.stringify($target))
 })(constrs))
+};
+throw new Error('match fail 10846:' + JSON.stringify($target))
 }
-throw new Error('Failed to match. ' + valueToString($target));
-})(group_constructors(tenv)(gid)))(map$slfrom_list(fold_ex_pats(nil)(heads)((found) => (head) => (($target) => {
-if ($target.type === "ex/constructor") {
+}
+} ;
+throw new Error('match fail 10704:' + JSON.stringify($target))
+}
+}
+}
+let type_error = (message) => (loced_items) => terr(message)(loced_items)
+let $lt_err = (x) => $lt_err$ti(terr(x)(nil))
+let $lt_missing = (name) => (loc) => $lt_err$ti(tmissing(cons($co(name)(loc))(nil)))
+let $lt_mismatch = (t1) => (t2) => $lt_err$ti(ttypes(forall(set$slnil)($eq$gt(nil)(t1)))(forall(set$slnil)($eq$gt(nil)(t2))))
+let scheme_$gtcst = ({"1": {"1": type, "0": preds}}) => {
+let t = type_$gtcst(type);
 {
-let id = $target[0];
-let args = $target[2];
-return cons($co(id)(length(args)))(found)
-}
-}
-return found
-throw new Error('Failed to match. ' + valueToString($target));
-})(head))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(gid))(find_gid(heads)))(map((row) => (($target) => {
-if ($target.type === "nil") {
-return fatal("is-complete called with empty row")
-}
-if ($target.type === "cons") {
-{
-let head = $target[0];
-return head
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(row))(matrix));
-
-const type_error = (message) => (loced_items) => terr(message)(loced_items);
-
-const type_error_$gts = (err) => (($target) => {
-if ($target.type === "twrap") {
-{
-let inner = $target[1];
-return type_error_$gts(inner)
-}
-}
-if ($target.type === "tmissing") {
-{
-let missing = $target[0];
-return `Missing values: ${join("")(map(({1: loc, 0: name}) => `\n - ${name} (${int_to_string(loc)})`)(missing))}`
-}
-}
-if ($target.type === "ttypes") {
-{
-let t1 = $target[0];
-let t2 = $target[1];
-return `Incompatible types: ${scheme_$gts(t1)} and ${scheme_$gts(t2)}`
-}
-}
-if ($target.type === "terr") {
-{
-let message = $target[0];
-let names = $target[1];
-return `${message}${join("")(map(({1: loc, 0: name}) => `\n - ${name} (${int_to_string(loc)})`)(names))}`
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(err);
-
-const err_to_fatal = (x) => (($target) => {
-if ($target.type === "ok") {
-{
-let v = $target[0];
-return v
-}
-}
-if ($target.type === "err") {
-{
-let e = $target[0];
-return fatal(`Result is err ${type_error_$gts(e)}`)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(x);
-
-const $lt_err = (x) => $lt_err$ti(terr(x)(nil));
-
-const $lt_missing = (name) => (loc) => $lt_err$ti(tmissing(cons($co(name)(loc))(nil)));
-
-const $lt_mismatch = (t1) => (t2) => $lt_err$ti(ttypes(forall(set$slnil)($eq$gt(nil)(t1)))(forall(set$slnil)($eq$gt(nil)(t2))));
-
-const scheme_$gtcst = ({1: {1: type, 0: preds}}) => ((t) => (($target) => {
+let $target = preds;
 if ($target.type === "nil") {
 return t
+} ;
+return cst$sllist(cons(cst$slid("=>")(-1))(cons(cst$slarray(map(pred_$gtcst)(preds))(-1))(cons(t)(nil))))(-1);
+throw new Error('match fail 20712:' + JSON.stringify($target))
 }
-return cst$sllist(cons(cst$slid("=>")(-1))(cons(cst$slarray(map(pred_$gtcst)(preds))(-1))(cons(t)(nil))))(-1)
-throw new Error('Failed to match. ' + valueToString($target));
-})(preds))(type_$gtcst(type));
-
-const with_preds = (preds) => ({1: {1: type, 0: p2}, 0: free}) => forall(free)($eq$gt(concat(cons(p2)(cons(filter(pred_contains(free))(preds))(nil))))(type));
-
-const type_match = (t1) => (t2) => (($target) => {
-if ($target.type === "," &&
-$target[0].type === "tapp" &&
-$target[1].type === "tapp") {
+}
+let pred_$gts = ({"2": locs, "1": cls, "0": type}) => `(isin ${type_$gts(type)} \"${cls}\" ${join(" ")(map(({"1": i, "0": l}) => `${int_to_string(l)}@${int_to_string(i)}`)(locs))})`
+let with_preds = (preds) => ({"1": {"1": type, "0": p2}, "0": free}) => forall(free)($eq$gt(concat(cons(p2)(cons(filter(pred_contains(free))(preds))(nil))))(type))
+let organize_resolved = (preds) => map$slmap((ol) => mapi((i) => ({"1": idx, "0": v}) => (($target) => {
+if ($target === true) {
+return fatal(`predicates out of order somehow: ${int_to_string(i)} ${int_to_string(idx)}`)
+} ;
+return v;
+throw new Error('match fail 17784:' + JSON.stringify($target))
+})($ex$eq(i)(idx)))(ol))(foldl(map$slnil)(preds)((by_loc) => (res) => {
+let locs = resolved_locs(res);
 {
+let tci = resolved_for_codegen(res);
+return foldl(by_loc)(locs)((by_loc) => ({"1": idx, "0": loc}) => (($target) => {
+if ($target.type === "none") {
+return map$slset(by_loc)(loc)(cons($co(tci)(idx))(nil))
+} ;
+if ($target.type === "some") {
+let current = $target[0];
+return map$slset(by_loc)(loc)(put_in_place(current)(tci)(idx))
+} ;
+throw new Error('match fail 17599:' + JSON.stringify($target))
+})(map$slget(by_loc)(loc)))
+}
+}))
+let name_for_instance = (type) => (cls) => `${type_$gts(type)} < ${cls}`
+let type_match = (t1) => (t2) => (($target) => {
+if ($target.type === ",") {
+if ($target[0].type === "tapp") {
 let l = $target[0][0];
 let r = $target[0][1];
 let loc = $target[0][2];
+if ($target[1].type === "tapp") {
 let l$qu = $target[1][0];
 let r$qu = $target[1][1];
-return (($target) => {
-if ($target.type === "ok") {
 {
+let $target = type_match(l)(l$qu);
+if ($target.type === "ok") {
 let sl = $target[0];
-return (($target) => {
+{
+let $target = type_match(r)(r$qu);
 if ($target.type === "ok") {
-{
 let sr = $target[0];
-return ok(merge(sl)(sr)(loc))
-}
-}
+return ok(merge_substitutions(sl)(sr)(loc))
+} ;
 {
 let err = $target;
 return err
+};
+throw new Error('match fail 18670:' + JSON.stringify($target))
 }
-throw new Error('Failed to match. ' + valueToString($target));
-})(type_match(r)(r$qu))
-}
-}
+} ;
 {
 let err = $target;
 return err
+};
+throw new Error('match fail 18661:' + JSON.stringify($target))
 }
-throw new Error('Failed to match. ' + valueToString($target));
-})(type_match(l)(l$qu))
-}
-}
-if ($target.type === "," &&
-$target[0].type === "tvar") {
-{
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "tvar") {
 let u = $target[0][0];
 let t = $target[1];
 return ok(map$slset(map$slnil)(u)(t))
-}
-}
-if ($target.type === "," &&
-$target[0].type === "tcon" &&
-$target[1].type === "tcon") {
-{
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "tcon") {
 let tc1 = $target[0][0];
+if ($target[1].type === "tcon") {
 let tc2 = $target[1][0];
-return (($target) => {
+{
+let $target = $eq(tc1)(tc2);
 if ($target === true) {
 return ok(map$slnil)
+} ;
+return err($co(`Unable to match types ${tc1} and ${tc2}`)(nil));
+throw new Error('match fail 18742:' + JSON.stringify($target))
 }
-return err($co(`Unable to match types ${tc1} and ${tc2}`)(nil))
-throw new Error('Failed to match. ' + valueToString($target));
-})($eq(tc1)(tc2))
-}
-}
-return err($co(`Unable to match ${type_$gts(t1)} vs ${type_$gts(t2)}`)(nil))
-throw new Error('Failed to match. ' + valueToString($target));
-})($co(t1)(t2));
-
-const ok_$gt = (result) => (($target) => {
+} 
+} 
+} ;
+return err($co(`Unable to match ${type_$gts(t1)} vs ${type_$gts(t2)}`)(nil));
+throw new Error('match fail 18643:' + JSON.stringify($target))
+})($co(t1)(t2))
+let tss_$gts = (tss) => joinor("\n")("no tss")(map(dot(joinor("; ")("[empty]"))(map(type_$gts)))(tss))
+let vps_$gts = (vps) => joinor("\n")("no vps")(map(({"1": preds, "0": a}) => `${a} is in predicates: ${join(";")(map(pred_$gts)(preds))}`)(vps))
+let preds_$gts = dot(join("\n"))(map(pred_$gts))
+let ok_$gt = (result) => (($target) => {
 if ($target.type === "ok") {
-{
 let v = $target[0];
 return $lt_(v)
-}
-}
+} ;
 if ($target.type === "err") {
-{
 let e = $target[0];
 return $lt_err(e)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(result);
-
-const run_and_preds = (statet) => (({1: result, 0: {1: {1: {1: types, 0: preds}, 0: subst}, 0: idx}}) => $co(err_to_fatal(result))(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))(state_f(statet)(state$slnil));
-
-const tenv$slapply = (subst) => ({4: typeclasses, 3: aliases, 2: types, 1: tcons, 0: values}) => tenv(scope$slapply(subst)(values))(tcons)(types)(aliases)(typeclasses);
-
-const var_bind = ($var) => (type) => (l) => (($target) => {
+} ;
+throw new Error('match fail 19842:' + JSON.stringify($target))
+})(result)
+let resolved_$gts = (res) => (($target) => {
+if ($target.type === "variable-head") {
+let pred = $target[0];
+return pred_$gts(pred)
+} ;
+if ($target.type === "resolved-pred") {
+let type = $target[0];
+let pred = $target[1];
+let args = $target[2];
+return `${pred_$gts(pred)}(${type_$gts(type)})(${join(" ")(map(resolved_$gts)(args))})`
+} ;
+throw new Error('match fail 24559:' + JSON.stringify($target))
+})(res)
+let tenv$slapply = (subst) => ({"4": typeclasses, "3": aliases, "2": types, "1": tcons, "0": values}) => tenv(scope$slapply(subst)(values))(tcons)(types)(aliases)(typeclasses)
+let var_bind = ($var) => (type) => (l) => (($target) => {
 if ($target.type === "tvar") {
-{
 let v = $target[0];
-return (($target) => {
+{
+let $target = $eq($var)(v);
 if ($target === true) {
 return $lt_($unit)
+} ;
+return $gt$gt$eq(subst_$gt(one_subst($var)(type)))((_2097) => $lt_($unit));
+throw new Error('match fail 2088:' + JSON.stringify($target))
 }
-return $gt$gt$eq(subst_$gt(one_subst($var)(type)))((_) => $lt_($unit))
-throw new Error('Failed to match. ' + valueToString($target));
-})($eq($var)(v))
-}
-}
-return (($target) => {
+} ;
+{
+let $target = set$slhas(type$slfree(type))($var);
 if ($target === true) {
 return $lt_err(`Cycle found while unifying type with type variable. ${$var}`)
-}
-return $gt$gt$eq(subst_$gt(one_subst($var)(type)))((_) => $lt_($unit))
-throw new Error('Failed to match. ' + valueToString($target));
-})(set$slhas(type$slfree(type))($var))
-throw new Error('Failed to match. ' + valueToString($target));
-})(type);
-
-const tenv$slapply_$gt = apply_$gt(tenv$slapply);
-
-const instantiate_tcon = ({1: tcons}) => (name) => (l) => (($target) => {
+} ;
+return $gt$gt$eq(subst_$gt(one_subst($var)(type)))((_2132) => $lt_($unit));
+throw new Error('match fail 2115:' + JSON.stringify($target))
+};
+throw new Error('match fail 2081:' + JSON.stringify($target))
+})(type)
+let tenv$slapply_$gt = apply_$gt(tenv$slapply)
+let instantiate_tcon = ({"1": tcons}) => (name) => (l) => (($target) => {
 if ($target.type === "none") {
 return $lt_err(`Unknown type constructor: ${name}`)
-}
-if ($target.type === "some" &&
-$target[0].type === "," &&
-$target[0][1].type === ",") {
-{
+} ;
+if ($target.type === "some") {
+if ($target[0].type === ",") {
 let free = $target[0][0];
+if ($target[0][1].type === ",") {
 let cargs = $target[0][1][0];
 let cres = $target[0][1][1];
 return $gt$gt$eq(make_subst_for_free(set$slfrom_list(free))(l))((subst) => $lt_($co(map(type$slapply(subst))(cargs))(type$slapply(subst)(cres))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(tcons)(name));
-
-const is_useful = (tenv) => (matrix) => (row) => ((head_and_rest) => (($target) => {
-if ($target.type === "none") {
-return false
-}
-if ($target.type === "some" &&
-$target[0].type === ",") {
-{
-let head = $target[0][0];
-let rest = $target[0][1];
-return (($target) => {
-if ($target.type === "ex/constructor") {
-{
-let id = $target[0];
-let args = $target[2];
-return is_useful(tenv)(specialized_matrix(id)(length(args))(matrix))(concat(cons(args)(cons(rest)(nil))))
-}
-}
-if ($target.type === "ex/any") {
-return (($target) => {
+} 
+} 
+} ;
+throw new Error('match fail 4084:' + JSON.stringify($target))
+})(map$slget(tcons)(name))
+let scheme_$gts = ({"1": {"1": type, "0": preds}, "0": vbls}) => `${(($target) => {
 if ($target.type === "nil") {
-return (($target) => {
-if ($target.type === "nil") {
-return true
-}
+return ""
+} ;
 {
-let defaults = $target;
-return is_useful(tenv)(defaults)(rest)
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(default_matrix(matrix))
-}
-{
-let alts = $target;
-return any(({1: alt, 0: id}) => is_useful(tenv)(specialized_matrix(id)(alt)(matrix))(concat(cons(any_list(alt))(cons(rest)(nil)))))(alts)
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slto_list(args_if_complete(tenv)(matrix)))
-}
-if ($target.type === "ex/or") {
-{
-let left = $target[0];
-let right = $target[1];
-return (($target) => {
-if ($target === true) {
-return true
-}
-return is_useful(tenv)(matrix)(cons(right)(rest))
-throw new Error('Failed to match. ' + valueToString($target));
-})(is_useful(tenv)(matrix)(cons(left)(rest)))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(head)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(head_and_rest))((($target) => {
+let vbls = $target;
+return `forall ${join(" ")(vbls)} : `
+};
+throw new Error('match fail 15351:' + JSON.stringify($target))
+})(set$slto_list(vbls))}${join("")(map(pred_$gts)(preds))}${type_$gts(type)}`
+let is_useful = (tenv) => (matrix) => (row) => {
+let head_and_rest = (($target) => {
 if ($target.type === "nil") {
 return none
-}
-if ($target.type === "cons" &&
-$target[0].type === "nil") {
-return none
-}
+} ;
 if ($target.type === "cons") {
-return (($target) => {
-if ($target.type === "nil") {
+if ($target[0].type === "nil") {
 return none
-}
+} 
+} ;
 if ($target.type === "cons") {
 {
+let $target = row;
+if ($target.type === "nil") {
+return none
+} ;
+if ($target.type === "cons") {
 let head = $target[0];
 let rest = $target[1];
 return some($co(head)(rest))
+} ;
+throw new Error('match fail 11050:' + JSON.stringify($target))
 }
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(row)
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(matrix));
-
-const by_inst = (classes) => (pred) => (({2: locs, 1: cls, 0: t}) => (({1: {0: insts}}) => find_some(({1: {1: cls2, 0: t2}, 0: ps}) => (($target) => {
-if ($target === true) {
-return none
-}
-return (($target) => {
-if ($target.type === "err") {
-return none
-}
-if ($target.type === "ok") {
+} ;
+throw new Error('match fail 11038:' + JSON.stringify($target))
+})(matrix);
 {
-let subst = $target[0];
-return some(map(predicate$slapply(subst))(ps))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(type_match(t2)(t))
-throw new Error('Failed to match. ' + valueToString($target));
-})($ex$eq(cls)(cls2)))(insts))((($target) => {
-if ($target.type === "some") {
-{
-let s = $target[0];
-return s
-}
-}
-return fatal(`Unknown class '${cls}' in predicate [by-inst]`)
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(classes)(cls))))(pred);
-
-const entail = (classes) => (predicates) => (predicate) => (($target) => {
-if ($target === true) {
-return true
-}
-return (($target) => {
+let $target = head_and_rest;
 if ($target.type === "none") {
 return false
-}
+} ;
 if ($target.type === "some") {
+if ($target[0].type === ",") {
+let head = $target[0][0];
+let rest = $target[0][1];
 {
-let qs = $target[0];
-return all(entail(classes)(predicates))(qs)
+let $target = head;
+if ($target.type === "ex/constructor") {
+let id = $target[0];
+let args = $target[2];
+return is_useful(tenv)(specialized_matrix(id)(length(args))(matrix))(concat(cons(args)(cons(rest)(nil))))
+} ;
+if ($target.type === "ex/any") {
+{
+let $target = map$slto_list(args_if_complete(tenv)(matrix));
+if ($target.type === "nil") {
+{
+let $target = default_matrix(matrix);
+if ($target.type === "nil") {
+return true
+} ;
+{
+let defaults = $target;
+return is_useful(tenv)(defaults)(rest)
+};
+throw new Error('match fail 10407:' + JSON.stringify($target))
+}
+} ;
+{
+let alts = $target;
+return any(({"1": alt, "0": id}) => is_useful(tenv)(specialized_matrix(id)(alt)(matrix))(concat(cons(any_list(alt))(cons(rest)(nil)))))(alts)
+};
+throw new Error('match fail 10395:' + JSON.stringify($target))
+}
+} ;
+if ($target.type === "ex/or") {
+let left = $target[0];
+let right = $target[1];
+{
+let $target = is_useful(tenv)(matrix)(cons(left)(rest));
+if ($target === true) {
+return true
+} ;
+return is_useful(tenv)(matrix)(cons(right)(rest));
+throw new Error('match fail 11134:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 10381:' + JSON.stringify($target))
+}
+} 
+} ;
+throw new Error('match fail 11090:' + JSON.stringify($target))
 }
 }
-throw new Error('Failed to match. ' + valueToString($target));
-})(by_inst(classes)(predicate))
-throw new Error('Failed to match. ' + valueToString($target));
-})(any(any(pred$eq(predicate)))(map(by_super(classes))(predicates)));
-
-const candidates = (classes) => ({1: qs, 0: v}) => ((is) => ((ts) => (($target) => {
+let type_error_$gts = (err) => (($target) => {
+if ($target.type === "twrap") {
+let inner = $target[1];
+return type_error_$gts(inner)
+} ;
+if ($target.type === "tmissing") {
+let missing = $target[0];
+return `Missing values: ${join("")(map(({"1": loc, "0": name}) => `\n - ${name} (${int_to_string(loc)})`)(missing))}`
+} ;
+if ($target.type === "ttypes") {
+let t1 = $target[0];
+let t2 = $target[1];
+return `Incompatible types: ${scheme_$gts(t1)} and ${scheme_$gts(t2)}`
+} ;
+if ($target.type === "terr") {
+let message = $target[0];
+let names = $target[1];
+return `${message}${join("")(map(({"1": loc, "0": name}) => `\n - ${name} (${int_to_string(loc)})`)(names))}`
+} ;
+throw new Error('match fail 12014:' + JSON.stringify($target))
+})(err)
+let err_to_fatal = (x) => (($target) => {
+if ($target.type === "ok") {
+let v = $target[0];
+return v
+} ;
+if ($target.type === "err") {
+let e = $target[0];
+return fatal(`Result is err ${type_error_$gts(e)}`)
+} ;
+throw new Error('match fail 12111:' + JSON.stringify($target))
+})(x)
+let get_args_for_matching_instance = (classes) => (pred) => {
+let {"2": locs, "1": cls, "0": t} = pred;
+{
+let {"1": {"0": insts}} = (($target) => {
+if ($target.type === "some") {
+let s = $target[0];
+return s
+} ;
+return fatal(`Unknown class '${cls}' in predicate [by-inst]`);
+throw new Error('match fail 18324:' + JSON.stringify($target))
+})(map$slget(classes)(cls));
+return find_some(({"1": {"1": cls2, "0": t2}, "0": ps}) => (($target) => {
+if ($target === true) {
+return none
+} ;
+{
+let $target = type_match(t2)(t);
+if ($target.type === "err") {
+return none
+} ;
+if ($target.type === "ok") {
+let subst = $target[0];
+return some($co(t2)(map(predicate$slapply(subst))(ps)))
+} ;
+throw new Error('match fail 18350:' + JSON.stringify($target))
+};
+throw new Error('match fail 18878:' + JSON.stringify($target))
+})($ex$eq(cls)(cls2)))(insts)
+}
+}
+let is_predicate_supported = (classes) => (predicates) => (predicate) => (($target) => {
+if ($target === true) {
+return true
+} ;
+{
+let $target = get_args_for_matching_instance(classes)(predicate);
+if ($target.type === "none") {
+return false
+} ;
+if ($target.type === "some") {
+if ($target[0].type === ",") {
+let args = $target[0][1];
+return all(is_predicate_supported(classes)(predicates))(args)
+} 
+} ;
+throw new Error('match fail 18396:' + JSON.stringify($target))
+};
+throw new Error('match fail 18380:' + JSON.stringify($target))
+})(any(any(pred$eq(predicate)))(map(expand_with_super_classes(classes))(predicates)))
+let candidates = (classes) => ({"1": qs, "0": v}) => {
+let is = map(({"1": i}) => i)(qs);
+{
+let ts = map(({"0": t}) => t)(qs);
+{
+let $target = not(every(cons(all(type$eq(tvar(v)(-1)))(ts))(cons(any((x) => any($eq(x))(numClasses))(is))(cons(all((x) => any($eq(x))(stdClasses))(is))(nil))))((x) => x));
 if ($target === true) {
 return nil
+} ;
+return filter((t$qu) => all(is_predicate_supported(classes)(nil))(map((i) => isin(t$qu)(i)(nil))(is)))(default_types);
+throw new Error('match fail 19224:' + JSON.stringify($target))
 }
-return filter((t$qu) => all(entail(classes)(nil))(map((i) => isin(t$qu)(i)(nil))(is)))(default_types)
-throw new Error('Failed to match. ' + valueToString($target));
-})(not(every(cons(all(type$eq(tvar(v)(-1)))(ts))(cons(any((x) => any($eq(x))(numClasses))(is))(cons(all((x) => any($eq(x))(stdClasses))(is))(nil))))((x) => x))))(map(({0: t}) => t)(qs)))(map(({1: i}) => i)(qs));
-
-const simplify_inner = (ce) => (rs) => (preds) => (($target) => {
+}
+}
+let remove_redundant_preds = (ce) => (preds) => loop($co(nil)(preds))(({"1": preds, "0": rs}) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return rs
-}
+} ;
 if ($target.type === "cons") {
-{
 let p = $target[0];
 let ps = $target[1];
-return (($target) => {
-if ($target === true) {
-return simplify_inner(ce)(rs)(ps)
-}
-return simplify_inner(ce)(cons(p)(rs))(ps)
-throw new Error('Failed to match. ' + valueToString($target));
-})(entail(ce)(concat(cons(rs)(cons(ps)(nil))))(p))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(preds);
-
-const simplify = (ce) => simplify_inner(ce)(nil);
-
-const to_hnfs = (ce) => (ps) => (($target) => {
-if ($target.type === "err") {
 {
+let $target = is_predicate_supported(ce)(concat(cons(rs)(cons(ps)(nil))))(p);
+if ($target === true) {
+return recur($co(rs)(ps))
+} ;
+return recur($co(cons(p)(rs))(ps));
+throw new Error('match fail 24296:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 24280:' + JSON.stringify($target))
+})(preds))
+let run_and_preds = (statet) => {
+let {"1": result, "0": {"1": {"1": {"1": types, "0": preds}, "0": subst}, "0": idx}} = state_f(statet)(state$slnil);
+return $co(err_to_fatal(result))(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds))))
+}
+let resolve_predicate = (ce) => (predicate) => (($target) => {
+if ($target === true) {
+return ok(variable_head(predicate))
+} ;
+{
+let $target = get_args_for_matching_instance(ce)(predicate);
+if ($target.type === "none") {
+return err(`No matching instance found for predicate: ${pred_$gts(predicate)}`)
+} ;
+if ($target.type === "some") {
+if ($target[0].type === ",") {
+let type = $target[0][0];
+let predicates = $target[0][1];
+{
+let $target = map$slok(resolve_predicate(ce))(predicates);
+if ($target.type === "err") {
 let e = $target[0];
 return err(e)
-}
-}
+} ;
 if ($target.type === "ok") {
-{
+let predicates = $target[0];
+return ok(resolved_pred(type)(predicate)(predicates))
+} ;
+throw new Error('match fail 24409:' + JSON.stringify($target))
+}
+} 
+} ;
+throw new Error('match fail 24379:' + JSON.stringify($target))
+};
+throw new Error('match fail 24368:' + JSON.stringify($target))
+})(predicate$slhas_variable_head(predicate))
+let collect_variable_heads = (ce) => (predicate) => (($target) => {
+if ($target.type === "err") {
+let e = $target[0];
+return err(e)
+} ;
+if ($target.type === "ok") {
 let v = $target[0];
-return ok(concat(v))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slok(to_hnf(ce))(ps));
-
-
-const to_hnf = (ce) => (p) => (($target) => {
-if ($target === true) {
-return ok(cons(p)(nil))
-}
-return (($target) => {
-if ($target.type === "none") {
-return (({1: name, 0: type}) => err(`Can't find an instance for class '${name}' for type ${type_$gts(type)}`))(p)
-}
-if ($target.type === "some") {
-{
-let ps = $target[0];
-return to_hnfs(ce)(ps)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(by_inst(ce)(p))
-throw new Error('Failed to match. ' + valueToString($target));
-})(in_hnf(p));
-
-const unify_inner = (t1) => (t2) => (l) => (($target) => {
-if ($target.type === "," &&
-$target[0].type === "tvar") {
-{
+return ok(bag$slto_list(get_variable_heads(v)))
+} ;
+throw new Error('match fail 24501:' + JSON.stringify($target))
+})(resolve_predicate(ce)(predicate))
+let reduce2 = (classes) => (predicates) => map(resolve_predicate(classes))(predicates)
+let resolveds_$gts = (resolveds) => join("\n")(map(resolved_$gts)(resolveds))
+let unify_inner = (t1) => (t2) => (l) => (($target) => {
+if ($target.type === ",") {
+if ($target[0].type === "tvar") {
 let $var = $target[0][0];
 let l = $target[0][1];
 let t = $target[1];
 return var_bind($var)(t)(l)
-}
-}
-if ($target.type === "," &&
-$target[1].type === "tvar") {
-{
+} 
+} ;
+if ($target.type === ",") {
 let t = $target[0];
+if ($target[1].type === "tvar") {
 let $var = $target[1][0];
 let l = $target[1][1];
 return var_bind($var)(t)(l)
-}
-}
-if ($target.type === "," &&
-$target[0].type === "tcon" &&
-$target[1].type === "tcon") {
-{
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "tcon") {
 let a = $target[0][0];
 let la = $target[0][1];
+if ($target[1].type === "tcon") {
 let b = $target[1][0];
 let lb = $target[1][1];
-return (($target) => {
+{
+let $target = $eq(a)(b);
 if ($target === true) {
 return $lt_($unit)
+} ;
+return $lt_mismatch(t1)(t2);
+throw new Error('match fail 1940:' + JSON.stringify($target))
 }
-return $lt_mismatch(t1)(t2)
-throw new Error('Failed to match. ' + valueToString($target));
-})($eq(a)(b))
-}
-}
-if ($target.type === "," &&
-$target[0].type === "tapp" &&
-$target[1].type === "tapp") {
-{
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "tapp") {
 let t1 = $target[0][0];
 let a1 = $target[0][1];
+if ($target[1].type === "tapp") {
 let t2 = $target[1][0];
 let a2 = $target[1][1];
-return $gt$gt$eq(unify_inner(t1)(t2)(l))((_) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq(unify_inner(type$slapply(subst)(a1))(type$slapply(subst)(a2))(l))((_) => $lt_($unit))))
-}
-}
-return $lt_mismatch(t1)(t2)
-throw new Error('Failed to match. ' + valueToString($target));
-})($co(t1)(t2));
-
-const is_exhaustive = (tenv) => (matrix) => (($target) => {
+return $gt$gt$eq(unify_inner(t1)(t2)(l))((_2047) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq(unify_inner(type$slapply(subst)(a1))(type$slapply(subst)(a2))(l))((_2047) => $lt_($unit))))
+} 
+} 
+} ;
+return $lt_mismatch(t1)(t2);
+throw new Error('match fail 1896:' + JSON.stringify($target))
+})($co(t1)(t2))
+let is_exhaustive = (tenv) => (matrix) => (($target) => {
 if ($target === true) {
 return false
-}
-return true
-throw new Error('Failed to match. ' + valueToString($target));
-})(is_useful(tenv)(matrix)(cons(ex$slany)(nil)));
-
-const unify = (t1) => (t2) => (l) => map_err_$gt(unify_inner(t1)(t2)(l))((inner) => err(twrap(ttypes(forall(set$slnil)($eq$gt(nil)(t1)))(forall(set$slnil)($eq$gt(nil)(t2))))(inner)));
-
-const with_defaults = (f) => (ce) => (known_variables) => (predicates) => ((vps) => ((tss) => (($target) => {
+} ;
+return true;
+throw new Error('match fail 10333:' + JSON.stringify($target))
+})(is_useful(tenv)(matrix)(cons(ex$slany)(nil)))
+let unify = (t1) => (t2) => (l) => map_err_$gt(unify_inner(t1)(t2)(l))((inner) => err(twrap(ttypes(forall(set$slnil)($eq$gt(nil)(t1)))(forall(set$slnil)($eq$gt(nil)(t2))))(inner)))
+let with_defaults = (f) => (ce) => (known_variables) => (predicates) => {
+let vps = ambiguities(known_variables)(predicates);
+{
+let tss = map(candidates(ce))(vps);
+{
+let $target = any(is_empty)(tss);
 if ($target === true) {
 return err(`Cannot resolve ambiguities: ${vps_$gts(vps)} defaults for variables: ${tss_$gts(tss)} with known variables: ${join("; ")(set$slto_list(known_variables))}`)
-}
-return ok(f(vps)(map(head)(tss)))
-throw new Error('Failed to match. ' + valueToString($target));
-})(any(is_empty)(tss)))(map(candidates(ce))(vps)))(ambiguities(known_variables)(predicates));
-
-const reduce = (ce) => (ps) => (($target) => {
-if ($target.type === "ok") {
-{
-let qs = $target[0];
-return ok(simplify(ce)(qs))
+} ;
+return ok(f(vps)(map(head)(tss)));
+throw new Error('match fail 18982:' + JSON.stringify($target))
 }
 }
+}
+let collect_variable_heads_multi = (ce) => (ps) => (($target) => {
 if ($target.type === "err") {
-{
 let e = $target[0];
 return err(e)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(to_hnfs(ce)(ps));
-
-const defaulted_preds = with_defaults((vps) => (ts) => concat(map(snd)(vps)));
-
-const default_subst = with_defaults((vps) => (ts) => map$slfrom_list(zip(map(fst)(vps))(ts)));
-
-const infer$slpattern = (tenv) => (pattern) => (($target) => {
+} ;
+if ($target.type === "ok") {
+let v = $target[0];
+return ok(concat(v))
+} ;
+throw new Error('match fail 19558:' + JSON.stringify($target))
+})(map$slok(collect_variable_heads(ce))(ps))
+let reduce = (ce) => (ps) => (($target) => {
+if ($target.type === "ok") {
+let qs = $target[0];
+return ok(remove_redundant_preds(ce)(qs))
+} ;
+if ($target.type === "err") {
+let e = $target[0];
+return err(e)
+} ;
+throw new Error('match fail 19703:' + JSON.stringify($target))
+})(collect_variable_heads_multi(ce)(ps))
+let defaulted_preds = with_defaults((vps) => (ts) => concat(map(snd)(vps)))
+let default_subst = with_defaults((vps) => (ts) => map$slfrom_list(zip(map(fst)(vps))(ts)))
+let infer$slpattern = (tenv) => (pattern) => (($target) => {
 if ($target.type === "pvar") {
-{
 let name = $target[0];
 let l = $target[1];
-return $gt$gt$eq(new_type_var(name)(l))((v) => $gt$gt$eq(record_type_$gt(v)(l)(false))((_) => $lt_($co(v)(map$slfrom_list(cons($co(name)(forall(set$slnil)($eq$gt(nil)(v))))(nil))))))
-}
-}
+return $gt$gt$eq(new_type_var(name)(l))((v) => $gt$gt$eq(record_type_$gt(v)(l)(false))((_4285) => $lt_($co(v)(map$slfrom_list(cons($co(name)(forall(set$slnil)($eq$gt(nil)(v))))(nil))))))
+} ;
 if ($target.type === "pany") {
-{
 let l = $target[0];
 return $gt$gt$eq(new_type_var("any")(l))((v) => $lt_($co(v)(map$slnil)))
-}
-}
+} ;
 if ($target.type === "pstr") {
-{
 let l = $target[1];
 return $lt_($co(tcon("string")(l))(map$slnil))
-}
-}
-if ($target.type === "pprim" &&
-$target[0].type === "pbool") {
-{
+} ;
+if ($target.type === "pprim") {
+if ($target[0].type === "pbool") {
 let l = $target[1];
 return $lt_($co(tcon("bool")(l))(map$slnil))
-}
-}
-if ($target.type === "pprim" &&
-$target[0].type === "pint") {
-{
+} 
+} ;
+if ($target.type === "pprim") {
+if ($target[0].type === "pint") {
 let l = $target[1];
 return $lt_($co(tcon("int")(l))(map$slnil))
-}
-}
-if ($target.type === "pprim" &&
-$target[0].type === "pfloat") {
-{
+} 
+} ;
+if ($target.type === "pprim") {
+if ($target[0].type === "pfloat") {
 let l = $target[1];
 return $lt_($co(tcon("float")(l))(map$slnil))
-}
-}
+} 
+} ;
 if ($target.type === "pcon") {
-{
 let name = $target[0];
 let args = $target[2];
 let l = $target[3];
-return $gt$gt$eq(instantiate_tcon(tenv)(name)(l))(({1: cres, 0: cargs}) => $gt$gt$eq(record_type_$gt(tfns(cargs)(cres)(l))(l)(false))((_) => $gt$gt$eq(map_$gt(infer$slpattern(tenv))(args))((sub_patterns) => $gt$gt$eq($lt_(unzip(sub_patterns)))(({1: scopes, 0: arg_types}) => $gt$gt$eq(do_$gt(({1: ctype, 0: ptype}) => unify(ptype)(ctype)(l))(zip(arg_types)(cargs)))((_) => $gt$gt$eq(type$slapply_$gt(cres))((cres) => $gt$gt$eq($lt_(foldl(map$slnil)(scopes)(map$slmerge)))((scope) => $lt_($co(cres)(scope)))))))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(pattern);
-
-const check_exhaustiveness = (tenv) => (target_type) => (patterns) => (l) => $gt$gt$eq(type$slapply_$gt(target_type))((target_type) => $gt$gt$eq($lt_(map((pat) => cons(pattern_to_ex_pattern(tenv)($co(pat)(target_type)))(nil))(patterns)))((matrix) => (($target) => {
+return $gt$gt$eq(instantiate_tcon(tenv)(name)(l))(({"1": cres, "0": cargs}) => $gt$gt$eq(record_type_$gt(tfns(cargs)(cres)(l))(l)(false))((_4032) => $gt$gt$eq(map_$gt(infer$slpattern(tenv))(args))((sub_patterns) => $gt$gt$eq($lt_(unzip(sub_patterns)))(({"1": scopes, "0": arg_types}) => $gt$gt$eq(do_$gt(({"1": ctype, "0": ptype}) => unify(ptype)(ctype)(l))(zip(arg_types)(cargs)))((_4032) => $gt$gt$eq(type$slapply_$gt(cres))((cres) => $gt$gt$eq($lt_(foldl(map$slnil)(scopes)(map$slmerge)))((scope) => $lt_($co(cres)(scope)))))))))
+} ;
+throw new Error('match fail 3998:' + JSON.stringify($target))
+})(pattern)
+let check_exhaustiveness = (tenv) => (target_type) => (patterns) => (l) => $gt$gt$eq(type$slapply_$gt(target_type))((target_type) => $gt$gt$eq($lt_(map((pat) => cons(pattern_to_ex_pattern(tenv)($co(pat)(target_type)))(nil))(patterns)))((matrix) => (($target) => {
 if ($target === true) {
 return $lt_($unit)
-}
-return $lt_err(`Match not exhaustive ${int_to_string(l)}`)
-throw new Error('Failed to match. ' + valueToString($target));
-})(is_exhaustive(tenv)(matrix))));
-
-const split = (ce) => (free_in_scope) => (value_tyvars) => (ps) => $gt$gt$eq(ok_$gt(reduce(ce)(ps)))((ps$qu) => $gt$gt$eq($lt_(partition(ps$qu)(({2: locs, 1: name, 0: type}) => every(set$slto_list(type$slfree(type)))((x) => any($eq(x))(free_in_scope)))))(({1: rs, 0: ds}) => $gt$gt$eq(ok_$gt(defaulted_preds(ce)(set$slfrom_list(concat(cons(free_in_scope)(cons(value_tyvars)(nil)))))(rs)))((rs$qu) => $gt$gt$eq(ok_$gt(default_subst(ce)(set$slfrom_list(concat(cons(free_in_scope)(cons(value_tyvars)(nil)))))(rs)))((subst) => $lt_($co(ds)($co(without(rs)(rs$qu)(pred$eq))($co(map(predicate$slapply(subst))(rs$qu))(subst))))))));
-
-const infer$slexpr_inner = (tenv) => (expr) => (($target) => {
-if ($target.type === "evar") {
+} ;
+return $lt_err(`Match not exhaustive ${int_to_string(l)}`);
+throw new Error('match fail 9861:' + JSON.stringify($target))
+})(is_exhaustive(tenv)(matrix))))
+let split = (classes) => (free_in_env) => (free_in_defn) => (predicates) => {
+let $gt$gt$eq = ok$gt$gt$eq;
 {
+let $lt_ = ok;
+return $gt$gt$eq(map$slok(resolve_predicate(classes))(predicates))((resolved) => $gt$gt$eq($lt_(remove_redundant_preds(classes)(bag$slto_list(many(map(get_variable_heads)(resolved))))))((reduced_predicates) => $gt$gt$eq($lt_(partition(reduced_predicates)(({"2": locs, "1": name, "0": type}) => every(set$slto_list(type$slfree(type)))((x) => contains(free_in_env)(x)($eq)))))(({"1": maybe_related_to_defn, "0": unrelated_to_defn}) => $gt$gt$eq(defaulted_preds(classes)(set$slfrom_list(concat(cons(free_in_env)(cons(free_in_defn)(nil)))))(maybe_related_to_defn))((defaulted) => $gt$gt$eq(default_subst(classes)(set$slfrom_list(concat(cons(free_in_env)(cons(free_in_defn)(nil)))))(maybe_related_to_defn))((subst) => $lt_($co(unrelated_to_defn)($co(without(maybe_related_to_defn)(defaulted)(pred$eq))($co(map(predicate$slapply(subst))(defaulted))($co(subst)(resolved))))))))))
+}
+}
+let infer$slexpr_inner = (tenv) => (expr) => (($target) => {
+if ($target.type === "evar") {
 let name = $target[0];
 let l = $target[1];
-return (($target) => {
+{
+let $target = tenv$slresolve(tenv)(name);
 if ($target.type === "none") {
 return $lt_missing(name)(l)
-}
+} ;
 if ($target.type === "some") {
-{
 let scheme = $target[0];
-return $gt$gt$eq(record_if_generic(scheme)(l))((_) => instantiate(scheme)(l))
+return $gt$gt$eq(record_if_generic(scheme)(l))((_13680) => instantiate(scheme)(l))
+} ;
+throw new Error('match fail 2272:' + JSON.stringify($target))
 }
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(tenv$slresolve(tenv)(name))
-}
-}
+} ;
 if ($target.type === "eprim") {
-{
 let prim = $target[0];
 return infer$slprim(prim)
-}
-}
+} ;
 if ($target.type === "equot") {
-{
 let quot = $target[0];
 let l = $target[1];
 return $lt_(infer$slquot(quot)(l))
-}
-}
+} ;
 if ($target.type === "estr") {
-{
 let templates = $target[1];
 let l = $target[2];
-return $gt$gt$eq(do_$gt(({0: expr}) => $gt$gt$eq(infer$slexpr(tenv)(expr))((t) => $gt$gt$eq(unify(t)(tcon("string")(l))(l))((_) => $lt_($unit))))(templates))((_) => $lt_(tcon("string")(l)))
-}
-}
-if ($target.type === "elambda" &&
-$target[0].type === "cons" &&
-$target[0][0].type === "pvar" &&
-$target[0][1].type === "nil") {
-{
+return $gt$gt$eq(do_$gt(({"0": expr}) => $gt$gt$eq(infer$slexpr(tenv)(expr))((t) => $gt$gt$eq(unify(t)(tcon("string")(l))(l))((_6807) => $lt_($unit))))(templates))((_6792) => $lt_(tcon("string")(l)))
+} ;
+if ($target.type === "elambda") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === "pvar") {
 let arg = $target[0][0][0];
 let al = $target[0][0][1];
+if ($target[0][1].type === "nil") {
 let body = $target[1];
 let l = $target[2];
-return $gt$gt$eq(new_type_var(arg)(al))((arg_type) => $gt$gt$eq(record_type_$gt(arg_type)(al)(false))((_) => $gt$gt$eq($lt_(tenv$slwith_type(tenv)(arg)(forall(set$slnil)($eq$gt(nil)(arg_type)))))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(arg_type))((arg_type) => $lt_(tfn(arg_type)(body_type)(l)))))))
-}
-}
-if ($target.type === "elambda" &&
-$target[0].type === "cons" &&
-$target[0][1].type === "nil") {
-{
+return $gt$gt$eq(new_type_var(arg)(al))((arg_type) => $gt$gt$eq(record_type_$gt(arg_type)(al)(false))((_2727) => $gt$gt$eq($lt_(tenv$slwith_type(tenv)(arg)(forall(set$slnil)($eq$gt(nil)(arg_type)))))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(arg_type))((arg_type) => $lt_(tfn(arg_type)(body_type)(l)))))))
+} 
+} 
+} 
+} ;
+if ($target.type === "elambda") {
+if ($target[0].type === "cons") {
 let pat = $target[0][0];
+if ($target[0][1].type === "nil") {
 let body = $target[1];
 let l = $target[2];
-return $gt$gt$eq(infer$slpattern(tenv)(pat))(({1: scope, 0: arg_type}) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(arg_type))((arg_type) => $lt_(tfn(arg_type)(body_type)(l))))))
-}
-}
-if ($target.type === "elambda" &&
-$target[0].type === "cons") {
-{
+return $gt$gt$eq(infer$slpattern(tenv)(pat))(({"1": scope, "0": arg_type}) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(arg_type))((arg_type) => $lt_(tfn(arg_type)(body_type)(l))))))
+} 
+} 
+} ;
+if ($target.type === "elambda") {
+if ($target[0].type === "cons") {
 let one = $target[0][0];
 let rest = $target[0][1];
 let body = $target[1];
 let l = $target[2];
 return infer$slexpr(tenv)(elambda(cons(one)(nil))(elambda(rest)(body)(l))(l))
-}
-}
-if ($target.type === "elambda" &&
-$target[0].type === "nil") {
-{
+} 
+} ;
+if ($target.type === "elambda") {
+if ($target[0].type === "nil") {
 let body = $target[1];
 let l = $target[2];
 return $lt_err("No args to lambda")
-}
-}
-if ($target.type === "eapp" &&
-$target[1].type === "cons" &&
-$target[1][1].type === "nil") {
-{
+} 
+} ;
+if ($target.type === "eapp") {
 let target = $target[0];
+if ($target[1].type === "cons") {
 let arg = $target[1][0];
+if ($target[1][1].type === "nil") {
 let l = $target[2];
-return $gt$gt$eq(new_type_var("result")(l))((result_var) => $gt$gt$eq(infer$slexpr(tenv)(target))((target_type) => $gt$gt$eq(tenv$slapply_$gt(tenv))((arg_tenv) => $gt$gt$eq(infer$slexpr(arg_tenv)(arg))((arg_type) => $gt$gt$eq(type$slapply_$gt(target_type))((target_type) => $gt$gt$eq(unify(target_type)(tfn(arg_type)(result_var)(l))(l))((_) => type$slapply_$gt(result_var)))))))
-}
-}
-if ($target.type === "eapp" &&
-$target[1].type === "cons") {
-{
+return $gt$gt$eq(new_type_var("result")(l))((result_var) => $gt$gt$eq(infer$slexpr(tenv)(target))((target_type) => $gt$gt$eq(tenv$slapply_$gt(tenv))((arg_tenv) => $gt$gt$eq(infer$slexpr(arg_tenv)(arg))((arg_type) => $gt$gt$eq(type$slapply_$gt(target_type))((target_type) => $gt$gt$eq(unify(target_type)(tfn(arg_type)(result_var)(l))(l))((_2428) => type$slapply_$gt(result_var)))))))
+} 
+} 
+} ;
+if ($target.type === "eapp") {
 let target = $target[0];
+if ($target[1].type === "cons") {
 let one = $target[1][0];
 let rest = $target[1][1];
 let l = $target[2];
 return infer$slexpr(tenv)(eapp(eapp(target)(cons(one)(nil))(l))(rest)(l))
-}
-}
-if ($target.type === "eapp" &&
-$target[1].type === "nil") {
-{
+} 
+} ;
+if ($target.type === "eapp") {
 let target = $target[0];
+if ($target[1].type === "nil") {
 let l = $target[2];
 return infer$slexpr(tenv)(target)
-}
-}
-if ($target.type === "elet" &&
-$target[0].type === "cons" &&
-$target[0][0].type === "," &&
-$target[0][0][0].type === "pvar" &&
-$target[0][1].type === "nil") {
-{
+} 
+} ;
+if ($target.type === "elet") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === ",") {
+if ($target[0][0][0].type === "pvar") {
 let name = $target[0][0][0][0];
 let nl = $target[0][0][0][1];
 let value = $target[0][0][1];
+if ($target[0][1].type === "nil") {
 let body = $target[1];
-return $gt$gt$eq(infer$slexpr(tenv)(value))((value_type) => $gt$gt$eq(record_type_$gt(value_type)(nl)(false))((_) => $gt$gt$eq(tenv$slapply_$gt(tenv))((applied_env) => $gt$gt$eq($lt_(generalize(applied_env)($eq$gt(nil)(value_type))))((scheme) => $gt$gt$eq($lt_(tenv$slwith_type(applied_env)(name)(scheme)))((bound_env) => infer$slexpr(bound_env)(body))))))
-}
-}
-if ($target.type === "elet" &&
-$target[0].type === "cons" &&
-$target[0][0].type === "," &&
-$target[0][1].type === "nil") {
-{
+return $gt$gt$eq(infer$slexpr(tenv)(value))((value_type) => $gt$gt$eq(record_type_$gt(value_type)(nl)(false))((_2816) => $gt$gt$eq(tenv$slapply_$gt(tenv))((applied_env) => $gt$gt$eq($lt_(generalize(applied_env)($eq$gt(nil)(value_type))))((scheme) => $gt$gt$eq($lt_(tenv$slwith_type(applied_env)(name)(scheme)))((bound_env) => infer$slexpr(bound_env)(body))))))
+} 
+} 
+} 
+} 
+} ;
+if ($target.type === "elet") {
+if ($target[0].type === "cons") {
+if ($target[0][0].type === ",") {
 let pat = $target[0][0][0];
 let value = $target[0][0][1];
+if ($target[0][1].type === "nil") {
 let body = $target[1];
 let l = $target[2];
-return $gt$gt$eq(infer$slpattern(tenv)(pat))(({1: scope, 0: type}) => $gt$gt$eq(infer$slexpr(tenv)(value))((value_type) => $gt$gt$eq(unify(type)(value_type)(l))((_) => $gt$gt$eq(scope$slapply_$gt(scope))((scope) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $lt_(body_type)))))))
-}
-}
-if ($target.type === "elet" &&
-$target[0].type === "cons") {
-{
+return $gt$gt$eq(infer$slpattern(tenv)(pat))(({"1": scope, "0": type}) => $gt$gt$eq(infer$slexpr(tenv)(value))((value_type) => $gt$gt$eq(unify(type)(value_type)(l))((_3987) => $gt$gt$eq(scope$slapply_$gt(scope))((scope) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $lt_(body_type)))))))
+} 
+} 
+} 
+} ;
+if ($target.type === "elet") {
+if ($target[0].type === "cons") {
 let one = $target[0][0];
 let more = $target[0][1];
 let body = $target[1];
 let l = $target[2];
 return infer$slexpr(tenv)(elet(cons(one)(nil))(elet(more)(body)(l))(l))
-}
-}
-if ($target.type === "elet" &&
-$target[0].type === "nil") {
-{
+} 
+} ;
+if ($target.type === "elet") {
+if ($target[0].type === "nil") {
 let body = $target[1];
 let l = $target[2];
 return $lt_err("No bindings in let")
-}
-}
+} 
+} ;
 if ($target.type === "ematch") {
-{
 let target = $target[0];
 let cases = $target[1];
 let l = $target[2];
-return $gt$gt$eq(infer$slexpr(tenv)(target))((target_type) => $gt$gt$eq(new_type_var("match result")(l))((result_type) => $gt$gt$eq(foldl_$gt($co(target_type)(nil))(cases)(({1: results, 0: target_type}) => ({1: body, 0: pat}) => $gt$gt$eq(infer$slpattern(tenv)(pat))(({1: scope, 0: type}) => $gt$gt$eq(unify(type)(target_type)(l))((_) => $gt$gt$eq(scope$slapply_$gt(scope))((scope) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(target_type))((target_type) => $lt_($co(target_type)(cons(body_type)(results)))))))))))(({1: all_results, 0: target_type}) => $gt$gt$eq(do_$gt((one_result) => $gt$gt$eq($lt_subst)((subst) => unify(type$slapply(subst)(one_result))(type$slapply(subst)(result_type))(l)))(reverse(all_results)))((_) => $gt$gt$eq(check_exhaustiveness(tenv)(target_type)(map(fst)(cases))(l))((_) => type$slapply_$gt(result_type))))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(expr);
+return $gt$gt$eq(infer$slexpr(tenv)(target))((target_type) => $gt$gt$eq(new_type_var("match result")(l))((result_type) => $gt$gt$eq(foldl_$gt($co(target_type)(nil))(cases)(({"1": results, "0": target_type}) => ({"1": body, "0": pat}) => $gt$gt$eq(infer$slpattern(tenv)(pat))(({"1": scope, "0": type}) => $gt$gt$eq(unify(type)(target_type)(l))((_13904) => $gt$gt$eq(scope$slapply_$gt(scope))((scope) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(target_type))((target_type) => $lt_($co(target_type)(cons(body_type)(results)))))))))))(({"1": all_results, "0": target_type}) => $gt$gt$eq(do_$gt((one_result) => $gt$gt$eq($lt_subst)((subst) => unify(type$slapply(subst)(one_result))(type$slapply(subst)(result_type))(l)))(reverse(all_results)))((_4960) => $gt$gt$eq(check_exhaustiveness(tenv)(target_type)(map(fst)(cases))(l))((_4960) => type$slapply_$gt(result_type))))))
+} ;
+throw new Error('match fail 2253:' + JSON.stringify($target))
+})(expr)
 
-
-const infer$slexpr = (tenv) => (expr) => $gt$gt$eq(subst_reset_$gt(map$slnil))((old) => $gt$gt$eq(infer$slexpr_inner(tenv)(expr))((type) => $gt$gt$eq(subst_reset_$gt(old))(($new) => $gt$gt$eq(subst_$gt($new))((_) => $gt$gt$eq(record_type_$gt(type)(expr_loc(expr))(false))((_) => $lt_(type))))));
-
-const add$sldefs = (tenv) => (defns) => $gt$gt$eq(reset_state_$gt)((_) => $gt$gt$eq($lt_(map(({0: name}) => name)(defns)))((names) => $gt$gt$eq($lt_(map(({1: {1: {1: l}}}) => l)(defns)))((locs) => $gt$gt$eq(map_$gt(({1: {0: nl}, 0: name}) => new_type_var(name)(nl))(defns))((vbls) => $gt$gt$eq($lt_(foldl(tenv)(zip(names)(map(forall(set$slnil))(map($eq$gt(nil))(vbls))))((tenv) => ({1: vbl, 0: name}) => tenv$slwith_type(tenv)(name)(vbl))))((bound_env) => $gt$gt$eq(map_$gt(({1: {1: {0: expr}}}) => infer$slexpr(bound_env)(expr))(defns))((types) => $gt$gt$eq(map_$gt(type$slapply_$gt)(vbls))((vbls) => $gt$gt$eq(do_$gt(({1: {1: loc, 0: type}, 0: vbl}) => unify(vbl)(type)(loc))(zip(vbls)(zip(types)(locs))))((_) => $gt$gt$eq(map_$gt(type$slapply_$gt)(types))((types) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_preds)((preds) => $gt$gt$eq($lt_(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))((preds) => $gt$gt$eq($lt_(tenv))(({4: class_env}) => $gt$gt$eq(split(class_env)(nil)((($target) => {
+let infer$slexpr = (tenv) => (expr) => $gt$gt$eq(subst_reset_$gt(map$slnil))((old) => $gt$gt$eq(infer$slexpr_inner(tenv)(expr))((type) => $gt$gt$eq(subst_reset_$gt(old))(($new) => $gt$gt$eq(subst_$gt($new))((_2977) => $gt$gt$eq(record_type_$gt(type)(expr_loc(expr))(false))((_2977) => $lt_(type))))))
+let add$sldefs = (tenv) => (defns) => $gt$gt$eq(reset_state_$gt)((_3545) => $gt$gt$eq($lt_(map(({"0": name}) => name)(defns)))((names) => $gt$gt$eq($lt_(map(({"1": {"1": {"1": l}}}) => l)(defns)))((locs) => $gt$gt$eq(map_$gt(({"1": {"0": nl}, "0": name}) => new_type_var(name)(nl))(defns))((vbls) => $gt$gt$eq($lt_(foldl(tenv)(zip(names)(map(forall(set$slnil))(map($eq$gt(nil))(vbls))))((tenv) => ({"1": vbl, "0": name}) => tenv$slwith_type(tenv)(name)(vbl))))((bound_env) => $gt$gt$eq(map_$gt(({"1": {"1": {"0": expr}}}) => infer$slexpr(bound_env)(expr))(defns))((types) => $gt$gt$eq(map_$gt(type$slapply_$gt)(vbls))((vbls) => $gt$gt$eq(do_$gt(({"1": {"1": loc, "0": type}, "0": vbl}) => unify(vbl)(type)(loc))(zip(vbls)(zip(types)(locs))))((_3545) => $gt$gt$eq(map_$gt(type$slapply_$gt)(types))((types) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_preds)((preds) => $gt$gt$eq($lt_(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))((preds) => $gt$gt$eq($lt_(tenv))(({"4": class_env}) => $gt$gt$eq(ok_$gt(split(class_env)(nil)((($target) => {
 if ($target === true) {
 return set$slto_list(foldl(set$slnil)(map(type$slfree)(types))(set$slmerge))
-}
-return nil
-throw new Error('Failed to match. ' + valueToString($target));
-})(all(({1: {1: {0: body}}}) => (($target) => {
+} ;
+return nil;
+throw new Error('match fail 23745:' + JSON.stringify($target))
+})(all(({"1": {"1": {"0": body}}}) => (($target) => {
 if ($target.type === "elambda") {
 return true
-}
-return false
-throw new Error('Failed to match. ' + valueToString($target));
-})(body))(defns)))(preds))(({1: {1: {1: subst2, 0: defaulted_preds}, 0: other_preds}, 0: free_preds}) => $gt$gt$eq(preds_$gt(defaulted_preds))((_) => $gt$gt$eq(subst_$gt(subst2))((_) => $gt$gt$eq($lt_(map(type$slapply(subst2))(types)))((types) => $lt_(foldl(tenv$slnil)(zip(names)(types))((tenv) => ({1: type, 0: name}) => tenv$slwith_type(tenv)(name)(with_preds(other_preds)(generalize(tenv)($eq$gt(nil)(type)))))))))))))))))))))));
-
-const add$sldef = (tenv) => (name) => (nl) => (expr) => (l) => $gt$gt$eq(new_type_var(name)(nl))((self) => $gt$gt$eq($lt_(tenv$slwith_type(tenv)(name)(forall(set$slnil)($eq$gt(nil)(self)))))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(expr))((type) => $gt$gt$eq(type$slapply_$gt(self))((self) => $gt$gt$eq(unify(self)(type)(l))((_) => $gt$gt$eq(type$slapply_$gt(type))((type) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_preds)((preds) => $lt_(tenv$slwith_type(tenv$slnil)(name)(generalize(tenv)($eq$gt(map(predicate$slapply(subst))(bag$slto_list(preds)))(type))))))))))));
-
-const infer_expr3 = (env) => (expr) => (({1: result, 0: {1: {1: {1: types, 0: preds}, 0: subst}}}) => ((preds) => $co((($target) => {
-if ($target.type === "ok") {
-{
-let t = $target[0];
-return ok(forall(set$slnil)($eq$gt(preds)(t)))
-}
-}
-if ($target.type === "err") {
-{
-let e = $target[0];
-return err(e)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(result))($co(map(({1: {1: dont_apply, 0: l}, 0: t}) => (($target) => {
-if ($target === true) {
-return $co(l)(forall(set$slnil)($eq$gt(nil)(t)))
-}
-return $co(l)(forall(set$slnil)($eq$gt(nil)(type$slapply(subst)(t))))
-throw new Error('Failed to match. ' + valueToString($target));
-})(dont_apply))(types))(organize_predicates(preds))))(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))(state_f(infer$slexpr(env)(expr))(state$slnil));
-
-const add$slexpr = (tenv) => (expr) => $gt$gt$eq(infer$slexpr(tenv)(expr))((t) => $gt$gt$eq($lt_preds)((preds) => $gt$gt$eq($lt_(tenv))(({4: class_env}) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))((preds) => $gt$gt$eq(split(class_env)(nil)(nil)(preds))(({1: {1: {1: subst2, 0: defaulted_preds}, 0: other_preds}, 0: free_preds}) => $gt$gt$eq(preds_$gt(defaulted_preds))((_) => $gt$gt$eq(preds_$gt(free_preds))((_) => $gt$gt$eq(preds_$gt(other_preds))((_) => $gt$gt$eq(subst_$gt(subst2))((_) => $lt_(type$slapply(subst2)(t))))))))))));
-
-const add$slstmt = (tenv) => (stmt) => (($target) => {
+} ;
+return false;
+throw new Error('match fail 23759:' + JSON.stringify($target))
+})(body))(defns)))(preds)))(({"1": {"1": {"1": {"1": resolved_predicates, "0": subst2}, "0": defaulted_preds}, "0": other_preds}, "0": free_preds}) => $gt$gt$eq(preds_$gt(defaulted_preds))((_3545) => $gt$gt$eq(subst_$gt(subst2))((_3545) => $gt$gt$eq($lt_(map(type$slapply(subst2))(types)))((types) => $lt_($co(foldl(tenv$slnil)(zip(names)(types))((tenv) => ({"1": type, "0": name}) => tenv$slwith_type(tenv)(name)(with_preds(other_preds)(generalize(tenv)($eq$gt(nil)(type))))))(resolved_predicates)))))))))))))))))))
+let add$sldef = (tenv) => (name) => (nl) => (expr) => (l) => $gt$gt$eq(new_type_var(name)(nl))((self) => $gt$gt$eq($lt_(tenv$slwith_type(tenv)(name)(forall(set$slnil)($eq$gt(nil)(self)))))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(expr))((type) => $gt$gt$eq(type$slapply_$gt(self))((self) => $gt$gt$eq(unify(self)(type)(l))((_5246) => $gt$gt$eq(type$slapply_$gt(type))((type) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_preds)((preds) => $lt_(tenv$slwith_type(tenv$slnil)(name)(generalize(tenv)($eq$gt(map(predicate$slapply(subst))(bag$slto_list(preds)))(type))))))))))))
+let add$slexpr = (tenv) => (expr) => $gt$gt$eq(infer$slexpr(tenv)(expr))((t) => $gt$gt$eq($lt_preds)((preds) => $gt$gt$eq($lt_(tenv))(({"4": class_env}) => $gt$gt$eq($lt_subst)((subst) => $gt$gt$eq($lt_(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))((preds) => $gt$gt$eq(ok_$gt(split(class_env)(nil)(nil)(preds)))(({"1": {"1": {"1": {"1": resolved_predicates, "0": subst2}, "0": defaulted_preds}, "0": other_preds}, "0": free_preds}) => $gt$gt$eq(preds_$gt(defaulted_preds))((_17856) => $gt$gt$eq(preds_$gt(free_preds))((_17856) => $gt$gt$eq(preds_$gt(other_preds))((_17856) => $gt$gt$eq(subst_$gt(subst2))((_17856) => $lt_($co(type$slapply(subst2)(t))(resolved_predicates))))))))))))
+let add$slstmt = (tenv) => (stmt) => (($target) => {
 if ($target.type === "tdef") {
-{
 let name = $target[0];
 let nl = $target[1];
 let expr = $target[2];
 let l = $target[3];
 return add$sldef(tenv)(name)(nl)(expr)(l)
-}
-}
+} ;
 if ($target.type === "texpr") {
-{
 let expr = $target[0];
 let l = $target[1];
-return $gt$gt$eq(infer$slexpr(tenv)(expr))((_) => $lt_(tenv$slnil))
-}
-}
+return $gt$gt$eq(infer$slexpr(tenv)(expr))((_2953) => $lt_(tenv$slnil))
+} ;
 if ($target.type === "ttypealias") {
-{
 let name = $target[0];
 let args = $target[2];
 let type = $target[3];
 return $lt_(add$sltypealias(tenv)(name)(args)(type))
-}
-}
+} ;
 if ($target.type === "tdeftype") {
-{
 let name = $target[0];
 let args = $target[2];
 let constrs = $target[3];
 let l = $target[4];
 return $lt_(add$sldeftype(tenv)(name)(args)(constrs)(l))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(stmt);
-
-const add$slstmts = (tenv) => (stmts) => $gt$gt$eq($lt_(split_stmts(stmts)))(({1: {1: {1: others, 0: exprs}, 0: aliases}, 0: defs}) => $gt$gt$eq(add$sldefs(tenv)(defs))((denv) => $gt$gt$eq(foldl_$gt(denv)(concat(cons(aliases)(cons(others)(nil))))((env) => (stmt) => $gt$gt$eq(add$slstmt(tenv$slmerge(tenv)(env))(stmt))((env$qu) => $lt_(tenv$slmerge(env)(env$qu)))))((final) => $gt$gt$eq(map_$gt(add$slexpr(tenv$slmerge(tenv)(final)))(exprs))((types) => $lt_($co(final)(types))))));
-
-const benv_with_pair = tenv$slmerge(builtin_env)(fst(err_to_fatal(run$slnil_$gt(add$slstmts(builtin_env)(cons({"0":",","1":12710,"2":{"0":{"0":"a","1":12711,"type":","},"1":{"0":{"0":"b","1":12712,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":12714,"1":{"0":{"0":{"0":"a","1":12715,"type":"tcon"},"1":{"0":{"0":"b","1":12716,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12713,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":12707,"type":"tdeftype"})(cons({"0":"list","1":12722,"2":{"0":{"0":"a","1":12723,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"nil","1":{"0":12725,"1":{"0":{"type":"nil"},"1":12724,"type":","},"type":","},"type":","},"1":{"0":{"0":"cons","1":{"0":12727,"1":{"0":{"0":{"0":"a","1":12728,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":12730,"type":"tcon"},"1":{"0":"a","1":12731,"type":"tcon"},"2":12729,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12726,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":12719,"type":"tdeftype"})(nil)))))));
-
-const infer_stmts3 = (env) => (stmts) => (({1: result, 0: {1: {1: {1: types, 0: preds}, 0: subst}}}) => ((preds) => ((preds_by_vbl) => $co((($target) => {
-if ($target.type === "err") {
+} ;
+throw new Error('match fail 2876:' + JSON.stringify($target))
+})(stmt)
+let add$slstmts = (tenv) => (stmts) => $gt$gt$eq($lt_(split_stmts(stmts)))(({"1": {"1": {"1": others, "0": exprs}, "0": aliases}, "0": defs}) => $gt$gt$eq(add$sldefs(tenv)(defs))(({"1": resolved_predicates, "0": denv}) => $gt$gt$eq(foldl_$gt(denv)(concat(cons(aliases)(cons(others)(nil))))((env) => (stmt) => $gt$gt$eq(add$slstmt(tenv$slmerge(tenv)(env))(stmt))((env$qu) => $lt_(tenv$slmerge(env)(env$qu)))))((final) => $gt$gt$eq(map_$gt(add$slexpr(tenv$slmerge(tenv)(final)))(exprs))((types) => $lt_($co(final)($co(types)(resolved_predicates)))))))
+let benv_with_pair = tenv$slmerge(builtin_env)(fst(err_to_fatal(run$slnil_$gt(add$slstmts(builtin_env)(cons({"0":",","1":12710,"2":{"0":{"0":"a","1":12711,"type":","},"1":{"0":{"0":"b","1":12712,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":12714,"1":{"0":{"0":{"0":"a","1":12715,"type":"tcon"},"1":{"0":{"0":"b","1":12716,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12713,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":12707,"type":"tdeftype"})(cons({"0":"list","1":12722,"2":{"0":{"0":"a","1":12723,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"nil","1":{"0":12725,"1":{"0":{"type":"nil"},"1":12724,"type":","},"type":","},"type":","},"1":{"0":{"0":"cons","1":{"0":12727,"1":{"0":{"0":{"0":"a","1":12728,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":12730,"type":"tcon"},"1":{"0":"a","1":12731,"type":"tcon"},"2":12729,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12726,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":12719,"type":"tdeftype"})(nil)))))))
+let infer_stmts3 = (env) => (stmts) => {
+let {"1": result, "0": {"1": {"1": {"1": types, "0": preds}, "0": subst}}} = state_f(add$slstmts(env)(stmts))(state$slnil);
 {
-let e = $target[0];
-return err(e)
-}
-}
-if ($target.type === "ok" &&
-$target[0].type === ",") {
+let preds$$0 = preds;
 {
-let tenv = $target[0][0];
-let types = $target[0][1];
-return ok($co(tenv)(map(forall(set$slnil))(map($eq$gt(nil))(types))))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(result))($co(map(({1: {1: dont_apply, 0: l}, 0: t}) => (($target) => {
-if ($target === true) {
-return $co(l)(forall(set$slnil)($eq$gt(nil)(t)))
-}
-return $co(l)(forall(set$slnil)($eq$gt(predicate$slcombine(concat(map(dot(none_to(nil))(map$slget(preds_by_vbl)))(set$slto_list(type$slfree(t))))))(type$slapply(subst)(t))))
-throw new Error('Failed to match. ' + valueToString($target));
-})(dont_apply))(types))(organize_predicates(preds))))(foldl(map$slnil)(preds)((map) => (pred) => foldl(map)(set$slto_list(predicate$slfree(pred)))((map) => (v) => (($target) => {
+let preds = predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds$$0)));
+{
+let preds_by_vbl = foldl(map$slnil)(preds)((map) => (pred) => foldl(map)(set$slto_list(predicate$slfree(pred)))((map) => (v) => (($target) => {
 if ($target.type === "none") {
 return map$slset(map)(v)(cons(pred)(nil))
-}
+} ;
 if ($target.type === "some") {
-{
 let preds = $target[0];
 return map$slset(map)(v)(cons(pred)(preds))
+} ;
+throw new Error('match fail 20629:' + JSON.stringify($target))
+})(map$slget(map)(v))));
+return $co((($target) => {
+if ($target.type === "err") {
+let e = $target[0];
+return err(e)
+} ;
+if ($target.type === "ok") {
+if ($target[0].type === ",") {
+let tenv = $target[0][0];
+if ($target[0][1].type === ",") {
+let types = $target[0][1][0];
+let resolved = $target[0][1][1];
+return ok($co(tenv)($co(map(forall(set$slnil))(map($eq$gt(nil))(map(fst)(types))))(organize_resolved(map(resolved_pred$slapply(subst))(concat(cons(resolved)(map(snd)(types))))))))
+} 
+} 
+} ;
+throw new Error('match fail 13208:' + JSON.stringify($target))
+})(result))(map(({"1": {"1": dont_apply, "0": l}, "0": t}) => (($target) => {
+if ($target === true) {
+return $co(l)(forall(set$slnil)($eq$gt(nil)(t)))
+} ;
+return $co(l)(forall(set$slnil)($eq$gt(predicate$slcombine(concat(map(dot(none_to(nil))(map$slget(preds_by_vbl)))(set$slto_list(type$slfree(t))))))(type$slapply(subst)(t))));
+throw new Error('match fail 12961:' + JSON.stringify($target))
+})(dont_apply))(types))
 }
 }
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(map)(v))))))(predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds)))))(state_f(add$slstmts(env)(stmts))(state$slnil));
-
+}
+}
+let infer_expr3 = (env) => (expr) => {
+let {"1": result, "0": {"1": {"1": {"1": types, "0": preds}, "0": subst}}} = state_f(add$slexpr(env)(expr))(state$slnil);
+{
+let preds$$0 = preds;
+{
+let preds = predicate$slcombine(map(predicate$slapply(subst))(bag$slto_list(preds$$0)));
+return $co((($target) => {
+if ($target.type === "ok") {
+if ($target[0].type === ",") {
+let t = $target[0][0];
+let resolved_predicates = $target[0][1];
+return ok($co(forall(set$slnil)($eq$gt(preds)(t)))(organize_resolved(map(resolved_pred$slapply(subst))(resolved_predicates))))
+} 
+} ;
+if ($target.type === "err") {
+let e = $target[0];
+return err(e)
+} ;
+throw new Error('match fail 12754:' + JSON.stringify($target))
+})(result))(map(({"1": {"1": dont_apply, "0": l}, "0": t}) => (($target) => {
+if ($target === true) {
+return $co(l)(forall(set$slnil)($eq$gt(nil)(t)))
+} ;
+return $co(l)(forall(set$slnil)($eq$gt(nil)(type$slapply(subst)(t))));
+throw new Error('match fail 13537:' + JSON.stringify($target))
+})(dont_apply))(types))
+}
+}
+}
 return $eval("env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts3 => infer3 =>\n  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts3, infer3})\n")(builtin_env)(tenv$slmerge)(tenv$slresolve)(scheme_$gts)(scheme_$gtcst)(infer_stmts3)(infer_expr3)

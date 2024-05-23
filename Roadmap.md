@@ -1,4 +1,25 @@
 
+# Tutorial ideas
+
+- [ ] it would be great for the `playground` document to have a dropdown letting you switch between evaluators,
+  with presets:
+  - bootstrap
+  - bootstrap + self-1
+  - self-1 + parse-self
+  - algw-s2 + self-1 + parse-self
+  - algw-s3 + self-1 + parse-self
+  - algw-fast + parse-1-args
+  - ...
+- [ ] and then a l2- test, with type classessss
+  - .. just algw-s4 + self-tc ... right?
+
+
+
+ehhhh I do think I want a toplevel to be able to have a `docstring` thing ... maybe a "prefix"?
+would I also want a "suffix"? idkkkk maybe tho who knows.
+These wouldn't be ... visible to the parser, righttt
+--> OK so a cool thing is, we can show the inferred type /above/ the term, but /below/ the docstring
+
 ## THIH noww
 
 self-tc
@@ -20,6 +41,15 @@ HOWEVER. With type variables, we're definitely not making it happen.
 `$type_class_insts["(, int int) < eq"]`
 -> probably needs to be something like:
 `$type_class_insts["(, a b) < eq"]($type_class_insts["int < eq"], $type_class_insts["int < eq"])`
+
+
+ok so I think I'm on the right track here with things I need to be resolving ...
+like
+there are ones in head normal form
+and ones that arent
+and
+we need both.
+
 
 right?
 
