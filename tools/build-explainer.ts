@@ -8,6 +8,7 @@ import {
 import { NUIState } from '../web/custom/UIState';
 
 const files = `
+toc.json
 algw-fast.js
 algw-fast.json
 algw-list.js
@@ -40,6 +41,7 @@ playground.json
 self-1.clj
 self-1.js
 self-1.json
+self-tc.json
 structured-editor.clj
 structured-editor.json
 thih.clj

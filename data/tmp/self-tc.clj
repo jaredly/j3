@@ -1,8 +1,6 @@
-(** ## Self-Hosted Code Generation **)
+(** ## Code Generation For Type Classes **)
 
-(** So the tree-walking interpreter was very simple to implement, but it's extremely slow 😴 So for the self-hosted compiler, we'll be doing code generation! It'll speed up execution of the parser & code generator by a factor of 10-20x!
-    We're still going for simplicity though, so our compilation target will be JavaScript :). With automatic garbage collection, flexible objects, and permissive type system, not to mention the excellent in-browser debugging tools, JavaScript makes for a very forgiving compilation target.
-    Maybe later we'll implement code generation for something a little closer to the metal, like chicken scheme cough I mean golang. **)
+(** Under construction **)
 
 (** ## Prelude **)
 
