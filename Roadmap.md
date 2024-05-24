@@ -1,4 +1,6 @@
 
+- `nodeName` for fixture tests --> would be great to show failing/succeeding
+
 # Tutorial ideas
 
 - [ ] it would be great for the `playground` document to have a dropdown letting you switch between evaluators,
@@ -31,6 +33,13 @@ The road to full type classes
 - [x] get plugins passing typeInfo
 - [ ] get toFile passing typeInfo
   -> hrm lower priority
+
+🤔 sooo ok, soo what we have here ... is .....
+ugh ok so I definitely want ... and we're definitely gonna need the ability
+to infer recursive types.
+
+- gotta be a parse error to overwrite `cons` or `nil` folks. dont do it
+  orrrr maybe I should use a special thing. Yeah that'd be better. `[a]` is cons maybe? and `[]` is nil? sure.
 
 
 Type Classesssss

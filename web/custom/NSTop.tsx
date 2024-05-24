@@ -240,6 +240,17 @@ const nodeName = (node: NodeResults<unknown>) => {
             },
         };
     }
+    if (node.ns.plugin?.id === 'fixture') {
+        return {
+            name: 'Fixture tests',
+            loc: node.ns.top,
+            style: {
+                color: '#aaa',
+                fontFamily:
+                    'Inter, "SF Pro Display", -apple-system, "system-ui"',
+            },
+        };
+    }
     if (node.node.type === 'rich-text') {
         const arr = node.node.contents as Array<
             | {
