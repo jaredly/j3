@@ -591,17 +591,6 @@
         (ematch target cases l)                 (let-> [
                                                     target-type        (infer/expr tenv target)
                                                     result-type        (new-type-var "match result" l)
-                                                    ;(, _ result-type)
-                                                    ;(foldl->
-                                                        (, target-type result-type)
-                                                            cases
-                                                            (fn [(, target-type result) (, pat body)]
-                                                            (let-> [
-                                                                body  (pat-and-body tenv pat body target-type false)
-                                                                subst <-subst
-                                                                _     (unify (type-apply subst result) body l)
-                                                                subst <-subst]
-                                                                (<- (, (type-apply subst target-type) (type-apply subst result))))))
                                                     (** Handle each case, collecting all of the resulting types of the bodies. **)
                                                     (, _ final-result) (foldl->
                                                                            (, target-type result-type)

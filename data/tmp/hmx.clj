@@ -357,6 +357,13 @@
                                                                                    (foldl map/nil scopes map/merge))))))
         _                       (fatal "l")))
 
+(defn with-scope [inner loc scope]
+    (foldl
+        inner
+            (map/to-list scope)
+            (fn [inner (, name type)]
+            (cdef name (forall set/nil (cbool true loc) type) inner loc))))
+
 (defn infer/expr [expr type]
     (match expr
         (eprim prim loc)                          (<- (capp "=" [(tcon (infer/prim prim) loc) type] loc))
@@ -376,6 +383,19 @@
                                                                       (capp "=" [(tfn (tvar x1 nl) (tvar x2 loc) loc) type] loc)
                                                                       loc)
                                                                   loc)))
+        (elambda [arg] body loc)                  (let-> [
+                                                      targ               (fresh-ty-var "fn-arg")
+                                                      tres               (fresh-ty-var "fn-body")
+                                                      (, pat vbls scope) (infer/pat arg (tvar targ loc))
+                                                      body               (infer/expr body (tvar tres loc))]
+                                                      (<-
+                                                          (cexists
+                                                              [targ tres ..vbls]
+                                                                  (cand
+                                                                  (with-scope (cand pat body loc) loc scope)
+                                                                      (capp "=" [(tfn (tvar targ loc) (tvar tres loc) loc) type] loc)
+                                                                      loc)
+                                                                  loc)))
         (elambda [arg ..args] body loc)           (infer/expr (elambda [arg] (elambda args body loc) loc) type)
         (elet [(, (pvar name nl) init)] body loc) (let-> [
                                                       x    (fresh-ty-var name)
@@ -383,6 +403,17 @@
                                                       body (infer/expr body type)]
                                                       (<-
                                                           (cdef name (forall (set/add set/nil x) init (tvar x nl)) body loc)))
+        (elet [(, pat init)] body loc)            (let-> [
+                                                      tinit               (fresh-ty-var "let-init")
+                                                      (, cpat vbls scope) (infer/pat pat (tvar tinit loc))
+                                                      cinit               (infer/expr init (tvar tinit loc))
+                                                      cbody               (infer/expr body type)]
+                                                      (<-
+                                                          (cexists
+                                                              [tinit ..vbls]
+                                                                  (cand cinit (with-scope (cand cpat cbody loc) loc scope) loc)
+                                                                  loc)))
+        (elet [pair ..rest] body loc)             (infer/expr (elet [pair] (elet rest body loc) loc) type)
         (eapp target [arg] loc)                   (let-> [
                                                       x      (fresh-ty-var "fn-arg")
                                                       target (infer/expr target (tfn (tvar x loc) type loc))
@@ -401,11 +432,7 @@
                                                                           (<-
                                                                               (cexists
                                                                                   vbls
-                                                                                      (foldl
-                                                                                      (cand pat-con exp-con loc)
-                                                                                          (map/to-list scope)
-                                                                                          (fn [inner (, name type)]
-                                                                                          (cdef name (forall set/nil (cbool true loc) type) inner loc)))
+                                                                                      (with-scope (cand pat-con exp-con loc) loc scope)
                                                                                       loc))))
                                                                       cases)]
                                                       (<-
@@ -544,6 +571,12 @@
 
 (** ## Some Tests **)
 
+(defn run-and-solve [inner assumps]
+    (let-> [
+        constraint inner
+        subst      (solve constraint assumps set/nil)]
+        (<- subst)))
+
 (defn check [expr]
     (run->
         (let-> [
@@ -603,4 +636,291 @@
                 (, _ a) a))
             "int")
         (, (@ "Lol") "string")
-        (, (@ "Lol ${"hi"}") "string")])
+        (, (@ "Lol ${"hi"}") "string")
+        (, (@ (fn [(, a b)] a)) "(fn [(, fn-body:2 b:4)] fn-body:2)")
+        (,
+        (@
+            (fn [x]
+                (match x
+                    (, a b) a)))
+            "(fn [(, lambda-body:2 b:6)] lambda-body:2)")])
+
+
+
+(** ## Adding Top-level Items to the Type Environment **)
+
+(deftype tenv
+    (tenv
+        (map string (, (list string) (list type) type))
+            (map string scheme)))
+
+(def tenv/nil (tenv map/nil map/nil))
+
+(add/def tenv/nil "x" 0 (@ 10) 1)
+
+(defn add/def [(tenv types assumps) name nl expr l]
+    (run->
+        (let-> [
+            v          (fresh-ty-var name)
+            constraint (infer/expr expr (tvar v nl))
+            subst      (solve
+                           (cdef name (forall set/nil (cbool true l) (tvar v nl)) constraint l)
+                               assumps
+                               set/nil)
+            type       (<- (type/apply subst (tvar v nl)))]
+            (<-
+                (tenv
+                    map/nil
+                        (map/set map/nil name (forall (type/free type) (cbool true l) type)))))
+            (, 0 types)))
+
+(,
+    (fn [(tdef name nl expr l)]
+        (let [
+            (tenv _ values) (add/def (tenv builtin-env basic-assumps) name nl expr l)]
+            (map/to-list values)))
+        [(,
+        (@! (def x 10))
+            [(, "x" (forall (map/from-list []) (cbool true 4577) (tcon "int" 4580)))])
+        (,
+        (@! (defn id [x] x))
+            [(,
+            "id"
+                (forall
+                (set/from-list ["lambda-body:2"])
+                    (cbool true 4598)
+                    (tapp
+                    (tapp (tcon "->" 4598) (tvar "lambda-body:2" 4598) 4598)
+                        (tvar "lambda-body:2" 4598)
+                        4598)))])
+        (,
+        (@! (defn rec [x] (let [m (rec x)] (+ x m))))
+            [(,
+            "rec"
+                (forall
+                (map/from-list [])
+                    (cbool true 4641)
+                    (tapp (tapp (tcon "->" 4641) (tcon "int" -1) 4641) (tcon "int" -1) 4641)))])])
+
+(** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
+
+(defn add/defs [(tenv types assumps) defns]
+    (run->
+        (let-> [
+            names       (<- (map (fn [(, name _)] name) defns))
+            locs        (<- (map (fn [(, _ _ _ l)] l) defns))
+            vbls        (map-> (fn [(, name nl _)] (fresh-ty-var name)) defns)
+            constraints (map->
+                            (fn [(, (, name nl expr l) vbl)] (infer/expr expr (tvar vbl nl)))
+                                (zip defns vbls))
+            subst       (solve
+                            (foldl
+                                (cands constraints -1)
+                                    (zip defns vbls)
+                                    (fn [inner (, (, name nl _ _) vbl)]
+                                    (cdef name (forall set/nil (cbool true nl) (tvar vbl nl)) inner nl)))
+                                assumps
+                                set/nil)
+            ;bound-env
+            ;(<-
+                (foldl
+                    tenv
+                        (zip names (map (forall set/nil) vbls))
+                        (fn [tenv (, name vbl)] (tenv/with-type tenv name vbl))))
+            ;(types
+                (map-> (fn [(, _ _ expr _)] (infer/expr bound-env expr)) defns)
+                    vbls
+                    (map-> type/apply-> vbls)
+                    ()
+                    (do->
+                    (fn [(, vbl type loc)] (unify vbl type loc))
+                        (zip vbls (zip types locs)))
+                    types
+                    (map-> type/apply-> types))]
+            (<-
+                (tenv
+                    map/nil
+                        (foldl
+                        map/nil
+                            (zip names vbls)
+                            (fn [assumps (, name vbl)]
+                            (map/set
+                                assumps
+                                    name
+                                    (let [type (type/apply subst (tvar vbl -1))]
+                                    (forall (type/free type) (cbool true -1) type))))))))
+            (, 0 types)))
+
+(,
+    (fn [x]
+        (add/defs
+            (tenv builtin-env basic-assumps)
+                (map (fn [(tdef name nl body l)] (, name nl body l)) x)))
+        [(,
+        [(@! (defn even [x] (let [o (odd x)] (+ x 2))))
+            (@! (defn odd [x] (let [e (even x)] 3)))]
+            (tenv
+            (map/from-list [])
+                (map/from-list
+                [(,
+                    "odd"
+                        (forall
+                        (map/from-list [])
+                            (cbool true -1)
+                            (tapp
+                            (tapp (tcon "->" 4903) (tcon "int" -1) 4903)
+                                (tcon "int" 4915)
+                                4903)))
+                    (,
+                    "even"
+                        (forall
+                        (map/from-list [])
+                            (cbool true -1)
+                            (tapp (tapp (tcon "->" 4885) (tcon "int" -1) 4885) (tcon "int" -1) 4885)))])))])
+
+(defn add/typealias [(tenv types values) name args type]
+    (tenv
+        (** TODO verify that all referenced types do exist **)
+            (map/set
+            map/nil
+                name
+                (,
+                (map fst args)
+                    (type/con-to-var (set/from-list (map fst args)) type)))
+            map/nil))
+
+(defn add/deftype [(tenv types assumps) name args constrs l]
+    (let [
+        free           (map fst args)
+        free-set       (set/from-list free)
+        res            (foldl
+                           (tcon name l)
+                               args
+                               (fn [inner (, name l)] (tapp inner (tvar name l) l)))
+        parsed-constrs (map
+                           (fn [(, name _ args _)]
+                               (let [
+                                   args (map (type/con-to-var free-set) args)
+                                   args (map (type/resolve-aliases aliases) args)]
+                                   (, name (, free args res))))
+                               constrs)]
+        (tenv
+            (map/from-list
+                (map
+                    (fn [(, name (, free args res))]
+                        (, name (forall (set/from-list free) (tfns args res l))))
+                        parsed-constrs))
+                (map/from-list parsed-constrs)
+                (map/set
+                map/nil
+                    name
+                    (, (length args) (set/from-list (map fst constrs))))
+                map/nil)))
+
+(defn type/con-to-var [vars type]
+    (match type
+        (tvar _ _)    type
+        (tcon name l) (if (set/has vars name)
+                          (tvar name l)
+                              type)
+        (tapp a b l)  (tapp (type/con-to-var vars a) (type/con-to-var vars b) l)))
+
+(defn type/resolve-aliases [aliases type]
+    (let [
+        (, target args) (type/unroll-app type)
+        args            (map (type/resolve-aliases aliases) (reverse (map fst args)))]
+        (match target
+            (tcon name l) (match (map/get aliases name)
+                              (some (, free type)) (let [subst (map/from-list (zip free args))]
+                                                       (type/resolve-aliases aliases (type/apply subst type)))
+                              _                    (foldl target args (fn [a b] (tapp a b l))))
+            (tvar _ l)    (foldl target args (fn [a b] (tapp a b l)))
+            _             target)))
+
+(defn type/unroll-app [type]
+    (match type
+        (tapp target arg l) (let [(, target inner) (type/unroll-app target)]
+                                (, target [(, arg l) ..inner]))
+        _                   (, type [])))
+
+(defn add/stmt [tenv stmt]
+    (match stmt
+        (tdef name nl expr l)            (add/def tenv name nl expr l)
+        (texpr expr l)                   (run/nil-> (let-> [_ (infer/expr tenv expr)] (<- tenv/nil)))
+        (ttypealias name _ args type _)  (add/typealias tenv name args type)
+        (tdeftype name _ args constrs l) (add/deftype tenv name args constrs l)))
+
+(defn split-stmts [stmts]
+    (loop
+        stmts
+            (fn [stmts recur]
+            (match stmts
+                []            (, [] [] [])
+                [stmt ..rest] (let [(, defs aliases others) (recur rest)]
+                                  (match stmt
+                                      (tdef name nl body l)  (, [(, name nl body l) ..defs] aliases others)
+                                      (ttypealias _ _ _ _ _) (, defs [stmt ..aliases] others)
+                                      _                      (, defs aliases [stmt ..others])))))))
+
+(defn add/stmts [tenv stmts]
+    (let [
+        (, defs aliases others) (split-stmts stmts)
+        denv                    (add/defs tenv defs)
+        final                   (foldl
+                                    denv
+                                        (concat [aliases others])
+                                        (fn [env stmt] (tenv/merge env (add/stmt (tenv/merge tenv env) stmt))))]
+        final))
+
+(,
+    (fn [(, x name)]
+        (scheme->s
+            (force
+                (tenv/resolve
+                    (foldl
+                        tenv/nil
+                            x
+                            (fn [env stmts]
+                            (tenv/merge env (add/stmts (tenv/merge builtin-env env) stmts))))
+                        name))))
+        [(,
+        (,
+            [[(@!
+                (deftype (x m)
+                    (a m)))]
+                [(@!
+                (defn aa [x]
+                    (match x
+                        (a 2) 2
+                        (a m) m)))]]
+                "aa")
+            "(fn [(x int)] int)")
+        (,
+        (,
+            [[(@! (typealias a int))
+                (@!
+                (deftype lol
+                    (elol a)))]]
+                "elol")
+            "(fn [int] lol)")
+        (,
+        (,
+            [[(@! (typealias alt (, (list pat) expr)))
+                (@! (typealias bindgroup (, alt)))
+                (@!
+                (deftype expr
+                    (elet bindgroup expr int)))]
+                [(@! (defn x [(elet b _ _)] b))]]
+                "x")
+            "(fn [expr] (, (list pat) expr))")
+        (,
+        (,
+            [[(@! (typealias (a b) (, int b)))
+                (@!
+                (deftype hi
+                    (red int)
+                        (blue)
+                        (green (a bool))))]]
+                "green")
+            "(fn [(, int bool)] hi)")
+        ])

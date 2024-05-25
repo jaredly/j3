@@ -1,5 +1,80 @@
 
+# IDEA IDEA IDEA
+
+Ok so what if
+algebraic effects are trying to do too many things at once?
+So I got here by thinking:
+- having the ability to bypass plumbing would be so cool.
+  like, oh here's a value I need in this one place. And, I'll want to
+  provide it in some other random place.
+  What iff I just had the type inference know how to plumb everything together?
+  OBVS you would want a really nicely explorable call graph so you can visualize what goes where.
+  ANDd when tracing, you'd want to .. keep track of things somehow idk.
+  ANYWAY what it turns into is just a bunch of "implicit arguments" that get `provide`d somewhere, and `request`ed somewhere else.
+  I guess we're doing dependency injection? hrmmmm anywayyy
+  it could also be interesting to do monomorphising on booleans, so you can like have `(if debug something-expensive)` and actually just get it compiled out.
+- BUT THEN i was like "oh hey that's one of the things algebraic effects does"
+  BUT actually full algebraic effects is way overpowered for that, like don't make me call up the stack
+  or some nonsense just to get that one value. how about you just pass in that value.
+
+SO basically I was like, what if functions were just a whole lot richer? like
+
+A function has
+- input arguments (maybe labeled idk)
+- a return value
+
+- implicit arguments (dependency injection)
+- effects (full on stop the world and come back)
+- exceptions (stop the world and dont come back)
+
+and all these things ... are like techincally in the realm of effects ...
+hrm could they all get bundled into one .. "effects" .. "implicit record" that gets passed around? I mean maybe
+
+```
+type Implicits = {
+  someConfigValue: a-value,
+  someEffectyThing: (takes-a-value, continuation: (returns-a-value) => um what goes here) => ... ok that's tricky type-wise,
+  someExceptyThing: hrm so really this would unroll all the way back up? right? hrm...
+}
+```
+
+what would it mean ... to have a "state effect" ... that was ... actually going to do mutation.
+would it break things?
+
+
+
+  AnDD another thing it does is "the state monad". but /both/ of those thing
+
+
+
+#
+
 - `nodeName` for fixture tests --> would be great to show failing/succeeding
+
+"Designing Record Systems" paper
+- uses HM(x) to do records with "extension", "concatenation", and "removal of fields"
+I don't really care about removal of fields.
+Extension & concatenation sounds great.
+But really the best would be enabling recursive types!
+Do I care about "field labels as first class values"?
+hrmm
+
+
+Soooo
+# Recursive types!
+
+https://sci-hub.st/10.3233/fi-1998-33401 looks good
+https://web.cs.ucla.edu/~palsberg/draft/jim-palsberg99.pdf might be helpful too
+roc's deal https://github.com/roc-lang/roc/blob/25f230fda81ef57387dc73cc315a15b5e383752b/crates/compiler/unify/src/unify.rs#L3701
+https://ieeexplore.ieee.org/document/782600
+https://www.semanticscholar.org/paper/TYPE-INFERENCE-WITH-RECURSIVE-TYPES-AT-DIFFERENT-Peric%C3%A1s-Geertsen/0749e4999aa588b3ff1a85f788e0c93d29306eb9
+https://dl.acm.org/doi/10.5555/864348
+
+This is a cool comparison of AlgW and HM(X) https://github.com/gowthamk/notes/blob/5eab166fafaa222310e1038cd86e212bfd8be815/_posts/2014-07-15-Type-Inference.markdown
+
+Looks like I need to add a `mu` type case, which is a `mu vbl . (some type that contains vbl)`.
+so ... unifying things ... seems like it should be doable, right?
+
 
 # Tutorial ideas
 
