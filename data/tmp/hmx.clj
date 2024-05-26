@@ -338,8 +338,8 @@
         (pprim prim loc)        (<- (, (capp "=" [(tcon (infer/prim prim) loc) type] loc) [] map/nil))
         (pany loc)              (<- (, (cbool true loc) [] map/nil))
         (pstr _ loc)            (<- (, (capp "=" [(tcon "string" loc) type] loc) [] map/nil))
-        (pcon name nl args loc) (let-> [(, _ tenv) <-state]
-                                    (match (map/get tenv name)
+        (pcon name nl args loc) (let-> [(, _ (tenv _ types _ _)) <-state]
+                                    (match (map/get types name)
                                         (none)                     (fatal "Unknown constructor")
                                         (some (, free cargs tres)) (let-> [
                                                                        vbls             (map-> fresh-ty-var free)
@@ -526,12 +526,16 @@
                                          (<- (compose-subst s2 subst)))
         (capp "=" [one two] _)       (unify one two)
         (cexists tvars inner _)      (solve inner assumps (set/merge free (set/from-list tvars)))
-        (cinstance name type loc)    (match (map/get assumps name)
-                                         (none)     (fatal "Unbound vbl ${name}")
-                                         (some got) (let-> [
-                                                        got   (instantiate got loc)
-                                                        subst (unify got type)]
-                                                        (<- subst)))
+        (cinstance name type loc)    (let-> [
+                                         got   (match (map/get assumps name)
+                                                   (some got) (<- got)
+                                                   _          (let-> [(, _ (tenv globals _ _ _)) <-state]
+                                                                  (match (map/get globals name)
+                                                                      (none)     (fatal "Unbound vbl ${name}")
+                                                                      (some got) (<- got))))
+                                         got   (instantiate got loc)
+                                         subst (unify got type)]
+                                         (<- subst))
         (cdef name scheme inner loc) (let-> [
                                          (forall _ cns t) (<- scheme)
                                          subst            (solve cns assumps free)
@@ -582,9 +586,9 @@
         (let-> [
             v          (fresh-ty-var "result")
             constraint (infer/expr expr (tvar v -1))
-            subst      (solve constraint basic-assumps set/nil)]
+            subst      (solve constraint map/nil set/nil)]
             (<- (, constraint subst (type/apply subst (tvar v -1)))))
-            (, 0 basic-tcons)))
+            (, 0 (tenv basic-assumps basic-tcons map/nil map/nil))))
 
 (check (@ 1))
 
@@ -651,33 +655,60 @@
 
 (deftype tenv
     (tenv
-        (map string (, (list string) (list type) type))
-            (map string scheme)))
+        (** Types of values in global scope **)
+            (map string scheme)
+            (** Data type constructors; (free variables) (arguments) (resulting type) **)
+            (map string (, (list string) (list type) type))
+            (** Data types (# free variables, constructor names) **)
+            (map string (, int (set string)))
+            (** Type aliases **)
+            (map string (, (list string) type))))
 
-(def tenv/nil (tenv map/nil map/nil))
+(def tenv/nil (tenv map/nil map/nil map/nil map/nil))
+
+(defn tenv/merge [(tenv v1 c1 t1 a1) (tenv v2 c2 t2 a2)]
+    (tenv
+        (map/merge v1 v2)
+            (map/merge c1 c2)
+            (map/merge t1 t2)
+            (map/merge a1 a2)))
+
+(defn tenv/with-global [(tenv values tc ty ta) name scheme]
+    (tenv (map/set values name scheme) tc ty ta))
+
+(defn tenv/with-type)
 
 (add/def tenv/nil "x" 0 (@ 10) 1)
 
-(defn add/def [(tenv types assumps) name nl expr l]
+(defn add/def [type-env name nl expr l]
     (run->
         (let-> [
             v          (fresh-ty-var name)
             constraint (infer/expr expr (tvar v nl))
             subst      (solve
-                           (cdef name (forall set/nil (cbool true l) (tvar v nl)) constraint l)
-                               assumps
+                           (cexists
+                               [v]
+                                   (cdef name (forall set/nil (cbool true l) (tvar v nl)) constraint l)
+                                   l)
+                               map/nil
                                set/nil)
             type       (<- (type/apply subst (tvar v nl)))]
             (<-
-                (tenv
-                    map/nil
-                        (map/set map/nil name (forall (type/free type) (cbool true l) type)))))
-            (, 0 types)))
+                (tenv/with-global
+                    tenv/nil
+                        name
+                        (forall (type/free type) (cbool true l) type))))
+            (, 0 type-env)))
 
 (,
     (fn [(tdef name nl expr l)]
         (let [
-            (tenv _ values) (add/def (tenv builtin-env basic-assumps) name nl expr l)]
+            (tenv values _ _ _) (add/def
+                                    (tenv basic-assumps builtin-env map/nil map/nil)
+                                        name
+                                        nl
+                                        expr
+                                        l)]
             (map/to-list values)))
         [(,
         (@! (def x 10))
@@ -700,11 +731,11 @@
                 (forall
                 (map/from-list [])
                     (cbool true 4641)
-                    (tapp (tapp (tcon "->" 4641) (tcon "int" -1) 4641) (tcon "int" -1) 4641)))])])
+                    (tapp (tapp (tcon "->" 4650) (tcon "int" -1) 4650) (tcon "int" -1) 4650)))])])
 
 (** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
 
-(defn add/defs [(tenv types assumps) defns]
+(defn add/defs [type-env defns]
     (run->
         (let-> [
             names       (<- (map (fn [(, name _)] name) defns))
@@ -719,49 +750,30 @@
                                     (zip defns vbls)
                                     (fn [inner (, (, name nl _ _) vbl)]
                                     (cdef name (forall set/nil (cbool true nl) (tvar vbl nl)) inner nl)))
-                                assumps
-                                set/nil)
-            ;bound-env
-            ;(<-
-                (foldl
-                    tenv
-                        (zip names (map (forall set/nil) vbls))
-                        (fn [tenv (, name vbl)] (tenv/with-type tenv name vbl))))
-            ;(types
-                (map-> (fn [(, _ _ expr _)] (infer/expr bound-env expr)) defns)
-                    vbls
-                    (map-> type/apply-> vbls)
-                    ()
-                    (do->
-                    (fn [(, vbl type loc)] (unify vbl type loc))
-                        (zip vbls (zip types locs)))
-                    types
-                    (map-> type/apply-> types))]
+                                map/nil
+                                set/nil)]
             (<-
-                (tenv
-                    map/nil
-                        (foldl
-                        map/nil
-                            (zip names vbls)
-                            (fn [assumps (, name vbl)]
-                            (map/set
-                                assumps
-                                    name
-                                    (let [type (type/apply subst (tvar vbl -1))]
-                                    (forall (type/free type) (cbool true -1) type))))))))
-            (, 0 types)))
+                (foldl
+                    tenv/nil
+                        (zip names vbls)
+                        (fn [tenv (, name vbl)]
+                        (tenv/with-global
+                            tenv
+                                name
+                                (let [type (type/apply subst (tvar vbl -1))]
+                                (forall (type/free type) (cbool true -1) type)))))))
+            (, 0 type-env)))
 
 (,
     (fn [x]
         (add/defs
-            (tenv builtin-env basic-assumps)
+            (tenv basic-assumps builtin-env map/nil map/nil)
                 (map (fn [(tdef name nl body l)] (, name nl body l)) x)))
         [(,
         [(@! (defn even [x] (let [o (odd x)] (+ x 2))))
             (@! (defn odd [x] (let [e (even x)] 3)))]
             (tenv
-            (map/from-list [])
-                (map/from-list
+            (map/from-list
                 [(,
                     "odd"
                         (forall
@@ -776,20 +788,24 @@
                         (forall
                         (map/from-list [])
                             (cbool true -1)
-                            (tapp (tapp (tcon "->" 4885) (tcon "int" -1) 4885) (tcon "int" -1) 4885)))])))])
+                            (tapp (tapp (tcon "->" 4885) (tcon "int" -1) 4885) (tcon "int" -1) 4885)))])
+                (map/from-list [])
+                (map/from-list [])
+                (map/from-list [])))])
 
-(defn add/typealias [(tenv types values) name args type]
+(defn add/typealias [(tenv values tcons types taliases) name args type]
     (tenv
-        (** TODO verify that all referenced types do exist **)
+        map/nil
+            map/nil
+            map/nil
             (map/set
             map/nil
                 name
                 (,
                 (map fst args)
-                    (type/con-to-var (set/from-list (map fst args)) type)))
-            map/nil))
+                    (type/con-to-var (set/from-list (map fst args)) type)))))
 
-(defn add/deftype [(tenv types assumps) name args constrs l]
+(defn add/deftype [(tenv globals tcons types aliases) name args constrs l]
     (let [
         free           (map fst args)
         free-set       (set/from-list free)
@@ -808,7 +824,9 @@
             (map/from-list
                 (map
                     (fn [(, name (, free args res))]
-                        (, name (forall (set/from-list free) (tfns args res l))))
+                        (,
+                            name
+                                (forall (set/from-list free) (cbool true -1) (tfns args res l))))
                         parsed-constrs))
                 (map/from-list parsed-constrs)
                 (map/set
@@ -846,7 +864,14 @@
 (defn add/stmt [tenv stmt]
     (match stmt
         (tdef name nl expr l)            (add/def tenv name nl expr l)
-        (texpr expr l)                   (run/nil-> (let-> [_ (infer/expr tenv expr)] (<- tenv/nil)))
+        (texpr expr l)                   (run->
+                                             (let-> [
+                                                 v          (fresh-ty-var "expr")
+                                                 constraint (infer/expr expr (tvar v l))
+                                                 subst      (solve (cexists [v] constraint l) map/nil set/nil)
+                                                 type       (<- (type/apply subst (tvar v l)))]
+                                                 (<- tenv/nil))
+                                                 (, 0 tenv))
         (ttypealias name _ args type _)  (add/typealias tenv name args type)
         (tdeftype name _ args constrs l) (add/deftype tenv name args constrs l)))
 
