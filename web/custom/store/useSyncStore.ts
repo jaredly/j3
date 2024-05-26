@@ -13,6 +13,7 @@ import { AnyEnv } from './getResults';
 import { Message, Sendable, ToPage } from '../worker/worker';
 import { calcChangedNodes } from './calcChangedNodes';
 import { collectPaths, pathForIdx } from '../../ide/ground-up/pathForIdx';
+import equal from 'fast-deep-equal';
 // import Worker from '../worker?worker'
 
 export const useSyncStore = (
@@ -267,6 +268,29 @@ export const setupSyncStore = (
                 );
             }
 
+            if (
+                state.trackChanges &&
+                state.trackChanges !== lastState.trackChanges
+            ) {
+                Object.keys(state.trackChanges.previous).forEach((k) => {
+                    if (
+                        state.trackChanges!.previous[+k] !==
+                        lastState.trackChanges?.previous[+k]
+                    ) {
+                        nodeChanges[+k] = results.topForLoc[+k];
+                    }
+                });
+                if (lastState.trackChanges?.previous) {
+                    Object.keys(lastState.trackChanges.previous).forEach(
+                        (k) => {
+                            if (!(k in state.trackChanges!.previous)) {
+                                nodeChanges[+k] = results.topForLoc[+k];
+                            }
+                        },
+                    );
+                }
+            }
+
             Object.keys(nodeChanges).forEach((id) => {
                 nodeListeners[id]?.forEach((f) =>
                     f(
@@ -279,7 +303,7 @@ export const setupSyncStore = (
             });
 
             evtListeners.all.forEach((f) => f(state));
-            if (state.at !== lastState.at) {
+            if (!equal(state.at, lastState.at)) {
                 evtListeners.selection.forEach((f) => f(state));
             }
             if (state.map !== lastState.map) {

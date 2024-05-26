@@ -22,6 +22,8 @@ let extend = (env: Env, var_: string, sch: ty_sch): Env => [
 let lookup = (env: Env, var_: string): ty_sch | undefined =>
     env.find((it) => it.var_ === var_)?.sch;
 
+// info is a leaf, link is a branch.
+// Union_repr is to find the leaf at the end
 export let Union_repr = <t>(point: Union_point<t>): Union_point<t> => {
     switch (point.current.type) {
         case 'info':
@@ -37,6 +39,11 @@ export let Union_repr = <t>(point: Union_point<t>): Union_point<t> => {
     }
 };
 
+// this ... seems like it's doing the same thing as union_repr
+// but, just a little bit different
+// yeah, this is useless.
+// this impl https://github.com/andreypopp/type-systems/blob/main/hmx/union_find.ml
+// makes much more sense.
 export let Union_find = <t>(point: Union_point<t>): t => {
     switch (point.current.type) {
         case 'info':
@@ -51,6 +58,8 @@ export let Union_find = <t>(point: Union_point<t>): t => {
         }
     }
 };
+
+// anyyyyyway, back to business; could I do a `subst` map
 
 let Union_union = <t>(
     f: (d1: t, d2: t) => t,

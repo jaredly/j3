@@ -5,6 +5,7 @@ import {
     Mods,
     StateChange,
     StateUpdate,
+    UpdateMap,
 } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { Def, DefType, Node } from '../../src/types/ast';
@@ -13,6 +14,7 @@ import { NNode } from '../../src/state/nestedNodes/NNode';
 import { Map, NsMap } from '../../src/types/mcst';
 import { NUIResults, Store } from './store/Store';
 import {
+    AnyEnv,
     Errors,
     FullEvalator,
     InferenceError,
@@ -20,6 +22,8 @@ import {
 import { LocedName } from './store/sortTops';
 import { TraceMap } from '../ide/ground-up/loadEv';
 import { displayFunctionIds } from './store/displayFunction';
+import { AllNames } from '../ide/ground-up/evaluators/interface';
+import { TypeEnv } from '../ide/infer/algw-cr/types';
 
 export type MetaData = {
     trace?: {
@@ -52,6 +56,11 @@ export type NUIState = {
     nsMap: { [key: number]: RealizedNamespace };
     meta: MetaDataMap;
     evaluator?: string | string[] | null;
+
+    trackChanges?: {
+        previous: UpdateMap;
+        message: string;
+    };
     // config?: {
     //     evaluator: string,
     //     // info ... about ... what kind of evaluator I would be.
@@ -194,11 +203,17 @@ export type RealizedNamespace = {
 
 export type WorkerPlugin<Results, Parsed, Options> = {
     test(node: Node): boolean;
+    compile?(
+        node: Node,
+        evaluator: AnyEnv,
+        options: Options,
+        tenv: TypeEnv,
+    ): string;
     parse(
         node: Node,
         errors: Errors,
         evaluator: FullEvalator<any, any, any>,
-    ): { parsed: Parsed; deps: LocedName[] } | null;
+    ): { parsed: Parsed; allNames: AllNames } | null;
     infer(
         parsed: Parsed,
         evaluator: FullEvalator<any, any, any>,
@@ -218,6 +233,7 @@ export type WorkerPlugin<Results, Parsed, Options> = {
         traces: TraceMap,
         env: any,
         options: Options,
+        typeEnv: any,
     ): Results;
     getErrors(results: Results): [string, number][];
 };
@@ -284,6 +300,7 @@ export type RegMap = {
 export type Action =
     | { type: 'undo' }
     | { type: 'redo' }
+    | { type: 'clear-changes'; ids: number[] }
     | { type: 'yank'; expr: DefType | Def; loc: number }
     | { type: 'jump-to-definition'; idx: number }
     | { type: 'highlight' }

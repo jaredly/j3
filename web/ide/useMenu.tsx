@@ -1,6 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { isParentOf } from './IDE';
 import { css } from '@linaria/core';
+
+export const isParentOf = (parent: HTMLElement, child: HTMLElement) => {
+    if (child === parent) {
+        return true;
+    }
+    while (child.parentElement && child.parentElement !== document.body) {
+        child = child.parentElement;
+        if (child === parent) {
+            return true;
+        }
+    }
+    return false;
+};
 
 type Action = {
     title: string;

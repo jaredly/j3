@@ -187,6 +187,10 @@ export type Values = {
     errors?: string[];
     unused: boolean;
     highlight: boolean;
+    static?: boolean;
+
+    // If the parent is new, we don't track changes on this one.
+    trackChanges?: MNode | null;
 
     reg: Reg;
     selection?: {
@@ -199,6 +203,7 @@ export type Values = {
 
 export const getValues = (
     idx: number,
+    pidx: number,
     store: Store,
     state: NUIState,
     results: NodeResults<any>,
@@ -241,6 +246,10 @@ export const getValues = (
 
     return {
         errors,
+        trackChanges:
+            state.trackChanges?.previous[pidx] === null
+                ? undefined
+                : state.trackChanges?.previous[idx],
         highlight: state.highlight?.includes(idx) ?? false,
         dispatch: store.dispatch,
         meta: state.meta?.[idx] ?? null,

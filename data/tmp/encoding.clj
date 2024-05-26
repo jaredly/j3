@@ -4,19 +4,19 @@
 (** One thing we need to decide at the start is: "what kinds of runtime values will the language have?"
     The simplest useful language I can think of would be a calculator language that only has 1 kind of runtime value: the floating-point number. Expressions would be something like expr = number | (expr op expr) where op is one of + - / *.
     Now, for our language to actually be able to self-host & be nice to use, we'll need the following kinds of runtime values:
-    - primitives (string, integer, boolean)
+    primitives (string, integer, boolean)
     
-    - at runtime, these will be native javascript strings, numbers, and booleans
-    - functions (we'll go with auto-currying for now)
+    At runtime, these will be native javascript strings, numbers, and booleans
+    functions
     
-    - we'll use native javascript functions as well
-    - algebraic data types (enums from Rust or Swift, or TypeScript's tagged unions). To keep things simple though, we'll omit labels from the arguments.
+    we'll use native javascript functions as well
+    algebraic data types
     
-    - these will be encoded as an object with a type attribute for the constructor name, and with the arguments addressed by their index in the constructor. So (evar "abc" 123) will be encoded as {type: "evar", 0: "abc", 1: 123}.
+    Like enums from Rust or Swift, or TypeScript's tagged unions.
+    These will be encoded as an object with a type attribute for the constructor name, and with the arguments addressed by their index in the constructor. So (evar "abc" 123) will be encoded as {type: "evar", 0: "abc", 1: 123}. Accessing the values will be done by destructuring (with a let or match).
+    
     And that's all we need! Notably we won't have arrays (but we will have linked lists w/ cons and nil), or objects, or even floats for now.
-    
     We'll now define a couple of utility functions that the structured editor will make use of: valueToNode and valueToString. This will allow the editor to display & manipulate the values that result from running code written in our language.
-    
     These utility functions have to be written in JavaScript (instead of our language) because the argument has type any, which our type system will not allow. Once we add Type Classes in Version 2 of the language (L2), we'll be able to drop this JavaScript in favor of an automatically derived type-class instance :). **)
 
 (** const valueToNode = (v) => {
@@ -87,4 +87,5 @@
 
 (** const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])] **)
 
-(** ({valueToString, valueToNode}) **)
+(** // This node is how we bundle up these functions for the structured editor to use.
+({valueToString, valueToNode}) **)

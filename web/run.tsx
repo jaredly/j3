@@ -1,12 +1,7 @@
-import './poly';
 import * as React from 'react';
 import { createRoot, Root } from 'react-dom/client';
-import { initialData } from './ide/initialData';
-import { IDE } from './ide/IDE';
-import { Test } from './ide/Test';
-import { Visualize } from './ide/infer/visualize/Visualize';
-import { GroundUp } from './ide/ground-up/GroundUp';
 import { Outside } from './ide/ground-up/Outside';
+import './poly';
 
 declare global {
     var root: Root;

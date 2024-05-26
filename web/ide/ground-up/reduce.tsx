@@ -26,7 +26,7 @@ import {
 } from '../../custom/old-stuff/reduce';
 import { filterNulls } from '../../custom/old-stuff/filterNulls';
 import { verticalMove } from '../../custom/verticalMove';
-import { newResults } from '../Test';
+import { newResults } from '../newResults';
 import { Algo, Trace } from '../infer/types';
 import { findTops, verifyPath } from './findTops';
 import { evalExpr } from './round-1/bootstrap';
@@ -581,6 +581,18 @@ export const reduce = (
     }
     if (action.type === 'highlight') {
         return { ...state, highlight: calcHighlight(state, usages) };
+    }
+    if (action.type === 'clear-changes') {
+        if (!state.trackChanges) return state;
+        const tc: NUIState['trackChanges'] = {
+            ...state.trackChanges,
+            previous: { ...state.trackChanges.previous },
+        };
+        action.ids.forEach((id) => {
+            delete tc.previous[id];
+        });
+
+        return { ...state, trackChanges: tc };
     }
     // console.time('actionToUpdate');
     const update = actionToUpdate(state, action);

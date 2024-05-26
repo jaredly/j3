@@ -1,12 +1,14 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { NUIState } from '../web/custom/UIState';
-import { bootstrap } from '../web/ide/ground-up/bootstrap';
+// import { bootstrap } from '../web/ide/ground-up/bootstrap';
 
-const [_, __, sfile] = process.argv;
-const state: NUIState = JSON.parse(readFileSync(sfile, 'utf-8'));
+// const [_, __, sfile] = process.argv;
+// const state: NUIState = JSON.parse(readFileSync(sfile, 'utf-8'));
 
-const ev = bootstrap;
+// const ev = bootstrap;
 
-const result = ev.toFile(state);
-writeFileSync(sfile + '.js', result.js);
+// const result = ev.toFile(state);
+// writeFileSync(sfile + '.js', result.js);
+
+throw new Error('what');

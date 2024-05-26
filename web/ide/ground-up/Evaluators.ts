@@ -70,6 +70,9 @@ export class LocError extends Error {
 export const repr: FullEvalator<{ values: {} }, Node, Node> = {
     id: 'repr',
     init: () => ({ values: {} }),
+    compile(expr, meta) {
+        return 'throw new Error("repr evaluator cant compile")';
+    },
     valueToString(v) {
         return 'no values in :repr:';
     },
@@ -83,7 +86,7 @@ export const repr: FullEvalator<{ values: {} }, Node, Node> = {
         return { expr: node, errors: [] };
     },
     setTracing(idx) {},
-    addStatements(stmts, env, _, __, ___, displayFunction) {
+    addStatements(stmts, env, _0, _, __, ___, displayFunction) {
         const display: Record<number, Produce> = {};
         Object.keys(stmts).forEach((id) => {
             display[+id] = displayFunction

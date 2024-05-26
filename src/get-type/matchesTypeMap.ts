@@ -1,4 +1,4 @@
-import { any } from '../to-ast/builtins';
+import { any } from '../to-ast/old-builtins';
 import { Ctx, globalType } from '../to-ast/library';
 import { Node, Type } from '../types/ast';
 import { MatchError } from '../types/types';

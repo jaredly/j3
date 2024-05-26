@@ -3,7 +3,7 @@ import { MetaDataMap, NUIState } from '../../custom/UIState';
 import { TraceMap } from './loadEv';
 import { LocedName } from '../../custom/store/sortTops';
 import { LocError, MyEvalError } from './Evaluators';
-import { Analyze, TypeChecker } from './evaluators/interface';
+import { AllNames, Analyze, TypeChecker } from './evaluators/interface';
 
 export type Errors = { [key: number]: string[] };
 
@@ -28,7 +28,7 @@ export type InferenceError =
       }
     | {
           type: 'missing';
-          missing: { name: string; loc: number; type: Node }[];
+          missing: { name: string; loc: number; type: Node | null }[];
       }
     | {
           type: 'nested';
@@ -47,6 +47,7 @@ export type FullEvalator<
     Expr,
     TypeEnv = any,
     Type = any,
+    TypeInfo = any,
 > = {
     id: string;
     init(): Env;
@@ -60,9 +61,9 @@ export type FullEvalator<
     analysis?: Analyze<Stmt, Expr, Type>;
 
     addStatements(
-        stmts: { [key: number]: Stmt },
+        stmts: { [key: number]: { stmt: Stmt; names?: AllNames } },
         env: Env,
-        // tenv: TypeEnv,
+        typeInfo: TypeInfo,
         meta: MetaDataMap,
         trace: TraceMap,
         top: number,
@@ -75,10 +76,18 @@ export type FullEvalator<
         js?: string;
     };
     setTracing(idx: number | null, traceMap: TraceMap, env: Env): void;
-    evaluate(expr: Expr, env: Env, meta: MetaDataMap): any;
+    evaluate(
+        expr: Expr,
+        allNames: AllNames,
+        typeInfo: TypeInfo,
+        env: Env,
+        meta: MetaDataMap,
+    ): any;
+    compile(expr: Expr, typeInfo: TypeInfo, meta: MetaDataMap): string;
     toFile(
         state: NUIState,
-        target?: number,
+        target: number | null,
+        includePlugins: boolean,
     ): {
         js: string;
         // errors: Errors

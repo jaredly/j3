@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import * as React from 'react';
 import { Action, NUIState, RegMap } from '../../custom/UIState';
-import { Map } from '../../../src/types/mcst';
+import { Map, traverseMCST } from '../../../src/types/mcst';
 import { Path } from '../../store';
 import { findTops } from './findTops';
 import { CombinedResults, Store } from '../../custom/store/Store';
@@ -445,16 +445,11 @@ const getCommands = (
                         .highlight!.map((idx): Cursor | null => {
                             const paths = pathFor(idx);
                             if (!paths.length) return null;
+                            const path = paths[0];
                             // throw new Error(`no path for ${idx}`);
                             return {
-                                start: [
-                                    ...paths[0].slice(0, -1),
-                                    { type: 'start', idx },
-                                ],
-                                end: [
-                                    ...paths[0].slice(0, -1),
-                                    { type: 'end', idx },
-                                ],
+                                start: [...paths[0], { type: 'start', idx }],
+                                end: [...paths[0], { type: 'end', idx }],
                             };
                         })
                         .filter(filterNulls),
@@ -514,6 +509,25 @@ const getCommands = (
                 });
             },
         });
+
+        if (state.trackChanges?.previous[idx] !== undefined) {
+            const toClear = [idx];
+            traverseMCST(idx, state.map, (id) => {
+                if (state.trackChanges!.previous[id] !== undefined) {
+                    toClear.push(id);
+                }
+            });
+            commands.push({
+                type: 'plain',
+                title: 'Clear trackChanges for this node & all children',
+                action() {
+                    dispatch({
+                        type: 'clear-changes',
+                        ids: toClear,
+                    });
+                },
+            });
+        }
     }
 
     return commands;
@@ -578,7 +592,7 @@ function getJumpToResult(store: Store): SuperCommand {
             const res = results.workerResults.nodes[top.ns.id]?.produce?.filter(
                 (p) => typeof p !== 'string' && p.type === 'type',
             ) as Extract<ProduceItem, { type: 'type' }>[];
-            node.parsed.names.forEach((name) => {
+            node.parsed.allNames?.global.declarations.forEach((name) => {
                 const t =
                     name.kind === 'value'
                         ? res?.find((prod) => prod.name === name.name)

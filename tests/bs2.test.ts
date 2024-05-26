@@ -1,6 +1,4 @@
-import { expect, test, describe } from 'bun:test';
-import { stateToBootstrapJs } from '../web/ide/ground-up/to-file';
-import { writeFileSync } from 'fs';
+import { test } from 'bun:test';
 import { runFixtures } from './runFixtures';
 
 /*
@@ -43,6 +41,12 @@ const fixtures: Fixture[] = [
         evaluator: ':javascript:',
     },
     {
+        id: 0.01,
+        name: 'bootstrap -> test',
+        file: 'l1-tests.json',
+        evaluator: [0],
+    },
+    {
         id: 0.1,
         name: 'jsbootstrap -> jcst',
         file: 'jcst.json',
@@ -55,12 +59,34 @@ const fixtures: Fixture[] = [
         file: 'self-1.json',
         evaluator: [0],
     },
+
+    {
+        id: 1.01,
+        name: 'self-1 -> test',
+        file: 'l1-tests.json',
+        evaluator: [0, 1],
+    },
+
     {
         id: 1.1,
         name: 'bootstrap -> parse-self',
         file: 'parse-self.json',
         evaluator: [0],
     },
+    {
+        id: 1.11,
+        name: 'self-1 + self-parse -> test',
+        file: 'l1-tests.json',
+        evaluator: [0.1, 1.1, 1],
+    },
+
+    {
+        id: 1.3,
+        name: 'bootstrap -> algw-fast',
+        file: 'algw-fast.json',
+        evaluator: [0],
+    },
+
     // The self-compile-to-js
     {
         id: 2,

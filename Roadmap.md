@@ -1,11 +1,362 @@
 
+# IDEA IDEA IDEA
+
+Ok so what if
+algebraic effects are trying to do too many things at once?
+So I got here by thinking:
+- having the ability to bypass plumbing would be so cool.
+  like, oh here's a value I need in this one place. And, I'll want to
+  provide it in some other random place.
+  What iff I just had the type inference know how to plumb everything together?
+  OBVS you would want a really nicely explorable call graph so you can visualize what goes where.
+  ANDd when tracing, you'd want to .. keep track of things somehow idk.
+  ANYWAY what it turns into is just a bunch of "implicit arguments" that get `provide`d somewhere, and `request`ed somewhere else.
+  I guess we're doing dependency injection? hrmmmm anywayyy
+  it could also be interesting to do monomorphising on booleans, so you can like have `(if debug something-expensive)` and actually just get it compiled out.
+- BUT THEN i was like "oh hey that's one of the things algebraic effects does"
+  BUT actually full algebraic effects is way overpowered for that, like don't make me call up the stack
+  or some nonsense just to get that one value. how about you just pass in that value.
+
+SO basically I was like, what if functions were just a whole lot richer? like
+
+A function has
+- input arguments (maybe labeled idk)
+- a return value
+
+- implicit arguments (dependency injection)
+- effects (full on stop the world and come back)
+- exceptions (stop the world and dont come back)
+
+and all these things ... are like techincally in the realm of effects ...
+hrm could they all get bundled into one .. "effects" .. "implicit record" that gets passed around? I mean maybe
+
+```
+type Implicits = {
+  someConfigValue: a-value,
+  someEffectyThing: (takes-a-value, continuation: (returns-a-value) => um what goes here) => ... ok that's tricky type-wise,
+  someExceptyThing: hrm so really this would unroll all the way back up? right? hrm...
+}
+```
+
+what would it mean ... to have a "state effect" ... that was ... actually going to do mutation.
+would it break things?
+
+
+
+  AnDD another thing it does is "the state monad". but /both/ of those thing
+
+
+
+#
+
+- `nodeName` for fixture tests --> would be great to show failing/succeeding
+
+"Designing Record Systems" paper
+- uses HM(x) to do records with "extension", "concatenation", and "removal of fields"
+I don't really care about removal of fields.
+Extension & concatenation sounds great.
+But really the best would be enabling recursive types!
+Do I care about "field labels as first class values"?
+hrmm
+
+
+Soooo
+# Recursive types!
+
+https://sci-hub.st/10.3233/fi-1998-33401 looks good
+https://web.cs.ucla.edu/~palsberg/draft/jim-palsberg99.pdf might be helpful too
+roc's deal https://github.com/roc-lang/roc/blob/25f230fda81ef57387dc73cc315a15b5e383752b/crates/compiler/unify/src/unify.rs#L3701
+https://ieeexplore.ieee.org/document/782600
+https://www.semanticscholar.org/paper/TYPE-INFERENCE-WITH-RECURSIVE-TYPES-AT-DIFFERENT-Peric%C3%A1s-Geertsen/0749e4999aa588b3ff1a85f788e0c93d29306eb9
+https://dl.acm.org/doi/10.5555/864348
+
+This is a cool comparison of AlgW and HM(X) https://github.com/gowthamk/notes/blob/5eab166fafaa222310e1038cd86e212bfd8be815/_posts/2014-07-15-Type-Inference.markdown
+
+Looks like I need to add a `mu` type case, which is a `mu vbl . (some type that contains vbl)`.
+so ... unifying things ... seems like it should be doable, right?
+
+
+# Tutorial ideas
+
+- [ ] it would be great for the `playground` document to have a dropdown letting you switch between evaluators,
+  with presets:
+  - bootstrap
+  - bootstrap + self-1
+  - self-1 + parse-self
+  - algw-s2 + self-1 + parse-self
+  - algw-s3 + self-1 + parse-self
+  - algw-fast + parse-1-args
+  - ...
+- [ ] and then a l2- test, with type classessss
+  - .. just algw-s4 + self-tc ... right?
+
+
+
+ehhhh I do think I want a toplevel to be able to have a `docstring` thing ... maybe a "prefix"?
+would I also want a "suffix"? idkkkk maybe tho who knows.
+These wouldn't be ... visible to the parser, righttt
+--> OK so a cool thing is, we can show the inferred type /above/ the term, but /below/ the docstring
+
+## THIH noww
+
+self-tc
+parse-self
+
+The road to full type classes
+- [x] start plumbing typeInfo
+- [x] get some tests working
+- [x] get plugins passing typeInfo
+- [ ] get toFile passing typeInfo
+  -> hrm lower priority
+
+🤔 sooo ok, soo what we have here ... is .....
+ugh ok so I definitely want ... and we're definitely gonna need the ability
+to infer recursive types.
+
+- gotta be a parse error to overwrite `cons` or `nil` folks. dont do it
+  orrrr maybe I should use a special thing. Yeah that'd be better. `[a]` is cons maybe? and `[]` is nil? sure.
+
+
+Type Classesssss
+
+- So, we've got "very basic type class info" passing in just fine.
+HOWEVER. With type variables, we're definitely not making it happen.
+
+`$type_class_insts["(, int int) < eq"]`
+-> probably needs to be something like:
+`$type_class_insts["(, a b) < eq"]($type_class_insts["int < eq"], $type_class_insts["int < eq"])`
+
+
+ok so I think I'm on the right track here with things I need to be resolving ...
+like
+there are ones in head normal form
+and ones that arent
+and
+we need both.
+
+
+right?
+
+# For debugging more stuffs
+
+-> the Save Evaluator plugin type
+  -> have an option to include fixture tests, for nicer debugginggg
+  -> alsoo have an option to like "produce a cli" ya know. instead of "return {}"
+
+##
+
+OK so long-term plan, it would be great for the host environment not to need to know about `sanitize`...right?
+
+
+- [ ] ENXT UP: record-if-generic should include predicates! thnxxxx
+  - which means we need to recording (qual type) instead of (type), which sounds fine
+    -> should we also be recording the full (scheme)? MMAYBeb
+
+- [ ] setPointerCapture and elementFromPoint
+
+# Builtins self-hosted
+
+.. something's not working?
+.. I mean, I think my `toFile` needs a litte more of something ...
+
+
+# Thinking about row types and tagged unions.
+
+... so, I didn't realize it, but Roc doesn't have record extension. Just record update. I imagine this makes the type system much simpler to implement.
+such records would *not* be able to represent Effect handlers, at least in the way I've envisioned it.
+... so maybe the scoped labels approach is fine? hmmm.
+hmmmmmm ok so disallowing record spread does make memory representation a ton simpler. well .... hmm idk maybe not. I mean, if you have an open record, you don't know. But they probably monomorphize that all away.
+but then, if you're already there, then extending records shouldn't be a problem either.
+
+
+# Pre Alg W
+
+I should prooobably do a "pre algw" document that is *without generics*. Right? ... would we still have type variables?
+Yeah I guess we would...
+Anyway, might be helpful as a stepping stone.
+
+
+# GADT thoughts
+
+https://blog.polybdenum.com/2024/03/03/what-are-gadts-and-why-do-they-make-type-inference-sad.html
+https://blog.janestreet.com/why-gadts-matter-for-performance/
+https://wiki.haskell.org/GADTs_for_dummies
+
+# THIH Type Classes
+
+type
+classes
+
+-> we're reporting the predicates
+-> for non-function types, we need to resolve things so it can actually compile
+-> for function types ... we're not really going to execute it anyway right? i mean ... what would be the point.
+
+- [x] predicates now default. cant say I totally grok the algorithm, but it seems to be doing it right
+- [x] I probably shouldn't allow toplevel consts to have numeric nonsense in them ... because how do you actually specialize that?
+  and does it just mean that ... the reference ... yeah ok I'm gonna say we drop it.
+- [ ] codegen now needs to use that infos for good news!
+  which will be great. I assume `compile2` will take ... whatever the type checker came up with.
+
+
+hrmmmm sooo I think I need `builtins` to not be just in a file. it needs to come out into the world.
+-> defined in javascript
+-> special thing, where we parse it specially. Yeah, it's just a string, it's got `consts`, and we figure it out. Good dealio.
+-> NOTE that I'll still have `equal` be fast-deep-equal probably.
+
+
+
+
+
+
+
+Things to think about:
+https://terbium.io/2021/02/traits-typeclasses/
+
+ok, so thinking about how we end up passing around the "instance maps" for things ... what if the predicate (isin type string) had a third argument, that is ... like a `(option int)`, that would get filled in with a reference to the ... location of the instance definition? hrmmm.
+
+Ok so the thing that will happen, is we'll get "the type of this function call is XYZ", with some type variables, that may have constriaints on them that exist in the "global predicates list".
+-> andddd so it's not really that the function call has predicates, it's that the variables in the function type have predicates.
+Anyways.
+Those predicates, they need resolvin.
+
+I'll need to sit down with this once I have the inference actually happening. And do a concrete example.
+
+OK SO yeah, I'm pretty sure: when we introduce a predicate, it *exists* because it was attached to some global value.
+SO, when we bring it into the world, we need to /tag/ it with the /loc/ of that variable reference, so that at runtime,
+we can replace `show` with `show($int$show)` or something like that. prefill in the relevant instance.
+
+
+OOOHK, so:
+- (defn x [a] (show a))
+  -> has predicate (isin a:12 "show") <- a:12 is the `tvar` name
+  -> gets generated as:
+    `const x = ($a_12_show) => (a) => show($a_12_show)(a)`
+  lovin it
+
+- [ ] STOPSHIP: only attach predicates that have type variables that are free in the declaration!!!
+  this makes sense now.
+
+# Track Changes
+
+ok this is cool
+
+- if this node didn't exist before, but does now, set its trackChanges to "new"
+- if it was modified but did exist, set it to "changed"
+  - hm but probably only if the `type` didn't chagne. if It did change, treat it as `new`
+- THEN:
+  - for containers, if you /changed/ do a light background highlight
+  - for containers, if you're /new/ and your parent is /not/, then do an outline
+  - // for atoms, if you /changed/, do a sub-highlight thing on your changes probably?
+  - for atoms, if you are changed or new, and your parent is /not new/, then do an outline or underline or something.
+
+- [x] hover lookin fresh
+- [x] got to indicate in the "collapse" dealio that there are changed children
+- [x] add a command balette thing to allow clearing of 'trackChanges' prev.
+- [ ] deleting a top shoudl delete the stuff
+  - and it should invalidate things that depended on it
+  - changing a name should do that tooooo
+- [ ] it's weird to report "change" info at a higher level than the "type" info that's coming up ...
+- [ ]
+
+
+#
+
+- [x] use all_names on the editor-end
+- [ ] use the `usages` from all_names on the editor end of things
+- [ ] ditch the usage tracking from algw-fast
+- [ ] figure out what I want to do with algw-s2 now that it has been ... fancied up.
+
+OOOOOH OK
+SO
+WHAT IF
+you could *switch between versions*. Yes let's do that.
+so we can really get a feel for the difference.
+maybe most relevant on the "playground" page?
+
+# Sprucing algw-s2 up to be the thing we always wanted
+
+- [x] <-err basic
+- [x] <-err with all the types
+- [ ] Infer the missing items ... ahead of time?
+  ok yeas I guess this is instrumental in enabling autocomplete. So I should definitely do it.
+  eye meanss it's not 100% the thing. like it's definitely a neat trick walking stick.
+- [x] OK but the more important thing
+  is hover for type.
+- [ ] and also usages, lets not forget that.
+  Soooo do these really need to be ... ... tracked in the type inference dealio?
+  Can't it be done a lot ... cheaper ... by a different analysis thing?
+  🤔
+  and the kicker is, we'd really like usage tracking to still work, even when there's a type error.
+  NOW in some future moment, when we have type classes, the "resolved instance" might be something a little more involved. but that's definitely future.
+  ok, so usage is gonna be a separate thing.
+
+  yeah suffice it to say, it'll be its own thing. Maybe even in the same breath as `externals`?
+  Might as well. Ok, so instead of `names` and `externals`, we have one thing to rule them all, and it's
+  `usages`
+  - (usage/local decl l)
+  - (usage/global name (kind) l)
+  - (decl/local l)
+  - (decl/global name (kind) l)
+
+
+
+# Feedback and such
+
+- [ ] make a glossary!
+- [ ] I want to be able to put definition tooltips everywhere. in the rich-text
+- [x] ugh the jumping around is so bad. I need a better thing for that.
+  - maybe just with rich text dealios? Yeah, like if it's rich-text, just don't.
+
+- [ ] bottom status bar - to show the # of errors and let you tab between them
+- [ ] also bottom status bar: "track changes!" you can probably turn it on or off, but if it's on, then it will have a map on `state` that is like `changesMap` and it will contain the previous version of each MNode that gets modified while track changes is on.
+  THIS WAY I can be like "I'll make a new version of (our type inference algorithm), but with [nicer error behavior]", and have it be reasonable to look through.
+  .. ALSO: do I want .. to be able to like ... show a "PR" view, of just the changes, somehow? In a little bit of context?
+- [ ] hrm search results need to ... simplify again. Maybe harder now that we're doing ReadOnlyRender instead of StaticRender
+- [ ] fixture tests - clicking the new output shouldn't "paste" it hsould just replace the stuff.
+
 # For Export
 
 for the series of artcicle
 - [x] collapsed things should show what's hiding
   - I love it so much
-- [ ] hrmm `stmt` is really a misnomer, and I should remove it.
+- [x] hrmm `stmt` is really a misnomer, and I should remove it.
   These are "toplevels".
+  - definitions
+  - expressions
+  ... I mean that's it, so thye could be called "definitions", but idk
+
+- [x] the FONT is TOO SMALL
+  andd maybe just too skinny? idk, I should play around with
+  different fonts.
+- [ ] Nowwww let's do some static rendering my good folks
+  and when I say static
+  I mean static.
+  - [ ] THIS MEANS no javascript
+    IT ALSO MEANS hm I can use the `detail` whatsit to get expand/collapse, right? <details><summary>thing</summary>more things</details>
+  - [ ] it would be nice to have a sticky header too
+  - [ ] and a collapsible table of contents at the top...
+
+# Static Rednder
+
+- [x] basic setup
+- [ ] show namespaces nested, with `<details>`
+- [ ] show productitems
+- [ ] do a "table of contents" at the top
+- [ ] get the right font
+
+
+#
+
+- gotta toplevel 'em all
+  - [x] Structured Editor
+  - [x] Encoding
+  - [x] AST
+  - [x] Bootstrap
+  - [x] self-1
+  - [x] parse-self
+  - [x] type inference
+  - [x] parse-1-args
+  - [x] algw-fast
 
 # The Blorg Porst
 
@@ -2488,10 +2839,12 @@ https://github.com/willtim/Expresso
 
 - https://github.com/Steell/DynamicStatic
   - type inference prototype. Supports subtypes, type unions, function overloads, and recursive types.
+    -> ehhh this looks really suspect. I feel like function overloads would obscure a ton of type errors
 - https://github.com/ameerwasi001/CzariScript
   - type system that supports subtype inference with parametric polymorphism, classes, objects, and single inheritance
 - https://github.com/Storyyeller/cubiml-demo
   - tagged unions, records, mutual recursion
+    -> hrmmm the fact that it doesn't permit type classes is maybe a dealbreaker for me.
 - https://bitbucket.org/structural-types/polyte/src/master/
   - "parametric polymorphic subtyping"?
 - https://www.normalesup.org/~simonet/soft/dalton/index.html

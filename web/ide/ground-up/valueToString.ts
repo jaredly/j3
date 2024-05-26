@@ -32,7 +32,7 @@ export const valueToString = (v: any): string => {
         return JSON.stringify(v);
     }
     if (typeof v === 'function') {
-        return '<function>';
+        return v + ''; // '<function>';
     }
     if (v == null) return 'null';
     if (v === undefined) return 'undefined';

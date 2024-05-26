@@ -27,7 +27,11 @@
 
 (defn nested-pred [x] (< (return "")))
 
-(defn z [y] (let [m (< (return "")) n (return 1)] (, m n)))
+(defn z [y]
+    (let [
+        m (< (return ""))
+        n (return 1)]
+        (, m n)))
 
 (let [(, _ what) (z 1)]
     (match what
@@ -38,7 +42,9 @@
 
 (show 1)
 
-(deftype (option a) (some a) (none))
+(deftype (option a)
+    (some a)
+        (none))
 
 (show (some "lol what is this"))
 

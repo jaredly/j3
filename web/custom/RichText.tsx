@@ -1,36 +1,30 @@
 import * as React from 'react';
 
-import { AutoFocusPlugin } from '@lexical/react/LexicalAutoFocusPlugin';
-import {
-    InitialEditorStateType,
-    LexicalComposer,
-} from '@lexical/react/LexicalComposer';
-import { RichTextPlugin } from '@lexical/react/LexicalRichTextPlugin';
-import { ContentEditable } from '@lexical/react/LexicalContentEditable';
-import { HistoryPlugin } from '@lexical/react/LexicalHistoryPlugin';
-import LexicalErrorBoundary from '@lexical/react/LexicalErrorBoundary';
-import { OnChangePlugin } from '@lexical/react/LexicalOnChangePlugin';
-
-import '@blocknote/react/style.css';
-import {
-    BlockNoteView,
-    useCreateBlockNote,
-    useEditorChange,
-    useEditorSelectionChange,
-} from '@blocknote/react';
+import '@blocknote/core/fonts/inter.css';
+// import '@blocknote/mantine/style.css';
+import '@blocknote/ariakit/style.css';
+// import '@fontsource/merriweather/300.css';
+import { BlockNoteView } from '@blocknote/ariakit';
+import { useCreateBlockNote, useEditorChange } from '@blocknote/react';
+// import '@blocknote/react/style.css';
 import { Path } from '../store';
 import { useGetStore, useSubscribe } from './store/StoreCtx';
 import { Reg } from './types';
 import { useAutoFocus } from './useAutoFocus';
+import { MNode } from '../../src/types/mcst';
+
+import { makeTrackChanges } from './makeTrackChanges';
 
 export const RichText = ({
     initial,
     // onChange,
     // onSelect,
+    trackChanges,
     path,
     idx,
     reg,
 }: {
+    trackChanges?: MNode | null;
     initial: any;
     // onChange: (v: any) => void;
     // onSelect: (v: any) => void;
@@ -40,10 +34,12 @@ export const RichText = ({
 }) => {
     // const state = useNode
     const store = useGetStore();
+    const tc = React.useMemo(() => makeTrackChanges(store, idx), []);
     // Creates a new editor instance.
     const editor = useCreateBlockNote({
         placeholders: { default: '...' },
         initialContent: initial,
+        _tiptapOptions: { extensions: tc ? [tc as any] : [] },
     });
     React.useMemo(() => {
         const configured = editor._tiptapEditor.extensionManager.extensions;
@@ -56,7 +52,10 @@ export const RichText = ({
     window.editor = editor;
     // const node = React.useRef<HTMLDivElement>(null);
 
-    useAutoFocus(store, idx, 'rich-text', () => editor?.focus());
+    useAutoFocus(store, idx, 'rich-text', () => {
+        console.log('Focus the rick editor');
+        editor?.focus();
+    });
 
     const isFocused = useSubscribe(
         () => {
@@ -95,6 +94,7 @@ export const RichText = ({
     //     });
     // }, editor);
     useEditorChange(() => {
+        console.log('editor change');
         // onChange(editor.document);
         store.dispatch({
             type: 'rich',
@@ -106,14 +106,22 @@ export const RichText = ({
     // Renders the editor instance using a React component.
     return (
         <BlockNoteView
-            style={{ minWidth: 400, maxWidth: 800 }}
+            // @ts-ignore
+            style={{
+                minWidth: 400,
+                maxWidth: 1000,
+                // outline:
+                //     trackChanges !== undefined
+                //         ? '1px solid rgb(20,155,20)'
+                //         : undefined,
+            }}
             className="rich-text"
             // ref={node}
             editor={editor}
             theme={'dark'}
             sideMenu={false}
             spellCheck={isFocused}
-            onKeyDown={(evt) => {
+            onKeyDown={(evt: React.KeyboardEvent) => {
                 // console.log('key down', evt.key, editor.document);
                 if (
                     evt.key === 'Backspace' &&

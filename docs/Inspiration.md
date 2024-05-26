@@ -21,7 +21,20 @@ Also livelits, good stuff.
 
 
 - https://enso.org/language
-- 
+-
 
 
 
+
+https://www.shadertoy.com/view/XfKSzV
+https://www.shadertoy.com/view/XfyXRV
+
+
+https://ocamlverse.net/content/future_ocaml.html
+
+# Ooh do I want to do a subtyping example?
+
+https://github.com/Storyyeller/cubiml-demo
+
+
+https://wiki.haskell.org/GADTs_for_dummies

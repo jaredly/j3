@@ -4,11 +4,60 @@ import { WorkerPlugin } from '../UIState';
 import { LocedName } from '../store/sortTops';
 import { Data, Expr, parse, parseExpr } from './Data';
 import { valueToString } from '../../ide/ground-up/valueToString';
+import { AllNames } from '../../ide/ground-up/evaluators/interface';
+import { blankAllNames } from '../../ide/ground-up/evaluators/analyze';
+import { AnyEnv } from '../store/getResults';
+import { TypeEnv } from '../../ide/infer/algw-cr/types';
+
+export const compileFixture = (
+    node: Node,
+    evaluator: AnyEnv,
+    options: never,
+    tenv: TypeEnv,
+) => {
+    // const typeInfo = []; // STOPSHIP typeInfo
+    const parsed = parse(node, parseExpr(evaluator, {}, blankAllNames()));
+    if (!parsed) throw new Error(`cant compile fixture tests, unable to parse`);
+    if (!parsed.test?.expr) throw new Error(`no test`);
+
+    // STOPSHIP: get the type env...
+    const info = evaluator.inference?.inferExpr(parsed.test.expr, tenv);
+    const codeGen =
+        info?.result.type === 'ok' ? info.result.value.codeGenData : undefined;
+
+    // STOPSHIP: pass type info for real
+    return `{
+    const test = ${evaluator.compile(parsed.test?.expr, codeGen, {})};
+    ${parsed.fixtures
+        .map((item, i) => {
+            if (item.type === 'unknown') return '';
+            if (!item.input?.expr && !item.output?.expr) return '';
+            if (!item.input?.expr)
+                throw new Error(`no input on line ${i} (${node.loc})`);
+            if (!item.output?.expr)
+                throw new Error(`no output on line ${i} (${node.loc})`);
+            return `
+    const in_${i} = ${evaluator.compile(item.input.expr, null, {})};
+    const mod_${i} = test(in_${i});
+    const out_${i} = ${evaluator.compile(item.output.expr, null, {})};
+    if (!equal(mod_${i}, out_${i})) {
+        console.log(mod_${i});
+        console.log(out_${i});
+        throw new Error(\`Fixture test (${
+            node.loc
+        }) failing ${i}. Not equal.\`);
+    }
+    `;
+        })
+        .join('\n')}
+}`;
+};
 
 export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
     test: (node: Node) => {
         return parse(node, (node) => undefined) != null;
     },
+    compile: compileFixture,
     infer(parsed, evaluator) {
         return {
             result: { type: 'ok', value: null },
@@ -29,9 +78,13 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
     // },
 
     parse(node, errors, evaluator) {
-        const deps: LocedName[] = [];
-        const parsed = parse(node, parseExpr(evaluator, errors, deps));
-        return parsed ? { parsed, deps } : null;
+        // const deps: LocedName[] = [];
+        const allNames: AllNames = {
+            global: { declarations: [], usages: [] },
+            local: { usages: [], declarations: [] },
+        };
+        const parsed = parse(node, parseExpr(evaluator, errors, allNames));
+        return parsed ? { parsed, allNames } : null;
     },
 
     getErrors(results: {
@@ -39,9 +92,6 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
     }) {
         const errors: [string, number][] = [];
         for (let [k, res] of Object.entries(results)) {
-            if (res.error) {
-                errors.push([res.error, +k]);
-            }
             if (!equal(res.expected, res.found)) {
                 errors.push([
                     `Fixture test not equal ${valueToString(
@@ -53,14 +103,28 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
             if (res.expected === undefined) {
                 errors.push([`No "expected" value for fixture test`, +k]);
             }
+            if (res.error) {
+                errors.push([res.error, +k]);
+            }
         }
         return errors;
     },
 
-    process(data, meta, evaluator, traces, env) {
+    process(data, meta, evaluator, traces, env, _options, tenv) {
         const setTracing = (idx: number | null) =>
             evaluator.setTracing(idx, traces, env);
-        const evaluate = (expr: Expr) => evaluator.evaluate(expr, env, meta);
+        const evaluate = (expr: Expr) => {
+            const t = evaluator.inference?.inferExpr(expr, tenv);
+            return evaluator.evaluate(
+                expr,
+                evaluator.analysis?.allNamesExpr(expr) ?? blankAllNames(),
+                t?.result.type === 'ok'
+                    ? t.result.value.codeGenData
+                    : undefined,
+                env,
+                meta,
+            );
+        };
 
         let test: null | Function = null;
         const results: {
@@ -88,7 +152,7 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
                         };
                     }
                 });
-                return { results };
+                return results;
             }
             if (typeof test !== 'function')
                 return {
@@ -136,6 +200,9 @@ export const fixtureWorker: WorkerPlugin<any, Data<Expr>, any> = {
 };
 
 const ensureSendable = (x: any) => {
+    if (typeof x === 'function') {
+        throw new Error(`Cannot send function ${x + ''}`);
+    }
     try {
         structuredClone(x);
     } catch (_) {

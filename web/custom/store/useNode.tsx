@@ -19,6 +19,7 @@ export const useNode = (
     let [state, setState] = useState(() =>
         getValues(
             idx,
+            path[path.length - 1].idx,
             store,
             store.getState(),
             store.getResults().results.nodes[findNs(path)],
@@ -87,7 +88,15 @@ export const useNode = (
             // Node is being deleted, ignore. This'll unmount in a minute
             if (!state.map[idx]) return;
             setState(
-                getValues(idx, store, state, results, asyncResults, unused),
+                getValues(
+                    idx,
+                    path[path.length - 1].idx,
+                    store,
+                    state,
+                    results,
+                    asyncResults,
+                    unused,
+                ),
             );
         });
     }, [idx]);

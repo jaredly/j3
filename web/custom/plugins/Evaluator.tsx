@@ -29,8 +29,7 @@ export const evaluatorPlugin: NamespacePlugin<
     // So... I want a way to send a message to the worker.
 
     render({ id }, results, store, ns) {
-        const options: string | null =
-            typeof ns.plugin === 'string' ? null : ns.plugin?.options;
+        const options: string | null = ns.plugin?.options;
         return {
             type: 'vert',
             children: [
@@ -79,6 +78,8 @@ export const evaluatorPlugin: NamespacePlugin<
                                             text = ev.toFile!(
                                                 store.getState(),
                                                 id,
+                                                // Here's the way to indicate that we should include plugins
+                                                false,
                                             ).js;
                                         } catch (err) {
                                             console.error(err);

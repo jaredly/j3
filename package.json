@@ -8,6 +8,16 @@
         "plot": "link:@types/@observablehq/plot",
         "vitest": "^0.34.5"
     },
+    "scripts": {
+        "start": "esbuild --bundle src/run.ts --platform=node --sourcemap=inline > ok.js && node --enable-source-maps ok.js ./examples/basic.clj; rm -f ok.js",
+        "server": "bun --hot run server.ts",
+        "explainer": "npm run build-web; bun tools/build-explainer.ts; cd web/dist; surge . compiler.jaredforsyth.com",
+        "web": "vite web --port 8224 --config vite.config.js",
+        "build-web": "vite build web --config vite.config.js",
+        "make-walk": "cd ../j2; yarn tx ../j3/src/types/ast.ts ../j3/src/types/walk-ast.ts",
+        "gram": "node ./make-grammar.js",
+        "test": "jest"
+    },
     "type": "module",
     "dependencies": {
         "@babel/core": "^7.20.12",
@@ -15,8 +25,11 @@
         "@babel/preset-react": "^7.22.3",
         "@babel/preset-typescript": "^7.21.5",
         "@babel/types": "^7.20.7",
-        "@blocknote/core": "^0.12.0",
-        "@blocknote/react": "^0.12.0",
+        "@blocknote/ariakit": "0.13.2",
+        "@blocknote/core": "0.13.2",
+        "@blocknote/mantine": "0.13.2",
+        "@blocknote/react": "0.13.2",
+        "@fontsource/merriweather": "^5.0.13",
         "@lexical/clipboard": "^0.8.1",
         "@lexical/code": "^0.8.1",
         "@lexical/html": "^0.8.1",
@@ -33,6 +46,7 @@
         "@linaria/react": "^4.3.8",
         "@linaria/vite": "^4.2.11",
         "@observablehq/plot": "^0.6.11",
+        "@tiptap/core": "^2.4.0",
         "@tiptap/pm": "^2",
         "@types/babel__generator": "^7.6.4",
         "@types/jest": "^29.2.5",
@@ -52,6 +66,7 @@
         "generator": "link:@types/@babel/generator",
         "grapheme-splitter": "^1.0.4",
         "jest": "^29.3.1",
+        "jsdom": "^24.0.0",
         "lexical": "^0.8.1",
         "localforage": "^1.10.0",
         "object-hash": "^3.0.0",
@@ -66,14 +81,5 @@
         "victormono": "^1.5.6",
         "vite": "^4.0.4",
         "wa-sqlite": "github:rhashimoto/wa-sqlite#breaking-changes"
-    },
-    "scripts": {
-        "start": "esbuild --bundle src/run.ts --platform=node --sourcemap=inline > ok.js && node --enable-source-maps ok.js ./examples/basic.clj; rm -f ok.js",
-        "server": "bun --hot run server.ts",
-        "web": "vite web --port 8224 --config vite.config.js",
-        "build-web": "vite build web --config vite.config.js",
-        "make-walk": "cd ../j2; yarn tx ../j3/src/types/ast.ts ../j3/src/types/walk-ast.ts",
-        "gram": "node ./make-grammar.js",
-        "test": "jest"
     }
 }

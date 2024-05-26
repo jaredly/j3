@@ -1,3 +1,5 @@
+import { blankAllNames } from '../../ide/ground-up/evaluators/analyze';
+import { AllNames } from '../../ide/ground-up/evaluators/interface';
 import { MetaDataMap } from '../UIState';
 import { filterNulls } from '../old-stuff/filterNulls';
 import { workerPlugins } from '../plugins/worker';
@@ -45,7 +47,8 @@ export function updateState(
         Object.values(nodes)
             .map((node) => {
                 if (node.parsed?.type === 'success') {
-                    for (let name of node.parsed.names) {
+                    for (let name of node.parsed.allNames?.global
+                        .declarations ?? []) {
                         if (namesTaken[name.kind][name.name] != null) {
                             duplicates.push({
                                 id: node.ns.id,
@@ -123,7 +126,7 @@ export function updateState(
     sorted.forEach((group) => {
         const groupKey = group.map((g) => g.id).join(';');
         group.forEach((item) => {
-            item.names.forEach((name) => {
+            item.allNames?.global.declarations.forEach((name) => {
                 if (topsForName[name.name] == null) {
                     topsForName[name.name] = { top: item.id, group: groupKey };
                 }
@@ -140,7 +143,7 @@ export function updateState(
         const depsUpdate =
             sourceUpdate ||
             group.some((g) =>
-                g.deps.some((ln) => {
+                g.allNames?.global.usages.some((ln) => {
                     if (!Object.hasOwn(topsForName, ln.name)) return false;
                     return state.results!.groups[topsForName[ln.name].group]
                         .changed;
@@ -203,9 +206,10 @@ export function updateState(
      *   and something is changed ...
      *   ok, I can reset the tops, I guess.
      */
+    let tenv: any = null;
     if (state.evaluator.inference) {
         // TODO
-        let tenv = state.evaluator.inference.init();
+        tenv = state.evaluator.inference.init();
         for (let group of sorted) {
             const groupKey = group.map((g) => g.id).join(';');
             // This does "deep" change propagation
@@ -242,7 +246,7 @@ export function updateState(
                     const err = result.err;
                     locedErrors(err).forEach(({ loc, text }) => {
                         add(
-                            state.results!.tops[topForLoc[loc]].errors,
+                            state.results!.tops[topForLoc[loc]]?.errors ?? {},
                             loc,
                             text,
                         );
@@ -284,6 +288,8 @@ export function updateState(
                 const types = res.result.value.types;
 
                 state.results.groups[groupKey].tenv = res.result.value.env;
+                state.results.groups[groupKey].codeGenData =
+                    res.result.value.codeGenData;
                 tenv = state.evaluator.inference.addTypes(
                     tenv,
                     res.result.value.env,
@@ -300,6 +306,14 @@ export function updateState(
 
                 state.results.groups[groupKey].typeFailed = false;
                 group.forEach((one) => {
+                    // const codeGenData = res.result.value.codeGenData;
+                    // if (codeGenData) {
+                    //     state.results!.tops[one.id].produce.push({
+                    //         type: 'pre',
+                    //         text: JSON.stringify(codeGenData),
+                    //     });
+                    // }
+
                     types.forEach((type) => {
                         try {
                             const text =
@@ -318,33 +332,37 @@ export function updateState(
                         }
                     });
 
-                    one.names.forEach(({ name, kind }) => {
-                        if (kind !== 'value') return;
-                        try {
-                            const type =
-                                state.evaluator!.inference!.typeForName(
-                                    tenv,
+                    one.allNames?.global.declarations.forEach(
+                        ({ name, kind }) => {
+                            if (kind !== 'value') return;
+                            try {
+                                const type =
+                                    state.evaluator!.inference!.typeForName(
+                                        tenv,
+                                        name,
+                                    );
+                                const text =
+                                    state.evaluator!.inference!.typeToString(
+                                        type,
+                                    );
+                                state.results!.tops[one.id].produce.push({
+                                    type: 'type',
+                                    text: text,
+                                    cst: state.evaluator!.inference!.typeToCst?.(
+                                        type,
+                                    ),
                                     name,
-                                );
-                            const text =
-                                state.evaluator!.inference!.typeToString(type);
-                            state.results!.tops[one.id].produce.push({
-                                type: 'type',
-                                text: text,
-                                cst: state.evaluator!.inference!.typeToCst?.(
-                                    type,
-                                ),
-                                name,
-                            });
-                        } catch (err) {
-                            state.results!.tops[one.id].produce.push({
-                                type: 'error',
-                                message: `Cant get type for ${name}: ${
-                                    (err as Error).message
-                                }`,
-                            });
-                        }
-                    });
+                                });
+                            } catch (err) {
+                                state.results!.tops[one.id].produce.push({
+                                    type: 'error',
+                                    message: `Cant get type for ${name}: ${
+                                        (err as Error).message
+                                    }`,
+                                });
+                            }
+                        },
+                    );
                 });
             } else {
                 state.results.groups[groupKey].typeFailed = true;
@@ -421,6 +439,7 @@ export function updateState(
                 state.results.groups[groupKey].traces,
                 env,
                 node.ns.plugin!.options,
+                tenv,
             );
             state.results.tops[group[0].id].pluginResults = results;
             const errors = plugin.getErrors(results);
@@ -434,7 +453,7 @@ export function updateState(
                     // },
                     ...errors.map(([name, id]) => ({
                         type: 'error' as const,
-                        message: `Plugin ${name} (${id})`,
+                        message: `Plugin(${name}) (${id})`,
                     })),
                 );
             }
@@ -451,13 +470,16 @@ export function updateState(
             continue;
         }
 
-        const stmts = group.reduce(
-            (map, g) => (
-                (map[g.id] = (nodes[g.id].parsed as SuccessParsed<any>).stmt),
-                map
-            ),
-            {} as Record<string, any>,
-        );
+        const stmts: Record<string, { stmt: any; names: AllNames }> = {};
+        for (let item of group) {
+            const parsed = nodes[item.id].parsed;
+            if (parsed?.type === 'success') {
+                stmts[item.id] = {
+                    stmt: parsed.stmt,
+                    names: parsed.allNames ?? blankAllNames(),
+                };
+            }
+        }
         const meta: MetaDataMap = {};
         group.forEach((one) => {
             const node = nodes[one.id];
@@ -470,6 +492,7 @@ export function updateState(
         const added = state.evaluator.addStatements(
             stmts,
             env,
+            state.results.groups[groupKey].codeGenData,
             meta,
             state.results.groups[groupKey].traces,
             nodes[group[0].id].ns.top,
@@ -478,7 +501,7 @@ export function updateState(
         );
 
         group.forEach((one) => {
-            one.names.forEach((name) => {
+            one.allNames?.global.declarations.forEach((name) => {
                 if (name.kind === 'value') {
                     state.results!.tops[one.id].values[name.name] =
                         added.values[name.name];
@@ -528,12 +551,33 @@ function showExecOrder(
     i: number,
     group: Sortable[],
 ) {
-    const groupNames = unique(group.flatMap((s) => s.names.map((n) => n.name)));
+    const groupNames = unique(
+        group.flatMap(
+            (s) => s.allNames?.global.declarations.map((n) => n.name) ?? [],
+        ),
+    );
     tops[one.id].produce.push(
         `Exec order ${i} - ${groupNames.join(', ')}\nDeps: ${unique(
-            one.deps.map((n) => n.name),
-        ).join(', ')}\nProduce: ${unique(one.names.map((n) => n.name)).join(
-            ', ',
-        )}`,
+            one.allNames?.global.usages.map((n) => n.name) ?? [],
+        ).join(', ')}\nProduce: ${unique(
+            one.allNames?.global.declarations.map((n) => n.name) ?? [],
+        ).join(', ')}`,
     );
 }
+
+const showAllNames = (allNames: AllNames) => {
+    return [
+        ...(allNames.global.declarations.length || allNames.global.usages.length
+            ? ['G']
+            : []),
+        ...allNames.global.declarations.map((d) => d.kind + ':' + d.name),
+        ...(allNames.global.usages.length ? ['U'] : []),
+        ...allNames.global.usages.map((d) => d.kind + ':' + d.name),
+        ...(allNames.global.declarations.length || allNames.local.usages.length
+            ? ['L']
+            : []),
+        ...allNames.local.declarations,
+        ...(allNames.local.usages.length ? ['U'] : []),
+        ...allNames.local.usages.map((u) => u.decl + ':' + u.loc),
+    ].join(' ');
+};

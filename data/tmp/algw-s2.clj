@@ -1,12 +1,21 @@
 (** ## Hindley Milner Type Inference
     Heavily based on the excellent paper [Algorithm W Step-By-Step](https://github.com/wh5a/Algorithm-W-Step-By-Step/blob/master/AlgorithmW.pdf).
-    This first version of the type checker is "vanilla algorithm w", and so won't actually be powerful enough to type check our language. We'll follow up by extending it with the ability to handle patterns, match forms, and user-defined types. **)
+    Notable differences:
+    - we're putting the "substitution list" into the state monad, which is less bug-prone and results in code that's easier to think about in my opinion
+    - because we actually will use this to self-host, we need to support pattern matching, match statements, and custom data types. This also makes the "type environment" somewhat more complex. **)
 
 (** ## Prelude **)
 
-(deftype (option a) (some a) (none))
+(deftype (option a)
+    (some a)
+        (none))
 
-(deftype (list a) (cons a (list a)) (nil))
+(deftype (list a)
+    (cons a (list a))
+        (nil))
+
+(deftype (, a b)
+    (, a b))
 
 (defn foldr [init items f]
     (match items
@@ -78,20 +87,23 @@
             []   (type->s type)
             vbls "forall ${(join " " vbls)} : ${(type->s type)}")))
 
-(** ## AST **)
+(** ## AST
+    again, this is the same as in the previous articles, so feel free to skip. **)
 
-(deftype prim (pint int int) (pbool bool int))
+(deftype prim
+    (pint int int)
+        (pbool bool int))
 
-(deftype stmt
-    (sdef string int expr int)
-        (sexpr expr int)
-        (sdeftype
+(deftype top
+    (tdef string int expr int)
+        (texpr expr int)
+        (tdeftype
         string
             int
             (list (, string int))
             (list (, string int (list type) int))
             int)
-        (stypealias string int (list (, string int)) type int))
+        (ttypealias string int (list (, string int)) type int))
 
 (deftype cst
     (cst/list (list cst) int)
@@ -102,7 +114,7 @@
 
 (deftype quot
     (quot/expr expr)
-        (quot/stmt stmt)
+        (quot/top top)
         (quot/type type)
         (quot/pat pat)
         (quot/quot cst))
@@ -145,27 +157,54 @@
 
 (def tint (tcon "int" -1))
 
-(defn type->s [type]
+(** ## Type to String, simple version **)
+
+(defn type->s-simple [type]
     (match type
         (tvar name _)                           name
-        (tapp (tapp (tcon "->" _) arg _) res _) "(fn [${(type->s arg)}] ${(type->s res)})"
-        (tapp target arg _)                     "(${(type->s target)} ${(type->s arg)})"
+        (tapp (tapp (tcon "->" _) arg _) res _) "(fn [${(type->s-simple arg)}] ${(type->s-simple res)})"
+        (tapp target arg _)                     "(${(type->s-simple target)} ${(type->s-simple arg)})"
         (tcon name _)                           name))
 
+(** ## Type to string, complex version **)
+
+(defn type->s [type]
+    (match type
+        (tvar name _)                       name
+        (tapp (tapp (tcon "->" _) _ _) _ _) (let [(, args result) (unwrap-fn type)]
+                                                "(fn [${(join " " (map type->s args))}] ${(type->s result)})")
+        (tapp _ _ _)                        (let [(, target args) (unwrap-app type [])]
+                                                "(${(type->s target)} ${(join " " (map type->s args))})")
+        (tcon name _)                       name))
+
+(defn unwrap-fn [t]
+    (match t
+        (tapp (tapp (tcon "->" _) a _) b _) (let [(, args res) (unwrap-fn b)] (, [a ..args] res))
+        _                                   (, [] t)))
+
+(defn unwrap-app [t args]
+    (match t
+        (tapp a b _) (unwrap-app a [b ..args])
+        _            (, t args)))
+
+(,
+    type->s
+        [(, (@t (fn [a b c] d)) "(fn [a b c] d)") (, (@t (, a b)) "(, a b)")])
+
 (** ## The Type Environment
-    For now, the "type environment" just consists of the "values in scope", mapped to their types (which might be only partially inferred, still containing unresolved type variables).
-    Once we add type classes, we'll use the "type environment" to keep track of defined classes and their instances. **)
+    The "type environment" gets passed around to most of the infer/ functions, and includes global definitions as well as the types of locally-bound variables. **)
 
 (** A scheme is the way that we represent generic types (sometimes called "polytypes"). The first argument is a set of the tvar ids that are generic in the contained type. **)
 
-(deftype scheme (forall (set string) type))
+(deftype scheme
+    (forall (set string) type))
 
 (deftype tenv
     (tenv
         (** Types of values currently in scope **)
             (map string scheme)
             (** Data type constructors; (free variables) (arguments) (resulting type) **)
-            (map string (, (set string) (list type) type))
+            (map string (, (list string) (list type) type))
             (** Data types (# free variables, constructor names) **)
             (map string (, int (set string)))
             (** Type aliases **)
@@ -245,7 +284,7 @@
 
 (** ## Composing substitution maps
     One very nice property of Algorithm W is that the constraints are resolved unidirectionally. In a generic "constraint solving" algorithm, the constraints must be applied repeatedly until some "fixed point" is reached, because applying one constraint might result in other constraints newly becoming applicable.
-    In Algorithm W, you only ever apply substitutions "backward": new substitutions get applied to the old substitution map, and never the other way around.
+    In Algorithm W, you only ever apply substitutions in a single direction: new substitutions get applied to the old substitution map, and never the other way around.
     🚨 This is a critical invariant. If you compose substitutions in the wrong order (as actually occurs in the "Algorithm W Step-By-Step" paper in one place 🫢) it will break the type system, resulting in incorrect inferences. One way to verify that you're doing it right is to check if new-subst has any types with tvars that have defined mappings in old-subst. If so, you're either applying them in the wrong order, or you forgot to apply the current substitution map at some step along the way.
     In our implementation, we will maintain this invariant as a consequence of system design; the composition map will live in our state monad, and so whenever we add a new map, we know which one is "newer" and which is "older". **)
 
@@ -281,22 +320,23 @@
 (** ## A State monad
     Given that we're going 100% immutable, having a State monad is really handy so you're not having to pipe state values into and out of every function. **)
 
-;(deftype (result good bad) (ok good) (err bad))
-
-(deftype (StateT state value) (StateT (fn [state] (, state value))))
+(deftype (StateT state value)
+    (StateT (fn [state] (, state value))))
 
 ((** This is our bind function. Given a (StateT state value) and a (fn [value] (StateT state value2), it produces a new StateT chaining the two things together, essentially running the second argument on the resolved value of the first argument. **)
     defn >>= [(StateT f) next]
     (StateT
         (fn [state]
-            (let [(, state value) (f state) (StateT fnext) (next value)]
+            (let [
+                (, state value) (f state)
+                (StateT fnext)  (next value)]
                 (fnext state)))))
 
 ((** Here's our return (or pure) function for the StateT monad. It produces a StateT that resolves to the given value, independent of the current state. **)
     defn <- [x]
     (StateT (fn [state] (, state x))))
 
-((** Given a StateT and an initial state, it will "run" the contained function and give you the final result. **)
+((** Given a StateT and an initial state, this will evaluate the contained function and give you the final result. **)
     defn run-> [(StateT f) state]
     (let [(, _ result) (f state)] result))
 
@@ -313,7 +353,10 @@
 (defn map-> [f arr]
     (match arr
         []           (<- [])
-        [one ..rest] (let-> [one (f one) rest (map-> f rest)] (<- [one ..rest]))))
+        [one ..rest] (let-> [
+                         one  (f one)
+                         rest (map-> f rest)]
+                         (<- [one ..rest]))))
 
 (defn foldl-> [init values f]
     (match values
@@ -325,21 +368,14 @@
         []           (<- init)
         [one ..rest] (let-> [init (foldr-> init rest f)] (f init one))))
 
-((** do-> is just like map-> except it is for functions that return (), so it doesn't need to collect the values into a list. **)
+((** do-> is just like map-> except for functions that return (), so it doesn't need to collect the values into a list. **)
     defn do-> [f arr]
     (match arr
         []           (<- ())
-        [one ..rest] (let-> [() (f one) () (do-> f rest)] (<- ()))))
-
-;(defn seq-> [arr]
-    (match arr
-        []           (<- [])
-        [one ..rest] (let-> [one one rest (seq-> rest)] (<- [one ..rest]))))
-
-;(defn force [e->s result]
-    (match result
-        (ok v)  v
-        (err e) (fatal "Result Error ${(e->s e)}")))
+        [one ..rest] (let-> [
+                         () (f one)
+                         () (do-> f rest)]
+                         (<- ()))))
 
 (** ## Type Inference State
     Here's where we take the StateT monad defined above and make it specific to our use case. Our StateT will contain an integer representing the "next unique ID" used for generating unique tvars, as well as the "current substitution map". **)
@@ -351,7 +387,10 @@
 (defn run/nil-> [st] (run-> st state/nil))
 
 (def <-next-idx
-    (let-> [(, idx subst) <-state _ (state-> (, (+ idx 1) subst))] (<- idx)))
+    (let-> [
+        (, idx subst) <-state
+        _             (state-> (, (+ idx 1) subst))]
+        (<- idx)))
 
 (def <-subst (let-> [(, _ subst) <-state] (<- subst)))
 
@@ -363,11 +402,16 @@
 
 ((** This overwrites the substitution map (without composing), returning the old substitution map. It is used for isolating a section of the algorithm, for performance reasons. **)
     defn subst-reset-> [new-subst]
-    (let-> [(, idx old-subst) <-state _ (state-> (, idx new-subst))]
+    (let-> [
+        (, idx old-subst) <-state
+        _                 (state-> (, idx new-subst))]
         (<- old-subst)))
 
 (def reset-state->
-    (let-> [(, _ _) <-state _ (state-> (, 0 map/nil))] (<- ())))
+    (let-> [
+        (, _ _) <-state
+        _       (state-> (, 0 map/nil))]
+        (<- ())))
 
 (** These are monadified versions of the */apply functions from above; they "apply the current substitution". **)
 
@@ -432,7 +476,7 @@
                            (let-> [_ (subst-> (one-subst var type))] (<- ())))))
 
 (** ## Inference
-    Here are the functions that we'll be using most often when writing the inference code (defined above, but summarized here as a refresher):
+    Here are the functions that we'll be using most often when writing the inference code (summarized here as a refresher):
     - infer/expr tenv expr - takes an expression, returns a type
     - unify t1 t2  - compares two types that need to be equivalent, and (a) if they can't be unified, throws an error, or (b) if they can be, adds the resulting substitutions to the current state
     - type/apply-> type - applies the current substitution map (from state) to the given type, which updates type variables with updated resolved types. **)
@@ -447,7 +491,7 @@
 (defn infer/quot [quot l]
     (match quot
         (quot/expr _) (tcon "expr" l)
-        (quot/stmt _) (tcon "stmt" l)
+        (quot/top _)  (tcon "top" l)
         (quot/type _) (tcon "type" l)
         (quot/pat _)  (tcon "pat" l)
         (quot/quot _) (tcon "cst" l)))
@@ -475,7 +519,10 @@
                                                     () (do->
                                                            (** For the "templates" of a template string, the expressions need to have type "string". **)
                                                                (fn [(, expr _ _)]
-                                                               (let-> [t (infer/expr tenv expr) () (unify t (tcon "string" l) l)] (<- ())))
+                                                               (let-> [
+                                                                   t  (infer/expr tenv expr)
+                                                                   () (unify t (tcon "string" l) l)]
+                                                                   (<- ())))
                                                                templates)]
                                                     (<- (tcon "string" l)))
         (** For lambdas (fn [name] body)
@@ -493,12 +540,14 @@
             Other than that, it's the same as the simple case. **)
         (elambda [pat] body l)                  (let-> [
                                                     (, arg-type scope) (infer/pattern tenv pat)
+                                                    scope              (scope/apply-> scope)
                                                     bound-env          (<- (tenv/with-scope tenv scope))
                                                     body-type          (infer/expr bound-env body)
                                                     arg-type           (type/apply-> arg-type)]
                                                     (<- (tfn arg-type body-type l)))
         (** This isn't necessarily the most efficient way to handle curried arguments, but imo it makes the above inference algorithm cleaner & more understandable, as you only have to think about one argument at a time. **)
         (elambda [one ..rest] body l)           (infer/expr tenv (elambda [one] (elambda rest body l) l))
+        (elambda [] body l)                     (fatal "No args to lambda")
         (** Function application (target arg)
             - create a type variable to represent the return value of the function application
             - infer the target type
@@ -537,33 +586,60 @@
                                                     body-type      (infer/expr bound-env body)]
                                                     (<- body-type))
         (elet [one ..more] body l)              (infer/expr tenv (elet [one] (elet more body l) l))
+        (elet [] body l)                        (fatal "No bindings in let")
         (** match expressions! Like let, but with a little more book-keeping. **)
         (ematch target cases l)                 (let-> [
-                                                    target-type (infer/expr tenv target)
-                                                    result-type (new-type-var "match result" l)
+                                                    target-type        (infer/expr tenv target)
+                                                    result-type        (new-type-var "match result" l)
                                                     (** Handle each case, collecting all of the resulting types of the bodies. **)
-                                                    all-results (map->
-                                                                    (fn [(, pat body)]
-                                                                        (let-> [
-                                                                            (, type scope) (infer/pattern tenv pat)
-                                                                            ()             (unify type target-type l)
-                                                                            scope          (scope/apply-> scope)
-                                                                            bound-env      (<- (tenv/with-scope tenv scope))]
-                                                                            (infer/expr bound-env body)))
-                                                                        cases)
+                                                    (, _ final-result) (foldl->
+                                                                           (, target-type result-type)
+                                                                               cases
+                                                                               (fn [(, target-type result) (, pat body)]
+                                                                               (let-> [
+                                                                                   (, type scope) (infer/pattern tenv pat)
+                                                                                   ()             (unify type target-type l)
+                                                                                   scope          (scope/apply-> scope)
+                                                                                   body-type      (infer/expr (tenv/with-scope tenv scope) body)
+                                                                                   subst          <-subst
+                                                                                   _              (unify (type/apply subst result) body-type l)
+                                                                                   subst          <-subst]
+                                                                                   (<- (, (type/apply subst target-type) (type/apply subst result))))))
+                                                    ;all-results
+                                                    ;(map->
+                                                        (fn [(, pat body)]
+                                                            (let-> [
+                                                                (, type scope) (infer/pattern tenv pat)
+                                                                ()             (unify type target-type l)
+                                                                scope          (scope/apply-> scope)
+                                                                bound-env      (<- (tenv/with-scope tenv scope))]
+                                                                (infer/expr bound-env body)))
+                                                            cases)
                                                     (** Unify all of the result types together **)
-                                                    ()          (do->
-                                                                    (fn [one-result]
-                                                                        (let-> [subst <-subst]
-                                                                            (unify
-                                                                                (type/apply subst one-result)
-                                                                                    (type/apply subst result-type)
-                                                                                    l)))
-                                                                        all-results)]
-                                                    (type/apply-> result-type))))
+                                                    ;()
+                                                    ;(do->
+                                                        (fn [one-result]
+                                                            (let-> [subst <-subst]
+                                                                (unify
+                                                                    (type/apply subst one-result)
+                                                                        (type/apply subst result-type)
+                                                                        l)))
+                                                            all-results)
+                                                    target             (type/apply-> target-type)
+                                                    ()                 (check-exhaustiveness tenv target (map fst cases) l)]
+                                                    (<- final-result))))
+
+(def env-with-pair
+    (tenv/merge
+        builtin-env
+            (add/stmts
+            builtin-env
+                [(@!
+                (deftype (, a b)
+                    (, a b)))])))
 
 (,
-    (errorToString (fn [x] (run/nil-> (infer/expr builtin-env x))))
+    (errorToString (fn [x] (run/nil-> (infer/expr env-with-pair x))))
         [(, (@ 10) (tcon "int" 4512))
         (, (@ hi) "Fatal runtime: Variable not found in scope: hi")
         (, (@ (let [x 10] x)) (tcon "int" 4547))
@@ -593,29 +669,29 @@
         (,
         (@
             (match 1
-                1 true))
+                1 true
+                _ false))
             (tcon "bool" 5074))
         (,
         (@
             (fn [x]
                 (match x
-                    (, 1 a) a)))
+                    (, 1 a) a
+                    _       1)))
             (tapp
             (tapp
                 (tcon "->" 5085)
-                    (tapp
-                    (tapp (tcon "," -1) (tcon "int" 5094) -1)
-                        (tvar "match result:1" 5089)
-                        -1)
+                    (tapp (tapp (tcon "," -1) (tcon "int" 5094) -1) (tcon "int" 11381) -1)
                     5085)
-                (tvar "match result:1" 5089)
+                (tcon "int" 11381)
                 5085))
         (,
         (@
             (match 1
                 1 true
-                2 2))
-            "Fatal runtime: Incompatible concrete types: int (5145) vs bool (5143)")
+                2 2
+                _ 3))
+            "Fatal runtime: Incompatible concrete types: bool (5143) vs int (5145)")
         (,
         (@
             (fn [x]
@@ -633,11 +709,58 @@
         (, (@ "hi") (tcon "string" 6785))
         (,
         (@ "hi ${1}")
-            "Fatal runtime: Incompatible concrete types: int (6850) vs string (6848)")])
+            "Fatal runtime: Incompatible concrete types: int (6850) vs string (6848)")
+        (,
+        (@ (fn [x] (let [(, a _) x] (a 2))))
+            (tapp
+            (tapp
+                (tcon "->" 11941)
+                    (tapp
+                    (tapp
+                        (tcon "," -1)
+                            (tapp
+                            (tapp (tcon "->" 11955) (tcon "int" 11957) 11955)
+                                (tvar "result:5" 11955)
+                                11955)
+                            -1)
+                        (tvar "b:2" 11950)
+                        -1)
+                    11941)
+                (tvar "result:5" 11955)
+                11941))
+        (,
+        (@ (fn [(, a _)] (a 2)))
+            (tapp
+            (tapp
+                (tcon "->" 12016)
+                    (tapp
+                    (tapp
+                        (tcon "," -1)
+                            (tapp
+                            (tapp (tcon "->" 12024) (tcon "int" 12026) 12024)
+                                (tvar "result:4" 12024)
+                                12024)
+                            -1)
+                        (tvar "b:1" 12020)
+                        -1)
+                    12016)
+                (tvar "result:4" 12024)
+                12016))])
+
+(,
+    (errorToString
+        (fn [x] (type->s (run/nil-> (infer/expr env-with-pair x)))))
+        [(,
+        (@ (fn [x] (let [(, a _) x] (a 2))))
+            "(fn [(, (fn [int] result:5) b:2)] result:5)")
+        (,
+        (@ (fn [(, a _)] (a 2)))
+            "(fn [(, (fn [int] result:4) b:1)] result:4)")])
 
 (** ## Patterns **)
 
-((** Here we are producing (1) a type for the pattern, and (2) a "scope" mapping of names to type variables. **)
+((** Here we are producing (1) a type for the pattern, and (2) a "scope" mapping of names to type variables.
+    Note You need to run scope/apply-> on the resulting scope in order for inference to work correctly. **)
     defn infer/pattern [tenv pattern]
     (match pattern
         (pvar name l)         (let-> [v (new-type-var name l)]
@@ -667,12 +790,260 @@
     defn instantiate-tcon [(tenv _ tcons _ _) name l]
     (match (map/get tcons name)
         (none)                     (fatal "Unknown type constructor: ${name}")
-        (some (, free cargs cres)) (let-> [subst (make-subst-for-free free l)]
+        (some (, free cargs cres)) (let-> [subst (make-subst-for-free (set/from-list free) l)]
                                        (<- (, (map (type/apply subst) cargs) (type/apply subst cres))))))
 
-(** ## Handling Statements **)
+(** ## Verification
+    We need to check match cases for exhaustiveness, e.g. whether it "covers all cases". If a match is not exhaustive, then it might lead to a runtime exception, which we are trying to avoid :).
+    Making this determination in a reasonable amount of time is far from straightforward, and we will be leaning heavily on the 2007 paper [Warnings for Pattern Matching](http://moscova.inria.fr/~maranget/papers/warn/warn.pdf) by Luc Maranget (and [this typescript implementation](https://github.com/jaredly/jerd/blob/c470af39ca6f780e387a1d088924ae6cf7229f57/language/src/typing/terms/exhaustive.ts)) for the algorithm. **)
 
+(defn any [f lst]
+    (match lst
+        []           false
+        [one ..rest] (if (f one)
+                         true
+                             (any f rest))))
 
+(defn check-exhaustiveness [tenv target-type patterns l]
+    (let-> [
+        target-type (type/apply-> target-type)
+        matrix      (<-
+                        (map
+                            (fn [pat] [(pattern-to-ex-pattern tenv (, pat target-type))])
+                                patterns))]
+        (if (is-exhaustive tenv matrix)
+            (<- ())
+                (fatal "Match not exhaustive ${(int-to-string l)}"))))
+
+(deftype ex-pattern
+    (** The "any" pattern here also includes pvar, because it doesn't place any constraints on the value. **)
+        (ex/any)
+        (** ex/constructor encompasses both user-defined data types (such as list, ,, or expr) as well as primitive types such as int, bool, and string. You can see below in the group-constructors function how these are handled. **)
+        (ex/constructor string string (list ex-pattern))
+        (** Our current language doesn't support or patterns, but they would be nice to add in the future, and they are well-supported by the algorithm, so we might as well implement them here. **)
+        (ex/or ex-pattern ex-pattern))
+
+(** Processing "patterns" to be legible to the exhaustiveness algorithm **)
+
+(defn pattern-to-ex-pattern [tenv (, pattern type)]
+    (match pattern
+        (pvar _ _)            (ex/any)
+        (pany _)              (ex/any)
+        (pstr str _)          (ex/constructor str "string" [])
+        (pprim (pint v _) _)  (ex/constructor (int-to-string v) "int" [])
+        (pprim (pbool v _) _) (ex/constructor
+                                  (if v
+                                      "true"
+                                          "false")
+                                      "bool"
+                                      [])
+        (pcon name _ args l)  (let [
+                                  (, tname targs)           (tcon-and-args type [] l)
+                                  (tenv _ tcons _ _)        tenv
+                                  (, free-names cargs cres) (match (map/get tcons name)
+                                                                (none)   (fatal "Unknown type constructor ${name}")
+                                                                (some v) v)
+                                  ;  do we need to assert that `cres` is the same as `type`? At this point it should be moot...
+                                  subst                     (map/from-list (zip free-names targs))]
+                                  (ex/constructor
+                                      name
+                                          tname
+                                          (map
+                                          (pattern-to-ex-pattern tenv)
+                                              (zip args (map (type/apply subst) cargs)))))))
+
+(pattern-to-ex-pattern
+    (add/stmt
+        builtin-env
+            (@!
+            (deftype (list a)
+                (nil)
+                    (cons a (list a)))))
+        (, (@p [2 a b]) (@t (list int))))
+
+(,
+    (pattern-to-ex-pattern
+        (tenv/merge
+            builtin-env
+                (add/stmts
+                builtin-env
+                    [(@!
+                    (deftype (, a b)
+                        (, a b)))
+                    (@!
+                    (deftype (list a)
+                        (nil)
+                            (cons a (list a))))])))
+        [(,
+        (, (@p [2 a b]) (@t (list int)))
+            (ex/constructor
+            "cons"
+                "list"
+                [(ex/constructor "2" "int" [])
+                (ex/constructor
+                "cons"
+                    "list"
+                    [(ex/any)
+                    (ex/constructor
+                    "cons"
+                        "list"
+                        [(ex/any) (ex/constructor "nil" "list" [])])])]))
+        (,
+        (, (@p (, 2 b)) (@t (, 1 2)))
+            (ex/constructor "," "," [(ex/constructor "2" "int" []) (ex/any)]))
+        (,  )])
+
+(defn tcon-and-args [type coll l]
+    (match type
+        (tvar _ _)          (fatal
+                                "Type not resolved ${(int-to-string l)} ${(jsonify type)} ${(jsonify coll)}")
+        (tcon name _)       (, name coll)
+        (tapp target arg _) (tcon-and-args target [arg ..coll] l)))
+
+(,
+    (fn [x] (tcon-and-args x [] 0))
+        [(,
+        (@t (hi a b (c d)))
+            (,
+            "hi"
+                [(tcon "a" 10046)
+                (tcon "b" 10047)
+                (tapp (tcon "c" 10049) (tcon "d" 10050) 10048)]))])
+
+(defn any-list [arity]
+    (loop
+        arity
+            (fn [arity recur]
+            (if (= 0 arity)
+                []
+                    [(ex/any) ..(recur (- arity 1))]))))
+
+(defn default-matrix [matrix]
+    (concat
+        (map
+            (fn [row]
+                (match row
+                    [(ex/any) ..rest]           [rest]
+                    [(ex/or left right) ..rest] (default-matrix [[left ..rest] [right ..rest]])
+                    _                           []))
+                matrix)))
+
+(defn is-exhaustive [tenv matrix]
+    (if (is-useful tenv matrix [(ex/any)])
+        false
+            true))
+
+(defn specialized-matrix [constructor arity matrix]
+    (concat (map (specialize-row constructor arity) matrix)))
+
+(defn specialize-row [constructor arity row]
+    (match row
+        []                                    (fatal "Can't specialize an empty row.")
+        [(ex/any) ..rest]                     [(concat [(any-list arity) rest])]
+        [(ex/constructor name _ args) ..rest] (if (= name constructor)
+                                                  [(concat [args rest])]
+                                                      [])
+        [(ex/or left right) ..rest]           (specialized-matrix
+                                                  constructor
+                                                      arity
+                                                      [[left ..rest] [right ..rest]])))
+
+(defn fold-ex-pat [init pat f]
+    (match pat
+        (ex/or left right) (f (f init left) right)
+        _                  (f init pat)))
+
+(defn fold-ex-pats [init pats f]
+    (foldl init pats (fn [init pat] (fold-ex-pat init pat f))))
+
+(defn find-gid [heads]
+    (fold-ex-pats
+        none
+            heads
+            (fn [gid pat]
+            (match pat
+                (ex/constructor _ id _) (match gid
+                                            (none)     (some id)
+                                            (some oid) (if (!= oid id)
+                                                           (fatal
+                                                               "Constructors with different group IDs in the same position.")
+                                                               (some id)))
+                _                       gid))))
+
+(defn group-constructors [tenv gid]
+    (match gid
+        "int"    []
+        "bool"   ["true" "false"]
+        "string" []
+        _        (let [(tenv _ _ types _) tenv]
+                     (match (map/get types gid)
+                         (none)             (fatal "Unknown type name ${gid}")
+                         (some (, _ names)) (set/to-list names)))))
+
+((** This checks the "head" of each row of the matrix, finds the common type, and, if each constructor for that type is represented in the matrix, returns a mapping from constructor name => arity. **)
+    defn args-if-complete [tenv matrix]
+    (let [
+        heads (map
+                  (fn [row]
+                      (match row
+                          []         (fatal "is-complete called with empty row")
+                          [head .._] head))
+                      matrix)
+        gid   (find-gid heads)]
+        (match gid
+            (none)     map/nil
+            (some gid) (let [
+                           found (map/from-list
+                                     (fold-ex-pats
+                                         []
+                                             heads
+                                             (fn [found head]
+                                             (match head
+                                                 (ex/constructor id _ args) [(, id (length args)) ..found]
+                                                 _                          found))))]
+                           (match (group-constructors tenv gid)
+                               []      map/nil
+                               constrs (loop
+                                           constrs
+                                               (fn [constrs recur]
+                                               (match constrs
+                                                   []          found
+                                                   [id ..rest] (match (map/get found id)
+                                                                   (none)   map/nil
+                                                                   (some _) (recur rest))))))))))
+
+(defn is-useful [tenv matrix row]
+    (let [
+        head-and-rest (match matrix
+                          (** If our matrix has a height or width of zero, the row is not useful. **)
+                          []       (none)
+                          [[] .._] (none)
+                          [_ .._]  (match row
+                                       []            (none)
+                                       [head ..rest] (some (, head rest))))]
+        (match head-and-rest
+            (none)               false
+            (some (, head rest)) (match head
+                                     (ex/constructor id _ args) (is-useful
+                                                                    tenv
+                                                                        (specialized-matrix id (length args) matrix)
+                                                                        (concat [args rest]))
+                                     (ex/any)                   (match (map/to-list (args-if-complete tenv matrix))
+                                                                    []   (match (default-matrix matrix)
+                                                                             []       true
+                                                                             defaults (is-useful tenv defaults rest))
+                                                                    alts (any
+                                                                             (fn [(, id alt)]
+                                                                                 (is-useful
+                                                                                     tenv
+                                                                                         (specialized-matrix id alt matrix)
+                                                                                         (concat [(any-list alt) rest])))
+                                                                                 alts))
+                                     (ex/or left right)         (if (is-useful tenv matrix [left ..rest])
+                                                                    true
+                                                                        (is-useful tenv matrix [right ..rest]))))))
+
+(** ## Adding Top-level Items to the Type Environment **)
 
 (defn add/def [tenv name nl expr l]
     (run/nil->
@@ -686,7 +1057,7 @@
             (<- (tenv/with-type tenv/nil name (generalize tenv type))))))
 
 (,
-    (fn [(sdef name nl expr l)]
+    (fn [(tdef name nl expr l)]
         (let [(tenv values _ _ _) (add/def builtin-env name nl expr l)]
             (map/to-list values)))
         [(, (@! (def x 10)) [(, "x" (forall set/nil (tcon "int" 3024)))])
@@ -738,7 +1109,7 @@
     (fn [x]
         (add/defs
             builtin-env
-                (map (fn [(sdef name nl body l)] (, name nl body l)) x)))
+                (map (fn [(tdef name nl body l)] (, name nl body l)) x)))
         [(,
         [(@! (defn even [x] (let [o (odd x)] (+ x 2))))
             (@! (defn odd [x] (let [e (even x)] 3)))]
@@ -776,7 +1147,8 @@
 
 (defn add/deftype [(tenv _ tcons types aliases) name args constrs l]
     (let [
-        free           (set/from-list (map fst args))
+        free           (map fst args)
+        free-set       (set/from-list free)
         res            (foldl
                            (tcon name l)
                                args
@@ -784,14 +1156,15 @@
         parsed-constrs (map
                            (fn [(, name _ args _)]
                                (let [
-                                   args (map (type/con-to-var free) args)
+                                   args (map (type/con-to-var free-set) args)
                                    args (map (type/resolve-aliases aliases) args)]
                                    (, name (, free args res))))
                                constrs)]
         (tenv
             (map/from-list
                 (map
-                    (fn [(, name (, free args res))] (, name (forall free (tfns args res l))))
+                    (fn [(, name (, free args res))]
+                        (, name (forall (set/from-list free) (tfns args res l))))
                         parsed-constrs))
                 (map/from-list parsed-constrs)
                 (map/set
@@ -817,7 +1190,8 @@
                               (some (, free type)) (let [subst (map/from-list (zip free args))]
                                                        (type/resolve-aliases aliases (type/apply subst type)))
                               _                    (foldl target args (fn [a b] (tapp a b l))))
-            (tvar _ l)    (foldl target args (fn [a b] (tapp a b l))))))
+            (tvar _ l)    (foldl target args (fn [a b] (tapp a b l)))
+            _             target)))
 
 (defn type/unroll-app [type]
     (match type
@@ -827,10 +1201,10 @@
 
 (defn add/stmt [tenv stmt]
     (match stmt
-        (sdef name nl expr l)            (add/def tenv name nl expr l)
-        (sexpr expr l)                   (run/nil-> (let-> [_ (infer/expr tenv expr)] (<- tenv/nil)))
-        (stypealias name _ args type _)  (add/typealias tenv name args type)
-        (sdeftype name _ args constrs l) (add/deftype tenv name args constrs l)))
+        (tdef name nl expr l)            (add/def tenv name nl expr l)
+        (texpr expr l)                   (run/nil-> (let-> [_ (infer/expr tenv expr)] (<- tenv/nil)))
+        (ttypealias name _ args type _)  (add/typealias tenv name args type)
+        (tdeftype name _ args constrs l) (add/deftype tenv name args constrs l)))
 
 (defn split-stmts [stmts]
     (loop
@@ -840,8 +1214,8 @@
                 []            (, [] [] [])
                 [stmt ..rest] (let [(, defs aliases others) (recur rest)]
                                   (match stmt
-                                      (sdef name nl body l)  (, [(, name nl body l) ..defs] aliases others)
-                                      (stypealias _ _ _ _ _) (, defs [stmt ..aliases] others)
+                                      (tdef name nl body l)  (, [(, name nl body l) ..defs] aliases others)
+                                      (ttypealias _ _ _ _ _) (, defs [stmt ..aliases] others)
                                       _                      (, defs aliases [stmt ..others])))))))
 
 (defn add/stmts [tenv stmts]
@@ -867,7 +1241,9 @@
                         name))))
         [(,
         (,
-            [[(@! (deftype (x m) (a m)))]
+            [[(@!
+                (deftype (x m)
+                    (a m)))]
                 [(@!
                 (defn aa [x]
                     (match x
@@ -876,22 +1252,33 @@
                 "aa")
             "(fn [(x int)] int)")
         (,
-        (, [[(@! (typealias a int)) (@! (deftype lol (elol a)))]] "elol")
+        (,
+            [[(@! (typealias a int))
+                (@!
+                (deftype lol
+                    (elol a)))]]
+                "elol")
             "(fn [int] lol)")
         (,
         (,
             [[(@! (typealias alt (, (list pat) expr)))
                 (@! (typealias bindgroup (, alt)))
-                (@! (deftype expr (elet bindgroup expr int)))]
+                (@!
+                (deftype expr
+                    (elet bindgroup expr int)))]
                 [(@! (defn x [(elet b _ _)] b))]]
                 "x")
-            "(fn [expr] ((, (list pat)) expr))")
+            "(fn [expr] (, (list pat) expr))")
         (,
         (,
             [[(@! (typealias (a b) (, int b)))
-                (@! (deftype hi (red int) (blue) (green (a bool))))]]
+                (@!
+                (deftype hi
+                    (red int)
+                        (blue)
+                        (green (a bool))))]]
                 "green")
-            "(fn [((, int) bool)] hi)")
+            "(fn [(, int bool)] hi)")
         ])
 
 (** ## Type Environment populated with Builtins **)
@@ -978,6 +1365,9 @@
                     (, "valueToString" (generic ["v"] (tfns [(vbl "v")] tstring -1)))
                     (, "eval" (generic ["v"] (tfns [(tcon "string" -1)] (vbl "v") -1)))
                     (,
+                    "eval-with"
+                        (generic ["ctx" "v"] (tfns [(tcon "ctx" -1) (tcon "string" -1)] (vbl "v") -1)))
+                    (,
                     "errorToString"
                         (generic ["v"] (tfns [(tfns [(vbl "v")] tstring -1) (vbl "v")] tstring -1)))
                     (, "sanitize" (concrete (tfns [tstring] tstring -1)))
@@ -985,9 +1375,7 @@
                     "replace-all"
                         (concrete (tfns [tstring tstring tstring] tstring -1)))
                     (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v") -1)))])
-                (map/from-list
-                [(, "()" (, set/nil [] (tcon "()" -1)))
-                    (, "," (, (set/from-list ["a" "b"]) [a b] (t, a b)))])
+                (map/from-list [(, "()" (, [] [] (tcon "()" -1))) (, "," (, ["a" "b"] [a b] (t, a b)))])
                 (map/from-list
                 [(, "int" (, 0 set/nil))
                     (, "float" (, 0 set/nil))
@@ -999,6 +1387,8 @@
                 map/nil)))
 
 (** ## Exporting for the structured editor **)
+
+(** This is a peek under the hood as to how the code in these documents gets "handed off" to the structured editor for use as an evaluator for other documents. It's not really necessary for you to understand it, and it's disabled here in the publicly hosted editor anyway. **)
 
 (eval
     (** env_nil => add_stmt => get_type => type_to_string => infer_stmts => infer =>

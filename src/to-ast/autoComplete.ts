@@ -1,4 +1,4 @@
-import { splitGraphemes } from '../parse/parse';
+import { splitGraphemes } from '../parse/splitGraphemes';
 import { State, StateChange, StateUpdate } from '../state/getKeyUpdate';
 import { Path } from '../state/path';
 import { MNode, Map } from '../types/mcst';

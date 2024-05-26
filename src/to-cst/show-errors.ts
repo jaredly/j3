@@ -1,7 +1,7 @@
 // import { Ctx } from '../to-ast/Ctx';
 import { asTaskType } from '../get-type/asTaskType';
 import { expandTask } from '../get-type/expandTask';
-import { blank } from '../to-ast/builtins';
+import { blank } from '../to-ast/old-builtins';
 import { Ctx } from '../to-ast/library';
 import { Type } from '../types/ast';
 import type { Error } from '../types/types';

@@ -1,4 +1,4 @@
-import { none } from '../to-ast/builtins';
+import { none } from '../to-ast/old-builtins';
 import { Local, Node, Type } from '../types/ast';
 import { applyAndResolve, expandEnumItems } from './applyAndResolve';
 import { Ctx } from '../to-ast/library';

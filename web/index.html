@@ -145,6 +145,9 @@
             .menu-row:hover > div {
                 background-color: #a33;
             }
+            .hover-bg:hover {
+                background-color: var(--hover-bg);
+            }
             .hover {
                 outline: 2px solid transparent;
             }
@@ -202,6 +205,21 @@
                 position: absolute;
             }
 
+            .bn-container[data-color-scheme] {
+                /* --bn-font-family: 'Merriweather'; */
+                /* font-weight: 200; */
+            }
+            .bn-container * {
+                font-weight: 200;
+            }
+
+            .rich-text .bn-default-styles {
+                font-size: 20px;
+            }
+            .rich-text .bn-block-outer {
+                line-height: 1.7;
+            }
+
             .bn-container a {
                 color: #aaa;
                 text-decoration-color: #777;
@@ -211,13 +229,17 @@
                 padding-inline: 8px !important;
             }
             .bn-editor strong {
-                font-family: monospace !important;
+                /* font-family: monospace !important; */
+                font-weight: 400;
             }
 
+            .bn-block code,
             .bn-inline-content code {
                 font-family: Jet Brains !important;
+                /* font-family: 'Merriweather' !important; */
                 font-variant-ligatures: normal;
                 color: #86b8ff;
+                white-space: nowrap;
             }
 
             .editor-container {

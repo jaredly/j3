@@ -2,7 +2,7 @@ import { Loc, Node } from '../types/cst';
 import { Expr, NumberKind, TVar, Type } from '../types/ast';
 import { Report } from '../get-type/get-types-new';
 import { Layout, MNodeContents } from '../types/mcst';
-import { basicBuiltins } from './builtins';
+import { basicBuiltins } from './old-builtins';
 import { Builtins, CstCtx, Env, Library } from './library';
 import objectHash from 'object-hash';
 import {
@@ -11,7 +11,7 @@ import {
     hashedToTree,
     splitNamespaces,
 } from '../db/hash-tree';
-export { none, nil, nilt, noloc, blank, any, noForm } from './builtins';
+export { none, nil, nilt, noloc, blank, any, noForm } from './old-builtins';
 
 export type AutoCompleteReplace = {
     type: 'update';

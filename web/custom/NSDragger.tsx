@@ -5,7 +5,7 @@ import { isAncestor } from './CardRoot';
 import { Drag } from './NsReg';
 import { NSMenu } from './NSMenu';
 import { useGetStore, useSubscribe } from './store/StoreCtx';
-import { hasErrors } from './hasErrors';
+import { hasErrors, hasTrackedChanges } from './hasErrors';
 
 export const NSDragger = ({
     ns,
@@ -42,6 +42,12 @@ export const NSDragger = ({
         [ns.id],
     );
 
+    const trackChange = useSubscribe(
+        () => hasTrackedChanges(ns.id, store.getState()),
+        (fn) => store.on('map', fn),
+        [ns.id],
+    );
+
     useEffect(() => {
         if (!cm) return;
         const fn = (evt: MouseEvent) => {
@@ -63,7 +69,10 @@ export const NSDragger = ({
                 cursor: 'pointer',
                 marginRight: 12,
                 color: hover || cm ? 'white' : '#444',
-                opacity: hover || cm || errs || ns.collapsed === true ? 1 : 0.6,
+                opacity:
+                    hover || cm || errs || trackChange || ns.collapsed === true
+                        ? 1
+                        : 0.6,
                 transition: '.2s ease opacity',
                 position: 'relative',
                 width: 30,
@@ -87,17 +96,27 @@ export const NSDragger = ({
                 })
             }
         >
-            [
-            {ns.collapsed === true ? (
-                <span style={{ color: errs ? 'red' : '#aaa' }}>
-                    {ns.children.length}
-                </span>
-            ) : errs ? (
-                '🚨'
-            ) : (
-                '⋯'
-            )}
-            ]
+            <span
+                style={{
+                    // outline: trackChange
+                    //     ? '2px dotted rgb(50 100 30)'
+                    //     : undefined,
+                    backgroundColor: trackChange ? 'rgb(20 36 20)' : undefined,
+                    borderRadius: 3,
+                }}
+            >
+                [
+                {ns.collapsed === true ? (
+                    <span style={{ color: errs ? 'red' : '#aaa' }}>
+                        {ns.children.length}
+                    </span>
+                ) : errs ? (
+                    '🚨'
+                ) : (
+                    '⋯'
+                )}
+                ]
+            </span>
             {cm ? (
                 <NSMenu mref={mref} setCM={setCM} ns={ns} setPin={setPin} />
             ) : null}

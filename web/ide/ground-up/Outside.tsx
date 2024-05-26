@@ -10,7 +10,7 @@ import { loadEvaluator } from './loadEv';
 import { FullEvalator } from './FullEvalator';
 import { AnyEnv } from '../../custom/store/getResults';
 
-export const Outside = () => {
+export const Outside = ({ override }: { override?: string[] }) => {
     const [listing, setListing] = useState(null as null | string[]);
     const hash = useHash();
 
@@ -24,6 +24,7 @@ export const Outside = () => {
             .then((list) => setListing(list.sort()));
     }, []);
     useEffect(() => {
+        if (override) return;
         const title = hash.slice(1);
         if (!recent.find((f) => f.title === title)) {
             setRecent((r) => r.concat([{ title, access: Date.now() }]));
@@ -48,7 +49,10 @@ export const Outside = () => {
                         alignItems: 'center',
                     }}
                 >
-                    {recent.map(({ title }) => (
+                    {(override
+                        ? override.map((n) => ({ title: n }))
+                        : recent
+                    ).map(({ title }) => (
                         <span key={title} style={{ minWidth: 'max-content' }}>
                             <a
                                 href={'#' + title}
@@ -170,7 +174,11 @@ export const Outside = () => {
     );
 };
 
-const onlyLast = <T,>(fn: (arg: T) => void, time: number, longTime: number) => {
+export const onlyLast = <T,>(
+    fn: (arg: T) => void,
+    time: number,
+    longTime: number,
+) => {
     let last = Date.now();
     let tid: Timer | null = null;
     return (arg: T) => {

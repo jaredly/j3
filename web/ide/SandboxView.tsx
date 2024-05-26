@@ -8,12 +8,10 @@ import { useLocalStorage } from '../Debug';
 import { useMenu } from '../custom/ByHand';
 import { Cursors } from '../custom/Cursors';
 import { HiddenInput } from '../custom/HiddenInput';
-import { Hover, calc } from '../custom/Hover';
 import { Menu } from '../custom/Menu';
 import { Root } from '../custom/old-stuff/Root';
 import { UIState } from '../custom/UIState';
-import { IDEAction } from './IDE';
-import { nilt } from '../../src/to-ast/builtins';
+import { nilt } from '../../src/to-ast/old-builtins';
 import { getType } from '../../src/get-type/get-types-new';
 import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodeForType } from '../../src/to-cst/nodeForType';
@@ -24,7 +22,7 @@ export const SandboxView = ({
     dispatch,
 }: {
     state: UIState;
-    dispatch: React.Dispatch<IDEAction>;
+    dispatch: React.Dispatch<any>;
 }) => {
     const [debug, setDebug] = useLocalStorage('j3-debug', () => false);
     const tops = (state.map[state.root] as ListLikeContents).values;

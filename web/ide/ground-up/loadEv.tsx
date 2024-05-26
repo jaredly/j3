@@ -1,21 +1,22 @@
 import { repr } from './Evaluators';
-import { bootstrap } from './bootstrap';
+// import { bootstrap } from './bootstrap';
 import { FullEvalator } from './FullEvalator';
 import { expr, stmt } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';
 import { NUIState } from '../../custom/UIState';
 import { urlForId } from './urlForId';
-import { bootstrapEvaluator } from './bootstrapEvaluator';
+// import { bootstrapEvaluator } from './bootstrapEvaluator';
 import { fnsEvaluator } from './fnsEvaluator';
-import { Tracer, builtins, traceEnv } from './builtins';
+import { Tracer, traceEnv } from './builtins';
 import { valueToString } from './valueToString';
 import { basicParser, recoveringParser } from './evaluators/parsers';
 import { compiler } from './evaluators/compiler';
 import { Expr, Stmt, analyzer } from './evaluators/analyze';
 import {
-    advancedInfer,
+    infer2,
     basicInfer,
     typeChecker,
+    infer3,
 } from './evaluators/type-checker';
 import { jsEvaluator } from './jsEvaluator';
 
@@ -25,7 +26,11 @@ export const loadEv = async (
     ids: string[],
 ): Promise<null | FullEvalator<any, any, any>> => {
     const res = await Promise.all(
-        ids.map((id) => fetch(jsUrl(id)).then((res) => res.text())),
+        ids.map((id) =>
+            fetch(jsUrl(id))
+                .then((res) => res.text())
+                .then((text) => ({ id, text })),
+        ),
     );
 
     return evaluatorFromText(ids.join(':'), res);
@@ -33,26 +38,28 @@ export const loadEv = async (
 
 export const evaluatorFromText = (
     id: string,
-    texts: string[],
+    texts: { id: string; text: string }[],
 ): FullEvalator<{ values: { [key: string]: any } }, Stmt, Expr> | null => {
-    const benv = { ...builtins(), ...traceEnv() };
-    const san = sanitizedEnv(benv);
-    const envArgs =
-        '{$env,' +
-        Object.keys(san)
-            .filter((n) => sanitize(n) === n)
-            .join(', ') +
-        '}';
+    // const benv = { ...builtins(), ...traceEnv() };
+    // const san = sanitizedEnv(benv);
+    // const envArgs =
+    //     '{$env,' +
+    //     Object.keys(san)
+    //         .filter((n) => sanitize(n) === n)
+    //         .join(', ') +
+    //     '}';
 
     let data: any = {};
-    for (let text of texts) {
+    for (let { text, id } of texts) {
         let result;
         try {
-            result = new Function(envArgs, '{' + text + '}')({
-                ...san,
-                $env: benv,
-            });
+            result = new Function('{' + text + '}')();
+            // result = new Function(envArgs, '{' + text + '}')({
+            //     ...san,
+            //     $env: benv,
+            // });
         } catch (err) {
+            console.log(`Failed to evaluate ${id}`);
             console.error(err);
             return null;
         }
@@ -135,7 +142,9 @@ export const evaluatorFromText = (
                 : undefined;
         const infer =
             data['infer_stmts2'] && data['infer2']
-                ? advancedInfer(data)
+                ? infer2(data)
+                : data['infer_stmts3'] && data['infer3']
+                ? infer3(data)
                 : data['infer_stmts'] && data['infer']
                 ? basicInfer(data)
                 : undefined;
@@ -160,12 +169,13 @@ export const evaluatorFromText = (
         }
 
         // console.log('going for it', data);
-        return fnsEvaluator(id, parser, comp, ann, typeCheck, san);
+        return fnsEvaluator(id, parser, comp, ann, typeCheck);
+        // return fnsEvaluator(id, parser, comp, ann, typeCheck, san);
     }
 
-    if (data.type === 'bootstrap') {
-        return bootstrapEvaluator(id, data) as FullEvalator<any, any, any>;
-    }
+    // if (data.type === 'bootstrap') {
+    //     return bootstrapEvaluator(id, data) as FullEvalator<any, any, any>;
+    // }
 
     console.log(id, 'no data sorry??', data.type);
 
@@ -248,8 +258,8 @@ export const loadEvaluator = (
 ) => {
     if (typeof ev === 'string') {
         switch (ev) {
-            case ':bootstrap:':
-                return fn(bootstrap, false);
+            // case ':bootstrap:':
+            //     return fn(bootstrap, false);
             case ':js:':
                 return fn(jsEvaluator, false);
             case ':repr:':

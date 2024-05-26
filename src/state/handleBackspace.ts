@@ -10,7 +10,8 @@ import {
     maybeClearParentList,
 } from './getKeyUpdate';
 import { replacePath, replacePathWith } from './replacePathWith';
-import { orderStartAndEnd, pathPos, splitGraphemes } from '../parse/parse';
+import { orderStartAndEnd, pathPos } from '../parse/parse';
+import { splitGraphemes } from '../parse/splitGraphemes';
 import { idText } from '../parse/idText';
 import { accessText, Identifier, stringText } from '../types/cst';
 import { collectNodes } from './clipboard';

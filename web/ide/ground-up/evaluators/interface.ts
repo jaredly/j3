@@ -2,6 +2,7 @@ import { Node } from '../../../../src/types/cst';
 import { MetaDataMap } from '../../../custom/UIState';
 import { LocedName } from '../../../custom/store/sortTops';
 import { InferenceError } from '../FullEvalator';
+import { TypeInfo } from './analyze';
 
 export type Parser<Stmt, Expr, SimpleNode> = {
     toNode(node: SimpleNode): Node;
@@ -10,10 +11,26 @@ export type Parser<Stmt, Expr, SimpleNode> = {
     parseExpr(node: Node): { expr: null | Expr; errors: [number, string][] };
 };
 
+export type AllNames = {
+    global: {
+        declarations: LocedName[];
+        usages: LocedName[];
+    };
+    local: {
+        declarations: number[];
+        usages: {
+            loc: number;
+            decl: number;
+        }[];
+    };
+};
+
 export type Analyze<Stmt, Expr, Type> = {
-    names(stmt: Stmt): LocedName[];
-    externalsStmt(stmt: Stmt): LocedName[];
-    externalsExpr(expr: Expr): LocedName[];
+    allNames(stmt: Stmt): AllNames;
+    allNamesExpr(expr: Expr): AllNames;
+    // names(stmt: Stmt): LocedName[];
+    // externalsStmt(stmt: Stmt): LocedName[];
+    // externalsExpr(expr: Expr): LocedName[];
     stmtSize(stmt: Stmt): number | null;
     exprSize(expr: Expr): number | null;
     typeSize(type: Type): number | null;
@@ -27,7 +44,10 @@ export type Infer<Env, Stmt, Expr, Type> = {
     ): {
         result:
             | { type: 'err'; err: InferenceError }
-            | { type: 'ok'; value: { env: Env; types: Type[] } };
+            | {
+                  type: 'ok';
+                  value: { env: Env; types: Type[]; codeGenData?: any };
+              };
         typesAndLocs: { loc: number; type: Type }[];
         usages: Record<number, number[]>;
     };
@@ -39,7 +59,7 @@ export type Infer<Env, Stmt, Expr, Type> = {
         usages: Record<number, number[]>;
         result:
             | { type: 'err'; err: InferenceError }
-            | { type: 'ok'; value: Type };
+            | { type: 'ok'; value: { type: Type; codeGenData?: any } };
     };
 };
 
@@ -54,6 +74,7 @@ export type TypeChecker<Env, Stmt, Expr, Type> = {
 
 export type Compiler<Stmt, Expr> = {
     prelude?: Record<string, string>;
-    compileStmt(stmt: Stmt, meta: MetaDataMap): string;
-    compileExpr(expr: Expr, meta: MetaDataMap): string;
+    builtins?: string;
+    compileStmt(stmt: Stmt, codeGenData: TypeInfo, meta: MetaDataMap): string;
+    compileExpr(expr: Expr, codeGenData: TypeInfo, meta: MetaDataMap): string;
 };

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Db, parseColumns } from '../../src/db/tables';
 import { Sandbox } from '../../src/to-ast/library';
-import { IDEAction } from './IDE';
+// import { IDEAction } from './IDE';
 import { getSandbox, getSandboxes } from '../../src/db/sandbox';
 import relative from 'dayjs/plugin/relativeTime';
 import dayjs from 'dayjs';
@@ -24,7 +24,7 @@ export const Dashboard = ({
 }: {
     db: Db;
     initial: Sandbox['meta'][];
-    dispatch: React.Dispatch<IDEAction>;
+    dispatch: React.Dispatch<any>;
 }) => {
     const [logs, setLogs] = useState([] as any[]);
     const [edit, setEdit] = useState('');
@@ -168,7 +168,7 @@ export const Dashboard = ({
 function showSandboxes(
     sandboxes: Sandbox['meta'][],
     db: Db,
-    dispatch: React.Dispatch<IDEAction>,
+    dispatch: React.Dispatch<any>,
 ) {
     return (
         <table style={{ borderSpacing: 0 }}>

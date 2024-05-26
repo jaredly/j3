@@ -66,4 +66,5 @@ const valueToString = (v) => {
 
 const unwrapList = value => value.type === 'nil' ? [] : [value[0], ...unwrapList(value[1])]
 
-return ({valueToString, valueToNode})
+return // This node is how we bundle up these functions for the structured editor to use.
+({valueToString, valueToNode})

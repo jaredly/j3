@@ -8,7 +8,8 @@ import {
     SandboxNamespace,
 } from '../../web/custom/UIState';
 import { plugins } from '../../web/custom/plugins';
-import { pathPos, splitGraphemes } from '../parse/parse';
+import { pathPos } from '../parse/parse';
+import { splitGraphemes } from '../parse/splitGraphemes';
 import { idText } from '../parse/idText';
 import { Ctx, NodeStyle } from '../to-ast/Ctx';
 import { Type } from '../types/ast';
@@ -304,7 +305,7 @@ export const getKeyUpdate = (
         return;
     }
 
-    if (key === 'Backspace') {
+    if (key === 'Backspace' || key === 'Delete') {
         return handleBackspace(map, nsMap, selection, hashNames, cards, mods);
     }
 

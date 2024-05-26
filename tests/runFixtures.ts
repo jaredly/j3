@@ -1,5 +1,5 @@
 import { NUIState, RealizedNamespace } from '../web/custom/UIState';
-import { bootstrap } from '../web/ide/ground-up/bootstrap';
+// import { bootstrap } from '../web/ide/ground-up/bootstrap';
 import { evaluatorFromText } from '../web/ide/ground-up/loadEv';
 import { join } from 'path';
 import {
@@ -10,6 +10,7 @@ import { calculateInitialState } from '../web/custom/worker/calculateInitialStat
 import { Fixture } from './bootstrap.test';
 import { jsEvaluator } from '../web/ide/ground-up/jsEvaluator';
 import { nodeToString } from '../src/to-cst/nodeToString';
+import { writeFileSync } from 'fs';
 
 export const runFixtures = async (fixtures: Fixture[]) => {
     const evaluators: { [key: number]: string } = {};
@@ -21,12 +22,15 @@ export const runFixtures = async (fixtures: Fixture[]) => {
         ).json();
         const ev =
             evaluator === null
-                ? bootstrap
+                ? null
                 : evaluator === ':javascript:'
                 ? jsEvaluator
                 : evaluatorFromText(
                       `some ev for ${evaluator.join(' ')}`,
-                      evaluator.map((id) => evaluators[id]),
+                      evaluator.map((id) => ({
+                          id: '' + id,
+                          text: evaluators[id],
+                      })),
                   );
 
         if (!ev) {
@@ -36,7 +40,7 @@ export const runFixtures = async (fixtures: Fixture[]) => {
                 )}`,
             );
         }
-        let tid;
+        let tid = null;
         Object.keys(state.nsMap).forEach((id) => {
             const ns = state.nsMap[+id] as RealizedNamespace;
             if (typeof ns.plugin === 'string') {
@@ -48,7 +52,7 @@ export const runFixtures = async (fixtures: Fixture[]) => {
 
         try {
             console.time('toFile');
-            const result = ev.toFile(state, tid);
+            const result = ev.toFile(state, tid, true);
             console.timeEnd('toFile');
             console.log(`js size ${result.js.length}`);
             evaluators[+id] = result.js;
@@ -75,16 +79,21 @@ export const runFixtures = async (fixtures: Fixture[]) => {
                     const names = group.tops.flatMap((t) => {
                         const p = worker.nodes[t].parsed;
                         return p?.type === 'success'
-                            ? p.names.map((n) => n.name)
+                            ? p.allNames?.global.declarations.map((n) => n.name)
                             : [];
                     });
                     if (names.length) {
                         console.log(names);
                     } else {
-                        group.tops.map((t) =>
+                        group.tops.forEach((t) =>
                             console.log(nodeToString(worker.nodes[t].node, {})),
                         );
                     }
+                    group.tops.forEach((t) => {
+                        worker.results?.tops[t].produce.forEach((item) => {
+                            console.log(JSON.stringify(item));
+                        });
+                    });
                     throw new Error(`group ${key} typeFailed!`);
                 }
             });
@@ -105,6 +114,13 @@ export const runFixtures = async (fixtures: Fixture[]) => {
             });
             console.timeEnd('worker');
         } catch (err) {
+            // if (Array.isArray(evaluator)) {
+            //     evaluator.forEach((id, i) => {
+            //         console.log(`writing ${id} to $ev_${i}.js`);
+            //         writeFileSync(`$ev_${i}.js`, evaluators[id]);
+            //     });
+            // }
+            // evaluator
             console.log(`Failed while doing ${id} : ${name}`);
             console.warn(`worker failed`, (err as Error).message);
             console.error(err);

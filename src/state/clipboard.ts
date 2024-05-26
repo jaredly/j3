@@ -1,9 +1,6 @@
 import equal from 'fast-deep-equal';
-import {
-    autoCompleteIfNeeded,
-    orderStartAndEnd,
-    splitGraphemes,
-} from '../parse/parse';
+import { autoCompleteIfNeeded, orderStartAndEnd } from '../parse/parse';
+import { splitGraphemes } from '../parse/splitGraphemes';
 import { idText } from '../parse/idText';
 import { Ctx, newCtx } from '../to-ast/Ctx';
 import { nodeToString } from '../to-cst/nodeToString';

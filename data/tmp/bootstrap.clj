@@ -85,7 +85,8 @@ const isBlank = n => ['blank', 'comment', 'rich-text', 'comment-node'].includes(
 const filterBlanks = values => values.filter(node => !isBlank(node)) **)
 
 (** ## Parser
-    This parser isn't super interesting (imo), so if you've seen parsers before feel free to just skip to the "Fixture tests" in each section so you can get a sense for what the transformation looks like. The actual code is quite formulaic. **)
+    This parser isn't super interesting (imo), so if you've seen parsers before feel free to just skip to the "Fixture tests" in each section so you can get a sense for what the transformation looks like. The actual code is quite formulaic.
+    (Click the [#] to the left of this block to expand the contents) **)
 
 (** ## Expressions **)
 
@@ -114,7 +115,7 @@ const filterBlanks = values => values.filter(node => !isBlank(node)) **)
 
 (deftype quot
     (quot/expr expr)
-        (quot/stmt stmt)
+        (quot/top top)
         (quot/type type)
         (quot/pat pat)
         (quot/quot cst))
@@ -215,7 +216,7 @@ const filterBlanks = values => values.filter(node => !isBlank(node)) **)
   ',': (loc, ...args) => args.map(parse).reduceRight((right, left) =>
     c.app(c.evar(',', loc), list([left, right]), loc)),
   '@': (loc, inner) => ({type: 'equot', 0: {type: 'quot/expr', 0: parse(inner)}, 1: loc}),
-  '@!': (loc, inner) => ({type: 'equot', 0: {type: 'quot/stmt', 0: parseStmt(inner)}, 1: loc}),
+  '@!': (loc, inner) => ({type: 'equot', 0: {type: 'quot/top', 0: parseTop(inner)}, 1: loc}),
   '@p': (loc, inner) => ({type: 'equot', 0: {type: 'quot/pat', 0: parsePat(inner)}, 1: loc}),
   '@t': (loc, inner) => ({type: 'equot', 0: {type: 'quot/type', 0: parseType(inner)}, 1: loc}),
   // The "double quote" means that the runtime value isn't going to be an AST type, but rather
@@ -327,8 +328,8 @@ const fromNode = node => {
 (** // Expects a node of type 'identifier' and if it's an int or true/false, returns
 // the appropriate `prim`
 const parsePrim = node => {
-  const v = +node.text
-  if (v + '' === node.text && Math.floor(v) === v) {
+  const v = Number(node.text)
+  if (v + '' === node.text && Number.isInteger(v)) {
     return c.prim(c.int(v, node.loc), node.loc)
   }
   if (node.text === 'true' || node.text === 'false') {
@@ -482,16 +483,16 @@ const p = {
         (, (@ 12) (** "(pprim (pint 12 1279) 1279)" **))
         (, (@ "hi") (** '(pstr "hi" 1286)' **))])
 
-(** ## Statements **)
+(** ## Top-levels **)
 
-(** const parseStmt = (node) => {
+(** const parseTop = (node) => {
   if (isBlank(node)) return
   switch (node.type) {
     // Check for toplevel forms
     case 'list':
       const values = filterBlanks(node.values)
       if (values.length && values[0].type === 'identifier') {
-        const f = stmtForms[values[0].text];
+        const f = topForms[values[0].text];
         if (f) {
           const res = f(node.loc, ...values.slice(1))
           if (res) return res
@@ -500,13 +501,10 @@ const p = {
   }
   // Otherwise, it's a toplevel expression
   const inner = parse(node)
-  return inner ? {type: 'sexpr', 0: inner, 1: node.loc} : inner
+  return inner ? {type: 'texpr', 0: inner, 1: node.loc} : inner
 } **)
 
-(** const stmtForms = {
-  typealias(loc, head, tail) {
-    return {type: 'stypealias'}
-  },
+(** const topForms = {
   deftype(loc, head, ...tail) {
     if (!head || !tail.length) return
     // handling both `(deftype expr` (no type arg) and `(deftype (list a)` (some type args)
@@ -528,34 +526,54 @@ const p = {
       if (values.length < 1) throw new Error(`empty list`)
       return pair(values[0].text, pair(values[0].loc, pair(list(values.slice(1).map(parseType)), item.loc)))
     })
-    return {type: 'sdeftype', 0: name.head.text, 1: name.head.loc, 2: list(name.args), 3: list(constructors), 4: loc}
+    return {type: 'tdeftype', 0: name.head.text, 1: name.head.loc, 2: list(name.args), 3: list(constructors), 4: loc}
   },
   def(loc, name, value) {
     if (!name || !value) return
     if (name.type !== 'identifier') return
-    return {type: 'sdef', 0: name.text, 1: name.loc, 2: parse(value), 3: loc}
+    return {type: 'tdef', 0: name.text, 1: name.loc, 2: parse(value), 3: loc}
   },
   defn(loc, name, args, value) {
     if (!name || !args || !value) return
     if (name.type !== 'identifier' || args.type !== 'array') return
     const body = forms.fn(loc, args, value)
     if (!body) return
-    return {type: 'sdef', 0: name.text, 1: name.loc, 2: body, 3: loc}
-  }
+    return {type: 'tdef', 0: name.text, 1: name.loc, 2: body, 3: loc}
+  },
+  typealias(loc, head, tail) {
+    let name, args;
+    if (head.type === 'identifier') {
+      name = head
+      args = []
+    } else if (head.type === 'list' && head.values.length >= 1 && head.values[0].type === 'identifier') {
+      name = head.values[0]
+      args = head.values.slice(1).map(n => pair(n.text, n.loc));
+    }
+    return {type: 'ttypealias', 0: name.text, 1: name.loc, 2: list(args), 3: parseType(tail), 4: loc}
+  },
 } **)
 
 (,
-    (** v => valueToString(parseStmt(v)) **)
-        [(, (@ 1) (** "(sexpr (eprim (pint 1 238) 238) 238)" **))
+    (** v => valueToString(parseTop(v)) **)
+        [(, (@ 1) (** "(texpr (eprim (pint 1 238) 238) 238)" **))
         (,
         (@ (def hi 10))
-            (** '(sdef "hi" 253 (eprim (pint 10 254) 254) 245)' **))
+            (** '(tdef "hi" 253 (eprim (pint 10 254) 254) 245)' **))
         (,
-        (@ (deftype (option a) (some a) (none)))
-            (** '(sdeftype "option" 1014 [(, "a" 1015)] [(, "some" 1017 [(tcon "a" 1018)] 1016) (, "none" 1020 [] 1019)] 1011)' **))
+        (@
+            (deftype (option a)
+                (some a)
+                    (none)))
+            (** '(tdeftype "option" 1014 [(, "a" 1015)] [(, "some" 1017 [(tcon "a" 1018)] 1016) (, "none" 1020 [] 1019)] 1011)' **))
         (,
         (@ (defn lol [a b] (+ a b)))
-            (** '(sdef "lol" 265 (elambda [(pvar "a" 268) (pvar "b" 269)] (eapp (evar "+" 271) [(evar "a" 272) (evar "b" 273)] 270) 261) 261)' **))])
+            (** '(tdef "lol" 265 (elambda [(pvar "a" 268) (pvar "b" 269)] (eapp (evar "+" 271) [(evar "a" 272) (evar "b" 273)] 270) 261) 261)' **))
+        (,
+        (@ (typealias (lol a) (list a n)))
+            (** '(ttypealias "lol" 1934 [(, "a" 1935)] (tapp (tapp (tcon "list" 1937) (tcon "a" 1938) 1936) (tcon "n" 1939) 1936) 1929)' **))
+        (,
+        (@ (typealias lol (list int)))
+            (** '(ttypealias "lol" 1947 [] (tapp (tcon "list" 1949) (tcon "int" 1950) 1948) 1945)' **))])
 
 (** ## Tree-Walking Evaluator
     To evaluate our code in this bootstrap environment, we're treating the AST as a very basic "bytecode" that we're evaluating in a "virtual machine". Evaluating a program, in this paradigm, simply consists of walking each node of the tree and "reducing" it to a runtime value. **)
@@ -701,14 +719,14 @@ const unescapeSlashes = (n) =>
     (** unescapeSlashes **)
         [(, "\n" "\n") (, "\\n" "\n") (, "\\\\n" "\\n") (, "\\\\" "\\") (, "\\\n" "\\\n")])
 
-(** const evaluateStmt = (node, env) => {
+(** const evaluateTop = (node, env) => {
   switch (node.type) {
-    case 'sexpr': return evaluate(node[0], env)
-    case 'sdef':
+    case 'texpr': return evaluate(node[0], env)
+    case 'tdef':
       const value = evaluate(node[2], env)
       env[node[0]] = value
       return value
-    case 'sdeftype':
+    case 'tdeftype':
       const res = {}
       unwrapList(node[3]).forEach(({0: name, 1: {1: {0: args}}}) => {
         res[name] = env[name] = constrFn(name, args)
@@ -730,19 +748,19 @@ const constrFn = (name, args) => {
   return next(args)([])
 } **)
 
-(** const evalStmts = stmts => {
-  if (stmts.type !== 'array') throw new Error('need array')
-  const env = {...testEnv} // evaluateStmt might mutate the `env` so we need to make a new obj here
+(** const evalTops = tops => {
+  if (tops.type !== 'array') throw new Error('need array')
+  const env = {...testEnv} // evaluateTop might mutate the `env` so we need to make a new obj here
   let res
-  filterBlanks(stmts.values).forEach(stmt => {
-    res = evaluateStmt(parseStmt(stmt), env)
+  filterBlanks(tops.values).forEach(top => {
+    res = evaluateTop(parseTop(top), env)
   });
   return valueToString(res)
 }
  **)
 
 (,
-    (** evalStmts **)
+    (** evalTops **)
         [(, [0] (** "0" **))
         (, [(def n 10) n] (** "10" **))
         (, [(defn hi [x] (, x 2)) (hi 5)] (** "(, 5 2)" **))
@@ -752,9 +770,22 @@ const constrFn = (name, args) => {
             (some v) v
             _        5)]
             (** "10" **))
-        (, [(deftype lots (lol a b c)) (lol 1 true "hi")] (** '(lol 1 true "hi")' **))
-        (, [(deftype a (com, 1 2)) (com, 1 2)] (** "(com, 1 2)" **))
-        (, [(deftype (list a) (cons a (list a)) (nil)) [1 2]] (** "[1 2]" **))
+        (,
+        [(deftype lots
+            (lol a b c))
+            (lol 1 true "hi")]
+            (** '(lol 1 true "hi")' **))
+        (,
+        [(deftype a
+            (com, 1 2))
+            (com, 1 2)]
+            (** "(com, 1 2)" **))
+        (,
+        [(deftype (list a)
+            (cons a (list a))
+                (nil))
+            [1 2]]
+            (** "[1 2]" **))
         (,
         [(defn fib- [x]
             (if (< x 1)
@@ -763,23 +794,24 @@ const constrFn = (name, args) => {
             (fib- 6)]
             (** "21" **))])
 
-(** ## Analysis **)
+(** ## Analysis
+    Our structured editor requires a basic level of static analysis in order to run. Specifically, we need to know, for each "top level item", what it "requires" (i.e. imports) and what it "provides" (i.e. exports). **)
 
 (** // This function collects a list of all "external references" in a given toplevel statement.
 // It is used to sort toplevels in the structured editor so that evaluation happens in the
 // correct dependency order, and for detecting circular dependencies (which need to be
 // evaluated as a group).
-const externals = stmt => {
-  switch (stmt.type) {
-    case 'sexpr': return externals_expr(stmt[0], [])
-    case 'sdef': return externals_expr(stmt[2], [stmt[0]])
-    case 'sdeftype': return []
+const externals = top => {
+  switch (top.type) {
+    case 'texpr': return externals_expr(top[0], [])
+    case 'tdef': return externals_expr(top[2], [top[0]])
+    case 'tdeftype': return []
   }
   return []
 } **)
 
 (,
-    (** v => externals(parseStmt(v)) **)
+    (** v => externals(parseTop(v)) **)
         [(, (@ lol) (** [{"name":"lol","kind":"value","loc":620}] **))
         (, (@ (fn [(, x)] (+ x))) (** [{"name":"+","kind":"value","loc":641}] **))
         (, (@ "hi ${x}") (** [{"name":"x","kind":"value","loc":653}] **))
@@ -824,21 +856,24 @@ const externals = stmt => {
 (** // `names` is the complement to `externals`; it produces a list of all values *provided* by a given statement.
 // Once we have type checking, we'll also want to report type names produced by a statement (which will have
 // `kind: "type"`).
-const names = stmt => {
-  switch (stmt.type) {
-    case 'sexpr': return []
-    case 'sdef': return [{name: stmt[0], kind: 'value', loc: stmt[1]}]
-    case 'sdeftype': return unwrapList(stmt[3]).map(({0: name, 1: {0: loc}}) => ({name, kind: 'value', loc}))
+const names = top => {
+  switch (top.type) {
+    case 'texpr': return []
+    case 'tdef': return [{name: top[0], kind: 'value', loc: top[1]}]
+    case 'tdeftype': return unwrapList(top[3]).map(({0: name, 1: {0: loc}}) => ({name, kind: 'value', loc}))
   }
   return []
 } **)
 
 (,
-    (** v => names(parseStmt(v)) **)
+    (** v => names(parseTop(v)) **)
         [(, (@ hi) (** [] **))
         (, (@ (def x 10)) (** [{"name":"x","kind":"value","loc":714}] **))
         (,
-        (@ (deftype (option x) (some x) (none)))
+        (@
+            (deftype (option x)
+                (some x)
+                    (none)))
             (** [{"name":"some","kind":"value","loc":730},{"name":"none","kind":"value","loc":733}] **))])
 
 (** // Produce a list of names that are bound when the pattern matches successfully.
@@ -854,31 +889,368 @@ const pat_names = pat => {
 }
  **)
 
+(** ## Builtins
+    There are a number of primitives that we'll have implemented in JavaScript, such as arithmetic operators, low-level parsers, and some other things that will help with performance a little bit. **)
+
+(** const builtins = `
+function equal(a, b) {
+    if (a === b) return true;
+
+    if (a && b && typeof a == 'object' && typeof b == 'object') {
+        var length, i, keys;
+        if (Array.isArray(a)) {
+            length = a.length;
+            if (length != b.length) return false;
+            for (i = length; i-- !== 0; ) if (!equal(a[i], b[i])) return false;
+            return true;
+        }
+
+        keys = Object.keys(a);
+        length = keys.length;
+        if (length !== Object.keys(b).length) return false;
+
+        for (i = length; i-- !== 0; ) {
+            if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
+        }
+
+        for (i = length; i-- !== 0; ) {
+            var key = keys[i];
+
+            if (!equal(a[key], b[key])) return false;
+        }
+
+        return true;
+    }
+
+    // true if both NaN, false otherwise
+    return a !== a && b !== b;
+}
+
+function unescapeString(n) {
+    if (n == null || !n.replaceAll) {
+        debugger;
+        return '';
+    }
+    return n.replaceAll(/\\\\./g, (m) => {
+        if (m[1] === 'n') {
+            return '\\n';
+        }
+        if (m[1] === 't') {
+            return '\\t';
+        }
+        if (m[1] === 'r') {
+            return '\\r';
+        }
+        return m[1];
+    });
+}
+
+ const sanMap = {
+    // '$$$$' gets interpreted by replaceAll as '$$', for reasons
+    $: '$$$$',
+    '-': '_',
+    '+': '$pl',
+    '*': '$ti',
+    '=': '$eq',
+    '>': '$gt',
+    '<': '$lt',
+    "'": '$qu',
+    '"': '$dq',
+    ',': '$co',
+    '/': '$sl',
+    ';': '$semi',
+    '@': '$at',
+    '.': '$do',
+    ':': '$cl',
+    '#': '$ha',
+    '!': '$ex',
+    '|': '$bar',
+    '()': '$unit',
+    '?': '$qe',
+  };
+ const kwds =
+    'case new var const let if else return super break while for default eval'.split(' ');
+
+// Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
+function sanitize(raw) {
+    for (let [key, val] of Object.entries(sanMap)) {
+        raw = raw.replaceAll(key, val);
+    }
+    if (kwds.includes(raw)) return '$' + raw
+    return raw
+}
+
+function unwrapList(v) {
+    return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])];
+}
+
+function wrapList(v) {
+    let res = { type: 'nil' };
+    for (let i = v.length - 1; i >= 0; i--) {
+        res = { type: 'cons', 0: v[i], 1: res };
+    }
+    return res;
+}
+
+ const valueToString = (v) => {
+    if (Array.isArray(v)) {
+        return \`[\${v.map(valueToString).join(', ')}]\`;
+    }
+    if (typeof v === 'object' && v && 'type' in v) {
+        if (v.type === 'cons' || v.type === 'nil') {
+            const un = unwrapList(v);
+            return '[' + un.map(valueToString).join(' ') + ']';
+        }
+
+        let args = [];
+        for (let i = 0; i in v; i++) {
+            args.push(v[i]);
+        }
+        return \`(\${v.type}\${args
+            .map((arg) => ' ' + valueToString(arg))
+            .join('')})\`;
+    }
+    if (typeof v === 'string') {
+        if (v.includes('"') && !v.includes("'")) {
+            return (
+                "'" + JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"') + "'"
+            );
+        }
+        return JSON.stringify(v);
+    }
+    if (typeof v === 'function') {
+        return '<function>';
+    }
+    if (typeof v === 'number' || typeof v === 'boolean') {
+      return '' + v;
+    }
+
+    if (v == null) {
+      return \`Unexpected \${v}\`;
+    }
+    return '' + v;
+}; 
+
+return {
+    '+': (a) => (b) => a + b,
+    '-': (a) => (b) => a - b,
+    '<': (a) => (b) => a < b,
+    '<=': (a) => (b) => a <= b,
+    '>': (a) => (b) => a > b,
+    '>=': (a) => (b) => a >= b,
+    '=': (a) => (b) => equal(a, b),
+    '!=': (a) => (b) => !equal(a, b),
+    $unit: null,
+    pi: Math.PI,
+    'replace-all': a => b => c => a.replaceAll(b, c),
+    eval: source => {
+      return new Function('', 'return ' + source)();
+    },
+    'eval-with': ctx => source => {
+      const args = '{' + Object.keys(ctx).join(',') + '}'
+      return new Function(args, 'return ' + source)(ctx);
+    },
+    errorToString: f => arg => {
+      try {
+        return f(arg)
+      } catch (err) {
+        return err.message;
+      }
+    },
+    valueToString,
+    unescapeString,
+    sanitize,
+    equal: a => b => equal(a, b),
+    'int-to-string': (a) => a.toString(),
+    'string-to-int': (a) => {
+        const v = Number(a);
+        return Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' };
+    },
+    'string-to-float': (a) => {
+        const v = Number(a);
+        return Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' };
+    },
+
+    // maps
+    'map/nil': [],
+    'map/set': (map) => (key) => (value) =>
+        [[key, value], ...map.filter((i) => i[0] !== key)],
+    'map/rm': (map) => (key) => map.filter((i) => !equal(i[0], key)),
+    'map/get': (map) => (key) => {
+        const found = map.find((i) => equal(i[0], key));
+        return found ? { type: 'some', 0: found[1] } : { type: 'none' };
+    },
+    'map/map': (fn) => (map) => map.map(([k, v]) => [k, fn(v)]),
+    'map/merge': (one) => (two) =>
+        [...one, ...two.filter(([key]) => !one.find(([a]) => equal(a, key)))],
+    'map/values': (map) => wrapList(map.map((item) => item[1])),
+    'map/keys': (map) => wrapList(map.map((item) => item[0])),
+    'map/from-list': (list) =>
+        unwrapList(list).map((pair) => [pair[0], pair[1]]),
+    'map/to-list': (map) =>
+        wrapList(map.map(([key, value]) => ({ type: ',', 0: key, 1: value }))),
+
+    // sets
+    'set/nil': [],
+    'set/add': (s) => (v) => [v, ...s.filter((m) => !equal(v, m))],
+    'set/has': (s) => (v) => s.includes(v),
+    'set/rm': (s) => (v) => s.filter((i) => !equal(i, v)),
+    // NOTE this is only working for primitives
+    'set/diff': (a) => (b) => a.filter((i) => !b.some((j) => equal(i, j))),
+    'set/merge': (a) => (b) =>
+        [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],
+    'set/overlap': (a) => (b) => a.filter((x) => b.some((y) => equal(y, x))),
+    'set/to-list': wrapList,
+    'set/from-list': (s) => {
+        const res = [];
+        unwrapList(s).forEach((item) => {
+            if (res.some((m) => equal(item, m))) {
+                return;
+            }
+            res.push(item);
+        });
+        return res;
+    },
+
+    // Various debugging stuff
+    jsonify: (v) => JSON.stringify(v) ?? 'undefined',
+    fatal: (message) => {
+        throw new Error(\`Fatal runtime: \${message}\`);
+    },
+};
+
+`; **)
+
+(** ## (Bonus) Reader
+    We don't need a reader in this environment, because the structured editor is working at the level of the CST node, but if you're following along & implementing this in another language outside of the structured editor, you're going to need a reader to turn an input string into a CST node. **)
+
+(** const reader = (text) => {
+  let i = 0;
+  const pairs = {'[': ']', '{': '}', '(': ')'}
+  const skipWhite = () => {
+    while (i < text.length && text[i].match(/\s/)) i++;
+    return (i >= text.length)
+  }
+  
+  const readString = () => {
+    const loc = i;
+    i++;
+    let first = ''
+    let current = ''
+    let templates = []
+    
+    const next = () => {
+      if (!templates.length) {
+        first = current
+      } else {
+        templates[templates.length - 1].suffix = current
+      }
+      current = ''
+    }
+    
+    for (; i < text.length; i++) {
+      if (text[i] === '"') break
+      if (text[i] === '\\') {
+        current += text[i]
+        i++
+      }
+      if (text[i] === '$' && text[i + 1] === '{') {
+        next()
+        i += 2;
+        templates.push({
+          expr: read(),
+          suffix: '',
+          loc: i,
+        })
+        if (text[i] !== '}') throw new Error('unmatched } in template string');
+        continue
+      }
+      current += text[i]
+      // console.log('a', current, text[i])
+    }
+    next()
+    return {first, templates, type: 'string', loc}
+  }
+    
+  const stops = `]}) \t\n`
+  const read = () => {
+    if (skipWhite()) return
+    switch (text[i]) {
+      case '[':
+      case '{':
+      case '(':
+        const start = i
+        const last = pairs[text[i]];
+        i+=1;
+        const values = [];
+        while (true) {
+          const next = read(text)
+          if (!next) break
+          values.push(next)
+        }
+        skipWhite()
+        if (i >= text.length || text[i] !== last) {
+          throw new Error(`Expected ${last}: ${text[i]}`)
+        }
+        i++
+        return {type: last === ']' ? 'array' : last === ')' ? 'list' : 'record', values, loc: start}
+      case '"':
+        return readString()
+      case '.':
+        if (text[i + 1] === '.') {
+          const loc = i
+          i += 2;
+          const inner = read()
+          return {type: 'spread', contents: inner, loc}
+        }
+      default: {
+        let start = i;
+        for (; i < text.length && !stops.includes(text[i]); i++) {}
+        if (start === i) return
+        return {type: 'identifier', text: text.slice(start, i), loc: start}
+      }
+    }
+  }
+  return read()
+} **)
+
+(,
+    (** reader **)
+        [(, "12" (** {"type":"identifier","text":"12","loc":0} **))
+        (,
+        "\"ab${abc}def\""
+            (** {"first":"ab","templates":[{"expr":{"type":"identifier","text":"abc","loc":5},"suffix":"def","loc":8}],"type":"string","loc":0} **))
+        (, "[]" (** {"type":"array","values":[],"loc":0} **))
+        (,
+        "{a}"
+            (** {"type":"record","values":[{"type":"identifier","text":"a","loc":1}],"loc":0} **))
+        (,
+        "(defn x [a] (+ a 2))"
+            (** {"type":"list","values":[{"type":"identifier","text":"defn","loc":1},{"type":"identifier","text":"x","loc":6},{"type":"array","values":[{"type":"identifier","text":"a","loc":9}],"loc":8},{"type":"list","values":[{"type":"identifier","text":"+","loc":13},{"type":"identifier","text":"a","loc":15},{"type":"identifier","text":"2","loc":17}],"loc":12}],"loc":0} **))
+        (,
+        "[a ..b]"
+            (** {"type":"array","values":[{"type":"identifier","text":"a","loc":1},{"type":"spread","contents":{"type":"identifier","text":"b","loc":5},"loc":3}],"loc":0} **))])
+
 (** ## Packaging it up as a Compiler for the structured editor **)
 
-(** ({type: 'fns', prelude: makePrelude({evaluate,evaluateStmt,unwrapList,constrFn,sanitize,sanMap,evalPat,kwds,unescapeSlashes,valueToString}),
+(** This is a peek under the hood as to how the code in these documents gets "handed off" to the structured editor for use as an evaluator for other documents. It's not really necessary for you to understand it, and it's disabled here in the publicly hosted editor anyway. **)
+
+(** ({type: 'fns', prelude: makePrelude({evaluate,evaluateStmt: evaluateTop,unwrapList,constrFn,sanMap,evalPat,kwds,unescapeSlashes,valueToString}),
   compile: ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)`,
-  compile_stmt: ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
+  compile_stmt: ast => _meta => `${ast.type === 'tdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'tdeftype' ? `const {${
     unwrapList(ast[3]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
   }} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)`,
-  parse_stmt: parseStmt, parse_expr: parse,
+  parse_stmt: parseTop, parse_expr: parse,
   names,
   externals_stmt: externals,
   externals_expr: e => externals_expr(e, []),
   fromNode: x => x,
+  builtins,
   toNode: x => x}) **)
 
+zx
+
 (** const makePrelude = obj => Object.entries(obj).reduce((obj, [k, v]) => (obj[k] = typeof v === 'function' ? '' + v : typeof v === 'string' ? v : JSON.stringify(v), obj), {}) **)
-
-(** // const compile = ast => _meta => `$env.evaluate(${JSON.stringify(ast)}, $env)` **)
-
-(** /* const compile_stmt = ast => _meta => `${ast.type === 'sdef' ? `const ${sanitize(ast[0])} = ` : ast.type === 'sdeftype' ? `const {${
-  unwrapList(ast[3]).map(c => `"${c[0]}": ${sanitize(c[0])}`)
-}} = ` : ''}$env.evaluateStmt(${JSON.stringify(ast)}, $env)` */ **)
-
-(** //const testCompileStmt = v => compile_stmt(parseStmt(v))() **)
-
-;((** testCompileStmt **) (deftype card (red) (black)))
 
 (** // Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
 const sanitize =  (raw) => {
@@ -907,16 +1279,19 @@ const sanitize =  (raw) => {
     '>': '$gt',
     '<': '$lt',
     "'": '$qu',
+    '.': '$do',
     '"': '$dq',
     ',': '$co',
     '/': '$sl',
     ';': '$semi',
     '@': '$at',
+    ':': '$cl',
+    '#': '$ha',
     '!': '$ex',
     '|': '$bar',
     '()': '$unit',
     '?': '$qe',
   };
 const kwds =
-    'case new var const let if else return super break while for default'.split(' ');
+    'case new var const let if else return super break while for default eval'.split(' ');
  **)

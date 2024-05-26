@@ -1,6 +1,6 @@
 import { fromMCST } from '../../../src/types/mcst';
 import { NUIState } from '../../custom/UIState';
-import { builtins, traceEnv } from './builtins';
+import { traceEnv } from './builtins';
 import { extractBuiltins } from './extractBuiltins';
 import { addTypeConstructors } from './addTypeConstructors';
 import { findTops } from './findTops';
@@ -90,6 +90,9 @@ export const valueToNode = (v: any): Node => {
             loc: -1,
         };
     }
+    if (v === null) {
+        return { type: 'list', values: [], loc: -1 };
+    }
     return {
         type: 'list',
         values: [
@@ -100,36 +103,39 @@ export const valueToNode = (v: any): Node => {
     };
 };
 
-export const bootstrap: FullEvalator<
+const bootstrap: FullEvalator<
     { values: { [key: string]: any } },
     stmt & { loc: number },
     expr
 > = {
     id: 'bootstrap',
     init: () => {
-        return { values: { ...builtins(), ...traceEnv() } };
+        return { values: { ...traceEnv() } };
     },
     valueToString,
     valueToNode,
+    compile(expr, meta) {
+        throw new Error(`bootstrap eval cant compile`);
+    },
     analysis: {
-        externalsStmt(stmt) {
-            switch (stmt.type) {
-                case 'sdef': {
-                    const res: LocedName[] = [];
-                    dependencies(stmt[1], [], res);
-                    return res;
-                }
-                case 'sexpr': {
-                    const res: LocedName[] = [];
-                    dependencies(stmt[0], [], res);
-                    return res;
-                }
-                case 'sdeftype': {
-                    //
-                }
-            }
-            return [];
-        },
+        // externalsStmt(stmt) {
+        //     switch (stmt.type) {
+        //         case 'sdef': {
+        //             const res: LocedName[] = [];
+        //             dependencies(stmt[1], [], res);
+        //             return res;
+        //         }
+        //         case 'sexpr': {
+        //             const res: LocedName[] = [];
+        //             dependencies(stmt[0], [], res);
+        //             return res;
+        //         }
+        //         case 'sdeftype': {
+        //             //
+        //         }
+        //     }
+        //     return [];
+        // },
         stmtSize() {
             return null;
         },
@@ -139,24 +145,30 @@ export const bootstrap: FullEvalator<
         typeSize() {
             return null;
         },
-        externalsExpr(expr) {
-            const res: LocedName[] = [];
-            dependencies(expr, [], res);
-            return res;
+        allNames(stmt) {
+            throw new Error('i dont think Im using this bootstrap anymore');
         },
-        names(stmt) {
-            switch (stmt.type) {
-                case 'sdef':
-                    return [{ name: stmt[0], kind: 'value', loc: stmt.loc }];
-                case 'sdeftype':
-                    return unwrapArray(stmt[1]).map((m) => ({
-                        name: m[0],
-                        kind: 'value',
-                        loc: stmt.loc,
-                    }));
-            }
-            return [];
+        allNamesExpr(stmt) {
+            throw new Error('i dont think Im using this bootstrap anymore');
         },
+        // externalsExpr(expr) {
+        //     const res: LocedName[] = [];
+        //     dependencies(expr, [], res);
+        //     return res;
+        // },
+        // names(stmt) {
+        //     switch (stmt.type) {
+        //         case 'sdef':
+        //             return [{ name: stmt[0], kind: 'value', loc: stmt.loc }];
+        //         case 'sdeftype':
+        //             return unwrapArray(stmt[1]).map((m) => ({
+        //                 name: m[0],
+        //                 kind: 'value',
+        //                 loc: stmt.loc,
+        //             }));
+        //     }
+        //     return [];
+        // },
     },
     parse(node) {
         const ctx: Ctx = { errors: {}, display: {} };
@@ -180,7 +192,7 @@ export const bootstrap: FullEvalator<
             ),
         };
     },
-    evaluate(expr, env) {
+    evaluate(expr, _, env) {
         return evalExpr(expr, env.values);
     },
     setTracing(idx) {},
@@ -188,7 +200,7 @@ export const bootstrap: FullEvalator<
         const display: Record<number, Produce> = {};
         const values: Record<string, any> = {};
         Object.keys(stmts).forEach((id) => {
-            const stmt = stmts[+id];
+            const { stmt } = stmts[+id];
             switch (stmt.type) {
                 case 'sdef': {
                     try {

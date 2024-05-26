@@ -8,6 +8,12 @@ import { LocError, MyEvalError } from './Evaluators';
 import { Produce as Produce } from './FullEvalator';
 import { Trace, TraceMap } from './loadEv';
 
+declare module 'react' {
+    interface CSSProperties {
+        [key: `--${string}`]: string | number;
+    }
+}
+
 export function RenderTraces() {
     // results: {
     //     errors: { [loc: number]: string[] };
@@ -101,9 +107,34 @@ export function RenderTraces() {
                                                     gridColumn: 1,
                                                     gridRow: i + 1,
                                                     whiteSpace: 'nowrap',
+                                                    display: 'flex',
                                                 }}
                                             >
                                                 <div
+                                                    style={{
+                                                        color: 'red',
+                                                        cursor: 'pointer',
+                                                        '--hover-bg':
+                                                            'rgba(255,0,0,0.2)',
+                                                    }}
+                                                    className="hover-bg"
+                                                    onClick={() => {
+                                                        store.dispatch({
+                                                            type: 'meta',
+                                                            meta: {
+                                                                [loc]: {
+                                                                    trace: undefined,
+                                                                },
+                                                            },
+                                                        });
+                                                    }}
+                                                >
+                                                    &times;
+                                                </div>
+                                                <div
+                                                    style={{
+                                                        cursor: 'pointer',
+                                                    }}
                                                     onClick={() => {
                                                         const path = pathForIdx(
                                                             loc,

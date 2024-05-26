@@ -25,7 +25,11 @@ export const Root = () => {
                             padding: 8,
                             cursor: 'pointer',
                             display: 'block',
-                            background: page === name.id ? '#333' : 'none',
+                            background:
+                                page === name.id ||
+                                (!page && name.id === 'intro')
+                                    ? '#333'
+                                    : 'none',
                             color: 'white',
                             textDecorationColor: '#333',
                         }}

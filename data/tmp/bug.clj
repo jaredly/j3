@@ -1,14 +1,18 @@
-(defn one-thing [a] (+ a 10))
+(defn one-thing [a] (+ a 110))
 
 (one-thing 101)
 
+(deftype (, a b)
+    (, a b))
+
 +
 
-(+  2 3)
+(+ 2 3)
 
 one-thing
 
-(deftype (x m) (a m))
+(deftype (x m)
+    (a m))
 
 (defn aa [x]
     (match x
@@ -23,6 +27,6 @@ one-thing
 
 (, 234 345)
 
-x
+
 
 (, 1 2)

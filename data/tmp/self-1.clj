@@ -33,7 +33,12 @@
         []           init
         [one ..rest] (f (foldr init rest f) one)))
 
-(deftype (list a) (nil) (cons a (list a)))
+(deftype (list a)
+    (nil)
+        (cons a (list a)))
+
+(deftype (, a b)
+    (, a b))
 
 (defn concat [lsts]
     (match lsts
@@ -44,7 +49,9 @@
 
 (defn indices [lst] (mapi 0 lst (fn [i _] i)))
 
-(deftype (option a) (some a) (none))
+(deftype (option a)
+    (some a)
+        (none))
 
 (** ## Our AST **)
 
@@ -73,7 +80,7 @@
 
 (deftype quot
     (quot/expr expr)
-        (quot/stmt stmt)
+        (quot/top top)
         (quot/type type)
         (quot/pat pat)
         (quot/quot cst))
@@ -86,7 +93,9 @@
         (cst/spread cst int)
         (cst/string string (list (, cst string int)) int))
 
-(deftype prim (pint int int) (pbool bool int))
+(deftype prim
+    (pint int int)
+        (pbool bool int))
 
 (deftype pat
     (pany int)
@@ -100,24 +109,24 @@
         (tapp type type int)
         (tcon string int))
 
-(deftype stmt
-    (sdeftype
+(deftype top
+    (tdeftype
         string
             int
             (list (, string int))
             (list (, string int (list type) int))
             int)
-        (sdef string int expr int)
-        (sexpr expr int)
-        (stypealias))
+        (tdef string int expr int)
+        (texpr expr int)
+        (ttypealias))
 
-(** ## Statements **)
+(** ## Top-level terms **)
 
-(defn compile-st [stmt]
-    (match stmt
-        (sexpr expr _)              (compile expr)
-        (sdef name _ body _)        "const ${(sanitize name)} = ${(compile body)};\n"
-        (sdeftype name _ _ cases _) (join
+(defn compile-top [top]
+    (match top
+        (texpr expr _)              (compile expr)
+        (tdef name _ body _)        "const ${(sanitize name)} = ${(compile body)};\n"
+        (tdeftype name _ _ cases _) (join
                                         "\n"
                                             (map
                                             cases
@@ -129,7 +138,7 @@
                                                                           name
                                                                               (map (indices args) (fn [i] "v${(int-to-string i)}")))]
                                                     "const ${(sanitize name)} = ${arrows}${body}"))))
-        (stypealias)                "/* type alias */"))
+        (ttypealias)                "/* type alias */"))
 
 (defn constructor-fn [name args]
     "({type: \"${name}\"${(join "" (mapi 0 args (fn [i arg] ", ${(int-to-string i)}: ${arg}")))}})")
@@ -292,15 +301,17 @@
 (,
     (fn [x] x)
         [(,
-        (@! (deftype (a b) (c b)))
-            (sdeftype "a" 6438 [(, "b" 6439)] [(, "c" 6441 [(tcon "b" 6442)] 6440)] 6433))
+        (@!
+            (deftype (a b)
+                (c b)))
+            (tdeftype "a" 6438 [(, "b" 6439)] [(, "c" 6441 [(tcon "b" 6442)] 6440)] 6433))
         (, (@ x) (evar "x" 6483))])
 
 (defn compile-quot [quot]
     (match quot
         (quot/quot x) (jsonify x)
         (quot/expr x) (jsonify x)
-        (quot/stmt x) (jsonify x)
+        (quot/top x)  (jsonify x)
         (quot/pat x)  (jsonify x)
         (quot/type x) (jsonify x)))
 
@@ -360,21 +371,25 @@
                 "yes"
                     "no"))))
 
+(compile (@ 1))
+
+eval
+
 (,
-    (fn [v] (eval (compile v)))
+    (fn [v] (eval-with-builtins (compile v)))
         [(, (@ 1) 1)
         (, (@ "hello") "hello")
         (, (@ (+ 2 3)) 5)
         (, (@ (@ 1)) (eprim (pint 1 5354) 5354))
-        (,
-        (@
-            (match []
-                []         "any"
-                [name .._] name))
-            "any")
         (, (@ "a${2}b") "a2b")
         (, (@ ((fn [a] (+ a 2)) 21)) 23)
-        (, (@ (let [one 1 two 2] (+ 1 2))) 3)
+        (,
+        (@
+            (let [
+                one 1
+                two 2]
+                (+ 1 2)))
+            3)
         (,
         (@
             (match 2
@@ -392,7 +407,253 @@
         (, (@ "${${1}") "${1")
         (, (@ "${${"a}"}") "${a}")])
 
+(** ## Builtins
+    There are a number of primitives that we'll have implemented in JavaScript, such as arithmetic operators, low-level parsers, and some other things that will help with performance a little bit. **)
+
+(def builtins-for-eval
+    ((eval
+        (** builtins => sanitize => {
+  const san = {}
+  Object.keys(builtins).forEach(k => san[sanitize(k)] = builtins[k])
+  return san
+} **)
+            (eval "(() => {${builtins}})()")
+            sanitize)
+        ))
+
+(def eval-with-builtins (eval-with builtins-for-eval))
+
+(eval-with-builtins "$pl(1)(3)")
+
+(eval "x => x + 2" 210)
+
+(def builtins
+    (** function equal(a, b) {
+    if (a === b) return true;
+
+    if (a && b && typeof a == 'object' && typeof b == 'object') {
+        var length, i, keys;
+        if (Array.isArray(a)) {
+            length = a.length;
+            if (length != b.length) return false;
+            for (i = length; i-- !== 0; ) if (!equal(a[i], b[i])) return false;
+            return true;
+        }
+
+        keys = Object.keys(a);
+        length = keys.length;
+        if (length !== Object.keys(b).length) return false;
+
+        for (i = length; i-- !== 0; ) {
+            if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
+        }
+
+        for (i = length; i-- !== 0; ) {
+            var key = keys[i];
+
+            if (!equal(a[key], b[key])) return false;
+        }
+
+        return true;
+    }
+
+    // true if both NaN, false otherwise
+    return a !== a && b !== b;
+}
+
+function unescapeString(n) {
+    if (n == null || !n.replaceAll) {
+        debugger;
+        return '';
+    }
+    return n.replaceAll(/\\\\./g, (m) => {
+        if (m[1] === 'n') {
+            return '\\n';
+        }
+        if (m[1] === 't') {
+            return '\\t';
+        }
+        if (m[1] === 'r') {
+            return '\\r';
+        }
+        return m[1];
+    });
+}
+
+function unwrapList(v) {
+    return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])];
+}
+
+function wrapList(v) {
+    let res = { type: 'nil' };
+    for (let i = v.length - 1; i >= 0; i--) {
+        res = { type: 'cons', 0: v[i], 1: res };
+    }
+    return res;
+}
+
+const sanMap = {
+    // '$$$$' gets interpreted by replaceAll as '$$', for reasons
+    $: '$$$$',
+    '-': '_',
+    '+': '$pl',
+    '*': '$ti',
+    '=': '$eq',
+    '>': '$gt',
+    '<': '$lt',
+    "'": '$qu',
+    '"': '$dq',
+    ',': '$co',
+    '/': '$sl',
+    ';': '$semi',
+    '@': '$at',
+    ':': '$cl',
+    '#': '$ha',
+    '!': '$ex',
+    '|': '$bar',
+    '()': '$unit',
+    '?': '$qe',
+  };
+const kwds =
+    'case new var const let if else return super break while for default eval'.split(' ');
+
+// Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
+function sanitize(raw) {
+    for (let [key, val] of Object.entries(sanMap)) {
+        raw = raw.replaceAll(key, val);
+    }
+    if (kwds.includes(raw)) return '$' + raw
+    return raw
+}
+
+const valueToString = (v) => {
+    if (Array.isArray(v)) {
+        return `[${v.map(valueToString).join(', ')}]`;
+    }
+    if (typeof v === 'object' && v && 'type' in v) {
+        if (v.type === 'cons' || v.type === 'nil') {
+            const un = unwrapList(v);
+            return '[' + un.map(valueToString).join(' ') + ']';
+        }
+
+        let args = [];
+        for (let i = 0; i in v; i++) {
+            args.push(v[i]);
+        }
+        return `(${v.type}${args
+            .map((arg) => ' ' + valueToString(arg))
+            .join('')})`;
+    }
+    if (typeof v === 'string') {
+        if (v.includes('"') && !v.includes("'")) {
+            return (
+                "'" + JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"') + "'"
+            );
+        }
+        return JSON.stringify(v);
+    }
+    if (typeof v === 'function') {
+        return '<function>';
+    }
+
+    return '' + v;
+};
+
+return {
+    '+': (a) => (b) => a + b,
+    '-': (a) => (b) => a - b,
+    '<': (a) => (b) => a < b,
+    '<=': (a) => (b) => a <= b,
+    '>': (a) => (b) => a > b,
+    '>=': (a) => (b) => a >= b,
+    '=': (a) => (b) => equal(a, b),
+    '!=': (a) => (b) => !equal(a, b),
+    pi: Math.PI,
+    'replace-all': a => b => c => a.replaceAll(b, c),
+    eval: source => {
+      return new Function('', 'return ' + source)();
+    },
+    'eval-with': ctx => source => {
+      const args = '{' + Object.keys(ctx).join(',') + '}'
+      return new Function(args, 'return ' + source)(ctx);
+    },
+    $unit: null,
+    errorToString: f => arg => {
+      try {
+        return f(arg)
+      } catch (err) {
+        return err.message;
+      }
+    },
+    valueToString,
+    unescapeString,
+    sanitize,
+    equal: a => b => equal(a, b),
+    'int-to-string': (a) => a.toString(),
+    'float-to-string': a => a.toString(),
+    'string-to-int': (a) => {
+        const v = Number(a);
+        return Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' };
+    },
+    'string-to-float': (a) => {
+        const v = Number(a);
+        return Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' };
+    },
+
+    // maps
+    'map/nil': [],
+    'map/set': (map) => (key) => (value) =>
+        [[key, value], ...map.filter((i) => i[0] !== key)],
+    'map/rm': (map) => (key) => map.filter((i) => !equal(i[0], key)),
+    'map/get': (map) => (key) => {
+        const found = map.find((i) => equal(i[0], key));
+        return found ? { type: 'some', 0: found[1] } : { type: 'none' };
+    },
+    'map/map': (fn) => (map) => map.map(([k, v]) => [k, fn(v)]),
+    'map/merge': (one) => (two) =>
+        [...one, ...two.filter(([key]) => !one.find(([a]) => equal(a, key)))],
+    'map/values': (map) => wrapList(map.map((item) => item[1])),
+    'map/keys': (map) => wrapList(map.map((item) => item[0])),
+    'map/from-list': (list) =>
+        unwrapList(list).map((pair) => [pair[0], pair[1]]),
+    'map/to-list': (map) =>
+        wrapList(map.map(([key, value]) => ({ type: ',', 0: key, 1: value }))),
+
+    // sets
+    'set/nil': [],
+    'set/add': (s) => (v) => [v, ...s.filter((m) => !equal(v, m))],
+    'set/has': (s) => (v) => s.includes(v),
+    'set/rm': (s) => (v) => s.filter((i) => !equal(i, v)),
+    // NOTE this is only working for primitives
+    'set/diff': (a) => (b) => a.filter((i) => !b.some((j) => equal(i, j))),
+    'set/merge': (a) => (b) =>
+        [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],
+    'set/overlap': (a) => (b) => a.filter((x) => b.some((y) => equal(y, x))),
+    'set/to-list': wrapList,
+    'set/from-list': (s) => {
+        const res = [];
+        unwrapList(s).forEach((item) => {
+            if (res.some((m) => equal(item, m))) {
+                return;
+            }
+            res.push(item);
+        });
+        return res;
+    },
+
+    // Various debugging stuff
+    jsonify: (v) => JSON.stringify(v) ?? 'undefined',
+    fatal: (message) => {
+        throw new Error(`Fatal runtime: ${message}`);
+    },
+} **))
+
+(** Packaging the code generation for the structured editor **)
+
+(** This is a peek under the hood as to how the code in these documents gets "handed off" to the structured editor for use as an evaluator for other documents. It's not really necessary for you to understand it, and it's disabled here in the publicly hosted editor anyway. **)
+
 (eval
-    (** compile => compile_stmt => ({type:'fns',compile: a => _ => compile(a), compile_stmt: a => _ => compile_stmt(a)}) **)
+    (** compile => compile_top => builtins => ({type:'fns',  compile: a => _ => compile(a), compile_stmt: a => _ => compile_top(a), builtins}) **)
         compile
-        compile-st)
+        compile-top
+        builtins)

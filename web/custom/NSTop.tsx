@@ -143,7 +143,7 @@ function NSTop({
                                 <PluginRender
                                     ns={ns}
                                     key={ns.top}
-                                    debug={false}
+                                    debug={debug.ids}
                                     idx={ns.top}
                                     // firstLineOnly={ns.collapsed}
                                     path={path.concat([
@@ -225,8 +225,11 @@ function NSTop({
 
 const nodeName = (node: NodeResults<unknown>) => {
     if (!node) return;
-    if (node.parsed?.type === 'success' && node.parsed.names.length) {
-        const name = node.parsed.names[0];
+    if (
+        node.parsed?.type === 'success' &&
+        node.parsed.allNames?.global.declarations.length
+    ) {
+        const name = node.parsed.allNames.global.declarations[0];
         return {
             ...name,
             style: {
@@ -234,6 +237,17 @@ const nodeName = (node: NodeResults<unknown>) => {
                 backgroundColor: name.kind === 'type' ? '#00101f' : '#111',
                 // fontFamily: name.kind === 'type' ? 'Victor Mono' : undefined,
                 // fontStyle: name.kind === 'type' ? 'italic' : undefined,
+            },
+        };
+    }
+    if (node.ns.plugin?.id === 'fixture') {
+        return {
+            name: 'Fixture tests',
+            loc: node.ns.top,
+            style: {
+                color: '#aaa',
+                fontFamily:
+                    'Inter, "SF Pro Display", -apple-system, "system-ui"',
             },
         };
     }
@@ -251,7 +265,7 @@ const nodeName = (node: NodeResults<unknown>) => {
             arr[0].content[0].type === 'text'
         ) {
             return {
-                name: arr[0].content[0].text,
+                name: arr[0].content.map((m) => m.text).join(''),
                 loc: node.node.loc,
                 style: {
                     color: '#aaa',
@@ -338,7 +352,7 @@ const RenderProduce = ({
         }
     }, [value]);
 
-    const maxHeight = 40;
+    const maxHeight = 45;
 
     // HACK (maybe) to only show inferred type if tehre's only one of them...
     const numTypes = value.filter(

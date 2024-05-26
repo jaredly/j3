@@ -1,14 +1,22 @@
 import { fromMCST } from '../../../src/types/mcst';
 import { MetaDataMap } from '../../custom/UIState';
 import { filterNulls } from '../../custom/old-stuff/filterNulls';
+import { plugins } from '../../custom/plugins';
+import { workerPlugins } from '../../custom/plugins/worker';
 import { depSort } from '../../custom/store/depSort';
 import { LocedName } from '../../custom/store/sortTops';
 import { unique } from '../../custom/store/unique';
 import { Errors, FullEvalator, ProduceItem } from './FullEvalator';
 import { valueToNode } from './bootstrap';
-import { builtins } from './builtins';
-import { Env, Expr, Stmt, Type } from './evaluators/analyze';
-import { Analyze, Compiler, Parser, TypeChecker } from './evaluators/interface';
+import { traceEnv } from './builtins';
+import { Env, Expr, Stmt, Type, TypeInfo } from './evaluators/analyze';
+import {
+    AllNames,
+    Analyze,
+    Compiler,
+    Parser,
+    TypeChecker,
+} from './evaluators/interface';
 import { findTops } from './findTops';
 import { FnsEnv, TraceMap, sanitizedEnv, withTracing } from './loadEv';
 import { sanitize } from './round-1/sanitize';
@@ -25,14 +33,23 @@ export const fnsEvaluator = (
     compiler: Compiler<Stmt, Expr>,
     analyze: undefined | Analyze<Stmt, Expr, Type>,
     typeCheck: undefined | TypeChecker<Env, Stmt, Expr, Type>,
-    san: any,
+    // san: any,
 ): FullEvalator<FnsEnv, Stmt, Expr, Env, Type> | null => {
+    const san: any = traceEnv();
     return {
         id,
         init() {
-            const values = sanitizedEnv(builtins());
+            const values = {};
+            if (compiler.builtins) {
+                const env = new Function(compiler.builtins)();
+                Object.assign(values, sanitizedEnv(env), env);
+            } else {
+                console.warn('No builtins from compiler');
+                // console.warn(`using baked-in builtins`);
+                // Object.assign(values, sanitizedEnv(builtins()));
+            }
             if (compiler.prelude) {
-                const total = preludeText(compiler);
+                const total = preludeText(compiler.prelude);
                 Object.assign(values, new Function(total)());
             }
             // console.log('doing a values', values);
@@ -41,6 +58,10 @@ export const fnsEvaluator = (
         // TODO: allow customization
         valueToString,
         valueToNode,
+
+        compile(expr, typeInfo, meta) {
+            return compiler.compileExpr(expr, typeInfo, meta);
+        },
 
         // @ts-ignore
         // _data: data,
@@ -57,21 +78,34 @@ export const fnsEvaluator = (
             return parser.parseExpr(node);
         },
 
-        toFile(state, target) {
+        toFile(state, target, includePlugins) {
             if (!this.analysis) {
                 throw new Error(`toFile requires analysis`);
             }
             let env = this.init();
+            env.js.push('const $env = {}');
+
+            if (compiler.builtins) {
+                const builtins = new Function(compiler.builtins)();
+                env.js.push(
+                    `const $builtins = (() => {${compiler.builtins}})();\nObject.assign($env, $builtins);`,
+                );
+                env.js.push(
+                    `const {${Object.keys(builtins)
+                        .map((k) => `${JSON.stringify(k)}: ${sanitize(k)}`)
+                        .join(', ')}} = $builtins;`,
+                );
+            }
 
             if (compiler.prelude) {
-                const total = preludeText(compiler);
+                const total = preludeText(compiler.prelude);
                 env.js.push(
                     `const $prelude = (() => {${total}})();\nObject.assign($env, $prelude);`,
                 );
             }
 
             const errors: Errors = {};
-            const allNames: LocedName[] = [];
+            const allDeclarations: LocedName[] = [];
             let ret: null | string = null;
             const tops = findTops(state);
             const sorted = depSort(
@@ -92,46 +126,76 @@ export const fnsEvaluator = (
                             top,
                             node,
                             stmt,
-                            names: this.analysis!.names(stmt),
-                            deps: this.analysis!.externalsStmt(stmt),
+                            allNames: this.analysis!.allNames(stmt),
+                            // names: this.analysis!.names(stmt),
+                            // deps: this.analysis!.externalsStmt(stmt),
                         };
                     })
                     .filter(filterNulls),
             );
 
+            const typeEnv = typeCheck?.init();
+
             sorted.forEach((group) => {
                 if (
-                    group.every((item) => item.names.length === 0) &&
+                    group.length === 1 &&
+                    group[0].top.ns.plugin &&
+                    includePlugins
+                ) {
+                    const config = group[0].top.ns.plugin;
+                    const plugin = workerPlugins[config.id];
+                    if (plugin.compile) {
+                        env.js.push(
+                            plugin.compile(
+                                group[0].node,
+                                this,
+                                config.options,
+                                typeEnv as any,
+                            ),
+                        );
+                        return;
+                    }
+                }
+                if (
+                    group.every(
+                        (item) =>
+                            item.allNames.global.declarations.length === 0,
+                    ) &&
                     group[0].top.top !== target
                 ) {
                     return;
                 }
                 const result = this.addStatements(
-                    group.map((g) => g.stmt),
+                    group.map((g) => ({ stmt: g.stmt, names: g.allNames })),
                     env,
+                    [], // STOPSHIP hrm
                     {},
                     {},
                     group[0].top.top,
                 );
-                if (
-                    group[0].top.top === target &&
-                    'js' in result &&
-                    typeof result.js === 'string'
-                ) {
-                    ret = result.js;
+                if (group[0].top.top === target) {
+                    if ('js' in result && typeof result.js === 'string') {
+                        ret = result.js;
+                    } else {
+                        console.error(`result for target top doesnt have js`);
+                        console.log(result);
+                    }
                     return;
                 }
                 env.js.push((result as any).js);
                 env = result.env;
-                allNames.push(
+                allDeclarations.push(
                     ...group
-                        .flatMap(({ names }) => names)
+                        .flatMap(({ allNames }) => allNames.global.declarations)
                         .filter((n) => n.kind === 'value'),
                 );
             });
 
             if (target != null && ret == null) {
-                console.log(target, sorted);
+                console.log(
+                    target,
+                    sorted.filter((t) => t[0].top.top === target),
+                );
                 debugger;
                 throw new Error(`tagtet wasnt a toplevel ${target}`);
             }
@@ -139,7 +203,7 @@ export const fnsEvaluator = (
                 env.js.push(`return ${ret}`);
             } else {
                 env.js.push(
-                    `return {type: 'fns', ${allNames
+                    `return {type: 'fns', ${allDeclarations
                         .map(({ name }) => sanitize(name))
                         .sort()
                         .join(', ')}}`,
@@ -151,6 +215,7 @@ export const fnsEvaluator = (
         addStatements(
             stmts,
             env,
+            typeInfo,
             meta,
             trace,
             top,
@@ -158,41 +223,18 @@ export const fnsEvaluator = (
             debugShowJs,
         ) {
             const display: { [key: number]: ProduceItem[] } = {};
-            // const values: Record<string, any> = {};
-            let names: LocedName[] | null = null;
-            if (analyze) {
-                try {
-                    names = Object.values(stmts)
-                        .flatMap((stmt) => analyze.names(stmt))
-                        .filter((n) => n.kind === 'value');
-                } catch (err) {
-                    console.error(`cant get names`, err);
-                    Object.keys(stmts).forEach((k) => {
-                        display[+k] = [
-                            {
-                                type: 'error',
-                                message:
-                                    'Error while getting stmt names ' +
-                                    (err as Error).message,
-                            },
-                        ];
-                    });
-                }
-            }
-
-            const res = compileStmt(
+            const res = compileStmt({
                 compiler,
-                analyze,
                 san,
-                Object.values(stmts),
+                stmts: Object.values(stmts),
+                typeInfo,
                 env,
                 meta,
-                trace,
-                displayResult,
+                traceMap: trace,
+                renderValue: displayResult,
                 top,
-                names,
                 debugShowJs,
-            );
+            });
 
             Object.keys(stmts).forEach((id) => {
                 if (display[+id]) {
@@ -213,15 +255,19 @@ export const fnsEvaluator = (
             }
         },
 
-        evaluate(expr, env, meta) {
+        evaluate(expr, allNames, typeInfo, env, meta) {
             const mm = prepareMeta(meta);
 
             const externals =
-                analyze
-                    ?.externalsExpr(expr)
+                allNames.global.usages
                     .filter((n) => n.kind === 'value')
                     .map((n) => n.name) ?? [];
-            const { needed, values } = assembleExternals(externals, env, san);
+            const { needed, values } = assembleExternals({
+                externals,
+                env,
+                san,
+                preludes: compiler.prelude ? Object.keys(compiler.prelude) : [],
+            });
             // console.log(`doing evaluate`, needed, values);
             values.$env = {};
             needed.forEach((name) => {
@@ -232,7 +278,7 @@ export const fnsEvaluator = (
             });
 
             try {
-                const js = compiler.compileExpr(expr, meta);
+                const js = compiler.compileExpr(expr, typeInfo, meta);
                 const fn = new Function(
                     needed.length
                         ? `{$env,${needed.map(sanitize).join(', ')}}`
@@ -255,46 +301,55 @@ export const fnsEvaluator = (
     };
 };
 
-const compileStmt = (
-    compiler: Compiler<Stmt, Expr>,
-    analyzer: undefined | Analyze<Stmt, Expr, Type>,
-    san: any,
-    stmts: Stmt[],
-    env: FnsEnv,
-    meta: MetaDataMap,
-    traceMap: TraceMap,
-    renderValue: (v: any) => ProduceItem[] = (v) => [valueToString(v)],
-    top: number,
-    namedValues?: null | LocedName[],
-    debugShowJs?: boolean,
-): {
+const compileStmt = ({
+    compiler,
+    san,
+    stmts,
+    typeInfo,
+    env,
+    meta,
+    traceMap,
+    renderValue = (v) => [valueToString(v)],
+    top,
+    debugShowJs,
+}: {
+    compiler: Compiler<Stmt, Expr>;
+    san: any;
+    stmts: { stmt: Stmt; names?: AllNames }[];
+    typeInfo: TypeInfo;
+    env: FnsEnv;
+    meta: MetaDataMap;
+    traceMap: TraceMap;
+    renderValue?: (v: any) => ProduceItem[];
+    top: number;
+    // namedValues?: null | LocedName[],
+    debugShowJs?: boolean;
+}): {
     env: any;
     display: ProduceItem[];
     values: Record<string, any>;
     js?: string;
 } => {
-    let externals: string[] = [];
-    if (analyzer) {
-        try {
-            externals = stmts
-                .flatMap((stmt) => analyzer.externalsStmt(stmt))
-                .filter((n) => n.kind === 'value')
-                .map((n) => n.name);
-        } catch (err) {
-            console.error('Unable to calculate externals');
-            console.error(err);
-        }
-    }
-    const { needed, values } = assembleExternals(
+    const externals = stmts
+        .flatMap((stmt) => stmt.names?.global.usages ?? [])
+        .filter((n) => n.kind === 'value')
+        .map((n) => n.name);
+    const namedValues = stmts
+        .flatMap((s) => s.names?.global.declarations ?? [])
+        .filter((n) => n.kind === 'value');
+    const { needed, values } = assembleExternals({
         externals,
         env,
         san,
-        namedValues,
-    );
+        names: namedValues,
+        preludes: compiler.prelude ? Object.keys(compiler.prelude) : [],
+    });
 
     let jss;
     try {
-        jss = stmts.map((stmt) => compiler.compileStmt(stmt, meta));
+        jss = stmts.map(({ stmt }) =>
+            compiler.compileStmt(stmt, typeInfo, meta),
+        );
     } catch (err) {
         console.error(err);
         return {
@@ -332,7 +387,7 @@ const compileStmt = (
         values.$env = {};
         needed.forEach((name) => {
             const got = values[sanitize(name)];
-            if (got) {
+            if (got !== undefined) {
                 values.$env[name] = got;
             }
         });
@@ -342,13 +397,13 @@ const compileStmt = (
             try {
                 result = fn(values);
             } catch (err) {
-                debugger;
+                // debugger;
                 return {
                     env,
                     display: [
                         {
                             type: 'error',
-                            message: `JS Evaluation Error: ${
+                            message: `JS Evaluation Error (def): ${
                                 (err as Error).message
                             }\n${js}\nDeps: ${needed.join(',')}`,
                         },
@@ -381,16 +436,17 @@ const compileStmt = (
                     display.push(`<null>`);
                 }
             } catch (err) {
-                debugger;
+                // debugger;
                 return {
                     env,
                     display: [
                         {
                             type: 'error',
-                            message: `JS Evaluation Error: ${
+                            message: `JS Evaluation Error (expr): ${
                                 (err as Error).message
                             }\n${js}\nDeps: ${needed.join(',')}`,
                         },
+                        { type: 'pre', text: JSON.stringify(values) },
                     ],
                     values: {},
                 };
@@ -422,21 +478,27 @@ const compileStmt = (
     }
 };
 
-function preludeText(compiler: Compiler<Stmt, Expr>) {
-    const text = Object.entries(compiler.prelude!)
+function preludeText(prelude: Record<string, string>) {
+    const text = Object.entries(prelude)
         .map(([name, defn]) => `const ${name} = ${defn};`)
         .join('\n\n');
-    const total =
-        text + `\nreturn {${Object.keys(compiler.prelude!).join(',')}}`;
+    const total = text + `\nreturn {${Object.keys(prelude).join(',')}}`;
     return total;
 }
 
-function assembleExternals(
-    externals: string[],
-    env: FnsEnv,
-    san: any,
-    names?: null | LocedName[],
-) {
+function assembleExternals({
+    externals,
+    env,
+    san,
+    names,
+    preludes,
+}: {
+    externals: string[];
+    env: FnsEnv;
+    san: any;
+    names?: null | LocedName[];
+    preludes: string[];
+}) {
     const provided = names?.map((obj) => obj.name) ?? [];
     const needed = unique(
         externals.concat([
@@ -446,8 +508,9 @@ function assembleExternals(
             // lol HACK HACK would be great to remove.
             // and have the evaluator define what globals needs to
             // be "implicitly required" for evaluation.
-            'evaluateStmt',
-            'evaluate',
+            // 'evaluateStmt',
+            // 'evaluate',
+            ...preludes,
         ]),
     ).filter(
         // Skip recursive self-calls
@@ -456,15 +519,16 @@ function assembleExternals(
     // .filter((n) => sanitize(n) === n);
     const values: Record<string, any> = {};
     needed.forEach((name) => {
+        const s = name === '$trace' ? '$trace' : sanitize(name);
         if (env.values[name] == null) {
-            if (san[sanitize(name)]) {
-                values[sanitize(name)] = san[sanitize(name)];
+            if (san[s]) {
+                values[s] = san[s];
             }
         } else {
-            values[sanitize(name)] = env.values[name];
+            values[s] = env.values[name];
         }
         if (
-            values[sanitize(name)] === undefined &&
+            values[s] === undefined &&
             name !== 'evaluate' &&
             name !== 'evaluateStmt'
         ) {
