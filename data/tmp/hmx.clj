@@ -2,16 +2,11 @@
 
 (** ## Prelude **)
 
-(deftype (option a)
-    (some a)
-        (none))
+(deftype (option a) (some a) (none))
 
-(deftype (list a)
-    (cons a (list a))
-        (nil))
+(deftype (list a) (cons a (list a)) (nil))
 
-(deftype (, a b)
-    (, a b))
+(deftype (, a b) (, a b))
 
 (defn foldr [init items f]
     (match items
@@ -80,9 +75,7 @@
 (** ## AST
     again, this is the same as in the previous articles, so feel free to skip. **)
 
-(deftype prim
-    (pint int int)
-        (pbool bool int))
+(deftype prim (pint int int) (pbool bool int))
 
 (deftype top
     (tdef string int expr int)
@@ -184,16 +177,13 @@
 (** ## A State monad
     Given that we're going 100% immutable, having a State monad is really handy so you're not having to pipe state values into and out of every function. **)
 
-(deftype (StateT state value)
-    (StateT (fn [state] (, state value))))
+(deftype (StateT state value) (StateT (fn [state] (, state value))))
 
 ((** This is our bind function. Given a (StateT state value) and a (fn [value] (StateT state value2), it produces a new StateT chaining the two things together, essentially running the second argument on the resolved value of the first argument. **)
     defn >>= [(StateT f) next]
     (StateT
         (fn [state]
-            (let [
-                (, state value) (f state)
-                (StateT fnext)  (next value)]
+            (let [(, state value) (f state) (StateT fnext) (next value)]
                 (fnext state)))))
 
 ((** Here's our return (or pure) function for the StateT monad. It produces a StateT that resolves to the given value, independent of the current state. **)
@@ -217,10 +207,7 @@
 (defn map-> [f arr]
     (match arr
         []           (<- [])
-        [one ..rest] (let-> [
-                         one  (f one)
-                         rest (map-> f rest)]
-                         (<- [one ..rest]))))
+        [one ..rest] (let-> [one (f one) rest (map-> f rest)] (<- [one ..rest]))))
 
 (defn foldl-> [init values f]
     (match values
@@ -236,10 +223,7 @@
     defn do-> [f arr]
     (match arr
         []           (<- ())
-        [one ..rest] (let-> [
-                         () (f one)
-                         () (do-> f rest)]
-                         (<- ()))))
+        [one ..rest] (let-> [() (f one) () (do-> f rest)] (<- ()))))
 
 (** ## Types for inference **)
 
@@ -260,8 +244,36 @@
                 [one]        one
                 [one ..rest] (cand one (recur rest) loc)))))
 
-(deftype scheme
-    (forall (set string) constraint type))
+(defn scheme->s [(forall _ _ t)] (type->s t))
+
+(deftype scheme (forall (set string) constraint type))
+
+(** ## Debugging stringification **)
+
+(defn assumps->s [assumps]
+    (join
+        "\n"
+            (map
+            (fn [(, name (forall _ _ t))] "${name} : ${(type->s t)}")
+                (map/to-list assumps))))
+
+(defn constraint->s [cns]
+    (match cns
+        (cbool true _)                             "true"
+        (cbool false _)                            "false"
+        (capp "=" [one two] _)                     "(= ${(type->s one)} ${(type->s two)})"
+        (cand left right _)                        "${(constraint->s left)} &&\n  ${(constraint->s right)}"
+        (cexists vbls inner _)                     "(∃${(join "," vbls)} ${(constraint->s inner)})"
+        (cdef name (forall vbls cns type) inner _) "(${name}=(forall ${(join "," (set/to-list vbls))} ${(constraint->s cns)} ${(type->s type)}) ${(constraint->s inner)})"
+        (cinstance name type _)                    "(vbl ${name} is ${(type->s type)})"
+        _                                          "[some constraint]"))
+
+(defn substs->s [subst]
+    (join
+        "\n"
+            (map
+            (fn [(, name type)] "${name}t${(type->s type)}")
+                (map/to-list subst))))
 
 (** ## Substitution maps **)
 
@@ -306,9 +318,7 @@
 (** ## Working with type variables **)
 
 (defn fresh-ty-var [name]
-    (let-> [
-        (, idx tenv) <-state
-        _            (state-> (, (+ idx 1) tenv))]
+    (let-> [(, idx tenv) <-state _ (state-> (, (+ idx 1) tenv))]
         (<- "${name}:${(int-to-string idx)}")))
 
 (defn instantiate [(forall vbls constraint type) loc]
@@ -326,6 +336,14 @@
         (pint _ _)  "int"
         (pbool _ _) "bool"))
 
+(defn infer/quot [quot]
+    (match quot
+        (quot/expr expr) "expr"
+        (quot/top top)   "top"
+        (quot/type type) "type"
+        (quot/pat pat)   "pat"
+        (quot/quot cst)  "cst"))
+
 (defn infer/pat-args [subst args cargs]
     (map->
         (fn [(, pat argt)] (infer/pat pat (type/apply subst argt)))
@@ -340,7 +358,7 @@
         (pstr _ loc)            (<- (, (capp "=" [(tcon "string" loc) type] loc) [] map/nil))
         (pcon name nl args loc) (let-> [(, _ (tenv _ types _ _)) <-state]
                                     (match (map/get types name)
-                                        (none)                     (fatal "Unknown constructor")
+                                        (none)                     (fatal "Unknown constructor ${name}")
                                         (some (, free cargs tres)) (let-> [
                                                                        vbls             (map-> fresh-ty-var free)
                                                                        subst            (<- (map/from-list (zip free (map (fn [x] (tvar x loc)) vbls))))
@@ -367,6 +385,7 @@
 (defn infer/expr [expr type]
     (match expr
         (eprim prim loc)                          (<- (capp "=" [(tcon (infer/prim prim) loc) type] loc))
+        (equot quot loc)                          (<- (capp "=" [(tcon (infer/quot quot) loc) type] loc))
         (estr prefix interps loc)                 (let-> [
                                                       inner (map-> (fn [(, expr _)] (infer/expr expr (tcon "string" -1))) interps)]
                                                       (<- (cands [(capp "=" [(tcon "string" loc) type] loc) ..inner] loc)))
@@ -420,6 +439,7 @@
                                                       arg    (infer/expr arg (tvar x loc))]
                                                       (<- (cexists [x] (cand target arg loc) loc)))
         (eapp target [arg ..rest] loc)            (infer/expr (eapp (eapp target [arg] loc) rest loc) type)
+        (eapp target [] loc)                      (infer/expr target type)
         (ematch target cases loc)                 (let-> [
                                                       ttarget (fresh-ty-var "match-target")
                                                       tres    (fresh-ty-var "match-result")
@@ -484,33 +504,6 @@
 (defn assumps/free [assumps]
     (foldl set/nil (map scheme/free (map/values assumps)) set/merge))
 
-(** ## Debugging stringification **)
-
-(defn assumps->s [assumps]
-    (join
-        "\n"
-            (map
-            (fn [(, name (forall _ _ t))] "${name} : ${(type->s t)}")
-                (map/to-list assumps))))
-
-(defn constraint->s [cns]
-    (match cns
-        (cbool true _)                             "true"
-        (cbool false _)                            "false"
-        (capp "=" [one two] _)                     "(= ${(type->s one)} ${(type->s two)})"
-        (cand left right _)                        "${(constraint->s left)} &&\n  ${(constraint->s right)}"
-        (cexists vbls inner _)                     "(∃${(join "," vbls)} ${(constraint->s inner)})"
-        (cdef name (forall vbls cns type) inner _) "(${name}=(forall ${(join "," (set/to-list vbls))} ${(constraint->s cns)} ${(type->s type)}) ${(constraint->s inner)})"
-        (cinstance name type _)                    "(vbl ${name} is ${(type->s type)})"
-        _                                          "[some constraint]"))
-
-(defn substs->s [subst]
-    (join
-        "\n"
-            (map
-            (fn [(, name type)] "${name}t${(type->s type)}")
-                (map/to-list subst))))
-
 (** ## Solving the constraints **)
 
 (defn solve [constraint assumps free]
@@ -550,6 +543,37 @@
                                          (<- (compose-subst res subst)))
         _                            (fatal "bad news bears")))
 
+(** ## Type Environment **)
+
+(deftype tenv
+    (tenv
+        (** Types of values in global scope **)
+            (map string scheme)
+            (** Data type constructors; (free variables) (arguments) (resulting type) **)
+            (map string (, (list string) (list type) type))
+            (** Data types (# free variables, constructor names) **)
+            (map string (, int (set string)))
+            (** Type aliases **)
+            (map string (, (list string) type))))
+
+(def tenv/nil (tenv map/nil map/nil map/nil map/nil))
+
+(defn tenv/merge [(tenv v1 c1 t1 a1) (tenv v2 c2 t2 a2)]
+    (tenv
+        (map/merge v1 v2)
+            (map/merge c1 c2)
+            (map/merge t1 t2)
+            (map/merge a1 a2)))
+
+(defn tenv/with-global [(tenv values tc ty ta) name scheme]
+    (tenv (map/set values name scheme) tc ty ta))
+
+(add/def tenv/nil "x" 0 (@ 10) 1)
+
+(defn tenv/resolve [(tenv values _ _ _) name] (map/get values name))
+
+;(defn tenv/with-type)
+
 (** ## Builtins **)
 
 (defn tpair [a b l] (tapp (tapp (tcon "," l) a l) b l))
@@ -573,12 +597,116 @@
             ","
                 (, ["a" "b"] [(tvar "a" -1) (tvar "b" -1)] (tpair (tvar "a" -1) (tvar "b" -1) -1)))]))
 
+(** ## Type Environment populated with Builtins **)
+
+(def tbool (tcon "bool" -1))
+
+(defn tmap [k v] (tapp (tapp (tcon "map" -1) k -1) v -1))
+
+(defn toption [arg] (tapp (tcon "option" -1) arg -1))
+
+;(typealias what l)
+
+(defn tlist [arg] (tapp (tcon "list" -1) arg -1))
+
+(defn tset [arg] (tapp (tcon "set" -1) arg -1))
+
+(defn concrete [t] (forall set/nil (cbool true -1) t))
+
+(defn generic [vbls t]
+    (forall (set/from-list vbls) (cbool true -1) t))
+
+(defn vbl [k] (tvar k -1))
+
+(defn t, [a b] (tapp (tapp (tcon "," -1) a -1) b -1))
+
+(def tstring (tcon "string" -1))
+
+(def builtin-env
+    (let [
+        k  (vbl "k")
+        v  (vbl "v")
+        v2 (vbl "v2")
+        kv (generic ["k" "v"])
+        kk (generic ["k"])
+        a  (vbl "a")
+        b  (vbl "b")]
+        (tenv
+            (map/from-list
+                [(, "+" (concrete (tfns [tint tint] tint -1)))
+                    (, "-" (concrete (tfns [tint tint] tint -1)))
+                    (, ">" (concrete (tfns [tint tint] tbool -1)))
+                    (, "<" (concrete (tfns [tint tint] tbool -1)))
+                    (, "=" (generic ["k"] (tfns [k k] tbool -1)))
+                    (, "!=" (generic ["k"] (tfns [k k] tbool -1)))
+                    (, ">=" (concrete (tfns [tint tint] tbool -1)))
+                    (, "<=" (concrete (tfns [tint tint] tbool -1)))
+                    (, "()" (concrete (tcon "()" -1)))
+                    (, "," (generic ["a" "b"] (tfns [a b] (t, a b) -1)))
+                    ;(,
+                    "trace"
+                        (kk
+                        (tfns
+                            [(tapp (tcon "list" -1) (tapp (tcon "trace-fmt" -1) k -1) -1)]
+                                (tcon "()" -1)
+                                -1)))
+                    (, "unescapeString" (concrete (tfns [tstring] tstring -1)))
+                    (, "int-to-string" (concrete (tfns [tint] tstring -1)))
+                    (, "string-to-int" (concrete (tfns [tstring] (toption tint) -1)))
+                    (,
+                    "string-to-float"
+                        (concrete (tfns [tstring] (toption (tcon "float" -1)) -1)))
+                    ;(, "++" (concrete (tfns [(tlist tstring)] tstring -1)))
+                    (, "map/nil" (kv (tmap k v)))
+                    (, "map/set" (kv (tfns [(tmap k v) k v] (tmap k v) -1)))
+                    (, "map/rm" (kv (tfns [(tmap k v) k] (tmap k v) -1)))
+                    (, "map/get" (kv (tfns [(tmap k v) k] (toption v) -1)))
+                    (,
+                    "map/map"
+                        (generic ["k" "v" "v2"] (tfns [(tfns [v] v2 -1) (tmap k v)] (tmap k v2) -1)))
+                    (, "map/merge" (kv (tfns [(tmap k v) (tmap k v)] (tmap k v) -1)))
+                    (, "map/values" (kv (tfns [(tmap k v)] (tlist v) -1)))
+                    (, "map/keys" (kv (tfns [(tmap k v)] (tlist k) -1)))
+                    (, "set/nil" (kk (tset k)))
+                    (, "set/add" (kk (tfns [(tset k) k] (tset k) -1)))
+                    (, "set/has" (kk (tfns [(tset k) k] tbool -1)))
+                    (, "set/rm" (kk (tfns [(tset k) k] (tset k) -1)))
+                    (, "set/diff" (kk (tfns [(tset k) (tset k)] (tset k) -1)))
+                    (, "set/merge" (kk (tfns [(tset k) (tset k)] (tset k) -1)))
+                    (, "set/overlap" (kk (tfns [(tset k) (tset k)] (tset k) -1)))
+                    (, "set/to-list" (kk (tfns [(tset k)] (tlist k) -1)))
+                    (, "set/from-list" (kk (tfns [(tlist k)] (tset k) -1)))
+                    (, "map/from-list" (kv (tfns [(tlist (t, k v))] (tmap k v) -1)))
+                    (, "map/to-list" (kv (tfns [(tmap k v)] (tlist (t, k v)) -1)))
+                    (, "jsonify" (generic ["v"] (tfns [(tvar "v" -1)] tstring -1)))
+                    (, "valueToString" (generic ["v"] (tfns [(vbl "v")] tstring -1)))
+                    (, "eval" (generic ["v"] (tfns [(tcon "string" -1)] (vbl "v") -1)))
+                    (,
+                    "eval-with"
+                        (generic ["ctx" "v"] (tfns [(tcon "ctx" -1) (tcon "string" -1)] (vbl "v") -1)))
+                    (,
+                    "errorToString"
+                        (generic ["v"] (tfns [(tfns [(vbl "v")] tstring -1) (vbl "v")] tstring -1)))
+                    (, "sanitize" (concrete (tfns [tstring] tstring -1)))
+                    (,
+                    "replace-all"
+                        (concrete (tfns [tstring tstring tstring] tstring -1)))
+                    (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v") -1)))])
+                (map/from-list [(, "()" (, [] [] (tcon "()" -1))) (, "," (, ["a" "b"] [a b] (t, a b)))])
+                (map/from-list
+                [(, "int" (, 0 set/nil))
+                    (, "float" (, 0 set/nil))
+                    (, "string" (, 0 set/nil))
+                    (, "bool" (, 0 set/nil))
+                    (, "map" (, 2 set/nil))
+                    (, "set" (, 1 set/nil))
+                    (, "->" (, 2 set/nil))])
+                map/nil)))
+
 (** ## Some Tests **)
 
 (defn run-and-solve [inner assumps]
-    (let-> [
-        constraint inner
-        subst      (solve constraint assumps set/nil)]
+    (let-> [constraint inner subst (solve constraint assumps set/nil)]
         (<- subst)))
 
 (defn check [expr]
@@ -653,32 +781,19 @@
 
 (** ## Adding Top-level Items to the Type Environment **)
 
-(deftype tenv
-    (tenv
-        (** Types of values in global scope **)
-            (map string scheme)
-            (** Data type constructors; (free variables) (arguments) (resulting type) **)
-            (map string (, (list string) (list type) type))
-            (** Data types (# free variables, constructor names) **)
-            (map string (, int (set string)))
-            (** Type aliases **)
-            (map string (, (list string) type))))
+(** ## Expressions **)
 
-(def tenv/nil (tenv map/nil map/nil map/nil map/nil))
+(defn add/expr [type-env expr]
+    (run->
+        (let-> [
+            v          (fresh-ty-var "expr")
+            constraint (infer/expr expr (tvar v -1))
+            subst      (solve (cexists [v] constraint -1) map/nil set/nil)
+            type       (<- (type/apply subst (tvar v -1)))]
+            (<- type))
+            (, 0 type-env)))
 
-(defn tenv/merge [(tenv v1 c1 t1 a1) (tenv v2 c2 t2 a2)]
-    (tenv
-        (map/merge v1 v2)
-            (map/merge c1 c2)
-            (map/merge t1 t2)
-            (map/merge a1 a2)))
-
-(defn tenv/with-global [(tenv values tc ty ta) name scheme]
-    (tenv (map/set values name scheme) tc ty ta))
-
-(defn tenv/with-type)
-
-(add/def tenv/nil "x" 0 (@ 10) 1)
+(** ## Single Definition **)
 
 (defn add/def [type-env name nl expr l]
     (run->
@@ -732,6 +847,8 @@
                 (map/from-list [])
                     (cbool true 4641)
                     (tapp (tapp (tcon "->" 4650) (tcon "int" -1) 4650) (tcon "int" -1) 4650)))])])
+
+(** ## Multiple recursive definitions **)
 
 (** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
 
@@ -792,6 +909,8 @@
                 (map/from-list [])
                 (map/from-list [])
                 (map/from-list [])))])
+
+(** ## Deftypes and Type Aliases **)
 
 (defn add/typealias [(tenv values tcons types taliases) name args type]
     (tenv
@@ -861,8 +980,10 @@
                                 (, target [(, arg l) ..inner]))
         _                   (, type [])))
 
-(defn add/stmt [tenv stmt]
-    (match stmt
+(** ## General Toplevel Items **)
+
+(defn add/top [tenv top]
+    (match top
         (tdef name nl expr l)            (add/def tenv name nl expr l)
         (texpr expr l)                   (run->
                                              (let-> [
@@ -875,7 +996,7 @@
         (ttypealias name _ args type _)  (add/typealias tenv name args type)
         (tdeftype name _ args constrs l) (add/deftype tenv name args constrs l)))
 
-(defn split-stmts [stmts]
+(defn split-tops [stmts]
     (loop
         stmts
             (fn [stmts recur]
@@ -887,14 +1008,14 @@
                                       (ttypealias _ _ _ _ _) (, defs [stmt ..aliases] others)
                                       _                      (, defs aliases [stmt ..others])))))))
 
-(defn add/stmts [tenv stmts]
+(defn add/tops [tenv tops]
     (let [
-        (, defs aliases others) (split-stmts stmts)
+        (, defs aliases others) (split-tops tops)
         denv                    (add/defs tenv defs)
         final                   (foldl
                                     denv
                                         (concat [aliases others])
-                                        (fn [env stmt] (tenv/merge env (add/stmt (tenv/merge tenv env) stmt))))]
+                                        (fn [env stmt] (tenv/merge env (add/top (tenv/merge tenv env) stmt))))]
         final))
 
 (,
@@ -906,13 +1027,11 @@
                         tenv/nil
                             x
                             (fn [env stmts]
-                            (tenv/merge env (add/stmts (tenv/merge builtin-env env) stmts))))
+                            (tenv/merge env (add/tops (tenv/merge builtin-env env) stmts))))
                         name))))
         [(,
         (,
-            [[(@!
-                (deftype (x m)
-                    (a m)))]
+            [[(@! (deftype (x m) (a m)))]
                 [(@!
                 (defn aa [x]
                     (match x
@@ -921,31 +1040,38 @@
                 "aa")
             "(fn [(x int)] int)")
         (,
-        (,
-            [[(@! (typealias a int))
-                (@!
-                (deftype lol
-                    (elol a)))]]
-                "elol")
+        (, [[(@! (typealias a int)) (@! (deftype lol (elol a)))]] "elol")
             "(fn [int] lol)")
         (,
         (,
             [[(@! (typealias alt (, (list pat) expr)))
                 (@! (typealias bindgroup (, alt)))
-                (@!
-                (deftype expr
-                    (elet bindgroup expr int)))]
+                (@! (deftype expr (elet bindgroup expr int)))]
                 [(@! (defn x [(elet b _ _)] b))]]
                 "x")
             "(fn [expr] (, (list pat) expr))")
         (,
         (,
             [[(@! (typealias (a b) (, int b)))
-                (@!
-                (deftype hi
-                    (red int)
-                        (blue)
-                        (green (a bool))))]]
+                (@! (deftype hi (red int) (blue) (green (a bool))))]]
                 "green")
             "(fn [(, int bool)] hi)")
         ])
+
+(** ## Exporting for the structured editor **)
+
+(** This is a peek under the hood as to how the code in these documents gets "handed off" to the structured editor for use as an evaluator for other documents. It's not really necessary for you to understand it, and it's disabled here in the publicly hosted editor anyway. **)
+
+(eval
+    (** env_nil => add_stmt => get_type => type_to_string => infer_stmts => infer =>
+  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, infer_stmts, infer})
+ **)
+        builtin-env
+        tenv/merge
+        tenv/resolve
+        scheme->s
+        add/tops
+        (fn [env expr] (forall set/nil (cbool true -1) (add/expr env expr))))
+
+(def builtin-env2
+    (tenv basic-assumps basic-tcons map/nil map/nil))

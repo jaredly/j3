@@ -33,12 +33,9 @@
         []           init
         [one ..rest] (f (foldr init rest f) one)))
 
-(deftype (list a)
-    (nil)
-        (cons a (list a)))
+(deftype (list a) (nil) (cons a (list a)))
 
-(deftype (, a b)
-    (, a b))
+(deftype (, a b) (, a b))
 
 (defn concat [lsts]
     (match lsts
@@ -49,9 +46,7 @@
 
 (defn indices [lst] (mapi 0 lst (fn [i _] i)))
 
-(deftype (option a)
-    (some a)
-        (none))
+(deftype (option a) (some a) (none))
 
 (** ## Our AST **)
 
@@ -93,9 +88,7 @@
         (cst/spread cst int)
         (cst/string string (list (, cst string int)) int))
 
-(deftype prim
-    (pint int int)
-        (pbool bool int))
+(deftype prim (pint int int) (pbool bool int))
 
 (deftype pat
     (pany int)
@@ -301,9 +294,7 @@
 (,
     (fn [x] x)
         [(,
-        (@!
-            (deftype (a b)
-                (c b)))
+        (@! (deftype (a b) (c b)))
             (tdeftype "a" 6438 [(, "b" 6439)] [(, "c" 6441 [(tcon "b" 6442)] 6440)] 6433))
         (, (@ x) (evar "x" 6483))])
 
@@ -383,13 +374,7 @@ eval
         (, (@ (@ 1)) (eprim (pint 1 5354) 5354))
         (, (@ "a${2}b") "a2b")
         (, (@ ((fn [a] (+ a 2)) 21)) 23)
-        (,
-        (@
-            (let [
-                one 1
-                two 2]
-                (+ 1 2)))
-            3)
+        (, (@ (let [one 1 two 2] (+ 1 2))) 3)
         (,
         (@
             (match 2

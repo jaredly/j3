@@ -6,16 +6,11 @@
 
 (** ## Prelude **)
 
-(deftype (option a)
-    (some a)
-        (none))
+(deftype (option a) (some a) (none))
 
-(deftype (list a)
-    (cons a (list a))
-        (nil))
+(deftype (list a) (cons a (list a)) (nil))
 
-(deftype (, a b)
-    (, a b))
+(deftype (, a b) (, a b))
 
 (defn foldr [init items f]
     (match items
@@ -90,9 +85,7 @@
 (** ## AST
     again, this is the same as in the previous articles, so feel free to skip. **)
 
-(deftype prim
-    (pint int int)
-        (pbool bool int))
+(deftype prim (pint int int) (pbool bool int))
 
 (deftype top
     (tdef string int expr int)
@@ -196,8 +189,7 @@
 
 (** A scheme is the way that we represent generic types (sometimes called "polytypes"). The first argument is a set of the tvar ids that are generic in the contained type. **)
 
-(deftype scheme
-    (forall (set string) type))
+(deftype scheme (forall (set string) type))
 
 (deftype tenv
     (tenv
@@ -320,16 +312,13 @@
 (** ## A State monad
     Given that we're going 100% immutable, having a State monad is really handy so you're not having to pipe state values into and out of every function. **)
 
-(deftype (StateT state value)
-    (StateT (fn [state] (, state value))))
+(deftype (StateT state value) (StateT (fn [state] (, state value))))
 
 ((** This is our bind function. Given a (StateT state value) and a (fn [value] (StateT state value2), it produces a new StateT chaining the two things together, essentially running the second argument on the resolved value of the first argument. **)
     defn >>= [(StateT f) next]
     (StateT
         (fn [state]
-            (let [
-                (, state value) (f state)
-                (StateT fnext)  (next value)]
+            (let [(, state value) (f state) (StateT fnext) (next value)]
                 (fnext state)))))
 
 ((** Here's our return (or pure) function for the StateT monad. It produces a StateT that resolves to the given value, independent of the current state. **)
@@ -353,10 +342,7 @@
 (defn map-> [f arr]
     (match arr
         []           (<- [])
-        [one ..rest] (let-> [
-                         one  (f one)
-                         rest (map-> f rest)]
-                         (<- [one ..rest]))))
+        [one ..rest] (let-> [one (f one) rest (map-> f rest)] (<- [one ..rest]))))
 
 (defn foldl-> [init values f]
     (match values
@@ -372,10 +358,7 @@
     defn do-> [f arr]
     (match arr
         []           (<- ())
-        [one ..rest] (let-> [
-                         () (f one)
-                         () (do-> f rest)]
-                         (<- ()))))
+        [one ..rest] (let-> [() (f one) () (do-> f rest)] (<- ()))))
 
 (** ## Type Inference State
     Here's where we take the StateT monad defined above and make it specific to our use case. Our StateT will contain an integer representing the "next unique ID" used for generating unique tvars, as well as the "current substitution map". **)
@@ -387,10 +370,7 @@
 (defn run/nil-> [st] (run-> st state/nil))
 
 (def <-next-idx
-    (let-> [
-        (, idx subst) <-state
-        _             (state-> (, (+ idx 1) subst))]
-        (<- idx)))
+    (let-> [(, idx subst) <-state _ (state-> (, (+ idx 1) subst))] (<- idx)))
 
 (def <-subst (let-> [(, _ subst) <-state] (<- subst)))
 
@@ -402,16 +382,11 @@
 
 ((** This overwrites the substitution map (without composing), returning the old substitution map. It is used for isolating a section of the algorithm, for performance reasons. **)
     defn subst-reset-> [new-subst]
-    (let-> [
-        (, idx old-subst) <-state
-        _                 (state-> (, idx new-subst))]
+    (let-> [(, idx old-subst) <-state _ (state-> (, idx new-subst))]
         (<- old-subst)))
 
 (def reset-state->
-    (let-> [
-        (, _ _) <-state
-        _       (state-> (, 0 map/nil))]
-        (<- ())))
+    (let-> [(, _ _) <-state _ (state-> (, 0 map/nil))] (<- ())))
 
 (** These are monadified versions of the */apply functions from above; they "apply the current substitution". **)
 
@@ -519,10 +494,7 @@
                                                     () (do->
                                                            (** For the "templates" of a template string, the expressions need to have type "string". **)
                                                                (fn [(, expr _ _)]
-                                                               (let-> [
-                                                                   t  (infer/expr tenv expr)
-                                                                   () (unify t (tcon "string" l) l)]
-                                                                   (<- ())))
+                                                               (let-> [t (infer/expr tenv expr) () (unify t (tcon "string" l) l)] (<- ())))
                                                                templates)]
                                                     (<- (tcon "string" l)))
         (** For lambdas (fn [name] body)
@@ -632,11 +604,7 @@
 (def env-with-pair
     (tenv/merge
         builtin-env
-            (add/stmts
-            builtin-env
-                [(@!
-                (deftype (, a b)
-                    (, a b)))])))
+            (add/stmts builtin-env [(@! (deftype (, a b) (, a b)))])))
 
 (,
     (errorToString (fn [x] (run/nil-> (infer/expr env-with-pair x))))
@@ -853,12 +821,7 @@
                                               (zip args (map (type/apply subst) cargs)))))))
 
 (pattern-to-ex-pattern
-    (add/stmt
-        builtin-env
-            (@!
-            (deftype (list a)
-                (nil)
-                    (cons a (list a)))))
+    (add/stmt builtin-env (@! (deftype (list a) (nil) (cons a (list a)))))
         (, (@p [2 a b]) (@t (list int))))
 
 (,
@@ -867,13 +830,7 @@
             builtin-env
                 (add/stmts
                 builtin-env
-                    [(@!
-                    (deftype (, a b)
-                        (, a b)))
-                    (@!
-                    (deftype (list a)
-                        (nil)
-                            (cons a (list a))))])))
+                    [(@! (deftype (, a b) (, a b))) (@! (deftype (list a) (nil) (cons a (list a))))])))
         [(,
         (, (@p [2 a b]) (@t (list int)))
             (ex/constructor
@@ -1241,9 +1198,7 @@
                         name))))
         [(,
         (,
-            [[(@!
-                (deftype (x m)
-                    (a m)))]
+            [[(@! (deftype (x m) (a m)))]
                 [(@!
                 (defn aa [x]
                     (match x
@@ -1252,31 +1207,20 @@
                 "aa")
             "(fn [(x int)] int)")
         (,
-        (,
-            [[(@! (typealias a int))
-                (@!
-                (deftype lol
-                    (elol a)))]]
-                "elol")
+        (, [[(@! (typealias a int)) (@! (deftype lol (elol a)))]] "elol")
             "(fn [int] lol)")
         (,
         (,
             [[(@! (typealias alt (, (list pat) expr)))
                 (@! (typealias bindgroup (, alt)))
-                (@!
-                (deftype expr
-                    (elet bindgroup expr int)))]
+                (@! (deftype expr (elet bindgroup expr int)))]
                 [(@! (defn x [(elet b _ _)] b))]]
                 "x")
             "(fn [expr] (, (list pat) expr))")
         (,
         (,
             [[(@! (typealias (a b) (, int b)))
-                (@!
-                (deftype hi
-                    (red int)
-                        (blue)
-                        (green (a bool))))]]
+                (@! (deftype hi (red int) (blue) (green (a bool))))]]
                 "green")
             "(fn [(, int bool)] hi)")
         ])

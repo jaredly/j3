@@ -11,12 +11,9 @@
 
 (defn hi [a] (+ a x-))
 
-(deftype (, a b)
-    (, a b))
+(deftype (, a b) (, a b))
 
-(deftype (list a)
-    (nil)
-        (cons a (list a)))
+(deftype (list a) (nil) (cons a (list a)))
 
 ,
 
@@ -24,9 +21,7 @@
 
 (hi 20)
 
-(deftype (option a)
-    (some a)
-        (none))
+(deftype (option a) (some a) (none))
 
 (defn id [x] x)
 

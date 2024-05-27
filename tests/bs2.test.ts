@@ -34,6 +34,7 @@ export type Fixture = {
 };
 
 const fixtures: Fixture[] = [
+    // Building bootstrap.json
     {
         id: 0,
         name: 'jsbootstrap -> bootstrap',
@@ -52,21 +53,20 @@ const fixtures: Fixture[] = [
         file: 'jcst.json',
         evaluator: ':javascript:',
     },
-    // The bootstrapped, VM
+
+    // The bootstrap.json -> self-1 and parse-self
     {
         id: 1,
         name: 'bootstrap -> self-1',
         file: 'self-1.json',
         evaluator: [0],
     },
-
     {
         id: 1.01,
         name: 'self-1 -> test',
         file: 'l1-tests.json',
         evaluator: [0, 1],
     },
-
     {
         id: 1.1,
         name: 'bootstrap -> parse-self',
@@ -80,14 +80,14 @@ const fixtures: Fixture[] = [
         evaluator: [0.1, 1.1, 1],
     },
 
-    {
-        id: 1.3,
-        name: 'bootstrap -> algw-fast',
-        file: 'algw-fast.json',
-        evaluator: [0],
-    },
+    // {
+    //     id: 1.3,
+    //     name: 'bootstrap -> algw-fast',
+    //     file: 'algw-fast.json',
+    //     evaluator: [0],
+    // },
 
-    // The self-compile-to-js
+    // The self-1 & parse-self  ==>  self-1 & parse-self
     {
         id: 2,
         name: 'bootstrapped-self -> self-1',
@@ -100,7 +100,8 @@ const fixtures: Fixture[] = [
         file: 'parse-self.json',
         evaluator: [0.1, 1.1, 1],
     },
-    // Using the self-js
+
+    // self-1 & parse-self (faster)  ==>  self-1, parse-self, algw-fast, algw-s2
     {
         id: 3,
         name: 'selfed-self -> self-1',
@@ -132,7 +133,8 @@ const fixtures: Fixture[] = [
         file: 'algw-s2.json',
         evaluator: [0.1, 2.1, 2, 4],
     },
-    // Testing it out
+
+    // algw-s2
     {
         id: 7,
         name: 'selfed-self+algw -> self-1',
@@ -157,6 +159,40 @@ const fixtures: Fixture[] = [
         file: 'thih.json',
         evaluator: [0.1, 2.1, 2, 6],
     },
+
+    // hmx lets build it
+    {
+        id: 11,
+        name: 'selfed-self+algw -> hmx',
+        file: 'hmx.json',
+        evaluator: [0.1, 2.1, 2, 6],
+    },
+    // hmx now try it out on stuff
+    {
+        id: 11.1,
+        name: 'selfed-self+hmx -> self-1',
+        file: 'self-1.json',
+        evaluator: [0.1, 2.1, 2, 11],
+    },
+    {
+        id: 11.2,
+        name: 'selfed-self+hmx -> algw-fast',
+        file: 'algw-fast.json',
+        evaluator: [0.1, 2.1, 2, 11],
+    },
+    {
+        id: 11.3,
+        name: 'selfed-self+hmx -> parse-self',
+        file: 'parse-self.json',
+        evaluator: [0.1, 2.1, 2, 11],
+    },
+    {
+        id: 11.4,
+        name: 'selfed-self+hmx -> thih',
+        file: 'thih.json',
+        evaluator: [0.1, 2.1, 2, 11],
+    },
+
     //
     // {
     //     id: 2.1,
