@@ -1,5 +1,9 @@
 
-# IDEA IDEA IDEA
+# HOW Aboutttt we take hmx and add records?
+
+
+
+# IDEA IDEA IDEA (algebraic effects, but a little more so)
 
 Ok so what if
 algebraic effects are trying to do too many things at once?
