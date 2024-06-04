@@ -87,6 +87,7 @@ export const fromJCST = (node: jcst): Node => {
 };
 
 export const toJCST = (node: Node): jcst | null => {
+	console.log('jcst we are doing a convert')
     switch (node.type) {
         case 'identifier':
             return { type: 'cst/id', 0: node.text, 1: node.loc };

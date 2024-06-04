@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NUIState } from '../../custom/UIState';
 import { debounce } from './reduce';
-import { useHash, saveState, loadState } from './reduce';
+import { useHash, saveState, onSaveState, loadState } from './reduce';
 import { urlForId } from './urlForId';
 import { GroundUp } from './GroundUp';
 import { useLocalStorage } from '../../Debug';
@@ -205,11 +205,18 @@ export const Loader = ({
     listing: null | string[];
 }) => {
     const latest = useRef<NUIState | null>(null);
+	const [saving, setSaving] = useState(false);
+	useEffect(() => {
+		return onSaveState(value => {
+console.log('got a save state change', value)
+			setSaving(value)
+		})
+	}, [])
 
     const save = useMemo(
         () =>
             onlyLast<{ state: NUIState }>(
-                ({ state }) => {
+                async ({ state }) => {
                     const now = Date.now();
                     // console.log(`Time since last save`, now - lastSaveTime);
                     if (now - lastSaveTime < 200) {
@@ -217,7 +224,7 @@ export const Loader = ({
                     }
                     lastSaveTime = now;
                     latest.current = state;
-                    return saveState(id, state);
+                    saveState(id, state);
                 },
                 // minimum time after last change
                 500,
@@ -278,6 +285,25 @@ export const Loader = ({
                 save={(state) => save({ state })}
                 initial={initial}
             />
+		{saving ? <Saving /> : null}
         </div>
     );
 };
+
+const Saving = () => {
+console.log('render saving I guess')
+	const [tick, setTick] = useState(null)
+	useEffect(() => {
+		const tid = setInterval(() => setTick(t => t + 1), 1000)
+		return () => clearInterval(tid)
+	}, [])
+	return <div style={{
+		position: 'fixed',
+		bottom: 0,
+		left: 0,
+		backgroundColor: 'green',
+		padding: 8,
+		zIndex: 2000
+	}}>Saving...{tick}s</div>
+}
+

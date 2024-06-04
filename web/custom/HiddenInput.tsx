@@ -44,7 +44,7 @@ export function HiddenInput({
 
     useEffect(() => {
         const key = (evt: KeyboardEvent) => {
-            if (evt.key === 'd' && evt.metaKey) {
+            if (evt.key === 'd' && (evt.metaKey || evt.ctrlKey)) {
                 evt.preventDefault();
             }
         };
@@ -161,7 +161,7 @@ export function HiddenInput({
                     });
                 }
 
-                if (evt.metaKey && evt.key === 'd') {
+                if ((evt.metaKey || evt.ctrlKey) && evt.key === 'd') {
                     evt.preventDefault();
                     const sel = state.at[0];
                     if (!sel) return;

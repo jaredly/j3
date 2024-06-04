@@ -8,6 +8,24 @@ import { ShowErrors } from './ShowErrors';
 import { collectErrors } from './collectErrors';
 import { Debug, WithStore } from './GroundUp';
 
+export function Commit() {
+	const [data, setData] = useState(null)
+return <div>
+	<button onClick={() => {
+		fetch('/data/commit').then(t => t.text()).then(d => setData(d));
+	}}>Get Info</button>
+	{data ? <pre>{data}<button onClick={() => setData(null)}>Clear</button></pre> : null}
+	<button onClick={() => {
+		fetch('/data/commit', {method: 'POST', data: 'a message idk'})
+			.then(res => {
+		console.log(res)
+		if (res.status !== 200) alert('what commit failed')
+setData(null)
+			});
+	}}>Do the commit</button>
+</div>
+}
+
 export function DebugCard({
     debug,
     setDebug,
@@ -104,6 +122,9 @@ export function DebugCard({
                     </WithStore>
                 </>
             ) : null}
+<Commit />
         </div>
     );
 }
+
+

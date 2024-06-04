@@ -39,7 +39,7 @@ export const CommandPalette = ({
 
     useEffect(() => {
         const fn = (evt: KeyboardEvent) => {
-            if (evt.metaKey && evt.key === 'p') {
+            if ((evt.metaKey || evt.ctrlKey) && evt.key === 'p') {
                 evt.preventDefault();
                 evt.stopPropagation();
                 if (evt.shiftKey) {
@@ -173,6 +173,7 @@ export const CommandPalette = ({
                         background: 'none',
                     }}
                 />
+{focus ? <button onMouseDown={evt => {evt.stopPropagation();evt.preventDefault()}} onClick={(evt) => {evt.preventDefault(); evt.stopPropagation(); setFocus(null)}}>Back</button> : null}
                 <div
                     style={{
                         overflow: 'auto',
