@@ -809,78 +809,6 @@ throw new Error('match fail 2221:' + JSON.stringify($target))
 let tenv$slresolve = ({"0": values}) => (name) => map$slget(values)(name)
 let tfn = (arg) => (body) => (l) => tapp(tapp(tcon("->")(l))(arg)(l))(body)(l)
 let tenv$slnil = tenv(map$slnil)(map$slnil)(map$slnil)(map$slnil)
-let type_$gts = (type) => (($target) => {
-if ($target.type === "trow") {
-let fields = $target[0];
-let spread = $target[1];
-let kind = $target[2];
-let loc = $target[3];
-{
-let $target = kind;
-if ($target.type === "rrecord") {
-return `{${join(" ")(map(({"1": value, "0": tag}) => `${tag} ${type_$gts(value)}`)(fields))}${(($target) => {
-if ($target.type === "none") {
-return ""
-} ;
-if ($target.type === "some") {
-let t = $target[0];
-return ` ..${type_$gts(t)}`
-} ;
-throw new Error('match fail 15846:' + JSON.stringify($target))
-})(spread)}}`
-} ;
-if ($target.type === "renum") {
-return `[${join(" ")(map(({"1": value, "0": tag}) => (($target) => {
-if ($target.type === "tcon") {
-if ($target[0] === "()") {
-return `'${tag}`
-} 
-} ;
-{
-let v = $target;
-return `('${tag} ${type_$gts(v)})`
-};
-throw new Error('match fail 15766:' + JSON.stringify($target))
-})(value))(fields))}${(($target) => {
-if ($target.type === "none") {
-return ""
-} ;
-if ($target.type === "some") {
-let t = $target[0];
-return ` ..${type_$gts(t)}`
-} ;
-throw new Error('match fail 15797:' + JSON.stringify($target))
-})(spread)}]`
-} ;
-throw new Error('match fail 14059:' + JSON.stringify($target))
-}
-} ;
-if ($target.type === "tvar") {
-let name = $target[0];
-return name
-} ;
-if ($target.type === "tapp") {
-if ($target[0].type === "tapp") {
-if ($target[0][0].type === "tcon") {
-if ($target[0][0][0] === "->") {
-let arg = $target[0][1];
-let res = $target[1];
-return `(fn [${type_$gts(arg)}] ${type_$gts(res)})`
-} 
-} 
-} 
-} ;
-if ($target.type === "tapp") {
-let target = $target[0];
-let arg = $target[1];
-return `(${type_$gts(target)} ${type_$gts(arg)})`
-} ;
-if ($target.type === "tcon") {
-let name = $target[0];
-return name
-} ;
-throw new Error('match fail 3224:' + JSON.stringify($target))
-})(type)
 let tfns = (args) => (body) => (l) => foldr(body)(args)((body) => (arg) => tfn(arg)(body)(l))
 let tint = tcon("int")(-1)
 let type$slcon_to_var = (vars) => (type) => (($target) => {
@@ -960,16 +888,6 @@ return tenv(map$slfrom_list(cons($co("+")(concrete(tfns(cons(tint)(cons(tint)(ni
 }
 })()
 let tenv$slwith_scope = ({"3": aliases, "2": types, "1": tcons, "0": values}) => (scope) => tenv(map$slmerge(scope)(values))(tcons)(types)(aliases)
-let scheme_$gts = ({"1": type, "0": vbls}) => (($target) => {
-if ($target.type === "nil") {
-return type_$gts(type)
-} ;
-{
-let vbls = $target;
-return `forall ${join(" ")(vbls)} : ${type_$gts(type)}`
-};
-throw new Error('match fail 6284:' + JSON.stringify($target))
-})(set$slto_list(vbls))
 let tcon_and_args = (type) => (coll) => (l) => (($target) => {
 if ($target.type === "trow") {
 return fatal("cant apply a row type")
@@ -1148,7 +1066,6 @@ throw new Error('match fail 15547:' + JSON.stringify($target))
 } ;
 throw new Error('match fail 15470:' + JSON.stringify($target))
 })(t)
-let substs_$gts = (substs) => join("\n")(map(({"1": t, "0": k}) => `${k} => ${type_$gts(t)}`)(map$slto_list(substs)))
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -1177,6 +1094,87 @@ let twrap = (v0) => (v1) => ({type: "twrap", 0: v0, 1: v1})
 let tmissing = (v0) => ({type: "tmissing", 0: v0})
 let scheme$slapply = (subst) => ({"1": type, "0": vbls}) => forall(vbls)(type$slapply(map_without(subst)(vbls))(type))
 let instantiate = ({"1": t, "0": vars}) => (l) => $gt$gt$eq(make_subst_for_free(vars)(l))((subst) => $lt_(type$slapply(subst)(t)))
+let type_$gts = (type) => (($target) => {
+if ($target.type === "trow") {
+let fields = $target[0];
+let spread = $target[1];
+let kind = $target[2];
+let loc = $target[3];
+{
+let spread$$0 = spread;
+{
+let {"1": spread, "0": fmap} = deep_map(fields)(spread$$0)(kind);
+{
+let fields = map$slto_list(fmap);
+{
+let $target = kind;
+if ($target.type === "rrecord") {
+return `{${join(" ")(map(({"1": value, "0": tag}) => `${tag} ${type_$gts(value)}`)(fields))}${(($target) => {
+if ($target.type === "none") {
+return ""
+} ;
+if ($target.type === "some") {
+let t = $target[0];
+return ` ..${type_$gts(t)}`
+} ;
+throw new Error('match fail 15846:' + JSON.stringify($target))
+})(spread)}}`
+} ;
+if ($target.type === "renum") {
+return `[${join(" ")(map(({"1": value, "0": tag}) => (($target) => {
+if ($target.type === "tcon") {
+if ($target[0] === "()") {
+return `'${tag}`
+} 
+} ;
+{
+let v = $target;
+return `('${tag} ${type_$gts(v)})`
+};
+throw new Error('match fail 15766:' + JSON.stringify($target))
+})(value))(fields))}${(($target) => {
+if ($target.type === "none") {
+return ""
+} ;
+if ($target.type === "some") {
+let t = $target[0];
+return ` ..${type_$gts(t)}`
+} ;
+throw new Error('match fail 15797:' + JSON.stringify($target))
+})(spread)}]`
+} ;
+throw new Error('match fail 14059:' + JSON.stringify($target))
+}
+}
+}
+}
+} ;
+if ($target.type === "tvar") {
+let name = $target[0];
+return name
+} ;
+if ($target.type === "tapp") {
+if ($target[0].type === "tapp") {
+if ($target[0][0].type === "tcon") {
+if ($target[0][0][0] === "->") {
+let arg = $target[0][1];
+let res = $target[1];
+return `(fn [${type_$gts(arg)}] ${type_$gts(res)})`
+} 
+} 
+} 
+} ;
+if ($target.type === "tapp") {
+let target = $target[0];
+let arg = $target[1];
+return `(${type_$gts(target)} ${type_$gts(arg)})`
+} ;
+if ($target.type === "tcon") {
+let name = $target[0];
+return name
+} ;
+throw new Error('match fail 3224:' + JSON.stringify($target))
+})(type)
 let add$sltypealias = ({"3": aliases, "2": types, "1": tcons, "0": values}) => (name) => (args) => (type) => tenv(map$slnil)(map$slnil)(map$slnil)(map$slset(map$slnil)(name)($co(map(fst)(args))(type$slcon_to_var(set$slfrom_list(map(fst)(args)))(type))))
 let type$slresolve_aliases = (aliases) => (type) => {
 let {"1": args, "0": target} = type$slunroll_app(type);
@@ -1269,6 +1267,16 @@ throw new Error('match fail 6714:' + JSON.stringify($target))
 let scope$slapply = (subst) => (scope) => map$slmap(scheme$slapply(subst))(scope)
 let scope$slapply_$gt = apply_$gt(scope$slapply)
 let scheme$slapply_$gt = apply_$gt(scheme$slapply)
+let scheme_$gts = ({"1": type, "0": vbls}) => (($target) => {
+if ($target.type === "nil") {
+return type_$gts(type)
+} ;
+{
+let vbls = $target;
+return `forall ${join(" ")(vbls)} : ${type_$gts(type)}`
+};
+throw new Error('match fail 6284:' + JSON.stringify($target))
+})(set$slto_list(vbls))
 let pattern_to_ex_pattern = (tenv) => ({"1": type, "0": pattern}) => (($target) => {
 if ($target.type === "pvar") {
 return ex$slany
@@ -1281,8 +1289,45 @@ let l = $target[2];
 return fatal("no what record")
 } ;
 if ($target.type === "penum") {
+let tag = $target[0];
+let tl = $target[1];
+let arg = $target[2];
 let l = $target[3];
-return fatal("hrrm enum")
+{
+let $target = type;
+if ($target.type === "trow") {
+let fields = $target[0];
+let spread = $target[1];
+let kind = $target[2];
+let l = $target[3];
+{
+let spread$$0 = spread;
+{
+let {"1": spread, "0": map} = deep_map(fields)(spread$$0)(kind);
+{
+let $target = map$slget(map)(tag);
+if ($target.type === "none") {
+return fatal(`enum variant ${tag} not contained in type`)
+} ;
+if ($target.type === "some") {
+let argt = $target[0];
+return ex$slconstructor(tag)("umtags")((($target) => {
+if ($target.type === "some") {
+let arg = $target[0];
+return cons(pattern_to_ex_pattern(tenv)($co(arg)(argt)))(nil)
+} ;
+return nil;
+throw new Error('match fail 16396:' + JSON.stringify($target))
+})(arg))
+} ;
+throw new Error('match fail 16370:' + JSON.stringify($target))
+}
+}
+}
+} ;
+return fatal("enum type not a record");
+throw new Error('match fail 14445:' + JSON.stringify($target))
+}
 } ;
 if ($target.type === "pstr") {
 let str = $target[0];
@@ -1524,6 +1569,7 @@ return l
 } ;
 throw new Error('match fail 13630:' + JSON.stringify($target))
 })(expr)
+let substs_$gts = (substs) => join("\n")(map(({"1": t, "0": k}) => `${k} => ${type_$gts(t)}`)(map$slto_list(substs)))
 let tenv$slapply = (subst) => ({"3": aliases, "2": types, "1": tcons, "0": values}) => tenv(scope$slapply(subst)(values))(tcons)(types)(aliases)
 let var_bind = ($var) => (type) => (l) => (($target) => {
 if ($target.type === "tvar") {

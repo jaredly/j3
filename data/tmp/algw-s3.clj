@@ -107,6 +107,7 @@
 (deftype cst
     (cst/list (list cst) int)
         (cst/array (list cst) int)
+        (cst/record (list cst) int)
         (cst/spread cst int)
         (cst/id string int)
         (cst/string string (list (, cst string int)) int))
@@ -126,14 +127,19 @@
         (elambda (list pat) expr int)
         (eapp expr (list expr) int)
         (elet (list (, pat expr)) expr int)
-        (ematch expr (list (, pat expr)) int))
+        (ematch expr (list (, pat expr)) int)
+        (eenum string int (option expr) int)
+        (erecord (option expr) (list (, string expr)) int)
+        (eaccess (option (, string int)) (list (, string int)) int))
 
 (deftype pat
     (pany int)
         (pvar string int)
         (pcon string int (list pat) int)
         (pstr string int)
-        (pprim prim int))
+        (pprim prim int)
+        (precord (list (, string pat)) (option pat) int)
+        (penum string int (option pat) int))
 
 (deftype type
     (tvar string int)
@@ -145,8 +151,11 @@
     (rrecord)
         (renum))
 
+
+
 (defn type= [one two]
     (match (, one two)
+        (, (trow _ _ _ _) (trow _ _ _ _))             (fatal "not impl")
         (, (tvar id _) (tvar id' _))                  (= id id')
         (, (tapp target arg _) (tapp target' arg' _)) (if (type= target target')
                                                           (type= arg arg')
@@ -168,6 +177,23 @@
 
 (defn type->s [type]
     (match type
+        (trow fields spread kind loc)           (let [
+                                                    (, fmap spread) (deep-map fields spread kind)
+                                                    fields          (map/to-list fmap)]
+                                                    (match kind
+                                                        (rrecord) "{${(join " " (map (fn [(, tag value)] "${tag} ${(type->s value)}") fields))}${(match spread
+                                                                      (none)   ""
+                                                                      (some t) " ..${(type->s t)}")}}"
+                                                        (renum)   "[${(join
+                                                                      " "
+                                                                          (map
+                                                                          (fn [(, tag value)]
+                                                                              (match value
+                                                                                  (tcon "()" _) "'${tag}"
+                                                                                  v             "('${tag} ${(type->s v)})"))
+                                                                              fields))}${(match spread
+                                                                      (none)   ""
+                                                                      (some t) " ..${(type->s t)}")}]"))
         (tvar name _)                           name
         (tapp (tapp (tcon "->" _) arg _) res _) "(fn [${(type->s arg)}] ${(type->s res)})"
         (tapp target arg _)                     "(${(type->s target)} ${(type->s arg)})"
@@ -187,6 +213,7 @@
 
 (defn type->cst [type]
     (match type
+        (trow fields spread kind l)         (cst/record [] l)
         (tvar name l)                       (cst/id name l)
         (tcon name l)                       (cst/id name l)
         (tapp (tapp (tcon "->" _) _ _) _ l) (let [(, args res) (fn-args-and-body type)]
@@ -240,9 +267,15 @@
 
 (defn type/free [type]
     (match type
-        (tvar id _)  (set/add set/nil id)
-        (tcon _ _)   set/nil
-        (tapp a b _) (set/merge (type/free a) (type/free b))))
+        (trow fields spread kind loc) (foldl
+                                          (match spread
+                                              (none)   set/nil
+                                              (some v) (type/free v))
+                                              (map (fn [(, _ t)] (type/free t)) fields)
+                                              set/merge)
+        (tvar id _)                   (set/add set/nil id)
+        (tcon _ _)                    set/nil
+        (tapp a b _)                  (set/merge (type/free a) (type/free b))))
 
 (defn scheme/free [(forall vbls type)]
     (set/diff (type/free type) vbls))
@@ -260,11 +293,18 @@
 
 (defn type/apply [subst type]
     (match type
-        (tvar id _)           (match (map/get subst id)
-                                  (none)   type
-                                  (some t) t)
-        (tapp target arg loc) (tapp (type/apply subst target) (type/apply subst arg) loc)
-        _                     type))
+        (tvar id _)              (match (map/get subst id)
+                                     (none)   type
+                                     (some t) t)
+        (tapp target arg loc)    (tapp (type/apply subst target) (type/apply subst arg) loc)
+        (trow fields spread k l) (trow
+                                     (map (fn [(, n t)] (, n (type/apply subst t))) fields)
+                                         (match spread
+                                         (none)   spread
+                                         (some t) (some (type/apply subst t)))
+                                         k
+                                         l)
+        _                        type))
 
 (,
     (type/apply (map/from-list [(, "a" (tcon "int" -1))]))
@@ -349,7 +389,12 @@
 
 ((** Given a StateT and an initial state, this will evaluate the contained function and give you the final result. **)
     defn run-> [(StateT f) state]
-    (let [(, _ result) (f state)] result))
+    (let [(, (, _ substs _) result) (f state)] result))
+
+(defn substs->s [substs]
+    (join
+        "\n"
+            (map (fn [(, k t)] "${k} => ${(type->s t)}") (map/to-list substs))))
 
 ((** Get the current state **)
     def <-state
@@ -540,19 +585,144 @@
             (fn [inner]
             (err (twrap (ttypes (forall set/nil t1) (forall set/nil t2)) inner)))))
 
+(def starts-with
+    (eval "(prefix) => (str) => str.startsWith(prefix)"))
+
+(defn quot-tvar [t]
+    (match t
+        (tvar _ _)               t
+        (tcon name l)            (if (starts-with "'" name)
+                                     (tvar name l)
+                                         t)
+        (tapp target arg l)      (tapp (quot-tvar target) (quot-tvar arg) l)
+        (trow fields spread k l) (trow
+                                     (map (fn [(, name type)] (, name (quot-tvar type))) fields)
+                                         (match spread
+                                         (none)   (none)
+                                         (some t) (some (quot-tvar t)))
+                                         k
+                                         l)))
+
+(,
+    (fn [(, t1 t2)]
+        (run/nil->
+            (let-> [
+                t1    (<- (quot-tvar t1))
+                t2    (<- (quot-tvar t2))
+                ()    (unify t1 t2 -1)
+                subst <-subst]
+                (<- (, (type/apply subst t1) (type/apply subst t2))))))
+        [(, (, (@t abc) (@t 'a)) (ok (, (tcon "abc" 15601) (tcon "abc" 15601)))) (,  )])
+
+(defn identify-unique [fields1 spread1 fields2 spread2 k]
+    (let [
+        (, map1 spread1) (deep-map fields1 spread1 k)
+        (, map2 spread2) (deep-map fields2 spread2 k)
+        (, u1 shared u2) (partition-keys map1 map2)]
+        (let-> [_ (map-> (fn [(, key t1 t2)] (unify t1 t2 -1)) shared)]
+            (<- (, u1 spread1 u2 spread2)))))
+
+(defn filter [f lst]
+    (match lst
+        []           []
+        [one ..rest] (if (f one)
+                         [one ..(filter f rest)]
+                             (filter f rest))))
+
+(defn partition [f lst]
+    (loop
+        (, lst [] [])
+            (fn [(, lst yes no) recur]
+            (match lst
+                []           (, yes no)
+                [one ..rest] (if (f one)
+                                 (recur (, rest [one ..yes] no))
+                                     (recur (, rest yes [one ..no])))))))
+
+(defn is-some [v]
+    (match v
+        (some _) true
+        _        false))
+
+(defn not [x]
+    (if x
+        false
+            true))
+
+(defn partition-keys [map1 map2]
+    (let [
+        (, shared unique) (loop
+                              (, (map/to-list map1) [] [])
+                                  (fn [(, items shared unique) recur]
+                                  (match items
+                                      []                     (, shared unique)
+                                      [(, key value) ..rest] (match (map/get map2 key)
+                                                                 (some value2) (recur (, rest [(, key value value2) ..shared] unique))
+                                                                 _             (recur (, rest shared [(, key value) ..unique]))))))]
+        (,
+            unique
+                shared
+                (foldl
+                []
+                    (map/to-list map2)
+                    (fn [unique (, key value)]
+                    (match (map/get map1 key)
+                        (none) [(, key value) ..unique]
+                        _      unique))))))
+
+(partition-keys
+    (map/from-list [(, 1 2) (, 3 4)])
+        (map/from-list [(, 1 3) (, 4 5) (, 5 6)]))
+
+(defn deep-map [fields spread k]
+    (let [map (map/from-list fields)]
+        (match spread
+            (some (trow fields spread k2 l)) (if (!= k2 k)
+                                                 (fatal "wrong kind")
+                                                     (let [(, map2 spread) (deep-map fields spread k)]
+                                                     (, (map/merge map map2) spread)))
+            _                                (, map spread))))
+
+(defn wrap-ok [t] (let-> [v t] (<- (some v))))
+
 (defn unify-inner [t1 t2 l]
     (match (, t1 t2)
-        (, (tvar var l) t)                 (var-bind var t l)
-        (, t (tvar var l))                 (var-bind var t l)
-        (, (tcon a la) (tcon b lb))        (if (= a b)
-                                               (<- ())
-                                                   (<-mismatch t1 t2))
-        (, (tapp t1 a1 _) (tapp t2 a2 _) ) (let-> [
-                                               ()    (unify-inner t1 t2 l)
-                                               subst <-subst
-                                               ()    (unify-inner (type/apply subst a1) (type/apply subst a2) l)]
-                                               (<- ()))
-        _                                  (<-mismatch t1 t2)))
+        (, (tvar var l) t)                       (var-bind var t l)
+        (, t (tvar var l))                       (var-bind var t l)
+        (, (tcon a la) (tcon b lb))              (if (= a b)
+                                                     (<- ())
+                                                         (<-mismatch t1 t2))
+        (, (trow f1 s1 k1 l) (trow f2 s2 k2 l2)) (if (!= k1 k2)
+                                                     (<-err "enum and record dont match")
+                                                         (let-> [
+                                                         (, u1 s1 u2 s2) (identify-unique f1 s1 f2 s2 k1)
+                                                         open            (<-
+                                                                             (match (, s1 s2)
+                                                                                 (, (some _) (some _)) true
+                                                                                 _                     false))
+                                                         _               (match (, s1 u2)
+                                                                             (, _ [])        (<- ())
+                                                                             (, (some s1) _) (let-> [
+                                                                                                 v2 (if open
+                                                                                                        (wrap-ok (new-type-var "row" l))
+                                                                                                            (<- none))]
+                                                                                                 (unify s1 (trow u2 v2 k1 l) l))
+                                                                             _               (<-err "unique fields on the right but no spread on the left"))
+                                                         _               (match (, s2 u1)
+                                                                             (, _ [])        (<- ())
+                                                                             (, (some s2) _) (let-> [
+                                                                                                 v1 (if open
+                                                                                                        (wrap-ok (new-type-var "row" l))
+                                                                                                            (<- none))]
+                                                                                                 (unify s2 (trow u1 v1 k2 l) l))
+                                                                             _               (<-err "unique fields on the left but no spread on the right"))]
+                                                         (<- ())))
+        (, (tapp t1 a1 _) (tapp t2 a2 _) )       (let-> [
+                                                     ()    (unify-inner t1 t2 l)
+                                                     subst <-subst
+                                                     ()    (unify-inner (type/apply subst a1) (type/apply subst a2) l)]
+                                                     (<- ()))
+        _                                        (<-mismatch t1 t2)))
 
 (defn one-subst [var type] (map/from-list [(, var type)]))
 
@@ -593,10 +763,13 @@
         The downside to our approach is we end up doing a lot of unrelated compositions, because everything gets dumped into one big map. This has exponential time complexity, slowing things way down. Fortunately, this little trick here mitigates all of the performance hit that I saw in practice (it achieves the same performance as passing around substitution maps manually).
         As with the tenv, we could come up with a data structure with even better performance characteristics for composing substitution maps, if it ended up being an issue. **)
         (let-> [
-        old  (subst-reset-> map/nil)
+        ;old
+        ;(subst-reset-> map/nil)
         type (infer/expr-inner tenv expr)
-        new  (subst-reset-> old)
-        ()   (subst-> new)
+        ;new
+        ;(subst-reset-> old)
+        ;()
+        ;(subst-> new)
         ()   (record-type-> type (expr-loc expr) false)]
         (<- type)))
 
@@ -609,7 +782,10 @@
         (elambda _ _ l) l
         (eapp _ _ l)    l
         (ematch _ _ l)  l
-        (elet _ _ l)    l))
+        (elet _ _ l)    l
+        (erecord _ _ l) l
+        (eenum _ _ _ l) l
+        (eaccess _ _ l) l))
 
 (defn record-if-generic [(forall free t) l]
     (match (set/to-list free)
@@ -619,6 +795,43 @@
 
 (defn infer/expr-inner [tenv expr]
     (match expr
+        (erecord spread items l)                 (let-> [
+                                                     spread (match spread
+                                                                (none)      (<- none)
+                                                                (some expr) (let-> [type (infer/expr tenv expr)] (<- (some type))))
+                                                     items  (map->
+                                                                (fn [(, name value)]
+                                                                    (let-> [value (infer/expr tenv value)] (<- (, name value))))
+                                                                    items)
+                                                     spread (match spread
+                                                                (none)        (<- none)
+                                                                (some spread) (let-> [
+                                                                                  t (new-type-var "record" l)
+                                                                                  _ (unify (trow items (some t) (rrecord) l) spread l)
+                                                                                  t (type/apply-> t)]
+                                                                                  (<- (some t))))]
+                                                     (type/apply-> (trow items spread (rrecord) l)))
+        (eaccess target [(, attr al)] l)         (match target
+                                                     (none)             (let-> [
+                                                                            t (new-type-var "record" l)
+                                                                            a (new-type-var attr l)]
+                                                                            (<- (tfn (trow [(, attr a)] (some t) (rrecord) l) a l)))
+                                                     (some (, name nl)) (let-> [
+                                                                            target (match (tenv/resolve tenv name)
+                                                                                       (none)        (<-missing name nl)
+                                                                                       (some scheme) (let-> [() (record-if-generic scheme l)] (instantiate scheme nl)))
+                                                                            target (type/apply-> target)
+                                                                            t      (new-type-var "record" l)
+                                                                            at     (new-type-var attr al)
+                                                                            _      (unify target (trow [(, attr at)] (some t) (rrecord) l) l)]
+                                                                            (type/apply-> at)))
+        (eaccess target _ l)                     (fatal "not yet")
+        (eenum tag nl arg l)                     (let-> [
+                                                     t   (new-type-var tag nl)
+                                                     arg (match arg
+                                                             (none)     (<- (tcon "()" nl))
+                                                             (some arg) (infer/expr tenv arg))]
+                                                     (<- (trow [(, tag arg)] (some t) (renum) l)))
         (evar name l)                            (match (tenv/resolve tenv name)
                                                      (none)        (<-missing name l)
                                                      (some scheme) (let-> [() (record-if-generic scheme l)] (instantiate scheme l)))
@@ -730,6 +943,56 @@
     (fn [x] (run/nil-> (infer/expr benv-with-pair x)))
         [(, (@ 10) (ok (tcon "int" 4512)))
         (, (@ hi) (err (tmissing [(, "hi" 4531)])))
+        (, (@ {a 2}) (ok (trow [(, "a" (tcon "int" 14459))] (none) (rrecord) 14456)))
+        (,
+        (@ {..{a 2 b 1} b 3})
+            (ok
+            (trow
+                [(, "b" (tcon "int" 15646))]
+                    (some (trow [(, "a" (tcon "int" 15644))] (none) (rrecord) 15637))
+                    (rrecord)
+                    15637)))
+        (,
+        (@ (fn [x] "${x.a}"))
+            (ok
+            (tapp
+                (tapp
+                    (tcon "->" 15904)
+                        (trow
+                        [(, "a" (tcon "string" 15908))]
+                            (some (tvar "record:1" 15912))
+                            (rrecord)
+                            15912)
+                        15904)
+                    (tcon "string" 15908)
+                    15904)))
+        (,
+        (@ (fn [x] "${x.a} ${x.b}"))
+            (ok
+            (tapp
+                (tapp
+                    (tcon "->" 16240)
+                        (trow
+                        [(, "a" (tcon "string" 16244))]
+                            (some
+                            (trow
+                                [(, "b" (tcon "string" 16244))]
+                                    (some (tvar "row:5" 16248))
+                                    (rrecord)
+                                    16248))
+                            (rrecord)
+                            16248)
+                        16240)
+                    (tcon "string" 16244)
+                    16240)))
+        (,
+        (@ 'hi)
+            (ok
+            (trow [(, "hi" (tcon "()" 14484))] (some (tvar "hi:0" 14484)) (renum) 14484)))
+        (,
+        (@ ('hi 2))
+            (ok
+            (trow [(, "hi" (tcon "int" 14524))] (some (tvar "hi:0" 14523)) (renum) 14522)))
         (, (@ (let [x 10] x)) (ok (tcon "int" 4547)))
         (,
         (@ (, 1 2))
@@ -871,31 +1134,51 @@
 ((** Here we are producing (1) a type for the pattern, and (2) a "scope" mapping of names to type variables. **)
     defn infer/pattern [tenv pattern]
     (match pattern
-        (pvar name l)         (let-> [
-                                  v  (new-type-var name l)
-                                  () (record-type-> v l false)]
-                                  (<- (, v (map/from-list [(, name (forall set/nil v))]))))
-        (pany l)              (let-> [v (new-type-var "any" l)] (<- (, v map/nil)))
-        (pstr _ l)            (<- (, (tcon "string" l) map/nil))
-        (pprim (pbool _ _) l) (<- (, (tcon "bool" l) map/nil))
-        (pprim (pint _ _) l)  (<- (, (tcon "int" l) map/nil))
+        (pvar name l)             (let-> [
+                                      v  (new-type-var name l)
+                                      () (record-type-> v l false)]
+                                      (<- (, v (map/from-list [(, name (forall set/nil v))]))))
+        (pany l)                  (let-> [v (new-type-var "any" l)] (<- (, v map/nil)))
+        (pstr _ l)                (<- (, (tcon "string" l) map/nil))
+        (pprim (pbool _ _) l)     (<- (, (tcon "bool" l) map/nil))
+        (pprim (pint _ _) l)      (<- (, (tcon "int" l) map/nil))
+        (precord fields spread l) (let-> [
+                                      tfields            (map->
+                                                             (fn [(, name pat)]
+                                                                 (let-> [(, arg scope) (infer/pattern tenv pat)]
+                                                                     (<- (, (, name arg) scope))))
+                                                                 fields)
+                                      (, tfields scopes) (<- (unzip tfields))
+                                      (, spread sscope)  (match spread
+                                                             (none)   (let-> [t (new-type-var "record-spread" l)] (<- (, t map/nil)))
+                                                             (some t) (infer/pattern tenv t))]
+                                      (<-
+                                          (,
+                                              (trow tfields (some spread) rrecord l)
+                                                  (foldl sscope scopes map/merge))))
+        (penum tag tl arg l)      (let-> [
+                                      (, carg scope) (match arg
+                                                         (some arg) (infer/pattern tenv arg)
+                                                         _          (<- (, (tcon "()" tl) map/nil)))
+                                      t              (new-type-var tag tl)]
+                                      (<- (, (trow [(, tag carg)] (some t) renum l) scope)))
         (** This is the only really complex case.
             cannot convert {"id":"8dc25efa-f2e6-431d-b516-a2dcbec00fec","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"instantiate the type constructor","styles":{}}],"children":[]}
             cannot convert {"id":"fbc62acd-aa18-4fde-9aaf-f465cc5b0860","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"infer the types for the pattern arguments","styles":{}}],"children":[]}
             cannot convert {"id":"d4cdaae3-0b80-4226-9b11-306ff6533ea4","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"unify the pattern types with the expected constructor types","styles":{}}],"children":[]}
             cannot convert {"id":"5631b441-770a-402c-b026-d53be33aa320","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"apply any substitutions to the type constructor's \"result\" type","styles":{}}],"children":[]}
             cannot convert {"id":"9de5a662-ca3d-422b-aef1-a621140eebaa","type":"numberedListItem","props":{"textColor":"default","backgroundColor":"default","textAlignment":"left"},"content":[{"type":"text","text":"merge all the sub scopes together","styles":{}}],"children":[]} **)
-        (pcon name _ args l)  (let-> [
-                                  (, cargs cres)       (instantiate-tcon tenv name l)
-                                  ()                   (record-type-> (tfns cargs cres l) l false)
-                                  sub-patterns         (map-> (infer/pattern tenv) args)
-                                  (, arg-types scopes) (<- (unzip sub-patterns))
-                                  ()                   (do->
-                                                           (fn [(, ptype ctype)] (unify ptype ctype l))
-                                                               (zip arg-types cargs))
-                                  cres                 (type/apply-> cres)
-                                  scope                (<- (foldl map/nil scopes map/merge))]
-                                  (<- (, cres scope)))))
+        (pcon name _ args l)      (let-> [
+                                      (, cargs cres)       (instantiate-tcon tenv name l)
+                                      ()                   (record-type-> (tfns cargs cres l) l false)
+                                      sub-patterns         (map-> (infer/pattern tenv) args)
+                                      (, arg-types scopes) (<- (unzip sub-patterns))
+                                      ()                   (do->
+                                                               (fn [(, ptype ctype)] (unify ptype ctype l))
+                                                                   (zip arg-types cargs))
+                                      cres                 (type/apply-> cres)
+                                      scope                (<- (foldl map/nil scopes map/merge))]
+                                      (<- (, cres scope)))))
 
 ((** This looks up a type constructor definition, and replaces any free variables in the arguments & result type with fresh type variables. **)
     defn instantiate-tcon [(tenv _ tcons _ _) name l]
@@ -940,6 +1223,18 @@
     (match pattern
         (pvar _ _)            (ex/any)
         (pany _)              (ex/any)
+        (precord _ _ l)       (fatal "no what record")
+        (penum tag tl arg l)  (match type
+                                  (trow fields spread kind l) (let [(, map spread) (deep-map fields spread kind)]
+                                                                  (match (map/get map tag)
+                                                                      (none)      (fatal "enum variant ${tag} not contained in type")
+                                                                      (some argt) (ex/constructor
+                                                                                      tag
+                                                                                          "umtags"
+                                                                                          (match arg
+                                                                                          (some arg) [(pattern-to-ex-pattern tenv (, arg argt))]
+                                                                                          _          []))))
+                                  _                           (fatal "enum type not a record"))
         (pstr str _)          (ex/constructor str "string" [])
         (pprim (pint v _) _)  (ex/constructor (int-to-string v) "int" [])
         (pprim (pbool v _) _) (ex/constructor
@@ -1012,6 +1307,7 @@
 
 (defn tcon-and-args [type coll l]
     (match type
+        (trow _ _ _ _)      (fatal "cant apply a row type")
         (tvar _ _)          (fatal
                                 "Type not resolved ${(int-to-string l)} it is a tvar at heart. ${(jsonify type)} ${(jsonify coll)}")
         (tcon name _)       (, name coll)
@@ -1179,6 +1475,9 @@
             (map/to-list values)))
         [(, (@! (def x 10)) [(, "x" (forall set/nil (tcon "int" 3024)))])
         (,
+        (@! (def x {}))
+            [(, "x" (forall (map/from-list []) (trow [] (none) (rrecord) 14145)))])
+        (,
         (@! (defn id [x] x))
             [(,
             "id"
@@ -1294,11 +1593,12 @@
 
 (defn type/con-to-var [vars type]
     (match type
-        (tvar _ _)    type
-        (tcon name l) (if (set/has vars name)
-                          (tvar name l)
-                              type)
-        (tapp a b l)  (tapp (type/con-to-var vars a) (type/con-to-var vars b) l)))
+        (trow _ _ _ _) (fatal "cant apply a row")
+        (tvar _ _)     type
+        (tcon name l)  (if (set/has vars name)
+                           (tvar name l)
+                               type)
+        (tapp a b l)   (tapp (type/con-to-var vars a) (type/con-to-var vars b) l)))
 
 (defn type/resolve-aliases [aliases type]
     (let [
