@@ -938,7 +938,7 @@ if ($target.type === "j/pobj") {
 let items = $target[0];
 let spread = $target[1];
 let l = $target[2];
-return `{${join(", ")(map(items)((pair) => `\"${escape_string(fst(pair))}\": ${pat_arg(ctx)(snd(pair))}`))}}${(($target) => {
+return `{${join(", ")(map(items)((pair) => `\"${escape_string(fst(pair))}\": ${pat_arg(ctx)(snd(pair))}`))}${(($target) => {
 if ($target.type === "some") {
 {
 let s = $target[0];
@@ -949,7 +949,7 @@ if ($target.type === "none") {
 return ""
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(spread)}`
+})(spread)}}`
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));

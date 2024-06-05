@@ -1225,46 +1225,66 @@
 
 (defn pattern-to-ex-pattern [tenv (, pattern type)]
     (match pattern
-        (pvar _ _)            (ex/any)
-        (pany _)              (ex/any)
-        (precord _ _ l)       (fatal "no what record")
-        (penum tag tl arg l)  (match type
-                                  (trow fields spread kind l) (let [(, map spread) (deep-map fields spread kind)]
-                                                                  (match (map/get map tag)
-                                                                      (none)      (fatal "enum variant ${tag} not contained in type")
-                                                                      (some argt) (ex/constructor
-                                                                                      tag
-                                                                                          (match spread
-                                                                                          (none) (gnames (map/keys map))
-                                                                                          _      (ginf))
-                                                                                          (match arg
-                                                                                          (some arg) [(pattern-to-ex-pattern tenv (, arg argt))]
-                                                                                          _          []))))
-                                  _                           (fatal "enum type not a record"))
-        (pstr str _)          (ex/constructor str ginf [])
-        (pprim (pint v _) _)  (ex/constructor (int-to-string v) ginf [])
-        (pprim (pbool v _) _) (ex/constructor
-                                  (if v
-                                      "true"
-                                          "false")
-                                      (gnames ["true" "false"])
-                                      [])
-        (pcon name _ args l)  (let [
-                                  (, tname targs)           (tcon-and-args type [] l)
-                                  (tenv _ tcons types _)    tenv
-                                  (, free-names cargs cres) (match (map/get tcons name)
-                                                                (none)   (fatal "Unknown type constructor ${name}")
-                                                                (some v) v)
-                                  ;  do we need to assert that `cres` is the same as `type`? At this point it should be moot...
-                                  subst                     (map/from-list (zip free-names targs))]
-                                  (ex/constructor
-                                      name
-                                          (match (map/get types tname)
-                                          (some (, _ names)) (gnames (set/to-list names))
-                                          _                  (fatal "Unknown type ${tname}"))
-                                          (map
-                                          (pattern-to-ex-pattern tenv)
-                                              (zip args (map (type/apply subst) cargs)))))))
+        (pvar _ _)                  (ex/any)
+        (pany _)                    (ex/any)
+        (precord pfields pspread l) (match type
+                                        (trow fields spread kind l) (let [
+                                                                        (, fmap spread) (deep-map fields spread kind)
+                                                                        field-ex        (map
+                                                                                            (fn [(, name pat)]
+                                                                                                (match (map/get fmap name)
+                                                                                                    (none)   (fatal "record unknown key ${name}")
+                                                                                                    (some t) (pattern-to-ex-pattern tenv (, pat t))))
+                                                                                                pfields)]
+                                                                        (ex/constructor
+                                                                            "record"
+                                                                                (gnames ["record"])
+                                                                                (match pspread
+                                                                                (none)     field-ex
+                                                                                (some pat) (let [
+                                                                                               spread-fields (map/to-list
+                                                                                                                 (foldl fmap pfields (fn [map (, name _)] (map/rm map name))))]
+                                                                                               [(pattern-to-ex-pattern
+                                                                                                   tenv
+                                                                                                       (, pat (trow spread-fields spread kind l)))]))))
+                                        _                           (fatal "record type not a row"))
+        (penum tag tl arg l)        (match type
+                                        (trow fields spread kind l) (let [(, map spread) (deep-map fields spread kind)]
+                                                                        (match (map/get map tag)
+                                                                            (none)      (fatal "enum variant ${tag} not contained in type")
+                                                                            (some argt) (ex/constructor
+                                                                                            tag
+                                                                                                (match spread
+                                                                                                (none) (gnames (map/keys map))
+                                                                                                _      (ginf))
+                                                                                                (match arg
+                                                                                                (some arg) [(pattern-to-ex-pattern tenv (, arg argt))]
+                                                                                                _          []))))
+                                        _                           (fatal "enum type not a row"))
+        (pstr str _)                (ex/constructor str ginf [])
+        (pprim (pint v _) _)        (ex/constructor (int-to-string v) ginf [])
+        (pprim (pbool v _) _)       (ex/constructor
+                                        (if v
+                                            "true"
+                                                "false")
+                                            (gnames ["true" "false"])
+                                            [])
+        (pcon name _ args l)        (let [
+                                        (, tname targs)           (tcon-and-args type [] l)
+                                        (tenv _ tcons types _)    tenv
+                                        (, free-names cargs cres) (match (map/get tcons name)
+                                                                      (none)   (fatal "Unknown type constructor ${name}")
+                                                                      (some v) v)
+                                        ;  do we need to assert that `cres` is the same as `type`? At this point it should be moot...
+                                        subst                     (map/from-list (zip free-names targs))]
+                                        (ex/constructor
+                                            name
+                                                (match (map/get types tname)
+                                                (some (, _ names)) (gnames (set/to-list names))
+                                                _                  (fatal "Unknown type ${tname}"))
+                                                (map
+                                                (pattern-to-ex-pattern tenv)
+                                                    (zip args (map (type/apply subst) cargs)))))))
 
 (pattern-to-ex-pattern
     (err-to-fatal

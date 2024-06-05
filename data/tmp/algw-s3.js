@@ -1262,8 +1262,51 @@ if ($target.type === "pany") {
 return ex$slany
 } ;
 if ($target.type === "precord") {
+let pfields = $target[0];
+let pspread = $target[1];
 let l = $target[2];
-return fatal("no what record")
+{
+let $target = type;
+if ($target.type === "trow") {
+let fields = $target[0];
+let spread = $target[1];
+let kind = $target[2];
+let l = $target[3];
+{
+let spread$$0 = spread;
+{
+let {"1": spread, "0": fmap} = deep_map(fields)(spread$$0)(kind);
+{
+let field_ex = map(({"1": pat, "0": name}) => (($target) => {
+if ($target.type === "none") {
+return fatal(`record unknown key ${name}`)
+} ;
+if ($target.type === "some") {
+let t = $target[0];
+return pattern_to_ex_pattern(tenv)($co(pat)(t))
+} ;
+throw new Error('match fail 16585:' + JSON.stringify($target))
+})(map$slget(fmap)(name)))(pfields);
+return ex$slconstructor("record")(gnames(cons("record")(nil)))((($target) => {
+if ($target.type === "none") {
+return field_ex
+} ;
+if ($target.type === "some") {
+let pat = $target[0];
+{
+let spread_fields = map$slto_list(foldl(fmap)(pfields)((map) => ({"0": name}) => map$slrm(map)(name)));
+return cons(pattern_to_ex_pattern(tenv)($co(pat)(trow(spread_fields)(spread)(kind)(l))))(nil)
+}
+} ;
+throw new Error('match fail 16573:' + JSON.stringify($target))
+})(pspread))
+}
+}
+}
+} ;
+return fatal("record type not a row");
+throw new Error('match fail 14435:' + JSON.stringify($target))
+}
 } ;
 if ($target.type === "penum") {
 let tag = $target[0];
@@ -1308,7 +1351,7 @@ throw new Error('match fail 16370:' + JSON.stringify($target))
 }
 }
 } ;
-return fatal("enum type not a record");
+return fatal("enum type not a row");
 throw new Error('match fail 14445:' + JSON.stringify($target))
 }
 } ;

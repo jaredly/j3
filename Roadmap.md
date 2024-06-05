@@ -1,4 +1,27 @@
 
+# Sooo here we've got the enums n stuff
+buttt the problem is, enums are always inferred as open. and I dont want them to be.
+like
+(match x
+'a 1
+'b 2)
+x should be inferred as closed.
+(match x
+'a 1
+_ 2)
+x should be inferred as open.
+
+(some-fn-that-is-open 'a)
+-> the argument 'a should be inferred as open.
+
+ok so it's kindof like, /patterns/ should be inferred as closed, but should be able to unify with other patterns?
+ugh I mean unifying meeeeans wait.
+the type of a pattern could be closed, but that doesn't mean that the whatsit needs to be, right?
+
+if the pattern is inferred as closed, that makes a lot of things wierd.
+ANOTHER OPTION: After grabbing all the target whatsits, if there's a spread variable, I torch it! give it an empty row.
+you know that might work.
+
 # IDEA IDEA IDEA
 
 Ok so what if
