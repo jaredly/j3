@@ -267,9 +267,6 @@ let cst$slrecord = (v0) => (v1) => ({type: "cst/record", 0: v0, 1: v1})
 let cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1})
 let cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
 let cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
-let ex$slany = {type: "ex/any"}
-let ex$slconstructor = (v0) => (v1) => (v2) => ({type: "ex/constructor", 0: v0, 1: v1, 2: v2})
-let ex$slor = (v0) => (v1) => ({type: "ex/or", 0: v0, 1: v1})
 let foldr = (init) => (items) => (f) => (($target) => {
 if ($target.type === "nil") {
 return init
@@ -482,13 +479,6 @@ return cons(one)(concat(cons(rest)(lists)))
 } ;
 throw new Error('match fail 9447:' + JSON.stringify($target))
 })(lists)
-let any_list = (arity) => loop(arity)((arity) => (recur) => (($target) => {
-if ($target === true) {
-return nil
-} ;
-return cons(ex$slany)(recur(arity - 1));
-throw new Error('match fail 11350:' + JSON.stringify($target))
-})($eq(0)(arity)))
 let any = (f) => (lst) => (($target) => {
 if ($target.type === "nil") {
 return false
@@ -507,34 +497,6 @@ throw new Error('match fail 10481:' + JSON.stringify($target))
 } ;
 throw new Error('match fail 10466:' + JSON.stringify($target))
 })(lst)
-let default_matrix = (matrix) => concat(map((row) => (($target) => {
-if ($target.type === "cons") {
-if ($target[0].type === "ex/any") {
-let rest = $target[1];
-return cons(rest)(nil)
-} 
-} ;
-if ($target.type === "cons") {
-if ($target[0].type === "ex/or") {
-let left = $target[0][0];
-let right = $target[0][1];
-let rest = $target[1];
-return default_matrix(cons(cons(left)(rest))(cons(cons(right)(rest))(nil)))
-} 
-} ;
-return nil;
-throw new Error('match fail 10531:' + JSON.stringify($target))
-})(row))(matrix))
-let fold_ex_pat = (init) => (pat) => (f) => (($target) => {
-if ($target.type === "ex/or") {
-let left = $target[0];
-let right = $target[1];
-return f(f(init)(left))(right)
-} ;
-return f(init)(pat);
-throw new Error('match fail 10758:' + JSON.stringify($target))
-})(pat)
-let fold_ex_pats = (init) => (pats) => (f) => foldl(init)(pats)((init) => (pat) => fold_ex_pat(init)(pat)(f))
 let $lt_err$ti = (x) => StateT((state) => $co(state)(err(x)))
 let map_err_$gt = ({"0": f}) => (next) => StateT((state) => (($target) => {
 if ($target.type === ",") {
@@ -623,47 +585,15 @@ throw new Error('match fail 15314:' + JSON.stringify($target))
 })(map$slget(map1)(key)))))
 }
 let wrap_ok = (t) => $gt$gt$eq(t)((v) => $lt_(some(v)))
+let ginf = {type: "ginf"}
+let gnames = (v0) => ({type: "gnames", 0: v0})
 let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 let tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 let tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
 let trow = (v0) => (v1) => (v2) => (v3) => ({type: "trow", 0: v0, 1: v1, 2: v2, 3: v3})
-let specialized_matrix = (constructor) => (arity) => (matrix) => concat(map(specialize_row(constructor)(arity))(matrix))
-
-let specialize_row = (constructor) => (arity) => (row) => (($target) => {
-if ($target.type === "nil") {
-return fatal("Can't specialize an empty row.")
-} ;
-if ($target.type === "cons") {
-if ($target[0].type === "ex/any") {
-let rest = $target[1];
-return cons(concat(cons(any_list(arity))(cons(rest)(nil))))(nil)
-} 
-} ;
-if ($target.type === "cons") {
-if ($target[0].type === "ex/constructor") {
-let name = $target[0][0];
-let args = $target[0][2];
-let rest = $target[1];
-{
-let $target = $eq(name)(constructor);
-if ($target === true) {
-return cons(concat(cons(args)(cons(rest)(nil))))(nil)
-} ;
-return nil;
-throw new Error('match fail 10596:' + JSON.stringify($target))
-}
-} 
-} ;
-if ($target.type === "cons") {
-if ($target[0].type === "ex/or") {
-let left = $target[0][0];
-let right = $target[0][1];
-let rest = $target[1];
-return specialized_matrix(constructor)(arity)(cons(cons(left)(rest))(cons(cons(right)(rest))(nil)))
-} 
-} ;
-throw new Error('match fail 10573:' + JSON.stringify($target))
-})(row)
+let ex$slany = {type: "ex/any"}
+let ex$slconstructor = (v0) => (v1) => (v2) => ({type: "ex/constructor", 0: v0, 1: v1, 2: v2})
+let ex$slor = (v0) => (v1) => ({type: "ex/or", 0: v0, 1: v1})
 let type$eq = (one) => (two) => (($target) => {
 if ($target.type === ",") {
 if ($target[0].type === "trow") {
@@ -906,31 +836,40 @@ return tcon_and_args(target)(cons(arg)(coll))(l)
 } ;
 throw new Error('match fail 9950:' + JSON.stringify($target))
 })(type)
-let find_gid = (heads) => fold_ex_pats(none)(heads)((gid) => (pat) => (($target) => {
-if ($target.type === "ex/constructor") {
-let id = $target[1];
-{
-let $target = gid;
-if ($target.type === "none") {
-return some(id)
-} ;
-if ($target.type === "some") {
-let oid = $target[0];
-{
-let $target = $ex$eq(oid)(id);
+let any_list = (arity) => loop(arity)((arity) => (recur) => (($target) => {
 if ($target === true) {
-return fatal("Constructors with different group IDs in the same position.")
+return nil
 } ;
-return some(id);
-throw new Error('match fail 10809:' + JSON.stringify($target))
-}
+return cons(ex$slany)(recur(arity - 1));
+throw new Error('match fail 11350:' + JSON.stringify($target))
+})($eq(0)(arity)))
+let default_matrix = (matrix) => concat(map((row) => (($target) => {
+if ($target.type === "cons") {
+if ($target[0].type === "ex/any") {
+let rest = $target[1];
+return cons(rest)(nil)
+} 
 } ;
-throw new Error('match fail 10798:' + JSON.stringify($target))
-}
+if ($target.type === "cons") {
+if ($target[0].type === "ex/or") {
+let left = $target[0][0];
+let right = $target[0][1];
+let rest = $target[1];
+return default_matrix(cons(cons(left)(rest))(cons(cons(right)(rest))(nil)))
+} 
 } ;
-return gid;
-throw new Error('match fail 10790:' + JSON.stringify($target))
-})(pat))
+return nil;
+throw new Error('match fail 10531:' + JSON.stringify($target))
+})(row))(matrix))
+let fold_ex_pat = (init) => (pat) => (f) => (($target) => {
+if ($target.type === "ex/or") {
+let left = $target[0];
+let right = $target[1];
+return f(f(init)(left))(right)
+} ;
+return f(init)(pat);
+throw new Error('match fail 10758:' + JSON.stringify($target))
+})(pat)
 let group_constructors = (tenv) => (gid) => (($target) => {
 if ($target === "int") {
 return nil
@@ -959,6 +898,7 @@ throw new Error('match fail 10915:' + JSON.stringify($target))
 };
 throw new Error('match fail 10888:' + JSON.stringify($target))
 })(gid)
+let fold_ex_pats = (init) => (pats) => (f) => foldl(init)(pats)((init) => (pat) => fold_ex_pat(init)(pat)(f))
 let target_and_args = (type) => (coll) => (($target) => {
 if ($target.type === "tapp") {
 let target = $target[0];
@@ -1088,6 +1028,43 @@ let tdef = (v0) => (v1) => (v2) => (v3) => ({type: "tdef", 0: v0, 1: v1, 2: v2, 
 let texpr = (v0) => (v1) => ({type: "texpr", 0: v0, 1: v1})
 let tdeftype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "tdeftype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
 let ttypealias = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "ttypealias", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
+let specialized_matrix = (constructor) => (arity) => (matrix) => concat(map(specialize_row(constructor)(arity))(matrix))
+
+let specialize_row = (constructor) => (arity) => (row) => (($target) => {
+if ($target.type === "nil") {
+return fatal("Can't specialize an empty row.")
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "ex/any") {
+let rest = $target[1];
+return cons(concat(cons(any_list(arity))(cons(rest)(nil))))(nil)
+} 
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "ex/constructor") {
+let name = $target[0][0];
+let args = $target[0][2];
+let rest = $target[1];
+{
+let $target = $eq(name)(constructor);
+if ($target === true) {
+return cons(concat(cons(args)(cons(rest)(nil))))(nil)
+} ;
+return nil;
+throw new Error('match fail 10596:' + JSON.stringify($target))
+}
+} 
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "ex/or") {
+let left = $target[0][0];
+let right = $target[0][1];
+let rest = $target[1];
+return specialized_matrix(constructor)(arity)(cons(cons(left)(rest))(cons(cons(right)(rest))(nil)))
+} 
+} ;
+throw new Error('match fail 10573:' + JSON.stringify($target))
+})(row)
 let terr = (v0) => (v1) => ({type: "terr", 0: v0, 1: v1})
 let ttypes = (v0) => (v1) => ({type: "ttypes", 0: v0, 1: v1})
 let twrap = (v0) => (v1) => ({type: "twrap", 0: v0, 1: v1})
@@ -1311,7 +1288,13 @@ return fatal(`enum variant ${tag} not contained in type`)
 } ;
 if ($target.type === "some") {
 let argt = $target[0];
-return ex$slconstructor(tag)("umtags")((($target) => {
+return ex$slconstructor(tag)((($target) => {
+if ($target.type === "none") {
+return gnames(map$slkeys(map))
+} ;
+return ginf;
+throw new Error('match fail 16367:' + JSON.stringify($target))
+})(spread))((($target) => {
 if ($target.type === "some") {
 let arg = $target[0];
 return cons(pattern_to_ex_pattern(tenv)($co(arg)(argt)))(nil)
@@ -1331,12 +1314,12 @@ throw new Error('match fail 14445:' + JSON.stringify($target))
 } ;
 if ($target.type === "pstr") {
 let str = $target[0];
-return ex$slconstructor(str)("string")(nil)
+return ex$slconstructor(str)(ginf)(nil)
 } ;
 if ($target.type === "pprim") {
 if ($target[0].type === "pint") {
 let v = $target[0][0];
-return ex$slconstructor(int_to_string(v))("int")(nil)
+return ex$slconstructor(int_to_string(v))(ginf)(nil)
 } 
 } ;
 if ($target.type === "pprim") {
@@ -1348,7 +1331,7 @@ return "true"
 } ;
 return "false";
 throw new Error('match fail 10204:' + JSON.stringify($target))
-})(v))("bool")(nil)
+})(v))(gnames(cons("true")(cons("false")(nil))))(nil)
 } 
 } ;
 if ($target.type === "pcon") {
@@ -1358,7 +1341,7 @@ let l = $target[3];
 {
 let {"1": targs, "0": tname} = tcon_and_args(type)(nil)(l);
 {
-let {"1": tcons} = tenv;
+let {"2": types, "1": tcons} = tenv;
 {
 let {"1": {"1": cres, "0": cargs}, "0": free_names} = (($target) => {
 if ($target.type === "none") {
@@ -1372,7 +1355,16 @@ throw new Error('match fail 10109:' + JSON.stringify($target))
 })(map$slget(tcons)(name));
 {
 let subst = map$slfrom_list(zip(free_names)(targs));
-return ex$slconstructor(name)(tname)(map(pattern_to_ex_pattern(tenv))(zip(args)(map(type$slapply(subst))(cargs))))
+return ex$slconstructor(name)((($target) => {
+if ($target.type === "some") {
+if ($target[0].type === ",") {
+let names = $target[0][1];
+return gnames(set$slto_list(names))
+} 
+} ;
+return fatal(`Unknown type ${tname}`);
+throw new Error('match fail 16437:' + JSON.stringify($target))
+})(map$slget(types)(tname)))(map(pattern_to_ex_pattern(tenv))(zip(args)(map(type$slapply(subst))(cargs))))
 }
 }
 }
@@ -1380,72 +1372,31 @@ return ex$slconstructor(name)(tname)(map(pattern_to_ex_pattern(tenv))(zip(args)(
 } ;
 throw new Error('match fail 9888:' + JSON.stringify($target))
 })(pattern)
-let args_if_complete = (tenv) => (matrix) => {
-let heads = map((row) => (($target) => {
-if ($target.type === "nil") {
-return fatal("is-complete called with empty row")
-} ;
-if ($target.type === "cons") {
-let head = $target[0];
-return head
-} ;
-throw new Error('match fail 10688:' + JSON.stringify($target))
-})(row))(matrix);
-{
-let gid = find_gid(heads);
+let find_gid = (heads) => fold_ex_pats(none)(heads)((gid) => (pat) => (($target) => {
+if ($target.type === "ex/constructor") {
+let id = $target[1];
 {
 let $target = gid;
 if ($target.type === "none") {
-return map$slnil
+return some(id)
 } ;
 if ($target.type === "some") {
-let gid = $target[0];
+let oid = $target[0];
 {
-let found = map$slfrom_list(fold_ex_pats(nil)(heads)((found) => (head) => (($target) => {
-if ($target.type === "ex/constructor") {
-let id = $target[0];
-let args = $target[2];
-return cons($co(id)(length(args)))(found)
+let $target = $ex$eq(oid)(id);
+if ($target === true) {
+return fatal("Constructors with different group IDs in the same position.")
 } ;
-return found;
-throw new Error('match fail 11013:' + JSON.stringify($target))
-})(head)));
-{
-let $target = group_constructors(tenv)(gid);
-if ($target.type === "nil") {
-return map$slnil
-} ;
-{
-let constrs = $target;
-return loop(constrs)((constrs) => (recur) => (($target) => {
-if ($target.type === "nil") {
-return found
-} ;
-if ($target.type === "cons") {
-let id = $target[0];
-let rest = $target[1];
-{
-let $target = map$slget(found)(id);
-if ($target.type === "none") {
-return map$slnil
-} ;
-if ($target.type === "some") {
-return recur(rest)
-} ;
-throw new Error('match fail 10952:' + JSON.stringify($target))
+return some(id);
+throw new Error('match fail 10809:' + JSON.stringify($target))
 }
 } ;
-throw new Error('match fail 10864:' + JSON.stringify($target))
-})(constrs))
-};
-throw new Error('match fail 10846:' + JSON.stringify($target))
-}
+throw new Error('match fail 10798:' + JSON.stringify($target))
 }
 } ;
-throw new Error('match fail 10704:' + JSON.stringify($target))
-}
-}
-}
+return gid;
+throw new Error('match fail 10790:' + JSON.stringify($target))
+})(pat))
 let type_error = (message) => (loced_items) => terr(message)(loced_items)
 let type_error_$gts = (err) => (($target) => {
 if ($target.type === "twrap") {
@@ -1635,88 +1586,70 @@ return tenv(map$slfrom_list(map(({"1": {"1": {"1": res, "0": args}, "0": free}, 
 }
 }
 }
-let is_useful = (tenv) => (matrix) => (row) => {
-let head_and_rest = (($target) => {
+let args_if_complete = (tenv) => (matrix) => {
+let heads = map((row) => (($target) => {
 if ($target.type === "nil") {
-return none
-} ;
-if ($target.type === "cons") {
-if ($target[0].type === "nil") {
-return none
-} 
-} ;
-if ($target.type === "cons") {
-{
-let $target = row;
-if ($target.type === "nil") {
-return none
+return fatal("is-complete called with empty row")
 } ;
 if ($target.type === "cons") {
 let head = $target[0];
-let rest = $target[1];
-return some($co(head)(rest))
+return head
 } ;
-throw new Error('match fail 11050:' + JSON.stringify($target))
-}
-} ;
-throw new Error('match fail 11038:' + JSON.stringify($target))
-})(matrix);
+throw new Error('match fail 10688:' + JSON.stringify($target))
+})(row))(matrix);
 {
-let $target = head_and_rest;
+let gid = find_gid(heads);
+{
+let $target = gid;
 if ($target.type === "none") {
-return false
+return map$slnil
 } ;
 if ($target.type === "some") {
-if ($target[0].type === ",") {
-let head = $target[0][0];
-let rest = $target[0][1];
+let gid = $target[0];
 {
-let $target = head;
+let found = map$slfrom_list(fold_ex_pats(nil)(heads)((found) => (head) => (($target) => {
 if ($target.type === "ex/constructor") {
 let id = $target[0];
 let args = $target[2];
-return is_useful(tenv)(specialized_matrix(id)(length(args))(matrix))(concat(cons(args)(cons(rest)(nil))))
+return cons($co(id)(length(args)))(found)
 } ;
-if ($target.type === "ex/any") {
+return found;
+throw new Error('match fail 11013:' + JSON.stringify($target))
+})(head)));
 {
-let $target = map$slto_list(args_if_complete(tenv)(matrix));
+let $target = gid;
+if ($target.type === "ginf") {
+return map$slnil
+} ;
+if ($target.type === "gnames") {
+let constrs = $target[0];
+return loop(constrs)((constrs) => (recur) => (($target) => {
 if ($target.type === "nil") {
-{
-let $target = default_matrix(matrix);
-if ($target.type === "nil") {
-return true
+return found
 } ;
+if ($target.type === "cons") {
+let id = $target[0];
+let rest = $target[1];
 {
-let defaults = $target;
-return is_useful(tenv)(defaults)(rest)
-};
-throw new Error('match fail 10407:' + JSON.stringify($target))
+let $target = map$slget(found)(id);
+if ($target.type === "none") {
+return map$slnil
+} ;
+if ($target.type === "some") {
+return recur(rest)
+} ;
+throw new Error('match fail 10952:' + JSON.stringify($target))
 }
 } ;
-{
-let alts = $target;
-return any(({"1": alt, "0": id}) => is_useful(tenv)(specialized_matrix(id)(alt)(matrix))(concat(cons(any_list(alt))(cons(rest)(nil)))))(alts)
-};
-throw new Error('match fail 10395:' + JSON.stringify($target))
+throw new Error('match fail 10864:' + JSON.stringify($target))
+})(constrs))
+} ;
+throw new Error('match fail 10846:' + JSON.stringify($target))
+}
 }
 } ;
-if ($target.type === "ex/or") {
-let left = $target[0];
-let right = $target[1];
-{
-let $target = is_useful(tenv)(matrix)(cons(left)(rest));
-if ($target === true) {
-return true
-} ;
-return is_useful(tenv)(matrix)(cons(right)(rest));
-throw new Error('match fail 11134:' + JSON.stringify($target))
+throw new Error('match fail 10704:' + JSON.stringify($target))
 }
-} ;
-throw new Error('match fail 10381:' + JSON.stringify($target))
-}
-} 
-} ;
-throw new Error('match fail 11090:' + JSON.stringify($target))
 }
 }
 let scheme_$gtcst = ({"1": type, "0": vbls}) => type_$gtcst(type)
@@ -1923,6 +1856,90 @@ return $gt$gt$eq(instantiate_tcon(tenv)(name)(l))(({"1": cres, "0": cargs}) => $
 } ;
 throw new Error('match fail 3998:' + JSON.stringify($target))
 })(pattern)
+let is_useful = (tenv) => (matrix) => (row) => {
+let head_and_rest = (($target) => {
+if ($target.type === "nil") {
+return none
+} ;
+if ($target.type === "cons") {
+if ($target[0].type === "nil") {
+return none
+} 
+} ;
+if ($target.type === "cons") {
+{
+let $target = row;
+if ($target.type === "nil") {
+return none
+} ;
+if ($target.type === "cons") {
+let head = $target[0];
+let rest = $target[1];
+return some($co(head)(rest))
+} ;
+throw new Error('match fail 11050:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 11038:' + JSON.stringify($target))
+})(matrix);
+{
+let $target = head_and_rest;
+if ($target.type === "none") {
+return false
+} ;
+if ($target.type === "some") {
+if ($target[0].type === ",") {
+let head = $target[0][0];
+let rest = $target[0][1];
+{
+let $target = head;
+if ($target.type === "ex/constructor") {
+let id = $target[0];
+let args = $target[2];
+return is_useful(tenv)(specialized_matrix(id)(length(args))(matrix))(concat(cons(args)(cons(rest)(nil))))
+} ;
+if ($target.type === "ex/any") {
+{
+let $target = map$slto_list(args_if_complete(tenv)(matrix));
+if ($target.type === "nil") {
+{
+let $target = default_matrix(matrix);
+if ($target.type === "nil") {
+return true
+} ;
+{
+let defaults = $target;
+return is_useful(tenv)(defaults)(rest)
+};
+throw new Error('match fail 10407:' + JSON.stringify($target))
+}
+} ;
+{
+let alts = $target;
+return any(({"1": alt, "0": id}) => is_useful(tenv)(specialized_matrix(id)(alt)(matrix))(concat(cons(any_list(alt))(cons(rest)(nil)))))(alts)
+};
+throw new Error('match fail 10395:' + JSON.stringify($target))
+}
+} ;
+if ($target.type === "ex/or") {
+let left = $target[0];
+let right = $target[1];
+{
+let $target = is_useful(tenv)(matrix)(cons(left)(rest));
+if ($target === true) {
+return true
+} ;
+return is_useful(tenv)(matrix)(cons(right)(rest));
+throw new Error('match fail 11134:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 10381:' + JSON.stringify($target))
+}
+} 
+} ;
+throw new Error('match fail 11090:' + JSON.stringify($target))
+}
+}
 let is_exhaustive = (tenv) => (matrix) => (($target) => {
 if ($target === true) {
 return false

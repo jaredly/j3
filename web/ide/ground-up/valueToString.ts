@@ -36,6 +36,12 @@ export const valueToString = (v: any): string => {
     }
     if (v == null) return 'null';
     if (v === undefined) return 'undefined';
+    if (typeof v === 'object') {
+        if ('tag' in v && 'arg' in v) {
+            return `('${v.tag} ${valueToString(v.arg)})`
+        }
+        return `{${Object.keys(v).map(k => `${k} ${valueToString(v[k])}`).join(' ')}}`
+    }
 
     return '' + v;
 };

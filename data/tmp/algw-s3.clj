@@ -1213,9 +1213,13 @@
     (** The "any" pattern here also includes pvar, because it doesn't place any constraints on the value. **)
         (ex/any)
         (** ex/constructor encompasses both user-defined data types (such as list, ,, or expr) as well as primitive types such as int, bool, and string. You can see below in the group-constructors function how these are handled. **)
-        (ex/constructor string string (list ex-pattern))
+        (ex/constructor string ex-group (list ex-pattern))
         (** Our current language doesn't support or patterns, but they would be nice to add in the future, and they are well-supported by the algorithm, so we might as well implement them here. **)
         (ex/or ex-pattern ex-pattern))
+
+(deftype ex-group
+    (ginf)
+        (gnames (list string)))
 
 (** Processing "patterns" to be legible to the exhaustiveness algorithm **)
 
@@ -1230,22 +1234,24 @@
                                                                       (none)      (fatal "enum variant ${tag} not contained in type")
                                                                       (some argt) (ex/constructor
                                                                                       tag
-                                                                                          "umtags"
+                                                                                          (match spread
+                                                                                          (none) (gnames (map/keys map))
+                                                                                          _      (ginf))
                                                                                           (match arg
                                                                                           (some arg) [(pattern-to-ex-pattern tenv (, arg argt))]
                                                                                           _          []))))
                                   _                           (fatal "enum type not a record"))
-        (pstr str _)          (ex/constructor str "string" [])
-        (pprim (pint v _) _)  (ex/constructor (int-to-string v) "int" [])
+        (pstr str _)          (ex/constructor str ginf [])
+        (pprim (pint v _) _)  (ex/constructor (int-to-string v) ginf [])
         (pprim (pbool v _) _) (ex/constructor
                                   (if v
                                       "true"
                                           "false")
-                                      "bool"
+                                      (gnames ["true" "false"])
                                       [])
         (pcon name _ args l)  (let [
                                   (, tname targs)           (tcon-and-args type [] l)
-                                  (tenv _ tcons _ _)        tenv
+                                  (tenv _ tcons types _)    tenv
                                   (, free-names cargs cres) (match (map/get tcons name)
                                                                 (none)   (fatal "Unknown type constructor ${name}")
                                                                 (some v) v)
@@ -1253,7 +1259,9 @@
                                   subst                     (map/from-list (zip free-names targs))]
                                   (ex/constructor
                                       name
-                                          tname
+                                          (match (map/get types tname)
+                                          (some (, _ names)) (gnames (set/to-list names))
+                                          _                  (fatal "Unknown type ${tname}"))
                                           (map
                                           (pattern-to-ex-pattern tenv)
                                               (zip args (map (type/apply subst) cargs)))))))
@@ -1291,19 +1299,19 @@
         (, (@p [2 a b]) (@t (list int)))
             (ex/constructor
             "cons"
-                "list"
-                [(ex/constructor "2" "int" [])
+                (gnames ["nil" "cons"])
+                [(ex/constructor "2" (ginf) [])
                 (ex/constructor
                 "cons"
-                    "list"
+                    (gnames ["nil" "cons"])
                     [(ex/any)
                     (ex/constructor
                     "cons"
-                        "list"
-                        [(ex/any) (ex/constructor "nil" "list" [])])])]))
+                        (gnames ["nil" "cons"])
+                        [(ex/any) (ex/constructor "nil" (gnames ["nil" "cons"]) [])])])]))
         (,
         (, (@p (, 2 b)) (@t (, 1 2)))
-            (ex/constructor "," "," [(ex/constructor "2" "int" []) (ex/any)]))])
+            (ex/constructor "," (gnames [","]) [(ex/constructor "2" (ginf) []) (ex/any)]))])
 
 (defn tcon-and-args [type coll l]
     (match type
@@ -1414,16 +1422,16 @@
                                              (match head
                                                  (ex/constructor id _ args) [(, id (length args)) ..found]
                                                  _                          found))))]
-                           (match (group-constructors tenv gid)
-                               []      map/nil
-                               constrs (loop
-                                           constrs
-                                               (fn [constrs recur]
-                                               (match constrs
-                                                   []          found
-                                                   [id ..rest] (match (map/get found id)
-                                                                   (none)   map/nil
-                                                                   (some _) (recur rest))))))))))
+                           (match gid
+                               (ginf)           map/nil
+                               (gnames constrs) (loop
+                                                    constrs
+                                                        (fn [constrs recur]
+                                                        (match constrs
+                                                            []          found
+                                                            [id ..rest] (match (map/get found id)
+                                                                            (none)   map/nil
+                                                                            (some _) (recur rest))))))))))
 
 (defn is-useful [tenv matrix row]
     (let [
