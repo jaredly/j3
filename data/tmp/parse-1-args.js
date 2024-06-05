@@ -161,6 +161,7 @@ return {
     sanitize,
     equal: a => b => equal(a, b),
     'int-to-string': (a) => a.toString(),
+    'float-to-string': a => a.toString(),
     'string-to-int': (a) => {
         const v = Number(a);
         return Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' };
@@ -218,7 +219,7 @@ return {
     },
 }})();
 Object.assign($env, $builtins);
-const {"+": $pl, "-": _, "<": $lt, "<=": $lt$eq, ">": $gt, ">=": $gt$eq, "=": $eq, "!=": $ex$eq, "pi": pi, "replace-all": replace_all, "eval": $eval, "eval-with": eval_with, "$unit": $unit, "errorToString": errorToString, "valueToString": valueToString, "unescapeString": unescapeString, "sanitize": sanitize, "equal": equal, "int-to-string": int_to_string, "string-to-int": string_to_int, "string-to-float": string_to_float, "map/nil": map$slnil, "map/set": map$slset, "map/rm": map$slrm, "map/get": map$slget, "map/map": map$slmap, "map/merge": map$slmerge, "map/values": map$slvalues, "map/keys": map$slkeys, "map/from-list": map$slfrom_list, "map/to-list": map$slto_list, "set/nil": set$slnil, "set/add": set$sladd, "set/has": set$slhas, "set/rm": set$slrm, "set/diff": set$sldiff, "set/merge": set$slmerge, "set/overlap": set$sloverlap, "set/to-list": set$slto_list, "set/from-list": set$slfrom_list, "jsonify": jsonify, "fatal": fatal} = $builtins;
+const {"+": $pl, "-": _, "<": $lt, "<=": $lt$eq, ">": $gt, ">=": $gt$eq, "=": $eq, "!=": $ex$eq, "pi": pi, "replace-all": replace_all, "eval": $eval, "eval-with": eval_with, "$unit": $unit, "errorToString": errorToString, "valueToString": valueToString, "unescapeString": unescapeString, "sanitize": sanitize, "equal": equal, "int-to-string": int_to_string, "float-to-string": float_to_string, "string-to-int": string_to_int, "string-to-float": string_to_float, "map/nil": map$slnil, "map/set": map$slset, "map/rm": map$slrm, "map/get": map$slget, "map/map": map$slmap, "map/merge": map$slmerge, "map/values": map$slvalues, "map/keys": map$slkeys, "map/from-list": map$slfrom_list, "map/to-list": map$slto_list, "set/nil": set$slnil, "set/add": set$sladd, "set/has": set$slhas, "set/rm": set$slrm, "set/diff": set$sldiff, "set/merge": set$slmerge, "set/overlap": set$sloverlap, "set/to-list": set$slto_list, "set/from-list": set$slfrom_list, "jsonify": jsonify, "fatal": fatal} = $builtins;
 const pint = (v0) => (v1) => ({type: "pint", 0: v0, 1: v1})
 const pbool = (v0) => (v1) => ({type: "pbool", 0: v0, 1: v1})
 const some = (v0) => ({type: "some", 0: v0})
@@ -381,6 +382,32 @@ const usage = (v0) => ({type: "usage", 0: v0})
 const decl = ({type: "decl"})
 const builtins = "function equal(a, b) {\n    if (a === b) return true;\n\n    if (a && b && typeof a == 'object' && typeof b == 'object') {\n        var length, i, keys;\n        if (Array.isArray(a)) {\n            length = a.length;\n            if (length != b.length) return false;\n            for (i = length; i-- !== 0; ) if (!equal(a[i], b[i])) return false;\n            return true;\n        }\n\n        keys = Object.keys(a);\n        length = keys.length;\n        if (length !== Object.keys(b).length) return false;\n\n        for (i = length; i-- !== 0; ) {\n            if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;\n        }\n\n        for (i = length; i-- !== 0; ) {\n            var key = keys[i];\n\n            if (!equal(a[key], b[key])) return false;\n        }\n\n        return true;\n    }\n\n    // true if both NaN, false otherwise\n    return a !== a && b !== b;\n}\n\nfunction unescapeString(n) {\n    if (n == null || !n.replaceAll) {\n        debugger;\n        return '';\n    }\n    return n.replaceAll(/\\\\./g, (m) => {\n        if (m[1] === 'n') {\n            return '\\n';\n        }\n        if (m[1] === 't') {\n            return '\\t';\n        }\n        if (m[1] === 'r') {\n            return '\\r';\n        }\n        return m[1];\n    });\n}\n\nfunction unwrapList(v) {\n    return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])];\n}\n\nfunction wrapList(v) {\n    let res = { type: 'nil' };\n    for (let i = v.length - 1; i >= 0; i--) {\n        res = { type: 'cons', 0: v[i], 1: res };\n    }\n    return res;\n}\n\nconst sanMap = {\n    // '\$\$\$\$' gets interpreted by replaceAll as '\$\$', for reasons\n    \$: '\$\$\$\$',\n    '-': '_',\n    '+': '\$pl',\n    '*': '\$ti',\n    '=': '\$eq',\n    '>': '\$gt',\n    '<': '\$lt',\n    \"'\": '\$qu',\n    '\"': '\$dq',\n    ',': '\$co',\n    '/': '\$sl',\n    ';': '\$semi',\n    '@': '\$at',\n    ':': '\$cl',\n    '#': '\$ha',\n    '!': '\$ex',\n    '|': '\$bar',\n    '()': '\$unit',\n    '?': '\$qe',\n  };\nconst kwds =\n    'case new var const let if else return super break while for default eval'.split(' ');\n\n// Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.\nfunction sanitize(raw) {\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    if (kwds.includes(raw)) return '\$' + raw\n    return raw\n}\n\nconst valueToString = (v) => {\n    if (Array.isArray(v)) {\n        return \`[\${v.map(valueToString).join(', ')}]\`;\n    }\n    if (typeof v === 'object' && v && 'type' in v) {\n        if (v.type === 'cons' || v.type === 'nil') {\n            const un = unwrapList(v);\n            return '[' + un.map(valueToString).join(' ') + ']';\n        }\n\n        let args = [];\n        for (let i = 0; i in v; i++) {\n            args.push(v[i]);\n        }\n        return \`(\${v.type}\${args\n            .map((arg) => ' ' + valueToString(arg))\n            .join('')})\`;\n    }\n    if (typeof v === 'string') {\n        if (v.includes('\"') && !v.includes(\"'\")) {\n            return (\n                \"'\" + JSON.stringify(v).slice(1, -1).replace(/\\\"/g, '\"') + \"'\"\n            );\n        }\n        return JSON.stringify(v);\n    }\n    if (typeof v === 'function') {\n        return '<function>';\n    }\n\n    return '' + v;\n};\n\nreturn {\n    '+': (a) => (b) => a + b,\n    '-': (a) => (b) => a - b,\n    '<': (a) => (b) => a < b,\n    '<=': (a) => (b) => a <= b,\n    '>': (a) => (b) => a > b,\n    '>=': (a) => (b) => a >= b,\n    '=': (a) => (b) => equal(a, b),\n    '!=': (a) => (b) => !equal(a, b),\n    pi: Math.PI,\n    'replace-all': a => b => c => a.replaceAll(b, c),\n    eval: source => {\n      return new Function('', 'return ' + source)();\n    },\n    'eval-with': ctx => source => {\n      const args = '{' + Object.keys(ctx).join(',') + '}'\n      return new Function(args, 'return ' + source)(ctx);\n    },\n    \$unit: null,\n    errorToString: f => arg => {\n      try {\n        return f(arg)\n      } catch (err) {\n        return err.message;\n      }\n    },\n    valueToString,\n    unescapeString,\n    sanitize,\n    equal: a => b => equal(a, b),\n    'int-to-string': (a) => a.toString(),\n    'string-to-int': (a) => {\n        const v = Number(a);\n        return Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' };\n    },\n    'string-to-float': (a) => {\n        const v = Number(a);\n        return Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' };\n    },\n\n    // maps\n    'map/nil': [],\n    'map/set': (map) => (key) => (value) =>\n        [[key, value], ...map.filter((i) => i[0] !== key)],\n    'map/rm': (map) => (key) => map.filter((i) => !equal(i[0], key)),\n    'map/get': (map) => (key) => {\n        const found = map.find((i) => equal(i[0], key));\n        return found ? { type: 'some', 0: found[1] } : { type: 'none' };\n    },\n    'map/map': (fn) => (map) => map.map(([k, v]) => [k, fn(v)]),\n    'map/merge': (one) => (two) =>\n        [...one, ...two.filter(([key]) => !one.find(([a]) => equal(a, key)))],\n    'map/values': (map) => wrapList(map.map((item) => item[1])),\n    'map/keys': (map) => wrapList(map.map((item) => item[0])),\n    'map/from-list': (list) =>\n        unwrapList(list).map((pair) => [pair[0], pair[1]]),\n    'map/to-list': (map) =>\n        wrapList(map.map(([key, value]) => ({ type: ',', 0: key, 1: value }))),\n\n    // sets\n    'set/nil': [],\n    'set/add': (s) => (v) => [v, ...s.filter((m) => !equal(v, m))],\n    'set/has': (s) => (v) => s.includes(v),\n    'set/rm': (s) => (v) => s.filter((i) => !equal(i, v)),\n    // NOTE this is only working for primitives\n    'set/diff': (a) => (b) => a.filter((i) => !b.some((j) => equal(i, j))),\n    'set/merge': (a) => (b) =>\n        [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],\n    'set/overlap': (a) => (b) => a.filter((x) => b.some((y) => equal(y, x))),\n    'set/to-list': wrapList,\n    'set/from-list': (s) => {\n        const res = [];\n        unwrapList(s).forEach((item) => {\n            if (res.some((m) => equal(item, m))) {\n                return;\n            }\n            res.push(item);\n        });\n        return res;\n    },\n\n    // Various debugging stuff\n    jsonify: (v) => JSON.stringify(v) ?? 'undefined',\n    fatal: (message) => {\n        throw new Error(\`Fatal runtime: \${message}\`);\n    },\n}";
 
+const renum = ({type: "renum"})
+const rrecord = ({type: "rrecord"})
+const map_opt$qe = (f) => (v) => (($target) => {
+if ($target.type === "some") {
+{
+let v = $target[0];
+return f(v)
+}
+}
+return none
+throw new Error('Failed to match. ' + valueToString($target));
+})(v);
+
+const map_or = (f) => (or) => (v) => (($target) => {
+if ($target.type === "some") {
+{
+let v = $target[0];
+return f(v)
+}
+}
+return or
+throw new Error('Failed to match. ' + valueToString($target));
+})(v);
+
+const parse_tag = $eval("v => v.startsWith('\\'') ? {type: 'some', 0: v.slice(1)} : {type: 'none'}");
+
 const nil = ({type: "nil"})
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 const pany = (v0) => ({type: "pany", 0: v0})
@@ -388,12 +415,17 @@ const pvar = (v0) => (v1) => ({type: "pvar", 0: v0, 1: v1})
 const pcon = (v0) => (v1) => (v2) => (v3) => ({type: "pcon", 0: v0, 1: v1, 2: v2, 3: v3})
 const pstr = (v0) => (v1) => ({type: "pstr", 0: v0, 1: v1})
 const pprim = (v0) => (v1) => ({type: "pprim", 0: v0, 1: v1})
+const precord = (v0) => (v1) => (v2) => ({type: "precord", 0: v0, 1: v1, 2: v2})
+const penum = (v0) => (v1) => (v2) => (v3) => ({type: "penum", 0: v0, 1: v1, 2: v2, 3: v3})
 const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
+const trow = (v0) => (v1) => (v2) => (v3) => ({type: "trow", 0: v0, 1: v1, 2: v2, 3: v3})
 const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
 const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
 const cst$slspread = (v0) => (v1) => ({type: "cst/spread", 0: v0, 1: v1})
+const cst$slrecord = (v0) => (v1) => ({type: "cst/record", 0: v0, 1: v1})
+const cst$slaccess = (v0) => (v1) => (v2) => ({type: "cst/access", 0: v0, 1: v1, 2: v2})
 const cst$slid = (v0) => (v1) => ({type: "cst/id", 0: v0, 1: v1})
 const cst$slstring = (v0) => (v1) => (v2) => ({type: "cst/string", 0: v0, 1: v1, 2: v2})
 const one = (v0) => ({type: "one", 0: v0})
@@ -512,6 +544,18 @@ return l
 }
 }
 if ($target.type === "pcon") {
+{
+let l = $target[3];
+return l
+}
+}
+if ($target.type === "precord") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "penum") {
 {
 let l = $target[3];
 return l
@@ -717,6 +761,20 @@ let int = $target[1];
 return set$slnil
 }
 }
+if ($target.type === "precord") {
+{
+let fields = $target[0];
+let spread = $target[1];
+let int = $target[2];
+return foldl(map_or(pat_names)(set$slnil)(spread))(map(fields)(dot(pat_names)(snd)))(set$slmerge)
+}
+}
+if ($target.type === "penum") {
+{
+let arg = $target[2];
+return map_or(pat_names)(set$slnil)(arg)
+}
+}
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
 
@@ -758,6 +816,13 @@ let two = $target[1];
 return bag$sland(externals_type(bound)(one))(externals_type(bound)(two))
 }
 }
+if ($target.type === "trow") {
+{
+let fields = $target[0];
+let spread = $target[1];
+return foldl(map_or(externals_type(bound))(empty)(spread))(map(fields)(dot(externals_type(bound))(snd)))(bag$sland)
+}
+}
 throw new Error('Failed to match. ' + valueToString($target));
 })(t);
 
@@ -795,6 +860,19 @@ let int = $target[1];
 return empty
 }
 }
+if ($target.type === "precord") {
+{
+let fields = $target[0];
+let spread = $target[1];
+return foldl(map_or(pat_names_loc)(empty)(spread))(map(fields)(dot(pat_names_loc)(snd)))(bag$sland)
+}
+}
+if ($target.type === "penum") {
+{
+let arg = $target[2];
+return map_or(pat_names_loc)(empty)(arg)
+}
+}
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
 
@@ -819,6 +897,9 @@ return "var"
 }
 if ($target.type === "tcon") {
 return "con"
+}
+if ($target.type === "trow") {
+return "row"
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(type);
@@ -940,6 +1021,66 @@ if ($target.type === "pprim") {
 let prim = $target[0];
 let l = $target[1];
 return fatal("Cant use prim as pattern")
+}
+}
+if ($target.type === "precord") {
+{
+let fields = $target[0];
+let spread = $target[1];
+let l = $target[2];
+return ((fields) => some(j$slpobj(foldr(nil)(fields)((rest) => ({1: pat, 0: name}) => (($target) => {
+if ($target.type === "none") {
+return rest
+}
+if ($target.type === "some") {
+{
+let pat = $target[0];
+return cons($co(name)(pat))(rest)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat)))((($target) => {
+if ($target.type === "none") {
+return none
+}
+if ($target.type === "some") {
+{
+let v = $target[0];
+return pat_$gtj$slpat(v)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(spread))(l)))(map(fields)(({1: pat, 0: name}) => $co(name)(pat_$gtj$slpat(pat))))
+}
+}
+if ($target.type === "penum") {
+{
+let name = $target[0];
+let arg = $target[2];
+let l = $target[3];
+return (($target) => {
+if ($target.type === "none") {
+return none
+}
+if ($target.type === "some") {
+{
+let v = $target[0];
+return (($target) => {
+if ($target.type === "none") {
+return none
+}
+if ($target.type === "some") {
+{
+let v = $target[0];
+return some(j$slpobj(cons($co("arg")(v))(nil))(none)(l))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat_$gtj$slpat(v))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arg)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -1177,6 +1318,18 @@ let l = $target[2];
 return l
 }
 }
+if ($target.type === "cst/access") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "cst/record") {
+{
+let l = $target[1];
+return l
+}
+}
 throw new Error('Failed to match. ' + valueToString($target));
 })(cst);
 
@@ -1221,6 +1374,14 @@ if ($target.type === "tcon") {
 let name = $target[0];
 let l = $target[1];
 return one($co(name)(l))
+}
+}
+if ($target.type === "trow") {
+{
+let fields = $target[0];
+let spread = $target[1];
+let l = $target[3];
+return foldl(map_or(type$slidents)(empty)(spread))(map(fields)(dot(type$slidents)(snd)))(bag$sland)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -1277,6 +1438,14 @@ let l = $target[1];
 return one(global(name)(type)(l)(usage($unit)))
 }
 }
+if ($target.type === "trow") {
+{
+let fields = $target[0];
+let spread = $target[1];
+let l = $target[3];
+return foldl(map_or(type$slnames(free))(empty)(spread))(map(fields)(dot(type$slnames(free))(snd)))(bag$sland)
+}
+}
 if ($target.type === "tapp") {
 {
 let target = $target[0];
@@ -1291,6 +1460,19 @@ const builtins_for_eval = $eval("builtins => sanitize => {\n  const san = {}\n  
 
 const eval_with_builtins = eval_with(builtins_for_eval);
 
+const expr$slvar_name = (bound) => (name) => (l) => (($target) => {
+if ($target.type === "some") {
+{
+let dl = $target[0];
+return one(local(l)(usage(dl)))
+}
+}
+if ($target.type === "none") {
+return one(global(name)(value)(l)(usage($unit)))
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(map$slget(bound)(name));
+
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
 const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
@@ -1299,6 +1481,9 @@ const elambda = (v0) => (v1) => (v2) => ({type: "elambda", 0: v0, 1: v1, 2: v2})
 const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2})
 const elet = (v0) => (v1) => (v2) => ({type: "elet", 0: v0, 1: v1, 2: v2})
 const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2})
+const eenum = (v0) => (v1) => (v2) => (v3) => ({type: "eenum", 0: v0, 1: v1, 2: v2, 3: v3})
+const erecord = (v0) => (v1) => (v2) => ({type: "erecord", 0: v0, 1: v1, 2: v2})
+const eaccess = (v0) => (v1) => (v2) => ({type: "eaccess", 0: v0, 1: v1, 2: v2})
 
 const quot$slexpr = (v0) => ({type: "quot/expr", 0: v0})
 const quot$sltop = (v0) => ({type: "quot/top", 0: v0})
@@ -1351,7 +1536,16 @@ let int = $target[0];
 return pprim(pint(int)(l))(l)
 }
 }
+return (($target) => {
+if ($target.type === "some") {
+{
+let t = $target[0];
+return penum(t)(l)(none)(l)
+}
+}
 return pvar(id)(l)
+throw new Error('Failed to match. ' + valueToString($target));
+})(parse_tag(id))
 throw new Error('Failed to match. ' + valueToString($target));
 })(string_to_int(id)))
 }
@@ -1407,7 +1601,66 @@ let name = $target[0][0][0];
 let il = $target[0][0][1];
 let rest = $target[0][1];
 let l = $target[1];
-return $gt$gt$eq(map_$gt(parse_pat)(rest))((rest) => $lt_(pcon(name)(il)(rest)(l)))
+return $gt$gt$eq(map_$gt(parse_pat)(rest))((rest) => (($target) => {
+if ($target.type === "some") {
+{
+let tag = $target[0];
+return $lt_(penum(tag)(il)(some(loop(rest)((rest) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return fatal("empty tag lol")
+}
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return one
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return pcon(",")(il)(cons(one)(cons(recur(rest))(nil)))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(rest))))(l))
+}
+}
+return $lt_(pcon(name)(il)(rest)(l))
+throw new Error('Failed to match. ' + valueToString($target));
+})(parse_tag(name)))
+}
+}
+if ($target.type === "cst/record") {
+{
+let items = $target[0];
+let l = $target[1];
+return $gt$gt$eq(loop(items)((items) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return $lt_($co(none)(nil))
+}
+if ($target.type === "cons" &&
+$target[0].type === "cst/spread" &&
+$target[1].type === "nil") {
+{
+let last = $target[0][0];
+return $gt$gt$eq(parse_pat(last))((last) => $lt_($co(some(last))(nil)))
+}
+}
+if ($target.type === "cons" &&
+$target[0].type === "cst/id" &&
+$target[1].type === "cons") {
+{
+let id = $target[0][0];
+let two = $target[1][0];
+let rest = $target[1][1];
+return $gt$gt$eq(recur(rest))(({1: rest, 0: last}) => $gt$gt$eq(parse_pat(two))((two) => $lt_($co(last)(cons($co(id)(two))(rest)))))
+}
+}
+return $lt_err($co(l)("Invalid record pat"))($co(none)(nil))
+throw new Error('Failed to match. ' + valueToString($target));
+})(items)))(({1: items, 0: spread}) => $lt_(precord(items)(spread)(l)))
 }
 }
 return $lt_err($co(cst_loc(pat))(`parse-pat mo match ${valueToString(pat)}`))(pany(cst_loc(pat)))
@@ -1534,6 +1787,24 @@ let l = $target[2];
 return l
 }
 }
+if ($target.type === "erecord") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "eenum") {
+{
+let l = $target[3];
+return l
+}
+}
+if ($target.type === "eaccess") {
+{
+let l = $target[2];
+return l
+}
+}
 throw new Error('Failed to match. ' + valueToString($target));
 })(expr);
 
@@ -1557,6 +1828,44 @@ if ($target.type === "eprim") {
 let prim = $target[0];
 let l = $target[1];
 return empty
+}
+}
+if ($target.type === "eenum") {
+{
+let arg = $target[2];
+return map_or(externals(bound))(empty)(arg)
+}
+}
+if ($target.type === "erecord") {
+{
+let spread = $target[0];
+let fields = $target[1];
+return foldl(map_or(externals(bound))(empty)(spread))(map(fields)(dot(externals(bound))(snd)))(bag$sland)
+}
+}
+if ($target.type === "eaccess") {
+{
+let target = $target[0];
+return (($target) => {
+if ($target.type === "none") {
+return empty
+}
+if ($target.type === "some" &&
+$target[0].type === ",") {
+{
+let v = $target[0][0];
+let l = $target[0][1];
+return (($target) => {
+if ($target === true) {
+return empty
+}
+return one($co(v)($co(value)(l)))
+throw new Error('Failed to match. ' + valueToString($target));
+})(set$slhas(bound)(v))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(target)
 }
 }
 if ($target.type === "estr") {
@@ -1805,6 +2114,15 @@ let expr = $target[1];
 let int = $target[2];
 return "let"
 }
+}
+if ($target.type === "erecord") {
+return "record"
+}
+if ($target.type === "eenum") {
+return "enum"
+}
+if ($target.type === "eaccess") {
+return "access"
 }
 if ($target.type === "ematch") {
 {
@@ -2196,6 +2514,18 @@ throw new Error('Failed to match. ' + valueToString($target));
 })($eq(l)(tl))
 }
 }
+if ($target.type === "eaccess") {
+{
+let name = $target[0];
+return none
+}
+}
+if ($target.type === "erecord") {
+return none
+}
+if ($target.type === "eenum") {
+return none
+}
 if ($target.type === "equot") {
 return none
 }
@@ -2432,6 +2762,21 @@ return $co(nil)(empty)
 if ($target.type === "pstr") {
 return $co(nil)(empty)
 }
+if ($target.type === "penum") {
+{
+let arg = $target[2];
+let l = $target[3];
+return map_or(pat$slnames)($co(nil)(empty))(arg)
+}
+}
+if ($target.type === "precord") {
+{
+let fields = $target[0];
+let spread = $target[1];
+let l = $target[2];
+return foldl(map_or(pat$slnames)($co(nil)(empty))(spread))(map(fields)(dot(pat$slnames)(snd)))(bound_and_names)
+}
+}
 if ($target.type === "pcon") {
 {
 let name = $target[0];
@@ -2449,6 +2794,59 @@ if ($target.type === "pany") {
 {
 let l = $target[0];
 return inner
+}
+}
+if ($target.type === "penum") {
+{
+let name = $target[0];
+let nl = $target[1];
+let arg = $target[2];
+let l = $target[3];
+return (($target) => {
+if ($target.type === "none") {
+return cons(j$slif(j$slbin("===")(target)(j$slstr(name)(nil)(nl))(nl))(j$slblock(inner))(none)(l))(nil)
+}
+if ($target.type === "some") {
+{
+let pat = $target[0];
+return cons(j$slif(j$slbin("===")(j$slattr(target)("tag")(nl))(j$slstr(name)(nil)(nl))(nl))(j$slblock(compile_pat$slj(pat)(j$slattr(target)("arg")(nl))(inner)(trace)))(none)(l))(nil)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arg)
+}
+}
+if ($target.type === "precord") {
+{
+let fields = $target[0];
+let spread = $target[1];
+let l = $target[2];
+return loop(fields)((fields) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return (($target) => {
+if ($target.type === "none") {
+return inner
+}
+if ($target.type === "some") {
+{
+let pat = $target[0];
+return cons(j$slsblock(j$slblock(cons(j$sllet(j$slpobj(mapi(0)(fields)((i) => ({0: name}) => $co(name)(j$slpvar(`_\$${int_to_string(i)}`)(l))))(some(j$slpvar("\$rest")(l)))(l))(target)(l))(compile_pat$slj(pat)(j$slvar("\$rest")(l))(inner)(trace))))(l))(nil)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(spread)
+}
+if ($target.type === "cons" &&
+$target[0].type === ",") {
+{
+let name = $target[0][0];
+let pat = $target[0][1];
+let rest = $target[1];
+return compile_pat$slj(pat)(j$slattr(target)(name)(l))(recur(rest))(trace)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(fields))
 }
 }
 if ($target.type === "pprim") {
@@ -3440,18 +3838,7 @@ if ($target.type === "evar") {
 {
 let name = $target[0];
 let l = $target[1];
-return (($target) => {
-if ($target.type === "some") {
-{
-let dl = $target[0];
-return one(local(l)(usage(dl)))
-}
-}
-if ($target.type === "none") {
-return one(global(name)(value)(l)(usage($unit)))
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(map$slget(bound)(name))
+return expr$slvar_name(bound)(name)(l)
 }
 }
 if ($target.type === "eprim") {
@@ -3459,6 +3846,40 @@ return empty
 }
 if ($target.type === "equot") {
 return empty
+}
+if ($target.type === "eaccess") {
+{
+let target = $target[0];
+let l = $target[2];
+return (($target) => {
+if ($target.type === "none") {
+return empty
+}
+if ($target.type === "some" &&
+$target[0].type === ",") {
+{
+let v = $target[0][0];
+let l = $target[0][1];
+return expr$slvar_name(bound)(v)(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(target)
+}
+}
+if ($target.type === "erecord") {
+{
+let spread = $target[0];
+let fields = $target[1];
+let l = $target[2];
+return foldl(map_or(expr$slnames(bound))(empty)(spread))(map(fields)(dot(expr$slnames(bound))(snd)))(bag$sland)
+}
+}
+if ($target.type === "eenum") {
+{
+let arg = $target[2];
+return map_or(expr$slnames(bound))(empty)(arg)
+}
 }
 if ($target.type === "eapp") {
 {
@@ -3691,7 +4112,16 @@ return eprim(pint(int)(l))(l)
 }
 }
 if ($target.type === "none") {
+return (($target) => {
+if ($target.type === "some") {
+{
+let tag = $target[0];
+return eenum(tag)(l)(none)(l)
+}
+}
 return evar(id)(l)
+throw new Error('Failed to match. ' + valueToString($target));
+})(parse_tag(id))
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(string_to_int(id)))
@@ -3872,7 +4302,44 @@ $target[0].type === "cons") {
 let target = $target[0][0];
 let args = $target[0][1];
 let l = $target[1];
+return (($target) => {
+if ($target.type === "some") {
+{
+let tag = $target[0];
+return $gt$gt$eq(map_$gt(parse_expr)(args))((args) => $lt_(eenum(tag)(cst_loc(target))(some(loop(args)((args) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return fatal("empty tag args")
+}
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return one
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return eapp(evar(",")(l))(cons(one)(cons(recur(rest))(nil)))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(args))))(l)))
+}
+}
 return $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq(map_$gt(parse_expr)(args))((args) => $lt_(eapp(target)(args)(l))))
+throw new Error('Failed to match. ' + valueToString($target));
+})((($target) => {
+if ($target.type === "cst/id") {
+{
+let id = $target[0];
+return parse_tag(id)
+}
+}
+return none
+throw new Error('Failed to match. ' + valueToString($target));
+})(target))
 }
 }
 if ($target.type === "cst/array") {
@@ -3880,6 +4347,43 @@ if ($target.type === "cst/array") {
 let args = $target[0];
 let l = $target[1];
 return parse_array(args)(l)
+}
+}
+if ($target.type === "cst/access") {
+{
+let target = $target[0];
+let items = $target[1];
+let l = $target[2];
+return $lt_(eaccess(target)(items)(l))
+}
+}
+if ($target.type === "cst/record") {
+{
+let items = $target[0];
+let l = $target[1];
+return $gt$gt$eq((($target) => {
+if ($target.type === "cons" &&
+$target[0].type === "cst/spread") {
+{
+let inner = $target[0][0];
+let l = $target[0][1];
+let rest = $target[1];
+return $gt$gt$eq(parse_expr(inner))((inner) => $lt_($co(some(inner))(rest)))
+}
+}
+return $lt_($co(none)(items))
+throw new Error('Failed to match. ' + valueToString($target));
+})(items))(({1: items, 0: spread}) => $gt$gt$eq(pairs(items))((pitems) => $gt$gt$eq(map_$gt(({1: value, 0: name}) => $gt$gt$eq((($target) => {
+if ($target.type === "cst/id") {
+{
+let id = $target[0];
+let l = $target[1];
+return $lt_(id)
+}
+}
+return $lt_err($co(cst_loc(name))("Not an identifier"))("\$error")
+throw new Error('Failed to match. ' + valueToString($target));
+})(name))((v) => $gt$gt$eq(parse_expr(value))((value) => $lt_($co(v)(value)))))(pitems))((items) => $lt_(erecord(spread)(items)(l)))))
 }
 }
 return $lt_err($co(cst_loc(cst))("Unable to parse"))(evar("()")(cst_loc(cst)))
@@ -4054,6 +4558,66 @@ let target = $target[0];
 let args = $target[1];
 let l = $target[2];
 return app$slj(target)(args)(trace)(l)
+}
+}
+if ($target.type === "eaccess") {
+{
+let target = $target[0];
+let items = $target[1];
+let l = $target[2];
+return ((make) => (($target) => {
+if ($target.type === "some" &&
+$target[0].type === ",") {
+{
+let t = $target[0][0];
+let nl = $target[0][1];
+return make(j$slvar(sanitize(t))(nl))
+}
+}
+if ($target.type === "none") {
+return j$sllambda(cons(j$slpvar("\$target")(l))(nil))(right(make(j$slvar("\$target")(l))))(l)
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(target))((target) => foldl(target)(items)((target) => ({1: nl, 0: name}) => j$slattr(target)(name)(nl)))
+}
+}
+if ($target.type === "erecord") {
+{
+let spread = $target[0];
+let fields = $target[1];
+let l = $target[2];
+return ((fields) => j$slobj((($target) => {
+if ($target.type === "none") {
+return fields
+}
+if ($target.type === "some") {
+{
+let s = $target[0];
+return cons(right(j$slspread(compile$slj(s)(trace))))(fields)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(spread))(l))(map(fields)(({1: value, 0: name}) => left($co(name)(compile$slj(value)(trace)))))
+}
+}
+if ($target.type === "eenum") {
+{
+let name = $target[0];
+let nl = $target[1];
+let arg = $target[2];
+let l = $target[3];
+return (($target) => {
+if ($target.type === "none") {
+return j$slstr(name)(nil)(nl)
+}
+if ($target.type === "some") {
+{
+let arg = $target[0];
+return j$slobj(cons(left($co("tag")(j$slstr(name)(nil)(nl))))(cons(left($co("arg")(compile$slj(arg)(trace))))(nil)))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(arg)
 }
 }
 if ($target.type === "ematch") {

@@ -138,7 +138,12 @@
 (deftype type
     (tvar string int)
         (tapp type type int)
-        (tcon string int))
+        (tcon string int)
+        (trow (list (, string type)) (option type) row-kind int))
+
+(deftype row-kind
+    (rrecord)
+        (renum))
 
 (defn type= [one two]
     (match (, one two)

@@ -27,7 +27,7 @@ export const loadEv = async (
 ): Promise<null | FullEvalator<any, any, any>> => {
     const res = await Promise.all(
         ids.map((id) =>
-            fetch(jsUrl(id) + '?cache-bust=' + Math.random().toString(32))
+            fetch(jsUrl(id) + (location.hostname === 'localhost' ? '' : '?cache-bust=' + Math.random().toString(32)))
                 .then((res) => res.text())
                 .then((text) => ({ id, text })),
         ),
