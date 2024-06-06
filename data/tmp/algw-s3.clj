@@ -941,7 +941,16 @@
 
 (,
     (fn [x] (run/nil-> (infer/expr benv-with-pair x)))
-        [(, (@ 10) (ok (tcon "int" 4512)))
+        [(,
+        (@
+            (fn [x]
+                (match x
+                    'ho  1
+                    'hum 2
+                    'hi  3
+                    )))
+            )
+        (, (@ 10) (ok (tcon "int" 4512)))
         (, (@ hi) (err (tmissing [(, "hi" 4531)])))
         (, (@ {a 2}) (ok (trow [(, "a" (tcon "int" 14459))] (none) (rrecord) 14456)))
         (,
