@@ -949,7 +949,7 @@
                     'hum 2
                     'hi  3
                     )))
-            )
+            (err (terr "Match not exhaustive 16673" [])))
         (, (@ 10) (ok (tcon "int" 4512)))
         (, (@ hi) (err (tmissing [(, "hi" 4531)])))
         (, (@ {a 2}) (ok (trow [(, "a" (tcon "int" 14459))] (none) (rrecord) 14456)))
@@ -1214,16 +1214,13 @@
                         (map
                             (fn [pat] [(pattern-to-ex-pattern tenv (, pat target-type))])
                                 patterns))]
-        (if (is-exhaustive tenv matrix)
+        (if (is-exhaustive matrix)
             (<- ())
                 (<-err "Match not exhaustive ${(int-to-string l)}"))))
 
 (deftype ex-pattern
-    (** The "any" pattern here also includes pvar, because it doesn't place any constraints on the value. **)
-        (ex/any)
-        (** ex/constructor encompasses both user-defined data types (such as list, ,, or expr) as well as primitive types such as int, bool, and string. You can see below in the group-constructors function how these are handled. **)
+    (ex/any)
         (ex/constructor string ex-group (list ex-pattern))
-        (** Our current language doesn't support or patterns, but they would be nice to add in the future, and they are well-supported by the algorithm, so we might as well implement them here. **)
         (ex/or ex-pattern ex-pattern))
 
 (deftype ex-group
@@ -1239,23 +1236,25 @@
         (precord pfields pspread l) (match type
                                         (trow fields spread kind l) (let [
                                                                         (, fmap spread) (deep-map fields spread kind)
-                                                                        field-ex        (map
-                                                                                            (fn [(, name pat)]
-                                                                                                (match (map/get fmap name)
-                                                                                                    (none)   (fatal "record unknown key ${name}")
-                                                                                                    (some t) (pattern-to-ex-pattern tenv (, pat t))))
-                                                                                                pfields)]
+                                                                        _               (match pspread
+                                                                                            (none)            ()
+                                                                                            (some (pany _))   ()
+                                                                                            (some (pvar _ _)) ()
+                                                                                            _                 (fatal "spread pattern must be any or var"))
+                                                                        pmap            (map/from-list pfields)]
                                                                         (ex/constructor
                                                                             "record"
                                                                                 (gnames ["record"])
-                                                                                (match pspread
-                                                                                (none)     field-ex
-                                                                                (some pat) (let [
-                                                                                               spread-fields (map/to-list
-                                                                                                                 (foldl fmap pfields (fn [map (, name _)] (map/rm map name))))]
-                                                                                               [(pattern-to-ex-pattern
-                                                                                                   tenv
-                                                                                                       (, pat (trow spread-fields spread kind l)))]))))
+                                                                                (loop
+                                                                                ;  TODO sort these
+                                                                                    (map/to-list fmap)
+                                                                                    (fn [fields recur]
+                                                                                    (match fields
+                                                                                        []                    [ex/any]
+                                                                                        [(, key type) ..rest] [(match (map/get pmap key)
+                                                                                                                  (none)   ex/any
+                                                                                                                  (some p) (pattern-to-ex-pattern tenv (, p type)))
+                                                                                                                  ..(recur rest)])))))
                                         _                           (fatal "record type not a row"))
         (penum tag tl arg l)        (match type
                                         (trow fields spread kind l) (let [(, map spread) (deep-map fields spread kind)]
@@ -1295,17 +1294,6 @@
                                                 (pattern-to-ex-pattern tenv)
                                                     (zip args (map (type/apply subst) cargs)))))))
 
-(pattern-to-ex-pattern
-    (err-to-fatal
-        (run/nil->
-            (add/stmt
-                builtin-env
-                    (@!
-                    (deftype (list a)
-                        (nil)
-                            (cons a (list a)))))))
-        (, (@p [2 a b]) (@t (list int))))
-
 (def benv-with-pair
     (tenv/merge
         builtin-env
@@ -1340,7 +1328,13 @@
                         [(ex/any) (ex/constructor "nil" (gnames ["nil" "cons"]) [])])])]))
         (,
         (, (@p (, 2 b)) (@t (, 1 2)))
-            (ex/constructor "," (gnames [","]) [(ex/constructor "2" (ginf) []) (ex/any)]))])
+            (ex/constructor "," (gnames [","]) [(ex/constructor "2" (ginf) []) (ex/any)]))
+        (,
+        (, (@p {a 2}) (trow [(, "a" tint) (, "b" tbool)] none precord 1))
+            (ex/constructor
+            "record"
+                (gnames ["record"])
+                [(ex/constructor "2" (ginf) []) (ex/any) (ex/any)]))])
 
 (defn tcon-and-args [type coll l]
     (match type
@@ -1360,13 +1354,17 @@
                 (tcon "b" 10047)
                 (tapp (tcon "c" 10049) (tcon "d" 10050) 10048)]))])
 
-(defn any-list [arity]
+(defn fill-list [what num]
     (loop
-        arity
-            (fn [arity recur]
-            (if (= 0 arity)
+        num
+            (fn [num recur]
+            (if (= 0 num)
                 []
-                    [(ex/any) ..(recur (- arity 1))]))))
+                    [what ..(recur (- num 1))]))))
+
+(def any-list (fill-list ex/any))
+
+(** A "default matrix" is one where the leading "any"s have been stripped off of each row that starts with an any. Rows that start with a constructor are omitted. **)
 
 (defn default-matrix [matrix]
     (concat
@@ -1378,10 +1376,12 @@
                     _                           []))
                 matrix)))
 
-(defn is-exhaustive [tenv matrix]
-    (if (is-useful tenv matrix [(ex/any)])
+(defn is-exhaustive [matrix]
+    (if (is-useful matrix [(ex/any)])
         false
             true))
+
+(** A "specialized matrix" is kind of like "filter". It produces the matrix that would be used if the "head" matches a given constructor. Rows with heads that don't match the constructor are ignored, while rows with "any" heads are expanded to have any "any" for each argument of the constructor. **)
 
 (defn specialized-matrix [constructor arity matrix]
     (concat (map (specialize-row constructor arity) matrix)))
@@ -1406,32 +1406,29 @@
 (defn fold-ex-pats [init pats f]
     (foldl init pats (fn [init pat] (fold-ex-pat init pat f))))
 
-(defn find-gid [heads]
+(defn fold-constructors [init pats f]
     (fold-ex-pats
+        init
+            pats
+            (fn [init pat]
+            (match pat
+                (ex/constructor name gid args) (f init name gid args)
+                _                              init))))
+
+(defn find-gid [heads]
+    (fold-constructors
         none
             heads
-            (fn [gid pat]
-            (match pat
-                (ex/constructor _ id _) (match gid
-                                            (none)     (some id)
-                                            (some oid) (if (!= oid id)
-                                                           (fatal
-                                                               "Constructors with different group IDs in the same position.")
-                                                               (some id)))
-                _                       gid))))
-
-(defn group-constructors [tenv gid]
-    (match gid
-        "int"    []
-        "bool"   ["true" "false"]
-        "string" []
-        _        (let [(tenv _ _ types _) tenv]
-                     (match (map/get types gid)
-                         (none)             (fatal "Unknown type name ${gid}")
-                         (some (, _ names)) (set/to-list names)))))
+            (fn [gid _ id _]
+            (match gid
+                (none)     (some id)
+                (some oid) (if (!= oid id)
+                               (fatal
+                                   "Constructors with different group IDs in the same position.")
+                                   (some id))))))
 
 ((** This checks the "head" of each row of the matrix, finds the common type, and, if each constructor for that type is represented in the matrix, returns a mapping from constructor name => arity. **)
-    defn args-if-complete [tenv matrix]
+    defn args-if-complete [matrix]
     (let [
         heads (map
                   (fn [row]
@@ -1444,13 +1441,10 @@
             (none)     map/nil
             (some gid) (let [
                            found (map/from-list
-                                     (fold-ex-pats
+                                     (fold-constructors
                                          []
                                              heads
-                                             (fn [found head]
-                                             (match head
-                                                 (ex/constructor id _ args) [(, id (length args)) ..found]
-                                                 _                          found))))]
+                                             (fn [found id _ args] [(, id (length args)) ..found])))]
                            (match gid
                                (ginf)           map/nil
                                (gnames constrs) (loop
@@ -1462,7 +1456,7 @@
                                                                             (none)   map/nil
                                                                             (some _) (recur rest))))))))))
 
-(defn is-useful [tenv matrix row]
+(defn is-useful [matrix row]
     (let [
         head-and-rest (match matrix
                           (** If our matrix has a height or width of zero, the row is not useful. **)
@@ -1475,23 +1469,21 @@
             (none)               false
             (some (, head rest)) (match head
                                      (ex/constructor id _ args) (is-useful
-                                                                    tenv
-                                                                        (specialized-matrix id (length args) matrix)
+                                                                    (specialized-matrix id (length args) matrix)
                                                                         (concat [args rest]))
-                                     (ex/any)                   (match (map/to-list (args-if-complete tenv matrix))
+                                     (ex/any)                   (match (map/to-list (args-if-complete matrix))
                                                                     []   (match (default-matrix matrix)
                                                                              []       true
-                                                                             defaults (is-useful tenv defaults rest))
+                                                                             defaults (is-useful defaults rest))
                                                                     alts (any
                                                                              (fn [(, id alt)]
                                                                                  (is-useful
-                                                                                     tenv
-                                                                                         (specialized-matrix id alt matrix)
+                                                                                     (specialized-matrix id alt matrix)
                                                                                          (concat [(any-list alt) rest])))
                                                                                  alts))
-                                     (ex/or left right)         (if (is-useful tenv matrix [left ..rest])
+                                     (ex/or left right)         (if (is-useful matrix [left ..rest])
                                                                     true
-                                                                        (is-useful tenv matrix [right ..rest]))))))
+                                                                        (is-useful matrix [right ..rest]))))))
 
 (** ## Adding Top-level Items to the Type Environment **)
 

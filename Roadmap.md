@@ -1,4 +1,8 @@
 
+# OK BUt a simple thing I can do is a "zoom" which doesn't even have to persist at themoment.
+
+trying to do zoom and cards are in the way.
+
 # Next Gen Storage Formatttt
 
 What do we want? the ability to have

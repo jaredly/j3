@@ -22,6 +22,7 @@ import { JumpTo, RenderProduceItem } from './RenderProduceItem';
 import { nodeColor } from './rainbow';
 import { NodeResults } from './store/getImmediateResults';
 import 'victormono';
+import equal from 'fast-deep-equal';
 
 const PluginRender = ({
     ns,
@@ -73,6 +74,8 @@ function NSTop({
     drag,
     debug,
     setPin,
+    setZoom,
+    zoom
 }: {
     idx: number;
     nsReg: NsReg;
@@ -80,6 +83,8 @@ function NSTop({
     drag: Drag;
     debug: Debug;
     setPin: (pin: number | null) => void;
+    setZoom: (pin: Path[] | null) => void;
+    zoom: Path[] | null
 }) {
     const store = useGetStore();
     const { ns, produce } = useNamespace(idx, path);
@@ -95,6 +100,10 @@ function NSTop({
     const nsp = path
         .map((p) => (p.type === 'ns' ? `${p.idx}$${p.child}` : `${p.idx}`))
         .join(':');
+
+    if (zoom != null && !equal(path.slice(0, zoom.length), zoom.slice(0, path.length))) {
+        return null // zoomed out
+    }
 
     return (
         <div
@@ -118,6 +127,7 @@ function NSTop({
                             dispatch={store.dispatch}
                             path={path}
                             setPin={setPin}
+                            setZoom={setZoom}
                         />
                         {debug.ids ? (
                             <div
@@ -185,6 +195,8 @@ function NSTop({
                                 child: id,
                                 idx: ns.id,
                             })}
+                            setZoom={setZoom}
+                            zoom={zoom}
                         />
                     ))}
                 {ns.collapsed ? (
@@ -319,7 +331,8 @@ const Wrapped = React.memo(NSTop, (prevProps, nextProps) => {
     return (
         prevProps.idx === nextProps.idx &&
         prevProps.debug === nextProps.debug &&
-        pathsEqual(prevProps.path, nextProps.path)
+        pathsEqual(prevProps.path, nextProps.path) &&
+        prevProps.zoom === nextProps.zoom
     );
 });
 
