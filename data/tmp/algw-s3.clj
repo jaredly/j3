@@ -965,7 +965,19 @@
         (@
             (match (some 1)
                 (none) 2))
-            )
+            (err
+            (terr
+                "Match not exhaustive 17655: \nMissing handler for case some"
+                    [])))
+        (,
+        (@
+            (match (some [])
+                (some [1 2 .._]) 1
+                (some [a .._])   2))
+            (err
+            (terr
+                "Match not exhaustive 17689: \nMissing handler for case none\nMissing handler for case nil"
+                    [])))
         (, (@ 10) (ok (tcon "int" 4512)))
         (, (@ hi) (err (tmissing [(, "hi" 4531)])))
         (, (@ {a 2}) (ok (trow [(, "a" (tcon "int" 14459))] (none) (rrecord) 14456)))
@@ -1257,7 +1269,7 @@
     (match m
         (minf)       "An infinite type requires a catchall"
         (mopen id)   "Open type (tvar ${id}) requires a catchall"
-        (mname name) "Missing handler for field ${name}"))
+        (mname name) "Missing handler for case ${name}"))
 
 (defn map/update [map key f] (map/set map key (f (map/get map key))))
 
@@ -1401,6 +1413,10 @@
                             [(@!
                             (deftype (, a b)
                                 (, a b)))
+                            (@!
+                            (deftype (option a)
+                                (none)
+                                    (some a)))
                             (@!
                             (deftype (list a)
                                 (nil)
