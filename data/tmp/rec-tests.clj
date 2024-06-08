@@ -21,6 +21,8 @@
 
 ('hi 10)
 
+(fn [x] ('hi x))
+
 (fn [{x x}] "${x}")
 
 
@@ -44,7 +46,9 @@
 (fn [x]
     (match x
         ('hi x) x
-        _       10))
+        ))
+
+(fn [{x ('hi a)}] 2 )
 
 (if true
     {x 1 y 10}

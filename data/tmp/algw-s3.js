@@ -260,20 +260,6 @@ let minf = {type: "minf"}
 let mname = (v0) => ({type: "mname", 0: v0})
 let mopen = (v0) => ({type: "mopen", 0: v0})
 let map$slupdate = (map) => (key) => (f) => map$slset(map)(key)(f(map$slget(map)(key)))
-let missing_$gts = (m) => (($target) => {
-if ($target.type === "minf") {
-return "An infinite type requires a catchall"
-} ;
-if ($target.type === "mopen") {
-let id = $target[0];
-return `Open type (tvar ${id}) requires a catchall`
-} ;
-if ($target.type === "mname") {
-let name = $target[0];
-return `Missing handler for case ${name}`
-} ;
-throw new Error('match fail 17592:' + JSON.stringify($target))
-})(m)
 let cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 let nil = {type: "nil"}
 let pany = (v0) => ({type: "pany", 0: v0})
@@ -627,6 +613,34 @@ return head
 } ;
 throw new Error('match fail 10688:' + JSON.stringify($target))
 })(row))(matrix)
+let missing_$gts = ({"1": m, "0": prefix}) => `Missing ${(($target) => {
+if ($target.type === "nil") {
+return ""
+} ;
+return `${join(" ")(prefix)} `;
+throw new Error('match fail 18035:' + JSON.stringify($target))
+})(prefix)}${(($target) => {
+if ($target.type === "minf") {
+return "_ : An infinite type requires a catchall"
+} ;
+if ($target.type === "mopen") {
+let id = $target[0];
+return `_ : Open type (tvar ${id}) requires a catchall`
+} ;
+if ($target.type === "mname") {
+let name = $target[0];
+return `${name} : Case not handled`
+} ;
+throw new Error('match fail 17592:' + JSON.stringify($target))
+})(m)}`
+let prefix = (prefix) => (missings) => map(({"1": missing, "0": pre}) => $co(cons(prefix)(pre))(missing))(missings)
+let filter_$gt = (f) => (items) => foldl_$gt(nil)(items)((res) => (v) => $gt$gt$eq(f(v))((b) => $lt_((($target) => {
+if ($target === true) {
+return cons(v)(res)
+} ;
+return res;
+throw new Error('match fail 17872:' + JSON.stringify($target))
+})(b))))
 let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 let tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 let tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
@@ -1647,16 +1661,16 @@ let {"1": {"1": anys, "0": by_cstr}, "0": gid} = group_rows(matrix);
 {
 let $target = gid;
 if ($target.type === "none") {
-return find_missing(anys)
+return prefix("_")(find_missing(anys))
 } ;
 if ($target.type === "some") {
 if ($target[0].type === "ginf") {
 {
 let $target = anys;
 if ($target.type === "nil") {
-return cons(minf)(nil)
+return cons($co(nil)(minf))(nil)
 } ;
-return find_missing(anys);
+return prefix("_")(find_missing(anys));
 throw new Error('match fail 17357:' + JSON.stringify($target))
 }
 } 
@@ -1677,8 +1691,8 @@ if ($target[0].type === ",") {
 let n = $target[0][0];
 let rows = $target[0][1];
 {
-let prefix = any_list(n);
-return find_missing(concat(cons(rows)(cons(map((row) => concat(cons(prefix)(cons(row)(nil))))(anys))(nil))))
+let args = any_list(n);
+return prefix(name)(find_missing(concat(cons(rows)(cons(map((row) => concat(cons(args)(cons(row)(nil))))(anys))(nil)))))
 }
 } 
 } ;
@@ -1693,11 +1707,11 @@ return nil
 } ;
 if ($target.type === ",") {
 if ($target[1].type === "nil") {
-return map(mname)(missing_fields)
+return map((name) => $co(nil)(mname(name)))(missing_fields)
 } 
 } ;
 if ($target.type === ",") {
-return find_missing(anys)
+return prefix("_")(find_missing(anys))
 } ;
 throw new Error('match fail 17471:' + JSON.stringify($target))
 })($co(missing_fields)(anys));
@@ -1712,7 +1726,7 @@ if ($target.type === ",") {
 if ($target[0].type === "some") {
 let id = $target[0][0];
 if ($target[1].type === "nil") {
-return cons(mopen(id))(nil)
+return cons($co(nil)(mopen(id)))(nil)
 } 
 } 
 } ;
@@ -1725,7 +1739,7 @@ let $target = missing_fields;
 if ($target.type === "nil") {
 return nil
 } ;
-return find_missing(anys);
+return prefix("_")(find_missing(anys));
 throw new Error('match fail 17542:' + JSON.stringify($target))
 }
 } 
@@ -1809,16 +1823,6 @@ return tenv(map$slfrom_list(map(({"1": {"1": {"1": res, "0": args}, "0": free}, 
 }
 }
 }
-let check_exhaustiveness = (tenv) => (target_type) => (patterns) => (l) => $gt$gt$eq(type$slapply_$gt(target_type))((target_type) => $gt$gt$eq($lt_(map((pat) => cons(pattern_to_ex_pattern(tenv)($co(pat)(target_type)))(nil))(patterns)))((matrix) => (($target) => {
-if ($target.type === "nil") {
-return $lt_($unit)
-} ;
-{
-let missing = $target;
-return $lt_err(`Match not exhaustive ${int_to_string(l)}: \n${join("\n")(map(missing_$gts)(missing))}`)
-};
-throw new Error('match fail 17555:' + JSON.stringify($target))
-})(find_missing(matrix))))
 let args_if_complete = (matrix) => {
 let heads = matrix_heads(matrix);
 {
@@ -2079,6 +2083,23 @@ return $gt$gt$eq(instantiate_tcon(tenv)(name)(l))(({"1": cres, "0": cargs}) => $
 } ;
 throw new Error('match fail 3998:' + JSON.stringify($target))
 })(pattern)
+let check_exhaustiveness = (tenv) => (target_type) => (patterns) => (l) => $gt$gt$eq(type$slapply_$gt(target_type))((target_type) => $gt$gt$eq($lt_(map((pat) => cons(pattern_to_ex_pattern(tenv)($co(pat)(target_type)))(nil))(patterns)))((matrix) => $gt$gt$eq(filter_$gt(({"1": missing}) => (($target) => {
+if ($target.type === "mopen") {
+let vbl = $target[0];
+return $gt$gt$eq(unify(tvar(vbl)(-1))(trow(nil)(none)(renum)(-1))(-1))((_17897) => $lt_(false))
+} ;
+return $lt_(true);
+throw new Error('match fail 17890:' + JSON.stringify($target))
+})(missing))(find_missing(matrix)))((missing) => (($target) => {
+if ($target.type === "nil") {
+return $lt_($unit)
+} ;
+{
+let missing = $target;
+return $lt_err(`Match not exhaustive ${int_to_string(l)}: \n${join("\n")(map(missing_$gts)(missing))}`)
+};
+throw new Error('match fail 17555:' + JSON.stringify($target))
+})(missing))))
 let is_useful = (matrix) => (row) => {
 let head_and_rest = (($target) => {
 if ($target.type === "nil") {
@@ -2280,7 +2301,7 @@ let pat = $target[0][0];
 if ($target[0][1].type === "nil") {
 let body = $target[1];
 let l = $target[2];
-return $gt$gt$eq(infer$slpattern(tenv)(pat))(({"1": scope, "0": arg_type}) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(arg_type))((arg_type) => $lt_(tfn(arg_type)(body_type)(l))))))
+return $gt$gt$eq(infer$slpattern(tenv)(pat))(({"1": scope, "0": arg_type}) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(arg_type))((arg_type) => $gt$gt$eq(check_exhaustiveness(tenv)(arg_type)(cons(pat)(nil))(l))((_4873) => type$slapply_$gt(tfn(arg_type)(body_type)(l)))))))
 } 
 } 
 } ;
@@ -2349,7 +2370,7 @@ let value = $target[0][0][1];
 if ($target[0][1].type === "nil") {
 let body = $target[1];
 let l = $target[2];
-return $gt$gt$eq(infer$slpattern(tenv)(pat))(({"1": scope, "0": type}) => $gt$gt$eq(infer$slexpr(tenv)(value))((value_type) => $gt$gt$eq(unify(type)(value_type)(l))((_3987) => $gt$gt$eq(scope$slapply_$gt(scope))((scope) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $lt_(body_type)))))))
+return $gt$gt$eq(infer$slpattern(tenv)(pat))(({"1": scope, "0": type}) => $gt$gt$eq(infer$slexpr(tenv)(value))((value_type) => $gt$gt$eq(unify(type)(value_type)(l))((_3987) => $gt$gt$eq(scope$slapply_$gt(scope))((scope) => $gt$gt$eq($lt_(tenv$slwith_scope(tenv)(scope)))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(body))((body_type) => $gt$gt$eq(type$slapply_$gt(type))((type) => $gt$gt$eq(check_exhaustiveness(tenv)(type)(cons(pat)(nil))(l))((_3987) => type$slapply_$gt(body_type)))))))))
 } 
 } 
 } 

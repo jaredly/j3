@@ -865,8 +865,9 @@
                                                      (, arg-type scope) (infer/pattern tenv pat)
                                                      bound-env          (<- (tenv/with-scope tenv scope))
                                                      body-type          (infer/expr bound-env body)
-                                                     arg-type           (type/apply-> arg-type)]
-                                                     (<- (tfn arg-type body-type l)))
+                                                     arg-type           (type/apply-> arg-type)
+                                                     ()                 (check-exhaustiveness tenv arg-type [pat] l)]
+                                                     (type/apply-> (tfn arg-type body-type l)))
         (** This isn't necessarily the most efficient way to handle curried arguments, but imo it makes the above inference algorithm cleaner & more understandable, as you only have to think about one argument at a time. **)
         (elambda [one ..rest] body l)            (infer/expr tenv (elambda [one] (elambda rest body l) l))
         (elambda [] body l)                      (<-err "No args to lambda")
@@ -906,8 +907,10 @@
                                                      ()             (unify type value-type l)
                                                      scope          (scope/apply-> scope)
                                                      bound-env      (<- (tenv/with-scope tenv scope))
-                                                     body-type      (infer/expr bound-env body)]
-                                                     (<- body-type))
+                                                     body-type      (infer/expr bound-env body)
+                                                     type           (type/apply-> type)
+                                                     ()             (check-exhaustiveness tenv type [pat] l)]
+                                                     (type/apply-> body-type))
         (elet [one ..more] body l)               (infer/expr tenv (elet [one] (elet more body l) l))
         (elet [] body l)                         (<-err "No bindings in let")
         (** match expressions! Like let, but with a little more book-keeping. **)
@@ -949,17 +952,35 @@
                     'hum 2
                     'hi  3
                     )))
-            (err
-            (terr
-                "Match not exhaustive 16673: \nOpen type (tvar row:8) requires a catchall"
-                    [])))
+            (ok
+            (tapp
+                (tapp
+                    (tcon "->" 16685)
+                        (trow
+                        [(, "ho" (tcon "()" 16677))]
+                            (some
+                            (trow
+                                [(, "hum" (tcon "()" 16679))]
+                                    (some
+                                    (trow
+                                        [(, "hi" (tcon "()" 16681))]
+                                            (some (trow [] (none) (renum) -1))
+                                            (renum)
+                                            16681))
+                                    (renum)
+                                    16679))
+                            (renum)
+                            16677)
+                        16685)
+                    (tcon "int" 16678)
+                    16685)))
         (,
         (@
             (match 1
                 2 3))
             (err
             (terr
-                "Match not exhaustive 17638: \nAn infinite type requires a catchall"
+                "Match not exhaustive 17638: \nMissing _ : An infinite type requires a catchall"
                     [])))
         (,
         (@
@@ -967,7 +988,7 @@
                 (none) 2))
             (err
             (terr
-                "Match not exhaustive 17655: \nMissing handler for case some"
+                "Match not exhaustive 17655: \nMissing some : Case not handled"
                     [])))
         (,
         (@
@@ -976,8 +997,23 @@
                 (some [a .._])   2))
             (err
             (terr
-                "Match not exhaustive 17689: \nMissing handler for case none\nMissing handler for case nil"
+                "Match not exhaustive 17689: \nMissing some nil : Case not handled\nMissing none : Case not handled"
                     [])))
+        (,
+        (@
+            (match (, 1 none)
+                (, _ (none)) 1))
+            (err
+            (terr
+                "Match not exhaustive 17736: \nMissing , _ some : Case not handled"
+                    [])))
+        (,
+        (@ (fn [(some x)] x))
+            (err
+            (terr
+                "Match not exhaustive 18091: \nMissing none : Case not handled"
+                    [])))
+        (, (@ (fn [('hi x)] x)) )
         (, (@ 10) (ok (tcon "int" 4512)))
         (, (@ hi) (err (tmissing [(, "hi" 4531)])))
         (, (@ {a 2}) (ok (trow [(, "a" (tcon "int" 14459))] (none) (rrecord) 14456)))
@@ -1235,14 +1271,31 @@
                          true
                              (any f rest))))
 
+(defn filter-> [f items]
+    (foldl->
+        []
+            items
+            (fn [res v]
+            (let-> [b (f v)]
+                (<-
+                    (if b
+                        [v ..res]
+                            res))))))
+
 (defn check-exhaustiveness [tenv target-type patterns l]
     (let-> [
         target-type (type/apply-> target-type)
         matrix      (<-
                         (map
                             (fn [pat] [(pattern-to-ex-pattern tenv (, pat target-type))])
-                                patterns))]
-        (match (find-missing matrix)
+                                patterns))
+        missing     (filter->
+                        (fn [(, _ missing)]
+                            (match missing
+                                (mopen vbl) (let-> [_ (unify (tvar vbl -1) (trow [] none (renum) -1) -1)] (<- false))
+                                _           (<- true)))
+                            (find-missing matrix))]
+        (match missing
             []      (<- ())
             missing (<-err
                         "Match not exhaustive ${(int-to-string l)}: \n${(join "\n" (map missing->s missing))}"))
@@ -1265,11 +1318,13 @@
         (mname string)
         (mopen string))
 
-(defn missing->s [m]
-    (match m
-        (minf)       "An infinite type requires a catchall"
-        (mopen id)   "Open type (tvar ${id}) requires a catchall"
-        (mname name) "Missing handler for case ${name}"))
+(defn missing->s [(, prefix m)]
+    "Missing ${(match prefix
+        [] ""
+        _  "${(join " " prefix)} ")}${(match m
+        (minf)       "_ : An infinite type requires a catchall"
+        (mopen id)   "_ : Open type (tvar ${id}) requires a catchall"
+        (mname name) "${name} : Case not handled")}")
 
 (defn map/update [map key f] (map/set map key (f (map/get map key))))
 
@@ -1298,16 +1353,19 @@
                                                                            anys))
                 [[] .._]                                       (fatal "empty row?")))))
 
+(defn prefix [prefix missings]
+    (map (fn [(, pre missing)] (, [prefix ..pre] missing)) missings))
+
 (defn find-missing [matrix]
     (match matrix
         []       []
         [[] .._] []
         _        (let [(, gid by-cstr anys) (group-rows matrix)]
                      (match gid
-                         (none)                     (find-missing anys)
+                         (none)                     (prefix "_" (find-missing anys))
                          (some (ginf))              (match anys
-                                                        [] [(minf)]
-                                                        _  (find-missing anys))
+                                                        [] [(, [] (minf))]
+                                                        _  (prefix "_" (find-missing anys)))
                          (some (gnames names open)) (let [
                                                         missing-fields (filter (fn [k] (not (is-some (map/get by-cstr k)))) names)
                                                         from-fields    (concat
@@ -1315,19 +1373,21 @@
                                                                                (fn [name]
                                                                                    (match (map/get by-cstr name)
                                                                                        (none)            []
-                                                                                       (some (, n rows)) (let [prefix (any-list n)]
-                                                                                                             (find-missing (concat [rows (map (fn [row] (concat [prefix row])) anys)])))))
+                                                                                       (some (, n rows)) (let [args (any-list n)]
+                                                                                                             (prefix
+                                                                                                                 name
+                                                                                                                     (find-missing (concat [rows (map (fn [row] (concat [args row])) anys)]))))))
                                                                                    names))
                                                         from-any       (match (, missing-fields anys)
                                                                            (, [] _) []
-                                                                           (, _ []) (map mname missing-fields)
-                                                                           (, _ _)  (find-missing anys))
+                                                                           (, _ []) (map (fn [name] (, [] (mname name))) missing-fields)
+                                                                           (, _ _)  (prefix "_" (find-missing anys)))
                                                         from-open      (match (, open anys)
                                                                            (, (none) _)       []
-                                                                           (, (some id) [])   [(mopen id)]
+                                                                           (, (some id) [])   [(, [] (mopen id))]
                                                                            (, (some id) anys) (match missing-fields
                                                                                                   [] []
-                                                                                                  _  (find-missing anys)))]
+                                                                                                  _  (prefix "_" (find-missing anys))))]
                                                         (concat [from-any from-open from-fields]))))))
 
 
