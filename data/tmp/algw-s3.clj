@@ -949,7 +949,23 @@
                     'hum 2
                     'hi  3
                     )))
-            (err (terr "Match not exhaustive 16673" [])))
+            (err
+            (terr
+                "Match not exhaustive 16673: \nOpen type (tvar row:8) requires a catchall"
+                    [])))
+        (,
+        (@
+            (match 1
+                2 3))
+            (err
+            (terr
+                "Match not exhaustive 17638: \nAn infinite type requires a catchall"
+                    [])))
+        (,
+        (@
+            (match (some 1)
+                (none) 2))
+            )
         (, (@ 10) (ok (tcon "int" 4512)))
         (, (@ hi) (err (tmissing [(, "hi" 4531)])))
         (, (@ {a 2}) (ok (trow [(, "a" (tcon "int" 14459))] (none) (rrecord) 14456)))
@@ -1214,23 +1230,95 @@
                         (map
                             (fn [pat] [(pattern-to-ex-pattern tenv (, pat target-type))])
                                 patterns))]
-        (if (is-exhaustive matrix)
+        (match (find-missing matrix)
+            []      (<- ())
+            missing (<-err
+                        "Match not exhaustive ${(int-to-string l)}: \n${(join "\n" (map missing->s missing))}"))
+            ;(if (is-exhaustive matrix)
             (<- ())
                 (<-err "Match not exhaustive ${(int-to-string l)}"))))
 
 (deftype ex-pattern
     (ex/any)
-        (ex/constructor string ex-group (list ex-pattern))
-        (ex/or ex-pattern ex-pattern))
+        (ex/constructor string ex-group (list ex-pattern)))
 
 (deftype ex-group
     (ginf)
         (gnames (list string) (option string)))
 
+(** ## Enumerating "missing" cases **)
+
 (deftype missing
     (minf)
         (mname string)
         (mopen string))
+
+(defn missing->s [m]
+    (match m
+        (minf)       "An infinite type requires a catchall"
+        (mopen id)   "Open type (tvar ${id}) requires a catchall"
+        (mname name) "Missing handler for field ${name}"))
+
+(defn map/update [map key f] (map/set map key (f (map/get map key))))
+
+(defn group-rows [matrix]
+    (loop
+        (, matrix none map/nil [])
+            (fn [(, matrix gid by-cstr anys) recur]
+            (match matrix
+                []                                             (, gid by-cstr anys)
+                [[(ex/any) ..row] ..rest]                      (recur (, rest gid by-cstr [row ..anys]))
+                [[(ex/constructor id rgid args) ..row] ..rest] (recur
+                                                                   (,
+                                                                       rest
+                                                                           (match gid
+                                                                           (none)     (some rgid)
+                                                                           (some gid) (if (!= gid rgid)
+                                                                                          (fatal "different GIDs in the same matrix")
+                                                                                              (some gid)))
+                                                                           (map/update
+                                                                           by-cstr
+                                                                               id
+                                                                               (fn [x]
+                                                                               (match x
+                                                                                   (none)            (, (length args) [(concat [args row])])
+                                                                                   (some (, n rows)) (, n [(concat [args row]) ..rows]))))
+                                                                           anys))
+                [[] .._]                                       (fatal "empty row?")))))
+
+(defn find-missing [matrix]
+    (match matrix
+        []       []
+        [[] .._] []
+        _        (let [(, gid by-cstr anys) (group-rows matrix)]
+                     (match gid
+                         (none)                     (find-missing anys)
+                         (some (ginf))              (match anys
+                                                        [] [(minf)]
+                                                        _  (find-missing anys))
+                         (some (gnames names open)) (let [
+                                                        missing-fields (filter (fn [k] (not (is-some (map/get by-cstr k)))) names)
+                                                        from-fields    (concat
+                                                                           (map
+                                                                               (fn [name]
+                                                                                   (match (map/get by-cstr name)
+                                                                                       (none)            []
+                                                                                       (some (, n rows)) (let [prefix (any-list n)]
+                                                                                                             (find-missing (concat [rows (map (fn [row] (concat [prefix row])) anys)])))))
+                                                                                   names))
+                                                        from-any       (match (, missing-fields anys)
+                                                                           (, [] _) []
+                                                                           (, _ []) (map mname missing-fields)
+                                                                           (, _ _)  (find-missing anys))
+                                                        from-open      (match (, open anys)
+                                                                           (, (none) _)       []
+                                                                           (, (some id) [])   [(mopen id)]
+                                                                           (, (some id) anys) (match missing-fields
+                                                                                                  [] []
+                                                                                                  _  (find-missing anys)))]
+                                                        (concat [from-any from-open from-fields]))))))
+
+
 
 (** Processing "patterns" to be legible to the exhaustiveness algorithm **)
 
@@ -1382,9 +1470,8 @@
         (map
             (fn [row]
                 (match row
-                    [(ex/any) ..rest]           [rest]
-                    [(ex/or left right) ..rest] (default-matrix [[left ..rest] [right ..rest]])
-                    _                           []))
+                    [(ex/any) ..rest] [rest]
+                    _                 []))
                 matrix)))
 
 (defn is-exhaustive [matrix]
@@ -1403,16 +1490,11 @@
         [(ex/any) ..rest]                     [(concat [(any-list arity) rest])]
         [(ex/constructor name _ args) ..rest] (if (= name constructor)
                                                   [(concat [args rest])]
-                                                      [])
-        [(ex/or left right) ..rest]           (specialized-matrix
-                                                  constructor
-                                                      arity
-                                                      [[left ..rest] [right ..rest]])))
+                                                      [])))
 
 (defn fold-ex-pat [init pat f]
     (match pat
-        (ex/or left right) (f (f init left) right)
-        _                  (f init pat)))
+        _ (f init pat)))
 
 (defn fold-ex-pats [init pats f]
     (foldl init pats (fn [init pat] (fold-ex-pat init pat f))))
@@ -1441,12 +1523,7 @@
 ((** This checks the "head" of each row of the matrix, finds the common type, and, if each constructor for that type is represented in the matrix, returns a mapping from constructor name => arity. **)
     defn args-if-complete [matrix]
     (let [
-        heads (map
-                  (fn [row]
-                      (match row
-                          []         (fatal "is-complete called with empty row")
-                          [head .._] head))
-                      matrix)
+        heads (matrix-heads matrix)
         gid   (find-gid heads)]
         (match gid
             (none)     map/nil
@@ -1467,6 +1544,14 @@
                                                                         [id ..rest] (match (map/get found id)
                                                                                         (none)   map/nil
                                                                                         (some _) (recur rest))))))))))
+
+(defn matrix-heads [matrix]
+    (map
+        (fn [row]
+            (match row
+                []         (fatal "is-complete called with empty row")
+                [head .._] head))
+            matrix))
 
 (defn is-useful [matrix row]
     (let [
@@ -1492,10 +1577,7 @@
                                                                                  (is-useful
                                                                                      (specialized-matrix id alt matrix)
                                                                                          (concat [(any-list alt) rest])))
-                                                                                 alts))
-                                     (ex/or left right)         (if (is-useful matrix [left ..rest])
-                                                                    true
-                                                                        (is-useful matrix [right ..rest]))))))
+                                                                                 alts))))))
 
 (** ## Adding Top-level Items to the Type Environment **)
 
