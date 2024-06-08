@@ -1225,7 +1225,12 @@
 
 (deftype ex-group
     (ginf)
-        (gnames (list string)))
+        (gnames (list string) (option string)))
+
+(deftype missing
+    (minf)
+        (mname string)
+        (mopen string))
 
 (** Processing "patterns" to be legible to the exhaustiveness algorithm **)
 
@@ -1244,7 +1249,7 @@
                                                                         pmap            (map/from-list pfields)]
                                                                         (ex/constructor
                                                                             "record"
-                                                                                (gnames ["record"])
+                                                                                (gnames ["record"] none)
                                                                                 (loop
                                                                                 ;  TODO sort these
                                                                                     (map/to-list fmap)
@@ -1262,9 +1267,12 @@
                                                                             (none)      (fatal "enum variant ${tag} not contained in type")
                                                                             (some argt) (ex/constructor
                                                                                             tag
-                                                                                                (match spread
-                                                                                                (none) (gnames (map/keys map))
-                                                                                                _      (ginf))
+                                                                                                (gnames
+                                                                                                (map/keys map)
+                                                                                                    (match spread
+                                                                                                    (none)             (none)
+                                                                                                    (some (tvar id _)) (some id)
+                                                                                                    (some t)           (fatal "spread not a tvar?")))
                                                                                                 (match arg
                                                                                                 (some arg) [(pattern-to-ex-pattern tenv (, arg argt))]
                                                                                                 _          []))))
@@ -1275,7 +1283,7 @@
                                         (if v
                                             "true"
                                                 "false")
-                                            (gnames ["true" "false"])
+                                            (gnames ["true" "false"] none)
                                             [])
         (pcon name _ args l)        (let [
                                         (, tname targs)           (tcon-and-args type [] l)
@@ -1288,7 +1296,7 @@
                                         (ex/constructor
                                             name
                                                 (match (map/get types tname)
-                                                (some (, _ names)) (gnames (set/to-list names))
+                                                (some (, _ names)) (gnames (set/to-list names) none)
                                                 _                  (fatal "Unknown type ${tname}"))
                                                 (map
                                                 (pattern-to-ex-pattern tenv)
@@ -1316,24 +1324,27 @@
         (, (@p [2 a b]) (@t (list int)))
             (ex/constructor
             "cons"
-                (gnames ["nil" "cons"])
+                (gnames ["nil" "cons"] (none))
                 [(ex/constructor "2" (ginf) [])
                 (ex/constructor
                 "cons"
-                    (gnames ["nil" "cons"])
+                    (gnames ["nil" "cons"] (none))
                     [(ex/any)
                     (ex/constructor
                     "cons"
-                        (gnames ["nil" "cons"])
-                        [(ex/any) (ex/constructor "nil" (gnames ["nil" "cons"]) [])])])]))
+                        (gnames ["nil" "cons"] (none))
+                        [(ex/any) (ex/constructor "nil" (gnames ["nil" "cons"] (none)) [])])])]))
         (,
         (, (@p (, 2 b)) (@t (, 1 2)))
-            (ex/constructor "," (gnames [","]) [(ex/constructor "2" (ginf) []) (ex/any)]))
+            (ex/constructor
+            ","
+                (gnames [","] (none))
+                [(ex/constructor "2" (ginf) []) (ex/any)]))
         (,
         (, (@p {a 2}) (trow [(, "a" tint) (, "b" tbool)] none precord 1))
             (ex/constructor
             "record"
-                (gnames ["record"])
+                (gnames ["record"] (none))
                 [(ex/constructor "2" (ginf) []) (ex/any) (ex/any)]))])
 
 (defn tcon-and-args [type coll l]
@@ -1446,15 +1457,16 @@
                                              heads
                                              (fn [found id _ args] [(, id (length args)) ..found])))]
                            (match gid
-                               (ginf)           map/nil
-                               (gnames constrs) (loop
-                                                    constrs
-                                                        (fn [constrs recur]
-                                                        (match constrs
-                                                            []          found
-                                                            [id ..rest] (match (map/get found id)
-                                                                            (none)   map/nil
-                                                                            (some _) (recur rest))))))))))
+                               (ginf)                       map/nil
+                               (gnames constrs (some open)) map/nil
+                               (gnames constrs _)           (loop
+                                                                constrs
+                                                                    (fn [constrs recur]
+                                                                    (match constrs
+                                                                        []          found
+                                                                        [id ..rest] (match (map/get found id)
+                                                                                        (none)   map/nil
+                                                                                        (some _) (recur rest))))))))))
 
 (defn is-useful [matrix row]
     (let [

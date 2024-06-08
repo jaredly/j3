@@ -160,6 +160,7 @@ export const GroundUp = ({
                 id={id}
                 size={size}
             />
+            {zoom != null ?<button onClick={() => setZoom(null)}>Reset zoom</button>: null}
             <WithStore store={store}>
                 <Cursors at={state.at} regs={state.regs} />
                 <Hover />
