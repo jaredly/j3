@@ -1,4 +1,16 @@
 
+# recursive types
+
+# Opaque types!! we'll probably want them in some form.
+
+a. we could have them be a "private type alias"; that is, we
+  - delay resolution of type aliases (have them show up as `tcon`)
+  - and have some aliases /not/ be introspectable outside of the namespace in which it was defined.
+    Seems reasonable, right?
+b. we could have them be normal userland types, but with no constructors, and just a `wrap` and `unwrap` no-op function that would be restricted in use to the namespace where it was created.
+
+I'm leaning toward the first, because it requires less magic at compile-time (eliminating the no-op wrappers) and is also less cumbersome at time of writing (wouldn't be able to destructure an arg until you unwrap it)
+
 # IDEA : show usages -> show /polymorphic instantiations/
 
 It would be sooo much less "mentally costly" to abstract types to the umpteenth level if it was trivial to see what, in /practice/ the type variables get instantiated as.
@@ -6,7 +18,7 @@ It would be sooo much less "mentally costly" to abstract types to the umpteenth 
 
 Alsooo I want the "number of usages" to be shown above everything.
 althoughhhh that's the kind of thing that only really gets useful in the "read / maintain" case, less so in the "write" case.
-I should think about how to make navigating two different cases make sense.
+I should think about how to make navigating two different cases make sense.gg
 
 # RECORDA ND ENUMS
 

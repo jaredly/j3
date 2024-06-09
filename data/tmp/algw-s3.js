@@ -256,7 +256,7 @@ return true;
 throw new Error('match fail 15150:' + JSON.stringify($target))
 })(x)
 let starts_with = $eval("(prefix) => (str) => str.startsWith(prefix)")
-let minf = {type: "minf"}
+let minf = (v0) => ({type: "minf", 0: v0})
 let mname = (v0) => ({type: "mname", 0: v0})
 let mopen = (v0) => ({type: "mopen", 0: v0})
 let map$slupdate = (map) => (key) => (f) => map$slset(map)(key)(f(map$slget(map)(key)))
@@ -604,7 +604,7 @@ throw new Error('match fail 15314:' + JSON.stringify($target))
 })(map$slget(map1)(key)))))
 }
 let wrap_ok = (t) => $gt$gt$eq(t)((v) => $lt_(some(v)))
-let ginf = {type: "ginf"}
+let ginf = (v0) => ({type: "ginf", 0: v0})
 let gnames = (v0) => (v1) => ({type: "gnames", 0: v0, 1: v1})
 let fill_list = (what) => (num) => loop(num)((num) => (recur) => (($target) => {
 if ($target === true) {
@@ -631,7 +631,8 @@ return `${join(" ")(prefix)} `;
 throw new Error('match fail 18035:' + JSON.stringify($target))
 })(prefix)}${(($target) => {
 if ($target.type === "minf") {
-return "_ : An infinite type requires a catchall"
+let name = $target[0];
+return `_ : The infinite type ${name} requires a catchall`
 } ;
 if ($target.type === "mopen") {
 let id = $target[0];
@@ -1510,12 +1511,12 @@ throw new Error('match fail 14445:' + JSON.stringify($target))
 } ;
 if ($target.type === "pstr") {
 let str = $target[0];
-return ex$slconstructor(str)(ginf)(nil)
+return ex$slconstructor(str)(ginf("string"))(nil)
 } ;
 if ($target.type === "pprim") {
 if ($target[0].type === "pint") {
 let v = $target[0][0];
-return ex$slconstructor(int_to_string(v))(ginf)(nil)
+return ex$slconstructor(int_to_string(v))(ginf("int"))(nil)
 } 
 } ;
 if ($target.type === "pprim") {
@@ -1764,12 +1765,13 @@ return prefix("_")(find_missing(anys))
 } ;
 if ($target.type === "some") {
 if ($target[0].type === "ginf") {
+let name = $target[0][0];
 {
 let $target = anys;
 if ($target.type === "nil") {
-return cons($co(nil)(minf))(nil)
+return cons($co(nil)(minf(name)))(nil)
 } ;
-return prefix("_")(find_missing(anys));
+return prefix(name)(find_missing(anys));
 throw new Error('match fail 17357:' + JSON.stringify($target))
 }
 } 

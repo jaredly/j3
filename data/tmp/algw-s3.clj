@@ -998,7 +998,7 @@
                 2 3))
             (err
             (terr
-                "Match not exhaustive 17638: \nMissing _ : An infinite type requires a catchall"
+                "Match not exhaustive 17638: \nMissing _ : The infinite type int requires a catchall"
                     [])))
         (,
         (@
@@ -1339,13 +1339,13 @@
         (ex/constructor string ex-group (list ex-pattern)))
 
 (deftype ex-group
-    (ginf)
+    (ginf string)
         (gnames (list string) (option string)))
 
 (** ## Enumerating "missing" cases **)
 
 (deftype missing
-    (minf)
+    (minf string)
         (mname string)
         (mopen string))
 
@@ -1353,7 +1353,7 @@
     "Missing ${(match prefix
         [] ""
         _  "${(join " " prefix)} ")}${(match m
-        (minf)       "_ : An infinite type requires a catchall"
+        (minf name)  "_ : The infinite type ${name} requires a catchall"
         (mopen id)   "_ : Open type (tvar ${id}) requires a catchall"
         (mname name) "${name} : Case not handled")}")
 
@@ -1394,9 +1394,9 @@
         _        (let [(, gid by-cstr anys) (group-rows matrix)]
                      (match gid
                          (none)                     (prefix "_" (find-missing anys))
-                         (some (ginf))              (match anys
-                                                        [] [(, [] (minf))]
-                                                        _  (prefix "_" (find-missing anys)))
+                         (some (ginf name))         (match anys
+                                                        [] [(, [] (minf name))]
+                                                        _  (prefix name (find-missing anys)))
                          (some (gnames names open)) (let [
                                                         missing-fields (filter (fn [k] (not (is-some (map/get by-cstr k)))) names)
                                                         from-fields    (concat
@@ -1468,8 +1468,8 @@
                                                                                                 (some arg) [(pattern-to-ex-pattern tenv (, arg argt))]
                                                                                                 _          []))))
                                         _                           (fatal "enum type not a row"))
-        (pstr str _)                (ex/constructor str ginf [])
-        (pprim (pint v _) _)        (ex/constructor (int-to-string v) ginf [])
+        (pstr str _)                (ex/constructor str (ginf "string") [])
+        (pprim (pint v _) _)        (ex/constructor (int-to-string v) (ginf "int") [])
         (pprim (pbool v _) _)       (ex/constructor
                                         (if v
                                             "true"
@@ -1520,7 +1520,7 @@
             (ex/constructor
             "cons"
                 (gnames ["nil" "cons"] (none))
-                [(ex/constructor "2" (ginf) [])
+                [(ex/constructor "2" (ginf "int") [])
                 (ex/constructor
                 "cons"
                     (gnames ["nil" "cons"] (none))
@@ -1534,13 +1534,13 @@
             (ex/constructor
             ","
                 (gnames [","] (none))
-                [(ex/constructor "2" (ginf) []) (ex/any)]))
+                [(ex/constructor "2" (ginf "int") []) (ex/any)]))
         (,
         (, (@p {a 2}) (trow [(, "a" tint) (, "b" tbool)] none precord 1))
             (ex/constructor
             "record"
                 (gnames ["record"] (none))
-                [(ex/constructor "2" (ginf) []) (ex/any) (ex/any)]))])
+                [(ex/constructor "2" (ginf "int") []) (ex/any) (ex/any)]))])
 
 (defn tcon-and-args [type coll l]
     (match type
@@ -1641,7 +1641,7 @@
                                              heads
                                              (fn [found id _ args] [(, id (length args)) ..found])))]
                            (match gid
-                               (ginf)                       map/nil
+                               (ginf _)                     map/nil
                                (gnames constrs (some open)) map/nil
                                (gnames constrs _)           (loop
                                                                 constrs
