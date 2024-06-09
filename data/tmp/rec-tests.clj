@@ -48,7 +48,7 @@
         ('hi x) x
         ))
 
-(fn [{x ('hi a)}] 2 )
+(fn [{x ('hi a)}] (+ 2 a) )
 
 (if true
     {x 1 y 10}

@@ -129,7 +129,7 @@
         (elet (list (, pat expr)) expr int)
         (ematch expr (list (, pat expr)) int)
         (eenum string int (option expr) int)
-        (erecord (option expr) (list (, string expr)) int)
+        (erecord (option (, expr bool)) (list (, string expr)) int)
         (eaccess (option (, string int)) (list (, string int)) int))
 
 (deftype pat
@@ -797,19 +797,20 @@
     (match expr
         (erecord spread items l)                 (let-> [
                                                      spread (match spread
-                                                                (none)      (<- none)
-                                                                (some expr) (let-> [type (infer/expr tenv expr)] (<- (some type))))
+                                                                (none)              (<- none)
+                                                                (some (, expr end)) (let-> [type (infer/expr tenv expr)] (<- (some (, type end)))))
                                                      items  (map->
                                                                 (fn [(, name value)]
                                                                     (let-> [value (infer/expr tenv value)] (<- (, name value))))
                                                                     items)
                                                      spread (match spread
-                                                                (none)        (<- none)
-                                                                (some spread) (let-> [
-                                                                                  t (new-type-var "record" l)
-                                                                                  _ (unify (trow items (some t) (rrecord) l) spread l)
-                                                                                  t (type/apply-> t)]
-                                                                                  (<- (some t))))]
+                                                                (none)                  (<- none)
+                                                                (some (, spread false)) (let-> [
+                                                                                            t (new-type-var "record" l)
+                                                                                            _ (unify (trow items (some t) (rrecord) l) spread l)
+                                                                                            t (type/apply-> t)]
+                                                                                            (<- (some t)))
+                                                                (some (, spread true))  (let-> [t (new-type-var "record" l)] (<- (some t))))]
                                                      (type/apply-> (trow items spread (rrecord) l)))
         (eaccess target [(, attr al)] l)         (match target
                                                      (none)             (let-> [
@@ -1013,7 +1014,20 @@
             (terr
                 "Match not exhaustive 18091: \nMissing none : Case not handled"
                     [])))
-        (, (@ (fn [('hi x)] x)) )
+        (,
+        (@ (fn [('hi x)] x))
+            (ok
+            (tapp
+                (tapp
+                    (tcon "->" 18110)
+                        (trow
+                        [(, "hi" (tvar "x:0" 18115))]
+                            (some (trow [] (none) (renum) -1))
+                            (renum)
+                            18113)
+                        18110)
+                    (tvar "x:0" 18115)
+                    18110)))
         (, (@ 10) (ok (tcon "int" 4512)))
         (, (@ hi) (err (tmissing [(, "hi" 4531)])))
         (, (@ {a 2}) (ok (trow [(, "a" (tcon "int" 14459))] (none) (rrecord) 14456)))

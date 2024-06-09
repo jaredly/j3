@@ -1,4 +1,10 @@
 
+# RECORDA ND ENUMS
+
+- oh my. lovin it.
+- match/let/fn will lock down an open enum, which I love.
+- noww I just need to lock things down at the toplevel, so if there's a spread in the output that's not in the input, we lock it down.
+
 # OK BUt a simple thing I can do is a "zoom" which doesn't even have to persist at themoment.
 
 trying to do zoom and cards are in the way.

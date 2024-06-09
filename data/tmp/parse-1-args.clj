@@ -119,7 +119,7 @@
         (elet (list (, pat expr)) expr int)
         (ematch expr (list (, pat expr)) int)
         (eenum string int (option expr) int)
-        (erecord (option expr) (list (, string expr)) int)
+        (erecord (option (, expr bool)) (list (, string expr)) int)
         (eaccess (option (, string int)) (list (, string int)) int))
 
 (deftype prim
@@ -1003,8 +1003,8 @@
                                                 fields (map fields (fn [(, name value)] (left (, name (compile/j value trace)))))]
                                                 (j/obj
                                                     (match spread
-                                                        (none)   fields
-                                                        (some s) [(right (j/spread (compile/j s trace))) ..fields])
+                                                        (none)         fields
+                                                        (some (, s _)) [(right (j/spread (compile/j s trace))) ..fields])
                                                         l))
             (eenum name nl arg l)           (match arg
                                                 (none)     (j/str name [] nl)
@@ -1673,16 +1673,21 @@ return {
                                                                         (, spread items) (match items
                                                                                              [(cst/spread inner l) ..rest] (let-> [inner (parse-expr inner)] (<- (, (some inner) rest)))
                                                                                              _                             (<- (, none items)))
-                                                                        pitems           (pairs items)
-                                                                        items            (map->
-                                                                                             (fn [(, name value)]
-                                                                                                 (let-> [
-                                                                                                     v     (match name
-                                                                                                               (cst/id id l) (<- id)
-                                                                                                               _             (<-err (, (cst-loc name) "Not an identifier") "$error"))
-                                                                                                     value (parse-expr value)]
-                                                                                                     (<- (, v value))))
-                                                                                                 pitems)]
+                                                                        (, items sprend) (loop
+                                                                                             (, items [])
+                                                                                                 (fn [(, items col) recur]
+                                                                                                 (match items
+                                                                                                     []                         (<- (, col none))
+                                                                                                     [(cst/spread inner l)]     (let-> [inner (parse-expr inner)] (<- (, col (some inner))))
+                                                                                                     [item]                     (<-err (, (cst-loc item) "Trailing record item") (, col none))
+                                                                                                     [(cst/id id l) two ..rest] (let-> [value (parse-expr two)] (recur (, rest [(, id value) ..col])))
+                                                                                                     [key _ ..rest]             (let-> [res (recur (, rest col))]
+                                                                                                                                    (<-err (, (cst-loc key) "Not an identifier") res)))))
+                                                                        spread           (match (, spread sprend)
+                                                                                             (, (some _) (some _)) (<-err (, l "Cant have spreads on both sides") none)
+                                                                                             (, (some s) _)        (<- (some (, s false)))
+                                                                                             (, _ (some s))        (<- (some (, s true)))
+                                                                                             _                     (<- none))]
                                                                         (<- (erecord spread items l)))
         _                                                           (<-err (, (cst-loc cst) "Unable to parse") (evar "()" (cst-loc cst)))))
 
@@ -1724,9 +1729,15 @@ return {
         (,
         (@@ {..x y 2})
             (erecord
-            (some (evar "x" 21859))
+            (some (, (evar "x" 21859) false))
                 [(, "y" (eprim (pint 2 21864) 21864))]
                 21858))
+        (,
+        (@@ {y 2 ..x})
+            (erecord
+            (some (, (evar "x" 22387) true))
+                [(, "y" (eprim (pint 2 22386) 22386))]
+                22384))
         (,
         (@@ (, 1 2))
             (eapp
@@ -2358,7 +2369,7 @@ dot
         (eprim prim l)            empty
         (eenum _ _ arg _)         (map-or (externals bound) empty arg)
         (erecord spread fields _) (foldl
-                                      (map-or (externals bound) empty spread)
+                                      (map-or (dot (externals bound) fst) empty spread)
                                           (map fields (dot (externals bound) snd))
                                           bag/and)
         (eaccess target _ _)      (match target
@@ -2497,7 +2508,7 @@ dot
                                       (none)         empty
                                       (some (, v l)) (expr/var-name bound v l))
         (erecord spread fields l) (foldl
-                                      (map-or (expr/names bound) empty spread)
+                                      (map-or (dot (expr/names bound) fst) empty spread)
                                           (map fields (dot (expr/names bound) snd))
                                           bag/and)
         (eenum _ _ arg _)         (map-or (expr/names bound) empty arg)
