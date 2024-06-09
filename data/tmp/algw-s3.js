@@ -655,6 +655,7 @@ throw new Error('match fail 17872:' + JSON.stringify($target))
 let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 let tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 let tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
+let trec = (v0) => (v1) => (v2) => ({type: "trec", 0: v0, 1: v1, 2: v2})
 let trow = (v0) => (v1) => (v2) => (v3) => ({type: "trow", 0: v0, 1: v1, 2: v2, 3: v3})
 let ex$slany = {type: "ex/any"}
 let ex$slconstructor = (v0) => (v1) => (v2) => ({type: "ex/constructor", 0: v0, 1: v1, 2: v2})
@@ -663,6 +664,24 @@ if ($target.type === ",") {
 if ($target[0].type === "trow") {
 if ($target[1].type === "trow") {
 return fatal("not impl")
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "trec") {
+let a = $target[0][0];
+let b = $target[0][1];
+if ($target[1].type === "trec") {
+let c = $target[1][0];
+let d = $target[1][1];
+{
+let $target = $eq(a)(c);
+if ($target === true) {
+return type$eq(b)(d)
+} ;
+return false;
+throw new Error('match fail 18946:' + JSON.stringify($target))
+}
 } 
 } 
 } ;
@@ -724,6 +743,12 @@ return type$slfree(v)
 } ;
 throw new Error('match fail 14085:' + JSON.stringify($target))
 })(spread))(map(({"1": t}) => type$slfree(t))(fields))(set$slmerge)
+} ;
+if ($target.type === "trec") {
+let name = $target[0];
+let inner = $target[1];
+let loc = $target[2];
+return set$slrm(type$slfree(inner))(name)
 } ;
 if ($target.type === "tvar") {
 let id = $target[0];
@@ -805,33 +830,6 @@ let tfn = (arg) => (body) => (l) => tapp(tapp(tcon("->")(l))(arg)(l))(body)(l)
 let tenv$slnil = tenv(map$slnil)(map$slnil)(map$slnil)(map$slnil)
 let tfns = (args) => (body) => (l) => foldr(body)(args)((body) => (arg) => tfn(arg)(body)(l))
 let tint = tcon("int")(-1)
-let type$slcon_to_var = (vars) => (type) => (($target) => {
-if ($target.type === "trow") {
-return fatal("cant apply a row")
-} ;
-if ($target.type === "tvar") {
-return type
-} ;
-if ($target.type === "tcon") {
-let name = $target[0];
-let l = $target[1];
-{
-let $target = set$slhas(vars)(name);
-if ($target === true) {
-return tvar(name)(l)
-} ;
-return type;
-throw new Error('match fail 5640:' + JSON.stringify($target))
-}
-} ;
-if ($target.type === "tapp") {
-let a = $target[0];
-let b = $target[1];
-let l = $target[2];
-return tapp(type$slcon_to_var(vars)(a))(type$slcon_to_var(vars)(b))(l)
-} ;
-throw new Error('match fail 5625:' + JSON.stringify($target))
-})(type)
 let type$slunroll_app = (type) => (($target) => {
 if ($target.type === "tapp") {
 let target = $target[0];
@@ -885,6 +883,11 @@ let tenv$slwith_scope = ({"3": aliases, "2": types, "1": tcons, "0": values}) =>
 let tcon_and_args = (type) => (coll) => (l) => (($target) => {
 if ($target.type === "trow") {
 return fatal("cant apply a row type")
+} ;
+if ($target.type === "trec") {
+let name = $target[0];
+let inner = $target[1];
+return fatal("cant apply a recursive type?")
 } ;
 if ($target.type === "tvar") {
 return fatal(`Type not resolved ${int_to_string(l)} it is a tvar at heart. ${jsonify(type)} ${jsonify(coll)}`)
@@ -1027,6 +1030,12 @@ let arg = $target[1];
 let l = $target[2];
 return tapp(quot_tvar(target))(quot_tvar(arg))(l)
 } ;
+if ($target.type === "trec") {
+let name = $target[0];
+let type = $target[1];
+let l = $target[2];
+return trec(name)(quot_tvar(type))(l)
+} ;
 if ($target.type === "trow") {
 let fields = $target[0];
 let spread = $target[1];
@@ -1168,6 +1177,22 @@ throw new Error('match fail 18421:' + JSON.stringify($target))
 return init;
 throw new Error('match fail 18357:' + JSON.stringify($target))
 })(t))(t)
+let type$slcon_to_var = (vars) => (type) => type$slmap((t) => (($target) => {
+if ($target.type === "tcon") {
+let name = $target[0];
+let l = $target[1];
+{
+let $target = set$slhas(vars)(name);
+if ($target === true) {
+return tvar(name)(l)
+} ;
+return t;
+throw new Error('match fail 19060:' + JSON.stringify($target))
+}
+} ;
+return t;
+throw new Error('match fail 19053:' + JSON.stringify($target))
+})(t))(type)
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -1255,6 +1280,11 @@ if ($target.type === "tvar") {
 let name = $target[0];
 return name
 } ;
+if ($target.type === "trec") {
+let name = $target[0];
+let inner = $target[1];
+return `(rec ${name} ${type_$gts(inner)})`
+} ;
 if ($target.type === "tapp") {
 if ($target[0].type === "tapp") {
 if ($target[0][0].type === "tcon") {
@@ -1278,6 +1308,39 @@ return name
 throw new Error('match fail 3224:' + JSON.stringify($target))
 })(type)
 let add$sltypealias = ({"3": aliases, "2": types, "1": tcons, "0": values}) => (name) => (args) => (type) => tenv(map$slnil)(map$slnil)(map$slnil)(map$slset(map$slnil)(name)($co(map(fst)(args))(type$slcon_to_var(set$slfrom_list(map(fst)(args)))(type))))
+let type$slcon_to_var_ = (vars) => (type) => (($target) => {
+if ($target.type === "trow") {
+return fatal("cant apply a row")
+} ;
+if ($target.type === "trec") {
+let name = $target[0];
+let inner = $target[1];
+let l = $target[2];
+return trec(name)(type$slcon_to_var(vars)(inner))(l)
+} ;
+if ($target.type === "tvar") {
+return type
+} ;
+if ($target.type === "tcon") {
+let name = $target[0];
+let l = $target[1];
+{
+let $target = set$slhas(vars)(name);
+if ($target === true) {
+return tvar(name)(l)
+} ;
+return type;
+throw new Error('match fail 5640:' + JSON.stringify($target))
+}
+} ;
+if ($target.type === "tapp") {
+let a = $target[0];
+let b = $target[1];
+let l = $target[2];
+return tapp(type$slcon_to_var(vars)(a))(type$slcon_to_var(vars)(b))(l)
+} ;
+throw new Error('match fail 5625:' + JSON.stringify($target))
+})(type)
 let type$slresolve_aliases = (aliases) => (type) => {
 let {"1": args, "0": target} = type$slunroll_app(type);
 {
@@ -1650,7 +1713,15 @@ throw new Error('match fail 18729:' + JSON.stringify($target))
 })(spread))(nil))))(l)
 } ;
 if ($target.type === "renum") {
-return cst$slarray(concat(cons(map(({"1": v, "0": k}) => cst$sllist(cons(cst$slid(k)(l))(cons(type_$gtcst(v))(nil)))(l))(fields))(cons((($target) => {
+return cst$slarray(concat(cons(map(({"1": v, "0": k}) => (($target) => {
+if ($target.type === "tcon") {
+if ($target[0] === "()") {
+return cst$slid(`'${k}`)(l)
+} 
+} ;
+return cst$sllist(cons(cst$slid(`'${k}`)(l))(cons(type_$gtcst(v))(nil)))(l);
+throw new Error('match fail 19090:' + JSON.stringify($target))
+})(v))(fields))(cons((($target) => {
 if ($target.type === "none") {
 return nil
 } ;
@@ -1676,6 +1747,12 @@ if ($target.type === "tcon") {
 let name = $target[0];
 let l = $target[1];
 return cst$slid(name)(l)
+} ;
+if ($target.type === "trec") {
+let name = $target[0];
+let inner = $target[1];
+let l = $target[2];
+return cst$sllist(cons(cst$slid("rec")(l))(cons(cst$slid(name)(l))(cons(type_$gtcst(inner))(nil))))(l)
 } ;
 if ($target.type === "tapp") {
 if ($target[0].type === "tapp") {
@@ -1889,7 +1966,7 @@ throw new Error('match fail 2088:' + JSON.stringify($target))
 {
 let $target = set$slhas(type$slfree(type))($var);
 if ($target === true) {
-return $lt_err(`Cycle found while unifying type with type variable. ${$var}`)
+return $lt_err(`Cycle found while unifying type with type variable. ${$var} is found in ${type_$gts(type)}`)
 } ;
 return $gt$gt$eq(subst_$gt(one_subst($var)(type)))((_2132) => $lt_($unit));
 throw new Error('match fail 2115:' + JSON.stringify($target))

@@ -145,6 +145,7 @@
     (tvar string int)
         (tapp type type int)
         (tcon string int)
+        (trec string type int)
         (trow (list (, string type)) (option type) row-kind int))
 
 (deftype row-kind
@@ -156,6 +157,9 @@
 (defn type= [one two]
     (match (, one two)
         (, (trow _ _ _ _) (trow _ _ _ _))             (fatal "not impl")
+        (, (trec a b _) (trec c d _))                 (if (= a c)
+                                                          (type= b d)
+                                                              false)
         (, (tvar id _) (tvar id' _))                  (= id id')
         (, (tapp target arg _) (tapp target' arg' _)) (if (type= target target')
                                                           (type= arg arg')
@@ -195,6 +199,7 @@
                                                                       (none)   ""
                                                                       (some t) " ..${(type->s t)}")}]"))
         (tvar name _)                           name
+        (trec name inner _)                     "(rec ${name} ${(type->s inner)})"
         (tapp (tapp (tcon "->" _) arg _) res _) "(fn [${(type->s arg)}] ${(type->s res)})"
         (tapp target arg _)                     "(${(type->s target)} ${(type->s arg)})"
         (tcon name _)                           name))
@@ -226,13 +231,19 @@
                                                                       l)
                                                     (renum)   (cst/array
                                                                   (concat
-                                                                      [(map (fn [(, k v)] (cst/list [(cst/id k l) (type->cst v)] l)) fields)
+                                                                      [(map
+                                                                          (fn [(, k v)]
+                                                                              (match v
+                                                                                  (tcon "()" _) (cst/id "'${k}" l)
+                                                                                  _             (cst/list [(cst/id "'${k}" l) (type->cst v)] l)))
+                                                                              fields)
                                                                           (match spread
                                                                           (none)   []
                                                                           (some v) [(cst/spread (type->cst v) l)])])
                                                                       l)))
         (tvar name l)                       (cst/id name l)
         (tcon name l)                       (cst/id name l)
+        (trec name inner l)                 (cst/list [(cst/id "rec" l) (cst/id name l) (type->cst inner)] l)
         (tapp (tapp (tcon "->" _) _ _) _ l) (let [(, args res) (fn-args-and-body type)]
                                                 (cst/list
                                                     [(cst/id "fn" l) (cst/array (map type->cst args) l) (type->cst res)]
@@ -290,6 +301,7 @@
                                               (some v) (type/free v))
                                               (map (fn [(, _ t)] (type/free t)) fields)
                                               set/merge)
+        (trec name inner loc)         (set/rm (type/free inner) name)
         (tvar id _)                   (set/add set/nil id)
         (tcon _ _)                    set/nil
         (tapp a b _)                  (set/merge (type/free a) (type/free b))))
@@ -612,6 +624,7 @@
                                      (tvar name l)
                                          t)
         (tapp target arg l)      (tapp (quot-tvar target) (quot-tvar arg) l)
+        (trec name type l)       (trec name (quot-tvar type) l)
         (trow fields spread k l) (trow
                                      (map (fn [(, name type)] (, name (quot-tvar type))) fields)
                                          (match spread
@@ -750,7 +763,7 @@
                            (let-> [_ (subst-> (one-subst var type))] (<- ())))
         _          (if (set/has (type/free type) var)
                        (<-err
-                           "Cycle found while unifying type with type variable. ${var}")
+                           "Cycle found while unifying type with type variable. ${var} is found in ${(type->s type)}")
                            (let-> [_ (subst-> (one-subst var type))] (<- ())))))
 
 (** ## Inference
@@ -1545,6 +1558,7 @@
 (defn tcon-and-args [type coll l]
     (match type
         (trow _ _ _ _)      (fatal "cant apply a row type")
+        (trec name inner _) (fatal "cant apply a recursive type?")
         (tvar _ _)          (fatal
                                 "Type not resolved ${(int-to-string l)} it is a tvar at heart. ${(jsonify type)} ${(jsonify coll)}")
         (tcon name _)       (, name coll)
@@ -1879,13 +1893,24 @@
                 map/nil)))
 
 (defn type/con-to-var [vars type]
+    (type/map
+        (fn [t]
+            (match t
+                (tcon name l) (if (set/has vars name)
+                                  (tvar name l)
+                                      t)
+                _             t))
+            type))
+
+(defn type/con-to-var- [vars type]
     (match type
-        (trow _ _ _ _) (fatal "cant apply a row")
-        (tvar _ _)     type
-        (tcon name l)  (if (set/has vars name)
-                           (tvar name l)
-                               type)
-        (tapp a b l)   (tapp (type/con-to-var vars a) (type/con-to-var vars b) l)))
+        (trow _ _ _ _)      (fatal "cant apply a row")
+        (trec name inner l) (trec name (type/con-to-var vars inner) l)
+        (tvar _ _)          type
+        (tcon name l)       (if (set/has vars name)
+                                (tvar name l)
+                                    type)
+        (tapp a b l)        (tapp (type/con-to-var vars a) (type/con-to-var vars b) l)))
 
 (defn type/resolve-aliases [aliases type]
     (let [

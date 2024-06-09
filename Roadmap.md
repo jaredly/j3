@@ -1,6 +1,10 @@
 
 # recursive types
 
+- [x] add a `trec name inner l`
+- [ ] swap it in, if occurs check fails
+
+
 # Opaque types!! we'll probably want them in some form.
 
 a. we could have them be a "private type alias"; that is, we
