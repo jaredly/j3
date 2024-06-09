@@ -150,6 +150,10 @@ export function HiddenInput({
                     return dispatch({ type: evt.shiftKey ? 'redo' : 'undo' });
                 }
 
+                if (evt.key === 'PageDown' || evt.key === 'PageUp') {
+                    return // let it happen
+                }
+
                 if (evt.key === 'Escape' && state.at.length > 0) {
                     return dispatch({
                         type: 'select',

@@ -166,7 +166,7 @@ createServer(async (req, res) => {
 
         mkdirSync(path.dirname(full), { recursive: true });
 
-        let { state, cache }: { state: NUIState; cache?: ResultsCache<any> } =
+        let state: NUIState =
             JSON.parse(await readBody(req));
         const last = state.history[state.history.length - 1].ts;
         try {
@@ -194,11 +194,11 @@ createServer(async (req, res) => {
         }
 
         const cacheFile = full + '.cache';
-        if (cache) {
-            writeFileSync(cacheFile, JSON.stringify(cache));
-        } else if (existsSync(cacheFile)) {
-            unlinkSync(cacheFile);
-        }
+        // if (cache) {
+        //     writeFileSync(cacheFile, JSON.stringify(cache));
+        // } else if (existsSync(cacheFile)) {
+        //     unlinkSync(cacheFile);
+        // }
 
         writeFileSync(full, raw);
         try {

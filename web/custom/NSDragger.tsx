@@ -14,6 +14,7 @@ export const NSDragger = ({
     dispatch,
     drag,
     setPin,
+    setZoom,
 }: {
     ns: RealizedNamespace;
     nsp: string;
@@ -21,6 +22,7 @@ export const NSDragger = ({
     dispatch: React.Dispatch<Action>;
     drag: Drag;
     setPin: (pin: number | null) => void;
+    setZoom: (zoom: Path[] | null) => void;
 }) => {
     const [hover, setHover] = useState(false);
     const source = useMemo(() => {
@@ -118,7 +120,7 @@ export const NSDragger = ({
                 ]
             </span>
             {cm ? (
-                <NSMenu mref={mref} setCM={setCM} ns={ns} setPin={setPin} />
+                <NSMenu mref={mref} setCM={setCM} ns={ns} setPin={setPin} setZoom={setZoom} path={path} />
             ) : null}
         </div>
     );

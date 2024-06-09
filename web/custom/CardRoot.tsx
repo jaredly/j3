@@ -16,12 +16,16 @@ export function CardRoot({
     dispatch,
     debug,
     setPin,
+    setZoom,
+    zoom
 }: {
     debug: Debug;
     card: number;
     state: NUIState;
     dispatch: React.Dispatch<Action>;
     setPin: (pin: number | null) => void;
+    setZoom: (pin: Path[] | null) => void;
+    zoom: Path[] | null
 }) {
     const dragProps = useDrag(dispatch, state);
 
@@ -60,11 +64,13 @@ export function CardRoot({
         >
             <NSTop
                 setPin={setPin}
+                setZoom={setZoom}
                 debug={debug}
                 nsReg={nsReg}
                 drag={dragObj}
                 idx={state.cards[card].top}
                 path={cardPath}
+                zoom={zoom}
             />
             {dragElements}
             {invalid ? (

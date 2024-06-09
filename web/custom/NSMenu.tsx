@@ -7,6 +7,7 @@ import { clipboardPrefix, clipboardSuffix } from './ByHand';
 import { NSExport } from '../../src/state/clipboard';
 import { Store } from './store/Store';
 import { displayFunctionIds } from './store/displayFunction';
+import { Path } from '../../src/state/path';
 
 export const exportNs = (id: number, state: NUIState) => {
     const ns = state.nsMap[id] as RealizedNamespace;
@@ -44,16 +45,20 @@ export function NSMenu({
     setCM,
     ns,
     setPin,
+    setZoom,
+    path
 }: {
     mref: React.RefObject<HTMLDivElement>;
     setCM: React.Dispatch<React.SetStateAction<boolean>>;
     ns: RealizedNamespace;
     setPin: (pin: number | null) => void;
+    setZoom: (zoom: Path[] | null) => void;
+    path: Path[]
 }) {
     const store = useGetStore();
     const items = useSubscribe(
         () => {
-            return getItems(store, ns, setPin);
+            return getItems(store, ns, path, setPin, setZoom);
         },
         (fn) => store.onChange('ns:' + ns.id, fn),
         [ns.id],
@@ -111,7 +116,9 @@ export function NSMenu({
 const getItems = (
     store: Store,
     ns: RealizedNamespace,
+    path: Path[],
     setPin: (pin: number | null) => void,
+    setZoom: (pin: Path[] | null) => void,
 ): MenuItem[] => {
     const current =
         typeof ns.plugin === 'string'
@@ -134,6 +141,10 @@ const getItems = (
                 setPin(ns.id);
             },
         },
+        {type: 'action', name: 'Zoom to', action() {
+            console.log('zoomnig', path)
+            setZoom(path)
+        }},
         { type: 'section', text: 'Set plugin' },
         ...plugins.map(
             (plugin): MenuItem => ({

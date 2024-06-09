@@ -1,4 +1,111 @@
 
+# IDEA : show usages -> show /polymorphic instantiations/
+
+It would be sooo much less "mentally costly" to abstract types to the umpteenth level if it was trivial to see what, in /practice/ the type variables get instantiated as.
+(this could also be cool for functions!) iff there are more than like 5 different instantiations, probably collapse into just showing the number of distinct instantiations.
+
+Alsooo I want the "number of usages" to be shown above everything.
+althoughhhh that's the kind of thing that only really gets useful in the "read / maintain" case, less so in the "write" case.
+I should think about how to make navigating two different cases make sense.
+
+# RECORDA ND ENUMS
+
+- oh my. lovin it.
+- match/let/fn will lock down an open enum, which I love.
+- noww I just need to lock things down at the toplevel, so if there's a spread in the output that's not in the input, we lock it down.
+
+# OK BUt a simple thing I can do is a "zoom" which doesn't even have to persist at themoment.
+
+trying to do zoom and cards are in the way.
+
+# Next Gen Storage Formatttt
+
+What do we want? the ability to have
+- more flexibility with "documents"
+  - so I can just include a small part of e.g. the type checker in a document (do an in depth of the exhaustiveness algo, for example)
+- not have to duplicate definitions all over the place
+- and such
+
+Namespaces ... let's do them!
+ok, so this will require some moderate level of monkeying with ... the CST? maybe? no se.
+like, if we want to "show the full" vs "show just the tail" of a namespaced name, in like `(defn hello [x] ...)` ...
+OR I guess we could have the namespace only be shown like above the thing, and actually be an attribute of the ... `RealizedNamespace`? could work. So, the name would be derived from the toplevel (via `analyze` yay) and the namespace that
+its in would be defined on the `RealziedNamespace`.
+nice.
+This *does* mean that simply moving things around would not change their namespaces. Which, I'm pretty OK with? Like you could use
+the namespace organizer on the sidebar to move things around, right?
+And documents are for ... (1) sandboxy things, and (2) literate programming documents
+**OK**, so a (document) would have (a) a "default namespace" that new (named) things are automatically a part of, and (b) you could have nodes that have a custom namespace specified. which is fine.
+
+Which begs the question: What about non-named things? Like expressions. It kinda seems like they wouldn't be part of a namespace by default, right? No need for them to be. BUT some things (like fixture tests) kindof want to be part of the namespace, right?
+ok yeah I kindof like this. So, When viewing some ... code, there would be at the top "documents w/ this namespace as their namespace", and then like a normal listing of everything in it, if that's what you want to see.
+Ok so expressions, and as a part of that (rich text) blocks, would not automatically be part of the namespace. They would be ~anonymous toplevels, living in the database and included in a document, but not referrable as part of the tree.
+
+OK LETS TALK resolution and such. BECAUSE, how do I know what I'm referring to, if there are like things to import? Does this mean we have to get serious about locking down references? I do think it does, my dear sir.
+UNLESSSS we decide that imports impact a /whole namespace/, as opposed to a /document/. IFF a namespace has imports defined as part of it, then ... things might be OK? welll so what if you're working on a definition but don't have the whole namespace pulled up, and you edit the imports, and it breaks something that you don't have pulled up? That sound rotten in the state of denmark.
+
+ehhhh ok but on the other hand, that means resolutions have to be baked in, amirite? rite? welllll ok not necessarily, because it would also be /cached/... nah if we need to recompile we're back to square 1. What iff we locked things down ... in the RealizedNamespace? naw that's nasty.
+Like why am I afraid of just bringing back the `cst/hash` type? Ok yes so it does make some things a little more complicated. andd ok so maybe I think we want to only use it for globals. ALTHOUGH hm yeah ok nvm. WAIT ok so we could ... have our fromNode dealio turn all the cst/hashes into cst/id w/ fully expanded namespace, right? tbh that would totally work. It could even happen at the `fromMCST` stage. tbh I like that.
+okkkk so, when ... do I lock it down? um like, it would involve taking autocomplete more seriously.
+which is fine tbh. like, if you have a reference that's not locked down, it'll be a problem right? I mean, it won't even compile.
+Sooo well ok so if I just had like a `cst/global` type, that might be even better than a `cst/id`, because then the error messages could be even more helpful.
+
+OK SO the /document/ defines the /evaluator/ right? Are we going to mess around with mutiple evaluators for the same document?
+I mean we could, like allow you to customize it per-card. Do cards even exist anymore tho? given that namespace parentage is no longer load-bearing. OK so the story is: You could customize it per ... toplevel? eh that sounds a bit too much.
+hrmmm maybe it would be ... a plugin? like, the use case is "here's some code, switch the evaluator to see what happens". idk.
+
+ANYway, I'd want some "system level configuration" that allows you to assemble ... umm ... hrm ... ok I was going to say "different things to be your evaulator", but ... actually can't I just have it be a single ... hrm ... like an expression, but should they live in the namespace-age somewhere? I guess I could have a .well-known location in the namespace, like `/evaluators` or something. hrm what if it was like `/.editor/evaluators`, and I might at some point have `/.editor/plugins`? That would be rad.
+OK so .editor/evaluators could have a set of ... huh I guess they would have to be /defined/. somewhere. buuut how would we know what evaluator to use to produce that evaluator? would it just be ... the "documents" in the .editor/evaluators namespace? that doesn't sound great.
+eh maybe I'm trying too hard, and it shouldn't be part of the namespacery after all. it was fun to think about though.
+SO:
+`[id]: {toplevel: tid, evaluator: id | null (js), title: string}`
+andd when pulling up an evaluator, we would have recorded when it was compiled ... and ideally we would know if it was stale. although that might have to wait until I have hashes nailed down.
+
+OK SO I've got a database, and it has a table `evaluator-config`
+and a table `evaluators` which maps an ID to the `source code` and maybe the `hash`, and definitely the timestamp.
+and a table `toplevels` that has each toplevel with its own little map, and also undo history.
+and a table `documents` that has the title, and the default namespace, and the import map, and the `evaluator` id.
+and a table `document-nodes` which has RealizedNamespace dealios
+and a table `names`? i meeean I want to be able to do a reverse lookup of toplevels to find a thing by name, right? but that should be an index on something else, I should think.
+and a table `parse-cache` which caches the analysis and parsing phase of each toplevel, keyed by `toplevelid:evaluatorid`. You can query the parse-cache to "find a thing by name". because it will have `export` and `usage` info.
+and a table `type-cache` which caches the type analysis phase, also keyed by `topevelid:evaluatorid`
+and a table `code-cache` which caches ... the compiled code phase ... right? seems like a thing. So you can just pull stuff up.
+anyway, and you might want to ... like export a toplevel expression as an executable? at some point in life.
+
+# OK NEW IDEA
+
+- we modify check-exhaustiveness to *tell* us what `spreads` would need to be nipped in order for things to be OK
+  and then we nip them.
+- ALSO I want something at like the expression top level that says "if ... there's a thing"
+  (def x 'hi) -> should just be 'hi, nothign more
+  BUT
+  (fn [x] (if true x 'ho)) -> should be ['ho ...x]
+  so ... basically if a function is /returning/ a spread that doesn't appear as a tvar in the args, nip it.
+
+
+# Sooo here we've got the enums n stuff
+buttt the problem is, enums are always inferred as open. and I dont want them to be.
+like
+(match x
+'a 1
+'b 2)
+x should be inferred as closed.
+(match x
+'a 1
+_ 2)
+x should be inferred as open.
+
+(some-fn-that-is-open 'a)
+-> the argument 'a should be inferred as open.
+
+ok so it's kindof like, /patterns/ should be inferred as closed, but should be able to unify with other patterns?
+ugh I mean unifying meeeeans wait.
+the type of a pattern could be closed, but that doesn't mean that the whatsit needs to be, right?
+
+if the pattern is inferred as closed, that makes a lot of things wierd.
+ANOTHER OPTION: After grabbing all the target whatsits, if there's a spread variable, I torch it! give it an empty row.
+you know that might work.
+
 # IDEA IDEA IDEA
 
 Ok so what if

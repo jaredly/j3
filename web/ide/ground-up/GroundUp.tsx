@@ -88,6 +88,7 @@ export const GroundUp = ({
 
     const [debug, setDebug] = useState<Debug>(initialDebug);
     const [pin, setPin] = useState(null as null | number);
+    const [zoom, setZoom] = useState(null as null | Path[]);
 
     const store = useSyncStore(initial.state, undefined, initial.evaluator);
     const { state } = useGlobalState(store);
@@ -144,6 +145,8 @@ export const GroundUp = ({
                         debug={debug}
                         dispatch={store.dispatch}
                         setPin={setPin}
+                        setZoom={setZoom}
+                        zoom={zoom}
                     />
                 ))}
             </WithStore>
@@ -157,6 +160,7 @@ export const GroundUp = ({
                 id={id}
                 size={size}
             />
+            {zoom != null ?<button onClick={() => setZoom(null)}>Reset zoom</button>: null}
             <WithStore store={store}>
                 <Cursors at={state.at} regs={state.regs} />
                 <Hover />
