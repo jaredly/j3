@@ -4,6 +4,7 @@ import {
     mkdirSync,
     readFileSync,
     readdirSync,
+    renameSync,
     statSync,
     unlinkSync,
     writeFileSync,
@@ -200,7 +201,10 @@ createServer(async (req, res) => {
         //     unlinkSync(cacheFile);
         // }
 
-        writeFileSync(full, raw);
+        // Two step to get around the laptop hard-stopping when the battery gives out
+        writeFileSync(full + '.next', raw);
+        renameSync(full + '.next', full)
+
         try {
             const { clj } = serializeFile(state);
             writeFileSync(full.replace('.json', '.clj'), clj);

@@ -646,24 +646,22 @@
 
 (defn check-recursion [t1 t2 (, lookup pairs count)]
     (let [
-        (, t1 t2 state) (if (is-rec-pair t1 t2)
-                            (if (has-inf-recursion t1 t2 pairs)
-                                (fatal "infinite recursion looks like")
-                                    (let [
-                                    (, t1 lookup) (add-rec lookup t1)
-                                    (, t2 lookup) (add-rec lookup t2)]
-                                    )))]
-        (if (is-rec-pair t1 t2)
-            (if (has-inf-recursion t1 t2 pairs)
-                (fatal "Infinite recursion looks like")
-                    (let [
-                    r1 (lookup-rec t1 lookup)
-                    r2 (lookup-rec t2 lookup)]
-                    (match (, r1 r2)
-                        (, (some _) (some _)) (, (tcon "$recur" -1) (tcon "$recur" -1) (, lookup pairs count))
-                        (, (some t1) _)       (, t1 t2 (, (add-rec lookup t2) pairs (+ 1 count)))
-                        _                     (, t1 t2 (, (add-rec (add-rec lookup t1) t2) [(, t1 t2) ..pairs] count)))))
-                (, t1 t2 (, lookup pairs count)))))
+        (, t1 t2 lookup pairs) (if (is-rec-pair t1 t2)
+                                   (if (has-inf-recursion t1 t2 pairs)
+                                       (fatal "infinite recursion looks like")
+                                           (let [
+                                           (, lookup t1) (add-rec lookup t1)
+                                           (, lookup t2) (add-rec lookup t2)]
+                                           (, t1 t2 lookup [(, t1 t2) ..pairs])))
+                                       (, t1 t2 lookup pairs))]
+        (let [
+            r1 (lookup-rec t1 lookup)
+            r2 (lookup-rec t2 lookup)]
+            (match (, r1 r2)
+                (, (some _) (some _)) (, (tcon "$recur" -1) (tcon "$recur" -1) (, lookup pairs count))
+                (, (some t1) (none))  (, t1 t2 (, lookup pairs (+ 1 count)))
+                (, (none) (some t2))  (, t1 t2 (, lookup pairs (+ 1 count)))
+                _                     (, t1 t2 (, lookup pairs count))))))
 
 (defn unify-inner [t1 t2 l]
     (let [;(, t1 t2 recstate) ;(check-recursion t1 t2 recstate)]
