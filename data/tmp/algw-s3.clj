@@ -762,7 +762,8 @@
                        (<- ())
                            (let-> [_ (subst-> (one-subst var type))] (<- ())))
         _          (if (set/has (type/free type) var)
-                       (<-err
+                       (let-> [_ (subst-> (one-subst var (trec var type l)))] (<- ()))
+                           ;(<-err
                            "Cycle found while unifying type with type variable. ${var} is found in ${(type->s type)}")
                            (let-> [_ (subst-> (one-subst var type))] (<- ())))))
 
