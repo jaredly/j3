@@ -38,6 +38,8 @@
         'nil        'nil
         ('cons x r) ('cons (f x) (map f r))))
 
+(map (fn [x] (+ x 1)) ('cons 1 'nil))
+
 123
 
 (fn [x] "${x.a}")

@@ -4,6 +4,7 @@ import { InferenceError, ProduceItem } from '../ide/ground-up/FullEvalator';
 import { useGetStore } from './store/StoreCtx';
 import { showError } from './store/processTypeInference';
 import { RenderStatic } from './RenderStatic';
+import { highlightIdxs } from './highlightIdxs';
 
 export const RenderProduceItem = ({
     value,
@@ -18,6 +19,9 @@ export const RenderProduceItem = ({
     }
     switch (value.type) {
         case 'type':
+            if (value.cst) {
+                return <RenderStatic node={value.cst} />
+            }
             return <div style={{ color: 'rgb(45 149 100)' }}>{value.text}</div>;
         case 'eval': {
             let parts: JSX.Element[] = highlightIdxs(value.inner);
@@ -45,28 +49,6 @@ export const RenderProduceItem = ({
     }
     return <b>Unrecognized produce item {JSON.stringify(value)}</b>;
 };
-
-export function highlightIdxs(msg: string) {
-    let at = 0;
-    let parts: JSX.Element[] = [];
-    msg.replace(/\d+/g, (match, idx) => {
-        if (idx > at) {
-            parts.push(<span key={at}>{msg.slice(at, idx)}</span>);
-        }
-        const loc = +match;
-        parts.push(
-            <JumpTo key={idx} loc={loc}>
-                {match}
-            </JumpTo>,
-        );
-        at = idx + match.length;
-        return '';
-    });
-    if (at < msg.length) {
-        parts.push(<span key={at}>{msg.slice(at)}</span>);
-    }
-    return parts;
-}
 
 export const JumpTo = ({
     children,

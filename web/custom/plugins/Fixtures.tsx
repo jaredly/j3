@@ -7,7 +7,7 @@ import { fromMCST, toMCST } from '../../../src/types/mcst';
 import { newNodeAfter, newNodeBefore } from '../../../src/state/newNodeBefore';
 import { newBlank, newId, newListLike } from '../../../src/state/newNodes';
 import { useGetStore } from '../store/StoreCtx';
-import { highlightIdxs } from '../RenderProduceItem';
+import { highlightIdxs } from '../highlightIdxs';
 import { Data, Expr, parse, findLastIndex, LineFixture } from './Data';
 import { valueToString } from '../../ide/ground-up/valueToString';
 import { Node } from '../../../src/types/cst';

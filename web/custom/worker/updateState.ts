@@ -316,12 +316,14 @@ export function updateState(
 
                     types.forEach((type) => {
                         try {
-                            const text =
-                                state.evaluator!.inference!.typeToString(type);
-                            state.results!.tops[one.id].produce.push({
-                                type: 'type',
-                                text,
-                            });
+                                const text =
+                                    state.evaluator!.inference!.typeToString(type);
+                                const cst = state.evaluator?.inference?.typeToCst?.(type)
+                                state.results!.tops[one.id].produce.push({
+                                    type: 'type',
+                                    text,
+                                    cst
+                                });
                         } catch (err) {
                             state.results!.tops[one.id].produce.push({
                                 type: 'error',
