@@ -138,7 +138,7 @@ const RenderInferenceError = ({ err }: { err: InferenceError }) => {
                 <div>Types don't match</div>
                 <JumpTo loc={err.one.loc}>
                     <RenderStatic node={err.one} />
-                </JumpTo>
+                </JumpTo>{' vs '}
                 <JumpTo loc={err.two.loc}>
                     <RenderStatic node={err.two} />
                 </JumpTo>

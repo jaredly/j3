@@ -4435,7 +4435,7 @@ return $lt_(some($co(s)(true)))
 }
 return $lt_(none)
 throw new Error('Failed to match. ' + valueToString($target));
-})($co(spread)(sprend)))((spread) => $lt_(erecord(spread)(items)(l)))))
+})($co(spread)(sprend)))((spread) => $lt_(erecord(spread)(rev(items)(nil))(l)))))
 }
 }
 return $lt_err($co(cst_loc(cst))("Unable to parse"))(evar("()")(cst_loc(cst)))

@@ -1688,8 +1688,10 @@ return {
                                                                                              (, (some s) _)        (<- (some (, s false)))
                                                                                              (, _ (some s))        (<- (some (, s true)))
                                                                                              _                     (<- none))]
-                                                                        (<- (erecord spread items l)))
+                                                                        (<- (erecord spread (rev items []) l)))
         _                                                           (<-err (, (cst-loc cst) "Unable to parse") (evar "()" (cst-loc cst)))))
+
+(defn )
 
 (defn parse-tuple [args il l]
     (match args
@@ -1738,6 +1740,12 @@ return {
             (some (, (evar "x" 22387) true))
                 [(, "y" (eprim (pint 2 22386) 22386))]
                 22384))
+        (,
+        (@@ {x 1 y 2})
+            (erecord
+            (none)
+                [(, "x" (eprim (pint 1 22423) 22423)) (, "y" (eprim (pint 2 22425) 22425))]
+                22421))
         (,
         (@@ (, 1 2))
             (eapp

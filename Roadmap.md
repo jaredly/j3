@@ -1,4 +1,13 @@
 
+# IDEA : show usages -> show /polymorphic instantiations/
+
+It would be sooo much less "mentally costly" to abstract types to the umpteenth level if it was trivial to see what, in /practice/ the type variables get instantiated as.
+(this could also be cool for functions!) iff there are more than like 5 different instantiations, probably collapse into just showing the number of distinct instantiations.
+
+Alsooo I want the "number of usages" to be shown above everything.
+althoughhhh that's the kind of thing that only really gets useful in the "read / maintain" case, less so in the "write" case.
+I should think about how to make navigating two different cases make sense.
+
 # RECORDA ND ENUMS
 
 - oh my. lovin it.

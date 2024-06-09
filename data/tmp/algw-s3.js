@@ -260,6 +260,16 @@ let minf = {type: "minf"}
 let mname = (v0) => ({type: "mname", 0: v0})
 let mopen = (v0) => ({type: "mopen", 0: v0})
 let map$slupdate = (map) => (key) => (f) => map$slset(map)(key)(f(map$slget(map)(key)))
+let map$slopt = (f) => (v) => (($target) => {
+if ($target.type === "none") {
+return none
+} ;
+if ($target.type === "some") {
+let v = $target[0];
+return some(f(v))
+} ;
+throw new Error('match fail 18313:' + JSON.stringify($target))
+})(v)
 let cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 let nil = {type: "nil"}
 let pany = (v0) => ({type: "pany", 0: v0})
@@ -1104,6 +1114,59 @@ return fatal("empty row?")
 } ;
 throw new Error('match fail 17153:' + JSON.stringify($target))
 })(matrix))
+let type$slmap = (f) => (t) => {
+let rec = type$slmap(f);
+return f((($target) => {
+if ($target.type === "tapp") {
+let a = $target[0];
+let b = $target[1];
+let l = $target[2];
+return tapp(rec(a))(rec(b))(l)
+} ;
+if ($target.type === "trow") {
+let fields = $target[0];
+let spread = $target[1];
+let k = $target[2];
+let l = $target[3];
+return trow(map(({"1": v, "0": k}) => $co(k)(rec(v)))(fields))(map$slopt(rec)(spread))(k)(l)
+} ;
+return t;
+throw new Error('match fail 18237:' + JSON.stringify($target))
+})(t))
+}
+let type$slfold = (init) => (f) => (t) => f((($target) => {
+if ($target.type === "tapp") {
+let a = $target[0];
+let b = $target[1];
+let l = $target[2];
+return f(f(init)(a))(b)
+} ;
+if ($target.type === "trow") {
+let fields = $target[0];
+let spread = $target[1];
+let k = $target[2];
+let l = $target[3];
+{
+let init$$0 = init;
+{
+let init = foldl(init$$0)(fields)((init) => ({"1": v, "0": k}) => f(init)(v));
+{
+let $target = spread;
+if ($target.type === "none") {
+return init
+} ;
+if ($target.type === "some") {
+let v = $target[0];
+return f(init)(v)
+} ;
+throw new Error('match fail 18421:' + JSON.stringify($target))
+}
+}
+}
+} ;
+return init;
+throw new Error('match fail 18357:' + JSON.stringify($target))
+})(t))(t)
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -1565,7 +1628,43 @@ let fields = $target[0];
 let spread = $target[1];
 let kind = $target[2];
 let l = $target[3];
-return cst$slrecord(nil)(l)
+{
+let spread$$0 = spread;
+{
+let {"1": spread, "0": fmap} = deep_map(fields)(spread$$0)(kind);
+{
+let fields = map$slto_list(fmap);
+{
+let $target = kind;
+if ($target.type === "rrecord") {
+return cst$slrecord(concat(cons(concat(map(({"1": v, "0": k}) => cons(cst$slid(k)(l))(cons(type_$gtcst(v))(nil)))(fields)))(cons((($target) => {
+if ($target.type === "none") {
+return nil
+} ;
+if ($target.type === "some") {
+let v = $target[0];
+return cons(cst$slspread(type_$gtcst(v))(l))(nil)
+} ;
+throw new Error('match fail 18729:' + JSON.stringify($target))
+})(spread))(nil))))(l)
+} ;
+if ($target.type === "renum") {
+return cst$slarray(concat(cons(map(({"1": v, "0": k}) => cst$sllist(cons(cst$slid(k)(l))(cons(type_$gtcst(v))(nil)))(l))(fields))(cons((($target) => {
+if ($target.type === "none") {
+return nil
+} ;
+if ($target.type === "some") {
+let v = $target[0];
+return cons(cst$slspread(type_$gtcst(v))(l))(nil)
+} ;
+throw new Error('match fail 18793:' + JSON.stringify($target))
+})(spread))(nil))))(l)
+} ;
+throw new Error('match fail 18610:' + JSON.stringify($target))
+}
+}
+}
+}
 } ;
 if ($target.type === "tvar") {
 let name = $target[0];
@@ -1758,6 +1857,20 @@ throw new Error('match fail 17345:' + JSON.stringify($target))
 };
 throw new Error('match fail 17613:' + JSON.stringify($target))
 })(matrix)
+let free_spreads = (t) => type$slfold(set$slnil)((vbls) => (t) => (($target) => {
+if ($target.type === "trow") {
+if ($target[1].type === "some") {
+if ($target[1][0].type === "tvar") {
+let vbl = $target[1][0][0];
+if ($target[2].type === "renum") {
+return set$sladd(vbls)(vbl)
+} 
+} 
+} 
+} ;
+return vbls;
+throw new Error('match fail 18462:' + JSON.stringify($target))
+})(t))(t)
 let tenv$slapply = (subst) => ({"3": aliases, "2": types, "1": tcons, "0": values}) => tenv(scope$slapply(subst)(values))(tcons)(types)(aliases)
 let var_bind = ($var) => (type) => (l) => (($target) => {
 if ($target.type === "tvar") {
@@ -2052,7 +2165,7 @@ let spread = $target[1];
 let l = $target[2];
 return $gt$gt$eq(map_$gt(({"1": pat, "0": name}) => $gt$gt$eq(infer$slpattern(tenv)(pat))(({"1": scope, "0": arg}) => $lt_($co($co(name)(arg))(scope))))(fields))((tfields) => $gt$gt$eq($lt_(unzip(tfields)))(({"1": scopes, "0": tfields}) => $gt$gt$eq((($target) => {
 if ($target.type === "none") {
-return $gt$gt$eq(new_type_var("record-spread")(l))((t) => $lt_($co(t)(map$slnil)))
+return $gt$gt$eq(new_type_var("spread")(l))((t) => $lt_($co(t)(map$slnil)))
 } ;
 if ($target.type === "some") {
 let t = $target[0];
@@ -2172,6 +2285,16 @@ throw new Error('match fail 10381:' + JSON.stringify($target))
 throw new Error('match fail 11090:' + JSON.stringify($target))
 }
 }
+let restrict_poly_enum = (t) => {
+let {"1": res, "0": args} = fn_args_and_body(t);
+{
+let free_in = foldl(set$slnil)(map(type$slfree)(args))(set$slmerge);
+{
+let vbls = set$sldiff(free_spreads(res))(free_in);
+return $gt$gt$eq(do_$gt((vbl) => unify(tvar(vbl)(-1))(trow(nil)(none)(renum)(-1))(-1))(set$slto_list(vbls)))((_18207) => type$slapply_$gt(t))
+}
+}
+}
 let infer$slexpr_inner = (tenv) => (expr) => (($target) => {
 if ($target.type === "erecord") {
 let spread = $target[0];
@@ -2182,8 +2305,11 @@ if ($target.type === "none") {
 return $lt_(none)
 } ;
 if ($target.type === "some") {
-let expr = $target[0];
-return $gt$gt$eq(infer$slexpr(tenv)(expr))((type) => $lt_(some(type)))
+if ($target[0].type === ",") {
+let expr = $target[0][0];
+let end = $target[0][1];
+return $gt$gt$eq(infer$slexpr(tenv)(expr))((type) => $lt_(some($co(type)(end))))
+} 
 } ;
 throw new Error('match fail 14215:' + JSON.stringify($target))
 })(spread))((spread) => $gt$gt$eq(map_$gt(({"1": value, "0": name}) => $gt$gt$eq(infer$slexpr(tenv)(value))((value) => $lt_($co(name)(value))))(items))((items) => $gt$gt$eq((($target) => {
@@ -2191,8 +2317,20 @@ if ($target.type === "none") {
 return $lt_(none)
 } ;
 if ($target.type === "some") {
-let spread = $target[0];
+if ($target[0].type === ",") {
+let spread = $target[0][0];
+if ($target[0][1] === false) {
 return $gt$gt$eq(new_type_var("record")(l))((t) => $gt$gt$eq(unify(trow(items)(some(t))(rrecord)(l))(spread)(l))((_14382) => $gt$gt$eq(type$slapply_$gt(t))((t) => $lt_(some(t)))))
+} 
+} 
+} ;
+if ($target.type === "some") {
+if ($target[0].type === ",") {
+let spread = $target[0][0];
+if ($target[0][1] === true) {
+return $lt_(some(spread))
+} 
+} 
 } ;
 throw new Error('match fail 14368:' + JSON.stringify($target))
 })(spread))((spread) => type$slapply_$gt(trow(items)(spread)(rrecord)(l)))))
@@ -2401,8 +2539,8 @@ throw new Error('match fail 2253:' + JSON.stringify($target))
 })(expr)
 
 let infer$slexpr = (tenv) => (expr) => $gt$gt$eq(infer$slexpr_inner(tenv)(expr))((type) => $gt$gt$eq(record_type_$gt(type)(expr_loc(expr))(false))((_2977) => $lt_(type)))
-let add$sldefs = (tenv) => (defns) => $gt$gt$eq(reset_state_$gt)((_3545) => $gt$gt$eq($lt_(map(({"0": name}) => name)(defns)))((names) => $gt$gt$eq($lt_(map(({"1": {"1": {"1": l}}}) => l)(defns)))((locs) => $gt$gt$eq(map_$gt(({"1": {"0": nl}, "0": name}) => new_type_var(name)(nl))(defns))((vbls) => $gt$gt$eq($lt_(foldl(tenv)(zip(names)(map(forall(set$slnil))(vbls)))((tenv) => ({"1": vbl, "0": name}) => tenv$slwith_type(tenv)(name)(vbl))))((bound_env) => $gt$gt$eq(map_$gt(({"1": {"1": {"0": expr}}}) => infer$slexpr(bound_env)(expr))(defns))((types) => $gt$gt$eq(map_$gt(type$slapply_$gt)(vbls))((vbls) => $gt$gt$eq(do_$gt(({"1": {"1": loc, "0": type}, "0": vbl}) => unify(vbl)(type)(loc))(zip(vbls)(zip(types)(locs))))((_3545) => $gt$gt$eq(map_$gt(type$slapply_$gt)(types))((types) => $lt_(foldl(tenv$slnil)(zip(names)(types))((tenv) => ({"1": type, "0": name}) => tenv$slwith_type(tenv)(name)(generalize(tenv)(type)))))))))))))
-let add$sldef = (tenv) => (name) => (nl) => (expr) => (l) => $gt$gt$eq(new_type_var(name)(nl))((self) => $gt$gt$eq($lt_(tenv$slwith_type(tenv)(name)(forall(set$slnil)(self))))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(expr))((type) => $gt$gt$eq(type$slapply_$gt(self))((self) => $gt$gt$eq(unify(self)(type)(l))((_5246) => $gt$gt$eq(type$slapply_$gt(type))((type) => $lt_(tenv$slwith_type(tenv$slnil)(name)(generalize(tenv)(type)))))))))
+let add$sldefs = (tenv) => (defns) => $gt$gt$eq(reset_state_$gt)((_3545) => $gt$gt$eq($lt_(map(({"0": name}) => name)(defns)))((names) => $gt$gt$eq($lt_(map(({"1": {"1": {"1": l}}}) => l)(defns)))((locs) => $gt$gt$eq(map_$gt(({"1": {"0": nl}, "0": name}) => new_type_var(name)(nl))(defns))((vbls) => $gt$gt$eq($lt_(foldl(tenv)(zip(names)(map(forall(set$slnil))(vbls)))((tenv) => ({"1": vbl, "0": name}) => tenv$slwith_type(tenv)(name)(vbl))))((bound_env) => $gt$gt$eq(map_$gt(({"1": {"1": {"0": expr}}}) => infer$slexpr(bound_env)(expr))(defns))((types) => $gt$gt$eq(map_$gt(restrict_poly_enum)(types))((types) => $gt$gt$eq(map_$gt(type$slapply_$gt)(vbls))((vbls) => $gt$gt$eq(do_$gt(({"1": {"1": loc, "0": type}, "0": vbl}) => unify(vbl)(type)(loc))(zip(vbls)(zip(types)(locs))))((_3545) => $gt$gt$eq(map_$gt(type$slapply_$gt)(types))((types) => $lt_(foldl(tenv$slnil)(zip(names)(types))((tenv) => ({"1": type, "0": name}) => tenv$slwith_type(tenv)(name)(generalize(tenv)(type))))))))))))))
+let add$sldef = (tenv) => (name) => (nl) => (expr) => (l) => $gt$gt$eq(new_type_var(name)(nl))((self) => $gt$gt$eq($lt_(tenv$slwith_type(tenv)(name)(forall(set$slnil)(self))))((bound_env) => $gt$gt$eq(infer$slexpr(bound_env)(expr))((type) => $gt$gt$eq(type$slapply_$gt(self))((self) => $gt$gt$eq(unify(self)(type)(l))((_5246) => $gt$gt$eq(type$slapply_$gt(type))((type) => $gt$gt$eq(restrict_poly_enum(type))((type) => $lt_(tenv$slwith_type(tenv$slnil)(name)(generalize(tenv)(type))))))))))
 let is_exhaustive = (matrix) => (($target) => {
 if ($target === true) {
 return false
@@ -2458,7 +2596,7 @@ return $lt_(add$sldeftype(tenv)(name)(args)(constrs)(l))
 } ;
 throw new Error('match fail 2876:' + JSON.stringify($target))
 })(stmt)
-let add$slstmts = (tenv) => (stmts) => $gt$gt$eq($lt_(split_stmts(stmts)))(({"1": {"1": {"1": others, "0": exprs}, "0": aliases}, "0": defs}) => $gt$gt$eq(add$sldefs(tenv)(defs))((denv) => $gt$gt$eq(foldl_$gt(denv)(concat(cons(aliases)(cons(others)(nil))))((env) => (stmt) => $gt$gt$eq(add$slstmt(tenv$slmerge(tenv)(env))(stmt))((env$qu) => $lt_(tenv$slmerge(env)(env$qu)))))((final) => $gt$gt$eq(map_$gt(infer$slexpr(tenv$slmerge(tenv)(final)))(exprs))((types) => $lt_($co(final)(types))))))
+let add$slstmts = (tenv) => (stmts) => $gt$gt$eq($lt_(split_stmts(stmts)))(({"1": {"1": {"1": others, "0": exprs}, "0": aliases}, "0": defs}) => $gt$gt$eq(add$sldefs(tenv)(defs))((denv) => $gt$gt$eq(foldl_$gt(denv)(concat(cons(aliases)(cons(others)(nil))))((env) => (stmt) => $gt$gt$eq(add$slstmt(tenv$slmerge(tenv)(env))(stmt))((env$qu) => $lt_(tenv$slmerge(env)(env$qu)))))((final) => $gt$gt$eq(map_$gt(infer$slexpr(tenv$slmerge(tenv)(final)))(exprs))((types) => $gt$gt$eq(map_$gt(restrict_poly_enum)(types))((types) => $lt_($co(final)(types)))))))
 let benv_with_pair = tenv$slmerge(builtin_env)(fst(err_to_fatal(run$slnil_$gt(add$slstmts(builtin_env)(cons({"0":",","1":12710,"2":{"0":{"0":"a","1":12711,"type":","},"1":{"0":{"0":"b","1":12712,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":12714,"1":{"0":{"0":{"0":"a","1":12715,"type":"tcon"},"1":{"0":{"0":"b","1":12716,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12713,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":12707,"type":"tdeftype"})(cons({"0":"option","1":17670,"2":{"0":{"0":"a","1":17671,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"none","1":{"0":17673,"1":{"0":{"type":"nil"},"1":17672,"type":","},"type":","},"type":","},"1":{"0":{"0":"some","1":{"0":17675,"1":{"0":{"0":{"0":"a","1":17676,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":17674,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":17667,"type":"tdeftype"})(cons({"0":"list","1":12722,"2":{"0":{"0":"a","1":12723,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"nil","1":{"0":12725,"1":{"0":{"type":"nil"},"1":12724,"type":","},"type":","},"type":","},"1":{"0":{"0":"cons","1":{"0":12727,"1":{"0":{"0":{"0":"a","1":12728,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":12730,"type":"tcon"},"1":{"0":"a","1":12731,"type":"tcon"},"2":12729,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12726,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":12719,"type":"tdeftype"})(nil))))))))
 let infer_stmts2 = (env) => (stmts) => {
 let {"1": result, "0": {"1": {"1": types, "0": subst}}} = state_f(add$slstmts(env)(stmts))(state$slnil);

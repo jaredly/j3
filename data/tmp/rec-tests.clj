@@ -1,4 +1,42 @@
-(** Thinking through what happens with records. **)
+(** ## Enums examples **)
+
+'hello
+
+('some 12)
+
+(if true
+    ('some 12)
+        'none)
+
+(defn or-12 [x]
+    (match x
+        'none     12
+        ('some y) y))
+
+(defn open-ended [x]
+    (match x
+        'red  0
+        'blue 2
+        _     3))
+
+(** ## Records examples **)
+
+{x 12}
+
+{x 0 y 12}
+
+(def get-x .x)
+
+(defn add-pos [{x x y y} {x x2 y y2}] {x (+ x x2) y (+ y y2)})
+
+(defn set-pos [record] {..record x 1 y 2})
+
+(defn extend-with-pos [record] {x 1 y 2 ..record})
+
+(defn map [f v]
+    (match v
+        'nil        'nil
+        ('cons x r) ('cons (f x) (map f r))))
 
 123
 
@@ -49,6 +87,32 @@
         ))
 
 (fn [{x ('hi a)}] (+ 2 a) )
+
+(defn set-example [x] {..x y 2})
+
+(defn extend-example [x] {y 2 ..x})
+
+;(set-example {a 1})
+
+;(set-example {a 1 y ""})
+
+(set-example {a 1 y 0})
+
+(extend-example {a 1})
+
+(extend-example {a 1 y 0})
+
+(extend-example {a 1 y ""})
+
+(defn maybe-set [x check]
+    (if check
+        {..x y 2}
+            x))
+
+;(defn doesnt-work [x check]
+    (if check
+        {y 2 ..x}
+            x))
 
 (if true
     {x 1 y 10}

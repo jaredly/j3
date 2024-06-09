@@ -213,7 +213,24 @@
 
 (defn type->cst [type]
     (match type
-        (trow fields spread kind l)         (cst/record [] l)
+        (trow fields spread kind l)         (let [
+                                                (, fmap spread) (deep-map fields spread kind)
+                                                fields          (map/to-list fmap)]
+                                                (match kind
+                                                    (rrecord) (cst/record
+                                                                  (concat
+                                                                      [(concat (map (fn [(, k v)] [(cst/id k l) (type->cst v)]) fields))
+                                                                          (match spread
+                                                                          (none)   []
+                                                                          (some v) [(cst/spread (type->cst v) l)])])
+                                                                      l)
+                                                    (renum)   (cst/array
+                                                                  (concat
+                                                                      [(map (fn [(, k v)] (cst/list [(cst/id k l) (type->cst v)] l)) fields)
+                                                                          (match spread
+                                                                          (none)   []
+                                                                          (some v) [(cst/spread (type->cst v) l)])])
+                                                                      l)))
         (tvar name l)                       (cst/id name l)
         (tcon name l)                       (cst/id name l)
         (tapp (tapp (tcon "->" _) _ _) _ l) (let [(, args res) (fn-args-and-body type)]
@@ -810,7 +827,7 @@
                                                                                             _ (unify (trow items (some t) (rrecord) l) spread l)
                                                                                             t (type/apply-> t)]
                                                                                             (<- (some t)))
-                                                                (some (, spread true))  (let-> [t (new-type-var "record" l)] (<- (some t))))]
+                                                                (some (, spread true))  (<- (some spread)))]
                                                      (type/apply-> (trow items spread (rrecord) l)))
         (eaccess target [(, attr al)] l)         (match target
                                                      (none)             (let-> [
@@ -1237,7 +1254,7 @@
                                                                  fields)
                                       (, tfields scopes) (<- (unzip tfields))
                                       (, spread sscope)  (match spread
-                                                             (none)   (let-> [t (new-type-var "record-spread" l)] (<- (, t map/nil)))
+                                                             (none)   (let-> [t (new-type-var "spread" l)] (<- (, t map/nil)))
                                                              (some t) (infer/pattern tenv t))]
                                       (<-
                                           (,
@@ -1678,7 +1695,8 @@
         type      (infer/expr bound-env expr)
         self      (type/apply-> self)
         ()        (unify self type l)
-        type      (type/apply-> type)]
+        type      (type/apply-> type)
+        type      (restrict-poly-enum type)]
         (<- (tenv/with-type tenv/nil name (generalize tenv type)))))
 
 (,
@@ -1690,6 +1708,17 @@
         (,
         (@! (def x {}))
             [(, "x" (forall (map/from-list []) (trow [] (none) (rrecord) 14145)))])
+        (,
+        (@! (def x ('hi 10)))
+            [(,
+            "x"
+                (forall
+                (map/from-list [])
+                    (trow
+                    [(, "hi" (tcon "int" 18552))]
+                        (some (trow [] (none) (renum) -1))
+                        (renum)
+                        18550)))])
         (,
         (@! (defn id [x] x))
             [(,
@@ -1710,6 +1739,50 @@
 
 (** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
 
+(defn restrict-poly-enum [t]
+    (let [
+        (, args res) (fn-args-and-body t)
+        free-in      (foldl set/nil (map type/free args) set/merge)
+        vbls         (set/diff (free-spreads res) free-in)]
+        (let-> [
+            () (do->
+                   (fn [vbl] (unify (tvar vbl -1) (trow [] none (renum) -1) -1))
+                       (set/to-list vbls))]
+            (type/apply-> t))))
+
+(defn map/opt [f v]
+    (match v
+        (none)   (none)
+        (some v) (some (f v))))
+
+(defn type/map [f t]
+    (let [rec (type/map f)]
+        (f
+            (match t
+                (tapp a b l)             (tapp (rec a) (rec b) l)
+                (trow fields spread k l) (trow (map (fn [(, k v)] (, k (rec v))) fields) (map/opt rec spread) k l)
+                _                        t))))
+
+(defn type/fold [init f t]
+    (f
+        (match t
+            (tapp a b l)             (f (f init a) b)
+            (trow fields spread k l) (let [init (foldl init fields (fn [init (, k v)] (f init v)))]
+                                         (match spread
+                                             (none)   init
+                                             (some v) (f init v)))
+            _                        init)
+            t))
+
+(defn free-spreads [t]
+    (type/fold
+        set/nil
+            (fn [vbls t]
+            (match t
+                (trow _ (some (tvar vbl _)) (renum) _) (set/add vbls vbl)
+                _                                      vbls))
+            t))
+
 (defn add/defs [tenv defns]
     (let-> [
         ()        (reset-state->)
@@ -1722,6 +1795,7 @@
                               (zip names (map (forall set/nil) vbls))
                               (fn [tenv (, name vbl)] (tenv/with-type tenv name vbl))))
         types     (map-> (fn [(, _ _ expr _)] (infer/expr bound-env expr)) defns)
+        types     (map-> restrict-poly-enum types)
         vbls      (map-> type/apply-> vbls)
         ()        (do->
                       (fn [(, vbl type loc)] (unify vbl type loc))
@@ -1861,7 +1935,8 @@
                                               (fn [env stmt]
                                               (let-> [env' (add/stmt (tenv/merge tenv env) stmt)]
                                                   (<- (tenv/merge env env')))))
-        types                         (map-> (infer/expr (tenv/merge tenv final)) exprs)]
+        types                         (map-> (infer/expr (tenv/merge tenv final)) exprs)
+        types                         (map-> restrict-poly-enum types)]
         (<- (, final types))))
 
 (,
@@ -2070,3 +2145,4 @@
         scheme->cst
         infer-stmts2
         infer-expr2)
+
