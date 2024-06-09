@@ -614,8 +614,101 @@
             (fn [inner]
             (err (twrap (ttypes (forall set/nil t1) (forall set/nil t2)) inner)))))
 
-(def starts-with
-    (eval "(prefix) => (str) => str.startsWith(prefix)"))
+(** ## Unify recursive types **)
+
+(typealias recstate (, (map string type) (list (, type type)) int))
+
+(defn is-rec-pair [t1 t2]
+    (match (, t1 t2)
+        (, (trec _ _ _) _) true
+        (, _ (trec _ _ _)) true
+        _                  false))
+
+(defn has-inf-recursion [t1 t2 pairs]
+    (any
+        (fn [(, a b)]
+            (if (type= t1 a)
+                (type= t2 b)
+                    false))
+            pairs))
+
+(defn lookup-rec [t lookup]
+    (match t
+        (tvar name l) (match (map/get lookup name)
+                          (some v) (some v)
+                          _        none)
+        _             none))
+
+(defn add-rec [lookup t]
+    (match t
+        (trec name inner _) (, (map/set lookup name inner) inner)
+        _                   (, lookup t)))
+
+(defn check-recursion [t1 t2 (, lookup pairs count)]
+    (let [
+        (, t1 t2 state) (if (is-rec-pair t1 t2)
+                            (if (has-inf-recursion t1 t2 pairs)
+                                (fatal "infinite recursion looks like")
+                                    (let [
+                                    (, t1 lookup) (add-rec lookup t1)
+                                    (, t2 lookup) (add-rec lookup t2)]
+                                    )))]
+        (if (is-rec-pair t1 t2)
+            (if (has-inf-recursion t1 t2 pairs)
+                (fatal "Infinite recursion looks like")
+                    (let [
+                    r1 (lookup-rec t1 lookup)
+                    r2 (lookup-rec t2 lookup)]
+                    (match (, r1 r2)
+                        (, (some _) (some _)) (, (tcon "$recur" -1) (tcon "$recur" -1) (, lookup pairs count))
+                        (, (some t1) _)       (, t1 t2 (, (add-rec lookup t2) pairs (+ 1 count)))
+                        _                     (, t1 t2 (, (add-rec (add-rec lookup t1) t2) [(, t1 t2) ..pairs] count)))))
+                (, t1 t2 (, lookup pairs count)))))
+
+(defn unify-inner [t1 t2 l]
+    (let [;(, t1 t2 recstate) ;(check-recursion t1 t2 recstate)]
+        (match (, t1 t2)
+            (, (tvar var l) t)                       (var-bind var t l)
+            (, t (tvar var l))                       (var-bind var t l)
+            (, (tcon a la) (tcon b lb))              (if (= a b)
+                                                         (<- ())
+                                                             (<-mismatch t1 t2))
+            (, (trow f1 s1 k1 l) (trow f2 s2 k2 l2)) (if (!= k1 k2)
+                                                         (<-err "enum and record dont match")
+                                                             (unify-trows f1 s1 k1 f2 s2 k2 l))
+            (, (tapp t1 a1 _) (tapp t2 a2 _) )       (let-> [
+                                                         ()    (unify-inner t1 t2 l)
+                                                         subst <-subst
+                                                         ()    (unify-inner (type/apply subst a1) (type/apply subst a2) l)]
+                                                         (<- ()))
+            _                                        (<-mismatch t1 t2))))
+
+(defn var-bind [var type l]
+    (match type
+        (tvar v _) (if (= var v)
+                       (<- ())
+                           (let-> [_ (subst-> (one-subst var type))] (<- ())))
+        _          (if (set/has (type/free type) var)
+                       (let-> [_ (subst-> (one-subst var (trec var type l)))] (<- ()))
+                           ;(<-err
+                           "Cycle found while unifying type with type variable. ${var} is found in ${(type->s type)}")
+                           (let-> [_ (subst-> (one-subst var type))] (<- ())))))
+
+(defn one-subst [var type] (map/from-list [(, var type)]))
+
+(,
+    test-unify
+        [(, (, (@t abc) (@t 'a)) (ok (, (tcon "abc" 15601) (tcon "abc" 15601)))) (,  )])
+
+(def test-unify
+    (fn [(, t1 t2)]
+        (run/nil->
+            (let-> [
+                t1    (<- (quot-tvar t1))
+                t2    (<- (quot-tvar t2))
+                ()    (unify t1 t2 -1)
+                subst <-subst]
+                (<- (, (type/apply subst t1) (type/apply subst t2)))))))
 
 (defn quot-tvar [t]
     (match t
@@ -633,23 +726,17 @@
                                          k
                                          l)))
 
-(,
-    (fn [(, t1 t2)]
-        (run/nil->
-            (let-> [
-                t1    (<- (quot-tvar t1))
-                t2    (<- (quot-tvar t2))
-                ()    (unify t1 t2 -1)
-                subst <-subst]
-                (<- (, (type/apply subst t1) (type/apply subst t2))))))
-        [(, (, (@t abc) (@t 'a)) (ok (, (tcon "abc" 15601) (tcon "abc" 15601)))) (,  )])
+(def starts-with
+    (eval "(prefix) => (str) => str.startsWith(prefix)"))
+
+(** ## trow unification **)
 
 (defn identify-unique [fields1 spread1 fields2 spread2 k]
     (let [
         (, map1 spread1) (deep-map fields1 spread1 k)
         (, map2 spread2) (deep-map fields2 spread2 k)
         (, u1 shared u2) (partition-keys map1 map2)]
-        (let-> [_ (map-> (fn [(, key t1 t2)] (unify t1 t2 -1)) shared)]
+        (let-> [_ (map-> (fn [(, key t1 t2)] (unify-inner t1 t2 -1)) shared)]
             (<- (, u1 spread1 u2 spread2)))))
 
 (defn filter [f lst]
@@ -715,57 +802,30 @@
 
 (defn wrap-ok [t] (let-> [v t] (<- (some v))))
 
-(defn unify-inner [t1 t2 l]
-    (match (, t1 t2)
-        (, (tvar var l) t)                       (var-bind var t l)
-        (, t (tvar var l))                       (var-bind var t l)
-        (, (tcon a la) (tcon b lb))              (if (= a b)
-                                                     (<- ())
-                                                         (<-mismatch t1 t2))
-        (, (trow f1 s1 k1 l) (trow f2 s2 k2 l2)) (if (!= k1 k2)
-                                                     (<-err "enum and record dont match")
-                                                         (let-> [
-                                                         (, u1 s1 u2 s2) (identify-unique f1 s1 f2 s2 k1)
-                                                         open            (<-
-                                                                             (match (, s1 s2)
-                                                                                 (, (some _) (some _)) true
-                                                                                 _                     false))
-                                                         _               (match (, s1 u2)
-                                                                             (, _ [])        (<- ())
-                                                                             (, (some s1) _) (let-> [
-                                                                                                 v2 (if open
-                                                                                                        (wrap-ok (new-type-var "row" l))
-                                                                                                            (<- none))]
-                                                                                                 (unify s1 (trow u2 v2 k1 l) l))
-                                                                             _               (<-err "unique fields on the right but no spread on the left"))
-                                                         _               (match (, s2 u1)
-                                                                             (, _ [])        (<- ())
-                                                                             (, (some s2) _) (let-> [
-                                                                                                 v1 (if open
-                                                                                                        (wrap-ok (new-type-var "row" l))
-                                                                                                            (<- none))]
-                                                                                                 (unify s2 (trow u1 v1 k2 l) l))
-                                                                             _               (<-err "unique fields on the left but no spread on the right"))]
-                                                         (<- ())))
-        (, (tapp t1 a1 _) (tapp t2 a2 _) )       (let-> [
-                                                     ()    (unify-inner t1 t2 l)
-                                                     subst <-subst
-                                                     ()    (unify-inner (type/apply subst a1) (type/apply subst a2) l)]
-                                                     (<- ()))
-        _                                        (<-mismatch t1 t2)))
-
-(defn one-subst [var type] (map/from-list [(, var type)]))
-
-(defn var-bind [var type l]
-    (match type
-        (tvar v _) (if (= var v)
-                       (<- ())
-                           (let-> [_ (subst-> (one-subst var type))] (<- ())))
-        _          (if (set/has (type/free type) var)
-                       (let-> [_ (subst-> (one-subst var (trec var type l)))] (<- ()))
-                           ;(<-err
-                           "Cycle found while unifying type with type variable. ${var} is found in ${(type->s type)}")
-                           (let-> [_ (subst-> (one-subst var type))] (<- ())))))
+(defn unify-trows [f1 s1 k1 f2 s2 k2 l]
+    (let-> [
+        (, u1 s1 u2 s2) (identify-unique f1 s1 f2 s2 k1)
+        open            (<-
+                            (match (, s1 s2)
+                                (, (some _) (some _)) true
+                                _                     false))
+        _               (match (, s1 u2)
+                            (, _ [])        (<- ())
+                            (, (some s1) _) (let-> [
+                                                v2 (if open
+                                                       (wrap-ok (new-type-var "row" l))
+                                                           (<- none))]
+                                                (unify-inner s1 (trow u2 v2 k1 l) l))
+                            _               (<-err "unique fields on the right but no spread on the left"))
+        _               (match (, s2 u1)
+                            (, _ [])        (<- ())
+                            (, (some s2) _) (let-> [
+                                                v1 (if open
+                                                       (wrap-ok (new-type-var "row" l))
+                                                           (<- none))]
+                                                (unify-inner s2 (trow u1 v1 k2 l) l))
+                            _               (<-err "unique fields on the left but no spread on the right"))]
+        (<- ())))
 
 (** ## Inference
     Here are the functions that we'll be using most often when writing the inference code (summarized here as a refresher):
