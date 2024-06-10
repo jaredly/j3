@@ -33,14 +33,14 @@
 
 (defn extend-with-pos [record] {x 1 y 2 ..record})
 
+(deftype (option a)
+    (none)
+        (some a))
+
 (defn map [f v]
     (match v
         'nil        'nil
         ('cons x r) ('cons (f x) (map f r))))
-
-(deftype (option a)
-    (none)
-        (some a))
 
 (map (fn [x] (+ x 1)) ('cons 1 'nil))
 

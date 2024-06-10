@@ -139,6 +139,7 @@
     (tvar string int)
         (tapp type type int)
         (tcon string int)
+        (trec string int type int)
         (trow (list (, string type)) (option type) row-kind int))
 
 (deftype row-kind
@@ -1442,6 +1443,7 @@ return {
                                                                                   body
                                                                                       (rev args [])
                                                                                       (fn [body arg] (tapp (tapp (tcon "->" l) arg l) body l)))))
+        (cst/list [(cst/id "rec" _) (cst/id name nl) inner] l)        (let-> [inner (parse-type inner)] (<- (trec name nl inner l)))
         (cst/list [(cst/id "," cl) ..items] l)                        (let-> [items (map-> parse-type items)]
                                                                           (<-
                                                                               (loop
@@ -1549,8 +1551,6 @@ return {
                          one  (parse-pat one)
                          rest (parse-pat-tuple rest il l)]
                          (<- (pcon "," -1 [one rest] l)))))
-
-
 
 (,
     (fn [x] (run/nil-> (parse-pat x)))
@@ -1690,8 +1690,6 @@ return {
                                                                                              _                     (<- none))]
                                                                         (<- (erecord spread (rev items []) l)))
         _                                                           (<-err (, (cst-loc cst) "Unable to parse") (evar "()" (cst-loc cst)))))
-
-(defn )
 
 (defn parse-tuple [args il l]
     (match args
@@ -2182,6 +2180,7 @@ return {
         (tapp _ _ _)   "app"
         (tvar _ _)     "var"
         (tcon _ _)     "con"
+        (trec _ _ _ _) "rec"
         (trow _ _ _ _) "row"))
 
 (defn fold-type [init type f]
@@ -2315,6 +2314,7 @@ dot
         (tvar name l)            (one (, name l))
         (tapp target arg _)      (bag/and (type/idents target) (type/idents arg))
         (tcon name l)            (one (, name l))
+        (trec name nl inner l)   (many [(one (, name nl)) (type/idents inner)])
         (trow fields spread _ l) (foldl
                                      (map-or (type/idents) empty spread)
                                          (map fields (dot type/idents snd))
@@ -2440,6 +2440,7 @@ dot
         (tcon name l)            (match (set/has bound name)
                                      true empty
                                      _    (one (, name (type) l)))
+        (trec _ _ inner l)       (externals-type bound inner)
         (tapp one two _)         (bag/and (externals-type bound one) (externals-type bound two))
         (trow fields spread _ _) (foldl
                                      (map-or (externals-type bound) empty spread)
@@ -2577,6 +2578,7 @@ dot
                                      (some dl) (one (local l (usage dl)))
                                      _         empty)
         (tcon name l)            (one (global name (type) l (usage ())))
+        (trec name nl inner l)   (type/names (map/set free name nl) inner)
         (trow fields spread _ l) (foldl
                                      (map-or (type/names free) empty spread)
                                          (map fields (dot (type/names free) snd))

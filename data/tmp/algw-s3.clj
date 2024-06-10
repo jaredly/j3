@@ -145,7 +145,7 @@
     (tvar string int)
         (tapp type type int)
         (tcon string int)
-        (trec string type int)
+        (trec string int type int)
         (trow (list (, string type)) (option type) row-kind int))
 
 (deftype row-kind
@@ -157,7 +157,7 @@
 (defn type= [one two]
     (match (, one two)
         (, (trow _ _ _ _) (trow _ _ _ _))             (fatal "not impl")
-        (, (trec a b _) (trec c d _))                 (if (= a c)
+        (, (trec a _ b _) (trec c _ d _))             (if (= a c)
                                                           (type= b d)
                                                               false)
         (, (tvar id _) (tvar id' _))                  (= id id')
@@ -199,9 +199,10 @@
                                                                       (none)   ""
                                                                       (some t) " ..${(type->s t)}")}]"))
         (tvar name _)                           name
-        (trec name inner _)                     "(rec ${name} ${(type->s inner)})"
+        (trec name _ inner _)                   "(rec ${name} ${(type->s inner)})"
         (tapp (tapp (tcon "->" _) arg _) res _) "(fn [${(type->s arg)}] ${(type->s res)})"
-        (tapp target arg _)                     "(${(type->s target)} ${(type->s arg)})"
+        (tapp target arg _)                     (let [(, target args) (target-and-args type [])]
+                                                    "(${(type->s target)} ${(join " " (map type->s args))})")
         (tcon name _)                           name))
 
 (defn scheme->cst [(forall vbls type)] (type->cst type))
@@ -243,7 +244,7 @@
                                                                       l)))
         (tvar name l)                       (cst/id name l)
         (tcon name l)                       (cst/id name l)
-        (trec name inner l)                 (cst/list [(cst/id "rec" l) (cst/id name l) (type->cst inner)] l)
+        (trec name nl inner l)              (cst/list [(cst/id "rec" l) (cst/id name nl) (type->cst inner)] l)
         (tapp (tapp (tcon "->" _) _ _) _ l) (let [(, args res) (fn-args-and-body type)]
                                                 (cst/list
                                                     [(cst/id "fn" l) (cst/array (map type->cst args) l) (type->cst res)]
@@ -301,7 +302,7 @@
                                               (some v) (type/free v))
                                               (map (fn [(, _ t)] (type/free t)) fields)
                                               set/merge)
-        (trec name inner loc)         (set/rm (type/free inner) name)
+        (trec name _ inner loc)       (set/rm (type/free inner) name)
         (tvar id _)                   (set/add set/nil id)
         (tcon _ _)                    set/nil
         (tapp a b _)                  (set/merge (type/free a) (type/free b))))
@@ -614,15 +615,115 @@
             (fn [inner]
             (err (twrap (ttypes (forall set/nil t1) (forall set/nil t2)) inner)))))
 
+(** ## Simplify recursive types **)
+
+(deftype simstate
+    (snum int)
+        (stype type string type int int)
+        (srep type))
+
+;(defn simplify-recursive-inner [t rvbl]
+    (match t
+        (tvar name _)          (if (= (some name) rvbl)
+                                   (some (snum 0))
+                                       none)
+        (tcon _ _)             none
+        (tapp target arg l)    (match (simplify-recursive-inner target rvbl)
+                                   (some (snum n))                    (some (snum (+ n 1)))
+                                   (some (stype _ _ _ 0 _))           (none)
+                                   (some (stype t2 name inner 1 max)) (if (type= (tapp t2 arg l) inner)
+                                                                          (some (stype (tvar name l) name inner max max))
+                                                                              (none))
+                                   (some (stype t2 name inner n max)) (some (stype (tapp t2 arg l) name inner (- n 1) max))
+                                   (some (srep target))               (match (simplify-recursive-inner arg rvbl)
+                                                                          (some (srep arg))                (some (srep (tapp target arg l)))
+                                                                          (some (stype t2 name inner 1 _)) (some (srep (tapp target (trec name l inner l) l)))
+                                                                          (some (stype t2 name inner _ _)) (some
+                                                                                                               (srep
+                                                                                                                   (tapp
+                                                                                                                       target
+                                                                                                                           (type/apply (map/from-list [(, name (trec name l inner l))]) t2)
+                                                                                                                           l)))
+                                                                          (none)                           (some (srep (tapp target arg l)))
+                                                                          _                                (fatal "simplyfing down both arms somehow..."))
+                                   (none)                             (match (simplify-recursive-inner arg rvbl)
+                                                                          (some (snum n))                    (some (snum (+ n 1)))
+                                                                          (some (stype _ _ _ 0 _))           (none)
+                                                                          (some (stype t2 name inner 1 max)) (if (type= (tapp target t2 l) inner)
+                                                                                                                 (some (stype (tvar name l) name inner max max))
+                                                                                                                     (some
+                                                                                                                     (srep
+                                                                                                                         (tapp
+                                                                                                                             target
+                                                                                                                                 (type/apply (map/from-list [(, name (trec name l inner l))]) t2)
+                                                                                                                                 l))))
+                                                                          (some (stype t2 name inner n max)) (some (stype (tapp target t2 l) name inner (- n 1) max))
+                                                                          (some (srep arg))                  (some (srep (tapp target arg l)))
+                                                                          (none)                             (none)))
+        (trec name nl inner l) (match (simplify-recursive-inner inner (some name))
+                                   (none)          (none)
+                                   (some (snum n)) (some (stype (tvar name l) name inner n n))
+                                   (some _)        (fatal "why stype at rec?"))
+        _                      none))
+
+(defn simplify-recursive-inner [t rvbl]
+    (match t
+        (tvar name _)          (if (= (some name) rvbl)
+                                   (some (snum 0))
+                                       none)
+        (tcon _ _)             none
+        (tapp target arg l)    (match (simplify-recursive-inner target rvbl)
+                                   (some (snum n))                  (some (snum (+ n 1)))
+                                   (some (stype _ _ _ 0 _))         (none)
+                                   (some (stype t2 name inner 1 _)) (if (type= (tapp t2 arg l) inner)
+                                                                        (some (srep (trec name l inner l)))
+                                                                            (none))
+                                   (some (stype t2 name inner n _)) (some (stype (tapp t2 arg l) name inner (- n 1) 0))
+                                   (some (srep target))             (match (simplify-recursive-inner arg rvbl)
+                                                                        (some (srep arg)) (some (srep (tapp target arg l)))
+                                                                        (none)            (some (srep (tapp target arg l)))
+                                                                        _                 (fatal "simplyfing down both arms somehow..."))
+                                   (none)                           (match (simplify-recursive-inner arg rvbl)
+                                                                        (some (snum n))                  (some (snum (+ n 1)))
+                                                                        (some (stype _ _ _ 0 _))         (none)
+                                                                        (some (stype t2 name inner 1 _)) (if (type= (tapp target t2 l) inner)
+                                                                                                             (some (srep (trec name l inner l)))
+                                                                                                                 (none))
+                                                                        (some (stype t2 name inner n _)) (some (stype (tapp target t2 l) name inner (- n 1) 0))
+                                                                        (some (srep arg))                (some (srep (tapp target arg l)))
+                                                                        (none)                           (none)))
+        (trec name nl inner l) (match (simplify-recursive-inner inner (some name))
+                                   (none)          (none)
+                                   (some (snum n)) (some (stype (tvar name l) name inner n 0))
+                                   (some _)        (fatal "why stype at rec?"))
+        _                      none))
+
+(defn simplify-recursive [type]
+    (match (simplify-recursive-inner type none)
+        (some (srep t))                 t
+        (some (stype t name inner _ _)) (type/apply (map/from-list [(, name (trec name -1 inner -1))]) t)
+        _                               type))
+
+(type->s (quot-tvar (@t (, int (option (rec 'a (, int (option 'a))))))))
+
+(type->s
+    (simplify-recursive
+        (quot-tvar (@t (, int (option (rec 'a (, int (option 'a)))))))))
+
+(type->s
+    (simplify-recursive
+        (quot-tvar
+            (@t (, int (option (, int (option (rec 'a (, int (option 'a)))))))))))
+
 (** ## Unify recursive types **)
 
 (typealias recstate (, (map string type) (list (, type type)) int))
 
 (defn is-rec-pair [t1 t2]
     (match (, t1 t2)
-        (, (trec _ _ _) _) true
-        (, _ (trec _ _ _)) true
-        _                  false))
+        (, (trec _ _ _ _) _) true
+        (, _ (trec _ _ _ _)) true
+        _                    false))
 
 (defn has-inf-recursion [t1 t2 pairs]
     (any
@@ -641,8 +742,8 @@
 
 (defn add-rec [lookup t]
     (match t
-        (trec name inner _) (, (map/set lookup name inner) inner)
-        _                   (, lookup t)))
+        (trec name _ inner _) (, (map/set lookup name inner) inner)
+        _                     (, lookup t)))
 
 (defn equal-modulo-vbls [t1 t2]
     (let [(, (, _ subst _) _) (state-f (unify t1 t2 -1) state/nil)]
@@ -710,7 +811,7 @@
                        (<- ())
                            (let-> [_ (subst-> (one-subst var type))] (<- ())))
         _          (if (set/has (type/free type) var)
-                       (let-> [_ (subst-> (one-subst var (trec var type l)))] (<- ()))
+                       (let-> [_ (subst-> (one-subst var (trec var l type l)))] (<- ()))
                            ;(<-err
                            "Cycle found while unifying type with type variable. ${var} is found in ${(type->s type)}")
                            (let-> [_ (subst-> (one-subst var type))] (<- ())))))
@@ -738,7 +839,7 @@
                                      (tvar name l)
                                          t)
         (tapp target arg l)      (tapp (quot-tvar target) (quot-tvar arg) l)
-        (trec name type l)       (trec name (quot-tvar type) l)
+        (trec name nl type l)    (trec name nl (quot-tvar type) l)
         (trow fields spread k l) (trow
                                      (map (fn [(, name type)] (, name (quot-tvar type))) fields)
                                          (match spread
@@ -1639,12 +1740,12 @@
 
 (defn tcon-and-args [type coll l]
     (match type
-        (trow _ _ _ _)      (fatal "cant apply a row type")
-        (trec name inner _) (fatal "cant apply a recursive type?")
-        (tvar _ _)          (fatal
-                                "Type not resolved ${(int-to-string l)} it is a tvar at heart. ${(jsonify type)} ${(jsonify coll)}")
-        (tcon name _)       (, name coll)
-        (tapp target arg _) (tcon-and-args target [arg ..coll] l)))
+        (trow _ _ _ _)        (fatal "cant apply a row type")
+        (trec name _ inner _) (fatal "cant apply a recursive type?")
+        (tvar _ _)            (fatal
+                                  "Type not resolved ${(int-to-string l)} it is a tvar at heart. ${(jsonify type)} ${(jsonify coll)}")
+        (tcon name _)         (, name coll)
+        (tapp target arg _)   (tcon-and-args target [arg ..coll] l)))
 
 (,
     (fn [x] (tcon-and-args x [] 0))
@@ -1902,7 +2003,10 @@
                 tenv/nil
                     (zip names types)
                     (fn [tenv (, name type)]
-                    (tenv/with-type tenv name (generalize tenv type)))))))
+                    (tenv/with-type
+                        tenv
+                            name
+                            (generalize tenv (simplify-recursive type))))))))
 
 (,
     (fn [x]
@@ -1986,13 +2090,13 @@
 
 (defn type/con-to-var- [vars type]
     (match type
-        (trow _ _ _ _)      (fatal "cant apply a row")
-        (trec name inner l) (trec name (type/con-to-var vars inner) l)
-        (tvar _ _)          type
-        (tcon name l)       (if (set/has vars name)
-                                (tvar name l)
-                                    type)
-        (tapp a b l)        (tapp (type/con-to-var vars a) (type/con-to-var vars b) l)))
+        (trow _ _ _ _)         (fatal "cant apply a row")
+        (trec name nl inner l) (trec name nl (type/con-to-var vars inner) l)
+        (tvar _ _)             type
+        (tcon name l)          (if (set/has vars name)
+                                   (tvar name l)
+                                       type)
+        (tapp a b l)           (tapp (type/con-to-var vars a) (type/con-to-var vars b) l)))
 
 (defn type/resolve-aliases [aliases type]
     (let [
@@ -2044,7 +2148,7 @@
                                                   (<- (tenv/merge env env')))))
         types                         (map-> (infer/expr (tenv/merge tenv final)) exprs)
         types                         (map-> restrict-poly-enum types)]
-        (<- (, final types))))
+        (<- (, final (map simplify-recursive types)))))
 
 (,
     (fn [(, x name)]
@@ -2090,7 +2194,7 @@
                     (elet bindgroup expr int)))]
                 [(@! (defn x [(elet b _ _)] b))]]
                 "x")
-            "(fn [expr] ((, (list pat)) expr))")
+            "(fn [expr] (, (list pat) expr))")
         (,
         (,
             [[(@! (typealias (a b) (, int b)))
@@ -2100,7 +2204,7 @@
                         (blue)
                         (green (a bool))))]]
                 "green")
-            "(fn [((, int) bool)] hi)")
+            "(fn [(, int bool)] hi)")
         ])
 
 (** ## Type Environment populated with Builtins **)

@@ -420,6 +420,7 @@ const penum = (v0) => (v1) => (v2) => (v3) => ({type: "penum", 0: v0, 1: v1, 2: 
 const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
+const trec = (v0) => (v1) => (v2) => (v3) => ({type: "trec", 0: v0, 1: v1, 2: v2, 3: v3})
 const trow = (v0) => (v1) => (v2) => (v3) => ({type: "trow", 0: v0, 1: v1, 2: v2, 3: v3})
 const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
 const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
@@ -809,6 +810,13 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(set$slhas(bound)(name))
 }
 }
+if ($target.type === "trec") {
+{
+let inner = $target[2];
+let l = $target[3];
+return externals_type(bound)(inner)
+}
+}
 if ($target.type === "tapp") {
 {
 let one = $target[0];
@@ -897,6 +905,9 @@ return "var"
 }
 if ($target.type === "tcon") {
 return "con"
+}
+if ($target.type === "trec") {
+return "rec"
 }
 if ($target.type === "trow") {
 return "row"
@@ -1376,6 +1387,15 @@ let l = $target[1];
 return one($co(name)(l))
 }
 }
+if ($target.type === "trec") {
+{
+let name = $target[0];
+let nl = $target[1];
+let inner = $target[2];
+let l = $target[3];
+return many(cons(one($co(name)(nl)))(cons(type$slidents(inner))(nil)))
+}
+}
 if ($target.type === "trow") {
 {
 let fields = $target[0];
@@ -1436,6 +1456,15 @@ if ($target.type === "tcon") {
 let name = $target[0];
 let l = $target[1];
 return one(global(name)(type)(l)(usage($unit)))
+}
+}
+if ($target.type === "trec") {
+{
+let name = $target[0];
+let nl = $target[1];
+let inner = $target[2];
+let l = $target[3];
+return type$slnames(map$slset(free)(name)(nl))(inner)
 }
 }
 if ($target.type === "trow") {
@@ -3621,6 +3650,22 @@ let body = $target[0][1][1][0];
 let rest = $target[0][1][1][1];
 let l = $target[1];
 return $gt$gt$eq(parse_type(body))((body) => $gt$gt$eq(map_$gt(parse_type)(args))((args) => $gt$gt$eq(do_$gt(unexpected("extra item in type"))(rest))((_) => $lt_(foldl(body)(rev(args)(nil))((body) => (arg) => tapp(tapp(tcon("->")(l))(arg)(l))(body)(l))))))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "rec" &&
+$target[0][1].type === "cons" &&
+$target[0][1][0].type === "cst/id" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][1].type === "nil") {
+{
+let name = $target[0][1][0][0];
+let nl = $target[0][1][0][1];
+let inner = $target[0][1][1][0];
+let l = $target[1];
+return $gt$gt$eq(parse_type(inner))((inner) => $lt_(trec(name)(nl)(inner)(l)))
 }
 }
 if ($target.type === "cst/list" &&

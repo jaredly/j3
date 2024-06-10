@@ -2,7 +2,15 @@
 # recursive types
 
 - [x] add a `trec name inner l`
-- [ ] swap it in, if occurs check fails
+- [x] swap it in, if occurs check fails
+- [x] basic simpification! very nice
+- [ ] handle trow in simplification plsss
+- [ ] it would be super nice if I could simplify multiple times. but it might require more bookkeeping? Like "srep" combined with stype? And then if we end up with
+  stype at the end, we'd need to ... back it off? ORRR actually I guess I could /subst/ it back in, right? maybe a little weird. but should work? maybe?
+    ->> erkkkk ok so ... I broke it, and it's not really quote fixed.
+    I want .. to be able to, like "unwrap" the dealio, as I'm coming back.
+    - [x] unbreak it a little
+    - [ ] ok maybe this can actually work?
 
 
 # Opaque types!! we'll probably want them in some form.
