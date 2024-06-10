@@ -19,10 +19,10 @@ export const RenderProduceItem = ({
     }
     switch (value.type) {
         case 'type':
-            if (value.cst) {
-                return <RenderStatic node={value.cst} />
-            }
-            return <div style={{ color: 'rgb(45 149 100)' }}>{value.text}</div>;
+            return <div style={{
+                borderLeft: '4px solid rgb(0,60,0)',
+            paddingLeft: 8
+            }}>{value.cst ? <RenderStatic node={value.cst} /> : <div style={{ color: 'rgb(45 149 100)' }}>{value.text}</div>}</div>;
         case 'eval': {
             let parts: JSX.Element[] = highlightIdxs(value.inner);
             return (

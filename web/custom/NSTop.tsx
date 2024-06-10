@@ -23,6 +23,7 @@ import { nodeColor } from './rainbow';
 import { NodeResults } from './store/getImmediateResults';
 import 'victormono';
 import equal from 'fast-deep-equal';
+import { RenderStatic } from './RenderStatic';
 
 const PluginRender = ({
     ns,
@@ -105,6 +106,19 @@ function NSTop({
         return null // zoomed out
     }
 
+    let type = null
+    let otherProduce = produce.slice()
+    const numTypes = otherProduce.filter(
+        (p) => typeof p !== 'string' && p.type === 'type',
+    ).length;
+    if (numTypes > 1) {
+        otherProduce = otherProduce.filter((p) => typeof p === 'string' || p.type !== 'type');
+    }
+    const tidx = otherProduce.findIndex(p => typeof p !== 'string' && p.type === 'type')
+    if (tidx !== -1) {
+        type = otherProduce.splice(tidx, 1)[0] as Extract<ProduceItem, {type: 'type'}>
+    }
+
     return (
         <div
             style={{
@@ -149,6 +163,13 @@ function NSTop({
                                 }
                             }}
                         >
+                            {type?.cst
+                            ? <div style={{display: 'flex', fontSize: '80%', borderLeft: '4px solid rgb(0, 80, 0)', paddingLeft: 8, }}>
+                                <span style={{marginRight: 8, opacity: 0.7}}>
+                                type:
+                                </span>
+                                <RenderStatic node={type.cst} />
+                            </div> : null}
                             {ns.plugin ? (
                                 <PluginRender
                                     ns={ns}
@@ -174,7 +195,7 @@ function NSTop({
                             <RenderProduce
                                 ns={ns.id}
                                 collapsed={ns.collapsed}
-                                value={produce}
+                                value={otherProduce}
                             />
                         </div>
                     </>
