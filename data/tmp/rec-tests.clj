@@ -38,7 +38,18 @@
         'nil        'nil
         ('cons x r) ('cons (f x) (map f r))))
 
+(deftype (option a)
+    (none)
+        (some a))
+
 (map (fn [x] (+ x 1)) ('cons 1 'nil))
+
+(defn map2 [f (, v rest)]
+    (,
+        (f v)
+            (match rest
+            (none)      (none)
+            (some rest) (some (map2 f rest)))))
 
 123
 

@@ -610,7 +610,7 @@
 
 (defn unify [t1 t2 l]
     (map-err->
-        (unify-inner t1 t2 l)
+        (unify-inner t1 t2 (, map/nil [] 0) l)
             (fn [inner]
             (err (twrap (ttypes (forall set/nil t1) (forall set/nil t2)) inner)))))
 
@@ -635,14 +635,30 @@
 (defn lookup-rec [t lookup]
     (match t
         (tvar name l) (match (map/get lookup name)
-                          (some v) (some v)
-                          _        none)
-        _             none))
+                          (some v) (let-> [v (type/apply-> v)] (<- (some v)))
+                          _        (<- none))
+        _             (<- none)))
 
 (defn add-rec [lookup t]
     (match t
         (trec name inner _) (, (map/set lookup name inner) inner)
         _                   (, lookup t)))
+
+(defn equal-modulo-vbls [t1 t2]
+    (let [(, (, _ subst _) _) (state-f (unify t1 t2 -1) state/nil)]
+        (all
+            (fn [(, _ v)]
+                (match v
+                    (tvar _ _) true
+                    _          false))
+                (map/to-list subst))))
+
+(defn all [f lst]
+    (match lst
+        []           true
+        [one ..rest] (if (f one)
+                         (all f rest)
+                             false)))
 
 (defn check-recursion [t1 t2 (, lookup pairs count)]
     (let [
@@ -654,17 +670,20 @@
                                            (, lookup t2) (add-rec lookup t2)]
                                            (, t1 t2 lookup [(, t1 t2) ..pairs])))
                                        (, t1 t2 lookup pairs))]
-        (let [
+        (let-> [
             r1 (lookup-rec t1 lookup)
             r2 (lookup-rec t2 lookup)]
-            (match (, r1 r2)
-                (, (some _) (some _)) (, (tcon "$recur" -1) (tcon "$recur" -1) (, lookup pairs count))
-                (, (some t1) (none))  (, t1 t2 (, lookup pairs (+ 1 count)))
-                (, (none) (some t2))  (, t1 t2 (, lookup pairs (+ 1 count)))
-                _                     (, t1 t2 (, lookup pairs count))))))
+            (<-
+                (match (, r1 r2)
+                    (, (some t1) (some t2)) (if (equal-modulo-vbls t1 t2)
+                                                (, (tcon "$recur" -1) (tcon "$recur" -1) (, lookup pairs count))
+                                                    (, t1 t2 (, lookup pairs (+ 1 count))))
+                    (, (some t1) (none))    (, t1 t2 (, lookup pairs (+ 1 count)))
+                    (, (none) (some t2))    (, t1 t2 (, lookup pairs (+ 1 count)))
+                    _                       (, t1 t2 (, lookup pairs count)))))))
 
-(defn unify-inner [t1 t2 l]
-    (let [;(, t1 t2 recstate) ;(check-recursion t1 t2 recstate)]
+(defn unify-inner [t1 t2 recstate l]
+    (let-> [(, t1 t2 recstate) (check-recursion t1 t2 recstate)]
         (match (, t1 t2)
             (, (tvar var l) t)                       (var-bind var t l)
             (, t (tvar var l))                       (var-bind var t l)
@@ -673,11 +692,15 @@
                                                              (<-mismatch t1 t2))
             (, (trow f1 s1 k1 l) (trow f2 s2 k2 l2)) (if (!= k1 k2)
                                                          (<-err "enum and record dont match")
-                                                             (unify-trows f1 s1 k1 f2 s2 k2 l))
+                                                             (unify-trows f1 s1 k1 f2 s2 k2 recstate l))
             (, (tapp t1 a1 _) (tapp t2 a2 _) )       (let-> [
-                                                         ()    (unify-inner t1 t2 l)
+                                                         ()    (unify-inner t1 t2 recstate l)
                                                          subst <-subst
-                                                         ()    (unify-inner (type/apply subst a1) (type/apply subst a2) l)]
+                                                         ()    (unify-inner
+                                                                   (type/apply subst a1)
+                                                                       (type/apply subst a2)
+                                                                       recstate
+                                                                       l)]
                                                          (<- ()))
             _                                        (<-mismatch t1 t2))))
 
@@ -729,12 +752,12 @@
 
 (** ## trow unification **)
 
-(defn identify-unique [fields1 spread1 fields2 spread2 k]
+(defn identify-unique [fields1 spread1 fields2 spread2 recstate k]
     (let [
         (, map1 spread1) (deep-map fields1 spread1 k)
         (, map2 spread2) (deep-map fields2 spread2 k)
         (, u1 shared u2) (partition-keys map1 map2)]
-        (let-> [_ (map-> (fn [(, key t1 t2)] (unify-inner t1 t2 -1)) shared)]
+        (let-> [_ (map-> (fn [(, key t1 t2)] (unify-inner t1 t2 recstate -1)) shared)]
             (<- (, u1 spread1 u2 spread2)))))
 
 (defn filter [f lst]
@@ -800,9 +823,9 @@
 
 (defn wrap-ok [t] (let-> [v t] (<- (some v))))
 
-(defn unify-trows [f1 s1 k1 f2 s2 k2 l]
+(defn unify-trows [f1 s1 k1 f2 s2 k2 recstate l]
     (let-> [
-        (, u1 s1 u2 s2) (identify-unique f1 s1 f2 s2 k1)
+        (, u1 s1 u2 s2) (identify-unique f1 s1 f2 s2 recstate k1)
         open            (<-
                             (match (, s1 s2)
                                 (, (some _) (some _)) true
@@ -813,7 +836,7 @@
                                                 v2 (if open
                                                        (wrap-ok (new-type-var "row" l))
                                                            (<- none))]
-                                                (unify-inner s1 (trow u2 v2 k1 l) l))
+                                                (unify-inner s1 (trow u2 v2 k1 l) recstate l))
                             _               (<-err "unique fields on the right but no spread on the left"))
         _               (match (, s2 u1)
                             (, _ [])        (<- ())
@@ -821,7 +844,7 @@
                                                 v1 (if open
                                                        (wrap-ok (new-type-var "row" l))
                                                            (<- none))]
-                                                (unify-inner s2 (trow u1 v1 k2 l) l))
+                                                (unify-inner s2 (trow u1 v1 k2 l) recstate l))
                             _               (<-err "unique fields on the left but no spread on the right"))]
         (<- ())))
 

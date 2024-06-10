@@ -33,7 +33,7 @@ export const RenderProduceItem = ({
             );
         }
         case 'inference-error':
-            return <RenderInferenceError err={value.err} />;
+            return <div style={{borderLeft: '4px solid rgb(255,50,50)', paddingLeft: 8}}><RenderInferenceError err={value.err} /></div>;
         case 'withjs': {
             let parts = highlightIdxs(value.message);
             return <div style={{ color: 'rgb(255,50,50)' }}>{parts}</div>;
