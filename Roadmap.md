@@ -1,4 +1,22 @@
 
+Ok, but so ...
+simplification.
+Currently I'm doing the "walk up a known unmber of steps, and check if it's equal."
+which apparently doesn't work for two-tailed recursion.
+Sooo what are my other options?
+
+# Brut-ish force:
+- first walk the type, collecting all (rec)s, deduping identical ones
+- then walk the type, matching on any recursions. If we start a match, do a subprocess that's like "try to collapse this dealio",
+  and if it succeeds then great.
+  OH I could reuse unify, right? like "try to unify this subtree" --> and that would also automatically take care of multiple nested collapsing! Which is very nice.
+  Ok, so "if this type unifies, then return the recursive deal, otherwise, traverse into it and keep going".
+  I think type/map should be up to the task.
+
+Yeahhhh that sounds very appealing. Let's do it.
+
+
+
 # recursive types
 
 - [x] add a `trec name inner l`
@@ -11,6 +29,15 @@
     I want .. to be able to, like "unwrap" the dealio, as I'm coming back.
     - [x] unbreak it a little
     - [ ] ok maybe this can actually work?
+    - [ ] no its broken somehow? need to have an example with simplifying both the arg and res of a function.
+      -> revert for the tweeeet
+      - maybe it's like "we're still unrolling the one side, and we need to check the other side to see if its a possibility?
+        -> and here is where I want to be able to do the unroll check.
+          -> oooh ok so what if unroll `(rec 'b (, 'a (option 'b))`
+            produced:
+              `(, 'a _)` `(, 'a (option _))` --- like replacing each step with "the hot path" being `(tvar _)`? And then I could do such a partial check.
+              That sounds great. I would fail to simplify in some cases probably, if it "still looked good" on the one hand, ... WAIT no that wouldn't happen,
+              because the other arm would have to match the partial. SO I think this is the right approach!
 
 
 # Opaque types!! we'll probably want them in some form.

@@ -51,6 +51,16 @@
             (none)      (none)
             (some rest) (some (map2 f rest)))))
 
+(defn map-bin [f (, left v right)]
+    (,
+        (match left
+            (none)      (none)
+            (some left) (some (map-bin f left)))
+            (f v)
+            (match right
+            (none)       (none)
+            (some right) (some (map-bin f right)))))
+
 123
 
 (fn [x] "${x.a}")

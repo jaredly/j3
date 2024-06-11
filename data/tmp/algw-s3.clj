@@ -200,7 +200,8 @@
                                                                       (some t) " ..${(type->s t)}")}]"))
         (tvar name _)                           name
         (trec name _ inner _)                   "(rec ${name} ${(type->s inner)})"
-        (tapp (tapp (tcon "->" _) arg _) res _) "(fn [${(type->s arg)}] ${(type->s res)})"
+        (tapp (tapp (tcon "->" _) arg _) res _) (let [(, args body) (fn-args-and-body type)]
+                                                    ("(fn [${(join " " (map type->s args))}] ${(type->s body)})"))
         (tapp target arg _)                     (let [(, target args) (target-and-args type [])]
                                                     "(${(type->s target)} ${(join " " (map type->s args))})")
         (tcon name _)                           name))
@@ -249,8 +250,17 @@
                                                 (cst/list
                                                     [(cst/id "fn" l) (cst/array (map type->cst args) l) (type->cst res)]
                                                         l))
+        (tapp (tapp (tcon "," cl) a _) b l) (let [all (unwrap-tuple-type type)]
+                                                (cst/list [(cst/id "," cl) ..(map type->cst all)] l))
         (tapp _ _ l)                        (let [(, name args) (target-and-args type [])]
                                                 (cst/list [(type->cst name) ..(map type->cst args)] l))))
+
+(defn unwrap-tuple-type [type]
+    (match type
+        (tapp (tapp (tcon "," _) a _) b _) (let [inner (unwrap-tuple-type b)] [a ..inner])
+        _                                  [type]))
+
+(type->cst (@t (, 1 2 3)))
 
 (** ## The Type Environment
     The "type environment" gets passed around to most of the infer/ functions, and includes global definitions as well as the types of locally-bound variables. **)
@@ -704,6 +714,10 @@
         (some (stype t name inner _ _)) (type/apply (map/from-list [(, name (trec name -1 inner -1))]) t)
         _                               type))
 
+;((** No-op for now... I think want to solve this a different way... **)
+    defn simplify-recursive [type]
+    type)
+
 (type->s (quot-tvar (@t (, int (option (rec 'a (, int (option 'a))))))))
 
 (type->s
@@ -712,8 +726,7 @@
 
 (type->s
     (simplify-recursive
-        (quot-tvar
-            (@t (, int (option (, int (option (rec 'a (, int (option 'a)))))))))))
+        (quot-tvar (@t (, in (option (, int (option (rec 'a (, int (option 'a)))))))))))
 
 (** ## Unify recursive types **)
 
@@ -1933,6 +1946,48 @@
                 (forall
                 (map/from-list [])
                     (tapp (tapp (tcon "->" 3146) (tcon "int" -1) 3146) (tcon "int" -1) 3146)))])])
+
+(def test-infer-str
+    (fn [(tdef name nl expr l)]
+        (let [
+            (tenv values _ _ _) (err-to-fatal
+                                    (run/nil->
+                                        (let-> [
+                                            (, tenv _) (add/stmts
+                                                           tenv/nil
+                                                               [(@!
+                                                               (deftype (option a)
+                                                                   (some a)
+                                                                       (none)))
+                                                               (@!
+                                                               (deftype (, a b)
+                                                                   (, a b)))])]
+                                            (add/def tenv name nl expr l))))]
+            (match (map/get values name)
+                (some t) (scheme->s t)
+                _        "type not found for ${name}"))))
+
+(test-infer-str
+    (@!
+        (defn map2 [f (, v rest)]
+            (,
+                (f v)
+                    (match rest
+                    (none)      (none)
+                    (some rest) (some (map2 f rest)))))))
+
+(,
+    test-infer-str
+        [(, (@! (def x 10)) "int")
+        (,
+        (@!
+            (defn map2 [f (, v rest)]
+                (,
+                    (f v)
+                        (match rest
+                        (none)      (none)
+                        (some rest) (some (map2 f rest))))))
+            "forall a:2 result:10 : (fn [(fn [a:2] result:10) (, a:2 (option (rec a:12 (, a:2 (option a:12)))))] (, result:10 (option (rec a:13 (, result:10 (option a:13))))))")])
 
 (** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
 
