@@ -54,6 +54,16 @@
         []           []
         [one ..rest] [(f one) ..(map f rest)]))
 
+(defn mapi [f lst]
+    (loop
+        (, 0 lst)
+            (fn [(, i lst) recur]
+            (match lst
+                []           []
+                [one ..rest] [(f i one) ..(recur (, (+ i 1) rest))]))))
+
+(mapi + [2 2 2 2 2])
+
 (defn map-without [map set] (foldr map (set/to-list set) map/rm))
 
 (defn fst [(, a _)] a)
@@ -192,7 +202,10 @@
     (tapp (tapp (tapp (tcon "->" l) effects l) arg l) body l))
 
 (defn tfns [args body l]
-    (foldr body args (fn [body arg] (tfn (tcon "??" l) arg body l))))
+    (foldr
+        body
+            (mapi (fn [i arg] (, (tvar "effect:${(int-to-string i)}" -1) arg)) args)
+            (fn [body (, effects arg)] (tfn effects arg body l))))
 
 (def tint (tcon "int" -1))
 
@@ -1297,11 +1310,11 @@
             (ok
             (tapp
                 (tapp
-                    (tapp (tcon "->" 23093) (tcon "??" -1) 23093)
+                    (tapp (tcon "->" 23093) (tvar "effects-lam:2" 23099) 23093)
                         (tcon "int" -1)
                         23093)
                     (tapp
-                    (tapp (tapp (tcon "->" -1) (tcon "??" -1) -1) (tcon "int" -1) -1)
+                    (tapp (tapp (tcon "->" -1) (tvar "effect:1" -1) -1) (tcon "int" -1) -1)
                         (tcon "int" -1)
                         -1)
                     23093)))
@@ -1465,14 +1478,17 @@
                     (forall
                         (map/from-list [])
                             (tapp
-                            (tapp (tapp (tcon "->" 4820) (tcon "??" -1) 4820) (tcon "int" 4822) 4820)
+                            (tapp
+                                (tapp (tcon "->" 4820) (tvar "effects-lam:2" 4817) 4820)
+                                    (tcon "int" 4822)
+                                    4820)
                                 (tvar "result:7" 4820)
                                 4820))
                         (forall
                         (map/from-list [])
                             (tapp
                             (tapp
-                                (tapp (tcon "->" 4823) (tcon "??" -1) 4823)
+                                (tapp (tcon "->" 4823) (tvar "effects-lam:2" 4817) 4823)
                                     (tcon "bool" 4825)
                                     4823)
                                 (tvar "result:8" 4823)
@@ -1488,14 +1504,17 @@
                     (forall
                         (map/from-list [])
                             (tapp
-                            (tapp (tapp (tcon "->" 4847) (tcon "??" -1) 4847) (tcon "int" 4849) 4847)
+                            (tapp
+                                (tapp (tcon "->" 4847) (tvar "effects-lam:2" 4836) 4847)
+                                    (tcon "int" 4849)
+                                    4847)
                                 (tvar "result:11" 4847)
                                 4847))
                         (forall
                         (map/from-list [])
                             (tapp
                             (tapp
-                                (tapp (tcon "->" 4850) (tcon "??" -1) 4850)
+                                (tapp (tcon "->" 4850) (tvar "effects-lam:2" 4836) 4850)
                                     (tcon "bool" 4852)
                                     4850)
                                 (tvar "result:12" 4850)
@@ -2087,9 +2106,12 @@
             [(,
             "rec"
                 (forall
-                (map/from-list [])
+                (set/from-list ["effects-lam:2"])
                     (tapp
-                    (tapp (tapp (tcon "->" 3146) (tcon "??" -1) 3146) (tcon "int" -1) 3146)
+                    (tapp
+                        (tapp (tcon "->" 3146) (tvar "effects-lam:2" 3150) 3146)
+                            (tcon "int" -1)
+                            3146)
                         (tcon "int" -1)
                         3146)))])])
 
@@ -2133,7 +2155,7 @@
                         (match rest
                         (none)      (none)
                         (some rest) (some (map2 f rest))))))
-            "forall a:3 result:12 : (fn [{??}(fn [{??}a:3] result:12) {??}(, a:3 (option (rec a:14 (, a:3 (option a:14)))))] (, result:12 (option (rec a:15 (, result:12 (option a:15))))))")])
+            "forall effects-lam:2 a:3 result:12 : (fn [{effects-lam:2}(fn [{effects-lam:2}a:3] result:12) {effects-lam:2}(, a:3 (option (rec a:14 (, a:3 (option a:14)))))] (, result:12 (option (rec a:15 (, result:12 (option a:15))))))")])
 
 (** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
 
@@ -2234,17 +2256,23 @@
                 [(,
                     "odd"
                         (forall
-                        (map/from-list [])
+                        (set/from-list ["effects-lam:3"])
                             (tapp
-                            (tapp (tapp (tcon "->" 3821) (tcon "??" -1) 3821) (tcon "int" -1) 3821)
+                            (tapp
+                                (tapp (tcon "->" 3821) (tvar "effects-lam:3" 3781) 3821)
+                                    (tcon "int" -1)
+                                    3821)
                                 (tcon "int" 3834)
                                 3821)))
                     (,
                     "even"
                         (forall
-                        (map/from-list [])
+                        (set/from-list ["effects-lam:3"])
                             (tapp
-                            (tapp (tapp (tcon "->" 3776) (tcon "??" -1) 3776) (tcon "int" -1) 3776)
+                            (tapp
+                                (tapp (tcon "->" 3776) (tvar "effects-lam:3" 3781) 3776)
+                                    (tcon "int" -1)
+                                    3776)
                                 (tcon "int" -1)
                                 3776)))])
                 (map/from-list [])
@@ -2398,7 +2426,7 @@
                 (deftype lol
                     (elol a)))]]
                 "elol")
-            "(fn [{??}int] lol)")
+            "(fn [{effect:0}int] lol)")
         (,
         (,
             [[(@! (typealias alt (, (list pat) expr)))
@@ -2418,7 +2446,7 @@
                         (blue)
                         (green (a bool))))]]
                 "green")
-            "(fn [{??}(, int bool)] hi)")
+            "(fn [{effect:0}(, int bool)] hi)")
         ])
 
 (** ## Type Environment populated with Builtins **)
@@ -2466,13 +2494,6 @@
                     (, "<=" (concrete (tfns [tint tint] tbool -1)))
                     (, "()" (concrete (tcon "()" -1)))
                     (, "," (generic ["a" "b"] (tfns [a b] (t, a b) -1)))
-                    ;(,
-                    "trace"
-                        (kk
-                        (tfns
-                            [(tapp (tcon "list" -1) (tapp (tcon "trace-fmt" -1) k -1) -1)]
-                                (tcon "()" -1)
-                                -1)))
                     (, "unescapeString" (concrete (tfns [tstring] tstring -1)))
                     (, "int-to-string" (concrete (tfns [tint] tstring -1)))
                     (, "string-to-int" (concrete (tfns [tstring] (toption tint) -1)))

@@ -100,7 +100,7 @@
 
 +
 
-(defn xa [a] (+ 2 *lol*))
+(defn xa [a] (+ a *lol*))
 
 (xa)
 

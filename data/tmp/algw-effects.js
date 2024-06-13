@@ -672,6 +672,17 @@ throw new Error('match fail 19753:' + JSON.stringify($target))
 } ;
 throw new Error('match fail 19742:' + JSON.stringify($target))
 })(lst)
+let mapi = (f) => (lst) => loop($co(0)(lst))(({"1": lst, "0": i}) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return nil
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+return cons(f(i)(one))(recur($co(i + 1)(rest)))
+} ;
+throw new Error('match fail 24289:' + JSON.stringify($target))
+})(lst))
 let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 let tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 let tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
@@ -805,7 +816,7 @@ throw new Error('match fail 2221:' + JSON.stringify($target))
 let tenv$slresolve = ({"0": values}) => (name) => map$slget(values)(name)
 let tfn = (effects) => (arg) => (body) => (l) => tapp(tapp(tapp(tcon("->")(l))(effects)(l))(arg)(l))(body)(l)
 let tenv$slnil = tenv(map$slnil)(map$slnil)(map$slnil)(map$slnil)
-let tfns = (args) => (body) => (l) => foldr(body)(args)((body) => (arg) => tfn(tcon("??")(l))(arg)(body)(l))
+let tfns = (args) => (body) => (l) => foldr(body)(mapi((i) => (arg) => $co(tvar(`effect:${int_to_string(i)}`)(-1))(arg))(args))((body) => ({"1": arg, "0": effects}) => tfn(effects)(arg)(body)(l))
 let tint = tcon("int")(-1)
 let type$slunroll_app = (type) => (($target) => {
 if ($target.type === "tapp") {
