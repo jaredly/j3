@@ -1,4 +1,12 @@
 
+-> *earmuffs*
+..
+??
+
+
+  
+#
+
 Ok, but so ...
 simplification.
 Currently I'm doing the "walk up a known unmber of steps, and check if it's equal."
