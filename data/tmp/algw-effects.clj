@@ -1105,6 +1105,9 @@
         (** If the variable we've found is generic, we want to record the type "pre-specialization" so we can show that on hover as well. **)
         _  (record-type-> t l true)))
 
+(def is-earmuffs
+    (eval "v => v.startsWith('*') && v.endsWith('*')"))
+
 (defn infer/expr-inner [tenv expr]
     (match expr
         (erecord spread items l)                 (let-> [
@@ -1146,9 +1149,18 @@
                                                              (none)     (<- (tcon "()" nl))
                                                              (some arg) (infer/expr tenv arg))]
                                                      (<- (trow [(, tag arg)] (some t) (renum) l)))
-        (evar name l)                            (match (tenv/resolve tenv name)
-                                                     (none)        (<-missing name l)
-                                                     (some scheme) (let-> [() (record-if-generic scheme l)] (instantiate scheme l)))
+        (evar name l)                            (if (is-earmuffs name)
+                                                     (let-> [
+                                                         effects (match (tenv/resolve tenv "(effects)")
+                                                                     (none)              (<-missing "(effects)" l)
+                                                                     (some (forall _ t)) (<- t))
+                                                         result  (new-type-var name l)
+                                                         t       (new-type-var "effects-rest" l)
+                                                         _       (unify effects (trow [(, name result)] (some t) (rrecord) l) l)]
+                                                         (type/apply-> result))
+                                                         (match (tenv/resolve tenv name)
+                                                         (none)        (<-missing name l)
+                                                         (some scheme) (let-> [() (record-if-generic scheme l)] (instantiate scheme l))))
         (eprim prim _)                           (<- (infer/prim prim))
         (equot quot l)                           (<- (infer/quot quot l))
         (estr _ templates l)                     (let-> [
