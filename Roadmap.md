@@ -16,6 +16,13 @@ Sooo what are my other options?
 Yeahhhh that sounds very appealing. Let's do it.
 
 
+Order or Ops
+- [x] do the brute-force (unify) simplification, verify it works two-tailed
+- [ ] letttts try out effects! or at least "auto-provided configs"
+- [ ] ok and then a little bit of effects? like ...
+  - ok let's dredge up the 'movies' example and figure out how it would look in the new waysss
+
+
 
 # recursive types
 

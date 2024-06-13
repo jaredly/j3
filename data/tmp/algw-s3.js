@@ -270,6 +270,7 @@ return some(f(v))
 } ;
 throw new Error('match fail 18313:' + JSON.stringify($target))
 })(v)
+let dot = (f) => (g) => (x) => f(g(x))
 let cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 let nil = {type: "nil"}
 let pany = (v0) => ({type: "pany", 0: v0})
@@ -677,71 +678,6 @@ let trec = (v0) => (v1) => (v2) => (v3) => ({type: "trec", 0: v0, 1: v1, 2: v2, 
 let trow = (v0) => (v1) => (v2) => (v3) => ({type: "trow", 0: v0, 1: v1, 2: v2, 3: v3})
 let ex$slany = {type: "ex/any"}
 let ex$slconstructor = (v0) => (v1) => (v2) => ({type: "ex/constructor", 0: v0, 1: v1, 2: v2})
-let type$eq = (one) => (two) => (($target) => {
-if ($target.type === ",") {
-if ($target[0].type === "trow") {
-if ($target[1].type === "trow") {
-return fatal("not impl")
-} 
-} 
-} ;
-if ($target.type === ",") {
-if ($target[0].type === "trec") {
-let a = $target[0][0];
-let b = $target[0][2];
-if ($target[1].type === "trec") {
-let c = $target[1][0];
-let d = $target[1][2];
-{
-let $target = $eq(a)(c);
-if ($target === true) {
-return type$eq(b)(d)
-} ;
-return false;
-throw new Error('match fail 18946:' + JSON.stringify($target))
-}
-} 
-} 
-} ;
-if ($target.type === ",") {
-if ($target[0].type === "tvar") {
-let id = $target[0][0];
-if ($target[1].type === "tvar") {
-let id$qu = $target[1][0];
-return $eq(id)(id$qu)
-} 
-} 
-} ;
-if ($target.type === ",") {
-if ($target[0].type === "tapp") {
-let target = $target[0][0];
-let arg = $target[0][1];
-if ($target[1].type === "tapp") {
-let target$qu = $target[1][0];
-let arg$qu = $target[1][1];
-{
-let $target = type$eq(target)(target$qu);
-if ($target === true) {
-return type$eq(arg)(arg$qu)
-} ;
-return false;
-throw new Error('match fail 240:' + JSON.stringify($target))
-}
-} 
-} 
-} ;
-if ($target.type === ",") {
-if ($target[0].type === "tcon") {
-let name = $target[0][0];
-if ($target[1].type === "tcon") {
-let name$qu = $target[1][0];
-return $eq(name)(name$qu)
-} 
-} 
-} ;
-return false;
-throw new Error('match fail 208:' + JSON.stringify($target))
-})($co(one)(two))
 let forall = (v0) => (v1) => ({type: "forall", 0: v0, 1: v1})
 let tenv = (v0) => (v1) => (v2) => (v3) => ({type: "tenv", 0: v0, 1: v1, 2: v2, 3: v3})
 let tenv$slwith_type = ({"3": aliases, "2": types, "1": tcons, "0": values}) => (name) => (scheme) => tenv(map$slset(values)(name)(scheme))(tcons)(types)(aliases)
@@ -1018,6 +954,32 @@ return $lt_($unit)
 return record_type_$gt(t)(l)(true);
 throw new Error('match fail 13752:' + JSON.stringify($target))
 })(set$slto_list(free))
+let map$eq = (v$eq) => (one) => (two) => {
+let k1 = map$slkeys(one);
+{
+let k2 = map$slkeys(two);
+{
+let $target = $eq(length(k1))(length(k2));
+if ($target === true) {
+return all((k) => (($target) => {
+if ($target.type === ",") {
+if ($target[0].type === "some") {
+let a = $target[0][0];
+if ($target[1].type === "some") {
+let b = $target[1][0];
+return v$eq(a)(b)
+} 
+} 
+} ;
+return false;
+throw new Error('match fail 21971:' + JSON.stringify($target))
+})($co(map$slget(one)(k))(map$slget(two)(k))))(k1)
+} ;
+return false;
+throw new Error('match fail 21954:' + JSON.stringify($target))
+}
+}
+}
 let deep_map = (fields) => (spread) => (k) => {
 let map = map$slfrom_list(fields);
 {
@@ -1190,7 +1152,7 @@ if ($target.type === "tapp") {
 let a = $target[0];
 let b = $target[1];
 let l = $target[2];
-return f(f(init)(a))(b)
+return type$slfold(type$slfold(init)(f)(a))(f)(b)
 } ;
 if ($target.type === "trow") {
 let fields = $target[0];
@@ -1200,7 +1162,7 @@ let l = $target[3];
 {
 let init$$0 = init;
 {
-let init = foldl(init$$0)(fields)((init) => ({"1": v, "0": k}) => f(init)(v));
+let init = foldl(init$$0)(fields)((init) => ({"1": v, "0": k}) => type$slfold(init)(f)(v));
 {
 let $target = spread;
 if ($target.type === "none") {
@@ -1208,7 +1170,7 @@ return init
 } ;
 if ($target.type === "some") {
 let v = $target[0];
-return f(init)(v)
+return type$slfold(init)(f)(v)
 } ;
 throw new Error('match fail 18421:' + JSON.stringify($target))
 }
@@ -1235,13 +1197,6 @@ return t;
 throw new Error('match fail 19053:' + JSON.stringify($target))
 })(t))(type)
 
-let has_inf_recursion = (t1) => (t2) => (pairs) => any(({"1": b, "0": a}) => (($target) => {
-if ($target === true) {
-return type$eq(t2)(b)
-} ;
-return false;
-throw new Error('match fail 19241:' + JSON.stringify($target))
-})(type$eq(t1)(a)))(pairs)
 let is_rec_pair = (t1) => (t2) => (($target) => {
 if ($target.type === ",") {
 if ($target[0].type === "trec") {
@@ -1285,167 +1240,6 @@ throw new Error('match fail 19439:' + JSON.stringify($target))
 let snum = (v0) => ({type: "snum", 0: v0})
 let stype = (v0) => (v1) => (v2) => (v3) => (v4) => ({type: "stype", 0: v0, 1: v1, 2: v2, 3: v3, 4: v4})
 let srep = (v0) => ({type: "srep", 0: v0})
-let simplify_recursive_inner = (t) => (rvbl) => (($target) => {
-if ($target.type === "tvar") {
-let name = $target[0];
-{
-let $target = $eq(some(name))(rvbl);
-if ($target === true) {
-return some(snum(0))
-} ;
-return none;
-throw new Error('match fail 20474:' + JSON.stringify($target))
-}
-} ;
-if ($target.type === "tcon") {
-return none
-} ;
-if ($target.type === "tapp") {
-let target = $target[0];
-let arg = $target[1];
-let l = $target[2];
-{
-let $target = simplify_recursive_inner(target)(rvbl);
-if ($target.type === "some") {
-if ($target[0].type === "snum") {
-let n = $target[0][0];
-return some(snum(n + 1))
-} 
-} ;
-if ($target.type === "some") {
-if ($target[0].type === "stype") {
-if ($target[0][3] === 0) {
-return none
-} 
-} 
-} ;
-if ($target.type === "some") {
-if ($target[0].type === "stype") {
-let t2 = $target[0][0];
-let name = $target[0][1];
-let inner = $target[0][2];
-if ($target[0][3] === 1) {
-{
-let $target = type$eq(tapp(t2)(arg)(l))(inner);
-if ($target === true) {
-return some(srep(trec(name)(l)(inner)(l)))
-} ;
-return none;
-throw new Error('match fail 20535:' + JSON.stringify($target))
-}
-} 
-} 
-} ;
-if ($target.type === "some") {
-if ($target[0].type === "stype") {
-let t2 = $target[0][0];
-let name = $target[0][1];
-let inner = $target[0][2];
-let n = $target[0][3];
-return some(stype(tapp(t2)(arg)(l))(name)(inner)(n - 1)(0))
-} 
-} ;
-if ($target.type === "some") {
-if ($target[0].type === "srep") {
-let target = $target[0][0];
-{
-let $target = simplify_recursive_inner(arg)(rvbl);
-if ($target.type === "some") {
-if ($target[0].type === "srep") {
-let arg = $target[0][0];
-return some(srep(tapp(target)(arg)(l)))
-} 
-} ;
-if ($target.type === "none") {
-return some(srep(tapp(target)(arg)(l)))
-} ;
-return fatal("simplyfing down both arms somehow...");
-throw new Error('match fail 20585:' + JSON.stringify($target))
-}
-} 
-} ;
-if ($target.type === "none") {
-{
-let $target = simplify_recursive_inner(arg)(rvbl);
-if ($target.type === "some") {
-if ($target[0].type === "snum") {
-let n = $target[0][0];
-return some(snum(n + 1))
-} 
-} ;
-if ($target.type === "some") {
-if ($target[0].type === "stype") {
-if ($target[0][3] === 0) {
-return none
-} 
-} 
-} ;
-if ($target.type === "some") {
-if ($target[0].type === "stype") {
-let t2 = $target[0][0];
-let name = $target[0][1];
-let inner = $target[0][2];
-if ($target[0][3] === 1) {
-{
-let $target = type$eq(tapp(target)(t2)(l))(inner);
-if ($target === true) {
-return some(srep(trec(name)(l)(inner)(l)))
-} ;
-return none;
-throw new Error('match fail 20660:' + JSON.stringify($target))
-}
-} 
-} 
-} ;
-if ($target.type === "some") {
-if ($target[0].type === "stype") {
-let t2 = $target[0][0];
-let name = $target[0][1];
-let inner = $target[0][2];
-let n = $target[0][3];
-return some(stype(tapp(target)(t2)(l))(name)(inner)(n - 1)(0))
-} 
-} ;
-if ($target.type === "some") {
-if ($target[0].type === "srep") {
-let arg = $target[0][0];
-return some(srep(tapp(target)(arg)(l)))
-} 
-} ;
-if ($target.type === "none") {
-return none
-} ;
-throw new Error('match fail 20623:' + JSON.stringify($target))
-}
-} ;
-throw new Error('match fail 20498:' + JSON.stringify($target))
-}
-} ;
-if ($target.type === "trec") {
-let name = $target[0];
-let nl = $target[1];
-let inner = $target[2];
-let l = $target[3];
-{
-let $target = simplify_recursive_inner(inner)(some(name));
-if ($target.type === "none") {
-return none
-} ;
-if ($target.type === "some") {
-if ($target[0].type === "snum") {
-let n = $target[0][0];
-return some(stype(tvar(name)(l))(name)(inner)(n)(0))
-} 
-} ;
-if ($target.type === "some") {
-return fatal("why stype at rec?")
-} ;
-throw new Error('match fail 20729:' + JSON.stringify($target))
-}
-} ;
-return none;
-throw new Error('match fail 20467:' + JSON.stringify($target))
-})(t)
 let unwrap_tuple_type = (type) => (($target) => {
 if ($target.type === "tapp") {
 if ($target[0].type === "tapp") {
@@ -1464,6 +1258,39 @@ return cons(a)(inner)
 return cons(type)(nil);
 throw new Error('match fail 21463:' + JSON.stringify($target))
 })(type)
+let find_recursives = (type) => type$slfold(nil)((res) => (type) => (($target) => {
+if ($target.type === "trec") {
+let name = $target[0];
+let inner = $target[2];
+return cons(type)(res)
+} ;
+return res;
+throw new Error('match fail 21548:' + JSON.stringify($target))
+})(type))(type)
+let type$slmap_post = (f) => (t) => {
+let rec = type$slmap(f);
+{
+let $target = f(t);
+if ($target.type === "tapp") {
+let a = $target[0];
+let b = $target[1];
+let l = $target[2];
+return tapp(rec(a))(rec(b))(l)
+} ;
+if ($target.type === "trow") {
+let fields = $target[0];
+let spread = $target[1];
+let k = $target[2];
+let l = $target[3];
+return trow(map(({"1": v, "0": k}) => $co(k)(rec(v)))(fields))(map$slopt(rec)(spread))(k)(l)
+} ;
+{
+let t = $target;
+return t
+};
+throw new Error('match fail 21710:' + JSON.stringify($target))
+}
+}
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
@@ -1490,6 +1317,122 @@ let terr = (v0) => (v1) => ({type: "terr", 0: v0, 1: v1})
 let ttypes = (v0) => (v1) => ({type: "ttypes", 0: v0, 1: v1})
 let twrap = (v0) => (v1) => ({type: "twrap", 0: v0, 1: v1})
 let tmissing = (v0) => ({type: "tmissing", 0: v0})
+let type$eq = (one) => (two) => (($target) => {
+if ($target.type === ",") {
+if ($target[0].type === "trow") {
+let f1 = $target[0][0];
+let s1 = $target[0][1];
+let k1 = $target[0][2];
+if ($target[1].type === "trow") {
+let f2 = $target[1][0];
+let s2 = $target[1][1];
+let k2 = $target[1][2];
+{
+let $target = $eq(k1)(k2);
+if ($target === true) {
+{
+let s1$$0 = s1;
+{
+let {"1": s1, "0": m1} = deep_map(f1)(s1$$0)(k1);
+{
+let s2$$0 = s2;
+{
+let {"1": s2, "0": m2} = deep_map(f2)(s2$$0)(k2);
+{
+let $target = (($target) => {
+if ($target.type === ",") {
+if ($target[0].type === "none") {
+if ($target[1].type === "none") {
+return true
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "some") {
+let a = $target[0][0];
+if ($target[1].type === "some") {
+let b = $target[1][0];
+return type$eq(a)(b)
+} 
+} 
+} ;
+return false;
+throw new Error('match fail 21924:' + JSON.stringify($target))
+})($co(s1)(s2));
+if ($target === true) {
+return map$eq(type$eq)(m1)(m2)
+} ;
+return false;
+throw new Error('match fail 21922:' + JSON.stringify($target))
+}
+}
+}
+}
+}
+} ;
+return false;
+throw new Error('match fail 14048:' + JSON.stringify($target))
+}
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "trec") {
+let a = $target[0][0];
+let b = $target[0][2];
+if ($target[1].type === "trec") {
+let c = $target[1][0];
+let d = $target[1][2];
+{
+let $target = $eq(a)(c);
+if ($target === true) {
+return type$eq(b)(d)
+} ;
+return false;
+throw new Error('match fail 18946:' + JSON.stringify($target))
+}
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "tvar") {
+let id = $target[0][0];
+if ($target[1].type === "tvar") {
+let id$qu = $target[1][0];
+return $eq(id)(id$qu)
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "tapp") {
+let target = $target[0][0];
+let arg = $target[0][1];
+if ($target[1].type === "tapp") {
+let target$qu = $target[1][0];
+let arg$qu = $target[1][1];
+{
+let $target = type$eq(target)(target$qu);
+if ($target === true) {
+return type$eq(arg)(arg$qu)
+} ;
+return false;
+throw new Error('match fail 240:' + JSON.stringify($target))
+}
+} 
+} 
+} ;
+if ($target.type === ",") {
+if ($target[0].type === "tcon") {
+let name = $target[0][0];
+if ($target[1].type === "tcon") {
+let name$qu = $target[1][0];
+return $eq(name)(name$qu)
+} 
+} 
+} ;
+return false;
+throw new Error('match fail 208:' + JSON.stringify($target))
+})($co(one)(two))
 let scheme$slapply = (subst) => ({"1": type, "0": vbls}) => forall(vbls)(type$slapply(map_without(subst)(vbls))(type))
 let instantiate = ({"1": t, "0": vars}) => (l) => $gt$gt$eq(make_subst_for_free(vars)(l))((subst) => $lt_(type$slapply(subst)(t)))
 let type_$gts = (type) => (($target) => {
@@ -2245,24 +2188,175 @@ return set$sladd(vbls)(vbl)
 return vbls;
 throw new Error('match fail 18462:' + JSON.stringify($target))
 })(t))(t)
-let simplify_recursive = (type) => (($target) => {
+let has_inf_recursion = (t1) => (t2) => (pairs) => any(({"1": b, "0": a}) => (($target) => {
+if ($target === true) {
+return type$eq(t2)(b)
+} ;
+return false;
+throw new Error('match fail 19241:' + JSON.stringify($target))
+})(type$eq(t1)(a)))(pairs)
+let simplify_recursive_inner = (t) => (rvbl) => (($target) => {
+if ($target.type === "tvar") {
+let name = $target[0];
+{
+let $target = $eq(some(name))(rvbl);
+if ($target === true) {
+return some(snum(0))
+} ;
+return none;
+throw new Error('match fail 20474:' + JSON.stringify($target))
+}
+} ;
+if ($target.type === "tcon") {
+return none
+} ;
+if ($target.type === "tapp") {
+let target = $target[0];
+let arg = $target[1];
+let l = $target[2];
+{
+let $target = simplify_recursive_inner(target)(rvbl);
 if ($target.type === "some") {
-if ($target[0].type === "srep") {
-let t = $target[0][0];
-return t
+if ($target[0].type === "snum") {
+let n = $target[0][0];
+return some(snum(n + 1))
 } 
 } ;
 if ($target.type === "some") {
 if ($target[0].type === "stype") {
-let t = $target[0][0];
-let name = $target[0][1];
-let inner = $target[0][2];
-return type$slapply(map$slfrom_list(cons($co(name)(trec(name)(-1)(inner)(-1)))(nil)))(t)
+if ($target[0][3] === 0) {
+return none
+} 
 } 
 } ;
-return type;
-throw new Error('match fail 20338:' + JSON.stringify($target))
-})(simplify_recursive_inner(type)(none))
+if ($target.type === "some") {
+if ($target[0].type === "stype") {
+let t2 = $target[0][0];
+let name = $target[0][1];
+let inner = $target[0][2];
+if ($target[0][3] === 1) {
+{
+let $target = type$eq(tapp(t2)(arg)(l))(inner);
+if ($target === true) {
+return some(srep(trec(name)(l)(inner)(l)))
+} ;
+return none;
+throw new Error('match fail 20535:' + JSON.stringify($target))
+}
+} 
+} 
+} ;
+if ($target.type === "some") {
+if ($target[0].type === "stype") {
+let t2 = $target[0][0];
+let name = $target[0][1];
+let inner = $target[0][2];
+let n = $target[0][3];
+return some(stype(tapp(t2)(arg)(l))(name)(inner)(n - 1)(0))
+} 
+} ;
+if ($target.type === "some") {
+if ($target[0].type === "srep") {
+let target = $target[0][0];
+{
+let $target = simplify_recursive_inner(arg)(rvbl);
+if ($target.type === "some") {
+if ($target[0].type === "srep") {
+let arg = $target[0][0];
+return some(srep(tapp(target)(arg)(l)))
+} 
+} ;
+if ($target.type === "none") {
+return some(srep(tapp(target)(arg)(l)))
+} ;
+return fatal("simplyfing down both arms somehow...");
+throw new Error('match fail 20585:' + JSON.stringify($target))
+}
+} 
+} ;
+if ($target.type === "none") {
+{
+let $target = simplify_recursive_inner(arg)(rvbl);
+if ($target.type === "some") {
+if ($target[0].type === "snum") {
+let n = $target[0][0];
+return some(snum(n + 1))
+} 
+} ;
+if ($target.type === "some") {
+if ($target[0].type === "stype") {
+if ($target[0][3] === 0) {
+return none
+} 
+} 
+} ;
+if ($target.type === "some") {
+if ($target[0].type === "stype") {
+let t2 = $target[0][0];
+let name = $target[0][1];
+let inner = $target[0][2];
+if ($target[0][3] === 1) {
+{
+let $target = type$eq(tapp(target)(t2)(l))(inner);
+if ($target === true) {
+return some(srep(trec(name)(l)(inner)(l)))
+} ;
+return none;
+throw new Error('match fail 20660:' + JSON.stringify($target))
+}
+} 
+} 
+} ;
+if ($target.type === "some") {
+if ($target[0].type === "stype") {
+let t2 = $target[0][0];
+let name = $target[0][1];
+let inner = $target[0][2];
+let n = $target[0][3];
+return some(stype(tapp(target)(t2)(l))(name)(inner)(n - 1)(0))
+} 
+} ;
+if ($target.type === "some") {
+if ($target[0].type === "srep") {
+let arg = $target[0][0];
+return some(srep(tapp(target)(arg)(l)))
+} 
+} ;
+if ($target.type === "none") {
+return none
+} ;
+throw new Error('match fail 20623:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 20498:' + JSON.stringify($target))
+}
+} ;
+if ($target.type === "trec") {
+let name = $target[0];
+let nl = $target[1];
+let inner = $target[2];
+let l = $target[3];
+{
+let $target = simplify_recursive_inner(inner)(some(name));
+if ($target.type === "none") {
+return none
+} ;
+if ($target.type === "some") {
+if ($target[0].type === "snum") {
+let n = $target[0][0];
+return some(stype(tvar(name)(l))(name)(inner)(n)(0))
+} 
+} ;
+if ($target.type === "some") {
+return fatal("why stype at rec?")
+} ;
+throw new Error('match fail 20729:' + JSON.stringify($target))
+}
+} ;
+return none;
+throw new Error('match fail 20467:' + JSON.stringify($target))
+})(t)
+let types_$gts = dot(join(" "))(map(type_$gts))
 let unify_inner = (t1) => (t2) => (recstate) => (l) => $gt$gt$eq(check_recursion(t1)(t2)(recstate))(({"1": {"1": recstate, "0": t2}, "0": t1}) => (($target) => {
 if ($target.type === ",") {
 if ($target[0].type === "tvar") {
@@ -2459,7 +2553,10 @@ throw new Error('match fail 14753:' + JSON.stringify($target))
 })($co(s2)(u1)))((_14702) => $lt_($unit)))))
 
 let equal_modulo_vbls = (t1) => (t2) => {
-let {"0": {"1": {"0": subst}}} = state_f(unify(t1)(t2)(-1))(state$slnil);
+let {"1": res, "0": {"1": {"0": subst}}} = state_f(unify(t1)(t2)(-1))(state$slnil);
+{
+let $target = res;
+if ($target.type === "ok") {
 return all(({"1": v}) => (($target) => {
 if ($target.type === "tvar") {
 return true
@@ -2467,6 +2564,10 @@ return true
 return false;
 throw new Error('match fail 19718:' + JSON.stringify($target))
 })(v))(map$slto_list(subst))
+} ;
+return false;
+throw new Error('match fail 21873:' + JSON.stringify($target))
+}
 }
 
 let identify_unique = (fields1) => (spread1) => (fields2) => (spread2) => (recstate) => (k) => {
@@ -2615,6 +2716,48 @@ return $gt$gt$eq(do_$gt((vbl) => unify(tvar(vbl)(-1))(trow(nil)(none)(renum)(-1)
 }
 }
 let test_unify = ({"1": t2, "0": t1}) => run$slnil_$gt($gt$gt$eq($lt_(quot_tvar(t1)))((t1) => $gt$gt$eq($lt_(quot_tvar(t2)))((t2) => $gt$gt$eq(unify(t1)(t2)(-1))((_15423) => $gt$gt$eq($lt_subst)((subst) => $lt_($co(type$slapply(subst)(t1))(type$slapply(subst)(t2))))))))
+let simplify_recursive2 = (type) => (($target) => {
+if ($target.type === "some") {
+if ($target[0].type === "srep") {
+let t = $target[0][0];
+return t
+} 
+} ;
+if ($target.type === "some") {
+if ($target[0].type === "stype") {
+let t = $target[0][0];
+let name = $target[0][1];
+let inner = $target[0][2];
+return type$slapply(map$slfrom_list(cons($co(name)(trec(name)(-1)(inner)(-1)))(nil)))(t)
+} 
+} ;
+return type;
+throw new Error('match fail 20338:' + JSON.stringify($target))
+})(simplify_recursive_inner(type)(none))
+let equal_modulo_vbls_subst = (t1) => (t2) => {
+let {"1": res, "0": {"1": {"0": subst}}} = state_f(unify(t1)(t2)(-1))(state$slnil);
+{
+let $target = res;
+if ($target.type === "ok") {
+{
+let $target = all(({"1": v}) => (($target) => {
+if ($target.type === "tvar") {
+return true
+} ;
+return false;
+throw new Error('match fail 21671:' + JSON.stringify($target))
+})(v))(map$slto_list(subst));
+if ($target === true) {
+return some(subst)
+} ;
+return none;
+throw new Error('match fail 21684:' + JSON.stringify($target))
+}
+} ;
+return none;
+throw new Error('match fail 21864:' + JSON.stringify($target))
+}
+}
 let infer$slpattern = (tenv) => (pattern) => (($target) => {
 if ($target.type === "pvar") {
 let name = $target[0];
@@ -2748,6 +2891,40 @@ throw new Error('match fail 10381:' + JSON.stringify($target))
 } 
 } ;
 throw new Error('match fail 11090:' + JSON.stringify($target))
+}
+}
+let simplify_recursive = (type) => {
+let recursives = find_recursives(type);
+{
+let simplify = (type) => loop(recursives)((recs) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return type
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+{
+let $target = equal_modulo_vbls_subst(one)(type);
+if ($target.type === "none") {
+return recur(rest)
+} ;
+if ($target.type === "some") {
+let subst = $target[0];
+return type$slapply(subst)(one)
+} ;
+throw new Error('match fail 21608:' + JSON.stringify($target))
+}
+} ;
+throw new Error('match fail 21596:' + JSON.stringify($target))
+})(recs));
+{
+let $target = recursives;
+if ($target.type === "nil") {
+return type
+} ;
+return type$slmap_post(simplify)(type);
+throw new Error('match fail 21531:' + JSON.stringify($target))
+}
 }
 }
 let infer$slexpr_inner = (tenv) => (expr) => (($target) => {

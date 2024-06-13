@@ -42,6 +42,11 @@
         'nil        'nil
         ('cons x r) ('cons (f x) (map f r))))
 
+(defn map-tree [f v]
+    (match v
+        'nil                       'nil
+        ('node (, _ left) x right) ('node (map-tree f left) (f x) (map-tree f right))))
+
 (map (fn [x] (+ x 1)) ('cons 1 'nil))
 
 (defn map2 [f (, v rest)]
@@ -58,8 +63,8 @@
             (some left) (some (map-bin f left)))
             (f v)
             (match right
-            (none)       (none)
-            (some right) (some (map-bin f right)))))
+            (none)             (none)
+            (some (, x right)) (some (, x (map-bin f right))))))
 
 123
 

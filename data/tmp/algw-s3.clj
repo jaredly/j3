@@ -152,11 +152,32 @@
     (rrecord)
         (renum))
 
-
+(defn map= [v= one two]
+    (let [
+        k1 (map/keys one)
+        k2 (map/keys two)]
+        (if (= (length k1) (length k2))
+            (all
+                (fn [k]
+                    (match (, (map/get one k) (map/get two k))
+                        (, (some a) (some b)) (v= a b)
+                        _                     false))
+                    k1)
+                false)))
 
 (defn type= [one two]
     (match (, one two)
-        (, (trow _ _ _ _) (trow _ _ _ _))             (fatal "not impl")
+        (, (trow f1 s1 k1 _) (trow f2 s2 k2 _))       (if (= k1 k2)
+                                                          (let [
+                                                              (, m1 s1) (deep-map f1 s1 k1)
+                                                              (, m2 s2) (deep-map f2 s2 k2)]
+                                                              (if (match (, s1 s2)
+                                                                  (, (none) (none))     true
+                                                                  (, (some a) (some b)) (type= a b)
+                                                                  _                     false)
+                                                                  (map= type= m1 m2)
+                                                                      false))
+                                                              false)
         (, (trec a _ b _) (trec c _ d _))             (if (= a c)
                                                           (type= b d)
                                                               false)
@@ -625,6 +646,45 @@
             (fn [inner]
             (err (twrap (ttypes (forall set/nil t1) (forall set/nil t2)) inner)))))
 
+(** ## Simplify recursive, but simply **)
+
+(defn find-recursives [type]
+    (type/fold
+        []
+            (fn [res type]
+            (match type
+                (trec name _ inner _) [type ..res]
+                _                     res))
+            type))
+
+(def types->s (dot (join " ") (map type->s)))
+
+(defn simplify-recursive [type]
+    (let [
+        recursives (find-recursives type)
+        simplify   (fn [type]
+                       (loop
+                           recursives
+                               (fn [recs recur]
+                               (match recs
+                                   []           type
+                                   [one ..rest] (match (equal-modulo-vbls-subst one type)
+                                                    (none)       (recur rest)
+                                                    (some subst) (type/apply subst one))))))]
+        (match recursives
+            [] type
+            (** Note: we're relying on the fact that type/map-post doesn't traverse into trecs. If it did, this would be somewhat less efficient. **)
+            _  (type/map-post simplify type))))
+
+(,
+    (dot (dot type->s simplify-recursive) quot-tvar)
+        [(,
+        (@t (, in (option (, int (option (rec 'a (, int (option 'a))))))))
+            "(, in (option (rec 'a (, int (option 'a)))))")
+        (,
+        (@t (, int (option (rec 'a (, int (option 'a))))))
+            "(rec 'a (, int (option 'a)))")])
+
 (** ## Simplify recursive types **)
 
 (deftype simstate
@@ -708,7 +768,7 @@
                                    (some _)        (fatal "why stype at rec?"))
         _                      none))
 
-(defn simplify-recursive [type]
+(defn simplify-recursive2 [type]
     (match (simplify-recursive-inner type none)
         (some (srep t))                 t
         (some (stype t name inner _ _)) (type/apply (map/from-list [(, name (trec name -1 inner -1))]) t)
@@ -727,6 +787,8 @@
 (type->s
     (simplify-recursive
         (quot-tvar (@t (, in (option (, int (option (rec 'a (, int (option 'a)))))))))))
+
+(defn dot [f g x] (f (g x)))
 
 (** ## Unify recursive types **)
 
@@ -759,13 +821,29 @@
         _                     (, lookup t)))
 
 (defn equal-modulo-vbls [t1 t2]
-    (let [(, (, _ subst _) _) (state-f (unify t1 t2 -1) state/nil)]
-        (all
-            (fn [(, _ v)]
-                (match v
-                    (tvar _ _) true
-                    _          false))
-                (map/to-list subst))))
+    (let [(, (, _ subst _) res) (state-f (unify t1 t2 -1) state/nil)]
+        (match res
+            (ok _) (all
+                       (fn [(, _ v)]
+                           (match v
+                               (tvar _ _) true
+                               _          false))
+                           (map/to-list subst))
+            _      false)))
+
+((** SO the cool thing here is that if you apply the subst to the (first) type, it will translate all the variables correctly so that it will be equivalent to the (second) type. This is useful in recursive type reduction, where two (equivalent) types nevertheless have different structure. **)
+    defn equal-modulo-vbls-subst [t1 t2]
+    (let [(, (, _ subst _) res) (state-f (unify t1 t2 -1) state/nil)]
+        (match res
+            (ok _) (if (all
+                       (fn [(, _ v)]
+                           (match v
+                               (tvar _ _) true
+                               _          false))
+                           (map/to-list subst))
+                       (some subst)
+                           (none))
+            _      (none))))
 
 (defn all [f lst]
     (match lst
@@ -2015,14 +2093,21 @@
                 (trow fields spread k l) (trow (map (fn [(, k v)] (, k (rec v))) fields) (map/opt rec spread) k l)
                 _                        t))))
 
+(defn type/map-post [f t]
+    (let [rec (type/map f)]
+        (match (f t)
+            (tapp a b l)             (tapp (rec a) (rec b) l)
+            (trow fields spread k l) (trow (map (fn [(, k v)] (, k (rec v))) fields) (map/opt rec spread) k l)
+            t                        t)))
+
 (defn type/fold [init f t]
     (f
         (match t
-            (tapp a b l)             (f (f init a) b)
-            (trow fields spread k l) (let [init (foldl init fields (fn [init (, k v)] (f init v)))]
+            (tapp a b l)             (type/fold (type/fold init f a) f b)
+            (trow fields spread k l) (let [init (foldl init fields (fn [init (, k v)] (type/fold init f v)))]
                                          (match spread
                                              (none)   init
-                                             (some v) (f init v)))
+                                             (some v) (type/fold init f v)))
             _                        init)
             t))
 
