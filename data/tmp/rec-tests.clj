@@ -65,6 +65,9 @@
     (none)
         (some a))
 
+(deftype (, a b)
+    (, a b))
+
 (defn map [f v]
     (match v
         'nil        'nil
@@ -102,5 +105,5 @@
 
 (defn xa [a] (+ a *lol*))
 
-(xa)
+(xa 2)
 

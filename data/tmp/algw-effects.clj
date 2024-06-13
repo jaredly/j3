@@ -2388,7 +2388,13 @@
                                               (fn [env stmt]
                                               (let-> [env' (add/stmt (tenv/merge tenv env) stmt)]
                                                   (<- (tenv/merge env env')))))
-        types                         (map-> (infer/expr (tenv/merge tenv final)) exprs)
+        types                         (map->
+                                          (infer/expr
+                                              (tenv/with-type
+                                                  (tenv/merge tenv final)
+                                                      "(effects)"
+                                                      (forall set/nil (trow [] none rrecord -1))))
+                                              exprs)
         types                         (map-> restrict-poly-enum types)]
         (<- (, final (map simplify-recursive types)))))
 
