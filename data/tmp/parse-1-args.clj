@@ -113,6 +113,7 @@
     (eprim prim int)
         (estr string (list (, expr string int)) int)
         (evar string int)
+        (eeffect string bool int)
         (equot quot int)
         (elambda (list pat) expr int)
         (eapp expr (list expr) int)
@@ -120,7 +121,15 @@
         (ematch expr (list (, pat expr)) int)
         (eenum string int (option expr) int)
         (erecord (option (, expr bool)) (list (, string expr)) int)
-        (eaccess (option (, string int)) (list (, string int)) int))
+        (eaccess (option (, string int)) (list (, string int)) int)
+        (eprovide
+        expr
+            (list (, effect-kind string int (list pat) expr))
+            int))
+
+(deftype effect-kind
+    (eearmuffs)
+        (eeffectful string int))
 
 (deftype prim
     (pint int int)
@@ -977,6 +986,9 @@
                                                 (pbool bool pl) (j/prim (j/bool bool pl) l))
             (evar name l)                   (j/var (sanitize name) l)
             (equot inner l)                 (j/raw (quot/jsonify inner) l)
+            (eeffect name false l)          (j/index (j/var "$lbeffects$rb" l) (j/str name [] l) l)
+            (eeffect name true l)           (fatal "effect compile not yet")
+            (eprovide target handlers l)    (fatal "provide not yet")
             (elambda pats body l)           (foldr
                                                 ; gotta trace the args
                                                     (compile/j body trace)
@@ -1430,6 +1442,10 @@ return {
     (eval
         "v => v.startsWith('\\'') ? {type: 'some', 0: v.slice(1)} : {type: 'none'}"))
 
+(def is-earmuffs
+    (eval
+        "v => v.startsWith('*') && v.endsWith('*') && v.length > 2"))
+
 (parse-tag "hi")
 
 (parse-tag "'hi")
@@ -1593,12 +1609,7 @@ return {
                                                                                          (<- (, expr suffix l))))
                                                                                      templates)]
                                                                         (<- (estr first tpls l)))
-        (cst/id id l)                                               (<-
-                                                                        (match (string-to-int id)
-                                                                            (some int) (eprim (pint int l) l)
-                                                                            (none)     (match (parse-tag id)
-                                                                                           (some tag) (eenum tag l none l)
-                                                                                           _          (evar id l))))
+        (cst/id id l)                                               (<- (parse-id id l))
         (cst/list [(cst/id "@" _) body] l)                          (let-> [expr (parse-expr body)] (<- (equot (quot/expr expr) l)))
         (cst/list [(cst/id "@@" _) body] l)                         (<- (equot (quot/quot body) l))
         (cst/list [(cst/id "@!" _) body] l)                         (let-> [top (parse-top body)] (<- (equot (quot/top top) l)))
@@ -1934,6 +1945,15 @@ return {
         [body ..rest] (let-> [() (do-> (unexpected "extra item body") rest)] (parse-expr body))
         []            (<-err (, ll "Missing body") (evar "()" l))))
 
+(defn parse-id [id l]
+    (if (is-earmuffs id)
+        (eeffect id false l)
+            (match (string-to-int id)
+            (some int) (eprim (pint int l) l)
+            (none)     (match (parse-tag id)
+                           (some tag) (eenum tag l none l)
+                           _          (evar id l)))))
+
 (defn parse-top [cst]
     (match cst
         (cst/list [(cst/id "def" _) (cst/id id li) value ..rest] l)              (let-> [
@@ -2050,17 +2070,19 @@ return {
 
 (defn expr-loc [expr]
     (match expr
-        (estr _ _ l)    l
-        (eprim _ l)     l
-        (evar _ l)      l
-        (equot _ l)     l
-        (elambda _ _ l) l
-        (elet _ _ l)    l
-        (eapp _ _ l)    l
-        (ematch _ _ l)  l
-        (erecord _ _ l) l
-        (eenum _ _ _ l) l
-        (eaccess _ _ l) l))
+        (estr _ _ l)     l
+        (eprim _ l)      l
+        (eeffect _ _ l)  l
+        (eprovide _ _ l) l
+        (evar _ l)       l
+        (equot _ l)      l
+        (elambda _ _ l)  l
+        (elet _ _ l)     l
+        (eapp _ _ l)     l
+        (ematch _ _ l)   l
+        (erecord _ _ l)  l
+        (eenum _ _ _ l)  l
+        (eaccess _ _ l)  l))
 
 (def its int-to-string)
 
@@ -2172,6 +2194,8 @@ return {
         (evar string int)    "var"
         (equot quot int)     "quot"
         (elambda _ expr int) "lambda"
+        (eeffect _ _ _)      "effect"
+        (eprovide _ _ _)     "provide"
         (eapp expr _ int)    "app"
         (elet _ expr int)    "let"
         (erecord _ _ _)      "record"
@@ -2227,6 +2251,8 @@ dot
         (evar _ l)             (if (= l tl)
                                    (some locs)
                                        none)
+        (eeffect _ _ _)        none
+        (eprovide _ _ _)       none
         (eaccess name _ _)     none
         (erecord _ _ _)        none
         (eenum _ _ _ _)        none
@@ -2379,6 +2405,17 @@ dot
                                       true empty
                                       _    (one (, name (value) l)))
         (eprim prim l)            empty
+        (eeffect _ _ _)           empty
+        (eprovide target cases _) (foldl
+                                      (externals bound target)
+                                          (map
+                                          cases
+                                              (fn [(, k name nl pats body)]
+                                              (foldl
+                                                  (externals (foldl bound (map pats pat-names) set/merge) body)
+                                                      (map pats pat-externals)
+                                                      bag/and)))
+                                          bag/and)
         (eenum _ _ arg _)         (map-or (externals bound) empty arg)
         (erecord spread fields _) (foldl
                                       (map-or (dot (externals bound) fst) empty spread)
@@ -2517,6 +2554,18 @@ dot
         (evar name l)             (expr/var-name bound name l)
         (eprim _ _)               empty
         (equot _ _)               empty
+        (eprovide target cases _) (foldl
+                                      (expr/names bound target)
+                                          (map
+                                          cases
+                                              (fn [(, k name nl pats body)]
+                                              (let [
+                                                  (, bound' names') (foldl (, [] empty) (map pats pat/names) bound-and-names)]
+                                                  (bag/and
+                                                      (expr/names (map/merge bound (map/from-list bound')) body)
+                                                          names'))))
+                                          bag/and)
+        (eeffect _ _ _)           empty
         (eaccess target _ l)      (match target
                                       (none)         empty
                                       (some (, v l)) (expr/var-name bound v l))

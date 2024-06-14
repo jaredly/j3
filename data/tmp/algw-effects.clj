@@ -134,13 +134,22 @@
         (evar string int)
         (estr string (list (, expr string int)) int)
         (equot quot int)
+        (eeffect string bool int)
         (elambda (list pat) expr int)
         (eapp expr (list expr) int)
         (elet (list (, pat expr)) expr int)
         (ematch expr (list (, pat expr)) int)
         (eenum string int (option expr) int)
+        (eprovide
+        expr
+            (list (, effect-kind string int (list pat) expr))
+            int)
         (erecord (option (, expr bool)) (list (, string expr)) int)
         (eaccess (option (, string int)) (list (, string int)) int))
+
+(deftype effect-kind
+    (eearmuffs)
+        (eeffectful string int))
 
 (deftype pat
     (pany int)
@@ -1100,17 +1109,19 @@
 
 (defn expr-loc [expr]
     (match expr
-        (evar _ l)      l
-        (eprim _ l)     l
-        (equot _ l)     l
-        (estr _ _ l)    l
-        (elambda _ _ l) l
-        (eapp _ _ l)    l
-        (ematch _ _ l)  l
-        (elet _ _ l)    l
-        (erecord _ _ l) l
-        (eenum _ _ _ l) l
-        (eaccess _ _ l) l))
+        (evar _ l)       l
+        (eprim _ l)      l
+        (equot _ l)      l
+        (estr _ _ l)     l
+        (elambda _ _ l)  l
+        (eeffect _ _ l)  l
+        (eprovide _ _ l) l
+        (eapp _ _ l)     l
+        (ematch _ _ l)   l
+        (elet _ _ l)     l
+        (erecord _ _ l)  l
+        (eenum _ _ _ l)  l
+        (eaccess _ _ l)  l))
 
 (defn record-if-generic [(forall free t) l]
     (match (set/to-list free)
@@ -1162,18 +1173,19 @@
                                                              (none)     (<- (tcon "()" nl))
                                                              (some arg) (infer/expr tenv arg))]
                                                      (<- (trow [(, tag arg)] (some t) (renum) l)))
-        (evar name l)                            (if (is-earmuffs name)
-                                                     (let-> [
-                                                         effects (match (tenv/resolve tenv "(effects)")
-                                                                     (none)              (<-missing "(effects)" l)
-                                                                     (some (forall _ t)) (<- t))
-                                                         result  (new-type-var name l)
-                                                         t       (new-type-var "effects-rest" l)
-                                                         _       (unify effects (trow [(, name result)] (some t) (rrecord) l) l)]
-                                                         (type/apply-> result))
-                                                         (match (tenv/resolve tenv name)
-                                                         (none)        (<-missing name l)
-                                                         (some scheme) (let-> [() (record-if-generic scheme l)] (instantiate scheme l))))
+        (eeffect name false l)                   (let-> [
+                                                     effects (match (tenv/resolve tenv "(effects)")
+                                                                 (none)              (<-missing "(effects)" l)
+                                                                 (some (forall _ t)) (<- t))
+                                                     result  (new-type-var name l)
+                                                     t       (new-type-var "effects-rest" l)
+                                                     _       (unify effects (trow [(, name result)] (some t) (rrecord) l) l)]
+                                                     (type/apply-> result))
+        (eeffect name true l)                    (fatal "Lol what effect")
+        (eprovide target cases l)                (fatal "provde it now")
+        (evar name l)                            (match (tenv/resolve tenv name)
+                                                     (none)        (<-missing name l)
+                                                     (some scheme) (let-> [() (record-if-generic scheme l)] (instantiate scheme l)))
         (eprim prim _)                           (<- (infer/prim prim))
         (equot quot l)                           (<- (infer/quot quot l))
         (estr _ templates l)                     (let-> [

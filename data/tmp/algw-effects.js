@@ -272,6 +272,8 @@ throw new Error('match fail 18313:' + JSON.stringify($target))
 })(v)
 let dot = (f) => (g) => (x) => f(g(x))
 let is_earmuffs = $eval("v => v.startsWith('*') && v.endsWith('*')")
+let eearmuffs = {type: "eearmuffs"}
+let eeffectful = (v0) => (v1) => ({type: "eeffectful", 0: v0, 1: v1})
 let cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 let nil = {type: "nil"}
 let pany = (v0) => ({type: "pany", 0: v0})
@@ -1310,11 +1312,13 @@ let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
 let equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1})
+let eeffect = (v0) => (v1) => (v2) => ({type: "eeffect", 0: v0, 1: v1, 2: v2})
 let elambda = (v0) => (v1) => (v2) => ({type: "elambda", 0: v0, 1: v1, 2: v2})
 let eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2})
 let elet = (v0) => (v1) => (v2) => ({type: "elet", 0: v0, 1: v1, 2: v2})
 let ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2})
 let eenum = (v0) => (v1) => (v2) => (v3) => ({type: "eenum", 0: v0, 1: v1, 2: v2, 3: v3})
+let eprovide = (v0) => (v1) => (v2) => ({type: "eprovide", 0: v0, 1: v1, 2: v2})
 let erecord = (v0) => (v1) => (v2) => ({type: "erecord", 0: v0, 1: v1, 2: v2})
 let eaccess = (v0) => (v1) => (v2) => ({type: "eaccess", 0: v0, 1: v1, 2: v2})
 
@@ -2049,6 +2053,14 @@ let l = $target[2];
 return l
 } ;
 if ($target.type === "elambda") {
+let l = $target[2];
+return l
+} ;
+if ($target.type === "eeffect") {
+let l = $target[2];
+return l
+} ;
+if ($target.type === "eprovide") {
 let l = $target[2];
 return l
 } ;
@@ -3040,12 +3052,10 @@ return infer$slexpr(tenv)(arg)
 throw new Error('match fail 14324:' + JSON.stringify($target))
 })(arg))((arg) => $lt_(trow(cons($co(tag)(arg))(nil))(some(t))(renum)(l))))
 } ;
-if ($target.type === "evar") {
+if ($target.type === "eeffect") {
 let name = $target[0];
-let l = $target[1];
-{
-let $target = is_earmuffs(name);
-if ($target === true) {
+if ($target[1] === false) {
+let l = $target[2];
 return $gt$gt$eq((($target) => {
 if ($target.type === "none") {
 return $lt_missing("(effects)")(l)
@@ -3056,9 +3066,26 @@ let t = $target[0][1];
 return $lt_(t)
 } 
 } ;
-throw new Error('match fail 24199:' + JSON.stringify($target))
-})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(new_type_var(name)(l))((result) => $gt$gt$eq(new_type_var("effects-rest")(l))((t) => $gt$gt$eq(unify(effects)(trow(cons($co(name)(result))(nil))(some(t))(rrecord)(l))(l))((_24195) => type$slapply_$gt(result)))))
+throw new Error('match fail 24995:' + JSON.stringify($target))
+})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(new_type_var(name)(l))((result) => $gt$gt$eq(new_type_var("effects-rest")(l))((t) => $gt$gt$eq(unify(effects)(trow(cons($co(name)(result))(nil))(some(t))(rrecord)(l))(l))((_24991) => type$slapply_$gt(result)))))
+} 
 } ;
+if ($target.type === "eeffect") {
+let name = $target[0];
+if ($target[1] === true) {
+let l = $target[2];
+return fatal("Lol what effect")
+} 
+} ;
+if ($target.type === "eprovide") {
+let target = $target[0];
+let cases = $target[1];
+let l = $target[2];
+return fatal("provde it now")
+} ;
+if ($target.type === "evar") {
+let name = $target[0];
+let l = $target[1];
 {
 let $target = tenv$slresolve(tenv)(name);
 if ($target.type === "none") {
@@ -3069,8 +3096,6 @@ let scheme = $target[0];
 return $gt$gt$eq(record_if_generic(scheme)(l))((_13680) => instantiate(scheme)(l))
 } ;
 throw new Error('match fail 2272:' + JSON.stringify($target))
-};
-throw new Error('match fail 24190:' + JSON.stringify($target))
 }
 } ;
 if ($target.type === "eprim") {

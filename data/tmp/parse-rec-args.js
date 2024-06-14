@@ -408,6 +408,10 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const parse_tag = $eval("v => v.startsWith('\\'') ? {type: 'some', 0: v.slice(1)} : {type: 'none'}");
 
+const eearmuffs = ({type: "eearmuffs"})
+const eeffectful = (v0) => (v1) => ({type: "eeffectful", 0: v0, 1: v1})
+const is_earmuffs = $eval("v => v.startsWith('*') && v.endsWith('*') && v.length > 2");
+
 const nil = ({type: "nil"})
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 const pany = (v0) => ({type: "pany", 0: v0})
@@ -1505,6 +1509,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
 const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
+const eeffect = (v0) => (v1) => (v2) => ({type: "eeffect", 0: v0, 1: v1, 2: v2})
 const equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1})
 const elambda = (v0) => (v1) => (v2) => ({type: "elambda", 0: v0, 1: v1, 2: v2})
 const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2})
@@ -1513,6 +1518,7 @@ const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2})
 const eenum = (v0) => (v1) => (v2) => (v3) => ({type: "eenum", 0: v0, 1: v1, 2: v2, 3: v3})
 const erecord = (v0) => (v1) => (v2) => ({type: "erecord", 0: v0, 1: v1, 2: v2})
 const eaccess = (v0) => (v1) => (v2) => ({type: "eaccess", 0: v0, 1: v1, 2: v2})
+const eprovide = (v0) => (v1) => (v2) => ({type: "eprovide", 0: v0, 1: v1, 2: v2})
 
 const quot$slexpr = (v0) => ({type: "quot/expr", 0: v0})
 const quot$sltop = (v0) => ({type: "quot/top", 0: v0})
@@ -1780,6 +1786,18 @@ let l = $target[1];
 return l
 }
 }
+if ($target.type === "eeffect") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "eprovide") {
+{
+let l = $target[2];
+return l
+}
+}
 if ($target.type === "evar") {
 {
 let l = $target[1];
@@ -1857,6 +1875,16 @@ if ($target.type === "eprim") {
 let prim = $target[0];
 let l = $target[1];
 return empty
+}
+}
+if ($target.type === "eeffect") {
+return empty
+}
+if ($target.type === "eprovide") {
+{
+let target = $target[0];
+let cases = $target[1];
+return foldl(externals(bound)(target))(map(cases)(({1: {1: {1: {1: body, 0: pats}, 0: nl}, 0: name}, 0: k}) => foldl(externals(foldl(bound)(map(pats)(pat_names))(set$slmerge))(body))(map(pats)(pat_externals))(bag$sland)))(bag$sland)
 }
 }
 if ($target.type === "eenum") {
@@ -2129,6 +2157,12 @@ let expr = $target[1];
 let int = $target[2];
 return "lambda"
 }
+}
+if ($target.type === "eeffect") {
+return "effect"
+}
+if ($target.type === "eprovide") {
+return "provide"
 }
 if ($target.type === "eapp") {
 {
@@ -2543,6 +2577,12 @@ throw new Error('Failed to match. ' + valueToString($target));
 })($eq(l)(tl))
 }
 }
+if ($target.type === "eeffect") {
+return none
+}
+if ($target.type === "eprovide") {
+return none
+}
 if ($target.type === "eaccess") {
 {
 let name = $target[0];
@@ -2819,6 +2859,34 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
 
 const provide_empty_effects = (jexp) => j$slapp(j$sllambda(cons(j$slpvar("\$lbeffects\$rb")(-1))(nil))(jexp)(-1))(cons(j$slobj(nil)(-1))(nil))(-1);
+
+const parse_id = (id) => (l) => (($target) => {
+if ($target === true) {
+return eeffect(id)(false)(l)
+}
+return (($target) => {
+if ($target.type === "some") {
+{
+let int = $target[0];
+return eprim(pint(int)(l))(l)
+}
+}
+if ($target.type === "none") {
+return (($target) => {
+if ($target.type === "some") {
+{
+let tag = $target[0];
+return eenum(tag)(l)(none)(l)
+}
+}
+return evar(id)(l)
+throw new Error('Failed to match. ' + valueToString($target));
+})(parse_tag(id))
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(string_to_int(id))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_earmuffs(id));
 
 const compile_pat$slj = (pat) => (target) => (inner) => (trace) => (($target) => {
 if ($target.type === "pany") {
@@ -3894,6 +3962,16 @@ return empty
 if ($target.type === "equot") {
 return empty
 }
+if ($target.type === "eprovide") {
+{
+let target = $target[0];
+let cases = $target[1];
+return foldl(expr$slnames(bound)(target))(map(cases)(({1: {1: {1: {1: body, 0: pats}, 0: nl}, 0: name}, 0: k}) => (({1: names$qu, 0: bound$qu}) => bag$sland(expr$slnames(map$slmerge(bound)(map$slfrom_list(bound$qu)))(body))(names$qu))(foldl($co(nil)(empty))(map(pats)(pat$slnames))(bound_and_names))))(bag$sland)
+}
+}
+if ($target.type === "eeffect") {
+return empty
+}
 if ($target.type === "eaccess") {
 {
 let target = $target[0];
@@ -4151,27 +4229,7 @@ if ($target.type === "cst/id") {
 {
 let id = $target[0];
 let l = $target[1];
-return $lt_((($target) => {
-if ($target.type === "some") {
-{
-let int = $target[0];
-return eprim(pint(int)(l))(l)
-}
-}
-if ($target.type === "none") {
-return (($target) => {
-if ($target.type === "some") {
-{
-let tag = $target[0];
-return eenum(tag)(l)(none)(l)
-}
-}
-return evar(id)(l)
-throw new Error('Failed to match. ' + valueToString($target));
-})(parse_tag(id))
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(string_to_int(id)))
+return $lt_(parse_id(id)(l))
 }
 }
 if ($target.type === "cst/list" &&
@@ -4593,6 +4651,30 @@ if ($target.type === "equot") {
 let inner = $target[0];
 let l = $target[1];
 return j$slraw(quot$sljsonify(inner))(l)
+}
+}
+if ($target.type === "eeffect" &&
+$target[1] === false) {
+{
+let name = $target[0];
+let l = $target[2];
+return j$slindex(j$slvar("\$lbeffects\$rb")(l))(j$slstr(name)(nil)(l))(l)
+}
+}
+if ($target.type === "eeffect" &&
+$target[1] === true) {
+{
+let name = $target[0];
+let l = $target[2];
+return fatal("effect compile not yet")
+}
+}
+if ($target.type === "eprovide") {
+{
+let target = $target[0];
+let handlers = $target[1];
+let l = $target[2];
+return fatal("provide not yet")
 }
 }
 if ($target.type === "elambda") {
