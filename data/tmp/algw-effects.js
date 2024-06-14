@@ -3226,12 +3226,15 @@ return false
 return true;
 throw new Error('match fail 10333:' + JSON.stringify($target))
 })(is_useful(matrix)(cons(ex$slany)(nil)))
-let infer_expr2 = (env) => (expr) => {
-let {"1": result, "0": {"1": {"1": types, "0": subst}}} = state_f(infer$slexpr(env)(expr))(state$slnil);
+let infer_expr3 = (env) => (expr) => {
+let {"1": result, "0": {"1": {"1": types, "0": subst}}} = state_f($gt$gt$eq(new_type_var("top-effects")(-1))((top_effects) => $gt$gt$eq($lt_(tenv$slwith_type(env)("(effects)")(forall(set$slnil)(trow(nil)(some(top_effects))(rrecord)(-1)))))((env) => $gt$gt$eq(infer$slexpr(env)(expr))((type) => $gt$gt$eq(type$slapply_$gt(top_effects))((top_effects) => $lt_($co(type)(top_effects)))))))(state$slnil);
 return $co((($target) => {
 if ($target.type === "ok") {
-let t = $target[0];
-return ok(forall(set$slnil)(t))
+if ($target[0].type === ",") {
+let t = $target[0][0];
+let top_effects = $target[0][1];
+return ok($co(forall(set$slnil)(t))(top_effects))
+} 
 } ;
 if ($target.type === "err") {
 let e = $target[0];
@@ -3274,9 +3277,9 @@ return $lt_(add$sldeftype(tenv)(name)(args)(constrs)(l))
 } ;
 throw new Error('match fail 2876:' + JSON.stringify($target))
 })(stmt)
-let add$slstmts = (tenv) => (stmts) => $gt$gt$eq($lt_(split_stmts(stmts)))(({"1": {"1": {"1": others, "0": exprs}, "0": aliases}, "0": defs}) => $gt$gt$eq(add$sldefs(tenv)(defs))((denv) => $gt$gt$eq(foldl_$gt(denv)(concat(cons(aliases)(cons(others)(nil))))((env) => (stmt) => $gt$gt$eq(add$slstmt(tenv$slmerge(tenv)(env))(stmt))((env$qu) => $lt_(tenv$slmerge(env)(env$qu)))))((final) => $gt$gt$eq(map_$gt(infer$slexpr(tenv$slwith_type(tenv$slmerge(tenv)(final))("(effects)")(forall(set$slnil)(trow(nil)(none)(rrecord)(-1)))))(exprs))((types) => $gt$gt$eq(map_$gt(restrict_poly_enum)(types))((types) => $lt_($co(final)(map(simplify_recursive)(types))))))))
+let add$slstmts = (tenv) => (stmts) => $gt$gt$eq($lt_(split_stmts(stmts)))(({"1": {"1": {"1": others, "0": exprs}, "0": aliases}, "0": defs}) => $gt$gt$eq(add$sldefs(tenv)(defs))((denv) => $gt$gt$eq(foldl_$gt(denv)(concat(cons(aliases)(cons(others)(nil))))((env) => (stmt) => $gt$gt$eq(add$slstmt(tenv$slmerge(tenv)(env))(stmt))((env$qu) => $lt_(tenv$slmerge(env)(env$qu)))))((final) => $gt$gt$eq(new_type_var("top-effects")(-1))((top_effects) => $gt$gt$eq(map_$gt(infer$slexpr(tenv$slwith_type(tenv$slmerge(tenv)(final))("(effects)")(forall(set$slnil)(trow(nil)(some(top_effects))(rrecord)(-1)))))(exprs))((types) => $gt$gt$eq(map_$gt(restrict_poly_enum)(types))((types) => $gt$gt$eq(type$slapply_$gt(top_effects))((top_effects) => $lt_($co(final)($co(map(simplify_recursive)(types))(top_effects))))))))))
 let benv_with_pair = tenv$slmerge(builtin_env)(fst(err_to_fatal(run$slnil_$gt(add$slstmts(builtin_env)(cons({"0":",","1":12710,"2":{"0":{"0":"a","1":12711,"type":","},"1":{"0":{"0":"b","1":12712,"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"3":{"0":{"0":",","1":{"0":12714,"1":{"0":{"0":{"0":"a","1":12715,"type":"tcon"},"1":{"0":{"0":"b","1":12716,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12713,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"4":12707,"type":"tdeftype"})(cons({"0":"option","1":17670,"2":{"0":{"0":"a","1":17671,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"none","1":{"0":17673,"1":{"0":{"type":"nil"},"1":17672,"type":","},"type":","},"type":","},"1":{"0":{"0":"some","1":{"0":17675,"1":{"0":{"0":{"0":"a","1":17676,"type":"tcon"},"1":{"type":"nil"},"type":"cons"},"1":17674,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":17667,"type":"tdeftype"})(cons({"0":"list","1":12722,"2":{"0":{"0":"a","1":12723,"type":","},"1":{"type":"nil"},"type":"cons"},"3":{"0":{"0":"nil","1":{"0":12725,"1":{"0":{"type":"nil"},"1":12724,"type":","},"type":","},"type":","},"1":{"0":{"0":"cons","1":{"0":12727,"1":{"0":{"0":{"0":"a","1":12728,"type":"tcon"},"1":{"0":{"0":{"0":"list","1":12730,"type":"tcon"},"1":{"0":"a","1":12731,"type":"tcon"},"2":12729,"type":"tapp"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12726,"type":","},"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"4":12719,"type":"tdeftype"})(nil))))))))
-let infer_stmts2 = (env) => (stmts) => {
+let infer_stmts3 = (env) => (stmts) => {
 let {"1": result, "0": {"1": {"1": types, "0": subst}}} = state_f(add$slstmts(env)(stmts))(state$slnil);
 return $co((($target) => {
 if ($target.type === "err") {
@@ -3286,8 +3289,11 @@ return err(e)
 if ($target.type === "ok") {
 if ($target[0].type === ",") {
 let tenv = $target[0][0];
-let types = $target[0][1];
-return ok($co(tenv)(map(forall(set$slnil))(types)))
+if ($target[0][1].type === ",") {
+let types = $target[0][1][0];
+let top_effects = $target[0][1][1];
+return ok($co(tenv)($co(map(forall(set$slnil))(types))(top_effects)))
+} 
 } 
 } ;
 throw new Error('match fail 13208:' + JSON.stringify($target))
@@ -3311,4 +3317,4 @@ return `type not found for ${name}`;
 throw new Error('match fail 21148:' + JSON.stringify($target))
 }
 }
-return $eval("env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts2 => infer2 =>\n  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts2, infer2})\n")(builtin_env)(tenv$slmerge)(tenv$slresolve)(scheme_$gts)(scheme_$gtcst)(infer_stmts2)(infer_expr2)
+return $eval("env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts3 => infer3 =>\n  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts3, infer3})\n")(builtin_env)(tenv$slmerge)(tenv$slresolve)(scheme_$gts)(scheme_$gtcst)(infer_stmts3)(infer_expr3)

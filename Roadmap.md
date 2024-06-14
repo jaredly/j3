@@ -3,8 +3,22 @@
 ..
 ??
 
+(provide thunk
+  *lol* 25)
 
-  
+(provide (fn (+ x 2))
+  *lol* 25)
+
+> would also be cool if the UI could like render some ui
+  that would ask for the value, and you fill it in.
+  > OOHHH I really wanted this while doing jerd#1, for doing config
+  sliders and such for my animations. so glad it's coming around again.
+
+When pretty-printing effects record, elide the .._? just do a trailing ..? yeah.
+BEST would be "only elide if it's unique" but we can do that later.
+
+(fn [x] {} y)
+
 #
 
 Ok, but so ...

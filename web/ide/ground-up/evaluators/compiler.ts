@@ -7,10 +7,10 @@ export type MetaList = [number, MetaData['trace']][];
 export const compiler = (fns: {
     prelude?: Record<string, string>;
     builtins?: string;
-    compile: (e: Expr) => (meta: MetaList) => string;
-    compile2: (e: Expr) => (info: TypeInfo) => (meta: MetaList) => string;
-    compile_stmt: (s: Stmt) => (meta: MetaList) => string;
-    compile_stmt2: (s: Stmt) => (info: TypeInfo) => (meta: MetaList) => string;
+    compile?: (e: Expr) => (meta: MetaList) => string;
+    compile2?: (e: Expr) => (info: TypeInfo) => (meta: MetaList) => string;
+    compile_stmt?: (s: Stmt) => (meta: MetaList) => string;
+    compile_stmt2?: (s: Stmt) => (info: TypeInfo) => (meta: MetaList) => string;
 }): Compiler<Stmt, Expr> => ({
     prelude: fns.prelude,
     builtins: fns.builtins,
@@ -19,6 +19,7 @@ export const compiler = (fns: {
         if (fns.compile2) {
             return fns.compile2(expr)(typeInfo)(mm);
         }
+        if (!fns.compile) throw new Error('no compile')
         return fns.compile(expr)(mm);
     },
     compileStmt(stmt, typeInfo, meta) {
@@ -26,6 +27,7 @@ export const compiler = (fns: {
         if (fns.compile_stmt2) {
             return fns.compile_stmt2(stmt)(typeInfo)(mm);
         }
+        if (!fns.compile_stmt) throw new Error('no compile')
         return fns.compile_stmt(stmt)(mm);
     },
 });

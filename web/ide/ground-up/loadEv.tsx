@@ -133,7 +133,9 @@ export const evaluatorFromText = (
                 ? basicParser(data)
                 : undefined;
         const comp =
-            data['compile'] && data['compile_stmt']
+            (data['compile'] && data['compile_stmt']) || (
+data['compile2'] && data['compile_stmt2']
+            )
                 ? compiler(data)
                 : undefined;
         const ann =

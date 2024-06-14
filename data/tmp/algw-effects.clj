@@ -2388,15 +2388,17 @@
                                               (fn [env stmt]
                                               (let-> [env' (add/stmt (tenv/merge tenv env) stmt)]
                                                   (<- (tenv/merge env env')))))
+        top-effects                   (new-type-var "top-effects" -1)
         types                         (map->
                                           (infer/expr
                                               (tenv/with-type
                                                   (tenv/merge tenv final)
                                                       "(effects)"
-                                                      (forall set/nil (trow [] none rrecord -1))))
+                                                      (forall set/nil (trow [] (some top-effects) rrecord -1))))
                                               exprs)
-        types                         (map-> restrict-poly-enum types)]
-        (<- (, final (map simplify-recursive types)))))
+        types                         (map-> restrict-poly-enum types)
+        top-effects                   (type/apply-> top-effects)]
+        (<- (, final (map simplify-recursive types) top-effects))))
 
 (,
     (fn [(, x name)]
@@ -2554,13 +2556,13 @@
 
 (** This is a peek under the hood as to how the code in these documents gets "handed off" to the structured editor for use as an evaluator for other documents. It's not really necessary for you to understand it, and it's disabled here in the publicly hosted editor anyway. **)
 
-(defn infer-stmts2 [env stmts]
+(defn infer-stmts3 [env stmts]
     (let [
         (, (, _ subst types) result) (state-f (add/stmts env stmts) state/nil)]
         (,
             (match result
-                (err e)             (err e)
-                (ok (, tenv types)) (ok (, tenv (map (forall set/nil) types))))
+                (err e)                         (err e)
+                (ok (, tenv types top-effects)) (ok (, tenv (map (forall set/nil) types) top-effects)))
                 (map
                 (fn [(, t l dont-apply)]
                     (if dont-apply
@@ -2570,13 +2572,24 @@
                 []
                 [])))
 
-(defn infer-expr2 [env expr]
+(defn infer-expr3 [env expr]
     (let [
-        (, (, _ subst types) result) (state-f (infer/expr env expr) state/nil)]
+        (, (, _ subst types) result) (state-f
+                                         (let-> [
+                                             top-effects (new-type-var "top-effects" -1)
+                                             env         (<-
+                                                             (tenv/with-type
+                                                                 env
+                                                                     "(effects)"
+                                                                     (forall set/nil (trow [] (some top-effects) rrecord -1))))
+                                             type        (infer/expr env expr)
+                                             top-effects (type/apply-> top-effects)]
+                                             (<- (, type top-effects)))
+                                             state/nil)]
         (,
             (match result
-                (ok t)  (ok (forall set/nil t))
-                (err e) (err e))
+                (ok (, t top-effects)) (ok (, (forall set/nil t) top-effects))
+                (err e)                (err e))
                 (map
                 (fn [(, t l dont-apply)]
                     (if dont-apply
@@ -2587,14 +2600,14 @@
                 [])))
 
 (eval
-    (** env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts2 => infer2 =>
-  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts2, infer2})
+    (** env_nil => add_stmt => get_type => type_to_string => type_to_cst => infer_stmts3 => infer3 =>
+  ({type: 'fns', env_nil, add_stmt, get_type, type_to_string, type_to_cst, infer_stmts3, infer3})
  **)
         builtin-env
         tenv/merge
         tenv/resolve
         scheme->s
         scheme->cst
-        infer-stmts2
-        infer-expr2)
+        infer-stmts3
+        infer-expr3)
 
