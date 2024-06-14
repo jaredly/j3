@@ -4845,7 +4845,29 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const simplify_js = tx((expr) => some(expr))(apply_until(simplify_one))((pat) => none)((pat) => pat)((stmt) => some(stmt))(apply_until(simplify_stmt))((block) => some(block))(apply_until(simplify_block));
 
-return $eval("({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt2, 3: compile2, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => builtins => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt2, compile2, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names, builtins})")(parse_and_compile((top) => state_f(parse_top(top))(state$slnil))((expr) => state_f(parse_expr(expr))(state$slnil))((top) => (type_info) => (ctx) => j$slcompile_stmts(ctx)(map(compile_top$slj(top)(ctx))(map$slstmt(simplify_js))))((expr) => (type_info) => (ctx) => j$slcompile(ctx)(map$slexpr(simplify_js)(compile$slj(expr)(ctx))))(names)(externals_top)((expr) => bag$slto_list(externals(set$slnil)(expr)))(top_size)(expr_size)(type_size)((tl) => (top) => (($target) => {
+return $eval("({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt2, 3: compile2, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => builtins => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt2, compile2, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names, builtins})")(parse_and_compile((top) => state_f(parse_top(top))(state$slnil))((expr) => state_f(parse_expr(expr))(state$slnil))((top) => (type_info) => (ctx) => ((top) => j$slcompile_stmts(ctx)(map(compile_top$slj(top)(ctx))(map$slstmt(simplify_js))))((($target) => {
+if ($target.type === "tvar") {
+return top
+}
+return (($target) => {
+if ($target.type === "texpr") {
+{
+let e = $target[0];
+let l = $target[1];
+return texpr(elambda(cons(pany(-1))(nil))(e)(l))(l)
+}
+}
+return fatal("non-expr has unbound effects??")
+throw new Error('Failed to match. ' + valueToString($target));
+})(top)
+throw new Error('Failed to match. ' + valueToString($target));
+})(type_info)))((expr) => (type_info) => (ctx) => ((expr) => j$slcompile(ctx)(map$slexpr(simplify_js)(compile$slj(expr)(ctx))))((($target) => {
+if ($target.type === "tvar") {
+return expr
+}
+return elambda(cons(pany(-1))(nil))(expr)(-1)
+throw new Error('Failed to match. ' + valueToString($target));
+})(type_info)))(names)(externals_top)((expr) => bag$slto_list(externals(set$slnil)(expr)))(top_size)(expr_size)(type_size)((tl) => (top) => (($target) => {
 if ($target.type === "some") {
 {
 let v = $target[0];

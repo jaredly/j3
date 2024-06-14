@@ -2626,11 +2626,21 @@ dot
         (fn [top] (state-f (parse-top top) state/nil))
             (fn [expr] (state-f (parse-expr expr) state/nil))
             (fn [top type-info ctx]
-            (j/compile-stmts
-                ctx
-                    (map (compile-top/j top ctx) (map/stmt simplify-js))))
+            (let [
+                top (match type-info
+                        (tvar _ _) top
+                        _          (match top
+                                       (texpr e l) (texpr (elambda [(pany -1)] e l) l)
+                                       _           (fatal "non-expr has unbound effects??")))]
+                (j/compile-stmts
+                    ctx
+                        (map (compile-top/j top ctx) (map/stmt simplify-js)))))
             (fn [expr type-info ctx]
-            (j/compile ctx (map/expr simplify-js (compile/j expr ctx))))
+            (let [
+                expr (match type-info
+                         (tvar _ _) expr
+                         _          (elambda [(pany -1)] expr -1))]
+                (j/compile ctx (map/expr simplify-js (compile/j expr ctx)))))
             names
             externals-top
             (fn [expr] (bag/to-list (externals set/nil expr)))

@@ -1,4 +1,14 @@
 
+# Just this moment
+
+- [ ] better pretty printing of types
+- [x] plumb the toplevel effects through to the compiler
+- [x] wrap expressions w/ toplevel effects
+- [ ] have all fn calls and applys have the new vbl
+
+
+#
+
 -> *earmuffs*
 ..
 ??
