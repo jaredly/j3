@@ -78,6 +78,14 @@
         'nil                       'nil
         ('node (, _ left) x right) ('node (map-tree f left) (f x) (map-tree f right))))
 
++
+
+((+ 1) 23)
+
+(+ 2 3)
+
+(, 1 2)
+
 (map (fn [x] (+ x 1)) ('cons 1 'nil))
 
 (defn map2 [f (, v rest)]

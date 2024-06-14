@@ -4,7 +4,10 @@
 - [ ] better pretty printing of types
 - [x] plumb the toplevel effects through to the compiler
 - [x] wrap expressions w/ toplevel effects
-- [ ] have all fn calls and applys have the new vbl
+- [x] have all fn calls and applys have the new vbl
+- [ ] make a (provide target ..effects) expression form
+- [ ] make a (fn x) thunk wrapping form, and (x) -> (x ())
+- [ ] do a cool web UI for providing earmuffs that are needed
 
 
 #

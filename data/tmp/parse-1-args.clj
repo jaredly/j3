@@ -868,7 +868,8 @@
     (foldl
         (compile/j target trace)
             args
-            (fn [target arg] (j/app target [(compile/j arg trace)] l))))
+            (fn [target arg]
+            (j/app target [(compile/j arg trace) (j/var "$lbeffects$rb" l)] l))))
 
 (defn expand-bindings [bindings l]
     (foldr
@@ -922,7 +923,7 @@
 
 (defn compile-top/j [top trace]
     (match top
-        (texpr expr l)                      [(j/sexpr (compile/j expr trace) l)]
+        (texpr expr l)                      [(j/sexpr (provide-empty-effects (right (compile/j expr trace))) l)]
         (tdef name nl body l)               [(j/let (j/pvar (sanitize name) nl) (compile/j body trace) l)]
         (ttypealias name _ _ _ _)           []
         (tdeftype name nl type-arg cases l) (map
@@ -984,7 +985,8 @@
                                                     (j/lambda
                                                         [(match (pat->j/pat pat)
                                                             (none)     (j/pvar "_${(its l)}" l)
-                                                            (some pat) pat)]
+                                                            (some pat) pat)
+                                                            (j/pvar "$lbeffects$rb" l)]
                                                             (match (trace-pat pat trace)
                                                             []    (right body)
                                                             stmts (left (j/block (concat [stmts [(j/return body l)]]))))
@@ -1138,7 +1140,9 @@
             map/nil))
 
 (defn run/j [v]
-    (eval (j/compile 0 (compile/j (run/nil-> (parse-expr v)) map/nil))))
+    (eval
+        "(($lbeffects$rb) => ${(j/compile 0 (compile/j (run/nil-> (parse-expr v)) map/nil))})({})"
+            ))
 
 (,
     run/j
@@ -2620,6 +2624,9 @@ dot
             (fn [type] int)
             (fn [int top] (list (, string int)))))
 
+(defn provide-empty-effects [jexp]
+    (j/app (j/lambda [(j/pvar "$lbeffects$rb" -1)] jexp -1) [(j/obj [] -1)] -1))
+
 ((eval
     "({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt2, 3: compile2, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => builtins => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt2, compile2, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names, builtins})")
     (parse-and-compile
@@ -2640,7 +2647,10 @@ dot
                 expr (match type-info
                          (tvar _ _) expr
                          _          (elambda [(pany -1)] expr -1))]
-                (j/compile ctx (map/expr simplify-js (compile/j expr ctx)))))
+                (j/compile
+                    ctx
+                        (provide-empty-effects
+                        (right (map/expr simplify-js (compile/j expr ctx)))))))
             names
             externals-top
             (fn [expr] (bag/to-list (externals set/nil expr)))
@@ -2653,3 +2663,5 @@ dot
                 _        [])))
         (fn [top] (bag/to-list (top/names top)))
         builtins)
+
+537

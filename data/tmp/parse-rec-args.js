@@ -2818,6 +2818,8 @@ return foldl($co(nil)(one(global(name)(value)(l)(usage($unit)))))(map(args)(pat$
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
 
+const provide_empty_effects = (jexp) => j$slapp(j$sllambda(cons(j$slpvar("\$lbeffects\$rb")(-1))(nil))(jexp)(-1))(cons(j$slobj(nil)(-1))(nil))(-1);
+
 const compile_pat$slj = (pat) => (target) => (inner) => (trace) => (($target) => {
 if ($target.type === "pany") {
 {
@@ -4609,7 +4611,7 @@ return pat
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(pat_$gtj$slpat(pat)))(nil))((($target) => {
+})(pat_$gtj$slpat(pat)))(cons(j$slpvar("\$lbeffects\$rb")(l))(nil)))((($target) => {
 if ($target.type === "nil") {
 return right(body)
 }
@@ -4733,7 +4735,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 const compile_let$slj = (body) => (trace) => (bindings) => (l) => foldr(compile$slj(body)(trace))(expand_bindings(bindings)(l))((body) => (binding) => j$slapp(j$sllambda(nil)(left(j$slblock(concat(cons(cons(compile_let_binding$slj(binding)(trace)(l))(nil))(cons(trace_pat(fst(binding))(trace))(cons(cons(j$slreturn(body)(l))(nil))(nil)))))))(l))(nil)(l));
 
 
-const app$slj = (target) => (args) => (trace) => (l) => foldl(compile$slj(target)(trace))(args)((target) => (arg) => j$slapp(target)(cons(compile$slj(arg)(trace))(nil))(l));
+const app$slj = (target) => (args) => (trace) => (l) => foldl(compile$slj(target)(trace))(args)((target) => (arg) => j$slapp(target)(cons(compile$slj(arg)(trace))(cons(j$slvar("\$lbeffects\$rb")(l))(nil)))(l));
 
 
 const compile_let_binding$slj = ({1: init, 0: pat}) => (trace) => (l) => (($target) => {
@@ -4749,7 +4751,7 @@ return j$sllet(pat)(compile$slj(init)(trace))(l)
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat_$gtj$slpat(pat));
 
-const run$slj = (v) => $eval(j$slcompile(0)(compile$slj(run$slnil_$gt(parse_expr(v)))(map$slnil)));
+const run$slj = (v) => $eval(`((\$lbeffects\$rb) => ${j$slcompile(0)(compile$slj(run$slnil_$gt(parse_expr(v)))(map$slnil))})({})`);
 
 const simplify_block = ({0: items}) => (($target) => {
 return (($target) => {
@@ -4774,7 +4776,7 @@ if ($target.type === "texpr") {
 {
 let expr = $target[0];
 let l = $target[1];
-return cons(j$slsexpr(compile$slj(expr)(trace))(l))(nil)
+return cons(j$slsexpr(provide_empty_effects(right(compile$slj(expr)(trace))))(l))(nil)
 }
 }
 if ($target.type === "tdef") {
@@ -4861,7 +4863,7 @@ return fatal("non-expr has unbound effects??")
 throw new Error('Failed to match. ' + valueToString($target));
 })(top)
 throw new Error('Failed to match. ' + valueToString($target));
-})(type_info)))((expr) => (type_info) => (ctx) => ((expr) => j$slcompile(ctx)(map$slexpr(simplify_js)(compile$slj(expr)(ctx))))((($target) => {
+})(type_info)))((expr) => (type_info) => (ctx) => ((expr) => j$slcompile(ctx)(provide_empty_effects(right(map$slexpr(simplify_js)(compile$slj(expr)(ctx))))))((($target) => {
 if ($target.type === "tvar") {
 return expr
 }
