@@ -227,6 +227,7 @@ const tightFirsts: { [key: string]: number } = {
     match: 2,
     let: 2,
     'let->': 2,
+    proide: 2,
     definstance: 2,
     defclass: 2,
     if: 2,

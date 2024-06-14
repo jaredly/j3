@@ -111,7 +111,10 @@
 
 +
 
-(defn xa [a] (+ a *lol*))
+(defn get-florbs [a] (+ a *extra-florbs*))
 
-(xa 2)
+(defn construct-tractors [abc florbs]
+    {tractors abc florbs (get-florbs florbs)})
+
+(provide (construct-tractors "yes" 12) *extra-florbs* 40)
 

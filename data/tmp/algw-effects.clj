@@ -140,16 +140,14 @@
         (elet (list (, pat expr)) expr int)
         (ematch expr (list (, pat expr)) int)
         (eenum string int (option expr) int)
-        (eprovide
-        expr
-            (list (, effect-kind string int (list pat) expr))
-            int)
+        (eprovide expr (list (, string int effect-pat expr)) int)
         (erecord (option (, expr bool)) (list (, string expr)) int)
         (eaccess (option (, string int)) (list (, string int)) int))
 
-(deftype effect-kind
+(deftype effect-pat
     (eearmuffs)
-        (eeffectful string int))
+        (ebang (list pat))
+        (eeffectful string int (list pat)))
 
 (deftype pat
     (pany int)
@@ -1182,7 +1180,23 @@
                                                      _       (unify effects (trow [(, name result)] (some t) (rrecord) l) l)]
                                                      (type/apply-> result))
         (eeffect name true l)                    (fatal "Lol what effect")
-        (eprovide target cases l)                (fatal "provde it now")
+        (eprovide target cases l)                (let-> [
+                                                     effects (match (tenv/resolve tenv "(effects)")
+                                                                 (none)              (<-missing "(effects)" l)
+                                                                 (some (forall _ t)) (<- t))
+                                                     rows    (map->
+                                                                 (fn [(, name nl kind expr)]
+                                                                     (match kind
+                                                                         (eearmuffs) (let-> [body (infer/expr tenv expr)] (<- (, name body)))
+                                                                         _           (fatal "other kind not supported yet")))
+                                                                     cases)
+                                                     target  (infer/expr
+                                                                 (tenv/with-type
+                                                                     tenv
+                                                                         "(effects)"
+                                                                         (forall set/nil (trow rows (some effects) rrecord l)))
+                                                                     target)]
+                                                     (<- target))
         (evar name l)                            (match (tenv/resolve tenv name)
                                                      (none)        (<-missing name l)
                                                      (some scheme) (let-> [() (record-if-generic scheme l)] (instantiate scheme l)))

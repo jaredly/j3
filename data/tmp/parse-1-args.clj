@@ -122,14 +122,12 @@
         (eenum string int (option expr) int)
         (erecord (option (, expr bool)) (list (, string expr)) int)
         (eaccess (option (, string int)) (list (, string int)) int)
-        (eprovide
-        expr
-            (list (, effect-kind string int (list pat) expr))
-            int))
+        (eprovide expr (list (, string int effect-pat expr)) int))
 
-(deftype effect-kind
+(deftype effect-pat
     (eearmuffs)
-        (eeffectful string int))
+        (ebang (list pat))
+        (eeffectful string int (list pat)))
 
 (deftype prim
     (pint int int)
@@ -669,7 +667,7 @@
                                            items
                                                (fn [item]
                                                (match item
-                                                   (left (, name value))   "${name}: ${(j/compile ctx value)}"
+                                                   (left (, name value))   "\"${name}\": ${(j/compile ctx value)}"
                                                    (right (j/spread expr)) "...${(j/compile ctx expr)}"))))}}"))
 
 (** ## Compile to JS **)
@@ -988,7 +986,21 @@
             (equot inner l)                 (j/raw (quot/jsonify inner) l)
             (eeffect name false l)          (j/index (j/var "$lbeffects$rb" l) (j/str name [] l) l)
             (eeffect name true l)           (fatal "effect compile not yet")
-            (eprovide target handlers l)    (fatal "provide not yet")
+            (eprovide target handlers l)    (j/app
+                                                (j/lambda
+                                                    [(j/pvar "$lbeffects$rb" l)]
+                                                        (right (compile/j target trace))
+                                                        l)
+                                                    [(j/obj
+                                                    [(right (j/spread (j/var "$lbeffects$rb" l)))
+                                                        ..(map
+                                                        handlers
+                                                            (fn [(, name nl kind body)]
+                                                            (match kind
+                                                                (eearmuffs) (left (, name (compile/j body trace)))
+                                                                _           (fatal "cant compile real effects handlers just yet"))))]
+                                                        l)]
+                                                    l)
             (elambda pats body l)           (foldr
                                                 ; gotta trace the args
                                                     (compile/j body trace)
@@ -1446,6 +1458,10 @@ return {
     (eval
         "v => v.startsWith('*') && v.endsWith('*') && v.length > 2"))
 
+(def is-bang (eval "v => v.startsWith('!')"))
+
+(def is-arrow (eval "v => v.startsWith('<-')"))
+
 (parse-tag "hi")
 
 (parse-tag "'hi")
@@ -1625,6 +1641,7 @@ return {
                                                                         body (parse-one-expr rest ll b)]
                                                                         (<- (elambda args body b)))
         (cst/list [(cst/id "fn" _) .._] l)                          (<-err (, l "Invalid 'fn' ${(int-to-string l)}") (evar "()" l))
+        (cst/list [(cst/id "provide" ml) target ..cases] l)         (parse-provide parse-expr target ml cases l)
         (cst/list [(cst/id "match" ml) target ..cases] l)           (let-> [
                                                                         target (parse-expr target)
                                                                         cases  (<- (pairs-plus (cst/id "()" ml) cases))
@@ -1729,6 +1746,22 @@ return {
         [(, (@@ true) (eprim (pbool true 1163) 1163))
         (, (@@ .abc) (eaccess (none) [(, "abc" 22113)] 22112))
         (, (@@ 'hi) (eenum "hi" 21779 (none) 21779))
+        (,
+        (@@ (provide x *lol* 20 (!fail msg) 2 (k <-set v) (k v)))
+            (eprovide
+            (evar "x" 23392)
+                [(, "*lol*" (, 23393 (, (eearmuffs) (eprim (pint 20 23394) 23394))))
+                (,
+                "!fail"
+                    (, 23395 (, (ebang [(pvar "msg" 23398)]) (eprim (pint 2 23396) 23396))))
+                (,
+                "<-set"
+                    (,
+                    23401
+                        (,
+                        (eeffectful "k" 23400 [(pvar "v" 23402)])
+                            (eapp (evar "k" 23404) [(evar "v" 23405)] 23403))))]
+                23390))
         (,
         (@@ ('hi 12 2))
             (eenum
@@ -1953,6 +1986,42 @@ return {
             (none)     (match (parse-tag id)
                            (some tag) (eenum tag l none l)
                            _          (evar id l)))))
+
+(defn parse-provide [parse-expr target ml cases l]
+    (let-> [
+        target (parse-expr target)
+        cases  (<- (pairs-plus (cst/id "()" ml) cases))
+        cases  (map->
+                   (fn [(, pat expr)]
+                       (let-> [
+                           expr             (parse-expr expr)
+                           (, id il epat l) (parse-provide-pat pat)]
+                           (<- (, id il epat expr))))
+                       cases)]
+        (<- (eprovide target cases l))))
+
+(defn parse-provide-pat [pat]
+    (match pat
+        (cst/id id l)                                      (if (is-earmuffs id)
+                                                               (<- (, id l (eearmuffs) l))
+                                                                   (<-err
+                                                                   (, l "Wrap in () or must be *earmuffed*")
+                                                                       (, id l (eearmuffs) l)))
+        (cst/list [(cst/id k kl) (cst/id id il) ..pats] l) (if (is-bang k)
+                                                               (let-> [pats (map-> parse-pat [(cst/id id il) ..pats])]
+                                                                   (<- (, k kl (ebang pats) l)))
+                                                                   (if (is-arrow id)
+                                                                   (let-> [pats (map-> parse-pat pats)]
+                                                                       (<- (, id il (eeffectful k kl pats) l)))
+                                                                       (<-err (, l "Unidentified effect kind") (, k kl (ebang []) l))))
+        (cst/list [(cst/id id il) ..pats] l)               (if (is-bang id)
+                                                               (let-> [pats (map-> parse-pat pats)] (<- (, id il (ebang pats) l)))
+                                                                   (<-err
+                                                                   (,
+                                                                       l
+                                                                           "Unidentified effect kind, expected *earmuffed*, <-arrowed, or !banged")
+                                                                       (, id il (ebang []) l)))
+        _                                                  (fatal "cant do it I think")))
 
 (defn parse-top [cst]
     (match cst
@@ -2410,11 +2479,16 @@ dot
                                       (externals bound target)
                                           (map
                                           cases
-                                              (fn [(, k name nl pats body)]
-                                              (foldl
-                                                  (externals (foldl bound (map pats pat-names) set/merge) body)
-                                                      (map pats pat-externals)
-                                                      bag/and)))
+                                              (fn [(, name nl k body)]
+                                              (let [
+                                                  pats (match k
+                                                           (ebang pats)          pats
+                                                           (eeffectful _ _ pats) pats
+                                                           _                     [])]
+                                                  (foldl
+                                                      (externals (foldl bound (map pats pat-names) set/merge) body)
+                                                          (map pats pat-externals)
+                                                          bag/and))))
                                           bag/and)
         (eenum _ _ arg _)         (map-or (externals bound) empty arg)
         (erecord spread fields _) (foldl
@@ -2558,8 +2632,12 @@ dot
                                       (expr/names bound target)
                                           (map
                                           cases
-                                              (fn [(, k name nl pats body)]
+                                              (fn [(, name nl k body)]
                                               (let [
+                                                  pats              (match k
+                                                                        (ebang pats)          pats
+                                                                        (eeffectful _ _ pats) pats
+                                                                        _                     [])
                                                   (, bound' names') (foldl (, [] empty) (map pats pat/names) bound-and-names)]
                                                   (bag/and
                                                       (expr/names (map/merge bound (map/from-list bound')) body)

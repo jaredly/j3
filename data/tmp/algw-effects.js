@@ -272,8 +272,6 @@ throw new Error('match fail 18313:' + JSON.stringify($target))
 })(v)
 let dot = (f) => (g) => (x) => f(g(x))
 let is_earmuffs = $eval("v => v.startsWith('*') && v.endsWith('*')")
-let eearmuffs = {type: "eearmuffs"}
-let eeffectful = (v0) => (v1) => ({type: "eeffectful", 0: v0, 1: v1})
 let cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 let nil = {type: "nil"}
 let pany = (v0) => ({type: "pany", 0: v0})
@@ -685,6 +683,9 @@ return cons(f(i)(one))(recur($co(i + 1)(rest)))
 } ;
 throw new Error('match fail 24289:' + JSON.stringify($target))
 })(lst))
+let eearmuffs = {type: "eearmuffs"}
+let ebang = (v0) => ({type: "ebang", 0: v0})
+let eeffectful = (v0) => (v1) => (v2) => ({type: "eeffectful", 0: v0, 1: v1, 2: v2})
 let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 let tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 let tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
@@ -3081,7 +3082,24 @@ if ($target.type === "eprovide") {
 let target = $target[0];
 let cases = $target[1];
 let l = $target[2];
-return fatal("provde it now")
+return $gt$gt$eq((($target) => {
+if ($target.type === "none") {
+return $lt_missing("(effects)")(l)
+} ;
+if ($target.type === "some") {
+if ($target[0].type === "forall") {
+let t = $target[0][1];
+return $lt_(t)
+} 
+} ;
+throw new Error('match fail 25088:' + JSON.stringify($target))
+})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(map_$gt(({"1": {"1": {"1": expr, "0": kind}, "0": nl}, "0": name}) => (($target) => {
+if ($target.type === "eearmuffs") {
+return $gt$gt$eq(infer$slexpr(tenv)(expr))((body) => $lt_($co(name)(body)))
+} ;
+return fatal("other kind not supported yet");
+throw new Error('match fail 25173:' + JSON.stringify($target))
+})(kind))(cases))((rows) => $gt$gt$eq(infer$slexpr(tenv$slwith_type(tenv)("(effects)")(forall(set$slnil)(trow(rows)(some(effects))(rrecord)(l))))(target))((target) => $lt_(target))))
 } ;
 if ($target.type === "evar") {
 let name = $target[0];

@@ -408,9 +408,11 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const parse_tag = $eval("v => v.startsWith('\\'') ? {type: 'some', 0: v.slice(1)} : {type: 'none'}");
 
-const eearmuffs = ({type: "eearmuffs"})
-const eeffectful = (v0) => (v1) => ({type: "eeffectful", 0: v0, 1: v1})
 const is_earmuffs = $eval("v => v.startsWith('*') && v.endsWith('*') && v.length > 2");
+
+const is_bang = $eval("v => v.startsWith('!')");
+
+const is_arrow = $eval("v => v.startsWith('<-')");
 
 const nil = ({type: "nil"})
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
@@ -1506,6 +1508,9 @@ return one(global(name)(value)(l)(usage($unit)))
 throw new Error('Failed to match. ' + valueToString($target));
 })(map$slget(bound)(name));
 
+const eearmuffs = ({type: "eearmuffs"})
+const ebang = (v0) => ({type: "ebang", 0: v0})
+const eeffectful = (v0) => (v1) => (v2) => ({type: "eeffectful", 0: v0, 1: v1, 2: v2})
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
 const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
@@ -1884,7 +1889,22 @@ if ($target.type === "eprovide") {
 {
 let target = $target[0];
 let cases = $target[1];
-return foldl(externals(bound)(target))(map(cases)(({1: {1: {1: {1: body, 0: pats}, 0: nl}, 0: name}, 0: k}) => foldl(externals(foldl(bound)(map(pats)(pat_names))(set$slmerge))(body))(map(pats)(pat_externals))(bag$sland)))(bag$sland)
+return foldl(externals(bound)(target))(map(cases)(({1: {1: {1: body, 0: k}, 0: nl}, 0: name}) => ((pats) => foldl(externals(foldl(bound)(map(pats)(pat_names))(set$slmerge))(body))(map(pats)(pat_externals))(bag$sland))((($target) => {
+if ($target.type === "ebang") {
+{
+let pats = $target[0];
+return pats
+}
+}
+if ($target.type === "eeffectful") {
+{
+let pats = $target[2];
+return pats
+}
+}
+return nil
+throw new Error('Failed to match. ' + valueToString($target));
+})(k))))(bag$sland)
 }
 }
 if ($target.type === "eenum") {
@@ -2888,6 +2908,68 @@ throw new Error('Failed to match. ' + valueToString($target));
 throw new Error('Failed to match. ' + valueToString($target));
 })(is_earmuffs(id));
 
+const parse_provide_pat = (pat) => (($target) => {
+if ($target.type === "cst/id") {
+{
+let id = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target === true) {
+return $lt_($co(id)($co(l)($co(eearmuffs)(l))))
+}
+return $lt_err($co(l)("Wrap in () or must be *earmuffed*"))($co(id)($co(l)($co(eearmuffs)(l))))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_earmuffs(id))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][1].type === "cons" &&
+$target[0][1][0].type === "cst/id") {
+{
+let k = $target[0][0][0];
+let kl = $target[0][0][1];
+let id = $target[0][1][0][0];
+let il = $target[0][1][0][1];
+let pats = $target[0][1][1];
+let l = $target[1];
+return (($target) => {
+if ($target === true) {
+return $gt$gt$eq(map_$gt(parse_pat)(cons(cst$slid(id)(il))(pats)))((pats) => $lt_($co(k)($co(kl)($co(ebang(pats))(l)))))
+}
+return (($target) => {
+if ($target === true) {
+return $gt$gt$eq(map_$gt(parse_pat)(pats))((pats) => $lt_($co(id)($co(il)($co(eeffectful(k)(kl)(pats))(l)))))
+}
+return $lt_err($co(l)("Unidentified effect kind"))($co(k)($co(kl)($co(ebang(nil))(l))))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_arrow(id))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_bang(k))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id") {
+{
+let id = $target[0][0][0];
+let il = $target[0][0][1];
+let pats = $target[0][1];
+let l = $target[1];
+return (($target) => {
+if ($target === true) {
+return $gt$gt$eq(map_$gt(parse_pat)(pats))((pats) => $lt_($co(id)($co(il)($co(ebang(pats))(l)))))
+}
+return $lt_err($co(l)("Unidentified effect kind, expected *earmuffed*, <-arrowed, or !banged"))($co(id)($co(il)($co(ebang(nil))(l))))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_bang(id))
+}
+}
+return fatal("cant do it I think")
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat);
+
 const compile_pat$slj = (pat) => (target) => (inner) => (trace) => (($target) => {
 if ($target.type === "pany") {
 {
@@ -3231,7 +3313,7 @@ $target[0].type === ",") {
 {
 let name = $target[0][0];
 let value = $target[0][1];
-return `${name}: ${j$slcompile(ctx)(value)}`
+return `\"${name}\": ${j$slcompile(ctx)(value)}`
 }
 }
 if ($target.type === "right" &&
@@ -3966,7 +4048,22 @@ if ($target.type === "eprovide") {
 {
 let target = $target[0];
 let cases = $target[1];
-return foldl(expr$slnames(bound)(target))(map(cases)(({1: {1: {1: {1: body, 0: pats}, 0: nl}, 0: name}, 0: k}) => (({1: names$qu, 0: bound$qu}) => bag$sland(expr$slnames(map$slmerge(bound)(map$slfrom_list(bound$qu)))(body))(names$qu))(foldl($co(nil)(empty))(map(pats)(pat$slnames))(bound_and_names))))(bag$sland)
+return foldl(expr$slnames(bound)(target))(map(cases)(({1: {1: {1: body, 0: k}, 0: nl}, 0: name}) => ((pats) => (({1: names$qu, 0: bound$qu}) => bag$sland(expr$slnames(map$slmerge(bound)(map$slfrom_list(bound$qu)))(body))(names$qu))(foldl($co(nil)(empty))(map(pats)(pat$slnames))(bound_and_names)))((($target) => {
+if ($target.type === "ebang") {
+{
+let pats = $target[0];
+return pats
+}
+}
+if ($target.type === "eeffectful") {
+{
+let pats = $target[2];
+return pats
+}
+}
+return nil
+throw new Error('Failed to match. ' + valueToString($target));
+})(k))))(bag$sland)
 }
 }
 if ($target.type === "eeffect") {
@@ -4056,6 +4153,8 @@ return many(map(tpls)(({0: expr}) => expr$slnames(bound)(expr)))
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(expr);
+
+const parse_provide = (parse_expr) => (target) => (ml) => (cases) => (l) => $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq($lt_(pairs_plus(cst$slid("()")(ml))(cases)))((cases) => $gt$gt$eq(map_$gt(({1: expr, 0: pat}) => $gt$gt$eq(parse_expr(expr))((expr) => $gt$gt$eq(parse_provide_pat(pat))(({1: {1: {1: l, 0: epat}, 0: il}, 0: id}) => $lt_($co(id)($co(il)($co(epat)(expr)))))))(cases))((cases) => $lt_(eprovide(target)(cases)(l)))));
 
 const parse_top = (cst) => (($target) => {
 if ($target.type === "cst/list" &&
@@ -4329,6 +4428,19 @@ $target[0][0][0] === "fn") {
 {
 let l = $target[1];
 return $lt_err($co(l)(`Invalid 'fn' ${int_to_string(l)}`))(evar("()")(l))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "provide" &&
+$target[0][1].type === "cons") {
+{
+let ml = $target[0][0][1];
+let target = $target[0][1][0];
+let cases = $target[0][1][1];
+let l = $target[1];
+return parse_provide(parse_expr)(target)(ml)(cases)(l)
 }
 }
 if ($target.type === "cst/list" &&
@@ -4674,7 +4786,13 @@ if ($target.type === "eprovide") {
 let target = $target[0];
 let handlers = $target[1];
 let l = $target[2];
-return fatal("provide not yet")
+return j$slapp(j$sllambda(cons(j$slpvar("\$lbeffects\$rb")(l))(nil))(right(compile$slj(target)(trace)))(l))(cons(j$slobj(cons(right(j$slspread(j$slvar("\$lbeffects\$rb")(l))))(map(handlers)(({1: {1: {1: body, 0: kind}, 0: nl}, 0: name}) => (($target) => {
+if ($target.type === "eearmuffs") {
+return left($co(name)(compile$slj(body)(trace)))
+}
+return fatal("cant compile real effects handlers just yet")
+throw new Error('Failed to match. ' + valueToString($target));
+})(kind))))(l))(nil))(l)
 }
 }
 if ($target.type === "elambda") {
