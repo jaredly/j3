@@ -872,50 +872,45 @@
             bindings
             (fn [res binding] (concat [(let-fix-shadow binding l) res]))))
 
+(def done-fn (con-fn "done"))
+
+(defn con-fn [name l f]
+    (j/lambda [(j/pvar name l)] (right (f (j/var name l))) l))
+
+(defn left-right [either name l usage]
+    (match either
+        (left v)  (usage v)
+        (right v) (j/app v [(con-fn name l usage)] l)))
+
 (defn cps/j [trace expr]
     (let [cps (cps/j trace)]
         (match expr
-            (eapp target [arg] l)        (j/lambda
-                                             [(j/pvar "done" l)]
-                                                 (right
-                                                 (j/app
-                                                     (cps target)
-                                                         [(j/lambda
-                                                         [(j/pvar "target" l)]
-                                                             (right
-                                                             (j/app
-                                                                 (cps arg)
-                                                                     [(j/lambda
-                                                                     [(j/pvar "arg" l)]
-                                                                         (right (j/app (j/var "target" l) [(j/var "arg" l) (j/var "done" l)] l))
-                                                                         l)]
-                                                                     l))
-                                                             l)]
-                                                         l))
-                                                 l)
+            (eapp target [arg] l)        (let [
+                                             target (cps target)
+                                             arg    (cps arg)]
+                                             (right
+                                                 (done-fn
+                                                     l
+                                                         (fn [done]
+                                                         (left-right
+                                                             target
+                                                                 "target"
+                                                                 l
+                                                                 (fn [target]
+                                                                 (left-right arg "arg" l (fn [arg] (j/app target [arg done] l)))))))))
             (eapp target [arg ..rest] l) (cps (eapp (eapp target [arg] l) rest l))
-            (eprim (pint n l) _)         (j/lambda
-                                             [(j/pvar "done" l)]
-                                                 (right (j/app (j/var "done" l) [(j/prim (j/int n l) l)] l))
-                                                 l)
-            (evar n l)                   (j/lambda
-                                             [(j/pvar "done" l)]
-                                                 (right (j/app (j/var "done" l) [(j/var (sanitize n) l)] l))
-                                                 l)
-            ;(eapp target args l)
-            ;(fn [recv]
-                (cps
-                    target
-                        (fn [target]
-                        (loop
-                            (, target args)
-                                (fn [(, target args) recur]
-                                (match args
-                                    []           (recv target)
-                                    [one ..rest] (cps one (fn [one] (recur (, ))))))))))
+            (eprim (pint n l) _)         (left (j/prim (j/int n l) l))
+            (evar n l)                   (left (j/var (sanitize n) l))
             _                            (fatal "no"))))
 
-(eval (j/compile 0 (cps/j 0 (@ (+ 12 4)))) (fn [x] x))
+(eval-with
+    (eval builtins-cps)
+        (j/compile 0 (finish (cps/j 0 (@ (+ 12 4))))))
+
+(defn finish [x]
+    (match x
+        (left x)  x
+        (right x) (j/app x [(j/lambda [(j/pvar "x" 1)] (right (j/var "x" 1)) 1)] 1)))
 
 (defn compile/j [expr trace]
     (maybe-trace
@@ -1262,6 +1257,14 @@
 (eval-with-builtins "$pl(1)(3)")
 
 (eval "x => x + 2" 210)
+
+(def builtins-cps
+    (** (() => {return {$pl: (x, done) => done((y, done) => done(x + y))}})() **)
+        )
+
+(eval builtins-cps)
+
+(eval-with (eval builtins-cps) "$pl(2, x => x)")
 
 (def builtins
     (** function equal(a, b) {
