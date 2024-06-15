@@ -913,26 +913,39 @@
 (defn cps/j2 [trace expr]
     (let [>>= cps>>=]
         (match expr
-            (evar n l)            (left (j/var (sanitize n) l))
-            (eprim (pint n l) _)  (left (j/prim (j/int n l) l))
-            (eapp target [arg] l) (go
-                                      (let-> [
-                                          target (<- (cps/j2 trace target))
-                                          arg    (<- (cps/j2 trace arg))]
-                                          (<-right
-                                              (done-fn
-                                                  l
-                                                      (fn [done] (j/app target [arg (j/var "$lbeffects$rb" l) done] l))))))
-            (eapp target args l)  (go
-                                      (let-> [
-                                          target (<- (cps/j2 trace target))
-                                          args   (loop args (fn [args recur] ()))]
-                                          (<- 1)))
-            _                     (fatal "no"))))
+            (evar n l)                    (left (j/var (sanitize n) l))
+            (eprim (pint n l) _)          (left (j/prim (j/int n l) l))
+            (eapp target [] l)            (cps/j2 trace target)
+            (eapp target [arg] l)         (go
+                                              (let-> [
+                                                  target (<- (cps/j2 trace target))
+                                                  arg    (<- (cps/j2 trace arg))]
+                                                  (<-right
+                                                      (done-fn
+                                                          l
+                                                              (fn [done] (j/app target [arg (j/var "$lbeffects$rb" l) done] l))))))
+            (eapp target [arg ..rest] l)  (cps/j2 trace (eapp (eapp target [arg] l) rest l))
+            (elambda [arg] body l)        (left
+                                              (j/lambda
+                                                  [(opt-or (pat->j/pat arg) (j/pvar "_" l))
+                                                      (j/pvar "$lbeffects$rb" l)
+                                                      (j/pvar "$done" l)]
+                                                      (right
+                                                      (match (cps/j2 trace body)
+                                                          (left body)  (j/app (j/var "$done" l) [body] l)
+                                                          (right body) (j/app body [(j/var "$done" l)] l)))
+                                                      l))
+            (elambda [arg ..rest] body l) (cps/j2 trace (elambda [arg] (elambda rest body l) l))
+            _                             (fatal "no"))))
 
-(cps/j2 0 (@ 1))
+(defn opt-or [v d]
+    (match v
+        (some v) v
+        _        d))
 
 (let [m (@ (+ 1))] (= (cps/j 0 m) (cps/j2 0 m)))
+
+(** ## Non Monads **)
 
 (defn cps/j [trace expr]
     (let [cps (cps/j trace)]
@@ -978,25 +991,19 @@
             (eprim (pint n l) _)         (left (j/prim (j/int n l) l))
             (evar n l)                   (left (j/var (sanitize n) l))
             (estr first [] l)            (left (j/str first [] l))
-            ;(estr first tpls l)
-            ;(right
-                (done-fn
-                    l
-                        (fn [done]
-                        (loop
-                            (, tpls [])
-                                (fn [(, tpls items) recur]
-                                (match tpls
-                                    []                       (j/str first items l)
-                                    [(, expr suffix) ..rest] (left-right (cps expr))))))))
             _                            (fatal "no"))))
 
 (defn cps-test [v]
     (eval-with
         (eval builtins-cps)
-            (j/compile 0 (provide-empty-effects (right (finish (cps/j 0 v)))))))
+            (j/compile 0 (provide-empty-effects (right (finish (cps/j2 0 v)))))))
 
-(, cps-test [(, (@ 1) 1) (, (@ (+ 2 3)) 5) (, (@ ((fn [x] (+ x 12)) 4)) 16)])
+(,
+    cps-test
+        [(, (@ 1) 1)
+        (, (@ (+ 2 3)) 5)
+        (, (@ ((fn [x] (+ x 12)) 4)) 16)
+        (, (@ ((fn [x y] (, x (+ 23 y))) 1 2)) (, 1 25))])
 
 (eval-with
     (eval builtins-cps)
@@ -1356,7 +1363,10 @@
 (eval "x => x + 2" 210)
 
 (def builtins-cps
-    (** (() => {return {$pl: (x, _, done) => done((y, _, done) => done(x + y))}})() **)
+    (** (() => {return {
+  $pl: (x, _, done) => done((y, _, done) => done(x + y)),
+  $co: (x, _, done) => done((y, _, done) => done({type: ',', 0: x, 1: y})),
+}})() **)
         )
 
 (eval builtins-cps)
