@@ -1,4 +1,19 @@
 
+# Things I wanttt
+
+- match guardsssss pleeeeease
+- multimatch would be super cool too. Like a match guard that is also a matchliness. like an `if let` but a `guard let` I guess? yeah.
+
+(match awesome
+  (sauce a b c ) if (cond) (the body ok))
+if isn't otherwise a valid thing, so this is parseable.
+
+(match awesome
+  (sauce a b c) if (let [abc def]) (the body ok))
+
+itssss a little bit blonky. And I think I'd probably exclude the second case from the exhaustiveness check, even though it's possible to exhaustively handle the `let`s. But I won't.
+
+
 # Just this moment
 
 - [x] better pretty printing of types
@@ -9,6 +24,36 @@
 - [ ] make a (fn x) thunk wrapping form, and (x) -> (x ())
 - [ ] do a cool web UI for providing earmuffs that are needed
 - [ ] ok CPS all the things, right? Is that where we're at now?
+
+
+## Figuring out CPS...
+
+(hello 1 2)
+hello(1)(2)
+
+done => hello(1, v => v(2, done))
+
+hello(1)
+
+done => hello(1, done)
+done => (done => hello(1, done))(v => v(2, done))
+
+done => left(x)(v => v(2, done))
+done => right(x)
+
+
+one(two(three))(four)
+
+(done => two(three, done))
+(done => (done => two(three, done))(arg => one(arg, done)))
+
+done => done(1)
+done => done(three)
+(done => two(three, done))
+done => (done => done(three))(arg => two(three, done))
+
+
+
 
 
 (fn [a b] {c} (fn [e f] {g} h))

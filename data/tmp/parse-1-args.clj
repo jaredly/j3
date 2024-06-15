@@ -899,9 +899,34 @@
                                                                  (fn [target]
                                                                  (left-right arg "arg" l (fn [arg] (j/app target [arg done] l)))))))))
             (eapp target [arg ..rest] l) (cps (eapp (eapp target [arg] l) rest l))
+            (elambda [arg] body l)       (let [
+                                             pat (match (pat->j/pat arg)
+                                                     (none)     (j/pvar "_" l)
+                                                     (some pat) pat)]
+                                             (left
+                                                 (j/lambda
+                                                     [pat (j/pvar "$done" l)]
+                                                         (right
+                                                         (match (cps body)
+                                                             (left body)  (j/app (j/var "$done" l) [body] l)
+                                                             (right body) (j/app body [(j/var "$done" l)] l)))
+                                                         l)))
+            (elambda args body l)        (cps
+                                             (loop
+                                                 args
+                                                     (fn [args recur]
+                                                     (match args
+                                                         []           (fatal "no args")
+                                                         [one]        (elambda [one] body l)
+                                                         [one ..rest] (elambda [one] (recur rest) l)))))
             (eprim (pint n l) _)         (left (j/prim (j/int n l) l))
             (evar n l)                   (left (j/var (sanitize n) l))
             _                            (fatal "no"))))
+
+(defn cps-test [v]
+    (eval-with (eval builtins-cps) (j/compile 0 (finish (cps/j 0 v)))))
+
+(, cps-test [(, (@ 1) 1) (, (@ (+ 2 3)) 5) (, (@ ((fn [x] (+ x 12)) 4)) 16)])
 
 (eval-with
     (eval builtins-cps)
