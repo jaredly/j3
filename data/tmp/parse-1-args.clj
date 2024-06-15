@@ -897,7 +897,11 @@
                                                                  "target"
                                                                  l
                                                                  (fn [target]
-                                                                 (left-right arg "arg" l (fn [arg] (j/app target [arg done] l)))))))))
+                                                                 (left-right
+                                                                     arg
+                                                                         "arg"
+                                                                         l
+                                                                         (fn [arg] (j/app target [arg (j/var "$lbeffects$rb" l) done] l)))))))))
             (eapp target [arg ..rest] l) (cps (eapp (eapp target [arg] l) rest l))
             (elambda [arg] body l)       (let [
                                              pat (match (pat->j/pat arg)
@@ -905,7 +909,7 @@
                                                      (some pat) pat)]
                                              (left
                                                  (j/lambda
-                                                     [pat (j/pvar "$done" l)]
+                                                     [pat (j/pvar "$lbeffects$rb" l) (j/pvar "$done" l)]
                                                          (right
                                                          (match (cps body)
                                                              (left body)  (j/app (j/var "$done" l) [body] l)
@@ -924,13 +928,17 @@
             _                            (fatal "no"))))
 
 (defn cps-test [v]
-    (eval-with (eval builtins-cps) (j/compile 0 (finish (cps/j 0 v)))))
+    (eval-with
+        (eval builtins-cps)
+            (j/compile 0 (provide-empty-effects (right (finish (cps/j 0 v)))))))
 
 (, cps-test [(, (@ 1) 1) (, (@ (+ 2 3)) 5) (, (@ ((fn [x] (+ x 12)) 4)) 16)])
 
 (eval-with
     (eval builtins-cps)
-        (j/compile 0 (finish (cps/j 0 (@ (+ 12 4))))))
+        (j/compile
+        0
+            (provide-empty-effects (right (finish (cps/j 0 (@ (+ 12 4))))))))
 
 (defn finish [x]
     (match x
@@ -1284,12 +1292,12 @@
 (eval "x => x + 2" 210)
 
 (def builtins-cps
-    (** (() => {return {$pl: (x, done) => done((y, done) => done(x + y))}})() **)
+    (** (() => {return {$pl: (x, _, done) => done((y, _, done) => done(x + y))}})() **)
         )
 
 (eval builtins-cps)
 
-(eval-with (eval builtins-cps) "$pl(2, x => x)")
+(eval-with (eval builtins-cps) "$pl(2, 0, x => x)")
 
 (def builtins
     (** function equal(a, b) {
