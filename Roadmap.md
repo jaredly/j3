@@ -1,13 +1,17 @@
 
 # Just this moment
 
-- [ ] better pretty printing of types
+- [x] better pretty printing of types
 - [x] plumb the toplevel effects through to the compiler
 - [x] wrap expressions w/ toplevel effects
 - [x] have all fn calls and applys have the new vbl
-- [ ] make a (provide target ..effects) expression form
+- [x] make a (provide target ..effects) expression form
 - [ ] make a (fn x) thunk wrapping form, and (x) -> (x ())
 - [ ] do a cool web UI for providing earmuffs that are needed
+- [ ] ok CPS all the things, right? Is that where we're at now?
+
+
+(fn [a b] {c} (fn [e f] {g} h))
 
 
 #
