@@ -256,6 +256,22 @@
         (tapp target arg _) (target-and-args target [arg ..coll])
         _                   (, type coll)))
 
+(defn is-empty-effects [effects arg]
+    (match effects
+        (tvar v _) (not (set/has (type/free arg) v))
+        _          false))
+
+(defn fn-args-and-body-effects [type]
+    (match type
+        (tapp (tapp (tapp (tcon "->" _) effects _) arg _) res _) (let [(, pairs res) (fn-args-and-body-effects res)]
+                                                                     (if (is-empty-effects effects arg)
+                                                                         (match pairs
+                                                                             []                        (, [(, [arg] none)] res)
+                                                                             [(, args effects) ..rest] (, [(, [arg ..args] effects) ..rest] res))
+                                                                             (, [(, [arg] (some effects)) ..pairs] res)))
+                                                                 _
+        (, [] type)))
+
 (defn fn-args-and-body [type]
     (match type
         (tapp (tapp (tapp (tcon "->" _) effects _) arg _) res _) (let [(, args res) (fn-args-and-body res)]
@@ -313,20 +329,32 @@
                                                            inner (type->cst-inner inner)]
                                                            (<- (cst/list [(cst/id "rec" l) (cst/id name nl) inner] l)))
         (tapp (tapp (tapp (tcon "->" _) _ _) _ l) _ _) (let-> [
-                                                           (, args res) (<- (fn-args-and-body type))
-                                                           args         (map->
-                                                                            (fn [(, e t)]
-                                                                                (let-> [
-                                                                                    e (type->cst-inner e)
-                                                                                    t (type->cst-inner t)]
-                                                                                    (<-
-                                                                                        [(match e
-                                                                                            (cst/id _ _) (cst/record [e] l)
-                                                                                            _            e)
-                                                                                            t])))
-                                                                                args)
-                                                           res          (type->cst-inner res)]
-                                                           (<- (cst/list [(cst/id "fn" l) (cst/array (concat args) l) res] l)))
+                                                           (, pairs res) (<- (fn-args-and-body-effects type))
+                                                           res           (type->cst-inner res)
+                                                           res           (foldr->
+                                                                             res
+                                                                                 pairs
+                                                                                 (fn [res (, args effects)]
+                                                                                 (let-> [
+                                                                                     args    (map-> type->cst-inner args)
+                                                                                     effects (match effects
+                                                                                                 (none)            (<- [])
+                                                                                                 (some (tvar n l)) (let-> [name (type-vbl-name n)] (<- [(cst/record [(cst/id name l)] l)]))
+                                                                                                 (some e)          (let-> [e (type->cst-inner e)] (<- [e])))]
+                                                                                     (<-
+                                                                                         (cst/list (concat [[(cst/id "fn" l) (cst/array args l)] effects [res]]) l)))))
+                                                           ;(map->
+                                                               (fn [(, e t)]
+                                                                   (let-> [
+                                                                       e (type->cst-inner e)
+                                                                       t (type->cst-inner t)]
+                                                                       (<-
+                                                                           [(match e
+                                                                               (cst/id _ _) (cst/record [e] l)
+                                                                               _            e)
+                                                                               t])))
+                                                                   args)]
+                                                           (<- res))
         (tapp (tapp (tcon "," cl) a _) b l)            (let-> [all (map-> type->cst-inner (unwrap-tuple-type type))]
                                                            (<- (cst/list [(cst/id "," cl) ..all] l)))
         (tapp _ _ l)                                   (let-> [

@@ -86,7 +86,7 @@
 
 (, 1 2)
 
-(map (fn [x] (+ x 1)) ('cons 1 'nil))
+(provide (map (fn [x] (+ x *num*)) ('cons 1 'nil)) *num* 23)
 
 (defn map2 [f (, v rest)]
     (,
