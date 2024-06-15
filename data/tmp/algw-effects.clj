@@ -263,46 +263,77 @@
         _                                                        (, [] type)))
 
 (defn type->cst [type]
+    (let [(, _ rse) ((state-f (type->cst-inner type) (, map/nil 0)))]
+        (match rse
+            (err _) (fatal "no err")
+            (ok v)  v)))
+
+(def type-vbl-items "abcdefghijklmnopqrstuvwxyz")
+
+(def str-idx (eval "s => i => s[i]"))
+
+(defn type-vbl-name [name]
+    (let-> [(, map idx) <-state]
+        (match (map/get map name)
+            (some name) (<- name)
+            (none)      (let-> [
+                            n2 (<- (str-idx type-vbl-items idx))
+                            _  (state-> (, (map/set map name n2) (+ idx 1 )))]
+                            (<- n2)))))
+
+(defn type->cst-inner [type]
     (match type
         (trow fields spread kind l)                    (let [
                                                            (, fmap spread) (deep-map fields spread kind)
                                                            fields          (map/to-list fmap)]
                                                            (match kind
-                                                               (rrecord) (cst/record
-                                                                             (concat
-                                                                                 [(concat (map (fn [(, k v)] [(cst/id k l) (type->cst v)]) fields))
-                                                                                     (match spread
-                                                                                     (none)   []
-                                                                                     (some v) [(cst/spread (type->cst v) l)])])
-                                                                                 l)
-                                                               (renum)   (cst/array
-                                                                             (concat
-                                                                                 [(map
-                                                                                     (fn [(, k v)]
-                                                                                         (match v
-                                                                                             (tcon "()" _) (cst/id "'${k}" l)
-                                                                                             _             (cst/list [(cst/id "'${k}" l) (type->cst v)] l)))
-                                                                                         fields)
-                                                                                     (match spread
-                                                                                     (none)   []
-                                                                                     (some v) [(cst/spread (type->cst v) l)])])
-                                                                                 l)))
-        (tvar name l)                                  (cst/id name l)
-        (tcon name l)                                  (cst/id name l)
-        (trec name nl inner l)                         (cst/list [(cst/id "rec" l) (cst/id name nl) (type->cst inner)] l)
-        (tapp (tapp (tapp (tcon "->" _) _ _) _ l) _ _) (let [(, args res) (fn-args-and-body type)]
-                                                           (cst/list
-                                                               [(cst/id "fn" l)
-                                                                   (cst/array
-                                                                   (concat
-                                                                       (map (fn [(, e t)] [(cst/record [(type->cst e)] l) (type->cst t)]) args))
-                                                                       l)
-                                                                   (type->cst res)]
-                                                                   l))
-        (tapp (tapp (tcon "," cl) a _) b l)            (let [all (unwrap-tuple-type type)]
-                                                           (cst/list [(cst/id "," cl) ..(map type->cst all)] l))
-        (tapp _ _ l)                                   (let [(, name args) (target-and-args type [])]
-                                                           (cst/list [(type->cst name) ..(map type->cst args)] l))))
+                                                               (rrecord) (let-> [
+                                                                             fields (map->
+                                                                                        (fn [(, k v)] (let-> [v (type->cst-inner v)] (<- [(cst/id k l) v])))
+                                                                                            fields)
+                                                                             spread (match spread
+                                                                                        (none)   (<- [])
+                                                                                        (some v) (let-> [v (type->cst-inner v)] (<- [(cst/spread v l)])))]
+                                                                             (<- (cst/record (concat [(concat fields) spread]) l)))
+                                                               (renum)   (let-> [
+                                                                             fields (map->
+                                                                                        (fn [(, k v)]
+                                                                                            (match v
+                                                                                                (tcon "()" _) (<- (cst/id "'${k}" l))
+                                                                                                _             (let-> [v (type->cst-inner v)] (<- (cst/list [(cst/id "'${k}" l) v] l)))))
+                                                                                            fields)
+                                                                             spread (match spread
+                                                                                        (none)   (<- [])
+                                                                                        (some v) (let-> [v (type->cst-inner v)] (<- [(cst/spread v l)])))]
+                                                                             (<- (cst/array (concat [fields spread]) l)))))
+        (tvar name l)                                  (let-> [name (type-vbl-name name)] (<- (cst/id name l)))
+        (tcon name l)                                  (<- (cst/id name l))
+        (trec name nl inner l)                         (let-> [
+                                                           name  (type-vbl-name name)
+                                                           inner (type->cst-inner inner)]
+                                                           (<- (cst/list [(cst/id "rec" l) (cst/id name nl) inner] l)))
+        (tapp (tapp (tapp (tcon "->" _) _ _) _ l) _ _) (let-> [
+                                                           (, args res) (<- (fn-args-and-body type))
+                                                           args         (map->
+                                                                            (fn [(, e t)]
+                                                                                (let-> [
+                                                                                    e (type->cst-inner e)
+                                                                                    t (type->cst-inner t)]
+                                                                                    (<-
+                                                                                        [(match e
+                                                                                            (cst/id _ _) (cst/record [e] l)
+                                                                                            _            e)
+                                                                                            t])))
+                                                                                args)
+                                                           res          (type->cst-inner res)]
+                                                           (<- (cst/list [(cst/id "fn" l) (cst/array (concat args) l) res] l)))
+        (tapp (tapp (tcon "," cl) a _) b l)            (let-> [all (map-> type->cst-inner (unwrap-tuple-type type))]
+                                                           (<- (cst/list [(cst/id "," cl) ..all] l)))
+        (tapp _ _ l)                                   (let-> [
+                                                           (, name args) (<- (target-and-args type []))
+                                                           name          (type->cst-inner name)
+                                                           args          (map-> type->cst-inner args)]
+                                                           (<- (cst/list [name ..args] l)))))
 
 (defn unwrap-tuple-type [type]
     (match type
@@ -2181,7 +2212,7 @@
                         (match rest
                         (none)      (none)
                         (some rest) (some (map2 f rest))))))
-            "forall effects-lam:2 a:3 result:12 : (fn [{effects-lam:2}(fn [{effects-lam:2}a:3] result:12) {effects-lam:2}(, a:3 (option (rec a:14 (, a:3 (option a:14)))))] (, result:12 (option (rec a:15 (, result:12 (option a:15))))))")])
+            "forall effects-lam:3 a:4 result:13 : (fn [{effects-lam:3}(fn [{effects-lam:3}a:4] result:13) {effects-lam:3}(, a:4 (option (rec a:15 (, a:4 (option a:15)))))] (, result:13 (option (rec a:16 (, result:13 (option a:16))))))")])
 
 (** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
 

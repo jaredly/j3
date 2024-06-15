@@ -272,6 +272,8 @@ throw new Error('match fail 18313:' + JSON.stringify($target))
 })(v)
 let dot = (f) => (g) => (x) => f(g(x))
 let is_earmuffs = $eval("v => v.startsWith('*') && v.endsWith('*')")
+let type_vbl_items = "abcdefghijklmnopqrstuvwxyz"
+let str_idx = $eval("s => i => s[i]")
 let cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 let nil = {type: "nil"}
 let pany = (v0) => ({type: "pany", 0: v0})
@@ -686,6 +688,16 @@ throw new Error('match fail 24289:' + JSON.stringify($target))
 let eearmuffs = {type: "eearmuffs"}
 let ebang = (v0) => ({type: "ebang", 0: v0})
 let eeffectful = (v0) => (v1) => (v2) => ({type: "eeffectful", 0: v0, 1: v1, 2: v2})
+let type_vbl_name = (name) => $gt$gt$eq($lt_state)(({"1": idx, "0": map}) => (($target) => {
+if ($target.type === "some") {
+let name = $target[0];
+return $lt_(name)
+} ;
+if ($target.type === "none") {
+return $gt$gt$eq($lt_(str_idx(type_vbl_items)(idx)))((n2) => $gt$gt$eq(state_$gt($co(map$slset(map)(name)(n2))(idx + 1)))((_25507) => $lt_(n2)))
+} ;
+throw new Error('match fail 25490:' + JSON.stringify($target))
+})(map$slget(map)(name)))
 let tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 let tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 let tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
@@ -1927,7 +1939,7 @@ throw new Error('match fail 12111:' + JSON.stringify($target))
 let $lt_err = (x) => $lt_err$ti(terr(x)(nil))
 let $lt_missing = (name) => (loc) => $lt_err$ti(tmissing(cons($co(name)(loc))(nil)))
 let $lt_mismatch = (t1) => (t2) => $lt_err$ti(ttypes(forall(set$slnil)(t1))(forall(set$slnil)(t2)))
-let type_$gtcst = (type) => (($target) => {
+let type_$gtcst_inner = (type) => (($target) => {
 if ($target.type === "trow") {
 let fields = $target[0];
 let spread = $target[1];
@@ -1942,36 +1954,36 @@ let fields = map$slto_list(fmap);
 {
 let $target = kind;
 if ($target.type === "rrecord") {
-return cst$slrecord(concat(cons(concat(map(({"1": v, "0": k}) => cons(cst$slid(k)(l))(cons(type_$gtcst(v))(nil)))(fields)))(cons((($target) => {
+return $gt$gt$eq(map_$gt(({"1": v, "0": k}) => $gt$gt$eq(type_$gtcst_inner(v))((v) => $lt_(cons(cst$slid(k)(l))(cons(v)(nil)))))(fields))((fields) => $gt$gt$eq((($target) => {
 if ($target.type === "none") {
-return nil
+return $lt_(nil)
 } ;
 if ($target.type === "some") {
 let v = $target[0];
-return cons(cst$slspread(type_$gtcst(v))(l))(nil)
+return $gt$gt$eq(type_$gtcst_inner(v))((v) => $lt_(cons(cst$slspread(v)(l))(nil)))
 } ;
-throw new Error('match fail 18729:' + JSON.stringify($target))
-})(spread))(nil))))(l)
+throw new Error('match fail 25259:' + JSON.stringify($target))
+})(spread))((spread) => $lt_(cst$slrecord(concat(cons(concat(fields))(cons(spread)(nil))))(l))))
 } ;
 if ($target.type === "renum") {
-return cst$slarray(concat(cons(map(({"1": v, "0": k}) => (($target) => {
+return $gt$gt$eq(map_$gt(({"1": v, "0": k}) => (($target) => {
 if ($target.type === "tcon") {
 if ($target[0] === "()") {
-return cst$slid(`'${k}`)(l)
+return $lt_(cst$slid(`'${k}`)(l))
 } 
 } ;
-return cst$sllist(cons(cst$slid(`'${k}`)(l))(cons(type_$gtcst(v))(nil)))(l);
-throw new Error('match fail 19090:' + JSON.stringify($target))
-})(v))(fields))(cons((($target) => {
+return $gt$gt$eq(type_$gtcst_inner(v))((v) => $lt_(cst$sllist(cons(cst$slid(`'${k}`)(l))(cons(v)(nil)))(l)));
+throw new Error('match fail 25305:' + JSON.stringify($target))
+})(v))(fields))((fields) => $gt$gt$eq((($target) => {
 if ($target.type === "none") {
-return nil
+return $lt_(nil)
 } ;
 if ($target.type === "some") {
 let v = $target[0];
-return cons(cst$slspread(type_$gtcst(v))(l))(nil)
+return $gt$gt$eq(type_$gtcst_inner(v))((v) => $lt_(cons(cst$slspread(v)(l))(nil)))
 } ;
-throw new Error('match fail 18793:' + JSON.stringify($target))
-})(spread))(nil))))(l)
+throw new Error('match fail 25350:' + JSON.stringify($target))
+})(spread))((spread) => $lt_(cst$slarray(concat(cons(fields)(cons(spread)(nil))))(l))))
 } ;
 throw new Error('match fail 18610:' + JSON.stringify($target))
 }
@@ -1982,19 +1994,19 @@ throw new Error('match fail 18610:' + JSON.stringify($target))
 if ($target.type === "tvar") {
 let name = $target[0];
 let l = $target[1];
-return cst$slid(name)(l)
+return $gt$gt$eq(type_vbl_name(name))((name) => $lt_(cst$slid(name)(l)))
 } ;
 if ($target.type === "tcon") {
 let name = $target[0];
 let l = $target[1];
-return cst$slid(name)(l)
+return $lt_(cst$slid(name)(l))
 } ;
 if ($target.type === "trec") {
 let name = $target[0];
 let nl = $target[1];
 let inner = $target[2];
 let l = $target[3];
-return cst$sllist(cons(cst$slid("rec")(l))(cons(cst$slid(name)(nl))(cons(type_$gtcst(inner))(nil))))(l)
+return $gt$gt$eq(type_vbl_name(name))((name) => $gt$gt$eq(type_$gtcst_inner(inner))((inner) => $lt_(cst$sllist(cons(cst$slid("rec")(l))(cons(cst$slid(name)(nl))(cons(inner)(nil))))(l))))
 } ;
 if ($target.type === "tapp") {
 if ($target[0].type === "tapp") {
@@ -2002,10 +2014,7 @@ if ($target[0][0].type === "tapp") {
 if ($target[0][0][0].type === "tcon") {
 if ($target[0][0][0][0] === "->") {
 let l = $target[0][2];
-{
-let {"1": res, "0": args} = fn_args_and_body(type);
-return cst$sllist(cons(cst$slid("fn")(l))(cons(cst$slarray(concat(map(({"1": t, "0": e}) => cons(cst$slrecord(cons(type_$gtcst(e))(nil))(l))(cons(type_$gtcst(t))(nil)))(args)))(l))(cons(type_$gtcst(res))(nil))))(l)
-}
+return $gt$gt$eq($lt_(fn_args_and_body(type)))(({"1": res, "0": args}) => $gt$gt$eq(map_$gt(({"1": t, "0": e}) => $gt$gt$eq(type_$gtcst_inner(e))((e) => $gt$gt$eq(type_$gtcst_inner(t))((t) => $lt_(cons(cst$slrecord(cons(e)(nil))(l))(cons(t)(nil))))))(args))((args) => $gt$gt$eq(type_$gtcst_inner(res))((res) => $lt_(cst$sllist(cons(cst$slid("fn")(l))(cons(cst$slarray(concat(args))(l))(cons(res)(nil))))(l)))))
 } 
 } 
 } 
@@ -2019,20 +2028,14 @@ let cl = $target[0][0][1];
 let a = $target[0][1];
 let b = $target[1];
 let l = $target[2];
-{
-let all = unwrap_tuple_type(type);
-return cst$sllist(cons(cst$slid(",")(cl))(map(type_$gtcst)(all)))(l)
-}
+return $gt$gt$eq(map_$gt(type_$gtcst_inner)(unwrap_tuple_type(type)))((all) => $lt_(cst$sllist(cons(cst$slid(",")(cl))(all))(l)))
 } 
 } 
 } 
 } ;
 if ($target.type === "tapp") {
 let l = $target[2];
-{
-let {"1": args, "0": name} = target_and_args(type)(nil);
-return cst$sllist(cons(type_$gtcst(name))(map(type_$gtcst)(args)))(l)
-}
+return $gt$gt$eq($lt_(target_and_args(type)(nil)))(({"1": args, "0": name}) => $gt$gt$eq(type_$gtcst_inner(name))((name) => $gt$gt$eq(map_$gt(type_$gtcst_inner)(args))((args) => $lt_(cst$sllist(cons(name)(args))(l)))))
 } ;
 throw new Error('match fail 13013:' + JSON.stringify($target))
 })(type)
@@ -2387,6 +2390,20 @@ return none;
 throw new Error('match fail 20467:' + JSON.stringify($target))
 })(t)
 let types_$gts = dot(join(" "))(map(type_$gts))
+let type_$gtcst = (type) => {
+let {"1": rse} = state_f(type_$gtcst_inner(type))($co(map$slnil)(0));
+{
+let $target = rse;
+if ($target.type === "err") {
+return fatal("no err")
+} ;
+if ($target.type === "ok") {
+let v = $target[0];
+return v
+} ;
+throw new Error('match fail 25573:' + JSON.stringify($target))
+}
+}
 let unify_inner = (t1) => (t2) => (recstate) => (l) => $gt$gt$eq(check_recursion(t1)(t2)(recstate))(({"1": {"1": recstate, "0": t2}, "0": t1}) => (($target) => {
 if ($target.type === ",") {
 if ($target[0].type === "tvar") {

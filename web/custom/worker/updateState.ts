@@ -329,7 +329,7 @@ export function updateState(
                                 type: 'error',
                                 message: `Cant stringify type ${JSON.stringify(
                                     type,
-                                )}`,
+                                )} : ${err.message}`,
                             });
                         }
                     });
