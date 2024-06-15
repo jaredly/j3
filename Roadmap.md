@@ -13,6 +13,9 @@ if isn't otherwise a valid thing, so this is parseable.
 
 itssss a little bit blonky. And I think I'd probably exclude the second case from the exhaustiveness check, even though it's possible to exhaustively handle the `let`s. But I won't.
 
+ALSOO string tpl patterns. "*${name}*" would be very nice.
+eventually I'll also want regexps, but doesn't need to be immediate.
+
 
 # Just this moment
 
@@ -24,6 +27,7 @@ itssss a little bit blonky. And I think I'd probably exclude the second case fro
 - [ ] make a (fn x) thunk wrapping form, and (x) -> (x ())
 - [ ] do a cool web UI for providing earmuffs that are needed
 - [ ] ok CPS all the things, right? Is that where we're at now?
+  - [x] little bit of cps
 
 
 ## Figuring out CPS...

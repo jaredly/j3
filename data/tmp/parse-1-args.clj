@@ -882,6 +882,58 @@
         (left v)  (usage v)
         (right v) (j/app v [(con-fn name l usage)] l)))
 
+>>=
+
+<-
+
+(defn cps>>= [(StateT f) next]
+    (StateT
+        (fn [state]
+            (let [(, (, has idx) value) (f state)]
+                (match value
+                    (left v)  ((state-f (next v)) (, has idx))
+                    (right v) (let [
+                                  name            "v${(int-to-string idx)}"
+                                  (, nstate iner) ((state-f (next (j/var name -1))) (, true (+ idx 1)))]
+                                  (, nstate (j/app v [(j/lambda [(j/pvar name -1)] (right iner) -1)] -1))))))))
+
+;(defn <-cps [v]
+    (fn [(, has idx)]
+        (if has
+            (, (, has idx) (right v)))))
+
+(defn go [(StateT f)]
+    (let [(, (, has _) value) (f (, false 0))]
+        (if has
+            (right value)
+                (left value))))
+
+(defn <-right [v] (StateT (fn [(, _ idx)] (, (, true idx) v))))
+
+(defn cps/j2 [trace expr]
+    (let [>>= cps>>=]
+        (match expr
+            (evar n l)            (left (j/var (sanitize n) l))
+            (eprim (pint n l) _)  (left (j/prim (j/int n l) l))
+            (eapp target [arg] l) (go
+                                      (let-> [
+                                          target (<- (cps/j2 trace target))
+                                          arg    (<- (cps/j2 trace arg))]
+                                          (<-right
+                                              (done-fn
+                                                  l
+                                                      (fn [done] (j/app target [arg (j/var "$lbeffects$rb" l) done] l))))))
+            (eapp target args l)  (go
+                                      (let-> [
+                                          target (<- (cps/j2 trace target))
+                                          args   (loop args (fn [args recur] ()))]
+                                          (<- 1)))
+            _                     (fatal "no"))))
+
+(cps/j2 0 (@ 1))
+
+(let [m (@ (+ 1))] (= (cps/j 0 m) (cps/j2 0 m)))
+
 (defn cps/j [trace expr]
     (let [cps (cps/j trace)]
         (match expr
@@ -925,6 +977,18 @@
                                                          [one ..rest] (elambda [one] (recur rest) l)))))
             (eprim (pint n l) _)         (left (j/prim (j/int n l) l))
             (evar n l)                   (left (j/var (sanitize n) l))
+            (estr first [] l)            (left (j/str first [] l))
+            ;(estr first tpls l)
+            ;(right
+                (done-fn
+                    l
+                        (fn [done]
+                        (loop
+                            (, tpls [])
+                                (fn [(, tpls items) recur]
+                                (match tpls
+                                    []                       (j/str first items l)
+                                    [(, expr suffix) ..rest] (left-right (cps expr))))))))
             _                            (fatal "no"))))
 
 (defn cps-test [v]
