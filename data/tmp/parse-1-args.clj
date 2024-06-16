@@ -902,6 +902,109 @@
         (if has
             (, (, has idx) (right v)))))
 
+(** ## CPS **)
+
+;(defn expand-bindings [bindings l]
+    (foldr
+        []
+            bindings
+            (fn [res binding] (concat [(let-fix-shadow binding l) res]))))
+
+;(def done-fn (con-fn "done"))
+
+;(defn con-fn [name l f]
+    (j/lambda [(j/pvar name l)] (right (f (j/var name l))) l))
+
+;(defn left-right [either name l usage]
+    (match either
+        (left v)  (usage v)
+        (right v) (j/app v [(con-fn name l usage)] l)))
+
+>>=
+
+<-
+
+;(defn cps>>= [(StateT f) next]
+    (StateT
+        (fn [state]
+            (let [(, (, has idx) value) (f state)]
+                (match value
+                    (left v)  ((state-f (next v)) (, has idx))
+                    (right v) (let [
+                                  name            "v${(int-to-string idx)}"
+                                  (, nstate iner) ((state-f (next (j/var name -1))) (, true (+ idx 1)))]
+                                  (, nstate (j/app v [(j/lambda [(j/pvar name -1)] (right iner) -1)] -1))))))))
+
+(defn go2 [(StateT f)]
+    (let [(, (, wraps _) value) (f (, [] 0))]
+        (match wraps
+            [] (left value)
+            _  (right
+                   (foldr
+                       value
+                           wraps
+                           (fn [inner (, thunk vbl)]
+                           (j/app thunk [(j/lambda [(j/pvar vbl -1)] (right inner) -1)] -1)))))))
+
+(defn <-lr [v]
+    (match v
+        (left v)  (<- v)
+        (right v) (let-> [
+                      (, wraps idx) <-state
+                      name          (<- "v${(int-to-string idx)}")
+                      _             (state-> (, [(, v name) ..wraps] (+ 1 idx)))]
+                      (<- (j/var name -1)))))
+
+(defn cps/j3 [trace expr]
+    (match expr
+        (evar n l)                    (left (j/var (sanitize n) l))
+        (eprim (pint n l) _)          (left (j/prim (j/int n l) l))
+        (eapp target [] l)            (cps/j2 trace target)
+        (eapp target [arg] l)         (go2
+                                          (let-> [
+                                              target (<-lr (cps/j2 trace target))
+                                              arg    (<-lr (cps/j2 trace arg))]
+                                              (<-
+                                                  (done-fn
+                                                      l
+                                                          (fn [done] (j/app target [arg (j/var "$lbeffects$rb" l) done] l))))))
+        (eapp target [arg ..rest] l)  (cps/j2 trace (eapp (eapp target [arg] l) rest l))
+        (elambda [arg] body l)        (left
+                                          (j/lambda
+                                              [(opt-or (pat->j/pat arg) (j/pvar "_" l))
+                                                  (j/pvar "$lbeffects$rb" l)
+                                                  (j/pvar "$done" l)]
+                                                  (right
+                                                  (match (cps/j2 trace body)
+                                                      (left body)  (j/app (j/var "$done" l) [body] l)
+                                                      (right body) (j/app body [(j/var "$done" l)] l)))
+                                                  l))
+        (elambda [arg ..rest] body l) (cps/j2 trace (elambda [arg] (elambda rest body l) l))
+        _                             (fatal "no")))
+
+(cps/j2 0 (@ 12))
+
+(cps/j2 0 (@ (+ 1 2)))
+
+(let [m (@ (+ 1))] (= (cps/j 0 m) (cps/j2 0 m)))
+
+(defn cps-test2 [v]
+    (eval-with
+        (eval builtins-cps)
+            (j/compile 0 (provide-empty-effects (right (finish (cps/j3 0 v)))))))
+
+(,
+    cps-test2
+        [(, (@ 1) 1)
+        (, (@ (+ 2 3)) 5)
+        (, (@ ((fn [x] (+ x 12)) 4)) 16)
+        (, (@ ((fn [x y] (, x (+ 23 y))) 1 2)) (, 1 25))])
+
+;(defn finish [x]
+    (match x
+        (left x)  x
+        (right x) (j/app x [(j/lambda [(j/pvar "x" 1)] (right (j/var "x" 1)) 1)] 1)))
+
 (defn go [(StateT f)]
     (let [(, (, has _) value) (f (, false 0))]
         (if has
