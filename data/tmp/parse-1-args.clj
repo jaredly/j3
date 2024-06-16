@@ -866,6 +866,8 @@
             (fn [target arg]
             (j/app target [(compile/j arg trace) (j/var "$lbeffects$rb" l)] l))))
 
+(** ## CPS **)
+
 (defn expand-bindings [bindings l]
     (foldr
         []
@@ -897,46 +899,58 @@
                                   (, nstate iner) ((state-f (next (j/var name -1))) (, true (+ idx 1)))]
                                   (, nstate (j/app v [(j/lambda [(j/pvar name -1)] (right iner) -1)] -1))))))))
 
-;(defn <-cps [v]
-    (fn [(, has idx)]
-        (if has
-            (, (, has idx) (right v)))))
-
 (defn go [(StateT f)]
-    (let [(, (, has _) value) (f (, false 0))]
-        (if has
-            (right value)
-                (left value))))
+    (let [(, (, wraps _) value) (f (, [] 0))]
+        (match wraps
+            [] (left value)
+            _  (right
+                   (foldr
+                       value
+                           wraps
+                           (fn [inner (, thunk vbl)]
+                           (j/app thunk [(j/lambda [(j/pvar vbl -1)] (right inner) -1)] -1)))))))
 
 (defn <-right [v] (StateT (fn [(, _ idx)] (, (, true idx) v))))
 
+(defn <-lr [v]
+    (match v
+        (left v)  (<- v)
+        (right v) (let-> [
+                      (, wraps idx) <-state
+                      name          (<- "v${(int-to-string idx)}")
+                      _             (state-> (, [(, v name) ..wraps] (+ 1 idx)))]
+                      (<- (j/var name -1)))))
+
 (defn cps/j2 [trace expr]
-    (let [>>= cps>>=]
-        (match expr
-            (evar n l)                    (left (j/var (sanitize n) l))
-            (eprim (pint n l) _)          (left (j/prim (j/int n l) l))
-            (eapp target [] l)            (cps/j2 trace target)
-            (eapp target [arg] l)         (go
-                                              (let-> [
-                                                  target (<- (cps/j2 trace target))
-                                                  arg    (<- (cps/j2 trace arg))]
-                                                  (<-right
-                                                      (done-fn
-                                                          l
-                                                              (fn [done] (j/app target [arg (j/var "$lbeffects$rb" l) done] l))))))
-            (eapp target [arg ..rest] l)  (cps/j2 trace (eapp (eapp target [arg] l) rest l))
-            (elambda [arg] body l)        (left
-                                              (j/lambda
-                                                  [(opt-or (pat->j/pat arg) (j/pvar "_" l))
-                                                      (j/pvar "$lbeffects$rb" l)
-                                                      (j/pvar "$done" l)]
-                                                      (right
-                                                      (match (cps/j2 trace body)
-                                                          (left body)  (j/app (j/var "$done" l) [body] l)
-                                                          (right body) (j/app body [(j/var "$done" l)] l)))
-                                                      l))
-            (elambda [arg ..rest] body l) (cps/j2 trace (elambda [arg] (elambda rest body l) l))
-            _                             (fatal "no"))))
+    (match expr
+        (evar n l)                    (left (j/var (sanitize n) l))
+        (eprim (pint n l) _)          (left (j/prim (j/int n l) l))
+        (eapp target [] l)            (cps/j2 trace target)
+        (eapp target [arg] l)         (go
+                                          (let-> [
+                                              target (<-lr (cps/j2 trace target))
+                                              arg    (<-lr (cps/j2 trace arg))]
+                                              (<-
+                                                  (done-fn
+                                                      l
+                                                          (fn [done] (j/app target [arg (j/var "$lbeffects$rb" l) done] l))))))
+        (eapp target [arg ..rest] l)  (cps/j2 trace (eapp (eapp target [arg] l) rest l))
+        (elambda [arg] body l)        (left
+                                          (j/lambda
+                                              [(opt-or (pat->j/pat arg) (j/pvar "_" l))
+                                                  (j/pvar "$lbeffects$rb" l)
+                                                  (j/pvar "$done" l)]
+                                                  (right
+                                                  (match (cps/j2 trace body)
+                                                      (left body)  (j/app (j/var "$done" l) [body] l)
+                                                      (right body) (j/app body [(j/var "$done" l)] l)))
+                                                  l))
+        (elambda [arg ..rest] body l) (cps/j2 trace (elambda [arg] (elambda rest body l) l))
+        _                             (fatal "no")))
+
+(cps/j2 0 (@ 12))
+
+(cps/j2 0 (@ (+ 1 2)))
 
 (defn opt-or [v d]
     (match v
@@ -944,6 +958,23 @@
         _        d))
 
 (let [m (@ (+ 1))] (= (cps/j 0 m) (cps/j2 0 m)))
+
+(defn cps-test [v]
+    (eval-with
+        (eval builtins-cps)
+            (j/compile 0 (provide-empty-effects (right (finish (cps/j2 0 v)))))))
+
+(,
+    cps-test
+        [(, (@ 1) 1)
+        (, (@ (+ 2 3)) 5)
+        (, (@ ((fn [x] (+ x 12)) 4)) 16)
+        (, (@ ((fn [x y] (, x (+ 23 y))) 1 2)) (, 1 25))])
+
+(defn finish [x]
+    (match x
+        (left x)  x
+        (right x) (j/app x [(j/lambda [(j/pvar "x" 1)] (right (j/var "x" 1)) 1)] 1)))
 
 (** ## Non Monads **)
 
@@ -993,28 +1024,11 @@
             (estr first [] l)            (left (j/str first [] l))
             _                            (fatal "no"))))
 
-(defn cps-test [v]
-    (eval-with
-        (eval builtins-cps)
-            (j/compile 0 (provide-empty-effects (right (finish (cps/j2 0 v)))))))
-
-(,
-    cps-test
-        [(, (@ 1) 1)
-        (, (@ (+ 2 3)) 5)
-        (, (@ ((fn [x] (+ x 12)) 4)) 16)
-        (, (@ ((fn [x y] (, x (+ 23 y))) 1 2)) (, 1 25))])
-
 (eval-with
     (eval builtins-cps)
         (j/compile
         0
             (provide-empty-effects (right (finish (cps/j 0 (@ (+ 12 4))))))))
-
-(defn finish [x]
-    (match x
-        (left x)  x
-        (right x) (j/app x [(j/lambda [(j/pvar "x" 1)] (right (j/var "x" 1)) 1)] 1)))
 
 (defn compile/j [expr trace]
     (maybe-trace
