@@ -935,58 +935,99 @@
                                   (, nstate iner) ((state-f (next (j/var name -1))) (, true (+ idx 1)))]
                                   (, nstate (j/app v [(j/lambda [(j/pvar name -1)] (right iner) -1)] -1))))))))
 
+(defn or [a b]
+    (if a
+        true
+            b))
+
 (defn go2 [(StateT f)]
-    (let [(, (, wraps _) value) (f (, [] 0))]
-        (match wraps
-            [] (left value)
-            _  (right
-                   (foldr
-                       value
-                           wraps
-                           (fn [inner (, thunk vbl)]
-                           (j/app thunk [(j/lambda [(j/pvar vbl -1)] (right inner) -1)] -1)))))))
+    (let [(, (, wraps flag _) value) (f (, [] false 0))]
+        (if (or (!= wraps []) flag)
+            (right
+                (foldr
+                    value
+                        wraps
+                        (fn [inner (, thunk vbl)]
+                        (j/app thunk [(j/lambda [(j/pvar vbl -1)] (right inner) -1)] -1))))
+                (left value))))
 
 (defn <-lr [v]
     (match v
         (left v)  (<- v)
         (right v) (let-> [
-                      (, wraps idx) <-state
-                      name          (<- "v${(int-to-string idx)}")
-                      _             (state-> (, [(, v name) ..wraps] (+ 1 idx)))]
+                      (, wraps flag idx) <-state
+                      name               (<- "v${(int-to-string idx)}")
+                      _                  (state-> (, [(, v name) ..wraps] flag (+ 1 idx)))]
                       (<- (j/var name -1)))))
+
+(defn <-r [v]
+    (let-> [
+        (, wraps _ idx) <-state
+        _               (state-> (, wraps true idx))]
+        (<- v)))
 
 (defn cps/j3 [trace expr]
     (match expr
         (evar n l)                    (left (j/var (sanitize n) l))
         (eprim (pint n l) _)          (left (j/prim (j/int n l) l))
-        (eapp target [] l)            (cps/j2 trace target)
+        (eapp target [] l)            (cps/j3 trace target)
         (eapp target [arg] l)         (go2
                                           (let-> [
-                                              target (<-lr (cps/j2 trace target))
-                                              arg    (<-lr (cps/j2 trace arg))]
-                                              (<-
+                                              target (<-lr (cps/j3 trace target))
+                                              arg    (<-lr (cps/j3 trace arg))]
+                                              (<-r
                                                   (done-fn
                                                       l
                                                           (fn [done] (j/app target [arg (j/var "$lbeffects$rb" l) done] l))))))
-        (eapp target [arg ..rest] l)  (cps/j2 trace (eapp (eapp target [arg] l) rest l))
+        (eapp target [arg ..rest] l)  (cps/j3 trace (eapp (eapp target [arg] l) rest l))
         (elambda [arg] body l)        (left
                                           (j/lambda
                                               [(opt-or (pat->j/pat arg) (j/pvar "_" l))
                                                   (j/pvar "$lbeffects$rb" l)
                                                   (j/pvar "$done" l)]
                                                   (right
-                                                  (match (cps/j2 trace body)
+                                                  (match (cps/j3 trace body)
                                                       (left body)  (j/app (j/var "$done" l) [body] l)
                                                       (right body) (j/app body [(j/var "$done" l)] l)))
                                                   l))
-        (elambda [arg ..rest] body l) (cps/j2 trace (elambda [arg] (elambda rest body l) l))
-        _                             (fatal "no")))
+        (elambda [arg ..rest] body l) (cps/j3 trace (elambda [arg] (elambda rest body l) l))
+        (eeffect name false l)        (left (j/index (j/var "$lbeffects$rb" l) (j/str name [] l) l))
+        (eeffect name true l)         (right
+                                          (done-fn
+                                              l
+                                                  (fn [done]
+                                                  (j/app (j/index (j/var "$lbeffects$rb" l) (j/str name [] l) l) [done] l))))
+        (eprovide target handlers l)  (go2
+                                          (let-> [
+                                              effects (<-lr
+                                                          (cps/j3
+                                                              trace
+                                                                  (erecord
+                                                                  (some (, (evar "(effects)" l) false))
+                                                                      (map
+                                                                      handlers
+                                                                          (fn [(, name nl kind body)]
+                                                                          (match kind
+                                                                              (eearmuffs) (, name body)
+                                                                              _           (fatal "nop"))))
+                                                                      l)))]
+                                              (<-r
+                                                  (done-fn
+                                                      l
+                                                          (fn [done]
+                                                          (j/app
+                                                              (j/lambda
+                                                                  [(j/pvar "$lbeffects$rb" l)]
+                                                                      (right
+                                                                      (match (cps/j3 trace target)
+                                                                          (left body)  (j/app done [body] l)
+                                                                          (right body) (j/app body [done] l)))
+                                                                      l)
+                                                                  [effects]
+                                                                  l))))))
+        _                             (fatal "no cps ${(jsonify expr)}")))
 
-(cps/j2 0 (@ 12))
 
-(cps/j2 0 (@ (+ 1 2)))
-
-(let [m (@ (+ 1))] (= (cps/j 0 m) (cps/j2 0 m)))
 
 (defn cps-test2 [v]
     (eval-with
@@ -998,12 +1039,10 @@
         [(, (@ 1) 1)
         (, (@ (+ 2 3)) 5)
         (, (@ ((fn [x] (+ x 12)) 4)) 16)
-        (, (@ ((fn [x y] (, x (+ 23 y))) 1 2)) (, 1 25))])
+        (, (@ ((fn [x y] (, x (+ 23 y))) 1 2)) (, 1 25))
+        (, (run/nil-> (parse-expr (@@ (provide *lol* *lol* 2)))) )])
 
-;(defn finish [x]
-    (match x
-        (left x)  x
-        (right x) (j/app x [(j/lambda [(j/pvar "x" 1)] (right (j/var "x" 1)) 1)] 1)))
+(** ## Mark 1, misbehaving monad **)
 
 (defn go [(StateT f)]
     (let [(, (, has _) value) (f (, false 0))]
@@ -1045,8 +1084,6 @@
     (match v
         (some v) v
         _        d))
-
-(let [m (@ (+ 1))] (= (cps/j 0 m) (cps/j2 0 m)))
 
 (** ## Non Monads **)
 
