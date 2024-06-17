@@ -4,6 +4,8 @@
 
 ('some 12)
 
+(jsonify ('some 2))
+
 (if true
     ('some 12)
         'none)
@@ -117,4 +119,10 @@
     {tractors abc florbs (get-florbs florbs)})
 
 (provide (construct-tractors "yes" 12) *extra-florbs* 40)
+
+(+ 2)
+
+(provide *lol* *lol* 12)
+
+(provide (+ 2 *lol*) *lol* 34)
 

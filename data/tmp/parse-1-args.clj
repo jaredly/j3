@@ -1020,7 +1020,7 @@
                                                                                              (eearmuffs) (, name body)
                                                                                              _           (fatal "nop"))))
                                                                                      l)))]
-                                                             (<-r
+                                                             (<-
                                                                  (right
                                                                      (done-fn
                                                                          l
@@ -1087,6 +1087,8 @@
 
 (j/compile 0 (finish (cps/j3 0 (@ (let [xaa 10] (+ 2 xaa))))))
 
+(j/compile 0 (finish (cps/j3 0 (rp (@@ (provide (+ 3 *lol*) *lol* 2))))))
+
 (,
     cps-test2
         [(, (@ 1) 1)
@@ -1133,8 +1135,7 @@
             25)])
 
 (defn cps-test2 [v]
-    ;(cps/j3 0 v)
-        (eval-with
+    (eval-with
         (eval builtins-cps)
             (j/compile 0 (provide-empty-effects (right (finish (cps/j3 0 v)))))))
 
@@ -1151,15 +1152,31 @@
 
 (defn compile-pat-list [pat target]
     (match pat
-        (pany _)              (, [] [])
-        (pprim prim l)        (, [(j/bin "===" target (compile-prim/j prim l) l)] [])
-        (pstr str l)          (, [(j/bin "===" target (j/str str [] l) l)] [])
-        (pvar name l)         (, [] [(j/let (j/pvar (sanitize name) l) target l)])
-        (pcon name nl args l) (let [(, check assign) (pat-loop-list target args 0)]
-                                  (,
-                                      [(j/bin "===" (j/attr target "type" l) (j/str name [] l) l) ..check]
-                                          assign))
-        _                     (fatal "nop")))
+        (pany _)                     (, [] [])
+        (pprim prim l)               (, [(j/bin "===" target (compile-prim/j prim l) l)] [])
+        (pstr str l)                 (, [(j/bin "===" target (j/str str [] l) l)] [])
+        (pvar name l)                (, [] [(j/let (j/pvar (sanitize name) l) target l)])
+        (pcon name nl args l)        (let [(, check assign) (pat-loop-list target args 0)]
+                                         (,
+                                             [(j/bin "===" (j/attr target "type" l) (j/str name [] l) l) ..check]
+                                                 assign))
+        (penum name nl (none) l)     (, [(j/bin "===" target (j/str name [] l) l)] [])
+        (penum name nl (some arg) l) (let [(, check assign) (compile-pat-list arg (j/attr target "arg" l))]
+                                         (,
+                                             [(j/bin "===" (j/attr target "tag" l) (j/str name [] l) l) ..check]
+                                                 assign))
+        (precord items spread l)     (let [
+                                         (, check assign) (loop
+                                                              (, items [] [])
+                                                                  (fn [(, items check assign) recur]
+                                                                  (match items
+                                                                      []                    (, check assign)
+                                                                      [(, name pat) ..rest] (let [(, c a) (compile-pat-list pat (j/attr target name l))]
+                                                                                                (, (concat [check c]) (concat [assign a]))))))]
+                                         (match spread
+                                             (none)        (, check assign)
+                                             (some spread) (let [(, c a) (compile-pat-list spread target)]
+                                                               (, (concat [check c]) (concat [assign a])))))))
 
 (,
     (fn [pat] (compile-pat-list pat (j/var "v" 0)))
@@ -1736,6 +1753,38 @@
                         (one a b)))))
             map/nil))
 
+(defn compile-cps/j [expr trace] (finish (cps/j3 trace expr)))
+
+(defn compile-top-cps/j [top trace]
+    (match top
+        (texpr expr l)                      [(j/sexpr
+                                                (provide-empty-effects (right (finish (cps/j3 trace expr))))
+                                                    l)]
+        (tdef name nl body l)               [(j/let (j/pvar (sanitize name) nl) (finish (cps/j3 trace body)) l)]
+        (ttypealias _ _ _ _ _)              []
+        (tdeftype name nl type-arg cases l) (map
+                                                cases
+                                                    (fn [case]
+                                                    (let [(, name2 nl args l) case]
+                                                        (j/let
+                                                            (j/pvar (sanitize name2) nl)
+                                                                (foldr
+                                                                (j/obj
+                                                                    [(left (, "type" (j/str name2 [] nl)))
+                                                                        ..(mapi
+                                                                        0
+                                                                            args
+                                                                            (fn [i _] (left (, (int-to-string i) (j/var "v${(int-to-string i)}" nl)))))]
+                                                                        l)
+                                                                    (mapi 0 args (fn [i _] (j/pvar "v${(int-to-string i)}" nl)))
+                                                                    (fn [body arg]
+                                                                    (j/lambda
+                                                                        [arg (j/pvar efvbl l) (j/pvar "done" l)]
+                                                                            (right (j/app (j/var "done" l) [body] l))
+                                                                            l)))
+                                                                l))
+                                                        ))))
+
 (defn compile-top/j [top trace]
     (match top
         (texpr expr l)                      [(j/sexpr (provide-empty-effects (right (compile/j expr trace))) l)]
@@ -1787,6 +1836,230 @@
   jsonify: (x, _, done) => done(JSON.stringify(x) ?? 'undefined'),
 }})() **)
         )
+
+(def builtins-ex-cps
+    (** function equal(a, b) {
+    if (a === b) return true;
+
+    if (a && b && typeof a == 'object' && typeof b == 'object') {
+        var length, i, keys;
+        if (Array.isArray(a)) {
+            length = a.length;
+            if (length != b.length) return false;
+            for (i = length; i-- !== 0; ) if (!equal(a[i], b[i])) return false;
+            return true;
+        }
+
+        keys = Object.keys(a);
+        length = keys.length;
+        if (length !== Object.keys(b).length) return false;
+
+        for (i = length; i-- !== 0; ) {
+            if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;
+        }
+
+        for (i = length; i-- !== 0; ) {
+            var key = keys[i];
+
+            if (!equal(a[key], b[key])) return false;
+        }
+
+        return true;
+    }
+
+    // true if both NaN, false otherwise
+    return a !== a && b !== b;
+}
+
+function unescapeString(n) {
+    if (n == null || !n.replaceAll) {
+        debugger;
+        return '';
+    }
+    return n.replaceAll(/\\\\./g, (m) => {
+        if (m[1] === 'n') {
+            return '\\n';
+        }
+        if (m[1] === 't') {
+            return '\\t';
+        }
+        if (m[1] === 'r') {
+            return '\\r';
+        }
+        return m[1];
+    });
+}
+
+function unwrapList(v) {
+    return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])];
+}
+
+function wrapList(v) {
+    let res = { type: 'nil' };
+    for (let i = v.length - 1; i >= 0; i--) {
+        res = { type: 'cons', 0: v[i], 1: res };
+    }
+    return res;
+}
+
+const sanMap = {
+    // '$$$$' gets interpreted by replaceAll as '$$', for reasons
+    $: '$$$$',
+    '-': '_',
+    '+': '$pl',
+    '*': '$ti',
+    '=': '$eq',
+    '>': '$gt',
+    '<': '$lt',
+    "'": '$qu',
+    '"': '$dq',
+    ',': '$co',
+    '/': '$sl',
+    ';': '$semi',
+    '@': '$at',
+    ':': '$cl',
+    '#': '$ha',
+    '!': '$ex',
+    '|': '$bar',
+    '()': '$unit',
+    '?': '$qe',
+  };
+const kwds =
+    'case new var const let if else return super break while for default eval'.split(' ');
+
+// Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
+function sanitize(raw) {
+    for (let [key, val] of Object.entries(sanMap)) {
+        raw = raw.replaceAll(key, val);
+    }
+    if (kwds.includes(raw)) return '$' + raw
+    return raw
+}
+
+const valueToString = (v) => {
+    if (Array.isArray(v)) {
+        return `[${v.map(valueToString).join(', ')}]`;
+    }
+    if (typeof v === 'object' && v && 'type' in v) {
+        if (v.type === 'cons' || v.type === 'nil') {
+            const un = unwrapList(v);
+            return '[' + un.map(valueToString).join(' ') + ']';
+        }
+
+        let args = [];
+        for (let i = 0; i in v; i++) {
+            args.push(v[i]);
+        }
+        return `(${v.type}${args
+            .map((arg) => ' ' + valueToString(arg))
+            .join('')})`;
+    }
+    if (typeof v === 'string') {
+        if (v.includes('"') && !v.includes("'")) {
+            return (
+                "'" + JSON.stringify(v).slice(1, -1).replace(/\\"/g, '"') + "'"
+            );
+        }
+        return JSON.stringify(v);
+    }
+    if (typeof v === 'function') {
+        return '<function>';
+    }
+
+    return '' + v;
+};
+
+return {
+    '+': (a, _, d) => d((b, _, d) => d(a + b)),
+    '-': (a, _, d) => d((b, _, d) => d(a - b)),
+    '<': (a, _, d) => d((b, _, d) => d(a < b)),
+    '<=': (a, _, d) => d((b, _, d) => d(a <= b)),
+    '>': (a, _, d) => d((b, _, d) => d(a > b)),
+    '>=': (a, _, d) => d((b, _, d) => d(a >= b)),
+    '=': (a, _, d) => d((b, _, d) => d(equal(a, b))),
+    '!=': (a, _, d) => d((b, _, d) => d(!equal(a, b))),
+    pi: Math.PI,
+    'replace-all': a => b => c => a.replaceAll(b, c),
+    eval: source => {
+      return new Function('', 'return ' + source)();
+    },
+    'eval-with': ctx => source => {
+      const args = '{' + Object.keys(ctx).join(',') + '}'
+      return new Function(args, 'return ' + source)(ctx);
+    },
+    $unit: null,
+/*    errorToString: f => arg => {
+      try {
+        return f(arg)
+      } catch (err) {
+        return err.message;
+      }
+    },
+  */  valueToString: (v, _, d) => d(valueToString(v)),
+    unescapeString: (v, _, d) => d(unescapeString(v)),
+    sanitize: (v, _, d) => d(sanitize(v)),
+    equal: (a, _, d) => d((b, _, d) => d(equal(a, b))),
+    'int-to-string': (a, _, d) => d(a.toString()),
+    'string-to-int': (a, _, d) => {
+        const v = Number(a);
+        return d(Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' });
+    },
+    'string-to-float': (a, _, d) => {
+        const v = Number(a);
+        return d(Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' });
+    },
+
+    // maps
+    'map/nil': [],
+    'map/set': (map, _, d) => d((key, _, d) => d((value, _, d) =>
+        d([[key, value], ...map.filter((i) => i[0] !== key)]))),
+    'map/rm': (map, _, d) => d((key, _, d) => d(map.filter((i) => !equal(i[0], key)))),
+    
+    // ** NOT FIXED YET **
+    'map/get': (map) => (key) => {
+        const found = map.find((i) => equal(i[0], key));
+        return found ? { type: 'some', 0: found[1] } : { type: 'none' };
+    },
+    'map/map': (fn) => (map) => map.map(([k, v]) => [k, fn(v)]),
+    'map/merge': (one) => (two) =>
+        [...one, ...two.filter(([key]) => !one.find(([a]) => equal(a, key)))],
+    'map/values': (map) => wrapList(map.map((item) => item[1])),
+    'map/keys': (map) => wrapList(map.map((item) => item[0])),
+    'map/from-list': (list) =>
+        unwrapList(list).map((pair) => [pair[0], pair[1]]),
+    'map/to-list': (map) =>
+        wrapList(map.map(([key, value]) => ({ type: ',', 0: key, 1: value }))),
+
+    // sets
+    'set/nil': [],
+    'set/add': (s) => (v) => [v, ...s.filter((m) => !equal(v, m))],
+    'set/has': (s) => (v) => s.includes(v),
+    'set/rm': (s) => (v) => s.filter((i) => !equal(i, v)),
+    // NOTE this is only working for primitives
+    'set/diff': (a) => (b) => a.filter((i) => !b.some((j) => equal(i, j))),
+    'set/merge': (a) => (b) =>
+        [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],
+    'set/overlap': (a) => (b) => a.filter((x) => b.some((y) => equal(y, x))),
+    'set/to-list': wrapList,
+    'set/from-list': (s) => {
+        const res = [];
+        unwrapList(s).forEach((item) => {
+            if (res.some((m) => equal(item, m))) {
+                return;
+            }
+            res.push(item);
+        });
+        return res;
+    },
+
+    // Various debugging stuff
+    jsonify: (v, _, d) => d(JSON.stringify(v) ?? 'undefined'),
+    fatal: (message) => {
+        throw new Error(`Fatal runtime: ${message}`);
+    },
+} **))
+
+(eval builtins-ex-cps)
 
 (eval builtins-cps)
 
@@ -3338,7 +3611,7 @@ dot
                                        _           (fatal "non-expr has unbound effects??")))]
                 (j/compile-stmts
                     ctx
-                        (map (compile-top/j top ctx) (map/stmt simplify-js)))))
+                        (map (compile-top-cps/j top ctx) (map/stmt simplify-js)))))
             (fn [expr type-info ctx]
             (let [
                 expr (match type-info
@@ -3347,7 +3620,7 @@ dot
                 (j/compile
                     ctx
                         (provide-empty-effects
-                        (right (map/expr simplify-js (compile/j expr ctx)))))))
+                        (right (map/expr simplify-js (compile-cps/j expr ctx)))))))
             names
             externals-top
             (fn [expr] (bag/to-list (externals set/nil expr)))
@@ -3359,6 +3632,6 @@ dot
                 (some v) (bag/to-list v)
                 _        [])))
         (fn [top] (bag/to-list (top/names top)))
-        builtins)
+        builtins-ex-cps)
 
 537
