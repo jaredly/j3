@@ -17,6 +17,24 @@ ALSOO string tpl patterns. "*${name}*" would be very nice.
 eventually I'll also want regexps, but doesn't need to be immediate.
 
 
+
+
+
+provide x
+  *lol* 23
+
+(effects => x)({
+  ...effects,
+  *lol* 23
+})
+
+
+
+
+
+
+
+
 # Just this moment
 
 - [x] better pretty printing of types
@@ -28,6 +46,7 @@ eventually I'll also want regexps, but doesn't need to be immediate.
 - [ ] do a cool web UI for providing earmuffs that are needed
 - [ ] ok CPS all the things, right? Is that where we're at now?
   - [x] little bit of cps
+  - [x] rather more cps
 
 
 ## Figuring out CPS...
