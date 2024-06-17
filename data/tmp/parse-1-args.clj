@@ -940,11 +940,6 @@
         true
             b))
 
-(deftype kinds
-    (plain)
-        (wrapped)
-        ())
-
 (defn go2 [(StateT f)]
     (let [(, (, wraps flag _) value) (f (, [] false 0))]
         (if (or (!= wraps []) flag)
@@ -1083,12 +1078,6 @@
         (eval-with
         (eval builtins-cps)
             (j/compile 0 (provide-empty-effects (right (finish (cps/j3 0 v)))))))
-
-(;eval-with
-    ;(eval builtins-cps)
-        (j/compile
-        0
-            (provide-empty-effects (right (finish (cps/j3 0 (@ "x${(+ 2)}")))))))
 
 (eval-with
     (eval builtins-cps)
