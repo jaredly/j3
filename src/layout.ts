@@ -233,6 +233,8 @@ const tightFirsts: { [key: string]: number } = {
     if: 2,
     '<>': 2,
     '->': 2,
+    '@': 1,
+    '@@': 1,
 };
 
 const alwaysMulti = ['switch', 'match', 'if', 'deftype'];
