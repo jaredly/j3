@@ -980,11 +980,12 @@
                                                                            (let-> [expr (<-lr (cps/j3 trace expr))] (<- (, expr suffix))))
                                                                            items)]
                                                              (<- (left (j/str prefix items l)))))
-        (eeffect name false l)                       (left (j/index (j/var efvbl l) (j/str name [] l) l))
-        (eeffect name true l)                        (right
-                                                         (done-fn
-                                                             l
-                                                                 (fn [done] (j/app (j/index (j/var efvbl l) (j/str name [] l) l) [done] l))))
+        (eeffect name _ l)                           (left (j/index (j/var efvbl l) (j/str name [] l) l))
+        ;(eeffect name true l)
+        ;(right
+            (done-fn
+                l
+                    (fn [done] (j/app (j/index (j/var efvbl l) (j/str name [] l) l) [done] l))))
         (erecord spread fields l)                    (go2
                                                          (let-> [
                                                              fields (map->

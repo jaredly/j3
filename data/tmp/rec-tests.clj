@@ -144,5 +144,5 @@
 
 (provide (+ 2 3) (!fail n) 12)
 
-(provide (+ 2 (!fail 21)) (!fail n) 23 (!foo) 1)
+(provide (+ 2 (!fail 21)) (!fail n) 3 (!foo) 1)
 

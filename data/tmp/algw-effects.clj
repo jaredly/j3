@@ -1530,7 +1530,14 @@
                     30180)
                 [(, "!fail" (, 30185 (, (ebang [(pvar "n" 30186)]) (estr "" [] 12))))]
                 30178)
-            )
+            (err
+            (twrap
+                (ttypes
+                    (forall (map/from-list []) (tcon "int" -1))
+                        (forall (map/from-list []) (tcon "string" 12)))
+                    (ttypes
+                    (forall (map/from-list []) (tcon "int" -1))
+                        (forall (map/from-list []) (tcon "string" 12))))))
         (,
         (@ (fn [(some x)] x))
             (err

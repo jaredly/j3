@@ -5696,20 +5696,11 @@ let l = $target[2];
 return go2($gt$gt$eq(map_$gt(({1: suffix, 0: expr}) => $gt$gt$eq($lt_lr(cps$slj3(trace)(expr)))((expr) => $lt_($co(expr)(suffix))))(items))((items) => $lt_(left(j$slstr(prefix)(items)(l)))))
 }
 }
-if ($target.type === "eeffect" &&
-$target[1] === false) {
+if ($target.type === "eeffect") {
 {
 let name = $target[0];
 let l = $target[2];
 return left(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))
-}
-}
-if ($target.type === "eeffect" &&
-$target[1] === true) {
-{
-let name = $target[0];
-let l = $target[2];
-return right(done_fn(l)((done) => j$slapp(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))(cons(done)(nil))(l)))
 }
 }
 if ($target.type === "erecord") {

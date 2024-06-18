@@ -19,10 +19,22 @@ export const RenderProduceItem = ({
     }
     switch (value.type) {
         case 'type':
-            return <div style={{
-                borderLeft: '4px solid rgb(0,60,0)',
-            paddingLeft: 8
-            }}>{value.cst ? <RenderStatic node={value.cst} /> : <div style={{ color: 'rgb(45 149 100)' }}>{value.text}</div>}</div>;
+            return (
+                <div
+                    style={{
+                        borderLeft: '4px solid rgb(0,60,0)',
+                        paddingLeft: 8,
+                    }}
+                >
+                    {value.cst ? (
+                        <RenderStatic node={value.cst} />
+                    ) : (
+                        <div style={{ color: 'rgb(45 149 100)' }}>
+                            {value.text}
+                        </div>
+                    )}
+                </div>
+            );
         case 'eval': {
             let parts: JSX.Element[] = highlightIdxs(value.inner);
             return (
@@ -33,7 +45,16 @@ export const RenderProduceItem = ({
             );
         }
         case 'inference-error':
-            return <div style={{borderLeft: '4px solid rgb(255,50,50)', paddingLeft: 8}}><RenderInferenceError err={value.err} /></div>;
+            return (
+                <div
+                    style={{
+                        borderLeft: '4px solid rgb(255,50,50)',
+                        paddingLeft: 8,
+                    }}
+                >
+                    <RenderInferenceError err={value.err} />
+                </div>
+            );
         case 'withjs': {
             let parts = highlightIdxs(value.message);
             return <div style={{ color: 'rgb(255,50,50)' }}>{parts}</div>;
@@ -43,7 +64,18 @@ export const RenderProduceItem = ({
             return <div style={{ color: 'rgb(255,50,50)' }}>{parts}</div>;
         }
         case 'pre':
-            return <pre>{value.text}</pre>;
+            return (
+                <pre
+                    className="mouse-capture"
+                    onMouseDownCapture={(evt) => {
+                        navigator.clipboard.writeText(value.text);
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                    }}
+                >
+                    {value.text}
+                </pre>
+            );
         case 'node':
             return <RenderStatic node={value.node} />;
     }
@@ -120,7 +152,8 @@ const RenderInferenceError = ({ err }: { err: InferenceError }) => {
                 <div>Types don't match</div>
                 <JumpTo loc={err.one.loc}>
                     <RenderStatic node={err.one} />
-                </JumpTo>{' vs '}
+                </JumpTo>
+                {' vs '}
                 <JumpTo loc={err.two.loc}>
                     <RenderStatic node={err.two} />
                 </JumpTo>

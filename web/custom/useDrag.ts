@@ -103,6 +103,7 @@ export function useDrag(dispatch: React.Dispatch<Action>, state: NUIState) {
         onMouseDownCapture: (evt: React.MouseEvent) => {
             let current = evt.target as HTMLElement;
             while (current && current !== document.body) {
+                if (current.classList.contains('mouse-capture')) return;
                 if (current.classList.contains('rich-text')) return;
                 if (current.getAttribute('data-handle')) return;
                 current = current.parentElement!;
