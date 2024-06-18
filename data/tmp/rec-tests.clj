@@ -126,3 +126,7 @@
 
 (provide (+ 2 *lol*) *lol* 34)
 
+(provide (+ 2 3) (!fail n) 12)
+
+(provide (+ 2 (!fail 21)) (!fail n) 23 (!foo) 1)
+

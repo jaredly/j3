@@ -211,7 +211,9 @@
 (defn tfns [args body l]
     (foldr
         body
-            (mapi (fn [i arg] (, (tvar "effect:${(int-to-string i)}" -1) arg)) args)
+            (mapi
+            (fn [i arg] (, (tvar "tfns-effect:${(int-to-string i)}" -1) arg))
+                args)
             (fn [body (, effects arg)] (tfn effects arg body l))))
 
 (def tint (tcon "int" -1))
@@ -948,7 +950,10 @@
                                            (, lookup t1) (add-rec lookup t1)
                                            (, lookup t2) (add-rec lookup t2)]
                                            (, t1 t2 lookup [(, t1 t2) ..pairs])))
-                                       (, t1 t2 lookup pairs))]
+                                       (, t1 t2 lookup pairs))
+        ()                     (if (> count 100)
+                                   (fatal "100 deep in unify")
+                                       ())]
         (let-> [
             r1 (lookup-rec t1 lookup)
             r2 (lookup-rec t2 lookup)]
@@ -1238,24 +1243,48 @@
                                                      t       (new-type-var "effects-rest" l)
                                                      _       (unify effects (trow [(, name result)] (some t) (rrecord) l) l)]
                                                      (type/apply-> result))
-        (eeffect name true l)                    (fatal "Lol what effect")
+        (eeffect name true l)                    (let-> [
+                                                     effects (match (tenv/resolve tenv "(effects)")
+                                                                 (none)              (<-missing "(effects)" l)
+                                                                 (some (forall _ t)) (<- t))
+                                                     result  (new-type-var name l)
+                                                     t       (new-type-var "effects-rest" l)
+                                                     _       (unify effects (trow [(, name result)] (some t) (rrecord) l) l)]
+                                                     (type/apply-> result))
         (eprovide target cases l)                (let-> [
                                                      effects (match (tenv/resolve tenv "(effects)")
                                                                  (none)              (<-missing "(effects)" l)
                                                                  (some (forall _ t)) (<- t))
+                                                     result  (new-type-var "provide-result" (expr-loc target))
                                                      rows    (map->
                                                                  (fn [(, name nl kind expr)]
                                                                      (match kind
-                                                                         (eearmuffs) (let-> [body (infer/expr tenv expr)] (<- (, name body)))
-                                                                         _           (fatal "other kind not supported yet")))
+                                                                         (eearmuffs)  (let-> [body (infer/expr tenv expr)] (<- (, name body)))
+                                                                         (ebang args) (let-> [
+                                                                                          sub-patterns         (map-> (infer/pattern tenv) args)
+                                                                                          (, arg-types scopes) (<- (unzip sub-patterns))
+                                                                                          scope                (<- (foldl map/nil scopes map/merge))
+                                                                                          body                 (infer/expr (tenv/with-scope tenv scope) expr)
+                                                                                          result               (type/apply-> result)
+                                                                                          ()                   (unify body result nl)
+                                                                                          any-result           (new-type-var "any-result" nl)
+                                                                                          fntype               (foldr->
+                                                                                                                   any-result
+                                                                                                                       arg-types
+                                                                                                                       (fn [res arg]
+                                                                                                                       (let-> [v (new-type-var "effects" nl)] (<- (tfn v arg res nl)))))]
+                                                                                          (<- (, name fntype)))
+                                                                         _            (fatal "other kind not supported yet")))
                                                                      cases)
                                                      target  (infer/expr
                                                                  (tenv/with-type
                                                                      tenv
                                                                          "(effects)"
                                                                          (forall set/nil (trow rows (some effects) rrecord l)))
-                                                                     target)]
-                                                     (<- target))
+                                                                     target)
+                                                     result  (type/apply-> result)
+                                                     ()      (unify target result l)]
+                                                     (type/apply-> target))
         (evar name l)                            (match (tenv/resolve tenv name)
                                                      (none)        (<-missing name l)
                                                      (some scheme) (let-> [() (record-if-generic scheme l)] (instantiate scheme l)))
@@ -1399,7 +1428,10 @@
                         (tcon "int" -1)
                         23093)
                     (tapp
-                    (tapp (tapp (tcon "->" -1) (tvar "effect:1" -1) -1) (tcon "int" -1) -1)
+                    (tapp
+                        (tapp (tcon "->" -1) (tvar "tfns-effect:1:5" 23101) -1)
+                            (tcon "int" -1)
+                            -1)
                         (tcon "int" -1)
                         -1)
                     23093)))
@@ -1466,6 +1498,39 @@
             (terr
                 "Match not exhaustive 17736: \nMissing , _ some : Case not handled"
                     [])))
+        (,
+        (eprovide
+            (eapp
+                (evar "+" 30181)
+                    [(eprim (pint 2 30182) 30182) (eprim (pint 3 30183) 30183)]
+                    30180)
+                [(,
+                "!fail"
+                    (, 30185 (, (ebang [(pvar "n" 30186)]) (eprim (pint 12 30187) 30187))))]
+                30178)
+            (ok (tcon "int" -1)))
+        (,
+        (eprovide
+            (eapp
+                (evar "+" 30181)
+                    [(eprim (pint 2 30182) 30182)
+                    (eapp (eeffect "!fail" true 12) [(eprim (pint 2 12) 12)] 12)]
+                    30180)
+                [(,
+                "!fail"
+                    (, 30185 (, (ebang [(pvar "n" 30186)]) (eprim (pint 12 30187) 30187))))]
+                30178)
+            (ok (tcon "int" -1)))
+        (,
+        (eprovide
+            (eapp
+                (evar "+" 30181)
+                    [(eprim (pint 2 30182) 30182)
+                    (eapp (eeffect "!fail" true 12) [(eprim (pint 2 12) 12)] 12)]
+                    30180)
+                [(, "!fail" (, 30185 (, (ebang [(pvar "n" 30186)]) (estr "" [] 12))))]
+                30178)
+            )
         (,
         (@ (fn [(some x)] x))
             (err
@@ -1567,7 +1632,7 @@
                                 (tapp (tcon "->" 4820) (tvar "effects-lam:2" 4817) 4820)
                                     (tcon "int" 4822)
                                     4820)
-                                (tvar "result:7" 4820)
+                                (tvar "result:9" 4820)
                                 4820))
                         (forall
                         (map/from-list [])
@@ -1576,7 +1641,7 @@
                                 (tapp (tcon "->" 4823) (tvar "effects-lam:2" 4817) 4823)
                                     (tcon "bool" 4825)
                                     4823)
-                                (tvar "result:8" 4823)
+                                (tvar "result:10" 4823)
                                 4823)))
                     (ttypes
                     (forall (map/from-list []) (tcon "int" 4822))
@@ -1593,7 +1658,7 @@
                                 (tapp (tcon "->" 4847) (tvar "effects-lam:2" 4836) 4847)
                                     (tcon "int" 4849)
                                     4847)
-                                (tvar "result:11" 4847)
+                                (tvar "result:13" 4847)
                                 4847))
                         (forall
                         (map/from-list [])
@@ -1602,7 +1667,7 @@
                                 (tapp (tcon "->" 4850) (tvar "effects-lam:2" 4836) 4850)
                                     (tcon "bool" 4852)
                                     4850)
-                                (tvar "result:12" 4850)
+                                (tvar "result:14" 4850)
                                 4850)))
                     (ttypes
                     (forall (map/from-list []) (tcon "int" 4849))
@@ -2519,7 +2584,7 @@
                 (deftype lol
                     (elol a)))]]
                 "elol")
-            "(fn [{effect:0}int] lol)")
+            "(fn [{tfns-effect:0}int] lol)")
         (,
         (,
             [[(@! (typealias alt (, (list pat) expr)))
@@ -2539,7 +2604,7 @@
                         (blue)
                         (green (a bool))))]]
                 "green")
-            "(fn [{effect:0}(, int bool)] hi)")
+            "(fn [{tfns-effect:0}(, int bool)] hi)")
         ])
 
 (** ## Type Environment populated with Builtins **)
@@ -2571,61 +2636,55 @@
         k  (vbl "k")
         v  (vbl "v")
         v2 (vbl "v2")
-        kv (generic ["k" "v"])
-        kk (generic ["k"])
         a  (vbl "a")
         b  (vbl "b")]
         (tenv
             (map/from-list
-                [(, "+" (concrete (tfns [tint tint] tint -1)))
-                    (, "-" (concrete (tfns [tint tint] tint -1)))
-                    (, ">" (concrete (tfns [tint tint] tbool -1)))
-                    (, "<" (concrete (tfns [tint tint] tbool -1)))
-                    (, "=" (generic ["k"] (tfns [k k] tbool -1)))
-                    (, "!=" (generic ["k"] (tfns [k k] tbool -1)))
-                    (, ">=" (concrete (tfns [tint tint] tbool -1)))
-                    (, "<=" (concrete (tfns [tint tint] tbool -1)))
-                    (, "()" (concrete (tcon "()" -1)))
-                    (, "," (generic ["a" "b"] (tfns [a b] (t, a b) -1)))
-                    (, "unescapeString" (concrete (tfns [tstring] tstring -1)))
-                    (, "int-to-string" (concrete (tfns [tint] tstring -1)))
-                    (, "string-to-int" (concrete (tfns [tstring] (toption tint) -1)))
-                    (,
-                    "string-to-float"
-                        (concrete (tfns [tstring] (toption (tcon "float" -1)) -1)))
-                    ;(, "++" (concrete (tfns [(tlist tstring)] tstring -1)))
-                    (, "map/nil" (kv (tmap k v)))
-                    (, "map/set" (kv (tfns [(tmap k v) k v] (tmap k v) -1)))
-                    (, "map/rm" (kv (tfns [(tmap k v) k] (tmap k v) -1)))
-                    (, "map/get" (kv (tfns [(tmap k v) k] (toption v) -1)))
-                    (,
-                    "map/map"
-                        (generic ["k" "v" "v2"] (tfns [(tfns [v] v2 -1) (tmap k v)] (tmap k v2) -1)))
-                    (, "map/merge" (kv (tfns [(tmap k v) (tmap k v)] (tmap k v) -1)))
-                    (, "map/values" (kv (tfns [(tmap k v)] (tlist v) -1)))
-                    (, "map/keys" (kv (tfns [(tmap k v)] (tlist k) -1)))
-                    (, "set/nil" (kk (tset k)))
-                    (, "set/add" (kk (tfns [(tset k) k] (tset k) -1)))
-                    (, "set/has" (kk (tfns [(tset k) k] tbool -1)))
-                    (, "set/rm" (kk (tfns [(tset k) k] (tset k) -1)))
-                    (, "set/diff" (kk (tfns [(tset k) (tset k)] (tset k) -1)))
-                    (, "set/merge" (kk (tfns [(tset k) (tset k)] (tset k) -1)))
-                    (, "set/overlap" (kk (tfns [(tset k) (tset k)] (tset k) -1)))
-                    (, "set/to-list" (kk (tfns [(tset k)] (tlist k) -1)))
-                    (, "set/from-list" (kk (tfns [(tlist k)] (tset k) -1)))
-                    (, "map/from-list" (kv (tfns [(tlist (t, k v))] (tmap k v) -1)))
-                    (, "map/to-list" (kv (tfns [(tmap k v)] (tlist (t, k v)) -1)))
-                    (, "jsonify" (generic ["v"] (tfns [(tvar "v" -1)] tstring -1)))
-                    (, "valueToString" (generic ["v"] (tfns [(vbl "v")] tstring -1)))
-                    (, "eval" (generic ["v"] (tfns [(tcon "string" -1)] (vbl "v") -1)))
-                    (,
-                    "errorToString"
-                        (generic ["v"] (tfns [(tfns [(vbl "v")] tstring -1) (vbl "v")] tstring -1)))
-                    (, "sanitize" (concrete (tfns [tstring] tstring -1)))
-                    (,
-                    "replace-all"
-                        (concrete (tfns [tstring tstring tstring] tstring -1)))
-                    (, "fatal" (generic ["v"] (tfns [tstring] (vbl "v") -1)))])
+                (map
+                    (fn [(, name type)] (, name (forall (type/free type) type)))
+                        [(, "+" (tfns [tint tint] tint -1))
+                        (, "-" (tfns [tint tint] tint -1))
+                        (, ">" (tfns [tint tint] tbool -1))
+                        (, "<" (tfns [tint tint] tbool -1))
+                        (, "=" (tfns [k k] tbool -1))
+                        (, "!=" (tfns [k k] tbool -1))
+                        (, ">=" (tfns [tint tint] tbool -1))
+                        (, "<=" (tfns [tint tint] tbool -1))
+                        (, "()" (tcon "()" -1))
+                        (, "," (tfns [a b] (t, a b) -1))
+                        (, "unescapeString" (tfns [tstring] tstring -1))
+                        (, "int-to-string" (tfns [tint] tstring -1))
+                        (, "string-to-int" (tfns [tstring] (toption tint) -1))
+                        (, "string-to-float" (tfns [tstring] (toption (tcon "float" -1)) -1))
+                        ;(, "++" (tfns [(tlist tstring)] tstring -1))
+                        (, "map/nil" (tmap k v))
+                        (, "map/set" (tfns [(tmap k v) k v] (tmap k v) -1))
+                        (, "map/rm" (tfns [(tmap k v) k] (tmap k v) -1))
+                        (, "map/get" (tfns [(tmap k v) k] (toption v) -1))
+                        (, "map/map" (tfns [(tfns [v] v2 -1) (tmap k v)] (tmap k v2) -1))
+                        (, "map/merge" (tfns [(tmap k v) (tmap k v)] (tmap k v) -1))
+                        (, "map/values" (tfns [(tmap k v)] (tlist v) -1))
+                        (, "map/keys" (tfns [(tmap k v)] (tlist k) -1))
+                        (, "set/nil" (tset k))
+                        (, "set/add" (tfns [(tset k) k] (tset k) -1))
+                        (, "set/has" (tfns [(tset k) k] tbool -1))
+                        (, "set/rm" (tfns [(tset k) k] (tset k) -1))
+                        (, "set/diff" (tfns [(tset k) (tset k)] (tset k) -1))
+                        (, "set/merge" (tfns [(tset k) (tset k)] (tset k) -1))
+                        (, "set/overlap" (tfns [(tset k) (tset k)] (tset k) -1))
+                        (, "set/to-list" (tfns [(tset k)] (tlist k) -1))
+                        (, "set/from-list" (tfns [(tlist k)] (tset k) -1))
+                        (, "map/from-list" (tfns [(tlist (t, k v))] (tmap k v) -1))
+                        (, "map/to-list" (tfns [(tmap k v)] (tlist (t, k v)) -1))
+                        (, "jsonify" (tfns [(tvar "v" -1)] tstring -1))
+                        (, "valueToString" (tfns [(vbl "v")] tstring -1))
+                        (, "eval" (tfns [(tcon "string" -1)] (vbl "v") -1))
+                        (,
+                        "errorToString"
+                            (tfns [(tfns [(vbl "v")] tstring -1) (vbl "v")] tstring -1))
+                        (, "sanitize" (tfns [tstring] tstring -1))
+                        (, "replace-all" (tfns [tstring tstring tstring] tstring -1))
+                        (, "fatal" (tfns [tstring] (vbl "v") -1))]))
                 (map/from-list [(, "()" (, [] [] (tcon "()" -1))) (, "," (, ["a" "b"] [a b] (t, a b)))])
                 (map/from-list
                 [(, "int" (, 0 set/nil))

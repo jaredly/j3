@@ -2960,6 +2960,10 @@ if ($target === true) {
 return eeffect(id)(false)(l)
 }
 return (($target) => {
+if ($target === true) {
+return eeffect(id)(true)(l)
+}
+return (($target) => {
 if ($target.type === "some") {
 {
 let int = $target[0];
@@ -2980,6 +2984,8 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(string_to_int(id))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_bang(id))
 throw new Error('Failed to match. ' + valueToString($target));
 })(is_earmuffs(id));
 
@@ -5765,6 +5771,18 @@ let l = $target[2];
 return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(erecord(some($co(evar("(effects)")(l))(false)))(map(handlers)(({1: {1: {1: body, 0: kind}, 0: nl}, 0: name}) => (($target) => {
 if ($target.type === "eearmuffs") {
 return $co(name)(body)
+}
+if ($target.type === "ebang") {
+{
+let pats = $target[0];
+return $co(name)(elambda((($target) => {
+if ($target.type === "nil") {
+return cons(pany(l))(nil)
+}
+return pats
+throw new Error('Failed to match. ' + valueToString($target));
+})(pats))(body)(l))
+}
 }
 return fatal("nop")
 throw new Error('Failed to match. ' + valueToString($target));

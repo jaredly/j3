@@ -831,7 +831,7 @@ throw new Error('match fail 2221:' + JSON.stringify($target))
 let tenv$slresolve = ({"0": values}) => (name) => map$slget(values)(name)
 let tfn = (effects) => (arg) => (body) => (l) => tapp(tapp(tapp(tcon("->")(l))(effects)(l))(arg)(l))(body)(l)
 let tenv$slnil = tenv(map$slnil)(map$slnil)(map$slnil)(map$slnil)
-let tfns = (args) => (body) => (l) => foldr(body)(mapi((i) => (arg) => $co(tvar(`effect:${int_to_string(i)}`)(-1))(arg))(args))((body) => ({"1": arg, "0": effects}) => tfn(effects)(arg)(body)(l))
+let tfns = (args) => (body) => (l) => foldr(body)(mapi((i) => (arg) => $co(tvar(`tfns-effect:${int_to_string(i)}`)(-1))(arg))(args))((body) => ({"1": arg, "0": effects}) => tfn(effects)(arg)(body)(l))
 let tint = tcon("int")(-1)
 let type$slunroll_app = (type) => (($target) => {
 if ($target.type === "tapp") {
@@ -867,16 +867,10 @@ let v = vbl("v");
 {
 let v2 = vbl("v2");
 {
-let kv = generic(cons("k")(cons("v")(nil)));
-{
-let kk = generic(cons("k")(nil));
-{
 let a = vbl("a");
 {
 let b = vbl("b");
-return tenv(map$slfrom_list(cons($co("+")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint)(-1))))(cons($co("-")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tint)(-1))))(cons($co(">")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("<")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool)(-1))))(cons($co("!=")(generic(cons("k")(nil))(tfns(cons(k)(cons(k)(nil)))(tbool)(-1))))(cons($co(">=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("<=")(concrete(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1))))(cons($co("()")(concrete(tcon("()")(-1))))(cons($co(",")(generic(cons("a")(cons("b")(nil)))(tfns(cons(a)(cons(b)(nil)))(t$co(a)(b))(-1))))(cons($co("unescapeString")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("int-to-string")(concrete(tfns(cons(tint)(nil))(tstring)(-1))))(cons($co("string-to-int")(concrete(tfns(cons(tstring)(nil))(toption(tint))(-1))))(cons($co("string-to-float")(concrete(tfns(cons(tstring)(nil))(toption(tcon("float")(-1)))(-1))))(cons($co("map/nil")(kv(tmap(k)(v))))(cons($co("map/set")(kv(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v))(-1))))(cons($co("map/rm")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v))(-1))))(cons($co("map/get")(kv(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v))(-1))))(cons($co("map/map")(generic(cons("k")(cons("v")(cons("v2")(nil))))(tfns(cons(tfns(cons(v)(nil))(v2)(-1))(cons(tmap(k)(v))(nil)))(tmap(k)(v2))(-1))))(cons($co("map/merge")(kv(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v))(-1))))(cons($co("map/values")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(v))(-1))))(cons($co("map/keys")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(k))(-1))))(cons($co("set/nil")(kk(tset(k))))(cons($co("set/add")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/has")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tbool)(-1))))(cons($co("set/rm")(kk(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1))))(cons($co("set/diff")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/merge")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/overlap")(kk(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1))))(cons($co("set/to-list")(kk(tfns(cons(tset(k))(nil))(tlist(k))(-1))))(cons($co("set/from-list")(kk(tfns(cons(tlist(k))(nil))(tset(k))(-1))))(cons($co("map/from-list")(kv(tfns(cons(tlist(t$co(k)(v)))(nil))(tmap(k)(v))(-1))))(cons($co("map/to-list")(kv(tfns(cons(tmap(k)(v))(nil))(tlist(t$co(k)(v)))(-1))))(cons($co("jsonify")(generic(cons("v")(nil))(tfns(cons(tvar("v")(-1))(nil))(tstring)(-1))))(cons($co("valueToString")(generic(cons("v")(nil))(tfns(cons(vbl("v"))(nil))(tstring)(-1))))(cons($co("eval")(generic(cons("v")(nil))(tfns(cons(tcon("string")(-1))(nil))(vbl("v"))(-1))))(cons($co("errorToString")(generic(cons("v")(nil))(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring)(-1))(cons(vbl("v"))(nil)))(tstring)(-1))))(cons($co("sanitize")(concrete(tfns(cons(tstring)(nil))(tstring)(-1))))(cons($co("replace-all")(concrete(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring)(-1))))(cons($co("fatal")(generic(cons("v")(nil))(tfns(cons(tstring)(nil))(vbl("v"))(-1))))(nil))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")($co(nil)($co(nil)(tcon("()")(-1)))))(cons($co(",")($co(cons("a")(cons("b")(nil)))($co(cons(a)(cons(b)(nil)))(t$co(a)(b)))))(nil))))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("float")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(cons($co("map")($co(2)(set$slnil)))(cons($co("set")($co(1)(set$slnil)))(cons($co("->")($co(2)(set$slnil)))(nil)))))))))(map$slnil)
-}
-}
+return tenv(map$slfrom_list(map(({"1": type, "0": name}) => $co(name)(forall(type$slfree(type))(type)))(cons($co("+")(tfns(cons(tint)(cons(tint)(nil)))(tint)(-1)))(cons($co("-")(tfns(cons(tint)(cons(tint)(nil)))(tint)(-1)))(cons($co(">")(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1)))(cons($co("<")(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1)))(cons($co("=")(tfns(cons(k)(cons(k)(nil)))(tbool)(-1)))(cons($co("!=")(tfns(cons(k)(cons(k)(nil)))(tbool)(-1)))(cons($co(">=")(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1)))(cons($co("<=")(tfns(cons(tint)(cons(tint)(nil)))(tbool)(-1)))(cons($co("()")(tcon("()")(-1)))(cons($co(",")(tfns(cons(a)(cons(b)(nil)))(t$co(a)(b))(-1)))(cons($co("unescapeString")(tfns(cons(tstring)(nil))(tstring)(-1)))(cons($co("int-to-string")(tfns(cons(tint)(nil))(tstring)(-1)))(cons($co("string-to-int")(tfns(cons(tstring)(nil))(toption(tint))(-1)))(cons($co("string-to-float")(tfns(cons(tstring)(nil))(toption(tcon("float")(-1)))(-1)))(cons($co("map/nil")(tmap(k)(v)))(cons($co("map/set")(tfns(cons(tmap(k)(v))(cons(k)(cons(v)(nil))))(tmap(k)(v))(-1)))(cons($co("map/rm")(tfns(cons(tmap(k)(v))(cons(k)(nil)))(tmap(k)(v))(-1)))(cons($co("map/get")(tfns(cons(tmap(k)(v))(cons(k)(nil)))(toption(v))(-1)))(cons($co("map/map")(tfns(cons(tfns(cons(v)(nil))(v2)(-1))(cons(tmap(k)(v))(nil)))(tmap(k)(v2))(-1)))(cons($co("map/merge")(tfns(cons(tmap(k)(v))(cons(tmap(k)(v))(nil)))(tmap(k)(v))(-1)))(cons($co("map/values")(tfns(cons(tmap(k)(v))(nil))(tlist(v))(-1)))(cons($co("map/keys")(tfns(cons(tmap(k)(v))(nil))(tlist(k))(-1)))(cons($co("set/nil")(tset(k)))(cons($co("set/add")(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1)))(cons($co("set/has")(tfns(cons(tset(k))(cons(k)(nil)))(tbool)(-1)))(cons($co("set/rm")(tfns(cons(tset(k))(cons(k)(nil)))(tset(k))(-1)))(cons($co("set/diff")(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1)))(cons($co("set/merge")(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1)))(cons($co("set/overlap")(tfns(cons(tset(k))(cons(tset(k))(nil)))(tset(k))(-1)))(cons($co("set/to-list")(tfns(cons(tset(k))(nil))(tlist(k))(-1)))(cons($co("set/from-list")(tfns(cons(tlist(k))(nil))(tset(k))(-1)))(cons($co("map/from-list")(tfns(cons(tlist(t$co(k)(v)))(nil))(tmap(k)(v))(-1)))(cons($co("map/to-list")(tfns(cons(tmap(k)(v))(nil))(tlist(t$co(k)(v)))(-1)))(cons($co("jsonify")(tfns(cons(tvar("v")(-1))(nil))(tstring)(-1)))(cons($co("valueToString")(tfns(cons(vbl("v"))(nil))(tstring)(-1)))(cons($co("eval")(tfns(cons(tcon("string")(-1))(nil))(vbl("v"))(-1)))(cons($co("errorToString")(tfns(cons(tfns(cons(vbl("v"))(nil))(tstring)(-1))(cons(vbl("v"))(nil)))(tstring)(-1)))(cons($co("sanitize")(tfns(cons(tstring)(nil))(tstring)(-1)))(cons($co("replace-all")(tfns(cons(tstring)(cons(tstring)(cons(tstring)(nil))))(tstring)(-1)))(cons($co("fatal")(tfns(cons(tstring)(nil))(vbl("v"))(-1)))(nil)))))))))))))))))))))))))))))))))))))))))))(map$slfrom_list(cons($co("()")($co(nil)($co(nil)(tcon("()")(-1)))))(cons($co(",")($co(cons("a")(cons("b")(nil)))($co(cons(a)(cons(b)(nil)))(t$co(a)(b)))))(nil))))(map$slfrom_list(cons($co("int")($co(0)(set$slnil)))(cons($co("float")($co(0)(set$slnil)))(cons($co("string")($co(0)(set$slnil)))(cons($co("bool")($co(0)(set$slnil)))(cons($co("map")($co(2)(set$slnil)))(cons($co("set")($co(1)(set$slnil)))(cons($co("->")($co(2)(set$slnil)))(nil)))))))))(map$slnil)
 }
 }
 }
@@ -2444,6 +2438,14 @@ throw new Error('match fail 19532:' + JSON.stringify($target))
 return $co(t1$$3)($co(t2$$2)($co(lookup$$1)(pairs$$0)));
 throw new Error('match fail 19526:' + JSON.stringify($target))
 })(is_rec_pair(t1$$3)(t2$$2));
+{
+(($target) => {
+if ($target === true) {
+return fatal("100 deep in unify")
+} ;
+return $unit;
+throw new Error('match fail 27227:' + JSON.stringify($target))
+})(count > 100);
 return $gt$gt$eq(lookup_rec(t1)(lookup))((r1) => $gt$gt$eq(lookup_rec(t2)(lookup))((r2) => $lt_((($target) => {
 if ($target.type === ",") {
 if ($target[0].type === "some") {
@@ -2480,6 +2482,7 @@ return $co(t1)($co(t2)($co(lookup)($co(pairs)(1 + count))))
 return $co(t1)($co(t2)($co(lookup)($co(pairs)(count))));
 throw new Error('match fail 19456:' + JSON.stringify($target))
 })($co(r1)(r2)))))
+}
 }
 }
 }
@@ -3161,7 +3164,18 @@ if ($target.type === "eeffect") {
 let name = $target[0];
 if ($target[1] === true) {
 let l = $target[2];
-return fatal("Lol what effect")
+return $gt$gt$eq((($target) => {
+if ($target.type === "none") {
+return $lt_missing("(effects)")(l)
+} ;
+if ($target.type === "some") {
+if ($target[0].type === "forall") {
+let t = $target[0][1];
+return $lt_(t)
+} 
+} ;
+throw new Error('match fail 26086:' + JSON.stringify($target))
+})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(new_type_var(name)(l))((result) => $gt$gt$eq(new_type_var("effects-rest")(l))((t) => $gt$gt$eq(unify(effects)(trow(cons($co(name)(result))(nil))(some(t))(rrecord)(l))(l))((_26082) => type$slapply_$gt(result)))))
 } 
 } ;
 if ($target.type === "eprovide") {
@@ -3179,13 +3193,17 @@ return $lt_(t)
 } 
 } ;
 throw new Error('match fail 25088:' + JSON.stringify($target))
-})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(map_$gt(({"1": {"1": {"1": expr, "0": kind}, "0": nl}, "0": name}) => (($target) => {
+})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(new_type_var("provide-result")(expr_loc(target)))((result) => $gt$gt$eq(map_$gt(({"1": {"1": {"1": expr, "0": kind}, "0": nl}, "0": name}) => (($target) => {
 if ($target.type === "eearmuffs") {
 return $gt$gt$eq(infer$slexpr(tenv)(expr))((body) => $lt_($co(name)(body)))
 } ;
+if ($target.type === "ebang") {
+let args = $target[0];
+return $gt$gt$eq(map_$gt(infer$slpattern(tenv))(args))((sub_patterns) => $gt$gt$eq($lt_(unzip(sub_patterns)))(({"1": scopes, "0": arg_types}) => $gt$gt$eq($lt_(foldl(map$slnil)(scopes)(map$slmerge)))((scope) => $gt$gt$eq(infer$slexpr(tenv$slwith_scope(tenv)(scope))(expr))((body) => $gt$gt$eq(type$slapply_$gt(result))((result) => $gt$gt$eq(unify(body)(result)(nl))((_25928) => $gt$gt$eq(new_type_var("any-result")(nl))((any_result) => $gt$gt$eq(foldr_$gt(any_result)(arg_types)((res) => (arg) => $gt$gt$eq(new_type_var("effects")(nl))((v) => $lt_(tfn(v)(arg)(res)(nl)))))((fntype) => $lt_($co(name)(fntype))))))))))
+} ;
 return fatal("other kind not supported yet");
 throw new Error('match fail 25173:' + JSON.stringify($target))
-})(kind))(cases))((rows) => $gt$gt$eq(infer$slexpr(tenv$slwith_type(tenv)("(effects)")(forall(set$slnil)(trow(rows)(some(effects))(rrecord)(l))))(target))((target) => $lt_(target))))
+})(kind))(cases))((rows) => $gt$gt$eq(infer$slexpr(tenv$slwith_type(tenv)("(effects)")(forall(set$slnil)(trow(rows)(some(effects))(rrecord)(l))))(target))((target) => $gt$gt$eq(type$slapply_$gt(result))((result) => $gt$gt$eq(unify(target)(result)(l))((_25064) => type$slapply_$gt(target)))))))
 } ;
 if ($target.type === "evar") {
 let name = $target[0];

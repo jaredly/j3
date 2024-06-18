@@ -1017,8 +1017,16 @@
                                                                                      handlers
                                                                                          (fn [(, name nl kind body)]
                                                                                          (match kind
-                                                                                             (eearmuffs) (, name body)
-                                                                                             _           (fatal "nop"))))
+                                                                                             (eearmuffs)  (, name body)
+                                                                                             (ebang pats) (,
+                                                                                                              name
+                                                                                                                  (elambda
+                                                                                                                  (match pats
+                                                                                                                      [] [(pany l)]
+                                                                                                                      _  pats)
+                                                                                                                      body
+                                                                                                                      l))
+                                                                                             _            (fatal "nop"))))
                                                                                      l)))]
                                                              (<-
                                                                  (right
@@ -2590,6 +2598,17 @@ return {
         (, (@@ .abc) (eaccess (none) [(, "abc" 22113)] 22112))
         (, (@@ 'hi) (eenum "hi" 21779 (none) 21779))
         (,
+        (@@ (provide (+ 2 3) (!fail n) 12))
+            (eprovide
+            (eapp
+                (evar "+" 30181)
+                    [(eprim (pint 2 30182) 30182) (eprim (pint 3 30183) 30183)]
+                    30180)
+                [(,
+                "!fail"
+                    (, 30185 (, (ebang [(pvar "n" 30186)]) (eprim (pint 12 30187) 30187))))]
+                30178))
+        (,
         (@@ (provide x *lol* 20 (!fail msg) 2 (k <-set v) (k v)))
             (eprovide
             (evar "x" 23392)
@@ -2824,11 +2843,13 @@ return {
 (defn parse-id [id l]
     (if (is-earmuffs id)
         (eeffect id false l)
-            (match (string-to-int id)
-            (some int) (eprim (pint int l) l)
-            (none)     (match (parse-tag id)
-                           (some tag) (eenum tag l none l)
-                           _          (evar id l)))))
+            (if (is-bang id)
+            (eeffect id true l)
+                (match (string-to-int id)
+                (some int) (eprim (pint int l) l)
+                (none)     (match (parse-tag id)
+                               (some tag) (eenum tag l none l)
+                               _          (evar id l))))))
 
 (defn parse-provide [parse-expr target ml cases l]
     (let-> [

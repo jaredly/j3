@@ -274,6 +274,7 @@ export function updateState(
             try {
                 res = state.evaluator.inference.infer(stmts, tenv);
             } catch (err) {
+                debugger;
                 group.forEach((item) => {
                     state.results!.tops[item.id].produce.push({
                         type: 'error',
@@ -316,14 +317,15 @@ export function updateState(
 
                     types.forEach((type) => {
                         try {
-                                const text =
-                                    state.evaluator!.inference!.typeToString(type);
-                                const cst = state.evaluator?.inference?.typeToCst?.(type)
-                                state.results!.tops[one.id].produce.push({
-                                    type: 'type',
-                                    text,
-                                    cst
-                                });
+                            const text =
+                                state.evaluator!.inference!.typeToString(type);
+                            const cst =
+                                state.evaluator?.inference?.typeToCst?.(type);
+                            state.results!.tops[one.id].produce.push({
+                                type: 'type',
+                                text,
+                                cst,
+                            });
                         } catch (err) {
                             state.results!.tops[one.id].produce.push({
                                 type: 'error',
