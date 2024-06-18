@@ -120,6 +120,22 @@
 
 (provide (construct-tractors "yes" 12) *extra-florbs* 40)
 
+(** ## Composability **)
+
+(defn needs-one [x] (+ x *one*))
+
+(defn needs-two [x] (+ x *two*))
+
+(defn give-one [f n] (provide (f ()) *one* n))
+
+(defn give-two [f n] (provide (f ()) *two* n))
+
+(give-one (fn [()] (needs-one 12)) 5)
+
+(defn needs-both [()] (+ (needs-one 2) (needs-two 3)))
+
+(give-one (fn [()] (give-two needs-both 12)) 10)
+
 (+ 2)
 
 (provide *lol* *lol* 12)

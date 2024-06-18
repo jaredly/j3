@@ -1994,6 +1994,7 @@
                                                 "false")
                                             (gnames ["true" "false"] none)
                                             [])
+        (pcon "()" _ [] _)          (ex/constructor "()" (gnames [] none) [])
         (pcon name _ args l)        (let [
                                         (, tname targs)           (tcon-and-args type [] l)
                                         (tenv _ tcons types _)    tenv

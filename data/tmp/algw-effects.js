@@ -1850,6 +1850,13 @@ throw new Error('match fail 10204:' + JSON.stringify($target))
 } 
 } ;
 if ($target.type === "pcon") {
+if ($target[0] === "()") {
+if ($target[2].type === "nil") {
+return ex$slconstructor("()")(gnames(nil)(none))(nil)
+} 
+} 
+} ;
+if ($target.type === "pcon") {
 let name = $target[0];
 let args = $target[2];
 let l = $target[3];
