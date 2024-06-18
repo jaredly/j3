@@ -14,7 +14,16 @@ export const RenderProduceItem = ({
 }) => {
     if (typeof value === 'string') {
         return (
-            <>{value.length > 1000 ? value.slice(0, 1000) + '...' : value}</>
+            <div
+                className="mouse-capture"
+                onMouseDownCapture={(evt) => {
+                    navigator.clipboard.writeText(value);
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                }}
+            >
+                {value.length > 1000 ? value.slice(0, 1000) + '...' : value}
+            </div>
         );
     }
     switch (value.type) {

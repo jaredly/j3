@@ -144,5 +144,25 @@
 
 (provide (+ 2 3) (!fail n) 12)
 
-(provide (+ 2 (!fail 21)) (!fail n) 3 (!foo) 1)
+(provide (!fail 2) (!fail n) n)
 
+(defn id [m] m)
+
+(provide (id (!fail 21)) (!fail n) 3)
+
+(deftype (list a)
+    (nil)
+        (cons a (list a)))
+
+(defn try-int [x]
+    (match (string-to-int x)
+        (none)   (!fail "Not an integer ${x}")
+        (some x) x))
+
+(defn fail-or [d f] (provide (f ()) (!fail _) d))
+
+(fail-or 'nil (fn [()] (map try-int ('cons "a" 'nil))))
+
+map
+
+(provide (!fail 21) (!fail n) 3)

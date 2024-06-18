@@ -1816,6 +1816,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(items);
 
 const j$slapp = (v0) => (v1) => (v2) => ({type: "j/app", 0: v0, 1: v1, 2: v2})
+const j$slcom = (v0) => (v1) => ({type: "j/com", 0: v0, 1: v1})
 const j$slbin = (v0) => (v1) => (v2) => (v3) => ({type: "j/bin", 0: v0, 1: v1, 2: v2, 3: v3})
 const j$slun = (v0) => (v1) => (v2) => ({type: "j/un", 0: v0, 1: v1, 2: v2})
 const j$sllambda = (v0) => (v1) => (v2) => ({type: "j/lambda", 0: v0, 1: v1, 2: v2})
@@ -3061,7 +3062,7 @@ return x
 if ($target.type === "right") {
 {
 let x = $target[0];
-return j$slapp(x)(cons(j$sllambda(cons(j$slpvar("x")(1))(nil))(right(j$slvar("x")(1)))(1))(nil))(1)
+return j$slapp(j$sllambda(nil)(left(j$slblock(cons(j$sllet(j$slpvar("\$final")(-1))(j$slstr("-uninitialized-")(nil)(-1))(-1))(cons(j$slsexpr(j$slapp(x)(cons(j$sllambda(cons(j$slpvar("x")(-1))(nil))(right(j$slassign("\$final")("=")(j$slvar("x")(-1))(-1)))(-1))(nil))(-1))(-1))(cons(j$slreturn(j$slvar("\$final")(-1))(-1))(nil))))))(-1))(nil)(-1)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -3255,6 +3256,86 @@ return j$slprim(j$slbool(bool)(pl))(l)
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(prim);
+
+const cps$sleffects = (cps$slj3) => (trace) => (l) => (handlers) => (done) => go2($gt$gt$eq(map_$gt(({1: {1: {1: body, 0: kind}, 0: nl}, 0: name}) => $gt$gt$eq((($target) => {
+if ($target.type === "eearmuffs") {
+return $lt_lr(cps$slj3(trace)(body))
+}
+if ($target.type === "ebang") {
+{
+let pats = $target[0];
+return $lt_lr(left(loop((($target) => {
+if ($target.type === "nil") {
+return cons(pvar("_")(l))(nil)
+}
+return pats
+throw new Error('Failed to match. ' + valueToString($target));
+})(pats))((pats) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return fatal("gotta have pats")
+}
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let final = $target[0];
+return j$sllambda(cons(opt_or(pat_$gtj$slpat(final))(j$slpvar("_")(l)))(cons(j$slpvar("_ignored_effects")(l))(cons(j$slpvar("_ignored_done")(l))(nil))))(left(j$slblock(cons(j$slsexpr((($target) => {
+if ($target.type === "left") {
+{
+let body = $target[0];
+return j$slapp(done)(cons(body)(nil))(l)
+}
+}
+if ($target.type === "right") {
+{
+let body = $target[0];
+return j$slapp(body)(cons(done)(nil))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)
+}
+}
+if ($target.type === "cons") {
+{
+let arg = $target[0];
+let rest = $target[1];
+return j$sllambda(cons(opt_or(pat_$gtj$slpat(arg))(j$slpvar("_")(l)))(cons(j$slpvar("_ignored_effects")(l))(cons(j$slpvar("\$done")(l))(nil))))(right(j$slapp(j$slvar("\$done")(l))(cons(recur(rest))(nil))(l)))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(pats))))
+}
+}
+return fatal("nop effect eprovide compile")
+throw new Error('Failed to match. ' + valueToString($target));
+})(kind))((value) => $lt_(left($co(name)(value)))))(handlers))((fields) => $gt$gt$eq($lt_lrt(some)(cps$slj3(trace)(evar("(effects)")(l))))((spread) => $lt_(left(j$slobj((($target) => {
+if ($target.type === "none") {
+return fields
+}
+if ($target.type === "some") {
+{
+let s = $target[0];
+return cons(right(j$slspread(s)))(fields)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(spread))(l))))));
+
+const $lt_lrn = (n) => (v) => (($target) => {
+if ($target.type === "left") {
+{
+let v = $target[0];
+return $lt_(v)
+}
+}
+if ($target.type === "right") {
+{
+let v = $target[0];
+return $gt$gt$eq($lt_state)(({1: {1: idx, 0: flag}, 0: wraps}) => $gt$gt$eq($lt_(`${n}_${int_to_string(idx)}`))((name) => $gt$gt$eq(state_$gt($co(cons($co(v)(name))(wraps))($co(flag)($pl(1)(idx)))))((_) => $lt_(j$slvar(name)(-1)))))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(v);
 
 const compile_pat$slj = (pat) => (target) => (inner) => (trace) => (($target) => {
 if ($target.type === "pany") {
@@ -3497,6 +3578,13 @@ let l = $target[1];
 return raw
 }
 }
+if ($target.type === "j/com") {
+{
+let cm = $target[0];
+let inner = $target[1];
+return `${j$slcompile(ctx)(inner)}/*${cm}*/`
+}
+}
 if ($target.type === "j/lambda") {
 {
 let args = $target[0];
@@ -3676,6 +3764,13 @@ let op = $target[0];
 let arg = $target[1];
 let l = $target[2];
 return j$slun(op)(loop(arg))(l)
+}
+}
+if ($target.type === "j/com") {
+{
+let cm = $target[0];
+let inner = $target[1];
+return j$slcom(cm)(loop(inner))
 }
 }
 if ($target.type === "j/lambda") {
@@ -5759,39 +5854,35 @@ if ($target.type === "eprovide") {
 let target = $target[0];
 let handlers = $target[1];
 let l = $target[2];
-return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(erecord(some($co(evar("(effects)")(l))(false)))(map(handlers)(({1: {1: {1: body, 0: kind}, 0: nl}, 0: name}) => (($target) => {
-if ($target.type === "eearmuffs") {
-return $co(name)(body)
-}
-if ($target.type === "ebang") {
+return right(done_fn(l)((done) => (($target) => {
+if ($target.type === "left") {
 {
-let pats = $target[0];
-return $co(name)(elambda((($target) => {
-if ($target.type === "nil") {
-return cons(pany(l))(nil)
+let v = $target[0];
+return v
 }
-return pats
+}
+if ($target.type === "right") {
+{
+let v = $target[0];
+return fatal("is this provide a fn?")
+}
+}
 throw new Error('Failed to match. ' + valueToString($target));
-})(pats))(body)(l))
-}
-}
-return fatal("nop")
-throw new Error('Failed to match. ' + valueToString($target));
-})(kind)))(l))))((effects) => $lt_(right(done_fn(l)((done) => j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
+})(go2($gt$gt$eq($lt_lr(cps$sleffects(cps$slj3)(trace)(l)(handlers)(done)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
 if ($target.type === "left") {
 {
 let body = $target[0];
-return j$slapp(done)(cons(body)(nil))(l)
+return j$slcom("left")(j$slapp(done)(cons(body)(nil))(l))
 }
 }
 if ($target.type === "right") {
 {
 let body = $target[0];
-return j$slapp(body)(cons(done)(nil))(l)
+return j$slcom("right")(j$slapp(body)(cons(done)(nil))(l))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(target))))(l))(cons(effects)(nil))(l))))))
+})(cps$slj3(trace)(target))))(l))(cons(effects)(nil))(l))))))))
 }
 }
 if ($target.type === "elet" &&
