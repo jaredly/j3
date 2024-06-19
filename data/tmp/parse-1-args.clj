@@ -875,46 +875,6 @@
                                                    (none)   (none)
                                                    (some v) (some (j/pobj [(, "arg" v)] none l))))))
 
-(** ## Expressions **)
-
-(defn app/j [target args trace l]
-    (foldl
-        (compile/j target trace)
-            args
-            (fn [target arg]
-            (j/app target [(compile/j arg trace) (j/var "$lbeffects$rb" l)] l))))
-
-(defn expand-bindings [bindings l]
-    (foldr
-        []
-            bindings
-            (fn [res binding] (concat [(let-fix-shadow binding l) res]))))
-
-(def done-fn (con-fn "done"))
-
-(defn con-fn [name l f]
-    (j/lambda [(j/pvar name l)] (right (f (j/var name l))) l))
-
-(defn left-right [either name l usage]
-    (match either
-        (left v)  (usage v)
-        (right v) (j/app v [(con-fn name l usage)] l)))
-
->>=
-
-<-
-
-(defn cps>>= [(StateT f) next]
-    (StateT
-        (fn [state]
-            (let [(, (, has idx) value) (f state)]
-                (match value
-                    (left v)  ((state-f (next v)) (, has idx))
-                    (right v) (let [
-                                  name            "v${(int-to-string idx)}"
-                                  (, nstate iner) ((state-f (next (j/var name -1))) (, true (+ idx 1)))]
-                                  (, nstate (j/app v [(j/lambda [(j/pvar name -1)] (right iner) -1)] -1))))))))
-
 (** ## CPS **)
 
 (defn or [a b]
@@ -1472,6 +1432,46 @@
         (, (@p case) (some "$case"))])
 
 (def m (jsonify 1))
+
+(** ## Expressions **)
+
+(defn app/j [target args trace l]
+    (foldl
+        (compile/j target trace)
+            args
+            (fn [target arg]
+            (j/app target [(compile/j arg trace) (j/var "$lbeffects$rb" l)] l))))
+
+(defn expand-bindings [bindings l]
+    (foldr
+        []
+            bindings
+            (fn [res binding] (concat [(let-fix-shadow binding l) res]))))
+
+(def done-fn (con-fn "done"))
+
+(defn con-fn [name l f]
+    (j/lambda [(j/pvar name l)] (right (f (j/var name l))) l))
+
+(defn left-right [either name l usage]
+    (match either
+        (left v)  (usage v)
+        (right v) (j/app v [(con-fn name l usage)] l)))
+
+>>=
+
+<-
+
+(defn cps>>= [(StateT f) next]
+    (StateT
+        (fn [state]
+            (let [(, (, has idx) value) (f state)]
+                (match value
+                    (left v)  ((state-f (next v)) (, has idx))
+                    (right v) (let [
+                                  name            "v${(int-to-string idx)}"
+                                  (, nstate iner) ((state-f (next (j/var name -1))) (, true (+ idx 1)))]
+                                  (, nstate (j/app v [(j/lambda [(j/pvar name -1)] (right iner) -1)] -1))))))))
 
 (defn compile/j [expr trace]
     (maybe-trace
