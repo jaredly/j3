@@ -3225,7 +3225,7 @@ return $lt_(t)
 } 
 } ;
 throw new Error('match fail 25088:' + JSON.stringify($target))
-})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(new_type_var("provide-result")(expr_loc(target)))((result) => $gt$gt$eq(map_$gt(({"1": {"1": {"1": expr, "0": kind}, "0": nl}, "0": name}) => (($target) => {
+})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(new_type_var("provide-result")(expr_loc(target)))((result) => $gt$gt$eq(new_type_var("k-effects")(expr_loc(target)))((k_effects) => $gt$gt$eq(map_$gt(({"1": {"1": {"1": expr, "0": kind}, "0": nl}, "0": name}) => (($target) => {
 if ($target.type === "eearmuffs") {
 return $gt$gt$eq(infer$slexpr(tenv)(expr))((body) => $lt_($co(name)(body)))
 } ;
@@ -3253,7 +3253,7 @@ if ($target.type === "eeffectful") {
 let k = $target[0];
 let kl = $target[1];
 let args = $target[2];
-return $gt$gt$eq(new_type_var("k-arg")(kl))((kv) => $gt$gt$eq(new_type_var("k-res")(kl))((kr) => $gt$gt$eq(new_type_var("ignore-effets")(kl))((ignore_effects) => $gt$gt$eq(new_type_var("ignore-2")(kl))((ignore_2) => $gt$gt$eq(map_$gt(infer$slpattern(tenv))(args))((sub_patterns) => $gt$gt$eq($lt_(unzip(sub_patterns)))(({"1": scopes, "0": arg_types}) => $gt$gt$eq($lt_(foldl(map$slnil)(scopes)(map$slmerge)))((scope) => $gt$gt$eq(infer$slexpr(tenv$slwith_type(tenv$slwith_scope(tenv)(scope))(k)(forall(set$slnil)(tfn(ignore_effects)(kv)(kr)(kl))))(expr))((body) => $gt$gt$eq(unify(body)(result)(nl))((_27570) => $gt$gt$eq(map_$gt(type$slapply_$gt)(arg_types))((arg_types) => $lt_($co(name)(tfn(ignore_2)(loop(arg_types)((args) => (recur) => (($target) => {
+return $gt$gt$eq(new_type_var("k-arg")(kl))((kv) => $gt$gt$eq(new_type_var("k-res")(kl))((kr) => $gt$gt$eq(new_type_var("ignore-2")(kl))((ignore_2) => $gt$gt$eq(map_$gt(infer$slpattern(tenv))(args))((sub_patterns) => $gt$gt$eq($lt_(unzip(sub_patterns)))(({"1": scopes, "0": arg_types}) => $gt$gt$eq($lt_(foldl(map$slnil)(scopes)(map$slmerge)))((scope) => $gt$gt$eq(infer$slexpr(tenv$slwith_type(tenv$slwith_scope(tenv)(scope))(k)(forall(set$slnil)(tfn(k_effects)(kv)(kr)(kl))))(expr))((body) => $gt$gt$eq(unify(body)(result)(nl))((_27570) => $gt$gt$eq(map_$gt(type$slapply_$gt)(arg_types))((arg_types) => $lt_($co(name)(tfn(ignore_2)(loop(arg_types)((args) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return tcon("()")(nl)
 } ;
@@ -3269,10 +3269,10 @@ let rest = $target[1];
 return tapp(tapp(tcon(",")(l))(one)(nl))(recur(rest))(nl)
 } ;
 throw new Error('match fail 27768:' + JSON.stringify($target))
-})(args)))(kv)(nl)))))))))))))
+})(args)))(kv)(nl))))))))))))
 } ;
 throw new Error('match fail 25173:' + JSON.stringify($target))
-})(kind))(cases))((rows) => $gt$gt$eq(infer$slexpr(tenv$slwith_type(tenv)("(effects)")(forall(set$slnil)(trow(rows)(some(effects))(rrecord)(l))))(target))((target) => $gt$gt$eq(type$slapply_$gt(result))((result) => $gt$gt$eq(unify(target)(result)(l))((_25064) => type$slapply_$gt(target)))))))
+})(kind))(cases))((rows) => $gt$gt$eq($lt_(trow(rows)(some(effects))(rrecord)(l)))((inner_effects) => $gt$gt$eq(infer$slexpr(tenv$slwith_type(tenv)("(effects)")(forall(set$slnil)(inner_effects)))(target))((target) => $gt$gt$eq(type$slapply_$gt(k_effects))((k_effects) => $gt$gt$eq(type$slapply_$gt(inner_effects))((inner_effects) => $gt$gt$eq(unify(k_effects)(inner_effects)(l))((_25064) => $gt$gt$eq(type$slapply_$gt(result))((result) => $gt$gt$eq(type$slapply_$gt(target))((target) => $gt$gt$eq(unify(target)(result)(l))((_25064) => type$slapply_$gt(target)))))))))))))
 } ;
 if ($target.type === "evar") {
 let name = $target[0];

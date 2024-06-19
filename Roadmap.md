@@ -6,6 +6,8 @@
 - [x] oooh hrm my recursive unification is broken?? we're getting too many type variables. not sure what the deal is...
   - [x] ahaha ok so I hadn't been doing type/apply for trec. now its better.
 
+- [ ] real effects!!!! is not quite working. might be something I'm not figuring out right
+
 
 # Things I wanttt
 

@@ -1969,6 +1969,13 @@ let l = $target[1];
 return empty
 }
 }
+if ($target.type === "eeffect" &&
+$target[1].type === "some") {
+{
+let args = $target[1][0];
+return foldl(empty)(map(args)(externals(bound)))(bag$sland)
+}
+}
 if ($target.type === "eeffect") {
 return empty
 }
@@ -2676,7 +2683,10 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 }
 if ($target.type === "eeffect") {
+{
+let args = $target[1];
 return none
+}
 }
 if ($target.type === "eprovide") {
 return none
@@ -2841,6 +2851,13 @@ let args = $target[1];
 return many(cons(expr$slidents(target))(map(args)(expr$slidents)))
 }
 }
+if ($target.type === "eeffect" &&
+$target[1].type === "some") {
+{
+let args = $target[1][0];
+return foldl(empty)(map(args)(expr$slidents))(bag$sland)
+}
+}
 if ($target.type === "elet") {
 {
 let bindings = $target[0];
@@ -2967,6 +2984,10 @@ if ($target === true) {
 return eeffect(id)(some(nil))(l)
 }
 return (($target) => {
+if ($target === true) {
+return eeffect(id)(some(nil))(l)
+}
+return (($target) => {
 if ($target.type === "some") {
 {
 let int = $target[0];
@@ -2987,6 +3008,8 @@ throw new Error('Failed to match. ' + valueToString($target));
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(string_to_int(id))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_arrow(id))
 throw new Error('Failed to match. ' + valueToString($target));
 })(is_bang(id))
 throw new Error('Failed to match. ' + valueToString($target));
@@ -4589,6 +4612,13 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(k))))(bag$sland)
 }
 }
+if ($target.type === "eeffect" &&
+$target[1].type === "some") {
+{
+let args = $target[1][0];
+return foldl(empty)(map(args)(expr$slnames(bound)))(bag$sland)
+}
+}
 if ($target.type === "eeffect") {
 return empty
 }
@@ -5191,8 +5221,8 @@ return (($target) => {
 if ($target.type === "some" &&
 $target[0].type === "left") {
 {
-let bang = $target[0][0];
-return $gt$gt$eq(map_$gt(parse_expr)(args))((args) => $lt_(eeffect(bang)(some(args))(l)))
+let effect = $target[0][0];
+return $gt$gt$eq(map_$gt(parse_expr)(args))((args) => $lt_(eeffect(effect)(some(args))(l)))
 }
 }
 if ($target.type === "some" &&
@@ -5233,7 +5263,7 @@ return some(left(id))
 }
 return map_opt(parse_tag(id))(right)
 throw new Error('Failed to match. ' + valueToString($target));
-})(is_bang(id))
+})(or(is_bang(id))(is_arrow(id)))
 }
 }
 return none

@@ -2640,29 +2640,30 @@ return {
         (cst/list [(cst/id "," il) ..args] l)                       (parse-tuple args il l)
         (cst/list [] l)                                             (<- (evar "()" l))
         (cst/list [target ..args] l)                                (match (match target
-                                                                        (cst/id id _) (if (is-bang id)
+                                                                        (cst/id id _) (if (or (is-bang id) (is-arrow id))
                                                                                           (some (left id))
                                                                                               (map-opt (parse-tag id) right))
                                                                         _             none)
-                                                                        (some (left bang)) (let-> [args (map-> parse-expr args)] (<- (eeffect bang (some args) l)))
-                                                                        (some (right tag)) (let-> [args (map-> parse-expr args)]
-                                                                                               (<-
-                                                                                                   (eenum
-                                                                                                       tag
-                                                                                                           (cst-loc target)
-                                                                                                           (some
-                                                                                                           (loop
-                                                                                                               args
-                                                                                                                   (fn [args recur]
-                                                                                                                   (match args
-                                                                                                                       []           (fatal "empty tag args")
-                                                                                                                       [one]        one
-                                                                                                                       [one ..rest] (eapp (evar "," l) [one (recur rest)] l)))))
-                                                                                                           l)))
-                                                                        _                  (let-> [
-                                                                                               target (parse-expr target)
-                                                                                               args   (map-> parse-expr args)]
-                                                                                               (<- (eapp target args l))))
+                                                                        (some (left effect)) (let-> [args (map-> parse-expr args)]
+                                                                                                 (<- (eeffect effect (some args) l)))
+                                                                        (some (right tag))   (let-> [args (map-> parse-expr args)]
+                                                                                                 (<-
+                                                                                                     (eenum
+                                                                                                         tag
+                                                                                                             (cst-loc target)
+                                                                                                             (some
+                                                                                                             (loop
+                                                                                                                 args
+                                                                                                                     (fn [args recur]
+                                                                                                                     (match args
+                                                                                                                         []           (fatal "empty tag args")
+                                                                                                                         [one]        one
+                                                                                                                         [one ..rest] (eapp (evar "," l) [one (recur rest)] l)))))
+                                                                                                             l)))
+                                                                        _                    (let-> [
+                                                                                                 target (parse-expr target)
+                                                                                                 args   (map-> parse-expr args)]
+                                                                                                 (<- (eapp target args l))))
         (cst/array args l)                                          (parse-array args l)
         (cst/access target items l)                                 (<- (eaccess target items l))
         (cst/record items l)                                        (let-> [
@@ -2958,11 +2959,13 @@ return {
         (eeffect id none l)
             (if (is-bang id)
             (eeffect id (some []) l)
-                (match (string-to-int id)
-                (some int) (eprim (pint int l) l)
-                (none)     (match (parse-tag id)
-                               (some tag) (eenum tag l none l)
-                               _          (evar id l))))))
+                (if (is-arrow id)
+                (eeffect id (some []) l)
+                    (match (string-to-int id)
+                    (some int) (eprim (pint int l) l)
+                    (none)     (match (parse-tag id)
+                                   (some tag) (eenum tag l none l)
+                                   _          (evar id l)))))))
 
 (defn parse-provide [parse-expr target ml cases l]
     (let-> [
@@ -3297,7 +3300,7 @@ dot
         (evar _ l)             (if (= l tl)
                                    (some locs)
                                        none)
-        (eeffect _ _ _)        none
+        (eeffect _ args _)     none
         (eprovide _ _ _)       none
         (eaccess name _ _)     none
         (erecord _ _ _)        none
@@ -3348,22 +3351,23 @@ dot
 
 (defn expr/idents [expr]
     (match expr
-        (estr _ exprs _)        (many (map exprs (dot expr/idents ,,0)))
-        (evar name l)           (one (, name l))
-        (elambda pats expr l)   (many [(expr/idents expr) ..(map pats pat/idents)])
-        (eapp target args _)    (many [(expr/idents target) ..(map args expr/idents)])
-        (elet bindings body _)  (many
-                                    [(expr/idents body)
-                                        ..(map
-                                        bindings
-                                            (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))])
-        (ematch target cases _) (bag/and
-                                    (expr/idents target)
-                                        (many
-                                        (map
-                                            cases
-                                                (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))))
-        _                       empty))
+        (estr _ exprs _)          (many (map exprs (dot expr/idents ,,0)))
+        (evar name l)             (one (, name l))
+        (elambda pats expr l)     (many [(expr/idents expr) ..(map pats pat/idents)])
+        (eapp target args _)      (many [(expr/idents target) ..(map args expr/idents)])
+        (eeffect _ (some args) _) (foldl empty (map args expr/idents) bag/and)
+        (elet bindings body _)    (many
+                                      [(expr/idents body)
+                                          ..(map
+                                          bindings
+                                              (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))])
+        (ematch target cases _)   (bag/and
+                                      (expr/idents target)
+                                          (many
+                                          (map
+                                              cases
+                                                  (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))))
+        _                         empty))
 
 (defn pat/idents [pat]
     (match pat
@@ -3451,6 +3455,7 @@ dot
                                       true empty
                                       _    (one (, name (value) l)))
         (eprim prim l)            empty
+        (eeffect _ (some args) _) (foldl empty (map args (externals bound)) bag/and)
         (eeffect _ _ _)           empty
         (eprovide target cases _) (foldl
                                       (externals bound target)
@@ -3620,6 +3625,7 @@ dot
                                                       (expr/names (map/merge bound (map/from-list bound')) body)
                                                           names'))))
                                           bag/and)
+        (eeffect _ (some args) _) (foldl empty (map args (expr/names bound)) bag/and)
         (eeffect _ _ _)           empty
         (eaccess target _ l)      (match target
                                       (none)         empty

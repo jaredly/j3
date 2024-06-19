@@ -246,8 +246,24 @@
 
 (defn demo-state [()]
     (let [
-        init *value*
-        ]
-        ))
+        one (inc ())
+        two (inc ())]
+        (, one two)))
+
+(with-state 2 demo-state)
+
+(provide *ok* *ok* 23)
+
+(provide (+ 1 (!fail 2)) (!fail _) 0)
+
+(provide (+ 1 (<-stuff 2)) (k <-stuff a) 23)
+
+(fn [x] (provide (+ 1 (<-stuff 2)) (k <-stuff a) (k 23)))
+
+(defn aa [m] (+ m 2))
+
+(aa 23)
+
+(+ 2)
 
 (provide (!fail 21) (!fail n) 3)
