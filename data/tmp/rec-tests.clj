@@ -233,4 +233,21 @@
         (!fail _)
         23)
 
+(** ## State Effect **)
+
+(defn with-state [v f]
+    (provide (f ()) *value* v (k <-set v) (with-state v k)))
+
+(defn inc [()]
+    (let [
+        current *value*
+        ()      (<-set (+ current 1))]
+        current))
+
+(defn demo-state [()]
+    (let [
+        init *value*
+        ]
+        ))
+
 (provide (!fail 21) (!fail n) 3)

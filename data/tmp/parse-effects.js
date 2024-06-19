@@ -3302,7 +3302,47 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)))
 }
 }
-return fatal("nop effect eprovide compile")
+if ($target.type === "eeffectful") {
+{
+let k = $target[0];
+let kl = $target[1];
+let pats = $target[2];
+return $lt_lr(left(j$sllambda(cons(j$slpvar(sanitize(k))(kl))(cons(loop(pats)((pats) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return j$slpvar("_")(l)
+}
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return opt_or(pat_$gtj$slpat(one))(j$slpvar("_")(l))
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return j$slpobj(cons($co("0")(opt_or(pat_$gtj$slpat(one))(j$slpvar("_")(l))))(cons($co("1")(recur(rest)))(nil)))(none)(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(pats)))(nil)))(left(j$slblock(cons(j$slsexpr((($target) => {
+if ($target.type === "left") {
+{
+let body = $target[0];
+return j$slapp(done)(cons(body)(nil))(l)
+}
+}
+if ($target.type === "right") {
+{
+let body = $target[0];
+return j$slapp(body)(cons(done)(nil))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)))
+}
+}
 throw new Error('Failed to match. ' + valueToString($target));
 })(kind))((value) => $lt_(left($co(name)(value)))))(handlers))((fields) => $gt$gt$eq($lt_lrt(some)(cps$slj3(trace)(evar("(effects)")(l))))((spread) => $lt_(left(j$slobj((($target) => {
 if ($target.type === "none") {

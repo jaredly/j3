@@ -1122,57 +1122,53 @@
                        (fn [(, name nl kind body)]
                            (let-> [
                                value (match kind
-                                         (eearmuffs)  (<-lr (cps/j3 trace body))
-                                         (ebang pats) (<-lr
-                                                          (left
-                                                              (j/lambda
-                                                                  [(j/pvar "_ignored_done" l)
-                                                                      (loop
-                                                                      pats
-                                                                          (fn [pats recur]
-                                                                          (match pats
-                                                                              []           (j/pvar "_" l)
-                                                                              [one]        (opt-or (pat->j/pat one) (j/pvar "_" l))
-                                                                              [one ..rest] (j/pobj
-                                                                                               [(, "0" (opt-or (pat->j/pat one) (j/pvar "_" l))) (, "1" (recur rest))]
-                                                                                                   (none)
-                                                                                                   l))))]
-                                                                      (left
-                                                                      (j/block
-                                                                          [(j/sexpr
-                                                                              (match (cps/j3 trace body)
-                                                                                  (left body)  (j/app done [body] l)
-                                                                                  (right body) (j/app body [done] l))
-                                                                                  l)
-                                                                              (j/return (j/raw "function noop() {return noop}" l) l)]))
-                                                                      l)
-                                                                  ;(loop
-                                                                  (match pats
-                                                                      [] [(pvar "_" l)]
-                                                                      _  pats)
-                                                                      (fn [pats recur]
-                                                                      (match pats
-                                                                          []           (fatal "gotta have pats")
-                                                                          [final]      (j/lambda
-                                                                                           [(opt-or (pat->j/pat final) (j/pvar "_" l))
-                                                                                               (j/pvar "_ignored_effects" l)
-                                                                                               (j/pvar "_ignored_done" l)]
-                                                                                               (left
-                                                                                               (j/block
-                                                                                                   [(j/sexpr
-                                                                                                       (match (cps/j3 trace body)
-                                                                                                           (left body)  (j/app done [body] l)
-                                                                                                           (right body) (j/app body [done] l))
-                                                                                                           l)
-                                                                                                       (j/return (j/raw "function noop() {return noop}" l) l)]))
-                                                                                               l)
-                                                                          [arg ..rest] (j/lambda
-                                                                                           [(opt-or (pat->j/pat arg) (j/pvar "_" l))
-                                                                                               (j/pvar "_ignored_effects" l)
-                                                                                               (j/pvar "$done" l)]
-                                                                                               (right (j/app (j/var "$done" l) [(recur rest)] l))
-                                                                                               l))))))
-                                         _            (fatal "nop effect eprovide compile"))]
+                                         (eearmuffs)            (<-lr (cps/j3 trace body))
+                                         (ebang pats)           (<-lr
+                                                                    (left
+                                                                        (j/lambda
+                                                                            [(j/pvar "_ignored_done" l)
+                                                                                (loop
+                                                                                pats
+                                                                                    (fn [pats recur]
+                                                                                    (match pats
+                                                                                        []           (j/pvar "_" l)
+                                                                                        [one]        (opt-or (pat->j/pat one) (j/pvar "_" l))
+                                                                                        [one ..rest] (j/pobj
+                                                                                                         [(, "0" (opt-or (pat->j/pat one) (j/pvar "_" l))) (, "1" (recur rest))]
+                                                                                                             (none)
+                                                                                                             l))))]
+                                                                                (left
+                                                                                (j/block
+                                                                                    [(j/sexpr
+                                                                                        (match (cps/j3 trace body)
+                                                                                            (left body)  (j/app done [body] l)
+                                                                                            (right body) (j/app body [done] l))
+                                                                                            l)
+                                                                                        (j/return (j/raw "function noop() {return noop}" l) l)]))
+                                                                                l)))
+                                         (eeffectful k kl pats) (<-lr
+                                                                    (left
+                                                                        (j/lambda
+                                                                            [(j/pvar (sanitize k) kl)
+                                                                                (loop
+                                                                                pats
+                                                                                    (fn [pats recur]
+                                                                                    (match pats
+                                                                                        []           (j/pvar "_" l)
+                                                                                        [one]        (opt-or (pat->j/pat one) (j/pvar "_" l))
+                                                                                        [one ..rest] (j/pobj
+                                                                                                         [(, "0" (opt-or (pat->j/pat one) (j/pvar "_" l))) (, "1" (recur rest))]
+                                                                                                             (none)
+                                                                                                             l))))]
+                                                                                (left
+                                                                                (j/block
+                                                                                    [(j/sexpr
+                                                                                        (match (cps/j3 trace body)
+                                                                                            (left body)  (j/app done [body] l)
+                                                                                            (right body) (j/app body [done] l))
+                                                                                            l)
+                                                                                        (j/return (j/raw "function noop() {return noop}" l) l)]))
+                                                                                l))))]
                                (<- (left (, name value)))))
                            handlers)
             spread (<-lrt some (cps/j3 trace (evar "(effects)" l)))]

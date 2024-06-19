@@ -1276,22 +1276,64 @@
                                                      rows    (map->
                                                                  (fn [(, name nl kind expr)]
                                                                      (match kind
-                                                                         (eearmuffs)  (let-> [body (infer/expr tenv expr)] (<- (, name body)))
-                                                                         (ebang args) (let-> [
-                                                                                          sub-patterns         (map-> (infer/pattern tenv) args)
-                                                                                          (, arg-types scopes) (<- (unzip sub-patterns))
-                                                                                          scope                (<- (foldl map/nil scopes map/merge))
-                                                                                          body                 (infer/expr (tenv/with-scope tenv scope) expr)
-                                                                                          result               (type/apply-> result)
-                                                                                          ()                   (unify body result nl)
-                                                                                          any-result           (new-type-var "any-result" nl)
-                                                                                          fntype               (foldr->
-                                                                                                                   any-result
-                                                                                                                       arg-types
-                                                                                                                       (fn [res arg]
-                                                                                                                       (let-> [v (new-type-var "effects" nl)] (<- (tfn v arg res nl)))))]
-                                                                                          (<- (, name fntype)))
-                                                                         _            (fatal "other kind not supported yet")))
+                                                                         (eearmuffs)            (let-> [body (infer/expr tenv expr)] (<- (, name body)))
+                                                                         (ebang args)           (let-> [
+                                                                                                    sub-patterns         (map-> (infer/pattern tenv) args)
+                                                                                                    (, arg-types scopes) (<- (unzip sub-patterns))
+                                                                                                    scope                (<- (foldl map/nil scopes map/merge))
+                                                                                                    body                 (infer/expr (tenv/with-scope tenv scope) expr)
+                                                                                                    result               (type/apply-> result)
+                                                                                                    ()                   (unify body result nl)
+                                                                                                    any-result           (new-type-var "any-result" nl)
+                                                                                                    ignore-effects       (new-type-var "effects" nl)
+                                                                                                    arg-types            (map-> type/apply-> arg-types)
+                                                                                                    ;(foldr->
+                                                                                                        any-result
+                                                                                                            arg-types
+                                                                                                            (fn [res arg]
+                                                                                                            (let-> [v (new-type-var "effects" nl)] (<- (tfn v arg res nl)))))]
+                                                                                                    (<-
+                                                                                                        (,
+                                                                                                            name
+                                                                                                                (tfn ignore-effects
+                                                                                                                (loop
+                                                                                                                    arg-types
+                                                                                                                        (fn [args recur]
+                                                                                                                        (match args
+                                                                                                                            []           (tcon "()" nl)
+                                                                                                                            [one]        one
+                                                                                                                            [one ..rest] (tapp (tapp (tcon "," l) one nl) (recur rest) nl))))
+                                                                                                                    any-result
+                                                                                                                    nl))))
+                                                                         (eeffectful k kl args) (let-> [
+                                                                                                    kv                   (new-type-var "k-arg" kl)
+                                                                                                    kr                   (new-type-var "k-res" kl)
+                                                                                                    ignore-effects       (new-type-var "ignore-effets" kl)
+                                                                                                    ignore-2             (new-type-var "ignore-2" kl)
+                                                                                                    sub-patterns         (map-> (infer/pattern tenv) args)
+                                                                                                    (, arg-types scopes) (<- (unzip sub-patterns))
+                                                                                                    scope                (<- (foldl map/nil scopes map/merge))
+                                                                                                    body                 (infer/expr
+                                                                                                                             (tenv/with-type
+                                                                                                                                 (tenv/with-scope tenv scope)
+                                                                                                                                     k
+                                                                                                                                     (forall set/nil (tfn ignore-effects kv kr kl)))
+                                                                                                                                 expr)
+                                                                                                    ()                   (unify body result nl)
+                                                                                                    arg-types            (map-> type/apply-> arg-types)]
+                                                                                                    (<-
+                                                                                                        (,
+                                                                                                            name
+                                                                                                                (tfn ignore-2
+                                                                                                                (loop
+                                                                                                                    arg-types
+                                                                                                                        (fn [args recur]
+                                                                                                                        (match args
+                                                                                                                            []           (tcon "()" nl)
+                                                                                                                            [one]        one
+                                                                                                                            [one ..rest] (tapp (tapp (tcon "," l) one nl) (recur rest) nl))))
+                                                                                                                    kv
+                                                                                                                    nl))))))
                                                                      cases)
                                                      target  (infer/expr
                                                                  (tenv/with-type
