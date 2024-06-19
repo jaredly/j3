@@ -520,7 +520,7 @@
 (defn make-lets [params args l]
     (match (, params args)
         (, [] [])                       []
-        (, [one ..params] [two ..args]) [(j/let one two l) ..(make-lets params args l)]
+        (, [one ..params] [two ..args]) [(j/let one (j/com "make-lets" two) l) ..(make-lets params args l)]
         _                               (fatal "invalid lets")))
 
 (defn call-at-end [items]
@@ -547,7 +547,8 @@
         [one ..rest] (+ 1 (len rest))))
 
 (defn simplify-block [(j/block items)]
-    (match items
+    (none)
+        ;(match items
         ;[(j/sblock (j/block items) l) ..rest]
         ;(some (j/block (concat [items rest])))
         _ (match (call-at-end items)
@@ -1238,7 +1239,7 @@
         (pany _)                     (, [] [])
         (pprim prim l)               (, [(j/bin "===" target (compile-prim/j prim l) l)] [])
         (pstr str l)                 (, [(j/bin "===" target (j/str str [] l) l)] [])
-        (pvar name l)                (, [] [(j/let (j/pvar (sanitize name) l) target l)])
+        (pvar name l)                (, [] [(j/let (j/pvar (sanitize name) l) (j/com "pat-list" target) l)])
         (pcon name nl args l)        (let [(, check assign) (pat-loop-list target args 0)]
                                          (,
                                              [(j/bin "===" (j/attr target "type" l) (j/str name [] l) l) ..check]

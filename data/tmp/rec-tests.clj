@@ -154,15 +154,28 @@
     (nil)
         (cons a (list a)))
 
+(defn fail-or [d f] (provide (f ()) (!fail _) d))
+
+(fail-or 'nil (fn [()] (map try-int ('cons "a" 'nil))))
+
+(fail-or none (fn [()] (some 10)))
+
+(provide (map try-int ('cons "12" ('cons "30" 'nil))) (!fail _) 'nil)
+
 (defn try-int [x]
     (match (string-to-int x)
         (none)   (!fail "Not an integer ${x}")
         (some x) x))
 
-(defn fail-or [d f] (provide (f ()) (!fail _) d))
+(provide (try-int "12") (!fail _) 34)
 
-(fail-or 'nil (fn [()] (map try-int ('cons "a" 'nil))))
+(provide (try-int "a") (!fail _) 10)
 
-map
+(provide
+    (match (string-to-int "a")
+        (none)   (!fail "a")
+        (some x) x)
+        (!fail _)
+        23)
 
 (provide (!fail 21) (!fail n) 3)
