@@ -1,4 +1,14 @@
 
+# Visualizing Algorithm W
+
+I'm imagining a thing ...
+
+that:
+- highlights (2) ast nodes when doing a (unify) ..
+- when doing new-type-var, adds it to the list of things we're looking at
+- when adding something to (subst), shows what it is, and how it applies to the "things in scope".
+
+
 # Effects stuff
 
 - [x] !bang is working!

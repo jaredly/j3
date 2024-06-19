@@ -1,3 +1,44 @@
+(** ## State Effect **)
+
+(defn with-state [v f]
+    (provide (f ()) *value* v (k <-set v) (with-state v k)))
+
+(defn inc [()]
+    (let [
+        current *value*
+        _       (<-set (+ current 1))]
+        current))
+
+(defn demo-state [()]
+    (let [
+        one (inc ())
+        two (inc ())]
+        (, one two)))
+
+[(, (with-state 2 (fn [()] *value*)) 2)
+    (, (with-state 2 (fn [()] (<-set 12))) )
+    (, (with-state 2 (fn [()] (let [_ (<-set 12)] *value*))) 12)
+    (, (with-state 2 demo-state) (, 2 3))]
+
+[(, (provide *ok* *ok* 23) 23)
+    (, (provide (+ 1 (!fail 2)) (!fail _) 0) 0)
+    (, (provide (+ 2 3)) 5)
+    (, (provide (+ 1 (<-stuff 2)) (k <-stuff a) 23) 23)
+    (,
+    (provide
+        (+ 1 (<-stuff 2))
+            (k <-stuff a)
+            (provide (k 23) (l <-stuff a) (fatal "only once")))
+        24)
+    (,
+    (provide
+        (+ *value* (<-set 12))
+            *value*
+            12
+            (k <-set v)
+            (provide (k 5) *value* 10 (k <-set _) (fatal "once")))
+        17)]
+
 (** ## Enums examples **)
 
 'hello
@@ -232,38 +273,5 @@
         (some x) x)
         (!fail _)
         23)
-
-(** ## State Effect **)
-
-(defn with-state [v f]
-    (provide (f ()) *value* v (k <-set v) (with-state v k)))
-
-(defn inc [()]
-    (let [
-        current *value*
-        ()      (<-set (+ current 1))]
-        current))
-
-(defn demo-state [()]
-    (let [
-        one (inc ())
-        two (inc ())]
-        (, one two)))
-
-(with-state 2 demo-state)
-
-(provide *ok* *ok* 23)
-
-(provide (+ 1 (!fail 2)) (!fail _) 0)
-
-(provide (+ 1 (<-stuff 2)) (k <-stuff a) 23)
-
-(fn [x] (provide (+ 1 (<-stuff 2)) (k <-stuff a) (k 23)))
-
-(defn aa [m] (+ m 2))
-
-(aa 23)
-
-(+ 2)
 
 (provide (!fail 21) (!fail n) 3)

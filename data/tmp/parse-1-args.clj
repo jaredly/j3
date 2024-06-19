@@ -1149,7 +1149,7 @@
                                          (eeffectful k kl pats) (<-lr
                                                                     (left
                                                                         (j/lambda
-                                                                            [(j/pvar (sanitize k) kl)
+                                                                            [(j/pvar "$continue" kl)
                                                                                 (loop
                                                                                 pats
                                                                                     (fn [pats recur]
@@ -1162,7 +1162,18 @@
                                                                                                              l))))]
                                                                                 (left
                                                                                 (j/block
-                                                                                    [(j/sexpr
+                                                                                    [(j/let
+                                                                                        (j/pvar (sanitize k) kl)
+                                                                                            (j/lambda
+                                                                                            [(j/pvar "v" kl) (j/pvar efvbl kl) (j/pvar "$done" kl)]
+                                                                                                (right
+                                                                                                (j/app
+                                                                                                    (j/app (j/var "$continue" kl) [(j/var "v" kl) (j/var efvbl kl)] kl)
+                                                                                                        [(j/var "$done" kl)]
+                                                                                                        kl))
+                                                                                                kl)
+                                                                                            kl)
+                                                                                        (j/sexpr
                                                                                         (match (cps/j3 trace body)
                                                                                             (left body)  (j/app done [body] l)
                                                                                             (right body) (j/app body [done] l))

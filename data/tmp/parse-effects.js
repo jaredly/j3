@@ -3330,7 +3330,7 @@ if ($target.type === "eeffectful") {
 let k = $target[0];
 let kl = $target[1];
 let pats = $target[2];
-return $lt_lr(left(j$sllambda(cons(j$slpvar(sanitize(k))(kl))(cons(loop(pats)((pats) => (recur) => (($target) => {
+return $lt_lr(left(j$sllambda(cons(j$slpvar("\$continue")(kl))(cons(loop(pats)((pats) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return j$slpvar("_")(l)
 }
@@ -3349,7 +3349,7 @@ return j$slpobj(cons($co("0")(opt_or(pat_$gtj$slpat(one))(j$slpvar("_")(l))))(co
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(pats)))(nil)))(left(j$slblock(cons(j$slsexpr((($target) => {
+})(pats)))(nil)))(left(j$slblock(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("v")(kl))(cons(j$slpvar(efvbl)(kl))(cons(j$slpvar("\$done")(kl))(nil))))(right(j$slapp(j$slapp(j$slvar("\$continue")(kl))(cons(j$slvar("v")(kl))(cons(j$slvar(efvbl)(kl))(nil)))(kl))(cons(j$slvar("\$done")(kl))(nil))(kl)))(kl))(kl))(cons(j$slsexpr((($target) => {
 if ($target.type === "left") {
 {
 let body = $target[0];
@@ -3363,7 +3363,7 @@ return j$slapp(body)(cons(done)(nil))(l)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)))
+})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil))))))(l)))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
