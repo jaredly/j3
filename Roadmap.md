@@ -1,4 +1,10 @@
 
+# Effects stuff
+
+- [x] !bang is working!
+- [ ] ok but the inferred effect on the !bang function is apalling. So let's enforce "only one arg for effects" and no currying. multi args become a tuple.
+
+
 # Things I wanttt
 
 - match guardsssss pleeeeease
