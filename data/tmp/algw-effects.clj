@@ -427,6 +427,8 @@
         (tcon _ _)                    set/nil
         (tapp a b _)                  (set/merge (type/free a) (type/free b))))
 
+(type/free (trec "a" 0 (tapp (tvar "b" -1) (tvar "a" -1) -1) 1))
+
 (defn scheme/free [(forall vbls type)]
     (set/diff (type/free type) vbls))
 
@@ -454,6 +456,7 @@
                                          (some t) (some (type/apply subst t)))
                                          k
                                          l)
+        (trec a al inner l)      (trec a al (type/apply (map/rm subst a) inner) l)
         _                        type))
 
 (,

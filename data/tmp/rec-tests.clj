@@ -70,10 +70,61 @@
 (deftype (, a b)
     (, a b))
 
+(** ## Working **)
+
+(defn morpp [f x] ('hi (f x) (morpp f x)))
+
+(** ## Not working **)
+
+(defn morp [x]
+    (if true
+        'ho
+            ('hi x (morp x))))
+
+(morp 12)
+
+((fn [x]
+    (if true
+        'ho
+            ('hi x (morp x))))
+    9)
+
+(defn clorn [v]
+    (match v
+        'nil        'nil
+        ('cons a b) ('cons a (clorn b))))
+
+(clorn ('cons 12 'nil))
+
+(defn clap [f v]
+    (match v
+        'nil        'nil
+        ('cons a b) ('cons (f a) (clap f b))))
+
+(clap (+ 2) 'nil)
+
+(defn morp2 [f (, a b)]
+    (if true
+        (, (f a) none)
+            (, (f a) (some (morp2 f b)))))
+
+(morp2 (+ 1) (, 1 2))
+
 (defn map [f v]
     (match v
         'nil        'nil
         ('cons x r) ('cons (f x) (map f r))))
+
+(map (+ 2) 'nil)
+
+(defn mapl [f v]
+    (match v
+        []           []
+        [one ..rest] [(f one) ..(mapl f rest)]))
+
+(provide (mapl try-int ["12" "34"]) (!fail _) [])
+
+(provide (map try-int ('cons "12" 'nil)) (!fail _) 'nil)
 
 (defn map-tree [f v]
     (match v
@@ -160,7 +211,11 @@
 
 (fail-or none (fn [()] (some 10)))
 
-(provide (map try-int ('cons "12" ('cons "30" 'nil))) (!fail _) 'nil)
+(provide (mapl try-int ["12" "30"]) (!fail _) [])
+
+(map try-int ('cons "12" ('cons "30" 'nil)))
+
+('cons "12" ('cons "30" 'nil))
 
 (defn try-int [x]
     (match (string-to-int x)

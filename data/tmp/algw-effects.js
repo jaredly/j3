@@ -784,6 +784,13 @@ return some(type$slapply(subst)(t))
 throw new Error('match fail 16016:' + JSON.stringify($target))
 })(spread))(k)(l)
 } ;
+if ($target.type === "trec") {
+let a = $target[0];
+let al = $target[1];
+let inner = $target[2];
+let l = $target[3];
+return trec(a)(al)(type$slapply(map$slrm(subst)(a))(inner))(l)
+} ;
 return type;
 throw new Error('match fail 558:' + JSON.stringify($target))
 })(type)
