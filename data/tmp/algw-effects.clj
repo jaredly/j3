@@ -134,7 +134,7 @@
         (evar string int)
         (estr string (list (, expr string int)) int)
         (equot quot int)
-        (eeffect string bool int)
+        (eeffect string (option (list expr)) int)
         (elambda (list pat) expr int)
         (eapp expr (list expr) int)
         (elet (list (, pat expr)) expr int)
@@ -1238,7 +1238,7 @@
                                                              (none)     (<- (tcon "()" nl))
                                                              (some arg) (infer/expr tenv arg))]
                                                      (<- (trow [(, tag arg)] (some t) (renum) l)))
-        (eeffect name false l)                   (let-> [
+        (eeffect name (none) l)                  (let-> [
                                                      effects (match (tenv/resolve tenv "(effects)")
                                                                  (none)              (<-missing "(effects)" l)
                                                                  (some (forall _ t)) (<- t))
@@ -1246,13 +1246,27 @@
                                                      t       (new-type-var "effects-rest" l)
                                                      _       (unify effects (trow [(, name result)] (some t) (rrecord) l) l)]
                                                      (type/apply-> result))
-        (eeffect name true l)                    (let-> [
-                                                     effects (match (tenv/resolve tenv "(effects)")
-                                                                 (none)              (<-missing "(effects)" l)
-                                                                 (some (forall _ t)) (<- t))
-                                                     result  (new-type-var name l)
-                                                     t       (new-type-var "effects-rest" l)
-                                                     _       (unify effects (trow [(, name result)] (some t) (rrecord) l) l)]
+        (eeffect name (some args) l)             (let-> [
+                                                     arg            (infer/expr
+                                                                        tenv
+                                                                            (loop
+                                                                            args
+                                                                                (fn [args recur]
+                                                                                (match args
+                                                                                    []           (evar "()" l)
+                                                                                    [one]        one
+                                                                                    [one ..rest] (eapp (evar "," l) [one (recur rest)] l)
+                                                                                    _            (fatal "no")))))
+                                                     effects        (match (tenv/resolve tenv "(effects)")
+                                                                        (none)              (<-missing "(effects)" l)
+                                                                        (some (forall _ t)) (<- t))
+                                                     result         (new-type-var name l)
+                                                     t              (new-type-var "effects-rest" l)
+                                                     ignore-effects (new-type-var "ignore-effects" l)
+                                                     _              (unify
+                                                                        effects
+                                                                            (trow [(, name (tfn ignore-effects arg result l))] (some t) (rrecord) l)
+                                                                            l)]
                                                      (type/apply-> result))
         (eprovide target cases l)                (let-> [
                                                      effects (match (tenv/resolve tenv "(effects)")
@@ -1517,7 +1531,7 @@
             (eapp
                 (evar "+" 30181)
                     [(eprim (pint 2 30182) 30182)
-                    (eapp (eeffect "!fail" true 12) [(eprim (pint 2 12) 12)] 12)]
+                    (eeffect "!fail" (some [(eprim (pint 2 12) 12)]) 12)]
                     30180)
                 [(,
                 "!fail"
@@ -1529,7 +1543,7 @@
             (eapp
                 (evar "+" 30181)
                     [(eprim (pint 2 30182) 30182)
-                    (eapp (eeffect "!fail" true 12) [(eprim (pint 2 12) 12)] 12)]
+                    (eeffect "!fail" (some [(eprim (pint 2 12) 12)]) 12)]
                     30180)
                 [(, "!fail" (, 30185 (, (ebang [(pvar "n" 30186)]) (estr "" [] 12))))]
                 30178)
@@ -1565,13 +1579,8 @@
         (, (@ hi) (err (tmissing [(, "hi" 4531)])))
         (, (@ {a 2}) (ok (trow [(, "a" (tcon "int" 14459))] (none) (rrecord) 14456)))
         (,
-        (@ {..{a 2 b 1} b 3})
-            (ok
-            (trow
-                [(, "b" (tcon "int" 15646))]
-                    (some (trow [(, "a" (tcon "int" 15644))] (none) (rrecord) 15637))
-                    (rrecord)
-                    15637)))
+        (erecord none [(, "y" (eprim (pint 2 21864) 21864))] 21858)
+            (ok (trow [(, "y" (tcon "int" 21864))] (none) (rrecord) 21858)))
         (,
         (@ (fn [x] "${x.a}"))
             (ok

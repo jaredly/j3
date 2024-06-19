@@ -3158,7 +3158,7 @@ throw new Error('match fail 14324:' + JSON.stringify($target))
 } ;
 if ($target.type === "eeffect") {
 let name = $target[0];
-if ($target[1] === false) {
+if ($target[1].type === "none") {
 let l = $target[2];
 return $gt$gt$eq((($target) => {
 if ($target.type === "none") {
@@ -3176,9 +3176,27 @@ throw new Error('match fail 24995:' + JSON.stringify($target))
 } ;
 if ($target.type === "eeffect") {
 let name = $target[0];
-if ($target[1] === true) {
+if ($target[1].type === "some") {
+let args = $target[1][0];
 let l = $target[2];
-return $gt$gt$eq((($target) => {
+return $gt$gt$eq(infer$slexpr(tenv)(loop(args)((args) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return evar("()")(l)
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+if ($target[1].type === "nil") {
+return one
+} 
+} ;
+if ($target.type === "cons") {
+let one = $target[0];
+let rest = $target[1];
+return eapp(evar(",")(l))(cons(one)(cons(recur(rest))(nil)))(l)
+} ;
+return fatal("no");
+throw new Error('match fail 27467:' + JSON.stringify($target))
+})(args))))((arg) => $gt$gt$eq((($target) => {
 if ($target.type === "none") {
 return $lt_missing("(effects)")(l)
 } ;
@@ -3189,7 +3207,7 @@ return $lt_(t)
 } 
 } ;
 throw new Error('match fail 26086:' + JSON.stringify($target))
-})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(new_type_var(name)(l))((result) => $gt$gt$eq(new_type_var("effects-rest")(l))((t) => $gt$gt$eq(unify(effects)(trow(cons($co(name)(result))(nil))(some(t))(rrecord)(l))(l))((_26082) => type$slapply_$gt(result)))))
+})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(new_type_var(name)(l))((result) => $gt$gt$eq(new_type_var("effects-rest")(l))((t) => $gt$gt$eq(new_type_var("ignore-effects")(l))((ignore_effects) => $gt$gt$eq(unify(effects)(trow(cons($co(name)(tfn(ignore_effects)(arg)(result)(l)))(nil))(some(t))(rrecord)(l))(l))((_26082) => type$slapply_$gt(result)))))))
 } 
 } ;
 if ($target.type === "eprovide") {

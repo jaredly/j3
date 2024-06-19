@@ -2,7 +2,7 @@
 # Effects stuff
 
 - [x] !bang is working!
-- [ ] ok but the inferred effect on the !bang function is apalling. So let's enforce "only one arg for effects" and no currying. multi args become a tuple.
+- [x] ok but the inferred effect on the !bang function is apalling. So let's enforce "only one arg for effects" and no currying. multi args become a tuple.
 - [x] oooh hrm my recursive unification is broken?? we're getting too many type variables. not sure what the deal is...
   - [x] ahaha ok so I hadn't been doing type/apply for trec. now its better.
 
