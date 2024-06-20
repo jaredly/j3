@@ -4,6 +4,7 @@ import { InferenceError, ProduceItem } from '../ide/ground-up/FullEvalator';
 import { useGetStore } from './store/StoreCtx';
 import { showError } from './store/processTypeInference';
 import { RenderStatic } from './RenderStatic';
+import { highlightIdxs } from './highlightIdxs';
 
 export const RenderProduceItem = ({
     value,
@@ -13,12 +14,36 @@ export const RenderProduceItem = ({
 }) => {
     if (typeof value === 'string') {
         return (
-            <>{value.length > 1000 ? value.slice(0, 1000) + '...' : value}</>
+            <div
+                className="mouse-capture"
+                onMouseDownCapture={(evt) => {
+                    navigator.clipboard.writeText(value);
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                }}
+            >
+                {value.length > 1000 ? value.slice(0, 1000) + '...' : value}
+            </div>
         );
     }
     switch (value.type) {
         case 'type':
-            return <div style={{ color: 'rgb(45 149 100)' }}>{value.text}</div>;
+            return (
+                <div
+                    style={{
+                        borderLeft: '4px solid rgb(0,60,0)',
+                        paddingLeft: 8,
+                    }}
+                >
+                    {value.cst ? (
+                        <RenderStatic node={value.cst} />
+                    ) : (
+                        <div style={{ color: 'rgb(45 149 100)' }}>
+                            {value.text}
+                        </div>
+                    )}
+                </div>
+            );
         case 'eval': {
             let parts: JSX.Element[] = highlightIdxs(value.inner);
             return (
@@ -29,7 +54,16 @@ export const RenderProduceItem = ({
             );
         }
         case 'inference-error':
-            return <RenderInferenceError err={value.err} />;
+            return (
+                <div
+                    style={{
+                        borderLeft: '4px solid rgb(255,50,50)',
+                        paddingLeft: 8,
+                    }}
+                >
+                    <RenderInferenceError err={value.err} />
+                </div>
+            );
         case 'withjs': {
             let parts = highlightIdxs(value.message);
             return <div style={{ color: 'rgb(255,50,50)' }}>{parts}</div>;
@@ -39,34 +73,23 @@ export const RenderProduceItem = ({
             return <div style={{ color: 'rgb(255,50,50)' }}>{parts}</div>;
         }
         case 'pre':
-            return <pre>{value.text}</pre>;
+            return (
+                <pre
+                    className="mouse-capture"
+                    onMouseDownCapture={(evt) => {
+                        navigator.clipboard.writeText(value.text);
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                    }}
+                >
+                    {value.text}
+                </pre>
+            );
         case 'node':
             return <RenderStatic node={value.node} />;
     }
     return <b>Unrecognized produce item {JSON.stringify(value)}</b>;
 };
-
-export function highlightIdxs(msg: string) {
-    let at = 0;
-    let parts: JSX.Element[] = [];
-    msg.replace(/\d+/g, (match, idx) => {
-        if (idx > at) {
-            parts.push(<span key={at}>{msg.slice(at, idx)}</span>);
-        }
-        const loc = +match;
-        parts.push(
-            <JumpTo key={idx} loc={loc}>
-                {match}
-            </JumpTo>,
-        );
-        at = idx + match.length;
-        return '';
-    });
-    if (at < msg.length) {
-        parts.push(<span key={at}>{msg.slice(at)}</span>);
-    }
-    return parts;
-}
 
 export const JumpTo = ({
     children,
@@ -138,7 +161,8 @@ const RenderInferenceError = ({ err }: { err: InferenceError }) => {
                 <div>Types don't match</div>
                 <JumpTo loc={err.one.loc}>
                     <RenderStatic node={err.one} />
-                </JumpTo>{' vs '}
+                </JumpTo>
+                {' vs '}
                 <JumpTo loc={err.two.loc}>
                     <RenderStatic node={err.two} />
                 </JumpTo>

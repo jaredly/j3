@@ -274,6 +274,7 @@ export function updateState(
             try {
                 res = state.evaluator.inference.infer(stmts, tenv);
             } catch (err) {
+                debugger;
                 group.forEach((item) => {
                     state.results!.tops[item.id].produce.push({
                         type: 'error',
@@ -304,9 +305,9 @@ export function updateState(
                     });
                 }
 
+                const codeGenData = res.result.value.codeGenData;
                 state.results.groups[groupKey].typeFailed = false;
                 group.forEach((one) => {
-                    // const codeGenData = res.result.value.codeGenData;
                     // if (codeGenData) {
                     //     state.results!.tops[one.id].produce.push({
                     //         type: 'pre',
@@ -318,16 +319,19 @@ export function updateState(
                         try {
                             const text =
                                 state.evaluator!.inference!.typeToString(type);
+                            const cst =
+                                state.evaluator?.inference?.typeToCst?.(type);
                             state.results!.tops[one.id].produce.push({
                                 type: 'type',
                                 text,
+                                cst,
                             });
                         } catch (err) {
                             state.results!.tops[one.id].produce.push({
                                 type: 'error',
                                 message: `Cant stringify type ${JSON.stringify(
                                     type,
-                                )}`,
+                                )} : ${err.message}`,
                             });
                         }
                     });

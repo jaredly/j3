@@ -1,4 +1,211 @@
 
+# Effects are alive!
+
+- [ ] now what's the story with top-level expressions that need effects?
+  - have a "run" button
+  - need to know built-in effects
+  - the compiler result ... should be able to be {type: 'value'} or {type: 'thunk'}, right? Yeah.
+    - {type: 'value' | 'thunk', deps: {[key: string]: 'int' | 'string' | 'bool'}}
+    - {type: 'value', value: abc, deps: {[key: string]: 'int' | 'string' | 'bool'}}
+    - {type: 'thunk', f: abc}
+    - soooo a 'thunk' will return ... later ...
+      ooh maybe it can deal directly in 'produceitems'? thats how we do incremental updates?
+      like, the thunk gets called with a function to call with updates? including (am I done yet)
+      so
+      `thunk: (env: {any}, update: (items: ProduceItem[], stillWorking: boolean) => void) => void`
+      how do I slide in the builtin-effects? idk. maybe pass in the `env`, which should have them on it? sure.
+
+```
+
+```
+
+
+# Visualizing Algorithm W
+
+I'm imagining a thing ...
+
+that:
+- highlights (2) ast nodes when doing a (unify) ..
+- when doing new-type-var, adds it to the list of things we're looking at
+- when adding something to (subst), shows what it is, and how it applies to the "things in scope".
+
+
+# Effects stuff
+
+- [x] !bang is working!
+- [x] ok but the inferred effect on the !bang function is apalling. So let's enforce "only one arg for effects" and no currying. multi args become a tuple.
+- [x] oooh hrm my recursive unification is broken?? we're getting too many type variables. not sure what the deal is...
+  - [x] ahaha ok so I hadn't been doing type/apply for trec. now its better.
+
+- [ ] real effects!!!! is not quite working. might be something I'm not figuring out right
+  -
+
+
+# Things I wanttt
+
+- match guardsssss pleeeeease
+- multimatch would be super cool too. Like a match guard that is also a matchliness. like an `if let` but a `guard let` I guess? yeah.
+
+(match awesome
+  (sauce a b c ) if (cond) (the body ok))
+if isn't otherwise a valid thing, so this is parseable.
+
+(match awesome
+  (sauce a b c) if (let [abc def]) (the body ok))
+
+itssss a little bit blonky. And I think I'd probably exclude the second case from the exhaustiveness check, even though it's possible to exhaustively handle the `let`s. But I won't.
+
+ALSOO string tpl patterns. "*${name}*" would be very nice.
+eventually I'll also want regexps, but doesn't need to be immediate.
+
+
+
+
+
+provide x
+  *lol* 23
+
+(effects => x)({
+  ...effects,
+  *lol* 23
+})
+
+
+
+
+
+
+
+
+# Just this moment
+
+- [x] better pretty printing of types
+- [x] plumb the toplevel effects through to the compiler
+- [x] wrap expressions w/ toplevel effects
+- [x] have all fn calls and applys have the new vbl
+- [x] make a (provide target ..effects) expression form
+- [ ] make a (fn x) thunk wrapping form, and (x) -> (x ())
+- [ ] do a cool web UI for providing earmuffs that are needed
+- [ ] ok CPS all the things, right? Is that where we're at now?
+  - [x] little bit of cps
+  - [x] rather more cps
+
+
+## Figuring out CPS...
+
+(hello 1 2)
+hello(1)(2)
+
+done => hello(1, v => v(2, done))
+
+hello(1)
+
+done => hello(1, done)
+done => (done => hello(1, done))(v => v(2, done))
+
+done => left(x)(v => v(2, done))
+done => right(x)
+
+
+one(two(three))(four)
+
+(done => two(three, done))
+(done => (done => two(three, done))(arg => one(arg, done)))
+
+done => done(1)
+done => done(three)
+(done => two(three, done))
+done => (done => done(three))(arg => two(three, done))
+
+
+
+
+
+(fn [a b] {c} (fn [e f] {g} h))
+
+
+#
+
+-> *earmuffs*
+..
+??
+
+(provide thunk
+  *lol* 25)
+
+(provide (fn (+ x 2))
+  *lol* 25)
+
+> would also be cool if the UI could like render some ui
+  that would ask for the value, and you fill it in.
+  > OOHHH I really wanted this while doing jerd#1, for doing config
+  sliders and such for my animations. so glad it's coming around again.
+
+When pretty-printing effects record, elide the .._? just do a trailing ..? yeah.
+BEST would be "only elide if it's unique" but we can do that later.
+
+(fn [x] {} y)
+
+#
+
+Ok, but so ...
+simplification.
+Currently I'm doing the "walk up a known unmber of steps, and check if it's equal."
+which apparently doesn't work for two-tailed recursion.
+Sooo what are my other options?
+
+# Brut-ish force:
+- first walk the type, collecting all (rec)s, deduping identical ones
+- then walk the type, matching on any recursions. If we start a match, do a subprocess that's like "try to collapse this dealio",
+  and if it succeeds then great.
+  OH I could reuse unify, right? like "try to unify this subtree" --> and that would also automatically take care of multiple nested collapsing! Which is very nice.
+  Ok, so "if this type unifies, then return the recursive deal, otherwise, traverse into it and keep going".
+  I think type/map should be up to the task.
+
+Yeahhhh that sounds very appealing. Let's do it.
+
+
+Order or Ops
+- [x] do the brute-force (unify) simplification, verify it works two-tailed
+- [ ] letttts try out effects! or at least "auto-provided configs"
+- [ ] ok and then a little bit of effects? like ...
+  - ok let's dredge up the 'movies' example and figure out how it would look in the new waysss
+
+
+
+# recursive types
+
+- [x] add a `trec name inner l`
+- [x] swap it in, if occurs check fails
+- [x] basic simpification! very nice
+- [ ] handle trow in simplification plsss
+- [ ] it would be super nice if I could simplify multiple times. but it might require more bookkeeping? Like "srep" combined with stype? And then if we end up with
+  stype at the end, we'd need to ... back it off? ORRR actually I guess I could /subst/ it back in, right? maybe a little weird. but should work? maybe?
+    ->> erkkkk ok so ... I broke it, and it's not really quote fixed.
+    I want .. to be able to, like "unwrap" the dealio, as I'm coming back.
+    - [x] unbreak it a little
+    - [ ] ok maybe this can actually work?
+    - [ ] no its broken somehow? need to have an example with simplifying both the arg and res of a function.
+      -> revert for the tweeeet
+      - maybe it's like "we're still unrolling the one side, and we need to check the other side to see if its a possibility?
+        -> and here is where I want to be able to do the unroll check.
+          -> oooh ok so what if unroll `(rec 'b (, 'a (option 'b))`
+            produced:
+              `(, 'a _)` `(, 'a (option _))` --- like replacing each step with "the hot path" being `(tvar _)`? And then I could do such a partial check.
+              That sounds great. I would fail to simplify in some cases probably, if it "still looked good" on the one hand, ... WAIT no that wouldn't happen,
+              because the other arm would have to match the partial. SO I think this is the right approach!
+
+
+# Opaque types!! we'll probably want them in some form.
+
+a. we could have them be a "private type alias"; that is, we
+  - delay resolution of type aliases (have them show up as `tcon`)
+  - and have some aliases /not/ be introspectable outside of the namespace in which it was defined.
+    Seems reasonable, right?
+b. we could have them be normal userland types, but with no constructors, and just a `wrap` and `unwrap` no-op function that would be restricted in use to the namespace where it was created.
+
+I'm leaning toward the first, because it requires less magic at compile-time (eliminating the no-op wrappers) and is also less cumbersome at time of writing (wouldn't be able to destructure an arg until you unwrap it)
+
 # IDEA : show usages -> show /polymorphic instantiations/
 
 It would be sooo much less "mentally costly" to abstract types to the umpteenth level if it was trivial to see what, in /practice/ the type variables get instantiated as.
@@ -6,7 +213,7 @@ It would be sooo much less "mentally costly" to abstract types to the umpteenth 
 
 Alsooo I want the "number of usages" to be shown above everything.
 althoughhhh that's the kind of thing that only really gets useful in the "read / maintain" case, less so in the "write" case.
-I should think about how to make navigating two different cases make sense.
+I should think about how to make navigating two different cases make sense.gg
 
 # RECORDA ND ENUMS
 

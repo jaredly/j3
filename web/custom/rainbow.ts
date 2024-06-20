@@ -44,6 +44,7 @@ const specials = [
     'fnrec',
     'if',
     'let',
+    'proide',
     'match',
 ];
 

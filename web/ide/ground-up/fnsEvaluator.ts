@@ -369,6 +369,13 @@ const compileStmt = ({
 
     try {
         let display: ProduceItem[] = [];
+
+        if (debugShowJs) {
+            display.push(
+                ...jss.map((text) => ({ type: 'pre' as const, text })),
+            );
+        }
+
         const fn = new Function(
             needed.length
                 ? `{${needed.map(sanitize).concat(['$env']).join(', ')}}`
@@ -401,6 +408,7 @@ const compileStmt = ({
                 return {
                     env,
                     display: [
+                        ...display,
                         {
                             type: 'error',
                             message: `JS Evaluation Error (def): ${
@@ -415,15 +423,17 @@ const compileStmt = ({
                 result_values[name] = result[sanitize(name)];
             });
             Object.assign(env.values, result_values);
-            display = namedValues
-                .flatMap(({ name }) =>
-                    result_values[name] === undefined
-                        ? null
-                        : typeof result_values[name] !== 'function'
-                        ? renderValue(result_values[name])
-                        : null,
-                )
-                .filter(filterNulls);
+            display.push(
+                ...namedValues
+                    .flatMap(({ name }) =>
+                        result_values[name] === undefined
+                            ? null
+                            : typeof result_values[name] !== 'function'
+                            ? renderValue(result_values[name])
+                            : null,
+                    )
+                    .filter(filterNulls),
+            );
         } else {
             try {
                 if (meta[top]?.traceTop) {
@@ -440,6 +450,7 @@ const compileStmt = ({
                 return {
                     env,
                     display: [
+                        ...display,
                         {
                             type: 'error',
                             message: `JS Evaluation Error (expr): ${
@@ -451,12 +462,6 @@ const compileStmt = ({
                     values: {},
                 };
             }
-        }
-        // display += '\n' + fn;
-        if (debugShowJs) {
-            display.push(
-                ...jss.map((text) => ({ type: 'pre' as const, text })),
-            );
         }
 
         return {

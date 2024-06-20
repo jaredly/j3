@@ -145,17 +145,42 @@
     (tvar string int)
         (tapp type type int)
         (tcon string int)
+        (trec string int type int)
         (trow (list (, string type)) (option type) row-kind int))
 
 (deftype row-kind
     (rrecord)
         (renum))
 
-
+(defn map= [v= one two]
+    (let [
+        k1 (map/keys one)
+        k2 (map/keys two)]
+        (if (= (length k1) (length k2))
+            (all
+                (fn [k]
+                    (match (, (map/get one k) (map/get two k))
+                        (, (some a) (some b)) (v= a b)
+                        _                     false))
+                    k1)
+                false)))
 
 (defn type= [one two]
     (match (, one two)
-        (, (trow _ _ _ _) (trow _ _ _ _))             (fatal "not impl")
+        (, (trow f1 s1 k1 _) (trow f2 s2 k2 _))       (if (= k1 k2)
+                                                          (let [
+                                                              (, m1 s1) (deep-map f1 s1 k1)
+                                                              (, m2 s2) (deep-map f2 s2 k2)]
+                                                              (if (match (, s1 s2)
+                                                                  (, (none) (none))     true
+                                                                  (, (some a) (some b)) (type= a b)
+                                                                  _                     false)
+                                                                  (map= type= m1 m2)
+                                                                      false))
+                                                              false)
+        (, (trec a _ b _) (trec c _ d _))             (if (= a c)
+                                                          (type= b d)
+                                                              false)
         (, (tvar id _) (tvar id' _))                  (= id id')
         (, (tapp target arg _) (tapp target' arg' _)) (if (type= target target')
                                                           (type= arg arg')
@@ -195,8 +220,11 @@
                                                                       (none)   ""
                                                                       (some t) " ..${(type->s t)}")}]"))
         (tvar name _)                           name
-        (tapp (tapp (tcon "->" _) arg _) res _) "(fn [${(type->s arg)}] ${(type->s res)})"
-        (tapp target arg _)                     "(${(type->s target)} ${(type->s arg)})"
+        (trec name _ inner _)                   "(rec ${name} ${(type->s inner)})"
+        (tapp (tapp (tcon "->" _) arg _) res _) (let [(, args body) (fn-args-and-body type)]
+                                                    ("(fn [${(join " " (map type->s args))}] ${(type->s body)})"))
+        (tapp target arg _)                     (let [(, target args) (target-and-args type [])]
+                                                    "(${(type->s target)} ${(join " " (map type->s args))})")
         (tcon name _)                           name))
 
 (defn scheme->cst [(forall vbls type)] (type->cst type))
@@ -226,19 +254,34 @@
                                                                       l)
                                                     (renum)   (cst/array
                                                                   (concat
-                                                                      [(map (fn [(, k v)] (cst/list [(cst/id k l) (type->cst v)] l)) fields)
+                                                                      [(map
+                                                                          (fn [(, k v)]
+                                                                              (match v
+                                                                                  (tcon "()" _) (cst/id "'${k}" l)
+                                                                                  _             (cst/list [(cst/id "'${k}" l) (type->cst v)] l)))
+                                                                              fields)
                                                                           (match spread
                                                                           (none)   []
                                                                           (some v) [(cst/spread (type->cst v) l)])])
                                                                       l)))
         (tvar name l)                       (cst/id name l)
         (tcon name l)                       (cst/id name l)
+        (trec name nl inner l)              (cst/list [(cst/id "rec" l) (cst/id name nl) (type->cst inner)] l)
         (tapp (tapp (tcon "->" _) _ _) _ l) (let [(, args res) (fn-args-and-body type)]
                                                 (cst/list
                                                     [(cst/id "fn" l) (cst/array (map type->cst args) l) (type->cst res)]
                                                         l))
+        (tapp (tapp (tcon "," cl) a _) b l) (let [all (unwrap-tuple-type type)]
+                                                (cst/list [(cst/id "," cl) ..(map type->cst all)] l))
         (tapp _ _ l)                        (let [(, name args) (target-and-args type [])]
                                                 (cst/list [(type->cst name) ..(map type->cst args)] l))))
+
+(defn unwrap-tuple-type [type]
+    (match type
+        (tapp (tapp (tcon "," _) a _) b _) (let [inner (unwrap-tuple-type b)] [a ..inner])
+        _                                  [type]))
+
+(type->cst (@t (, 1 2 3)))
 
 (** ## The Type Environment
     The "type environment" gets passed around to most of the infer/ functions, and includes global definitions as well as the types of locally-bound variables. **)
@@ -290,6 +333,7 @@
                                               (some v) (type/free v))
                                               (map (fn [(, _ t)] (type/free t)) fields)
                                               set/merge)
+        (trec name _ inner loc)       (set/rm (type/free inner) name)
         (tvar id _)                   (set/add set/nil id)
         (tcon _ _)                    set/nil
         (tapp a b _)                  (set/merge (type/free a) (type/free b))))
@@ -598,12 +642,286 @@
 
 (defn unify [t1 t2 l]
     (map-err->
-        (unify-inner t1 t2 l)
+        (unify-inner t1 t2 (, map/nil [] 0) l)
             (fn [inner]
             (err (twrap (ttypes (forall set/nil t1) (forall set/nil t2)) inner)))))
 
-(def starts-with
-    (eval "(prefix) => (str) => str.startsWith(prefix)"))
+(** ## Simplify recursive, but simply **)
+
+(defn find-recursives [type]
+    (type/fold
+        []
+            (fn [res type]
+            (match type
+                (trec name _ inner _) [type ..res]
+                _                     res))
+            type))
+
+(def types->s (dot (join " ") (map type->s)))
+
+(defn simplify-recursive [type]
+    (let [
+        recursives (find-recursives type)
+        simplify   (fn [type]
+                       (loop
+                           recursives
+                               (fn [recs recur]
+                               (match recs
+                                   []           type
+                                   [one ..rest] (match (equal-modulo-vbls-subst one type)
+                                                    (none)       (recur rest)
+                                                    (some subst) (type/apply subst one))))))]
+        (match recursives
+            [] type
+            (** Note: we're relying on the fact that type/map-post doesn't traverse into trecs. If it did, this would be somewhat less efficient. **)
+            _  (type/map-post simplify type))))
+
+(,
+    (dot (dot type->s simplify-recursive) quot-tvar)
+        [(,
+        (@t (, in (option (, int (option (rec 'a (, int (option 'a))))))))
+            "(, in (option (rec 'a (, int (option 'a)))))")
+        (,
+        (@t (, int (option (rec 'a (, int (option 'a))))))
+            "(rec 'a (, int (option 'a)))")])
+
+(** ## Simplify recursive types **)
+
+(deftype simstate
+    (snum int)
+        (stype type string type int int)
+        (srep type))
+
+;(defn simplify-recursive-inner [t rvbl]
+    (match t
+        (tvar name _)          (if (= (some name) rvbl)
+                                   (some (snum 0))
+                                       none)
+        (tcon _ _)             none
+        (tapp target arg l)    (match (simplify-recursive-inner target rvbl)
+                                   (some (snum n))                    (some (snum (+ n 1)))
+                                   (some (stype _ _ _ 0 _))           (none)
+                                   (some (stype t2 name inner 1 max)) (if (type= (tapp t2 arg l) inner)
+                                                                          (some (stype (tvar name l) name inner max max))
+                                                                              (none))
+                                   (some (stype t2 name inner n max)) (some (stype (tapp t2 arg l) name inner (- n 1) max))
+                                   (some (srep target))               (match (simplify-recursive-inner arg rvbl)
+                                                                          (some (srep arg))                (some (srep (tapp target arg l)))
+                                                                          (some (stype t2 name inner 1 _)) (some (srep (tapp target (trec name l inner l) l)))
+                                                                          (some (stype t2 name inner _ _)) (some
+                                                                                                               (srep
+                                                                                                                   (tapp
+                                                                                                                       target
+                                                                                                                           (type/apply (map/from-list [(, name (trec name l inner l))]) t2)
+                                                                                                                           l)))
+                                                                          (none)                           (some (srep (tapp target arg l)))
+                                                                          _                                (fatal "simplyfing down both arms somehow..."))
+                                   (none)                             (match (simplify-recursive-inner arg rvbl)
+                                                                          (some (snum n))                    (some (snum (+ n 1)))
+                                                                          (some (stype _ _ _ 0 _))           (none)
+                                                                          (some (stype t2 name inner 1 max)) (if (type= (tapp target t2 l) inner)
+                                                                                                                 (some (stype (tvar name l) name inner max max))
+                                                                                                                     (some
+                                                                                                                     (srep
+                                                                                                                         (tapp
+                                                                                                                             target
+                                                                                                                                 (type/apply (map/from-list [(, name (trec name l inner l))]) t2)
+                                                                                                                                 l))))
+                                                                          (some (stype t2 name inner n max)) (some (stype (tapp target t2 l) name inner (- n 1) max))
+                                                                          (some (srep arg))                  (some (srep (tapp target arg l)))
+                                                                          (none)                             (none)))
+        (trec name nl inner l) (match (simplify-recursive-inner inner (some name))
+                                   (none)          (none)
+                                   (some (snum n)) (some (stype (tvar name l) name inner n n))
+                                   (some _)        (fatal "why stype at rec?"))
+        _                      none))
+
+(defn simplify-recursive-inner [t rvbl]
+    (match t
+        (tvar name _)          (if (= (some name) rvbl)
+                                   (some (snum 0))
+                                       none)
+        (tcon _ _)             none
+        (tapp target arg l)    (match (simplify-recursive-inner target rvbl)
+                                   (some (snum n))                  (some (snum (+ n 1)))
+                                   (some (stype _ _ _ 0 _))         (none)
+                                   (some (stype t2 name inner 1 _)) (if (type= (tapp t2 arg l) inner)
+                                                                        (some (srep (trec name l inner l)))
+                                                                            (none))
+                                   (some (stype t2 name inner n _)) (some (stype (tapp t2 arg l) name inner (- n 1) 0))
+                                   (some (srep target))             (match (simplify-recursive-inner arg rvbl)
+                                                                        (some (srep arg)) (some (srep (tapp target arg l)))
+                                                                        (none)            (some (srep (tapp target arg l)))
+                                                                        _                 (fatal "simplyfing down both arms somehow..."))
+                                   (none)                           (match (simplify-recursive-inner arg rvbl)
+                                                                        (some (snum n))                  (some (snum (+ n 1)))
+                                                                        (some (stype _ _ _ 0 _))         (none)
+                                                                        (some (stype t2 name inner 1 _)) (if (type= (tapp target t2 l) inner)
+                                                                                                             (some (srep (trec name l inner l)))
+                                                                                                                 (none))
+                                                                        (some (stype t2 name inner n _)) (some (stype (tapp target t2 l) name inner (- n 1) 0))
+                                                                        (some (srep arg))                (some (srep (tapp target arg l)))
+                                                                        (none)                           (none)))
+        (trec name nl inner l) (match (simplify-recursive-inner inner (some name))
+                                   (none)          (none)
+                                   (some (snum n)) (some (stype (tvar name l) name inner n 0))
+                                   (some _)        (fatal "why stype at rec?"))
+        _                      none))
+
+(defn simplify-recursive2 [type]
+    (match (simplify-recursive-inner type none)
+        (some (srep t))                 t
+        (some (stype t name inner _ _)) (type/apply (map/from-list [(, name (trec name -1 inner -1))]) t)
+        _                               type))
+
+;((** No-op for now... I think want to solve this a different way... **)
+    defn simplify-recursive [type]
+    type)
+
+(type->s (quot-tvar (@t (, int (option (rec 'a (, int (option 'a))))))))
+
+(type->s
+    (simplify-recursive
+        (quot-tvar (@t (, int (option (rec 'a (, int (option 'a)))))))))
+
+(type->s
+    (simplify-recursive
+        (quot-tvar (@t (, in (option (, int (option (rec 'a (, int (option 'a)))))))))))
+
+(defn dot [f g x] (f (g x)))
+
+(** ## Unify recursive types **)
+
+(typealias recstate (, (map string type) (list (, type type)) int))
+
+(defn is-rec-pair [t1 t2]
+    (match (, t1 t2)
+        (, (trec _ _ _ _) _) true
+        (, _ (trec _ _ _ _)) true
+        _                    false))
+
+(defn has-inf-recursion [t1 t2 pairs]
+    (any
+        (fn [(, a b)]
+            (if (type= t1 a)
+                (type= t2 b)
+                    false))
+            pairs))
+
+(defn lookup-rec [t lookup]
+    (match t
+        (tvar name l) (match (map/get lookup name)
+                          (some v) (let-> [v (type/apply-> v)] (<- (some v)))
+                          _        (<- none))
+        _             (<- none)))
+
+(defn add-rec [lookup t]
+    (match t
+        (trec name _ inner _) (, (map/set lookup name inner) inner)
+        _                     (, lookup t)))
+
+(defn equal-modulo-vbls [t1 t2]
+    (let [(, (, _ subst _) res) (state-f (unify t1 t2 -1) state/nil)]
+        (match res
+            (ok _) (all
+                       (fn [(, _ v)]
+                           (match v
+                               (tvar _ _) true
+                               _          false))
+                           (map/to-list subst))
+            _      false)))
+
+((** SO the cool thing here is that if you apply the subst to the (first) type, it will translate all the variables correctly so that it will be equivalent to the (second) type. This is useful in recursive type reduction, where two (equivalent) types nevertheless have different structure. **)
+    defn equal-modulo-vbls-subst [t1 t2]
+    (let [(, (, _ subst _) res) (state-f (unify t1 t2 -1) state/nil)]
+        (match res
+            (ok _) (if (all
+                       (fn [(, _ v)]
+                           (match v
+                               (tvar _ _) true
+                               _          false))
+                           (map/to-list subst))
+                       (some subst)
+                           (none))
+            _      (none))))
+
+(defn all [f lst]
+    (match lst
+        []           true
+        [one ..rest] (if (f one)
+                         (all f rest)
+                             false)))
+
+(defn check-recursion [t1 t2 (, lookup pairs count)]
+    (let [
+        (, t1 t2 lookup pairs) (if (is-rec-pair t1 t2)
+                                   (if (has-inf-recursion t1 t2 pairs)
+                                       (fatal "infinite recursion looks like")
+                                           (let [
+                                           (, lookup t1) (add-rec lookup t1)
+                                           (, lookup t2) (add-rec lookup t2)]
+                                           (, t1 t2 lookup [(, t1 t2) ..pairs])))
+                                       (, t1 t2 lookup pairs))]
+        (let-> [
+            r1 (lookup-rec t1 lookup)
+            r2 (lookup-rec t2 lookup)]
+            (<-
+                (match (, r1 r2)
+                    (, (some t1) (some t2)) (if (equal-modulo-vbls t1 t2)
+                                                (, (tcon "$recur" -1) (tcon "$recur" -1) (, lookup pairs count))
+                                                    (, t1 t2 (, lookup pairs (+ 1 count))))
+                    (, (some t1) (none))    (, t1 t2 (, lookup pairs (+ 1 count)))
+                    (, (none) (some t2))    (, t1 t2 (, lookup pairs (+ 1 count)))
+                    _                       (, t1 t2 (, lookup pairs count)))))))
+
+(defn unify-inner [t1 t2 recstate l]
+    (let-> [(, t1 t2 recstate) (check-recursion t1 t2 recstate)]
+        (match (, t1 t2)
+            (, (tvar var l) t)                       (var-bind var t l)
+            (, t (tvar var l))                       (var-bind var t l)
+            (, (tcon a la) (tcon b lb))              (if (= a b)
+                                                         (<- ())
+                                                             (<-mismatch t1 t2))
+            (, (trow f1 s1 k1 l) (trow f2 s2 k2 l2)) (if (!= k1 k2)
+                                                         (<-err "enum and record dont match")
+                                                             (unify-trows f1 s1 k1 f2 s2 k2 recstate l))
+            (, (tapp t1 a1 _) (tapp t2 a2 _) )       (let-> [
+                                                         ()    (unify-inner t1 t2 recstate l)
+                                                         subst <-subst
+                                                         ()    (unify-inner
+                                                                   (type/apply subst a1)
+                                                                       (type/apply subst a2)
+                                                                       recstate
+                                                                       l)]
+                                                         (<- ()))
+            _                                        (<-mismatch t1 t2))))
+
+(defn var-bind [var type l]
+    (match type
+        (tvar v _) (if (= var v)
+                       (<- ())
+                           (let-> [_ (subst-> (one-subst var type))] (<- ())))
+        _          (if (set/has (type/free type) var)
+                       (let-> [_ (subst-> (one-subst var (trec var l type l)))] (<- ()))
+                           ;(<-err
+                           "Cycle found while unifying type with type variable. ${var} is found in ${(type->s type)}")
+                           (let-> [_ (subst-> (one-subst var type))] (<- ())))))
+
+(defn one-subst [var type] (map/from-list [(, var type)]))
+
+(,
+    test-unify
+        [(, (, (@t abc) (@t 'a)) (ok (, (tcon "abc" 15601) (tcon "abc" 15601)))) (,  )])
+
+(def test-unify
+    (fn [(, t1 t2)]
+        (run/nil->
+            (let-> [
+                t1    (<- (quot-tvar t1))
+                t2    (<- (quot-tvar t2))
+                ()    (unify t1 t2 -1)
+                subst <-subst]
+                (<- (, (type/apply subst t1) (type/apply subst t2)))))))
 
 (defn quot-tvar [t]
     (match t
@@ -612,6 +930,7 @@
                                      (tvar name l)
                                          t)
         (tapp target arg l)      (tapp (quot-tvar target) (quot-tvar arg) l)
+        (trec name nl type l)    (trec name nl (quot-tvar type) l)
         (trow fields spread k l) (trow
                                      (map (fn [(, name type)] (, name (quot-tvar type))) fields)
                                          (match spread
@@ -620,23 +939,17 @@
                                          k
                                          l)))
 
-(,
-    (fn [(, t1 t2)]
-        (run/nil->
-            (let-> [
-                t1    (<- (quot-tvar t1))
-                t2    (<- (quot-tvar t2))
-                ()    (unify t1 t2 -1)
-                subst <-subst]
-                (<- (, (type/apply subst t1) (type/apply subst t2))))))
-        [(, (, (@t abc) (@t 'a)) (ok (, (tcon "abc" 15601) (tcon "abc" 15601)))) (,  )])
+(def starts-with
+    (eval "(prefix) => (str) => str.startsWith(prefix)"))
 
-(defn identify-unique [fields1 spread1 fields2 spread2 k]
+(** ## trow unification **)
+
+(defn identify-unique [fields1 spread1 fields2 spread2 recstate k]
     (let [
         (, map1 spread1) (deep-map fields1 spread1 k)
         (, map2 spread2) (deep-map fields2 spread2 k)
         (, u1 shared u2) (partition-keys map1 map2)]
-        (let-> [_ (map-> (fn [(, key t1 t2)] (unify t1 t2 -1)) shared)]
+        (let-> [_ (map-> (fn [(, key t1 t2)] (unify-inner t1 t2 recstate -1)) shared)]
             (<- (, u1 spread1 u2 spread2)))))
 
 (defn filter [f lst]
@@ -702,56 +1015,30 @@
 
 (defn wrap-ok [t] (let-> [v t] (<- (some v))))
 
-(defn unify-inner [t1 t2 l]
-    (match (, t1 t2)
-        (, (tvar var l) t)                       (var-bind var t l)
-        (, t (tvar var l))                       (var-bind var t l)
-        (, (tcon a la) (tcon b lb))              (if (= a b)
-                                                     (<- ())
-                                                         (<-mismatch t1 t2))
-        (, (trow f1 s1 k1 l) (trow f2 s2 k2 l2)) (if (!= k1 k2)
-                                                     (<-err "enum and record dont match")
-                                                         (let-> [
-                                                         (, u1 s1 u2 s2) (identify-unique f1 s1 f2 s2 k1)
-                                                         open            (<-
-                                                                             (match (, s1 s2)
-                                                                                 (, (some _) (some _)) true
-                                                                                 _                     false))
-                                                         _               (match (, s1 u2)
-                                                                             (, _ [])        (<- ())
-                                                                             (, (some s1) _) (let-> [
-                                                                                                 v2 (if open
-                                                                                                        (wrap-ok (new-type-var "row" l))
-                                                                                                            (<- none))]
-                                                                                                 (unify s1 (trow u2 v2 k1 l) l))
-                                                                             _               (<-err "unique fields on the right but no spread on the left"))
-                                                         _               (match (, s2 u1)
-                                                                             (, _ [])        (<- ())
-                                                                             (, (some s2) _) (let-> [
-                                                                                                 v1 (if open
-                                                                                                        (wrap-ok (new-type-var "row" l))
-                                                                                                            (<- none))]
-                                                                                                 (unify s2 (trow u1 v1 k2 l) l))
-                                                                             _               (<-err "unique fields on the left but no spread on the right"))]
-                                                         (<- ())))
-        (, (tapp t1 a1 _) (tapp t2 a2 _) )       (let-> [
-                                                     ()    (unify-inner t1 t2 l)
-                                                     subst <-subst
-                                                     ()    (unify-inner (type/apply subst a1) (type/apply subst a2) l)]
-                                                     (<- ()))
-        _                                        (<-mismatch t1 t2)))
-
-(defn one-subst [var type] (map/from-list [(, var type)]))
-
-(defn var-bind [var type l]
-    (match type
-        (tvar v _) (if (= var v)
-                       (<- ())
-                           (let-> [_ (subst-> (one-subst var type))] (<- ())))
-        _          (if (set/has (type/free type) var)
-                       (<-err
-                           "Cycle found while unifying type with type variable. ${var}")
-                           (let-> [_ (subst-> (one-subst var type))] (<- ())))))
+(defn unify-trows [f1 s1 k1 f2 s2 k2 recstate l]
+    (let-> [
+        (, u1 s1 u2 s2) (identify-unique f1 s1 f2 s2 recstate k1)
+        open            (<-
+                            (match (, s1 s2)
+                                (, (some _) (some _)) true
+                                _                     false))
+        _               (match (, s1 u2)
+                            (, _ [])        (<- ())
+                            (, (some s1) _) (let-> [
+                                                v2 (if open
+                                                       (wrap-ok (new-type-var "row" l))
+                                                           (<- none))]
+                                                (unify-inner s1 (trow u2 v2 k1 l) recstate l))
+                            _               (<-err "unique fields on the right but no spread on the left"))
+        _               (match (, s2 u1)
+                            (, _ [])        (<- ())
+                            (, (some s2) _) (let-> [
+                                                v1 (if open
+                                                       (wrap-ok (new-type-var "row" l))
+                                                           (<- none))]
+                                                (unify-inner s2 (trow u1 v1 k2 l) recstate l))
+                            _               (<-err "unique fields on the left but no spread on the right"))]
+        (<- ())))
 
 (** ## Inference
     Here are the functions that we'll be using most often when writing the inference code (summarized here as a refresher):
@@ -998,7 +1285,7 @@
                 2 3))
             (err
             (terr
-                "Match not exhaustive 17638: \nMissing _ : An infinite type requires a catchall"
+                "Match not exhaustive 17638: \nMissing _ : The infinite type int requires a catchall"
                     [])))
         (,
         (@
@@ -1339,13 +1626,13 @@
         (ex/constructor string ex-group (list ex-pattern)))
 
 (deftype ex-group
-    (ginf)
+    (ginf string)
         (gnames (list string) (option string)))
 
 (** ## Enumerating "missing" cases **)
 
 (deftype missing
-    (minf)
+    (minf string)
         (mname string)
         (mopen string))
 
@@ -1353,7 +1640,7 @@
     "Missing ${(match prefix
         [] ""
         _  "${(join " " prefix)} ")}${(match m
-        (minf)       "_ : An infinite type requires a catchall"
+        (minf name)  "_ : The infinite type ${name} requires a catchall"
         (mopen id)   "_ : Open type (tvar ${id}) requires a catchall"
         (mname name) "${name} : Case not handled")}")
 
@@ -1394,9 +1681,9 @@
         _        (let [(, gid by-cstr anys) (group-rows matrix)]
                      (match gid
                          (none)                     (prefix "_" (find-missing anys))
-                         (some (ginf))              (match anys
-                                                        [] [(, [] (minf))]
-                                                        _  (prefix "_" (find-missing anys)))
+                         (some (ginf name))         (match anys
+                                                        [] [(, [] (minf name))]
+                                                        _  (prefix name (find-missing anys)))
                          (some (gnames names open)) (let [
                                                         missing-fields (filter (fn [k] (not (is-some (map/get by-cstr k)))) names)
                                                         from-fields    (concat
@@ -1468,8 +1755,8 @@
                                                                                                 (some arg) [(pattern-to-ex-pattern tenv (, arg argt))]
                                                                                                 _          []))))
                                         _                           (fatal "enum type not a row"))
-        (pstr str _)                (ex/constructor str ginf [])
-        (pprim (pint v _) _)        (ex/constructor (int-to-string v) ginf [])
+        (pstr str _)                (ex/constructor str (ginf "string") [])
+        (pprim (pint v _) _)        (ex/constructor (int-to-string v) (ginf "int") [])
         (pprim (pbool v _) _)       (ex/constructor
                                         (if v
                                             "true"
@@ -1520,7 +1807,7 @@
             (ex/constructor
             "cons"
                 (gnames ["nil" "cons"] (none))
-                [(ex/constructor "2" (ginf) [])
+                [(ex/constructor "2" (ginf "int") [])
                 (ex/constructor
                 "cons"
                     (gnames ["nil" "cons"] (none))
@@ -1534,21 +1821,22 @@
             (ex/constructor
             ","
                 (gnames [","] (none))
-                [(ex/constructor "2" (ginf) []) (ex/any)]))
+                [(ex/constructor "2" (ginf "int") []) (ex/any)]))
         (,
         (, (@p {a 2}) (trow [(, "a" tint) (, "b" tbool)] none precord 1))
             (ex/constructor
             "record"
                 (gnames ["record"] (none))
-                [(ex/constructor "2" (ginf) []) (ex/any) (ex/any)]))])
+                [(ex/constructor "2" (ginf "int") []) (ex/any) (ex/any)]))])
 
 (defn tcon-and-args [type coll l]
     (match type
-        (trow _ _ _ _)      (fatal "cant apply a row type")
-        (tvar _ _)          (fatal
-                                "Type not resolved ${(int-to-string l)} it is a tvar at heart. ${(jsonify type)} ${(jsonify coll)}")
-        (tcon name _)       (, name coll)
-        (tapp target arg _) (tcon-and-args target [arg ..coll] l)))
+        (trow _ _ _ _)        (fatal "cant apply a row type")
+        (trec name _ inner _) (fatal "cant apply a recursive type?")
+        (tvar _ _)            (fatal
+                                  "Type not resolved ${(int-to-string l)} it is a tvar at heart. ${(jsonify type)} ${(jsonify coll)}")
+        (tcon name _)         (, name coll)
+        (tapp target arg _)   (tcon-and-args target [arg ..coll] l)))
 
 (,
     (fn [x] (tcon-and-args x [] 0))
@@ -1641,7 +1929,7 @@
                                              heads
                                              (fn [found id _ args] [(, id (length args)) ..found])))]
                            (match gid
-                               (ginf)                       map/nil
+                               (ginf _)                     map/nil
                                (gnames constrs (some open)) map/nil
                                (gnames constrs _)           (loop
                                                                 constrs
@@ -1737,6 +2025,48 @@
                 (map/from-list [])
                     (tapp (tapp (tcon "->" 3146) (tcon "int" -1) 3146) (tcon "int" -1) 3146)))])])
 
+(def test-infer-str
+    (fn [(tdef name nl expr l)]
+        (let [
+            (tenv values _ _ _) (err-to-fatal
+                                    (run/nil->
+                                        (let-> [
+                                            (, tenv _) (add/stmts
+                                                           tenv/nil
+                                                               [(@!
+                                                               (deftype (option a)
+                                                                   (some a)
+                                                                       (none)))
+                                                               (@!
+                                                               (deftype (, a b)
+                                                                   (, a b)))])]
+                                            (add/def tenv name nl expr l))))]
+            (match (map/get values name)
+                (some t) (scheme->s t)
+                _        "type not found for ${name}"))))
+
+(test-infer-str
+    (@!
+        (defn map2 [f (, v rest)]
+            (,
+                (f v)
+                    (match rest
+                    (none)      (none)
+                    (some rest) (some (map2 f rest)))))))
+
+(,
+    test-infer-str
+        [(, (@! (def x 10)) "int")
+        (,
+        (@!
+            (defn map2 [f (, v rest)]
+                (,
+                    (f v)
+                        (match rest
+                        (none)      (none)
+                        (some rest) (some (map2 f rest))))))
+            "forall a:2 result:10 : (fn [(fn [a:2] result:10) (, a:2 (option (rec a:12 (, a:2 (option a:12)))))] (, result:10 (option (rec a:13 (, result:10 (option a:13))))))")])
+
 (** Ok, but what about mutual recursion? It's actually very similar to the single case; you make a list of type variables, one for each definition, then do inference on each, unifying the result with the type variable, and then apply the final substitution to everything at the end! **)
 
 (defn restrict-poly-enum [t]
@@ -1763,14 +2093,21 @@
                 (trow fields spread k l) (trow (map (fn [(, k v)] (, k (rec v))) fields) (map/opt rec spread) k l)
                 _                        t))))
 
+(defn type/map-post [f t]
+    (let [rec (type/map f)]
+        (match (f t)
+            (tapp a b l)             (tapp (rec a) (rec b) l)
+            (trow fields spread k l) (trow (map (fn [(, k v)] (, k (rec v))) fields) (map/opt rec spread) k l)
+            t                        t)))
+
 (defn type/fold [init f t]
     (f
         (match t
-            (tapp a b l)             (f (f init a) b)
-            (trow fields spread k l) (let [init (foldl init fields (fn [init (, k v)] (f init v)))]
+            (tapp a b l)             (type/fold (type/fold init f a) f b)
+            (trow fields spread k l) (let [init (foldl init fields (fn [init (, k v)] (type/fold init f v)))]
                                          (match spread
                                              (none)   init
-                                             (some v) (f init v)))
+                                             (some v) (type/fold init f v)))
             _                        init)
             t))
 
@@ -1806,7 +2143,10 @@
                 tenv/nil
                     (zip names types)
                     (fn [tenv (, name type)]
-                    (tenv/with-type tenv name (generalize tenv type)))))))
+                    (tenv/with-type
+                        tenv
+                            name
+                            (generalize tenv (simplify-recursive type))))))))
 
 (,
     (fn [x]
@@ -1879,13 +2219,24 @@
                 map/nil)))
 
 (defn type/con-to-var [vars type]
+    (type/map
+        (fn [t]
+            (match t
+                (tcon name l) (if (set/has vars name)
+                                  (tvar name l)
+                                      t)
+                _             t))
+            type))
+
+(defn type/con-to-var- [vars type]
     (match type
-        (trow _ _ _ _) (fatal "cant apply a row")
-        (tvar _ _)     type
-        (tcon name l)  (if (set/has vars name)
-                           (tvar name l)
-                               type)
-        (tapp a b l)   (tapp (type/con-to-var vars a) (type/con-to-var vars b) l)))
+        (trow _ _ _ _)         (fatal "cant apply a row")
+        (trec name nl inner l) (trec name nl (type/con-to-var vars inner) l)
+        (tvar _ _)             type
+        (tcon name l)          (if (set/has vars name)
+                                   (tvar name l)
+                                       type)
+        (tapp a b l)           (tapp (type/con-to-var vars a) (type/con-to-var vars b) l)))
 
 (defn type/resolve-aliases [aliases type]
     (let [
@@ -1937,7 +2288,7 @@
                                                   (<- (tenv/merge env env')))))
         types                         (map-> (infer/expr (tenv/merge tenv final)) exprs)
         types                         (map-> restrict-poly-enum types)]
-        (<- (, final types))))
+        (<- (, final (map simplify-recursive types)))))
 
 (,
     (fn [(, x name)]
@@ -1983,7 +2334,7 @@
                     (elet bindgroup expr int)))]
                 [(@! (defn x [(elet b _ _)] b))]]
                 "x")
-            "(fn [expr] ((, (list pat)) expr))")
+            "(fn [expr] (, (list pat) expr))")
         (,
         (,
             [[(@! (typealias (a b) (, int b)))
@@ -1993,7 +2344,7 @@
                         (blue)
                         (green (a bool))))]]
                 "green")
-            "(fn [((, int) bool)] hi)")
+            "(fn [(, int bool)] hi)")
         ])
 
 (** ## Type Environment populated with Builtins **)

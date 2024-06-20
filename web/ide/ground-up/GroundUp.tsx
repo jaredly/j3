@@ -26,6 +26,8 @@ import { AutoComplete } from './AutoComplete';
 import { RenderReadOnly } from '../../custom/RenderStatic';
 import { selectEnd } from '../../../src/state/navigate';
 import { DebugCard } from './DebugCard';
+import { useNamespace } from '../../custom/store/useNamespace';
+import { RenderProduceItem } from '../../custom/RenderProduceItem';
 
 export const WithStore = ({
     store,
@@ -191,6 +193,13 @@ const ShowPin = ({
         (fn) => store.onChange('ns:' + pin, fn),
         [pin],
     );
+    const results = useSubscribe(
+        () => 
+            [store.getResults().results.nodes[pin],
+            store.getResults().workerResults.nodes[pin]] as const,
+        fn => store.onChange('ns:' + pin, fn),
+        [pin]
+    )
     return (
         <div
             style={{
@@ -201,6 +210,7 @@ const ShowPin = ({
                 backgroundColor: 'black',
                 zIndex: 100,
                 padding: 4,
+                fontSize: '80%',
             }}
         >
             <button
@@ -226,6 +236,12 @@ const ShowPin = ({
                     idx={ns.top}
                     path={[{ type: 'ns-top', idx: pin }]}
                 />
+                {results[1].produce.map((pi, i) => (
+                    <RenderProduceItem
+                        key={i}
+                        value={pi}
+                    />
+                ))}
             </div>
         </div>
     );

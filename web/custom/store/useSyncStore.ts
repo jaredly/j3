@@ -118,6 +118,15 @@ export const setupSyncStore = (
                 );
 
                 Object.assign(workerResults.nodes, msg.results);
+
+                // Clean out old trace tops
+                Object.keys(workerResults.traces).forEach((k) => {
+                    if (!state.meta[+k].traceTop) {
+                        delete workerResults.traces[+k];
+                        delete msg.traces[+k];
+                    }
+                });
+
                 Object.assign(workerResults.traces, msg.traces);
 
                 Object.keys(workerResults.nodes).forEach((k) => {

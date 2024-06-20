@@ -408,6 +408,12 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const parse_tag = $eval("v => v.startsWith('\\'') ? {type: 'some', 0: v.slice(1)} : {type: 'none'}");
 
+const is_earmuffs = $eval("v => v.startsWith('*') && v.endsWith('*') && v.length > 2");
+
+const is_bang = $eval("v => v.startsWith('!')");
+
+const is_arrow = $eval("v => v.startsWith('<-')");
+
 const nil = ({type: "nil"})
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
 const pany = (v0) => ({type: "pany", 0: v0})
@@ -420,6 +426,7 @@ const penum = (v0) => (v1) => (v2) => (v3) => ({type: "penum", 0: v0, 1: v1, 2: 
 const tvar = (v0) => (v1) => ({type: "tvar", 0: v0, 1: v1})
 const tapp = (v0) => (v1) => (v2) => ({type: "tapp", 0: v0, 1: v1, 2: v2})
 const tcon = (v0) => (v1) => ({type: "tcon", 0: v0, 1: v1})
+const trec = (v0) => (v1) => (v2) => (v3) => ({type: "trec", 0: v0, 1: v1, 2: v2, 3: v3})
 const trow = (v0) => (v1) => (v2) => (v3) => ({type: "trow", 0: v0, 1: v1, 2: v2, 3: v3})
 const cst$sllist = (v0) => (v1) => ({type: "cst/list", 0: v0, 1: v1})
 const cst$slarray = (v0) => (v1) => ({type: "cst/array", 0: v0, 1: v1})
@@ -809,6 +816,13 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(set$slhas(bound)(name))
 }
 }
+if ($target.type === "trec") {
+{
+let inner = $target[2];
+let l = $target[3];
+return externals_type(bound)(inner)
+}
+}
 if ($target.type === "tapp") {
 {
 let one = $target[0];
@@ -897,6 +911,9 @@ return "var"
 }
 if ($target.type === "tcon") {
 return "con"
+}
+if ($target.type === "trec") {
+return "rec"
 }
 if ($target.type === "trow") {
 return "row"
@@ -1376,6 +1393,15 @@ let l = $target[1];
 return one($co(name)(l))
 }
 }
+if ($target.type === "trec") {
+{
+let name = $target[0];
+let nl = $target[1];
+let inner = $target[2];
+let l = $target[3];
+return many(cons(one($co(name)(nl)))(cons(type$slidents(inner))(nil)))
+}
+}
 if ($target.type === "trow") {
 {
 let fields = $target[0];
@@ -1438,6 +1464,15 @@ let l = $target[1];
 return one(global(name)(type)(l)(usage($unit)))
 }
 }
+if ($target.type === "trec") {
+{
+let name = $target[0];
+let nl = $target[1];
+let inner = $target[2];
+let l = $target[3];
+return type$slnames(map$slset(free)(name)(nl))(inner)
+}
+}
 if ($target.type === "trow") {
 {
 let fields = $target[0];
@@ -1473,9 +1508,13 @@ return one(global(name)(value)(l)(usage($unit)))
 throw new Error('Failed to match. ' + valueToString($target));
 })(map$slget(bound)(name));
 
+const eearmuffs = ({type: "eearmuffs"})
+const ebang = (v0) => ({type: "ebang", 0: v0})
+const eeffectful = (v0) => (v1) => (v2) => ({type: "eeffectful", 0: v0, 1: v1, 2: v2})
 const eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 const estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
 const evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
+const eeffect = (v0) => (v1) => (v2) => ({type: "eeffect", 0: v0, 1: v1, 2: v2})
 const equot = (v0) => (v1) => ({type: "equot", 0: v0, 1: v1})
 const elambda = (v0) => (v1) => (v2) => ({type: "elambda", 0: v0, 1: v1, 2: v2})
 const eapp = (v0) => (v1) => (v2) => ({type: "eapp", 0: v0, 1: v1, 2: v2})
@@ -1484,6 +1523,7 @@ const ematch = (v0) => (v1) => (v2) => ({type: "ematch", 0: v0, 1: v1, 2: v2})
 const eenum = (v0) => (v1) => (v2) => (v3) => ({type: "eenum", 0: v0, 1: v1, 2: v2, 3: v3})
 const erecord = (v0) => (v1) => (v2) => ({type: "erecord", 0: v0, 1: v1, 2: v2})
 const eaccess = (v0) => (v1) => (v2) => ({type: "eaccess", 0: v0, 1: v1, 2: v2})
+const eprovide = (v0) => (v1) => (v2) => ({type: "eprovide", 0: v0, 1: v1, 2: v2})
 
 const quot$slexpr = (v0) => ({type: "quot/expr", 0: v0})
 const quot$sltop = (v0) => ({type: "quot/top", 0: v0})
@@ -1751,6 +1791,18 @@ let l = $target[1];
 return l
 }
 }
+if ($target.type === "eeffect") {
+{
+let l = $target[2];
+return l
+}
+}
+if ($target.type === "eprovide") {
+{
+let l = $target[2];
+return l
+}
+}
 if ($target.type === "evar") {
 {
 let l = $target[1];
@@ -1828,6 +1880,31 @@ if ($target.type === "eprim") {
 let prim = $target[0];
 let l = $target[1];
 return empty
+}
+}
+if ($target.type === "eeffect") {
+return empty
+}
+if ($target.type === "eprovide") {
+{
+let target = $target[0];
+let cases = $target[1];
+return foldl(externals(bound)(target))(map(cases)(({1: {1: {1: body, 0: k}, 0: nl}, 0: name}) => ((pats) => foldl(externals(foldl(bound)(map(pats)(pat_names))(set$slmerge))(body))(map(pats)(pat_externals))(bag$sland))((($target) => {
+if ($target.type === "ebang") {
+{
+let pats = $target[0];
+return pats
+}
+}
+if ($target.type === "eeffectful") {
+{
+let pats = $target[2];
+return pats
+}
+}
+return nil
+throw new Error('Failed to match. ' + valueToString($target));
+})(k))))(bag$sland)
 }
 }
 if ($target.type === "eenum") {
@@ -2100,6 +2177,12 @@ let expr = $target[1];
 let int = $target[2];
 return "lambda"
 }
+}
+if ($target.type === "eeffect") {
+return "effect"
+}
+if ($target.type === "eprovide") {
+return "provide"
 }
 if ($target.type === "eapp") {
 {
@@ -2514,6 +2597,12 @@ throw new Error('Failed to match. ' + valueToString($target));
 })($eq(l)(tl))
 }
 }
+if ($target.type === "eeffect") {
+return none
+}
+if ($target.type === "eprovide") {
+return none
+}
 if ($target.type === "eaccess") {
 {
 let name = $target[0];
@@ -2786,6 +2875,98 @@ let l = $target[3];
 return foldl($co(nil)(one(global(name)(value)(l)(usage($unit)))))(map(args)(pat$slnames))(bound_and_names)
 }
 }
+throw new Error('Failed to match. ' + valueToString($target));
+})(pat);
+
+const provide_empty_effects = (jexp) => j$slapp(j$sllambda(cons(j$slpvar("\$lbeffects\$rb")(-1))(nil))(jexp)(-1))(cons(j$slobj(nil)(-1))(nil))(-1);
+
+const parse_id = (id) => (l) => (($target) => {
+if ($target === true) {
+return eeffect(id)(false)(l)
+}
+return (($target) => {
+if ($target.type === "some") {
+{
+let int = $target[0];
+return eprim(pint(int)(l))(l)
+}
+}
+if ($target.type === "none") {
+return (($target) => {
+if ($target.type === "some") {
+{
+let tag = $target[0];
+return eenum(tag)(l)(none)(l)
+}
+}
+return evar(id)(l)
+throw new Error('Failed to match. ' + valueToString($target));
+})(parse_tag(id))
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(string_to_int(id))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_earmuffs(id));
+
+const parse_provide_pat = (pat) => (($target) => {
+if ($target.type === "cst/id") {
+{
+let id = $target[0];
+let l = $target[1];
+return (($target) => {
+if ($target === true) {
+return $lt_($co(id)($co(l)($co(eearmuffs)(l))))
+}
+return $lt_err($co(l)("Wrap in () or must be *earmuffed*"))($co(id)($co(l)($co(eearmuffs)(l))))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_earmuffs(id))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][1].type === "cons" &&
+$target[0][1][0].type === "cst/id") {
+{
+let k = $target[0][0][0];
+let kl = $target[0][0][1];
+let id = $target[0][1][0][0];
+let il = $target[0][1][0][1];
+let pats = $target[0][1][1];
+let l = $target[1];
+return (($target) => {
+if ($target === true) {
+return $gt$gt$eq(map_$gt(parse_pat)(cons(cst$slid(id)(il))(pats)))((pats) => $lt_($co(k)($co(kl)($co(ebang(pats))(l)))))
+}
+return (($target) => {
+if ($target === true) {
+return $gt$gt$eq(map_$gt(parse_pat)(pats))((pats) => $lt_($co(id)($co(il)($co(eeffectful(k)(kl)(pats))(l)))))
+}
+return $lt_err($co(l)("Unidentified effect kind"))($co(k)($co(kl)($co(ebang(nil))(l))))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_arrow(id))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_bang(k))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id") {
+{
+let id = $target[0][0][0];
+let il = $target[0][0][1];
+let pats = $target[0][1];
+let l = $target[1];
+return (($target) => {
+if ($target === true) {
+return $gt$gt$eq(map_$gt(parse_pat)(pats))((pats) => $lt_($co(id)($co(il)($co(ebang(pats))(l)))))
+}
+return $lt_err($co(l)("Unidentified effect kind, expected *earmuffed*, <-arrowed, or !banged"))($co(id)($co(il)($co(ebang(nil))(l))))
+throw new Error('Failed to match. ' + valueToString($target));
+})(is_bang(id))
+}
+}
+return fatal("cant do it I think")
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat);
 
@@ -3132,7 +3313,7 @@ $target[0].type === ",") {
 {
 let name = $target[0][0];
 let value = $target[0][1];
-return `${name}: ${j$slcompile(ctx)(value)}`
+return `\"${name}\": ${j$slcompile(ctx)(value)}`
 }
 }
 if ($target.type === "right" &&
@@ -3626,6 +3807,22 @@ return $gt$gt$eq(parse_type(body))((body) => $gt$gt$eq(map_$gt(parse_type)(args)
 if ($target.type === "cst/list" &&
 $target[0].type === "cons" &&
 $target[0][0].type === "cst/id" &&
+$target[0][0][0] === "rec" &&
+$target[0][1].type === "cons" &&
+$target[0][1][0].type === "cst/id" &&
+$target[0][1][1].type === "cons" &&
+$target[0][1][1][1].type === "nil") {
+{
+let name = $target[0][1][0][0];
+let nl = $target[0][1][0][1];
+let inner = $target[0][1][1][0];
+let l = $target[1];
+return $gt$gt$eq(parse_type(inner))((inner) => $lt_(trec(name)(nl)(inner)(l)))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
 $target[0][0][0] === ",") {
 {
 let cl = $target[0][0][1];
@@ -3847,6 +4044,31 @@ return empty
 if ($target.type === "equot") {
 return empty
 }
+if ($target.type === "eprovide") {
+{
+let target = $target[0];
+let cases = $target[1];
+return foldl(expr$slnames(bound)(target))(map(cases)(({1: {1: {1: body, 0: k}, 0: nl}, 0: name}) => ((pats) => (({1: names$qu, 0: bound$qu}) => bag$sland(expr$slnames(map$slmerge(bound)(map$slfrom_list(bound$qu)))(body))(names$qu))(foldl($co(nil)(empty))(map(pats)(pat$slnames))(bound_and_names)))((($target) => {
+if ($target.type === "ebang") {
+{
+let pats = $target[0];
+return pats
+}
+}
+if ($target.type === "eeffectful") {
+{
+let pats = $target[2];
+return pats
+}
+}
+return nil
+throw new Error('Failed to match. ' + valueToString($target));
+})(k))))(bag$sland)
+}
+}
+if ($target.type === "eeffect") {
+return empty
+}
 if ($target.type === "eaccess") {
 {
 let target = $target[0];
@@ -3931,6 +4153,8 @@ return many(map(tpls)(({0: expr}) => expr$slnames(bound)(expr)))
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(expr);
+
+const parse_provide = (parse_expr) => (target) => (ml) => (cases) => (l) => $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq($lt_(pairs_plus(cst$slid("()")(ml))(cases)))((cases) => $gt$gt$eq(map_$gt(({1: expr, 0: pat}) => $gt$gt$eq(parse_expr(expr))((expr) => $gt$gt$eq(parse_provide_pat(pat))(({1: {1: {1: l, 0: epat}, 0: il}, 0: id}) => $lt_($co(id)($co(il)($co(epat)(expr)))))))(cases))((cases) => $lt_(eprovide(target)(cases)(l)))));
 
 const parse_top = (cst) => (($target) => {
 if ($target.type === "cst/list" &&
@@ -4104,27 +4328,7 @@ if ($target.type === "cst/id") {
 {
 let id = $target[0];
 let l = $target[1];
-return $lt_((($target) => {
-if ($target.type === "some") {
-{
-let int = $target[0];
-return eprim(pint(int)(l))(l)
-}
-}
-if ($target.type === "none") {
-return (($target) => {
-if ($target.type === "some") {
-{
-let tag = $target[0];
-return eenum(tag)(l)(none)(l)
-}
-}
-return evar(id)(l)
-throw new Error('Failed to match. ' + valueToString($target));
-})(parse_tag(id))
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(string_to_int(id)))
+return $lt_(parse_id(id)(l))
 }
 }
 if ($target.type === "cst/list" &&
@@ -4224,6 +4428,19 @@ $target[0][0][0] === "fn") {
 {
 let l = $target[1];
 return $lt_err($co(l)(`Invalid 'fn' ${int_to_string(l)}`))(evar("()")(l))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "provide" &&
+$target[0][1].type === "cons") {
+{
+let ml = $target[0][0][1];
+let target = $target[0][1][0];
+let cases = $target[0][1][1];
+let l = $target[1];
+return parse_provide(parse_expr)(target)(ml)(cases)(l)
 }
 }
 if ($target.type === "cst/list" &&
@@ -4548,6 +4765,36 @@ let l = $target[1];
 return j$slraw(quot$sljsonify(inner))(l)
 }
 }
+if ($target.type === "eeffect" &&
+$target[1] === false) {
+{
+let name = $target[0];
+let l = $target[2];
+return j$slindex(j$slvar("\$lbeffects\$rb")(l))(j$slstr(name)(nil)(l))(l)
+}
+}
+if ($target.type === "eeffect" &&
+$target[1] === true) {
+{
+let name = $target[0];
+let l = $target[2];
+return fatal("effect compile not yet")
+}
+}
+if ($target.type === "eprovide") {
+{
+let target = $target[0];
+let handlers = $target[1];
+let l = $target[2];
+return j$slapp(j$sllambda(cons(j$slpvar("\$lbeffects\$rb")(l))(nil))(right(compile$slj(target)(trace)))(l))(cons(j$slobj(cons(right(j$slspread(j$slvar("\$lbeffects\$rb")(l))))(map(handlers)(({1: {1: {1: body, 0: kind}, 0: nl}, 0: name}) => (($target) => {
+if ($target.type === "eearmuffs") {
+return left($co(name)(compile$slj(body)(trace)))
+}
+return fatal("cant compile real effects handlers just yet")
+throw new Error('Failed to match. ' + valueToString($target));
+})(kind))))(l))(nil))(l)
+}
+}
 if ($target.type === "elambda") {
 {
 let pats = $target[0];
@@ -4564,7 +4811,7 @@ return pat
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(pat_$gtj$slpat(pat)))(nil))((($target) => {
+})(pat_$gtj$slpat(pat)))(cons(j$slpvar("\$lbeffects\$rb")(l))(nil)))((($target) => {
 if ($target.type === "nil") {
 return right(body)
 }
@@ -4688,7 +4935,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 const compile_let$slj = (body) => (trace) => (bindings) => (l) => foldr(compile$slj(body)(trace))(expand_bindings(bindings)(l))((body) => (binding) => j$slapp(j$sllambda(nil)(left(j$slblock(concat(cons(cons(compile_let_binding$slj(binding)(trace)(l))(nil))(cons(trace_pat(fst(binding))(trace))(cons(cons(j$slreturn(body)(l))(nil))(nil)))))))(l))(nil)(l));
 
 
-const app$slj = (target) => (args) => (trace) => (l) => foldl(compile$slj(target)(trace))(args)((target) => (arg) => j$slapp(target)(cons(compile$slj(arg)(trace))(nil))(l));
+const app$slj = (target) => (args) => (trace) => (l) => foldl(compile$slj(target)(trace))(args)((target) => (arg) => j$slapp(target)(cons(compile$slj(arg)(trace))(cons(j$slvar("\$lbeffects\$rb")(l))(nil)))(l));
 
 
 const compile_let_binding$slj = ({1: init, 0: pat}) => (trace) => (l) => (($target) => {
@@ -4704,7 +4951,7 @@ return j$sllet(pat)(compile$slj(init)(trace))(l)
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat_$gtj$slpat(pat));
 
-const run$slj = (v) => $eval(j$slcompile(0)(compile$slj(run$slnil_$gt(parse_expr(v)))(map$slnil)));
+const run$slj = (v) => $eval(`((\$lbeffects\$rb) => ${j$slcompile(0)(compile$slj(run$slnil_$gt(parse_expr(v)))(map$slnil))})({})`);
 
 const simplify_block = ({0: items}) => (($target) => {
 return (($target) => {
@@ -4729,7 +4976,7 @@ if ($target.type === "texpr") {
 {
 let expr = $target[0];
 let l = $target[1];
-return cons(j$slsexpr(compile$slj(expr)(trace))(l))(nil)
+return cons(j$slsexpr(provide_empty_effects(right(compile$slj(expr)(trace))))(l))(nil)
 }
 }
 if ($target.type === "tdef") {
@@ -4800,7 +5047,29 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const simplify_js = tx((expr) => some(expr))(apply_until(simplify_one))((pat) => none)((pat) => pat)((stmt) => some(stmt))(apply_until(simplify_stmt))((block) => some(block))(apply_until(simplify_block));
 
-return $eval("({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt, 3: compile, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => builtins => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt, compile, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names, builtins})")(parse_and_compile((top) => state_f(parse_top(top))(state$slnil))((expr) => state_f(parse_expr(expr))(state$slnil))((top) => (ctx) => j$slcompile_stmts(ctx)(map(compile_top$slj(top)(ctx))(map$slstmt(simplify_js))))((expr) => (ctx) => j$slcompile(ctx)(map$slexpr(simplify_js)(compile$slj(expr)(ctx))))(names)(externals_top)((expr) => bag$slto_list(externals(set$slnil)(expr)))(top_size)(expr_size)(type_size)((tl) => (top) => (($target) => {
+return $eval("({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt2, 3: compile2, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => builtins => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt2, compile2, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names, builtins})")(parse_and_compile((top) => state_f(parse_top(top))(state$slnil))((expr) => state_f(parse_expr(expr))(state$slnil))((top) => (type_info) => (ctx) => ((top) => j$slcompile_stmts(ctx)(map(compile_top$slj(top)(ctx))(map$slstmt(simplify_js))))((($target) => {
+if ($target.type === "tvar") {
+return top
+}
+return (($target) => {
+if ($target.type === "texpr") {
+{
+let e = $target[0];
+let l = $target[1];
+return texpr(elambda(cons(pany(-1))(nil))(e)(l))(l)
+}
+}
+return fatal("non-expr has unbound effects??")
+throw new Error('Failed to match. ' + valueToString($target));
+})(top)
+throw new Error('Failed to match. ' + valueToString($target));
+})(type_info)))((expr) => (type_info) => (ctx) => ((expr) => j$slcompile(ctx)(provide_empty_effects(right(map$slexpr(simplify_js)(compile$slj(expr)(ctx))))))((($target) => {
+if ($target.type === "tvar") {
+return expr
+}
+return elambda(cons(pany(-1))(nil))(expr)(-1)
+throw new Error('Failed to match. ' + valueToString($target));
+})(type_info)))(names)(externals_top)((expr) => bag$slto_list(externals(set$slnil)(expr)))(top_size)(expr_size)(type_size)((tl) => (top) => (($target) => {
 if ($target.type === "some") {
 {
 let v = $target[0];
