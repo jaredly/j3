@@ -156,21 +156,21 @@
 
 (morp2 (+ 1) (, 1 2))
 
-(defn map [f v]
+(defn map-enum [f v]
     (match v
         'nil        'nil
-        ('cons x r) ('cons (f x) (map f r))))
+        ('cons x r) ('cons (f x) (map-enum f r))))
 
-(map (+ 2) 'nil)
+(map-enum (+ 2) 'nil)
 
-(defn mapl [f v]
+(defn map [f v]
     (match v
         []           []
-        [one ..rest] [(f one) ..(mapl f rest)]))
+        [one ..rest] [(f one) ..(map f rest)]))
 
-(provide (mapl try-int ["12" "34"]) (!fail _) [])
+(provide (map try-int ["12" "34"]) (!fail _) [])
 
-(provide (map try-int ('cons "12" 'nil)) (!fail _) 'nil)
+(provide (map-enum try-int ('cons "12" 'nil)) (!fail _) 'nil)
 
 (defn map-tree [f v]
     (match v
@@ -185,7 +185,7 @@
 
 (, 1 2)
 
-(provide (map (fn [x] (+ x *num*)) ('cons 1 'nil)) *num* 23)
+(provide (map-enum (fn [x] (+ x *num*)) ('cons 1 'nil)) *num* 23)
 
 (defn map2 [f (, v rest)]
     (,
@@ -253,20 +253,22 @@
 
 (defn fail-or [d f] (provide (f ()) (!fail _) d))
 
-(fail-or 'nil (fn [()] (map try-int ('cons "a" 'nil))))
+(fail-or 'nil (fn [()] (map-enum try-int ('cons "a" 'nil))))
 
 (fail-or none (fn [()] (some 10)))
-
-(provide (mapl try-int ["12" "30"]) (!fail _) [])
-
-(map try-int ('cons "12" ('cons "30" 'nil)))
-
-('cons "12" ('cons "30" 'nil))
 
 (defn try-int [x]
     (match (string-to-int x)
         (none)   (!fail "Not an integer ${x}")
         (some x) x))
+
+(provide (map try-int ["12" "30"]) (!fail _) [])
+
+(provide (map try-int ["12" "abc"]) (!fail _) [])
+
+(map-enum try-int ('cons "12" ('cons "30" 'nil)))
+
+('cons "12" ('cons "30" 'nil))
 
 (provide (try-int "12") (!fail _) 34)
 
