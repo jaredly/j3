@@ -889,11 +889,11 @@
                 (fn [done]
                     (foldr
                         (match value
-                            (left value)  (j/app done [value] -1)
+                            (left value)  (j/app done [value (j/var efvbl -1)] -1)
                             (right value) (value done))
                             wraps
                             (fn [inner (, thunk vbl)]
-                            (thunk (j/lambda [(j/pvar vbl -1)] (right inner) -1))))))
+                            (thunk (j/lambda [(j/pvar vbl -1) (j/pvar efvbl -1)] (right inner) -1))))))
                 value)))
 
 (defn <-lr [v] (<-lrt (fn [x] x) v))
@@ -924,7 +924,7 @@
 
 (def efvbl (sanitize "(effects)"))
 
-(deftype citem
+;(deftype citem
     (cplain j/expr)
         (cdone (fn [j/expr] j/expr))
         (** this expects a function that has args (result, new-effects, new-continuation). It supercedes the old continuation ... right? hrm. **)
@@ -937,12 +937,47 @@
         (eprim (pint n l) _)                         (left (j/prim (j/int n l) l))
         (eprim (pbool b l) _)                        (left (j/prim (j/bool b l) l))
         (eapp target [] l)                           (cps/j3 trace target)
-        (eapp target [arg] l)                        (go2
+        (eapp target args l)                         (go2
                                                          (let-> [
                                                              target (<-lr (cps/j3 trace target))
-                                                             arg    (<-lr (cps/j3 trace arg))]
-                                                             (<-r (right (fn [done] (j/app target [arg (j/var efvbl l) done] l))))))
-        (eapp target [arg ..rest] l)                 (cps/j3 trace (eapp (eapp target [arg] l) rest l))
+                                                             args   (map-> (fn [arg] (<-lr (cps/j3 trace arg))) (rev args []))]
+                                                             (<-r
+                                                                 (right
+                                                                     (fn [done]
+                                                                         (loop
+                                                                             (, (rev args []) target)
+                                                                                 (fn [(, args target) recur]
+                                                                                 (match args
+                                                                                     []           (fatal "no args")
+                                                                                     [one]        (j/app target [one (j/var efvbl l) done] l)
+                                                                                     [one ..rest] (j/app
+                                                                                                      target
+                                                                                                          [one
+                                                                                                          (j/var efvbl l)
+                                                                                                          (j/lambda
+                                                                                                          [(j/pvar "$t" l) (j/pvar efvbl l)]
+                                                                                                              (right (recur (, rest (j/var "$t" l))))
+                                                                                                              l)]
+                                                                                                          l)
+                                                                                     ;(recur
+                                                                                         (,
+                                                                                             rest
+                                                                                                 (j/lambda
+                                                                                                 [(j/pvar "$t" l) (j/pvar efvbl l)]
+                                                                                                     (right (j/app (j/var "$t" l) [one (j/var efvbl l) done] l))
+                                                                                                     l))))))
+                                                                             ;(foldl
+                                                                             target
+                                                                                 args
+                                                                                 (fn [target arg] (j/app target [arg (j/var efvl l) done] l))))))))
+        ;((eapp target [arg] l)
+            (go2
+                (let-> [
+                    target (<-lr (cps/j3 trace target))
+                    arg    (<-lr (cps/j3 trace arg))]
+                    (<-r (right (fn [done] (j/app target [arg (j/var efvbl l) done] l))))))
+                (eapp target [arg ..rest] l)
+                (cps/j3 trace (eapp (eapp target [arg] l) rest l)))
         (elambda [] _ l)                             (fatal "no empty lambda args")
         (elambda [arg] body l)                       (left
                                                          (j/lambda
@@ -951,18 +986,18 @@
                                                                  (j/pvar "$done" l)]
                                                                  (right
                                                                  (match (cps/j3 trace body)
-                                                                     (left body)  (j/app (j/var "$done" l) [body] l)
+                                                                     (left body)  (j/app (j/var "$done" l) [body (j/var efvbl l)] l)
                                                                      (right body) (body (j/var "$done" l))))
                                                                  l))
         (elambda [arg ..rest] body l)                (cps/j3 trace (elambda [arg] (elambda rest body l) l))
         (eaccess (some (, target _)) [(, name _)] l) (left (j/index (j/var target l) (j/str name [] l) l))
         (eaccess (none) [(, name _)] l)              (left
                                                          (j/lambda
-                                                             [(j/pvar "target" l) (j/pvar "_" l) (j/pvar "done" l)]
+                                                             [(j/pvar "target" l) (j/pvar efvbl l) (j/pvar "done" l)]
                                                                  (right
                                                                  (j/app
                                                                      (j/var "done" l)
-                                                                         [(j/index (j/var "target" l) (j/str name [] l) l)]
+                                                                         [(j/index (j/var "target" l) (j/str name [] l) l) (j/var efvbl l)]
                                                                          l))
                                                                  l))
         (estr prefix items l)                        (go2
@@ -972,7 +1007,13 @@
                                                                            (let-> [expr (<-lr (cps/j3 trace expr))] (<- (, expr suffix))))
                                                                            items)]
                                                              (<- (left (j/str prefix items l)))))
-        (eeffect name (none) l)                      (left (j/index (j/var efvbl l) (j/str name [] l) l))
+        (eeffect name (none) l)                      (right
+                                                         (fn [done]
+                                                             (j/app
+                                                                 done
+                                                                     [(j/index (j/var efvbl l) (j/str name [] l) l) (j/var efvbl l)]
+                                                                     l)))
+        ;(left (j/index (j/var efvbl l) (j/str name [] l) l))
         (eeffect name (some args) l)                 (go2
                                                          (let-> [args (map-> (fn [x] (let-> [v (<-lr (cps/j3 trace x))] (<- v))) args)]
                                                              (let [
@@ -1019,7 +1060,7 @@
                                                                                      [(j/pvar efvbl l)]
                                                                                          (right
                                                                                          (match (cps/j3 trace target)
-                                                                                             (left body)  (j/com "left" (j/app done [body] l))
+                                                                                             (left body)  (j/com "left" (j/app done [body (j/var efvbl l)] l))
                                                                                              (right body) (j/com "right" (body done))))
                                                                                          l)
                                                                                      [effects]
@@ -1036,7 +1077,7 @@
                                                                                  [(opt-or (pat->j/pat pat) (j/pvar "_" l))]
                                                                                      (right
                                                                                      (match (go2 (let-> [body (<-lr (cps/j3 trace body))] (<- (left body))))
-                                                                                         (left body)  (j/app done [body] l)
+                                                                                         (left body)  (j/app done [body (j/var efvbl l)] l)
                                                                                          (right body) (body done)))
                                                                                      l)
                                                                                  [value]
@@ -1063,7 +1104,7 @@
                                                                                                          (j/var "$target" l)
                                                                                                          (j/return
                                                                                                          (match (cps/j3 trace body)
-                                                                                                             (left b)  (j/app done [b] l)
+                                                                                                             (left b)  (j/app done [b (j/var efvbl l)] l)
                                                                                                              (right b) (b done))
                                                                                                              l)
                                                                                                          l)))))
@@ -1098,7 +1139,7 @@
                                                                                 (j/block
                                                                                     [(j/sexpr
                                                                                         (match (cps/j3 trace body)
-                                                                                            (left body)  (j/app done [body] l)
+                                                                                            (left body)  (j/app done [body (j/var efvbl l)] l)
                                                                                             (right body) (body done))
                                                                                             l)
                                                                                         (j/return (j/raw "function noop() {return noop}" l) l)]))
@@ -1121,7 +1162,7 @@
                                                                                 (j/block
                                                                                     [(j/sexpr
                                                                                         (match (cps/j3 trace body)
-                                                                                            (left body)  (j/app done [body] l)
+                                                                                            (left body)  (j/app done [body (j/var efvbl l)] l)
                                                                                             (right body) (body done))
                                                                                             l)
                                                                                         (j/return (j/raw "function noop() {return noop}" l) l)]))
@@ -1882,7 +1923,7 @@
                                                                     (fn [body arg]
                                                                     (j/lambda
                                                                         [arg (j/pvar efvbl l) (j/pvar "done" l)]
-                                                                            (right (j/app (j/var "done" l) [body] l))
+                                                                            (right (j/app (j/var "done" l) [body (j/var efvbl l)] l))
                                                                             l)))
                                                                 l))
                                                         ))))
@@ -2073,23 +2114,23 @@ const valueToString = (v) => {
 };
 
 return {
-    '+': (a, _, d) => d((b, _, d) => d(a + b)),
-    '-': (a, _, d) => d((b, _, d) => d(a - b)),
-    '<': (a, _, d) => d((b, _, d) => d(a < b)),
-    '<=': (a, _, d) => d((b, _, d) => d(a <= b)),
-    '>': (a, _, d) => d((b, _, d) => d(a > b)),
-    '>=': (a, _, d) => d((b, _, d) => d(a >= b)),
-    '=': (a, _, d) => d((b, _, d) => d(equal(a, b))),
-    '!=': (a, _, d) => d((b, _, d) => d(!equal(a, b))),
+    '+': (a, e, d) => d((b, e, d) => d(a + b, e), e),
+    '-': (a, e, d) => d((b, e, d) => d(a - b, e), e),
+    '<': (a, e, d) => d((b, e, d) => d(a < b, e), e),
+    '<=': (a, e, d) => d((b, e, d) => d(a <= b, e), e),
+    '>': (a, e, d) => d((b, e, d) => d(a > b, e), e),
+    '>=': (a, e, d) => d((b, e, d) => d(a >= b, e), e),
+    '=': (a, e, d) => d((b, e, d) => d(equal(a, b), e), e),
+    '!=': (a, e, d) => d((b, e, d) => d(!equal(a, b), e), e),
     pi: Math.PI,
-    'replace-all': a => b => c => a.replaceAll(b, c),
-    eval: source => {
-      return new Function('', 'return ' + source)();
+    //'replace-all': a => b => c => a.replaceAll(b, c),
+    eval: (source, e, d) => {
+      d(new Function('', 'return ' + source)(), e);
     },
-    'eval-with': ctx => source => {
+    /*'eval-with': ctx => source => {
       const args = '{' + Object.keys(ctx).join(',') + '}'
       return new Function(args, 'return ' + source)(ctx);
-    },
+    },*/
     $unit: null,
 /*    errorToString: f => arg => {
       try {
@@ -2098,27 +2139,28 @@ return {
         return err.message;
       }
     },
-  */  valueToString: (v, _, d) => d(valueToString(v)),
-    unescapeString: (v, _, d) => d(unescapeString(v)),
-    sanitize: (v, _, d) => d(sanitize(v)),
-    equal: (a, _, d) => d((b, _, d) => d(equal(a, b))),
-    'int-to-string': (a, _, d) => d(a.toString()),
-    'string-to-int': (a, _, d) => {
+  */  valueToString: (v, e, d) => d(valueToString(v), e),
+    unescapeString: (v, e, d) => d(unescapeString(v), e),
+    sanitize: (v, e, d) => d(sanitize(v), e),
+    equal: (a, e, d) => d((b, e, d) => d(equal(a, b), e), e),
+    'int-to-string': (a, e, d) => d(a.toString(), e),
+    'string-to-int': (a, e, d) => {
         const v = Number(a);
-        return d(Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' });
+        return d(Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' }, e);
     },
-    'string-to-float': (a, _, d) => {
+    'string-to-float': (a, e, d) => {
         const v = Number(a);
-        return d(Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' });
+        return d(Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' }, e);
     },
 
     // maps
     'map/nil': [],
-    'map/set': (map, _, d) => d((key, _, d) => d((value, _, d) =>
-        d([[key, value], ...map.filter((i) => i[0] !== key)]))),
-    'map/rm': (map, _, d) => d((key, _, d) => d(map.filter((i) => !equal(i[0], key)))),
+    'map/set': (map, e, d) => d((key, e, d) => d((value, e, d) =>
+        d([[key, value], ...map.filter((i) => i[0] !== key)], e), e), e),
+    'map/rm': (map, e, d) => d((key, e, d) => d(map.filter((i) => !equal(i[0], key)), e), e),
     
     // ** NOT FIXED YET **
+    /*
     'map/get': (map) => (key) => {
         const found = map.find((i) => equal(i[0], key));
         return found ? { type: 'some', 0: found[1] } : { type: 'none' };
@@ -2154,9 +2196,10 @@ return {
         });
         return res;
     },
+    */
 
     // Various debugging stuff
-    jsonify: (v, _, d) => d(JSON.stringify(v) ?? 'undefined'),
+    jsonify: (v, e, d) => d(JSON.stringify(v) ?? 'undefined', e),
     fatal: (message) => {
         throw new Error(`Fatal runtime: ${message}`);
     },

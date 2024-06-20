@@ -15,8 +15,60 @@
         two (inc ())]
         (, one two)))
 
+(fn [x]
+    (let [
+        x (<-set 10)
+        _ (<-log "hi")]
+        x))
+
+(, (<-one) (<-two))
+
+(, *one* *two*)
+
+(defn collect [v f]
+    (provide (f ()) *dump* v (k <-add i) (collect [i ..v] (fn [()] (k i)))))
+
+(defn loop [val f] (f val (fn [val] (loop val f))))
+
+(defn snd [(, _ x)] x)
+
+(defn rev [x]
+    (loop
+        (, x [])
+            (fn [(, x col) recur]
+            (match x
+                []           col
+                [one ..rest] (recur (, rest [one ..col]))))))
+
+(rev [1 2 3])
+
+(defn log [f] (collect [] (fn [()] (let [x (f ())] (, x (rev *dump*))))))
+
+(collect
+    []
+        (fn [()]
+        (let [
+            _ (<-add 1)
+            _ (<-add 2)]
+            *dump*)))
+
+(collect [] (fn [()] (let [_ (+ (<-add 1) (<-add 2))] *dump*)))
+
+(collect [] (fn [()] (let [_ (<-add (+ 1 (<-add 2)))] *dump*)))
+
+(provide
+    (+ *value* (<-set 12))
+        *value*
+        12
+        (k <-set v)
+        (+ 23 (provide (k 5) *value* 20 (k <-set _) (fatal "once"))))
+
+[(, (log (fn [()] (+ (<-add 1) (<-add 2)))) (, 3 [1 2]))
+    (, (log (fn [()] (, (<-add 1) (<-add 2)))) (, (, 1 2) [1 2]))
+    (, (log (fn [()] (<-add (+ 1 (<-add 5))))) (, 6 [5 6]))]
+
 [(, (with-state 2 (fn [()] *value*)) 2)
-    (, (with-state 2 (fn [()] (<-set 12))) ())
+    (, (with-state 2 (fn [()] (, (<-set 12) 2))) (, () 2))
     (, (with-state 2 (fn [()] (let [_ (<-set 12)] *value*))) 12)
     (, (with-state 2 demo-state) (, 2 3))]
 
@@ -36,7 +88,7 @@
             *value*
             12
             (k <-set v)
-            (+ 23 (provide (k 5) *value* 10 (k <-set _) (fatal "once"))))
+            (+ 23 (provide (k 5) *value* 20 (k <-set _) (fatal "once"))))
         17)]
 
 (provide

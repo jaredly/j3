@@ -437,7 +437,7 @@ const efvbl = sanitize("(effects)");
 
 const m = jsonify(1);
 
-const builtins_ex_cps = "function equal(a, b) {\n    if (a === b) return true;\n\n    if (a && b && typeof a == 'object' && typeof b == 'object') {\n        var length, i, keys;\n        if (Array.isArray(a)) {\n            length = a.length;\n            if (length != b.length) return false;\n            for (i = length; i-- !== 0; ) if (!equal(a[i], b[i])) return false;\n            return true;\n        }\n\n        keys = Object.keys(a);\n        length = keys.length;\n        if (length !== Object.keys(b).length) return false;\n\n        for (i = length; i-- !== 0; ) {\n            if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;\n        }\n\n        for (i = length; i-- !== 0; ) {\n            var key = keys[i];\n\n            if (!equal(a[key], b[key])) return false;\n        }\n\n        return true;\n    }\n\n    // true if both NaN, false otherwise\n    return a !== a && b !== b;\n}\n\nfunction unescapeString(n) {\n    if (n == null || !n.replaceAll) {\n        debugger;\n        return '';\n    }\n    return n.replaceAll(/\\\\./g, (m) => {\n        if (m[1] === 'n') {\n            return '\\n';\n        }\n        if (m[1] === 't') {\n            return '\\t';\n        }\n        if (m[1] === 'r') {\n            return '\\r';\n        }\n        return m[1];\n    });\n}\n\nfunction unwrapList(v) {\n    return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])];\n}\n\nfunction wrapList(v) {\n    let res = { type: 'nil' };\n    for (let i = v.length - 1; i >= 0; i--) {\n        res = { type: 'cons', 0: v[i], 1: res };\n    }\n    return res;\n}\n\nconst sanMap = {\n    // '\$\$\$\$' gets interpreted by replaceAll as '\$\$', for reasons\n    \$: '\$\$\$\$',\n    '-': '_',\n    '+': '\$pl',\n    '*': '\$ti',\n    '=': '\$eq',\n    '>': '\$gt',\n    '<': '\$lt',\n    \"'\": '\$qu',\n    '\"': '\$dq',\n    ',': '\$co',\n    '/': '\$sl',\n    ';': '\$semi',\n    '@': '\$at',\n    ':': '\$cl',\n    '#': '\$ha',\n    '!': '\$ex',\n    '|': '\$bar',\n    '()': '\$unit',\n    '?': '\$qe',\n  };\nconst kwds =\n    'case new var const let if else return super break while for default eval'.split(' ');\n\n// Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.\nfunction sanitize(raw) {\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    if (kwds.includes(raw)) return '\$' + raw\n    return raw\n}\n\nconst valueToString = (v) => {\n    if (Array.isArray(v)) {\n        return \`[\${v.map(valueToString).join(', ')}]\`;\n    }\n    if (typeof v === 'object' && v && 'type' in v) {\n        if (v.type === 'cons' || v.type === 'nil') {\n            const un = unwrapList(v);\n            return '[' + un.map(valueToString).join(' ') + ']';\n        }\n\n        let args = [];\n        for (let i = 0; i in v; i++) {\n            args.push(v[i]);\n        }\n        return \`(\${v.type}\${args\n            .map((arg) => ' ' + valueToString(arg))\n            .join('')})\`;\n    }\n    if (typeof v === 'string') {\n        if (v.includes('\"') && !v.includes(\"'\")) {\n            return (\n                \"'\" + JSON.stringify(v).slice(1, -1).replace(/\\\"/g, '\"') + \"'\"\n            );\n        }\n        return JSON.stringify(v);\n    }\n    if (typeof v === 'function') {\n        return '<function>';\n    }\n\n    return '' + v;\n};\n\nreturn {\n    '+': (a, _, d) => d((b, _, d) => d(a + b)),\n    '-': (a, _, d) => d((b, _, d) => d(a - b)),\n    '<': (a, _, d) => d((b, _, d) => d(a < b)),\n    '<=': (a, _, d) => d((b, _, d) => d(a <= b)),\n    '>': (a, _, d) => d((b, _, d) => d(a > b)),\n    '>=': (a, _, d) => d((b, _, d) => d(a >= b)),\n    '=': (a, _, d) => d((b, _, d) => d(equal(a, b))),\n    '!=': (a, _, d) => d((b, _, d) => d(!equal(a, b))),\n    pi: Math.PI,\n    'replace-all': a => b => c => a.replaceAll(b, c),\n    eval: source => {\n      return new Function('', 'return ' + source)();\n    },\n    'eval-with': ctx => source => {\n      const args = '{' + Object.keys(ctx).join(',') + '}'\n      return new Function(args, 'return ' + source)(ctx);\n    },\n    \$unit: null,\n/*    errorToString: f => arg => {\n      try {\n        return f(arg)\n      } catch (err) {\n        return err.message;\n      }\n    },\n  */  valueToString: (v, _, d) => d(valueToString(v)),\n    unescapeString: (v, _, d) => d(unescapeString(v)),\n    sanitize: (v, _, d) => d(sanitize(v)),\n    equal: (a, _, d) => d((b, _, d) => d(equal(a, b))),\n    'int-to-string': (a, _, d) => d(a.toString()),\n    'string-to-int': (a, _, d) => {\n        const v = Number(a);\n        return d(Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' });\n    },\n    'string-to-float': (a, _, d) => {\n        const v = Number(a);\n        return d(Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' });\n    },\n\n    // maps\n    'map/nil': [],\n    'map/set': (map, _, d) => d((key, _, d) => d((value, _, d) =>\n        d([[key, value], ...map.filter((i) => i[0] !== key)]))),\n    'map/rm': (map, _, d) => d((key, _, d) => d(map.filter((i) => !equal(i[0], key)))),\n    \n    // ** NOT FIXED YET **\n    'map/get': (map) => (key) => {\n        const found = map.find((i) => equal(i[0], key));\n        return found ? { type: 'some', 0: found[1] } : { type: 'none' };\n    },\n    'map/map': (fn) => (map) => map.map(([k, v]) => [k, fn(v)]),\n    'map/merge': (one) => (two) =>\n        [...one, ...two.filter(([key]) => !one.find(([a]) => equal(a, key)))],\n    'map/values': (map) => wrapList(map.map((item) => item[1])),\n    'map/keys': (map) => wrapList(map.map((item) => item[0])),\n    'map/from-list': (list) =>\n        unwrapList(list).map((pair) => [pair[0], pair[1]]),\n    'map/to-list': (map) =>\n        wrapList(map.map(([key, value]) => ({ type: ',', 0: key, 1: value }))),\n\n    // sets\n    'set/nil': [],\n    'set/add': (s) => (v) => [v, ...s.filter((m) => !equal(v, m))],\n    'set/has': (s) => (v) => s.includes(v),\n    'set/rm': (s) => (v) => s.filter((i) => !equal(i, v)),\n    // NOTE this is only working for primitives\n    'set/diff': (a) => (b) => a.filter((i) => !b.some((j) => equal(i, j))),\n    'set/merge': (a) => (b) =>\n        [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],\n    'set/overlap': (a) => (b) => a.filter((x) => b.some((y) => equal(y, x))),\n    'set/to-list': wrapList,\n    'set/from-list': (s) => {\n        const res = [];\n        unwrapList(s).forEach((item) => {\n            if (res.some((m) => equal(item, m))) {\n                return;\n            }\n            res.push(item);\n        });\n        return res;\n    },\n\n    // Various debugging stuff\n    jsonify: (v, _, d) => d(JSON.stringify(v) ?? 'undefined'),\n    fatal: (message) => {\n        throw new Error(\`Fatal runtime: \${message}\`);\n    },\n}";
+const builtins_ex_cps = "function equal(a, b) {\n    if (a === b) return true;\n\n    if (a && b && typeof a == 'object' && typeof b == 'object') {\n        var length, i, keys;\n        if (Array.isArray(a)) {\n            length = a.length;\n            if (length != b.length) return false;\n            for (i = length; i-- !== 0; ) if (!equal(a[i], b[i])) return false;\n            return true;\n        }\n\n        keys = Object.keys(a);\n        length = keys.length;\n        if (length !== Object.keys(b).length) return false;\n\n        for (i = length; i-- !== 0; ) {\n            if (!Object.prototype.hasOwnProperty.call(b, keys[i])) return false;\n        }\n\n        for (i = length; i-- !== 0; ) {\n            var key = keys[i];\n\n            if (!equal(a[key], b[key])) return false;\n        }\n\n        return true;\n    }\n\n    // true if both NaN, false otherwise\n    return a !== a && b !== b;\n}\n\nfunction unescapeString(n) {\n    if (n == null || !n.replaceAll) {\n        debugger;\n        return '';\n    }\n    return n.replaceAll(/\\\\./g, (m) => {\n        if (m[1] === 'n') {\n            return '\\n';\n        }\n        if (m[1] === 't') {\n            return '\\t';\n        }\n        if (m[1] === 'r') {\n            return '\\r';\n        }\n        return m[1];\n    });\n}\n\nfunction unwrapList(v) {\n    return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])];\n}\n\nfunction wrapList(v) {\n    let res = { type: 'nil' };\n    for (let i = v.length - 1; i >= 0; i--) {\n        res = { type: 'cons', 0: v[i], 1: res };\n    }\n    return res;\n}\n\nconst sanMap = {\n    // '\$\$\$\$' gets interpreted by replaceAll as '\$\$', for reasons\n    \$: '\$\$\$\$',\n    '-': '_',\n    '+': '\$pl',\n    '*': '\$ti',\n    '=': '\$eq',\n    '>': '\$gt',\n    '<': '\$lt',\n    \"'\": '\$qu',\n    '\"': '\$dq',\n    ',': '\$co',\n    '/': '\$sl',\n    ';': '\$semi',\n    '@': '\$at',\n    ':': '\$cl',\n    '#': '\$ha',\n    '!': '\$ex',\n    '|': '\$bar',\n    '()': '\$unit',\n    '?': '\$qe',\n  };\nconst kwds =\n    'case new var const let if else return super break while for default eval'.split(' ');\n\n// Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.\nfunction sanitize(raw) {\n    for (let [key, val] of Object.entries(sanMap)) {\n        raw = raw.replaceAll(key, val);\n    }\n    if (kwds.includes(raw)) return '\$' + raw\n    return raw\n}\n\nconst valueToString = (v) => {\n    if (Array.isArray(v)) {\n        return \`[\${v.map(valueToString).join(', ')}]\`;\n    }\n    if (typeof v === 'object' && v && 'type' in v) {\n        if (v.type === 'cons' || v.type === 'nil') {\n            const un = unwrapList(v);\n            return '[' + un.map(valueToString).join(' ') + ']';\n        }\n\n        let args = [];\n        for (let i = 0; i in v; i++) {\n            args.push(v[i]);\n        }\n        return \`(\${v.type}\${args\n            .map((arg) => ' ' + valueToString(arg))\n            .join('')})\`;\n    }\n    if (typeof v === 'string') {\n        if (v.includes('\"') && !v.includes(\"'\")) {\n            return (\n                \"'\" + JSON.stringify(v).slice(1, -1).replace(/\\\"/g, '\"') + \"'\"\n            );\n        }\n        return JSON.stringify(v);\n    }\n    if (typeof v === 'function') {\n        return '<function>';\n    }\n\n    return '' + v;\n};\n\nreturn {\n    '+': (a, e, d) => d((b, e, d) => d(a + b, e), e),\n    '-': (a, e, d) => d((b, e, d) => d(a - b, e), e),\n    '<': (a, e, d) => d((b, e, d) => d(a < b, e), e),\n    '<=': (a, e, d) => d((b, e, d) => d(a <= b, e), e),\n    '>': (a, e, d) => d((b, e, d) => d(a > b, e), e),\n    '>=': (a, e, d) => d((b, e, d) => d(a >= b, e), e),\n    '=': (a, e, d) => d((b, e, d) => d(equal(a, b), e), e),\n    '!=': (a, e, d) => d((b, e, d) => d(!equal(a, b), e), e),\n    pi: Math.PI,\n    //'replace-all': a => b => c => a.replaceAll(b, c),\n    eval: (source, e, d) => {\n      d(new Function('', 'return ' + source)(), e);\n    },\n    /*'eval-with': ctx => source => {\n      const args = '{' + Object.keys(ctx).join(',') + '}'\n      return new Function(args, 'return ' + source)(ctx);\n    },*/\n    \$unit: null,\n/*    errorToString: f => arg => {\n      try {\n        return f(arg)\n      } catch (err) {\n        return err.message;\n      }\n    },\n  */  valueToString: (v, e, d) => d(valueToString(v), e),\n    unescapeString: (v, e, d) => d(unescapeString(v), e),\n    sanitize: (v, e, d) => d(sanitize(v), e),\n    equal: (a, e, d) => d((b, e, d) => d(equal(a, b), e), e),\n    'int-to-string': (a, e, d) => d(a.toString(), e),\n    'string-to-int': (a, e, d) => {\n        const v = Number(a);\n        return d(Number.isInteger(v) && v.toString() === a ? { type: 'some', 0: v } : { type: 'none' }, e);\n    },\n    'string-to-float': (a, e, d) => {\n        const v = Number(a);\n        return d(Number.isFinite(v) ? { type: 'some', 0: v } : { type: 'none' }, e);\n    },\n\n    // maps\n    'map/nil': [],\n    'map/set': (map, e, d) => d((key, e, d) => d((value, e, d) =>\n        d([[key, value], ...map.filter((i) => i[0] !== key)], e), e), e),\n    'map/rm': (map, e, d) => d((key, e, d) => d(map.filter((i) => !equal(i[0], key)), e), e),\n    \n    // ** NOT FIXED YET **\n    /*\n    'map/get': (map) => (key) => {\n        const found = map.find((i) => equal(i[0], key));\n        return found ? { type: 'some', 0: found[1] } : { type: 'none' };\n    },\n    'map/map': (fn) => (map) => map.map(([k, v]) => [k, fn(v)]),\n    'map/merge': (one) => (two) =>\n        [...one, ...two.filter(([key]) => !one.find(([a]) => equal(a, key)))],\n    'map/values': (map) => wrapList(map.map((item) => item[1])),\n    'map/keys': (map) => wrapList(map.map((item) => item[0])),\n    'map/from-list': (list) =>\n        unwrapList(list).map((pair) => [pair[0], pair[1]]),\n    'map/to-list': (map) =>\n        wrapList(map.map(([key, value]) => ({ type: ',', 0: key, 1: value }))),\n\n    // sets\n    'set/nil': [],\n    'set/add': (s) => (v) => [v, ...s.filter((m) => !equal(v, m))],\n    'set/has': (s) => (v) => s.includes(v),\n    'set/rm': (s) => (v) => s.filter((i) => !equal(i, v)),\n    // NOTE this is only working for primitives\n    'set/diff': (a) => (b) => a.filter((i) => !b.some((j) => equal(i, j))),\n    'set/merge': (a) => (b) =>\n        [...a, ...b.filter((x) => !a.some((y) => equal(y, x)))],\n    'set/overlap': (a) => (b) => a.filter((x) => b.some((y) => equal(y, x))),\n    'set/to-list': wrapList,\n    'set/from-list': (s) => {\n        const res = [];\n        unwrapList(s).forEach((item) => {\n            if (res.some((m) => equal(item, m))) {\n                return;\n            }\n            res.push(item);\n        });\n        return res;\n    },\n    */\n\n    // Various debugging stuff\n    jsonify: (v, e, d) => d(JSON.stringify(v) ?? 'undefined', e),\n    fatal: (message) => {\n        throw new Error(\`Fatal runtime: \${message}\`);\n    },\n}";
 
 const nil = ({type: "nil"})
 const cons = (v0) => (v1) => ({type: "cons", 0: v0, 1: v1})
@@ -3217,7 +3217,7 @@ return right((done) => foldr((($target) => {
 if ($target.type === "left") {
 {
 let value = $target[0];
-return j$slapp(done)(cons(value)(nil))(-1)
+return j$slapp(done)(cons(value)(cons(j$slvar(efvbl)(-1))(nil)))(-1)
 }
 }
 if ($target.type === "right") {
@@ -3227,7 +3227,7 @@ return value(done)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(value))(wraps)((inner) => ({1: vbl, 0: thunk}) => thunk(j$sllambda(cons(j$slpvar(vbl)(-1))(nil))(right(inner))(-1))))
+})(value))(wraps)((inner) => ({1: vbl, 0: thunk}) => thunk(j$sllambda(cons(j$slpvar(vbl)(-1))(cons(j$slpvar(efvbl)(-1))(nil)))(right(inner))(-1))))
 }
 return value
 throw new Error('Failed to match. ' + valueToString($target));
@@ -3298,9 +3298,6 @@ return $gt$gt$eq($lt_state)(({1: {1: idx, 0: flag}, 0: wraps}) => $gt$gt$eq($lt_
 throw new Error('Failed to match. ' + valueToString($target));
 })(v);
 
-const cplain = (v0) => ({type: "cplain", 0: v0})
-const cdone = (v0) => ({type: "cdone", 0: v0})
-const ceffect = (v0) => ({type: "ceffect", 0: v0})
 const compile_pat$slj = (pat) => (target) => (inner) => (trace) => (($target) => {
 if ($target.type === "pany") {
 {
@@ -5590,24 +5587,31 @@ let l = $target[2];
 return cps$slj3(trace)(target)
 }
 }
-if ($target.type === "eapp" &&
-$target[1].type === "cons" &&
-$target[1][1].type === "nil") {
+if ($target.type === "eapp") {
 {
 let target = $target[0];
-let arg = $target[1][0];
+let args = $target[1];
 let l = $target[2];
-return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(target)))((target) => $gt$gt$eq($lt_lr(cps$slj3(trace)(arg)))((arg) => $lt_r(right((done) => j$slapp(target)(cons(arg)(cons(j$slvar(efvbl)(l))(cons(done)(nil))))(l))))))
+return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(target)))((target) => $gt$gt$eq(map_$gt((arg) => $lt_lr(cps$slj3(trace)(arg)))(rev(args)(nil)))((args) => $lt_r(right((done) => loop($co(rev(args)(nil))(target))(({1: target, 0: args}) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return fatal("no args")
 }
-}
-if ($target.type === "eapp" &&
-$target[1].type === "cons") {
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
 {
-let target = $target[0];
-let arg = $target[1][0];
-let rest = $target[1][1];
-let l = $target[2];
-return cps$slj3(trace)(eapp(eapp(target)(cons(arg)(nil))(l))(rest)(l))
+let one = $target[0];
+return j$slapp(target)(cons(one)(cons(j$slvar(efvbl)(l))(cons(done)(nil))))(l)
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return j$slapp(target)(cons(one)(cons(j$slvar(efvbl)(l))(cons(j$sllambda(cons(j$slpvar("\$t")(l))(cons(j$slpvar(efvbl)(l))(nil)))(right(recur($co(rest)(j$slvar("\$t")(l)))))(l))(nil))))(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(args)))))))
 }
 }
 if ($target.type === "elambda" &&
@@ -5628,7 +5632,7 @@ return left(j$sllambda(cons(opt_or(pat_$gtj$slpat(arg))(j$slpvar("_")(l)))(cons(
 if ($target.type === "left") {
 {
 let body = $target[0];
-return j$slapp(j$slvar("\$done")(l))(cons(body)(nil))(l)
+return j$slapp(j$slvar("\$done")(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
 }
 }
 if ($target.type === "right") {
@@ -5672,7 +5676,7 @@ $target[1][1].type === "nil") {
 {
 let name = $target[1][0][0];
 let l = $target[2];
-return left(j$sllambda(cons(j$slpvar("target")(l))(cons(j$slpvar("_")(l))(cons(j$slpvar("done")(l))(nil))))(right(j$slapp(j$slvar("done")(l))(cons(j$slindex(j$slvar("target")(l))(j$slstr(name)(nil)(l))(l))(nil))(l)))(l))
+return left(j$sllambda(cons(j$slpvar("target")(l))(cons(j$slpvar(efvbl)(l))(cons(j$slpvar("done")(l))(nil))))(right(j$slapp(j$slvar("done")(l))(cons(j$slindex(j$slvar("target")(l))(j$slstr(name)(nil)(l))(l))(cons(j$slvar(efvbl)(l))(nil)))(l)))(l))
 }
 }
 if ($target.type === "estr") {
@@ -5688,7 +5692,7 @@ $target[1].type === "none") {
 {
 let name = $target[0];
 let l = $target[2];
-return left(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))
+return right((done) => j$slapp(done)(cons(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))(cons(j$slvar(efvbl)(l))(nil)))(l))
 }
 }
 if ($target.type === "eeffect" &&
@@ -5793,7 +5797,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 if ($target.type === "left") {
 {
 let body = $target[0];
-return j$slcom("left")(j$slapp(done)(cons(body)(nil))(l))
+return j$slcom("left")(j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l))
 }
 }
 if ($target.type === "right") {
@@ -5819,7 +5823,7 @@ return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(expr)))((value) => $lt_(right((done)
 if ($target.type === "left") {
 {
 let body = $target[0];
-return j$slapp(done)(cons(body)(nil))(l)
+return j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
 }
 }
 if ($target.type === "right") {
@@ -5849,7 +5853,7 @@ return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(target)))((target) => $lt_(right((do
 if ($target.type === "left") {
 {
 let b = $target[0];
-return j$slapp(done)(cons(b)(nil))(l)
+return j$slapp(done)(cons(b)(cons(j$slvar(efvbl)(l))(nil)))(l)
 }
 }
 if ($target.type === "right") {
@@ -5897,7 +5901,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 if ($target.type === "left") {
 {
 let body = $target[0];
-return j$slapp(done)(cons(body)(nil))(l)
+return j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
 }
 }
 if ($target.type === "right") {
@@ -5938,7 +5942,7 @@ throw new Error('Failed to match. ' + valueToString($target));
 if ($target.type === "left") {
 {
 let body = $target[0];
-return j$slapp(done)(cons(body)(nil))(l)
+return j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
 }
 }
 if ($target.type === "right") {
@@ -6074,7 +6078,7 @@ let nl = $target[1];
 let type_arg = $target[2];
 let cases = $target[3];
 let l = $target[4];
-return map(cases)(($case) => (({1: {1: {1: l, 0: args}, 0: nl}, 0: name2}) => j$sllet(j$slpvar(sanitize(name2))(nl))(foldr(j$slobj(cons(left($co("type")(j$slstr(name2)(nil)(nl))))(mapi(0)(args)((i) => (_) => left($co(int_to_string(i))(j$slvar(`v${int_to_string(i)}`)(nl))))))(l))(mapi(0)(args)((i) => (_) => j$slpvar(`v${int_to_string(i)}`)(nl)))((body) => (arg) => j$sllambda(cons(arg)(cons(j$slpvar(efvbl)(l))(cons(j$slpvar("done")(l))(nil))))(right(j$slapp(j$slvar("done")(l))(cons(body)(nil))(l)))(l)))(l))($case))
+return map(cases)(($case) => (({1: {1: {1: l, 0: args}, 0: nl}, 0: name2}) => j$sllet(j$slpvar(sanitize(name2))(nl))(foldr(j$slobj(cons(left($co("type")(j$slstr(name2)(nil)(nl))))(mapi(0)(args)((i) => (_) => left($co(int_to_string(i))(j$slvar(`v${int_to_string(i)}`)(nl))))))(l))(mapi(0)(args)((i) => (_) => j$slpvar(`v${int_to_string(i)}`)(nl)))((body) => (arg) => j$sllambda(cons(arg)(cons(j$slpvar(efvbl)(l))(cons(j$slpvar("done")(l))(nil))))(right(j$slapp(j$slvar("done")(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)))(l)))(l))($case))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));

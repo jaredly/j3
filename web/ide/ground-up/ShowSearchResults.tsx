@@ -136,11 +136,13 @@ export const ShowSearchResults = ({
                             }}
                         >
                             <button
-                                onClick={() => {
+                                onClick={(evt) => {
+                                    evt.stopPropagation();
+                                    evt.preventDefault();
                                     setResults({
                                         ...results,
                                         results: results.results.filter(
-                                            (r, j) => j !== i,
+                                            (rn) => rn !== r,
                                         ),
                                     });
                                 }}
