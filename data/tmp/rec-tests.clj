@@ -1,3 +1,7 @@
+(** ## Thunk Infrastructure **)
+
+(, (<-wait 1000) 34)
+
 (** ## State Effect **)
 
 (defn with-state [v f]
@@ -21,7 +25,11 @@
         _ (<-log "hi")]
         x))
 
-(, (<-one) (<-two))
+(, (<-one) (<-twao))
+
+(def xyz (fn [x] <-one))
+
+(<-http/get "http://lol")
 
 (, *one* *two*)
 
@@ -32,6 +40,8 @@
 
 (defn snd [(, _ x)] x)
 
+(jsonify ('hi 12))
+
 (defn rev [x]
     (loop
         (, x [])
@@ -39,8 +49,6 @@
             (match x
                 []           col
                 [one ..rest] (recur (, rest [one ..col]))))))
-
-(rev [1 2 3])
 
 (defn log [f] (collect [] (fn [()] (let [x (f ())] (, x (rev *dump*))))))
 

@@ -94,7 +94,7 @@ export const RichText = ({
     //     });
     // }, editor);
     useEditorChange(() => {
-        console.log('editor change');
+        // console.log('editor change');
         // onChange(editor.document);
         store.dispatch({
             type: 'rich',

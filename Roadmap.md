@@ -1,4 +1,25 @@
 
+# Effects are alive!
+
+- [ ] now what's the story with top-level expressions that need effects?
+  - have a "run" button
+  - need to know built-in effects
+  - the compiler result ... should be able to be {type: 'value'} or {type: 'thunk'}, right? Yeah.
+    - {type: 'value' | 'thunk', deps: {[key: string]: 'int' | 'string' | 'bool'}}
+    - {type: 'value', value: abc, deps: {[key: string]: 'int' | 'string' | 'bool'}}
+    - {type: 'thunk', f: abc}
+    - soooo a 'thunk' will return ... later ...
+      ooh maybe it can deal directly in 'produceitems'? thats how we do incremental updates?
+      like, the thunk gets called with a function to call with updates? including (am I done yet)
+      so
+      `thunk: (env: {any}, update: (items: ProduceItem[], stillWorking: boolean) => void) => void`
+      how do I slide in the builtin-effects? idk. maybe pass in the `env`, which should have them on it? sure.
+
+```
+
+```
+
+
 # Visualizing Algorithm W
 
 I'm imagining a thing ...
@@ -17,6 +38,7 @@ that:
   - [x] ahaha ok so I hadn't been doing type/apply for trec. now its better.
 
 - [ ] real effects!!!! is not quite working. might be something I'm not figuring out right
+  -
 
 
 # Things I wanttt
