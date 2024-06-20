@@ -16,7 +16,7 @@
         (, one two)))
 
 [(, (with-state 2 (fn [()] *value*)) 2)
-    (, (with-state 2 (fn [()] (<-set 12))) )
+    (, (with-state 2 (fn [()] (<-set 12))) ())
     (, (with-state 2 (fn [()] (let [_ (<-set 12)] *value*))) 12)
     (, (with-state 2 demo-state) (, 2 3))]
 
@@ -36,8 +36,13 @@
             *value*
             12
             (k <-set v)
-            (provide (k 5) *value* 10 (k <-set _) (fatal "once")))
+            (+ 23 (provide (k 5) *value* 10 (k <-set _) (fatal "once"))))
         17)]
+
+(provide
+    (+ 1 (<-stuff 2))
+        (k <-stuff a)
+        (provide (k 23) (l <-stuff a) (fatal "only once")))
 
 (** ## Enums examples **)
 
@@ -88,7 +93,7 @@
 
 'hi
 
-{..{x 2 y 3} x 2}
+{..{x 12 y 3} x 2}
 
 (fn [x]
     (if true

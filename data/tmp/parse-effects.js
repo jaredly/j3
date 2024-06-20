@@ -3087,7 +3087,7 @@ return x
 if ($target.type === "right") {
 {
 let x = $target[0];
-return j$slapp(j$sllambda(nil)(left(j$slblock(cons(j$sllet(j$slpvar("\$final")(-1))(j$slstr("-uninitialized-")(nil)(-1))(-1))(cons(j$slsexpr(j$slapp(x)(cons(j$sllambda(cons(j$slpvar("x")(-1))(nil))(right(j$slassign("\$final")("=")(j$slvar("x")(-1))(-1)))(-1))(nil))(-1))(-1))(cons(j$slreturn(j$slvar("\$final")(-1))(-1))(nil))))))(-1))(nil)(-1)
+return j$slapp(j$sllambda(nil)(left(j$slblock(cons(j$sllet(j$slpvar("\$final")(-1))(j$slstr("-uninitialized-")(nil)(-1))(-1))(cons(j$slsexpr(x(j$sllambda(cons(j$slpvar("x")(-1))(nil))(right(j$slassign("\$final")("=")(j$slvar("x")(-1))(-1)))(-1)))(-1))(cons(j$slreturn(j$slvar("\$final")(-1))(-1))(nil))))))(-1))(nil)(-1)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -3213,21 +3213,21 @@ throw new Error('Failed to match. ' + valueToString($target));
 
 const go2 = ({0: f}) => (({1: value, 0: {1: {0: flag}, 0: wraps}}) => (($target) => {
 if ($target === true) {
-return right(foldr((($target) => {
+return right((done) => foldr((($target) => {
 if ($target.type === "left") {
 {
 let value = $target[0];
-return done_fn(-1)((done) => j$slapp(done)(cons(value)(nil))(-1))
+return j$slapp(done)(cons(value)(nil))(-1)
 }
 }
 if ($target.type === "right") {
 {
 let value = $target[0];
-return value
+return value(done)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(value))(wraps)((inner) => ({1: vbl, 0: thunk}) => j$slapp(thunk)(cons(j$sllambda(cons(j$slpvar(vbl)(-1))(nil))(right(inner))(-1))(nil))(-1)))
+})(value))(wraps)((inner) => ({1: vbl, 0: thunk}) => thunk(j$sllambda(cons(j$slpvar(vbl)(-1))(nil))(right(inner))(-1))))
 }
 return value
 throw new Error('Failed to match. ' + valueToString($target));
@@ -3282,104 +3282,6 @@ return j$slprim(j$slbool(bool)(pl))(l)
 throw new Error('Failed to match. ' + valueToString($target));
 })(prim);
 
-const cps$sleffects = (cps$slj3) => (trace) => (l) => (handlers) => (done) => go2($gt$gt$eq(map_$gt(({1: {1: {1: body, 0: kind}, 0: nl}, 0: name}) => $gt$gt$eq((($target) => {
-if ($target.type === "eearmuffs") {
-return $lt_lr(cps$slj3(trace)(body))
-}
-if ($target.type === "ebang") {
-{
-let pats = $target[0];
-return $lt_lr(left(j$sllambda(cons(j$slpvar("_ignored_done")(l))(cons(loop(pats)((pats) => (recur) => (($target) => {
-if ($target.type === "nil") {
-return j$slpvar("_")(l)
-}
-if ($target.type === "cons" &&
-$target[1].type === "nil") {
-{
-let one = $target[0];
-return opt_or(pat_$gtj$slpat(one))(j$slpvar("_")(l))
-}
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return j$slpobj(cons($co("0")(opt_or(pat_$gtj$slpat(one))(j$slpvar("_")(l))))(cons($co("1")(recur(rest)))(nil)))(none)(l)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(pats)))(nil)))(left(j$slblock(cons(j$slsexpr((($target) => {
-if ($target.type === "left") {
-{
-let body = $target[0];
-return j$slapp(done)(cons(body)(nil))(l)
-}
-}
-if ($target.type === "right") {
-{
-let body = $target[0];
-return j$slapp(body)(cons(done)(nil))(l)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)))
-}
-}
-if ($target.type === "eeffectful") {
-{
-let k = $target[0];
-let kl = $target[1];
-let pats = $target[2];
-return $lt_lr(left(j$sllambda(cons(j$slpvar("\$continue")(kl))(cons(loop(pats)((pats) => (recur) => (($target) => {
-if ($target.type === "nil") {
-return j$slpvar("_")(l)
-}
-if ($target.type === "cons" &&
-$target[1].type === "nil") {
-{
-let one = $target[0];
-return opt_or(pat_$gtj$slpat(one))(j$slpvar("_")(l))
-}
-}
-if ($target.type === "cons") {
-{
-let one = $target[0];
-let rest = $target[1];
-return j$slpobj(cons($co("0")(opt_or(pat_$gtj$slpat(one))(j$slpvar("_")(l))))(cons($co("1")(recur(rest)))(nil)))(none)(l)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(pats)))(nil)))(left(j$slblock(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("v")(kl))(cons(j$slpvar(efvbl)(kl))(cons(j$slpvar("\$done")(kl))(nil))))(right(j$slapp(j$slapp(j$slvar("\$continue")(kl))(cons(j$slvar("v")(kl))(cons(j$slvar(efvbl)(kl))(nil)))(kl))(cons(j$slvar("\$done")(kl))(nil))(kl)))(kl))(kl))(cons(j$slsexpr((($target) => {
-if ($target.type === "left") {
-{
-let body = $target[0];
-return j$slapp(done)(cons(body)(nil))(l)
-}
-}
-if ($target.type === "right") {
-{
-let body = $target[0];
-return j$slapp(body)(cons(done)(nil))(l)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil))))))(l)))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(kind))((value) => $lt_(left($co(name)(value)))))(handlers))((fields) => $gt$gt$eq($lt_lrt(some)(cps$slj3(trace)(evar("(effects)")(l))))((spread) => $lt_(left(j$slobj((($target) => {
-if ($target.type === "none") {
-return fields
-}
-if ($target.type === "some") {
-{
-let s = $target[0];
-return cons(right(j$slspread(s)))(fields)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(spread))(l))))));
-
 const $lt_lrn = (n) => (v) => (($target) => {
 if ($target.type === "left") {
 {
@@ -3396,6 +3298,9 @@ return $gt$gt$eq($lt_state)(({1: {1: idx, 0: flag}, 0: wraps}) => $gt$gt$eq($lt_
 throw new Error('Failed to match. ' + valueToString($target));
 })(v);
 
+const cplain = (v0) => ({type: "cplain", 0: v0})
+const cdone = (v0) => ({type: "cdone", 0: v0})
+const ceffect = (v0) => ({type: "ceffect", 0: v0})
 const compile_pat$slj = (pat) => (target) => (inner) => (trace) => (($target) => {
 if ($target.type === "pany") {
 {
@@ -4819,8 +4724,6 @@ return fatal("no")
 throw new Error('Failed to match. ' + valueToString($target));
 })(expr))(cps$slj(trace));
 
-const cps_test = (v) => eval_with($eval(builtins_cps))(j$slcompile(0)(provide_empty_effects(right(finish(cps$slj2(0)(v))))));
-
 const compile_pat = (pat) => (target) => (inner) => (l) => (({1: assign, 0: check}) => ((inner) => ((inner) => inner)((($target) => {
 if ($target.type === "nil") {
 return inner
@@ -5648,84 +5551,6 @@ return j$sllet(pat)(compile$slj(init)(trace))(l)
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat_$gtj$slpat(pat));
 
-const run$slj = (v) => $eval(`((\$lbeffects\$rb) => ${j$slcompile(0)(compile$slj(run$slnil_$gt(parse_expr(v)))(map$slnil))})({})`);
-
-const example_expr = run$slnil_$gt(parse_expr({"0":{"0":{"0":"match","1":12702,"type":"cst/id"},"1":{"0":{"0":"stmt","1":12703,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"sexpr","1":12705,"type":"cst/id"},"1":{"0":{"0":"expr","1":12706,"type":"cst/id"},"1":{"0":{"0":"l","1":12707,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12704,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"compile","1":12709,"type":"cst/id"},"1":{"0":{"0":"expr","1":12710,"type":"cst/id"},"1":{"0":{"0":"trace","1":12711,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12708,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"sdef","1":12713,"type":"cst/id"},"1":{"0":{"0":"name","1":12714,"type":"cst/id"},"1":{"0":{"0":"nl","1":12715,"type":"cst/id"},"1":{"0":{"0":"body","1":12716,"type":"cst/id"},"1":{"0":{"0":"l","1":12717,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12712,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"++","1":12719,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12721,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12724,"type":"cst/id"},"1":{"0":{"0":"name","1":12725,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12723,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12726,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"compile","1":12729,"type":"cst/id"},"1":{"0":{"0":"body","1":12730,"type":"cst/id"},"1":{"0":{"0":"trace","1":12731,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12728,"type":"cst/list"},"1":{"0":{"0":";\\n","1":{"type":"nil"},"2":12732,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12720,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12718,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"stypealias","1":12735,"type":"cst/id"},"1":{"0":{"0":"name","1":12736,"type":"cst/id"},"1":{"0":{"0":"_","1":12737,"type":"cst/id"},"1":{"0":{"0":"_","1":12738,"type":"cst/id"},"1":{"0":{"0":"_","1":12739,"type":"cst/id"},"1":{"0":{"0":"_","1":12740,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12734,"type":"cst/list"},"1":{"0":{"0":"/* type alias ","1":{"0":{"0":{"0":"name","1":12743,"type":"cst/id"},"1":{"0":" */","1":12744,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":12741,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sdeftype","1":12746,"type":"cst/id"},"1":{"0":{"0":"name","1":12747,"type":"cst/id"},"1":{"0":{"0":"nl","1":12748,"type":"cst/id"},"1":{"0":{"0":"type-arg","1":12749,"type":"cst/id"},"1":{"0":{"0":"cases","1":12750,"type":"cst/id"},"1":{"0":{"0":"l","1":12751,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12745,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"join","1":12753,"type":"cst/id"},"1":{"0":{"0":"\\n","1":{"type":"nil"},"2":12754,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"map","1":12757,"type":"cst/id"},"1":{"0":{"0":"cases","1":12758,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12760,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"case","1":12762,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"1":12761,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"let","1":12764,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":{"0":{"0":",","1":12767,"type":"cst/id"},"1":{"0":{"0":"name2","1":12768,"type":"cst/id"},"1":{"0":{"0":"nl","1":12769,"type":"cst/id"},"1":{"0":{"0":"args","1":12770,"type":"cst/id"},"1":{"0":{"0":"l","1":12771,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12766,"type":"cst/list"},"1":{"0":{"0":"case","1":12772,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12765,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12774,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12776,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12779,"type":"cst/id"},"1":{"0":{"0":"name2","1":12780,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12778,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12781,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12784,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"mapi","1":12786,"type":"cst/id"},"1":{"0":{"0":"0","1":12787,"type":"cst/id"},"1":{"0":{"0":"args","1":12788,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12790,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"i","1":12792,"type":"cst/id"},"1":{"0":{"0":"_","1":12793,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12791,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12795,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"(v","1":{"type":"nil"},"2":12797,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12800,"type":"cst/id"},"1":{"0":{"0":"i","1":12801,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12799,"type":"cst/list"},"1":{"0":{"0":") => ","1":{"type":"nil"},"2":12802,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12796,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12794,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12789,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12785,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12783,"type":"cst/list"},"1":{"0":{"0":"({type: \\\"","1":{"type":"nil"},"2":12804,"type":"cst/string"},"1":{"0":{"0":"name2","1":12806,"type":"cst/id"},"1":{"0":{"0":"\\\"","1":{"type":"nil"},"2":12807,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12810,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"mapi","1":12812,"type":"cst/id"},"1":{"0":{"0":"0","1":12813,"type":"cst/id"},"1":{"0":{"0":"args","1":12814,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12816,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"i","1":12818,"type":"cst/id"},"1":{"0":{"0":"_","1":12819,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12817,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12821,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":", ","1":{"type":"nil"},"2":12823,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12826,"type":"cst/id"},"1":{"0":{"0":"i","1":12827,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12825,"type":"cst/list"},"1":{"0":{"0":": v","1":{"type":"nil"},"2":12828,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12831,"type":"cst/id"},"1":{"0":{"0":"i","1":12832,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12830,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12822,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12820,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12815,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12811,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12809,"type":"cst/list"},"1":{"0":{"0":"});","1":{"type":"nil"},"2":12833,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12775,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12773,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12763,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12759,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12756,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12752,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12701,"type":"cst/list"}));
-
-const compile_top$slj = (top) => (trace) => (($target) => {
-if ($target.type === "texpr") {
-{
-let expr = $target[0];
-let l = $target[1];
-return cons(j$slsexpr(provide_empty_effects(right(compile$slj(expr)(trace))))(l))(nil)
-}
-}
-if ($target.type === "tdef") {
-{
-let name = $target[0];
-let nl = $target[1];
-let body = $target[2];
-let l = $target[3];
-return cons(j$sllet(j$slpvar(sanitize(name))(nl))(compile$slj(body)(trace))(l))(nil)
-}
-}
-if ($target.type === "ttypealias") {
-{
-let name = $target[0];
-return nil
-}
-}
-if ($target.type === "tdeftype") {
-{
-let name = $target[0];
-let nl = $target[1];
-let type_arg = $target[2];
-let cases = $target[3];
-let l = $target[4];
-return map(cases)(($case) => (({1: {1: {1: l, 0: args}, 0: nl}, 0: name2}) => j$sllet(j$slpvar(sanitize(name2))(nl))(foldr(j$slobj(cons(left($co("type")(j$slstr(name2)(nil)(nl))))(mapi(0)(args)((i) => (_) => left($co(int_to_string(i))(j$slvar(`v${int_to_string(i)}`)(nl))))))(l))(mapi(0)(args)((i) => (_) => j$slpvar(`v${int_to_string(i)}`)(nl)))((body) => (arg) => j$sllambda(cons(arg)(nil))(right(body))(l)))(l))($case))
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(top);
-
-const ex = run$slnil_$gt(parse_expr({"0":{"0":{"0":"let","1":16241,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"x","1":16243,"type":"cst/id"},"1":{"0":{"0":"10","1":16244,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":16242,"type":"cst/array"},"1":{"0":{"0":"x","1":16246,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16240,"type":"cst/list"}));
-
-const top$slnames = (top) => (($target) => {
-if ($target.type === "tdef") {
-{
-let name = $target[0];
-let l = $target[1];
-let body = $target[2];
-return bag$sland(one(global(name)(value)(l)(decl)))(expr$slnames(map$slfrom_list(cons($co(name)(l))(nil)))(body))
-}
-}
-if ($target.type === "texpr") {
-{
-let body = $target[0];
-return expr$slnames(map$slnil)(body)
-}
-}
-if ($target.type === "ttypealias") {
-{
-let name = $target[0];
-let l = $target[1];
-let free = $target[2];
-let body = $target[3];
-return bag$sland(one(global(name)(type)(l)(decl)))(type$slnames(map$slfrom_list(free))(body))
-}
-}
-if ($target.type === "tdeftype") {
-{
-let name = $target[0];
-let l = $target[1];
-let free = $target[2];
-let constructors = $target[3];
-return foldl(one(global(name)(type)(l)(decl)))(map(constructors)(({1: {1: {0: args}, 0: l}, 0: name}) => foldl(one(global(name)(value)(l)(decl)))(map(args)(type$slnames(map$slfrom_list(free))))(bag$sland)))(bag$sland)
-}
-}
-throw new Error('Failed to match. ' + valueToString($target));
-})(top);
-
 const cps$slj3 = (trace) => (expr) => (($target) => {
 if ($target.type === "evar") {
 {
@@ -5772,7 +5597,7 @@ $target[1][1].type === "nil") {
 let target = $target[0];
 let arg = $target[1][0];
 let l = $target[2];
-return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(target)))((target) => $gt$gt$eq($lt_lr(cps$slj3(trace)(arg)))((arg) => $lt_r(right(done_fn(l)((done) => j$slapp(target)(cons(arg)(cons(j$slvar(efvbl)(l))(cons(done)(nil))))(l)))))))
+return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(target)))((target) => $gt$gt$eq($lt_lr(cps$slj3(trace)(arg)))((arg) => $lt_r(right((done) => j$slapp(target)(cons(arg)(cons(j$slvar(efvbl)(l))(cons(done)(nil))))(l))))))
 }
 }
 if ($target.type === "eapp" &&
@@ -5809,7 +5634,7 @@ return j$slapp(j$slvar("\$done")(l))(cons(body)(nil))(l)
 if ($target.type === "right") {
 {
 let body = $target[0];
-return j$slapp(body)(cons(j$slvar("\$done")(l))(nil))(l)
+return body(j$slvar("\$done")(l))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -5872,7 +5697,7 @@ $target[1].type === "some") {
 let name = $target[0];
 let args = $target[1][0];
 let l = $target[2];
-return go2($gt$gt$eq(map_$gt((x) => $gt$gt$eq($lt_lr(cps$slj3(trace)(x)))((v) => $lt_(v)))(args))((args) => ((tuple) => $lt_(right(done_fn(l)((done) => j$slapp(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))(cons(done)(cons(tuple)(nil)))(l)))))(loop(args)((args) => (recur) => (($target) => {
+return go2($gt$gt$eq(map_$gt((x) => $gt$gt$eq($lt_lr(cps$slj3(trace)(x)))((v) => $lt_(v)))(args))((args) => ((tuple) => $lt_(right((done) => j$slapp(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))(cons(done)(cons(tuple)(nil)))(l))))(loop(args)((args) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return j$slvar("\$unit")(l)
 }
@@ -5950,7 +5775,7 @@ if ($target.type === "eprovide") {
 let target = $target[0];
 let handlers = $target[1];
 let l = $target[2];
-return right(done_fn(l)((done) => (($target) => {
+return right((done) => (($target) => {
 if ($target.type === "left") {
 {
 let v = $target[0];
@@ -5964,7 +5789,7 @@ return fatal("is this provide a fn?")
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(go2($gt$gt$eq($lt_lr(cps$sleffects(cps$slj3)(trace)(l)(handlers)(done)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
+})(go2($gt$gt$eq($lt_lr(cps$sleffects(trace)(l)(handlers)(done)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
 if ($target.type === "left") {
 {
 let body = $target[0];
@@ -5974,11 +5799,11 @@ return j$slcom("left")(j$slapp(done)(cons(body)(nil))(l))
 if ($target.type === "right") {
 {
 let body = $target[0];
-return j$slcom("right")(j$slapp(body)(cons(done)(nil))(l))
+return j$slcom("right")(body(done))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(target))))(l))(cons(effects)(nil))(l))))))))
+})(cps$slj3(trace)(target))))(l))(cons(effects)(nil))(l)))))))
 }
 }
 if ($target.type === "elet" &&
@@ -5990,7 +5815,7 @@ let pat = $target[0][0][0];
 let expr = $target[0][0][1];
 let body = $target[1];
 let l = $target[2];
-return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(expr)))((value) => $lt_(right(done_fn(l)((done) => j$slapp(j$sllambda(cons(opt_or(pat_$gtj$slpat(pat))(j$slpvar("_")(l)))(nil))(right((($target) => {
+return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(expr)))((value) => $lt_(right((done) => j$slapp(j$sllambda(cons(opt_or(pat_$gtj$slpat(pat))(j$slpvar("_")(l)))(nil))(right((($target) => {
 if ($target.type === "left") {
 {
 let body = $target[0];
@@ -6000,11 +5825,11 @@ return j$slapp(done)(cons(body)(nil))(l)
 if ($target.type === "right") {
 {
 let body = $target[0];
-return j$slapp(body)(cons(done)(nil))(l)
+return body(done)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(go2($gt$gt$eq($lt_lr(cps$slj3(trace)(body)))((body) => $lt_(left(body)))))))(l))(cons(value)(nil))(l))))))
+})(go2($gt$gt$eq($lt_lr(cps$slj3(trace)(body)))((body) => $lt_(left(body)))))))(l))(cons(value)(nil))(l)))))
 }
 }
 if ($target.type === "elet") {
@@ -6020,7 +5845,7 @@ if ($target.type === "ematch") {
 let target = $target[0];
 let cases = $target[1];
 let l = $target[2];
-return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(target)))((target) => $lt_(right(done_fn(l)((done) => j$slapp(j$sllambda(cons(j$slpvar("\$target")(l))(nil))(left(j$slblock(map(cases)(({1: body, 0: pat}) => compile_pat(pat)(j$slvar("\$target")(l))(j$slreturn((($target) => {
+return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(target)))((target) => $lt_(right((done) => j$slapp(j$sllambda(cons(j$slpvar("\$target")(l))(nil))(left(j$slblock(map(cases)(({1: body, 0: pat}) => compile_pat(pat)(j$slvar("\$target")(l))(j$slreturn((($target) => {
 if ($target.type === "left") {
 {
 let b = $target[0];
@@ -6030,16 +5855,193 @@ return j$slapp(done)(cons(b)(nil))(l)
 if ($target.type === "right") {
 {
 let b = $target[0];
-return j$slapp(b)(cons(done)(nil))(l)
+return b(done)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(body)))(l))(l)))))(l))(cons(target)(nil))(l))))))
+})(cps$slj3(trace)(body)))(l))(l)))))(l))(cons(target)(nil))(l)))))
 }
 }
 return fatal(`no cps ${jsonify(expr)}`)
 throw new Error('Failed to match. ' + valueToString($target));
 })(expr);
+
+
+const cps$sleffects = (trace) => (l) => (handlers) => (done) => go2($gt$gt$eq(map_$gt(({1: {1: {1: body, 0: kind}, 0: nl}, 0: name}) => $gt$gt$eq((($target) => {
+if ($target.type === "eearmuffs") {
+return $lt_lr(cps$slj3(trace)(body))
+}
+if ($target.type === "ebang") {
+{
+let pats = $target[0];
+return $lt_lr(left(j$sllambda(cons(j$slpvar("_ignored_done")(l))(cons(loop(pats)((pats) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return j$slpvar("_")(l)
+}
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return opt_or(pat_$gtj$slpat(one))(j$slpvar("_")(l))
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return j$slpobj(cons($co("0")(opt_or(pat_$gtj$slpat(one))(j$slpvar("_")(l))))(cons($co("1")(recur(rest)))(nil)))(none)(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(pats)))(nil)))(left(j$slblock(cons(j$slsexpr((($target) => {
+if ($target.type === "left") {
+{
+let body = $target[0];
+return j$slapp(done)(cons(body)(nil))(l)
+}
+}
+if ($target.type === "right") {
+{
+let body = $target[0];
+return body(done)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)))
+}
+}
+if ($target.type === "eeffectful") {
+{
+let k = $target[0];
+let kl = $target[1];
+let pats = $target[2];
+return $lt_lr(left(j$sllambda(cons(j$slpvar(sanitize(k))(kl))(cons(loop(pats)((pats) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return j$slpvar("_")(l)
+}
+if ($target.type === "cons" &&
+$target[1].type === "nil") {
+{
+let one = $target[0];
+return opt_or(pat_$gtj$slpat(one))(j$slpvar("_")(l))
+}
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return j$slpobj(cons($co("0")(opt_or(pat_$gtj$slpat(one))(j$slpvar("_")(l))))(cons($co("1")(recur(rest)))(nil)))(none)(l)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(pats)))(nil)))(left(j$slblock(cons(j$slsexpr((($target) => {
+if ($target.type === "left") {
+{
+let body = $target[0];
+return j$slapp(done)(cons(body)(nil))(l)
+}
+}
+if ($target.type === "right") {
+{
+let body = $target[0];
+return body(done)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(kind))((value) => $lt_(left($co(name)(value)))))(handlers))((fields) => $gt$gt$eq($lt_lrt(some)(cps$slj3(trace)(evar("(effects)")(l))))((spread) => $lt_(left(j$slobj((($target) => {
+if ($target.type === "none") {
+return fields
+}
+if ($target.type === "some") {
+{
+let s = $target[0];
+return cons(right(j$slspread(s)))(fields)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(spread))(l))))));
+
+const run$slj = (v) => $eval(`((\$lbeffects\$rb) => ${j$slcompile(0)(compile$slj(run$slnil_$gt(parse_expr(v)))(map$slnil))})({})`);
+
+const example_expr = run$slnil_$gt(parse_expr({"0":{"0":{"0":"match","1":12702,"type":"cst/id"},"1":{"0":{"0":"stmt","1":12703,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"sexpr","1":12705,"type":"cst/id"},"1":{"0":{"0":"expr","1":12706,"type":"cst/id"},"1":{"0":{"0":"l","1":12707,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12704,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"compile","1":12709,"type":"cst/id"},"1":{"0":{"0":"expr","1":12710,"type":"cst/id"},"1":{"0":{"0":"trace","1":12711,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12708,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"sdef","1":12713,"type":"cst/id"},"1":{"0":{"0":"name","1":12714,"type":"cst/id"},"1":{"0":{"0":"nl","1":12715,"type":"cst/id"},"1":{"0":{"0":"body","1":12716,"type":"cst/id"},"1":{"0":{"0":"l","1":12717,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12712,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"++","1":12719,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12721,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12724,"type":"cst/id"},"1":{"0":{"0":"name","1":12725,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12723,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12726,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"compile","1":12729,"type":"cst/id"},"1":{"0":{"0":"body","1":12730,"type":"cst/id"},"1":{"0":{"0":"trace","1":12731,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12728,"type":"cst/list"},"1":{"0":{"0":";\\n","1":{"type":"nil"},"2":12732,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12720,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12718,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"stypealias","1":12735,"type":"cst/id"},"1":{"0":{"0":"name","1":12736,"type":"cst/id"},"1":{"0":{"0":"_","1":12737,"type":"cst/id"},"1":{"0":{"0":"_","1":12738,"type":"cst/id"},"1":{"0":{"0":"_","1":12739,"type":"cst/id"},"1":{"0":{"0":"_","1":12740,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12734,"type":"cst/list"},"1":{"0":{"0":"/* type alias ","1":{"0":{"0":{"0":"name","1":12743,"type":"cst/id"},"1":{"0":" */","1":12744,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":12741,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sdeftype","1":12746,"type":"cst/id"},"1":{"0":{"0":"name","1":12747,"type":"cst/id"},"1":{"0":{"0":"nl","1":12748,"type":"cst/id"},"1":{"0":{"0":"type-arg","1":12749,"type":"cst/id"},"1":{"0":{"0":"cases","1":12750,"type":"cst/id"},"1":{"0":{"0":"l","1":12751,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12745,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"join","1":12753,"type":"cst/id"},"1":{"0":{"0":"\\n","1":{"type":"nil"},"2":12754,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"map","1":12757,"type":"cst/id"},"1":{"0":{"0":"cases","1":12758,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12760,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"case","1":12762,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"1":12761,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"let","1":12764,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":{"0":{"0":",","1":12767,"type":"cst/id"},"1":{"0":{"0":"name2","1":12768,"type":"cst/id"},"1":{"0":{"0":"nl","1":12769,"type":"cst/id"},"1":{"0":{"0":"args","1":12770,"type":"cst/id"},"1":{"0":{"0":"l","1":12771,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12766,"type":"cst/list"},"1":{"0":{"0":"case","1":12772,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12765,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12774,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12776,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12779,"type":"cst/id"},"1":{"0":{"0":"name2","1":12780,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12778,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12781,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12784,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"mapi","1":12786,"type":"cst/id"},"1":{"0":{"0":"0","1":12787,"type":"cst/id"},"1":{"0":{"0":"args","1":12788,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12790,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"i","1":12792,"type":"cst/id"},"1":{"0":{"0":"_","1":12793,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12791,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12795,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"(v","1":{"type":"nil"},"2":12797,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12800,"type":"cst/id"},"1":{"0":{"0":"i","1":12801,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12799,"type":"cst/list"},"1":{"0":{"0":") => ","1":{"type":"nil"},"2":12802,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12796,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12794,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12789,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12785,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12783,"type":"cst/list"},"1":{"0":{"0":"({type: \\\"","1":{"type":"nil"},"2":12804,"type":"cst/string"},"1":{"0":{"0":"name2","1":12806,"type":"cst/id"},"1":{"0":{"0":"\\\"","1":{"type":"nil"},"2":12807,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12810,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"mapi","1":12812,"type":"cst/id"},"1":{"0":{"0":"0","1":12813,"type":"cst/id"},"1":{"0":{"0":"args","1":12814,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12816,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"i","1":12818,"type":"cst/id"},"1":{"0":{"0":"_","1":12819,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12817,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12821,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":", ","1":{"type":"nil"},"2":12823,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12826,"type":"cst/id"},"1":{"0":{"0":"i","1":12827,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12825,"type":"cst/list"},"1":{"0":{"0":": v","1":{"type":"nil"},"2":12828,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12831,"type":"cst/id"},"1":{"0":{"0":"i","1":12832,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12830,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12822,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12820,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12815,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12811,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12809,"type":"cst/list"},"1":{"0":{"0":"});","1":{"type":"nil"},"2":12833,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12775,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12773,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12763,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12759,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12756,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12752,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12701,"type":"cst/list"}));
+
+const compile_top$slj = (top) => (trace) => (($target) => {
+if ($target.type === "texpr") {
+{
+let expr = $target[0];
+let l = $target[1];
+return cons(j$slsexpr(provide_empty_effects(right(compile$slj(expr)(trace))))(l))(nil)
+}
+}
+if ($target.type === "tdef") {
+{
+let name = $target[0];
+let nl = $target[1];
+let body = $target[2];
+let l = $target[3];
+return cons(j$sllet(j$slpvar(sanitize(name))(nl))(compile$slj(body)(trace))(l))(nil)
+}
+}
+if ($target.type === "ttypealias") {
+{
+let name = $target[0];
+return nil
+}
+}
+if ($target.type === "tdeftype") {
+{
+let name = $target[0];
+let nl = $target[1];
+let type_arg = $target[2];
+let cases = $target[3];
+let l = $target[4];
+return map(cases)(($case) => (({1: {1: {1: l, 0: args}, 0: nl}, 0: name2}) => j$sllet(j$slpvar(sanitize(name2))(nl))(foldr(j$slobj(cons(left($co("type")(j$slstr(name2)(nil)(nl))))(mapi(0)(args)((i) => (_) => left($co(int_to_string(i))(j$slvar(`v${int_to_string(i)}`)(nl))))))(l))(mapi(0)(args)((i) => (_) => j$slpvar(`v${int_to_string(i)}`)(nl)))((body) => (arg) => j$sllambda(cons(arg)(nil))(right(body))(l)))(l))($case))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(top);
+
+const ex = run$slnil_$gt(parse_expr({"0":{"0":{"0":"let","1":16241,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"x","1":16243,"type":"cst/id"},"1":{"0":{"0":"10","1":16244,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":16242,"type":"cst/array"},"1":{"0":{"0":"x","1":16246,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":16240,"type":"cst/list"}));
+
+const top$slnames = (top) => (($target) => {
+if ($target.type === "tdef") {
+{
+let name = $target[0];
+let l = $target[1];
+let body = $target[2];
+return bag$sland(one(global(name)(value)(l)(decl)))(expr$slnames(map$slfrom_list(cons($co(name)(l))(nil)))(body))
+}
+}
+if ($target.type === "texpr") {
+{
+let body = $target[0];
+return expr$slnames(map$slnil)(body)
+}
+}
+if ($target.type === "ttypealias") {
+{
+let name = $target[0];
+let l = $target[1];
+let free = $target[2];
+let body = $target[3];
+return bag$sland(one(global(name)(type)(l)(decl)))(type$slnames(map$slfrom_list(free))(body))
+}
+}
+if ($target.type === "tdeftype") {
+{
+let name = $target[0];
+let l = $target[1];
+let free = $target[2];
+let constructors = $target[3];
+return foldl(one(global(name)(type)(l)(decl)))(map(constructors)(({1: {1: {0: args}, 0: l}, 0: name}) => foldl(one(global(name)(value)(l)(decl)))(map(args)(type$slnames(map$slfrom_list(free))))(bag$sland)))(bag$sland)
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(top);
 
 const cps_test2 = (v) => eval_with($eval(builtins_cps))(j$slcompile(0)(provide_empty_effects(right(finish(cps$slj3(0)(v))))));
 

@@ -886,13 +886,14 @@
     (let [(, (, wraps flag _) value) (f (, [] false 0))]
         (if (or (!= wraps []) flag)
             (right
-                (foldr
-                    (match value
-                        (left value)  (done-fn -1 (fn [done] (j/app done [value] -1)))
-                        (right value) value)
-                        wraps
-                        (fn [inner (, thunk vbl)]
-                        (j/app thunk [(j/lambda [(j/pvar vbl -1)] (right inner) -1)] -1))))
+                (fn [done]
+                    (foldr
+                        (match value
+                            (left value)  (j/app done [value] -1)
+                            (right value) (value done))
+                            wraps
+                            (fn [inner (, thunk vbl)]
+                            (thunk (j/lambda [(j/pvar vbl -1)] (right inner) -1))))))
                 value)))
 
 (defn <-lr [v] (<-lrt (fn [x] x) v))
@@ -923,6 +924,12 @@
 
 (def efvbl (sanitize "(effects)"))
 
+(deftype citem
+    (cplain j/expr)
+        (cdone (fn [j/expr] j/expr))
+        (** this expects a function that has args (result, new-effects, new-continuation). It supercedes the old continuation ... right? hrm. **)
+        (ceffect (fn [j/expr] j/expr)))
+
 (defn cps/j3 [trace expr]
     (match expr
         (evar n l)                                   (left (j/var (sanitize n) l))
@@ -934,9 +941,7 @@
                                                          (let-> [
                                                              target (<-lr (cps/j3 trace target))
                                                              arg    (<-lr (cps/j3 trace arg))]
-                                                             (<-r
-                                                                 (right
-                                                                     (done-fn l (fn [done] (j/app target [arg (j/var efvbl l) done] l)))))))
+                                                             (<-r (right (fn [done] (j/app target [arg (j/var efvbl l) done] l))))))
         (eapp target [arg ..rest] l)                 (cps/j3 trace (eapp (eapp target [arg] l) rest l))
         (elambda [] _ l)                             (fatal "no empty lambda args")
         (elambda [arg] body l)                       (left
@@ -947,7 +952,7 @@
                                                                  (right
                                                                  (match (cps/j3 trace body)
                                                                      (left body)  (j/app (j/var "$done" l) [body] l)
-                                                                     (right body) (j/app body [(j/var "$done" l)] l)))
+                                                                     (right body) (body (j/var "$done" l))))
                                                                  l))
         (elambda [arg ..rest] body l)                (cps/j3 trace (elambda [arg] (elambda rest body l) l))
         (eaccess (some (, target _)) [(, name _)] l) (left (j/index (j/var target l) (j/str name [] l) l))
@@ -980,10 +985,8 @@
                                                                                    [one ..rest] (j/app (j/var "$co" l) [one (recur rest)] l))))]
                                                                  (<-
                                                                      (right
-                                                                         (done-fn
-                                                                             l
-                                                                                 (fn [done]
-                                                                                 (j/app (j/index (j/var efvbl l) (j/str name [] l) l) [done tuple] l))))))))
+                                                                         (fn [done]
+                                                                             (j/app (j/index (j/var efvbl l) (j/str name [] l) l) [done tuple] l)))))))
         (erecord spread fields l)                    (go2
                                                          (let-> [
                                                              fields (map->
@@ -1006,42 +1009,38 @@
                                                                         (let-> [arg (<-lr (cps/j3 trace arg))]
                                                                             (<- (left (j/obj [(left (, "tag" (j/str name [] nl))) (left (, "arg" arg))] l))))))
         (eprovide target handlers l)                 (right
-                                                         (done-fn
-                                                             l
-                                                                 (fn [done]
-                                                                 (match (go2
-                                                                     (let-> [effects (<-lr (cps/effects cps/j3 trace l handlers done))]
-                                                                         (<-
-                                                                             (left
-                                                                                 (j/app
-                                                                                     (j/lambda
-                                                                                         [(j/pvar efvbl l)]
-                                                                                             (right
-                                                                                             (match (cps/j3 trace target)
-                                                                                                 (left body)  (j/com "left" (j/app done [body] l))
-                                                                                                 (right body) (j/com "right" (j/app body [done] l))))
-                                                                                             l)
-                                                                                         [effects]
-                                                                                         l)))))
-                                                                     (left v)  v
-                                                                     (right v) (fatal "is this provide a fn?")))))
+                                                         (fn [done]
+                                                             (match (go2
+                                                                 (let-> [effects (<-lr (cps/effects trace l handlers done))]
+                                                                     (<-
+                                                                         (left
+                                                                             (j/app
+                                                                                 (j/lambda
+                                                                                     [(j/pvar efvbl l)]
+                                                                                         (right
+                                                                                         (match (cps/j3 trace target)
+                                                                                             (left body)  (j/com "left" (j/app done [body] l))
+                                                                                             (right body) (j/com "right" (body done))))
+                                                                                         l)
+                                                                                     [effects]
+                                                                                     l)))))
+                                                                 (left v)  v
+                                                                 (right v) (fatal "is this provide a fn?"))))
         (elet [(, pat expr)] body l)                 (go2
                                                          (let-> [value (<-lr (cps/j3 trace expr))]
                                                              (<-
                                                                  (right
-                                                                     (done-fn
-                                                                         l
-                                                                             (fn [done]
-                                                                             (j/app
-                                                                                 (j/lambda
-                                                                                     [(opt-or (pat->j/pat pat) (j/pvar "_" l))]
-                                                                                         (right
-                                                                                         (match (go2 (let-> [body (<-lr (cps/j3 trace body))] (<- (left body))))
-                                                                                             (left body)  (j/app done [body] l)
-                                                                                             (right body) (j/app body [done] l)))
-                                                                                         l)
-                                                                                     [value]
-                                                                                     l)))))))
+                                                                     (fn [done]
+                                                                         (j/app
+                                                                             (j/lambda
+                                                                                 [(opt-or (pat->j/pat pat) (j/pvar "_" l))]
+                                                                                     (right
+                                                                                     (match (go2 (let-> [body (<-lr (cps/j3 trace body))] (<- (left body))))
+                                                                                         (left body)  (j/app done [body] l)
+                                                                                         (right body) (body done)))
+                                                                                     l)
+                                                                                 [value]
+                                                                                 l))))))
         (elet bindings body l)                       (let [bindings (expand-bindings bindings l)]
                                                          (cps/j3
                                                              trace
@@ -1050,32 +1049,30 @@
                                                          (let-> [target (<-lr (cps/j3 trace target))]
                                                              (<-
                                                                  (right
-                                                                     (done-fn
-                                                                         l
-                                                                             (fn [done]
-                                                                             (j/app
-                                                                                 (j/lambda
-                                                                                     [(j/pvar "$target" l)]
-                                                                                         (left
-                                                                                         (j/block
-                                                                                             (map
-                                                                                                 cases
-                                                                                                     (fn [(, pat body)]
-                                                                                                     (compile-pat
-                                                                                                         pat
-                                                                                                             (j/var "$target" l)
-                                                                                                             (j/return
-                                                                                                             (match (cps/j3 trace body)
-                                                                                                                 (left b)  (j/app done [b] l)
-                                                                                                                 (right b) (j/app b [done] l))
-                                                                                                                 l)
-                                                                                                             l)))))
-                                                                                         l)
-                                                                                     [target]
-                                                                                     l)))))))
+                                                                     (fn [done]
+                                                                         (j/app
+                                                                             (j/lambda
+                                                                                 [(j/pvar "$target" l)]
+                                                                                     (left
+                                                                                     (j/block
+                                                                                         (map
+                                                                                             cases
+                                                                                                 (fn [(, pat body)]
+                                                                                                 (compile-pat
+                                                                                                     pat
+                                                                                                         (j/var "$target" l)
+                                                                                                         (j/return
+                                                                                                         (match (cps/j3 trace body)
+                                                                                                             (left b)  (j/app done [b] l)
+                                                                                                             (right b) (b done))
+                                                                                                             l)
+                                                                                                         l)))))
+                                                                                     l)
+                                                                                 [target]
+                                                                                 l))))))
         _                                            (fatal "no cps ${(jsonify expr)}")))
 
-(defn cps/effects [cps/j3 trace l handlers done]
+(defn cps/effects [trace l handlers done]
     (go2
         (let-> [
             fields (map->
@@ -1102,14 +1099,14 @@
                                                                                     [(j/sexpr
                                                                                         (match (cps/j3 trace body)
                                                                                             (left body)  (j/app done [body] l)
-                                                                                            (right body) (j/app body [done] l))
+                                                                                            (right body) (body done))
                                                                                             l)
                                                                                         (j/return (j/raw "function noop() {return noop}" l) l)]))
                                                                                 l)))
                                          (eeffectful k kl pats) (<-lr
                                                                     (left
                                                                         (j/lambda
-                                                                            [(j/pvar "$continue" kl)
+                                                                            [(j/pvar (sanitize k) kl)
                                                                                 (loop
                                                                                 pats
                                                                                     (fn [pats recur]
@@ -1122,21 +1119,10 @@
                                                                                                              l))))]
                                                                                 (left
                                                                                 (j/block
-                                                                                    [(j/let
-                                                                                        (j/pvar (sanitize k) kl)
-                                                                                            (j/lambda
-                                                                                            [(j/pvar "v" kl) (j/pvar efvbl kl) (j/pvar "$done" kl)]
-                                                                                                (right
-                                                                                                (j/app
-                                                                                                    (j/app (j/var "$continue" kl) [(j/var "v" kl) (j/var efvbl kl)] kl)
-                                                                                                        [(j/var "$done" kl)]
-                                                                                                        kl))
-                                                                                                kl)
-                                                                                            kl)
-                                                                                        (j/sexpr
+                                                                                    [(j/sexpr
                                                                                         (match (cps/j3 trace body)
                                                                                             (left body)  (j/app done [body] l)
-                                                                                            (right body) (j/app body [done] l))
+                                                                                            (right body) (body done))
                                                                                             l)
                                                                                         (j/return (j/raw "function noop() {return noop}" l) l)]))
                                                                                 l))))]
@@ -1219,13 +1205,11 @@
                               (j/block
                                   [(j/let (j/pvar "$final" -1) (j/str "-uninitialized-" [] -1) -1)
                                       (j/sexpr
-                                      (j/app
-                                          x
-                                              [(j/lambda
+                                      (x
+                                          (j/lambda
                                               [(j/pvar "x" -1)]
                                                   (right (j/assign "$final" "=" (j/var "x" -1) -1))
-                                                  -1)]
-                                              -1)
+                                                  -1))
                                           -1)
                                       (j/return (j/var "$final" -1) -1)]))
                               -1)
@@ -1741,17 +1725,7 @@
             (elambda [arg ..rest] body l) (cps/j2 trace (elambda [arg] (elambda rest body l) l))
             _                             (fatal "no"))))
 
-(,
-    cps-test
-        [(, (@ 1) 1)
-        (, (@ (+ 2 3)) 5)
-        (, (@ ((fn [x] (+ x 12)) 4)) 16)
-        (, (@ ((fn [x y] (, x (+ 23 y))) 1 2)) (, 1 25))])
 
-(defn cps-test [v]
-    (eval-with
-        (eval builtins-cps)
-            (j/compile 0 (provide-empty-effects (right (finish (cps/j2 0 v)))))))
 
 (defn opt-or [v d]
     (match v
