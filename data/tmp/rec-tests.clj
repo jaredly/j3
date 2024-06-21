@@ -2,6 +2,19 @@
 
 (, (<-wait 1000) (<-log "yall") (<-wait 1000))
 
+(** ## Guess a number **)
+
+(defn guess-my-number [()]
+    (let [num (<-random/int 0 10)]
+        (loop
+            0
+                (fn [count recur]
+                (if (= num (<-ask/int "Guess a number between 0 - 10"))
+                    "It took you ${(int-to-string count)} tries!"
+                        (recur (+ 1 count)))))))
+
+(guess-my-number ())
+
 (** ## State Effect **)
 
 (defn with-state [v f]

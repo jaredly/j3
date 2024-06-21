@@ -19,7 +19,7 @@ import {
     getImmediateResults,
 } from './getImmediateResults';
 import { Sendable } from '../worker/worker';
-import { WorkerResults } from './useSyncStore';
+import { AsyncResults, WorkerResults } from './useSyncStore';
 import { initialState } from '../../ide/ground-up/reduce';
 import { emptyResults } from './getResults';
 
@@ -52,6 +52,7 @@ export type CombinedResults = {
 };
 
 export type Store = {
+    asyncResults: AsyncResults;
     dispatch: React.Dispatch<Action>;
     getState(): NUIState;
     getResults(): CombinedResults;
@@ -77,8 +78,8 @@ export type Store = {
 
     // remote fn calls
     respond: {
-        trigger(id: number): void;
-        ask(id: number, value: any): void;
+        trigger(ns: number, id: number): void;
+        ask(ns: number, id: number, value: any): void;
     };
 };
 
@@ -160,6 +161,7 @@ const nope = () => {
 
 export const noopStore: Store = {
     setDebug() {},
+    asyncResults: { triggers: {}, asks: {} },
     dispatch: nope,
     getEvaluator() {
         return null;

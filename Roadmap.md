@@ -1,4 +1,16 @@
 
+# I should really clean up the "produceItems" concept.
+like ... really there should be (0-1) product, (0-1) type maybe, (0-n) errors
+
+THEN I can only throttle the height of the errors, which is what causes things to bork around.
+welll and the appearance / disappearance of a product. Although I also want to be smarter about that, and display the most recently working product, with a "stale" marker if it is stale.
+Which would also be enabled by this change.
+
+
+OK BUT BEFORE
+I go off on that chase, let's close the loop on `ask`s, and make a working "guess this number" game.
+
+
 # IDEAS
 
 - effecvts like http routes, e.g. a `platform` could do a star match on requested effects to e.g. provide a typed k/v store?

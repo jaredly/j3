@@ -60,7 +60,13 @@ export type ToPage =
           traces: TraceMap;
           id: number;
       }
-    | { type: 'async'; top: number; produce: ProduceItem[]; id: number };
+    | {
+          type: 'async';
+          tid: number;
+          produce: ProduceItem[];
+          waiting: boolean;
+          id: number;
+      };
 // | { type: 'plugin'; id: number };
 
 const sendBack = (msg: ToPage) => postMessage(msg);
@@ -125,8 +131,14 @@ const handleMessage = async (
         case 'trigger': {
             if (!state) return null;
             state.asyncFns.fns[msg.tid](
-                (top: number, produce: ProduceItem[]) => {
-                    sendBack({ type: 'async', id: msg.id, produce, top });
+                (produce: ProduceItem[], waiting: boolean) => {
+                    sendBack({
+                        type: 'async',
+                        id: msg.id,
+                        produce,
+                        tid: msg.tid,
+                        waiting,
+                    });
                 },
             );
             // delete state.asyncFns.fns[msg.tid];
@@ -158,7 +170,11 @@ const next = async () => {
     running = true;
     const msg = queue.shift()!;
     state = await handleMessage(msg, state);
-    if (state?.results) {
+    if (
+        state?.results &&
+        msg.type !== 'trigger' &&
+        msg.type !== 'ask:response'
+    ) {
         const updated: Record<number, Sendable> = {};
         const traces: TraceMap = {};
         Object.values(state.results.groups).forEach((group) => {

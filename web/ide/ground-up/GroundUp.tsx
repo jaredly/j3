@@ -162,7 +162,9 @@ export const GroundUp = ({
                 id={id}
                 size={size}
             />
-            {zoom != null ?<button onClick={() => setZoom(null)}>Reset zoom</button>: null}
+            {zoom != null ? (
+                <button onClick={() => setZoom(null)}>Reset zoom</button>
+            ) : null}
             <WithStore store={store}>
                 <Cursors at={state.at} regs={state.regs} />
                 <Hover />
@@ -194,12 +196,14 @@ const ShowPin = ({
         [pin],
     );
     const results = useSubscribe(
-        () => 
-            [store.getResults().results.nodes[pin],
-            store.getResults().workerResults.nodes[pin]] as const,
-        fn => store.onChange('ns:' + pin, fn),
-        [pin]
-    )
+        () =>
+            [
+                store.getResults().results.nodes[pin],
+                store.getResults().workerResults.nodes[pin],
+            ] as const,
+        (fn) => store.onChange('ns:' + pin, fn),
+        [pin],
+    );
     return (
         <div
             style={{
@@ -237,10 +241,7 @@ const ShowPin = ({
                     path={[{ type: 'ns-top', idx: pin }]}
                 />
                 {results[1].produce.map((pi, i) => (
-                    <RenderProduceItem
-                        key={i}
-                        value={pi}
-                    />
+                    <RenderProduceItem key={i} value={pi} ns={ns.id} />
                 ))}
             </div>
         </div>

@@ -205,13 +205,13 @@ export const Loader = ({
     listing: null | string[];
 }) => {
     const latest = useRef<NUIState | null>(null);
-	const [saving, setSaving] = useState(false);
-	useEffect(() => {
-		return onSaveState(value => {
-console.log('got a save state change', value)
-			setSaving(value)
-		})
-	}, [])
+    const [saving, setSaving] = useState(false);
+    useEffect(() => {
+        return onSaveState((value: any) => {
+            console.log('got a save state change', value);
+            setSaving(value);
+        });
+    }, []);
 
     const save = useMemo(
         () =>
@@ -285,25 +285,30 @@ console.log('got a save state change', value)
                 save={(state) => save({ state })}
                 initial={initial}
             />
-		{saving ? <Saving /> : null}
+            {saving ? <Saving /> : null}
         </div>
     );
 };
 
 const Saving = () => {
-console.log('render saving I guess')
-	const [tick, setTick] = useState(null)
-	useEffect(() => {
-		const tid = setInterval(() => setTick(t => t + 1), 1000)
-		return () => clearInterval(tid)
-	}, [])
-	return <div style={{
-		position: 'fixed',
-		bottom: 0,
-		left: 0,
-		backgroundColor: 'green',
-		padding: 8,
-		zIndex: 2000
-	}}>Saving...{tick}s</div>
-}
-
+    console.log('render saving I guess');
+    const [tick, setTick] = useState(0);
+    useEffect(() => {
+        const tid = setInterval(() => setTick((t) => t + 1), 1000);
+        return () => clearInterval(tid);
+    }, []);
+    return (
+        <div
+            style={{
+                position: 'fixed',
+                bottom: 0,
+                left: 0,
+                backgroundColor: 'green',
+                padding: 8,
+                zIndex: 2000,
+            }}
+        >
+            Saving...{tick}s
+        </div>
+    );
+};

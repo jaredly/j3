@@ -234,7 +234,6 @@ export const fnsEvaluator = (
                 renderValue: displayResult,
                 top,
                 debugShowJs,
-                ns: +Object.keys(stmts)[0],
             });
 
             Object.keys(stmts).forEach((id) => {
@@ -313,7 +312,6 @@ const compileStmt = ({
     renderValue = (v) => [valueToString(v)],
     top,
     debugShowJs,
-    ns,
 }: {
     compiler: Compiler<Stmt, Expr>;
     san: any;
@@ -326,7 +324,6 @@ const compileStmt = ({
     top: number;
     // namedValues?: null | LocedName[],
     debugShowJs?: boolean;
-    ns: number;
 }): {
     env: any;
     display: ProduceItem[];
@@ -450,7 +447,7 @@ const compileStmt = ({
                             result.f(
                                 env.values,
                                 (produce: ProduceItem[], waiting: boolean) => {
-                                    ok(ns, produce);
+                                    ok(produce, waiting);
                                 },
                             ),
                     });

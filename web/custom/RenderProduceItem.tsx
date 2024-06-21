@@ -7,9 +7,11 @@ import { RenderStatic } from './RenderStatic';
 import { highlightIdxs } from './highlightIdxs';
 
 export const RenderProduceItem = ({
+    ns,
     value,
 }: // dispatch,
 {
+    ns: number;
     value: ProduceItem;
 }) => {
     const store = useGetStore();
@@ -29,14 +31,20 @@ export const RenderProduceItem = ({
     }
     switch (value.type) {
         case 'trigger':
+            const obj = store.asyncResults.triggers[value.f as number];
             return (
-                <button
-                    onClick={() => {
-                        store.respond.trigger(value.f as number);
-                    }}
-                >
-                    Trigger this yall
-                </button>
+                <div>
+                    <button
+                        onClick={() => {
+                            store.respond.trigger(ns, value.f as number);
+                        }}
+                    >
+                        {obj?.waiting ? 'Running...' : 'Trigger this yall'}
+                    </button>
+                    {obj?.items.map((item, i) => (
+                        <RenderProduceItem key={i} ns={ns} value={item} />
+                    ))}
+                </div>
             );
         case 'ask':
             switch (value.kind) {
@@ -48,14 +56,22 @@ export const RenderProduceItem = ({
                             {value.text}
                             <button
                                 onClick={() => {
-                                    store.respond.ask(value.f as number, true);
+                                    store.respond.ask(
+                                        ns,
+                                        value.f as number,
+                                        true,
+                                    );
                                 }}
                             >
                                 True
                             </button>
                             <button
                                 onClick={() => {
-                                    store.respond.ask(value.f as number, false);
+                                    store.respond.ask(
+                                        ns,
+                                        value.f as number,
+                                        false,
+                                    );
                                 }}
                             >
                                 False
