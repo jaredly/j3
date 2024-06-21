@@ -12,6 +12,7 @@ export const RenderProduceItem = ({
 {
     value: ProduceItem;
 }) => {
+    const store = useGetStore();
     if (typeof value === 'string') {
         return (
             <div
@@ -27,6 +28,49 @@ export const RenderProduceItem = ({
         );
     }
     switch (value.type) {
+        case 'trigger':
+            return (
+                <button
+                    onClick={() => {
+                        store.respond.trigger(value.f as number);
+                    }}
+                >
+                    Trigger this yall
+                </button>
+            );
+        case 'ask':
+            switch (value.kind) {
+                case 'int':
+                    return <div>{value.text}</div>;
+                case 'bool':
+                    return (
+                        <div>
+                            {value.text}
+                            <button
+                                onClick={() => {
+                                    store.respond.ask(value.f as number, true);
+                                }}
+                            >
+                                True
+                            </button>
+                            <button
+                                onClick={() => {
+                                    store.respond.ask(value.f as number, false);
+                                }}
+                            >
+                                False
+                            </button>
+                        </div>
+                    );
+                case 'string':
+                    return <div>{value.text} Want a string</div>;
+                default:
+                    return (
+                        <div>
+                            {value.text} Unknonwn ask kind: {value.kind}
+                        </div>
+                    );
+            }
         case 'type':
             return (
                 <div

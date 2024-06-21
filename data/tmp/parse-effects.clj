@@ -2198,29 +2198,33 @@ return {
       '<-http/get'(k, v) {
         fetch(v).then(res => {
           if (res.status === 200) {
-            return res.text().then(text => k(this, {type: 'ok', 0: text}))
+            return res.text().then(text => k({type: 'ok', 0: text}, this))
           } else {
-            k(this, {type: 'err', 0: {tag: 'HTTP/Status', arg: res.status}})
+            k({type: 'err', 0: {tag: 'HTTP/Status', arg: res.status}}, this)
           }
         }).catch(err => {
-          k(this, {type: 'err', 0: {tag: 'HTTP/Unknown', arg: err.message || 'Unknown'}})
+          k({type: 'err', 0: {tag: 'HTTP/Unknown', arg: err.message || 'Unknown'}}, this)
         })
       },
-      '<-ask'(k, v) {
-        k(this, prompt(v) || '')
-      },
       '<-log'(k, v) {
-        $produce.push($env.valueToString(v));
-        $update($produce, true);
-        k(this, null)
+        $env.valueToString(v, 0, v => $update(v, true));
+        k(null, this)
       },
       '<-fail'(k, v) {
-        $produce.push({type: 'error', error: $env.valueToString(v)});
-        $update($produce, false);
+        $env.valueToString(v, 0, v => $update({type: 'error', error: v}));
       },
       '<-wait'(k, v) {
-        setTimeout(() => k(this, null), v);
+        setTimeout(() => k(null, this), v);
       },
+      '<-ask-bool'(k, v) {
+        $ask('bool', v, v => k(v, this))
+      },
+      '<-ask-string'(k, v) {
+        $ask('string', v, v => k(v, this))
+      },
+      '<-ask-int'(k, v) {
+        $ask('int', v, v => k(v, this))
+      }
 } **))
 
 (eval builtin-effects)
@@ -3575,16 +3579,42 @@ dot
                 _          (match top
                                (texpr expr l) (match (cps/j3 ctx expr)
                                                   (left _)  (fatal "why is an effectful expr a left?")
-                                                  (right f) "({$type: 'thunk', f: ($env, $update) => {\nconst $produce = [];\nconst $lbeffects$rb = ${builtin-effects};\n${(j/compile-stmt
-                                                                ctx
-                                                                    (map/stmt
-                                                                    simplify-js
-                                                                        (j/sexpr
-                                                                        (f
-                                                                            (j/raw
-                                                                                "((final_value) => {\n  $produce.push(final_value);\n  $update($produce, false)\n})"
-                                                                                    l))
-                                                                            l)))}\n}})")
+                                                  (right f) (join
+                                                                ""
+                                                                    [(** ({$type: 'thunk', f: ($env, respond) => {
+const $produce = [];
+const $update = (v, waiting) => {
+  $produce.push(v);
+  respond($produce, waiting)
+}
+const $ask = (kind, text, f) => {
+  const self = {type: 'ask', text, kind, f: v => {
+    self.value = v;
+    respond($produce, true);
+    f(v)
+  }}
+  $produce.push(self)
+  respond($produce, true);
+}
+const $lbeffects$rb = **)
+                                                                    builtin-effects
+                                                                    (** ;
+
+ **)
+                                                                    (j/compile-stmt
+                                                                    ctx
+                                                                        (map/stmt
+                                                                        simplify-js
+                                                                            (j/sexpr
+                                                                            (f
+                                                                                (j/raw
+                                                                                    (** ((final_value) => {
+  $env.valueToString(final_value, 0, s => $update(s, false))
+}) **)
+                                                                                        l))
+                                                                                l)))
+                                                                    (** 
+}}) **)]))
                                _              (fatal "non-expr has unbound effects??"))))
             (fn [expr type-info ctx]
             (let [

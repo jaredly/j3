@@ -466,40 +466,39 @@ const stripCache = (cache?: ResultsCache<any>) => {
     return { ...cache, results: {}, lastState: null };
 };
 
-let saveQueue = {};
+let saveQueue: { [key: string]: NUIState } = {};
 let saving = false;
 
-const listeners = [];
-export const onSaveState = (fn) => {
-	listeners.push(fn);
-	return () => {
-		const idx = listeners.indexOf(fn)
-		if (idx !== -1) listeners.splice(idx, 1)
-	};
-}
-
+const listeners: Function[] = [];
+export const onSaveState = (fn: Function) => {
+    listeners.push(fn);
+    return () => {
+        const idx = listeners.indexOf(fn);
+        if (idx !== -1) listeners.splice(idx, 1);
+    };
+};
 
 export const saveState = async (
     id: string,
     state: NUIState,
     cache?: ResultsCache<any>,
-) => {
-	if (saving) {
-		saveQueue[id] = state;
-		return;
-	}
-	saving = true
-	listeners.forEach(f => f(true));
-	delete saveQueue[id];
+): Promise<void> => {
+    if (saving) {
+        saveQueue[id] = state;
+        return;
+    }
+    saving = true;
+    listeners.forEach((f) => f(true));
+    delete saveQueue[id];
     let ti = 0; // setTimeout(() => alert('Saving taking too long!'), 10000);
     let now = Date.now();
     try {
         const res = await fetch(urlForId(id), {
             method: 'POST',
-            body: JSON.stringify( state ),
+            body: JSON.stringify(state),
             headers: { 'Content-type': 'application/json' },
         });
-	listeners.forEach(f => f(false));
+        listeners.forEach((f) => f(false));
         console.log(`saving took ${Date.now() - now}ms`);
         if (res.status !== 200) {
             alert(
@@ -512,11 +511,11 @@ export const saveState = async (
         alert(`Error ${(err as Error).message} while saving state!`);
     }
 
-	saving = false;
-	const keys = Object.keys(saveQueue)
-	if (keys.length) {
-		return saveState(keys[0], saveQueue[keys[0]])
-	}
+    saving = false;
+    const keys = Object.keys(saveQueue);
+    if (keys.length) {
+        return saveState(keys[0], saveQueue[keys[0]]);
+    }
 };
 
 export function loadState(state: NUIState = initialState()) {

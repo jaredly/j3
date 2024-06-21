@@ -74,6 +74,12 @@ export type Store = {
         disableEvaluation: boolean,
         showJs: boolean,
     ): void;
+
+    // remote fn calls
+    respond: {
+        trigger(id: number): void;
+        ask(id: number, value: any): void;
+    };
 };
 
 export type OldStore = {
@@ -176,6 +182,10 @@ export const noopStore: Store = {
         return () => {};
     },
     reg: nope,
+    respond: {
+        ask(id, value) {},
+        trigger(id) {},
+    },
 };
 
 export type Values = {

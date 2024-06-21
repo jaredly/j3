@@ -234,6 +234,7 @@ export const fnsEvaluator = (
                 renderValue: displayResult,
                 top,
                 debugShowJs,
+                ns: +Object.keys(stmts)[0],
             });
 
             Object.keys(stmts).forEach((id) => {
@@ -312,6 +313,7 @@ const compileStmt = ({
     renderValue = (v) => [valueToString(v)],
     top,
     debugShowJs,
+    ns,
 }: {
     compiler: Compiler<Stmt, Expr>;
     san: any;
@@ -324,6 +326,7 @@ const compileStmt = ({
     top: number;
     // namedValues?: null | LocedName[],
     debugShowJs?: boolean;
+    ns: number;
 }): {
     env: any;
     display: ProduceItem[];
@@ -440,7 +443,18 @@ const compileStmt = ({
                     withTracing(traceMap, top, san.$setTracer, env);
                 }
                 const result = fn(values);
-                if (result != null) {
+                if (result && result.$type === 'thunk') {
+                    display.push({
+                        type: 'trigger',
+                        f: (ok) =>
+                            result.f(
+                                env.values,
+                                (produce: ProduceItem[], waiting: boolean) => {
+                                    ok(ns, produce);
+                                },
+                            ),
+                    });
+                } else if (result != null) {
                     display.push(...renderValue(result));
                 } else {
                     display.push(`<null>`);

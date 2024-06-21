@@ -331,7 +331,7 @@ export function updateState(
                                 type: 'error',
                                 message: `Cant stringify type ${JSON.stringify(
                                     type,
-                                )} : ${err.message}`,
+                                )} : ${(err as Error).message}`,
                             });
                         }
                     });
@@ -519,9 +519,25 @@ export function updateState(
         });
 
         Object.entries(added.display).forEach(([key, produce]) => {
-            state.results!.tops[+key].produce.push(
-                ...(Array.isArray(produce) ? produce : [produce]),
-            );
+            const items = Array.isArray(produce) ? produce : [produce];
+            items.forEach((item) => {
+                if (typeof item !== 'string') {
+                    if (
+                        item.type === 'trigger' &&
+                        typeof item.f === 'function'
+                    ) {
+                        const id = state.asyncFns.nid++;
+                        state.asyncFns.fns[id] = item.f as (v: any) => void;
+                        item.f = id;
+                    }
+                    if (item.type === 'ask' && typeof item.f === 'function') {
+                        const id = state.asyncFns.nid++;
+                        state.asyncFns.fns[id] = item.f as (v: any) => void;
+                        item.f = id;
+                    }
+                }
+            });
+            state.results!.tops[+key].produce.push(...items);
         });
     }
 

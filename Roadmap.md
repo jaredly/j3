@@ -1,4 +1,14 @@
 
+# IDEAS
+
+- effecvts like http routes, e.g. a `platform` could do a star match on requested effects to e.g. provide a typed k/v store?
+- toplevel exprs that are missing earmuffs shouldn't just have a default filled in. MAYBE have aalue saved on the namespace. not sure how the undo stack would look for that. I guess it's fine. I can just rack up a bunch of changes.
+- also had some thoughts about wasm, and ... c, I guess. I'll want to monomorphize all over the place. right?
+  unless everything's just on the heap. which is maybe fine? at any rate, I'd need to have type information a lot more than I currently do.
+  - the thing about monomorphizing. I could have a tree-like cache of monomorphized code, where the code for one toplevel also has pointers to the other toplevels that it depends on.
+  - anyway, then we'd be able to have relatively quick compilations. Right? maybe.
+
+
 # Effects are alive!
 
 - [ ] now what's the story with top-level expressions that need effects?
@@ -15,9 +25,11 @@
       `thunk: (env: {any}, update: (items: ProduceItem[], stillWorking: boolean) => void) => void`
       how do I slide in the builtin-effects? idk. maybe pass in the `env`, which should have them on it? sure.
 
-```
 
-```
+- [ ] {$type: thunk}
+- [ ] return a produceItem that's like ... {type: 'trigger'} that renders a little play button
+  - oof vscode is strugglin
+- [ ]
 
 
 # Visualizing Algorithm W

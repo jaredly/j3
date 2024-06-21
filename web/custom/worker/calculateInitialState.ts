@@ -40,6 +40,7 @@ export function calculateInitialState(
         {
             evaluator,
             nodes: {},
+            asyncFns: { fns: {}, nid: 0 },
             results: {
                 groups: {},
                 sorted: [],

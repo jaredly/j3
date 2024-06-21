@@ -1,6 +1,6 @@
 (** ## Thunk Infrastructure **)
 
-(, (<-wait 1000) 34)
+(, (<-wait 1000) (<-log "yall") (<-wait 1000))
 
 (** ## State Effect **)
 

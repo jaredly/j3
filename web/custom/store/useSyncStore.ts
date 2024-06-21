@@ -159,7 +159,24 @@ export const setupSyncStore = (
                 evtListeners.results.forEach((f) => f(state));
 
                 store.dispatch({ type: 'highlight' });
+                break;
             }
+            case 'async':
+                // TODO: make a produceItem that's nested, like "asyncProduce"
+                // and we replace that each time. Would be great.
+                workerResults.nodes[msg.top].produce = msg.produce;
+                nodeListeners[`ns:${msg.top}`]?.forEach((f) =>
+                    f(
+                        state,
+                        results.nodes[msg.top],
+                        workerResults.nodes[msg.top],
+                        false,
+                    ),
+                );
+                // msg.
+                break;
+            default:
+                console.log('droppping message', msg);
         }
     });
 
@@ -169,6 +186,16 @@ export const setupSyncStore = (
             // console.error('ignoring sotry');
             send({ type: 'debug', execOrder, id: msgid++, showJs });
         },
+
+        respond: {
+            trigger(id) {
+                send({ type: 'trigger', id: msgid++, tid: id });
+            },
+            ask(id, value) {
+                send({ type: 'ask:response', id: msgid++, tid: id, value });
+            },
+        },
+
         dispatch(action) {
             if (action.type === 'jump-to-definition') {
                 const changed = getJumpToAction(

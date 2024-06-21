@@ -10,6 +10,14 @@ export type Errors = { [key: number]: string[] };
 export type ProduceItem =
     | string
     | { type: 'node'; node: Node }
+    | { type: 'trigger'; f: ((v: any) => void) | number; text?: string }
+    | {
+          type: 'ask';
+          kind: 'int' | 'string' | 'bool';
+          text: string;
+          f: ((v: any) => void) | number;
+          value?: number | string | boolean;
+      }
     | { type: 'inference-error'; err: InferenceError }
     | { type: 'type'; text: string; cst?: Node; name?: string }
     | { type: 'withjs'; message: string; js: string; stack?: string }
