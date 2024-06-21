@@ -1,4 +1,4 @@
-(** ## More Fancy Parser & Code Generator
+(** ## More Fancy Parser & Code Generator (Records + Effects)
     The parser uses a monad to allow for "recovery" after invalid syntax, with fine-grained error reporting.
     The code generator first transforms the AST into an Intermediate Representation that is an approximation of JavaScript's AST. It then does some simplifying passes on the result, applying some basic optimizations. It also supports "tracing", so that you can get lightweight logging of intermediate values. **)
 
@@ -1218,6 +1218,12 @@
                 (@@
                     (provide (+ 2 (!fail 4))
                         (!fail n) n))))))
+
+(cps-test2 (@ (+ 2 3)))
+
+(j/compile
+    0
+        (provide-empty-effects (right (finish (cps/j3 0 0 (@ (+ 2 3)))))))
 
 (,
     cps-test2
