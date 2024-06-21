@@ -1,5 +1,7 @@
 
 EASE OF USE things
+- (f)
+- (fn x)
 
 
 - [x] let's try having `k = (a, b, c) => $k(a, {...$k_effects, ...b}, c)`

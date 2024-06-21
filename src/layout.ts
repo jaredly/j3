@@ -108,7 +108,10 @@ export const calculateLayout = (
                     type: 'multiline',
                     tightFirst: howTight(firstNode),
                     pos,
-                    pairs: firstName === 'switch' || firstName === 'match',
+                    pairs:
+                        firstName === 'switch' ||
+                        firstName === 'match' ||
+                        firstName === 'provide',
                     cw,
                 };
             }
@@ -227,7 +230,7 @@ const tightFirsts: { [key: string]: number } = {
     match: 2,
     let: 2,
     'let->': 2,
-    proide: 2,
+    provide: 2,
     definstance: 2,
     defclass: 2,
     if: 2,
@@ -237,7 +240,7 @@ const tightFirsts: { [key: string]: number } = {
     '@@': 1,
 };
 
-const alwaysMulti = ['switch', 'match', 'if', 'deftype'];
+const alwaysMulti = ['switch', 'match', 'provide', 'if', 'deftype'];
 
 function howTight(item?: Map[0]) {
     if (item?.type === 'identifier') {

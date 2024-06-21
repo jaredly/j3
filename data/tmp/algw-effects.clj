@@ -768,7 +768,7 @@
             (** Note: we're relying on the fact that type/map-post doesn't traverse into trecs. If it did, this would be somewhat less efficient. **)
             _  (type/map-post simplify type))))
 
-(,
+;(,
     (dot (dot type->s simplify-recursive) quot-tvar)
         [(,
         (@t (, in (option (, int (option (rec 'a (, int (option 'a))))))))
@@ -1241,7 +1241,7 @@
         (eeffect name (none) l)                  (let-> [
                                                      effects (match (tenv/resolve tenv "(effects)")
                                                                  (none)              (<-missing "(effects)" l)
-                                                                 (some (forall _ t)) (<- t))
+                                                                 (some (forall _ t)) (type/apply-> t))
                                                      result  (new-type-var name l)
                                                      t       (new-type-var "effects-rest" l)
                                                      _       (unify effects (trow [(, name result)] (some t) (rrecord) l) l)]
@@ -1259,7 +1259,7 @@
                                                                                     _            (fatal "no")))))
                                                      effects        (match (tenv/resolve tenv "(effects)")
                                                                         (none)              (<-missing "(effects)" l)
-                                                                        (some (forall _ t)) (<- t))
+                                                                        (some (forall _ t)) (type/apply-> t))
                                                      result         (new-type-var name l)
                                                      t              (new-type-var "effects-rest" l)
                                                      ignore-effects (new-type-var "ignore-effects" l)
@@ -1271,7 +1271,7 @@
         (eprovide target cases l)                (let-> [
                                                      effects       (match (tenv/resolve tenv "(effects)")
                                                                        (none)              (<-missing "(effects)" l)
-                                                                       (some (forall _ t)) (<- t))
+                                                                       (some (forall _ t)) (type/apply-> t))
                                                      result        (new-type-var "provide-result" (expr-loc target))
                                                      k-effects     (new-type-var "k-effects" (expr-loc target))
                                                      rows          (map->
@@ -1287,12 +1287,7 @@
                                                                                                           ()                   (unify body result nl)
                                                                                                           any-result           (new-type-var "any-result" nl)
                                                                                                           ignore-effects       (new-type-var "effects" nl)
-                                                                                                          arg-types            (map-> type/apply-> arg-types)
-                                                                                                          ;(foldr->
-                                                                                                              any-result
-                                                                                                                  arg-types
-                                                                                                                  (fn [res arg]
-                                                                                                                  (let-> [v (new-type-var "effects" nl)] (<- (tfn v arg res nl)))))]
+                                                                                                          arg-types            (map-> type/apply-> arg-types)]
                                                                                                           (<-
                                                                                                               (,
                                                                                                                   name
@@ -1411,10 +1406,8 @@
                                                      target-type (type/apply-> target-type)
                                                      effects     (match (tenv/resolve tenv "(effects)")
                                                                      (none)              (<-missing "(effects)" l)
-                                                                     (some (forall _ t)) (<- t))
-                                                     _           (unify target-type (tfn effects arg-type result-var l) l)
-                                                     v           (type/apply-> target-type)
-                                                     e           (type/apply-> effects)]
+                                                                     (some (forall _ t)) (type/apply-> t))
+                                                     _           (unify target-type (tfn effects arg-type result-var l) l)]
                                                      (type/apply-> result-var))
         (** Same story here as for the lambdas. Splitting things out like this allows us to look at one argument at a time. **)
         (eapp target [one ..rest] l)             (infer/expr tenv (eapp (eapp target [one] l) rest l))
@@ -1472,6 +1465,51 @@
                                                                                          (reverse all-results))
                                                      ()                          (check-exhaustiveness tenv target-type (map fst cases) l)]
                                                      (type/apply-> result-type))))
+
+(,
+    (fn [x]
+        (run/nil->
+            (let-> [
+                e (new-type-var "effects-top" -1)
+                t (infer/expr
+                      (tenv/with-type benv-with-pair "(effects)" (forall set/nil e))
+                          x)
+                e (type/apply-> e)]
+                (<- (, (type->cst t) (type->cst e))))))
+        [(,
+        (eeffect "<-one" (some []) 1)
+            (ok
+            (,
+                (cst/id "a" 1)
+                    (cst/record
+                    [(cst/id "<-one" 1)
+                        (cst/list
+                        [(cst/id "fn" 1) (cst/array [(cst/id "()" -1)] 1) (cst/id "a" 1)]
+                            1)
+                        (cst/spread (cst/id "b" 1) 1)]
+                        1))))
+        (,
+        (elambda
+            [(pvar "()" l)]
+                (eeffect "<-one" (some [(eeffect "<-two" (some []) 1)]) 1)
+                1)
+            (ok
+            (,
+                (cst/list
+                    [(cst/id "fn" 1)
+                        (cst/array [(cst/id "b" (eval (**  **)))] 1)
+                        (cst/record
+                        [(cst/id "<-two" 1)
+                            (cst/list
+                            [(cst/id "fn" 1) (cst/array [(cst/id "b" (eval (**  **)))] 1) (cst/id "c" 1)]
+                                1)
+                            (cst/id "<-one" 1)
+                            (cst/list [(cst/id "fn" 1) (cst/array [(cst/id "c" 1)] 1) (cst/id "a" 1)] 1)
+                            (cst/spread (cst/id "d" 1) 1)]
+                            1)
+                        (cst/id "a" 1)]
+                        1)
+                    (cst/id "a" -1))))])
 
 (,
     (fn [x]

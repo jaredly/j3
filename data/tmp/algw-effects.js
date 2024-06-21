@@ -3167,7 +3167,7 @@ return $lt_missing("(effects)")(l)
 if ($target.type === "some") {
 if ($target[0].type === "forall") {
 let t = $target[0][1];
-return $lt_(t)
+return type$slapply_$gt(t)
 } 
 } ;
 throw new Error('match fail 24995:' + JSON.stringify($target))
@@ -3203,7 +3203,7 @@ return $lt_missing("(effects)")(l)
 if ($target.type === "some") {
 if ($target[0].type === "forall") {
 let t = $target[0][1];
-return $lt_(t)
+return type$slapply_$gt(t)
 } 
 } ;
 throw new Error('match fail 26086:' + JSON.stringify($target))
@@ -3221,7 +3221,7 @@ return $lt_missing("(effects)")(l)
 if ($target.type === "some") {
 if ($target[0].type === "forall") {
 let t = $target[0][1];
-return $lt_(t)
+return type$slapply_$gt(t)
 } 
 } ;
 throw new Error('match fail 25088:' + JSON.stringify($target))
@@ -3355,11 +3355,11 @@ return $lt_missing("(effects)")(l)
 if ($target.type === "some") {
 if ($target[0].type === "forall") {
 let t = $target[0][1];
-return $lt_(t)
+return type$slapply_$gt(t)
 } 
 } ;
 throw new Error('match fail 22161:' + JSON.stringify($target))
-})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(unify(target_type)(tfn(effects)(arg_type)(result_var)(l))(l))((_2428) => $gt$gt$eq(type$slapply_$gt(target_type))((v) => $gt$gt$eq(type$slapply_$gt(effects))((e) => type$slapply_$gt(result_var))))))))))
+})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(unify(target_type)(tfn(effects)(arg_type)(result_var)(l))(l))((_2428) => type$slapply_$gt(result_var))))))))
 } 
 } 
 } ;

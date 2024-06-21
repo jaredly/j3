@@ -5006,6 +5006,19 @@ $target[0].type === "cons" &&
 $target[0][0].type === "cst/id" &&
 $target[0][0][0] === "fn" &&
 $target[0][1].type === "cons" &&
+$target[0][1][1].type === "nil") {
+{
+let ll = $target[0][0][1];
+let one = $target[0][1][0];
+let l = $target[1];
+return $gt$gt$eq(parse_expr(one))((body) => $lt_(elambda(cons(pany(ll))(nil))(body)(l)))
+}
+}
+if ($target.type === "cst/list" &&
+$target[0].type === "cons" &&
+$target[0][0].type === "cst/id" &&
+$target[0][0][0] === "fn" &&
+$target[0][1].type === "cons" &&
 $target[0][1][0].type === "cst/array") {
 {
 let ll = $target[0][0][1];
@@ -5147,7 +5160,13 @@ throw new Error('Failed to match. ' + valueToString($target));
 })(args))))(l)))
 }
 }
-return $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq(map_$gt(parse_expr)(args))((args) => $lt_(eapp(target)(args)(l))))
+return $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq(map_$gt(parse_expr)(args))((args) => $lt_(eapp(target)((($target) => {
+if ($target.type === "nil") {
+return cons(evar("()")(l))(nil)
+}
+return args
+throw new Error('Failed to match. ' + valueToString($target));
+})(args))(l))))
 throw new Error('Failed to match. ' + valueToString($target));
 })((($target) => {
 if ($target.type === "cst/id") {
@@ -5556,7 +5575,7 @@ if ($target.type === "equot") {
 {
 let inner = $target[0];
 let l = $target[1];
-return left(j$slraw(quot$sljsonify(inner))(l))
+return left(j$slraw(`(${quot$sljsonify(inner)})`)(l))
 }
 }
 if ($target.type === "eprim" &&

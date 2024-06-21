@@ -929,7 +929,7 @@
 (defn cps/j3 [trace expr]
     (match expr
         (evar n l)                                   (left (j/var (sanitize n) l))
-        (equot inner l)                              (left (j/raw (quot/jsonify inner) l))
+        (equot inner l)                              (left (j/raw "(${(quot/jsonify inner)})" l))
         (eprim (pint n l) _)                         (left (j/prim (j/int n l) l))
         (eprim (pbool b l) _)                        (left (j/prim (j/bool b l) l))
         (eapp target [] l)                           (cps/j3 trace target)
@@ -954,26 +954,7 @@
                                                                                                           [(j/pvar "$t" l) (j/pvar efvbl l)]
                                                                                                               (right (recur (, rest (j/var "$t" l))))
                                                                                                               l)]
-                                                                                                          l)
-                                                                                     ;(recur
-                                                                                         (,
-                                                                                             rest
-                                                                                                 (j/lambda
-                                                                                                 [(j/pvar "$t" l) (j/pvar efvbl l)]
-                                                                                                     (right (j/app (j/var "$t" l) [one (j/var efvbl l) done] l))
-                                                                                                     l))))))
-                                                                             ;(foldl
-                                                                             target
-                                                                                 args
-                                                                                 (fn [target arg] (j/app target [arg (j/var efvl l) done] l))))))))
-        ;((eapp target [arg] l)
-            (go2
-                (let-> [
-                    target (<-lr (cps/j3 trace target))
-                    arg    (<-lr (cps/j3 trace arg))]
-                    (<-r (right (fn [done] (j/app target [arg (j/var efvbl l) done] l))))))
-                (eapp target [arg ..rest] l)
-                (cps/j3 trace (eapp (eapp target [arg] l) rest l)))
+                                                                                                          l)))))))))
         (elambda [] _ l)                             (fatal "no empty lambda args")
         (elambda [arg] body l)                       (left
                                                          (j/lambda
@@ -1009,7 +990,6 @@
                                                                  done
                                                                      [(j/index (j/var efvbl l) (j/str name [] l) l) (j/var efvbl l)]
                                                                      l)))
-        ;(left (j/index (j/var efvbl l) (j/str name [] l) l))
         (eeffect name (some args) l)                 (go2
                                                          (let-> [args (map-> (fn [x] (let-> [v (<-lr (cps/j3 trace x))] (<- v))) args)]
                                                              (let [
@@ -1200,7 +1180,13 @@
 
 (j/compile
     0
-        (finish (cps/j3 0 (rp (@@ (provide (+ 2 (!fail 4)) (!fail n) n))))))
+        (finish
+        (cps/j3
+            0
+                (rp
+                (@@
+                    (provide (+ 2 (!fail 4))
+                        (!fail n) n))))))
 
 (,
     cps-test2
@@ -1208,9 +1194,24 @@
         (, (@ (+ 2 3)) 5)
         (, (@ ((fn [x] (+ x 12)) 4)) 16)
         (, (@ ((fn [x y] (, x (+ 23 y))) 1 2)) (, 1 25))
-        (, (rp (@@ (provide (+ 3 *lol*) *lol* 2))) 5)
-        (, (rp (@@ (provide (!fail 2) (!fail n) n))) 2)
-        (, (rp (@@ (provide (+ 2 (!fail 1)) (!fail n) n))) 1)
+        (,
+        (rp
+            (@@
+                (provide (+ 3 *lol*)
+                    *lol* 2)))
+            5)
+        (,
+        (rp
+            (@@
+                (provide (!fail 2)
+                    (!fail n) n)))
+            2)
+        (,
+        (rp
+            (@@
+                (provide (+ 2 (!fail 1))
+                    (!fail n) n)))
+            1)
         (, (@ "hi") "hi")
         (, (@ "hi${23}") "hi23")
         (, (@ "hi ${(+ 2 3)}") "hi 5")
@@ -2455,6 +2456,7 @@ return {
                                                                         yes  (parse-expr yes)
                                                                         no   (parse-expr no)]
                                                                         (<- (ematch cond [(, (pprim (pbool true l) l) yes) (, (pany l) no)] l)))
+        (cst/list [(cst/id "fn" ll) one] l)                         (let-> [body (parse-expr one)] (<- (elambda [(pany ll)] body l)))
         (cst/list [(cst/id "fn" ll) (cst/array args _) ..rest]  b)  (let-> [
                                                                         args (map-> parse-pat args)
                                                                         body (parse-one-expr rest ll b)]
@@ -2521,7 +2523,13 @@ return {
                                                                         _                    (let-> [
                                                                                                  target (parse-expr target)
                                                                                                  args   (map-> parse-expr args)]
-                                                                                                 (<- (eapp target args l))))
+                                                                                                 (<-
+                                                                                                     (eapp
+                                                                                                         target
+                                                                                                             (match args
+                                                                                                             [] [(evar "()" l)]
+                                                                                                             _  args)
+                                                                                                             l))))
         (cst/array args l)                                          (parse-array args l)
         (cst/access target items l)                                 (<- (eaccess target items l))
         (cst/record items l)                                        (let-> [
@@ -2570,7 +2578,9 @@ return {
         (, (@@ .abc) (eaccess (none) [(, "abc" 22113)] 22112))
         (, (@@ 'hi) (eenum "hi" 21779 (none) 21779))
         (,
-        (@@ (provide (+ 2 3) (!fail n) 12))
+        (@@
+            (provide (+ 2 3)
+                (!fail n) 12))
             (eprovide
             (eapp
                 (evar "+" 30181)
@@ -2581,7 +2591,11 @@ return {
                     (, 30185 (, (ebang [(pvar "n" 30186)]) (eprim (pint 12 30187) 30187))))]
                 30178))
         (,
-        (@@ (provide x *lol* 20 (!fail msg) 2 (k <-set v) (k v)))
+        (@@
+            (provide x
+                *lol*       20
+                (!fail msg) 2
+                (k <-set v) (k v)))
             (eprovide
             (evar "x" 23392)
                 [(, "*lol*" (, 23393 (, (eearmuffs) (eprim (pint 20 23394) 23394))))
@@ -3671,3 +3685,5 @@ const $lbeffects$rb = **)
         builtins-ex-cps)
 
 537
+
+(@t (, in (option (, int (option (rec 'a (, int (option 'a))))))))

@@ -46,34 +46,74 @@
                                 "That's it!" "It took me ${(int-to-string tries)} tries."
                                 x            "Unrecognized answer: ${x}"))))))))
 
-(guess-your-number ())
+(guess-your-number)
 
 
 
-(defn ignore-log [f] (provide (f ()) (k <-log _) (ignore-log k)))
+(defn ignore-log [f]
+    (provide (f)
+        (k <-log _) (ignore-log k)))
 
 (defn test-options [opts f]
-    (provide
-        (f ())
-            (k <-ask/options t _)
-            (let [() (<-log t)]
-            (match opts
-                []           (fatal "Ran out of options")
-                [one ..rest] (test-options rest (fn [()] (k one)))))))
+    (provide (f)
+        (k <-ask/options t _) (let [
+                                  () ()
+                                  ;(<-log t)]
+                                  (match opts
+                                      []           (!fail "Ran out of options")
+                                      [one ..rest] (test-options rest (fn (k one)))))))
 
 (ignore-log
-    (fn [()]
-        (test-options
-            ["Too high" "Too high" "Too low" "Too lows"]
-                guess-your-number)))
+    (fn (test-options ["Too high" "Too high" "Too low"] guess-your-number)
+        ))
 
 (test-options ["Too high" "Too high" "Too low"] guess-your-number)
 
 
 
+(@ (, <-one <-two))
 
+(@ (<-one <-two))
 
+(fn (<-one <-two))
 
+(fn ((<-one) <-two))
+
+(fn (, <-one <-two))
+
+(fn (let [
+    _ <-one
+    _ <-two]
+    12)
+    )
+
+(fn (let [_ <-one] <-two))
+
+(fn (let [_ 1] (, <-one <-two)))
+
+(fn (let [_ <-one] (let [_ <-two] 2)))
+
+(fn (if <-one
+    <-two
+        <-three)
+    )
+
+(fn (<-one <-two))
+
+(defn aaaaaa [()]
+    (let [
+        () (<-log "")
+        _  (!fail "lol")
+        () (<-more 234)]
+        (match []
+            []           (!fail "Ran out of options")
+            [one ..rest] "as")))
+
+(fn (let [
+    () (<-one)
+    () (<-two)]
+    ())
+    )
 
 
 
@@ -88,7 +128,9 @@
 (** ## State Effect **)
 
 (defn with-state [v f]
-    (provide (f ()) *value* v (k <-set v) (with-state v k)))
+    (provide (f ())
+        *value*     v
+        (k <-set v) (with-state v k)))
 
 (defn inc [()]
     (let [
@@ -117,7 +159,9 @@
 (, *one* *two*)
 
 (defn collect [v f]
-    (provide (f ()) *dump* v (k <-add i) (collect [i ..v] (fn [()] (k i)))))
+    (provide (f ())
+        *dump*      v
+        (k <-add i) (collect [i ..v] (fn [()] (k i)))))
 
 (defn loop [val f] (f val (fn [val] (loop val f))))
 
@@ -147,12 +191,13 @@
 
 (collect [] (fn [()] (let [_ (<-add (+ 1 (<-add 2)))] *dump*)))
 
-(provide
-    (+ *value* (<-set 12))
-        *value*
-        12
-        (k <-set v)
-        (+ 23 (provide (k 5) *value* 20 (k <-set _) (fatal "once"))))
+(provide (+ *value* (<-set 12))
+    *value*     12
+    (k <-set v) (+
+                    23
+                        (provide (k 5)
+                        *value*     20
+                        (k <-set _) (fatal "once"))))
 
 [(, (log (fn [()] (+ (<-add 1) (<-add 2)))) (, 3 [1 2]))
     (, (log (fn [()] (, (<-add 1) (<-add 2)))) (, (, 1 2) [1 2]))
@@ -163,29 +208,40 @@
     (, (with-state 2 (fn [()] (let [_ (<-set 12)] *value*))) 12)
     (, (with-state 2 demo-state) (, 2 3))]
 
-[(, (provide *ok* *ok* 23) 23)
-    (, (provide (+ 1 (!fail 2)) (!fail _) 0) 0)
-    (, (provide (+ 2 3)) 5)
-    (, (provide (+ 1 (<-stuff 2)) (k <-stuff a) 23) 23)
+[(,
+    (provide *ok*
+        *ok* 23)
+        23)
     (,
-    (provide
-        (+ 1 (<-stuff 2))
-            (k <-stuff a)
-            (provide (k 23) (l <-stuff a) (fatal "only once")))
+    (provide (+ 1 (!fail 2))
+        (!fail _) 0)
+        0)
+    (,
+    (provide (+ 2 3)
+        )
+        5)
+    (,
+    (provide (+ 1 (<-stuff 2))
+        (k <-stuff a) 23)
+        23)
+    (,
+    (provide (+ 1 (<-stuff 2))
+        (k <-stuff a) (provide (k 23)
+                          (l <-stuff a) (fatal "only once")))
         24)
     (,
-    (provide
-        (+ *value* (<-set 12))
-            *value*
-            12
-            (k <-set v)
-            (+ 23 (provide (k 5) *value* 20 (k <-set _) (fatal "once"))))
+    (provide (+ *value* (<-set 12))
+        *value*     12
+        (k <-set v) (+
+                        23
+                            (provide (k 5)
+                            *value*     20
+                            (k <-set _) (fatal "once"))))
         17)]
 
-(provide
-    (+ 1 (<-stuff 2))
-        (k <-stuff a)
-        (provide (k 23) (l <-stuff a) (fatal "only once")))
+(provide (+ 1 (<-stuff 2))
+    (k <-stuff a) (provide (k 23)
+                      (l <-stuff a) (fatal "only once")))
 
 (** ## Enums examples **)
 
@@ -311,9 +367,11 @@
         []           []
         [one ..rest] [(f one) ..(map f rest)]))
 
-(provide (map try-int ["12" "34"]) (!fail _) [])
+(provide (map try-int ["12" "34"])
+    (!fail _) [])
 
-(provide (map-enum try-int ('cons "12" 'nil)) (!fail _) 'nil)
+(provide (map-enum try-int ('cons "12" 'nil))
+    (!fail _) 'nil)
 
 (defn map-tree [f v]
     (match v
@@ -328,7 +386,8 @@
 
 (, 1 2)
 
-(provide (map-enum (fn [x] (+ x *num*)) ('cons 1 'nil)) *num* 23)
+(provide (map-enum (fn [x] (+ x *num*)) ('cons 1 'nil))
+    *num* 23)
 
 (defn map2 [f (, v rest)]
     (,
@@ -358,7 +417,8 @@
 (defn construct-tractors [abc florbs]
     {tractors abc florbs (get-florbs florbs)})
 
-(provide (construct-tractors "yes" 12) *extra-florbs* 40)
+(provide (construct-tractors "yes" 12)
+    *extra-florbs* 40)
 
 (** ## Composability **)
 
@@ -366,9 +426,13 @@
 
 (defn needs-two [x] (+ x *two*))
 
-(defn give-one [f n] (provide (f ()) *one* n))
+(defn give-one [f n]
+    (provide (f ())
+        *one* n))
 
-(defn give-two [f n] (provide (f ()) *two* n))
+(defn give-two [f n]
+    (provide (f ())
+        *two* n))
 
 (give-one (fn [()] (needs-one 12)) 5)
 
@@ -378,23 +442,30 @@
 
 (+ 2)
 
-(provide *lol* *lol* 12)
+(provide *lol*
+    *lol* 12)
 
-(provide (+ 2 *lol*) *lol* 34)
+(provide (+ 2 *lol*)
+    *lol* 34)
 
-(provide (+ 2 3) (!fail n) 12)
+(provide (+ 2 3)
+    (!fail n) 12)
 
-(provide (!fail 2) (!fail n) n)
+(provide (!fail 2)
+    (!fail n) n)
 
 (defn id [m] m)
 
-(provide (id (!fail 21)) (!fail n) 3)
+(provide (id (!fail 21))
+    (!fail n) 3)
 
 (deftype (list a)
     (nil)
         (cons a (list a)))
 
-(defn fail-or [d f] (provide (f ()) (!fail _) d))
+(defn fail-or [d f]
+    (provide (f ())
+        (!fail _) d))
 
 (fail-or 'nil (fn [()] (map-enum try-int ('cons "a" 'nil))))
 
@@ -405,23 +476,26 @@
         (none)   (!fail "Not an integer ${x}")
         (some x) x))
 
-(provide (map try-int ["12" "30"]) (!fail _) [])
+(provide (map try-int ["12" "30"])
+    (!fail _) [])
 
-(provide (map try-int ["12" "abc"]) (!fail _) [])
+(provide (map try-int ["12" "abc"])
+    (!fail _) [])
 
 (map-enum try-int ('cons "12" ('cons "30" 'nil)))
 
 ('cons "12" ('cons "30" 'nil))
 
-(provide (try-int "12") (!fail _) 34)
+(provide (try-int "12")
+    (!fail _) 34)
 
-(provide (try-int "a") (!fail _) 10)
+(provide (try-int "a")
+    (!fail _) 10)
 
-(provide
-    (match (string-to-int "a")
-        (none)   (!fail "a")
-        (some x) x)
-        (!fail _)
-        23)
+(provide (match (string-to-int "a")
+    (none)   (!fail "a")
+    (some x) x)
+    (!fail _) 23)
 
-(provide (!fail 21) (!fail n) 3)
+(provide (!fail 21)
+    (!fail n) 3)
