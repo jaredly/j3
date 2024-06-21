@@ -1,19 +1,89 @@
 (** ## Thunk Infrastructure **)
 
-(, (<-wait 1000) (<-log "yall") (<-wait 1000))
+(, (<-log "ok") (<-wait 1000) (<-log "yall") (<-wait 1000))
+
+(loop
+    20
+        (fn [c recur]
+        (if (= c 0)
+            []
+                [(<-random/int 2 13) ..(recur (- c 1))])))
 
 (** ## Guess a number **)
 
 (defn guess-my-number [()]
     (let [num (<-random/int 0 10)]
         (loop
-            0
+            1
                 (fn [count recur]
-                (if (= num (<-ask/int "Guess a number between 0 - 10"))
-                    "It took you ${(int-to-string count)} tries!"
-                        (recur (+ 1 count)))))))
+                (let [guess (<-ask/int "Guess a number between 0 - 10")]
+                    (if (= num guess)
+                        "It took you ${(int-to-string count)} tries!"
+                            (let [
+                            () (<-log
+                                   (if (< num guess)
+                                       "too high"
+                                           "too low"))]
+                            (recur (+ 1 count)))))))))
 
 (guess-my-number ())
+
+(defn guess-your-number [()]
+    (let [() (<-log "Think of number between 0 and 10")]
+        (loop
+            (, 1 0 10)
+                (fn [(, tries low high) recur]
+                (if (> low high)
+                    "Your number cannot exist, as it must be lower than ${(int-to-string high)} but higher than ${(int-to-string low)}"
+                        (if (= low high)
+                        "You number must be ${(int-to-string low)}"
+                            (let [half (/ (+ low high) 2)]
+                            (match (<-ask/options
+                                "Is it ${(int-to-string half)}?"
+                                    ["Too high" "Too low" "That's it!"])
+                                "Too high"   (recur (, (+ tries 1) low (- half 1)))
+                                "Too low"    (recur (, (+ tries 1) (+ half 1) high))
+                                "That's it!" "It took me ${(int-to-string tries)} tries."
+                                x            "Unrecognized answer: ${x}"))))))))
+
+(guess-your-number ())
+
+
+
+(defn ignore-log [f] (provide (f ()) (k <-log _) (ignore-log k)))
+
+(defn test-options [opts f]
+    (provide
+        (f ())
+            (k <-ask/options t _)
+            (let [() (<-log t)]
+            (match opts
+                []           (fatal "Ran out of options")
+                [one ..rest] (test-options rest (fn [()] (k one)))))))
+
+(ignore-log
+    (fn [()]
+        (test-options
+            ["Too high" "Too high" "Too low" "Too low"]
+                guess-your-number)))
+
+(test-options ["Too high" "Too high" "Too low"] guess-your-number)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 (** ## State Effect **)
 

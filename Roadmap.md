@@ -10,6 +10,9 @@ Which would also be enabled by this change.
 OK BUT BEFORE
 I go off on that chase, let's close the loop on `ask`s, and make a working "guess this number" game.
 
+TYPE SIGNATURES Shoudl also "debounce" on changes to the inferred height.
+
+a `do` block is short for (let [() a () b () c] d)
 
 # IDEAS
 

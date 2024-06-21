@@ -18,10 +18,24 @@ export type ProduceItem =
       }
     | {
           type: 'ask';
-          kind: 'int' | 'string' | 'bool';
+          kind: 'string' | 'bool';
+          options: null;
           text: string;
           f: ((v: any) => void) | number;
-          //   value?: number | string | boolean;
+      }
+    | {
+          type: 'ask';
+          kind: 'int';
+          options?: [number, number];
+          text: string;
+          f: ((v: number) => void) | number;
+      }
+    | {
+          type: 'ask';
+          kind: 'options';
+          options: string[];
+          text: string;
+          f: ((v: string) => void) | number;
       }
     | { type: 'inference-error'; err: InferenceError }
     | { type: 'type'; text: string; cst?: Node; name?: string }

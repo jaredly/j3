@@ -924,11 +924,7 @@
 
 (def efvbl (sanitize "(effects)"))
 
-;(deftype citem
-    (cplain j/expr)
-        (cdone (fn [j/expr] j/expr))
-        (** this expects a function that has args (result, new-effects, new-continuation). It supercedes the old continuation ... right? hrm. **)
-        (ceffect (fn [j/expr] j/expr)))
+
 
 (defn cps/j3 [trace expr]
     (match expr
@@ -981,7 +977,7 @@
         (elambda [] _ l)                             (fatal "no empty lambda args")
         (elambda [arg] body l)                       (left
                                                          (j/lambda
-                                                             [(opt-or (pat->j/pat arg) (j/pvar "_" l))
+                                                             [(opt-or (pat->j/pat arg) (j/pvar "$_arg" l))
                                                                  (j/pvar efvbl l)
                                                                  (j/pvar "$done" l)]
                                                                  (right
@@ -1023,7 +1019,9 @@
                                                                                (match args
                                                                                    []           (j/var "$unit" l)
                                                                                    [one]        one
-                                                                                   [one ..rest] (j/app (j/var "$co" l) [one (recur rest)] l))))]
+                                                                                   [one ..rest] (j/obj
+                                                                                                    [(left (, "type" (j/str "," [] l))) (left (, "0" one)) (left (, "1" (recur rest)))]
+                                                                                                        l))))]
                                                                  (<-
                                                                      (right
                                                                          (fn [done]
@@ -1074,7 +1072,7 @@
                                                                      (fn [done]
                                                                          (j/app
                                                                              (j/lambda
-                                                                                 [(opt-or (pat->j/pat pat) (j/pvar "_" l))]
+                                                                                 [(opt-or (pat->j/pat pat) (j/pvar "$_arg" l))]
                                                                                      (right
                                                                                      (match (go2 (let-> [body (<-lr (cps/j3 trace body))] (<- (left body))))
                                                                                          (left body)  (j/app done [body (j/var efvbl l)] l)
@@ -1124,15 +1122,15 @@
                                          (ebang pats)           (<-lr
                                                                     (left
                                                                         (j/lambda
-                                                                            [(j/pvar "_ignored_done" l)
+                                                                            [(j/pvar "$_ignored_done" l)
                                                                                 (loop
                                                                                 pats
                                                                                     (fn [pats recur]
                                                                                     (match pats
-                                                                                        []           (j/pvar "_" l)
-                                                                                        [one]        (opt-or (pat->j/pat one) (j/pvar "_" l))
+                                                                                        []           (j/pvar "$_" l)
+                                                                                        [one]        (opt-or (pat->j/pat one) (j/pvar "$_e" l))
                                                                                         [one ..rest] (j/pobj
-                                                                                                         [(, "0" (opt-or (pat->j/pat one) (j/pvar "_" l))) (, "1" (recur rest))]
+                                                                                                         [(, "0" (opt-or (pat->j/pat one) (j/pvar "$_e" l))) (, "1" (recur rest))]
                                                                                                              (none)
                                                                                                              l))))]
                                                                                 (left
@@ -1152,10 +1150,10 @@
                                                                                 pats
                                                                                     (fn [pats recur]
                                                                                     (match pats
-                                                                                        []           (j/pvar "_" l)
-                                                                                        [one]        (opt-or (pat->j/pat one) (j/pvar "_" l))
+                                                                                        []           (j/pvar "$_" l)
+                                                                                        [one]        (opt-or (pat->j/pat one) (j/pvar "$_" l))
                                                                                         [one ..rest] (j/pobj
-                                                                                                         [(, "0" (opt-or (pat->j/pat one) (j/pvar "_" l))) (, "1" (recur rest))]
+                                                                                                         [(, "0" (opt-or (pat->j/pat one) (j/pvar "$_" l))) (, "1" (recur rest))]
                                                                                                              (none)
                                                                                                              l))))]
                                                                                 (left
@@ -2101,6 +2099,8 @@ const valueToString = (v) => {
 return {
     '+': (a, e, d) => d((b, e, d) => d(a + b, e), e),
     '-': (a, e, d) => d((b, e, d) => d(a - b, e), e),
+    '/': (a, e, d) => d((b, e, d) => d(Math.floor(a / b), e), e),
+    '*': (a, e, d) => d((b, e, d) => d(a * b, e), e),
     '<': (a, e, d) => d((b, e, d) => d(a < b, e), e),
     '<=': (a, e, d) => d((b, e, d) => d(a <= b, e), e),
     '>': (a, e, d) => d((b, e, d) => d(a > b, e), e),
@@ -2216,14 +2216,26 @@ return {
       '<-wait'(k, v) {
         setTimeout(() => k(null, this), v);
       },
-      '<-ask-bool'(k, v) {
-        $ask('bool', v, v => k(v, this))
+      '<-ask/bool'(k, v) {
+        $ask('bool', v, null, v => k(v, this))
       },
-      '<-ask-string'(k, v) {
-        $ask('string', v, v => k(v, this))
+      '<-ask/string'(k, v) {
+        $ask('string', v, null, v => k(v, this))
       },
-      '<-ask-int'(k, v) {
-        $ask('int', v, v => k(v, this))
+      '<-ask/int'(k, v) {
+        $ask('int', v, null, v => k(v, this))
+      },
+      '<-ask/int-range'(k, v) {
+        $ask('int', v[0], [v[1][0], v[1][1]], v => k(v, this))
+      },
+      '<-ask/options'(k, v) {
+        function unwrapList(v) {
+          return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])];
+        }
+        $ask('options', v[0], unwrapList(v[1]), v => k(v, this))
+      },
+      '<-random/int'(k, v) {
+        k(Math.round(Math.random() * (v[1] - v[0]) + v[0]), this)
       }
 } **))
 
@@ -3587,8 +3599,8 @@ const $update = (v, waiting) => {
   $produce.push(v);
   respond($produce, waiting)
 }
-const $ask = (kind, text, f) => {
-  const self = {type: 'ask', text, kind, f: v => {
+const $ask = (kind, text, options, f) => {
+  const self = {type: 'ask', text, options, kind, f: v => {
     self.value = v;
     respond($produce, true);
     f(v)

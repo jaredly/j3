@@ -1,3 +1,4 @@
+import { ProduceItem } from '../../ide/ground-up/FullEvalator';
 import { blankAllNames } from '../../ide/ground-up/evaluators/analyze';
 import { AllNames } from '../../ide/ground-up/evaluators/interface';
 import { MetaDataMap } from '../UIState';
@@ -520,28 +521,35 @@ export function updateState(
 
         Object.entries(added.display).forEach(([key, produce]) => {
             const items = Array.isArray(produce) ? produce : [produce];
-            items.forEach((item) => {
-                if (typeof item !== 'string') {
-                    if (
-                        item.type === 'trigger' &&
-                        typeof item.f === 'function'
-                    ) {
-                        const id = state.asyncFns.nid++;
-                        state.asyncFns.fns[id] = item.f as (v: any) => void;
-                        item.f = id;
-                    }
-                    if (item.type === 'ask' && typeof item.f === 'function') {
-                        const id = state.asyncFns.nid++;
-                        state.asyncFns.fns[id] = item.f as (v: any) => void;
-                        item.f = id;
-                    }
-                }
-            });
+            handleAsyncFunctions(items, state);
             state.results!.tops[+key].produce.push(...items);
         });
     }
 
     return { ...state, nodes };
+}
+
+function handleAsyncFunctions(items: ProduceItem[], state: State) {
+    items.forEach((item) => {
+        if (typeof item !== 'string') {
+            if (item.type === 'trigger' && typeof item.f === 'function') {
+                const id = state.asyncFns.nid++;
+                const f = item.f;
+                state.asyncFns.fns[id] = ((ok) => {
+                    f((produce: ProduceItem[], waiting: boolean) => {
+                        handleAsyncFunctions(produce, state);
+                        ok(produce, waiting);
+                    });
+                }) as (v: any) => void;
+                item.f = id;
+            }
+            if (item.type === 'ask' && typeof item.f === 'function') {
+                const id = state.asyncFns.nid++;
+                state.asyncFns.fns[id] = item.f as (v: any) => void;
+                item.f = id;
+            }
+        }
+    });
 }
 
 function processUsages(

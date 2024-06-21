@@ -1,10 +1,47 @@
-import React, { ReactNode, useEffect, useRef } from 'react';
+import React, { ReactNode, useEffect, useRef, useState } from 'react';
 import { collectPaths, pathForIdx } from '../ide/ground-up/pathForIdx';
 import { InferenceError, ProduceItem } from '../ide/ground-up/FullEvalator';
 import { useGetStore } from './store/StoreCtx';
 import { showError } from './store/processTypeInference';
 import { RenderStatic } from './RenderStatic';
 import { highlightIdxs } from './highlightIdxs';
+
+const buttonStyle = {
+    background: '#191919',
+    padding: '4px 8px',
+    borderRadius: 4,
+    margin: 8,
+    color: '#aaa',
+    border: 'none',
+    cursor: 'pointer',
+} as const;
+
+const AskInt = ({ send }: { send: (v: number) => void }) => {
+    const [v, setV] = useState('');
+    return (
+        <div>
+            <input
+                style={{
+                    background: 'none',
+                    border: '1px solid rgba(200, 200, 200, 0.2)',
+                    color: 'inherit',
+                    outline: 'none',
+                }}
+                value={v}
+                onChange={(evt) => setV(evt.target.value)}
+            />
+            <button
+                disabled={!Number.isInteger(Number(v))}
+                style={buttonStyle}
+                onClick={() => {
+                    send(Number(v));
+                }}
+            >
+                OK
+            </button>
+        </div>
+    );
+};
 
 export const RenderProduceItem = ({
     ns,
@@ -33,28 +70,76 @@ export const RenderProduceItem = ({
         case 'trigger':
             const obj = store.asyncResults.triggers[value.f as number];
             return (
-                <div>
+                <div className="mouse-capture">
                     <button
                         onClick={() => {
                             store.respond.trigger(ns, value.f as number);
                         }}
+                        style={{
+                            ...buttonStyle,
+                            cursor: obj?.waiting ? 'progress' : 'pointer',
+                        }}
+                        disabled={obj?.waiting}
                     >
-                        {obj?.waiting ? 'Running...' : 'Trigger this yall'}
+                        {obj?.waiting ? 'Running...' : 'Run'}
                     </button>
-                    {obj?.items.map((item, i) => (
-                        <RenderProduceItem key={i} ns={ns} value={item} />
-                    ))}
+                    {obj?.items ? (
+                        <div style={{ padding: 8 }}>
+                            {obj.items.map((item, i) => (
+                                <RenderProduceItem
+                                    key={i}
+                                    ns={ns}
+                                    value={item}
+                                />
+                            ))}
+                        </div>
+                    ) : null}
                 </div>
             );
         case 'ask':
             switch (value.kind) {
+                case 'options':
+                    return (
+                        <div>
+                            {value.text}
+                            {value.options.map((opt, i) => (
+                                <button
+                                    key={i}
+                                    style={buttonStyle}
+                                    onClick={() => {
+                                        store.respond.ask(
+                                            ns,
+                                            value.f as number,
+                                            opt,
+                                        );
+                                    }}
+                                >
+                                    {opt}
+                                </button>
+                            ))}
+                        </div>
+                    );
                 case 'int':
-                    return <div>{value.text}</div>;
+                    return (
+                        <div>
+                            {value.text}
+                            <AskInt
+                                send={(num) => {
+                                    store.respond.ask(
+                                        ns,
+                                        value.f as number,
+                                        num,
+                                    );
+                                }}
+                            />
+                        </div>
+                    );
                 case 'bool':
                     return (
                         <div>
                             {value.text}
                             <button
+                                style={buttonStyle}
                                 onClick={() => {
                                     store.respond.ask(
                                         ns,
@@ -66,6 +151,7 @@ export const RenderProduceItem = ({
                                 True
                             </button>
                             <button
+                                style={buttonStyle}
                                 onClick={() => {
                                     store.respond.ask(
                                         ns,
@@ -83,7 +169,8 @@ export const RenderProduceItem = ({
                 default:
                     return (
                         <div>
-                            {value.text} Unknonwn ask kind: {value.kind}
+                            {(value as any).text} Unknonwn ask kind:{' '}
+                            {(value as any).kind}
                         </div>
                     );
             }

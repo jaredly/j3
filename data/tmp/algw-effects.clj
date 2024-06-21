@@ -2710,6 +2710,8 @@
                         (, "-" (tfns [tint tint] tint -1))
                         (, ">" (tfns [tint tint] tbool -1))
                         (, "<" (tfns [tint tint] tbool -1))
+                        (, "/" (tfns [tint tint] tint -1))
+                        (, "*" (tfns [tint tint] tint -1))
                         (, "=" (tfns [k k] tbool -1))
                         (, "!=" (tfns [k k] tbool -1))
                         (, ">=" (tfns [tint tint] tbool -1))
