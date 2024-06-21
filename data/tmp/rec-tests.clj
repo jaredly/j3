@@ -64,7 +64,7 @@
 (ignore-log
     (fn [()]
         (test-options
-            ["Too high" "Too high" "Too low" "Too low"]
+            ["Too high" "Too high" "Too low" "Too lows"]
                 guess-your-number)))
 
 (test-options ["Too high" "Too high" "Too low"] guess-your-number)

@@ -1025,7 +1025,10 @@
                                                                  (<-
                                                                      (right
                                                                          (fn [done]
-                                                                             (j/app (j/index (j/var efvbl l) (j/str name [] l) l) [done tuple] l)))))))
+                                                                             (j/app
+                                                                                 (j/index (j/var efvbl l) (j/str name [] l) l)
+                                                                                     [done tuple (j/var efvbl l)]
+                                                                                     l)))))))
         (erecord spread fields l)                    (go2
                                                          (let-> [
                                                              fields (map->
@@ -1145,7 +1148,7 @@
                                          (eeffectful k kl pats) (<-lr
                                                                     (left
                                                                         (j/lambda
-                                                                            [(j/pvar (sanitize k) kl)
+                                                                            [(j/pvar "$lbk$rb" kl)
                                                                                 (loop
                                                                                 pats
                                                                                     (fn [pats recur]
@@ -1155,10 +1158,27 @@
                                                                                         [one ..rest] (j/pobj
                                                                                                          [(, "0" (opt-or (pat->j/pat one) (j/pvar "$_" l))) (, "1" (recur rest))]
                                                                                                              (none)
-                                                                                                             l))))]
+                                                                                                             l))))
+                                                                                (j/pvar "k$lbeffects$rb" kl)]
                                                                                 (left
                                                                                 (j/block
-                                                                                    [(j/sexpr
+                                                                                    [(j/let
+                                                                                        (j/pvar (sanitize k) kl)
+                                                                                            (j/lambda
+                                                                                            [(j/pvar "value" kl) (j/pvar "effects" kl) (j/pvar "ignored_done" kl)]
+                                                                                                (right
+                                                                                                (j/app
+                                                                                                    (j/var "$lbk$rb" kl)
+                                                                                                        [(j/var "value" kl)
+                                                                                                        (j/obj
+                                                                                                        [(right (j/spread (j/var "k$lbeffects$rb" kl)))
+                                                                                                            (right (j/spread (j/var "effects" kl)))]
+                                                                                                            kl)
+                                                                                                        (j/var "ignored_done" kl)]
+                                                                                                        kl))
+                                                                                                kl)
+                                                                                            kl)
+                                                                                        (j/sexpr
                                                                                         (match (cps/j3 trace body)
                                                                                             (left body)  (j/app done [body (j/var efvbl l)] l)
                                                                                             (right body) (body done))

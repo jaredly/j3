@@ -5697,7 +5697,7 @@ $target[1].type === "some") {
 let name = $target[0];
 let args = $target[1][0];
 let l = $target[2];
-return go2($gt$gt$eq(map_$gt((x) => $gt$gt$eq($lt_lr(cps$slj3(trace)(x)))((v) => $lt_(v)))(args))((args) => ((tuple) => $lt_(right((done) => j$slapp(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))(cons(done)(cons(tuple)(nil)))(l))))(loop(args)((args) => (recur) => (($target) => {
+return go2($gt$gt$eq(map_$gt((x) => $gt$gt$eq($lt_lr(cps$slj3(trace)(x)))((v) => $lt_(v)))(args))((args) => ((tuple) => $lt_(right((done) => j$slapp(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))(cons(done)(cons(tuple)(cons(j$slvar(efvbl)(l))(nil))))(l))))(loop(args)((args) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return j$slvar("\$unit")(l)
 }
@@ -5915,7 +5915,7 @@ if ($target.type === "eeffectful") {
 let k = $target[0];
 let kl = $target[1];
 let pats = $target[2];
-return $lt_lr(left(j$sllambda(cons(j$slpvar(sanitize(k))(kl))(cons(loop(pats)((pats) => (recur) => (($target) => {
+return $lt_lr(left(j$sllambda(cons(j$slpvar("\$lbk\$rb")(kl))(cons(loop(pats)((pats) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return j$slpvar("\$_")(l)
 }
@@ -5934,7 +5934,7 @@ return j$slpobj(cons($co("0")(opt_or(pat_$gtj$slpat(one))(j$slpvar("\$_")(l))))(
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(pats)))(nil)))(left(j$slblock(cons(j$slsexpr((($target) => {
+})(pats)))(cons(j$slpvar("k\$lbeffects\$rb")(kl))(nil))))(left(j$slblock(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("ignored_done")(kl))(nil))))(right(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(j$slobj(cons(right(j$slspread(j$slvar("k\$lbeffects\$rb")(kl))))(cons(right(j$slspread(j$slvar("effects")(kl))))(nil)))(kl))(cons(j$slvar("ignored_done")(kl))(nil))))(kl)))(kl))(kl))(cons(j$slsexpr((($target) => {
 if ($target.type === "left") {
 {
 let body = $target[0];
@@ -5948,7 +5948,7 @@ return body(done)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)))
+})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil))))))(l)))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));

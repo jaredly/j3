@@ -1,4 +1,11 @@
 
+EASE OF USE things
+
+
+- [x] let's try having `k = (a, b, c) => $k(a, {...$k_effects, ...b}, c)`
+  - [x] yay that fixed it
+
+
 # I should really clean up the "produceItems" concept.
 like ... really there should be (0-1) product, (0-1) type maybe, (0-n) errors
 
