@@ -907,13 +907,13 @@
                       _                  (state-> (, [(, v name) ..wraps] flag (+ 1 idx)))]
                       (<- (j/var name -1)))))
 
-(defn <-lrt [idx t l v]
+(defn <-lrt [nidx t l v]
     (match v
         (left v)  (<- (t v))
         (right v) (let-> [
                       (, wraps flag idx) <-state
                       name               (<-
-                                             "tmp$${(int-to-string idx)}$${(int-to-string l)}v${(int-to-string idx)}")
+                                             "tmp$${(int-to-string nidx)}$${(int-to-string l)}v${(int-to-string idx)}")
                       _                  (state-> (, [(, v name) ..wraps] flag (+ 1 idx)))]
                       (<- (t (j/var name -1))))))
 
