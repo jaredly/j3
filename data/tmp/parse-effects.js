@@ -3207,13 +3207,13 @@ return fatal("no")
 throw new Error('Failed to match. ' + valueToString($target));
 })(expr))(cps$gt$gt$eq);
 
-const go2 = ({0: f}) => (({1: value, 0: {1: {0: flag}, 0: wraps}}) => (($target) => {
+const go2 = (l) => ({0: f}) => (({1: value, 0: {1: {0: flag}, 0: wraps}}) => (($target) => {
 if ($target === true) {
 return right((done) => foldr((($target) => {
 if ($target.type === "left") {
 {
 let value = $target[0];
-return j$slapp(done)(cons(value)(cons(j$slvar(efvbl)(-1))(nil)))(-1)
+return j$slapp(done)(cons(value)(cons(j$slvar(efvbl)(l))(nil)))(l)
 }
 }
 if ($target.type === "right") {
@@ -3223,13 +3223,13 @@ return value(done)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(value))(wraps)((inner) => ({1: vbl, 0: thunk}) => thunk(j$sllambda(cons(j$slpvar(vbl)(-1))(cons(j$slpvar(efvbl)(-1))(nil)))(right(inner))(-1))))
+})(value))(wraps)((inner) => ({1: vbl, 0: thunk}) => thunk(j$sllambda(cons(j$slpvar(vbl)(l))(cons(j$slpvar(efvbl)(l))(nil)))(right(inner))(l))))
 }
 return value
 throw new Error('Failed to match. ' + valueToString($target));
 })(or($ex$eq(wraps)(nil))(flag)))(f($co(nil)($co(false)(0))));
 
-const $lt_lrt = (t) => (v) => (($target) => {
+const $lt_lrt = (idx) => (t) => (l) => (v) => (($target) => {
 if ($target.type === "left") {
 {
 let v = $target[0];
@@ -3239,13 +3239,13 @@ return $lt_(t(v))
 if ($target.type === "right") {
 {
 let v = $target[0];
-return $gt$gt$eq($lt_state)(({1: {1: idx, 0: flag}, 0: wraps}) => $gt$gt$eq($lt_(`v${int_to_string(idx)}`))((name) => $gt$gt$eq(state_$gt($co(cons($co(v)(name))(wraps))($co(flag)($pl(1)(idx)))))((_) => $lt_(t(j$slvar(name)(-1))))))
+return $gt$gt$eq($lt_state)(({1: {1: idx, 0: flag}, 0: wraps}) => $gt$gt$eq($lt_(`tmp\$${int_to_string(idx)}\$${int_to_string(l)}v${int_to_string(idx)}`))((name) => $gt$gt$eq(state_$gt($co(cons($co(v)(name))(wraps))($co(flag)($pl(1)(idx)))))((_) => $lt_(t(j$slvar(name)(-1))))))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
 })(v);
 
-const $lt_lr = (v) => $lt_lrt((x) => x)(v);
+const $lt_lr = (idx) => (l) => (v) => $lt_lrt(idx)((x) => x)(l)(v);
 
 const pat_as_arg = (pat) => (($target) => {
 if ($target.type === "none") {
@@ -5563,7 +5563,7 @@ return j$sllet(pat)(compile$slj(init)(trace))(l)
 throw new Error('Failed to match. ' + valueToString($target));
 })(pat_$gtj$slpat(pat));
 
-const cps$slj3 = (trace) => (expr) => (($target) => {
+const cps$slj3 = (trace) => (idx) => (expr) => ((nidx) => (($lt_lr) => (($lt_lrt) => (($target) => {
 if ($target.type === "evar") {
 {
 let n = $target[0];
@@ -5599,7 +5599,7 @@ $target[1].type === "nil") {
 {
 let target = $target[0];
 let l = $target[2];
-return cps$slj3(trace)(target)
+return cps$slj3(trace)(nidx)(target)
 }
 }
 if ($target.type === "eapp") {
@@ -5607,7 +5607,19 @@ if ($target.type === "eapp") {
 let target = $target[0];
 let args = $target[1];
 let l = $target[2];
-return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(target)))((target) => $gt$gt$eq(map_$gt((arg) => $lt_lr(cps$slj3(trace)(arg)))(rev(args)(nil)))((args) => $lt_r(right((done) => loop($co(rev(args)(nil))(target))(({1: target, 0: args}) => (recur) => (($target) => {
+return go2(l)($gt$gt$eq($lt_lr(l)(cps$slj3(trace)(nidx)(target)))((target) => $gt$gt$eq(loop($co($pl(1)(nidx))(rev(args)(nil)))(({1: args, 0: nidx}) => (recur) => (($target) => {
+if ($target.type === "nil") {
+return $lt_($co(nidx)(nil))
+}
+if ($target.type === "cons") {
+{
+let one = $target[0];
+let rest = $target[1];
+return $gt$gt$eq($lt_lr(l)(cps$slj3(trace)(nidx)(one)))((item) => $gt$gt$eq(recur($co($pl(1)(nidx))(rest)))(({1: rest, 0: nidx}) => $lt_($co($pl(2)(nidx))(cons(item)(rest)))))
+}
+}
+throw new Error('Failed to match. ' + valueToString($target));
+})(args)))(({1: args, 0: nidx}) => $lt_r(right((done) => loop($co(rev(args)(nil))(target))(({1: target, 0: args}) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return fatal("no args")
 }
@@ -5657,7 +5669,7 @@ return body(j$slvar("\$done")(l))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(body))))(l))
+})(cps$slj3(trace)(nidx)(body))))(l))
 }
 }
 if ($target.type === "elambda" &&
@@ -5667,7 +5679,7 @@ let arg = $target[0][0];
 let rest = $target[0][1];
 let body = $target[1];
 let l = $target[2];
-return cps$slj3(trace)(elambda(cons(arg)(nil))(elambda(rest)(body)(l))(l))
+return cps$slj3(trace)(nidx)(elambda(cons(arg)(nil))(elambda(rest)(body)(l))(l))
 }
 }
 if ($target.type === "eaccess" &&
@@ -5699,7 +5711,7 @@ if ($target.type === "estr") {
 let prefix = $target[0];
 let items = $target[1];
 let l = $target[2];
-return go2($gt$gt$eq(map_$gt(({1: suffix, 0: expr}) => $gt$gt$eq($lt_lr(cps$slj3(trace)(expr)))((expr) => $lt_($co(expr)(suffix))))(items))((items) => $lt_(left(j$slstr(prefix)(items)(l)))))
+return go2(l)($gt$gt$eq(map_$gt(({1: suffix, 0: expr}) => $gt$gt$eq($lt_lr(l)(cps$slj3(trace)(nidx)(expr)))((expr) => $lt_($co(expr)(suffix))))(items))((items) => $lt_(left(j$slstr(prefix)(items)(l)))))
 }
 }
 if ($target.type === "eeffect" &&
@@ -5716,7 +5728,7 @@ $target[1].type === "some") {
 let name = $target[0];
 let args = $target[1][0];
 let l = $target[2];
-return go2($gt$gt$eq(map_$gt((x) => $gt$gt$eq($lt_lr(cps$slj3(trace)(x)))((v) => $lt_(v)))(args))((args) => ((tuple) => $lt_(right((done) => j$slapp(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))(cons(done)(cons(tuple)(cons(j$slvar(efvbl)(l))(nil))))(l))))(loop(args)((args) => (recur) => (($target) => {
+return go2(l)($gt$gt$eq(map_$gt((x) => $gt$gt$eq($lt_lr(l)(cps$slj3(trace)(nidx)(x)))((v) => $lt_(v)))(args))((args) => ((tuple) => $lt_(right((done) => j$slapp(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))(cons(done)(cons(tuple)(cons(j$slvar(efvbl)(l))(nil))))(l))))(loop(args)((args) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return j$slvar("\$unit")(l)
 }
@@ -5743,7 +5755,7 @@ if ($target.type === "erecord") {
 let spread = $target[0];
 let fields = $target[1];
 let l = $target[2];
-return go2($gt$gt$eq(map_$gt(({1: value, 0: name}) => $gt$gt$eq($lt_lr(cps$slj3(trace)(value)))((v) => $lt_(left($co(name)(v)))))(fields))((fields) => $gt$gt$eq((($target) => {
+return go2(l)($gt$gt$eq(map_$gt(({1: value, 0: name}) => $gt$gt$eq($lt_lr(l)(cps$slj3(trace)(nidx)(value)))((v) => $lt_(left($co(name)(v)))))(fields))((fields) => $gt$gt$eq((($target) => {
 if ($target.type === "none") {
 return $lt_(none)
 }
@@ -5751,7 +5763,7 @@ if ($target.type === "some" &&
 $target[0].type === ",") {
 {
 let s = $target[0][0];
-return $lt_lrt(some)(cps$slj3(trace)(s))
+return $lt_lrt(some)(l)(cps$slj3(trace)(nidx)(s))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -5782,7 +5794,7 @@ return left(j$slstr(name)(nil)(nl))
 if ($target.type === "some") {
 {
 let arg = $target[0];
-return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(arg)))((arg) => $lt_(left(j$slobj(cons(left($co("tag")(j$slstr(name)(nil)(nl))))(cons(left($co("arg")(arg)))(nil)))(l)))))
+return go2(l)($gt$gt$eq($lt_lr(l)(cps$slj3(trace)(nidx)(arg)))((arg) => $lt_(left(j$slobj(cons(left($co("tag")(j$slstr(name)(nil)(nl))))(cons(left($co("arg")(arg)))(nil)))(l)))))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
@@ -5808,7 +5820,7 @@ return fatal("is this provide a fn?")
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(go2($gt$gt$eq($lt_lr(cps$sleffects(trace)(l)(handlers)(done)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
+})(go2(l)($gt$gt$eq($lt_lr(l)(cps$sleffects(trace)(l)(handlers)(nidx)(done)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
 if ($target.type === "left") {
 {
 let body = $target[0];
@@ -5822,7 +5834,7 @@ return j$slcom("right")(body(done))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(target))))(l))(cons(effects)(nil))(l)))))))
+})(cps$slj3(trace)(nidx)(target))))(l))(cons(effects)(nil))(l)))))))
 }
 }
 if ($target.type === "elet" &&
@@ -5834,7 +5846,7 @@ let pat = $target[0][0][0];
 let expr = $target[0][0][1];
 let body = $target[1];
 let l = $target[2];
-return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(expr)))((value) => $lt_(right((done) => j$slapp(j$sllambda(cons(opt_or(pat_$gtj$slpat(pat))(j$slpvar("\$_arg")(l)))(nil))(right((($target) => {
+return go2(l)($gt$gt$eq($lt_lr(l)(cps$slj3(trace)(nidx)(expr)))((value) => $lt_(right((done) => j$slapp(j$sllambda(cons(opt_or(pat_$gtj$slpat(pat))(j$slpvar("\$_arg")(l)))(nil))(right((($target) => {
 if ($target.type === "left") {
 {
 let body = $target[0];
@@ -5848,7 +5860,7 @@ return body(done)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(go2($gt$gt$eq($lt_lr(cps$slj3(trace)(body)))((body) => $lt_(left(body)))))))(l))(cons(value)(nil))(l)))))
+})(go2(l)($gt$gt$eq($lt_lr(l)(cps$slj3(trace)(nidx)(body)))((body) => $lt_(left(body)))))))(l))(cons(value)(nil))(l)))))
 }
 }
 if ($target.type === "elet") {
@@ -5856,7 +5868,7 @@ if ($target.type === "elet") {
 let bindings = $target[0];
 let body = $target[1];
 let l = $target[2];
-return ((bindings) => cps$slj3(trace)(foldr(body)(bindings)((body) => (binding) => elet(cons(binding)(nil))(body)(l))))(expand_bindings(bindings)(l))
+return ((bindings) => cps$slj3(trace)(nidx)(foldr(body)(bindings)((body) => (binding) => elet(cons(binding)(nil))(body)(l))))(expand_bindings(bindings)(l))
 }
 }
 if ($target.type === "ematch") {
@@ -5864,7 +5876,7 @@ if ($target.type === "ematch") {
 let target = $target[0];
 let cases = $target[1];
 let l = $target[2];
-return go2($gt$gt$eq($lt_lr(cps$slj3(trace)(target)))((target) => $lt_(right((done) => j$slapp(j$sllambda(cons(j$slpvar("\$target")(l))(nil))(left(j$slblock(map(cases)(({1: body, 0: pat}) => compile_pat(pat)(j$slvar("\$target")(l))(j$slreturn((($target) => {
+return go2(l)($gt$gt$eq($lt_lr(l)(cps$slj3(trace)(nidx)(target)))((target) => $lt_(right((done) => j$slapp(j$sllambda(cons(j$slpvar("\$target")(l))(nil))(left(j$slblock(map(cases)(({1: body, 0: pat}) => compile_pat(pat)(j$slvar("\$target")(l))(j$slreturn((($target) => {
 if ($target.type === "left") {
 {
 let b = $target[0];
@@ -5878,22 +5890,22 @@ return b(done)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(body)))(l))(l)))))(l))(cons(target)(nil))(l)))))
+})(cps$slj3(trace)(nidx)(body)))(l))(l)))))(l))(cons(target)(nil))(l)))))
 }
 }
 return fatal(`no cps ${jsonify(expr)}`)
 throw new Error('Failed to match. ' + valueToString($target));
-})(expr);
+})(expr))($lt_lrt(nidx)))($lt_lr(nidx)))($pl(1)(idx));
 
 
-const cps$sleffects = (trace) => (l) => (handlers) => (done) => go2($gt$gt$eq(map_$gt(({1: {1: {1: body, 0: kind}, 0: nl}, 0: name}) => $gt$gt$eq((($target) => {
+const cps$sleffects = (trace) => (l) => (handlers) => (nidx) => (done) => go2(l)($gt$gt$eq(map_$gt(({1: {1: {1: body, 0: kind}, 0: nl}, 0: name}) => $gt$gt$eq((($target) => {
 if ($target.type === "eearmuffs") {
-return $lt_lr(cps$slj3(trace)(body))
+return $lt_lr(nidx)(l)(cps$slj3(trace)(nidx)(body))
 }
 if ($target.type === "ebang") {
 {
 let pats = $target[0];
-return $lt_lr(left(j$sllambda(cons(j$slpvar("\$_ignored_done")(l))(cons(loop(pats)((pats) => (recur) => (($target) => {
+return $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$_ignored_done")(l))(cons(loop(pats)((pats) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return j$slpvar("\$_")(l)
 }
@@ -5926,7 +5938,7 @@ return body(done)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)))
+})(cps$slj3(trace)(nidx)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)))
 }
 }
 if ($target.type === "eeffectful") {
@@ -5934,7 +5946,7 @@ if ($target.type === "eeffectful") {
 let k = $target[0];
 let kl = $target[1];
 let pats = $target[2];
-return $lt_lr(left(j$sllambda(cons(j$slpvar("\$lbk\$rb")(kl))(cons(loop(pats)((pats) => (recur) => (($target) => {
+return $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$lbk\$rb")(kl))(cons(loop(pats)((pats) => (recur) => (($target) => {
 if ($target.type === "nil") {
 return j$slpvar("\$_")(l)
 }
@@ -5967,11 +5979,11 @@ return body(done)
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(trace)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil))))))(l)))
+})(cps$slj3(trace)(nidx)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil))))))(l)))
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(kind))((value) => $lt_(left($co(name)(value)))))(handlers))((fields) => $gt$gt$eq($lt_lrt(some)(cps$slj3(trace)(evar("(effects)")(l))))((spread) => $lt_(left(j$slobj((($target) => {
+})(kind))((value) => $lt_(left($co(name)(value)))))(handlers))((fields) => $gt$gt$eq($lt_lrt(nidx)(some)(l)(cps$slj3(trace)(nidx)(evar("(effects)")(l))))((spread) => $lt_(left(j$slobj((($target) => {
 if ($target.type === "none") {
 return fields
 }
@@ -6062,7 +6074,7 @@ return foldl(one(global(name)(type)(l)(decl)))(map(constructors)(({1: {1: {0: ar
 throw new Error('Failed to match. ' + valueToString($target));
 })(top);
 
-const cps_test2 = (v) => eval_with($eval(builtins_cps))(j$slcompile(0)(provide_empty_effects(right(finish(cps$slj3(0)(v))))));
+const cps_test2 = (v) => eval_with($eval(builtins_cps))(j$slcompile(0)(provide_empty_effects(right(finish(cps$slj3(0)(0)(v))))));
 
 const rp = (x) => run$slnil_$gt(parse_expr(x));
 
@@ -6071,7 +6083,7 @@ if ($target.type === "texpr") {
 {
 let expr = $target[0];
 let l = $target[1];
-return cons(j$slsexpr(provide_empty_effects(right(finish(cps$slj3(trace)(expr)))))(l))(nil)
+return cons(j$slsexpr(provide_empty_effects(right(finish(cps$slj3(trace)(0)(expr)))))(l))(nil)
 }
 }
 if ($target.type === "tdef") {
@@ -6080,7 +6092,7 @@ let name = $target[0];
 let nl = $target[1];
 let body = $target[2];
 let l = $target[3];
-return cons(j$sllet(j$slpvar(sanitize(name))(nl))(finish(cps$slj3(trace)(body)))(l))(nil)
+return cons(j$sllet(j$slpvar(sanitize(name))(nl))(finish(cps$slj3(trace)(0)(body)))(l))(nil)
 }
 }
 if ($target.type === "ttypealias") {
@@ -6099,7 +6111,7 @@ return map(cases)(($case) => (({1: {1: {1: l, 0: args}, 0: nl}, 0: name2}) => j$
 throw new Error('Failed to match. ' + valueToString($target));
 })(top);
 
-const compile_cps$slj = (expr) => (trace) => finish(cps$slj3(trace)(expr));
+const compile_cps$slj = (expr) => (trace) => finish(cps$slj3(trace)(0)(expr));
 
 return $eval("({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt2, 3: compile2, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => builtins => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt2, compile2, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names, builtins,\nprelude: {'\$unit': null}})")(parse_and_compile((top) => state_f(parse_top(top))(state$slnil))((expr) => state_f(parse_expr(expr))(state$slnil))((top) => (type_info) => (ctx) => (($target) => {
 if ($target.type === "tvar") {
@@ -6121,7 +6133,7 @@ return join("")(cons("({\$type: 'thunk', f: (\$env, respond) => {\nconst \$produ
 }
 }
 throw new Error('Failed to match. ' + valueToString($target));
-})(cps$slj3(ctx)(expr))
+})(cps$slj3(ctx)(0)(expr))
 }
 }
 return fatal("non-expr has unbound effects??")
