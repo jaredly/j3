@@ -281,7 +281,9 @@ export const fnsEvaluator = (
                 const js = compiler.compileExpr(expr, typeInfo, meta);
                 const fn = new Function(
                     needed.length
-                        ? `{$env,${needed.map(sanitize).join(', ')}}`
+                        ? `{${unique(
+                              needed.map(sanitize).concat(['$env']),
+                          ).join(', ')}}`
                         : '_',
                     'return ' + js,
                 );
@@ -378,7 +380,9 @@ const compileStmt = ({
 
         const fn = new Function(
             needed.length
-                ? `{${needed.map(sanitize).concat(['$env']).join(', ')}}`
+                ? `{${unique(needed.map(sanitize).concat(['$env'])).join(
+                      ', ',
+                  )}}`
                 : '_',
             `{${
                 stmts.length === 1 && !namedValues?.length ? `return ${js}` : js

@@ -9,6 +9,22 @@
             []
                 [(<-random/int 2 13) ..(recur (- c 1))])))
 
+(provide (provide (provide (, <-top <-middle <-bottom)
+    (k <-top _) (provide (k "top")
+                    (k <-top _) (fatal "top 2")))
+    (k <-middle _) (provide (k "middle")
+                       (k <-middle _) (fatal "middle 2")))
+    (k <-bottom _) (provide (k "bottom")
+                       (k <-bottom _) (fatal "bottom 2")))
+
+(provide (provide (provide (, <-middle <-bottom <-top)
+    (k <-top _) (provide (k "top")
+                    (k <-top _) (fatal "top 2")))
+    (k <-middle _) (provide (k "middle")
+                       (k <-middle _) (fatal "middle 2")))
+    (k <-bottom _) (provide (k "bottom")
+                       (k <-bottom _) (fatal "bottom 2")))
+
 (** ## Guess a number **)
 
 (defn guess-my-number [()]
@@ -26,7 +42,7 @@
                                            "too low"))]
                             (recur (+ 1 count)))))))))
 
-(guess-my-number ())
+(guess-my-number () )
 
 (defn guess-your-number [()]
     (let [() (<-log "Think of number between 0 and 10")]
@@ -48,17 +64,17 @@
 
 (guess-your-number)
 
-
+(provide (<-log <-one)
+    (k <-one _) (k "hi"))
 
 (defn ignore-log [f]
     (provide (f)
-        (k <-log _) (ignore-log k)))
+        (k <-log _) (ignore-log k)
+        (!fails f)  f))
 
 (defn test-options [opts f]
     (provide (f)
-        (k <-ask/options t _) (let [
-                                  () ()
-                                  ;(<-log t)]
+        (k <-ask/options t _) (let [() (<-log t)]
                                   (match opts
                                       []           (!fail "Ran out of options")
                                       [one ..rest] (test-options rest (fn (k one)))))))
@@ -70,50 +86,6 @@
 (test-options ["Too high" "Too high" "Too low"] guess-your-number)
 
 
-
-(@ (, <-one <-two))
-
-(@ (<-one <-two))
-
-(fn (<-one <-two))
-
-(fn ((<-one) <-two))
-
-(fn (, <-one <-two))
-
-(fn (let [
-    _ <-one
-    _ <-two]
-    12)
-    )
-
-(fn (let [_ <-one] <-two))
-
-(fn (let [_ 1] (, <-one <-two)))
-
-(fn (let [_ <-one] (let [_ <-two] 2)))
-
-(fn (if <-one
-    <-two
-        <-three)
-    )
-
-(fn (<-one <-two))
-
-(defn aaaaaa [()]
-    (let [
-        () (<-log "")
-        _  (!fail "lol")
-        () (<-more 234)]
-        (match []
-            []           (!fail "Ran out of options")
-            [one ..rest] "as")))
-
-(fn (let [
-    () (<-one)
-    () (<-two)]
-    ())
-    )
 
 
 
@@ -393,17 +365,17 @@
     (,
         (f v)
             (match rest
-            (none)      (none)
+            (none)      none
             (some rest) (some (map2 f rest)))))
 
 (defn map-bin [f (, left v right)]
     (,
         (match left
-            (none)      (none)
+            (none)      none
             (some left) (some (map-bin f left)))
             (f v)
             (match right
-            (none)             (none)
+            (none)             none
             (some (, x right)) (some (, x (map-bin f right))))))
 
 (** ## Effects? **)

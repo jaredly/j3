@@ -1,4 +1,14 @@
 
+
+BUG I think there's an issue .. with ... the way that effects are overridden.
+
+- [ ] YES I think we'll have to keep a ... list of things ... and then a "most recent top" thing.
+  So we can determine what's the main dealio
+
+- [ ] whyyyy does it sometimes come back "max stack size reached"? hrmmm maybe the max size is lower if there's memory pressure or something?
+
+
+
 EASE OF USE things
 - (f)
 - (fn x)
