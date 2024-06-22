@@ -9,6 +9,8 @@
             []
                 [(<-random/int 2 13) ..(recur (- c 1))])))
 
+(** ## Levels of Providers **)
+
 (provide (provide (provide (, <-top <-middle <-bottom)
     (k <-top _) (provide (k "top")
                     (k <-top _) (fatal "top 2")))
@@ -24,6 +26,81 @@
                        (k <-middle _) (fatal "middle 2")))
     (k <-bottom _) (provide (k "bottom")
                        (k <-bottom _) (fatal "bottom 2")))
+
+(provide (provide (provide (, <-bottom <-middle <-top)
+    (k <-top _) (provide (k "top")
+                    (k <-top _) (fatal "top 2")))
+    (k <-middle _) (provide (k "middle")
+                       (k <-middle _) (fatal "middle 2")))
+    (k <-bottom _) (provide (k "bottom")
+                       (k <-bottom _) (fatal "bottom 2")))
+
+(** ## Provider continuity **)
+
+(defn c-> [n f]
+    (provide (f)
+        (k <-c ()) (c-> (+ n 1) (fn (k n)))))
+
+[(, (c-> 0 (fn [<-c <-c <-c <-c])) [0 1 2 3])
+    (,
+    (c-> 0 (fn (, <-c <-c ((fn (c-> 100 (fn (, <-c <-c))))) <-c <-c)))
+        (, 0 (, 1 (, (, 100 101) (, 2 3)))))
+    (,
+    (c-> 0 (fn (, <-c <-c ((fn (, <-c <-c ((fn <-c))))) <-c <-c)))
+        (, 0 (, 1 (, (, 2 (, 3 4)) (, 5 6)))))]
+
+(** Oooh ok this is a much simpler shadowing example **)
+
+(c-> 0 (fn (, <-c <-c ((fn (, <-c <-c ((fn <-c))))) <-c <-c)))
+
+(** ## Provider Shadowing **)
+
+(** This should be "inner" and "top outer", but if provider shadowing isn't working properly, it might say "inner" and "bottom outer" **)
+
+(provide (provide (provide (, <-inner <-outer)
+    (k <-outer _) (provide (k "top outer")
+                      (k <-outer _) (fatal "top 2")))
+    (k <-inner _) (provide (k "inner")
+                      (k <-inner _) (fatal "inner 2")))
+    (k <-outer _) (provide (k "bottom outer")
+                      (k <-outer _) (fatal "bottom 2")))
+
+(provide (provide (provide (, <-outer <-inner)
+    (k <-outer _) (provide (k "top outer")
+                      (k <-outer _) (fatal "top 2")))
+    (k <-inner _) (provide (k "inner")
+                      (k <-inner _) (fatal "inner 2")))
+    (k <-outer _) (provide (k "bottom outer")
+                      (k <-outer _) (fatal "bottom 2")))
+
+(defn one-> [name f]
+    (provide (f)
+        (k <-one _) (one-> name (fn (k name)))))
+
+(defn two-> [f]
+    (provide (f)
+        (k <-two _) (two-> (fn (k "two")))))
+
+(** The "outer" one-> should be shadowed by the inner one-> **)
+
+(one->
+    "outer one"
+        (fn (,
+        <-one
+            (two-> (fn (one-> "inner one" (fn (, <-one <-two <-one)))))
+            <-one)
+        ))
+
+
+
+(defn n-> [f]
+    (loop
+        (, 0 f)
+            (fn [(, n f) recur]
+            (provide (f)
+                (k <-c _) (recur (, (+ n 1) (fn (k n))))))))
+
+(n-> (fn [<-c <-c <-c <-c]))
 
 (** ## Guess a number **)
 
