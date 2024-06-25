@@ -234,13 +234,13 @@ export function updateState(
                     state.evaluator!,
                     tenv,
                 );
-                typesAndLocs.forEach(({ loc, type }) => {
-                    add(
-                        state.results!.tops[group[0].id].hover,
-                        loc,
-                        hoverType(type),
-                    );
-                });
+                // typesAndLocs.forEach(({ loc, type }) => {
+                //     add(
+                //         state.results!.tops[group[0].id].hover,
+                //         loc,
+                //         hoverType(type),
+                //     );
+                // });
                 state.results.tops[group[0].id].usages = usages;
                 if (result.type === 'err') {
                     state.results.groups[groupKey].typeFailed = true;
@@ -275,7 +275,9 @@ export function updateState(
             try {
                 res = state.evaluator.inference.infer(stmts, tenv);
             } catch (err) {
-                debugger;
+                // debugger;
+                console.log(err);
+                console.log((err as Error).stack);
                 group.forEach((item) => {
                     state.results!.tops[item.id].produce.push({
                         type: 'error',

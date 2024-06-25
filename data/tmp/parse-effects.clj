@@ -925,13 +925,10 @@
 
 (def efvbl (sanitize "(effects)"))
 
-
-
 (defn cps/j3 [trace idx expr]
     (let [
-        nidx  (+ 1 idx)
-        <-lr  (<-lr nidx)
-        <-lrt (<-lrt nidx)]
+        nidx (+ 1 idx)
+        <-lr (<-lr nidx)]
         (match expr
             (evar n l)                                   (left (j/var (sanitize n) l))
             (equot inner l)                              (left (j/raw "(${(quot/jsonify inner)})" l))
@@ -949,11 +946,8 @@
                                                                                            []           (<- (, nidx []))
                                                                                            [one ..rest] (let-> [
                                                                                                             item          (<-lr l (cps/j3 trace (+ 100 nidx) one))
-                                                                                                            (, nidx rest) (recur (, (+ 1 nidx) rest))
-                                                                                                            ;item
-                                                                                                            ;(<-lr l (cps/j3 trace nidx one))]
-                                                                                                            (<- (, (+ 2 nidx) [item ..rest]))))))
-                                                                 ;(map-> (fn [arg] (<-lr l (cps/j3 trace nidx arg))) (rev args []))]
+                                                                                                            (, nidx rest) (recur (, (+ 1 nidx) rest))]
+                                                                                                            (<- (, (+ 2 nidx) [item ..rest]))))))]
                                                                  (<-r
                                                                      (right
                                                                          (fn [done]
@@ -1003,11 +997,7 @@
                                                                                items)]
                                                                  (<- (left (j/str prefix items l)))))
             (eeffect name (none) l)                      (right
-                                                             (fn [done]
-                                                                 (j/app
-                                                                     done
-                                                                         [(j/index (j/var efvbl l) (j/str name [] l) l) (j/var efvbl l)]
-                                                                         l)))
+                                                             (fn [done] (j/app done [(resolve-effect l name) (j/var efvbl l)] l)))
             (eeffect name (some args) l)                 (go2
                                                              l
                                                                  (let-> [args (map-> (fn [x] (let-> [v (<-lr l (cps/j3 trace nidx x))] (<- v))) args)]
@@ -1024,10 +1014,7 @@
                                                                      (<-
                                                                          (right
                                                                              (fn [done]
-                                                                                 (j/app
-                                                                                     (j/index (j/var efvbl l) (j/str name [] l) l)
-                                                                                         [done tuple (j/var efvbl l)]
-                                                                                         l)))))))
+                                                                                 (j/app (resolve-effect l name) [done tuple (j/var efvbl l)] l)))))))
             (erecord spread fields l)                    (go2
                                                              l
                                                                  (let-> [
@@ -1037,7 +1024,7 @@
                                                                                 fields)
                                                                  spread (match spread
                                                                             (none)         (<- none)
-                                                                            (some (, s _)) (<-lrt some l (cps/j3 trace nidx s)))]
+                                                                            (some (, s _)) (<-lrt nidx some l (cps/j3 trace nidx s)))]
                                                                  (<-
                                                                      (left
                                                                          (j/obj
@@ -1053,23 +1040,51 @@
                                                                                 (<- (left (j/obj [(left (, "tag" (j/str name [] nl))) (left (, "arg" arg))] l))))))
             (eprovide target handlers l)                 (right
                                                              (fn [done]
-                                                                 (match (go2
-                                                                     l
-                                                                         (let-> [effects (<-lr l (cps/effects trace l handlers nidx done))]
-                                                                         (<-
+                                                                 (j/app
+                                                                     (j/lambda
+                                                                         []
                                                                              (left
-                                                                                 (j/app
-                                                                                     (j/lambda
-                                                                                         [(j/pvar efvbl l)]
-                                                                                             (right
-                                                                                             (match (cps/j3 trace nidx target)
-                                                                                                 (left body)  (j/com "left" (j/app done [body (j/var efvbl l)] l))
-                                                                                                 (right body) (j/com "right" (body done))))
+                                                                             (let [
+                                                                                 ndone     "$done${(int-to-string idx)}"
+                                                                                 save-name "$these_effects$${(int-to-string idx)}"]
+                                                                                 (j/block
+                                                                                     [(j/let (j/pvar save-name l) (j/raw "null" l) l)
+                                                                                         (j/let
+                                                                                         (j/pvar ndone l)
+                                                                                             (j/lambda
+                                                                                             [(j/pvar "$vbl" l) (j/pvar "$eff" l)]
+                                                                                                 (right
+                                                                                                 (j/app
+                                                                                                     done
+                                                                                                         [(j/var "$vbl" l)
+                                                                                                         (j/raw "$remove_me($eff, \"${save-name}\", ${save-name})" l)]
+                                                                                                         l))
+                                                                                                 l)
                                                                                              l)
-                                                                                         [effects]
-                                                                                         l)))))
-                                                                     (left v)  v
-                                                                     (right v) (fatal "is this provide a fn?"))))
+                                                                                         (let [done (j/var ndone l)]
+                                                                                         (j/return
+                                                                                             (match (go2
+                                                                                                 l
+                                                                                                     (let-> [
+                                                                                                     effects (<-lr l (cps/effects trace l handlers nidx save-name done))]
+                                                                                                     (<-
+                                                                                                         (left
+                                                                                                             (j/app
+                                                                                                                 (j/lambda
+                                                                                                                     [(j/pvar efvbl l)]
+                                                                                                                         (right
+                                                                                                                         (match (cps/j3 trace nidx target)
+                                                                                                                             (left body)  (j/com "left" (j/app done [body (j/var efvbl l)] l))
+                                                                                                                             (right body) (j/com "right" (body done))))
+                                                                                                                         l)
+                                                                                                                     [effects]
+                                                                                                                     l)))))
+                                                                                                 (left v)  v
+                                                                                                 (right v) (fatal "is this provide a fn?"))
+                                                                                                 l))])))
+                                                                             l)
+                                                                         []
+                                                                         l)))
             (elet [(, pat expr)] body l)                 (go2
                                                              l
                                                                  (let-> [value (<-lr l (cps/j3 trace nidx expr))]
@@ -1119,7 +1134,7 @@
                                                                                      l))))))
             _                                            (fatal "no cps ${(jsonify expr)}"))))
 
-(defn cps/effects [trace l handlers nidx done]
+(defn cps/effects [trace l handlers nidx save-name done]
     (go2
         l
             (let-> [
@@ -1180,10 +1195,12 @@
                                                                                                 (j/app
                                                                                                     (j/var "$lbk$rb" kl)
                                                                                                         [(j/var "value" kl)
-                                                                                                        (j/obj
-                                                                                                        [(right (j/spread (j/var "k$lbeffects$rb" kl)))
-                                                                                                            (right (j/spread (j/var "effects" kl)))]
-                                                                                                            kl)
+                                                                                                        (rebase-handlers
+                                                                                                        kl
+                                                                                                            name
+                                                                                                            (j/var "k$lbeffects$rb" kl)
+                                                                                                            (j/var "effects" kl)
+                                                                                                            save-name)
                                                                                                         (j/var "ignored_done" kl)]
                                                                                                         kl))
                                                                                                 kl)
@@ -1196,34 +1213,37 @@
                                                                                         (j/return (j/raw "function noop() {return noop}" l) l)]))
                                                                                 l))))]
                                (<- (left (, name value)))))
-                           handlers)
-            spread (<-lrt nidx some l (cps/j3 trace nidx (evar "(effects)" l)))]
+                           handlers)]
             (<-
                 (left
-                    (j/obj
-                        (match spread
-                            (none)   fields
-                            (some s) [(right (j/spread s)) ..fields])
-                            l))))))
+                    (push-handlers
+                        l
+                            (j/var efvbl l)
+                            save-name
+                            (j/assign save-name "=" (j/obj fields l) l)))))))
 
-(j/compile 0 (finish (cps/j3 0 0 (@ (let [xaa 10] (+ 2 xaa))))))
+(defn resolve-effect [l name]
+    (j/app (j/var "$get_effect" l) [(j/var efvbl l) (j/str name [] l)] l))
 
-(j/compile
-    0
-        (finish
-        (cps/j3
-            0
-                0
-                (rp
-                (@@
-                    (provide (+ 2 (!fail 4))
-                        (!fail n) n))))))
+(defn push-handlers [l current-effects save-name new-handlers]
+    (j/array
+        [(right (j/spread current-effects))
+            (left (j/str save-name [] l))
+            (left new-handlers)]
+            l))
+
+(defn rebase-handlers [l name previous-effects new-effects save-name]
+    (j/app
+        (j/var "$rebase_handlers" l)
+            [(j/str name [] l)
+            previous-effects
+            new-effects
+            (j/str save-name [] l)]
+            l))
+
+(def empty-effects (j/array [] -1))
 
 (cps-test2 (@ (+ 2 3)))
-
-(j/compile
-    0
-        (provide-empty-effects (right (finish (cps/j3 0 0 (@ (+ 2 3)))))))
 
 (,
     cps-test2
@@ -1263,6 +1283,17 @@
         (,
         (rp
             (@@
+                (provide (provide (provide (, <-inner <-outer)
+                    (k <-outer _) (provide (k "top outer")
+                                      (k <-outer _) (fatal "top 2")))
+                    (k <-inner _) (provide (k "inner")
+                                      (k <-inner _) (fatal "inner 2")))
+                    (k <-outer _) (provide (k "bottom outer")
+                                      (k <-outer _) (fatal "bottom 2")))))
+            (, "inner" "top outer"))
+        (,
+        (rp
+            (@@
                 (provide (+ *value* (<-set 12))
                     *value*     12
                     (k <-set v) (+
@@ -1271,6 +1302,17 @@
                                         *value*     20
                                         (k <-set _) (fatal "once"))))))
             17)
+        (,
+        (rp
+            (@@
+                (provide (,
+                    (provide <-v
+                        (k <-v _) (provide (k "inner")
+                                      (k <-v _) (fatal "inner twice")))
+                        <-v)
+                    (k <-v _) (provide (k "outer")
+                                  (k <-v _) (fatal "outer twice")))))
+            )
         (, (@ "hi") "hi")
         (, (@ "hi${23}") "hi23")
         (, (@ "hi ${(+ 2 3)}") "hi 5")
@@ -2041,6 +2083,32 @@
   $co: (x, _, done) => done((y, _, done) => done({type: ',', 0: x, 1: y})),
   $unit: 'unit',
   jsonify: (x, _, done) => done(JSON.stringify(x) ?? 'undefined'),
+  $get_effect: function(effects, name) {
+    if (!Array.isArray(effects)) throw new Error(`effects not an array: ${JSON.stringify(effects)}`)
+  for (let i=effects.length - 1; i>=0; i--) {
+    if (effects[i][name] != undefined) {
+      return effects[i][name];
+    }
+  }
+  throw new Error(`Effect ${name} not present in effects list ${effects.map(m => Object.keys(m)).join(' ; ')}`);
+},
+  $rebase_handlers: function(name, prev, next, save_name) {
+    /*let i = prev.length - 1;
+    for (; i>=0; i--) {
+      if (prev[i][name] != undefined) {
+        break;
+      }
+    }*/
+    const at = prev.indexOf(save_name);
+    if (at === -1) throw new Error(`got lost somewhere`)
+    return [...next, ...prev.slice(at + 1)]
+  },
+  $remove_me: (eff, save_name, mine) => {
+    if (!eff) return eff
+    const at = eff.indexOf(save_name)
+    if (at === -1) throw new Error('nope');
+    return eff.slice(0, at + 1)
+  },
 }})() **)
         )
 
@@ -3668,13 +3736,41 @@ dot
 (defn provide-empty-effects [jexp]
     (j/app
         (j/lambda [(j/pvar "$lbeffects$rb" -1)] jexp -1)
-            [(j/obj [] -1) ;(j/raw builtin-effects -1)]
+            [empty-effects]
             -1))
 
 ((eval
     (** ({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt2, 3: compile2, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => builtins => ({
 type: 'fns', parse_stmt2, parse_expr2, compile_stmt2, compile2, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names, builtins,
-prelude: {'$unit': null}}) **))
+prelude: {'$unit': null,
+$get_effect: function (effects, name) {
+  for (let i=effects.length - 1; i>=0; i--) {
+    if (effects[i][name] != undefined) {
+      return effects[i][name];
+    }
+  }
+  throw new Error(`Effect ${name} not present in effects list ${JSON.stringify(effects)}`);
+},
+
+  $rebase_handlers: function(name, prev, next, save_name) {
+    /*let i = prev.length - 1;
+    for (; i>=0; i--) {
+      if (prev[i][name] != undefined) {
+        break;
+      }
+    }*/
+    const at = prev.indexOf(save_name);
+    if (at === -1) throw new Error(`got lost somewhere`)
+    return [...next, ...prev.slice(at + 1)]
+  },
+  $remove_me: (eff, save_name, mine) => {
+    if (!eff) return eff
+    const at = eff.indexOf(save_name)
+    if (at === -1) throw new Error('nope');
+    return eff.slice(0, at + 1)
+  },
+}
+}) **))
     (parse-and-compile
         (fn [top] (state-f (parse-top top) state/nil))
             (fn [expr] (state-f (parse-expr expr) state/nil))
@@ -3703,9 +3799,9 @@ const $ask = (kind, text, options, f) => {
   $produce.push(self)
   respond($produce, true);
 }
-const $lbeffects$rb = **)
+const $lbeffects$rb = [ **)
                                                                     builtin-effects
-                                                                    (** ;
+                                                                    (** ];
 
  **)
                                                                     (j/compile-stmt

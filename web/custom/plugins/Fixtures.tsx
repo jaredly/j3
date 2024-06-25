@@ -75,13 +75,13 @@ export const fixturePlugin: NamespacePlugin<any, Data<Expr>, any> = {
         // Cursor is in the output section of a fixture, need to make a new fixture after it.
         for (let i = 0; i < parsed.fixtures.length; i++) {
             const fx = parsed.fixtures[i];
-            console.log('child', child.idx, fx.loc);
+            // console.log('child', child.idx, fx.loc);
             if (child.idx === fx.loc && child.at === 2) {
                 const loc = path.slice(0, cidx - 1).concat([
                     // { type: 'child', idx: child.idx, at: 2 },
                     { type: 'child', idx: parsed.fxid, at: i },
                 ]);
-                console.log('new loc', loc);
+                // console.log('new loc', loc);
                 return newNodeAfter(
                     loc,
                     map,
@@ -101,9 +101,9 @@ export const fixturePlugin: NamespacePlugin<any, Data<Expr>, any> = {
             }
         }
 
-        console.log(child.idx, parsed.test?.node.loc);
+        // console.log(child.idx, parsed.test?.node.loc);
 
-        console.log('parsed', path, node, parsed);
+        // console.log('parsed', path, node, parsed);
         return null;
     },
 
@@ -271,7 +271,7 @@ function StatusMessage({
                     evt.stopPropagation();
                     // So ... we want .... the .. evaluator? to tell us, how to turn a [value]
                     // into a [CST]. Right? Seems about right.
-                    console.log(res.found);
+                    // console.log(res.found);
                     // dispatch({
                     //     type: 'select',
                     //     at: [

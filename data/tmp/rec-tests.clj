@@ -1,3 +1,15 @@
+(defn main [argv]
+    (match <-next-event
+        ('mouse-button which 'down) (do-something)
+        'draw                       (draw-something)
+        ('key-press which)          (change-something)))
+
+(defn do-something [()] 1)
+
+(defn draw-something [()] 2)
+
+(defn change-something [()] 3)
+
 (** ## Thunk Infrastructure **)
 
 (, (<-log "ok") (<-wait 1000) (<-log "yall") (<-wait 1000))
@@ -40,6 +52,16 @@
 (defn c-> [n f]
     (provide (f)
         (k <-c ()) (c-> (+ n 1) (fn (k n)))))
+
+(c-> 10 (fn <-c))
+
+(, 1 2 3 4 5)
+
+(defn t-> [n f]
+    (provide (f)
+        (k <-t ()) (t-> (+ n 1) (fn (k n)))))
+
+(t-> 1000 (fn (c-> 0 (fn (, <-c (c-> 10 (fn (, <-c <-t <-c))) <-c)))))
 
 [(, (c-> 0 (fn [<-c <-c <-c <-c])) [0 1 2 3])
     (,
@@ -91,7 +113,22 @@
             <-one)
         ))
 
+(** We also need to release a set of handlers when we leave the scope **)
 
+(provide (,
+    (provide <-v
+        (k <-v _) (provide (k "inner")
+                      (k <-v _) (fatal "inner twice")))
+        <-v)
+    (k <-v _) (provide (k "outer")
+                  (k <-v _) (fatal "outer twice")))
+
+(provide (,
+    (provide 0
+        (k <-v _) (fatal "nope"))
+        <-v)
+    (k <-v _) (provide (k "outer")
+                  (k <-v _) (fatal "outer twice")))
 
 (defn n-> [f]
     (loop

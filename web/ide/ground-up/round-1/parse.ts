@@ -13,8 +13,13 @@ export const unwrapTuple3 = <a, b, c>(v: tuple<a, tuple<b, c>>): [a, b, c] => [
     v[1][1],
 ];
 
-export const unwrapArray = <a>(v: arr<a>): a[] =>
-    v.type === 'nil' ? [] : [v[0], ...unwrapArray(v[1])];
+export const unwrapArray = <a>(v: arr<a>): a[] => {
+    const res = [];
+    for (; v.type !== 'nil'; v = v[1]) {
+        res.push(v[0]);
+    }
+    return res;
+};
 
 export const wrapArray = <a>(v: Array<a>): arr<a> => {
     let res: arr<a> = { type: 'nil' };

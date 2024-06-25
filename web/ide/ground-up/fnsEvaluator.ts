@@ -165,6 +165,9 @@ export const fnsEvaluator = (
                 ) {
                     return;
                 }
+                // if (group[0].top.top === target) {
+                //     debugger;
+                // }
                 const result = this.addStatements(
                     group.map((g) => ({ stmt: g.stmt, names: g.allNames })),
                     env,
@@ -179,6 +182,10 @@ export const fnsEvaluator = (
                     } else {
                         console.error(`result for target top doesnt have js`);
                         console.log(result);
+                        console.warn('Display!');
+                        Object.keys(result.display).forEach((k) => {
+                            console.log(result.display[+k]);
+                        });
                     }
                     return;
                 }

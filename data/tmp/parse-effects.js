@@ -1,3 +1,5 @@
+// built by parse-1-args.js:algw-list.js:jcst.js on 6/24/2024, 10:41:22 PM
+
 const $env = {}
 const $builtins = (() => {function equal(a, b) {
     if (a === b) return true;
@@ -52,7 +54,11 @@ function unescapeString(n) {
 }
 
 function unwrapList(v) {
-    return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])];
+  const res = [];
+  for (;v.type !== 'nil';v=v[1]) {
+    res.push(v[0]);
+  }
+  return res;
 }
 
 function wrapList(v) {
@@ -365,7 +371,7 @@ let parse_tag = $eval("v => v.startsWith('\\'') ? {type: 'some', 0: v.slice(1)} 
 let is_earmuffs = $eval("v => v.startsWith('*') && v.endsWith('*') && v.length > 2")
 let is_bang = $eval("v => v.startsWith('!')")
 let is_arrow = $eval("v => v.startsWith('<-')")
-let builtins_cps = "(() => {return {\n  \$pl: (x, _, done) => done((y, _, done) => done(x + y)),\n  \$co: (x, _, done) => done((y, _, done) => done({type: ',', 0: x, 1: y})),\n  \$unit: 'unit',\n  jsonify: (x, _, done) => done(JSON.stringify(x) ?? 'undefined'),\n}})()"
+let builtins_cps = "(() => {return {\n  \$pl: (x, _, done) => done((y, _, done) => done(x + y)),\n  \$co: (x, _, done) => done((y, _, done) => done({type: ',', 0: x, 1: y})),\n  \$unit: 'unit',\n  jsonify: (x, _, done) => done(JSON.stringify(x) ?? 'undefined'),\n  \$get_effect: function(effects, name) {\n    if (!Array.isArray(effects)) throw new Error(\`effects not an array: \${JSON.stringify(effects)}\`)\n  for (let i=effects.length - 1; i>=0; i--) {\n    if (effects[i][name] != undefined) {\n      return effects[i][name];\n    }\n  }\n  throw new Error(\`Effect \${name} not present in effects list \${effects.map(m => Object.keys(m)).join(' ; ')}\`);\n},\n  \$rebase_handlers: function(name, prev, next, save_name) {\n    /*let i = prev.length - 1;\n    for (; i>=0; i--) {\n      if (prev[i][name] != undefined) {\n        break;\n      }\n    }*/\n    const at = prev.indexOf(save_name);\n    if (at === -1) throw new Error(\`got lost somewhere\`)\n    return [...next, ...prev.slice(at + 1)]\n  },\n  \$remove_me: (eff, save_name, mine) => {\n    if (!eff) return eff\n    const at = eff.indexOf(save_name)\n    if (at === -1) throw new Error('nope');\n    return eff.slice(0, at + 1)\n  },\n}})()"
 let opt_or = (v) => (d) => (($target) => {
 if ($target.type === "some") {
 let v = $target[0];
@@ -2519,7 +2525,6 @@ return foldl($co(nil)(one(global(name)(value)(l)(usage($unit)))))(map(args)(pat$
 } ;
 throw new Error('match fail 19782:' + JSON.stringify($target))
 })(pat)
-let provide_empty_effects = (jexp) => j$slapp(j$sllambda(cons(j$slpvar("\$lbeffects\$rb")(-1))(nil))(jexp)(-1))(cons(j$slobj(nil)(-1))(nil))(-1)
 let parse_id = (id) => (l) => (($target) => {
 if ($target === true) {
 return eeffect(id)(none)(l)
@@ -2811,6 +2816,10 @@ return $gt$gt$eq($lt_state)(({"1": {"1": idx, "0": flag}, "0": wraps}) => $gt$gt
 } ;
 throw new Error('match fail 30779:' + JSON.stringify($target))
 })(v)
+let resolve_effect = (l) => (name) => j$slapp(j$slvar("\$get_effect")(l))(cons(j$slvar(efvbl)(l))(cons(j$slstr(name)(nil)(l))(nil)))(l)
+let push_handlers = (l) => (current_effects) => (save_name) => (new_handlers) => j$slarray(cons(right(j$slspread(current_effects)))(cons(left(j$slstr(save_name)(nil)(l)))(cons(left(new_handlers))(nil))))(l)
+let empty_effects = j$slarray(nil)(-1)
+let rebase_handlers = (l) => (name) => (previous_effects) => (new_effects) => (save_name) => j$slapp(j$slvar("\$rebase_handlers")(l))(cons(j$slstr(name)(nil)(l))(cons(previous_effects)(cons(new_effects)(cons(j$slstr(save_name)(nil)(l))(nil)))))(l)
 let compile_pat$slj = (pat) => (target) => (inner) => (trace) => (($target) => {
 if ($target.type === "pany") {
 let l = $target[0];
@@ -3978,6 +3987,7 @@ return many(map(tpls)(({"0": expr}) => expr$slnames(bound)(expr)))
 } ;
 throw new Error('match fail 19534:' + JSON.stringify($target))
 })(expr)
+let provide_empty_effects = (jexp) => j$slapp(j$sllambda(cons(j$slpvar("\$lbeffects\$rb")(-1))(nil))(jexp)(-1))(cons(empty_effects)(nil))(-1)
 let parse_provide = (parse_expr) => (target) => (ml) => (cases) => (l) => $gt$gt$eq(parse_expr(target))((target) => $gt$gt$eq($lt_(pairs_plus(cst$slid("()")(ml))(cases)))((cases) => $gt$gt$eq(map_$gt(({"1": expr, "0": pat}) => $gt$gt$eq(parse_expr(expr))((expr) => $gt$gt$eq(parse_provide_pat(pat))(({"1": {"1": {"1": l, "0": epat}, "0": il}, "0": id}) => $lt_($co(id)($co(il)($co(epat)(expr)))))))(cases))((cases) => $lt_(eprovide(target)(cases)(l)))))
 let cps$slj = (trace) => (expr) => {
 let cps = cps$slj(trace);
@@ -4957,10 +4967,6 @@ let $lt_lr$$0 = $lt_lr;
 {
 let $lt_lr = $lt_lr$$0(nidx);
 {
-let $lt_lrt$$0 = $lt_lrt;
-{
-let $lt_lrt = $lt_lrt$$0(nidx);
-{
 let $target = expr;
 if ($target.type === "evar") {
 let n = $target[0];
@@ -5099,7 +5105,7 @@ if ($target.type === "eeffect") {
 let name = $target[0];
 if ($target[1].type === "none") {
 let l = $target[2];
-return right((done) => j$slapp(done)(cons(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))(cons(j$slvar(efvbl)(l))(nil)))(l))
+return right((done) => j$slapp(done)(cons(resolve_effect(l)(name))(cons(j$slvar(efvbl)(l))(nil)))(l))
 } 
 } ;
 if ($target.type === "eeffect") {
@@ -5125,7 +5131,7 @@ return j$slobj(cons(left($co("type")(j$slstr(",")(nil)(l))))(cons(left($co("0")(
 } ;
 throw new Error('match fail 31280:' + JSON.stringify($target))
 })(args));
-return $lt_(right((done) => j$slapp(j$slindex(j$slvar(efvbl)(l))(j$slstr(name)(nil)(l))(l))(cons(done)(cons(tuple)(cons(j$slvar(efvbl)(l))(nil))))(l)))
+return $lt_(right((done) => j$slapp(resolve_effect(l)(name))(cons(done)(cons(tuple)(cons(j$slvar(efvbl)(l))(nil))))(l)))
 }))
 } 
 } ;
@@ -5140,7 +5146,7 @@ return $lt_(none)
 if ($target.type === "some") {
 if ($target[0].type === ",") {
 let s = $target[0][0];
-return $lt_lrt(some)(l)(cps$slj3(trace)(nidx)(s))
+return $lt_lrt(nidx)(some)(l)(cps$slj3(trace)(nidx)(s))
 } 
 } ;
 throw new Error('match fail 27149:' + JSON.stringify($target))
@@ -5176,7 +5182,13 @@ if ($target.type === "eprovide") {
 let target = $target[0];
 let handlers = $target[1];
 let l = $target[2];
-return right((done) => (($target) => {
+return right((done) => j$slapp(j$sllambda(nil)(left((() => {
+let ndone = `\$done${int_to_string(idx)}`;
+{
+let save_name = `\$these_effects\$${int_to_string(idx)}`;
+return j$slblock(cons(j$sllet(j$slpvar(save_name)(l))(j$slraw("null")(l))(l))(cons(j$sllet(j$slpvar(ndone)(l))(j$sllambda(cons(j$slpvar("\$vbl")(l))(cons(j$slpvar("\$eff")(l))(nil)))(right(j$slapp(done)(cons(j$slvar("\$vbl")(l))(cons(j$slraw(`\$remove_me(\$eff, \"${save_name}\", ${save_name})`)(l))(nil)))(l)))(l))(l))(cons((() => {
+let done = j$slvar(ndone)(l);
+return j$slreturn((($target) => {
 if ($target.type === "left") {
 let v = $target[0];
 return v
@@ -5186,7 +5198,7 @@ let v = $target[0];
 return fatal("is this provide a fn?")
 } ;
 throw new Error('match fail 30863:' + JSON.stringify($target))
-})(go2(l)($gt$gt$eq($lt_lr(l)(cps$sleffects(trace)(l)(handlers)(nidx)(done)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
+})(go2(l)($gt$gt$eq($lt_lr(l)(cps$sleffects(trace)(l)(handlers)(nidx)(save_name)(done)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
 if ($target.type === "left") {
 let body = $target[0];
 return j$slcom("left")(j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l))
@@ -5196,7 +5208,10 @@ let body = $target[0];
 return j$slcom("right")(body(done))
 } ;
 throw new Error('match fail 26987:' + JSON.stringify($target))
-})(cps$slj3(trace)(nidx)(target))))(l))(cons(effects)(nil))(l)))))))
+})(cps$slj3(trace)(nidx)(target))))(l))(cons(effects)(nil))(l)))))))(l)
+})())(nil))))
+}
+})()))(l))(nil)(l))
 } ;
 if ($target.type === "elet") {
 if ($target[0].type === "cons") {
@@ -5255,10 +5270,8 @@ throw new Error('match fail 25755:' + JSON.stringify($target))
 }
 }
 }
-}
-}
 
-let cps$sleffects = (trace) => (l) => (handlers) => (nidx) => (done) => go2(l)($gt$gt$eq(map_$gt(({"1": {"1": {"1": body, "0": kind}, "0": nl}, "0": name}) => $gt$gt$eq((($target) => {
+let cps$sleffects = (trace) => (l) => (handlers) => (nidx) => (save_name) => (done) => go2(l)($gt$gt$eq(map_$gt(({"1": {"1": {"1": body, "0": kind}, "0": nl}, "0": name}) => $gt$gt$eq((($target) => {
 if ($target.type === "eearmuffs") {
 return $lt_lr(nidx)(l)(cps$slj3(trace)(nidx)(body))
 } ;
@@ -5312,7 +5325,7 @@ let rest = $target[1];
 return j$slpobj(cons($co("0")(opt_or(pat_$gtj$slpat(one))(j$slpvar("\$_")(l))))(cons($co("1")(recur(rest)))(nil)))(none)(l)
 } ;
 throw new Error('match fail 31508:' + JSON.stringify($target))
-})(pats)))(cons(j$slpvar("k\$lbeffects\$rb")(kl))(nil))))(left(j$slblock(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("ignored_done")(kl))(nil))))(right(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(j$slobj(cons(right(j$slspread(j$slvar("k\$lbeffects\$rb")(kl))))(cons(right(j$slspread(j$slvar("effects")(kl))))(nil)))(kl))(cons(j$slvar("ignored_done")(kl))(nil))))(kl)))(kl))(kl))(cons(j$slsexpr((($target) => {
+})(pats)))(cons(j$slpvar("k\$lbeffects\$rb")(kl))(nil))))(left(j$slblock(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("ignored_done")(kl))(nil))))(right(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(rebase_handlers(kl)(name)(j$slvar("k\$lbeffects\$rb")(kl))(j$slvar("effects")(kl))(save_name))(cons(j$slvar("ignored_done")(kl))(nil))))(kl)))(kl))(kl))(cons(j$slsexpr((($target) => {
 if ($target.type === "left") {
 let body = $target[0];
 return j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
@@ -5325,16 +5338,7 @@ throw new Error('match fail 31567:' + JSON.stringify($target))
 })(cps$slj3(trace)(nidx)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil))))))(l)))
 } ;
 throw new Error('match fail 30383:' + JSON.stringify($target))
-})(kind))((value) => $lt_(left($co(name)(value)))))(handlers))((fields) => $gt$gt$eq($lt_lrt(nidx)(some)(l)(cps$slj3(trace)(nidx)(evar("(effects)")(l))))((spread) => $lt_(left(j$slobj((($target) => {
-if ($target.type === "none") {
-return fields
-} ;
-if ($target.type === "some") {
-let s = $target[0];
-return cons(right(j$slspread(s)))(fields)
-} ;
-throw new Error('match fail 30307:' + JSON.stringify($target))
-})(spread))(l))))))
+})(kind))((value) => $lt_(left($co(name)(value)))))(handlers))((fields) => $lt_(left(push_handlers(l)(j$slvar(efvbl)(l))(save_name)(j$slassign(save_name)("=")(j$slobj(fields)(l))(l))))))
 let run$slj = (v) => $eval(`((\$lbeffects\$rb) => ${j$slcompile(0)(compile$slj(run$slnil_$gt(parse_expr(v)))(map$slnil))})({})`)
 let example_expr = run$slnil_$gt(parse_expr({"0":{"0":{"0":"match","1":12702,"type":"cst/id"},"1":{"0":{"0":"stmt","1":12703,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"sexpr","1":12705,"type":"cst/id"},"1":{"0":{"0":"expr","1":12706,"type":"cst/id"},"1":{"0":{"0":"l","1":12707,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12704,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"compile","1":12709,"type":"cst/id"},"1":{"0":{"0":"expr","1":12710,"type":"cst/id"},"1":{"0":{"0":"trace","1":12711,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12708,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"sdef","1":12713,"type":"cst/id"},"1":{"0":{"0":"name","1":12714,"type":"cst/id"},"1":{"0":{"0":"nl","1":12715,"type":"cst/id"},"1":{"0":{"0":"body","1":12716,"type":"cst/id"},"1":{"0":{"0":"l","1":12717,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12712,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"++","1":12719,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12721,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12724,"type":"cst/id"},"1":{"0":{"0":"name","1":12725,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12723,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12726,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"compile","1":12729,"type":"cst/id"},"1":{"0":{"0":"body","1":12730,"type":"cst/id"},"1":{"0":{"0":"trace","1":12731,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12728,"type":"cst/list"},"1":{"0":{"0":";\\n","1":{"type":"nil"},"2":12732,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12720,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12718,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"stypealias","1":12735,"type":"cst/id"},"1":{"0":{"0":"name","1":12736,"type":"cst/id"},"1":{"0":{"0":"_","1":12737,"type":"cst/id"},"1":{"0":{"0":"_","1":12738,"type":"cst/id"},"1":{"0":{"0":"_","1":12739,"type":"cst/id"},"1":{"0":{"0":"_","1":12740,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12734,"type":"cst/list"},"1":{"0":{"0":"/* type alias ","1":{"0":{"0":{"0":"name","1":12743,"type":"cst/id"},"1":{"0":" */","1":12744,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":12741,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sdeftype","1":12746,"type":"cst/id"},"1":{"0":{"0":"name","1":12747,"type":"cst/id"},"1":{"0":{"0":"nl","1":12748,"type":"cst/id"},"1":{"0":{"0":"type-arg","1":12749,"type":"cst/id"},"1":{"0":{"0":"cases","1":12750,"type":"cst/id"},"1":{"0":{"0":"l","1":12751,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12745,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"join","1":12753,"type":"cst/id"},"1":{"0":{"0":"\\n","1":{"type":"nil"},"2":12754,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"map","1":12757,"type":"cst/id"},"1":{"0":{"0":"cases","1":12758,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12760,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"case","1":12762,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"1":12761,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"let","1":12764,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":{"0":{"0":",","1":12767,"type":"cst/id"},"1":{"0":{"0":"name2","1":12768,"type":"cst/id"},"1":{"0":{"0":"nl","1":12769,"type":"cst/id"},"1":{"0":{"0":"args","1":12770,"type":"cst/id"},"1":{"0":{"0":"l","1":12771,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12766,"type":"cst/list"},"1":{"0":{"0":"case","1":12772,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12765,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12774,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12776,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12779,"type":"cst/id"},"1":{"0":{"0":"name2","1":12780,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12778,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12781,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12784,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"mapi","1":12786,"type":"cst/id"},"1":{"0":{"0":"0","1":12787,"type":"cst/id"},"1":{"0":{"0":"args","1":12788,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12790,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"i","1":12792,"type":"cst/id"},"1":{"0":{"0":"_","1":12793,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12791,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12795,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"(v","1":{"type":"nil"},"2":12797,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12800,"type":"cst/id"},"1":{"0":{"0":"i","1":12801,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12799,"type":"cst/list"},"1":{"0":{"0":") => ","1":{"type":"nil"},"2":12802,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12796,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12794,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12789,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12785,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12783,"type":"cst/list"},"1":{"0":{"0":"({type: \\\"","1":{"type":"nil"},"2":12804,"type":"cst/string"},"1":{"0":{"0":"name2","1":12806,"type":"cst/id"},"1":{"0":{"0":"\\\"","1":{"type":"nil"},"2":12807,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12810,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"mapi","1":12812,"type":"cst/id"},"1":{"0":{"0":"0","1":12813,"type":"cst/id"},"1":{"0":{"0":"args","1":12814,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12816,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"i","1":12818,"type":"cst/id"},"1":{"0":{"0":"_","1":12819,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12817,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12821,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":", ","1":{"type":"nil"},"2":12823,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12826,"type":"cst/id"},"1":{"0":{"0":"i","1":12827,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12825,"type":"cst/list"},"1":{"0":{"0":": v","1":{"type":"nil"},"2":12828,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12831,"type":"cst/id"},"1":{"0":{"0":"i","1":12832,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12830,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12822,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12820,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12815,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12811,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12809,"type":"cst/list"},"1":{"0":{"0":"});","1":{"type":"nil"},"2":12833,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12775,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12773,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12763,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12759,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12756,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12752,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12701,"type":"cst/list"}))
 let compile_top$slj = (top) => (trace) => (($target) => {
@@ -5427,7 +5431,7 @@ return j$sllet(j$slpvar(sanitize(name2))(nl))(foldr(j$slobj(cons(left($co("type"
 throw new Error('match fail 29692:' + JSON.stringify($target))
 })(top)
 let compile_cps$slj = (expr) => (trace) => finish(cps$slj3(trace)(0)(expr))
-return $eval("({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt2, 3: compile2, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => builtins => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt2, compile2, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names, builtins,\nprelude: {'\$unit': null}})")(parse_and_compile((top) => state_f(parse_top(top))(state$slnil))((expr) => state_f(parse_expr(expr))(state$slnil))((top) => (type_info) => (ctx) => (($target) => {
+return $eval("({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt2, 3: compile2, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => builtins => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt2, compile2, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names, builtins,\nprelude: {'\$unit': null,\n\$get_effect: function (effects, name) {\n  for (let i=effects.length - 1; i>=0; i--) {\n    if (effects[i][name] != undefined) {\n      return effects[i][name];\n    }\n  }\n  throw new Error(\`Effect \${name} not present in effects list \${JSON.stringify(effects)}\`);\n},\n\n  \$rebase_handlers: function(name, prev, next, save_name) {\n    /*let i = prev.length - 1;\n    for (; i>=0; i--) {\n      if (prev[i][name] != undefined) {\n        break;\n      }\n    }*/\n    const at = prev.indexOf(save_name);\n    if (at === -1) throw new Error(\`got lost somewhere\`)\n    return [...next, ...prev.slice(at + 1)]\n  },\n  \$remove_me: (eff, save_name, mine) => {\n    if (!eff) return eff\n    const at = eff.indexOf(save_name)\n    if (at === -1) throw new Error('nope');\n    return eff.slice(0, at + 1)\n  },\n}\n})")(parse_and_compile((top) => state_f(parse_top(top))(state$slnil))((expr) => state_f(parse_expr(expr))(state$slnil))((top) => (type_info) => (ctx) => (($target) => {
 if ($target.type === "tvar") {
 return j$slcompile_stmts(ctx)(map(compile_top_cps$slj(top)(ctx))(map$slstmt(simplify_js)))
 } ;
@@ -5443,7 +5447,7 @@ return fatal("why is an effectful expr a left?")
 } ;
 if ($target.type === "right") {
 let f = $target[0];
-return join("")(cons("({\$type: 'thunk', f: (\$env, respond) => {\nconst \$produce = [];\nconst \$update = (v, waiting) => {\n  \$produce.push(v);\n  respond(\$produce, waiting)\n}\nconst \$ask = (kind, text, options, f) => {\n  const self = {type: 'ask', text, options, kind, f: v => {\n    self.value = v;\n    respond(\$produce, true);\n    f(v)\n  }}\n  \$produce.push(self)\n  respond(\$produce, true);\n}\nconst \$lbeffects\$rb =")(cons(builtin_effects)(cons(";\n\n")(cons(j$slcompile_stmt(ctx)(map$slstmt(simplify_js)(j$slsexpr(f(j$slraw("((final_value) => {\n  \$env.valueToString(final_value, 0, s => \$update(s, false))\n})")(l)))(l))))(cons("\n}})")(nil))))))
+return join("")(cons("({\$type: 'thunk', f: (\$env, respond) => {\nconst \$produce = [];\nconst \$update = (v, waiting) => {\n  \$produce.push(v);\n  respond(\$produce, waiting)\n}\nconst \$ask = (kind, text, options, f) => {\n  const self = {type: 'ask', text, options, kind, f: v => {\n    self.value = v;\n    respond(\$produce, true);\n    f(v)\n  }}\n  \$produce.push(self)\n  respond(\$produce, true);\n}\nconst \$lbeffects\$rb = [")(cons(builtin_effects)(cons("];\n\n")(cons(j$slcompile_stmt(ctx)(map$slstmt(simplify_js)(j$slsexpr(f(j$slraw("((final_value) => {\n  \$env.valueToString(final_value, 0, s => \$update(s, false))\n})")(l)))(l))))(cons("\n}})")(nil))))))
 } ;
 throw new Error('match fail 32091:' + JSON.stringify($target))
 }

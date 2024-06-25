@@ -1,4 +1,121 @@
 
+# OH wow ok
+so I have not understood the drill here
+
+```
+ability C where
+    cC : () ->{C} Nat
+
+ign : '{g, C} (Nat, Nat) ->{g} (Nat, (Nat, Nat))
+ign f = handle !f with cases
+    { pure } -> (10, pure)
+    { cC _ -> k } -> (100, (100, 100))
+
+> handle (5, !cC) with cases
+    { pure } -> (1, (3, pure))
+    { cC _ -> k } -> (2, ign '(k 51))
+
+-> (2, (10, (5, 51)))
+```
+
+so, it looks like "pure" definitely is needed, in order for types to make sense.
+but pure gets skipped on the one hand, because cC is called, but its used on the second hand indeed.
+
+```
+(2, <- comes from the final ness of the cC handler
+    (10, <- comes from the pure case of ign
+         (5, <- from the main expression
+             51 <- from the value passed to `k`
+                )))
+```
+
+pretty crazy.
+So, gotta fix that for sure.
+and the inference around it too.
+
+
+
+
+
+
+
+
+
+alsoooo wow unison can't infer the removal of an effect????
+like, this annotation is *required* for it to work right. ouch.
+```
+ign : '{g, C} (Nat, Nat) ->{g} (Nat, (Nat, Nat))
+ign f = handle !f with cases
+    { pure } -> (10, pure)
+    { cC _ -> k } -> (100, (100, 100))
+```
+
+
+
+# One world thoughts
+
+ok, so we've established that: to register a compiler, you need to ... like take an action.
+Right?
+and ... ok so maybe a "compiler" is /ought to be a "namespace that fits a certain whatsit"?
+welllll but there's the "convert this fn into something legible by the js backend"
+... I wonder if I should abstract that out at all ...
+yeahh ok, so the "compiler" is "a toplevel expression that evaluates to an object fitting the expected shape".
+
+Anyway, so then you've registered your compiler ... although, should we still allow the mix & match of
+different /aspects/ of the compiler? seems nice to iterate on them separately. yeah.
+so ... but then they'd get bundled together? yeah nvm let's have it all be one thing.
+we can use normal abstraction things to split things out.
+
+OK OK OK
+so
+there's a table somewhere, with:
+- the toplevel id where this compiler came from
+- what this compiler has been named (established at "time of compilation" maybe idk)
+- timestamp of compilation
+- the produced sourcecode
+
+
+
+hmmm do I want shallow handlers? I think so? that's what unison does, at least..
+
+
+#
+
+NEXTT UP:
+- where we have `ndone` in the eprovider gen, we
+- make a vbl for the effects obj, but uninitialized
+- then `ndone` actually becomes a lambda where we remove our effects...
+  - using the now-set variable
+- and so, when we have our effects obj, we actually do `(our_effects = theobj)`.
+  GREAT!
+
+I think it should work.
+
+
+oof.
+ok
+so, the thing is, we have been replaced.
+
+
+
+
+
+// MAYBE IDK
+wait no we need to do it before then.
+- acccctually it's like, as soon as we show up in the provider handler, right? (ACTUALLY I think this is working.)
+  -> OR if we don't, then definitely afterwards. right?
+    -> OK so ... it's the "main course" next that
+
+
+# Name ideas
+
+"an area to do stuff, to try stuff out"
+"sandbox" "playground"
+"porch" "stoop"
+(stoic js)
+
+#
+
 
 BUG I think there's an issue .. with ... the way that effects are overridden.
 
@@ -6,6 +123,11 @@ BUG I think there's an issue .. with ... the way that effects are overridden.
   So we can determine what's the main dealio
 
 - [ ] whyyyy does it sometimes come back "max stack size reached"? hrmmm maybe the max size is lower if there's memory pressure or something?
+
+ok OOF we have some bug
+
+
+
 
 
 
@@ -16,6 +138,29 @@ EASE OF USE things
 
 - [x] let's try having `k = (a, b, c) => $k(a, {...$k_effects, ...b}, c)`
   - [x] yay that fixed it
+
+
+# OOf to get around the stack limit thing
+had to roll my own map.
+
+```
+const map = (values) => (f) => {
+    let top = nil;
+    let last = null;
+    while (values.type === 'cons') {
+        const nv = { type: 'cons', 0: f(values[0]), 1: nil };
+        if (top === nil) {
+            top = nv;
+        } else {
+            last[1] = nv;
+        }
+        last = nv;
+        values = values[1];
+    }
+    return top;
+};
+```
+
 
 
 # I should really clean up the "produceItems" concept.

@@ -167,8 +167,7 @@ createServer(async (req, res) => {
 
         mkdirSync(path.dirname(full), { recursive: true });
 
-        let state: NUIState =
-            JSON.parse(await readBody(req));
+        let state: NUIState = JSON.parse(await readBody(req));
         const last = state.history[state.history.length - 1].ts;
         try {
             state = compressState(state);
@@ -182,7 +181,7 @@ createServer(async (req, res) => {
         if (existsSync(full)) {
             const prev: NUIState = JSON.parse(readFileSync(full, 'utf-8'));
             const plast = prev.history[prev.history.length - 1];
-            if (plast.ts > last) {
+            if (plast && plast.ts > last) {
                 console.warn(
                     `AHH we lost some history somehow: plast vs last: `,
                     plast.ts - last,
@@ -203,7 +202,7 @@ createServer(async (req, res) => {
 
         // Two step to get around the laptop hard-stopping when the battery gives out
         writeFileSync(full + '.next', raw);
-        renameSync(full + '.next', full)
+        renameSync(full + '.next', full);
 
         try {
             const { clj } = serializeFile(state);

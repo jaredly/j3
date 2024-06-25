@@ -75,7 +75,7 @@ export const evaluatorPlugin: NamespacePlugin<
                                             // TODO `toFile` should know what to do with caches!
                                             // Alsooooo should `store` expose a way to talk to the
                                             // web worker(s)? Seems like it.
-                                            text = ev.toFile!(
+                                            text = ev.toFile(
                                                 store.getState(),
                                                 id,
                                                 // Here's the way to indicate that we should include plugins
@@ -89,7 +89,11 @@ export const evaluatorPlugin: NamespacePlugin<
                                         }
 
                                         return fetch(urlForId(options), {
-                                            body: text,
+                                            body:
+                                                `// built by ${
+                                                    ev.id
+                                                } on ${new Date().toLocaleString()}\n\n` +
+                                                text,
                                             method: 'POST',
                                         });
                                     }}

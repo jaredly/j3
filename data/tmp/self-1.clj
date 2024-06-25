@@ -481,7 +481,11 @@ function unescapeString(n) {
 }
 
 function unwrapList(v) {
-    return v.type === 'nil' ? [] : [v[0], ...unwrapList(v[1])];
+  const res = [];
+  for (;v.type !== 'nil';v=v[1]) {
+    res.push(v[0]);
+  }
+  return res;
 }
 
 function wrapList(v) {
