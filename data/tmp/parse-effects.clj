@@ -1110,9 +1110,34 @@
                                         (j/let
                                         (j/pvar ndone l)
                                             (j/lambda
-                                            [(j/pvar "$vbl" l) (j/pvar "$eff" l)]
-                                                (right
-                                                (j/app
+                                            [(j/pvar "$vbl" l) (j/pvar "$eff" l) (j/pvar "more_done" l)]
+                                                (left
+                                                (j/block
+                                                    ;[(j/return
+                                                        (j/app
+                                                            done
+                                                                [(j/var "$vbl" l)
+                                                                (j/raw "$remove_me($eff, \"${save-name}\", ${save-name})" l)]
+                                                                l)
+                                                            l)]
+                                                        [(j/sexpr
+                                                        (j/assign
+                                                            "$eff"
+                                                                "="
+                                                                (j/raw "$remove_me($eff, \"${save-name}\", ${save-name})" l)
+                                                                l)
+                                                            l)
+                                                        (j/if
+                                                        (j/var "more_done" l)
+                                                            (j/block
+                                                            [(j/return
+                                                                (j/app (j/var "more_done" l) [(j/var "$vbl" l) (j/var "$eff" l) done] l)
+                                                                    l)])
+                                                            (some
+                                                            (j/block [(j/return (j/app done [(j/var "$vbl" l) (j/var "$eff" l)] l) l)]))
+                                                            l)
+                                                        ;(j/raw "more_done ? more_done($vbl, $eff, " l)])
+                                                    ;(j/app
                                                     done
                                                         [(j/var "$vbl" l)
                                                         (j/raw "$remove_me($eff, \"${save-name}\", ${save-name})" l)]

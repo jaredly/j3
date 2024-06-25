@@ -1,4 +1,4 @@
-// built by parse-1-args.js:algw-list.js:jcst.js on 6/25/2024, 10:37:12 AM
+// built by parse-1-args.js:algw-list.js:jcst.js on 6/25/2024, 1:41:58 PM
 
 const $env = {}
 const $builtins = (() => {function equal(a, b) {
@@ -5263,7 +5263,7 @@ return right((done) => j$slapp(j$sllambda(nil)(left((() => {
 let ndone = `\$done${int_to_string(idx)}`;
 {
 let save_name = `\$these_effects\$${int_to_string(idx)}`;
-return j$slblock(cons(j$sllet(j$slpvar(save_name)(l))(j$slraw("null")(l))(l))(cons(j$sllet(j$slpvar(ndone)(l))(j$sllambda(cons(j$slpvar("\$vbl")(l))(cons(j$slpvar("\$eff")(l))(nil)))(right(j$slapp(done)(cons(j$slvar("\$vbl")(l))(cons(j$slraw(`\$remove_me(\$eff, \"${save_name}\", ${save_name})`)(l))(nil)))(l)))(l))(l))(cons((() => {
+return j$slblock(cons(j$sllet(j$slpvar(save_name)(l))(j$slraw("null")(l))(l))(cons(j$sllet(j$slpvar(ndone)(l))(j$sllambda(cons(j$slpvar("\$vbl")(l))(cons(j$slpvar("\$eff")(l))(cons(j$slpvar("more_done")(l))(nil))))(left(j$slblock(cons(j$slsexpr(j$slassign("\$eff")("=")(j$slraw(`\$remove_me(\$eff, \"${save_name}\", ${save_name})`)(l))(l))(l))(cons(j$slif(j$slvar("more_done")(l))(j$slblock(cons(j$slreturn(j$slapp(j$slvar("more_done")(l))(cons(j$slvar("\$vbl")(l))(cons(j$slvar("\$eff")(l))(cons(done)(nil))))(l))(l))(nil)))(some(j$slblock(cons(j$slreturn(j$slapp(done)(cons(j$slvar("\$vbl")(l))(cons(j$slvar("\$eff")(l))(nil)))(l))(l))(nil))))(l))(nil)))))(l))(l))(cons((() => {
 let done = j$slvar(ndone)(l);
 return j$slreturn((($target) => {
 if ($target.type === "left") {

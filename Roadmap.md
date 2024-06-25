@@ -1,4 +1,26 @@
 
+# Ugh still not
+quite on it
+
+
+```clj
+(defn c-> [n f]
+    (provide (f)
+        (k <-c ()) (c-> (+ n 1) (fn (k n)))))
+
+; does not work
+(c-> 0 (fn (, (c-> 100 (fn (, <-c <-c))) <-c)))
+
+; does work
+(c-> 0 (fn (, (c-> 100 (fn <-c)) <-c)))
+```
+
+
+
+
+
+
+
 # OH wow ok
 so I have not understood the drill here
 
