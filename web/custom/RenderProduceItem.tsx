@@ -290,7 +290,7 @@ export const JumpTo = ({
 const RenderInferenceError = ({ err }: { err: InferenceError }) => {
     if (err.type === 'missing') {
         return (
-            <div style={{ color: 'rgb(255,50,50)' }}>
+            <div style={{ color: 'rgb(255,150,150)' }}>
                 Missing (or erroring) terms:
                 {err.missing.map((m, i) => (
                     <div key={i}>
@@ -304,7 +304,7 @@ const RenderInferenceError = ({ err }: { err: InferenceError }) => {
     }
     if (err.type === 'types') {
         return (
-            <div style={{ color: 'rgb(255,50,50)' }}>
+            <div style={{ color: 'rgb(255,150,150)' }}>
                 <div>Types don't match</div>
                 <JumpTo loc={err.one.loc}>
                     <RenderStatic node={err.one} />
@@ -318,7 +318,7 @@ const RenderInferenceError = ({ err }: { err: InferenceError }) => {
     }
     if (err.type === 'nested') {
         return (
-            <div style={{ color: 'rgb(255,50,50)' }}>
+            <div style={{ color: 'rgb(255,150,150)' }}>
                 Nested
                 <RenderInferenceError err={err.outer} />
                 -&gt;
