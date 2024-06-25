@@ -14,6 +14,12 @@
 
 (, (<-log "ok") (<-wait 1000) (<-log "yall") (<-wait 1000))
 
+(provide (, 2 <-c)
+    (k <-c _) (,
+                  4
+                      (provide (k 5)
+                      (_ <-c _) (fatal "nope"))))
+
 (loop
     20
         (fn [c recur]
@@ -52,6 +58,14 @@
 (defn c-> [n f]
     (provide (f)
         (k <-c ()) (c-> (+ n 1) (fn (k n)))))
+
+(, 1 2)
+
+(loop
+    (, 0 (fn (, <-c <-c)))
+        (fn [(, n f) recur]
+        (provide (f)
+            (k <-c _) (recur (, (+ n 1) (fn (k n)))))))
 
 (c-> 10 (fn <-c))
 
@@ -105,13 +119,7 @@
 
 (** The "outer" one-> should be shadowed by the inner one-> **)
 
-(one->
-    "outer one"
-        (fn (,
-        <-one
-            (two-> (fn (one-> "inner one" (fn (, <-one <-two <-one)))))
-            <-one)
-        ))
+(one-> "outer one" (fn (, (one-> "inner one" (fn <-one)) <-one)))
 
 (** We also need to release a set of handlers when we leave the scope **)
 
@@ -323,7 +331,7 @@
                             (provide (k 5)
                             *value*     20
                             (k <-set _) (fatal "once"))))
-        17)]
+        40)]
 
 (provide (+ 1 (<-stuff 2))
     (k <-stuff a) (provide (k 23)

@@ -16,7 +16,7 @@ export const valueToString = (v: any): string => {
         }
         if (v.type === ',') {
             const items = [v[0]];
-            while (v[1].type === ',') {
+            while (v[1] && v[1].type === ',') {
                 v = v[1];
                 items.push(v[0]);
             }

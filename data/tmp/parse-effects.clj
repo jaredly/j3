@@ -926,9 +926,7 @@
 (def efvbl (sanitize "(effects)"))
 
 (defn cps/j3 [trace idx expr]
-    (let [
-        nidx (+ 1 idx)
-        <-lr (<-lr nidx)]
+    (let [nidx (+ 1 idx)]
         (match expr
             (evar n l)                                   (left (j/var (sanitize n) l))
             (equot inner l)                              (left (j/raw "(${(quot/jsonify inner)})" l))
@@ -938,14 +936,14 @@
             (eapp target args l)                         (go2
                                                              l
                                                                  (let-> [
-                                                                 target        (<-lr l (cps/j3 trace nidx target))
+                                                                 target        (<-lr nidx l (cps/j3 trace nidx target))
                                                                  (, nidx args) (loop
                                                                                    (, (+ 1 nidx) (rev args []))
                                                                                        (fn [(, nidx args) recur]
                                                                                        (match args
                                                                                            []           (<- (, nidx []))
                                                                                            [one ..rest] (let-> [
-                                                                                                            item          (<-lr l (cps/j3 trace (+ 100 nidx) one))
+                                                                                                            item          (<-lr nidx l (cps/j3 trace (+ 100 nidx) one))
                                                                                                             (, nidx rest) (recur (, (+ 1 nidx) rest))]
                                                                                                             (<- (, (+ 2 nidx) [item ..rest]))))))]
                                                                  (<-r
@@ -993,14 +991,16 @@
                                                                  (let-> [
                                                                  items (map->
                                                                            (fn [(, expr suffix)]
-                                                                               (let-> [expr (<-lr l (cps/j3 trace nidx expr))] (<- (, expr suffix))))
+                                                                               (let-> [expr (<-lr nidx l (cps/j3 trace nidx expr))]
+                                                                                   (<- (, expr suffix))))
                                                                                items)]
                                                                  (<- (left (j/str prefix items l)))))
             (eeffect name (none) l)                      (right
                                                              (fn [done] (j/app done [(resolve-effect l name) (j/var efvbl l)] l)))
             (eeffect name (some args) l)                 (go2
                                                              l
-                                                                 (let-> [args (map-> (fn [x] (let-> [v (<-lr l (cps/j3 trace nidx x))] (<- v))) args)]
+                                                                 (let-> [
+                                                                 args (map-> (fn [x] (let-> [v (<-lr nidx l (cps/j3 trace nidx x))] (<- v))) args)]
                                                                  (let [
                                                                      tuple (loop
                                                                                args
@@ -1020,7 +1020,7 @@
                                                                  (let-> [
                                                                  fields (map->
                                                                             (fn [(, name value)]
-                                                                                (let-> [v (<-lr l (cps/j3 trace nidx value))] (<- (left (, name v)))))
+                                                                                (let-> [v (<-lr nidx l (cps/j3 trace nidx value))] (<- (left (, name v)))))
                                                                                 fields)
                                                                  spread (match spread
                                                                             (none)         (<- none)
@@ -1036,58 +1036,12 @@
                                                              (none)     (left (j/str name [] nl))
                                                              (some arg) (go2
                                                                             l
-                                                                                (let-> [arg (<-lr l (cps/j3 trace nidx arg))]
+                                                                                (let-> [arg (<-lr nidx l (cps/j3 trace nidx arg))]
                                                                                 (<- (left (j/obj [(left (, "tag" (j/str name [] nl))) (left (, "arg" arg))] l))))))
-            (eprovide target handlers l)                 (right
-                                                             (fn [done]
-                                                                 (j/app
-                                                                     (j/lambda
-                                                                         []
-                                                                             (left
-                                                                             (let [
-                                                                                 ndone     "$done${(int-to-string idx)}"
-                                                                                 save-name "$these_effects$${(int-to-string idx)}"]
-                                                                                 (j/block
-                                                                                     [(j/let (j/pvar save-name l) (j/raw "null" l) l)
-                                                                                         (j/let
-                                                                                         (j/pvar ndone l)
-                                                                                             (j/lambda
-                                                                                             [(j/pvar "$vbl" l) (j/pvar "$eff" l)]
-                                                                                                 (right
-                                                                                                 (j/app
-                                                                                                     done
-                                                                                                         [(j/var "$vbl" l)
-                                                                                                         (j/raw "$remove_me($eff, \"${save-name}\", ${save-name})" l)]
-                                                                                                         l))
-                                                                                                 l)
-                                                                                             l)
-                                                                                         (let [done (j/var ndone l)]
-                                                                                         (j/return
-                                                                                             (match (go2
-                                                                                                 l
-                                                                                                     (let-> [
-                                                                                                     effects (<-lr l (cps/effects trace l handlers nidx save-name done))]
-                                                                                                     (<-
-                                                                                                         (left
-                                                                                                             (j/app
-                                                                                                                 (j/lambda
-                                                                                                                     [(j/pvar efvbl l)]
-                                                                                                                         (right
-                                                                                                                         (match (cps/j3 trace nidx target)
-                                                                                                                             (left body)  (j/com "left" (j/app done [body (j/var efvbl l)] l))
-                                                                                                                             (right body) (j/com "right" (body done))))
-                                                                                                                         l)
-                                                                                                                     [effects]
-                                                                                                                     l)))))
-                                                                                                 (left v)  v
-                                                                                                 (right v) (fatal "is this provide a fn?"))
-                                                                                                 l))])))
-                                                                             l)
-                                                                         []
-                                                                         l)))
+            (eprovide target handlers l)                 (cps/provide idx l trace handlers target)
             (elet [(, pat expr)] body l)                 (go2
                                                              l
-                                                                 (let-> [value (<-lr l (cps/j3 trace nidx expr))]
+                                                                 (let-> [value (<-lr nidx l (cps/j3 trace nidx expr))]
                                                                  (<-
                                                                      (right
                                                                          (fn [done]
@@ -1095,7 +1049,9 @@
                                                                                  (j/lambda
                                                                                      [(opt-or (pat->j/pat pat) (j/pvar "$_arg" l))]
                                                                                          (right
-                                                                                         (match (go2 l (let-> [body (<-lr l (cps/j3 trace nidx body))] (<- (left body))))
+                                                                                         (match (go2
+                                                                                             l
+                                                                                                 (let-> [body (<-lr nidx l (cps/j3 trace nidx body))] (<- (left body))))
                                                                                              (left body)  (j/app done [body (j/var efvbl l)] l)
                                                                                              (right body) (body done)))
                                                                                          l)
@@ -1108,7 +1064,7 @@
                                                                      (foldr body bindings (fn [body binding] (elet [binding] body l)))))
             (ematch target cases l)                      (go2
                                                              l
-                                                                 (let-> [target (<-lr l (cps/j3 trace nidx target))]
+                                                                 (let-> [target (<-lr nidx l (cps/j3 trace nidx target))]
                                                                  (<-
                                                                      (right
                                                                          (fn [done]
@@ -1134,6 +1090,273 @@
                                                                                      l))))))
             _                                            (fatal "no cps ${(jsonify expr)}"))))
 
+(** Compiling Effect Providers! Very complexx **)
+
+(defn cps/provide [idx l trace handlers target]
+    (let [
+        nidx (+ 1 idx)
+        <-lr (<-lr nidx)]
+        (right
+            (fn [done]
+                (j/app
+                    (j/lambda
+                        []
+                            (left
+                            (let [
+                                ndone     "$done${(int-to-string idx)}"
+                                save-name "$these_effects$${(int-to-string idx)}"]
+                                (j/block
+                                    [(j/let (j/pvar save-name l) (j/raw "null" l) l)
+                                        (j/let
+                                        (j/pvar ndone l)
+                                            (j/lambda
+                                            [(j/pvar "$vbl" l) (j/pvar "$eff" l)]
+                                                (right
+                                                (j/app
+                                                    done
+                                                        [(j/var "$vbl" l)
+                                                        (j/raw "$remove_me($eff, \"${save-name}\", ${save-name})" l)]
+                                                        l))
+                                                l)
+                                            l)
+                                        (let [done (j/var ndone l)]
+                                        (j/return
+                                            (match (go2
+                                                l
+                                                    (let-> [
+                                                    effects (<-lr l (cps/effects2 trace l handlers nidx save-name ndone))]
+                                                    (<-
+                                                        (left
+                                                            (j/app
+                                                                (j/lambda
+                                                                    [(j/pvar efvbl l)]
+                                                                        (right
+                                                                        (match (cps/j3 trace nidx target)
+                                                                            (left body)  (j/com "left" (j/app done [body (j/var efvbl l)] l))
+                                                                            (right body) (j/com "right" (body done))))
+                                                                        l)
+                                                                    [effects]
+                                                                    l)))))
+                                                (left v)  v
+                                                (right v) (fatal "is this provide a fn?"))
+                                                l))])))
+                            l)
+                        []
+                        l)))))
+
+(defn cps/effects2 [trace l handlers nidx save-name done]
+    (go2
+        l
+            (let-> [
+            fields (map->
+                       (fn [(, name nl kind body)]
+                           (let-> [
+                               value (match kind
+                                         (eearmuffs)            (<-lr nidx l (cps/j3 trace nidx body))
+                                         (ebang pats)           (<-lr
+                                                                    nidx
+                                                                        l
+                                                                        (left
+                                                                        (j/lambda
+                                                                            [(j/pvar "$_ignored_done" l) (pats-tuple pats l)]
+                                                                                (left
+                                                                                (j/block
+                                                                                    [(j/sexpr
+                                                                                        (match (cps/j3 trace nidx body)
+                                                                                            (left body)  (j/app (j/var done l) [body (j/var efvbl l)] l)
+                                                                                            (right body) (body (j/var done l)))
+                                                                                            l)
+                                                                                        (j/return (j/raw "function noop() {return noop}" l) l)]))
+                                                                                l)))
+                                         (eeffectful k kl pats) (<-lr
+                                                                    nidx
+                                                                        l
+                                                                        (left
+                                                                        (j/lambda
+                                                                            [(j/pvar "$lbk$rb" kl)
+                                                                                (pats-tuple pats l)
+                                                                                (j/pvar "k$lbeffects$rb" kl)]
+                                                                                (let [sdone "$save_done${(int-to-string nidx)}"]
+                                                                                (left
+                                                                                    (j/block
+                                                                                        [(j/let (j/pvar sdone l) (j/var done kl) kl)
+                                                                                            (j/let
+                                                                                            (j/pvar (sanitize k) kl)
+                                                                                                (j/lambda
+                                                                                                [(j/pvar "value" kl) (j/pvar "effects" kl) (j/pvar "ignored_done" kl)]
+                                                                                                    (left
+                                                                                                    (j/block
+                                                                                                        [(j/sexpr (j/assign done "=" (j/var "ignored_done" kl) kl) kl)
+                                                                                                            (j/return
+                                                                                                            (j/app
+                                                                                                                (j/var "$lbk$rb" kl)
+                                                                                                                    [(j/var "value" kl)
+                                                                                                                    (rebase-handlers
+                                                                                                                    kl
+                                                                                                                        name
+                                                                                                                        (j/var "k$lbeffects$rb" kl)
+                                                                                                                        (j/var "effects" kl)
+                                                                                                                        save-name)
+                                                                                                                    (j/var "ignored_done" kl)]
+                                                                                                                    kl)
+                                                                                                                l)]))
+                                                                                                    kl)
+                                                                                                kl)
+                                                                                            (j/sexpr
+                                                                                            (match (cps/j3 trace nidx body)
+                                                                                                (left body)  (j/app (j/var sdone l) [body (j/var efvbl l)] l)
+                                                                                                (right body) (body (j/var sdone l)))
+                                                                                                l)
+                                                                                            (j/return (j/raw "function noop() {return noop}" l) l)])))
+                                                                                l))))]
+                               (<- (left (, name value)))))
+                           handlers)]
+            (<-
+                (left
+                    (push-handlers
+                        l
+                            (j/var efvbl l)
+                            save-name
+                            (j/assign save-name "=" (j/obj fields l) l)))))))
+
+(** Disabling for now **)
+
+(,
+    (dot cps-test2 rp)
+        [(,
+        (@@
+            (provide (+ 3 *lol*)
+                *lol* 2))
+            5)
+        (,
+        (@@
+            (provide (+ 3 *lol*)
+                *lol* 2))
+            5)
+        (,
+        (@@
+            (provide (, 2 <-c)
+                (k <-c _) (,
+                              4
+                                  (provide (k 5)
+                                  (_ <-c _) (fatal "nope")))))
+            (, 4 2 5))
+        (,
+        (@@
+            (provide (!fail 2)
+                (!fail n) n))
+            2)
+        (,
+        (@@
+            (provide (+ 2 (!fail 1))
+                (!fail n) n))
+            1)
+        (,
+        (@@
+            (provide (provide (provide (, <-top <-middle <-bottom)
+                (k <-top _) (provide (k "top")
+                                (k <-top _) (fatal "top 2")))
+                (k <-middle _) (provide (k "middle")
+                                   (k <-middle _) (fatal "middle 2")))
+                (k <-bottom _) (provide (k "bottom")
+                                   (k <-bottom _) (fatal "bottom 2"))))
+            (, "top" (, "middle" "bottom")))
+        (,
+        (@@
+            (provide (provide (provide (, <-inner <-outer)
+                (k <-outer _) (provide (k "top outer")
+                                  (k <-outer _) (fatal "top 2")))
+                (k <-inner _) (provide (k "inner")
+                                  (k <-inner _) (fatal "inner 2")))
+                (k <-outer _) (provide (k "bottom outer")
+                                  (k <-outer _) (fatal "bottom 2"))))
+            (, "inner" "top outer"))
+        (,
+        (@@
+            (provide (+ *value* (<-set 12))
+                *value*     12
+                (k <-set _) (+
+                                23
+                                    (provide (k 5)
+                                    *value*     0
+                                    (k <-set _) (fatal "once")))))
+            40)
+        (,
+        (@@
+            (provide (,
+                (provide <-v
+                    (k <-v _) (provide (k "inner")
+                                  (k <-v _) (fatal "inner twice")))
+                    <-v)
+                (k <-v _) (provide (k "outer")
+                              (k <-v _) (fatal "outer twice"))))
+            )
+        ])
+
+(defn cps/provide_ [idx l trace handlers target]
+    (let [
+        nidx (+ 1 idx)
+        <-lr (<-lr nidx)]
+        (right
+            (fn [done]
+                (j/app
+                    (j/lambda
+                        []
+                            (left
+                            (let [
+                                ndone     "$done${(int-to-string idx)}"
+                                save-name "$these_effects$${(int-to-string idx)}"]
+                                (j/block
+                                    [(j/let (j/pvar save-name l) (j/raw "null" l) l)
+                                        (j/let
+                                        (j/pvar ndone l)
+                                            (j/lambda
+                                            [(j/pvar "$vbl" l) (j/pvar "$eff" l)]
+                                                (right
+                                                (j/app
+                                                    done
+                                                        [(j/var "$vbl" l)
+                                                        (j/raw "$remove_me($eff, \"${save-name}\", ${save-name})" l)]
+                                                        l))
+                                                l)
+                                            l)
+                                        (let [done (j/var ndone l)]
+                                        (j/return
+                                            (match (go2
+                                                l
+                                                    (let-> [
+                                                    effects (<-lr l (cps/effects trace l handlers nidx save-name done))]
+                                                    (<-
+                                                        (left
+                                                            (j/app
+                                                                (j/lambda
+                                                                    [(j/pvar efvbl l)]
+                                                                        (right
+                                                                        (match (cps/j3 trace nidx target)
+                                                                            (left body)  (j/com "left" (j/app done [body (j/var efvbl l)] l))
+                                                                            (right body) (j/com "right" (body done))))
+                                                                        l)
+                                                                    [effects]
+                                                                    l)))))
+                                                (left v)  v
+                                                (right v) (fatal "is this provide a fn?"))
+                                                l))])))
+                            l)
+                        []
+                        l)))))
+
+(defn pats-tuple [pats l]
+    (loop
+        pats
+            (fn [pats recur]
+            (match pats
+                []           (j/pvar "$_" l)
+                [one]        (opt-or (pat->j/pat one) (j/pvar "$_" l))
+                [one ..rest] (j/pobj
+                                 [(, "0" (opt-or (pat->j/pat one) (j/pvar "$_" l))) (, "1" (recur rest))]
+                                     (none)
+                                     l)))))
+
 (defn cps/effects [trace l handlers nidx save-name done]
     (go2
         l
@@ -1148,17 +1371,7 @@
                                                                         l
                                                                         (left
                                                                         (j/lambda
-                                                                            [(j/pvar "$_ignored_done" l)
-                                                                                (loop
-                                                                                pats
-                                                                                    (fn [pats recur]
-                                                                                    (match pats
-                                                                                        []           (j/pvar "$_" l)
-                                                                                        [one]        (opt-or (pat->j/pat one) (j/pvar "$_e" l))
-                                                                                        [one ..rest] (j/pobj
-                                                                                                         [(, "0" (opt-or (pat->j/pat one) (j/pvar "$_e" l))) (, "1" (recur rest))]
-                                                                                                             (none)
-                                                                                                             l))))]
+                                                                            [(j/pvar "$_ignored_done" l) (pats-tuple pats l)]
                                                                                 (left
                                                                                 (j/block
                                                                                     [(j/sexpr
@@ -1174,16 +1387,7 @@
                                                                         (left
                                                                         (j/lambda
                                                                             [(j/pvar "$lbk$rb" kl)
-                                                                                (loop
-                                                                                pats
-                                                                                    (fn [pats recur]
-                                                                                    (match pats
-                                                                                        []           (j/pvar "$_" l)
-                                                                                        [one]        (opt-or (pat->j/pat one) (j/pvar "$_" l))
-                                                                                        [one ..rest] (j/pobj
-                                                                                                         [(, "0" (opt-or (pat->j/pat one) (j/pvar "$_" l))) (, "1" (recur rest))]
-                                                                                                             (none)
-                                                                                                             l))))
+                                                                                (pats-tuple pats l)
                                                                                 (j/pvar "k$lbeffects$rb" kl)]
                                                                                 (left
                                                                                 (j/block
@@ -1235,10 +1439,7 @@
 (defn rebase-handlers [l name previous-effects new-effects save-name]
     (j/app
         (j/var "$rebase_handlers" l)
-            [(j/str name [] l)
-            previous-effects
-            new-effects
-            (j/str save-name [] l)]
+            [(j/str name [] l) previous-effects new-effects (j/var save-name l)]
             l))
 
 (def empty-effects (j/array [] -1))
@@ -1246,73 +1447,44 @@
 (cps-test2 (@ (+ 2 3)))
 
 (,
+    (dot cps-test2 rp)
+        [(,
+        (@@
+            (provide *ok*
+                *ok* 10))
+            10)
+        (,
+        (@@
+            (provide !fail
+                (!fail) 23))
+            23)
+        (,
+        (@@
+            (provide <-c
+                (l <-c _) 2))
+            2)
+        (,
+        (@@
+            (provide <-c
+                (k <-c _) (k 2)))
+            2)
+        (,
+        (@@
+            (provide (, 2 <-c)
+                (k <-c _) (k 4)))
+            (, 2 4))
+        (,
+        (@@
+            (provide (, 2 <-c)
+                (k <-c _) (, 1 (k 4))))
+            (, 1 (, 2 4)))])
+
+(,
     cps-test2
         [(, (@ 1) 1)
         (, (@ (+ 2 3)) 5)
         (, (@ ((fn [x] (+ x 12)) 4)) 16)
         (, (@ ((fn [x y] (, x (+ 23 y))) 1 2)) (, 1 25))
-        (,
-        (rp
-            (@@
-                (provide (+ 3 *lol*)
-                    *lol* 2)))
-            5)
-        (,
-        (rp
-            (@@
-                (provide (!fail 2)
-                    (!fail n) n)))
-            2)
-        (,
-        (rp
-            (@@
-                (provide (+ 2 (!fail 1))
-                    (!fail n) n)))
-            1)
-        (,
-        (rp
-            (@@
-                (provide (provide (provide (, <-top <-middle <-bottom)
-                    (k <-top _) (provide (k "top")
-                                    (k <-top _) (fatal "top 2")))
-                    (k <-middle _) (provide (k "middle")
-                                       (k <-middle _) (fatal "middle 2")))
-                    (k <-bottom _) (provide (k "bottom")
-                                       (k <-bottom _) (fatal "bottom 2")))))
-            (, "top" (, "middle" "bottom")))
-        (,
-        (rp
-            (@@
-                (provide (provide (provide (, <-inner <-outer)
-                    (k <-outer _) (provide (k "top outer")
-                                      (k <-outer _) (fatal "top 2")))
-                    (k <-inner _) (provide (k "inner")
-                                      (k <-inner _) (fatal "inner 2")))
-                    (k <-outer _) (provide (k "bottom outer")
-                                      (k <-outer _) (fatal "bottom 2")))))
-            (, "inner" "top outer"))
-        (,
-        (rp
-            (@@
-                (provide (+ *value* (<-set 12))
-                    *value*     12
-                    (k <-set v) (+
-                                    23
-                                        (provide (k 5)
-                                        *value*     20
-                                        (k <-set _) (fatal "once"))))))
-            17)
-        (,
-        (rp
-            (@@
-                (provide (,
-                    (provide <-v
-                        (k <-v _) (provide (k "inner")
-                                      (k <-v _) (fatal "inner twice")))
-                        <-v)
-                    (k <-v _) (provide (k "outer")
-                                  (k <-v _) (fatal "outer twice")))))
-            )
         (, (@ "hi") "hi")
         (, (@ "hi${23}") "hi23")
         (, (@ "hi ${(+ 2 3)}") "hi 5")
@@ -2091,23 +2263,17 @@
     }
   }
   throw new Error(`Effect ${name} not present in effects list ${effects.map(m => Object.keys(m)).join(' ; ')}`);
-},
-  $rebase_handlers: function(name, prev, next, save_name) {
-    /*let i = prev.length - 1;
-    for (; i>=0; i--) {
-      if (prev[i][name] != undefined) {
-        break;
-      }
-    }*/
-    const at = prev.indexOf(save_name);
+  },
+  $rebase_handlers: function(name, prev, next, mine) {
+    const at = prev.indexOf(mine);
     if (at === -1) throw new Error(`got lost somewhere`)
     return [...next, ...prev.slice(at + 1)]
   },
   $remove_me: (eff, save_name, mine) => {
     if (!eff) return eff
-    const at = eff.indexOf(save_name)
-    if (at === -1) throw new Error('nope');
-    return eff.slice(0, at + 1)
+    const at = eff.indexOf(mine)
+    if (at === -1) return eff // throw new Error('cant remove me, not there');
+    return eff.slice(0, at)
   },
 }})() **)
         )
@@ -3751,23 +3917,16 @@ $get_effect: function (effects, name) {
   }
   throw new Error(`Effect ${name} not present in effects list ${JSON.stringify(effects)}`);
 },
-
-  $rebase_handlers: function(name, prev, next, save_name) {
-    /*let i = prev.length - 1;
-    for (; i>=0; i--) {
-      if (prev[i][name] != undefined) {
-        break;
-      }
-    }*/
-    const at = prev.indexOf(save_name);
+  $rebase_handlers: function(name, prev, next, mine) {
+    const at = prev.indexOf(mine);
     if (at === -1) throw new Error(`got lost somewhere`)
     return [...next, ...prev.slice(at + 1)]
   },
   $remove_me: (eff, save_name, mine) => {
     if (!eff) return eff
-    const at = eff.indexOf(save_name)
-    if (at === -1) throw new Error('nope');
-    return eff.slice(0, at + 1)
+    const at = eff.indexOf(mine)
+    if (at === -1) return eff // throw new Error('cant remove me, not there');
+    return eff.slice(0, at)
   },
 }
 }) **))
