@@ -1,4 +1,4 @@
-// built by parse-1-args.js:algw-list.js:jcst.js on 6/25/2024, 1:41:58 PM
+// built by parse-1-args.js:algw-list.js:jcst.js on 6/25/2024, 3:24:27 PM
 
 const $env = {}
 const $builtins = (() => {function equal(a, b) {
@@ -1368,6 +1368,7 @@ return j$slpobj(cons($co("0")(opt_or(pat_$gtj$slpat(one))(j$slpvar("\$_")(l))))(
 } ;
 throw new Error('match fail 35513:' + JSON.stringify($target))
 })(pats))
+let jpv = (n) => j$slpvar(n)(-1)
 let eprim = (v0) => (v1) => ({type: "eprim", 0: v0, 1: v1})
 let estr = (v0) => (v1) => (v2) => ({type: "estr", 0: v0, 1: v1, 2: v2})
 let evar = (v0) => (v1) => ({type: "evar", 0: v0, 1: v1})
@@ -2836,7 +2837,9 @@ throw new Error('match fail 30779:' + JSON.stringify($target))
 let resolve_effect = (l) => (name) => j$slapp(j$slvar("\$get_effect")(l))(cons(j$slvar(efvbl)(l))(cons(j$slstr(name)(nil)(l))(nil)))(l)
 let push_handlers = (l) => (current_effects) => (save_name) => (new_handlers) => j$slarray(cons(right(j$slspread(current_effects)))(cons(left(j$slstr(save_name)(nil)(l)))(cons(left(new_handlers))(nil))))(l)
 let empty_effects = j$slarray(nil)(-1)
-let rebase_handlers = (l) => (name) => (previous_effects) => (new_effects) => (save_name) => j$slapp(j$slvar("\$rebase_handlers")(l))(cons(j$slstr(name)(nil)(l))(cons(previous_effects)(cons(new_effects)(cons(j$slvar(save_name)(l))(nil)))))(l)
+let rebase_handlers = (l) => (previous_effects) => (new_effects) => (save_name) => j$slapp(j$slvar("\$rebase_handlers")(l))(cons(j$slstr("lol")(nil)(l))(cons(previous_effects)(cons(new_effects)(cons(j$slvar(save_name)(l))(nil)))))(l)
+let iffe = (items) => j$slapp(j$sllambda(nil)(left(j$slblock(items)))(-1))(nil)(-1)
+let jv = (n) => j$slvar(n)(-1)
 let compile_pat$slj = (pat) => (target) => (inner) => (trace) => (($target) => {
 if ($target.type === "pany") {
 let l = $target[0];
@@ -5254,41 +5257,35 @@ throw new Error('match fail 25755:' + JSON.stringify($target))
 }
 
 let cps$slprovide = (idx) => (l) => (trace) => (handlers) => (target) => {
-let nidx = 1 + idx;
+let idx$$0 = idx;
 {
-let $lt_lr$$0 = $lt_lr;
+let idx = 1 + idx$$0;
 {
-let $lt_lr = $lt_lr$$0(nidx);
-return right((done) => j$slapp(j$sllambda(nil)(left((() => {
-let ndone = `\$done${int_to_string(idx)}`;
+let dn = `done\$${its(idx)}`;
 {
-let save_name = `\$these_effects\$${int_to_string(idx)}`;
-return j$slblock(cons(j$sllet(j$slpvar(save_name)(l))(j$slraw("null")(l))(l))(cons(j$sllet(j$slpvar(ndone)(l))(j$sllambda(cons(j$slpvar("\$vbl")(l))(cons(j$slpvar("\$eff")(l))(cons(j$slpvar("more_done")(l))(nil))))(left(j$slblock(cons(j$slsexpr(j$slassign("\$eff")("=")(j$slraw(`\$remove_me(\$eff, \"${save_name}\", ${save_name})`)(l))(l))(l))(cons(j$slif(j$slvar("more_done")(l))(j$slblock(cons(j$slreturn(j$slapp(j$slvar("more_done")(l))(cons(j$slvar("\$vbl")(l))(cons(j$slvar("\$eff")(l))(cons(done)(nil))))(l))(l))(nil)))(some(j$slblock(cons(j$slreturn(j$slapp(done)(cons(j$slvar("\$vbl")(l))(cons(j$slvar("\$eff")(l))(nil)))(l))(l))(nil))))(l))(nil)))))(l))(l))(cons((() => {
-let done = j$slvar(ndone)(l);
-return j$slreturn((($target) => {
+let self = `self\$${its(idx)}`;
+return right((done) => iffe(cons(j$sllet(jpv(self))(j$slraw("null")(l))(l))(cons(j$sllet(j$slpvar(dn)(l))(j$sllambda(cons(jpv("arg"))(cons(jpv("ef"))(nil)))(right(j$slapp(done)(cons(jv("arg"))(cons(j$slraw(`ef?.filter(m => m !== ${self})`)(l))(nil)))(l)))(l))(-1))(cons((($target) => {
 if ($target.type === "left") {
 let v = $target[0];
-return v
+return j$slreturn(v)(l)
 } ;
 if ($target.type === "right") {
 let v = $target[0];
 return fatal("is this provide a fn?")
 } ;
-throw new Error('match fail 35817:' + JSON.stringify($target))
-})(go2(l)($gt$gt$eq($lt_lr(l)(cps$sleffects2(trace)(l)(handlers)(nidx)(save_name)(ndone)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
+throw new Error('match fail 36534:' + JSON.stringify($target))
+})(go2(l)($gt$gt$eq($lt_lr(idx)(l)(cps$sleffects2(trace)(l)(handlers)(idx)(self)(dn)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
 if ($target.type === "left") {
 let body = $target[0];
-return j$slcom("left")(j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l))
+return j$slapp(j$slvar(dn)(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
 } ;
 if ($target.type === "right") {
 let body = $target[0];
-return j$slcom("right")(body(done))
+return body(j$slvar(dn)(l))
 } ;
-throw new Error('match fail 35852:' + JSON.stringify($target))
-})(cps$slj3(trace)(nidx)(target))))(l))(cons(effects)(nil))(l)))))))(l)
-})())(nil))))
+throw new Error('match fail 36569:' + JSON.stringify($target))
+})(cps$slj3(trace)(idx)(target))))(l))(cons(effects)(nil))(l)))))))(nil)))))
 }
-})()))(l))(nil)(l))
 }
 }
 }
@@ -5299,25 +5296,30 @@ return $lt_lr(nidx)(l)(cps$slj3(trace)(nidx)(body))
 } ;
 if ($target.type === "ebang") {
 let pats = $target[0];
-return $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$_ignored_done")(l))(cons(pats_tuple(pats)(l))(nil)))(left(j$slblock(cons(j$slsexpr((($target) => {
+return $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$_ignored_done")(l))(cons(pats_tuple(pats)(l))(cons(j$slpvar(efvbl)(l))(nil))))(left(j$slblock(cons(j$sllet(j$slpvar("done")(l))(j$sllambda(cons(jpv("val"))(cons(jpv("ef"))(nil)))(right(j$slapp(j$slvar(done)(l))(cons(jv("val"))(cons(j$slraw(`ef.slice(0, ef.indexOf(${save_name}))`)(l))(nil)))(l)))(l))(l))(cons(j$slsexpr((($target) => {
 if ($target.type === "left") {
 let body = $target[0];
-return j$slapp(j$slvar(done)(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
+return j$slapp(j$slvar("done")(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
 } ;
 if ($target.type === "right") {
 let body = $target[0];
-return body(j$slvar(done)(l))
+return body(j$slvar("done")(l))
 } ;
 throw new Error('match fail 35450:' + JSON.stringify($target))
-})(cps$slj3(trace)(nidx)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)))
+})(cps$slj3(trace)(nidx)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil))))))(l)))
 } ;
 if ($target.type === "eeffectful") {
 let k = $target[0];
 let kl = $target[1];
 let pats = $target[2];
-return $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$lbk\$rb")(kl))(cons(pats_tuple(pats)(l))(cons(j$slpvar("k\$lbeffects\$rb")(kl))(nil))))((() => {
+return cps$sleffectful(nidx)(l)(kl)(pats)(done)(k)(save_name)(trace)(body)
+} ;
+throw new Error('match fail 35352:' + JSON.stringify($target))
+})(kind))((value) => $lt_(left($co(name)(value)))))(handlers))((fields) => $lt_(left(push_handlers(l)(j$slvar(efvbl)(l))(save_name)(j$slassign(save_name)("=")(j$slobj(fields)(l))(l))))))
+
+let cps$sleffectful = (nidx) => (l) => (kl) => (pats) => (done) => (k) => (save_name) => (trace) => (body) => $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$lbk\$rb")(kl))(cons(pats_tuple(pats)(l))(cons(j$slpvar("k\$lbeffects\$rb")(kl))(nil))))((() => {
 let sdone = `\$save_done${int_to_string(nidx)}`;
-return left(j$slblock(cons(j$sllet(j$slpvar(sdone)(l))(j$slvar(done)(kl))(kl))(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("ignored_done")(kl))(nil))))(left(j$slblock(cons(j$slsexpr(j$slassign(done)("=")(j$slvar("ignored_done")(kl))(kl))(kl))(cons(j$slreturn(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(rebase_handlers(kl)(name)(j$slvar("k\$lbeffects\$rb")(kl))(j$slvar("effects")(kl))(save_name))(cons(j$slvar("ignored_done")(kl))(nil))))(kl))(l))(nil)))))(kl))(kl))(cons(j$slsexpr((($target) => {
+return left(j$slblock(cons(j$sllet(j$slpvar("good_and_done")(l))(j$slvar(done)(kl))(kl))(cons(j$sllet(j$slpvar(sdone)(l))(j$sllambda(cons(jpv("val"))(cons(jpv("ef"))(nil)))(right(j$slapp(jv("good_and_done"))(cons(jv("val"))(cons(j$slraw(`ef?.slice(0, ef.indexOf(${save_name}))`)(l))(nil)))(l)))(l))(kl))(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("after_k")(kl))(nil))))(left(j$slblock(cons(j$slsexpr(j$slassign(done)("=")(j$slvar("after_k")(kl))(kl))(kl))(cons(j$slreturn(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(rebase_handlers(kl)(j$slvar("k\$lbeffects\$rb")(kl))(j$slvar("effects")(kl))(save_name))(nil)))(kl))(l))(nil)))))(kl))(kl))(cons(j$slsexpr((($target) => {
 if ($target.type === "left") {
 let body = $target[0];
 return j$slapp(j$slvar(sdone)(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
@@ -5327,11 +5329,8 @@ let body = $target[0];
 return body(j$slvar(sdone)(l))
 } ;
 throw new Error('match fail 35641:' + JSON.stringify($target))
-})(cps$slj3(trace)(nidx)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil))))))
+})(cps$slj3(trace)(nidx)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))))
 })())(l)))
-} ;
-throw new Error('match fail 35352:' + JSON.stringify($target))
-})(kind))((value) => $lt_(left($co(name)(value)))))(handlers))((fields) => $lt_(left(push_handlers(l)(j$slvar(efvbl)(l))(save_name)(j$slassign(save_name)("=")(j$slobj(fields)(l))(l))))))
 let run$slj = (v) => $eval(`((\$lbeffects\$rb) => ${j$slcompile(0)(compile$slj(run$slnil_$gt(parse_expr(v)))(map$slnil))})({})`)
 let example_expr = run$slnil_$gt(parse_expr({"0":{"0":{"0":"match","1":12702,"type":"cst/id"},"1":{"0":{"0":"stmt","1":12703,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"sexpr","1":12705,"type":"cst/id"},"1":{"0":{"0":"expr","1":12706,"type":"cst/id"},"1":{"0":{"0":"l","1":12707,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12704,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"compile","1":12709,"type":"cst/id"},"1":{"0":{"0":"expr","1":12710,"type":"cst/id"},"1":{"0":{"0":"trace","1":12711,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12708,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"sdef","1":12713,"type":"cst/id"},"1":{"0":{"0":"name","1":12714,"type":"cst/id"},"1":{"0":{"0":"nl","1":12715,"type":"cst/id"},"1":{"0":{"0":"body","1":12716,"type":"cst/id"},"1":{"0":{"0":"l","1":12717,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12712,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"++","1":12719,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12721,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12724,"type":"cst/id"},"1":{"0":{"0":"name","1":12725,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12723,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12726,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"compile","1":12729,"type":"cst/id"},"1":{"0":{"0":"body","1":12730,"type":"cst/id"},"1":{"0":{"0":"trace","1":12731,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12728,"type":"cst/list"},"1":{"0":{"0":";\\n","1":{"type":"nil"},"2":12732,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12720,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12718,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"stypealias","1":12735,"type":"cst/id"},"1":{"0":{"0":"name","1":12736,"type":"cst/id"},"1":{"0":{"0":"_","1":12737,"type":"cst/id"},"1":{"0":{"0":"_","1":12738,"type":"cst/id"},"1":{"0":{"0":"_","1":12739,"type":"cst/id"},"1":{"0":{"0":"_","1":12740,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12734,"type":"cst/list"},"1":{"0":{"0":"/* type alias ","1":{"0":{"0":{"0":"name","1":12743,"type":"cst/id"},"1":{"0":" */","1":12744,"type":","},"type":","},"1":{"type":"nil"},"type":"cons"},"2":12741,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sdeftype","1":12746,"type":"cst/id"},"1":{"0":{"0":"name","1":12747,"type":"cst/id"},"1":{"0":{"0":"nl","1":12748,"type":"cst/id"},"1":{"0":{"0":"type-arg","1":12749,"type":"cst/id"},"1":{"0":{"0":"cases","1":12750,"type":"cst/id"},"1":{"0":{"0":"l","1":12751,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12745,"type":"cst/list"},"1":{"0":{"0":{"0":{"0":"join","1":12753,"type":"cst/id"},"1":{"0":{"0":"\\n","1":{"type":"nil"},"2":12754,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"map","1":12757,"type":"cst/id"},"1":{"0":{"0":"cases","1":12758,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12760,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"case","1":12762,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"1":12761,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"let","1":12764,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":{"0":{"0":",","1":12767,"type":"cst/id"},"1":{"0":{"0":"name2","1":12768,"type":"cst/id"},"1":{"0":{"0":"nl","1":12769,"type":"cst/id"},"1":{"0":{"0":"args","1":12770,"type":"cst/id"},"1":{"0":{"0":"l","1":12771,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12766,"type":"cst/list"},"1":{"0":{"0":"case","1":12772,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12765,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12774,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"const ","1":{"type":"nil"},"2":12776,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"sanitize","1":12779,"type":"cst/id"},"1":{"0":{"0":"name2","1":12780,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12778,"type":"cst/list"},"1":{"0":{"0":" = ","1":{"type":"nil"},"2":12781,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12784,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"mapi","1":12786,"type":"cst/id"},"1":{"0":{"0":"0","1":12787,"type":"cst/id"},"1":{"0":{"0":"args","1":12788,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12790,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"i","1":12792,"type":"cst/id"},"1":{"0":{"0":"_","1":12793,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12791,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12795,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"(v","1":{"type":"nil"},"2":12797,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12800,"type":"cst/id"},"1":{"0":{"0":"i","1":12801,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12799,"type":"cst/list"},"1":{"0":{"0":") => ","1":{"type":"nil"},"2":12802,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12796,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12794,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12789,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12785,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12783,"type":"cst/list"},"1":{"0":{"0":"({type: \\\"","1":{"type":"nil"},"2":12804,"type":"cst/string"},"1":{"0":{"0":"name2","1":12806,"type":"cst/id"},"1":{"0":{"0":"\\\"","1":{"type":"nil"},"2":12807,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"++","1":12810,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"mapi","1":12812,"type":"cst/id"},"1":{"0":{"0":"0","1":12813,"type":"cst/id"},"1":{"0":{"0":"args","1":12814,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"fn","1":12816,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":"i","1":12818,"type":"cst/id"},"1":{"0":{"0":"_","1":12819,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12817,"type":"cst/array"},"1":{"0":{"0":{"0":{"0":"++","1":12821,"type":"cst/id"},"1":{"0":{"0":{"0":{"0":", ","1":{"type":"nil"},"2":12823,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12826,"type":"cst/id"},"1":{"0":{"0":"i","1":12827,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12825,"type":"cst/list"},"1":{"0":{"0":": v","1":{"type":"nil"},"2":12828,"type":"cst/string"},"1":{"0":{"0":{"0":{"0":"int-to-string","1":12831,"type":"cst/id"},"1":{"0":{"0":"i","1":12832,"type":"cst/id"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12830,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12822,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12820,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12815,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12811,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12809,"type":"cst/list"},"1":{"0":{"0":"});","1":{"type":"nil"},"2":12833,"type":"cst/string"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12775,"type":"cst/array"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"1":12773,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12763,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12759,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12756,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12752,"type":"cst/list"},"1":{"type":"nil"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"type":"cons"},"1":12701,"type":"cst/list"}))
 let compile_top$slj = (top) => (trace) => (($target) => {
@@ -5446,7 +5445,7 @@ if ($target.type === "eeffectful") {
 let k = $target[0];
 let kl = $target[1];
 let pats = $target[2];
-return $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$lbk\$rb")(kl))(cons(pats_tuple(pats)(l))(cons(j$slpvar("k\$lbeffects\$rb")(kl))(nil))))(left(j$slblock(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("ignored_done")(kl))(nil))))(right(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(rebase_handlers(kl)(name)(j$slvar("k\$lbeffects\$rb")(kl))(j$slvar("effects")(kl))(save_name))(cons(j$slvar("ignored_done")(kl))(nil))))(kl)))(kl))(kl))(cons(j$slsexpr((($target) => {
+return $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$lbk\$rb")(kl))(cons(pats_tuple(pats)(l))(cons(j$slpvar("k\$lbeffects\$rb")(kl))(nil))))(left(j$slblock(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("ignored_done")(kl))(nil))))(right(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(rebase_handlers(kl)(j$slvar("k\$lbeffects\$rb")(kl))(j$slvar("effects")(kl))(save_name))(cons(j$slvar("ignored_done")(kl))(nil))))(kl)))(kl))(kl))(cons(j$slsexpr((($target) => {
 if ($target.type === "left") {
 let body = $target[0];
 return j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
@@ -5492,6 +5491,45 @@ let body = $target[0];
 return j$slcom("right")(body(done))
 } ;
 throw new Error('match fail 26987:' + JSON.stringify($target))
+})(cps$slj3(trace)(nidx)(target))))(l))(cons(effects)(nil))(l)))))))(l)
+})())(nil))))
+}
+})()))(l))(nil)(l))
+}
+}
+}
+let cps$slprovide23 = (idx) => (l) => (trace) => (handlers) => (target) => {
+let nidx = 1 + idx;
+{
+let $lt_lr$$0 = $lt_lr;
+{
+let $lt_lr = $lt_lr$$0(nidx);
+return right((done) => j$slapp(j$sllambda(nil)(left((() => {
+let ndone = `\$done${int_to_string(idx)}`;
+{
+let save_name = `\$these_effects\$${int_to_string(idx)}`;
+return j$slblock(cons(j$sllet(j$slpvar(save_name)(l))(j$slraw("null")(l))(l))(cons(j$sllet(j$slpvar(ndone)(l))(j$sllambda(cons(j$slpvar("\$vbl")(l))(cons(j$slpvar("\$eff")(l))(cons(j$slpvar("more_done")(l))(nil))))(left(j$slblock(cons(j$slsexpr(j$slassign("\$eff")("=")(j$slraw(`\$remove_me(\$eff, \"${save_name}\", ${save_name})`)(l))(l))(l))(cons(j$slif(j$slvar("more_done")(l))(j$slblock(cons(j$slreturn(j$slapp(j$slvar("more_done")(l))(cons(j$slvar("\$vbl")(l))(cons(j$slvar("\$eff")(l))(cons(done)(nil))))(l))(l))(nil)))(some(j$slblock(cons(j$slreturn(j$slapp(done)(cons(j$slvar("\$vbl")(l))(cons(j$slvar("\$eff")(l))(nil)))(l))(l))(nil))))(l))(nil)))))(l))(l))(cons((() => {
+let done = j$slvar(ndone)(l);
+return j$slreturn((($target) => {
+if ($target.type === "left") {
+let v = $target[0];
+return v
+} ;
+if ($target.type === "right") {
+let v = $target[0];
+return fatal("is this provide a fn?")
+} ;
+throw new Error('match fail 35817:' + JSON.stringify($target))
+})(go2(l)($gt$gt$eq($lt_lr(l)(cps$sleffects2(trace)(l)(handlers)(nidx)(save_name)(ndone)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
+if ($target.type === "left") {
+let body = $target[0];
+return j$slcom("left")(j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l))
+} ;
+if ($target.type === "right") {
+let body = $target[0];
+return j$slcom("right")(body(done))
+} ;
+throw new Error('match fail 35852:' + JSON.stringify($target))
 })(cps$slj3(trace)(nidx)(target))))(l))(cons(effects)(nil))(l)))))))(l)
 })())(nil))))
 }

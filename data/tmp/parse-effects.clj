@@ -1209,7 +1209,19 @@
                     (let [sdone "$save_done${(int-to-string nidx)}"]
                     (left
                         (j/block
-                            [(j/let (j/pvar sdone l) (j/var done kl) kl)
+                            [(j/let (j/pvar "good_and_done" l) (j/var done kl) kl)
+                                (j/let
+                                (j/pvar sdone l)
+                                    (j/lambda
+                                    [(jpv "val") (jpv "ef")]
+                                        (right
+                                        (j/app
+                                            (jv "good_and_done")
+                                                [(jv "val") (j/raw "ef?.slice(0, ef.indexOf(${save-name}))" l)]
+                                                l))
+                                        l)
+                                    ;(j/var done kl)
+                                    kl)
                                 (j/let
                                 (j/pvar (sanitize k) kl)
                                     (j/lambda
