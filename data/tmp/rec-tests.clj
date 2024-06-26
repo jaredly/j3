@@ -370,6 +370,15 @@
         'blue 2
         _     3))
 
+(def one 'one)
+
+(def two 'two)
+
+(defn maybe [a]
+    (if a
+        one
+            two))
+
 (** ## Records examples **)
 
 {x 12}

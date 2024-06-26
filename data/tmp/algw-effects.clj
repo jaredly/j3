@@ -2317,7 +2317,8 @@
         self      (type/apply-> self)
         ()        (unify self type l)
         type      (type/apply-> type)
-        type      (restrict-poly-enum type)]
+        ;type
+        ;(restrict-poly-enum type)]
         (<- (tenv/with-type tenv/nil name (generalize tenv type)))))
 
 (,
@@ -2334,12 +2335,8 @@
             [(,
             "x"
                 (forall
-                (map/from-list [])
-                    (trow
-                    [(, "hi" (tcon "int" 18552))]
-                        (some (trow [] (none) (renum) -1))
-                        (renum)
-                        18550)))])
+                (set/from-list ["hi:1"])
+                    (trow [(, "hi" (tcon "int" 18552))] (some (tvar "hi:1" 18551)) (renum) 18550)))])
         (,
         (@! (defn id [x] x))
             [(,
@@ -2477,7 +2474,8 @@
                               (zip names (map (forall set/nil) vbls))
                               (fn [tenv (, name vbl)] (tenv/with-type tenv name vbl))))
         types     (map-> (fn [(, _ _ expr _)] (infer/expr bound-env expr)) defns)
-        types     (map-> restrict-poly-enum types)
+        ;types
+        ;(map-> restrict-poly-enum types)
         vbls      (map-> type/apply-> vbls)
         ()        (do->
                       (fn [(, vbl type loc)] (unify vbl type loc))
