@@ -1,4 +1,4 @@
-// built by parse-1-args.js:algw-list.js:jcst.js on 6/25/2024, 3:24:27 PM
+// built by parse-1-args.js:algw-list.js:jcst.js on 6/25/2024, 9:15:54 PM
 
 const $env = {}
 const $builtins = (() => {function equal(a, b) {
@@ -5263,8 +5263,10 @@ let idx = 1 + idx$$0;
 {
 let dn = `done\$${its(idx)}`;
 {
+let dnr = `done_ref\$${its(idx)}`;
+{
 let self = `self\$${its(idx)}`;
-return right((done) => iffe(cons(j$sllet(jpv(self))(j$slraw("null")(l))(l))(cons(j$sllet(j$slpvar(dn)(l))(j$sllambda(cons(jpv("arg"))(cons(jpv("ef"))(nil)))(right(j$slapp(done)(cons(jv("arg"))(cons(j$slraw(`ef?.filter(m => m !== ${self})`)(l))(nil)))(l)))(l))(-1))(cons((($target) => {
+return right((done) => iffe(cons(j$sllet(jpv(self))(j$slraw("null")(l))(l))(cons(j$sllet(j$slpvar(dn)(l))(j$sllambda(cons(jpv("arg"))(cons(jpv("ef"))(nil)))(right(j$slapp(done)(cons(jv("arg"))(cons(j$slraw(`ef?.filter(m => m !== ${self})`)(l))(nil)))(l)))(l))(-1))(cons(j$sllet(j$slpvar(dnr)(l))(j$sllambda(cons(jpv("arg"))(cons(jpv("ef"))(nil)))(right(j$slapp(jv(dn))(cons(jv("arg"))(cons(jv("ef"))(nil)))(l)))(l))(-1))(cons((($target) => {
 if ($target.type === "left") {
 let v = $target[0];
 return j$slreturn(v)(l)
@@ -5277,14 +5279,15 @@ throw new Error('match fail 36534:' + JSON.stringify($target))
 })(go2(l)($gt$gt$eq($lt_lr(idx)(l)(cps$sleffects2(trace)(l)(handlers)(idx)(self)(dn)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
 if ($target.type === "left") {
 let body = $target[0];
-return j$slapp(j$slvar(dn)(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
+return j$slapp(j$slvar(dnr)(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
 } ;
 if ($target.type === "right") {
 let body = $target[0];
-return body(j$slvar(dn)(l))
+return body(j$slvar(dnr)(l))
 } ;
 throw new Error('match fail 36569:' + JSON.stringify($target))
-})(cps$slj3(trace)(idx)(target))))(l))(cons(effects)(nil))(l)))))))(nil)))))
+})(cps$slj3(trace)(idx)(target))))(l))(cons(effects)(nil))(l)))))))(nil))))))
+}
 }
 }
 }
@@ -5319,7 +5322,7 @@ throw new Error('match fail 35352:' + JSON.stringify($target))
 
 let cps$sleffectful = (nidx) => (l) => (kl) => (pats) => (done) => (k) => (save_name) => (trace) => (body) => $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$lbk\$rb")(kl))(cons(pats_tuple(pats)(l))(cons(j$slpvar("k\$lbeffects\$rb")(kl))(nil))))((() => {
 let sdone = `\$save_done${int_to_string(nidx)}`;
-return left(j$slblock(cons(j$sllet(j$slpvar("good_and_done")(l))(j$slvar(done)(kl))(kl))(cons(j$sllet(j$slpvar(sdone)(l))(j$sllambda(cons(jpv("val"))(cons(jpv("ef"))(nil)))(right(j$slapp(jv("good_and_done"))(cons(jv("val"))(cons(j$slraw(`ef?.slice(0, ef.indexOf(${save_name}))`)(l))(nil)))(l)))(l))(kl))(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("after_k")(kl))(nil))))(left(j$slblock(cons(j$slsexpr(j$slassign(done)("=")(j$slvar("after_k")(kl))(kl))(kl))(cons(j$slreturn(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(rebase_handlers(kl)(j$slvar("k\$lbeffects\$rb")(kl))(j$slvar("effects")(kl))(save_name))(nil)))(kl))(l))(nil)))))(kl))(kl))(cons(j$slsexpr((($target) => {
+return left(j$slblock(cons(j$sllet(j$slpvar("good_and_done")(l))(j$slvar(done)(kl))(kl))(cons(j$sllet(j$slpvar(sdone)(l))(j$sllambda(cons(jpv("val"))(cons(jpv("ef"))(nil)))(right(j$slapp(jv("good_and_done"))(cons(jv("val"))(cons(j$slraw(`ef?.filter(m => m !== (${save_name}))`)(l))(nil)))(l)))(l))(kl))(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("after_k")(kl))(nil))))(left(j$slblock(cons(j$slsexpr(j$slassign(done)("=")(j$slvar("after_k")(kl))(kl))(kl))(cons(j$slreturn(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(rebase_handlers(kl)(j$slvar("k\$lbeffects\$rb")(kl))(j$slvar("effects")(kl))(save_name))(nil)))(kl))(l))(nil)))))(kl))(kl))(cons(j$slsexpr((($target) => {
 if ($target.type === "left") {
 let body = $target[0];
 return j$slapp(j$slvar(sdone)(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
