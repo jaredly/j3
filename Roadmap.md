@@ -1,4 +1,41 @@
 
+# OK SO NOW
+we do a real test of the type sistem
+
+and it comes up wanting so much
+
+ok, it would really be nice for:
+```clj
+(defn parse-int [v]
+    (match (string-to-int v)
+        (some v) ('Ok v)
+        _        ('Err ('NotAnInt v))))
+```
+to have the 'Err term with an /open/ enum, so it
+could merge with other things.
+CMON the thing I want, is for enums to be able to merge,
+if I want them to. but not if I don't. is that so hard?
+it appears to be moderately hard.
+
+^ like, can I just have ... an enum with an open-ishness,
+where it doesn't force a catchall in a match, but is willing
+to merge with other things?
+seems like kindof a stretch.
+
+------- ok so Roc does this right, now to figure out howwwwww
+
+
+ALSO
+`!fail` having an actual return value variable is not turning
+out so hot, because it's being locked down, and now it won't jive
+with other dealios.
+SO I think we should go back to `!fail` not actually having
+a return value.
+
+... that's all of the bugs for now.
+
+
+
 # Ugh still not
 quite on it
 
@@ -15,6 +52,43 @@ quite on it
 (c-> 0 (fn (, (c-> 100 (fn <-c)) <-c)))
 ```
 
+
+```js
+const $find = (ef, name) => {
+  for (let i=ef.length - 1; i>=0; i--) {
+    if (ef[name]) {
+      return ef[name]
+    }
+  }
+  throw new Error(`cant find ef ${name}`)
+}
+
+const c_ = ($effects, n, f, $kont) => {
+  let odone = $kont
+  const $provided = {
+    'c->': ($effects, _any, $k) => {
+      $effects = $effects.filter(m => m !== $provided);
+      c_($effects, n + 1, ($ef, _, $do) => $k($ef, n, $do), $kont)
+    }
+  };
+  f($unit, [...$effects, $provided], $kont)
+}
+
+c_(
+  [],
+  0,
+  ($ef, _, $d) => c_(
+    $ef,
+    100,
+    ($ef, _, $d) => ,
+    $d,
+  ),
+  ($ef, value, $d) => {
+    console.log(value, 'final done, and the done fn is', $d)
+  })
+
+
+```
 
 
 
