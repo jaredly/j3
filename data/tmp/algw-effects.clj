@@ -134,7 +134,7 @@
         (evar string int)
         (estr string (list (, expr string int)) int)
         (equot quot int)
-        (eeffect string (option (list expr)) int)
+        (eeffect string (option (, (list expr) bool)) int)
         (elambda (list pat) expr int)
         (eapp expr (list expr) int)
         (elet (list (, pat expr)) expr int)
@@ -1246,7 +1246,7 @@
                                                      t       (new-type-var "effects-rest" l)
                                                      _       (unify effects (trow [(, name result)] (some t) (rrecord) l) l)]
                                                      (type/apply-> result))
-        (eeffect name (some args) l)             (let-> [
+        (eeffect name (some (, args cr)) l)      (let-> [
                                                      arg            (infer/expr
                                                                         tenv
                                                                             (loop
@@ -1266,7 +1266,10 @@
                                                      _              (unify
                                                                         effects
                                                                             (trow [(, name (tfn ignore-effects arg result l))] (some t) (rrecord) l)
-                                                                            l)]
+                                                                            l)
+                                                     result         (if cr
+                                                                        (<- result)
+                                                                            (new-type-var "ignore-result" l))]
                                                      (type/apply-> result))
         (eprovide target cases l)                (let-> [
                                                      effects       (match (tenv/resolve tenv "(effects)")

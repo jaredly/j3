@@ -1,8 +1,9 @@
-(defn task [()] (let [api-key ]))
-
 (deftype (list a)
     (cons a (list a))
         (nil))
+
+(deftype (, a b)
+    (, a b))
 
 (deftype (option a)
     (some a)
@@ -12,6 +13,16 @@
     (match v
         ('Ok v)  ('Ok v)
         ('Err e) ('Err (f e))))
+
+(defn loop [init f] (f init (fn [init] (loop init f))))
+
+(defn mapi [f m]
+    (loop
+        (, 0 m)
+            (fn [(, i m) recur]
+            (match m
+                []           []
+                [one ..rest] [(f one i) ..(recur (, (+ i 1) rest))]))))
 
 (defn require [v]
     (match v
@@ -40,18 +51,30 @@
 
 (defn parse-int [v]
     (match (string-to-int v)
-        (some v) v
-        _        (!fail ('parseInt v))))
+        (some v) ('Ok v)
+        _        ('Err ('NotAnInt v))))
 
 (defn movie-from-line [line idx]
     (match (split "!" line)
-        [title year starring] {title title year (parse-int year)}
-        ;({title title year (parse-int year) starring (split "," starring)})
+        [title year starring] {
+                                  title    title
+                                  year     (require
+                                               (map-err (fn [err] ('LineError idx line err)) (parse-int year)))
+                                  starring (split "," starring)}
         _                     (!fail ('LineError idx line 'InvalidLine))))
+
+(defn get-movies [url]
+    (let [
+        response (require (<-http/get url))
+        lines    (split "\n" response)]
+        (mapi movie-from-line lines)))
+
+(defn task [()] (write-output (get-movies "the-url?key=${(api-key)}")))
 
 (defn main [()]
     (provide (task)
          (!fail err)
         (match err
-            ('Err 'ApiKeyMissing) (<-log "You need env API_KEY")
-            ('Err ('parseInt v))  (<-log "Not an integer ${v}"))))
+            'ApiKeyMissing (<-log "You need env API_KEY")
+            ('NotAnInt v)  (<-log "Not an integer ${v}")
+            _              (<-log "Some other error"))))

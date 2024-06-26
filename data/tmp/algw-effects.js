@@ -1,4 +1,4 @@
-// built by parse-1-args.js:jcst.js:algw-list.js on 6/26/2024, 6:09:00 AM
+// built by parse-1-args.js:jcst.js:algw-list.js on 6/26/2024, 6:16:51 AM
 
 const $env = {}
 const $builtins = (() => {function equal(a, b) {
@@ -3185,7 +3185,9 @@ throw new Error('match fail 24995:' + JSON.stringify($target))
 if ($target.type === "eeffect") {
 let name = $target[0];
 if ($target[1].type === "some") {
-let args = $target[1][0];
+if ($target[1][0].type === ",") {
+let args = $target[1][0][0];
+let cr = $target[1][0][1];
 let l = $target[2];
 return $gt$gt$eq(infer$slexpr(tenv)(loop(args)((args) => (recur) => (($target) => {
 if ($target.type === "nil") {
@@ -3215,7 +3217,14 @@ return type$slapply_$gt(t)
 } 
 } ;
 throw new Error('match fail 26086:' + JSON.stringify($target))
-})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(new_type_var(name)(l))((result) => $gt$gt$eq(new_type_var("effects-rest")(l))((t) => $gt$gt$eq(new_type_var("ignore-effects")(l))((ignore_effects) => $gt$gt$eq(unify(effects)(trow(cons($co(name)(tfn(ignore_effects)(arg)(result)(l)))(nil))(some(t))(rrecord)(l))(l))((_26082) => type$slapply_$gt(result)))))))
+})(tenv$slresolve(tenv)("(effects)")))((effects) => $gt$gt$eq(new_type_var(name)(l))((result) => $gt$gt$eq(new_type_var("effects-rest")(l))((t) => $gt$gt$eq(new_type_var("ignore-effects")(l))((ignore_effects) => $gt$gt$eq(unify(effects)(trow(cons($co(name)(tfn(ignore_effects)(arg)(result)(l)))(nil))(some(t))(rrecord)(l))(l))((_26082) => $gt$gt$eq((($target) => {
+if ($target === true) {
+return $lt_(result)
+} ;
+return new_type_var("ignore-result")(l);
+throw new Error('match fail 28705:' + JSON.stringify($target))
+})(cr))((result) => type$slapply_$gt(result))))))))
+} 
 } 
 } ;
 if ($target.type === "eprovide") {

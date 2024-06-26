@@ -120,7 +120,7 @@
     (eprim prim int)
         (estr string (list (, expr string int)) int)
         (evar string int)
-        (eeffect string (option (list expr)) int)
+        (eeffect string (option (, (list expr) bool)) int)
         (equot quot int)
         (elambda (list pat) expr int)
         (eapp expr (list expr) int)
@@ -997,7 +997,7 @@
                                                                  (<- (left (j/str prefix items l)))))
             (eeffect name (none) l)                      (right
                                                              (fn [done] (j/app done [(resolve-effect l name) (j/var efvbl l)] l)))
-            (eeffect name (some args) l)                 (go2
+            (eeffect name (some (, args can-return)) l)  (go2
                                                              l
                                                                  (let-> [
                                                                  args (map-> (fn [x] (let-> [v (<-lr nidx l (cps/j3 trace nidx x))] (<- v))) args)]
@@ -2694,35 +2694,35 @@ return {
         (cst/list [] l)                                             (<- (evar "()" l))
         (cst/list [target ..args] l)                                (match (match target
                                                                         (cst/id id _) (if (or (is-bang id) (is-arrow id))
-                                                                                          (some (left id))
+                                                                                          (some (left (, id (is-arrow id))))
                                                                                               (map-opt (parse-tag id) right))
                                                                         _             none)
-                                                                        (some (left effect)) (let-> [args (map-> parse-expr args)]
-                                                                                                 (<- (eeffect effect (some args) l)))
-                                                                        (some (right tag))   (let-> [args (map-> parse-expr args)]
-                                                                                                 (<-
-                                                                                                     (eenum
-                                                                                                         tag
-                                                                                                             (cst-loc target)
-                                                                                                             (some
-                                                                                                             (loop
-                                                                                                                 args
-                                                                                                                     (fn [args recur]
-                                                                                                                     (match args
-                                                                                                                         []           (fatal "empty tag args")
-                                                                                                                         [one]        one
-                                                                                                                         [one ..rest] (eapp (evar "," l) [one (recur rest)] l)))))
-                                                                                                             l)))
-                                                                        _                    (let-> [
-                                                                                                 target (parse-expr target)
-                                                                                                 args   (map-> parse-expr args)]
-                                                                                                 (<-
-                                                                                                     (eapp
-                                                                                                         target
-                                                                                                             (match args
-                                                                                                             [] [(evar "()" l)]
-                                                                                                             _  args)
-                                                                                                             l))))
+                                                                        (some (left (, effect bool))) (let-> [args (map-> parse-expr args)]
+                                                                                                          (<- (eeffect effect (some (, args bool)) l)))
+                                                                        (some (right tag))            (let-> [args (map-> parse-expr args)]
+                                                                                                          (<-
+                                                                                                              (eenum
+                                                                                                                  tag
+                                                                                                                      (cst-loc target)
+                                                                                                                      (some
+                                                                                                                      (loop
+                                                                                                                          args
+                                                                                                                              (fn [args recur]
+                                                                                                                              (match args
+                                                                                                                                  []           (fatal "empty tag args")
+                                                                                                                                  [one]        one
+                                                                                                                                  [one ..rest] (eapp (evar "," l) [one (recur rest)] l)))))
+                                                                                                                      l)))
+                                                                        _                             (let-> [
+                                                                                                          target (parse-expr target)
+                                                                                                          args   (map-> parse-expr args)]
+                                                                                                          (<-
+                                                                                                              (eapp
+                                                                                                                  target
+                                                                                                                      (match args
+                                                                                                                      [] [(evar "()" l)]
+                                                                                                                      _  args)
+                                                                                                                      l))))
         (cst/array args l)                                          (parse-array args l)
         (cst/access target items l)                                 (<- (eaccess target items l))
         (cst/record items l)                                        (let-> [
@@ -3023,9 +3023,9 @@ return {
     (if (is-earmuffs id)
         (eeffect id none l)
             (if (is-bang id)
-            (eeffect id (some []) l)
+            (eeffect id (some (, [] false)) l)
                 (if (is-arrow id)
-                (eeffect id (some []) l)
+                (eeffect id (some (, [] true)) l)
                     (match (string-to-int id)
                     (some int) (eprim (pint int l) l)
                     (none)     (match (parse-tag id)
@@ -3416,23 +3416,23 @@ dot
 
 (defn expr/idents [expr]
     (match expr
-        (estr _ exprs _)          (many (map exprs (dot expr/idents ,,0)))
-        (evar name l)             (one (, name l))
-        (elambda pats expr l)     (many [(expr/idents expr) ..(map pats pat/idents)])
-        (eapp target args _)      (many [(expr/idents target) ..(map args expr/idents)])
-        (eeffect _ (some args) _) (foldl empty (map args expr/idents) bag/and)
-        (elet bindings body _)    (many
-                                      [(expr/idents body)
-                                          ..(map
-                                          bindings
-                                              (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))])
-        (ematch target cases _)   (bag/and
-                                      (expr/idents target)
-                                          (many
-                                          (map
-                                              cases
-                                                  (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))))
-        _                         empty))
+        (estr _ exprs _)                (many (map exprs (dot expr/idents ,,0)))
+        (evar name l)                   (one (, name l))
+        (elambda pats expr l)           (many [(expr/idents expr) ..(map pats pat/idents)])
+        (eapp target args _)            (many [(expr/idents target) ..(map args expr/idents)])
+        (eeffect _ (some (, args _)) _) (foldl empty (map args expr/idents) bag/and)
+        (elet bindings body _)          (many
+                                            [(expr/idents body)
+                                                ..(map
+                                                bindings
+                                                    (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))])
+        (ematch target cases _)         (bag/and
+                                            (expr/idents target)
+                                                (many
+                                                (map
+                                                    cases
+                                                        (fn [(, pat exp)] (bag/and (pat/idents pat) (expr/idents exp))))))
+        _                               empty))
 
 (defn pat/idents [pat]
     (match pat
@@ -3516,75 +3516,75 @@ dot
 
 (defn externals [bound expr]
     (match expr
-        (evar name l)             (match (set/has bound name)
-                                      true empty
-                                      _    (one (, name (value) l)))
-        (eprim prim l)            empty
-        (eeffect _ (some args) _) (foldl empty (map args (externals bound)) bag/and)
-        (eeffect _ _ _)           empty
-        (eprovide target cases _) (foldl
-                                      (externals bound target)
-                                          (map
-                                          cases
-                                              (fn [(, name nl k body)]
-                                              (let [
-                                                  pats (match k
-                                                           (ebang pats)          pats
-                                                           (eeffectful _ _ pats) pats
-                                                           _                     [])]
-                                                  (foldl
-                                                      (externals (foldl bound (map pats pat-names) set/merge) body)
-                                                          (map pats pat-externals)
-                                                          bag/and))))
-                                          bag/and)
-        (eenum _ _ arg _)         (map-or (externals bound) empty arg)
-        (erecord spread fields _) (foldl
-                                      (map-or (dot (externals bound) fst) empty spread)
-                                          (map fields (dot (externals bound) snd))
-                                          bag/and)
-        (eaccess target _ _)      (match target
-                                      (none)         empty
-                                      (some (, v l)) (if (set/has bound v)
-                                                         empty
-                                                             (one (, v (value) l))))
-        (estr first templates l)  (many
-                                      (map
-                                          templates
-                                              (fn [arg]
-                                              (match arg
-                                                  (, expr _ _) (externals bound expr)))))
-        (equot expr l)            empty
-        (elambda pats body l)     (bag/and
-                                      (foldl empty (map pats pat-externals) bag/and)
-                                          (externals (foldl bound (map pats pat-names) set/merge) body))
-        (elet bindings body l)    (bag/and
-                                      (foldl
-                                          empty
-                                              (map
-                                              bindings
-                                                  (fn [arg]
-                                                  (let [(, pat init) arg]
-                                                      (bag/and (pat-externals pat) (externals bound init)))))
-                                              bag/and)
-                                          (externals
-                                          (foldl
-                                              bound
-                                                  (map bindings (fn [arg] (let [(, pat _) arg] (pat-names pat))))
-                                                  set/merge)
-                                              body))
-        (eapp target args l)      (bag/and
-                                      (externals bound target)
-                                          (foldl empty (map args (externals bound)) bag/and))
-        (ematch expr cases l)     (bag/and
-                                      (externals bound expr)
-                                          (foldl
-                                          empty
-                                              cases
-                                              (fn [bag arg]
-                                              (match arg
-                                                  (, pat body) (bag/and
-                                                                   (bag/and bag (pat-externals pat))
-                                                                       (externals (set/merge bound (pat-names pat)) body))))))))
+        (evar name l)                   (match (set/has bound name)
+                                            true empty
+                                            _    (one (, name (value) l)))
+        (eprim prim l)                  empty
+        (eeffect _ (some (, args _)) _) (foldl empty (map args (externals bound)) bag/and)
+        (eeffect _ _ _)                 empty
+        (eprovide target cases _)       (foldl
+                                            (externals bound target)
+                                                (map
+                                                cases
+                                                    (fn [(, name nl k body)]
+                                                    (let [
+                                                        pats (match k
+                                                                 (ebang pats)          pats
+                                                                 (eeffectful _ _ pats) pats
+                                                                 _                     [])]
+                                                        (foldl
+                                                            (externals (foldl bound (map pats pat-names) set/merge) body)
+                                                                (map pats pat-externals)
+                                                                bag/and))))
+                                                bag/and)
+        (eenum _ _ arg _)               (map-or (externals bound) empty arg)
+        (erecord spread fields _)       (foldl
+                                            (map-or (dot (externals bound) fst) empty spread)
+                                                (map fields (dot (externals bound) snd))
+                                                bag/and)
+        (eaccess target _ _)            (match target
+                                            (none)         empty
+                                            (some (, v l)) (if (set/has bound v)
+                                                               empty
+                                                                   (one (, v (value) l))))
+        (estr first templates l)        (many
+                                            (map
+                                                templates
+                                                    (fn [arg]
+                                                    (match arg
+                                                        (, expr _ _) (externals bound expr)))))
+        (equot expr l)                  empty
+        (elambda pats body l)           (bag/and
+                                            (foldl empty (map pats pat-externals) bag/and)
+                                                (externals (foldl bound (map pats pat-names) set/merge) body))
+        (elet bindings body l)          (bag/and
+                                            (foldl
+                                                empty
+                                                    (map
+                                                    bindings
+                                                        (fn [arg]
+                                                        (let [(, pat init) arg]
+                                                            (bag/and (pat-externals pat) (externals bound init)))))
+                                                    bag/and)
+                                                (externals
+                                                (foldl
+                                                    bound
+                                                        (map bindings (fn [arg] (let [(, pat _) arg] (pat-names pat))))
+                                                        set/merge)
+                                                    body))
+        (eapp target args l)            (bag/and
+                                            (externals bound target)
+                                                (foldl empty (map args (externals bound)) bag/and))
+        (ematch expr cases l)           (bag/and
+                                            (externals bound expr)
+                                                (foldl
+                                                empty
+                                                    cases
+                                                    (fn [bag arg]
+                                                    (match arg
+                                                        (, pat body) (bag/and
+                                                                         (bag/and bag (pat-externals pat))
+                                                                             (externals (set/merge bound (pat-names pat)) body))))))))
 
 (defn dot [a b c] (a (b c)))
 
@@ -3672,64 +3672,64 @@ dot
 
 (defn expr/names [bound expr]
     (match expr
-        (evar name l)             (expr/var-name bound name l)
-        (eprim _ _)               empty
-        (equot _ _)               empty
-        (eprovide target cases _) (foldl
-                                      (expr/names bound target)
-                                          (map
-                                          cases
-                                              (fn [(, name nl k body)]
-                                              (let [
-                                                  pats              (match k
-                                                                        (ebang pats)          pats
-                                                                        (eeffectful _ _ pats) pats
-                                                                        _                     [])
-                                                  (, bound' names') (foldl (, [] empty) (map pats pat/names) bound-and-names)]
-                                                  (bag/and
-                                                      (expr/names (map/merge bound (map/from-list bound')) body)
-                                                          names'))))
-                                          bag/and)
-        (eeffect _ (some args) _) (foldl empty (map args (expr/names bound)) bag/and)
-        (eeffect _ _ _)           empty
-        (eaccess target _ l)      (match target
-                                      (none)         empty
-                                      (some (, v l)) (expr/var-name bound v l))
-        (erecord spread fields l) (foldl
-                                      (map-or (dot (expr/names bound) fst) empty spread)
-                                          (map fields (dot (expr/names bound) snd))
-                                          bag/and)
-        (eenum _ _ arg _)         (map-or (expr/names bound) empty arg)
-        (eapp target args _)      (foldl
-                                      (expr/names bound target)
-                                          (map args (expr/names bound))
-                                          bag/and)
-        (elambda args body _)     (let [
-                                      (, bound' names) (foldl (, [] empty) (map args pat/names) bound-and-names)]
-                                      (bag/and
-                                          names
-                                              (expr/names (map/merge bound (map/from-list bound')) body)))
-        (elet bindings body _)    (loop
-                                      (, bindings bound empty)
-                                          (fn [(, bindings bound names) recur]
-                                          (match bindings
-                                              []                    (bag/and names (expr/names bound body))
-                                              [(, pat expr) ..rest] (let [
-                                                                        (, bound' names') (pat/names pat)
-                                                                        bound             (map/merge bound (map/from-list bound'))
-                                                                        names             (bag/and names names')]
-                                                                        (recur (, rest bound (bag/and names (expr/names bound expr))))))))
-        (ematch target cases _)   (foldl
-                                      (expr/names bound target)
-                                          (map
-                                          cases
-                                              (fn [(, pat body)]
-                                              (let [
-                                                  (, bound' names') (pat/names pat)
-                                                  bound             (map/merge bound (map/from-list bound'))]
-                                                  (bag/and names' (expr/names bound body)))))
-                                          bag/and)
-        (estr _ tpls _)           (many (map tpls (fn [(, expr _ _)] (expr/names bound expr))))))
+        (evar name l)                   (expr/var-name bound name l)
+        (eprim _ _)                     empty
+        (equot _ _)                     empty
+        (eprovide target cases _)       (foldl
+                                            (expr/names bound target)
+                                                (map
+                                                cases
+                                                    (fn [(, name nl k body)]
+                                                    (let [
+                                                        pats              (match k
+                                                                              (ebang pats)          pats
+                                                                              (eeffectful _ _ pats) pats
+                                                                              _                     [])
+                                                        (, bound' names') (foldl (, [] empty) (map pats pat/names) bound-and-names)]
+                                                        (bag/and
+                                                            (expr/names (map/merge bound (map/from-list bound')) body)
+                                                                names'))))
+                                                bag/and)
+        (eeffect _ (some (, args _)) _) (foldl empty (map args (expr/names bound)) bag/and)
+        (eeffect _ _ _)                 empty
+        (eaccess target _ l)            (match target
+                                            (none)         empty
+                                            (some (, v l)) (expr/var-name bound v l))
+        (erecord spread fields l)       (foldl
+                                            (map-or (dot (expr/names bound) fst) empty spread)
+                                                (map fields (dot (expr/names bound) snd))
+                                                bag/and)
+        (eenum _ _ arg _)               (map-or (expr/names bound) empty arg)
+        (eapp target args _)            (foldl
+                                            (expr/names bound target)
+                                                (map args (expr/names bound))
+                                                bag/and)
+        (elambda args body _)           (let [
+                                            (, bound' names) (foldl (, [] empty) (map args pat/names) bound-and-names)]
+                                            (bag/and
+                                                names
+                                                    (expr/names (map/merge bound (map/from-list bound')) body)))
+        (elet bindings body _)          (loop
+                                            (, bindings bound empty)
+                                                (fn [(, bindings bound names) recur]
+                                                (match bindings
+                                                    []                    (bag/and names (expr/names bound body))
+                                                    [(, pat expr) ..rest] (let [
+                                                                              (, bound' names') (pat/names pat)
+                                                                              bound             (map/merge bound (map/from-list bound'))
+                                                                              names             (bag/and names names')]
+                                                                              (recur (, rest bound (bag/and names (expr/names bound expr))))))))
+        (ematch target cases _)         (foldl
+                                            (expr/names bound target)
+                                                (map
+                                                cases
+                                                    (fn [(, pat body)]
+                                                    (let [
+                                                        (, bound' names') (pat/names pat)
+                                                        bound             (map/merge bound (map/from-list bound'))]
+                                                        (bag/and names' (expr/names bound body)))))
+                                                bag/and)
+        (estr _ tpls _)                 (many (map tpls (fn [(, expr _ _)] (expr/names bound expr))))))
 
 (defn pat/names [pat]
     (match pat

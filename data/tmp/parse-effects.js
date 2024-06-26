@@ -1,4 +1,4 @@
-// built by parse-1-args.js:algw-list.js:jcst.js on 6/25/2024, 9:15:54 PM
+// built by parse-1-args.js:algw-list.js:jcst.js on 6/26/2024, 6:15:13 AM
 
 const $env = {}
 const $builtins = (() => {function equal(a, b) {
@@ -1688,8 +1688,10 @@ return empty
 } ;
 if ($target.type === "eeffect") {
 if ($target[1].type === "some") {
-let args = $target[1][0];
+if ($target[1][0].type === ",") {
+let args = $target[1][0][0];
 return foldl(empty)(map(args)(externals(bound)))(bag$sland)
+} 
 } 
 } ;
 if ($target.type === "eeffect") {
@@ -2452,8 +2454,10 @@ return many(cons(expr$slidents(target))(map(args)(expr$slidents)))
 } ;
 if ($target.type === "eeffect") {
 if ($target[1].type === "some") {
-let args = $target[1][0];
+if ($target[1][0].type === ",") {
+let args = $target[1][0][0];
 return foldl(empty)(map(args)(expr$slidents))(bag$sland)
+} 
 } 
 } ;
 if ($target.type === "elet") {
@@ -2550,12 +2554,12 @@ return eeffect(id)(none)(l)
 {
 let $target = is_bang(id);
 if ($target === true) {
-return eeffect(id)(some(nil))(l)
+return eeffect(id)(some($co(nil)(false)))(l)
 } ;
 {
 let $target = is_arrow(id);
 if ($target === true) {
-return eeffect(id)(some(nil))(l)
+return eeffect(id)(some($co(nil)(true)))(l)
 } ;
 {
 let $target = string_to_int(id);
@@ -3906,8 +3910,10 @@ return bag$sland(expr$slnames(map$slmerge(bound)(map$slfrom_list(bound$qu)))(bod
 } ;
 if ($target.type === "eeffect") {
 if ($target[1].type === "some") {
-let args = $target[1][0];
+if ($target[1][0].type === ",") {
+let args = $target[1][0][0];
 return foldl(empty)(map(args)(expr$slnames(bound)))(bag$sland)
+} 
 } 
 } ;
 if ($target.type === "eeffect") {
@@ -4599,7 +4605,7 @@ let id = $target[0];
 {
 let $target = or(is_bang(id))(is_arrow(id));
 if ($target === true) {
-return some(left(id))
+return some(left($co(id)(is_arrow(id))))
 } ;
 return map_opt(parse_tag(id))(right);
 throw new Error('match fail 31323:' + JSON.stringify($target))
@@ -4610,8 +4616,11 @@ throw new Error('match fail 21697:' + JSON.stringify($target))
 })(target);
 if ($target.type === "some") {
 if ($target[0].type === "left") {
-let effect = $target[0][0];
-return $gt$gt$eq(map_$gt(parse_expr)(args))((args) => $lt_(eeffect(effect)(some(args))(l)))
+if ($target[0][0].type === ",") {
+let effect = $target[0][0][0];
+let bool = $target[0][0][1];
+return $gt$gt$eq(map_$gt(parse_expr)(args))((args) => $lt_(eeffect(effect)(some($co(args)(bool)))(l)))
+} 
 } 
 } ;
 if ($target.type === "some") {
@@ -5127,7 +5136,9 @@ return right((done) => j$slapp(done)(cons(resolve_effect(l)(name))(cons(j$slvar(
 if ($target.type === "eeffect") {
 let name = $target[0];
 if ($target[1].type === "some") {
-let args = $target[1][0];
+if ($target[1][0].type === ",") {
+let args = $target[1][0][0];
+let can_return = $target[1][0][1];
 let l = $target[2];
 return go2(l)($gt$gt$eq(map_$gt((x) => $gt$gt$eq($lt_lr(nidx)(l)(cps$slj3(trace)(nidx)(x)))((v) => $lt_(v)))(args))((args) => {
 let tuple = loop(args)((args) => (recur) => (($target) => {
@@ -5149,6 +5160,7 @@ throw new Error('match fail 31280:' + JSON.stringify($target))
 })(args));
 return $lt_(right((done) => j$slapp(resolve_effect(l)(name))(cons(done)(cons(tuple)(cons(j$slvar(efvbl)(l))(nil))))(l)))
 }))
+} 
 } 
 } ;
 if ($target.type === "erecord") {
@@ -5299,17 +5311,20 @@ return $lt_lr(nidx)(l)(cps$slj3(trace)(nidx)(body))
 } ;
 if ($target.type === "ebang") {
 let pats = $target[0];
-return $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$_ignored_done")(l))(cons(pats_tuple(pats)(l))(cons(j$slpvar(efvbl)(l))(nil))))(left(j$slblock(cons(j$sllet(j$slpvar("done")(l))(j$sllambda(cons(jpv("val"))(cons(jpv("ef"))(nil)))(right(j$slapp(j$slvar(done)(l))(cons(jv("val"))(cons(j$slraw(`ef.slice(0, ef.indexOf(${save_name}))`)(l))(nil)))(l)))(l))(l))(cons(j$slsexpr((($target) => {
+{
+let dn = `bang\$done\$${its(nidx)}`;
+return $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$_ignored_done")(l))(cons(pats_tuple(pats)(l))(cons(j$slpvar(efvbl)(l))(nil))))(left(j$slblock(cons(j$sllet(j$slpvar(dn)(l))(j$sllambda(cons(jpv("val"))(cons(jpv("ef"))(nil)))(right(j$slapp(j$slvar(done)(l))(cons(jv("val"))(cons(j$slraw(`ef.slice(0, ef.indexOf(${save_name}))`)(l))(nil)))(l)))(l))(l))(cons(j$slsexpr((($target) => {
 if ($target.type === "left") {
 let body = $target[0];
-return j$slapp(j$slvar("done")(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
+return j$slapp(j$slvar(dn)(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
 } ;
 if ($target.type === "right") {
 let body = $target[0];
-return body(j$slvar("done")(l))
+return body(j$slvar(dn)(l))
 } ;
 throw new Error('match fail 35450:' + JSON.stringify($target))
 })(cps$slj3(trace)(nidx)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil))))))(l)))
+}
 } ;
 if ($target.type === "eeffectful") {
 let k = $target[0];
@@ -5322,7 +5337,7 @@ throw new Error('match fail 35352:' + JSON.stringify($target))
 
 let cps$sleffectful = (nidx) => (l) => (kl) => (pats) => (done) => (k) => (save_name) => (trace) => (body) => $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$lbk\$rb")(kl))(cons(pats_tuple(pats)(l))(cons(j$slpvar("k\$lbeffects\$rb")(kl))(nil))))((() => {
 let sdone = `\$save_done${int_to_string(nidx)}`;
-return left(j$slblock(cons(j$sllet(j$slpvar("good_and_done")(l))(j$slvar(done)(kl))(kl))(cons(j$sllet(j$slpvar(sdone)(l))(j$sllambda(cons(jpv("val"))(cons(jpv("ef"))(nil)))(right(j$slapp(jv("good_and_done"))(cons(jv("val"))(cons(j$slraw(`ef?.filter(m => m !== (${save_name}))`)(l))(nil)))(l)))(l))(kl))(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("after_k")(kl))(nil))))(left(j$slblock(cons(j$slsexpr(j$slassign(done)("=")(j$slvar("after_k")(kl))(kl))(kl))(cons(j$slreturn(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(rebase_handlers(kl)(j$slvar("k\$lbeffects\$rb")(kl))(j$slvar("effects")(kl))(save_name))(nil)))(kl))(l))(nil)))))(kl))(kl))(cons(j$slsexpr((($target) => {
+return left(j$slblock(cons(j$sllet(j$slpvar("good_and_done")(l))(j$slvar(done)(kl))(kl))(cons(j$sllet(j$slpvar(sdone)(l))(j$sllambda(cons(jpv("val"))(cons(jpv("ef"))(nil)))(right(j$slapp(jv("good_and_done"))(cons(jv("val"))(cons(j$slraw(`ef?.filter(m => m !== ${save_name})`)(l))(nil)))(l)))(l))(kl))(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("after_k")(kl))(nil))))(left(j$slblock(cons(j$slsexpr(j$slassign(done)("=")(j$slvar("after_k")(kl))(kl))(kl))(cons(j$slreturn(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(rebase_handlers(kl)(j$slvar("k\$lbeffects\$rb")(kl))(j$slvar("effects")(kl))(save_name))(nil)))(kl))(l))(nil)))))(kl))(kl))(cons(j$slsexpr((($target) => {
 if ($target.type === "left") {
 let body = $target[0];
 return j$slapp(j$slvar(sdone)(l))(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
@@ -5426,120 +5441,6 @@ return j$sllet(j$slpvar(sanitize(name2))(nl))(foldr(j$slobj(cons(left($co("type"
 throw new Error('match fail 29692:' + JSON.stringify($target))
 })(top)
 let compile_cps$slj = (expr) => (trace) => finish(cps$slj3(trace)(0)(expr))
-let cps$sleffects = (trace) => (l) => (handlers) => (nidx) => (save_name) => (done) => go2(l)($gt$gt$eq(map_$gt(({"1": {"1": {"1": body, "0": kind}, "0": nl}, "0": name}) => $gt$gt$eq((($target) => {
-if ($target.type === "eearmuffs") {
-return $lt_lr(nidx)(l)(cps$slj3(trace)(nidx)(body))
-} ;
-if ($target.type === "ebang") {
-let pats = $target[0];
-return $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$_ignored_done")(l))(cons(pats_tuple(pats)(l))(nil)))(left(j$slblock(cons(j$slsexpr((($target) => {
-if ($target.type === "left") {
-let body = $target[0];
-return j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
-} ;
-if ($target.type === "right") {
-let body = $target[0];
-return body(done)
-} ;
-throw new Error('match fail 31449:' + JSON.stringify($target))
-})(cps$slj3(trace)(nidx)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil)))))(l)))
-} ;
-if ($target.type === "eeffectful") {
-let k = $target[0];
-let kl = $target[1];
-let pats = $target[2];
-return $lt_lr(nidx)(l)(left(j$sllambda(cons(j$slpvar("\$lbk\$rb")(kl))(cons(pats_tuple(pats)(l))(cons(j$slpvar("k\$lbeffects\$rb")(kl))(nil))))(left(j$slblock(cons(j$sllet(j$slpvar(sanitize(k))(kl))(j$sllambda(cons(j$slpvar("value")(kl))(cons(j$slpvar("effects")(kl))(cons(j$slpvar("ignored_done")(kl))(nil))))(right(j$slapp(j$slvar("\$lbk\$rb")(kl))(cons(j$slvar("value")(kl))(cons(rebase_handlers(kl)(j$slvar("k\$lbeffects\$rb")(kl))(j$slvar("effects")(kl))(save_name))(cons(j$slvar("ignored_done")(kl))(nil))))(kl)))(kl))(kl))(cons(j$slsexpr((($target) => {
-if ($target.type === "left") {
-let body = $target[0];
-return j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l)
-} ;
-if ($target.type === "right") {
-let body = $target[0];
-return body(done)
-} ;
-throw new Error('match fail 31567:' + JSON.stringify($target))
-})(cps$slj3(trace)(nidx)(body)))(l))(cons(j$slreturn(j$slraw("function noop() {return noop}")(l))(l))(nil))))))(l)))
-} ;
-throw new Error('match fail 30383:' + JSON.stringify($target))
-})(kind))((value) => $lt_(left($co(name)(value)))))(handlers))((fields) => $lt_(left(push_handlers(l)(j$slvar(efvbl)(l))(save_name)(j$slassign(save_name)("=")(j$slobj(fields)(l))(l))))))
-let cps$slprovide_ = (idx) => (l) => (trace) => (handlers) => (target) => {
-let nidx = 1 + idx;
-{
-let $lt_lr$$0 = $lt_lr;
-{
-let $lt_lr = $lt_lr$$0(nidx);
-return right((done) => j$slapp(j$sllambda(nil)(left((() => {
-let ndone = `\$done${int_to_string(idx)}`;
-{
-let save_name = `\$these_effects\$${int_to_string(idx)}`;
-return j$slblock(cons(j$sllet(j$slpvar(save_name)(l))(j$slraw("null")(l))(l))(cons(j$sllet(j$slpvar(ndone)(l))(j$sllambda(cons(j$slpvar("\$vbl")(l))(cons(j$slpvar("\$eff")(l))(nil)))(right(j$slapp(done)(cons(j$slvar("\$vbl")(l))(cons(j$slraw(`\$remove_me(\$eff, \"${save_name}\", ${save_name})`)(l))(nil)))(l)))(l))(l))(cons((() => {
-let done = j$slvar(ndone)(l);
-return j$slreturn((($target) => {
-if ($target.type === "left") {
-let v = $target[0];
-return v
-} ;
-if ($target.type === "right") {
-let v = $target[0];
-return fatal("is this provide a fn?")
-} ;
-throw new Error('match fail 30863:' + JSON.stringify($target))
-})(go2(l)($gt$gt$eq($lt_lr(l)(cps$sleffects(trace)(l)(handlers)(nidx)(save_name)(done)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
-if ($target.type === "left") {
-let body = $target[0];
-return j$slcom("left")(j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l))
-} ;
-if ($target.type === "right") {
-let body = $target[0];
-return j$slcom("right")(body(done))
-} ;
-throw new Error('match fail 26987:' + JSON.stringify($target))
-})(cps$slj3(trace)(nidx)(target))))(l))(cons(effects)(nil))(l)))))))(l)
-})())(nil))))
-}
-})()))(l))(nil)(l))
-}
-}
-}
-let cps$slprovide23 = (idx) => (l) => (trace) => (handlers) => (target) => {
-let nidx = 1 + idx;
-{
-let $lt_lr$$0 = $lt_lr;
-{
-let $lt_lr = $lt_lr$$0(nidx);
-return right((done) => j$slapp(j$sllambda(nil)(left((() => {
-let ndone = `\$done${int_to_string(idx)}`;
-{
-let save_name = `\$these_effects\$${int_to_string(idx)}`;
-return j$slblock(cons(j$sllet(j$slpvar(save_name)(l))(j$slraw("null")(l))(l))(cons(j$sllet(j$slpvar(ndone)(l))(j$sllambda(cons(j$slpvar("\$vbl")(l))(cons(j$slpvar("\$eff")(l))(cons(j$slpvar("more_done")(l))(nil))))(left(j$slblock(cons(j$slsexpr(j$slassign("\$eff")("=")(j$slraw(`\$remove_me(\$eff, \"${save_name}\", ${save_name})`)(l))(l))(l))(cons(j$slif(j$slvar("more_done")(l))(j$slblock(cons(j$slreturn(j$slapp(j$slvar("more_done")(l))(cons(j$slvar("\$vbl")(l))(cons(j$slvar("\$eff")(l))(cons(done)(nil))))(l))(l))(nil)))(some(j$slblock(cons(j$slreturn(j$slapp(done)(cons(j$slvar("\$vbl")(l))(cons(j$slvar("\$eff")(l))(nil)))(l))(l))(nil))))(l))(nil)))))(l))(l))(cons((() => {
-let done = j$slvar(ndone)(l);
-return j$slreturn((($target) => {
-if ($target.type === "left") {
-let v = $target[0];
-return v
-} ;
-if ($target.type === "right") {
-let v = $target[0];
-return fatal("is this provide a fn?")
-} ;
-throw new Error('match fail 35817:' + JSON.stringify($target))
-})(go2(l)($gt$gt$eq($lt_lr(l)(cps$sleffects2(trace)(l)(handlers)(nidx)(save_name)(ndone)))((effects) => $lt_(left(j$slapp(j$sllambda(cons(j$slpvar(efvbl)(l))(nil))(right((($target) => {
-if ($target.type === "left") {
-let body = $target[0];
-return j$slcom("left")(j$slapp(done)(cons(body)(cons(j$slvar(efvbl)(l))(nil)))(l))
-} ;
-if ($target.type === "right") {
-let body = $target[0];
-return j$slcom("right")(body(done))
-} ;
-throw new Error('match fail 35852:' + JSON.stringify($target))
-})(cps$slj3(trace)(nidx)(target))))(l))(cons(effects)(nil))(l)))))))(l)
-})())(nil))))
-}
-})()))(l))(nil)(l))
-}
-}
-}
 return $eval("({0: parse_stmt2,  1: parse_expr2, 2: compile_stmt2, 3: compile2, 4: names, 5: externals_stmt, 6: externals_expr, 7: stmt_size, 8: expr_size, 9: type_size, 10: locals_at}) => all_names => builtins => ({\ntype: 'fns', parse_stmt2, parse_expr2, compile_stmt2, compile2, names, externals_stmt, externals_expr, stmt_size, expr_size, type_size, locals_at, all_names, builtins,\nprelude: {'\$unit': null,\n\$get_effect: function (effects, name) {\n  for (let i=effects.length - 1; i>=0; i--) {\n    if (effects[i][name] != undefined) {\n      return effects[i][name];\n    }\n  }\n  throw new Error(\`Effect \${name} not present in effects list \${JSON.stringify(effects)}\`);\n},\n  \$rebase_handlers: function(name, prev, next, mine) {\n    const at = prev.indexOf(mine);\n    if (at === -1) throw new Error(\`got lost somewhere\`)\n    return [...next, ...prev.slice(at + 1)]\n  },\n  \$remove_me: (eff, save_name, mine) => {\n    if (!eff) return eff\n    const at = eff.indexOf(mine)\n    if (at === -1) return eff // throw new Error('cant remove me, not there');\n    return eff.slice(0, at)\n  },\n}\n})")(parse_and_compile((top) => state_f(parse_top(top))(state$slnil))((expr) => state_f(parse_expr(expr))(state$slnil))((top) => (type_info) => (ctx) => (($target) => {
 if ($target.type === "tvar") {
 return j$slcompile_stmts(ctx)(map(compile_top_cps$slj(top)(ctx))(map$slstmt(simplify_js)))
