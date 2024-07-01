@@ -1,4 +1,133 @@
 
+# More one world thoughts
+
+## Things I need to do before one world is ready
+
+[1] locs are strings
+  - make the code changes
+  - convert all existing .json files
+  - done?
+[2]
+
+
+
+
+
+
+
+- locs need to be strings (right? so I can "namespace" a loc by the toplevel id)
+- toplevel references need to be locked down.
+  - cst/id, cst/global (is a global reference)
+  - node type=global
+  - which means I need to be able to resolve global references ...
+    - it would be the definition id, which should be a cst/id
+    - anyway, it would be something like `id=[toplevelid]:[loc]`
+      orr should it be split out? `{type: 'global', top: number, idx: number}`?
+    - would that be compatible with other things?
+      soooo I kinda rely on locs being globally unique, when I'm e.g. reporting type errors.
+      I think it's probably just better that way.
+
+
+
+
+## make an sqlite orm layer or something to handle the checkpointing.
+- read is normal
+- on write, check the `table_name$history` table, and if there's not a `checkpointid = 'staging'` entry for the row to be altered, make on to save the current value. otherwise leave it be.
+- then the "commit" action is taking all rows with `checkpointid = 'staging'` and giving them a checkpointid.
+  - do I care about branching and stuff? hrmm I mean probably? idk.
+
+^ ok so orr I could just lean on git again, because it's a lot better at things
+or rather, it is quite reliable.
+I could have file-based normal git for the start, and move to an in-memory git repo later if I want to.
+- toplevels would be stored as a file w/ the clj first and then the json after
+- namespaces would be the path/to/the/thing and then the file contents would be a whatsit
+
+What's the downside? oh yeah, searching is much harder. is that a thing I care about? ...
+
+potential file structure
+
+settings.json
+ns/[name]/[space]/[path]
+top/[id].json
+doc/[id]/doc.json
+doc/[id]/ns.txt -> just the namespace where the doc lives. for easier searching
+doc/[id]/[doc-node-id].json
+
+yeah I think that makes sense
+
+
+ok anyway: we have
+- global settings
+  - list of evaluators (aliases, name -> full evaluator path)
+    - name
+    - toplevel id + checkpoint
+      - ok so what if this was just the full chain?
+      - like,
+        - {toplevel id, checkpoint}[]
+        - with the full list going back to the start, which was evaluated by `js evaluator`?
+        - seems legit
+        - shouldn't be too many hops, right? Like I mean, definitely under 10. So it's not out of control.
+        - ok so really this is a list of aliases. which means it doesn't have to be checkpointed itself.
+          - I do like that.
+        - the full "path" would be used as the ID, both in documents, and in the "cache", where we save the evaluator's code.
+        - yeah that's pretty slick.
+
+- toplevels
+  - map (MCST)
+  - root = 0?
+  - docstring (rich-text? prolly)
+  - is this where we specify namespaces? idk seems like that would be somewhere else.
+- namespaces
+  - full ... name?
+  - the toplevel id we're mapping it to
+  - idk I mean we could represent it as an actual tree, but then we wouldn't get db uniqueness nicities.
+  - yeah getting uniqueness for free seems worth it.
+- documents
+  - title
+  - set the evaluator to use
+  - toplevel namespace (also determines "where the document lives" logically)
+  - namespace "imports" (aliases really)
+  - toplevel document node id <- actually document node IDs can be prefixed by the document's ID. so the root is always like `some-doc-id:0`
+    - because it's not like we'll be moving document nodes between documents. copying maybe, but that's fine.
+- document nodes
+  - has the `metaMap` to indicate what is traced
+    - this means that tracing configs are isolated to a single document, which I think makes a lot of sense
+  - has display configuration & plugin settings ... and probably *earmuffs*-default-values
+  - might have a "default namespace for all children"
+
+
+
+
+
+
+# Language features I still want:
+- records with ... optional items? might wreak havok with the unification algorithm
+- how about records with defaul values? hmmmmm might be possible. maybe if the default values thing was a subordinate record (type variable?)
+  - like (trow spread-vbl default-values-vbl (list fields))? seems worth exploring
+- we could do functions with default arguments, but we'd have to switch to non-curried. and like it wouldn't be usable everywhere? idk.
+
+- (match x 'A 'B y y) should eliminate `'A`. check-exahustiveness should report, for every `tany`, the options available, and the subset that apply (so we know what to eliminate)
+
+- ok also need to bring the type class dealio into the new effects whatsit
+  - which means, some more things
+    - but I don't want to add type classes until ... I have records? or something?
+- $ for record punning
+
+
+# Um ok so the "movies" exampel is old and stuff
+
+let's compare to roc's tasks
+- https://www.roc-lang.org/examples/Tasks/README.html this'll be a nice comparison
+- https://www.roc-lang.org/examples/TaskLoop/README.html this is a walk in the park.
+
+
+and thennnnn oooooohhhhh that's right
+enum restriction, gotta have it plssss
+
+`(fn [x] (match x 'A 'B y y))`
+should take the 'A out of the result. Not that it cant be put back in, but it shouldn't be there in our result.
+
+
 # OK SO NOW
 we do a real test of the type sistem
 

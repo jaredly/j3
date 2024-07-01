@@ -9,11 +9,6 @@
     (some a)
         (none))
 
-(defn map-err [f v]
-    (match v
-        ('Ok v)  ('Ok v)
-        ('Err e) ('Err (f e))))
-
 (defn loop [init f] (f init (fn [init] (loop init f))))
 
 (defn mapi [f m]
@@ -23,6 +18,22 @@
             (match m
                 []           []
                 [one ..rest] [(f one i) ..(recur (, (+ i 1) rest))]))))
+
+(defn split [x y]
+    (eval
+        "(x, e, d) => d((y, e, d) => d(y.split(x).reduceRight((a, b) => ({type: 'cons', 0: b, 1: a}), {type: 'nil'}), e), e)"
+            x
+            y))
+
+(defn parse-int [v]
+    (match (string-to-int v)
+        (some v) ('Ok v)
+        _        ('Err ('NotAnInt v))))
+
+(defn map-err [f v]
+    (match v
+        ('Ok v)  ('Ok v)
+        ('Err e) ('Err (f e))))
 
 (defn require [v]
     (match v
@@ -38,21 +49,8 @@
                     y        y))
                 (<-env/get "API_KEY"))))
 
-(defn split [x y]
-    (eval
-        "(x, e, d) => d((y, e, d) => d(y.split(x).reduceRight((a, b) => ({type: 'cons', 0: b, 1: a}), {type: 'nil'}), e), e)"
-            x
-            y))
-
-(split "!" "12!3")
-
 (defn write-output [movies]
     (require (<-fs/write-file "output.json" (jsonify movies))))
-
-(defn parse-int [v]
-    (match (string-to-int v)
-        (some v) ('Ok v)
-        _        ('Err ('NotAnInt v))))
 
 (defn movie-from-line [line idx]
     (match (split "!" line)
@@ -73,8 +71,8 @@
 
 (defn main [()]
     (provide (task)
-         (!fail err)
-        (match err
-            'ApiKeyMissing (<-log "You need env API_KEY")
-            ('NotAnInt v)  (<-log "Not an integer ${v}")
-            _              (<-log "Some other error"))))
+        (!fail err) (match err
+                        'ApiKeyMissing          (<-log "You need env API_KEY")
+                        ('LineError idx line _) (<-log
+                                                    "Invalid line (${(int-to-string idx)} in API response: ${line}")
+                        _                       (<-log "Some other error"))))
