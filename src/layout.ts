@@ -1,15 +1,16 @@
-import { Ctx } from './to-ast/Ctx';
+import { Display } from './to-ast/library';
 import { Layout, Map, MNode, MNodeContents } from './types/mcst';
 
 const maxWidth = 60;
 // const maxWidth = 100;
 // const maxWidth = 20;
+export type HashNames = Record<string, string>;
 
 export const calculateLayout = (
     node: MNode,
     pos: number,
-    display: Ctx['display'],
-    hashNames: Ctx['hashNames'],
+    display: Display,
+    hashNames: HashNames,
     map: Map,
     recursive = false,
     parentCtx?: ParentCtx,
@@ -255,8 +256,8 @@ export const layout = (
     idx: number,
     pos: number,
     map: Map,
-    display: Ctx['display'],
-    hashNames: Ctx['hashNames'],
+    display: Display,
+    hashNames: HashNames,
     recursive = false,
     parentCtx?: ParentCtx,
 ): Layout => {
@@ -276,8 +277,8 @@ function childWidth(
     children: number[],
     recursive: boolean,
     pos: number,
-    display: Ctx['display'],
-    hashNames: Ctx['hashNames'],
+    display: Display,
+    hashNames: HashNames,
     map: Map,
     parent?: ParentCtx,
     spacer = 1,

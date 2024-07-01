@@ -1,42 +1,32 @@
-import equal from 'fast-deep-equal';
-import { autoCompleteIfNeeded, orderStartAndEnd } from '../parse/parse';
-import { splitGraphemes } from '../parse/splitGraphemes';
+import { NUIState, RealizedNamespace } from '../../web/custom/UIState';
+import { findTops } from '../../web/ide/ground-up/findTops';
+import { reduceUpdate } from '../../web/ide/ground-up/reduce';
+import { renderNodeToString } from '../../web/ide/ground-up/renderNodeToString';
 import { idText } from '../parse/idText';
-import { Ctx, newCtx } from '../to-ast/Ctx';
-import { nodeToString } from '../to-cst/nodeToString';
-import { accessText, Node, NodeExtra, stringText } from '../types/cst';
+import { orderStartAndEnd } from '../parse/parse';
+import { splitGraphemes } from '../parse/splitGraphemes';
+import { Display } from '../to-ast/library';
+// import { Ctx, newCtx } from '../to-ast/Ctx';
+import { Node, NodeExtra, accessText, stringText } from '../types/cst';
 import {
-    fromMCST,
     ListLikeContents,
-    Map,
     MNodeExtra,
+    Map,
     NsMap,
+    fromMCST,
     toMCST,
 } from '../types/mcst';
 import { transformNode } from '../types/transform-cst';
 import {
-    applyUpdate,
+    NsUpdateMap,
+    StateUpdate,
+    UpdateMap,
     getKeyUpdate,
     insertText,
-    NsUpdateMap,
-    State,
-    StateUpdate,
 } from './getKeyUpdate';
 import { selectEnd } from './navigate';
 import { newNodeAfter } from './newNodeBefore';
 import { Path, cmpFullPath } from './path';
-import { UpdateMap } from './getKeyUpdate';
-import { filterComments, nodeToExpr } from '../to-ast/nodeToExpr';
-import { applyMods } from '../getCtx';
-import { getType } from '../get-type/get-types-new';
-import { validateExpr } from '../get-type/validate';
-import { addDef } from '../to-ast/to-ast';
-import { applyInferMod, infer } from '../infer/infer';
-import { CstCtx } from '../to-ast/library';
-import { renderNodeToString } from '../../web/ide/ground-up/renderNodeToString';
-import { NUIState, RealizedNamespace } from '../../web/custom/UIState';
-import { reduceUpdate } from '../../web/ide/ground-up/reduce';
-import { findTops } from '../../web/ide/ground-up/findTops';
 
 export type CoverageLevel =
     | { type: 'inner'; start: Path; end: Path }
@@ -324,7 +314,7 @@ export const paste = (
 
 export const clipboardText = (
     items: ClipboardItem[],
-    display: Ctx['display'], //['hashNames'],
+    display: Display, //['hashNames'],
     sep = '\n',
 ) => {
     return items
@@ -653,7 +643,7 @@ export function generateRawPasteUpdate(
 ): StateUpdate {
     const chars = basicLex(item.text.trim()); // splitGraphemes(item.text); //.replace(/\s+/g, ' '));
     let tmp = { ...state };
-    let tctx = withCtx ? newCtx() : null;
+    let tctx = null;
     for (let char of chars) {
         console.log(char);
         const update = getKeyUpdate(
@@ -662,7 +652,7 @@ export function generateRawPasteUpdate(
             tmp.nsMap,
             tmp.cards,
             tmp.at[0],
-            tctx?.results.hashNames ?? {},
+            {},
             tmp.nidx,
         );
         // if (update?.autoComplete && tctx) {
@@ -674,33 +664,34 @@ export function generateRawPasteUpdate(
         // console.log('mod', tmp);
         // applyUpdate(tmp, 0, update);
 
-        if (tctx) {
-            tctx = newCtx();
+        //     if (tctx) {
+        //         tctx = newCtx();
 
-            const root = fromMCST(tmp.root, tmp.map) as {
-                values: Node[];
-            };
-            filterComments(root.values).forEach((node) => {
-                const expr = nodeToExpr(node, tctx!);
-                let t = getType(expr, tctx!, {
-                    errors: tctx!.results.errors,
-                    types: {},
-                });
-                validateExpr(expr, tctx!, tctx!.results.errors);
-                tctx = addDef(expr, tctx!) as CstCtx;
-            });
+        //         const root = fromMCST(tmp.root, tmp.map) as {
+        //             values: Node[];
+        //         };
+        //         filterComments(root.values).forEach((node) => {
+        //             const expr = nodeToExpr(node, tctx!);
+        //             let t = getType(expr, tctx!, {
+        //                 errors: tctx!.results.errors,
+        //                 types: {},
+        //             });
+        //             validateExpr(expr, tctx!, tctx!.results.errors);
+        //             tctx = addDef(expr, tctx!) as CstCtx;
+        //         });
 
-            tmp = { ...tmp, map: { ...tmp.map } };
-            applyMods(tctx, tmp.map, state.nidx);
+        //         tmp = { ...tmp, map: { ...tmp.map } };
+        //         applyMods(tctx, tmp.map, state.nidx);
 
-            if (update && 'autoComplete' in update && update.autoComplete) {
-                const mods = infer(tctx, tmp.map);
-                Object.keys(mods).forEach((id) => {
-                    applyInferMod(mods[+id], tmp.map, tmp.nidx, +id);
-                });
-            }
-        }
+        //         if (update && 'autoComplete' in update && update.autoComplete) {
+        //             const mods = infer(tctx, tmp.map);
+        //             Object.keys(mods).forEach((id) => {
+        //                 applyInferMod(mods[+id], tmp.map, tmp.nidx, +id);
+        //             });
+        //         }
+        //     }
     }
+
     const update: UpdateMap = {};
     for (let key of Object.keys(tmp.map)) {
         if (tmp.map[+key] !== state.map[+key]) {

@@ -9,9 +9,7 @@ import {
     getKeyUpdate,
     isRootPath,
 } from '../../../src/state/getKeyUpdate';
-import { CompilationResults, Ctx } from '../../../src/to-ast/library';
-import { Node } from '../../../src/types/cst';
-import { ListLikeContents, fromMCST } from '../../../src/types/mcst';
+import { moveNode } from '../../../src/state/moveNode';
 import {
     Action,
     NUIState,
@@ -24,16 +22,10 @@ import {
     calcHistoryItem,
     undoRedo,
 } from '../../custom/old-stuff/reduce';
-import { filterNulls } from '../../custom/old-stuff/filterNulls';
-import { verticalMove } from '../../custom/verticalMove';
-import { newResults } from '../newResults';
-import { Algo, Trace } from '../infer/types';
-import { findTops, verifyPath } from './findTops';
-import { evalExpr } from './round-1/bootstrap';
-import { parseStmt, stmt } from './round-1/parse';
-import { moveNode } from '../../../src/state/moveNode';
 import { ResultsCache } from '../../custom/store/ResultsCache';
-import { valueToString } from './valueToString';
+import { verticalMove } from '../../custom/verticalMove';
+// import { newResults } from '../newResults';
+import { findTops, verifyPath } from './findTops';
 import { urlForId } from './urlForId';
 import { white } from './white';
 
@@ -316,78 +308,78 @@ export const actionToUpdate = (
 //     });
 // }
 
-export function calcResults(
-    state: NUIState,
-    { builtins, getTrace, infer, parse, typToString }: Algo<any, any, any>,
-    doLayout = true,
-) {
-    const tops = (state.map[state.root] as ListLikeContents).values;
-    const results: Ctx['results'] & {
-        tops: {
-            [key: number]: {
-                summary: string;
-                data: Trace[];
-                failed: boolean;
-                expr?: any;
-            };
-        };
-        typs: { [loc: number]: any };
-    } = {
-        display: {},
-        errors: {},
-        globalNames: {},
-        hashNames: {},
-        localMap: {
-            terms: {},
-            types: {},
-        },
-        mods: {},
-        toplevel: {},
-        tops: {},
-        typs: {},
-    };
+// export function calcResults(
+//     state: NUIState,
+//     { builtins, getTrace, infer, parse, typToString }: Algo<any, any, any>,
+//     doLayout = true,
+// ) {
+//     const tops = (state.map[state.root] as ListLikeContents).values;
+//     const results: Ctx['results'] & {
+//         tops: {
+//             [key: number]: {
+//                 summary: string;
+//                 data: Trace[];
+//                 failed: boolean;
+//                 expr?: any;
+//             };
+//         };
+//         typs: { [loc: number]: any };
+//     } = {
+//         display: {},
+//         errors: {},
+//         globalNames: {},
+//         hashNames: {},
+//         localMap: {
+//             terms: {},
+//             types: {},
+//         },
+//         mods: {},
+//         toplevel: {},
+//         tops: {},
+//         typs: {},
+//     };
 
-    tops.forEach((top) => {
-        const node = fromMCST(top, state.map);
-        const errors = {};
-        const expr = parse(node, { errors, display: results.display });
-        if (expr) {
-            try {
-                const typ = infer(builtins, expr, {
-                    display: results.display,
-                    typs: results.typs,
-                });
-                const trace = getTrace();
-                // console.log(typ);
-                results.tops[top] = {
-                    summary: typToString(typ),
-                    data: trace,
-                    failed: false,
-                    expr,
-                };
-            } catch (err) {
-                // console.log('no typ sorry', err);
-                results.tops[top] = {
-                    summary: 'Type Error: ' + (err as Error).message,
-                    data: getTrace(),
-                    failed: true,
-                };
-            }
-        } else {
-            results.tops[top] = {
-                summary: 'not parse: ' + Object.values(errors).join('; '),
-                data: getTrace(),
-                failed: true,
-            };
-        }
+//     tops.forEach((top) => {
+//         const node = fromMCST(top, state.map);
+//         const errors = {};
+//         const expr = parse(node, { errors, display: results.display });
+//         if (expr) {
+//             try {
+//                 const typ = infer(builtins, expr, {
+//                     display: results.display,
+//                     typs: results.typs,
+//                 });
+//                 const trace = getTrace();
+//                 // console.log(typ);
+//                 results.tops[top] = {
+//                     summary: typToString(typ),
+//                     data: trace,
+//                     failed: false,
+//                     expr,
+//                 };
+//             } catch (err) {
+//                 // console.log('no typ sorry', err);
+//                 results.tops[top] = {
+//                     summary: 'Type Error: ' + (err as Error).message,
+//                     data: getTrace(),
+//                     failed: true,
+//                 };
+//             }
+//         } else {
+//             results.tops[top] = {
+//                 summary: 'not parse: ' + Object.values(errors).join('; '),
+//                 data: getTrace(),
+//                 failed: true,
+//             };
+//         }
 
-        if (doLayout) {
-            layout(top, 0, state.map, results.display, results.hashNames, true);
-        }
-    });
+//         if (doLayout) {
+//             layout(top, 0, state.map, results.display, results.hashNames, true);
+//         }
+//     });
 
-    return results;
-}
+//     return results;
+// }
 
 /**
  * Debounce a function.
@@ -670,10 +662,10 @@ export const traverseNS = (
 };
 
 export const verifyState = (state: NUIState) => {
-    const results = newResults();
+    // const results = newResults();
     const all = findTops(state);
     all.map(({ top }) => {
-        layout(top, 0, state.map, results.display, results.hashNames, true);
+        layout(top, 0, state.map, {}, {}, true);
     });
 
     const seen: { [key: number]: number } = {};

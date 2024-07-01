@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { getCtx } from '../../src/getCtx';
+// import { getCtx } from '../../src/getCtx';
 import { State } from '../../src/state/getKeyUpdate';
 import { selectEnd } from '../../src/state/navigate';
 import { Path } from '../../src/state/path';
@@ -67,34 +67,34 @@ export const loadState = (raw: string): State => {
     };
 };
 
-export const uiState = (state: State): UIState => {
-    const idx = (state.map[-1] as ListLikeContents).values[0];
-    const at = selectEnd(idx, [{ idx: -1, type: 'card', card: 0 }], state.map)!;
-    return {
-        nidx: state.nidx,
-        root: -1,
-        nsMap: {},
-        meta: {},
-        cards: [
-            {
-                path: [],
-                // ns: {
-                //     type: 'normal',
-                //     children: [],
-                //     hash: null,
-                //     top: idx,
-                // },
-                top: -2,
-            },
-        ],
-        regs: {},
-        clipboard: [],
-        hover: [],
-        history: [],
-        at: [{ start: at }],
-        ...getCtx(state.map, -1, state.nidx),
-    };
-};
+// export const uiState = (state: State): UIState => {
+//     const idx = (state.map[-1] as ListLikeContents).values[0];
+//     const at = selectEnd(idx, [{ idx: -1, type: 'card', card: 0 }], state.map)!;
+//     return {
+//         nidx: state.nidx,
+//         root: -1,
+//         nsMap: {},
+//         meta: {},
+//         cards: [
+//             {
+//                 path: [],
+//                 // ns: {
+//                 //     type: 'normal',
+//                 //     children: [],
+//                 //     hash: null,
+//                 //     top: idx,
+//                 // },
+//                 top: -2,
+//             },
+//         ],
+//         regs: {},
+//         clipboard: [],
+//         hover: [],
+//         history: [],
+//         at: [{ start: at }],
+//         ...getCtx(state.map, -1, state.nidx),
+//     };
+// };
 
 export const clipboardPrefix = '<!--""" jerd-clipboard ';
 export const clipboardSuffix = ' """-->';
@@ -103,12 +103,12 @@ export const isRootPath = (path: Path[]) => {
     return path.length === 1 && path[0].type !== 'child';
 };
 
-export function useMenu(state: UIState) {
-    return useMemo(() => {
-        if (state.at.length > 1 || state.at[0].end) return;
-        const path = state.at[0].start;
-        const last = path[path.length - 1];
-        const items = state.ctx.results.display[last.idx]?.autoComplete;
-        return items ? { path, items } : undefined;
-    }, [state.map, state.at, state.ctx]);
-}
+// export function useMenu(state: UIState) {
+//     return useMemo(() => {
+//         if (state.at.length > 1 || state.at[0].end) return;
+//         const path = state.at[0].start;
+//         const last = path[path.length - 1];
+//         const items = state.ctx.results.display[last.idx]?.autoComplete;
+//         return items ? { path, items } : undefined;
+//     }, [state.map, state.at, state.ctx]);
+// }

@@ -8,7 +8,6 @@ import { commonAncestor } from './clipboard';
 import { validatePath } from './validatePath';
 import { transformNode } from '../types/transform-cst';
 import { Path } from './path';
-import { Ctx } from '../to-ast/Ctx';
 import { Card } from '../../web/custom/UIState';
 
 export const removeNodes = (

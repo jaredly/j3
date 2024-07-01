@@ -17,7 +17,6 @@ import { accessText, Identifier, stringText } from '../types/cst';
 import { collectNodes } from './clipboard';
 import { Path } from './path';
 import { removeNodes } from './removeNodes';
-import { Ctx } from '../to-ast/Ctx';
 import { modChildren } from './modChildren';
 import { Card, RealizedNamespace } from '../../web/custom/UIState';
 

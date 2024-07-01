@@ -1,6 +1,6 @@
 import { Path } from '../state/path';
 import { lastName } from '../db/hash-tree';
-import { Ctx } from '../to-ast/Ctx';
+// import { Ctx } from '../to-ast/Ctx';
 import { Node } from '../types/cst';
 
 export type SourceMap = {
@@ -10,7 +10,7 @@ export type SourceMap = {
 
 export const nodeToString = (
     node: Node,
-    hashNames: Ctx['hashNames'] | null,
+    hashNames: Record<string, string> | null,
     sm: SourceMap = { map: {}, cur: 0 },
     addBefore = 0,
 ): string => {
@@ -56,7 +56,7 @@ export const showSourceMap = (text: string, sm: SourceMap) => {
 
 export const nodeToString_ = (
     node: Node,
-    hashNames: Ctx['hashNames'] | null,
+    hashNames: Record<string, string> | null,
     sm: SourceMap = { map: {}, cur: 0 },
 ): string => {
     switch (node.type) {

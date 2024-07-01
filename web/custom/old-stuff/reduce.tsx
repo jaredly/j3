@@ -1,6 +1,6 @@
 import { NsUpdateMap, State, UpdateMap } from '../../../src/state/getKeyUpdate';
 import { redoItem, undoItem } from '../../../src/to-ast/history';
-import { CstCtx, Ctx, HistoryItem } from '../../../src/to-ast/library';
+import { HistoryItem } from '../../../src/to-ast/library';
 import { Map } from '../../../src/types/mcst';
 // import { yankFromSandboxToLibrary } from '../../ide/yankFromSandboxToLibrary';
 import {
@@ -84,23 +84,23 @@ export const undoRedo = (state: NUIState, kind: 'undo' | 'redo'): NUIState => {
     };
 };
 
-export const findAdded = <T,>(shorter: T[], longer: T[]) => {
-    const added = [];
-    let i = 0,
-        ti = 0;
-    for (; i < shorter.length && ti < longer.length; i++, ti++) {
-        while (ti < longer.length && shorter[i] !== longer[ti]) {
-            added.push({ i, ti, item: longer[ti] });
-            ti++;
-        }
-    }
-    for (; ti < longer.length; ti++) {
-        added.push({ i: shorter.length, ti, item: longer[ti] });
-    }
-    if (added.length === longer.length - shorter.length) {
-        return added;
-    }
-};
+// export const findAdded = <T,>(shorter: T[], longer: T[]) => {
+//     const added = [];
+//     let i = 0,
+//         ti = 0;
+//     for (; i < shorter.length && ti < longer.length; i++, ti++) {
+//         while (ti < longer.length && shorter[i] !== longer[ti]) {
+//             added.push({ i, ti, item: longer[ti] });
+//             ti++;
+//         }
+//     }
+//     for (; ti < longer.length; ti++) {
+//         added.push({ i: shorter.length, ti, item: longer[ti] });
+//     }
+//     if (added.length === longer.length - shorter.length) {
+//         return added;
+//     }
+// };
 
 export const calcHistoryItem = (
     state: NUIState,
@@ -184,51 +184,51 @@ export const calcHistoryItem = (
     };
 };
 
-export function fixMissingReferences(
-    prevCtx: Ctx,
-    ctx: CstCtx,
-    map: Map,
-    prevMap: Map,
-) {
-    let fixedMissing = false;
-    const missing: Record<number, string> = {};
-    Object.entries(prevCtx.results.hashNames).forEach(([k, v]) => {
-        if (!ctx.results.hashNames[+k]) {
-            missing[+k] = v;
-            const node = map[+k];
-            const pnode = prevMap[+k];
-            if (
-                node?.type === 'hash' &&
-                pnode?.type === 'hash' &&
-                node.hash === pnode.hash
-            ) {
-                fixedMissing = true;
-                map[+k] = {
-                    type: 'identifier',
-                    loc: +k,
-                    text: v,
-                };
-            }
-        }
-    });
-    Object.entries(map).forEach(([k, v]) => {
-        if (
-            v.type === 'hash' &&
-            // TODO ok I don't super love that I'm overloading `local hash` with `toplevel hash`
-            // I kinda want to add a `kind` to hash, ya know?
-            typeof v.hash === 'number' &&
-            !map[v.hash]
-        ) {
-            const ref = prevMap[v.hash];
-            if (ref?.type === 'identifier') {
-                fixedMissing = true;
-                map[+k] = {
-                    type: 'identifier',
-                    loc: +k,
-                    text: ref.text,
-                };
-            }
-        }
-    });
-    return fixedMissing;
-}
+// export function fixMissingReferences(
+//     prevCtx: Ctx,
+//     ctx: CstCtx,
+//     map: Map,
+//     prevMap: Map,
+// ) {
+//     let fixedMissing = false;
+//     const missing: Record<number, string> = {};
+//     Object.entries(prevCtx.results.hashNames).forEach(([k, v]) => {
+//         if (!ctx.results.hashNames[+k]) {
+//             missing[+k] = v;
+//             const node = map[+k];
+//             const pnode = prevMap[+k];
+//             if (
+//                 node?.type === 'hash' &&
+//                 pnode?.type === 'hash' &&
+//                 node.hash === pnode.hash
+//             ) {
+//                 fixedMissing = true;
+//                 map[+k] = {
+//                     type: 'identifier',
+//                     loc: +k,
+//                     text: v,
+//                 };
+//             }
+//         }
+//     });
+//     Object.entries(map).forEach(([k, v]) => {
+//         if (
+//             v.type === 'hash' &&
+//             // TODO ok I don't super love that I'm overloading `local hash` with `toplevel hash`
+//             // I kinda want to add a `kind` to hash, ya know?
+//             typeof v.hash === 'number' &&
+//             !map[v.hash]
+//         ) {
+//             const ref = prevMap[v.hash];
+//             if (ref?.type === 'identifier') {
+//                 fixedMissing = true;
+//                 map[+k] = {
+//                     type: 'identifier',
+//                     loc: +k,
+//                     text: ref.text,
+//                 };
+//             }
+//         }
+//     });
+//     return fixedMissing;
+// }

@@ -3,6 +3,8 @@
 
 ## Things I need to do before one world is ready
 
+[0] remove all dead code, for real
+
 [1] locs are strings
   - make the code changes
   - convert all existing .json files

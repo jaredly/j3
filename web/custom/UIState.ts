@@ -1,4 +1,4 @@
-import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
+// import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { type ClipboardItem } from '../../src/state/clipboard';
 import {
     State,
@@ -9,7 +9,7 @@ import {
 } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
 import { Def, DefType, Node } from '../../src/types/ast';
-import { Ctx, HistoryItem } from '../../src/to-ast/library';
+import { HistoryItem } from '../../src/to-ast/library';
 import { NNode } from '../../src/state/nestedNodes/NNode';
 import { Map, NsMap } from '../../src/types/mcst';
 import { NUIResults, Store } from './store/Store';
@@ -24,6 +24,7 @@ import { TraceMap } from '../ide/ground-up/loadEv';
 import { displayFunctionIds } from './store/displayFunction';
 import { AllNames } from '../ide/ground-up/evaluators/interface';
 import { TypeEnv } from '../ide/infer/algw-cr/types';
+import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 
 export type MetaData = {
     trace?: {
@@ -285,7 +286,7 @@ export type SandboxNamespace =
     //   }
     RealizedNamespace;
 
-export type UIState = { ctx: Ctx } & NUIState;
+export type UIState = NUIState;
 
 export type RegMap = {
     [key: number]: {

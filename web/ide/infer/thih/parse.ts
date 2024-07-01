@@ -1,7 +1,7 @@
 import { Assump, Expr, builtins } from './types';
 import { term, parse as hmxparse } from '../hmx/hmx';
 import { Node } from '../../../../src/types/cst';
-import { Display } from '../../../../src/to-ast/library';
+// import { Display } from '../../../../src/to-ast/library';
 import { Ctx } from '../algw-cr/parse';
 import { trace } from '.';
 

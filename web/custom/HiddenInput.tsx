@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
+// import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
 import {
     type ClipboardItem,
     clipboardText,
@@ -12,6 +12,8 @@ import equal from 'fast-deep-equal';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { goRight } from '../../src/state/goRightUntil';
 import { useGetStore } from './store/StoreCtx';
+import { Display } from '../../src/to-ast/library';
+import { AutoCompleteResult } from '../../src/to-ast/Ctx';
 // import { Ctx } from '../../src/to-ast/library';
 
 const shouldIgnore = (el: Element | null) => {
@@ -90,7 +92,7 @@ export function HiddenInput({
 
                 dispatch({ type: 'copy', items });
 
-                const display: Ctx['display'] = {};
+                const display: Display = {};
                 const { results } = store.getResults();
                 Object.values(results.nodes).forEach((nodeResults) => {
                     Object.assign(display, nodeResults.layout);
@@ -151,7 +153,7 @@ export function HiddenInput({
                 }
 
                 if (evt.key === 'PageDown' || evt.key === 'PageUp') {
-                    return // let it happen
+                    return; // let it happen
                 }
 
                 if (evt.key === 'Escape' && state.at.length > 0) {

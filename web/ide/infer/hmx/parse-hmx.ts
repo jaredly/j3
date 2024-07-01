@@ -1,10 +1,10 @@
-import { Display } from '../../../../src/to-ast/library';
+// import { Display } from '../../../../src/to-ast/library';
 import { Node } from '../../../../src/types/cst';
 import { term } from './hmx';
 
 export const parse = (
     node: Node,
-    ctx: { errors: { [key: number]: string }; display: Display },
+    ctx: { errors: { [key: number]: string } },
 ): term | undefined => {
     switch (node.type) {
         case 'identifier': {

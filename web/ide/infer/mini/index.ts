@@ -1,4 +1,4 @@
-import { register } from '../types';
+// import { register } from '../types';
 import {
     CoreAlgebra_term,
     Mark_none,
@@ -311,4 +311,4 @@ function caTermToString<t>(
     return '';
 }
 
-register('mini', { builtins, parse, infer, typToString, getTrace });
+// register('mini', { builtins, parse, infer, typToString, getTrace });

@@ -1,8 +1,8 @@
 // https://github.com/jfecher/algorithm-j/blob/master/j.ml
 // nice.
 
-import { Display } from '../../../../src/to-ast/library';
-import { Trace, TraceKind, Tree, register } from '../types';
+// import { Display } from '../../../../src/to-ast/library';
+// import { Trace, TraceKind, Tree, register } from '../types';
 import { parse } from './parse-j';
 
 const walkExpr = (expr: expr, fn: (e: expr) => void): void => {
@@ -521,7 +521,7 @@ let _infer = (env: Env, expr: expr, results: Results): typ => {
 export let infer = (
     env: Env,
     expr: expr,
-    results: { typs: Results; display: Display },
+    results: { typs: Results; display: any },
 ): typ => {
     reset();
     // env = { ...env };
@@ -548,95 +548,95 @@ const toString = (expr: expr): string => {
     }
 };
 
-const toTree = (expr: expr): Tree => {
-    switch (expr.type) {
-        case 'let':
-            return {
-                name: '(let',
-                loc: expr.loc,
-                children: [
-                    { name: expr.name, loc: expr.nameloc, children: [] },
-                    ...[expr.init, expr.body].map(toTree),
-                ],
-            };
-        case 'fncall':
-            return {
-                name: toString(expr).slice(0, 10),
-                loc: expr.loc,
-                children: [expr.fn, ...expr.args].map(toTree),
-            };
-        case 'lambda':
-            return {
-                name: '(fn [',
-                loc: expr.loc,
-                children: [
-                    ...expr.names.map(
-                        (name): Tree => ({
-                            name: name.name,
-                            children: [],
-                            loc: name.loc,
-                        }),
-                    ),
-                    toTree(expr.expr),
-                ],
-            };
-        case 'identifier':
-            return { name: expr.id, loc: expr.loc, children: [] };
-        case 'number':
-            return { name: '' + expr.value, loc: expr.loc, children: [] };
-    }
-    return { name: expr.type, loc: expr.loc, children: [] };
-};
+// const toTree = (expr: expr): Tree => {
+//     switch (expr.type) {
+//         case 'let':
+//             return {
+//                 name: '(let',
+//                 loc: expr.loc,
+//                 children: [
+//                     { name: expr.name, loc: expr.nameloc, children: [] },
+//                     ...[expr.init, expr.body].map(toTree),
+//                 ],
+//             };
+//         case 'fncall':
+//             return {
+//                 name: toString(expr).slice(0, 10),
+//                 loc: expr.loc,
+//                 children: [expr.fn, ...expr.args].map(toTree),
+//             };
+//         case 'lambda':
+//             return {
+//                 name: '(fn [',
+//                 loc: expr.loc,
+//                 children: [
+//                     ...expr.names.map(
+//                         (name): Tree => ({
+//                             name: name.name,
+//                             children: [],
+//                             loc: name.loc,
+//                         }),
+//                     ),
+//                     toTree(expr.expr),
+//                 ],
+//             };
+//         case 'identifier':
+//             return { name: expr.id, loc: expr.loc, children: [] };
+//         case 'number':
+//             return { name: '' + expr.value, loc: expr.loc, children: [] };
+//     }
+//     return { name: expr.type, loc: expr.loc, children: [] };
+// };
 
-let trace: Trace[] = [];
+let trace: any[] = [];
 
-register('j', {
-    infer,
-    builtins: {
-        '>': {
-            typevars: [],
-            typ: {
-                type: 'fn',
-                args: [
-                    {
-                        type: 'lit',
-                        name: 'number',
-                        loc: -1,
-                    },
-                    { type: 'lit', name: 'number', loc: -1 },
-                ],
-                ret: { type: 'lit', name: 'bool', loc: -1 },
-                loc: -1,
-            },
-        },
-        '+': {
-            typevars: [],
-            typ: {
-                type: 'fn',
-                args: [
-                    {
-                        type: 'lit',
-                        name: 'number',
-                        loc: -1,
-                    },
-                    { type: 'lit', name: 'number', loc: -1 },
-                ],
-                ret: { type: 'lit', name: 'number', loc: -1 },
-                loc: -1,
-            },
-        },
-    },
-    getTrace: () => {
-        const res = trace;
-        trace = [];
-        return res;
-    },
-    parse,
-    typToString,
-    toTree,
-});
+// register('j', {
+//     infer,
+//     builtins: {
+//         '>': {
+//             typevars: [],
+//             typ: {
+//                 type: 'fn',
+//                 args: [
+//                     {
+//                         type: 'lit',
+//                         name: 'number',
+//                         loc: -1,
+//                     },
+//                     { type: 'lit', name: 'number', loc: -1 },
+//                 ],
+//                 ret: { type: 'lit', name: 'bool', loc: -1 },
+//                 loc: -1,
+//             },
+//         },
+//         '+': {
+//             typevars: [],
+//             typ: {
+//                 type: 'fn',
+//                 args: [
+//                     {
+//                         type: 'lit',
+//                         name: 'number',
+//                         loc: -1,
+//                     },
+//                     { type: 'lit', name: 'number', loc: -1 },
+//                 ],
+//                 ret: { type: 'lit', name: 'number', loc: -1 },
+//                 loc: -1,
+//             },
+//         },
+//     },
+//     getTrace: () => {
+//         const res = trace;
+//         trace = [];
+//         return res;
+//     },
+//     parse,
+//     typToString,
+//     toTree,
+// });
 
-function typTraceKind(typ: typ): TraceKind {
+function typTraceKind(typ: typ): any {
     return typ.type === 'var' && typ.var.type === 'unbound'
         ? 'type:free'
         : // : typIsPartial(typ)
