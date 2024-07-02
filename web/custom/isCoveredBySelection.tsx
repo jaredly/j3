@@ -1,7 +1,8 @@
-import { Map, NsMap } from '../../src/types/mcst';
+import { Map } from '../../src/types/mcst';
 import { CoverageLevel, selectionStatus } from '../../src/state/clipboard';
 import { State } from '../../src/state/getKeyUpdate';
 import { Path } from '../../src/state/path';
+import { NsMap } from './UIState';
 
 export const isCoveredBySelection = (
     at: State['at'],

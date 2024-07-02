@@ -12,7 +12,7 @@ import { Data, Expr, parse, findLastIndex, LineFixture } from './Data';
 import { valueToString } from '../../ide/ground-up/valueToString';
 import { Node } from '../../../src/types/cst';
 import { valueToNode } from '../../ide/ground-up/bootstrap';
-import { UpdateMap } from '../../../src/state/getKeyUpdate';
+import { UpdateMap } from '../../../src/types/mcst';
 import { reLoc } from '../../../src/state/clipboard';
 
 export const fixturePlugin: NamespacePlugin<any, Data<Expr>, any> = {

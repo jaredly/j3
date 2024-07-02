@@ -1,7 +1,6 @@
 // Um the path
 
-import { NUIState, RealizedNamespace } from '../../web/custom/UIState';
-import { NsMap } from '../types/mcst';
+import { NUIState, RealizedNamespace, NsMap } from '../../web/custom/UIState';
 
 export type PathChild =
     | { type: 'card'; card: number }

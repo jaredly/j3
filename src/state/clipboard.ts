@@ -1,4 +1,4 @@
-import { NUIState, RealizedNamespace } from '../../web/custom/UIState';
+import { NUIState, NsMap, RealizedNamespace } from '../../web/custom/UIState';
 import { findTops } from '../../web/ide/ground-up/findTops';
 import { reduceUpdate } from '../../web/ide/ground-up/reduce';
 import { renderNodeToString } from '../../web/ide/ground-up/renderNodeToString';
@@ -12,7 +12,6 @@ import {
     ListLikeContents,
     MNodeExtra,
     Map,
-    NsMap,
     fromMCST,
     toMCST,
 } from '../types/mcst';
@@ -20,10 +19,10 @@ import { transformNode } from '../types/transform-cst';
 import {
     NsUpdateMap,
     StateUpdate,
-    UpdateMap,
     getKeyUpdate,
     insertText,
 } from './getKeyUpdate';
+import { UpdateMap } from '../types/mcst';
 import { selectEnd } from './navigate';
 import { newNodeAfter } from './newNodeBefore';
 import { Path, cmpFullPath } from './path';

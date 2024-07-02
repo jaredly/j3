@@ -1,4 +1,5 @@
-import { NsUpdateMap, State, UpdateMap } from '../../../src/state/getKeyUpdate';
+import { NsUpdateMap, State } from '../../../src/state/getKeyUpdate';
+import { UpdateMap } from '../../../src/types/mcst';
 import { redoItem, undoItem } from '../../../src/to-ast/history';
 import { HistoryItem } from '../../../src/to-ast/library';
 import { Map } from '../../../src/types/mcst';

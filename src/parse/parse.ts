@@ -1,10 +1,11 @@
 // hmm
+import { NsMap } from '../../web/custom/UIState';
 import { Mods, State, applyUpdate } from '../state/getKeyUpdate';
 import { Path, cmpFullPath } from '../state/path';
 import { AutoCompleteReplace } from '../to-ast/Ctx';
 import { applyMenuItem } from '../to-ast/autoComplete';
 import { Display } from '../to-ast/library';
-import { Map, NsMap } from '../types/mcst';
+import { Map } from '../types/mcst';
 import { splitGraphemes } from './splitGraphemes';
 export const idxSource = () => {
     let idx = 0;

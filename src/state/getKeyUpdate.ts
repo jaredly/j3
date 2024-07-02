@@ -4,13 +4,14 @@ import {
     MetaDataUpdateMap,
     RegMap,
     SandboxNamespace,
+    NsMap,
 } from '../../web/custom/UIState';
 import { plugins } from '../../web/custom/plugins';
 import { idText } from '../parse/idText';
 import { pathPos } from '../parse/parse';
 import { splitGraphemes } from '../parse/splitGraphemes';
 import { Type } from '../types/ast';
-import { MNode, Map, NsMap } from '../types/mcst';
+import { MNode, Map } from '../types/mcst';
 import { closeListLike } from './closeListLike';
 import { goLeft, goLeftUntil } from './goLeftUntil';
 import { goRight, goRightUntil } from './goRightUntil';
@@ -33,6 +34,7 @@ import {
 } from './newNodes';
 import { Path } from './path';
 import { replacePathWith } from './replacePathWith';
+import { UpdateMap } from '../types/mcst';
 
 export const wrappable: Path['type'][] = [
     'spread-contents',
@@ -137,7 +139,6 @@ export type State = {
     at: Cursor[];
     menu?: { selection: number; dismissed?: boolean };
 };
-export type UpdateMap = { [key: string]: null | Map[0] };
 export type NsUpdateMap = { [key: string]: null | SandboxNamespace };
 
 export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {

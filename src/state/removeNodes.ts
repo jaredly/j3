@@ -1,5 +1,5 @@
-import { UpdateMap } from './getKeyUpdate';
-import { fromMCST, Map, NsMap } from '../types/mcst';
+import { UpdateMap } from '../types/mcst';
+import { fromMCST, Map } from '../types/mcst';
 import { selectStart } from './navigate';
 import { goLeft } from './goLeftUntil';
 import { StateChange } from './getKeyUpdate';
@@ -8,7 +8,7 @@ import { commonAncestor } from './clipboard';
 import { validatePath } from './validatePath';
 import { transformNode } from '../types/transform-cst';
 import { Path } from './path';
-import { Card } from '../../web/custom/UIState';
+import { Card, NsMap } from '../../web/custom/UIState';
 
 export const removeNodes = (
     start: Path[],

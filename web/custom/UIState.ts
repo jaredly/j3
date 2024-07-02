@@ -5,13 +5,13 @@ import {
     Mods,
     StateChange,
     StateUpdate,
-    UpdateMap,
 } from '../../src/state/getKeyUpdate';
+import { UpdateMap } from '../../src/types/mcst';
 import { Path } from '../../src/state/path';
 import { Def, DefType, Node } from '../../src/types/ast';
 import { HistoryItem } from '../../src/to-ast/library';
 import { NNode } from '../../src/state/nestedNodes/NNode';
-import { Map, NsMap } from '../../src/types/mcst';
+import { Map } from '../../src/types/mcst';
 import { NUIResults, Store } from './store/Store';
 import {
     AnyEnv,
@@ -41,6 +41,7 @@ export type MetaData = {
 
 export type MetaDataMap = { [key: number]: MetaData };
 export type MetaDataUpdateMap = { [key: number]: MetaData | null };
+export type NsMap = { [key: number]: RealizedNamespace };
 
 export type NUIState = {
     regs: RegMap;
@@ -54,7 +55,7 @@ export type NUIState = {
     };
     history: HistoryItem[];
     cards: Card[];
-    nsMap: { [key: number]: RealizedNamespace };
+    nsMap: NsMap;
     meta: MetaDataMap;
     evaluator?: string | string[] | null;
 

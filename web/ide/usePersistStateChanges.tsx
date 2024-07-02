@@ -9,7 +9,7 @@ import {
 import { Db } from '../../src/db/tables';
 import { HashedTree } from '../../src/db/hash-tree';
 import { addDefinitions, addNamespaces } from '../../src/db/library';
-import { UpdateMap } from '../../src/state/getKeyUpdate';
+import { UpdateMap } from '../../src/types/mcst';
 
 // so
 // like the sandbox meta
