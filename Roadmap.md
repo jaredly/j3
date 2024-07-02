@@ -1,15 +1,33 @@
 
 # More one world thoughts
 
+collaborative editing .... should in principle not be too bad, right?
+undo/redo gets a little weird, but we just need to flag history items based on originator, and say you only undo the changes you make.
+
+
+
+oooh so what about:
+- the ability to "pin" a reference, which means that we're basically doing hash-addressed for that (and all descendents), BUT it's *lazy*; so IF something gets edited that is pinned, the toplevel gets copied (as deep as needed) and the pinner is updated to point to that thing.
+That'd be a neat trick.
+- I also waaant best-in-class dead code detection. because nothing can have effects.
+
+
+
 ## Things I need to do before one world is ready
 
 [0] remove all dead code, for real
+  - ok that was a lot. not like, alllll all, but a lot.
 
 [1] locs are strings
+  - .... hmm so currently I have the notion of "finding the max loc"
+    is that just not a thing anymore? ??
   - make the code changes
   - convert all existing .json files
   - done?
-[2]
+
+ok I do declare, that this is actually a bad idea.
+
+[2] should I build things from the ground up again? like, I've learned some things...
 
 
 
