@@ -22,6 +22,7 @@ Toplevel
 */
 
 import { Nodes } from './nodes';
+import { TS } from './state';
 
 export type Toplevel = {
     id: string;
@@ -29,6 +30,7 @@ export type Toplevel = {
     root: number;
     docstring: number;
     nextLoc: number;
+    ts: TS;
 };
 
-export type Toplevels = Record<number, Toplevel>;
+export type Toplevels = Record<string, Toplevel>;

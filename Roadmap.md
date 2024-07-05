@@ -1,4 +1,105 @@
 
+# Implementing one-world
+
+cheapest way to start is to say we're all just one big json blob
+again.
+
+buttt I also will want ... /changes/ to be, like, pretty well structured.
+So that server chatter isn't too bad.
+and then we can make p2p also work, right?
+
+
+
+#
+
+HiddenInput provides itself on context, and allows
+... text ... items to register themselves. And I guess
+blinkers as well?
+
+Ok so nodes will control their own cursor, which honestly
+is a good idea, so we don't get the cursor out of alignment
+when formatting comes in and such.
+
+Also my cursor path will no longer have indexes in it,
+so adding multiple things to the same node shouldn't be a problem.
+
+alsooo the HiddenInput, when dispatching the keydown event to listeners,
+will wrap it in a thing that will tell the central store to
+batch changes into one change (and one historyItem)
+
+
+
+
+# Things to represent
+
+- documents
+- document nodes
+- toplevels (with a node map)
+- namespaces -> hashes
+- hashes -> a serialization of a toplevel
+  -> gonna have to maintain a strict reverse mapping of "what references this hash" so I can do eager garbage collection.
+
+
+so, second guessing the whole "hash" thing.
+Cannn I, instead:
+-> just have document nodes, that have multiple toplevels listed?
+  ->
+
+
+ifff you edit the name of something, that has dependents.
+-> it gets staged. And to "commit" the stage, you have the option to (a) keep all dependencies (b) break all dependencies.
+
+Because, "I want to switch between these two impls" is not terribly uncommon.
+hrmmm maybe I'll need a special command for that.
+
+I think the default behavior should just be "update all users, it's fine".
+Deleting a thing from the document doesn't mean deleting it from the library.
+-> and so, doesn't trigger staging.
+- NOTE that stagingness is a library-level thing, not a document-level thing.
+Deleting a thing from the library which has dependents will both break all references, and put you into staging. And you can't get out until you've fixed the issues.
+
+
+
+
+
+hrmmm so how do I ... ensure ...
+
+what I mean to say is, that:
+
+document-node -> does it point at
+1) a namespace library path (so it can pull up all alternatives from different stagings)
+OR
+2) a toplevel id ... in which case, it would not.
+
+and to make matters worse -- if I make a change to a toplevel, prompting a staging split, does that mean we generate a new toplevel id?
+seems a little ... drastic. I guess it would only happen the first time? or something
+
+
+
+ok backup, what if the thing we're /staging/ isn't based on "multiple namespace mappings" but rather "multiple toplevelid bodies"?
+and then we're back to "refs point to toplevelids, and namespaces are just a way to give them names".
+
+you know there's really something nice about that
+because
+you'd have
+state: { toplevels: { [somid]: {nodes}, ...other things }}
+and then
+staging_state: { toplevels: {[somid]: {nodes} }}
+and you could have structural sharing with all non-edited nodes from the `nodes` map.
+
+ok on principle, I think I find this quite appealing.
+
+
+
+
+
+
+
+
+
+
+
+
 # More one world thoughts
 
 collaborative editing .... should in principle not be too bad, right?

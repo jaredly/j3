@@ -1,4 +1,178 @@
 
+Can we think about rebases for a second?
+
+like, you have two stagings, and we're making changes to both.
+
+
+[side note, do I want to be able to "commit" and include active stagings in that snapshot?]
+[it kinda seems like I do. like I would be able to "revert" if I wanted to.]
+
+OK SO
+commits do impact the full everything
+and branches as well
+
+releases are just from a single namespace/root thing.
+
+andddddd commit also save the state of staging. I think.
+because I sure do want to be able to preserve it.
+
+
+So like
+how do we deal with library dependencies.
+a library is a commit with the hashes all bundled
+-> downloading the library, involves getting the whole bundle of stuff
+  -> to start with, I'd skip any deduplication and just drab the tarball I should think
+  -> but we can dedup at some point I imagine.
+-> the downloading of it is a caching action. The library artifacts don't need to be committed anywhere.
+-> can/should we use github releases for releases? sounds kinda fun
+  - anywayyy releases are . like . tagged with a sha probably
+
+-> whereeee do we specify that a library exists?
+-> would it be like a ... toplevel mapping of "library name" to "source url" or something?
+
+so, I guess ... a namespace/name could map to a `hash + index` or a `library hash + index`. Right?
+Dooo I really need to build that in just yet? Seems like I could get pretty far without it.
+so yeah, it should be forwards compatible.
+
+Alllrighty.
+Back to the question of "to git or not to git"
+
+
+
+
+
+
+
+
+
+
+##
+
+Let's talk about "staging".
+This is related to the "WIP" state that I described earlier.
+
+The idea is:
+When you make a change
+- if the change results in the toplevel failing to type check, you enter staging
+  - if you make further changes that restore type checking, you exit staging
+- if the change results in a downstream type error, you enter staging
+  - if you resolve that, you exit staging
+- if the change results in a downstream test failure, you enter staging
+
+WHILE IN STAGING:
+- your changes don't get *committed* to the namespace
+  - does that mean that namespaces actually map to a `hash`, and references are to a `hash` instead of an `id`?? MAYybe.
+- we display somehow that the affected toplevels are "in staging"
+- IF YOU WANT TO, you can choose to "stash" your staging into a fresh namespace. cool, right?
+  - does that clone everything downstream as well? mmmmm maybe it does? Or maybe you can choose not to.
+- There's probably got to be a way to "merge back" the stashed changes, right?
+
+
+ANOTHER WAY to exit staging is to say
+"the downstream things that are broken should refer to the previous version".
+This is like ... the opposite of stash? like, "I don't need to move, you need to move."
+
+I see two options here:
+- (1) the "previous working versions" of the things get put in a new namespace
+- (2) the "previous working versions" of the things get renamed, with like a suffix, and are left in the same namespace.
+- (3) welll I guess I could maybe have a special "stashes" notion, where things get tossed, and have the same "name", but they're "in a named stash" and can't really be referred to (or not as well idk). And then you can choose to take them out of the stash?
+  - sounds kinda reasonable.
+
+
+IT WOULD SEEM that you could have multiple, independent "stagings" happening at once.
+
+IT WOULD ALSO BE INTERESTING if you could have multiple *versions of the same set of functions* being ... edited ... at once ... and then the "test" fixture matrices would display the results for each set, so you can compare them.
+
+Ok, so ... there would be a "switcher" at the top of a toplevel that exists in one or more "stagings", so you can swap between them.
+-> I think undo history would have to ... take that into account? like you can switch to another version, and undo a thing that was done in that version. Right? Although maybe that doesn't make it weird, you just "search farther back" for the thing to undo/redo.
+
+ANDDD probably if you switch to one thing one place, it gets switched in the whole document.
+
+ANOTHER THING are "stagings" scoped to a single document? or do they live elsewhere? hmmmm kinda seems like it would be scoped. right?
+althougghghhh actually no, there could be weird clobbering things if you edit a toplevel in one document without realizing that there's a staging in another document. Right? A "staging" should be trackable with "# tests passing".
+Ok but I think they would be at least /tagged/ with the namespace of the document where they originated.
+
+
+
+
+
+# How does this interact with version control?
+A "commit" is saying "i'm going to give a name to this 'current state of the world'".
+> BUT it's not actually about the *whole* world, it makes sense for it to be focused on a particular toplevel (or namespace I guess) and then snapshot the deep dependency tree from there.
+
+
+# OK SO ANOTHER THING
+what about ~module-level~ polymorphism? Roc has this I think.
+And it would seem useful to be able to say "I depend on being provided ~these functions~ with ~these signatures~".
+
+it's a little like ... algebraic effects ... but
+
+Does it make sense for this dependency to /need/ to be provided all at once?
+I guess it makes sense for it to need to be provided, in general.
+And as long as we can do `spread` or something to get things in place, it's probably fine. We'll want to allow multi-spread in this case.
+
+THE QUESTION IS
+- should we require that you provide a default implementation?
+  -> probably.
+- is this ... different ... from *earmuffs*?
+  -> I mean I kinda is, and kinda isnt.
+
+so like, why not just use earmuffs for this kind of thing?
+they should be statically compileable. And if you use it in different ways then it'll multimorphise for it.
+
+
+
+
+
+
+
+## Should algebraic effects be declared? Prolly.
+> side note, having algebraic effects be 100% inferred is maybe a little off? like there's part of me that's like "oh so cool"... but another part of me thinks it's just asking for trouble.
+... I do ... still think it makes sense to set them apart visually.
+
+ok yeah I do think makes sense to have them be declared. but they can be very polymorphic.
+andd this means we can take advantage of namespaces and such, which seems nice. `<-hello//folks` could be abbreviated as `<-folks`, `*one/two/three*` could show up as `*two/three*`.
+[[ NOTE ]] This does cut off the potential for ... first-class manipulation of effect names. like `<-hello/*` or whatever. But, that should probably just be handled by passing an argument in.
+yeah that's fine.
+
+
+
+
+
+
+Ok so if you start staging with one thing
+because it breaks a downstream thing
+and then you edit the downstream thing
+
+
+
+
+
+
+
+
+
+
+
+- if the toplevel that you're editing has no tests or usages, then we do no staging. Normal, quick, editing.
+- if it has usages, and the changes make any usage fail to type check, then we enter staging. If you make more changes that restore type checking, then we exit staging.
+- if it *does* have tests, and you make an edit,
+  - if the
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ==============
 
 OK so we'll have a special CST node type that is ... 'code'. Right?

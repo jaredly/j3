@@ -14,6 +14,7 @@
         "explainer": "npm run build-web; bun tools/build-explainer.ts; cd web/dist; surge . compiler.jaredforsyth.com",
         "web": "vite web --port 8224 --config vite.config.js",
         "ow": "vite one-world/client --port 8226 --config vite.config.js",
+        "ows": "env PORT=8227 bun --hot run one-world/server/run.ts",
         "build-web": "vite build web --config vite.config.js",
         "make-walk": "cd ../j2; yarn tx ../j3/src/types/ast.ts ../j3/src/types/walk-ast.ts",
         "gram": "node ./make-grammar.js",

@@ -1,8 +1,29 @@
 //
 
+export type PathRoot = {
+    type: 'doc-node';
+    ids: string[];
+}; // another option would be like, "search-result" or "pin" or something
+
+export type Path = {
+    root: PathRoot;
+    children: number[];
+};
+
+export type Selection =
+    | { type: 'start' | 'end' | 'inside' }
+    | { type: 'subtext'; at: number }
+    | { type: 'rich-text'; sel: any };
+
+export type Cursor = {
+    path: Path;
+    selection: Selection;
+};
+
 type Simple =
+    // id for identifier. "blank" === empty id
     | { type: 'id' | 'stringText' | 'accessText'; text: string; loc: number }
-    | { type: 'ref'; toplevel: string; node: number; loc: number }
+    | { type: 'ref'; toplevel: string; loc: number }
     | { type: 'rich-text'; contents: any; loc: number }
     | { type: 'raw-code'; lang: string; raw: string; loc: number };
 
