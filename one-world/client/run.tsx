@@ -5,6 +5,7 @@ import { createBrowserRouter } from 'react-router-dom';
 
 import { Browse } from './Browse';
 import { Edit } from './Edit';
+import { StoreProvider } from './StoreProvider';
 
 export const router = createBrowserRouter([
     {
@@ -32,4 +33,8 @@ window.root =
         })(),
     );
 
-window.root.render(<RouterProvider router={router} />);
+window.root.render(
+    <StoreProvider>
+        <RouterProvider router={router} />
+    </StoreProvider>,
+);

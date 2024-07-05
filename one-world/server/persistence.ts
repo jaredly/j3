@@ -1,4 +1,4 @@
-import { PersistedState, Stage } from '../shared/state';
+import { Document, PersistedState, Stage } from '../shared/state';
 import {
     existsSync,
     mkdirSync,
@@ -8,16 +8,23 @@ import {
     writeFileSync,
 } from 'fs';
 import { join } from 'path';
+import { Toplevel } from '../shared/toplevels';
+
+export type Change =
+    | { type: 'toplevel'; id: string; tl: null | Toplevel }
+    | { type: 'document'; id: string; doc: null | Document };
 
 export const saveChanges = (
     base: string,
     prev: PersistedState,
     next: PersistedState,
 ) => {
+    const changes: Change[] = [];
     if (next.toplevels !== prev.toplevels) {
         Object.keys(prev.toplevels).forEach((k) => {
             if (!next.toplevels[k]) {
                 unlinkSync(join(base, 'toplevels', k));
+                changes.push({ type: 'toplevel', id: k, tl: null });
             }
         });
         Object.keys(next.toplevels).forEach((k) => {
@@ -26,6 +33,11 @@ export const saveChanges = (
                     join(base, 'toplevels', k),
                     JSON.stringify(next.toplevels[k]),
                 );
+                changes.push({
+                    type: 'toplevel',
+                    id: k,
+                    tl: next.toplevels[k],
+                });
             }
         });
     }
@@ -34,6 +46,7 @@ export const saveChanges = (
         Object.keys(prev.documents).forEach((k) => {
             if (!next.documents[k]) {
                 unlinkSync(join(base, 'documents', k));
+                changes.push({ type: 'document', id: k, doc: null });
             }
         });
         Object.keys(next.documents).forEach((k) => {
@@ -42,6 +55,11 @@ export const saveChanges = (
                     join(base, 'documents', k),
                     JSON.stringify(next.documents[k]),
                 );
+                changes.push({
+                    type: 'document',
+                    id: k,
+                    doc: next.documents[k],
+                });
             }
         });
     }
@@ -52,6 +70,8 @@ export const saveChanges = (
     if (next.stages !== prev.stages) {
         throw new Error('not save yet');
     }
+
+    return changes;
 };
 
 // iff the server is processing actions, and not just blindly storing a full dump
