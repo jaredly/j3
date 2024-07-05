@@ -10,6 +10,7 @@ export type Stage = {
     id: string;
     title?: string;
     toplevels: Toplevels;
+    documents: Record<string, Doc>;
     ts: TS;
 };
 
@@ -20,7 +21,7 @@ export type Reference = {
 
 export type PersistedState = {
     toplevels: Toplevels;
-    documents: Record<string, Document>;
+    documents: Record<string, Doc>;
     namespaces: Record<string, Reference>;
     stages: Record<string, Stage>;
 };
@@ -39,7 +40,7 @@ export type UserDocument = {
     selections: { start: Cursor; end?: Cursor }[];
 };
 
-export type Document = {
+export type Doc = {
     id: string;
     title: string;
     namespace: string;

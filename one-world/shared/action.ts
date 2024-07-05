@@ -1,4 +1,4 @@
-import { Document, PersistedState, Reference, Stage } from './state';
+import { Doc, PersistedState, Reference, Stage } from './state';
 import { Toplevel } from './toplevels';
 
 export type Action =
@@ -22,4 +22,4 @@ export type ToplevelAction =
     | { type: 'nodes'; nodes: Partial<Toplevel['nodes']> }
     | { type: 'delete' };
 
-export type DocAction = { type: 'reset'; doc: Document } | { type: 'delete' };
+export type DocAction = { type: 'reset'; doc: Doc } | { type: 'delete' };

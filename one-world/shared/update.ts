@@ -1,5 +1,5 @@
 import { Action, DocAction, ToplevelAction } from './action';
-import { Document, PersistedState } from './state';
+import { Doc, PersistedState } from './state';
 import { Toplevel } from './toplevels';
 
 export const update = (
@@ -52,9 +52,9 @@ export const update = (
 };
 
 export const updateDoc = (
-    doc: undefined | Document,
+    doc: undefined | Doc,
     action: DocAction,
-): Document | null => {
+): Doc | null => {
     switch (action.type) {
         case 'reset':
             return action.doc;

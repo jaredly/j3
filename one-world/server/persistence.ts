@@ -1,4 +1,4 @@
-import { Document, PersistedState, Stage } from '../shared/state';
+import { Doc, PersistedState, Stage } from '../shared/state';
 import {
     existsSync,
     mkdirSync,
@@ -12,7 +12,7 @@ import { Toplevel } from '../shared/toplevels';
 
 export type Change =
     | { type: 'toplevel'; id: string; tl: null | Toplevel }
-    | { type: 'document'; id: string; doc: null | Document };
+    | { type: 'document'; id: string; doc: null | Doc };
 
 export const saveChanges = (
     base: string,

@@ -1,4 +1,63 @@
 
+# July 5 morning thoughts
+
+- all changes to /main/ get checkpointed (committed)
+- you can "name" a checkpoint (add a commit message) which means it won't be garbage collected
+
+- all changes go into an "automatic stage" which is unique per-user-session.
+  - merging back to `main` is debounced (not more than every 10 seconds idk, or if you switch the toplevel you're editing. If you're editing a rich-text, I might bump the timeout to 1 minute or so? they're more expensive to checkpoint.) and of course everything has to be green.
+
+Indicate the "pending stage" whatnot with a status bar at the bottom, saying like "28 pending changes, 3 errors".
+
+IFF you want to "try again" starting from /main/, or if you want to branch off the current stage, that's when we get into multiple stages. Althought to be honest, maybe that's a bad idea? Like doing a rebase sounds super annoying.
+Maybe I /do/ actually want "stash"? That sounds better I think.
+So "revert" just drops the staged changes.
+And "stash" drops the changes in a stash, where they can be re-staged at a later time.
+
+ALSO: Changes to a /stage/ are checkpointed with some frequency. Like a lot. Maybe every change? idk. Anyway. And then the cool thing is, all those checkpoints can be dropped kindof aggressively. Like, "any staged checkpoints older than a day".
+-> UI undo/redo ... do we say it only applies within the /stage/?
+  -> it seems like you should be able to "re-enter" the most recently committed staging history. Right? Seems like it.
+-> OK but so here's the story:
+  - if you're out of staging, then: undo/redo *changes your view* but doesn't make any changes to the state.
+    -> So you enter "history viewing mode" and you have the opportunity to say "revert to here". You can also like copy/paste things.
+
+BROAD STROKES:
+- While you're still in staging, undo/redo works as you might expect, because we have a change history for you to mess in. (undo/redo does reverts of history items)
+- Once you're out of staging (either by undoing your way out of staging, or things are green), undo/redo:
+  - jump your view between commits to /main/
+    - if we still have staging history for a given change, you can scrub within the change.
+
+>> So we'd show a scrubber timeline along the bottom.
+  >> We'd also limit you to showing commits that impact ... the current ... namespace (or document??? idk. like anything open in or referenced by the current document.).
+
+
+BIG QUESTION: What do we do about /document/ versioning?
+Obvs if I /undo/ the creation of a toplevel, the documenet node referencing it is going to have a bad time.
+Do we checkpoint documents at the same time?
+And do the undo/redo history within a stage?
+
+it feels a little ... weird ... but maybe I don't see why not? And I don't see any other normal way to ensure that they stay reasonably synced.
+
+yeah, gotta have them synced as well.
+
+
+
+
+
+
+
+SIDE NOTE: It would be nice to be able to "multi-select toplevels" for copying / moving etc. Like "checkboxes on the side". Probably triggered (visibility) by holding down a key?
+
+Q: Can I get sub-toplevel structural sharing for checkpoints? Sooo probably the /staging/ checkpoints would actually just be persisting the /change history/, such that you could recreate the past.
+And then /main/ checkpoints as just doing a full-on hash of each toplevel.
+
+
+
+
+
+
+
+
 # Implementing one-world
 
 cheapest way to start is to say we're all just one big json blob
