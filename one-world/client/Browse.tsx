@@ -38,6 +38,7 @@ export const Browse = () => {
                             doc: {
                                 evaluator: [],
                                 id,
+                                nextLoc: 0,
                                 namespace: '',
                                 nodes: {},
                                 nsAliases: {},

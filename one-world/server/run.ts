@@ -11,6 +11,7 @@ import { Action } from '../shared/action';
 import { update } from '../shared/update';
 import { UserDocument } from '../shared/state';
 import { ServerWebSocket } from 'bun';
+import { rid } from '../shared/rid';
 
 type Session = {
     ws: ServerWebSocket<unknown>;
@@ -20,19 +21,24 @@ type Session = {
 const baseDirectory = './.ow-data';
 
 let state = loadState(baseDirectory);
-let ssid = 0;
-const sessions: Record<number, Session> = {};
+// let ssid = 0;
+const sessions: Record<string, Session> = {};
 
 Bun.serve({
     port: process.env.PORT,
     fetch(req, server) {
         console.log(req.url);
-        if (req.url.endsWith('/ws')) {
+        const url = new URL(req.url);
+        if (url.pathname === '/ws') {
+            if (!url.search.startsWith('?ssid=')) {
+                throw new Error(`no ssid provided`);
+            }
+            const ssid = url.search.slice('?ssid='.length);
             // upgrade the request to a WebSocket
-            const id = ssid++;
+            // const id = ssid++;
             if (
                 server.upgrade(req, {
-                    data: { id },
+                    data: { ssid },
                     headers: {
                         'Access-Control-Allow-Origin': '*',
                         'Access-Control-Allow-Methods':
@@ -66,29 +72,35 @@ Bun.serve({
     },
     websocket: {
         open(ws) {
-            const id: number = (ws.data as any).id;
-            console.log('ws open', id);
-            sessions[id] = { selections: [], ws };
+            let ssid: string = (ws.data as any).ssid;
+            if (sessions[ssid]) {
+                console.log('need new ssid', ssid, 'is taken');
+                ssid = rid() + rid();
+                (ws.data as any).ssid = ssid;
+            }
+            console.log('ws open', ssid);
+            sessions[ssid] = { selections: [], ws };
+            ws.send(JSON.stringify({ type: 'hello', ssid }));
         },
         close(ws) {
-            const id: number = (ws.data as any).id;
-            console.log('ws close', id);
-            delete sessions[id];
+            const ssid: string = (ws.data as any).ssid;
+            console.log('ws close', ssid);
+            delete sessions[ssid];
         },
         // handler called when a message is received
         async message(ws, message) {
             const msg = JSON.parse(String(message));
-            const id: number = (ws.data as any).id;
+            const ssid: string = (ws.data as any).ssid;
             if (msg.type === 'presence') {
-                sessions[id].selections = msg.selections;
+                sessions[ssid].selections = msg.selections;
 
                 Object.keys(sessions).forEach((k) => {
-                    if (+k !== id) {
-                        sessions[+k].ws.send(
+                    if (k !== ssid) {
+                        sessions[k].ws.send(
                             JSON.stringify({
                                 type: 'presence',
                                 selections: msg.selections,
-                                id,
+                                id: ssid,
                             }),
                         );
                     }
@@ -104,8 +116,8 @@ Bun.serve({
                 state = next;
                 // notify others of the changes
                 Object.keys(sessions).forEach((k) => {
-                    if (+k !== id) {
-                        sessions[+k].ws.send(
+                    if (k !== ssid) {
+                        sessions[k].ws.send(
                             JSON.stringify({ type: 'changes', changes }),
                         );
                     }

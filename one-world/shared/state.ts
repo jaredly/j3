@@ -10,7 +10,6 @@ export type Stage = {
     id: string;
     title?: string;
     toplevels: Toplevels;
-    documents: Record<string, Doc>;
     ts: TS;
 };
 
@@ -42,11 +41,12 @@ export type UserDocument = {
 
 export type Doc = {
     id: string;
-    title: string;
+    title?: string;
     namespace: string;
     nsAliases: Record<string, string>;
     nodes: Record<number, DocumentNode>;
     evaluator: EvaluatorPath;
+    nextLoc: number;
     ts: TS;
 };
 

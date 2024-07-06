@@ -1,4 +1,40 @@
 
+mOre thoughts about documents:
+- by default, a new document is a "scratch" document, e.g. it's probably not meant for public consumption. Just a place to do stuff. If you then give it a name, it gets upgraded to something that shows up places.
+
+
+#
+
+Let's talk aboit evaluators and tests
+
+-> a test toplevel gets registered to one or more evaluators.
+That's how we know "what needs to stay green".
+-> alsooo if you're in a doc w/ an evaluator, and you grab a test toplevel that's not registered to it, it renders disabled or something.
+-> Adding that test case to the current evaluator would then happen /within/ a stage.
+
+yeah taht sounds rad.
+because changes to toplevels get staged.
+
+
+
+
+
+----
+OK so best of both worlds:
+- if a tab tries to connect, it first uses the localstorage'd id
+  - if there's already an option connection, it gets a new ID, and that gets pushState'd into the URL. Very nice.
+
+
+I think I want the "session id" to be persistent in a browser.
+so saving stuff to localstorage.
+Anddd that means we'll need to coordinate across tabs if we want to ensure that everything's handled in the proper order.
+whiiiich is gonna be a pain. idk.
+eh, for now, we'll *not* have it be persistent, and see how far we get.
+There should be a way to "list current stages" and resume someone else's stage.
+
+
+
+
 # July 5 morning thoughts
 
 - all changes to /main/ get checkpointed (committed)
@@ -35,6 +71,11 @@ BIG QUESTION: What do we do about /document/ versioning?
 Obvs if I /undo/ the creation of a toplevel, the documenet node referencing it is going to have a bad time.
 Do we checkpoint documents at the same time?
 And do the undo/redo history within a stage?
+
+
+Ahhhhh ok so I think I'm going to YOLO the document node changes during a staging. If there's a document node that doesn't correspond to a known toplevel, we'll just ignore it. I think it'll be fine?
+
+
 
 it feels a little ... weird ... but maybe I don't see why not? And I don't see any other normal way to ensure that they stay reasonably synced.
 

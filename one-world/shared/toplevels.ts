@@ -22,7 +22,7 @@ Toplevel
 */
 
 import { Nodes } from './nodes';
-import { TS } from './state';
+import { EvaluatorPath, TS } from './state';
 
 export type Toplevel = {
     id: string;
@@ -31,6 +31,13 @@ export type Toplevel = {
     docstring: number;
     nextLoc: number;
     ts: TS;
+    // plugin?
+    // test?
+    testConfig?: {
+        plugin: string;
+        config: any;
+        evaluators: EvaluatorPath[];
+    };
 };
 
 export type Toplevels = Record<string, Toplevel>;
