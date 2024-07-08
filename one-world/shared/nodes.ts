@@ -1,5 +1,7 @@
 //
 
+export type Loc = Array<[string, number]>;
+
 export type PathRoot = {
     type: 'doc-node';
     ids: string[];
@@ -20,15 +22,15 @@ export type Cursor = {
     selection: Selection;
 };
 
-type Simple =
+type Simple<Loc> =
     // id for identifier. "blank" === empty id
-    | { type: 'id' | 'stringText' | 'accessText'; text: string; loc: number }
-    | { type: 'ref'; toplevel: string; loc: number }
-    | { type: 'rich-text'; contents: any; loc: number }
-    | { type: 'raw-code'; lang: string; raw: string; loc: number };
+    | { type: 'id' | 'stringText' | 'accessText'; text: string; loc: Loc }
+    | { type: 'ref'; toplevel: string; kind: string; loc: Loc }
+    | { type: 'rich-text'; contents: any; loc: Loc }
+    | { type: 'raw-code'; lang: string; raw: string; loc: Loc };
 
 export type Node =
-    | Simple
+    | Simple<number>
     | { type: 'list' | 'array' | 'record'; items: number[]; loc: number }
     | {
           type: 'string';
@@ -41,22 +43,23 @@ export type Node =
     | { type: 'record-access'; target: number; items: number[]; loc: number };
 
 export type RecNode =
-    | Simple
-    | { type: 'list' | 'array' | 'record'; items: RecNode[]; loc: number }
+    | Simple<Loc>
+    | { type: 'list' | 'array' | 'record'; items: RecNode[]; loc: Loc }
     | {
           type: 'string';
           first: RecNode;
           templates: { expr: RecNode; suffix: RecNode }[];
-          loc: number;
+          loc: Loc;
       }
-    | { type: 'comment-node' | 'spread'; contents: RecNode; loc: number }
-    | { type: 'annot'; contents: RecNode; annot: RecNode; loc: number }
-    | { type: 'record-access'; target: RecNode; items: RecNode[]; loc: number };
+    | { type: 'comment-node' | 'spread'; contents: RecNode; loc: Loc }
+    | { type: 'annot'; contents: RecNode; annot: RecNode; loc: Loc }
+    | { type: 'record-access'; target: RecNode; items: RecNode[]; loc: Loc };
 
 export type Nodes = Record<number, Node>;
 
-export const fromMap = (id: number, nodes: Nodes): RecNode => {
+export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
     const node = nodes[id];
+    const loc: [string, number][] = [[top, node.loc]];
     switch (node.type) {
         case 'id':
         case 'stringText':
@@ -64,44 +67,50 @@ export const fromMap = (id: number, nodes: Nodes): RecNode => {
         case 'rich-text':
         case 'raw-code':
         case 'ref':
-            return node;
+            return { ...node, loc };
         case 'list':
         case 'array':
         case 'record':
-            return { ...node, items: node.items.map((n) => fromMap(n, nodes)) };
+            return {
+                ...node,
+                loc,
+                items: node.items.map((n) => fromMap(top, n, nodes)),
+            };
         case 'comment-node':
         case 'spread':
-            return { ...node, contents: fromMap(node.contents, nodes) };
+            return {
+                ...node,
+                loc,
+                contents: fromMap(top, node.contents, nodes),
+            };
         case 'annot':
             return {
                 ...node,
-                contents: fromMap(node.contents, nodes),
-                annot: fromMap(node.annot, nodes),
+                loc,
+                contents: fromMap(top, node.contents, nodes),
+                annot: fromMap(top, node.annot, nodes),
             };
         case 'record-access':
             return {
                 ...node,
-                target: fromMap(node.target, nodes),
-                items: node.items.map((n) => fromMap(n, nodes)),
+                loc,
+                target: fromMap(top, node.target, nodes),
+                items: node.items.map((n) => fromMap(top, n, nodes)),
             };
         case 'string':
             return {
                 ...node,
-                first: fromMap(node.first, nodes),
+                loc,
+                first: fromMap(top, node.first, nodes),
                 templates: node.templates.map((t) => ({
-                    expr: fromMap(t.expr, nodes),
-                    suffix: fromMap(t.suffix, nodes),
+                    expr: fromMap(top, t.expr, nodes),
+                    suffix: fromMap(top, t.suffix, nodes),
                 })),
             };
     }
 };
 
-export const toMap = (node: RecNode, nodes: Nodes): number => {
-    nodes[node.loc] = fromRec(node, nodes);
-    return node.loc;
-};
-
-const fromRec = (node: RecNode, nodes: Nodes): Node => {
+const foldNode = <V>(v: V, node: RecNode, f: (v: V, node: RecNode) => V): V => {
     switch (node.type) {
         case 'id':
         case 'stringText':
@@ -109,39 +118,117 @@ const fromRec = (node: RecNode, nodes: Nodes): Node => {
         case 'rich-text':
         case 'raw-code':
         case 'ref':
-            return node;
+            return f(v, node);
+        case 'list':
+        case 'array':
+        case 'record':
+            return node.items.reduce(
+                (v, node) => foldNode(v, node, f),
+                f(v, node),
+            );
+        case 'comment-node':
+        case 'spread':
+            return foldNode(f(v, node), node.contents, f);
+        case 'annot':
+            return foldNode(
+                foldNode(f(v, node), node.contents, f),
+                node.annot,
+                f,
+            );
+        case 'record-access':
+            return node.items.reduce(
+                (v, node) => foldNode(v, node, f),
+                foldNode(f(v, node), node.target, f),
+            );
+        case 'string':
+            return node.templates.reduce(
+                (v, { expr, suffix }) =>
+                    foldNode(foldNode(v, expr, f), suffix, f),
+                foldNode(f(v, node), node.first, f),
+            );
+    }
+};
+
+const maxLoc = (node: RecNode) => {
+    return foldNode(0, node, (max, node) =>
+        Math.max(max, node.loc[node.loc.length - 1][1]),
+    );
+};
+
+// Gotta have a way to determine
+
+const getLoc = (node: RecNode, nodes: Nodes, idx: { next: number }) => {
+    const loc = node.loc[node.loc.length - 1][1];
+    if (loc in nodes) {
+        return idx.next++;
+    }
+    // @ts-ignore this will get overwritten in a sec
+    nodes[loc] = null;
+    return loc;
+};
+
+export const toMap = (node: RecNode, nodes: Nodes): number => {
+    const idx = { next: maxLoc(node) + 1 };
+    return _toMap(node, nodes, idx);
+};
+
+const _toMap = (node: RecNode, nodes: Nodes, idx: { next: number }): number => {
+    const loc = getLoc(node, nodes, idx);
+    nodes[loc] = fromRec(node, loc, nodes, idx);
+    return loc;
+};
+
+const fromRec = (
+    node: RecNode,
+    loc: number,
+    nodes: Nodes,
+    idx: { next: number },
+): Node => {
+    switch (node.type) {
+        case 'id':
+        case 'stringText':
+        case 'accessText':
+        case 'rich-text':
+        case 'raw-code':
+        case 'ref':
+            return { ...node, loc };
         case 'list':
         case 'array':
         case 'record':
             return {
                 ...node,
-                items: node.items.map((n) => toMap(n, nodes)),
+                loc,
+                items: node.items.map((n) => _toMap(n, nodes, idx)),
             };
         case 'comment-node':
         case 'spread':
             return {
                 ...node,
-                contents: toMap(node.contents, nodes),
+                loc,
+                contents: _toMap(node.contents, nodes, idx),
             };
         case 'annot':
             return {
                 ...node,
-                contents: toMap(node.contents, nodes),
-                annot: toMap(node.annot, nodes),
+                loc,
+                contents: _toMap(node.contents, nodes, idx),
+                annot: _toMap(node.annot, nodes, idx),
             };
         case 'record-access':
             return {
                 ...node,
-                target: toMap(node.target, nodes),
-                items: node.items.map((n) => toMap(n, nodes)),
+                loc,
+                target: _toMap(node.target, nodes, idx),
+                items: node.items.map((n) => _toMap(n, nodes, idx)),
             };
         case 'string':
             return {
                 ...node,
-                first: toMap(node.first, nodes),
+                loc,
+                first: _toMap(node.first, nodes, idx),
                 templates: node.templates.map((t) => ({
-                    expr: toMap(t.expr, nodes),
-                    suffix: toMap(t.suffix, nodes),
+                    expr: _toMap(t.expr, nodes, idx),
+                    suffix: _toMap(t.suffix, nodes, idx),
                 })),
             };
     }

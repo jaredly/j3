@@ -1,4 +1,83 @@
 
+## Macross
+
+Ok so this time we're going hard on macros folks, I really do think.
+This'll make a variety of things very interesting.
+
+Macros we'll be making:
+- , (yesss this is a macro! happening at expr, pat, and type.) -> it'll transform into the `pair` type constructor. yes thanks.
+- -> and ->> let's get some nice thread macros thankss
+- let->
+- if, easy one
+- oooh `and` and `or`, right? late binding ftw
+
+OH OK SO here's the thing folks.
+MACROS ALSO NEED TO GIVE ME FORMATTING INFOS. yes indeed.
+so that we know that `let->` should render with pairs and such.
+And that `->` should have 1 tightFirst
+
+---> one thing that might be a little complex, is that the macro *and* the parser might have conflicting ideas about what formatting should happen. In that case, the macro wins.
+
+ALSO the parser might be parsing the ~same stuff multiple times depending on macro-ness. So we'll just arbitrarily decide that the first one wins.
+
+Macros get saved in the toplevel.
+
+##
+
+Having a thought about ... visual callouts.
+So, it might be nice, if you're like scrolling through stuff, to show "here's an error" or something a little louder than an underline.
+Like a red icon or something.
+BUT we don't want to jump the cursor around, if you're /editing that line/. SO the story is, if your cursor is on the same line, we *suppress* the show/hide of the little icon. BUT once your cursor leaves, we can have it show up, making things easier to find.
+
+----
+
+What about ...
+allowing you to compile & run things with type errors?
+I think hazel does this.
+
+(paper rabbit hole)
+Here's hazel's latest paper https://hazel.org/papers/marking-popl24.pdf
+using bidirectional type checking, which I don't know if I've tried? Or is it the same as HM(X)?
+- there's this https://arxiv.org/pdf/1908.05839 which is maybe too formal for me
+- or this https://www.cl.cam.ac.uk/~nk480/bidir.pdf
+- or this one https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/putting.pdf which might be pratical enough for me to grok
+- or this https://www.cis.upenn.edu/~bcpierce/papers/lti-toplas.pdf
+
+ahhhh hrm.. does bidirectional type checking necessarily assume that some type annotations are required?
+Then I'm not interested, sorry....
+
+buuuut it kinda looks like the hazel paper doesn't rely on type annotations? Not sure.
+
+Ok interesting.
+So, the hazel inference algorithm : returns *both* an inferred type, and a set of constraints.
+Does that make sense?
+
+
+ok ... so ....
+alright, the way that hazel deals with "running code with type errors" is that it has a full "partial evaluation" so it doesn't /have/ to know ahead of time what will be ... "correct".
+Yeah, so
+
+```
+let m = fun (x) -> (x +3, x(23)) in (m(2), m(fun (y) -> y + 2))
+```
+
+gives you
+```
+((5, <partial>), (<partial>, 25))
+```
+
+which would be completely unusable in any optimized compilation environment.
+
+... would it be interesting to have a de-opt compilation environment available for evaluating forms that have type errors?
+I feel like that might get really weird in the world where I need type information in order to compile (e.g. type classes).
+
+, and, I don't think I'm really quite that invested in allowing you to run code that contains type errors.
+
+Ok, so let's consider that top be settled. I will *not* allow you to run code with type errors.
+unless at some very future time I decide to.
+
+
+
 # Ok
 so I've been going back and forth on the "stages" thing.
 but I think my final answer is that:

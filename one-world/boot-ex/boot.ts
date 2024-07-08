@@ -69,14 +69,13 @@ const compileTop = (
 // the stuff that when evaled returns a map of things.
 // these get plopped onto `$env`.
 const builtins = '';
+// hrmmmm so $env has the builtins on it, but `runtime` stuff are
+// /not/ on env, and are insteaed available as globals.
 
 // -------------------- Type Inference ---------------
 
 /*
 init(): tenv with builtins
-^ NOTE: should ... the init ... include builtins? seems like it.
-// or I could have a separate thing that is "builtins". I mean,
-// why bother with that. Yeah let's wait on that until/if I need it.
 infer-top(toplevel, tenv):
     - tenv
     - (option type)  ; the type to display over this toplevel
@@ -88,11 +87,7 @@ infer-top(toplevel, tenv):
     - inference errors maybe
     - types for locs
 add-tenv(old, new): tenv
-type-to-cst(type): cst, fmts
-
-
-
-
-
+type-to-cst(type, tenv): cst, fmts
+    -> this might also do type-alias reinstatement
 
 */
