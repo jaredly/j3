@@ -41,7 +41,8 @@ export type UserDocument = {
 
 export type Doc = {
     id: string;
-    title?: string;
+    title: string;
+    published: boolean;
     namespace: string;
     nsAliases: Record<string, string>;
     nodes: Record<number, DocumentNode>;
@@ -52,8 +53,7 @@ export type Doc = {
 
 export type DocumentNode = {
     id: number;
-    document: string;
-    toplevel: number;
+    toplevel: string;
     children: number[];
     ts: TS;
 

@@ -29,7 +29,7 @@ export type Toplevel = {
     id: string;
     nodes: Nodes;
     root: number;
-    docstring: number;
+    docstring?: number;
     nextLoc: number;
     ts: TS;
     macros: Record<

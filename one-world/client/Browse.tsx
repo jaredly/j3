@@ -32,6 +32,32 @@ export const Browse = () => {
                     // ws send a message ... and ... update the state locally too,
                     // right?
                     const id = Math.random().toString(36).slice(2);
+                    const ts = {
+                        created: Date.now(),
+                        updated: Date.now(),
+                    } as const;
+                    const tid = id + ':top';
+                    store.update({
+                        type: 'toplevel',
+                        id: tid,
+                        action: {
+                            type: 'reset',
+                            toplevel: {
+                                id: tid,
+                                macros: {},
+                                nextLoc: 1,
+                                nodes: {
+                                    0: {
+                                        type: 'id',
+                                        loc: 0,
+                                        text: '',
+                                    },
+                                },
+                                root: 0,
+                                ts,
+                            },
+                        },
+                    });
                     store.update({
                         type: 'doc',
                         id,
@@ -39,16 +65,27 @@ export const Browse = () => {
                             type: 'reset',
                             doc: {
                                 evaluator: [],
+                                published: false,
                                 id,
-                                nextLoc: 0,
+                                nextLoc: 2,
                                 namespace: '',
-                                nodes: {},
-                                nsAliases: {},
-                                title: 'Untitled',
-                                ts: {
-                                    created: Date.now(),
-                                    updated: Date.now(),
+                                nodes: {
+                                    0: {
+                                        id: 0,
+                                        children: [1],
+                                        toplevel: '',
+                                        ts,
+                                    },
+                                    1: {
+                                        id: 1,
+                                        children: [],
+                                        toplevel: tid,
+                                        ts,
+                                    },
                                 },
+                                nsAliases: {},
+                                title: `Session ${new Date().toLocaleString()}`,
+                                ts,
                             },
                         },
                     });
