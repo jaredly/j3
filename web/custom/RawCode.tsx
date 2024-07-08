@@ -96,14 +96,11 @@ export const RawCode = ({
         }
         focus.current?.();
     });
-    // console.log(store.getState().at);
 
     return (
         <div
             style={{
-                // backgroundColor: '#224',
                 backgroundColor: 'rgb(28 28 28)',
-                // padding: 8,
                 padding: toplevel ? 8 : '0 8px',
                 borderRadius: 4,
             }}
@@ -114,7 +111,6 @@ export const RawCode = ({
                 focus.current?.();
             }}
         >
-            {/* <textarea defaultValue={initial} /> */}
             <div
                 className="editor"
                 ref={ref}

@@ -25,9 +25,7 @@ export type Cursor = {
 type Simple<Loc> =
     // id for identifier. "blank" === empty id
     | { type: 'id' | 'stringText' | 'accessText'; text: string; loc: Loc }
-    | { type: 'ref'; toplevel: string; kind: string; loc: Loc }
-    | { type: 'rich-text'; contents: any; loc: Loc }
-    | { type: 'raw-code'; lang: string; raw: string; loc: Loc };
+    | { type: 'ref'; toplevel: string; kind: string; loc: Loc };
 
 export type Node =
     | Simple<number>
@@ -40,7 +38,16 @@ export type Node =
       }
     | { type: 'comment-node' | 'spread'; contents: number; loc: number }
     | { type: 'annot'; contents: number; annot: number; loc: number }
-    | { type: 'record-access'; target: number; items: number[]; loc: number };
+    | { type: 'record-access'; target: number; items: number[]; loc: number }
+    // doooo I want to be embedding some embeds? I kinda want to leave open the option.
+    | { type: 'rich-text'; contents: any; loc: number; embeds: number[] }
+    | {
+          type: 'raw-code';
+          lang: string;
+          raw: string;
+          loc: number;
+          embeds: number[];
+      };
 
 export type RecNode =
     | Simple<Loc>
@@ -53,7 +60,15 @@ export type RecNode =
       }
     | { type: 'comment-node' | 'spread'; contents: RecNode; loc: Loc }
     | { type: 'annot'; contents: RecNode; annot: RecNode; loc: Loc }
-    | { type: 'record-access'; target: RecNode; items: RecNode[]; loc: Loc };
+    | { type: 'record-access'; target: RecNode; items: RecNode[]; loc: Loc }
+    | { type: 'rich-text'; contents: any; loc: Loc; embeds: RecNode[] }
+    | {
+          type: 'raw-code';
+          lang: string;
+          raw: string;
+          loc: Loc;
+          embeds: RecNode[];
+      };
 
 export type Nodes = Record<number, Node>;
 
@@ -64,10 +79,15 @@ export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
         case 'id':
         case 'stringText':
         case 'accessText':
-        case 'rich-text':
-        case 'raw-code':
         case 'ref':
             return { ...node, loc };
+        case 'rich-text':
+        case 'raw-code':
+            return {
+                ...node,
+                loc,
+                embeds: node.embeds.map((n) => fromMap(top, n, nodes)),
+            };
         case 'list':
         case 'array':
         case 'record':
@@ -188,10 +208,15 @@ const fromRec = (
         case 'id':
         case 'stringText':
         case 'accessText':
-        case 'rich-text':
-        case 'raw-code':
         case 'ref':
             return { ...node, loc };
+        case 'rich-text':
+        case 'raw-code':
+            return {
+                ...node,
+                loc,
+                embeds: node.embeds.map((n) => _toMap(n, nodes, idx)),
+            };
         case 'list':
         case 'array':
         case 'record':
