@@ -1,10 +1,12 @@
 // Can this do "nested node" rendering, as well as
 // adaptive layout stuff?
 
-type ListDisplay =
+export type ListDisplay =
     | { type: 'horiz' }
     | {
-          type: 'vert' | 'switch';
+          // either means it will be horiz as long as it is under
+          // the width limit
+          type: 'vert' | 'either';
           tightFirst: number;
           indent: number;
           // the pairsliness of things
@@ -16,8 +18,10 @@ type ListDisplay =
       }
     | { type: 'wrap'; indent: number };
 
-type RenderInfo =
-    | { type: 'single-line' }
+export type RenderInfo =
+    // indicates that this node should take up a full line
+    // in a pairs dealio
+    | { type: 'pairs-full-line' }
     | ListDisplay
     | {
           // we can use this to show record keywords in a different fontlyness
@@ -28,7 +32,7 @@ type RenderInfo =
           color?: string;
       };
 
-type Renderable =
+export type Renderable =
     | { type: 'ref'; loc: number }
     // RenderInfo.text can help here
     | { type: 'text'; text: string }

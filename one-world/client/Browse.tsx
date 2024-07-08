@@ -1,12 +1,12 @@
 import * as React from 'react';
-import { useParams } from 'react-router-dom';
-import { StateContext } from './StoreContext';
+import { Link, useParams } from 'react-router-dom';
+import { StoreContext } from './StoreContext';
 
 export const Browse = () => {
     const params = useParams();
-    const store = React.useContext(StateContext);
-    const state = store.getState();
     const path = params.path || '/';
+    const store = React.useContext(StoreContext);
+    const state = store.getState();
     return (
         <div style={{ padding: 50 }}>
             All namespaces that exist
@@ -21,7 +21,9 @@ export const Browse = () => {
             <ul>
                 {Object.keys(state.documents).map((id) => (
                     <li key={id}>
-                        <button key={id}>{state.documents[id].title}</button>
+                        <Link to={`/edit/${id}`} key={id}>
+                            {state.documents[id].title}
+                        </Link>
                     </li>
                 ))}
             </ul>

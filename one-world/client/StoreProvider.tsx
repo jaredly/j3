@@ -1,9 +1,8 @@
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { PersistedState } from '../shared/state';
-import { StateContext, Store } from './StoreContext';
-import { update } from '../shared/update';
+import { StoreContext, Store } from './StoreContext';
 import { rid } from '../shared/rid';
+import { newStore } from './newStore';
 
 const lskey = 'stoa:ssid';
 
@@ -52,31 +51,6 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
         return <div>loading initial world state...</div>;
     }
     return (
-        <StateContext.Provider value={store}>{children}</StateContext.Provider>
+        <StoreContext.Provider value={store}>{children}</StoreContext.Provider>
     );
-};
-
-const newStore = (state: PersistedState, ws: WebSocket): Store => {
-    const store: Store = {
-        getState() {
-            return state;
-        },
-        update(action) {
-            state = update(state, action);
-            ws.send(
-                JSON.stringify({
-                    type: 'action',
-                    action,
-                }),
-            );
-            // todo notify
-        },
-        on(evt, f) {
-            return () => {};
-        },
-        onNode(id, f) {
-            return () => {};
-        },
-    };
-    return store;
 };

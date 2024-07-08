@@ -1,4 +1,32 @@
 
+# Ok
+so I've been going back and forth on the "stages" thing.
+but I think my final answer is that:
+- I want things to be green by default
+- if you want to make changes outside of the current "stage", you can
+  - stash them
+  - open a new tab
+
+NOTE that now that we have `eref`s for global references, we can compile them differently (using `$env[toplevel + loc]`), which means we don't have to ... ... ... sanitize them anymore. (locals still need it though).
+HOwever, do need to think about `builtins`, and what toplevel they end up referencing. I mean, probably the actual one they came from? Maybe? Or the compiler? hrmmmm.
+
+
+
+dinifetly a thing: HiddenInfo just does a listener model.
+if no listeners, then don't grab focus?
+
+If you're editing an ID, the edited text is *local state* until
+(a) a timeout
+(b) you focus elsewhere
+(c) you accept an autocomplete
+Then it gets committed back to the store, and we process stuff
+
+btW I think I want `blank`s to be significant now, at least in some places.
+
+
+
+#
+
 mOre thoughts about documents:
 - by default, a new document is a "scratch" document, e.g. it's probably not meant for public consumption. Just a place to do stuff. If you then give it a name, it gets upgraded to something that shows up places.
 
