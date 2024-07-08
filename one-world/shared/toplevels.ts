@@ -21,7 +21,8 @@ Toplevel
 
 */
 
-import { Nodes } from './nodes';
+import { Loc, Nodes, RecNode } from './nodes';
+import { RenderInfo } from './renderables';
 import { EvaluatorPath, TS } from './state';
 
 export type Toplevel = {
@@ -31,6 +32,14 @@ export type Toplevel = {
     docstring: number;
     nextLoc: number;
     ts: TS;
+    macros: Record<
+        number,
+        {
+            result: RecNode;
+            errors: any;
+            fmt: { loc: Loc; info: RenderInfo }[];
+        }
+    >;
     // plugin?
     // test?
     testConfig?: {

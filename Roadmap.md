@@ -1,4 +1,55 @@
 
+## The JS Runtime
+
+This time let's use a typescript parser
+and strip the annotations?
+maybe?
+ugh maybe not.
+No typescript for you.
+BUT we can at least parse the JS to reliably find exports and imports.
+
+OHH EAIT so the fact that we're switching to `cst/ref`s makes this mor complicated.
+
+hmm does that mean ... that I'm bout to
+yeah getting fancy w/ js is not on my todo list. Soo
+this means that, we also want the /parser/ to be able to report *extra* global usages?
+
+ORRR we just make a special allowance for toplevel raw-code's.
+hm but how would that interact with namespaces? and such?
+ok ok ok. so.
+let's say that the 'evaluator as such' is responsible for reporting (externals & global usages).
+ergh. but then what do we do about autocomplete? hrm I guess that's not too bad really. we just deny it categorically.
+ok but then ... how do we actually do resolution?
+grrr.
+
+ok, we might be getting fancy with the javascripts as well.
+buuut wasn't the point of the js eval to not get fancy?
+like.
+
+among the issues:
+- if we have multiple defns in a raw-code, how to identify them? (only one [loc] for that raw-code node)
+  - can solve that by only allowing a single defn per dealio.
+- if there's one loc and it's the whole node, then cst/ref's won't render correctly, as they expect a `cst/id` that they can grab the `.text` off of.
+  - ok I guess we can solve that by allowing a very basic form `(def x [raw-code])`.
+    - I guess that's not horrid.
+
+and we'll just agree that update things will be a little buggy, but that's what you get.
+
+
+
+
+## COVERAGE
+
+So another thing that would be super nice, along with the "tests" integration, is tracking coverage ~automatically.
+
+Seems like it ought to be as simple as updating a `$coverage` map whenever anything happens ...
+... do I want a separate compilation ... mode ... to enable it?
+
+maybe. Maybe just enable it for "things on screen"? That ought to be fine, right?
+
+So yeah, a compilation flag should probably be had.
+buut I can probably do without it to start with.
+
 ## Macross
 
 Ok so this time we're going hard on macros folks, I really do think.

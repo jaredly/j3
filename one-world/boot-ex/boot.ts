@@ -9,19 +9,27 @@ type Autocomplete = {
     options: string[];
 };
 
-// ALTERNATIVE:
-// format takes a "parsed form" and returns the list of formats about it.
-// which we could also do with the normal one, to be fair
-
 type Ctx = {
-    cursor?: { loc: number; autocomplete: [] };
+    cursor?: { loc: number; autocomplete?: Autocomplete };
     errors: ParseError[];
     fmt: Fmt[];
     usages: Usage[];
     exports: { loc: number; kind: string }[];
 };
 
-const parse = (node: RecNode, ctx: Ctx) => {
+const parse = (node: RecNode, cursor?: number) => {
+    const ctx: Ctx = {
+        cursor: cursor ? { loc: cursor } : undefined,
+        errors: [],
+        fmt: [],
+        usages: [],
+        exports: [],
+    };
+    const result = _parse(node, ctx);
+    return { result, ...ctx };
+};
+
+const _parse = (node: RecNode, ctx: Ctx) => {
     // do the thing
     //
     // parse gives us
@@ -59,10 +67,18 @@ const asExpr = (t: any) => {
 // kinda seems like we do.
 const compileTop = (
     abc: any,
-    typeInfo: any,
-    trace: { top: boolean; nodes: Record<number, { fmt?: string }> },
+    typeInfo: unknown,
+    trace: Record<number, { fmt?: string }>,
 ): string => {
-    return 'lol';
+    return `$evaluate(${JSON.stringify(abc)})`;
+};
+
+const compileExpr = (
+    abc: any,
+    typeInfo: unknown,
+    trace: Record<number, { fmt?: string }>,
+): string => {
+    return `$evaluate(${JSON.stringify(abc)})`;
 };
 
 // -------------------- Runtime -------------------
@@ -71,6 +87,7 @@ const compileTop = (
 const builtins = '';
 // hrmmmm so $env has the builtins on it, but `runtime` stuff are
 // /not/ on env, and are insteaed available as globals.
+const runtime = '';
 
 // -------------------- Type Inference ---------------
 

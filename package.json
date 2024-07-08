@@ -6,6 +6,7 @@
         "dependency-cruiser": "^16.3.1",
         "peggy": "^2.0.1",
         "plot": "link:@types/@observablehq/plot",
+        "ts-pegjs": "^4.2.1",
         "vitest": "^0.34.5"
     },
     "scripts": {
