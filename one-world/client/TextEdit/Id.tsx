@@ -6,6 +6,8 @@ import { specials, textKey } from '../keyboard';
 import { useBlink } from './useBlink';
 import { renderTextAndCursor } from './renderTextAndCursor';
 import { getNewSelection } from './getNewSelection';
+import { useKeys } from './useKeys';
+import { useDrag } from './useDrag';
 
 export type EditState = {
     text: string[];
@@ -27,80 +29,11 @@ export const Id = ({
     const latest = useLatest(state);
     const { resetBlink, blink } = useBlink();
 
-    useKeyListener(
-        state != null,
-        (key, mods) => {
-            if (!latest.current) return;
-            let { text, sel } = latest.current;
-            if (sel == null) return;
+    maintainLatestText(node.text, latest, setState);
 
-            resetBlink();
+    useKeys(state, latest, resetBlink, setState);
 
-            if (specials[key]) {
-                const action = specials[key](
-                    sel === text.length
-                        ? 'end'
-                        : sel === 0
-                        ? 'start'
-                        : 'middle',
-                    latest.current,
-                    mods,
-                );
-                if (action?.type === 'update') {
-                    setState({
-                        text: action.text,
-                        sel: action.cursor,
-                        start: action.cursorStart,
-                    });
-                }
-                return;
-            }
-            const extra = splitGraphemes(key);
-            if (extra.length > 1) {
-                console.log('Too many graphemes? What is this', key, extra);
-                return;
-            }
-            const results = textKey(extra, latest.current, mods);
-            setState({ text: results.text, sel: results.cursor });
-        },
-        () => {
-            setState(null);
-        },
-    );
-
-    const [drag, setDrag] = useState(false);
-
-    const ref = useRef<HTMLSpanElement>(null);
-
-    useEffect(() => {
-        if (!drag) return;
-        const a = () => {
-            setDrag(false);
-        };
-        const b = (evt: MouseEvent) => {
-            const state = latest.current;
-            const range = new Range();
-            const text = state?.text ?? splitGraphemes(node.text);
-            const sel = getNewSelection(
-                text,
-                state,
-                ref.current!,
-                evt.clientX,
-                false,
-                range,
-            );
-            setState({ text, sel: sel.sel, start: state?.start ?? state?.sel });
-
-            resetBlink();
-        };
-        document.addEventListener('mouseup', a);
-        document.addEventListener('mousemove', b);
-
-        return () => {
-            document.removeEventListener('mouseup', a);
-            document.removeEventListener('mousemove', b);
-        };
-    }, [drag]);
+    const { ref, setDrag } = useDrag(node.text, latest, setState, resetBlink);
 
     return (
         <span
@@ -121,9 +54,7 @@ export const Id = ({
                 );
 
                 setState({ sel, start, text });
-
                 resetBlink();
-
                 setDrag(true);
             }}
             style={{
@@ -136,3 +67,23 @@ export const Id = ({
         </span>
     );
 };
+
+function maintainLatestText(
+    nodeText: string,
+    latest: React.MutableRefObject<EditState | null>,
+    setState: React.Dispatch<React.SetStateAction<EditState | null>>,
+) {
+    const prevText = useRef(nodeText);
+    useEffect(() => {
+        if (prevText.current !== nodeText) {
+            prevText.current = nodeText;
+            if (latest.current) {
+                const text = splitGraphemes(nodeText);
+                setState({
+                    sel: Math.min(text.length, latest.current.sel),
+                    text,
+                });
+            }
+        }
+    }, [nodeText]);
+}

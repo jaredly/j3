@@ -12,6 +12,9 @@
     oRRR should I allow the in-node drag to just be handled locally, but the external drag to be up the chain?
     that sounds pretty good actually.
 
+- [ ] on blur, we gots to commit any changes
+  - into a stage, right? the current stage?
+
 are we ready for multi-node?
 
 the blinker doesn't work right, and it bothers me.
