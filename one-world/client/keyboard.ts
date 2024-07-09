@@ -1,6 +1,8 @@
 // ok
 
 import { RecNode } from '../shared/nodes';
+import { EditState } from './Edit';
+import { Mods } from './HiddenInput';
 
 type Location = 'start' | 'middle' | 'end';
 
@@ -11,25 +13,61 @@ type Action =
       }
     | { type: 'split' }
     | { type: 'delete' | 'join-left' }
-    | { type: 'update'; text: string[]; cursor: number; after?: RecNode }
+    | {
+          type: 'update';
+          text: string[];
+          cursor: number;
+          cursorStart?: number;
+          after?: RecNode;
+      }
     | { type: 'nav'; dir: 'up' | 'down' | 'left' | 'right' }
     | { type: 'after' | 'before'; node: RecNode };
 
+export const textKey = (
+    key: string[],
+    { text, sel, start }: EditState,
+    mods: Mods,
+) => {
+    if (start != null) {
+        const [left, right] = start < sel ? [start, sel] : [sel, start];
+        return {
+            text: text.slice(0, left).concat(key).concat(text.slice(right)),
+            cursor: left + key.length,
+        };
+    }
+    return {
+        text: text.slice(0, sel).concat(key).concat(text.slice(sel)),
+        cursor: sel + key.length,
+    };
+};
+
 export const specials: Record<
     string,
-    (loc: Location, cursor: number, text: string[]) => Action | void
+    (
+        loc: Location,
+        state: EditState,
+        mods: { shift: boolean; meta: boolean },
+    ) => Action | void
 > = {
-    Backspace(loc, cursor, text) {
+    Backspace(loc, { text, sel, start }, mods) {
         if (text.length === 0) {
             return { type: 'delete' };
         }
-        if (cursor === 0) {
+        if (start != null) {
+            const [left, right] = start < sel ? [start, sel] : [sel, start];
+            return {
+                type: 'update',
+                text: text.slice(0, left).concat(text.slice(right)),
+                cursor: left,
+            };
+        }
+        if (sel === 0) {
             return { type: 'join-left' };
         }
         return {
             type: 'update',
-            text: text.slice(0, cursor - 1).concat(text.slice(cursor)),
-            cursor: cursor - 1,
+            text: text.slice(0, sel - 1).concat(text.slice(sel)),
+            cursor: sel - 1,
         };
     },
     ' '(loc) {
@@ -57,15 +95,38 @@ export const specials: Record<
 
     ArrowUp: () => ({ type: 'nav', dir: 'up' }),
     ArrowDown: () => ({ type: 'nav', dir: 'down' }),
-    ArrowLeft(_, cursor, text) {
-        if (cursor > 0) {
-            return { type: 'update', text, cursor: cursor - 1 };
+    ArrowLeft(_, { text, sel, start }, { shift }) {
+        if (shift) {
+            return {
+                type: 'update',
+                text,
+                cursor: Math.max(0, sel - 1),
+                cursorStart: start ?? sel,
+            };
+        }
+        if (sel > 0) {
+            return { type: 'update', text, cursor: Math.max(0, sel - 1) };
         }
     },
-    ArrowRight(_, cursor, text) {
-        if (cursor < text.length) {
-            return { type: 'update', text, cursor: cursor + 1 };
+    ArrowRight(_, { text, sel, start }, { shift }) {
+        if (shift) {
+            return {
+                type: 'update',
+                text,
+                cursor: Math.min(text.length, sel + 1),
+                cursorStart: start ?? sel,
+            };
         }
+        if (sel < text.length) {
+            return {
+                type: 'update',
+                text,
+                cursor: Math.min(text.length, sel + 1),
+            };
+        }
+        // if (cursor < text.length) {
+        //     return { type: 'update', text, cursor: cursor + 1 };
+        // }
     },
     '('(loc) {
         return loc === 'start'

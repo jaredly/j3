@@ -1,11 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { HiddenInput } from './HiddenInput';
+import { Id } from './Id';
 import { useStore } from './StoreContext';
-import { HiddenInput, useKeyListener } from './HiddenInput';
-import { Node } from '../shared/nodes';
-import { specials } from './keyboard';
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { useLatest } from '../../web/custom/useLatest';
 
 export const Edit = () => {
     const params = useParams();
@@ -66,91 +63,6 @@ const useTopNode = (id: string, loc: number) => {
         [id, loc],
     );
 };
-
-const Id = ({
-    node,
-}: {
-    node: {
-        type: 'id' | 'stringText' | 'accessText';
-        text: string;
-        loc: number;
-    };
-}) => {
-    const [text, setText] = useState(null as null | string[]);
-    const [sel, setSel] = useState(null as null | number);
-    const [blink, setBlink] = useState(true);
-    const bid = useRef(null as null | Timer);
-
-    const latest = useLatest({ text, sel });
-
-    useKeyListener(sel != null, (key, mods) => {
-        const { text, sel } = latest.current;
-        if (sel == null) return;
-
-        setBlink(false);
-
-        clearTimeout(bid.current!);
-        bid.current = setTimeout(() => setBlink(true), 200);
-
-        const emes = text ?? splitGraphemes(node.text);
-
-        if (specials[key]) {
-            const action = specials[key](
-                sel === emes.length ? 'end' : sel === 0 ? 'start' : 'middle',
-                sel,
-                emes,
-            );
-            if (action?.type === 'update') {
-                setText(action.text);
-                setSel(action.cursor);
-            }
-            return;
-        }
-        const extra = splitGraphemes(key);
-        if (extra.length > 1) {
-            console.log('Too many graphemes? What is this', key, extra);
-            return;
-        }
-        setText([...emes.slice(0, sel), ...extra, ...emes.slice(sel)]);
-        setSel(sel + extra.length);
-    });
-
-    return (
-        <span
-            onClick={() => setSel(0)}
-            style={{
-                padding: 4,
-                backgroundColor: '#222',
-                boxSizing: 'border-box',
-            }}
-        >
-            {sel != null && text != null ? (
-                <>
-                    {text.slice(0, sel).join('')}
-                    <span style={cursorStyle(blink)}>|</span>
-                    {text.slice(sel).join('')}
-                </>
-            ) : (
-                text?.join('') ?? node.text
-            )}
-        </span>
-    );
-};
-
-const cursorStyle = (blink: boolean) =>
-    ({
-        width: 0,
-        display: 'inline-block',
-        marginLeft: -7,
-        marginRight: 7,
-        fontSize: 23,
-        top: 3,
-        position: 'relative',
-        marginTop: -7,
-        animationDuration: '1s',
-        animationName: blink ? 'blink' : 'unset',
-        animationIterationCount: 'infinite',
-    } as const);
 
 const TopNode = ({ id, loc }: { id: string; loc: number }) => {
     const node = useTopNode(id, loc);
