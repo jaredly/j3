@@ -71,7 +71,7 @@ const TopNode = ({ id, loc }: { id: string; loc: number }) => {
         node.type === 'accessText' ||
         node.type === 'stringText'
     ) {
-        return <Id node={node} />;
+        return <Id node={node} tid={id} />;
     }
     return <span>some other {node.type}</span>;
 };

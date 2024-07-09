@@ -12,8 +12,11 @@
     oRRR should I allow the in-node drag to just be handled locally, but the external drag to be up the chain?
     that sounds pretty good actually.
 
-- [ ] on blur, we gots to commit any changes
+- [x] clean up refactors
+
+- [x] on blur, we gots to commit any changes
   - into a stage, right? the current stage?
+- [x] notify nodes that changed
 
 are we ready for multi-node?
 

@@ -56,7 +56,7 @@ export function getNewSelection(
             }
         }
     } else {
-        sel = offsetInNode(range, node, text, x);
+        sel = offsetInNode(range, node.firstChild!, text, x);
     }
     return {
         sel,

@@ -1,13 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { useLatest } from '../../../web/custom/useLatest';
-import { useKeyListener } from '../HiddenInput';
-import { specials, textKey } from '../keyboard';
-import { useBlink } from './useBlink';
-import { renderTextAndCursor } from './renderTextAndCursor';
 import { getNewSelection } from './getNewSelection';
-import { useKeys } from './useKeys';
+import { renderTextAndCursor } from './renderTextAndCursor';
+import { useBlink } from './useBlink';
 import { useDrag } from './useDrag';
+import { useKeys } from './useKeys';
 
 export type EditState = {
     text: string[];
@@ -16,8 +14,10 @@ export type EditState = {
 };
 
 export const Id = ({
+    tid,
     node,
 }: {
+    tid: string;
     node: {
         type: 'id' | 'stringText' | 'accessText';
         text: string;
@@ -31,7 +31,7 @@ export const Id = ({
 
     maintainLatestText(node.text, latest, setState);
 
-    useKeys(state, latest, resetBlink, setState);
+    useKeys(tid, node.loc, latest, resetBlink, setState);
 
     const { ref, setDrag } = useDrag(node.text, latest, setState, resetBlink);
 

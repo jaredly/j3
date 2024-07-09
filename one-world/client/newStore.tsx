@@ -48,7 +48,14 @@ export const newStore = (state: PersistedState, ws: WebSocket): Store => {
                     action,
                 }),
             );
-            // todo notify
+            if (action.type === 'toplevel') {
+                if (action.action.type === 'nodes') {
+                    Object.keys(action.action.nodes).forEach((loc) => {
+                        evts.tops[action.id].nodes[+loc]?.forEach((f) => f());
+                    });
+                }
+            }
+            // todo notify more
         },
         on(evt, f) {
             return () => {};

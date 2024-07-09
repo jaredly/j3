@@ -3,15 +3,19 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { useKeyListener } from '../HiddenInput';
 import { specials, textKey } from '../keyboard';
 import { EditState } from './Id';
+import { useStore } from '../StoreContext';
 
 export function useKeys(
-    state: EditState | null,
+    tid: string,
+    loc: number,
     latest: React.MutableRefObject<EditState | null>,
     resetBlink: () => void,
     setState: React.Dispatch<React.SetStateAction<EditState | null>>,
 ) {
+    const store = useStore();
+
     useKeyListener(
-        state != null,
+        latest.current != null,
         (key, mods) => {
             if (!latest.current) return;
             let { text, sel } = latest.current;
@@ -48,6 +52,31 @@ export function useKeys(
             setState({ text: results.text, sel: results.cursor });
         },
         () => {
+            if (latest.current) {
+                const text = latest.current.text.join('');
+                const current = store.getState().toplevels[tid].nodes[loc];
+                if (
+                    current.type === 'id' ||
+                    current.type === 'accessText' ||
+                    current.type === 'stringText'
+                ) {
+                    if (text !== current.text) {
+                        store.update({
+                            type: 'toplevel',
+                            id: tid,
+                            action: {
+                                type: 'nodes',
+                                nodes: {
+                                    [loc]: {
+                                        ...current,
+                                        text,
+                                    },
+                                },
+                            },
+                        });
+                    }
+                }
+            }
             setState(null);
         },
     );
