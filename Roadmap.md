@@ -1,4 +1,19 @@
 
+## Doin a reboot
+
+### Basic Identifier Edit
+
+- [x] selection (represent, render, move)
+- [x] click, shift+click
+- [ ] shift+drag
+  - so the thing about shift drag, is it's going to be impacting much more
+    than just one thing.
+    Sooo given that in part it'll have to be handled higher up, should I do that already?
+    oRRR should I allow the in-node drag to just be handled locally, but the external drag to be up the chain?
+    that sounds pretty good actually.
+
+
+
 ## Ok so
 do I really need the /renderable/ stuff? And the nestedNodes dealio? like
 ... does it do anything for me?

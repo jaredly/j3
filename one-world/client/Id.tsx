@@ -1,11 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { useStore } from './StoreContext';
-import { HiddenInput, useKeyListener } from './HiddenInput';
-import { Node } from '../shared/nodes';
-import { specials, textKey } from './keyboard';
+import React, { useRef, useState } from 'react';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { useLatest } from '../../web/custom/useLatest';
+import { useKeyListener } from './HiddenInput';
+import { specials, textKey } from './keyboard';
 
 export type EditState = {
     text: string[];
