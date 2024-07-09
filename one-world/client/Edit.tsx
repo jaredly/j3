@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { HiddenInput } from './HiddenInput';
 import { Id } from './TextEdit/Id';
 import { useStore } from './StoreContext';
-import { Node } from '../shared/nodes';
+import { Node, Path } from '../shared/nodes';
+
+const emptyNodes: number[] = [];
 
 export const Edit = () => {
     const params = useParams();
@@ -21,7 +23,7 @@ export const Edit = () => {
         <HiddenInput>
             <div style={{ padding: 100 }}>
                 Editing {doc.title}
-                <DocNode doc={doc.id} id={0} />
+                <DocNode doc={doc.id} id={0} parentNodes={emptyNodes} />
                 {/** ok */}
             </div>
         </HiddenInput>
@@ -65,21 +67,33 @@ const useTopNode = (id: string, loc: number) => {
     );
 };
 
-const TopNode = ({ id, loc }: { id: string; loc: number }) => {
+const TopNode = ({
+    id,
+    loc,
+    parentPath,
+}: {
+    id: string;
+    loc: number;
+    parentPath: Path;
+}) => {
     const node = useTopNode(id, loc);
+    const path = useMemo(
+        () => ({ ...parentPath, children: parentPath.children.concat([loc]) }),
+        [loc, parentPath],
+    );
     if (
         node.type === 'id' ||
         node.type === 'accessText' ||
         node.type === 'stringText'
     ) {
-        return <Id node={node} tid={id} />;
+        return <Id path={path} node={node} tid={id} />;
     }
     if (
         node.type === 'list' ||
         node.type === 'array' ||
         node.type === 'record'
     ) {
-        return <Collection node={node} tid={id} />;
+        return <Collection node={node} tid={id} path={path} />;
     }
     return <span>some other {node.type}</span>;
 };
@@ -87,28 +101,45 @@ const TopNode = ({ id, loc }: { id: string; loc: number }) => {
 const Collection = ({
     node,
     tid,
+    path,
 }: {
     node: Extract<Node, { type: 'list' | 'array' | 'record' }>;
     tid: string;
+    path: Path;
 }) => {
     const [l, r] = { list: '()', array: '[]', record: '{}' }[node.type];
     return (
         <span>
             {l}
             {node.items.map((loc) => (
-                <TopNode key={loc} id={tid} loc={loc} />
+                <TopNode key={loc} id={tid} loc={loc} parentPath={path} />
             ))}
             {r}
         </span>
     );
 };
 
-const Toplevel = ({ id }: { id: string }) => {
+const Toplevel = ({
+    id,
+    doc,
+    docNodes,
+}: {
+    id: string;
+    doc: string;
+    docNodes: number[];
+}) => {
     const store = useStore();
     const top = useToplevel(id);
+    const path: Path = useMemo(
+        () => ({
+            children: [],
+            root: { type: 'doc-node', ids: docNodes, doc },
+        }),
+        [docNodes],
+    );
     return (
         <div>
-            <TopNode id={id} loc={top.root} />
+            <TopNode id={id} loc={top.root} parentPath={path} />
         </div>
     );
     // todo know about focus
@@ -116,18 +147,37 @@ const Toplevel = ({ id }: { id: string }) => {
     // })
 };
 
-const DocNode = ({ doc, id }: { doc: string; id: number }) => {
+const DocNode = ({
+    doc,
+    id,
+    parentNodes,
+}: {
+    doc: string;
+    id: number;
+    parentNodes: number[];
+}) => {
     const node = useDocNode(doc, id);
+    const docNodes = useMemo(() => parentNodes.concat([id]), [parentNodes, id]);
     return (
         <div>
             {id === 0 ? null : (
                 <div>
-                    A doc node toplevel: <Toplevel id={node.toplevel} />
+                    A doc node toplevel:{' '}
+                    <Toplevel
+                        id={node.toplevel}
+                        doc={doc}
+                        docNodes={docNodes}
+                    />
                 </div>
             )}
             <div style={{ paddingLeft: id === 0 ? 0 : 20 }}>
                 {node.children.map((id) => (
-                    <DocNode key={id} id={id} doc={doc} />
+                    <DocNode
+                        key={id}
+                        id={id}
+                        doc={doc}
+                        parentNodes={docNodes}
+                    />
                 ))}
             </div>
         </div>

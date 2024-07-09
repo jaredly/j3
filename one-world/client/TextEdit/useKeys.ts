@@ -4,20 +4,25 @@ import { useKeyListener } from '../HiddenInput';
 import { specials, textKey } from '../keyboard';
 import { EditState } from './Id';
 import { useStore } from '../StoreContext';
+import { handleAction } from './actions';
+import { Path } from '../../shared/nodes';
 
 export function useKeys(
     tid: string,
-    loc: number,
+    path: Path,
     latest: React.MutableRefObject<EditState | null>,
     resetBlink: () => void,
     setState: React.Dispatch<React.SetStateAction<EditState | null>>,
 ) {
     const store = useStore();
 
+    const loc = path.children[path.children.length - 1];
+
     useKeyListener(
         latest.current != null,
         (key, mods) => {
             if (!latest.current) return;
+            if (mods.meta) return; // skip those
             let { text, sel } = latest.current;
 
             resetBlink();
@@ -32,14 +37,24 @@ export function useKeys(
                     latest.current,
                     mods,
                 );
-                if (action?.type === 'update') {
+                if (!action) {
+                } else if (action.type === 'update') {
                     setState({
                         text: action.text,
                         sel: action.cursor,
                         start: action.cursorStart,
                     });
                 } else {
-                    console.warn('ignoring action', action);
+                    const saction = handleAction(
+                        action,
+                        path,
+                        store.getState(),
+                    );
+                    if (saction) {
+                        store.update(saction);
+                    } else {
+                        console.warn('ignoring action', action);
+                    }
                 }
                 return;
             }

@@ -20,6 +20,8 @@
 
 are we ready for multi-node?
 
+right after multinode, we need to do actual selection management.
+
 ...
 I do need {clicking on punctuation} to do useful things.
 

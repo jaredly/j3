@@ -17,7 +17,7 @@ export const renderTextAndCursor = (
                 }
                 <span
                     style={{
-                        backgroundColor: 'rgba(100,0,0,0.4)',
+                        backgroundColor: 'rgba(200,200,0,0.2)',
                     }}
                 >
                     {text.slice(left, right).join('')}

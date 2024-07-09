@@ -6,20 +6,23 @@ import { Mods } from './HiddenInput';
 
 type Location = 'start' | 'middle' | 'end';
 
-type Action =
+type LocalAction = {
+    type: 'update';
+    text: string[];
+    cursor: number;
+    cursorStart?: number;
+    after?: RecNode;
+};
+
+export type KeyAction =
+    // non-mutative
+    // mutative
     | {
           type: 'surround';
           kind: 'list' | 'record' | 'array' | 'string' | 'comment' | 'spread';
       }
     | { type: 'split' }
     | { type: 'delete' | 'join-left' }
-    | {
-          type: 'update';
-          text: string[];
-          cursor: number;
-          cursorStart?: number;
-          after?: RecNode;
-      }
     | { type: 'nav'; dir: 'up' | 'down' | 'left' | 'right' }
     | { type: 'after' | 'before'; node: RecNode };
 
@@ -47,7 +50,7 @@ export const specials: Record<
         loc: Location,
         state: EditState,
         mods: { shift: boolean; meta: boolean },
-    ) => Action | void
+    ) => KeyAction | LocalAction | void
 > = {
     Backspace(loc, { text, sel, start }, mods) {
         if (text.length === 0) {

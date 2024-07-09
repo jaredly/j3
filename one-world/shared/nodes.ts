@@ -4,7 +4,8 @@ export type Loc = Array<[string, number]>;
 
 export type PathRoot = {
     type: 'doc-node';
-    ids: string[];
+    doc: string;
+    ids: number[];
 }; // another option would be like, "search-result" or "pin" or something
 
 export type Path = {
@@ -37,7 +38,7 @@ export type Node =
           templates: { expr: number; suffix: number }[];
           loc: number;
       }
-    | { type: 'comment-node' | 'spread'; contents: number; loc: number }
+    | { type: 'comment' | 'spread'; contents: number; loc: number }
     | { type: 'annot'; contents: number; annot: number; loc: number }
     | { type: 'record-access'; target: number; items: number[]; loc: number }
     // doooo I want to be embedding some embeds? I kinda want to leave open the option.
@@ -59,7 +60,7 @@ export type RecNode =
           templates: { expr: RecNode; suffix: RecNode }[];
           loc: Loc;
       }
-    | { type: 'comment-node' | 'spread'; contents: RecNode; loc: Loc }
+    | { type: 'comment' | 'spread'; contents: RecNode; loc: Loc }
     | { type: 'annot'; contents: RecNode; annot: RecNode; loc: Loc }
     | { type: 'record-access'; target: RecNode; items: RecNode[]; loc: Loc }
     | { type: 'rich-text'; contents: any; loc: Loc; embeds: RecNode[] }
@@ -97,7 +98,7 @@ export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
                 loc,
                 items: node.items.map((n) => fromMap(top, n, nodes)),
             };
-        case 'comment-node':
+        case 'comment':
         case 'spread':
             return {
                 ...node,
@@ -147,7 +148,7 @@ const foldNode = <V>(v: V, node: RecNode, f: (v: V, node: RecNode) => V): V => {
                 (v, node) => foldNode(v, node, f),
                 f(v, node),
             );
-        case 'comment-node':
+        case 'comment':
         case 'spread':
             return foldNode(f(v, node), node.contents, f);
         case 'annot':
@@ -226,7 +227,7 @@ const fromRec = (
                 loc,
                 items: node.items.map((n) => _toMap(n, nodes, idx)),
             };
-        case 'comment-node':
+        case 'comment':
         case 'spread':
             return {
                 ...node,
