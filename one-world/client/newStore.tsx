@@ -1,5 +1,6 @@
 import { PersistedState } from '../shared/state';
 import { update } from '../shared/update';
+import { listen } from './listen';
 import { Store } from './StoreContext';
 
 type Evts = {
@@ -30,16 +31,6 @@ const ensure = <K extends string | number, A>(
     if (!obj[k]) {
         obj[k] = n();
     }
-};
-
-const listen = (lst: (() => void)[], f: () => void) => {
-    lst.push(f);
-    return () => {
-        const idx = lst.indexOf(f);
-        if (idx !== -1) {
-            lst.splice(idx, 1);
-        }
-    };
 };
 
 export const newStore = (state: PersistedState, ws: WebSocket): Store => {

@@ -5,13 +5,17 @@
 
 - [x] selection (represent, render, move)
 - [x] click, shift+click
-- [ ] shift+drag
+- [x] click+drag
   - so the thing about shift drag, is it's going to be impacting much more
     than just one thing.
     Sooo given that in part it'll have to be handled higher up, should I do that already?
     oRRR should I allow the in-node drag to just be handled locally, but the external drag to be up the chain?
     that sounds pretty good actually.
 
+are we ready for multi-node?
+
+the blinker doesn't work right, and it bothers me.
+I need the blink to happen better.
 
 
 ## Ok so

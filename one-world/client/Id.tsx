@@ -27,38 +27,48 @@ export const Id = ({
 
     const latest = useLatest(state);
 
-    useKeyListener(state != null, (key, mods) => {
-        if (!latest.current) return;
-        let { text, sel } = latest.current;
-        if (sel == null) return;
+    useKeyListener(
+        state != null,
+        (key, mods) => {
+            if (!latest.current) return;
+            let { text, sel } = latest.current;
+            if (sel == null) return;
 
-        setBlink(false);
-        clearTimeout(bid.current!);
-        bid.current = setTimeout(() => setBlink(true), 200);
+            setBlink(false);
+            clearTimeout(bid.current!);
+            bid.current = setTimeout(() => setBlink(true), 200);
 
-        if (specials[key]) {
-            const action = specials[key](
-                sel === text.length ? 'end' : sel === 0 ? 'start' : 'middle',
-                latest.current,
-                mods,
-            );
-            if (action?.type === 'update') {
-                setState({
-                    text: action.text,
-                    sel: action.cursor,
-                    start: action.cursorStart,
-                });
+            if (specials[key]) {
+                const action = specials[key](
+                    sel === text.length
+                        ? 'end'
+                        : sel === 0
+                        ? 'start'
+                        : 'middle',
+                    latest.current,
+                    mods,
+                );
+                if (action?.type === 'update') {
+                    setState({
+                        text: action.text,
+                        sel: action.cursor,
+                        start: action.cursorStart,
+                    });
+                }
+                return;
             }
-            return;
-        }
-        const extra = splitGraphemes(key);
-        if (extra.length > 1) {
-            console.log('Too many graphemes? What is this', key, extra);
-            return;
-        }
-        const results = textKey(extra, latest.current, mods);
-        setState({ text: results.text, sel: results.cursor });
-    });
+            const extra = splitGraphemes(key);
+            if (extra.length > 1) {
+                console.log('Too many graphemes? What is this', key, extra);
+                return;
+            }
+            const results = textKey(extra, latest.current, mods);
+            setState({ text: results.text, sel: results.cursor });
+        },
+        () => {
+            setState(null);
+        },
+    );
 
     const [drag, setDrag] = useState(false);
 
@@ -100,6 +110,8 @@ export const Id = ({
         <span
             ref={ref}
             onMouseDown={(evt) => {
+                evt.preventDefault();
+                evt.stopPropagation();
                 const text = state?.text ?? splitGraphemes(node.text);
                 const range = new Range();
 
