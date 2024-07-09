@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { HiddenInput } from './HiddenInput';
-import { Id } from './Id';
+import { Id } from './TextEdit/Id';
 import { useStore } from './StoreContext';
 
 export const Edit = () => {

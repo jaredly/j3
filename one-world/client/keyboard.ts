@@ -1,7 +1,7 @@
 // ok
 
 import { RecNode } from '../shared/nodes';
-import { EditState } from './Id';
+import { EditState } from './TextEdit/Id';
 import { Mods } from './HiddenInput';
 
 type Location = 'start' | 'middle' | 'end';

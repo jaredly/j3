@@ -1,0 +1,59 @@
+import React from 'react';
+import { EditState } from './Id';
+
+export const renderTextAndCursor = (
+    { start, sel, text }: EditState,
+    blink: boolean,
+) => {
+    if (start != null && start !== sel) {
+        const [left, right] = start < sel ? [start, sel] : [sel, start];
+        return (
+            <>
+                {text.slice(0, left).join('')}
+                {
+                    <span style={sel === left ? cursorStyle(blink) : undefined}>
+                        {sel === left ? '|' : ''}
+                    </span>
+                }
+                <span
+                    style={{
+                        backgroundColor: 'rgba(100,0,0,0.4)',
+                    }}
+                >
+                    {text.slice(left, right).join('')}
+                </span>
+                {
+                    <span
+                        style={sel === right ? cursorStyle(blink) : undefined}
+                    >
+                        {sel === right ? '|' : ''}
+                    </span>
+                }
+                {text.slice(right).join('')}
+            </>
+        );
+    }
+    return (
+        <>
+            {text.slice(0, sel).join('')}
+            <span style={cursorStyle(blink)}>|</span>
+            {text.slice(sel).join('')}
+        </>
+    );
+};
+
+const cursorStyle = (blink: boolean) =>
+    ({
+        width: 0,
+        display: 'inline-block',
+        marginLeft: -7,
+        marginRight: 7,
+        fontSize: 23,
+        top: 3,
+        position: 'relative',
+        marginTop: -7,
+        opacity: blink ? 0 : 1,
+        // animationDuration: '2s',
+        // animationName: blink ? 'blink' : 'unset',
+        // animationIterationCount: 'infinite',
+    } as const);
