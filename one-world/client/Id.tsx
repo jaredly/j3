@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { useLatest } from '../../web/custom/useLatest';
 import { useKeyListener } from './HiddenInput';
@@ -29,7 +29,7 @@ export const Id = ({
 
     useKeyListener(state != null, (key, mods) => {
         if (!latest.current) return;
-        const { text, sel } = latest.current;
+        let { text, sel } = latest.current;
         if (sel == null) return;
 
         setBlink(false);
@@ -60,19 +60,65 @@ export const Id = ({
         setState({ text: results.text, sel: results.cursor });
     });
 
+    const [drag, setDrag] = useState(false);
+
+    const ref = useRef<HTMLSpanElement>(null);
+
+    useEffect(() => {
+        if (!drag) return;
+        const a = () => {
+            setDrag(false);
+        };
+        const b = (evt: MouseEvent) => {
+            const state = latest.current;
+            const range = new Range();
+            const text = state?.text ?? splitGraphemes(node.text);
+            const sel = getNewSelection(
+                text,
+                state,
+                ref.current!,
+                evt.clientX,
+                false,
+                range,
+            );
+            setState({ text, sel: sel.sel, start: state?.start ?? state?.sel });
+
+            setBlink(false);
+            clearTimeout(bid.current!);
+            bid.current = setTimeout(() => setBlink(true), 200);
+        };
+        document.addEventListener('mouseup', a);
+        document.addEventListener('mousemove', b);
+
+        return () => {
+            document.removeEventListener('mouseup', a);
+            document.removeEventListener('mousemove', b);
+        };
+    }, [drag]);
+
     return (
         <span
+            ref={ref}
             onMouseDown={(evt) => {
                 const text = state?.text ?? splitGraphemes(node.text);
                 const range = new Range();
 
-                let { sel, start } = getNewSelection(text, state, evt, range);
+                let { sel, start } = getNewSelection(
+                    text,
+                    state,
+                    evt.currentTarget,
+                    evt.clientX,
+                    evt.shiftKey,
+                    range,
+                );
 
                 setState({ sel, start, text });
 
                 setBlink(false);
                 clearTimeout(bid.current!);
                 bid.current = setTimeout(() => setBlink(true), 200);
+
+                setDrag(true);
             }}
             style={{
                 padding: 4,
@@ -86,7 +132,7 @@ export const Id = ({
 };
 
 const show = ({ start, sel, text }: EditState, blink: boolean) => {
-    if (start != null) {
+    if (start != null && start !== sel) {
         const [left, right] = start < sel ? [start, sel] : [sel, start];
         return (
             <>
@@ -133,7 +179,7 @@ const cursorStyle = (blink: boolean) =>
         top: 3,
         position: 'relative',
         marginTop: -7,
-        animationDuration: '1s',
+        animationDuration: '2s',
         animationName: blink ? 'blink' : 'unset',
         animationIterationCount: 'infinite',
     } as const);
@@ -141,66 +187,64 @@ const cursorStyle = (blink: boolean) =>
 function getNewSelection(
     text: string[],
     state: EditState | null,
-    evt: React.MouseEvent<HTMLSpanElement, MouseEvent>,
+    // evt: React.MouseEvent<HTMLSpanElement, MouseEvent>,
+    node: HTMLSpanElement,
+    x: number,
+    shift: boolean,
     range: Range,
 ) {
     let sel = text.length;
 
     if (state) {
-        if (state.start != null) {
-            const mid =
-                evt.currentTarget.firstElementChild!.nextElementSibling!;
+        if (state.start != null && state.start !== state.sel) {
+            const mid = node.firstElementChild!.nextElementSibling!;
             const box = mid.getBoundingClientRect();
             const [left, right] =
                 state.start < state.sel
                     ? [state.start, state.sel]
                     : [state.sel, state.start];
-            if (evt.clientX < box.left) {
+            if (x < box.left) {
                 sel = offsetInNode(
                     range,
-                    evt.currentTarget.firstChild!,
+                    node.firstChild!,
                     text.slice(0, left),
-                    evt.clientX,
+                    x,
                 );
-            } else if (evt.clientX < box.right) {
+            } else if (x < box.right) {
                 sel =
                     offsetInNode(
                         range,
                         mid.firstChild!,
                         text.slice(left, right),
-                        evt.clientX,
+                        x,
                     ) + left;
             } else {
                 sel =
-                    offsetInNode(
-                        range,
-                        evt.currentTarget.lastChild!,
-                        text.slice(right),
-                        evt.clientX,
-                    ) + right;
+                    offsetInNode(range, node.lastChild!, text.slice(right), x) +
+                    right;
             }
         } else {
-            const one = evt.currentTarget.firstChild!;
-            const mid = evt.currentTarget.firstElementChild!;
+            const one = node.firstChild!;
+            const mid = node.firstElementChild!;
             const ob = mid.getBoundingClientRect();
-            if (ob.right > evt.clientX) {
-                sel = offsetInNode(range, one, text.slice(0, sel), evt.clientX);
+            if (ob.right > x) {
+                sel = offsetInNode(range, one, text.slice(0, sel), x);
             } else {
                 sel =
                     offsetInNode(
                         range,
-                        evt.currentTarget.lastChild!,
+                        node.lastChild!,
                         text.slice(state.sel),
-                        evt.clientX,
+                        x,
                     ) + state.sel;
             }
         }
     } else {
-        sel = offsetInNode(range, evt.currentTarget, text, evt.clientX);
+        sel = offsetInNode(range, node, text, x);
     }
     return {
         sel,
-        start: evt.shiftKey ? state?.start ?? state?.sel : undefined,
+        start: shift ? state?.start ?? state?.sel : undefined,
     };
 }
 
