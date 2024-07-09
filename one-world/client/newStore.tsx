@@ -35,13 +35,16 @@ const ensure = <K extends string | number, A>(
 
 export const newStore = (state: PersistedState, ws: WebSocket): Store => {
     const evts = blankEvts();
+    window.state = state;
     const store: Store = {
         getState() {
             return state;
         },
         update(action) {
             const prev = state;
+            console.log('update ation', action);
             state = update(state, action);
+            window.state = state;
             ws.send(
                 JSON.stringify({
                     type: 'action',

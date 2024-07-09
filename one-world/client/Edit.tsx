@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { HiddenInput } from './HiddenInput';
 import { Id } from './TextEdit/Id';
@@ -36,7 +36,16 @@ const useSubscribe = <T,>(
     deps: any[],
 ) => {
     const [value, update] = useState(get());
-    useEffect(() => sub(() => update(get())), deps);
+    const first = useRef(true);
+    useEffect(() => {
+        if (first.current) {
+            first.current = false;
+        } else {
+            // On change in dependencies, do a fresh get()
+            update(get());
+        }
+        return sub(() => update(get()));
+    }, deps);
     return value;
 };
 
@@ -137,6 +146,7 @@ const Toplevel = ({
         }),
         [docNodes],
     );
+    console.log('rendering toplevel here', top.root);
     return (
         <div>
             <TopNode id={id} loc={top.root} parentPath={path} />

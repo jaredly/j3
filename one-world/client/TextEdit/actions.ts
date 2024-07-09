@@ -91,7 +91,8 @@ export const handleAction = (
     switch (action.type) {
         case 'surround': {
             const loc = path.children[path.children.length - 1];
-            let idx = state.toplevels[top].nextLoc + 1;
+            let nidx = state.toplevels[top].nextLoc + 1;
+            let idx = nidx++;
             const map: Record<number, Node> = {};
             if (
                 action.kind === 'list' ||
@@ -102,8 +103,8 @@ export const handleAction = (
             } else if (action.kind === 'comment' || action.kind === 'spread') {
                 map[idx] = { type: action.kind, contents: loc, loc: idx };
             } else {
-                const fidx = idx + 1;
-                const sidx = idx + 2;
+                const fidx = nidx++;
+                const sidx = nidx++;
                 map[idx] = {
                     type: action.kind,
                     first: fidx,
@@ -113,9 +114,10 @@ export const handleAction = (
                 map[fidx] = { type: 'stringText', text: '', loc: fidx };
                 map[sidx] = { type: 'stringText', text: '', loc: sidx };
             }
-            const update = replaceWith(state.toplevels[top], path, loc);
+            const update = replaceWith(state.toplevels[top], path, idx);
             if (!update) return;
             update.update.nodes = { ...map, ...update.update.nodes };
+            update.update.nextLoc = nidx;
             return { type: 'toplevel', id: top, action: update };
         }
     }
