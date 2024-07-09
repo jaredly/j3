@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { HiddenInput } from './HiddenInput';
 import { Id } from './TextEdit/Id';
 import { useStore } from './StoreContext';
+import { Node } from '../shared/nodes';
 
 export const Edit = () => {
     const params = useParams();
@@ -73,7 +74,33 @@ const TopNode = ({ id, loc }: { id: string; loc: number }) => {
     ) {
         return <Id node={node} tid={id} />;
     }
+    if (
+        node.type === 'list' ||
+        node.type === 'array' ||
+        node.type === 'record'
+    ) {
+        return <Collection node={node} tid={id} />;
+    }
     return <span>some other {node.type}</span>;
+};
+
+const Collection = ({
+    node,
+    tid,
+}: {
+    node: Extract<Node, { type: 'list' | 'array' | 'record' }>;
+    tid: string;
+}) => {
+    const [l, r] = { list: '()', array: '[]', record: '{}' }[node.type];
+    return (
+        <span>
+            {l}
+            {node.items.map((loc) => (
+                <TopNode key={loc} id={tid} loc={loc} />
+            ))}
+            {r}
+        </span>
+    );
 };
 
 const Toplevel = ({ id }: { id: string }) => {

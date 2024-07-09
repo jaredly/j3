@@ -64,8 +64,14 @@ export const HiddenInput = ({ children }: { children: React.ReactNode }) => {
                 value=""
                 onChange={() => {}}
                 autoFocus
+                // onFocus={() => {
+                //     console.log('focus again?');
+                // }}
                 onBlur={(evt) => {
-                    ctx.listeners.blur.map((f) => f());
+                    if (evt.currentTarget !== document.activeElement) {
+                        console.log('blurred');
+                        ctx.listeners.blur.map((f) => f());
+                    }
                     // if (ctx.listeners.key.length) {
                     //     evt.currentTarget.focus();
                     // }

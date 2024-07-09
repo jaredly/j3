@@ -20,8 +20,15 @@
 
 are we ready for multi-node?
 
-the blinker doesn't work right, and it bothers me.
-I need the blink to happen better.
+...
+I do need {clicking on punctuation} to do useful things.
+
+- [x] the blinker doesn't work right, and it bothers me.
+    I need the blink to happen better.
+    FIXED
+
+- [ ] eventually I'll want the {presence} reporting stuff to also include "pending text changes"
+  so that typing really shows up.
 
 
 ## Ok so
