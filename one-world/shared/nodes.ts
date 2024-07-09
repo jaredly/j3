@@ -24,7 +24,8 @@ export type Cursor = {
 
 type Simple<Loc> =
     // id for identifier. "blank" === empty id
-    | { type: 'id' | 'stringText' | 'accessText'; text: string; loc: Loc }
+    | { type: 'id'; text: string; loc: Loc }
+    | { type: 'stringText' | 'accessText'; text: string; loc: Loc }
     | { type: 'ref'; toplevel: string; kind: string; loc: Loc };
 
 export type Node =

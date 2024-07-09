@@ -1,4 +1,15 @@
 
+## Ok so
+do I really need the /renderable/ stuff? And the nestedNodes dealio? like
+... does it do anything for me?
+oh yeah, it was to produce ... text as well ... right?
+but maybe I don't need it that way?
+
+ok wait, I need something to run the layoiut algorithm on.
+maybe that's what we're doing here.
+Yeah.
+
+
 ## The JS Runtime
 
 This time let's use a typescript parser
