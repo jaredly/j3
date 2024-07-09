@@ -51,6 +51,7 @@ export function useKeys(
                         store.getState(),
                     );
                     if (saction) {
+                        // console.log('state action', saction);
                         store.update(saction);
                     } else {
                         console.warn('ignoring action', action);
@@ -80,12 +81,9 @@ export function useKeys(
                             type: 'toplevel',
                             id: tid,
                             action: {
-                                type: 'nodes',
-                                nodes: {
-                                    [loc]: {
-                                        ...current,
-                                        text,
-                                    },
+                                type: 'update',
+                                update: {
+                                    nodes: { [loc]: { ...current, text } },
                                 },
                             },
                         });

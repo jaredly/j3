@@ -19,7 +19,7 @@ export type NamespaceAction = {
 export type ToplevelAction =
     | { type: 'reset'; toplevel: Toplevel }
     | { type: 'update'; update: Partial<Toplevel> }
-    | { type: 'nodes'; nodes: Partial<Toplevel['nodes']> }
+    // | { type: 'nodes'; nodes: Partial<Toplevel['nodes']> }
     | { type: 'delete' };
 
 export type DocAction = { type: 'reset'; doc: Doc } | { type: 'delete' };

@@ -74,14 +74,18 @@ export const updateTL = (
             return null;
         case 'update':
             if (!tl) throw new Error('trying to update nonexistent toplevel');
-            return { ...tl, ...action.update };
-        case 'nodes':
-            if (!tl) throw new Error('trying to update nonexistent toplevel');
-            const nodes = { ...tl.nodes };
-            Object.entries(action.nodes).forEach(([key, value]) => {
-                if (!value) delete nodes[+key];
-                else nodes[+key] = value;
-            });
-            return { ...tl, nodes };
+            return {
+                ...tl,
+                ...action.update,
+                nodes: { ...tl.nodes, ...action.update.nodes },
+            };
+        // case 'nodes':
+        //     if (!tl) throw new Error('trying to update nonexistent toplevel');
+        //     const nodes = { ...tl.nodes };
+        //     Object.entries(action.nodes).forEach(([key, value]) => {
+        //         if (!value) delete nodes[+key];
+        //         else nodes[+key] = value;
+        //     });
+        //     return { ...tl, nodes };
     }
 };

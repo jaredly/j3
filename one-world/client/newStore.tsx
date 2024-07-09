@@ -49,10 +49,17 @@ export const newStore = (state: PersistedState, ws: WebSocket): Store => {
                 }),
             );
             if (action.type === 'toplevel') {
-                if (action.action.type === 'nodes') {
-                    Object.keys(action.action.nodes).forEach((loc) => {
-                        evts.tops[action.id].nodes[+loc]?.forEach((f) => f());
-                    });
+                if (action.action.type === 'update') {
+                    if (action.action.update.nodes) {
+                        Object.keys(action.action.update.nodes).forEach(
+                            (loc) => {
+                                evts.tops[action.id]?.nodes[+loc]?.forEach(
+                                    (f) => f(),
+                                );
+                            },
+                        );
+                    }
+                    evts.tops[action.id]?.fns.forEach((f) => f());
                 }
             }
             // todo notify more
@@ -79,5 +86,8 @@ export const newStore = (state: PersistedState, ws: WebSocket): Store => {
             return listen(evts.docs[doc].nodes[id], f);
         },
     };
+    // ws.onmessage = evt => {
+    //     const msg = JSON.parse(evt.data)
+    // }
     return store;
 };
