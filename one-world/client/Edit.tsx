@@ -38,13 +38,17 @@ const useSubscribe = <T,>(
     const [value, update] = useState(get());
     const first = useRef(true);
     useEffect(() => {
+        console.log('use subscribe setup');
         if (first.current) {
             first.current = false;
         } else {
             // On change in dependencies, do a fresh get()
             update(get());
         }
-        return sub(() => update(get()));
+        return sub(() => {
+            console.log('sub trigger');
+            update(get());
+        });
     }, deps);
     return value;
 };
@@ -85,6 +89,7 @@ const TopNode = ({
     loc: number;
     parentPath: Path;
 }) => {
+    console.log('render top', id, loc);
     const node = useTopNode(id, loc);
     const path = useMemo(
         () => ({ ...parentPath, children: parentPath.children.concat([loc]) }),
@@ -117,28 +122,24 @@ const Collection = ({
     tid: string;
     path: Path;
 }) => {
+    console.log('render collection', tid);
     const [l, r] = { list: '()', array: '[]', record: '{}' }[node.type];
     return (
         <span
-            style={{
-                display: 'inline-flex',
-                flexWrap: 'wrap',
-                alignItems: 'center',
-            }}
+            style={
+                {
+                    // display: 'inline-flex',
+                    // flexWrap: 'wrap',
+                    // alignItems: 'center',
+                }
+            }
         >
             {l}
-            <span
-                style={{
-                    gap: 8,
-                    display: 'inline-flex',
-                    flexWrap: 'wrap',
-                    alignItems: 'center',
-                }}
-            >
-                {node.items.map((loc) => (
+            {node.items.map((loc, i) => (
+                <span key={loc} style={i === 0 ? undefined : { marginLeft: 8 }}>
                     <TopNode key={loc} id={tid} loc={loc} parentPath={path} />
-                ))}
-            </span>
+                </span>
+            ))}
             {r}
         </span>
     );
@@ -153,7 +154,6 @@ const Toplevel = ({
     doc: string;
     docNodes: number[];
 }) => {
-    const store = useStore();
     const top = useToplevel(id);
     const path: Path = useMemo(
         () => ({

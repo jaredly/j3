@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { useLatest } from '../../../web/custom/useLatest';
 import { getNewSelection } from './getNewSelection';
-import { renderTextAndCursor } from './renderTextAndCursor';
+import { RenderTextAndCursor } from './renderTextAndCursor';
 import { useBlink } from './useBlink';
 import { useDrag } from './useDrag';
 import { useKeys } from './useKeys';
@@ -28,6 +28,8 @@ export const Id = ({
     };
 }) => {
     const [state, setState] = useState(null as null | EditState);
+
+    // console.log('render id', tid);
 
     const latest = useLatest(state);
     const { resetBlink, blink } = useBlink();
@@ -67,7 +69,11 @@ export const Id = ({
                 whiteSpace: 'nowrap',
             }}
         >
-            {state != null ? renderTextAndCursor(state, blink) : node.text}
+            {state != null ? (
+                <RenderTextAndCursor state={state} blink={blink} />
+            ) : (
+                node.text
+            )}
         </span>
     );
 };

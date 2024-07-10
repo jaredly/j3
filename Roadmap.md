@@ -1,7 +1,9 @@
 
-## Doin a reboot
 
-oof the
+
+whyyyyyyyyyyyyyyyyyyyyyyyyyy am I out of memory????
+What is thatttttt
+
 
 ### Basic Identifier Edit
 
@@ -28,6 +30,7 @@ oof the
 - [x] delete
 - [x] join left
 - [x] why does 'after' jump out of the current list?
+- [ ] make a clickable 'start' and 'end' for collections
 
 #### Selection management!
 gotta manage it centrally, my dear.
@@ -36,10 +39,6 @@ gotta manage it centrally, my dear.
   and it has the /selection/ infos
 - [ ] /updates/ should mod the selection as well.
   probably needs to be managed by the store, so it can be coordinated with /updates/
-
-are we ready for multi-node?
-
-right after multinode, we need to do actual selection management.
 
 ...
 I do need {clicking on punctuation} to do useful things.

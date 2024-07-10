@@ -1,10 +1,13 @@
 import React from 'react';
 import { EditState } from './Id';
 
-export const renderTextAndCursor = (
-    { start, sel, text }: EditState,
-    blink: boolean,
-) => {
+export const RenderTextAndCursor = ({
+    state: { start, sel, text },
+    blink,
+}: {
+    state: EditState;
+    blink: boolean;
+}) => {
     if (start != null && start !== sel) {
         const [left, right] = start < sel ? [start, sel] : [sel, start];
         return (
