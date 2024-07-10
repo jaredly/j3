@@ -264,7 +264,12 @@ export const handleAction = (
                 };
             }
             return update
-                ? { type: 'toplevel', id: top.id, action: update }
+                ? {
+                      type: 'in-session',
+                      action: { type: 'toplevel', id: top.id, action: update },
+                      doc: path.root.doc,
+                      selections: [],
+                  }
                 : undefined;
         }
 

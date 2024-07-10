@@ -1,17 +1,27 @@
+import { ensure } from '../client/newStore';
 import { Action, DocAction, ToplevelAction } from './action';
 import { Doc, PersistedState } from './state';
 import { Toplevel } from './toplevels';
 
+export type Updated = {
+    toplevels: Record<string, Record<number, true>>;
+    selections: Record<string, true>;
+};
+
 export const update = (
     state: PersistedState,
     action: Action,
+    updated: Updated,
 ): PersistedState => {
     switch (action.type) {
+        case 'in-session': {
+            return update(state, action.action, updated);
+        }
         case 'reset':
             return action.state;
         case 'multi':
             action.actions.forEach((action) => {
-                state = update(state, action);
+                state = update(state, action, updated);
             });
             return state;
         case 'doc': {
@@ -31,7 +41,11 @@ export const update = (
             };
         }
         case 'toplevel': {
-            const tl = updateTL(state.toplevels[action.id], action.action);
+            const tl = updateTL(
+                state.toplevels[action.id],
+                action.action,
+                ensure(updated.toplevels, action.id, () => ({})),
+            );
             if (!tl) {
                 state = { ...state };
                 state.toplevels = { ...state.toplevels };
@@ -66,6 +80,7 @@ export const updateDoc = (
 export const updateTL = (
     tl: undefined | Toplevel,
     action: ToplevelAction,
+    updated: Record<number, true>,
 ): Toplevel | null => {
     switch (action.type) {
         case 'reset':
@@ -77,8 +92,10 @@ export const updateTL = (
             const nodes = { ...tl.nodes };
             Object.entries(action.update.nodes ?? {}).forEach(([k, v]) => {
                 if (v === undefined) {
+                    // ignore this, it'll probably get cleaned up?
                     delete nodes[+k];
                 } else {
+                    updated[+k] = true;
                     nodes[+k] = v;
                 }
             });

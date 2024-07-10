@@ -1,14 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { Hidden, HiddenInput } from './HiddenInput';
-import { EditState, Id } from './TextEdit/Id';
-import { useStore } from './StoreContext';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Node, Path, Selection, serializePath } from '../shared/nodes';
 import { DocSession, NodeSelection } from '../shared/state';
+import { Hidden } from './HiddenInput';
+import { useStore } from './StoreContext';
+import { EditState } from './TextEdit/Id';
 import { ManagedId, selectionAction } from './TextEdit/ManagedId';
-import { specials, textKey } from './keyboard';
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { handleAction } from './TextEdit/actions';
+import { specials, textKey } from './keyboard';
 
 const emptyNodes: number[] = [];
 
@@ -24,7 +24,6 @@ export const Edit = () => {
         [id],
     );
 
-    // const session = useSessionId()
     const docSession = store.getDocSession(id, store.session);
 
     return (

@@ -1,6 +1,7 @@
+import { Action } from '../shared/action';
 import { serializePath } from '../shared/nodes';
 import { DocSession, NodeSelection, PersistedState } from '../shared/state';
-import { update } from '../shared/update';
+import { update, Updated } from '../shared/update';
 import { listen } from './listen';
 import { Store } from './StoreContext';
 
@@ -25,7 +26,7 @@ type Evts = {
 const blankEvts = (): Evts => ({ tops: {}, docs: {}, selections: {} });
 const blankFns = (): Evts['docs'][''] => ({ fns: [], nodes: {} });
 
-const ensure = <K extends string | number, A>(
+export const ensure = <K extends string | number, A>(
     obj: Record<K, A>,
     k: K,
     n: () => A,
@@ -33,6 +34,7 @@ const ensure = <K extends string | number, A>(
     if (!obj[k]) {
         obj[k] = n();
     }
+    return obj[k];
 };
 
 const selPathKeys = (sel: NodeSelection) => {
@@ -80,8 +82,12 @@ export const newStore = (
             return state;
         },
         update(action) {
+            const updated: Updated = { toplevels: {}, selections: {} };
+
             if (action.type === 'in-session') {
                 if (action.selections) {
+                    const extras: Action[] = [];
+
                     const key = `${action.doc} - ${session}`;
                     const prev = docSessionCache[key].selections;
                     docSessionCache[key].selections = action.selections;
@@ -90,45 +96,93 @@ export const newStore = (
                         selPathKeys(sel).forEach((k) => {
                             const id = `${session}#${k}`;
                             seen[id] = true;
-                            evts.selections[id]?.forEach((f) => f());
+                            updated.selections[id] = true;
                         });
                     });
                     prev.forEach((sel) => {
                         selPathKeys(sel).forEach((k) => {
                             const id = `${session}#${k}`;
-                            if (!seen[k]) {
-                                evts.selections[id]?.forEach((f) => f());
+                            updated.selections[id] = true;
+                            if (
+                                !seen[id] &&
+                                sel.type === 'within' &&
+                                sel.text
+                            ) {
+                                const last =
+                                    sel.path.children[
+                                        sel.path.children.length - 1
+                                    ];
+                                const node =
+                                    state.toplevels[sel.path.root.toplevel]
+                                        .nodes[last];
+                                if (
+                                    node.type === 'id' ||
+                                    node.type === 'accessText' ||
+                                    node.type === 'stringText'
+                                ) {
+                                    extras.push({
+                                        type: 'toplevel',
+                                        id: sel.path.root.toplevel,
+                                        action: {
+                                            type: 'update',
+                                            update: {
+                                                nodes: {
+                                                    [node.loc]: {
+                                                        ...node,
+                                                        text: sel.text.join(''),
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    });
+                                }
                             }
                         });
                     });
+
+                    if (extras.length) {
+                        action.action = {
+                            type: 'multi',
+                            actions: [...extras, action.action],
+                        };
+                    }
                 }
             }
 
             // const prev = state;
             console.log('update ation', action);
-            state = update(state, action);
+            state = update(state, action, updated);
             // @ts-ignore
             window.state = state;
-            ws.send(
-                JSON.stringify({
-                    type: 'action',
-                    action,
-                }),
+
+            console.warn('disabled persistence');
+            // ws.send(JSON.stringify({ type: 'action', action }));
+
+            Object.entries(updated.toplevels).forEach(([top, nodes]) => {
+                Object.keys(nodes).forEach((k) => {
+                    evts.tops[top]?.nodes[+k]?.forEach((f) => f());
+                });
+                evts.tops[top]?.fns.forEach((f) => f());
+            });
+
+            Object.keys(updated.selections).forEach((id) =>
+                evts.selections[id]?.forEach((f) => f()),
             );
-            if (action.type === 'toplevel') {
-                if (action.action.type === 'update') {
-                    if (action.action.update.nodes) {
-                        Object.keys(action.action.update.nodes).forEach(
-                            (loc) => {
-                                evts.tops[action.id]?.nodes[+loc]?.forEach(
-                                    (f) => f(),
-                                );
-                            },
-                        );
-                    }
-                    evts.tops[action.id]?.fns.forEach((f) => f());
-                }
-            }
+
+            // if (action.type === 'toplevel') {
+            //     if (action.action.type === 'update') {
+            //         if (action.action.update.nodes) {
+            //             Object.keys(action.action.update.nodes).forEach(
+            //                 (loc) => {
+            //                     evts.tops[action.id]?.nodes[+loc]?.forEach(
+            //                         (f) => f(),
+            //                     );
+            //                 },
+            //             );
+            //         }
+            //         evts.tops[action.id]?.fns.forEach((f) => f());
+            //     }
+            // }
             // todo notify more
         },
         on(evt, f) {
