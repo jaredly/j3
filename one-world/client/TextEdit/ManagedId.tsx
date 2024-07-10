@@ -6,6 +6,7 @@ import { RenderTextAndCursor } from './renderTextAndCursor';
 import { getNewSelection } from './getNewSelection';
 import { useStore } from '../StoreContext';
 import { useLatest } from '../../../web/custom/useLatest';
+import { Action } from '../../shared/action';
 
 const blinkTime = 500;
 const blinkWait = 200;
@@ -70,24 +71,14 @@ export const ManagedId = ({
                     range,
                 );
 
-                store.update({
-                    type: 'in-session',
-                    action: { type: 'multi', actions: [] },
-                    doc: path.root.doc,
-                    selections: [
-                        {
-                            type: 'within',
-                            cursor: sel,
-                            start,
-                            path,
-                            pathKey: serializePath(path),
-                            text:
-                                selection?.type === 'within'
-                                    ? selection.text
-                                    : undefined,
-                        },
-                    ],
-                });
+                const action: Action = selectionAction(
+                    path,
+                    sel,
+                    start,
+                    selection,
+                    selection?.type === 'within' ? selection.text : undefined,
+                );
+                store.update(action);
 
                 // setState({ sel, start, text });
                 // resetBlink();
@@ -179,3 +170,27 @@ export const useDrag = (
     }, [drag]);
     return { ref, setDrag };
 };
+
+export function selectionAction(
+    path: Path,
+    sel: number,
+    start: number | undefined,
+    selection: void | NodeSelection,
+    text?: string[],
+): Action {
+    return {
+        type: 'in-session',
+        action: { type: 'multi', actions: [] },
+        doc: path.root.doc,
+        selections: [
+            {
+                type: 'within',
+                cursor: sel,
+                start,
+                path,
+                pathKey: serializePath(path),
+                text, //: selection?.type === 'within' ? selection.text : undefined,
+            },
+        ],
+    };
+}

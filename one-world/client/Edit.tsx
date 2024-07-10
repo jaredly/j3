@@ -5,7 +5,10 @@ import { EditState, Id } from './TextEdit/Id';
 import { useStore } from './StoreContext';
 import { Node, Path, Selection, serializePath } from '../shared/nodes';
 import { DocSession, NodeSelection } from '../shared/state';
-import { ManagedId } from './TextEdit/ManagedId';
+import { ManagedId, selectionAction } from './TextEdit/ManagedId';
+import { specials, textKey } from './keyboard';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { handleAction } from './TextEdit/actions';
 
 const emptyNodes: number[] = [];
 
@@ -25,11 +28,108 @@ export const Edit = () => {
     const docSession = store.getDocSession(id, store.session);
 
     return (
-        // <HiddenInput>
         <div style={{ padding: 100 }}>
             <Hidden
                 onKeyDown={(evt) => {
                     if (evt.metaKey) return;
+                    if (!docSession.selections.length) return;
+                    docSession.selections.forEach((selection) => {
+                        if (selection.type !== 'within') return; // TODO will do this later
+                        const last =
+                            selection.path.children[
+                                selection.path.children.length - 1
+                            ];
+                        const node =
+                            store.getState().toplevels[
+                                selection.path.root.toplevel
+                            ].nodes[last];
+                        if (
+                            node.type !== 'id' &&
+                            node.type !== 'accessText' &&
+                            node.type !== 'stringText'
+                        )
+                            return;
+                        const text =
+                            selection.text ?? splitGraphemes(node.text);
+                        const sel = selection.cursor;
+                        const mods = { meta: evt.metaKey, shift: evt.shiftKey };
+                        const editState: EditState = {
+                            text,
+                            sel,
+                            start: selection.start,
+                        };
+
+                        const key = evt.key;
+                        if (specials[key]) {
+                            const action = specials[key](
+                                sel === text.length
+                                    ? 'end'
+                                    : sel === 0
+                                    ? 'start'
+                                    : 'middle',
+                                editState,
+                                mods,
+                            );
+                            if (!action) {
+                            } else if (action.type === 'update') {
+                                // setState({ text: action.text, sel: action.cursor, start: action.cursorStart, });
+                                store.update(
+                                    selectionAction(
+                                        selection.path,
+                                        action.cursor,
+                                        action.cursorStart,
+                                        selection,
+                                        action.text,
+                                    ),
+                                );
+                                return;
+                            } else {
+                                // maybeCommitTextChanges(
+                                //     editState,
+                                //     store,
+                                //     tid,
+                                //     loc,
+                                // );
+
+                                const state = store.getState();
+                                const saction = handleAction(
+                                    action,
+                                    selection.path,
+                                    state,
+                                );
+                                if (saction) {
+                                    store.update(saction);
+                                } else {
+                                    console.warn('ignoring action', action);
+                                }
+                            }
+                            return;
+                        }
+                        const extra = splitGraphemes(key);
+                        if (extra.length > 1) {
+                            console.warn(
+                                'Too many graphemes? What is this',
+                                key,
+                                extra,
+                            );
+                            return;
+                        }
+                        const results = textKey(extra, editState, {
+                            meta: evt.metaKey,
+                            shift: evt.shiftKey,
+                        });
+                        // setState({ text: results.text, sel: results.cursor });
+                        store.update(
+                            selectionAction(
+                                selection.path,
+                                results.cursor,
+                                undefined,
+                                // results.cursorStart,
+                                selection,
+                                results.text,
+                            ),
+                        );
+                    });
                 }}
                 onBlur={(evt) => {
                     // blur
@@ -37,9 +137,7 @@ export const Edit = () => {
             />
             Editing {doc.title}
             <DocNode doc={doc.id} id={0} parentNodes={emptyNodes} />
-            {/** ok */}
         </div>
-        // </HiddenInput>
     );
 };
 
