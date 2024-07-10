@@ -117,13 +117,11 @@ export const Edit = () => {
                             meta: evt.metaKey,
                             shift: evt.shiftKey,
                         });
-                        // setState({ text: results.text, sel: results.cursor });
                         store.update(
                             selectionAction(
                                 selection.path,
                                 results.cursor,
                                 undefined,
-                                // results.cursorStart,
                                 selection,
                                 results.text,
                             ),

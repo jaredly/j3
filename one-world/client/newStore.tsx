@@ -99,6 +99,7 @@ export const newStore = (
                             updated.selections[id] = true;
                         });
                     });
+
                     prev.forEach((sel) => {
                         selPathKeys(sel).forEach((k) => {
                             const id = `${session}#${k}`;
@@ -108,34 +109,7 @@ export const newStore = (
                                 sel.type === 'within' &&
                                 sel.text
                             ) {
-                                const last =
-                                    sel.path.children[
-                                        sel.path.children.length - 1
-                                    ];
-                                const node =
-                                    state.toplevels[sel.path.root.toplevel]
-                                        .nodes[last];
-                                if (
-                                    node.type === 'id' ||
-                                    node.type === 'accessText' ||
-                                    node.type === 'stringText'
-                                ) {
-                                    extras.push({
-                                        type: 'toplevel',
-                                        id: sel.path.root.toplevel,
-                                        action: {
-                                            type: 'update',
-                                            update: {
-                                                nodes: {
-                                                    [node.loc]: {
-                                                        ...node,
-                                                        text: sel.text.join(''),
-                                                    },
-                                                },
-                                            },
-                                        },
-                                    });
-                                }
+                                maybeCommitTextChange(sel, state, extras);
                             }
                         });
                     });
@@ -158,32 +132,7 @@ export const newStore = (
             console.warn('disabled persistence');
             // ws.send(JSON.stringify({ type: 'action', action }));
 
-            Object.entries(updated.toplevels).forEach(([top, nodes]) => {
-                Object.keys(nodes).forEach((k) => {
-                    evts.tops[top]?.nodes[+k]?.forEach((f) => f());
-                });
-                evts.tops[top]?.fns.forEach((f) => f());
-            });
-
-            Object.keys(updated.selections).forEach((id) =>
-                evts.selections[id]?.forEach((f) => f()),
-            );
-
-            // if (action.type === 'toplevel') {
-            //     if (action.action.type === 'update') {
-            //         if (action.action.update.nodes) {
-            //             Object.keys(action.action.update.nodes).forEach(
-            //                 (loc) => {
-            //                     evts.tops[action.id]?.nodes[+loc]?.forEach(
-            //                         (f) => f(),
-            //                     );
-            //                 },
-            //             );
-            //         }
-            //         evts.tops[action.id]?.fns.forEach((f) => f());
-            //     }
-            // }
-            // todo notify more
+            sendUpdates(updated, evts);
         },
         on(evt, f) {
             return () => {};
@@ -214,3 +163,45 @@ export const newStore = (
     };
     return store;
 };
+
+function sendUpdates(updated: Updated, evts: Evts) {
+    Object.entries(updated.toplevels).forEach(([top, nodes]) => {
+        Object.keys(nodes).forEach((k) => {
+            evts.tops[top]?.nodes[+k]?.forEach((f) => f());
+        });
+        evts.tops[top]?.fns.forEach((f) => f());
+    });
+
+    Object.keys(updated.selections).forEach((id) =>
+        evts.selections[id]?.forEach((f) => f()),
+    );
+}
+
+function maybeCommitTextChange(
+    sel: Extract<NodeSelection, { type: 'within' }>,
+    state: PersistedState,
+    extras: Action[],
+) {
+    const last = sel.path.children[sel.path.children.length - 1];
+    const node = state.toplevels[sel.path.root.toplevel].nodes[last];
+    if (
+        node.type !== 'id' &&
+        node.type !== 'accessText' &&
+        node.type !== 'stringText'
+    ) {
+        return;
+    }
+    const text = sel.text!.join('');
+    if (text === node.text) return;
+
+    extras.push({
+        type: 'toplevel',
+        id: sel.path.root.toplevel,
+        action: {
+            type: 'update',
+            update: {
+                nodes: { [node.loc]: { ...node, text: sel.text!.join('') } },
+            },
+        },
+    });
+}
