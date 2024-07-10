@@ -1,9 +1,11 @@
+import { serializePath } from '../shared/nodes';
 import { DocSession, PersistedState } from '../shared/state';
 import { update } from '../shared/update';
 import { listen } from './listen';
 import { Store } from './StoreContext';
 
 type Evts = {
+    selections: Record<string, (() => void)[]>;
     tops: Record<
         string,
         {
@@ -20,7 +22,7 @@ type Evts = {
     >;
 };
 
-const blankEvts = (): Evts => ({ tops: {}, docs: {} });
+const blankEvts = (): Evts => ({ tops: {}, docs: {}, selections: {} });
 const blankFns = (): Evts['docs'][''] => ({ fns: [], nodes: {} });
 
 const ensure = <K extends string | number, A>(
@@ -48,9 +50,9 @@ export const newStore = (state: PersistedState, ws: WebSocket): Store => {
                     );
                 } else {
                     docSessionCache[id] = {
+                        doc,
                         history: [],
                         activeStage: null,
-                        doc,
                         selections: [],
                     };
                 }
@@ -90,6 +92,11 @@ export const newStore = (state: PersistedState, ws: WebSocket): Store => {
         },
         on(evt, f) {
             return () => {};
+        },
+        onSelection(session, path, f) {
+            const id = `${session}#${serializePath(path)}`;
+            ensure(evts.selections, id, () => []);
+            return listen(evts.selections[id], f);
         },
         onTop(id, f) {
             ensure(evts.tops, id, blankFns);

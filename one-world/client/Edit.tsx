@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { HiddenInput } from './HiddenInput';
-import { Id } from './TextEdit/Id';
-import { useStore } from './StoreContext';
-import { Node, Path } from '../shared/nodes';
+import { EditState, Id } from './TextEdit/Id';
+import { useSessionId, useStore } from './StoreContext';
+import { Node, Path, Selection, serializePath } from '../shared/nodes';
+import { DocSession, NodeSelection } from '../shared/state';
 
 const emptyNodes: number[] = [];
 
@@ -71,14 +72,66 @@ const useToplevel = (id: string) => {
     );
 };
 
-const useTopNode = (id: string, loc: number) => {
-    const store = useStore();
-    return useSubscribe(
-        (f) => store.onTopNode(id, loc, f),
-        () => store.getState().toplevels[id].nodes[loc],
-        [id, loc],
-    );
+export type EditSelection =
+    | { type: 'range'; start: Selection; cursor: Selection; text?: string[] }
+    | { type: 'cursor'; cursor: Selection; text?: string[] };
+
+// TODO: potential optimization, we could cache the pathKey on the selection object.
+const findSelection = (
+    docSession: DocSession,
+    pathKey: string,
+): NodeSelection | void => {
+    for (let sel of docSession.selections) {
+        switch (sel.type) {
+            case 'within':
+                if (sel.pathKey === pathKey) return sel;
+                break;
+            case 'without':
+                if (sel.pathKey === pathKey) return sel;
+                break;
+            case 'multi':
+                if (sel.cursor.pathKey === pathKey) return sel;
+                if (sel.start?.pathKey === pathKey) return sel;
+                break;
+        }
+    }
 };
+
+const useTopNode = (path: Path) => {
+    const store = useStore();
+    const state = store.getState();
+    const dnode = path.root.ids[path.root.ids.length - 1];
+    const top = state.documents[path.root.doc].nodes[dnode].toplevel;
+    const loc = path.children[path.children.length - 1];
+    const session = useSessionId();
+    const node = useSubscribe(
+        (f) => store.onTopNode(top, loc, f),
+        () => store.getState().toplevels[top].nodes[loc],
+        [top, loc],
+    );
+    const pathKey = useMemo(() => serializePath(path), [path]);
+
+    const editState = useSubscribe(
+        (f) => store.onSelection(session, path, f),
+        () => {
+            const ds = store.getDocSession(path.root.doc, session);
+            return findSelection(ds, pathKey);
+        },
+        [path, session],
+    );
+
+    return { node, state: editState };
+};
+
+// const editState = (sel?: NodeSelection): EditState | void => {
+//     if (!sel) return;
+//     if (sel.type === 'within') {
+//         return { sel: sel.cursor, start: sel.start, text: sel.text };
+//     }
+//     // if (sel.type === 'cursor') {
+//     //     return;
+//     // }
+// };
 
 const TopNode = ({
     id,
@@ -90,11 +143,11 @@ const TopNode = ({
     parentPath: Path;
 }) => {
     console.log('render top', id, loc);
-    const node = useTopNode(id, loc);
     const path = useMemo(
         () => ({ ...parentPath, children: parentPath.children.concat([loc]) }),
         [loc, parentPath],
     );
+    const { node, state } = useTopNode(path);
     if (!node) return null;
     if (
         node.type === 'id' ||

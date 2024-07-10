@@ -1,7 +1,7 @@
 // full on state
 // probably persisted or something
 
-import { Cursor } from './nodes';
+import { Cursor, Path } from './nodes';
 import { Toplevels } from './toplevels';
 
 export type TS = { created: number; updated: number };
@@ -18,11 +18,42 @@ export type Reference = {
     loc: number;
 };
 
+export type NodeSelection =
+    | {
+          type: 'within';
+          path: Path;
+          pathKey: string;
+          cursor: number;
+          start?: number;
+          text?: string[];
+      }
+    | {
+          type: 'without';
+          path: Path;
+          pathKey: string;
+          location: 'start' | 'end' | 'inside';
+      }
+    | {
+          type: 'multi';
+          start?: {
+              path: Path;
+              pathKey: string;
+              location: 'start' | 'end' | 'inside' | number;
+          };
+          cursor: { path: Path; pathKey: string };
+      };
+
 export type DocSession = {
     doc: string;
     history: any[];
     activeStage: null | string;
-    selections: { start?: Cursor; cursor: Cursor }[];
+    selections: NodeSelection[];
+    // idTexts: Record<number, string[]>;
+    // selection cache???
+    // selections: {
+    //     sels: { start?: Cursor; cursor: Cursor }[];
+    //     cache: Record<number, {idx: number}>
+    // }
 };
 
 export type PersistedState = {

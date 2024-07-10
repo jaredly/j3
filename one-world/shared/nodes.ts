@@ -13,6 +13,12 @@ export type Path = {
     children: number[];
 };
 
+export const serializePath = (path: Path) => {
+    return `${path.root.doc}#${path.root.ids.join('.')}#${path.children.join(
+        '.',
+    )}`;
+};
+
 export type Selection =
     | { type: 'start' | 'end' | 'inside' }
     | { type: 'subtext'; at: number }
