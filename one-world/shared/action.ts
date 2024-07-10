@@ -16,10 +16,16 @@ export type NamespaceAction = {
     map: Record<string, Reference | null>;
 };
 
+export type ToplevelUpdate = {
+    type: 'update';
+    update: Partial<Omit<Toplevel, 'nodes'>> & {
+        nodes?: Partial<Toplevel['nodes']>;
+    };
+};
+
 export type ToplevelAction =
     | { type: 'reset'; toplevel: Toplevel }
-    | { type: 'update'; update: Partial<Toplevel> }
-    // | { type: 'nodes'; nodes: Partial<Toplevel['nodes']> }
+    | ToplevelUpdate
     | { type: 'delete' };
 
 export type DocAction = { type: 'reset'; doc: Doc } | { type: 'delete' };

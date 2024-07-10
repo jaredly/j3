@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { Action, ToplevelAction } from '../../shared/action';
+import { Action, ToplevelAction, ToplevelUpdate } from '../../shared/action';
 import {
     Node,
     Nodes,
@@ -77,7 +77,7 @@ const replaceWith = (
     top: Toplevel,
     path: Path,
     loc: number,
-): Extract<ToplevelAction, { type: 'update' }> | void => {
+): ToplevelUpdate | void => {
     const self = path.children[path.children.length - 1];
     if (path.children.length > 1) {
         const parent = top.nodes[path.children[path.children.length - 2]];
@@ -88,12 +88,44 @@ const replaceWith = (
     return { type: 'update', update: { root: loc } };
 };
 
+export const remove = (path: Path, top: Toplevel): void | ToplevelUpdate => {
+    if (path.children.length === 1) {
+        // soooo remove the toplevel, right? so it won't be a toplevelupdate.
+        return;
+    }
+
+    const lloc = path.children[path.children.length - 1];
+    const ploc = path.children[path.children.length - 2];
+    const parent = top.nodes[ploc];
+
+    switch (parent.type) {
+        case 'list':
+        case 'array':
+        case 'record': {
+            const idx = parent.items.indexOf(lloc);
+            if (idx === -1) return;
+            const items = parent.items.slice();
+            items.splice(idx, 1);
+            return {
+                type: 'update',
+                update: {
+                    nodes: { [ploc]: { ...parent, items }, [lloc]: undefined },
+                },
+            };
+        }
+        case 'spread':
+        case 'comment':
+            // replaceWith(top, {...path, children: path.children.slice(0, -1)}, lloc)
+            return;
+    }
+};
+
 export const addSibling = (
     path: Path,
     top: Toplevel,
     sibling: RecNode,
     left: boolean,
-): void | Extract<ToplevelAction, { type: 'update' }> => {
+): void | ToplevelUpdate => {
     let containerParent = null;
     for (let i = path.children.length - 1; i >= 0; i--) {
         const node = top.nodes[path.children[i]];
@@ -156,7 +188,12 @@ export const handleAction = (
                 : undefined;
         }
 
-        // case 'delete':
+        case 'delete': {
+            const update = remove(path, top);
+            return update
+                ? { type: 'toplevel', id: top.id, action: update }
+                : undefined;
+        }
 
         case 'split': {
             const lastNode = top.nodes[last];
