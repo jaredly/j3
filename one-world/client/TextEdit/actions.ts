@@ -1,4 +1,3 @@
-import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Action, ToplevelAction, ToplevelUpdate } from '../../shared/action';
 import {
     Node,
@@ -11,7 +10,6 @@ import {
 import { PersistedState } from '../../shared/state';
 import { Toplevel } from '../../shared/toplevels';
 import { KeyAction } from '../keyboard';
-import { Store } from '../StoreContext';
 
 const replaceChild = (node: Node, old: number, nw: number): Node | void => {
     switch (node.type) {
@@ -86,6 +84,49 @@ const replaceWith = (
         return { type: 'update', update: { nodes: { [fixed.loc]: fixed } } };
     }
     return { type: 'update', update: { root: loc } };
+};
+
+export const joinLeft = (path: Path, top: Toplevel): void | ToplevelUpdate => {
+    if (path.children.length === 1) {
+        // soooo remove the toplevel, right? so it won't be a toplevelupdate.
+        return;
+    }
+
+    const lloc = path.children[path.children.length - 1];
+    const ploc = path.children[path.children.length - 2];
+    const parent = top.nodes[ploc];
+
+    const node = top.nodes[lloc];
+    if (node.type !== 'id') return;
+
+    if (
+        parent.type !== 'list' &&
+        parent.type !== 'array' &&
+        parent.type !== 'record'
+    ) {
+        return;
+    }
+
+    const idx = parent.items.indexOf(lloc);
+    if (idx === -1) return;
+    if (idx === 0) return;
+    const prev = parent.items[idx - 1];
+    const pnode = top.nodes[prev];
+    if (pnode.type !== 'id') return;
+
+    const items = parent.items.slice();
+    items.splice(idx, 1);
+
+    return {
+        type: 'update',
+        update: {
+            nodes: {
+                [ploc]: { ...parent, items },
+                [prev]: { ...pnode, text: pnode.text + node.text },
+                [lloc]: undefined,
+            },
+        },
+    };
 };
 
 export const remove = (path: Path, top: Toplevel): void | ToplevelUpdate => {
@@ -190,6 +231,13 @@ export const handleAction = (
 
         case 'delete': {
             const update = remove(path, top);
+            return update
+                ? { type: 'toplevel', id: top.id, action: update }
+                : undefined;
+        }
+
+        case 'join-left': {
+            const update = joinLeft(path, top);
             return update
                 ? { type: 'toplevel', id: top.id, action: update }
                 : undefined;

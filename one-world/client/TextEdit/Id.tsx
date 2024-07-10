@@ -64,6 +64,7 @@ export const Id = ({
                 padding: 4,
                 backgroundColor: '#222',
                 boxSizing: 'border-box',
+                whiteSpace: 'nowrap',
             }}
         >
             {state != null ? renderTextAndCursor(state, blink) : node.text}

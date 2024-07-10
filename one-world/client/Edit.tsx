@@ -90,6 +90,7 @@ const TopNode = ({
         () => ({ ...parentPath, children: parentPath.children.concat([loc]) }),
         [loc, parentPath],
     );
+    if (!node) return null;
     if (
         node.type === 'id' ||
         node.type === 'accessText' ||
@@ -120,7 +121,7 @@ const Collection = ({
     return (
         <span>
             {l}
-            <span style={{ gap: 8, display: 'inline-flex' }}>
+            <span style={{ gap: 8, display: 'inline-flex', flexWrap: 'wrap' }}>
                 {node.items.map((loc) => (
                     <TopNode key={loc} id={tid} loc={loc} parentPath={path} />
                 ))}
