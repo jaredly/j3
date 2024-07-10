@@ -119,9 +119,22 @@ const Collection = ({
 }) => {
     const [l, r] = { list: '()', array: '[]', record: '{}' }[node.type];
     return (
-        <span>
+        <span
+            style={{
+                display: 'inline-flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+            }}
+        >
             {l}
-            <span style={{ gap: 8, display: 'inline-flex', flexWrap: 'wrap' }}>
+            <span
+                style={{
+                    gap: 8,
+                    display: 'inline-flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                }}
+            >
                 {node.items.map((loc) => (
                     <TopNode key={loc} id={tid} loc={loc} parentPath={path} />
                 ))}

@@ -176,6 +176,7 @@ export const addSibling = (
             node.type === 'record'
         ) {
             containerParent = i;
+            break;
         }
     }
     if (containerParent == null) {

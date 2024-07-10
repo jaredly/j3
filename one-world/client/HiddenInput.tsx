@@ -69,7 +69,6 @@ export const HiddenInput = ({ children }: { children: React.ReactNode }) => {
                 // }}
                 onBlur={(evt) => {
                     if (evt.currentTarget !== document.activeElement) {
-                        console.log('blurred');
                         ctx.listeners.blur.map((f) => f());
                     }
                     // if (ctx.listeners.key.length) {
@@ -77,16 +76,16 @@ export const HiddenInput = ({ children }: { children: React.ReactNode }) => {
                     // }
                 }}
                 style={{
-                    width: 10,
-                    height: 10,
-                    // width: 0,
-                    // height: 0,
-                    // opacity: 0,
-                    // position: 'fixed',
-                    // top: 0,
-                    // left: 0,
-                    // border: 'none',
-                    // pointerEvents: 'none',
+                    // width: 10,
+                    // height: 10,
+                    width: 0,
+                    height: 0,
+                    opacity: 0,
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    border: 'none',
+                    pointerEvents: 'none',
                 }}
                 onKeyDown={(evt) => {
                     ctx.listeners.key.forEach((k) =>

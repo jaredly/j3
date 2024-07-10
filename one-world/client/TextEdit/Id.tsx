@@ -61,7 +61,7 @@ export const Id = ({
                 setDrag(true);
             }}
             style={{
-                padding: 4,
+                padding: '0 4px',
                 backgroundColor: '#222',
                 boxSizing: 'border-box',
                 whiteSpace: 'nowrap',

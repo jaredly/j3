@@ -25,6 +25,9 @@ oof the
 - [x] split
 - [x] before
 - [x] after
+- [x] delete
+- [x] join left
+- [x] why does 'after' jump out of the current list?
 
 #### Selection management!
 gotta manage it centrally, my dear.

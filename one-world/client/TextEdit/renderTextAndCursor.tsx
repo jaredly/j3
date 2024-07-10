@@ -53,6 +53,7 @@ const cursorStyle = (blink: boolean) =>
         position: 'relative',
         marginTop: -7,
         opacity: blink ? 0 : 1,
+        lineHeight: '16px',
         // animationDuration: '2s',
         // animationName: blink ? 'blink' : 'unset',
         // animationIterationCount: 'infinite',
