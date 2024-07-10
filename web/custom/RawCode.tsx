@@ -1,12 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Path } from '../../src/state/path';
-// import { ReactCodeJar } from 'react-codejar';
 import { CodeJar } from 'codejar';
+import { NewThing } from '../../src/state/getKeyUpdate';
+import { newNodeAfter } from '../../src/state/newNodeBefore';
 import { useGetStore, useSubscribe } from './store/StoreCtx';
 import { lastPath, useAutoFocus } from './useAutoFocus';
-import { newNodeAfter } from '../../src/state/newNodeBefore';
-import { NewThing } from '../../src/state/getKeyUpdate';
-import { useLatest } from './useLatest';
 
 export const RawCode = ({
     initial,
