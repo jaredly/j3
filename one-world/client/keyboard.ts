@@ -21,7 +21,7 @@ export type KeyAction =
           type: 'surround';
           kind: 'list' | 'record' | 'array' | 'string' | 'comment' | 'spread';
       }
-    | { type: 'split' }
+    | { type: 'split'; at: number; del: number; text: string[] }
     | { type: 'delete' | 'join-left' }
     | { type: 'nav'; dir: 'up' | 'down' | 'left' | 'right' }
     | { type: 'after' | 'before'; node: RecNode };
@@ -73,21 +73,33 @@ export const specials: Record<
             cursor: sel - 1,
         };
     },
-    ' '(loc) {
-        return loc === 'middle'
-            ? { type: 'split' }
-            : {
-                  type: loc === 'start' ? 'before' : 'after',
-                  node: { type: 'id', text: '', loc: [] },
-              };
+    ' '(loc, state) {
+        if (loc === 'middle') {
+            const [left, right] =
+                state.start != null
+                    ? state.sel < state.start
+                        ? [state.sel, state.start]
+                        : [state.start, state.sel]
+                    : [state.sel, state.sel];
+            return {
+                type: 'split',
+                at: left,
+                del: right - left,
+                text: state.text,
+            };
+        }
+        return {
+            type: loc === 'start' ? 'before' : 'after',
+            node: { type: 'id', text: '', loc: [] },
+        };
     },
     Enter(loc) {
-        return loc === 'middle'
-            ? { type: 'split' }
-            : {
-                  type: loc === 'start' ? 'before' : 'after',
-                  node: { type: 'id', text: '', loc: [] },
-              };
+        // return loc === 'middle'
+        //     ? { type: 'split' }
+        //     : {
+        //           type: loc === 'start' ? 'before' : 'after',
+        //           node: { type: 'id', text: '', loc: [] },
+        //       };
     },
 
     Escape() {},

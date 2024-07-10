@@ -120,9 +120,11 @@ const Collection = ({
     return (
         <span>
             {l}
-            {node.items.map((loc) => (
-                <TopNode key={loc} id={tid} loc={loc} parentPath={path} />
-            ))}
+            <span style={{ gap: 8, display: 'inline-flex' }}>
+                {node.items.map((loc) => (
+                    <TopNode key={loc} id={tid} loc={loc} parentPath={path} />
+                ))}
+            </span>
             {r}
         </span>
     );

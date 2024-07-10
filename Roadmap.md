@@ -20,6 +20,20 @@ oof the
   - into a stage, right? the current stage?
 - [x] notify nodes that changed
 
+- [x] some multi node!
+- [x] surround
+- [x] split
+- [x] before
+- [x] after
+
+#### Selection management!
+gotta manage it centrally, my dear.
+
+- [ ] have a ... doc-session data thing? saved to localstorage probably
+  and it has the /selection/ infos
+- [ ] /updates/ should mod the selection as well.
+  probably needs to be managed by the store, so it can be coordinated with /updates/
+
 are we ready for multi-node?
 
 right after multinode, we need to do actual selection management.

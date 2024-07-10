@@ -180,6 +180,7 @@ const maxLoc = (node: RecNode) => {
 // Gotta have a way to determine
 
 const getLoc = (node: RecNode, nodes: Nodes, idx: { next: number }) => {
+    if (!node.loc.length) return idx.next++;
     const loc = node.loc[node.loc.length - 1][1];
     if (loc in nodes) {
         return idx.next++;
@@ -191,10 +192,14 @@ const getLoc = (node: RecNode, nodes: Nodes, idx: { next: number }) => {
 
 export const toMap = (node: RecNode, nodes: Nodes): number => {
     const idx = { next: maxLoc(node) + 1 };
-    return _toMap(node, nodes, idx);
+    return toMapInner(node, nodes, idx);
 };
 
-const _toMap = (node: RecNode, nodes: Nodes, idx: { next: number }): number => {
+export const toMapInner = (
+    node: RecNode,
+    nodes: Nodes,
+    idx: { next: number },
+): number => {
     const loc = getLoc(node, nodes, idx);
     nodes[loc] = fromRec(node, loc, nodes, idx);
     return loc;
@@ -217,7 +222,7 @@ const fromRec = (
             return {
                 ...node,
                 loc,
-                embeds: node.embeds.map((n) => _toMap(n, nodes, idx)),
+                embeds: node.embeds.map((n) => toMapInner(n, nodes, idx)),
             };
         case 'list':
         case 'array':
@@ -225,37 +230,37 @@ const fromRec = (
             return {
                 ...node,
                 loc,
-                items: node.items.map((n) => _toMap(n, nodes, idx)),
+                items: node.items.map((n) => toMapInner(n, nodes, idx)),
             };
         case 'comment':
         case 'spread':
             return {
                 ...node,
                 loc,
-                contents: _toMap(node.contents, nodes, idx),
+                contents: toMapInner(node.contents, nodes, idx),
             };
         case 'annot':
             return {
                 ...node,
                 loc,
-                contents: _toMap(node.contents, nodes, idx),
-                annot: _toMap(node.annot, nodes, idx),
+                contents: toMapInner(node.contents, nodes, idx),
+                annot: toMapInner(node.annot, nodes, idx),
             };
         case 'record-access':
             return {
                 ...node,
                 loc,
-                target: _toMap(node.target, nodes, idx),
-                items: node.items.map((n) => _toMap(n, nodes, idx)),
+                target: toMapInner(node.target, nodes, idx),
+                items: node.items.map((n) => toMapInner(n, nodes, idx)),
             };
         case 'string':
             return {
                 ...node,
                 loc,
-                first: _toMap(node.first, nodes, idx),
+                first: toMapInner(node.first, nodes, idx),
                 templates: node.templates.map((t) => ({
-                    expr: _toMap(t.expr, nodes, idx),
-                    suffix: _toMap(t.suffix, nodes, idx),
+                    expr: toMapInner(t.expr, nodes, idx),
+                    suffix: toMapInner(t.suffix, nodes, idx),
                 })),
             };
     }

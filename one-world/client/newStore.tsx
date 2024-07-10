@@ -35,7 +35,7 @@ const ensure = <K extends string | number, A>(
 
 export const newStore = (state: PersistedState, ws: WebSocket): Store => {
     const evts = blankEvts();
-    window.state = state;
+    // window.state = state;
     const store: Store = {
         getState() {
             return state;
@@ -44,7 +44,7 @@ export const newStore = (state: PersistedState, ws: WebSocket): Store => {
             const prev = state;
             console.log('update ation', action);
             state = update(state, action);
-            window.state = state;
+            // window.state = state;
             ws.send(
                 JSON.stringify({
                     type: 'action',

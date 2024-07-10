@@ -3,7 +3,7 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { useKeyListener } from '../HiddenInput';
 import { specials, textKey } from '../keyboard';
 import { EditState } from './Id';
-import { useStore } from '../StoreContext';
+import { Store, useStore } from '../StoreContext';
 import { handleAction } from './actions';
 import { Path } from '../../shared/nodes';
 
@@ -45,11 +45,9 @@ export function useKeys(
                         start: action.cursorStart,
                     });
                 } else {
-                    const saction = handleAction(
-                        action,
-                        path,
-                        store.getState(),
-                    );
+                    maybeCommitTextChanges(latest.current, store, tid, loc);
+                    const state = store.getState();
+                    const saction = handleAction(action, path, state);
                     if (saction) {
                         // console.log('state action', saction);
                         store.update(saction);
@@ -69,28 +67,37 @@ export function useKeys(
         },
         () => {
             if (latest.current) {
-                const text = latest.current.text.join('');
-                const current = store.getState().toplevels[tid].nodes[loc];
-                if (
-                    current.type === 'id' ||
-                    current.type === 'accessText' ||
-                    current.type === 'stringText'
-                ) {
-                    if (text !== current.text) {
-                        store.update({
-                            type: 'toplevel',
-                            id: tid,
-                            action: {
-                                type: 'update',
-                                update: {
-                                    nodes: { [loc]: { ...current, text } },
-                                },
-                            },
-                        });
-                    }
-                }
+                maybeCommitTextChanges(latest.current, store, tid, loc);
             }
             setState(null);
         },
     );
+}
+
+function maybeCommitTextChanges(
+    estate: EditState,
+    store: Store,
+    tid: string,
+    loc: number,
+) {
+    const text = estate.text.join('');
+    const current = store.getState().toplevels[tid].nodes[loc];
+    if (
+        current.type === 'id' ||
+        current.type === 'accessText' ||
+        current.type === 'stringText'
+    ) {
+        if (text !== current.text) {
+            store.update({
+                type: 'toplevel',
+                id: tid,
+                action: {
+                    type: 'update',
+                    update: {
+                        nodes: { [loc]: { ...current, text } },
+                    },
+                },
+            });
+        }
+    }
 }

@@ -1,5 +1,13 @@
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Action, ToplevelAction } from '../../shared/action';
-import { Node, Path } from '../../shared/nodes';
+import {
+    Node,
+    Nodes,
+    Path,
+    RecNode,
+    toMap,
+    toMapInner,
+} from '../../shared/nodes';
 import { PersistedState } from '../../shared/state';
 import { Toplevel } from '../../shared/toplevels';
 import { KeyAction } from '../keyboard';
@@ -80,6 +88,50 @@ const replaceWith = (
     return { type: 'update', update: { root: loc } };
 };
 
+export const addSibling = (
+    path: Path,
+    top: Toplevel,
+    sibling: RecNode,
+    left: boolean,
+): void | Extract<ToplevelAction, { type: 'update' }> => {
+    let containerParent = null;
+    for (let i = path.children.length - 1; i >= 0; i--) {
+        const node = top.nodes[path.children[i]];
+        if (
+            node.type === 'list' ||
+            node.type === 'array' ||
+            node.type === 'record'
+        ) {
+            containerParent = i;
+        }
+    }
+    if (containerParent == null) {
+        return; // TODO: toplevel whatsit
+    }
+    const child = path.children[containerParent + 1];
+    const parent = top.nodes[path.children[containerParent]] as Extract<
+        Node,
+        { type: 'list' | 'array' | 'record' }
+    >;
+    const idx = parent.items.indexOf(child);
+    if (idx === -1) return;
+
+    const nodes: Nodes = {};
+
+    const nidx = { next: top.nextLoc };
+
+    const nloc = toMapInner(sibling, nodes, nidx);
+    const items = parent.items.slice();
+    items.splice(idx + (left ? 0 : 1), 0, nloc);
+
+    nodes[parent.loc] = { ...parent, items };
+
+    return {
+        type: 'update',
+        update: { nextLoc: nidx.next, nodes },
+    };
+};
+
 export const handleAction = (
     action: KeyAction,
     path: Path,
@@ -87,11 +139,51 @@ export const handleAction = (
 ): Action | void => {
     if (path.root.type !== 'doc-node') return;
     const docNode = path.root.ids[path.root.ids.length - 1];
-    const top = state.documents[path.root.doc].nodes[docNode].toplevel;
+    const tid = state.documents[path.root.doc].nodes[docNode].toplevel;
+    const top = state.toplevels[tid];
+    const last = path.children[path.children.length - 1];
     switch (action.type) {
+        case 'before':
+        case 'after': {
+            const update = addSibling(
+                path,
+                top,
+                action.node,
+                action.type === 'before',
+            );
+            return update
+                ? { type: 'toplevel', id: top.id, action: update }
+                : undefined;
+        }
+
+        // case 'delete':
+
+        case 'split': {
+            const lastNode = top.nodes[last];
+            if (lastNode.type !== 'id') return; // skipping othersss
+            const left = action.text.slice(0, action.at);
+            const right = action.text.slice(action.at + action.del);
+
+            const update = addSibling(
+                path,
+                top,
+                { type: 'id', loc: [], text: right.join('') },
+                false,
+            );
+            if (update) {
+                update.update.nodes = {
+                    ...update.update.nodes,
+                    [last]: { ...lastNode, text: left.join('') },
+                };
+            }
+            return update
+                ? { type: 'toplevel', id: top.id, action: update }
+                : undefined;
+        }
+
         case 'surround': {
             const loc = path.children[path.children.length - 1];
-            let nidx = state.toplevels[top].nextLoc + 1;
+            let nidx = top.nextLoc;
             let idx = nidx++;
             const map: Record<number, Node> = {};
             if (
@@ -114,11 +206,11 @@ export const handleAction = (
                 map[fidx] = { type: 'stringText', text: '', loc: fidx };
                 map[sidx] = { type: 'stringText', text: '', loc: sidx };
             }
-            const update = replaceWith(state.toplevels[top], path, idx);
+            const update = replaceWith(top, path, idx);
             if (!update) return;
             update.update.nodes = { ...map, ...update.update.nodes };
             update.update.nextLoc = nidx;
-            return { type: 'toplevel', id: top, action: update };
+            return { type: 'toplevel', id: tid, action: update };
         }
     }
 };
