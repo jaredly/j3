@@ -1,5 +1,5 @@
 import { serializePath } from '../shared/nodes';
-import { DocSession, PersistedState } from '../shared/state';
+import { DocSession, NodeSelection, PersistedState } from '../shared/state';
 import { update } from '../shared/update';
 import { listen } from './listen';
 import { Store } from './StoreContext';
@@ -35,6 +35,18 @@ const ensure = <K extends string | number, A>(
     }
 };
 
+const selPathKeys = (sel: NodeSelection) => {
+    switch (sel.type) {
+        case 'multi':
+            return sel.start
+                ? [sel.cursor.pathKey, sel.start.pathKey]
+                : [sel.cursor.pathKey];
+        case 'within':
+        case 'without':
+            return [sel.pathKey];
+    }
+};
+
 export const newStore = (state: PersistedState, ws: WebSocket): Store => {
     const evts = blankEvts();
     // @ts-ignore
@@ -63,7 +75,31 @@ export const newStore = (state: PersistedState, ws: WebSocket): Store => {
             return state;
         },
         update(action) {
-            const prev = state;
+            if (action.type === 'in-session') {
+                if (action.selections) {
+                    const key = `${action.doc} - ${action.session}`;
+                    const prev = docSessionCache[key].selections;
+                    docSessionCache[key].selections = action.selections;
+                    const seen: Record<string, true> = {};
+                    action.selections.forEach((sel) => {
+                        selPathKeys(sel).forEach((k) => {
+                            const id = `${action.session}#${k}`;
+                            seen[id] = true;
+                            evts.selections[id]?.forEach((f) => f());
+                        });
+                    });
+                    prev.forEach((sel) => {
+                        selPathKeys(sel).forEach((k) => {
+                            const id = `${action.session}#${k}`;
+                            if (!seen[k]) {
+                                evts.selections[id]?.forEach((f) => f());
+                            }
+                        });
+                    });
+                }
+            }
+
+            // const prev = state;
             console.log('update ation', action);
             state = update(state, action);
             // @ts-ignore

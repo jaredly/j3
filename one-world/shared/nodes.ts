@@ -6,6 +6,7 @@ export type PathRoot = {
     type: 'doc-node';
     doc: string;
     ids: number[];
+    toplevel: string;
 }; // another option would be like, "search-result" or "pin" or something
 
 export type Path = {

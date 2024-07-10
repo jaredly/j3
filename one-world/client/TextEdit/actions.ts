@@ -212,8 +212,9 @@ export const handleAction = (
     state: PersistedState,
 ): Action | void => {
     if (path.root.type !== 'doc-node') return;
-    const docNode = path.root.ids[path.root.ids.length - 1];
-    const tid = state.documents[path.root.doc].nodes[docNode].toplevel;
+    // const docNode = path.root.ids[path.root.ids.length - 1];
+    // const tid = state.documents[path.root.doc].nodes[docNode].toplevel;
+    const tid = path.root.toplevel;
     const top = state.toplevels[tid];
     const last = path.children[path.children.length - 1];
     switch (action.type) {

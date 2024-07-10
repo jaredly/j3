@@ -5,6 +5,7 @@ import { EditState, Id } from './TextEdit/Id';
 import { useSessionId, useStore } from './StoreContext';
 import { Node, Path, Selection, serializePath } from '../shared/nodes';
 import { DocSession, NodeSelection } from '../shared/state';
+import { ManagedId } from './TextEdit/ManagedId';
 
 const emptyNodes: number[] = [];
 
@@ -99,9 +100,10 @@ const findSelection = (
 
 const useTopNode = (path: Path) => {
     const store = useStore();
-    const state = store.getState();
-    const dnode = path.root.ids[path.root.ids.length - 1];
-    const top = state.documents[path.root.doc].nodes[dnode].toplevel;
+    // const state = store.getState();
+    // const dnode = path.root.ids[path.root.ids.length - 1];
+    // const top = state.documents[path.root.doc].nodes[dnode].toplevel;
+    const top = path.root.toplevel;
     const loc = path.children[path.children.length - 1];
     const session = useSessionId();
     const node = useSubscribe(
@@ -111,7 +113,7 @@ const useTopNode = (path: Path) => {
     );
     const pathKey = useMemo(() => serializePath(path), [path]);
 
-    const editState = useSubscribe(
+    const selection = useSubscribe(
         (f) => store.onSelection(session, path, f),
         () => {
             const ds = store.getDocSession(path.root.doc, session);
@@ -120,7 +122,7 @@ const useTopNode = (path: Path) => {
         [path, session],
     );
 
-    return { node, state: editState };
+    return { node, selection };
 };
 
 // const editState = (sel?: NodeSelection): EditState | void => {
@@ -147,14 +149,15 @@ const TopNode = ({
         () => ({ ...parentPath, children: parentPath.children.concat([loc]) }),
         [loc, parentPath],
     );
-    const { node, state } = useTopNode(path);
+    const { node, selection } = useTopNode(path);
     if (!node) return null;
     if (
         node.type === 'id' ||
         node.type === 'accessText' ||
         node.type === 'stringText'
     ) {
-        return <Id path={path} node={node} tid={id} />;
+        // return <Id path={path} node={node} tid={id} />;
+        return <ManagedId path={path} node={node} selection={selection} />;
     }
     if (
         node.type === 'list' ||
@@ -211,9 +214,9 @@ const Toplevel = ({
     const path: Path = useMemo(
         () => ({
             children: [],
-            root: { type: 'doc-node', ids: docNodes, doc },
+            root: { type: 'doc-node', ids: docNodes, doc, toplevel: id },
         }),
-        [docNodes],
+        [docNodes, id],
     );
     console.log('rendering toplevel here', top.root);
     return (
