@@ -1,4 +1,4 @@
-import { PersistedState } from '../shared/state';
+import { DocSession, PersistedState } from '../shared/state';
 import { update } from '../shared/update';
 import { listen } from './listen';
 import { Store } from './StoreContext';
@@ -37,7 +37,26 @@ export const newStore = (state: PersistedState, ws: WebSocket): Store => {
     const evts = blankEvts();
     // @ts-ignore
     window.state = state;
+    const docSessionCache: { [id: string]: DocSession } = {};
     const store: Store = {
+        getDocSession(doc: string, session: string) {
+            const id = `${doc} - ${session}`;
+            if (!docSessionCache[id]) {
+                if (localStorage['doc:ss:' + id]) {
+                    docSessionCache[id] = JSON.parse(
+                        localStorage['doc:ss:' + id],
+                    );
+                } else {
+                    docSessionCache[id] = {
+                        history: [],
+                        activeStage: null,
+                        doc,
+                        selections: [],
+                    };
+                }
+            }
+            return docSessionCache[id];
+        },
         getState() {
             return state;
         },

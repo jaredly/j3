@@ -1,4 +1,4 @@
-import { Doc, PersistedState, Reference, Stage } from './state';
+import { Doc, DocSession, PersistedState, Reference, Stage } from './state';
 import { Toplevel } from './toplevels';
 
 export type Action =
@@ -6,6 +6,13 @@ export type Action =
     | { type: 'multi'; actions: Action[] }
     | { type: 'doc'; id: string; action: DocAction }
     | { type: 'toplevel'; id: string; action: ToplevelAction; stage?: string }
+    | {
+          type: 'in-session';
+          doc: string;
+          session: string;
+          action: Action;
+          selections?: DocSession['selections'];
+      }
     | { type: 'namespaces'; action: NamespaceAction }
     | { type: 'stage'; id: string; action: StageAction };
 

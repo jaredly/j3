@@ -1,8 +1,12 @@
 
+Ok folks, I think we'll want to do centralized selection state management now.
+
+
 
 
 whyyyyyyyyyyyyyyyyyyyyyyyyyy am I out of memory????
 What is thatttttt
+lol ok that was so ugh.
 
 
 ### Basic Identifier Edit

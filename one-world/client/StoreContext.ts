@@ -1,8 +1,9 @@
 import { createContext, useContext } from 'react';
-import { PersistedState } from '../shared/state';
+import { DocSession, PersistedState } from '../shared/state';
 import { Action } from '../shared/action';
 
 export type Store = {
+    getDocSession(doc: string, session: string): DocSession;
     getState(): PersistedState;
     update(action: Action): void;
     onTop(id: string, f: () => void): () => void;

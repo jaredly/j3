@@ -9,13 +9,13 @@
 import { loadState, saveChanges } from './persistence';
 import { Action } from '../shared/action';
 import { update } from '../shared/update';
-import { UserDocument } from '../shared/state';
+import { DocSession } from '../shared/state';
 import { ServerWebSocket } from 'bun';
 import { rid } from '../shared/rid';
 
 type Session = {
     ws: ServerWebSocket<unknown>;
-    selections: UserDocument['selections'];
+    selections: DocSession['selections'];
 };
 
 const baseDirectory = './.ow-data';

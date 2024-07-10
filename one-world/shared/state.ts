@@ -18,6 +18,13 @@ export type Reference = {
     loc: number;
 };
 
+export type DocSession = {
+    doc: string;
+    history: any[];
+    activeStage: null | string;
+    selections: { start?: Cursor; cursor: Cursor }[];
+};
+
 export type PersistedState = {
     toplevels: Toplevels;
     documents: Record<string, Doc>;
@@ -29,15 +36,6 @@ export type EvaluatorPath = {
     toplevel: string;
     commit: string;
 }[];
-
-// State for the active user.
-// Maybeeeee completely transient? idk
-// Like session-only
-export type UserDocument = {
-    history: any[];
-    activeStage: null | string;
-    selections: { start: Cursor; end?: Cursor }[];
-};
 
 export type Doc = {
     id: string;
