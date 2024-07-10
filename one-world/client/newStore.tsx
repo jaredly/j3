@@ -47,12 +47,17 @@ const selPathKeys = (sel: NodeSelection) => {
     }
 };
 
-export const newStore = (state: PersistedState, ws: WebSocket): Store => {
+export const newStore = (
+    state: PersistedState,
+    ws: WebSocket,
+    session: string,
+): Store => {
     const evts = blankEvts();
     // @ts-ignore
     window.state = state;
     const docSessionCache: { [id: string]: DocSession } = {};
     const store: Store = {
+        session,
         getDocSession(doc: string, session: string) {
             const id = `${doc} - ${session}`;
             if (!docSessionCache[id]) {
@@ -77,20 +82,20 @@ export const newStore = (state: PersistedState, ws: WebSocket): Store => {
         update(action) {
             if (action.type === 'in-session') {
                 if (action.selections) {
-                    const key = `${action.doc} - ${action.session}`;
+                    const key = `${action.doc} - ${session}`;
                     const prev = docSessionCache[key].selections;
                     docSessionCache[key].selections = action.selections;
                     const seen: Record<string, true> = {};
                     action.selections.forEach((sel) => {
                         selPathKeys(sel).forEach((k) => {
-                            const id = `${action.session}#${k}`;
+                            const id = `${session}#${k}`;
                             seen[id] = true;
                             evts.selections[id]?.forEach((f) => f());
                         });
                     });
                     prev.forEach((sel) => {
                         selPathKeys(sel).forEach((k) => {
-                            const id = `${action.session}#${k}`;
+                            const id = `${session}#${k}`;
                             if (!seen[k]) {
                                 evts.selections[id]?.forEach((f) => f());
                             }
@@ -153,8 +158,5 @@ export const newStore = (state: PersistedState, ws: WebSocket): Store => {
             return listen(evts.docs[doc].nodes[id], f);
         },
     };
-    // ws.onmessage = evt => {
-    //     const msg = JSON.parse(evt.data)
-    // }
     return store;
 };

@@ -17,8 +17,6 @@ const getSsid = () => {
 };
 
 export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
-    // const [state, setState] = useState(null as null | PersistedState);
-    // const [ws, setWs] = useState(null as null | WebSocket);
     const [store, setStore] = useState(null as null | Store);
     useEffect(() => {
         const ssid = getSsid();
@@ -40,7 +38,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
                                 '?ssid=' + data.ssid,
                             );
                         }
-                        setStore(newStore(state, ws));
+                        setStore(newStore(state, ws, ssid));
                     };
                     ws.addEventListener('message', f);
                 };

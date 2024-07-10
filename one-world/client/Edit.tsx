@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { HiddenInput } from './HiddenInput';
+import { Hidden, HiddenInput } from './HiddenInput';
 import { EditState, Id } from './TextEdit/Id';
-import { useSessionId, useStore } from './StoreContext';
+import { useStore } from './StoreContext';
 import { Node, Path, Selection, serializePath } from '../shared/nodes';
 import { DocSession, NodeSelection } from '../shared/state';
 import { ManagedId } from './TextEdit/ManagedId';
@@ -21,14 +21,25 @@ export const Edit = () => {
         [id],
     );
 
+    // const session = useSessionId()
+    const docSession = store.getDocSession(id, store.session);
+
     return (
-        <HiddenInput>
-            <div style={{ padding: 100 }}>
-                Editing {doc.title}
-                <DocNode doc={doc.id} id={0} parentNodes={emptyNodes} />
-                {/** ok */}
-            </div>
-        </HiddenInput>
+        // <HiddenInput>
+        <div style={{ padding: 100 }}>
+            <Hidden
+                onKeyDown={(evt) => {
+                    if (evt.metaKey) return;
+                }}
+                onBlur={(evt) => {
+                    // blur
+                }}
+            />
+            Editing {doc.title}
+            <DocNode doc={doc.id} id={0} parentNodes={emptyNodes} />
+            {/** ok */}
+        </div>
+        // </HiddenInput>
     );
 };
 
@@ -105,7 +116,7 @@ const useTopNode = (path: Path) => {
     // const top = state.documents[path.root.doc].nodes[dnode].toplevel;
     const top = path.root.toplevel;
     const loc = path.children[path.children.length - 1];
-    const session = useSessionId();
+    // const session = useSessionId();
     const node = useSubscribe(
         (f) => store.onTopNode(top, loc, f),
         () => store.getState().toplevels[top].nodes[loc],
@@ -114,12 +125,12 @@ const useTopNode = (path: Path) => {
     const pathKey = useMemo(() => serializePath(path), [path]);
 
     const selection = useSubscribe(
-        (f) => store.onSelection(session, path, f),
+        (f) => store.onSelection(store.session, path, f),
         () => {
-            const ds = store.getDocSession(path.root.doc, session);
+            const ds = store.getDocSession(path.root.doc, store.session);
             return findSelection(ds, pathKey);
         },
-        [path, session],
+        [path, store.session],
     );
 
     return { node, selection };

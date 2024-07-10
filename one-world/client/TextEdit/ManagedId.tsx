@@ -4,7 +4,7 @@ import { Path, serializePath } from '../../shared/nodes';
 import { NodeSelection } from '../../shared/state';
 import { RenderTextAndCursor } from './renderTextAndCursor';
 import { getNewSelection } from './getNewSelection';
-import { useSessionId, useStore } from '../StoreContext';
+import { useStore } from '../StoreContext';
 import { useLatest } from '../../../web/custom/useLatest';
 
 const blinkTime = 500;
@@ -36,9 +36,7 @@ export const ManagedId = ({
         return () => clearInterval(iv);
     }, [selection]);
 
-    const session = useSessionId();
-
-    const { ref, setDrag } = useDrag(node.text, selection, path, session);
+    const { ref, setDrag } = useDrag(node.text, selection, path);
 
     return (
         <span
@@ -76,7 +74,6 @@ export const ManagedId = ({
                     type: 'in-session',
                     action: { type: 'multi', actions: [] },
                     doc: path.root.doc,
-                    session,
                     selections: [
                         {
                             type: 'within',
@@ -115,7 +112,6 @@ export const useDrag = (
     nodeText: string,
     selection: void | NodeSelection,
     path: Path,
-    session: string,
     // latest: React.MutableRefObject<EditState | null>,
     // setState: React.Dispatch<React.SetStateAction<EditState | null>>,
     // resetBlink: () => void,
@@ -154,7 +150,6 @@ export const useDrag = (
                 type: 'in-session',
                 action: { type: 'multi', actions: [] },
                 doc: path.root.doc,
-                session,
                 selections: [
                     {
                         type: 'within',

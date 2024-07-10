@@ -9,7 +9,6 @@ export type Action =
     | {
           type: 'in-session';
           doc: string;
-          session: string;
           action: Action;
           selections?: DocSession['selections'];
       }

@@ -4,6 +4,7 @@ import { Action } from '../shared/action';
 import { Path } from '../shared/nodes';
 
 export type Store = {
+    session: string;
     getDocSession(doc: string, session: string): DocSession;
     getState(): PersistedState;
     update(action: Action): void;
@@ -21,8 +22,7 @@ export const useStore = () => {
     return useContext(StoreContext);
 };
 
-export const SessionContext = createContext<string>(null as any);
-
-export const useSessionId = () => {
-    return useContext(SessionContext);
-};
+// export const SessionContext = createContext<string>(null as any);
+// export const useSessionId = () => {
+//     return useContext(SessionContext);
+// };
