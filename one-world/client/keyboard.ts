@@ -28,6 +28,7 @@ export type KeyAction =
     | { type: 'delete'; direction: 'left' | 'right' | 'blank' }
     | { type: 'unwrap'; direction: 'left' | 'right' }
     | { type: 'shrink'; from: 'start' | 'end' }
+    | { type: 'swap'; direction: 'left' | 'right' }
     | { type: 'join-left'; text: string[] }
     | {
           type: 'nav';
@@ -65,12 +66,26 @@ export const specials: Record<
     string,
     (
         sel: NodeSelection,
-        mods: { shift: boolean; meta: boolean },
+        mods: { shift: boolean; meta: boolean; ctrl: boolean },
         text?: string,
     ) => KeyAction | LocalAction | void
 > = {
-    Tab(_, { shift }) {
-        return { type: 'nav', dir: shift ? 'left' : 'right' };
+    Tab(selection, { shift }) {
+        if (selection.type === 'within') {
+            return { type: 'nav', dir: shift ? 'left' : 'right' };
+        }
+        if (selection.type === 'without') {
+            if (selection.location === 'inside') {
+                return { type: 'nav', dir: shift ? 'left' : 'right' };
+            }
+            if (selection.location === (shift ? 'end' : 'start')) {
+                return {
+                    type: 'nav',
+                    dir: shift ? 'inside-end' : 'inside-start',
+                };
+            }
+            return { type: 'nav', dir: shift ? 'left' : 'right' };
+        }
     },
 
     Delete(selection, mods, rawText) {
@@ -175,7 +190,8 @@ export const specials: Record<
 
     ArrowUp: () => ({ type: 'nav', dir: 'up' }),
     ArrowDown: () => ({ type: 'nav', dir: 'down' }),
-    ArrowLeft(selection, { shift }, rawText) {
+    ArrowLeft(selection, { shift, ctrl }, rawText) {
+        if (ctrl) return { type: 'swap', direction: 'left' };
         if (selection.type !== 'within') {
             if (selection.type === 'without') {
                 return {
@@ -209,7 +225,8 @@ export const specials: Record<
             return { type: 'nav', dir: 'left' };
         }
     },
-    ArrowRight(selection, { shift }, rawText) {
+    ArrowRight(selection, { shift, ctrl }, rawText) {
+        if (ctrl) return { type: 'swap', direction: 'right' };
         if (selection.type !== 'within') {
             if (selection.type === 'without') {
                 return {

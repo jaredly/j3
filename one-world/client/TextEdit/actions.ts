@@ -254,7 +254,6 @@ export const remove = (path: Path, top: Toplevel): void | ToplevelUpdate => {
         }
         case 'spread':
         case 'comment':
-            // replaceWith(top, {...path, children: path.children.slice(0, -1)}, lloc)
             return;
     }
 };

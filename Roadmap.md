@@ -15,6 +15,11 @@ seems a little nice.
 - [ ] gotta get some undo/redo in here, it's very needed.
 - [x] tab / shift-tab pls
   - it's not perfect, but it's something
+  - erps, no I don't want it quite this way.
+
+- [ ] multi select is definitely needed.
+- [ ] I want a way to swap children
+
 
 
 

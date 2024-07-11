@@ -69,18 +69,11 @@ export const Edit = () => {
                             rawText != null && selection.type === 'within'
                                 ? selection.text ?? splitGraphemes(rawText)
                                 : undefined;
-                        // if (
-                        // ) {
-                        //     return;
-                        // }
-                        // const text =
-                        // const sel = selection.cursor;
-                        const mods = { meta: evt.metaKey, shift: evt.shiftKey };
-                        // const editState: EditState = {
-                        //     text,
-                        //     sel,
-                        //     start: selection.start,
-                        // };
+                        const mods = {
+                            meta: evt.metaKey,
+                            shift: evt.shiftKey,
+                            ctrl: evt.ctrlKey,
+                        };
 
                         const key = evt.key;
                         if (specials[key]) {
