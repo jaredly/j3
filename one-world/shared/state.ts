@@ -31,7 +31,7 @@ export type NodeSelection =
           type: 'without';
           path: Path;
           pathKey: string;
-          location: 'start' | 'end' | 'inside';
+          location: 'start' | 'end' | 'inside' | 'all';
       }
     | {
           type: 'multi';

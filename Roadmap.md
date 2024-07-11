@@ -8,9 +8,10 @@ Ok folks, I think we'll want to do centralized selection state management now.
 - [x] unwrap, lookin slick
 
 NEXT UP: A bit of navigation
-- [ ] Arrow Left & Right if you please
 - [x] Ok I also need my `Hidden` input to reclaim focus at .. all times?
-- [ ] then I'll need a blinker for the start & end of collections.
+- [x] then I'll need a blinker for the start & end of collections.
+- [x] dbl click to select all
+- [ ] Arrow Left & Right if you please
 
 
 ENUMERATING ALL THE PLACES SELECTION CAN HAPPEN

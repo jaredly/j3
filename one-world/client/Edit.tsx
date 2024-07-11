@@ -62,8 +62,9 @@ export const Edit = () => {
                             node.type !== 'id' &&
                             node.type !== 'accessText' &&
                             node.type !== 'stringText'
-                        )
+                        ) {
                             return;
+                        }
                         const text =
                             selection.text ?? splitGraphemes(node.text);
                         const sel = selection.cursor;

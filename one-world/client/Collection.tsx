@@ -20,7 +20,15 @@ export const Collection = ({
     const [l, r] = { list: '()', array: '[]', record: '{}' }[node.type];
     const store = useStore();
     return (
-        <span>
+        <span
+            style={
+                selection?.type === 'without' && selection.location === 'all'
+                    ? {
+                          backgroundColor: 'red',
+                      }
+                    : undefined
+            }
+        >
             {selection?.type === 'without' && selection.location === 'start' ? (
                 <span style={cursorStyle(false)}>{'|'}</span>
             ) : null}
@@ -75,7 +83,6 @@ const clickBracket = (
     path: Path,
     left: boolean,
 ) => {
-    console.log('clicjing brakcet');
     const box = evt.currentTarget.getBoundingClientRect();
     const l = evt.clientX < (box.left + box.right) / 2;
 
@@ -85,7 +92,11 @@ const clickBracket = (
         setSelection(
             store,
             path.root.doc,
-            selectNode(getNodeForPath(cpath, store.getState()), cpath, left),
+            selectNode(
+                getNodeForPath(cpath, store.getState()),
+                cpath,
+                left ? 'start' : 'end',
+            ),
         );
         return;
     }
@@ -114,7 +125,7 @@ function clickSpace(
         setSelection(
             store,
             path.root.doc,
-            selectNode(getNodeForPath(lpath, store.getState()), lpath, false),
+            selectNode(getNodeForPath(lpath, store.getState()), lpath, 'end'),
         );
     } else {
         const rpath = {
@@ -124,7 +135,7 @@ function clickSpace(
         setSelection(
             store,
             path.root.doc,
-            selectNode(getNodeForPath(rpath, store.getState()), rpath, true),
+            selectNode(getNodeForPath(rpath, store.getState()), rpath, 'start'),
         );
     }
 }

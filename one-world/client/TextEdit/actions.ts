@@ -305,6 +305,33 @@ export const handleAction = (
     const top = state.toplevels[tid];
     const last = path.children[path.children.length - 1];
     switch (action.type) {
+        case 'end': {
+            for (let i = path.children.length - 2; i >= 0; i--) {
+                const node = top.nodes[path.children[i]];
+                if (node.type === action.which) {
+                    const cpath = {
+                        ...path,
+                        children: path.children.slice(0, i + 1),
+                    };
+                    return {
+                        type: 'in-session',
+                        action: { type: 'multi', actions: [] },
+                        doc: path.root.doc,
+                        selections: [
+                            {
+                                type: 'without',
+                                location: 'end',
+                                path: cpath,
+                                pathKey: serializePath(cpath),
+                            },
+                        ],
+                    };
+                }
+            }
+            console.log('no end', path);
+            return;
+        }
+
         case 'before':
         case 'after': {
             const update = addSibling(

@@ -7,6 +7,7 @@ import { getNewSelection } from './getNewSelection';
 import { useStore } from '../StoreContext';
 import { useLatest } from '../../../web/custom/useLatest';
 import { Action } from '../../shared/action';
+import { getNodeForPath, selectNode, setSelection } from '../selectNode';
 
 const blinkTime = 500;
 
@@ -48,6 +49,17 @@ export const ManagedId = ({
                 cursor: 'text',
             }}
             ref={store.textRef(path, pathKey)}
+            onDoubleClick={() => {
+                setSelection(
+                    store,
+                    path.root.doc,
+                    selectNode(
+                        getNodeForPath(path, store.getState()),
+                        path,
+                        'all',
+                    ),
+                );
+            }}
             onMouseDown={(evt) => {
                 evt.preventDefault();
                 evt.stopPropagation();

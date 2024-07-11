@@ -21,6 +21,7 @@ export type KeyAction =
           type: 'surround';
           kind: 'list' | 'record' | 'array' | 'string' | 'comment' | 'spread';
       }
+    | { type: 'end'; which: 'list' | 'array' | 'record' }
     | { type: 'split'; at: number; del: number; text: string[] }
     | { type: 'delete' }
     | { type: 'join-left'; text: string[] }
@@ -122,6 +123,8 @@ export const specials: Record<
         }
         if (sel > 0) {
             return { type: 'update', text, cursor: Math.max(0, sel - 1) };
+        } else {
+            return { type: 'nav', dir: 'left' };
         }
     },
     ArrowRight(_, { text, sel, start }, { shift }) {
@@ -139,11 +142,13 @@ export const specials: Record<
                 text,
                 cursor: Math.min(text.length, sel + 1),
             };
+        } else {
+            return { type: 'nav', dir: 'right' };
         }
-        // if (cursor < text.length) {
-        //     return { type: 'update', text, cursor: cursor + 1 };
-        // }
     },
+    ')': () => ({ type: 'end', which: 'list' }),
+    ']': () => ({ type: 'end', which: 'array' }),
+    '}': () => ({ type: 'end', which: 'record' }),
     '('(loc, { text }) {
         return loc === 'start' || text.length === 0
             ? { type: 'surround', kind: 'list' }

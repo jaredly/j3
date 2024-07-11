@@ -21,7 +21,7 @@ export const setSelection = (store: Store, doc: string, sel: NodeSelection) => {
 export const selectNode = (
     node: Node,
     path: Path,
-    start: boolean,
+    side: 'start' | 'end' | 'all',
 ): NodeSelection => {
     if (
         node.type === 'id' ||
@@ -30,7 +30,8 @@ export const selectNode = (
     ) {
         return {
             type: 'within',
-            cursor: start ? 0 : splitGraphemes(node.text).length,
+            cursor: side === 'start' ? 0 : splitGraphemes(node.text).length,
+            start: side === 'all' ? 0 : undefined,
             path,
             pathKey: serializePath(path),
         };
@@ -42,7 +43,7 @@ export const selectNode = (
     ) {
         return {
             type: 'without',
-            location: start ? 'start' : 'end',
+            location: side,
             path,
             pathKey: serializePath(path),
         };
