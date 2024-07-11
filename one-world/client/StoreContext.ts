@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, RefObject, useContext } from 'react';
 import { DocSession, PersistedState } from '../shared/state';
 import { Action } from '../shared/action';
 import { Path } from '../shared/nodes';
@@ -16,6 +16,9 @@ export type Store = {
     onDoc(id: string, f: () => void): () => void;
     onDocNode(doc: string, id: number, f: () => void): () => void;
     on(evt: StoreEvt, f: () => void): () => void;
+    // focus and drag management
+    textRef(path: Path, pathKey: string): RefObject<HTMLElement>;
+    startDrag(pathKey: string, path: Path): void;
 };
 
 export const StoreContext = createContext<Store>(null as any);

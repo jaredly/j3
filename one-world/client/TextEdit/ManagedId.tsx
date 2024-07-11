@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Path, serializePath } from '../../shared/nodes';
 import { NodeSelection } from '../../shared/state';
@@ -9,7 +9,6 @@ import { useLatest } from '../../../web/custom/useLatest';
 import { Action } from '../../shared/action';
 
 const blinkTime = 500;
-const blinkWait = 200;
 
 export const ManagedId = ({
     path,
@@ -37,7 +36,7 @@ export const ManagedId = ({
         return () => clearInterval(iv);
     }, [selection]);
 
-    const { ref, setDrag } = useDrag(selection, path);
+    const pathKey = useMemo(() => serializePath(path), [path]);
 
     return (
         <span
@@ -46,8 +45,9 @@ export const ManagedId = ({
                 backgroundColor: '#222',
                 boxSizing: 'border-box',
                 whiteSpace: 'nowrap',
+                cursor: 'text',
             }}
-            ref={ref}
+            ref={store.textRef(path, pathKey)}
             onMouseDown={(evt) => {
                 evt.preventDefault();
                 evt.stopPropagation();
@@ -78,8 +78,7 @@ export const ManagedId = ({
                     selection?.type === 'within' ? selection.text : undefined,
                 );
                 store.update(action);
-
-                setDrag(true);
+                store.startDrag(pathKey, path);
             }}
         >
             {selection?.type === 'within'

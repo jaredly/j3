@@ -1,9 +1,10 @@
 import { Action } from '../shared/action';
-import { serializePath } from '../shared/nodes';
+import { Path, serializePath } from '../shared/nodes';
 import { DocSession, NodeSelection, PersistedState } from '../shared/state';
 import { update, Updated } from '../shared/update';
 import { listen } from './listen';
 import { Store } from './StoreContext';
+import { getNewSelection } from './TextEdit/getNewSelection';
 
 type Evts = {
     general: {
@@ -57,6 +58,78 @@ const selPathKeys = (sel: NodeSelection) => {
     }
 };
 
+const setupDragger = (store: Store) => {
+    let dragState = null as null | {
+        pathKey: string;
+        path: Path;
+        node: HTMLElement;
+    };
+    const textRefs: Record<
+        string,
+        { path: Path; current: null | HTMLElement }
+    > = {};
+
+    const mouseUp = () => {
+        document.removeEventListener('mouseup', mouseUp);
+        document.removeEventListener('mousemove', mouseMove);
+    };
+
+    const mouseMove = (evt: MouseEvent) => {
+        if (!dragState) return;
+
+        const sels = store.getDocSession(
+            dragState.path.root.doc,
+            store.session,
+        ).selections;
+        const matching = sels.find(
+            (s) => s.type === 'within' && s.pathKey === dragState!.pathKey,
+        );
+
+        const range = new Range();
+        const sel = getNewSelection(
+            matching?.type === 'within'
+                ? { start: matching.start, sel: matching.cursor }
+                : null,
+            dragState.node,
+            { x: evt.clientX, y: evt.clientY },
+            true,
+            range,
+        );
+        if (!sel) return;
+        store.update({
+            type: 'in-session',
+            action: { type: 'multi', actions: [] },
+            doc: dragState.path.root.doc,
+            selections: [
+                {
+                    type: 'within',
+                    cursor: sel.sel,
+                    start: sel.start,
+                    path: dragState.path,
+                    pathKey: dragState.pathKey,
+                    text:
+                        matching?.type === 'within' ? matching.text : undefined,
+                },
+            ],
+        });
+    };
+
+    const startDrag = (pathKey: string, path: Path) => {
+        if (!textRefs[pathKey]) {
+            console.warn('No registered', textRefs);
+            return;
+        }
+        if (!textRefs[pathKey].current) {
+            console.warn('no what');
+        }
+        document.addEventListener('mouseup', mouseUp);
+        document.addEventListener('mousemove', mouseMove);
+        dragState = { pathKey, path, node: textRefs[pathKey].current! };
+    };
+
+    return { textRefs, startDrag };
+};
+
 export const newStore = (
     state: PersistedState,
     ws: WebSocket,
@@ -68,6 +141,7 @@ export const newStore = (
     const docSessionCache: { [id: string]: DocSession } = {};
     // @ts-ignore
     window.docSessions = docSessionCache;
+
     const store: Store = {
         session,
         getDocSession(doc: string, session: string) {
@@ -172,7 +246,21 @@ export const newStore = (
             ensure(evts.docs[doc].nodes, id, () => []);
             return listen(evts.docs[doc].nodes[id], f);
         },
+
+        // Drag stuff
+        textRef(path, pathKey) {
+            if (!dragger.textRefs[pathKey]) {
+                dragger.textRefs[pathKey] = { current: null, path };
+            }
+            return dragger.textRefs[pathKey];
+        },
+        startDrag(pathKey, path) {
+            dragger.startDrag(pathKey, path);
+        },
     };
+
+    const dragger = setupDragger(store);
+
     return store;
 };
 
