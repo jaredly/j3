@@ -5,6 +5,7 @@ import {
     Nodes,
     Path,
     RecNode,
+    RecNodeT,
     serializePath,
     toMap,
     toMapInner,
@@ -182,7 +183,7 @@ export const remove = (path: Path, top: Toplevel): void | ToplevelUpdate => {
 export const addSibling = (
     path: Path,
     top: Toplevel,
-    sibling: RecNode,
+    sibling: RecNodeT<boolean>,
     left: boolean,
 ): void | { update: ToplevelUpdate; selection: NodeSelection } => {
     let containerParent = null;
@@ -212,7 +213,20 @@ export const addSibling = (
 
     const nidx = { next: top.nextLoc };
 
-    const nloc = toMapInner(sibling, nodes, nidx);
+    let selected = null as null | number[];
+
+    const nloc = toMapInner(sibling, [], nodes, (node, _, path) => {
+        const id = nidx.next++;
+        if (node.loc === true) {
+            selected = path.concat([id]);
+        }
+        return id;
+    });
+
+    if (selected == null) {
+        throw new Error(`invalid "sibling"; one node must have loc=true`);
+    }
+
     const items = parent.items.slice();
     items.splice(idx + (left ? 0 : 1), 0, nloc);
 
@@ -220,8 +234,9 @@ export const addSibling = (
 
     const npath: Path = {
         root: path.root,
-        children: path.children.slice(0, containerParent).concat([nloc]),
+        children: path.children.slice(0, containerParent + 1).concat(selected),
     };
+    console.log('new path folks', npath, nloc);
 
     return {
         update: {
@@ -304,7 +319,7 @@ export const handleAction = (
             const update = addSibling(
                 path,
                 top,
-                { type: 'id', loc: [], text: right.join('') },
+                { type: 'id', loc: true, text: right.join('') },
                 false,
             );
             if (update) {

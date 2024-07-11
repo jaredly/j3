@@ -58,25 +58,32 @@ export type Node =
           embeds: number[];
       };
 
-export type RecNode =
+export type RecNode = RecNodeT<Loc>;
+
+export type RecNodeT<Loc> =
     | Simple<Loc>
-    | { type: 'list' | 'array' | 'record'; items: RecNode[]; loc: Loc }
+    | { type: 'list' | 'array' | 'record'; items: RecNodeT<Loc>[]; loc: Loc }
     | {
           type: 'string';
-          first: RecNode;
-          templates: { expr: RecNode; suffix: RecNode }[];
+          first: RecNodeT<Loc>;
+          templates: { expr: RecNodeT<Loc>; suffix: RecNodeT<Loc> }[];
           loc: Loc;
       }
-    | { type: 'comment' | 'spread'; contents: RecNode; loc: Loc }
-    | { type: 'annot'; contents: RecNode; annot: RecNode; loc: Loc }
-    | { type: 'record-access'; target: RecNode; items: RecNode[]; loc: Loc }
-    | { type: 'rich-text'; contents: any; loc: Loc; embeds: RecNode[] }
+    | { type: 'comment' | 'spread'; contents: RecNodeT<Loc>; loc: Loc }
+    | { type: 'annot'; contents: RecNodeT<Loc>; annot: RecNodeT<Loc>; loc: Loc }
+    | {
+          type: 'record-access';
+          target: RecNodeT<Loc>;
+          items: RecNodeT<Loc>[];
+          loc: Loc;
+      }
+    | { type: 'rich-text'; contents: any; loc: Loc; embeds: RecNodeT<Loc>[] }
     | {
           type: 'raw-code';
           lang: string;
           raw: string;
           loc: Loc;
-          embeds: RecNode[];
+          embeds: RecNodeT<Loc>[];
       };
 
 export type Nodes = Record<number, Node>;
@@ -199,24 +206,29 @@ const getLoc = (node: RecNode, nodes: Nodes, idx: { next: number }) => {
 
 export const toMap = (node: RecNode, nodes: Nodes): number => {
     const idx = { next: maxLoc(node) + 1 };
-    return toMapInner(node, nodes, idx);
+    return toMapInner(node, [], nodes, (node, nodes) =>
+        getLoc(node, nodes, idx),
+    );
 };
 
-export const toMapInner = (
-    node: RecNode,
+export const toMapInner = <T>(
+    node: RecNodeT<T>,
+    path: number[],
     nodes: Nodes,
-    idx: { next: number },
+    getLoc: (node: RecNodeT<T>, nodes: Nodes, path: number[]) => number,
+    // idx: { next: number },
 ): number => {
-    const loc = getLoc(node, nodes, idx);
-    nodes[loc] = fromRec(node, loc, nodes, idx);
+    const loc = getLoc(node, nodes, path);
+    nodes[loc] = fromRec(node, path.concat([loc]), loc, nodes, getLoc);
     return loc;
 };
 
-const fromRec = (
-    node: RecNode,
+const fromRec = <T>(
+    node: RecNodeT<T>,
+    path: number[],
     loc: number,
     nodes: Nodes,
-    idx: { next: number },
+    getLoc: (node: RecNodeT<T>, nodes: Nodes, path: number[]) => number,
 ): Node => {
     switch (node.type) {
         case 'id':
@@ -229,7 +241,9 @@ const fromRec = (
             return {
                 ...node,
                 loc,
-                embeds: node.embeds.map((n) => toMapInner(n, nodes, idx)),
+                embeds: node.embeds.map((n) =>
+                    toMapInner(n, path, nodes, getLoc),
+                ),
             };
         case 'list':
         case 'array':
@@ -237,37 +251,41 @@ const fromRec = (
             return {
                 ...node,
                 loc,
-                items: node.items.map((n) => toMapInner(n, nodes, idx)),
+                items: node.items.map((n) =>
+                    toMapInner(n, path, nodes, getLoc),
+                ),
             };
         case 'comment':
         case 'spread':
             return {
                 ...node,
                 loc,
-                contents: toMapInner(node.contents, nodes, idx),
+                contents: toMapInner(node.contents, path, nodes, getLoc),
             };
         case 'annot':
             return {
                 ...node,
                 loc,
-                contents: toMapInner(node.contents, nodes, idx),
-                annot: toMapInner(node.annot, nodes, idx),
+                contents: toMapInner(node.contents, path, nodes, getLoc),
+                annot: toMapInner(node.annot, path, nodes, getLoc),
             };
         case 'record-access':
             return {
                 ...node,
                 loc,
-                target: toMapInner(node.target, nodes, idx),
-                items: node.items.map((n) => toMapInner(n, nodes, idx)),
+                target: toMapInner(node.target, path, nodes, getLoc),
+                items: node.items.map((n) =>
+                    toMapInner(n, path, nodes, getLoc),
+                ),
             };
         case 'string':
             return {
                 ...node,
                 loc,
-                first: toMapInner(node.first, nodes, idx),
+                first: toMapInner(node.first, path, nodes, getLoc),
                 templates: node.templates.map((t) => ({
-                    expr: toMapInner(t.expr, nodes, idx),
-                    suffix: toMapInner(t.suffix, nodes, idx),
+                    expr: toMapInner(t.expr, path, nodes, getLoc),
+                    suffix: toMapInner(t.suffix, path, nodes, getLoc),
                 })),
             };
     }

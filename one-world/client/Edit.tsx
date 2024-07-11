@@ -77,7 +77,9 @@ export const Edit = () => {
                                         action.cursor,
                                         action.cursorStart,
                                         selection,
-                                        action.text,
+                                        action.text.join('') === node.text
+                                            ? undefined
+                                            : action.text,
                                     ),
                                 );
                                 return;
@@ -126,16 +128,20 @@ export const Edit = () => {
             />
             Editing {doc.title}
             <DocNode doc={doc.id} id={0} parentNodes={emptyNodes} />
-            <pre>
-                {JSON.stringify(
-                    store.getDocSession(doc.id, store.session),
-                    null,
-                    2,
-                )}
-            </pre>
-            <pre>{JSON.stringify(store.getState(), null, 2)}</pre>
+            <Monitor id={doc.id} />
+            {/* <pre>{JSON.stringify(store.getState(), null, 2)}</pre> */}
         </div>
     );
+};
+
+const Monitor = ({ id }: { id: string }) => {
+    const store = useStore();
+    const sel = useSubscribe(
+        (f) => store.on('selection', f),
+        () => store.getDocSession(id, store.session).selections,
+        [],
+    );
+    return <pre>{JSON.stringify(sel, null, 2)}</pre>;
 };
 
 const useSubscribe = <T,>(

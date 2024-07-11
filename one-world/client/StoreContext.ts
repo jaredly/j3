@@ -3,6 +3,8 @@ import { DocSession, PersistedState } from '../shared/state';
 import { Action } from '../shared/action';
 import { Path } from '../shared/nodes';
 
+export type StoreEvt = 'selection';
+
 export type Store = {
     session: string;
     getDocSession(doc: string, session: string): DocSession;
@@ -13,7 +15,7 @@ export type Store = {
     onTopNode(top: string, id: number, f: () => void): () => void;
     onDoc(id: string, f: () => void): () => void;
     onDocNode(doc: string, id: number, f: () => void): () => void;
-    on(evt: any, f: () => void): () => void;
+    on(evt: StoreEvt, f: () => void): () => void;
 };
 
 export const StoreContext = createContext<Store>(null as any);

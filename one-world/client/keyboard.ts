@@ -1,6 +1,6 @@
 // ok
 
-import { RecNode } from '../shared/nodes';
+import { RecNode, RecNodeT } from '../shared/nodes';
 import { EditState } from './TextEdit/Id';
 import { Mods } from './HiddenInput';
 
@@ -24,7 +24,7 @@ export type KeyAction =
     | { type: 'split'; at: number; del: number; text: string[] }
     | { type: 'delete' | 'join-left' }
     | { type: 'nav'; dir: 'up' | 'down' | 'left' | 'right' }
-    | { type: 'after' | 'before'; node: RecNode };
+    | { type: 'after' | 'before'; node: RecNodeT<boolean> };
 
 export const textKey = (
     key: string[],
@@ -90,7 +90,7 @@ export const specials: Record<
         }
         return {
             type: loc === 'start' ? 'before' : 'after',
-            node: { type: 'id', text: '', loc: [] },
+            node: { type: 'id', text: '', loc: true },
         };
     },
     Enter(loc) {
@@ -150,8 +150,8 @@ export const specials: Record<
                   type: 'after',
                   node: {
                       type: 'list',
-                      items: [{ type: 'id', text: '', loc: [] }],
-                      loc: [],
+                      items: [{ type: 'id', text: '', loc: true }],
+                      loc: false,
                   },
               };
     },
@@ -162,8 +162,8 @@ export const specials: Record<
                   type: 'after',
                   node: {
                       type: 'array',
-                      items: [{ type: 'id', text: '', loc: [] }],
-                      loc: [],
+                      items: [{ type: 'id', text: '', loc: true }],
+                      loc: false,
                   },
               };
     },
@@ -174,8 +174,8 @@ export const specials: Record<
                   type: 'after',
                   node: {
                       type: 'record',
-                      items: [{ type: 'id', text: '', loc: [] }],
-                      loc: [],
+                      items: [{ type: 'id', text: '', loc: true }],
+                      loc: false,
                   },
               };
     },

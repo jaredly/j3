@@ -40,7 +40,7 @@ export function useKeys(
                 if (!action) {
                 } else if (action.type === 'update') {
                     setState({
-                        text: action.text,
+                        text: action.text!,
                         sel: action.cursor,
                         start: action.cursorStart,
                     });

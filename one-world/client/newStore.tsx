@@ -6,6 +6,9 @@ import { listen } from './listen';
 import { Store } from './StoreContext';
 
 type Evts = {
+    general: {
+        selection: (() => void)[];
+    };
     selections: Record<string, (() => void)[]>;
     tops: Record<
         string,
@@ -23,7 +26,12 @@ type Evts = {
     >;
 };
 
-const blankEvts = (): Evts => ({ tops: {}, docs: {}, selections: {} });
+const blankEvts = (): Evts => ({
+    tops: {},
+    docs: {},
+    selections: {},
+    general: { selection: [] },
+});
 const blankFns = (): Evts['docs'][''] => ({ fns: [], nodes: {} });
 
 export const ensure = <K extends string | number, A>(
@@ -122,6 +130,8 @@ export const newStore = (
                             actions: [...extras, action.action],
                         };
                     }
+
+                    evts.general.selection.forEach((f) => f());
                 }
             }
 
@@ -137,7 +147,7 @@ export const newStore = (
             sendUpdates(updated, evts);
         },
         on(evt, f) {
-            return () => {};
+            return listen(evts.general.selection, f);
         },
         onSelection(session, path, f) {
             const id = `${session}#${serializePath(path)}`;

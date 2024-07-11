@@ -2,7 +2,8 @@
 Ok folks, I think we'll want to do centralized selection state management now.
 
 - [x] start up centralized selection management
-- [ ] edit
+- [x] edit
+- [ ] RecNode should have a Loc param where we can do false/true
 
 
 

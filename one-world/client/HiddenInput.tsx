@@ -97,16 +97,16 @@ export const Hidden = ({
                 onChange={() => {}}
                 autoFocus
                 style={{
-                    // width: 10,
-                    // height: 10,
-                    width: 0,
-                    height: 0,
-                    opacity: 0,
+                    width: 10,
+                    height: 10,
+                    // width: 0,
+                    // height: 0,
+                    // opacity: 0,
+                    // pointerEvents: 'none',
                     position: 'fixed',
                     top: 0,
                     left: 0,
                     border: 'none',
-                    pointerEvents: 'none',
                 }}
                 onKeyDown={(evt) => {
                     // ctx.listeners.key.forEach((k) =>
