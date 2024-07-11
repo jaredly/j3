@@ -6,8 +6,15 @@ Do I want to:
 support highlighting the opening or closing bracket, so you can switch it to something else?
 seems a little nice.
 
-- [+] slurp and slap is coolio
-- [ ] space at start of an id selects wrong
+- [x] slurp and slap is coolio
+- [x] space at start of an id selects wrong
+- [ ] wihtout[all] on double click, so left=select start, right=select end.
+- [ ] unwrap replace should select/all
+- [x] space at end pls
+- [x] tabbinhg away shouldn't kill focus
+- [ ] gotta get some undo/redo in here, it's very needed.
+- [ ] tab / shift-tab pls
+
 
 
 

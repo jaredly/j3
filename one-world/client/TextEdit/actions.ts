@@ -7,6 +7,7 @@ import {
     Nodes,
     parentPath,
     Path,
+    pathWithChildren,
     RecNode,
     RecNodeT,
     serializePath,
@@ -265,7 +266,7 @@ export const addSibling = (
     left: boolean,
 ): void | { update: ToplevelUpdate; selection?: NodeSelection } => {
     let containerParent = null;
-    for (let i = path.children.length - 1; i >= 0; i--) {
+    for (let i = path.children.length - 2; i >= 0; i--) {
         const node = top.nodes[path.children[i]];
         if (isCollection(node)) {
             containerParent = i;
@@ -381,6 +382,7 @@ export const handleAction = (
         }
 
         case 'shrink': {
+            if (path.children.length < 2) return;
             const loc = path.children[path.children.length - 1];
             const ploc = path.children[path.children.length - 2];
             const node = top.nodes[loc];
@@ -419,10 +421,23 @@ export const handleAction = (
                 else items.splice(idx, 0, first);
             }
 
-            return topUpdate(tid, {
+            const up = topUpdate(tid, {
                 [loc]: { ...node, items: citems },
                 [ploc]: { ...parent, items },
             });
+            if (!citems.length) {
+                return justSel(
+                    selectNode(
+                        top.nodes[items[idx]],
+                        pathWithChildren(parentPath(path), items[idx]),
+                        action.from,
+                    ),
+                    path.root.doc,
+                    up,
+                );
+            } else {
+                return up;
+            }
         }
 
         case 'unwrap': {

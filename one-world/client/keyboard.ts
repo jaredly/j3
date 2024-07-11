@@ -69,6 +69,10 @@ export const specials: Record<
         text?: string,
     ) => KeyAction | LocalAction | void
 > = {
+    Tab(_, { shift }) {
+        return { type: 'nav', dir: shift ? 'left' : 'right' };
+    },
+
     Delete(selection, mods, rawText) {
         if (selection.type === 'multi') return;
         if (selection.type === 'without') {

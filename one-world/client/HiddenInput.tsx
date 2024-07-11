@@ -119,10 +119,9 @@ export const Hidden = ({
                 onKeyDown(evt);
             }}
             onBlur={(evt) => {
-                // if (evt.currentTarget !== document.activeElement) {
-                //     ctx.listeners.blur.map((f) => f());
-                // }
-                onBlur(evt);
+                if (evt.currentTarget !== document.activeElement) {
+                    onBlur(evt);
+                }
             }}
         />
     );

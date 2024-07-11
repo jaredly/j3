@@ -103,6 +103,8 @@ export const Edit = () => {
                                             : action.text,
                                     ),
                                 );
+                                evt.preventDefault();
+                                evt.stopPropagation();
                                 return;
                             } else {
                                 const state = store.getState();
@@ -116,6 +118,8 @@ export const Edit = () => {
                                 } else {
                                     console.warn('ignoring action', action);
                                 }
+                                evt.preventDefault();
+                                evt.stopPropagation();
                             }
                             return;
                         }
@@ -149,6 +153,8 @@ export const Edit = () => {
                                     results.text,
                                 ),
                             );
+                            evt.preventDefault();
+                            evt.stopPropagation();
                         }
                     });
                 }}
