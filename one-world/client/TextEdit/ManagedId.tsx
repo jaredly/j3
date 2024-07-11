@@ -8,6 +8,7 @@ import { useStore } from '../StoreContext';
 import { useLatest } from '../../../web/custom/useLatest';
 import { Action } from '../../shared/action';
 import { getNodeForPath, selectNode, setSelection } from '../selectNode';
+import { fasthash, getRainbowHashColor } from '../../../web/custom/rainbow';
 
 const blinkTime = 500;
 
@@ -39,6 +40,18 @@ export const ManagedId = ({
 
     const pathKey = useMemo(() => serializePath(path), [path]);
 
+    const color = useMemo(
+        () =>
+            getRainbowHashColor(
+                fasthash(
+                    (selection?.type === 'within'
+                        ? selection.text?.join('')
+                        : null) ?? node.text,
+                ),
+            ),
+        [node.text, selection?.type === 'within' ? selection.text : null],
+    );
+
     return (
         <span
             style={{
@@ -47,6 +60,7 @@ export const ManagedId = ({
                 boxSizing: 'border-box',
                 whiteSpace: 'nowrap',
                 cursor: 'text',
+                color,
             }}
             ref={store.textRef(path, pathKey)}
             onDoubleClick={() => {

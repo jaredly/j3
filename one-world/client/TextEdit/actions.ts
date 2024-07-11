@@ -461,7 +461,7 @@ export const handleAction = (
             switch (action.dir) {
                 case 'left':
                     return justSel(goLeft(path, state), path.root.doc);
-                case 'left-inside': {
+                case 'inside-end': {
                     const top = state.toplevels[path.root.toplevel];
                     const loc = path.children[path.children.length - 1];
                     return justSel(
@@ -471,7 +471,7 @@ export const handleAction = (
                 }
                 case 'right':
                     return justSel(goRight(path, state), path.root.doc);
-                case 'right-inside': {
+                case 'inside-start': {
                     const top = state.toplevels[path.root.toplevel];
                     const loc = path.children[path.children.length - 1];
                     return justSel(

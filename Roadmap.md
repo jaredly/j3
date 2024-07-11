@@ -1,4 +1,13 @@
 
+
+
+Thoughts...
+Do I want to:
+support highlighting the opening or closing bracket, so you can switch it to something else?
+seems a little nice.
+
+
+
 Ok folks, I think we'll want to do centralized selection state management now.
 
 - [x] start up centralized selection management

@@ -19,7 +19,7 @@ export function getRainbowHashColor(hash: string | number) {
 }
 
 // https://github.com/darkskyapp/string-hash/blob/master/index.js
-function fasthash(str: string) {
+export function fasthash(str: string) {
     var hash = 5381,
         i = str.length;
 

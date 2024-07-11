@@ -29,13 +29,7 @@ export type KeyAction =
     | { type: 'join-left'; text: string[] }
     | {
           type: 'nav';
-          dir:
-              | 'up'
-              | 'down'
-              | 'left'
-              | 'right'
-              | 'left-inside'
-              | 'right-inside';
+          dir: 'up' | 'down' | 'left' | 'right' | 'inside-start' | 'inside-end';
       }
     | { type: 'after' | 'before'; node: RecNodeT<boolean> };
 
@@ -68,6 +62,13 @@ export const specials: Record<
     Backspace(selection, mods, rawText) {
         if (selection.type === 'multi') return;
         if (selection.type === 'without') {
+            // switch (selection.location) {
+            //     case 'all':
+            //     case 'inside':
+            //         return {type: 'blank'}
+            //     case 'end':
+            //         return {type: 'nav', dir: 'left-inside'}
+            // }
             return;
         }
         const sel = selection.cursor;
@@ -143,8 +144,7 @@ export const specials: Record<
             if (selection.type === 'without') {
                 return {
                     type: 'nav',
-                    dir:
-                        selection.location === 'start' ? 'left' : 'left-inside',
+                    dir: selection.location === 'start' ? 'left' : 'inside-end',
                 };
             }
             return { type: 'nav', dir: 'left' };
@@ -174,7 +174,7 @@ export const specials: Record<
                 return {
                     type: 'nav',
                     dir:
-                        selection.location === 'end' ? 'right' : 'right-inside',
+                        selection.location === 'end' ? 'right' : 'inside-start',
                 };
             }
             return { type: 'nav', dir: 'right' };
