@@ -20,6 +20,10 @@ import { Toplevel } from '../../shared/toplevels';
 import { KeyAction } from '../keyboard';
 import { getNodeForPath, selectNode } from '../selectNode';
 
+const isCollection = (node: Node): node is CollectionT =>
+    node.type === 'list' || node.type === 'record' || node.type === 'array';
+type CollectionT = Extract<Node, { type: 'list' | 'array' | 'record' }>;
+
 const replaceChild = (node: Node, old: number, nw: number): Node | void => {
     switch (node.type) {
         case 'ref':
@@ -95,6 +99,43 @@ const replaceWith = (
     return { type: 'update', update: { root: loc } };
 };
 
+const unwrap = (
+    path: Path,
+    top: Toplevel,
+    parent: CollectionT,
+): void | [ToplevelUpdate, NodeSelection] => {
+    if (path.children.length < 3) return;
+    const lloc = path.children[path.children.length - 1];
+    const gloc = path.children[path.children.length - 3];
+    const gparent = top.nodes[gloc];
+    if (!isCollection(gparent)) return;
+    const items = gparent.items.slice();
+    const pidx = items.indexOf(parent.loc);
+    items.splice(pidx, 1, ...parent.items);
+    const npath = {
+        ...path,
+        children: path.children.slice(0, -2).concat([lloc]),
+    };
+    return [
+        {
+            type: 'update',
+            update: {
+                nodes: {
+                    [gloc]: { ...gparent, items },
+                    [parent.loc]: undefined,
+                },
+            },
+        },
+        selectNode(top.nodes[lloc], npath, 'start'),
+        // {
+        //     type: 'within',
+        //     cursor: 0,
+        //     path: npath,
+        //     pathKey: serializePath(npath),
+        // },
+    ];
+};
+
 export const joinLeft = (
     path: Path,
     top: Toplevel,
@@ -125,46 +166,11 @@ export const joinLeft = (
 
     // syk, we're doing an unwrap
     if (idx === 0) {
-        if (path.children.length < 3) return;
-        const gloc = path.children[path.children.length - 3];
-        const gparent = top.nodes[gloc];
-        if (
-            gparent.type !== 'list' &&
-            gparent.type !== 'array' &&
-            gparent.type !== 'record'
-        ) {
-            return;
-        }
-        const items = gparent.items.slice();
-        const pidx = items.indexOf(ploc);
-        items.splice(pidx, 1, ...parent.items);
-        const npath = {
-            ...path,
-            children: path.children.slice(0, -2).concat([lloc]),
-        };
-        return [
-            {
-                type: 'update',
-                update: {
-                    nodes: {
-                        [gloc]: { ...gparent, items },
-                        [ploc]: undefined,
-                    },
-                },
-            },
-            {
-                type: 'within',
-                cursor: 0,
-                path: npath,
-                pathKey: serializePath(npath),
-            },
-        ];
+        return unwrap(path, top, parent);
     }
 
-    if (idx === 0) return;
     const prev = parent.items[idx - 1];
-    const pnode = top.nodes[prev];
-    if (pnode.type !== 'id') return;
+    const prevNode = top.nodes[prev];
 
     const items = parent.items.slice();
     items.splice(idx, 1);
@@ -174,20 +180,40 @@ export const joinLeft = (
         children: path.children.slice(0, -1).concat([prev]),
     };
 
+    if (rightText.length === 0) {
+        return [
+            {
+                type: 'update',
+                update: {
+                    nodes: {
+                        [ploc]: { ...parent, items },
+                        [lloc]: undefined,
+                    },
+                },
+            },
+            selectNode(prevNode, ppath, 'end'),
+        ];
+    }
+
+    if (prevNode.type !== 'id') return;
+
     return [
         {
             type: 'update',
             update: {
                 nodes: {
                     [ploc]: { ...parent, items },
-                    [prev]: { ...pnode, text: pnode.text + rightText.join('') },
+                    [prev]: {
+                        ...prevNode,
+                        text: prevNode.text + rightText.join(''),
+                    },
                     [lloc]: undefined,
                 },
             },
         },
         {
             type: 'within',
-            cursor: splitGraphemes(pnode.text).length,
+            cursor: splitGraphemes(prevNode.text).length,
             path: ppath,
             pathKey: serializePath(ppath),
         },
@@ -231,15 +257,11 @@ export const addSibling = (
     top: Toplevel,
     sibling: RecNodeT<boolean>,
     left: boolean,
-): void | { update: ToplevelUpdate; selection: NodeSelection } => {
+): void | { update: ToplevelUpdate; selection?: NodeSelection } => {
     let containerParent = null;
     for (let i = path.children.length - 1; i >= 0; i--) {
         const node = top.nodes[path.children[i]];
-        if (
-            node.type === 'list' ||
-            node.type === 'array' ||
-            node.type === 'record'
-        ) {
+        if (isCollection(node)) {
             containerParent = i;
             break;
         }
@@ -248,10 +270,8 @@ export const addSibling = (
         return; // TODO: toplevel whatsit
     }
     const child = path.children[containerParent + 1];
-    const parent = top.nodes[path.children[containerParent]] as Extract<
-        Node,
-        { type: 'list' | 'array' | 'record' }
-    >;
+    const parent = top.nodes[path.children[containerParent]];
+    if (!isCollection(parent)) return;
     const idx = parent.items.indexOf(child);
     if (idx === -1) return;
 
@@ -282,7 +302,6 @@ export const addSibling = (
         root: path.root,
         children: path.children.slice(0, containerParent + 1).concat(selected),
     };
-    console.log('new path folks', npath, nloc);
 
     return {
         update: {
@@ -290,12 +309,14 @@ export const addSibling = (
             update: { nextLoc: nidx.next, nodes },
         },
         // select the dealio. ok?
-        selection: {
-            type: 'within',
-            cursor: 0,
-            path: npath,
-            pathKey: serializePath(npath),
-        },
+        selection: left
+            ? undefined
+            : {
+                  type: 'within',
+                  cursor: 0,
+                  path: npath,
+                  pathKey: serializePath(npath),
+              },
     };
 };
 
@@ -345,20 +366,94 @@ export const handleAction = (
                 action.type === 'before',
             );
             return update
-                ? {
-                      type: 'in-session',
-                      action: {
-                          type: 'toplevel',
-                          id: top.id,
-                          action: update.update,
-                      },
-                      doc: path.root.doc,
-                      selections: [update.selection],
-                  }
+                ? justSel(update.selection, path.root.doc, {
+                      type: 'toplevel',
+                      id: top.id,
+                      action: update.update,
+                  })
                 : undefined;
         }
 
+        case 'unwrap': {
+            const loc = path.children[path.children.length - 1];
+            const ploc = path.children[path.children.length - 2];
+            const node = top.nodes[loc];
+            const parent = top.nodes[ploc];
+            if (!isCollection(parent) || !isCollection(node)) return;
+            const idx = parent.items.indexOf(loc);
+            if (
+                action.direction === 'left'
+                    ? idx === 0
+                    : idx === parent.items.length - 1
+            ) {
+                const update = unwrap(path, top, parent);
+                return update
+                    ? {
+                          type: 'in-session',
+                          action: {
+                              type: 'toplevel',
+                              id: top.id,
+                              action: update[0],
+                          },
+                          doc: path.root.doc,
+                          selections: [update[1]],
+                      }
+                    : undefined;
+            }
+            const items = parent.items.slice();
+            const citems = node.items.slice();
+
+            if (action.direction === 'left') {
+                const prev = items[idx - 1];
+                items.splice(idx - 1, 1);
+                citems.unshift(prev);
+            } else {
+                const next = items[idx + 1];
+                items.splice(idx + 1, 1);
+                citems.push(next);
+            }
+
+            return {
+                type: 'toplevel',
+                id: tid,
+                action: {
+                    type: 'update',
+                    update: {
+                        nodes: {
+                            [loc]: { ...node, items: citems },
+                            [ploc]: { ...parent, items },
+                        },
+                    },
+                },
+            };
+        }
+
         case 'delete': {
+            if (action.direction === 'blank') {
+                const loc = path.children[path.children.length - 1];
+                return {
+                    type: 'in-session',
+                    action: {
+                        type: 'toplevel',
+                        id: tid,
+                        action: {
+                            type: 'update',
+                            update: {
+                                nodes: { [loc]: { type: 'id', loc, text: '' } },
+                            },
+                        },
+                    },
+                    doc: path.root.doc,
+                    selections: [
+                        {
+                            type: 'within',
+                            cursor: 0,
+                            path,
+                            pathKey: serializePath(path),
+                        },
+                    ],
+                };
+            }
             const update = remove(path, top);
             return update
                 ? { type: 'toplevel', id: top.id, action: update }
@@ -403,16 +498,11 @@ export const handleAction = (
             // const npath: Path = {...path, children: path.children.slice(0, -1).concat([])}
 
             return update
-                ? {
-                      type: 'in-session',
-                      action: {
-                          type: 'toplevel',
-                          id: top.id,
-                          action: update.update,
-                      },
-                      doc: path.root.doc,
-                      selections: [update.selection],
-                  }
+                ? justSel(update.selection, path.root.doc, {
+                      type: 'toplevel',
+                      id: top.id,
+                      action: update.update,
+                  })
                 : undefined;
         }
 
@@ -457,6 +547,8 @@ export const handleAction = (
             };
         }
 
+        // case 'unwrap':
+
         case 'nav': {
             switch (action.dir) {
                 case 'left':
@@ -496,15 +588,19 @@ export const handleAction = (
     }
 };
 
-const justSel = (sel: NodeSelection | void, doc: string): Action | void =>
+const justSel = (
+    sel: NodeSelection | void,
+    doc: string,
+    inner?: Action,
+): Action | void =>
     sel
         ? {
               type: 'in-session',
-              action: { type: 'multi', actions: [] },
+              action: inner ?? { type: 'multi', actions: [] },
               doc,
               selections: [sel],
           }
-        : undefined;
+        : inner;
 
 const goLeft = (path: Path, state: PersistedState): void | NodeSelection => {
     // If we're at the top of the toplevel...

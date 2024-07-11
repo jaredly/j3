@@ -163,8 +163,25 @@ export const Edit = () => {
                 }}
             />
             Editing {doc.title}
-            <DocNode doc={doc.id} id={0} parentNodes={emptyNodes} />
-            <Monitor id={doc.id} />
+            <div
+                style={{
+                    padding: 40,
+                    color: '#aac',
+                    fontFamily: 'Jet Brains',
+                    fontVariationSettings: "'wght' 100, 'wdth' 100",
+                }}
+            >
+                <DocNode doc={doc.id} id={0} parentNodes={emptyNodes} />
+            </div>
+            <div
+                style={{
+                    fontFamily: 'Jet Brains',
+                    fontVariationSettings: "'wght' 100, 'wdth' 100",
+                    fontSize: '50%',
+                }}
+            >
+                <Monitor id={doc.id} />
+            </div>
             {/* <pre>{JSON.stringify(store.getState(), null, 2)}</pre> */}
         </div>
     );
@@ -363,14 +380,7 @@ const DocNode = ({
     return (
         <div>
             {id === 0 ? null : (
-                <div>
-                    A doc node toplevel:{' '}
-                    <Toplevel
-                        id={node.toplevel}
-                        doc={doc}
-                        docNodes={docNodes}
-                    />
-                </div>
+                <Toplevel id={node.toplevel} doc={doc} docNodes={docNodes} />
             )}
             <div style={{ paddingLeft: id === 0 ? 0 : 20 }}>
                 {node.children.map((id) => (

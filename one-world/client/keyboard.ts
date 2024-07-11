@@ -25,7 +25,9 @@ export type KeyAction =
       }
     | { type: 'end'; which: 'list' | 'array' | 'record' }
     | { type: 'split'; at: number; del: number; text: string[] }
-    | { type: 'delete' }
+    | { type: 'delete'; direction: 'left' | 'right' | 'blank' }
+    | { type: 'unwrap'; direction: 'left' | 'right' }
+    | { type: 'shrink'; from: 'start' | 'end' }
     | { type: 'join-left'; text: string[] }
     | {
           type: 'nav';
@@ -67,18 +69,38 @@ export const specials: Record<
         text?: string,
     ) => KeyAction | LocalAction | void
 > = {
+    Delete(selection, mods, rawText) {
+        if (selection.type === 'multi') return;
+        if (selection.type === 'without') {
+            switch (selection.location) {
+                case 'all':
+                case 'inside':
+                    return { type: 'delete', direction: 'blank' };
+                case 'end':
+                    return { type: 'unwrap', direction: 'right' };
+                case 'start':
+                    if (mods.shift) {
+                        return { type: 'delete', direction: 'blank' };
+                    }
+                    return { type: 'shrink', from: 'start' };
+            }
+        }
+    },
     Backspace(selection, mods, rawText) {
         if (selection.type === 'multi') return;
         if (selection.type === 'without') {
-            // switch (selection.location) {
-            //     case 'all':
-            //     case 'inside':
-            //         // return {type: 'blank'}
-            //     case 'end':
-            //         return {type: 'nav', dir: 'inside-end'}
-            //     case 'start':
-            //         return {type: 'unwrap'}
-            // }
+            switch (selection.location) {
+                case 'all':
+                case 'inside':
+                    return { type: 'delete', direction: 'blank' };
+                case 'end':
+                    if (mods.shift) {
+                        return { type: 'delete', direction: 'blank' };
+                    }
+                    return { type: 'shrink', from: 'end' };
+                case 'start':
+                    return { type: 'unwrap', direction: 'left' };
+            }
             return;
         }
         const sel = selection.cursor;

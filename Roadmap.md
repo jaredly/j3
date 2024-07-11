@@ -6,6 +6,9 @@ Do I want to:
 support highlighting the opening or closing bracket, so you can switch it to something else?
 seems a little nice.
 
+- [+] slurp and slap is coolio
+- [ ] space at start of an id selects wrong
+
 
 
 Ok folks, I think we'll want to do centralized selection state management now.

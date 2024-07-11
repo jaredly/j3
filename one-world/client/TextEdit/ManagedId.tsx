@@ -61,6 +61,8 @@ export const ManagedId = ({
                 whiteSpace: 'nowrap',
                 cursor: 'text',
                 color,
+                // to lessen the jolty colors
+                transition: '.2s ease color',
             }}
             ref={store.textRef(path, pathKey)}
             onDoubleClick={() => {
