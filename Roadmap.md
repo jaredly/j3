@@ -13,7 +13,8 @@ seems a little nice.
 - [x] space at end pls
 - [x] tabbinhg away shouldn't kill focus
 - [ ] gotta get some undo/redo in here, it's very needed.
-- [ ] tab / shift-tab pls
+- [x] tab / shift-tab pls
+  - it's not perfect, but it's something
 
 
 

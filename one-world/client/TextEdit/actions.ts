@@ -382,10 +382,25 @@ export const handleAction = (
         }
 
         case 'shrink': {
-            if (path.children.length < 2) return;
             const loc = path.children[path.children.length - 1];
-            const ploc = path.children[path.children.length - 2];
             const node = top.nodes[loc];
+            if (!isCollection(node)) return;
+            if (node.items.length === 1) {
+                const update = replaceWith(top, path, node.items[0]);
+                return update
+                    ? justSel(
+                          selectNode(
+                              top.nodes[node.items[0]],
+                              pathWithChildren(parentPath(path), node.items[0]),
+                              action.from,
+                          ),
+                          path.root.doc,
+                          { type: 'toplevel', id: top.id, action: update },
+                      )
+                    : undefined;
+            }
+            if (path.children.length < 2) return;
+            const ploc = path.children[path.children.length - 2];
             const parent = top.nodes[ploc];
             if (!isCollection(parent) || !isCollection(node)) return;
             const idx = parent.items.indexOf(loc);
