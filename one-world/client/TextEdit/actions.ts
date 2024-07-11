@@ -99,6 +99,12 @@ const replaceWith = (
     return { type: 'update', update: { root: loc } };
 };
 
+const topUpdate = (id: string, nodes: ToplevelUpdate['update']): Action => ({
+    type: 'toplevel',
+    id,
+    action: { type: 'update', update: { nodes } },
+});
+
 const unwrap = (
     path: Path,
     top: Toplevel,
@@ -374,6 +380,51 @@ export const handleAction = (
                 : undefined;
         }
 
+        case 'shrink': {
+            const loc = path.children[path.children.length - 1];
+            const ploc = path.children[path.children.length - 2];
+            const node = top.nodes[loc];
+            const parent = top.nodes[ploc];
+            if (!isCollection(parent) || !isCollection(node)) return;
+            const idx = parent.items.indexOf(loc);
+
+            const items = parent.items.slice();
+            const citems = node.items.slice();
+
+            // delete it
+            if (citems.length === 0) {
+                return {
+                    type: 'toplevel',
+                    id: tid,
+                    action: {
+                        type: 'update',
+                        update: {
+                            nodes: {
+                                [loc]: { type: 'id', loc, text: '' },
+                            },
+                        },
+                    },
+                };
+            }
+
+            if (action.from === 'end') {
+                const last = citems[citems.length - 1];
+                citems.pop();
+                if (!citems.length) items[idx] = last;
+                else items.splice(idx + 1, 0, last);
+            } else {
+                const first = citems[0];
+                citems.shift();
+                if (!citems.length) items[idx] = first;
+                else items.splice(idx, 0, first);
+            }
+
+            return topUpdate(tid, {
+                [loc]: { ...node, items: citems },
+                [ploc]: { ...parent, items },
+            });
+        }
+
         case 'unwrap': {
             const loc = path.children[path.children.length - 1];
             const ploc = path.children[path.children.length - 2];
@@ -413,19 +464,10 @@ export const handleAction = (
                 citems.push(next);
             }
 
-            return {
-                type: 'toplevel',
-                id: tid,
-                action: {
-                    type: 'update',
-                    update: {
-                        nodes: {
-                            [loc]: { ...node, items: citems },
-                            [ploc]: { ...parent, items },
-                        },
-                    },
-                },
-            };
+            return topUpdate(tid, {
+                [loc]: { ...node, items: citems },
+                [ploc]: { ...parent, items },
+            });
         }
 
         case 'delete': {
@@ -463,16 +505,11 @@ export const handleAction = (
         case 'join-left': {
             const update = joinLeft(path, top, action.text);
             return update
-                ? {
-                      type: 'in-session',
-                      action: {
-                          type: 'toplevel',
-                          id: top.id,
-                          action: update[0],
-                      },
-                      doc: path.root.doc,
-                      selections: [update[1]],
-                  }
+                ? justSel(update[1], path.root.doc, {
+                      type: 'toplevel',
+                      id: top.id,
+                      action: update[0],
+                  })
                 : undefined;
         }
 
