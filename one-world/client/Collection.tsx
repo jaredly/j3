@@ -5,6 +5,7 @@ import { TopNode } from './Edit';
 import { Store, useStore } from './StoreContext';
 import { cursorStyle } from './TextEdit/renderTextAndCursor';
 import { getNodeForPath, isLeft, selectNode, setSelection } from './selectNode';
+import { colors } from './TextEdit/colors';
 
 export const Collection = ({
     node,
@@ -24,7 +25,7 @@ export const Collection = ({
             style={
                 selection?.type === 'without' && selection.location === 'all'
                     ? {
-                          backgroundColor: 'red',
+                          backgroundColor: colors.selection,
                       }
                     : undefined
             }
@@ -36,6 +37,13 @@ export const Collection = ({
                 onMouseDown={(evt) => {
                     evt.preventDefault();
                     evt.stopPropagation();
+                    if (evt.shiftKey) {
+                        return setSelection(
+                            store,
+                            path.root.doc,
+                            selectNode(node, path, 'all'),
+                        );
+                    }
                     clickBracket(evt, store, node.items, path, true);
                 }}
             >
@@ -64,6 +72,13 @@ export const Collection = ({
                 onMouseDown={(evt) => {
                     evt.preventDefault();
                     evt.stopPropagation();
+                    if (evt.shiftKey) {
+                        return setSelection(
+                            store,
+                            path.root.doc,
+                            selectNode(node, path, 'all'),
+                        );
+                    }
                     clickBracket(evt, store, node.items, path, false);
                 }}
             >

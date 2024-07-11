@@ -1,5 +1,6 @@
 import React from 'react';
 import { EditState } from './Id';
+import { colors } from './colors';
 
 export const RenderTextAndCursor = ({
     state: { start, sel, text },
@@ -20,7 +21,7 @@ export const RenderTextAndCursor = ({
                 }
                 <span
                     style={{
-                        backgroundColor: 'rgba(200,200,0,0.2)',
+                        backgroundColor: colors.selection,
                     }}
                 >
                     {text.slice(left, right).join('')}

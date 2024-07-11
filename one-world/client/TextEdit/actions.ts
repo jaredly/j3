@@ -18,7 +18,7 @@ import {
 import { NodeSelection, PersistedState } from '../../shared/state';
 import { Toplevel } from '../../shared/toplevels';
 import { KeyAction } from '../keyboard';
-import { selectNode } from '../selectNode';
+import { getNodeForPath, selectNode } from '../selectNode';
 
 const replaceChild = (node: Node, old: number, nw: number): Node | void => {
     switch (node.type) {
@@ -479,6 +479,16 @@ export const handleAction = (
                         path.root.doc,
                     );
                 }
+                case 'to-end':
+                    return justSel(
+                        selectNode(getNodeForPath(path, state), path, 'end'),
+                        path.root.doc,
+                    );
+                case 'to-start':
+                    return justSel(
+                        selectNode(getNodeForPath(path, state), path, 'start'),
+                        path.root.doc,
+                    );
                 default:
                     return;
             }

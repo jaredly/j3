@@ -29,7 +29,15 @@ export type KeyAction =
     | { type: 'join-left'; text: string[] }
     | {
           type: 'nav';
-          dir: 'up' | 'down' | 'left' | 'right' | 'inside-start' | 'inside-end';
+          dir:
+              | 'up'
+              | 'down'
+              | 'left'
+              | 'right'
+              | 'inside-start'
+              | 'inside-end'
+              | 'to-start'
+              | 'to-end';
       }
     | { type: 'after' | 'before'; node: RecNodeT<boolean> };
 
@@ -65,9 +73,11 @@ export const specials: Record<
             // switch (selection.location) {
             //     case 'all':
             //     case 'inside':
-            //         return {type: 'blank'}
+            //         // return {type: 'blank'}
             //     case 'end':
-            //         return {type: 'nav', dir: 'left-inside'}
+            //         return {type: 'nav', dir: 'inside-end'}
+            //     case 'start':
+            //         return {type: 'unwrap'}
             // }
             return;
         }
@@ -144,7 +154,12 @@ export const specials: Record<
             if (selection.type === 'without') {
                 return {
                     type: 'nav',
-                    dir: selection.location === 'start' ? 'left' : 'inside-end',
+                    dir:
+                        selection.location === 'start'
+                            ? 'left'
+                            : selection.location === 'all'
+                            ? 'to-start'
+                            : 'inside-end',
                 };
             }
             return { type: 'nav', dir: 'left' };
@@ -174,7 +189,11 @@ export const specials: Record<
                 return {
                     type: 'nav',
                     dir:
-                        selection.location === 'end' ? 'right' : 'inside-start',
+                        selection.location === 'end'
+                            ? 'right'
+                            : selection.location === 'all'
+                            ? 'to-end'
+                            : 'inside-start',
                 };
             }
             return { type: 'nav', dir: 'right' };
