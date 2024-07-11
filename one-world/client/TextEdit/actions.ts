@@ -1,13 +1,15 @@
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Action, ToplevelAction, ToplevelUpdate } from '../../shared/action';
 import {
     Node,
     Nodes,
     Path,
     RecNode,
+    serializePath,
     toMap,
     toMapInner,
 } from '../../shared/nodes';
-import { PersistedState } from '../../shared/state';
+import { NodeSelection, PersistedState } from '../../shared/state';
 import { Toplevel } from '../../shared/toplevels';
 import { KeyAction } from '../keyboard';
 
@@ -86,7 +88,10 @@ const replaceWith = (
     return { type: 'update', update: { root: loc } };
 };
 
-export const joinLeft = (path: Path, top: Toplevel): void | ToplevelUpdate => {
+export const joinLeft = (
+    path: Path,
+    top: Toplevel,
+): void | [ToplevelUpdate, NodeSelection] => {
     if (path.children.length === 1) {
         // soooo remove the toplevel, right? so it won't be a toplevelupdate.
         return;
@@ -117,16 +122,29 @@ export const joinLeft = (path: Path, top: Toplevel): void | ToplevelUpdate => {
     const items = parent.items.slice();
     items.splice(idx, 1);
 
-    return {
-        type: 'update',
-        update: {
-            nodes: {
-                [ploc]: { ...parent, items },
-                [prev]: { ...pnode, text: pnode.text + node.text },
-                [lloc]: undefined,
+    const ppath: Path = {
+        ...path,
+        children: path.children.slice(0, -1).concat([prev]),
+    };
+
+    return [
+        {
+            type: 'update',
+            update: {
+                nodes: {
+                    [ploc]: { ...parent, items },
+                    [prev]: { ...pnode, text: pnode.text + node.text },
+                    [lloc]: undefined,
+                },
             },
         },
-    };
+        {
+            type: 'within',
+            cursor: splitGraphemes(pnode.text).length,
+            path: ppath,
+            pathKey: serializePath(ppath),
+        },
+    ];
 };
 
 export const remove = (path: Path, top: Toplevel): void | ToplevelUpdate => {
@@ -166,7 +184,7 @@ export const addSibling = (
     top: Toplevel,
     sibling: RecNode,
     left: boolean,
-): void | ToplevelUpdate => {
+): void | { update: ToplevelUpdate; selection: NodeSelection } => {
     let containerParent = null;
     for (let i = path.children.length - 1; i >= 0; i--) {
         const node = top.nodes[path.children[i]];
@@ -200,9 +218,23 @@ export const addSibling = (
 
     nodes[parent.loc] = { ...parent, items };
 
+    const npath: Path = {
+        root: path.root,
+        children: path.children.slice(0, containerParent).concat([nloc]),
+    };
+
     return {
-        type: 'update',
-        update: { nextLoc: nidx.next, nodes },
+        update: {
+            type: 'update',
+            update: { nextLoc: nidx.next, nodes },
+        },
+        // select the dealio. ok?
+        selection: {
+            type: 'within',
+            cursor: 0,
+            path: npath,
+            pathKey: serializePath(npath),
+        },
     };
 };
 
@@ -227,7 +259,16 @@ export const handleAction = (
                 action.type === 'before',
             );
             return update
-                ? { type: 'toplevel', id: top.id, action: update }
+                ? {
+                      type: 'in-session',
+                      action: {
+                          type: 'toplevel',
+                          id: top.id,
+                          action: update.update,
+                      },
+                      doc: path.root.doc,
+                      selections: [update.selection],
+                  }
                 : undefined;
         }
 
@@ -241,7 +282,16 @@ export const handleAction = (
         case 'join-left': {
             const update = joinLeft(path, top);
             return update
-                ? { type: 'toplevel', id: top.id, action: update }
+                ? {
+                      type: 'in-session',
+                      action: {
+                          type: 'toplevel',
+                          id: top.id,
+                          action: update[0],
+                      },
+                      doc: path.root.doc,
+                      selections: [update[1]],
+                  }
                 : undefined;
         }
 
@@ -258,17 +308,24 @@ export const handleAction = (
                 false,
             );
             if (update) {
-                update.update.nodes = {
-                    ...update.update.nodes,
+                update.update.update.nodes = {
+                    ...update.update.update.nodes,
                     [last]: { ...lastNode, text: left.join('') },
                 };
             }
+
+            // const npath: Path = {...path, children: path.children.slice(0, -1).concat([])}
+
             return update
                 ? {
                       type: 'in-session',
-                      action: { type: 'toplevel', id: top.id, action: update },
+                      action: {
+                          type: 'toplevel',
+                          id: top.id,
+                          action: update.update,
+                      },
                       doc: path.root.doc,
-                      selections: [],
+                      selections: [update.selection],
                   }
                 : undefined;
         }

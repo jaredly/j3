@@ -58,6 +58,8 @@ export const newStore = (
     // @ts-ignore
     window.state = state;
     const docSessionCache: { [id: string]: DocSession } = {};
+    // @ts-ignore
+    window.docSessions = docSessionCache;
     const store: Store = {
         session,
         getDocSession(doc: string, session: string) {
@@ -124,12 +126,12 @@ export const newStore = (
             }
 
             // const prev = state;
-            console.log('update ation', action);
+            // console.log('update ation', action);
             state = update(state, action, updated);
             // @ts-ignore
             window.state = state;
 
-            console.warn('disabled persistence');
+            // console.warn('disabled persistence');
             // ws.send(JSON.stringify({ type: 'action', action }));
 
             sendUpdates(updated, evts);

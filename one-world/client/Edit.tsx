@@ -71,7 +71,6 @@ export const Edit = () => {
                             );
                             if (!action) {
                             } else if (action.type === 'update') {
-                                // setState({ text: action.text, sel: action.cursor, start: action.cursorStart, });
                                 store.update(
                                     selectionAction(
                                         selection.path,
@@ -83,13 +82,6 @@ export const Edit = () => {
                                 );
                                 return;
                             } else {
-                                // maybeCommitTextChanges(
-                                //     editState,
-                                //     store,
-                                //     tid,
-                                //     loc,
-                                // );
-
                                 const state = store.getState();
                                 const saction = handleAction(
                                     action,
@@ -134,6 +126,14 @@ export const Edit = () => {
             />
             Editing {doc.title}
             <DocNode doc={doc.id} id={0} parentNodes={emptyNodes} />
+            <pre>
+                {JSON.stringify(
+                    store.getDocSession(doc.id, store.session),
+                    null,
+                    2,
+                )}
+            </pre>
+            <pre>{JSON.stringify(store.getState(), null, 2)}</pre>
         </div>
     );
 };
@@ -146,7 +146,6 @@ const useSubscribe = <T,>(
     const [value, update] = useState(get());
     const first = useRef(true);
     useEffect(() => {
-        console.log('use subscribe setup');
         if (first.current) {
             first.current = false;
         } else {
@@ -154,7 +153,6 @@ const useSubscribe = <T,>(
             update(get());
         }
         return sub(() => {
-            console.log('sub trigger');
             update(get());
         });
     }, deps);
@@ -250,7 +248,6 @@ const TopNode = ({
     loc: number;
     parentPath: Path;
 }) => {
-    console.log('render top', id, loc);
     const path = useMemo(
         () => ({ ...parentPath, children: parentPath.children.concat([loc]) }),
         [loc, parentPath],
@@ -284,7 +281,6 @@ const Collection = ({
     tid: string;
     path: Path;
 }) => {
-    console.log('render collection', tid);
     const [l, r] = { list: '()', array: '[]', record: '{}' }[node.type];
     return (
         <span
