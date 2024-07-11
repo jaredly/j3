@@ -166,6 +166,7 @@ export const newStore = (
             return state;
         },
         update(action) {
+            console.log('store updat', action);
             const updated: Updated = { toplevels: {}, selections: {} };
 
             if (action.type === 'in-session') {
@@ -216,7 +217,7 @@ export const newStore = (
             window.state = state;
 
             // console.warn('disabled persistence');
-            // ws.send(JSON.stringify({ type: 'action', action }));
+            ws.send(JSON.stringify({ type: 'action', action }));
 
             sendUpdates(updated, evts);
         },

@@ -41,7 +41,7 @@ export const ManagedId = ({
     return (
         <span
             style={{
-                padding: '0 4px',
+                // padding: '0 4px',
                 backgroundColor: '#222',
                 boxSizing: 'border-box',
                 whiteSpace: 'nowrap',

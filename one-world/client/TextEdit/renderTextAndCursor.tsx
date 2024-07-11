@@ -45,8 +45,9 @@ export const RenderTextAndCursor = ({
     );
 };
 
-const cursorStyle = (blink: boolean) =>
+export const cursorStyle = (blink: boolean) =>
     ({
+        pointerEvents: 'none',
         width: 0,
         display: 'inline-block',
         marginLeft: -7,

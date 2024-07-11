@@ -9,6 +9,8 @@ import { EditState } from './TextEdit/Id';
 import { ManagedId, selectionAction } from './TextEdit/ManagedId';
 import { handleAction } from './TextEdit/actions';
 import { specials, textKey } from './keyboard';
+import { cursorStyle } from './TextEdit/renderTextAndCursor';
+import { Collection } from './Collection';
 
 const emptyNodes: number[] = [];
 
@@ -265,7 +267,7 @@ const useTopNode = (path: Path) => {
 //     // }
 // };
 
-const TopNode = ({
+export const TopNode = ({
     id,
     loc,
     parentPath,
@@ -293,40 +295,16 @@ const TopNode = ({
         node.type === 'array' ||
         node.type === 'record'
     ) {
-        return <Collection node={node} tid={id} path={path} />;
+        return (
+            <Collection
+                node={node}
+                tid={id}
+                path={path}
+                selection={selection}
+            />
+        );
     }
     return <span>some other {node.type}</span>;
-};
-
-const Collection = ({
-    node,
-    tid,
-    path,
-}: {
-    node: Extract<Node, { type: 'list' | 'array' | 'record' }>;
-    tid: string;
-    path: Path;
-}) => {
-    const [l, r] = { list: '()', array: '[]', record: '{}' }[node.type];
-    return (
-        <span
-            style={
-                {
-                    // display: 'inline-flex',
-                    // flexWrap: 'wrap',
-                    // alignItems: 'center',
-                }
-            }
-        >
-            {l}
-            {node.items.map((loc, i) => (
-                <span key={loc} style={i === 0 ? undefined : { marginLeft: 8 }}>
-                    <TopNode key={loc} id={tid} loc={loc} parentPath={path} />
-                </span>
-            ))}
-            {r}
-        </span>
-    );
 };
 
 const Toplevel = ({
@@ -346,7 +324,7 @@ const Toplevel = ({
         }),
         [docNodes, id],
     );
-    console.log('rendering toplevel here', top.root);
+    // console.log('rendering toplevel here', top.root);
     return (
         <div>
             <TopNode id={id} loc={top.root} parentPath={path} />
