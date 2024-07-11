@@ -13,6 +13,7 @@ import {
 import { NodeSelection, PersistedState } from '../../shared/state';
 import { Toplevel } from '../../shared/toplevels';
 import { KeyAction } from '../keyboard';
+import { selectNode } from '../selectNode';
 
 const replaceChild = (node: Node, old: number, nw: number): Node | void => {
     switch (node.type) {
@@ -449,14 +450,7 @@ export const handleAction = (
                 type: 'in-session',
                 action: { type: 'toplevel', id: tid, action: update },
                 doc: path.root.doc,
-                selections: [
-                    {
-                        type: 'within',
-                        cursor: 0,
-                        path: npath,
-                        pathKey: serializePath(npath),
-                    },
-                ],
+                selections: [selectNode(top.nodes[loc], npath, 'start')],
             };
         }
     }

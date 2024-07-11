@@ -49,7 +49,7 @@ export const Edit = () => {
                     if (evt.metaKey) return;
                     if (!docSession.selections.length) return;
                     docSession.selections.forEach((selection) => {
-                        if (selection.type !== 'within') return; // TODO will do this later
+                        if (selection.type === 'multi') return; // TODO will do this later
                         const last =
                             selection.path.children[
                                 selection.path.children.length - 1
@@ -58,33 +58,36 @@ export const Edit = () => {
                             store.getState().toplevels[
                                 selection.path.root.toplevel
                             ].nodes[last];
-                        if (
-                            node.type !== 'id' &&
-                            node.type !== 'accessText' &&
-                            node.type !== 'stringText'
-                        ) {
-                            return;
-                        }
+
+                        const rawText =
+                            node.type === 'id' ||
+                            node.type === 'accessText' ||
+                            node.type === 'stringText'
+                                ? node.text
+                                : undefined;
                         const text =
-                            selection.text ?? splitGraphemes(node.text);
-                        const sel = selection.cursor;
+                            rawText != null && selection.type === 'within'
+                                ? selection.text ?? splitGraphemes(rawText)
+                                : undefined;
+                        // if (
+                        // ) {
+                        //     return;
+                        // }
+                        // const text =
+                        // const sel = selection.cursor;
                         const mods = { meta: evt.metaKey, shift: evt.shiftKey };
-                        const editState: EditState = {
-                            text,
-                            sel,
-                            start: selection.start,
-                        };
+                        // const editState: EditState = {
+                        //     text,
+                        //     sel,
+                        //     start: selection.start,
+                        // };
 
                         const key = evt.key;
                         if (specials[key]) {
                             const action = specials[key](
-                                sel === text.length
-                                    ? 'end'
-                                    : sel === 0
-                                    ? 'start'
-                                    : 'middle',
-                                editState,
+                                selection,
                                 mods,
+                                rawText,
                             );
                             if (!action) {
                             } else if (action.type === 'update') {
@@ -94,7 +97,8 @@ export const Edit = () => {
                                         action.cursor,
                                         action.cursorStart,
                                         selection,
-                                        action.text.join('') === node.text
+                                        !action.text ||
+                                            action.text.join('') === rawText
                                             ? undefined
                                             : action.text,
                                     ),
@@ -124,19 +128,28 @@ export const Edit = () => {
                             );
                             return;
                         }
-                        const results = textKey(extra, editState, {
-                            meta: evt.metaKey,
-                            shift: evt.shiftKey,
-                        });
-                        store.update(
-                            selectionAction(
-                                selection.path,
-                                results.cursor,
-                                undefined,
-                                selection,
-                                results.text,
-                            ),
-                        );
+
+                        if (selection.type === 'within' && text) {
+                            const editState: EditState = {
+                                text,
+                                sel: selection.cursor,
+                                start: selection.start,
+                            };
+
+                            const results = textKey(extra, editState, {
+                                meta: evt.metaKey,
+                                shift: evt.shiftKey,
+                            });
+                            store.update(
+                                selectionAction(
+                                    selection.path,
+                                    results.cursor,
+                                    undefined,
+                                    selection,
+                                    results.text,
+                                ),
+                            );
+                        }
                     });
                 }}
                 onBlur={(evt) => {

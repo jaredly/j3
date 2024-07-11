@@ -3,12 +3,14 @@
 import { RecNode, RecNodeT } from '../shared/nodes';
 import { EditState } from './TextEdit/Id';
 import { Mods } from './HiddenInput';
+import { NodeSelection } from '../shared/state';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 
 type Location = 'start' | 'middle' | 'end';
 
 type LocalAction = {
     type: 'update';
-    text: string[];
+    text?: string[];
     cursor: number;
     cursorStart?: number;
     after?: RecNode;
@@ -49,18 +51,25 @@ export const textKey = (
 export const specials: Record<
     string,
     (
-        loc: Location,
-        state: EditState,
+        sel: NodeSelection,
         mods: { shift: boolean; meta: boolean },
+        text?: string,
     ) => KeyAction | LocalAction | void
 > = {
-    Backspace(loc, { text, sel, start }, mods) {
-        if (sel === 0) {
-            return { type: 'join-left', text };
+    Backspace(selection, mods, rawText) {
+        if (selection.type === 'multi') return;
+        if (selection.type === 'without') {
+            return;
         }
-        // if (text.length === 0) {
-        //     return { type: 'delete' };
-        // }
+        const sel = selection.cursor;
+        const text = selection.text ?? splitGraphemes(rawText ?? '');
+        if (sel === 0) {
+            return {
+                type: 'join-left',
+                text: text.slice(selection.start ?? 0),
+            };
+        }
+        const start = selection.start;
         if (start != null) {
             const [left, right] = start < sel ? [start, sel] : [sel, start];
             return {
@@ -75,23 +84,31 @@ export const specials: Record<
             cursor: sel - 1,
         };
     },
-    ' '(loc, state) {
-        if (loc === 'middle') {
-            const [left, right] =
-                state.start != null
-                    ? state.sel < state.start
-                        ? [state.sel, state.start]
-                        : [state.start, state.sel]
-                    : [state.sel, state.sel];
+    ' '(selection, meta, rawText) {
+        if (selection.type === 'multi') return;
+        if (selection.type !== 'within') {
+            // todo handle multi
             return {
-                type: 'split',
-                at: left,
-                del: right - left,
-                text: state.text,
+                type: selection.location === 'start' ? 'before' : 'after',
+                node: { type: 'id', text: '', loc: true },
             };
         }
+        const text = selection.text ?? splitGraphemes(rawText ?? '');
+        if (
+            (selection.start != null && selection.start !== selection.cursor) ||
+            selection.cursor > 0
+        ) {
+            const [left, right] =
+                selection.start != null
+                    ? selection.cursor < selection.start
+                        ? [selection.cursor, selection.start]
+                        : [selection.start, selection.cursor]
+                    : [selection.cursor, selection.cursor];
+            return { type: 'split', at: left, del: right - left, text };
+        }
         return {
-            type: loc === 'start' ? 'before' : 'after',
+            type:
+                selection.cursor === 0 && text.length > 0 ? 'before' : 'after',
             node: { type: 'id', text: '', loc: true },
         };
     },
@@ -112,35 +129,52 @@ export const specials: Record<
 
     ArrowUp: () => ({ type: 'nav', dir: 'up' }),
     ArrowDown: () => ({ type: 'nav', dir: 'down' }),
-    ArrowLeft(_, { text, sel, start }, { shift }) {
+    ArrowLeft(selection, { shift }, rawText) {
+        if (selection.type !== 'within') {
+            if (selection.type === 'without') {
+            }
+            return;
+        }
+        const { text, start, cursor } = selection;
         if (shift) {
             return {
                 type: 'update',
-                text,
-                cursor: Math.max(0, sel - 1),
-                cursorStart: start ?? sel,
+                text: text,
+                cursor: Math.max(0, cursor - 1),
+                cursorStart: start ?? cursor,
             };
         }
-        if (sel > 0) {
-            return { type: 'update', text, cursor: Math.max(0, sel - 1) };
+        if (cursor > 0) {
+            return {
+                type: 'update',
+                text: text,
+                cursor: Math.max(0, cursor - 1),
+            };
         } else {
             return { type: 'nav', dir: 'left' };
         }
     },
-    ArrowRight(_, { text, sel, start }, { shift }) {
+    ArrowRight(selection, { shift }, rawText) {
+        if (selection.type !== 'within') {
+            if (selection.type === 'without') {
+            }
+            return;
+        }
+        let { text, start, cursor } = selection;
+        text = text ?? splitGraphemes(rawText ?? '');
         if (shift) {
             return {
                 type: 'update',
                 text,
-                cursor: Math.min(text.length, sel + 1),
-                cursorStart: start ?? sel,
+                cursor: Math.min(text.length, cursor + 1),
+                cursorStart: start ?? cursor,
             };
         }
-        if (sel < text.length) {
+        if (cursor < text.length) {
             return {
                 type: 'update',
                 text,
-                cursor: Math.min(text.length, sel + 1),
+                cursor: Math.min(text.length, cursor + 1),
             };
         } else {
             return { type: 'nav', dir: 'right' };
@@ -149,40 +183,35 @@ export const specials: Record<
     ')': () => ({ type: 'end', which: 'list' }),
     ']': () => ({ type: 'end', which: 'array' }),
     '}': () => ({ type: 'end', which: 'record' }),
-    '('(loc, { text }) {
-        return loc === 'start' || text.length === 0
-            ? { type: 'surround', kind: 'list' }
-            : {
-                  type: 'after',
-                  node: {
-                      type: 'list',
-                      items: [{ type: 'id', text: '', loc: true }],
-                      loc: false,
-                  },
-              };
+    '('(selection, mods, rawText) {
+        return maybeSurround(selection, 'list');
     },
-    '['(loc, { text }) {
-        return loc === 'start' || text.length === 0
-            ? { type: 'surround', kind: 'array' }
-            : {
-                  type: 'after',
-                  node: {
-                      type: 'array',
-                      items: [{ type: 'id', text: '', loc: true }],
-                      loc: false,
-                  },
-              };
+    '['(selection) {
+        return maybeSurround(selection, 'array');
     },
-    '{'(loc, { text }) {
-        return loc === 'start' || text.length === 0
-            ? { type: 'surround', kind: 'record' }
-            : {
-                  type: 'after',
-                  node: {
-                      type: 'record',
-                      items: [{ type: 'id', text: '', loc: true }],
-                      loc: false,
-                  },
-              };
+    '{'(selection) {
+        return maybeSurround(selection, 'record');
     },
 };
+
+function maybeSurround(
+    selection: NodeSelection,
+    kind: 'list' | 'array' | 'record',
+): KeyAction {
+    const surround =
+        selection.type === 'without'
+            ? selection.location === 'start' || selection.location === 'all'
+            : selection.type === 'within'
+            ? selection.cursor === 0
+            : false;
+    return surround
+        ? { type: 'surround', kind: kind }
+        : {
+              type: 'after',
+              node: {
+                  type: kind,
+                  items: [{ type: 'id', text: '', loc: true }],
+                  loc: false,
+              },
+          };
+}

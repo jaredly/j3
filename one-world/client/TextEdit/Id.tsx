@@ -5,7 +5,7 @@ import { getNewSelection } from './getNewSelection';
 import { RenderTextAndCursor } from './renderTextAndCursor';
 import { useBlink } from './useBlink';
 import { useDrag } from './useDrag';
-import { useKeys } from './useKeys';
+// import { useKeys } from './useKeys';
 import { Path } from '../../shared/nodes';
 
 export type EditState = {
@@ -36,7 +36,7 @@ export const Id = ({
 
     maintainLatestText(node.text, latest, setState);
 
-    useKeys(tid, path, latest, resetBlink, setState);
+    // useKeys(tid, path, latest, resetBlink, setState);
 
     const { ref, setDrag } = useDrag(node.text, latest, setState, resetBlink);
 
