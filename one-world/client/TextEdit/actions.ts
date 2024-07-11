@@ -92,6 +92,7 @@ const replaceWith = (
 export const joinLeft = (
     path: Path,
     top: Toplevel,
+    rightText: string[],
 ): void | [ToplevelUpdate, NodeSelection] => {
     if (path.children.length === 1) {
         // soooo remove the toplevel, right? so it won't be a toplevelupdate.
@@ -115,6 +116,45 @@ export const joinLeft = (
 
     const idx = parent.items.indexOf(lloc);
     if (idx === -1) return;
+
+    // syk, we're doing an unwrap
+    if (idx === 0) {
+        if (path.children.length < 3) return;
+        const gloc = path.children[path.children.length - 3];
+        const gparent = top.nodes[gloc];
+        if (
+            gparent.type !== 'list' &&
+            gparent.type !== 'array' &&
+            gparent.type !== 'record'
+        ) {
+            return;
+        }
+        const items = gparent.items.slice();
+        const pidx = items.indexOf(ploc);
+        items.splice(pidx, 1, ...parent.items);
+        const npath = {
+            ...path,
+            children: path.children.slice(0, -2).concat([lloc]),
+        };
+        return [
+            {
+                type: 'update',
+                update: {
+                    nodes: {
+                        [gloc]: { ...gparent, items },
+                        [ploc]: undefined,
+                    },
+                },
+            },
+            {
+                type: 'within',
+                cursor: 0,
+                path: npath,
+                pathKey: serializePath(npath),
+            },
+        ];
+    }
+
     if (idx === 0) return;
     const prev = parent.items[idx - 1];
     const pnode = top.nodes[prev];
@@ -134,7 +174,7 @@ export const joinLeft = (
             update: {
                 nodes: {
                     [ploc]: { ...parent, items },
-                    [prev]: { ...pnode, text: pnode.text + node.text },
+                    [prev]: { ...pnode, text: pnode.text + rightText.join('') },
                     [lloc]: undefined,
                 },
             },
@@ -295,7 +335,7 @@ export const handleAction = (
         }
 
         case 'join-left': {
-            const update = joinLeft(path, top);
+            const update = joinLeft(path, top, action.text);
             return update
                 ? {
                       type: 'in-session',
@@ -374,7 +414,23 @@ export const handleAction = (
             if (!update) return;
             update.update.nodes = { ...map, ...update.update.nodes };
             update.update.nextLoc = nidx;
-            return { type: 'toplevel', id: tid, action: update };
+            const npath = {
+                ...path,
+                children: path.children.slice(0, -1).concat([idx, loc]),
+            };
+            return {
+                type: 'in-session',
+                action: { type: 'toplevel', id: tid, action: update },
+                doc: path.root.doc,
+                selections: [
+                    {
+                        type: 'within',
+                        cursor: 0,
+                        path: npath,
+                        pathKey: serializePath(npath),
+                    },
+                ],
+            };
         }
     }
 };

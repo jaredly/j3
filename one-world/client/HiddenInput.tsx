@@ -86,41 +86,44 @@ export const HiddenInput = ({ children }: { children: React.ReactNode }) => {
 export const Hidden = ({
     onKeyDown,
     onBlur,
+    iref,
 }: {
     onKeyDown: (evt: React.KeyboardEvent) => void;
     onBlur: (evt: React.FocusEvent) => void;
+    iref: React.RefObject<HTMLInputElement>;
 }) => {
     return (
-        <>
-            <input
-                value=""
-                onChange={() => {}}
-                autoFocus
-                style={{
-                    width: 10,
-                    height: 10,
-                    // width: 0,
-                    // height: 0,
-                    // opacity: 0,
-                    // pointerEvents: 'none',
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    border: 'none',
-                }}
-                onKeyDown={(evt) => {
-                    // ctx.listeners.key.forEach((k) =>
-                    //     k(evt.key, { shift: evt.shiftKey, meta: evt.metaKey }),
-                    // );
-                    onKeyDown(evt);
-                }}
-                onBlur={(evt) => {
-                    // if (evt.currentTarget !== document.activeElement) {
-                    //     ctx.listeners.blur.map((f) => f());
-                    // }
-                    onBlur(evt);
-                }}
-            />
-        </>
+        <input
+            ref={iref}
+            value=""
+            onChange={() => {}}
+            autoFocus
+            style={{
+                // width: 10,
+                // height: 10,
+
+                width: 0,
+                height: 0,
+                opacity: 0,
+                pointerEvents: 'none',
+
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                border: 'none',
+            }}
+            onKeyDown={(evt) => {
+                // ctx.listeners.key.forEach((k) =>
+                //     k(evt.key, { shift: evt.shiftKey, meta: evt.metaKey }),
+                // );
+                onKeyDown(evt);
+            }}
+            onBlur={(evt) => {
+                // if (evt.currentTarget !== document.activeElement) {
+                //     ctx.listeners.blur.map((f) => f());
+                // }
+                onBlur(evt);
+            }}
+        />
     );
 };

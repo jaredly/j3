@@ -53,7 +53,7 @@ export const Id = ({
                     text,
                     state,
                     evt.currentTarget,
-                    evt.clientX,
+                    { x: evt.clientX, y: evt.clientY },
                     evt.shiftKey,
                     range,
                 );

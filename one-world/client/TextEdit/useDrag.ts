@@ -22,7 +22,7 @@ export const useDrag = (
                 text,
                 state,
                 ref.current!,
-                evt.clientX,
+                { x: evt.clientX, y: evt.clientY },
                 false,
                 range,
             );

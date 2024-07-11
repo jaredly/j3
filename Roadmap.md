@@ -3,7 +3,21 @@ Ok folks, I think we'll want to do centralized selection state management now.
 
 - [x] start up centralized selection management
 - [x] edit
-- [ ] RecNode should have a Loc param where we can do false/true
+- [x] RecNode should have a Loc param where we can do false/true
+- [x] yay looks like we are preserving selection state through a bunch of editings.
+- [x] unwrap, lookin slick
+
+NEXT UP: A bit of navigation
+- [ ] Arrow Left & Right if you please
+- [x] Ok I also need my `Hidden` input to reclaim focus at .. all times?
+- [ ] then I'll need a blinker for the start & end of collections.
+
+
+ENUMERATING ALL THE PLACES SELECTION CAN HAPPEN
+- text (subtext)
+- start/end of a listlike or string
+- start of a comment or spread
+- ... is that it? interseting.
 
 
 

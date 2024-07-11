@@ -22,7 +22,8 @@ export type KeyAction =
           kind: 'list' | 'record' | 'array' | 'string' | 'comment' | 'spread';
       }
     | { type: 'split'; at: number; del: number; text: string[] }
-    | { type: 'delete' | 'join-left' }
+    | { type: 'delete' }
+    | { type: 'join-left'; text: string[] }
     | { type: 'nav'; dir: 'up' | 'down' | 'left' | 'right' }
     | { type: 'after' | 'before'; node: RecNodeT<boolean> };
 
@@ -53,9 +54,12 @@ export const specials: Record<
     ) => KeyAction | LocalAction | void
 > = {
     Backspace(loc, { text, sel, start }, mods) {
-        if (text.length === 0) {
-            return { type: 'delete' };
+        if (sel === 0) {
+            return { type: 'join-left', text };
         }
+        // if (text.length === 0) {
+        //     return { type: 'delete' };
+        // }
         if (start != null) {
             const [left, right] = start < sel ? [start, sel] : [sel, start];
             return {
@@ -63,9 +67,6 @@ export const specials: Record<
                 text: text.slice(0, left).concat(text.slice(right)),
                 cursor: left,
             };
-        }
-        if (sel === 0) {
-            return { type: 'join-left' };
         }
         return {
             type: 'update',
@@ -143,8 +144,8 @@ export const specials: Record<
         //     return { type: 'update', text, cursor: cursor + 1 };
         // }
     },
-    '('(loc) {
-        return loc === 'start'
+    '('(loc, { text }) {
+        return loc === 'start' || text.length === 0
             ? { type: 'surround', kind: 'list' }
             : {
                   type: 'after',
@@ -155,8 +156,8 @@ export const specials: Record<
                   },
               };
     },
-    '['(loc) {
-        return loc === 'start'
+    '['(loc, { text }) {
+        return loc === 'start' || text.length === 0
             ? { type: 'surround', kind: 'array' }
             : {
                   type: 'after',
@@ -167,8 +168,8 @@ export const specials: Record<
                   },
               };
     },
-    '{'(loc) {
-        return loc === 'start'
+    '{'(loc, { text }) {
+        return loc === 'start' || text.length === 0
             ? { type: 'surround', kind: 'record' }
             : {
                   type: 'after',

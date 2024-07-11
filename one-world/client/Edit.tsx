@@ -26,9 +26,23 @@ export const Edit = () => {
 
     const docSession = store.getDocSession(id, store.session);
 
+    const iref = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        return store.on('selection', () => {
+            const ds = store.getDocSession(id, store.session);
+            if (ds.selections.length) {
+                iref.current?.focus();
+            } else if (iref.current === document.activeElement) {
+                iref.current?.blur();
+            }
+        });
+    }, []);
+
     return (
         <div style={{ padding: 100 }}>
             <Hidden
+                iref={iref}
                 onKeyDown={(evt) => {
                     if (evt.metaKey) return;
                     if (!docSession.selections.length) return;
@@ -124,6 +138,12 @@ export const Edit = () => {
                 }}
                 onBlur={(evt) => {
                     // blur
+                    store.update({
+                        type: 'in-session',
+                        action: { type: 'multi', actions: [] },
+                        doc: id,
+                        selections: [],
+                    });
                 }}
             />
             Editing {doc.title}

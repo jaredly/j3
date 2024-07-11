@@ -1,68 +1,75 @@
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { EditState } from './Id';
+
+// const selectionPosition = (node: HTMLElement, x: number) => {
+// }
+
+export const realOffset = (
+    range: Range,
+    node: HTMLElement,
+    pos: { x: number; y: number },
+    off = 0,
+): null | number => {
+    for (let child of node.childNodes) {
+        if (child.nodeName === '#text') {
+            const graphemes = splitGraphemes(child.textContent!);
+            let prevPos = null;
+            let offset = 0;
+            for (let i = 0; i <= graphemes.length; i++) {
+                range.setStart(child, 0);
+                range.setEnd(child, offset);
+                const rb = range.getBoundingClientRect();
+                if (pos.y > rb.bottom || pos.y < rb.top) {
+                    if (i < graphemes.length) {
+                        offset += graphemes[i].length;
+                    }
+                    continue;
+                }
+                if (rb.right > pos.x) {
+                    if (prevPos) {
+                        if (prevPos.dx < Math.abs(pos.x - rb.right)) {
+                            return prevPos.off + off;
+                        }
+                    }
+                    return offset + off;
+                }
+                prevPos = { dx: Math.abs(rb.right - pos.x), off: offset };
+                if (i < graphemes.length) {
+                    offset += graphemes[i].length;
+                }
+            }
+            off += graphemes.length;
+        } else {
+            // the cursor element
+            if ((child as HTMLElement).style.width === '0px') {
+                continue;
+            }
+            const inner = realOffset(range, child as HTMLElement, pos, off);
+            if (inner != null) {
+                return inner;
+            }
+            off += splitGraphemes(child.textContent!).length;
+        }
+    }
+    return null;
+};
 
 export function getNewSelection(
     text: string[],
     state: EditState | null,
-    // evt: React.MouseEvent<HTMLSpanElement, MouseEvent>,
     node: HTMLSpanElement,
-    x: number,
+    pos: { x: number; y: number },
     shift: boolean,
     range: Range,
 ) {
-    let sel = text.length;
-
-    if (state) {
-        if (state.start != null && state.start !== state.sel) {
-            const mid = node.firstElementChild!.nextElementSibling!;
-            const box = mid.getBoundingClientRect();
-            const [left, right] =
-                state.start < state.sel
-                    ? [state.start, state.sel]
-                    : [state.sel, state.start];
-            if (x < box.left) {
-                sel = offsetInNode(
-                    range,
-                    node.firstChild!,
-                    text.slice(0, left),
-                    x,
-                );
-            } else if (x < box.right) {
-                sel =
-                    offsetInNode(
-                        range,
-                        mid.firstChild!,
-                        text.slice(left, right),
-                        x,
-                    ) + left;
-            } else {
-                sel =
-                    offsetInNode(range, node.lastChild!, text.slice(right), x) +
-                    right;
-            }
-        } else {
-            const one = node.firstChild!;
-            const mid = node.firstElementChild!;
-            const ob = mid.getBoundingClientRect();
-            if (ob.right > x) {
-                sel = offsetInNode(range, one, text.slice(0, sel), x);
-            } else {
-                sel =
-                    offsetInNode(
-                        range,
-                        node.lastChild!,
-                        text.slice(state.sel),
-                        x,
-                    ) + state.sel;
-            }
-        }
-    } else {
-        sel = offsetInNode(range, node.firstChild!, text, x);
-    }
+    const sel = realOffset(range, node, pos);
+    if (sel == null) return state ?? { sel: 0, start: 0 };
     return {
         sel,
         start: shift ? state?.start ?? state?.sel : undefined,
     };
 }
+
 const offsetInNode = (
     range: Range,
     node: ChildNode,

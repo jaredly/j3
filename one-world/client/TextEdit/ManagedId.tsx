@@ -66,7 +66,7 @@ export const ManagedId = ({
                           }
                         : null,
                     evt.currentTarget,
-                    evt.clientX,
+                    { x: evt.clientX, y: evt.clientY },
                     evt.shiftKey,
                     range,
                 );
@@ -131,7 +131,7 @@ export const useDrag = (
                     : null,
 
                 ref.current!,
-                evt.clientX,
+                { x: evt.clientX, y: evt.clientY },
                 true,
                 range,
             );
