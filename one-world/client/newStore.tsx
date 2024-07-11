@@ -166,7 +166,7 @@ export const newStore = (
             return state;
         },
         update(action) {
-            console.log('store updat', action);
+            // console.log('store updat', action);
             const updated: Updated = { toplevels: {}, selections: {} };
 
             if (action.type === 'in-session') {

@@ -27,7 +27,16 @@ export type KeyAction =
     | { type: 'split'; at: number; del: number; text: string[] }
     | { type: 'delete' }
     | { type: 'join-left'; text: string[] }
-    | { type: 'nav'; dir: 'up' | 'down' | 'left' | 'right' }
+    | {
+          type: 'nav';
+          dir:
+              | 'up'
+              | 'down'
+              | 'left'
+              | 'right'
+              | 'left-inside'
+              | 'right-inside';
+      }
     | { type: 'after' | 'before'; node: RecNodeT<boolean> };
 
 export const textKey = (
@@ -132,8 +141,13 @@ export const specials: Record<
     ArrowLeft(selection, { shift }, rawText) {
         if (selection.type !== 'within') {
             if (selection.type === 'without') {
+                return {
+                    type: 'nav',
+                    dir:
+                        selection.location === 'start' ? 'left' : 'left-inside',
+                };
             }
-            return;
+            return { type: 'nav', dir: 'left' };
         }
         const { text, start, cursor } = selection;
         if (shift) {
@@ -157,8 +171,13 @@ export const specials: Record<
     ArrowRight(selection, { shift }, rawText) {
         if (selection.type !== 'within') {
             if (selection.type === 'without') {
+                return {
+                    type: 'nav',
+                    dir:
+                        selection.location === 'end' ? 'right' : 'right-inside',
+                };
             }
-            return;
+            return { type: 'nav', dir: 'right' };
         }
         let { text, start, cursor } = selection;
         text = text ?? splitGraphemes(rawText ?? '');

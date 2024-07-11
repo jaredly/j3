@@ -1,14 +1,19 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Action, ToplevelAction, ToplevelUpdate } from '../../shared/action';
 import {
+    inFromEnd,
+    inFromStart,
     Node,
     Nodes,
+    parentPath,
     Path,
     RecNode,
     RecNodeT,
     serializePath,
     toMap,
     toMapInner,
+    toTheLeft,
+    toTheRight,
 } from '../../shared/nodes';
 import { NodeSelection, PersistedState } from '../../shared/state';
 import { Toplevel } from '../../shared/toplevels';
@@ -300,8 +305,6 @@ export const handleAction = (
     state: PersistedState,
 ): Action | void => {
     if (path.root.type !== 'doc-node') return;
-    // const docNode = path.root.ids[path.root.ids.length - 1];
-    // const tid = state.documents[path.root.doc].nodes[docNode].toplevel;
     const tid = path.root.toplevel;
     const top = state.toplevels[tid];
     const last = path.children[path.children.length - 1];
@@ -453,5 +456,140 @@ export const handleAction = (
                 selections: [selectNode(top.nodes[loc], npath, 'start')],
             };
         }
+
+        case 'nav': {
+            switch (action.dir) {
+                case 'left':
+                    return justSel(goLeft(path, state), path.root.doc);
+                case 'left-inside': {
+                    const top = state.toplevels[path.root.toplevel];
+                    const loc = path.children[path.children.length - 1];
+                    return justSel(
+                        inFromEnd(top.nodes[loc], path, top.nodes),
+                        path.root.doc,
+                    );
+                }
+                case 'right':
+                    return justSel(goRight(path, state), path.root.doc);
+                case 'right-inside': {
+                    const top = state.toplevels[path.root.toplevel];
+                    const loc = path.children[path.children.length - 1];
+                    return justSel(
+                        inFromStart(top.nodes[loc], path, top.nodes),
+                        path.root.doc,
+                    );
+                }
+                default:
+                    return;
+            }
+        }
     }
+};
+
+const justSel = (sel: NodeSelection | void, doc: string): Action | void =>
+    sel
+        ? {
+              type: 'in-session',
+              action: { type: 'multi', actions: [] },
+              doc,
+              selections: [sel],
+          }
+        : undefined;
+
+const goLeft = (path: Path, state: PersistedState): void | NodeSelection => {
+    // If we're at the top of the toplevel...
+    if (path.children.length < 2) {
+        if (path.root.ids.length < 2) return;
+        const loc = path.root.ids[path.root.ids.length - 1];
+        const nodes = state.documents[path.root.doc].nodes;
+        const parent = nodes[path.root.ids[path.root.ids.length - 2]];
+        const idx = parent.children.indexOf(loc);
+        if (idx === -1) return;
+        // Select the end of the parent toplevel
+        if (idx === 0) {
+            const top = state.toplevels[parent.toplevel];
+            if (!top) return; // root
+            return selectNode(
+                top.nodes[top.root],
+                {
+                    root: { ...path.root, ids: path.root.ids.slice(0, -1) },
+                    children: [top.root],
+                },
+                'end',
+            );
+        }
+        let nid = parent.children[idx - 1];
+        let nids = path.root.ids.slice(0, -1).concat(nid);
+        while (nodes[nid].children.length) {
+            nid = nodes[nid].children[nodes[nid].children.length - 1];
+            nids.push(nid);
+        }
+        const top = state.toplevels[nodes[nid].toplevel];
+        return selectNode(
+            top.nodes[top.root],
+            {
+                root: { ...path.root, ids: nids },
+                children: [top.root],
+            },
+            'end',
+        );
+    }
+
+    const top = state.toplevels[path.root.toplevel];
+    const parent = path.children[path.children.length - 2];
+    return toTheLeft(
+        top.nodes[parent],
+        path.children[path.children.length - 1],
+        parentPath(path),
+        top.nodes,
+    );
+};
+
+const goRight = (path: Path, state: PersistedState): void | NodeSelection => {
+    // If we're at the top of the toplevel...
+    if (path.children.length < 2) {
+        if (path.root.ids.length < 2) return;
+        const loc = path.root.ids[path.root.ids.length - 1];
+        const nodes = state.documents[path.root.doc].nodes;
+        const parent = nodes[path.root.ids[path.root.ids.length - 2]];
+        const idx = parent.children.indexOf(loc);
+        if (idx === -1) return;
+        // Select the end of the parent toplevel
+        if (idx === 0) {
+            const top = state.toplevels[parent.toplevel];
+            if (!top) return; // root
+            return selectNode(
+                top.nodes[top.root],
+                {
+                    root: { ...path.root, ids: path.root.ids.slice(0, -1) },
+                    children: [top.root],
+                },
+                'end',
+            );
+        }
+        let nid = parent.children[idx - 1];
+        let nids = path.root.ids.slice(0, -1).concat(nid);
+        while (nodes[nid].children.length) {
+            nid = nodes[nid].children[nodes[nid].children.length - 1];
+            nids.push(nid);
+        }
+        const top = state.toplevels[nodes[nid].toplevel];
+        return selectNode(
+            top.nodes[top.root],
+            {
+                root: { ...path.root, ids: nids },
+                children: [top.root],
+            },
+            'end',
+        );
+    }
+
+    const top = state.toplevels[path.root.toplevel];
+    const parent = path.children[path.children.length - 2];
+    return toTheRight(
+        top.nodes[parent],
+        path.children[path.children.length - 1],
+        parentPath(path),
+        top.nodes,
+    );
 };

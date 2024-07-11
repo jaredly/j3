@@ -1,5 +1,8 @@
 //
 
+import { selectNode } from '../client/selectNode';
+import { NodeSelection } from './state';
+
 export type Loc = Array<[string, number]>;
 
 export type PathRoot = {
@@ -13,6 +16,16 @@ export type Path = {
     root: PathRoot;
     children: number[];
 };
+
+export const pathWithChildren = (path: Path, ...children: number[]) => ({
+    ...path,
+    children: path.children.concat(children),
+});
+
+export const parentPath = (path: Path) => ({
+    ...path,
+    children: path.children.slice(0, -1),
+});
 
 export const serializePath = (path: Path) => {
     return `${path.root.doc}#${path.root.ids.join('.')}#${path.children.join(
@@ -87,6 +100,120 @@ export type RecNodeT<Loc> =
       };
 
 export type Nodes = Record<number, Node>;
+
+export const inFromEnd = (
+    node: Node,
+    path: Path,
+    nodes: Nodes,
+): void | NodeSelection => {
+    switch (node.type) {
+        case 'id':
+        case 'stringText':
+        case 'accessText':
+        case 'ref':
+        case 'rich-text':
+        case 'raw-code':
+            return;
+        case 'list':
+        case 'array':
+        case 'record': {
+            if (node.items.length === 0) {
+                return {
+                    type: 'without',
+                    location: 'inside',
+                    path,
+                    pathKey: serializePath(path),
+                };
+            }
+            const loc = node.items[node.items.length - 1];
+            return selectNode(nodes[loc], pathWithChildren(path, loc), 'end');
+        }
+    }
+};
+
+export const inFromStart = (
+    node: Node,
+    path: Path,
+    nodes: Nodes,
+): void | NodeSelection => {
+    switch (node.type) {
+        case 'id':
+        case 'stringText':
+        case 'accessText':
+        case 'ref':
+        case 'rich-text':
+        case 'raw-code':
+            return;
+        case 'list':
+        case 'array':
+        case 'record': {
+            if (node.items.length === 0) {
+                return {
+                    type: 'without',
+                    location: 'inside',
+                    path,
+                    pathKey: serializePath(path),
+                };
+            }
+            const loc = node.items[0];
+            return selectNode(nodes[loc], pathWithChildren(path, loc), 'start');
+        }
+    }
+};
+
+export const toTheRight = (
+    parent: Node,
+    cloc: number,
+    path: Path,
+    nodes: Nodes,
+): void | NodeSelection => {
+    switch (parent.type) {
+        case 'id':
+        case 'stringText':
+        case 'accessText':
+        case 'ref':
+        case 'rich-text':
+        case 'raw-code':
+            return;
+        case 'list':
+        case 'array':
+        case 'record': {
+            const idx = parent.items.indexOf(cloc);
+            if (idx === parent.items.length - 1) {
+                return selectNode(parent, path, 'end');
+            }
+            const loc = parent.items[idx + 1];
+            return selectNode(nodes[loc], pathWithChildren(path, loc), 'start');
+        }
+    }
+};
+
+export const toTheLeft = (
+    parent: Node,
+    cloc: number,
+    path: Path,
+    nodes: Nodes,
+): void | NodeSelection => {
+    switch (parent.type) {
+        case 'id':
+        case 'stringText':
+        case 'accessText':
+        case 'ref':
+        case 'rich-text':
+        case 'raw-code':
+            return;
+        case 'list':
+        case 'array':
+        case 'record': {
+            const idx = parent.items.indexOf(cloc);
+            if (idx === 0) {
+                return selectNode(parent, path, 'start');
+            }
+            const loc = parent.items[idx - 1];
+            return selectNode(nodes[loc], pathWithChildren(path, loc), 'end');
+        }
+    }
+};
 
 export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
     const node = nodes[id];
