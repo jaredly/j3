@@ -50,7 +50,6 @@ export const Id = ({
                 const range = new Range();
 
                 let { sel, start } = getNewSelection(
-                    text,
                     state,
                     evt.currentTarget,
                     { x: evt.clientX, y: evt.clientY },

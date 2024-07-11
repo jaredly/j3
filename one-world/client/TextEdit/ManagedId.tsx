@@ -37,7 +37,7 @@ export const ManagedId = ({
         return () => clearInterval(iv);
     }, [selection]);
 
-    const { ref, setDrag } = useDrag(node.text, selection, path);
+    const { ref, setDrag } = useDrag(selection, path);
 
     return (
         <span
@@ -57,7 +57,6 @@ export const ManagedId = ({
                 const range = new Range();
 
                 let { sel, start } = getNewSelection(
-                    text,
                     selection?.type === 'within'
                         ? {
                               start: selection.start,
@@ -80,8 +79,6 @@ export const ManagedId = ({
                 );
                 store.update(action);
 
-                // setState({ sel, start, text });
-                // resetBlink();
                 setDrag(true);
             }}
         >
@@ -99,14 +96,7 @@ export const ManagedId = ({
     );
 };
 
-export const useDrag = (
-    nodeText: string,
-    selection: void | NodeSelection,
-    path: Path,
-    // latest: React.MutableRefObject<EditState | null>,
-    // setState: React.Dispatch<React.SetStateAction<EditState | null>>,
-    // resetBlink: () => void,
-) => {
+export const useDrag = (selection: void | NodeSelection, path: Path) => {
     const store = useStore();
     const [drag, setDrag] = useState(false);
     const ref = useRef<HTMLSpanElement>(null);
@@ -117,16 +107,11 @@ export const useDrag = (
         const move = (evt: MouseEvent) => {
             const selection = latest.current;
             const range = new Range();
-            const text =
-                (selection?.type === 'within' ? selection.text : undefined) ??
-                splitGraphemes(nodeText);
             const sel = getNewSelection(
-                text,
                 selection?.type === 'within'
                     ? {
                           start: selection.start,
                           sel: selection.cursor,
-                          text,
                       }
                     : null,
 
@@ -135,7 +120,6 @@ export const useDrag = (
                 true,
                 range,
             );
-            // setState({ text, sel: sel.sel, start: state?.start ?? state?.sel });
 
             store.update({
                 type: 'in-session',

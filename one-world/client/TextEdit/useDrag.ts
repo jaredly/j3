@@ -19,7 +19,6 @@ export const useDrag = (
             const range = new Range();
             const text = state?.text ?? splitGraphemes(nodeText);
             const sel = getNewSelection(
-                text,
                 state,
                 ref.current!,
                 { x: evt.clientX, y: evt.clientY },

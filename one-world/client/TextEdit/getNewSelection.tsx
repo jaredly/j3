@@ -1,5 +1,10 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { EditState } from './Id';
+
+export type EditState = {
+    text?: string[];
+    sel: number;
+    start?: number;
+};
 
 // const selectionPosition = (node: HTMLElement, x: number) => {
 // }
@@ -55,7 +60,6 @@ export const realOffset = (
 };
 
 export function getNewSelection(
-    text: string[],
     state: EditState | null,
     node: HTMLSpanElement,
     pos: { x: number; y: number },
@@ -69,23 +73,3 @@ export function getNewSelection(
         start: shift ? state?.start ?? state?.sel : undefined,
     };
 }
-
-const offsetInNode = (
-    range: Range,
-    node: ChildNode,
-    text: string[],
-    x: number,
-) => {
-    let offset = 0;
-    for (let i = 0; i < text.length; i++) {
-        range.setStart(node, offset);
-        range.setEnd(node, offset);
-        offset += text[i].length;
-        const rb = range.getBoundingClientRect();
-        // console.log(rb.left)
-        if (Math.abs(rb.left - x) < 5 || rb.left > x) {
-            return i;
-        }
-    }
-    return text.length;
-};
