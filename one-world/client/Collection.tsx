@@ -1,16 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useParams } from 'react-router-dom';
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Node, Path, Selection, serializePath } from '../shared/nodes';
-import { DocSession, NodeSelection, PersistedState } from '../shared/state';
-import { Hidden } from './HiddenInput';
-import { Store, useStore } from './StoreContext';
-import { EditState } from './TextEdit/Id';
-import { ManagedId, selectionAction } from './TextEdit/ManagedId';
-import { handleAction } from './TextEdit/actions';
-import { specials, textKey } from './keyboard';
-import { cursorStyle } from './TextEdit/renderTextAndCursor';
+import React from 'react';
+import { Node, Path, serializePath } from '../shared/nodes';
+import { NodeSelection } from '../shared/state';
 import { TopNode } from './Edit';
+import { Store, useStore } from './StoreContext';
+import { cursorStyle } from './TextEdit/renderTextAndCursor';
+import { getNodeForPath, isLeft, selectNode, setSelection } from './selectNode';
 
 export const Collection = ({
     node,
@@ -72,54 +66,6 @@ export const Collection = ({
             ) : null}
         </span>
     );
-};
-
-const isLeft = (evt: React.MouseEvent) => {
-    const box = evt.currentTarget.getBoundingClientRect();
-    return evt.clientX < (box.left + box.right) / 2;
-};
-
-const setSelection = (store: Store, doc: string, sel: NodeSelection) => {
-    store.update({
-        type: 'in-session',
-        action: { type: 'multi', actions: [] },
-        doc,
-        selections: [sel],
-    });
-};
-
-const selectNode = (node: Node, path: Path, start: boolean): NodeSelection => {
-    if (
-        node.type === 'id' ||
-        node.type === 'accessText' ||
-        node.type === 'stringText'
-    ) {
-        return {
-            type: 'within',
-            cursor: start ? 0 : splitGraphemes(node.text).length,
-            path,
-            pathKey: serializePath(path),
-        };
-    }
-    if (
-        node.type === 'list' ||
-        node.type === 'array' ||
-        node.type === 'record'
-    ) {
-        return {
-            type: 'without',
-            location: start ? 'start' : 'end',
-            path,
-            pathKey: serializePath(path),
-        };
-    }
-    throw new Error(`dont no how to select ${node.type}`);
-};
-
-const getNodeForPath = (path: Path, state: PersistedState) => {
-    return state.toplevels[path.root.toplevel].nodes[
-        path.children[path.children.length - 1]
-    ];
 };
 
 const clickBracket = (
