@@ -21,9 +21,14 @@ import { Toplevel } from '../../shared/toplevels';
 import { KeyAction } from '../keyboard';
 import { getNodeForPath, selectNode } from '../selectNode';
 
-const isCollection = (node: Node): node is CollectionT =>
+export const isText = (node: Node): node is TextT =>
+    node.type === 'id' ||
+    node.type === 'stringText' ||
+    node.type === 'accessText';
+export const isCollection = (node: Node): node is CollectionT =>
     node.type === 'list' || node.type === 'record' || node.type === 'array';
 type CollectionT = Extract<Node, { type: 'list' | 'array' | 'record' }>;
+type TextT = Extract<Node, { type: 'id' | 'stringText' | 'accessText' }>;
 
 const replaceChild = (node: Node, old: number, nw: number): Node | void => {
     switch (node.type) {
@@ -734,6 +739,74 @@ export const handleAction = (
                         selectNode(getNodeForPath(path, state), path, 'start'),
                         path.root.doc,
                     );
+                case 'contract':
+                    if (selection.type !== 'without') {
+                        return; // what
+                    }
+                    if (selection.child) {
+                        if (selection.child.path.length) {
+                            const cpath = pathWithChildren(
+                                path,
+                                selection.child.path[0],
+                            );
+                            return justSel(
+                                {
+                                    type: 'without',
+                                    location: 'all',
+                                    path: cpath,
+                                    pathKey: serializePath(cpath),
+                                    child: {
+                                        path: selection.child.path.slice(1),
+                                        final: selection.child.final,
+                                    },
+                                },
+                                path.root.doc,
+                            );
+                        }
+                        return justSel(selection.child.final, path.root.doc);
+                    }
+                    return;
+
+                case 'expand':
+                    if (
+                        selection?.type !== 'without' ||
+                        selection.location !== 'all'
+                    ) {
+                        return justSel(
+                            {
+                                type: 'without',
+                                location: 'all',
+                                path,
+                                pathKey: serializePath(path),
+                                child: { path: [], final: selection },
+                            },
+                            path.root.doc,
+                        );
+                    }
+                    if (path.children.length > 1) {
+                        const parent = parentPath(path);
+                        return justSel(
+                            {
+                                type: 'without',
+                                location: 'all',
+                                path: parent,
+                                pathKey: serializePath(parent),
+                                child: selection.child
+                                    ? {
+                                          ...selection.child,
+                                          path: [
+                                              path.children[
+                                                  path.children.length - 1
+                                              ],
+                                              ...selection.child.path,
+                                          ],
+                                      }
+                                    : { path: [], final: selection },
+                            },
+                            path.root.doc,
+                        );
+                    }
+                    return;
                 default:
                     return;
             }

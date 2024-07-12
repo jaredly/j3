@@ -25,7 +25,7 @@ export const Collection = ({
             style={
                 selection?.type === 'without' && selection.location === 'all'
                     ? {
-                          backgroundColor: colors.selection,
+                          backgroundColor: colors.nodeSelection,
                       }
                     : undefined
             }

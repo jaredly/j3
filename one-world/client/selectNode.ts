@@ -3,6 +3,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Node, Path, serializePath } from '../shared/nodes';
 import { NodeSelection, PersistedState } from '../shared/state';
 import { Store } from './StoreContext';
+import { isCollection, isText } from './TextEdit/actions';
 
 export const isLeft = (evt: React.MouseEvent) => {
     const box = evt.currentTarget.getBoundingClientRect();
@@ -23,24 +24,24 @@ export const selectNode = (
     path: Path,
     side: 'start' | 'end' | 'all',
 ): NodeSelection => {
-    if (
-        node.type === 'id' ||
-        node.type === 'accessText' ||
-        node.type === 'stringText'
-    ) {
+    if (isText(node)) {
+        if (side === 'all') {
+            return {
+                type: 'without',
+                location: 'all',
+                path,
+                pathKey: serializePath(path),
+            };
+        }
         return {
             type: 'within',
             cursor: side === 'start' ? 0 : splitGraphemes(node.text).length,
-            start: side === 'all' ? 0 : undefined,
+            // start: side === 'all' ? 0 : undefined,
             path,
             pathKey: serializePath(path),
         };
     }
-    if (
-        node.type === 'list' ||
-        node.type === 'array' ||
-        node.type === 'record'
-    ) {
+    if (isCollection(node)) {
         return {
             type: 'without',
             location: side,

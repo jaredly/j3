@@ -9,6 +9,7 @@ import { useLatest } from '../../../web/custom/useLatest';
 import { Action } from '../../shared/action';
 import { getNodeForPath, selectNode, setSelection } from '../selectNode';
 import { fasthash, getRainbowHashColor } from '../../../web/custom/rainbow';
+import { colors } from './colors';
 
 const blinkTime = 500;
 
@@ -57,6 +58,11 @@ export const ManagedId = ({
             style={{
                 // padding: '0 4px',
                 // backgroundColor: '#222',
+                backgroundColor:
+                    selection?.type === 'without' &&
+                    selection.location === 'all'
+                        ? colors.nodeSelection
+                        : undefined,
                 boxSizing: 'border-box',
                 whiteSpace: 'nowrap',
                 cursor: 'text',

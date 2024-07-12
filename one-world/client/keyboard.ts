@@ -41,7 +41,9 @@ export type KeyAction =
               | 'inside-start'
               | 'inside-end'
               | 'to-start'
-              | 'to-end';
+              | 'to-end'
+              | 'expand'
+              | 'contract';
       }
     | { type: 'after' | 'before'; node: RecNodeT<boolean> };
 
@@ -201,8 +203,18 @@ export const specials: Record<
     Shift() {},
     Control() {},
 
-    ArrowUp: () => ({ type: 'nav', dir: 'up' }),
-    ArrowDown: () => ({ type: 'nav', dir: 'down' }),
+    ArrowUp: (_, { shift }) => {
+        if (shift) {
+            return { type: 'nav', dir: 'expand' };
+        }
+        return { type: 'nav', dir: 'up' };
+    },
+    ArrowDown: (_, { shift }) => {
+        if (shift) {
+            return { type: 'nav', dir: 'contract' };
+        }
+        return { type: 'nav', dir: 'down' };
+    },
     ArrowLeft(selection, { shift, ctrl }, rawText) {
         if (ctrl) return { type: 'swap', direction: 'left', into: shift };
         if (selection.type !== 'within') {

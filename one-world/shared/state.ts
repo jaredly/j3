@@ -31,6 +31,10 @@ export type NodeSelection =
           type: 'without';
           path: Path;
           pathKey: string;
+          child?: {
+              path: number[];
+              final: NodeSelection;
+          };
           location: 'start' | 'end' | 'inside' | 'all';
       }
     | {
