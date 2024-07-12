@@ -43,7 +43,9 @@ export type KeyAction =
               | 'to-start'
               | 'to-end'
               | 'expand'
-              | 'contract';
+              | 'contract'
+              | 'tab'
+              | 'tab-left';
       }
     | { type: 'after' | 'before'; node: RecNodeT<boolean> };
 
@@ -75,11 +77,11 @@ export const specials: Record<
 > = {
     Tab(selection, { shift }) {
         if (selection.type === 'within') {
-            return { type: 'nav', dir: shift ? 'left' : 'right' };
+            return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
         }
         if (selection.type === 'without') {
             if (selection.location === 'inside') {
-                return { type: 'nav', dir: shift ? 'left' : 'right' };
+                return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
             }
             if (selection.location === (shift ? 'end' : 'start')) {
                 return {
@@ -87,7 +89,7 @@ export const specials: Record<
                     dir: shift ? 'inside-end' : 'inside-start',
                 };
             }
-            return { type: 'nav', dir: shift ? 'left' : 'right' };
+            return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
         }
     },
 

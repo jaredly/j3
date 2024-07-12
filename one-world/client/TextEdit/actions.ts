@@ -1,17 +1,17 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { Action, ToplevelAction, ToplevelUpdate } from '../../shared/action';
+import { Action, ToplevelUpdate } from '../../shared/action';
 import {
     inFromEnd,
     inFromStart,
+    nextAtom,
     Node,
     Nodes,
     parentPath,
     Path,
     pathWithChildren,
-    RecNode,
+    prevAtom,
     RecNodeT,
     serializePath,
-    toMap,
     toMapInner,
     toTheLeft,
     toTheRight,
@@ -19,7 +19,7 @@ import {
 import { NodeSelection, PersistedState } from '../../shared/state';
 import { Toplevel } from '../../shared/toplevels';
 import { KeyAction } from '../keyboard';
-import { getNodeForPath, selectNode } from '../selectNode';
+import { getNodeForPath, selectAll, selectNode } from '../selectNode';
 
 export const isText = (node: Node): node is TextT =>
     node.type === 'id' ||
@@ -739,6 +739,20 @@ export const handleAction = (
                         selectNode(getNodeForPath(path, state), path, 'start'),
                         path.root.doc,
                     );
+
+                case 'tab-left': {
+                    const at = prevAtom(path, top.nodes);
+                    return at
+                        ? justSel(selectAll(at), path.root.doc)
+                        : undefined;
+                }
+                case 'tab': {
+                    const at = nextAtom(path, top.nodes);
+                    return at
+                        ? justSel(selectAll(at), path.root.doc)
+                        : undefined;
+                }
+
                 case 'contract':
                     if (selection.type !== 'without') {
                         return; // what
@@ -765,7 +779,11 @@ export const handleAction = (
                         }
                         return justSel(selection.child.final, path.root.doc);
                     }
-                    return;
+
+                    return justSel(
+                        selectNode(getNodeForPath(path, state), path, 'start'),
+                        path.root.doc,
+                    );
 
                 case 'expand':
                     if (
@@ -862,7 +880,11 @@ const justSel = (
           }
         : inner;
 
-const goLeft = (path: Path, state: PersistedState): void | NodeSelection => {
+const goLeft = (
+    path: Path,
+    state: PersistedState,
+    all?: boolean,
+): void | NodeSelection => {
     // If we're at the top of the toplevel...
     if (path.children.length < 2) {
         if (path.root.ids.length < 2) return;
@@ -911,7 +933,11 @@ const goLeft = (path: Path, state: PersistedState): void | NodeSelection => {
     );
 };
 
-const goRight = (path: Path, state: PersistedState): void | NodeSelection => {
+const goRight = (
+    path: Path,
+    state: PersistedState,
+    all?: boolean,
+): void | NodeSelection => {
     // If we're at the top of the toplevel...
     if (path.children.length < 2) {
         if (path.root.ids.length < 2) return;

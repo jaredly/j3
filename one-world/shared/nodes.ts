@@ -1,6 +1,7 @@
 //
 
 import { selectNode } from '../client/selectNode';
+import { isCollection } from '../client/TextEdit/actions';
 import { NodeSelection } from './state';
 
 export type Loc = Array<[string, number]>;
@@ -159,6 +160,71 @@ export const inFromStart = (
             return selectNode(nodes[loc], pathWithChildren(path, loc), 'start');
         }
     }
+};
+
+export const firstAtom = (path: Path, nodes: Nodes): Path => {
+    const loc = path.children[path.children.length - 1];
+    const node = nodes[loc];
+    if (!isCollection(node)) {
+        return path;
+    }
+    return firstAtom(
+        { ...path, children: path.children.concat([node.items[0]]) },
+        nodes,
+    );
+};
+
+export const lastAtom = (path: Path, nodes: Nodes): Path => {
+    const loc = path.children[path.children.length - 1];
+    const node = nodes[loc];
+    if (!isCollection(node)) {
+        return path;
+    }
+    return lastAtom(
+        {
+            ...path,
+            children: path.children.concat([node.items[node.items.length - 1]]),
+        },
+        nodes,
+    );
+};
+
+export const nextAtom = (path: Path, nodes: Nodes): Path | void => {
+    if (path.children.length < 2) return; // ok um
+    const loc = path.children[path.children.length - 1];
+    const ploc = path.children[path.children.length - 2];
+    const parent = nodes[ploc];
+    if (!isCollection(parent)) {
+        return;
+    }
+
+    const idx = parent.items.indexOf(loc);
+    if (idx === parent.items.length - 1) {
+        return nextAtom(parentPath(path), nodes);
+    }
+    return firstAtom(
+        pathWithChildren(parentPath(path), parent.items[idx + 1]),
+        nodes,
+    );
+};
+
+export const prevAtom = (path: Path, nodes: Nodes): Path | void => {
+    if (path.children.length < 2) return; // ok um
+    const loc = path.children[path.children.length - 1];
+    const ploc = path.children[path.children.length - 2];
+    const parent = nodes[ploc];
+    if (!isCollection(parent)) {
+        return;
+    }
+
+    const idx = parent.items.indexOf(loc);
+    if (idx === 0) {
+        return prevAtom(parentPath(path), nodes);
+    }
+    return lastAtom(
+        pathWithChildren(parentPath(path), parent.items[idx - 1]),
+        nodes,
+    );
 };
 
 export const toTheRight = (

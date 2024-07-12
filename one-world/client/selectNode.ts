@@ -19,6 +19,13 @@ export const setSelection = (store: Store, doc: string, sel: NodeSelection) => {
     });
 };
 
+export const selectAll = (path: Path): NodeSelection => ({
+    type: 'without',
+    location: 'all',
+    path,
+    pathKey: serializePath(path),
+});
+
 export const selectNode = (
     node: Node,
     path: Path,
