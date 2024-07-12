@@ -605,7 +605,7 @@ export const handleAction = (
             const ploc = path.children[path.children.length - 2];
             const node = top.nodes[loc];
             const parent = top.nodes[ploc];
-            if (!isCollection(parent) || !isCollection(node)) return;
+            if (!isCollection(parent)) return;
             const idx = parent.items.indexOf(loc);
             if (
                 action.direction === 'left'
@@ -627,12 +627,27 @@ export const handleAction = (
                     : undefined;
             }
             const items = parent.items.slice();
+            if (!isCollection(node)) {
+                if (action.direction === 'left') {
+                    const prev = top.nodes[items[idx - 1]];
+                    if (prev.type === 'id' && prev.text === '') {
+                        items.splice(idx - 1, 1);
+                        return topUpdate(tid, {
+                            [ploc]: { ...parent, items },
+                        });
+                    }
+                }
+                return;
+            }
             const citems = node.items.slice();
 
             if (action.direction === 'left') {
                 const prev = items[idx - 1];
                 items.splice(idx - 1, 1);
-                citems.unshift(prev);
+                const node = top.nodes[prev];
+                if (node.type !== 'id' || node.text !== '') {
+                    citems.unshift(prev);
+                }
             } else {
                 const next = items[idx + 1];
                 items.splice(idx + 1, 1);
