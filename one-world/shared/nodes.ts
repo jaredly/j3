@@ -107,29 +107,20 @@ export const inFromEnd = (
     path: Path,
     nodes: Nodes,
 ): void | NodeSelection => {
-    switch (node.type) {
-        case 'id':
-        case 'stringText':
-        case 'accessText':
-        case 'ref':
-        case 'rich-text':
-        case 'raw-code':
-            return;
-        case 'list':
-        case 'array':
-        case 'record': {
-            if (node.items.length === 0) {
-                return {
-                    type: 'without',
-                    location: 'inside',
-                    path,
-                    pathKey: serializePath(path),
-                };
-            }
-            const loc = node.items[node.items.length - 1];
-            return selectNode(nodes[loc], pathWithChildren(path, loc), 'end');
+    const children = childLocs(node);
+    if (!children.length) {
+        if (isCollection(node)) {
+            return {
+                type: 'without',
+                location: 'inside',
+                path,
+                pathKey: serializePath(path),
+            };
         }
+        return;
     }
+    const loc = children[children.length - 1];
+    return selectNode(nodes[loc], pathWithChildren(path, loc), 'end');
 };
 
 export const inFromStart = (
@@ -137,39 +128,31 @@ export const inFromStart = (
     path: Path,
     nodes: Nodes,
 ): void | NodeSelection => {
-    switch (node.type) {
-        case 'id':
-        case 'stringText':
-        case 'accessText':
-        case 'ref':
-        case 'rich-text':
-        case 'raw-code':
-            return;
-        case 'list':
-        case 'array':
-        case 'record': {
-            if (node.items.length === 0) {
-                return {
-                    type: 'without',
-                    location: 'inside',
-                    path,
-                    pathKey: serializePath(path),
-                };
-            }
-            const loc = node.items[0];
-            return selectNode(nodes[loc], pathWithChildren(path, loc), 'start');
+    const children = childLocs(node);
+    if (children.length === 0) {
+        if (isCollection(node)) {
+            return {
+                type: 'without',
+                location: 'inside',
+                path,
+                pathKey: serializePath(path),
+            };
         }
+        return;
     }
+    const loc = children[0];
+    return selectNode(nodes[loc], pathWithChildren(path, loc), 'start');
 };
 
 export const firstAtom = (path: Path, nodes: Nodes): Path => {
     const loc = path.children[path.children.length - 1];
     const node = nodes[loc];
-    if (!isCollection(node)) {
+    const children = childLocs(node);
+    if (!children.length) {
         return path;
     }
     return firstAtom(
-        { ...path, children: path.children.concat([node.items[0]]) },
+        { ...path, children: path.children.concat([children[0]]) },
         nodes,
     );
 };
@@ -177,13 +160,14 @@ export const firstAtom = (path: Path, nodes: Nodes): Path => {
 export const lastAtom = (path: Path, nodes: Nodes): Path => {
     const loc = path.children[path.children.length - 1];
     const node = nodes[loc];
-    if (!isCollection(node)) {
+    const children = childLocs(node);
+    if (!children.length) {
         return path;
     }
     return lastAtom(
         {
             ...path,
-            children: path.children.concat([node.items[node.items.length - 1]]),
+            children: path.children.concat([children[children.length - 1]]),
         },
         nodes,
     );
@@ -194,16 +178,17 @@ export const nextAtom = (path: Path, nodes: Nodes): Path | void => {
     const loc = path.children[path.children.length - 1];
     const ploc = path.children[path.children.length - 2];
     const parent = nodes[ploc];
-    if (!isCollection(parent)) {
+    const children = childLocs(parent);
+    if (!children.length) {
         return;
     }
 
-    const idx = parent.items.indexOf(loc);
-    if (idx === parent.items.length - 1) {
+    const idx = children.indexOf(loc);
+    if (idx === children.length - 1) {
         return nextAtom(parentPath(path), nodes);
     }
     return firstAtom(
-        pathWithChildren(parentPath(path), parent.items[idx + 1]),
+        pathWithChildren(parentPath(path), children[idx + 1]),
         nodes,
     );
 };
@@ -213,16 +198,17 @@ export const prevAtom = (path: Path, nodes: Nodes): Path | void => {
     const loc = path.children[path.children.length - 1];
     const ploc = path.children[path.children.length - 2];
     const parent = nodes[ploc];
-    if (!isCollection(parent)) {
+    const children = childLocs(parent);
+    if (!children.length) {
         return;
     }
 
-    const idx = parent.items.indexOf(loc);
+    const idx = children.indexOf(loc);
     if (idx === 0) {
         return prevAtom(parentPath(path), nodes);
     }
     return lastAtom(
-        pathWithChildren(parentPath(path), parent.items[idx - 1]),
+        pathWithChildren(parentPath(path), children[idx - 1]),
         nodes,
     );
 };
@@ -233,25 +219,13 @@ export const toTheRight = (
     path: Path,
     nodes: Nodes,
 ): void | NodeSelection => {
-    switch (parent.type) {
-        case 'id':
-        case 'stringText':
-        case 'accessText':
-        case 'ref':
-        case 'rich-text':
-        case 'raw-code':
-            return;
-        case 'list':
-        case 'array':
-        case 'record': {
-            const idx = parent.items.indexOf(cloc);
-            if (idx === parent.items.length - 1) {
-                return selectNode(parent, path, 'end');
-            }
-            const loc = parent.items[idx + 1];
-            return selectNode(nodes[loc], pathWithChildren(path, loc), 'start');
-        }
+    const children = childLocs(parent);
+    const idx = children.indexOf(cloc);
+    if (idx === children.length - 1) {
+        return selectNode(parent, path, 'end');
     }
+    const loc = children[idx + 1];
+    return selectNode(nodes[loc], pathWithChildren(path, loc), 'start');
 };
 
 export const toTheLeft = (
@@ -260,24 +234,41 @@ export const toTheLeft = (
     path: Path,
     nodes: Nodes,
 ): void | NodeSelection => {
-    switch (parent.type) {
+    const children = childLocs(parent);
+    const idx = children.indexOf(cloc);
+    if (idx === 0) {
+        return selectNode(parent, path, 'start');
+    }
+    const loc = children[idx - 1];
+    return selectNode(nodes[loc], pathWithChildren(path, loc), 'end');
+};
+
+export const childLocs = (node: Node) => {
+    switch (node.type) {
         case 'id':
         case 'stringText':
         case 'accessText':
         case 'ref':
+            return [];
         case 'rich-text':
         case 'raw-code':
-            return;
+            return node.embeds;
         case 'list':
         case 'array':
-        case 'record': {
-            const idx = parent.items.indexOf(cloc);
-            if (idx === 0) {
-                return selectNode(parent, path, 'start');
-            }
-            const loc = parent.items[idx - 1];
-            return selectNode(nodes[loc], pathWithChildren(path, loc), 'end');
-        }
+        case 'record':
+            return node.items;
+        case 'comment':
+        case 'spread':
+            return [node.contents];
+        case 'annot':
+            return [node.contents, node.annot];
+        case 'record-access':
+            return [node.target, ...node.items];
+        case 'string':
+            return [
+                node.first,
+                ...node.templates.flatMap((t) => [t.expr, t.suffix]),
+            ];
     }
 };
 

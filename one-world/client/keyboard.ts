@@ -293,6 +293,10 @@ export const specials: Record<
     ')': () => ({ type: 'end', which: 'list' }),
     ']': () => ({ type: 'end', which: 'array' }),
     '}': () => ({ type: 'end', which: 'record' }),
+
+    '"'(selection, mods, text) {
+        return maybeSurround(selection, 'string');
+    },
     '('(selection, mods, rawText) {
         return maybeSurround(selection, 'list');
     },
@@ -306,7 +310,7 @@ export const specials: Record<
 
 function maybeSurround(
     selection: NodeSelection,
-    kind: 'list' | 'array' | 'record',
+    kind: 'list' | 'array' | 'record' | 'string',
 ): KeyAction {
     const surround =
         selection.type === 'without'
@@ -318,10 +322,18 @@ function maybeSurround(
         ? { type: 'surround', kind: kind }
         : {
               type: 'after',
-              node: {
-                  type: kind,
-                  items: [{ type: 'id', text: '', loc: true }],
-                  loc: false,
-              },
+              node:
+                  kind === 'string'
+                      ? {
+                            type: kind,
+                            first: { type: 'stringText', text: '', loc: true },
+                            templates: [],
+                            loc: false,
+                        }
+                      : {
+                            type: kind,
+                            items: [{ type: 'id', text: '', loc: true }],
+                            loc: false,
+                        },
           };
 }

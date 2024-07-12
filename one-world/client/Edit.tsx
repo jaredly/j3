@@ -11,6 +11,7 @@ import { handleAction } from './TextEdit/actions';
 import { specials, textKey } from './keyboard';
 import { cursorStyle } from './TextEdit/renderTextAndCursor';
 import { Collection } from './Collection';
+import { String } from './String';
 
 const emptyNodes: number[] = [];
 
@@ -337,6 +338,11 @@ export const TopNode = ({
                 path={path}
                 selection={selection}
             />
+        );
+    }
+    if (node.type === 'string') {
+        return (
+            <String node={node} tid={id} path={path} selection={selection} />
         );
     }
     return <span>some other {node.type}</span>;

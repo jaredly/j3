@@ -31,15 +31,15 @@ export const selectNode = (
     path: Path,
     side: 'start' | 'end' | 'all',
 ): NodeSelection => {
+    if (side === 'all') {
+        return {
+            type: 'without',
+            location: 'all',
+            path,
+            pathKey: serializePath(path),
+        };
+    }
     if (isText(node)) {
-        if (side === 'all') {
-            return {
-                type: 'without',
-                location: 'all',
-                path,
-                pathKey: serializePath(path),
-            };
-        }
         return {
             type: 'within',
             cursor: side === 'start' ? 0 : splitGraphemes(node.text).length,
@@ -48,15 +48,12 @@ export const selectNode = (
             pathKey: serializePath(path),
         };
     }
-    if (isCollection(node)) {
-        return {
-            type: 'without',
-            location: side,
-            path,
-            pathKey: serializePath(path),
-        };
-    }
-    throw new Error(`dont no how to select ${node.type}`);
+    return {
+        type: 'without',
+        location: side,
+        path,
+        pathKey: serializePath(path),
+    };
 };
 
 export const getNodeForPath = (path: Path, state: PersistedState) => {

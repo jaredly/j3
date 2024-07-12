@@ -1,0 +1,151 @@
+import React from 'react';
+import { Node, Path, serializePath } from '../shared/nodes';
+import { NodeSelection } from '../shared/state';
+import { TopNode } from './Edit';
+import { Store, useStore } from './StoreContext';
+import { cursorStyle } from './TextEdit/renderTextAndCursor';
+import { getNodeForPath, isLeft, selectNode, setSelection } from './selectNode';
+import { colors } from './TextEdit/colors';
+
+export const String = ({
+    node,
+    tid,
+    path,
+    selection,
+}: {
+    node: Extract<Node, { type: 'string' }>;
+    tid: string;
+    path: Path;
+    selection: void | NodeSelection;
+}) => {
+    const store = useStore();
+    return (
+        <span
+            style={
+                selection?.type === 'without' && selection.location === 'all'
+                    ? {
+                          backgroundColor: colors.nodeSelection,
+                      }
+                    : undefined
+            }
+        >
+            {selection?.type === 'without' && selection.location === 'start' ? (
+                <span style={cursorStyle(false)}>{'|'}</span>
+            ) : null}
+            <span
+                onMouseDown={(evt) => {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    if (evt.shiftKey) {
+                        return setSelection(
+                            store,
+                            path.root.doc,
+                            selectNode(node, path, 'all'),
+                        );
+                    }
+                    // clickBracket(evt, store, node.items, path, true);
+                }}
+            >
+                "
+            </span>
+            <TopNode id={tid} loc={node.first} parentPath={path} />
+            {/* {node.items.map((loc, i) => (
+                <React.Fragment key={loc}>
+                    {i === 0 ? null : (
+                        <span
+                            style={{ width: 8, cursor: 'text' }}
+                            onMouseDown={(evt) => {
+                                evt.preventDefault();
+                                evt.stopPropagation();
+                                clickSpace(evt, path, node, i, store, loc);
+                            }}
+                        />
+                    )}
+                    <TopNode id={tid} loc={loc} parentPath={path} />
+                </React.Fragment>
+            ))} */}
+            <span
+                onMouseDown={(evt) => {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    if (evt.shiftKey) {
+                        return setSelection(
+                            store,
+                            path.root.doc,
+                            selectNode(node, path, 'all'),
+                        );
+                    }
+                    // clickBracket(evt, store, node.items, path, false);
+                }}
+            >
+                "
+            </span>
+            {selection?.type === 'without' && selection.location === 'end' ? (
+                <span style={cursorStyle(false)}>{'|'}</span>
+            ) : null}
+        </span>
+    );
+};
+
+const clickBracket = (
+    evt: React.MouseEvent<HTMLSpanElement>,
+    store: Store,
+    items: number[],
+    path: Path,
+    left: boolean,
+) => {
+    const l = isLeft(evt);
+
+    if (l !== left && items.length) {
+        const cid = items[left ? 0 : items.length - 1];
+        const cpath: Path = { ...path, children: path.children.concat([cid]) };
+        setSelection(
+            store,
+            path.root.doc,
+            selectNode(
+                getNodeForPath(cpath, store.getState()),
+                cpath,
+                left ? 'start' : 'end',
+            ),
+        );
+        return;
+    }
+
+    setSelection(store, path.root.doc, {
+        type: 'without',
+        location: l === left ? (left ? 'start' : 'end') : 'inside',
+        pathKey: serializePath(path),
+        path,
+    });
+};
+
+function clickSpace(
+    evt: React.MouseEvent<HTMLSpanElement, MouseEvent>,
+    path: Path,
+    node: { type: 'list' | 'array' | 'record'; items: number[]; loc: number },
+    i: number,
+    store: Store,
+    loc: number,
+) {
+    if (isLeft(evt)) {
+        const lpath = {
+            ...path,
+            children: path.children.concat([node.items[i - 1]]),
+        };
+        setSelection(
+            store,
+            path.root.doc,
+            selectNode(getNodeForPath(lpath, store.getState()), lpath, 'end'),
+        );
+    } else {
+        const rpath = {
+            ...path,
+            children: path.children.concat([loc]),
+        };
+        setSelection(
+            store,
+            path.root.doc,
+            selectNode(getNodeForPath(rpath, store.getState()), rpath, 'start'),
+        );
+    }
+}
