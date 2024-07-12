@@ -107,7 +107,7 @@ const replaceWith = (
 
 const topUpdate = (
     id: string,
-    nodes: ToplevelUpdate['update'],
+    nodes: ToplevelUpdate['update']['nodes'],
     nidx?: number,
 ): Action => ({
     type: 'toplevel',
@@ -457,7 +457,7 @@ export const handleAction = (
             if (action.direction === 'left') {
                 if (idx === 0) {
                     return action.into
-                        ? jumpOut(path, top, items, selection, 'first')
+                        ? jumpOut(path, top, parent, selection, 'first')
                         : undefined;
                 }
                 const sloc = items[idx - 1];
@@ -483,7 +483,7 @@ export const handleAction = (
             } else {
                 if (idx === items.length - 1) {
                     return action.into
-                        ? jumpOut(path, top, items, selection, 'last')
+                        ? jumpOut(path, top, parent, selection, 'last')
                         : undefined;
                 }
 
@@ -771,7 +771,39 @@ export const handleAction = (
             } else if (action.kind === 'comment' || action.kind === 'spread') {
                 map[idx] = { type: action.kind, contents: loc, loc: idx };
             } else {
+                const node = top.nodes[loc];
+                if (isText(node) && node.text === '') {
+                    const idx = top.nextLoc;
+                    const npath = pathWithChildren(path, idx);
+                    return justSel(
+                        {
+                            type: 'within',
+                            cursor: 0,
+                            path: npath,
+                            pathKey: serializePath(npath),
+                        },
+                        path.root.doc,
+                        topUpdate(
+                            top.id,
+                            {
+                                [loc]: {
+                                    type: 'string',
+                                    first: idx,
+                                    templates: [],
+                                    loc,
+                                },
+                                [idx]: {
+                                    type: 'stringText',
+                                    text: '',
+                                    loc: idx,
+                                },
+                            },
+                            top.nextLoc + 1,
+                        ),
+                    );
+                }
                 const fidx = nidx++;
+                map[fidx] = { type: 'stringText', text: '', loc: fidx };
                 const sidx = nidx++;
                 map[idx] = {
                     type: action.kind,
@@ -779,7 +811,6 @@ export const handleAction = (
                     templates: [{ expr: loc, suffix: sidx }],
                     loc: idx,
                 };
-                map[fidx] = { type: 'stringText', text: '', loc: fidx };
                 map[sidx] = { type: 'stringText', text: '', loc: sidx };
             }
             const update = replaceWith(top, path, idx);
@@ -928,7 +959,7 @@ export const handleAction = (
 const jumpOut = (
     path: Path,
     top: Toplevel,
-    items: number[],
+    parent: CollectionT,
     selection: NodeSelection,
     which: 'first' | 'last',
 ) => {
@@ -941,6 +972,7 @@ const jumpOut = (
     if (!isCollection(gparent)) return;
     const idx = gparent.items.indexOf(ploc);
     if (idx === -1) return;
+    const items = parent.items.slice();
     if (which === 'first') {
         items.shift();
     } else {
@@ -953,7 +985,7 @@ const jumpOut = (
         withPath(selection, dpath),
         path.root.doc,
         topUpdate(top.id, {
-            [ploc]: { ...top.nodes[ploc], items },
+            [ploc]: { ...parent, items },
             [gloc]: { ...gparent, items: gitems },
         }),
     );

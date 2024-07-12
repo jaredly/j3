@@ -205,7 +205,7 @@ export const keys: {
                     case 'inside':
                         return { type: 'delete', direction: 'blank' };
                     case 'end':
-                        if (mods.shift) {
+                        if (mods.shift || node.type === 'string') {
                             return { type: 'delete', direction: 'blank' };
                         }
                         return { type: 'shrink', from: 'end' };

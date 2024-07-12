@@ -1,3 +1,4 @@
+import { Node } from './nodes';
 import { Doc, DocSession, PersistedState, Reference, Stage } from './state';
 import { Toplevel } from './toplevels';
 
@@ -25,7 +26,7 @@ export type NamespaceAction = {
 export type ToplevelUpdate = {
     type: 'update';
     update: Partial<Omit<Toplevel, 'nodes'>> & {
-        nodes?: Partial<Toplevel['nodes']>;
+        nodes?: Record<string, Node | undefined>;
     };
 };
 
