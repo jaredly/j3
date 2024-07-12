@@ -102,8 +102,12 @@ export const ManagedId = ({
                     path,
                     sel,
                     start,
-                    selection,
+                    evt.metaKey
+                        ? store.getDocSession(path.root.doc, store.session)
+                              .selections
+                        : [],
                     selection?.type === 'within' ? selection.text : undefined,
+                    [],
                 );
                 store.update(action);
                 store.startDrag(pathKey, path);
@@ -186,22 +190,25 @@ export function selectionAction(
     path: Path,
     sel: number,
     start: number | undefined,
-    selection: void | NodeSelection,
-    text?: string[],
+    before: NodeSelection[],
+    text: string[] | undefined,
+    after: NodeSelection[],
 ): Action {
     return {
         type: 'in-session',
         action: { type: 'multi', actions: [] },
         doc: path.root.doc,
         selections: [
+            ...before,
             {
                 type: 'within',
                 cursor: sel,
                 start,
                 path,
                 pathKey: serializePath(path),
-                text, //: selection?.type === 'within' ? selection.text : undefined,
+                text,
             },
+            ...after,
         ],
     };
 }

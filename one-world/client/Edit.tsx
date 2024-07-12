@@ -26,8 +26,6 @@ export const Edit = () => {
         [id],
     );
 
-    const docSession = store.getDocSession(id, store.session);
-
     const iref = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -47,8 +45,12 @@ export const Edit = () => {
                 iref={iref}
                 onKeyDown={(evt) => {
                     if (evt.metaKey) return;
+
+                    const docSession = store.getDocSession(id, store.session);
+
                     if (!docSession.selections.length) return;
-                    docSession.selections.forEach((selection) => {
+                    const sels = docSession.selections;
+                    docSession.selections.forEach((selection, i) => {
                         if (selection.type === 'multi') return; // TODO will do this later
                         const last =
                             selection.path.children[
@@ -89,11 +91,12 @@ export const Edit = () => {
                                         selection.path,
                                         action.cursor,
                                         action.cursorStart,
-                                        selection,
+                                        sels.slice(0, i),
                                         !action.text ||
                                             action.text.join('') === rawText
                                             ? undefined
                                             : action.text,
+                                        sels.slice(i + 1),
                                     ),
                                 );
                                 evt.preventDefault();
@@ -143,8 +146,9 @@ export const Edit = () => {
                                     selection.path,
                                     results.cursor,
                                     undefined,
-                                    selection,
+                                    sels.slice(0, i),
                                     results.text,
+                                    sels.slice(i + 1),
                                 ),
                             );
                             evt.preventDefault();
@@ -162,7 +166,7 @@ export const Edit = () => {
                     });
                 }}
             />
-            Editing {doc.title}
+            {/* Editing {doc.title} */}
             <div
                 style={{
                     padding: 40,

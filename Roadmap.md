@@ -33,6 +33,16 @@ ok ... it is a little weird to have multiple ways to splurge.
 - [ ] tabbb shouold probably do a 'select all' on things.
 
 
+Ok so far I've been pretty much ignoring multi-cursor.
+but, that needs to stop.
+hoWEVER,
+I might want ids anyway?
+eh, indices will prolly work. right?
+-> maybe. anyway, I think I'll want to /group/ all of the updates,
+   and then send them at once. yes.
+
+
+
 
 # So high level
 
