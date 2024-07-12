@@ -176,11 +176,11 @@ export const newStore = (
                     const key = `${action.doc} - ${session}`;
                     const prev = docSessionCache[key].selections;
                     docSessionCache[key].selections = action.selections;
-                    const seen: Record<string, true> = {};
+                    const seen: Record<string, NodeSelection> = {};
                     action.selections.forEach((sel) => {
                         selPathKeys(sel).forEach((k) => {
                             const id = `${session}#${k}`;
-                            seen[id] = true;
+                            seen[id] = sel;
                             updated.selections[id] = true;
                         });
                     });
@@ -190,9 +190,9 @@ export const newStore = (
                             const id = `${session}#${k}`;
                             updated.selections[id] = true;
                             if (
-                                !seen[id] &&
                                 sel.type === 'within' &&
-                                sel.text
+                                sel.text &&
+                                (!seen[id] || seen[id].type !== 'within')
                             ) {
                                 maybeCommitTextChange(sel, state, extras);
                             }

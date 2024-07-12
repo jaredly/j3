@@ -1,5 +1,12 @@
+#
+
+Broadly:
+
+- [ ] add in /strings/
+- [ ] select multiple siblings
 
 
+#
 
 Thoughts...
 Do I want to:
@@ -26,11 +33,11 @@ seems a little nice.
   - [x] deleting an empty collection now works
   - [ ] anotherrr option, don't let swapping make a collection empty. produce a new blank for it.
     - [ ] and if you try to swap the blank out ... just refuse? idk maybe. although that's a little complex.
-- [ ] shift-del to remove a whole node, all the time
+- [x] shift-del to remove a whole node, all the time
 
 ok ... it is a little weird to have multiple ways to splurge.
 
-- [ ] tabbb shouold probably do a 'select all' on things.
+- [x] tabbb shouold probably do a 'select all' on things.
 
 
 Ok so far I've been pretty much ignoring multi-cursor.
@@ -57,11 +64,13 @@ eh, indices will prolly work. right?
 
 Node types, I should probably flesh these out before doing too much more nav work.
 - [x] id
+- [x] list/array/record
 - [ ] strings
-- [ ] record-access
+- [ ] comment / spread
+- [ ] record
+- [ ] annot
 - [ ] rich-text (let's do it!!!)
 - [ ] raw-codeeeee
-- [ ]
 
 
 BIG QQQQ Is there a purpose to having (id) be different from (stringText)?
