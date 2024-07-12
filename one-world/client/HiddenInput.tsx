@@ -14,7 +14,7 @@ const HiddenCtx = createContext<{
 
 export type EvtKey = 'key';
 
-export type Mods = { shift: boolean; meta: boolean };
+export type Mods = { shift: boolean; meta: boolean; ctrl: boolean };
 
 export const useKeyListener = (
     active: boolean,
@@ -70,7 +70,11 @@ export const HiddenInput = ({ children }: { children: React.ReactNode }) => {
                 }}
                 onKeyDown={(evt) => {
                     ctx.listeners.key.forEach((k) =>
-                        k(evt.key, { shift: evt.shiftKey, meta: evt.metaKey }),
+                        k(evt.key, {
+                            shift: evt.shiftKey,
+                            meta: evt.metaKey,
+                            ctrl: evt.ctrlKey,
+                        }),
                     );
                 }}
                 onBlur={(evt) => {
@@ -84,18 +88,27 @@ export const HiddenInput = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
+// from http://xahlee.info/comp/unicode_computing_symbols.html
 const specials: Record<string, string> = {
     Backspace: '⌫',
     Delete: '⌦',
     Meta: '⌘',
-    ArrowLeft: '⇦',
     Shift: '⬆',
-    ArrowUp: '⇧',
-    ArrowRight: '⇨',
-    ArrowDown: '⇩',
+    ArrowUp: '↑',
+    ArrowLeft: '←',
+    ArrowDown: '↓',
+    ArrowRight: '→',
+    // ArrowLeft: '⇦',
+    // Shift: '⇧',
+    // ArrowUp: '⇧',
+    // ArrowRight: '⇨',
+    // ArrowDown: '⇩',
     Enter: '⏎',
     Control: '^',
-    Alt: '⎇',
+    // Alt: '⎇',
+    Alt: '⌥',
+    ' ': '␣',
+    Tab: '⇥',
 };
 
 const showKey = (key: Key) => {

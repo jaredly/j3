@@ -8,7 +8,7 @@ import { useStore } from './StoreContext';
 import { EditState } from './TextEdit/Id';
 import { ManagedId, selectionAction } from './TextEdit/ManagedId';
 import { handleAction } from './TextEdit/actions';
-import { specials, textKey } from './keyboard';
+import { keys, runKey, textKey } from './keyboard';
 import { cursorStyle } from './TextEdit/renderTextAndCursor';
 import { Collection } from './Collection';
 import { String } from './String';
@@ -78,83 +78,102 @@ export const Edit = () => {
                             ctrl: evt.ctrlKey,
                         };
 
-                        const key = evt.key;
-                        if (specials[key]) {
-                            const action = specials[key](
+                        const res = runKey(evt.key, mods, node, selection);
+                        if (res === false) return;
+                        evt.preventDefault();
+                        evt.stopPropagation();
+                        if (res) {
+                            const state = store.getState();
+                            const saction = handleAction(
+                                res,
+                                selection.path,
+                                state,
                                 selection,
-                                mods,
-                                rawText,
                             );
-                            if (!action) {
-                            } else if (action.type === 'update') {
-                                store.update(
-                                    selectionAction(
-                                        selection.path,
-                                        action.cursor,
-                                        action.cursorStart,
-                                        sels.slice(0, i),
-                                        !action.text ||
-                                            action.text.join('') === rawText
-                                            ? undefined
-                                            : action.text,
-                                        sels.slice(i + 1),
-                                    ),
-                                );
-                                evt.preventDefault();
-                                evt.stopPropagation();
-                                return;
+                            if (saction) {
+                                store.update(saction);
                             } else {
-                                const state = store.getState();
-                                const saction = handleAction(
-                                    action,
-                                    selection.path,
-                                    state,
-                                    selection,
-                                );
-                                if (saction) {
-                                    store.update(saction);
-                                } else {
-                                    console.warn('ignoring action', action);
-                                }
-                                evt.preventDefault();
-                                evt.stopPropagation();
+                                console.warn('ignoring action', res);
                             }
-                            return;
                         }
-                        const extra = splitGraphemes(key);
-                        if (extra.length > 1) {
-                            console.warn(
-                                'Too many graphemes? What is this',
-                                key,
-                                extra,
-                            );
-                            return;
-                        }
+                        // if (keys[key]) {
+                        //     const what = keys[key]
+                        //     const action = keys[key](
+                        //         selection,
+                        //         mods,
+                        //         rawText,
+                        //     );
+                        //     if (!action) {
+                        //     } else if (action.type === 'update') {
+                        //         store.update(
+                        //             selectionAction(
+                        //                 selection.path,
+                        //                 action.cursor,
+                        //                 action.cursorStart,
+                        //                 sels.slice(0, i),
+                        //                 !action.text ||
+                        //                     action.text.join('') === rawText
+                        //                     ? undefined
+                        //                     : action.text,
+                        //                 sels.slice(i + 1),
+                        //             ),
+                        //         );
+                        //         evt.preventDefault();
+                        //         evt.stopPropagation();
+                        //         return;
+                        //     } else {
+                        //         const state = store.getState();
+                        //         const saction = handleAction(
+                        //             action,
+                        //             selection.path,
+                        //             state,
+                        //             selection,
+                        //         );
+                        //         if (saction) {
+                        //             store.update(saction);
+                        //         } else {
+                        //             console.warn('ignoring action', action);
+                        //         }
+                        //         evt.preventDefault();
+                        //         evt.stopPropagation();
+                        //     }
+                        //     return;
+                        // }
+                        // const extra = splitGraphemes(key);
+                        // if (extra.length > 1) {
+                        //     console.warn(
+                        //         'Too many graphemes? What is this',
+                        //         key,
+                        //         extra,
+                        //     );
+                        //     return;
+                        // }
 
-                        if (selection.type === 'within' && text) {
-                            const editState: EditState = {
-                                text,
-                                sel: selection.cursor,
-                                start: selection.start,
-                            };
+                        // if (selection.type === 'within' && text) {
+                        //     const editState: EditState = {
+                        //         text,
+                        //         sel: selection.cursor,
+                        //         start: selection.start,
+                        //     };
 
-                            const results = textKey(extra, editState, {
-                                meta: evt.metaKey,
-                                shift: evt.shiftKey,
-                            });
-                            store.update(
-                                selectionAction(
-                                    selection.path,
-                                    results.cursor,
-                                    undefined,
-                                    sels.slice(0, i),
-                                    results.text,
-                                    sels.slice(i + 1),
-                                ),
-                            );
-                            evt.preventDefault();
-                            evt.stopPropagation();
-                        }
+                        //     const results = textKey(extra, editState, {
+                        //         meta: evt.metaKey,
+                        //         shift: evt.shiftKey,
+                        //         ctrl: evt.ctrlKey,
+                        //     });
+                        //     store.update(
+                        //         selectionAction(
+                        //             selection.path,
+                        //             results.cursor,
+                        //             undefined,
+                        //             sels.slice(0, i),
+                        //             results.text,
+                        //             sels.slice(i + 1),
+                        //         ),
+                        //     );
+                        //     evt.preventDefault();
+                        //     evt.stopPropagation();
+                        // }
                     });
                 }}
                 onBlur={(evt) => {

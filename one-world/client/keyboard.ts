@@ -1,30 +1,19 @@
 // ok
 
-import { RecNode, RecNodeT } from '../shared/nodes';
-import { EditState } from './TextEdit/Id';
-import { Mods } from './HiddenInput';
-import { NodeSelection } from '../shared/state';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-
-type Location = 'start' | 'middle' | 'end';
-
-type LocalAction = {
-    type: 'update';
-    text?: string[];
-    cursor: number;
-    cursorStart?: number;
-    after?: RecNode;
-};
+import { Node, RecNodeT } from '../shared/nodes';
+import { NodeSelection } from '../shared/state';
+import { Mods } from './HiddenInput';
+import { isCollection, isText, TextT } from './TextEdit/actions';
 
 export type KeyAction =
-    // non-mutative
-    // mutative
     | {
           type: 'surround';
           kind: 'list' | 'record' | 'array' | 'string' | 'comment' | 'spread';
       }
     | { type: 'end'; which: 'list' | 'array' | 'record' }
-    | { type: 'split'; at: number; del: number; text: string[] }
+    | { type: 'split'; left: string[]; right: string[] }
+    | { type: 'update'; text?: string[]; cursor: number; start?: number }
     | { type: 'delete'; direction: 'left' | 'right' | 'blank' }
     | { type: 'unwrap'; direction: 'left' | 'right' }
     | { type: 'shrink'; from: 'start' | 'end' }
@@ -51,260 +40,367 @@ export type KeyAction =
 
 export const textKey = (
     key: string[],
-    { text, sel, start }: EditState,
-    mods: Mods,
-) => {
+    text: string[],
+    sel: number,
+    start?: number,
+): KeyAction => {
     if (start != null) {
         const [left, right] = start < sel ? [start, sel] : [sel, start];
         return {
+            type: 'update',
             text: text.slice(0, left).concat(key).concat(text.slice(right)),
             cursor: left + key.length,
         };
     }
     return {
+        type: 'update',
         text: text.slice(0, sel).concat(key).concat(text.slice(sel)),
         cursor: sel + key.length,
     };
 };
 
-export const specials: Record<
-    string,
-    (
-        sel: NodeSelection,
-        mods: { shift: boolean; meta: boolean; ctrl: boolean },
-        text?: string,
-    ) => KeyAction | LocalAction | void
-> = {
-    Tab(selection, { shift }) {
-        if (selection.type === 'within') {
-            return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
+type KeyRes = KeyAction | void | false;
+
+export const runKey = (
+    key: string,
+    mods: Mods,
+    node: Node,
+    selection: NodeSelection,
+) => {
+    if (mods.meta) return false;
+    // um also ctrl and alt?
+    if (node.type === 'stringText') {
+        if (keys.stringText[key]) {
+            return keys.stringText[key](selection, mods, node, key);
         }
-        if (selection.type === 'without') {
-            if (selection.location === 'inside') {
+    }
+    if (isText(node)) {
+        if (keys.text[key]) {
+            return keys.text[key](selection, mods, node, key);
+        }
+        if (keys.any[key]) {
+            return keys.any[key](selection, mods, node, key);
+        }
+        return keys.text[''](selection, mods, node, key);
+    }
+    if (isCollection(node)) {
+        if (keys.collection[key]) {
+            return keys.collection[key](selection, mods, node, key);
+        }
+    }
+    if (keys.any[key]) {
+        return keys.any[key](selection, mods, node, key);
+    }
+    return keys.any[''](selection, mods, node, key);
+};
+
+type KFn<T> = (
+    selection: NodeSelection,
+    mods: Mods,
+    node: T,
+    key: string,
+) => KeyRes;
+type KFns<S> = Record<string, KFn<Extract<Node, { type: S }>>>;
+
+const textInsert = (
+    sel: NodeSelection,
+    _: Mods,
+    node: TextT,
+    key: string,
+): KeyRes => {
+    if (sel.type === 'multi') return;
+    const keys = splitGraphemes(key);
+    if (keys.length > 1) {
+        console.warn('Too many graphemes? What is this', key, keys);
+        return;
+    }
+    if (sel.type === 'without') {
+        return { type: 'update', text: keys, cursor: keys.length };
+    }
+    return textKey(
+        keys,
+        sel.text ?? splitGraphemes(node.text),
+        sel.cursor,
+        sel.start,
+    );
+};
+
+export const keys: {
+    any: Record<string, KFn<Node>>;
+    collection: KFns<'list' | 'array' | 'record'>;
+    stringText: Record<string, KFn<TextT>>;
+    text: Record<string, KFn<TextT>>;
+} = {
+    stringText: {
+        ' ': textInsert,
+        '"': textInsert,
+        "'": textInsert,
+        '(': textInsert,
+        ')': textInsert,
+        '}': textInsert,
+        '[': textInsert,
+        ']': textInsert,
+        '.': textInsert,
+        '{'(sel, mods, node) {
+            if (sel.type === 'within' && sel.start == null) {
+                const text = sel.text ?? splitGraphemes(node.text);
+                if (text[sel.cursor - 1] === '$') {
+                    return {
+                        type: 'split',
+                        left: text.slice(0, sel.cursor - 1),
+                        right: text.slice(sel.cursor),
+                    };
+                }
+            }
+            return textInsert(sel, mods, node, '{');
+        },
+    },
+    text: {
+        '': textInsert,
+    },
+    collection: {},
+    any: {
+        ''(sel, _, node, key) {},
+        Tab(selection, { shift }) {
+            if (selection.type === 'within') {
                 return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
             }
-            if (selection.location === (shift ? 'end' : 'start')) {
+            if (selection.type === 'without') {
+                if (selection.location === 'inside') {
+                    return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
+                }
+                if (selection.location === (shift ? 'end' : 'start')) {
+                    return {
+                        type: 'nav',
+                        dir: shift ? 'inside-end' : 'inside-start',
+                    };
+                }
+                return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
+            }
+        },
+
+        Delete(selection, mods) {
+            if (selection.type === 'multi') return;
+            if (selection.type === 'without') {
+                switch (selection.location) {
+                    case 'all':
+                    case 'inside':
+                        return { type: 'delete', direction: 'blank' };
+                    case 'end':
+                        return { type: 'unwrap', direction: 'right' };
+                    case 'start':
+                        if (mods.shift) {
+                            return { type: 'delete', direction: 'blank' };
+                        }
+                        return { type: 'shrink', from: 'start' };
+                }
+            }
+        },
+
+        Backspace(selection, mods, node) {
+            if (selection.type === 'multi') return;
+            if (selection.type === 'without') {
+                switch (selection.location) {
+                    case 'all':
+                    case 'inside':
+                        return { type: 'delete', direction: 'blank' };
+                    case 'end':
+                        if (mods.shift) {
+                            return { type: 'delete', direction: 'blank' };
+                        }
+                        return { type: 'shrink', from: 'end' };
+                    case 'start':
+                        return { type: 'unwrap', direction: 'left' };
+                }
+                return;
+            }
+            if (mods.shift) {
+                return { type: 'delete', direction: 'blank' };
+            }
+            if (!isText(node)) return;
+            const sel = selection.cursor;
+            const text = selection.text ?? splitGraphemes(node.text);
+            if (sel === 0) {
                 return {
-                    type: 'nav',
-                    dir: shift ? 'inside-end' : 'inside-start',
+                    type: 'join-left',
+                    text: text.slice(selection.start ?? 0),
                 };
             }
-            return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
-        }
-    },
-
-    Delete(selection, mods, rawText) {
-        if (selection.type === 'multi') return;
-        if (selection.type === 'without') {
-            switch (selection.location) {
-                case 'all':
-                case 'inside':
-                    return { type: 'delete', direction: 'blank' };
-                case 'end':
-                    return { type: 'unwrap', direction: 'right' };
-                case 'start':
-                    if (mods.shift) {
-                        return { type: 'delete', direction: 'blank' };
-                    }
-                    return { type: 'shrink', from: 'start' };
+            const start = selection.start;
+            if (start != null) {
+                const [left, right] = start < sel ? [start, sel] : [sel, start];
+                return {
+                    type: 'update',
+                    text: text.slice(0, left).concat(text.slice(right)),
+                    cursor: left,
+                };
             }
-        }
-    },
-    Backspace(selection, mods, rawText) {
-        if (selection.type === 'multi') return;
-        if (selection.type === 'without') {
-            switch (selection.location) {
-                case 'all':
-                case 'inside':
-                    return { type: 'delete', direction: 'blank' };
-                case 'end':
-                    if (mods.shift) {
-                        return { type: 'delete', direction: 'blank' };
-                    }
-                    return { type: 'shrink', from: 'end' };
-                case 'start':
-                    return { type: 'unwrap', direction: 'left' };
-            }
-            return;
-        }
-        if (mods.shift) {
-            return { type: 'delete', direction: 'blank' };
-        }
-        const sel = selection.cursor;
-        const text = selection.text ?? splitGraphemes(rawText ?? '');
-        if (sel === 0) {
-            return {
-                type: 'join-left',
-                text: text.slice(selection.start ?? 0),
-            };
-        }
-        const start = selection.start;
-        if (start != null) {
-            const [left, right] = start < sel ? [start, sel] : [sel, start];
             return {
                 type: 'update',
-                text: text.slice(0, left).concat(text.slice(right)),
-                cursor: left,
+                text: text.slice(0, sel - 1).concat(text.slice(sel)),
+                cursor: sel - 1,
             };
-        }
-        return {
-            type: 'update',
-            text: text.slice(0, sel - 1).concat(text.slice(sel)),
-            cursor: sel - 1,
-        };
-    },
-    ' '(selection, meta, rawText) {
-        if (selection.type === 'multi') return;
-        if (selection.type !== 'within') {
-            if (selection.location === 'inside') {
+        },
+
+        ' '(selection, meta, node) {
+            if (selection.type === 'multi') return;
+            if (selection.type !== 'within') {
+                if (selection.location === 'inside') {
+                    return {
+                        type: 'inside',
+                        nodes: [
+                            { type: 'id', text: '', loc: false },
+                            { type: 'id', text: '', loc: true },
+                        ],
+                    };
+                }
+                // todo handle multi
                 return {
-                    type: 'inside',
-                    nodes: [
-                        { type: 'id', text: '', loc: false },
-                        { type: 'id', text: '', loc: true },
-                    ],
+                    type: selection.location === 'start' ? 'before' : 'after',
+                    node: { type: 'id', text: '', loc: true },
                 };
             }
-            // todo handle multi
+            if (!isText(node)) return;
+            const text = selection.text ?? splitGraphemes(node.text);
+            if (
+                (selection.start != null &&
+                    selection.start !== selection.cursor) ||
+                selection.cursor > 0
+            ) {
+                const [left, right] =
+                    selection.start != null
+                        ? selection.cursor < selection.start
+                            ? [selection.cursor, selection.start]
+                            : [selection.start, selection.cursor]
+                        : [selection.cursor, selection.cursor];
+                return {
+                    type: 'split',
+                    left: text.slice(0, left),
+                    right: text.slice(right),
+                };
+            }
             return {
-                type: selection.location === 'start' ? 'before' : 'after',
+                type:
+                    selection.cursor === 0 && text.length > 0
+                        ? 'before'
+                        : 'after',
                 node: { type: 'id', text: '', loc: true },
             };
-        }
-        const text = selection.text ?? splitGraphemes(rawText ?? '');
-        if (
-            (selection.start != null && selection.start !== selection.cursor) ||
-            selection.cursor > 0
-        ) {
-            const [left, right] =
-                selection.start != null
-                    ? selection.cursor < selection.start
-                        ? [selection.cursor, selection.start]
-                        : [selection.start, selection.cursor]
-                    : [selection.cursor, selection.cursor];
-            return { type: 'split', at: left, del: right - left, text };
-        }
-        return {
-            type:
-                selection.cursor === 0 && text.length > 0 ? 'before' : 'after',
-            node: { type: 'id', text: '', loc: true },
-        };
-    },
-    Enter(loc) {
-        // return loc === 'middle'
-        //     ? { type: 'split' }
-        //     : {
-        //           type: loc === 'start' ? 'before' : 'after',
-        //           node: { type: 'id', text: '', loc: [] },
-        //       };
-    },
+        },
 
-    Escape() {},
-    Meta() {},
-    Alt() {},
-    Shift() {},
-    Control() {},
+        Enter(loc) {},
 
-    ArrowUp: (_, { shift }) => {
-        if (shift) {
-            return { type: 'nav', dir: 'expand' };
-        }
-        return { type: 'nav', dir: 'up' };
-    },
-    ArrowDown: (_, { shift }) => {
-        if (shift) {
-            return { type: 'nav', dir: 'contract' };
-        }
-        return { type: 'nav', dir: 'down' };
-    },
-    ArrowLeft(selection, { shift, ctrl }, rawText) {
-        if (ctrl) return { type: 'swap', direction: 'left', into: shift };
-        if (selection.type !== 'within') {
-            if (selection.type === 'without') {
+        Escape() {},
+        Meta() {},
+        Alt() {},
+        Shift() {},
+        Control() {},
+
+        ArrowUp: (_, { shift }) => {
+            if (shift) {
+                return { type: 'nav', dir: 'expand' };
+            }
+            return { type: 'nav', dir: 'up' };
+        },
+        ArrowDown: (_, { shift }) => {
+            if (shift) {
+                return { type: 'nav', dir: 'contract' };
+            }
+            return { type: 'nav', dir: 'down' };
+        },
+
+        ArrowLeft(selection, { shift, ctrl }, rawText) {
+            if (ctrl) return { type: 'swap', direction: 'left', into: shift };
+            if (selection.type !== 'within') {
+                if (selection.type === 'without') {
+                    return {
+                        type: 'nav',
+                        dir:
+                            selection.location === 'start'
+                                ? 'left'
+                                : selection.location === 'all' ||
+                                  selection.location === 'inside'
+                                ? 'to-start'
+                                : 'inside-end',
+                    };
+                }
+                return { type: 'nav', dir: 'left' };
+            }
+            const { text, start, cursor } = selection;
+            if (shift) {
                 return {
-                    type: 'nav',
-                    dir:
-                        selection.location === 'start'
-                            ? 'left'
-                            : selection.location === 'all' ||
-                              selection.location === 'inside'
-                            ? 'to-start'
-                            : 'inside-end',
+                    type: 'update',
+                    text: text,
+                    cursor: Math.max(0, cursor - 1),
+                    start: start ?? cursor,
                 };
             }
-            return { type: 'nav', dir: 'left' };
-        }
-        const { text, start, cursor } = selection;
-        if (shift) {
-            return {
-                type: 'update',
-                text: text,
-                cursor: Math.max(0, cursor - 1),
-                cursorStart: start ?? cursor,
-            };
-        }
-        if (cursor > 0) {
-            return {
-                type: 'update',
-                text: text,
-                cursor: Math.max(0, cursor - 1),
-            };
-        } else {
-            return { type: 'nav', dir: 'left' };
-        }
-    },
-    ArrowRight(selection, { shift, ctrl }, rawText) {
-        if (ctrl) return { type: 'swap', direction: 'right', into: shift };
-        if (selection.type !== 'within') {
-            if (selection.type === 'without') {
+            if (cursor > 0) {
                 return {
-                    type: 'nav',
-                    dir:
-                        selection.location === 'end'
-                            ? 'right'
-                            : selection.location === 'all' ||
-                              selection.location === 'inside'
-                            ? 'to-end'
-                            : 'inside-start',
+                    type: 'update',
+                    text: text,
+                    cursor: Math.max(0, cursor - 1),
+                };
+            } else {
+                return { type: 'nav', dir: 'left' };
+            }
+        },
+
+        ArrowRight(selection, { shift, ctrl }, node) {
+            if (ctrl) return { type: 'swap', direction: 'right', into: shift };
+            if (selection.type !== 'within') {
+                if (selection.type === 'without') {
+                    return {
+                        type: 'nav',
+                        dir:
+                            selection.location === 'end'
+                                ? 'right'
+                                : selection.location === 'all' ||
+                                  selection.location === 'inside'
+                                ? 'to-end'
+                                : 'inside-start',
+                    };
+                }
+                return { type: 'nav', dir: 'right' };
+            }
+            if (!isText(node)) return;
+            let { text, start, cursor } = selection;
+            text = text ?? splitGraphemes(node.text);
+            if (shift) {
+                return {
+                    type: 'update',
+                    text,
+                    cursor: Math.min(text.length, cursor + 1),
+                    start: start ?? cursor,
                 };
             }
-            return { type: 'nav', dir: 'right' };
-        }
-        let { text, start, cursor } = selection;
-        text = text ?? splitGraphemes(rawText ?? '');
-        if (shift) {
-            return {
-                type: 'update',
-                text,
-                cursor: Math.min(text.length, cursor + 1),
-                cursorStart: start ?? cursor,
-            };
-        }
-        if (cursor < text.length) {
-            return {
-                type: 'update',
-                text,
-                cursor: Math.min(text.length, cursor + 1),
-            };
-        } else {
-            return { type: 'nav', dir: 'right' };
-        }
-    },
-    ')': () => ({ type: 'end', which: 'list' }),
-    ']': () => ({ type: 'end', which: 'array' }),
-    '}': () => ({ type: 'end', which: 'record' }),
+            if (cursor < text.length) {
+                return {
+                    type: 'update',
+                    text,
+                    cursor: Math.min(text.length, cursor + 1),
+                };
+            } else {
+                return { type: 'nav', dir: 'right' };
+            }
+        },
 
-    '"'(selection, mods, text) {
-        return maybeSurround(selection, 'string');
-    },
-    '('(selection, mods, rawText) {
-        return maybeSurround(selection, 'list');
-    },
-    '['(selection) {
-        return maybeSurround(selection, 'array');
-    },
-    '{'(selection) {
-        return maybeSurround(selection, 'record');
+        ')': () => ({ type: 'end', which: 'list' }),
+        ']': () => ({ type: 'end', which: 'array' }),
+        '}': () => ({ type: 'end', which: 'record' }),
+
+        '"'(selection) {
+            return maybeSurround(selection, 'string');
+        },
+        '('(selection) {
+            return maybeSurround(selection, 'list');
+        },
+        '['(selection) {
+            return maybeSurround(selection, 'array');
+        },
+        '{'(selection) {
+            return maybeSurround(selection, 'record');
+        },
     },
 };
 

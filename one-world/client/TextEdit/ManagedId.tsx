@@ -43,13 +43,15 @@ export const ManagedId = ({
 
     const color = useMemo(
         () =>
-            getRainbowHashColor(
-                fasthash(
-                    (selection?.type === 'within'
-                        ? selection.text?.join('')
-                        : null) ?? node.text,
-                ),
-            ),
+            node.type === 'stringText'
+                ? colors.string
+                : getRainbowHashColor(
+                      fasthash(
+                          (selection?.type === 'within'
+                              ? selection.text?.join('')
+                              : null) ?? node.text,
+                      ),
+                  ),
         [node.text, selection?.type === 'within' ? selection.text : null],
     );
 
@@ -64,7 +66,7 @@ export const ManagedId = ({
                         ? colors.nodeSelection
                         : undefined,
                 boxSizing: 'border-box',
-                whiteSpace: 'nowrap',
+                whiteSpace: 'pre',
                 cursor: 'text',
                 color,
                 // to lessen the jolty colors

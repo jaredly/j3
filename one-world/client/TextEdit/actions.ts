@@ -27,8 +27,8 @@ export const isText = (node: Node): node is TextT =>
     node.type === 'accessText';
 export const isCollection = (node: Node): node is CollectionT =>
     node.type === 'list' || node.type === 'record' || node.type === 'array';
-type CollectionT = Extract<Node, { type: 'list' | 'array' | 'record' }>;
-type TextT = Extract<Node, { type: 'id' | 'stringText' | 'accessText' }>;
+export type CollectionT = Extract<Node, { type: 'list' | 'array' | 'record' }>;
+export type TextT = Extract<Node, { type: 'id' | 'stringText' | 'accessText' }>;
 
 const replaceChild = (node: Node, old: number, nw: number): Node | void => {
     switch (node.type) {
@@ -105,10 +105,17 @@ const replaceWith = (
     return { type: 'update', update: { root: loc } };
 };
 
-const topUpdate = (id: string, nodes: ToplevelUpdate['update']): Action => ({
+const topUpdate = (
+    id: string,
+    nodes: ToplevelUpdate['update'],
+    nidx?: number,
+): Action => ({
     type: 'toplevel',
     id,
-    action: { type: 'update', update: { nodes } },
+    action: {
+        type: 'update',
+        update: nidx != null ? { nodes, nextLoc: nidx } : { nodes },
+    },
 });
 
 const unwrap = (
@@ -347,6 +354,19 @@ export const handleAction = (
     const top = state.toplevels[tid];
     const last = path.children[path.children.length - 1];
     switch (action.type) {
+        case 'update': {
+            return justSel(
+                {
+                    type: 'within',
+                    cursor: action.cursor,
+                    start: action.start,
+                    text: action.text,
+                    path,
+                    pathKey: serializePath(path),
+                },
+                path.root.doc,
+            );
+        }
         case 'end': {
             for (let i = path.children.length - 2; i >= 0; i--) {
                 const node = top.nodes[path.children[i]];
@@ -636,20 +656,59 @@ export const handleAction = (
 
         case 'split': {
             const lastNode = top.nodes[last];
+            if (lastNode.type === 'stringText') {
+                const ploc = path.children[path.children.length - 2];
+                let parent = top.nodes[ploc];
+                if (parent.type !== 'string') return;
+                const tpl = parent.templates.slice();
+                const map: Nodes = {};
+                let nidx = top.nextLoc;
+                const expr = nidx++;
+                const suffix = nidx++;
+                map[expr] = { type: 'id', loc: expr, text: '' };
+                map[suffix] = {
+                    type: 'stringText',
+                    loc: suffix,
+                    text: action.right.join(''),
+                };
+                map[last] = { ...lastNode, text: action.left.join('') };
+                map[ploc] = { ...parent, templates: tpl };
+
+                if (parent.first === last) {
+                    tpl.unshift({ expr, suffix });
+                } else {
+                    const idx = parent.templates.findIndex(
+                        (t) => t.suffix === last,
+                    );
+                    if (idx === -1) return;
+                    tpl.splice(idx + 1, 0, { expr, suffix });
+                }
+                const npath = pathWithChildren(parentPath(path), expr);
+                return justSel(
+                    {
+                        type: 'within',
+                        cursor: 0,
+                        path: npath,
+                        pathKey: serializePath(npath),
+                    },
+                    path.root.doc,
+                    topUpdate(top.id, map, nidx),
+                );
+            }
             if (lastNode.type !== 'id') return; // skipping othersss
-            const left = action.text.slice(0, action.at);
-            const right = action.text.slice(action.at + action.del);
+            // const left = action.text.slice(0, action.at);
+            // const right = action.text.slice(action.at + action.del);
 
             const update = addSibling(
                 path,
                 top,
-                { type: 'id', loc: true, text: right.join('') },
+                { type: 'id', loc: true, text: action.right.join('') },
                 false,
             );
             if (update) {
                 update.update.update.nodes = {
                     ...update.update.update.nodes,
-                    [last]: { ...lastNode, text: left.join('') },
+                    [last]: { ...lastNode, text: action.left.join('') },
                 };
             }
 

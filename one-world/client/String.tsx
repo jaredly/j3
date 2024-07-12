@@ -28,13 +28,13 @@ export const String = ({
     const store = useStore();
     return (
         <span
-            style={
-                selection?.type === 'without' && selection.location === 'all'
-                    ? {
-                          backgroundColor: colors.nodeSelection,
-                      }
-                    : undefined
-            }
+            style={{
+                backgroundColor:
+                    selection?.type === 'without' &&
+                    selection.location === 'all'
+                        ? colors.nodeSelection
+                        : colors.stringBg,
+            }}
         >
             {selection?.type === 'without' && selection.location === 'start' ? (
                 <span style={cursorStyle(false)}>{'|'}</span>
@@ -43,6 +43,7 @@ export const String = ({
                 onMouseDown={(evt) =>
                     clickPunctuation(evt, store, null, node.first, path)
                 }
+                style={{ color: colors.string }}
             >
                 "
             </span>
@@ -82,6 +83,7 @@ export const String = ({
                         : node.first;
                     clickPunctuation(evt, store, last, null, path);
                 }}
+                style={{ color: colors.string }}
             >
                 "
             </span>
