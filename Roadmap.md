@@ -24,6 +24,9 @@ seems a little nice.
 - [ ] the 'inside' place for a collection (reachable by "swapping" the only item out of it)
   is currently quite borked
   - [x] deleting an empty collection now works
+  - [ ] anotherrr option, don't let swapping make a collection empty. produce a new blank for it.
+    - [ ] and if you try to swap the blank out ... just refuse? idk maybe. although that's a little complex.
+- [ ] shift-del to remove a whole node, all the time
 
 ok ... it is a little weird to have multiple ways to splurge.
 

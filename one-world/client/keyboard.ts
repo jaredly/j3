@@ -30,6 +30,7 @@ export type KeyAction =
     | { type: 'shrink'; from: 'start' | 'end' }
     | { type: 'swap'; direction: 'left' | 'right'; into: boolean }
     | { type: 'join-left'; text: string[] }
+    | { type: 'inside'; nodes: RecNodeT<boolean>[] }
     | {
           type: 'nav';
           dir:
@@ -122,6 +123,9 @@ export const specials: Record<
             }
             return;
         }
+        if (mods.shift) {
+            return { type: 'delete', direction: 'blank' };
+        }
         const sel = selection.cursor;
         const text = selection.text ?? splitGraphemes(rawText ?? '');
         if (sel === 0) {
@@ -148,6 +152,15 @@ export const specials: Record<
     ' '(selection, meta, rawText) {
         if (selection.type === 'multi') return;
         if (selection.type !== 'within') {
+            if (selection.location === 'inside') {
+                return {
+                    type: 'inside',
+                    nodes: [
+                        { type: 'id', text: '', loc: false },
+                        { type: 'id', text: '', loc: true },
+                    ],
+                };
+            }
             // todo handle multi
             return {
                 type: selection.location === 'start' ? 'before' : 'after',
@@ -199,7 +212,8 @@ export const specials: Record<
                     dir:
                         selection.location === 'start'
                             ? 'left'
-                            : selection.location === 'all'
+                            : selection.location === 'all' ||
+                              selection.location === 'inside'
                             ? 'to-start'
                             : 'inside-end',
                 };
@@ -234,7 +248,8 @@ export const specials: Record<
                     dir:
                         selection.location === 'end'
                             ? 'right'
-                            : selection.location === 'all'
+                            : selection.location === 'all' ||
+                              selection.location === 'inside'
                             ? 'to-end'
                             : 'inside-start',
                 };
