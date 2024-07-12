@@ -21,6 +21,9 @@ seems a little nice.
 - [x] I want a way to swap children
 - [x] implement the 'into' (+shift) part of swap, for bring things back into
   - and maybe "pulling out" should be reserved for +shift as well....
+- [ ] the 'inside' place for a collection (reachable by "swapping" the only item out of it)
+  is currently quite borked
+  - [x] deleting an empty collection now works
 
 ok ... it is a little weird to have multiple ways to splurge.
 

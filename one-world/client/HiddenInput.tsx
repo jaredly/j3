@@ -106,6 +106,9 @@ const showKey = (key: Key) => {
     if (key.meta && key.key !== 'Meta') {
         text.unshift(specials.Meta);
     }
+    if (key.alt && key.key !== 'Alt') {
+        text.unshift(specials.Alt);
+    }
     if (key.ctrl && key.key !== 'Control') {
         text.unshift(specials.Control);
     }
@@ -129,6 +132,7 @@ type Key = {
     meta: boolean;
     shift: boolean;
     ctrl: boolean;
+    alt: boolean;
 };
 
 export const Hidden = ({
@@ -191,6 +195,7 @@ export const Hidden = ({
                         meta: evt.metaKey,
                         ctrl: evt.ctrlKey,
                         shift: evt.shiftKey,
+                        alt: evt.altKey,
                     });
                     // ctx.listeners.key.forEach((k) =>
                     //     k(evt.key, { shift: evt.shiftKey, meta: evt.metaKey }),

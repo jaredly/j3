@@ -473,6 +473,18 @@ export const handleAction = (
                       )
                     : undefined;
             }
+            if (node.items.length === 0) {
+                return justSel(
+                    {
+                        type: 'within',
+                        cursor: 0,
+                        path,
+                        pathKey: serializePath(path),
+                    },
+                    path.root.doc,
+                    topUpdate(top.id, { [loc]: { type: 'id', text: '', loc } }),
+                );
+            }
             if (path.children.length < 2) return;
             const ploc = path.children[path.children.length - 2];
             const parent = top.nodes[ploc];
