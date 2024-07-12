@@ -16,6 +16,11 @@
             /* ::selection {
                 background-color: rgba(255, 255, 200, 0.3);
             } */
+
+            :root {
+                color-scheme: dark light;
+            }
+
             @font-face {
                 font-family: 'Fira Code VF';
                 src: url('/static/FiraCode-VF.woff2') format('woff2-variations');
@@ -125,6 +130,14 @@
                 font-weight: 200;
                 /* font-variation-settings: 'wght' 100, 'wdth' 100; */
             }
+
+            @media (prefers-color-scheme: light) {
+                html,
+                body {
+                    background-color: white;
+                }
+            }
+
             [data-prefix]::before {
                 content: attr(data-prefix);
                 padding-right: 4px;
