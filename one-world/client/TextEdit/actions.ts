@@ -170,6 +170,40 @@ export const joinLeft = (
     const parent = top.nodes[ploc];
 
     const node = top.nodes[lloc];
+    if (node.type === 'stringText' && parent.type === 'string') {
+        if (parent.first === lloc) return;
+        const idx = parent.templates.findIndex((t) => t.suffix === lloc);
+        if (idx === -1) return;
+        const prev =
+            idx === 0 ? parent.first : parent.templates[idx - 1].suffix;
+        const pnode = top.nodes[prev];
+        if (pnode.type !== 'stringText') return;
+        const templates = parent.templates.slice();
+        templates.splice(idx, 1);
+        // const up = topUpdate(top.id, { });
+        const npath = pathWithChildren(parentPath(path), prev);
+        return [
+            {
+                type: 'update',
+                update: {
+                    nodes: {
+                        [ploc]: { ...parent, templates },
+                        [prev]: {
+                            ...pnode,
+                            text: pnode.text + rightText.join(''),
+                        },
+                    },
+                },
+            },
+            {
+                type: 'within',
+                cursor: splitGraphemes(pnode.text).length,
+                path: npath,
+                pathKey: serializePath(npath),
+            },
+        ];
+    }
+
     if (node.type !== 'id') return;
 
     if (

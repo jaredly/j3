@@ -3,10 +3,15 @@
 Broadly:
 
 - [ ] add in /strings/
+  - mostly
 - [ ] select multiple siblings
 
 
 #
+
+- [ ] space in a string interpolation, seems like it should produce a list
+
+
 
 Thoughts...
 Do I want to:
