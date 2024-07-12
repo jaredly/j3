@@ -28,7 +28,7 @@ export type KeyAction =
     | { type: 'delete'; direction: 'left' | 'right' | 'blank' }
     | { type: 'unwrap'; direction: 'left' | 'right' }
     | { type: 'shrink'; from: 'start' | 'end' }
-    | { type: 'swap'; direction: 'left' | 'right' }
+    | { type: 'swap'; direction: 'left' | 'right'; into: boolean }
     | { type: 'join-left'; text: string[] }
     | {
           type: 'nav';
@@ -191,7 +191,7 @@ export const specials: Record<
     ArrowUp: () => ({ type: 'nav', dir: 'up' }),
     ArrowDown: () => ({ type: 'nav', dir: 'down' }),
     ArrowLeft(selection, { shift, ctrl }, rawText) {
-        if (ctrl) return { type: 'swap', direction: 'left' };
+        if (ctrl) return { type: 'swap', direction: 'left', into: shift };
         if (selection.type !== 'within') {
             if (selection.type === 'without') {
                 return {
@@ -226,7 +226,7 @@ export const specials: Record<
         }
     },
     ArrowRight(selection, { shift, ctrl }, rawText) {
-        if (ctrl) return { type: 'swap', direction: 'right' };
+        if (ctrl) return { type: 'swap', direction: 'right', into: shift };
         if (selection.type !== 'within') {
             if (selection.type === 'without') {
                 return {

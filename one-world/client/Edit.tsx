@@ -105,6 +105,7 @@ export const Edit = () => {
                                     action,
                                     selection.path,
                                     state,
+                                    selection,
                                 );
                                 if (saction) {
                                     store.update(saction);

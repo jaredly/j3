@@ -18,7 +18,39 @@ seems a little nice.
   - erps, no I don't want it quite this way.
 
 - [ ] multi select is definitely needed.
-- [ ] I want a way to swap children
+- [x] I want a way to swap children
+- [x] implement the 'into' (+shift) part of swap, for bring things back into
+  - and maybe "pulling out" should be reserved for +shift as well....
+
+ok ... it is a little weird to have multiple ways to splurge.
+
+- [ ] tabbb shouold probably do a 'select all' on things.
+
+
+
+# So high level
+
+- Basic arrow nav
+  - [x] left/right
+  - [ ] up/down unsolved
+    - let's be honest though, might want to get formatting working first though
+  - [70%] tab/shift-tab
+  - [80%] swap
+
+
+
+Node types, I should probably flesh these out before doing too much more nav work.
+- [x] id
+- [ ] strings
+- [ ] record-access
+- [ ] rich-text (let's do it!!!)
+- [ ] raw-codeeeee
+- [ ]
+
+
+BIG QQQQ Is there a purpose to having (id) be different from (stringText)?
+-> I mean, they have very different rules for ... what is allowed.
+-> buttttt it's enough to ...
 
 
 

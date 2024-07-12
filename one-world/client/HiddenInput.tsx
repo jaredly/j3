@@ -4,6 +4,7 @@ import React, {
     useEffect,
     useMemo,
     useRef,
+    useState,
 } from 'react';
 import { listen } from './listen';
 
@@ -83,6 +84,53 @@ export const HiddenInput = ({ children }: { children: React.ReactNode }) => {
     );
 };
 
+const specials: Record<string, string> = {
+    Backspace: '⌫',
+    Delete: '⌦',
+    Meta: '⌘',
+    ArrowLeft: '⇦',
+    Shift: '⬆',
+    ArrowUp: '⇧',
+    ArrowRight: '⇨',
+    ArrowDown: '⇩',
+    Enter: '⏎',
+    Control: '^',
+    Alt: '⎇',
+};
+
+const showKey = (key: Key) => {
+    let text = [specials[key.key] ?? key.key];
+    if (key.shift && key.key !== 'Shift') {
+        text.unshift(specials.Shift);
+    }
+    if (key.meta && key.key !== 'Meta') {
+        text.unshift(specials.Meta);
+    }
+    if (key.ctrl && key.key !== 'Control') {
+        text.unshift(specials.Control);
+    }
+    return text.map((t, i) => (
+        <span
+            key={i}
+            style={{
+                padding: '4px 8px',
+                backgroundColor: '#555',
+                color: '#aaa',
+                fontWeight: 'bold',
+                borderRadius: 12,
+            }}
+        >
+            {t}
+        </span>
+    ));
+};
+type Key = {
+    key: string;
+    meta: boolean;
+    shift: boolean;
+    ctrl: boolean;
+};
+
 export const Hidden = ({
     onKeyDown,
     onBlur,
@@ -92,37 +140,69 @@ export const Hidden = ({
     onBlur: (evt: React.FocusEvent) => void;
     iref: React.RefObject<HTMLInputElement>;
 }) => {
+    const [show, setShow] = useState(null as null | Key);
+
+    useEffect(() => {
+        if (!show) return;
+        const tid = setTimeout(() => {
+            setShow(null);
+        }, 1500);
+
+        return () => clearTimeout(tid);
+    }, [show]);
+
     return (
-        <input
-            ref={iref}
-            value=""
-            onChange={() => {}}
-            autoFocus
-            style={{
-                // width: 10,
-                // height: 10,
+        <>
+            {show ? (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        padding: 24,
+                        display: 'flex',
+                        gap: 16,
+                        color: 'white',
+                        fontSize: '200%',
+                    }}
+                >
+                    {showKey(show)}
+                </div>
+            ) : null}
+            <input
+                ref={iref}
+                value=""
+                onChange={() => {}}
+                autoFocus
+                style={{
+                    width: 0,
+                    height: 0,
+                    opacity: 0,
+                    pointerEvents: 'none',
 
-                width: 0,
-                height: 0,
-                opacity: 0,
-                pointerEvents: 'none',
-
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                border: 'none',
-            }}
-            onKeyDown={(evt) => {
-                // ctx.listeners.key.forEach((k) =>
-                //     k(evt.key, { shift: evt.shiftKey, meta: evt.metaKey }),
-                // );
-                onKeyDown(evt);
-            }}
-            onBlur={(evt) => {
-                if (evt.currentTarget !== document.activeElement) {
-                    onBlur(evt);
-                }
-            }}
-        />
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    border: 'none',
+                }}
+                onKeyDown={(evt) => {
+                    setShow({
+                        key: evt.key,
+                        meta: evt.metaKey,
+                        ctrl: evt.ctrlKey,
+                        shift: evt.shiftKey,
+                    });
+                    // ctx.listeners.key.forEach((k) =>
+                    //     k(evt.key, { shift: evt.shiftKey, meta: evt.metaKey }),
+                    // );
+                    onKeyDown(evt);
+                }}
+                onBlur={(evt) => {
+                    if (evt.currentTarget !== document.activeElement) {
+                        onBlur(evt);
+                    }
+                }}
+            />
+        </>
     );
 };

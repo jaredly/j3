@@ -227,6 +227,11 @@ export const joinLeft = (
     ];
 };
 
+const withPath = (sel: NodeSelection, path: Path): NodeSelection | void => {
+    if (sel.type === 'multi') return;
+    return { ...sel, path, pathKey: serializePath(path) };
+};
+
 export const remove = (path: Path, top: Toplevel): void | ToplevelUpdate => {
     if (path.children.length === 1) {
         // soooo remove the toplevel, right? so it won't be a toplevelupdate.
@@ -330,6 +335,7 @@ export const handleAction = (
     action: KeyAction,
     path: Path,
     state: PersistedState,
+    selection: NodeSelection,
 ): Action | void => {
     if (path.root.type !== 'doc-node') return;
     const tid = path.root.toplevel;
@@ -378,6 +384,75 @@ export const handleAction = (
                       action: update.update,
                   })
                 : undefined;
+        }
+
+        case 'swap': {
+            if (path.children.length < 2) return;
+            const loc = path.children[path.children.length - 1];
+            const ploc = path.children[path.children.length - 2];
+            const parent = top.nodes[ploc];
+            if (!isCollection(parent)) return;
+            const idx = parent.items.indexOf(loc);
+            if (idx === -1) return;
+            const items = parent.items.slice();
+            if (action.direction === 'left') {
+                if (idx === 0) {
+                    return action.into
+                        ? jumpOut(path, top, items, selection, 'first')
+                        : undefined;
+                }
+                const sloc = items[idx - 1];
+                const sib = top.nodes[sloc];
+                if (action.into && isCollection(sib)) {
+                    const sitems = sib.items.slice();
+                    sitems.push(loc);
+                    items.splice(idx, 1);
+                    return justSel(
+                        withPath(
+                            selection,
+                            pathWithChildren(parentPath(path), sloc, loc),
+                        ),
+                        path.root.doc,
+                        topUpdate(tid, {
+                            [ploc]: { ...parent, items },
+                            [sloc]: { ...sib, items: sitems },
+                        }),
+                    );
+                }
+                items.splice(idx - 1, 1);
+                items.splice(idx, 0, sloc);
+            } else {
+                if (idx === items.length - 1) {
+                    return action.into
+                        ? jumpOut(path, top, items, selection, 'last')
+                        : undefined;
+                }
+
+                const sloc = items[idx + 1];
+                const sib = top.nodes[sloc];
+                if (action.into && isCollection(sib)) {
+                    const sitems = sib.items.slice();
+                    sitems.unshift(loc);
+                    items.splice(idx, 1);
+                    return justSel(
+                        withPath(
+                            selection,
+                            pathWithChildren(parentPath(path), sloc, loc),
+                        ),
+                        path.root.doc,
+                        topUpdate(tid, {
+                            [ploc]: { ...parent, items },
+                            [sloc]: { ...sib, items: sitems },
+                        }),
+                    );
+                }
+
+                // if (idx === parent.items.length - 1) return;
+                items.splice(idx + 1, 1);
+                items.splice(idx, 0, sloc);
+            }
+
+            return topUpdate(tid, { [ploc]: { ...parent, items } });
         }
 
         case 'shrink': {
@@ -652,6 +727,40 @@ export const handleAction = (
             }
         }
     }
+};
+
+const jumpOut = (
+    path: Path,
+    top: Toplevel,
+    items: number[],
+    selection: NodeSelection,
+    which: 'first' | 'last',
+) => {
+    const loc = path.children[path.children.length - 1];
+    const ploc = path.children[path.children.length - 2];
+
+    if (path.children.length < 3) return;
+    const gloc = path.children[path.children.length - 3];
+    const gparent = top.nodes[gloc];
+    if (!isCollection(gparent)) return;
+    const idx = gparent.items.indexOf(ploc);
+    if (idx === -1) return;
+    if (which === 'first') {
+        items.shift();
+    } else {
+        items.pop();
+    }
+    const gitems = gparent.items.slice();
+    gitems.splice(idx + (which === 'last' ? 1 : 0), 0, loc);
+    const dpath = pathWithChildren(parentPath(parentPath(path)), loc);
+    return justSel(
+        withPath(selection, dpath),
+        path.root.doc,
+        topUpdate(top.id, {
+            [ploc]: { ...top.nodes[ploc], items },
+            [gloc]: { ...gparent, items: gitems },
+        }),
+    );
 };
 
 const justSel = (
