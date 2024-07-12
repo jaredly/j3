@@ -4,8 +4,15 @@ import { NodeSelection } from '../shared/state';
 import { TopNode } from './Edit';
 import { Store, useStore } from './StoreContext';
 import { cursorStyle } from './TextEdit/renderTextAndCursor';
-import { getNodeForPath, isLeft, selectNode, setSelection } from './selectNode';
+import {
+    getNodeForPath,
+    isLeft,
+    selectAll,
+    selectNode,
+    setSelection,
+} from './selectNode';
 import { colors } from './TextEdit/colors';
+import { clickPunctuation } from './clickPunctuation';
 
 export const Collection = ({
     node,
@@ -35,15 +42,6 @@ export const Collection = ({
             ) : null}
             <span
                 onMouseDown={(evt) => {
-                    evt.preventDefault();
-                    evt.stopPropagation();
-                    if (evt.shiftKey) {
-                        return setSelection(
-                            store,
-                            path.root.doc,
-                            selectNode(node, path, 'all'),
-                        );
-                    }
                     clickBracket(evt, store, node.items, path, true);
                 }}
             >
@@ -59,9 +57,13 @@ export const Collection = ({
                         <span
                             style={{ width: 8, cursor: 'text' }}
                             onMouseDown={(evt) => {
-                                evt.preventDefault();
-                                evt.stopPropagation();
-                                clickSpace(evt, path, node, i, store, loc);
+                                clickPunctuation(
+                                    evt,
+                                    store,
+                                    node.items[i - 1],
+                                    loc,
+                                    path,
+                                );
                             }}
                         />
                     )}
@@ -70,15 +72,6 @@ export const Collection = ({
             ))}
             <span
                 onMouseDown={(evt) => {
-                    evt.preventDefault();
-                    evt.stopPropagation();
-                    if (evt.shiftKey) {
-                        return setSelection(
-                            store,
-                            path.root.doc,
-                            selectNode(node, path, 'all'),
-                        );
-                    }
                     clickBracket(evt, store, node.items, path, false);
                 }}
             >
@@ -98,6 +91,12 @@ const clickBracket = (
     path: Path,
     left: boolean,
 ) => {
+    evt.preventDefault();
+    evt.stopPropagation();
+    if (evt.shiftKey) {
+        return setSelection(store, path.root.doc, selectAll(path));
+    }
+
     const box = evt.currentTarget.getBoundingClientRect();
     const l = evt.clientX < (box.left + box.right) / 2;
 

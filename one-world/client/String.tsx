@@ -1,11 +1,18 @@
 import React from 'react';
-import { Node, Path, serializePath } from '../shared/nodes';
+import { Node, Path, pathWithChildren, serializePath } from '../shared/nodes';
 import { NodeSelection } from '../shared/state';
 import { TopNode } from './Edit';
 import { Store, useStore } from './StoreContext';
 import { cursorStyle } from './TextEdit/renderTextAndCursor';
-import { getNodeForPath, isLeft, selectNode, setSelection } from './selectNode';
+import {
+    getNodeForPath,
+    isLeft,
+    selectAll,
+    selectNode,
+    setSelection,
+} from './selectNode';
 import { colors } from './TextEdit/colors';
+import { clickPunctuation } from './clickPunctuation';
 
 export const String = ({
     node,
@@ -33,49 +40,47 @@ export const String = ({
                 <span style={cursorStyle(false)}>{'|'}</span>
             ) : null}
             <span
-                onMouseDown={(evt) => {
-                    evt.preventDefault();
-                    evt.stopPropagation();
-                    if (evt.shiftKey) {
-                        return setSelection(
-                            store,
-                            path.root.doc,
-                            selectNode(node, path, 'all'),
-                        );
-                    }
-                    // clickBracket(evt, store, node.items, path, true);
-                }}
+                onMouseDown={(evt) =>
+                    clickPunctuation(evt, store, null, node.first, path)
+                }
             >
                 "
             </span>
             <TopNode id={tid} loc={node.first} parentPath={path} />
-            {/* {node.items.map((loc, i) => (
-                <React.Fragment key={loc}>
-                    {i === 0 ? null : (
-                        <span
-                            style={{ width: 8, cursor: 'text' }}
-                            onMouseDown={(evt) => {
-                                evt.preventDefault();
-                                evt.stopPropagation();
-                                clickSpace(evt, path, node, i, store, loc);
-                            }}
-                        />
-                    )}
-                    <TopNode id={tid} loc={loc} parentPath={path} />
+            {node.templates.map(({ expr, suffix }, i) => (
+                <React.Fragment key={expr}>
+                    <span
+                        onMouseDown={(evt) =>
+                            clickPunctuation(
+                                evt,
+                                store,
+                                i === 0
+                                    ? node.first
+                                    : node.templates[i - 1].suffix,
+                                expr,
+                                path,
+                            )
+                        }
+                    >
+                        {'${'}
+                    </span>
+                    <TopNode id={tid} loc={expr} parentPath={path} />
+                    <span
+                        onMouseDown={(evt) =>
+                            clickPunctuation(evt, store, expr, suffix, path)
+                        }
+                    >
+                        {'}'}
+                    </span>
+                    <TopNode id={tid} loc={suffix} parentPath={path} />
                 </React.Fragment>
-            ))} */}
+            ))}
             <span
                 onMouseDown={(evt) => {
-                    evt.preventDefault();
-                    evt.stopPropagation();
-                    if (evt.shiftKey) {
-                        return setSelection(
-                            store,
-                            path.root.doc,
-                            selectNode(node, path, 'all'),
-                        );
-                    }
-                    // clickBracket(evt, store, node.items, path, false);
+                    const last = node.templates.length
+                        ? node.templates[node.templates.length - 1].suffix
+                        : node.first;
+                    clickPunctuation(evt, store, last, null, path);
                 }}
             >
                 "
@@ -85,38 +90,6 @@ export const String = ({
             ) : null}
         </span>
     );
-};
-
-const clickBracket = (
-    evt: React.MouseEvent<HTMLSpanElement>,
-    store: Store,
-    items: number[],
-    path: Path,
-    left: boolean,
-) => {
-    const l = isLeft(evt);
-
-    if (l !== left && items.length) {
-        const cid = items[left ? 0 : items.length - 1];
-        const cpath: Path = { ...path, children: path.children.concat([cid]) };
-        setSelection(
-            store,
-            path.root.doc,
-            selectNode(
-                getNodeForPath(cpath, store.getState()),
-                cpath,
-                left ? 'start' : 'end',
-            ),
-        );
-        return;
-    }
-
-    setSelection(store, path.root.doc, {
-        type: 'without',
-        location: l === left ? (left ? 'start' : 'end') : 'inside',
-        pathKey: serializePath(path),
-        path,
-    });
 };
 
 function clickSpace(
