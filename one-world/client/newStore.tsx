@@ -285,11 +285,7 @@ function maybeCommitTextChange(
 ) {
     const last = sel.path.children[sel.path.children.length - 1];
     const node = state.toplevels[sel.path.root.toplevel].nodes[last];
-    if (
-        node.type !== 'id' &&
-        node.type !== 'accessText' &&
-        node.type !== 'stringText'
-    ) {
+    if (node.type !== 'id') {
         return;
     }
     const text = sel.text!.join('');

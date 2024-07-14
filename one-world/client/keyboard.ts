@@ -69,9 +69,9 @@ export const runKey = (
 ) => {
     if (mods.meta) return false;
     // um also ctrl and alt?
-    if (node.type === 'stringText') {
-        if (keys.stringText[key]) {
-            return keys.stringText[key](selection, mods, node, key);
+    if (node.type === 'string') {
+        if (keys.string[key]) {
+            return keys.string[key](selection, mods, node, key);
         }
     }
     if (isText(node)) {
@@ -125,34 +125,59 @@ const textInsert = (
     );
 };
 
+const stringInsert = (
+    sel: NodeSelection,
+    _: Mods,
+    node: Extract<Node, { type: 'string' }>,
+    key: string,
+): KeyRes => {
+    if (sel.type === 'multi') return;
+    const keys = splitGraphemes(key);
+    if (keys.length > 1) {
+        console.warn('Too many graphemes? What is this', key, keys);
+        return;
+    }
+    if (sel.type === 'without') {
+        return { type: 'update', text: keys, cursor: keys.length };
+    }
+    // STOP
+    // return textKey(
+    //     keys,
+    //     sel.text ?? splitGraphemes(node.text),
+    //     sel.cursor,
+    //     sel.start,
+    // );
+};
+
 export const keys: {
     any: Record<string, KFn<Node>>;
     collection: KFns<'list' | 'array' | 'record'>;
-    stringText: Record<string, KFn<TextT>>;
+    string: KFns<'string'>;
     text: Record<string, KFn<TextT>>;
 } = {
-    stringText: {
-        ' ': textInsert,
-        '"': textInsert,
-        "'": textInsert,
-        '(': textInsert,
-        ')': textInsert,
-        '}': textInsert,
-        '[': textInsert,
-        ']': textInsert,
-        '.': textInsert,
+    string: {
+        ' ': stringInsert,
+        '"': stringInsert,
+        "'": stringInsert,
+        '(': stringInsert,
+        ')': stringInsert,
+        '}': stringInsert,
+        '[': stringInsert,
+        ']': stringInsert,
+        '.': stringInsert,
         '{'(sel, mods, node) {
-            if (sel.type === 'within' && sel.start == null) {
-                const text = sel.text ?? splitGraphemes(node.text);
-                if (text[sel.cursor - 1] === '$') {
-                    return {
-                        type: 'split',
-                        left: text.slice(0, sel.cursor - 1),
-                        right: text.slice(sel.cursor),
-                    };
-                }
-            }
-            return textInsert(sel, mods, node, '{');
+            // STOP
+            // if (sel.type === 'within' && sel.start == null) {
+            //     const text = sel.text ?? splitGraphemes(node.text);
+            //     if (text[sel.cursor - 1] === '$') {
+            //         return {
+            //             type: 'split',
+            //             left: text.slice(0, sel.cursor - 1),
+            //             right: text.slice(sel.cursor),
+            //         };
+            //     }
+            // }
+            // return textInsert(sel, mods, node, '{');
         },
     },
     text: {
@@ -422,9 +447,9 @@ function maybeSurround(
                   kind === 'string'
                       ? {
                             type: kind,
-                            first: { type: 'stringText', text: '', loc: true },
+                            first: '',
                             templates: [],
-                            loc: false,
+                            loc: true,
                         }
                       : {
                             type: kind,

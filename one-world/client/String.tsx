@@ -40,40 +40,40 @@ export const String = ({
                 <span style={cursorStyle(false)}>{'|'}</span>
             ) : null}
             <span
-                onMouseDown={(evt) =>
-                    clickPunctuation(evt, store, null, node.first, path)
-                }
+                // onMouseDown={(evt) =>
+                //     clickPunctuation(evt, store, null, node.first, path)
+                // }
                 style={{ color: colors.string }}
             >
                 "
             </span>
-            <TopNode id={tid} loc={node.first} parentPath={path} />
+            {/* <TopNode id={tid} loc={node.first} parentPath={path} /> */}
             {node.templates.map(({ expr, suffix }, i) => (
                 <React.Fragment key={expr}>
                     <span
-                        onMouseDown={(evt) =>
-                            clickPunctuation(
-                                evt,
-                                store,
-                                i === 0
-                                    ? node.first
-                                    : node.templates[i - 1].suffix,
-                                expr,
-                                path,
-                            )
-                        }
+                    // onMouseDown={(evt) =>
+                    //     clickPunctuation(
+                    //         evt,
+                    //         store,
+                    //         i === 0
+                    //             ? node.first
+                    //             : node.templates[i - 1].suffix,
+                    //         expr,
+                    //         path,
+                    //     )
+                    // }
                     >
                         {'${'}
                     </span>
                     <TopNode id={tid} loc={expr} parentPath={path} />
                     <span
-                        onMouseDown={(evt) =>
-                            clickPunctuation(evt, store, expr, suffix, path)
-                        }
+                    // onMouseDown={(evt) =>
+                    //     clickPunctuation(evt, store, expr, suffix, path)
+                    // }
                     >
                         {'}'}
                     </span>
-                    <TopNode id={tid} loc={suffix} parentPath={path} />
+                    {/* <TopNode id={tid} loc={suffix} parentPath={path} /> */}
                 </React.Fragment>
             ))}
             <span
@@ -81,7 +81,7 @@ export const String = ({
                     const last = node.templates.length
                         ? node.templates[node.templates.length - 1].suffix
                         : node.first;
-                    clickPunctuation(evt, store, last, null, path);
+                    // clickPunctuation(evt, store, last, null, path);
                 }}
                 style={{ color: colors.string }}
             >

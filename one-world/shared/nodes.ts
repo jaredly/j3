@@ -47,7 +47,6 @@ export type Cursor = {
 type Simple<Loc> =
     // id for identifier. "blank" === empty id
     | { type: 'id'; text: string; loc: Loc }
-    | { type: 'stringText' | 'accessText'; text: string; loc: Loc }
     | { type: 'ref'; toplevel: string; kind: string; loc: Loc };
 
 export type Node =
@@ -55,8 +54,8 @@ export type Node =
     | { type: 'list' | 'array' | 'record'; items: number[]; loc: number }
     | {
           type: 'string';
-          first: number;
-          templates: { expr: number; suffix: number }[];
+          first: string;
+          templates: { expr: number; suffix: string }[];
           loc: number;
       }
     | { type: 'comment' | 'spread'; contents: number; loc: number }
@@ -79,8 +78,8 @@ export type RecNodeT<Loc> =
     | { type: 'list' | 'array' | 'record'; items: RecNodeT<Loc>[]; loc: Loc }
     | {
           type: 'string';
-          first: RecNodeT<Loc>;
-          templates: { expr: RecNodeT<Loc>; suffix: RecNodeT<Loc> }[];
+          first: string;
+          templates: { expr: RecNodeT<Loc>; suffix: string }[];
           loc: Loc;
       }
     | { type: 'comment' | 'spread'; contents: RecNodeT<Loc>; loc: Loc }
@@ -246,8 +245,6 @@ export const toTheLeft = (
 export const childLocs = (node: Node) => {
     switch (node.type) {
         case 'id':
-        case 'stringText':
-        case 'accessText':
         case 'ref':
             return [];
         case 'rich-text':
@@ -265,10 +262,7 @@ export const childLocs = (node: Node) => {
         case 'record-access':
             return [node.target, ...node.items];
         case 'string':
-            return [
-                node.first,
-                ...node.templates.flatMap((t) => [t.expr, t.suffix]),
-            ];
+            return node.templates.flatMap((t) => t.expr);
     }
 };
 
@@ -277,8 +271,6 @@ export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
     const loc: [string, number][] = [[top, node.loc]];
     switch (node.type) {
         case 'id':
-        case 'stringText':
-        case 'accessText':
         case 'ref':
             return { ...node, loc };
         case 'rich-text':
@@ -321,10 +313,9 @@ export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
             return {
                 ...node,
                 loc,
-                first: fromMap(top, node.first, nodes),
                 templates: node.templates.map((t) => ({
                     expr: fromMap(top, t.expr, nodes),
-                    suffix: fromMap(top, t.suffix, nodes),
+                    suffix: t.suffix,
                 })),
             };
     }
@@ -333,8 +324,6 @@ export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
 const foldNode = <V>(v: V, node: RecNode, f: (v: V, node: RecNode) => V): V => {
     switch (node.type) {
         case 'id':
-        case 'stringText':
-        case 'accessText':
         case 'rich-text':
         case 'raw-code':
         case 'ref':
@@ -362,9 +351,8 @@ const foldNode = <V>(v: V, node: RecNode, f: (v: V, node: RecNode) => V): V => {
             );
         case 'string':
             return node.templates.reduce(
-                (v, { expr, suffix }) =>
-                    foldNode(foldNode(v, expr, f), suffix, f),
-                foldNode(f(v, node), node.first, f),
+                (v, { expr }) => foldNode(v, expr, f),
+                f(v, node),
             );
     }
 };
@@ -416,8 +404,6 @@ const fromRec = <T>(
 ): Node => {
     switch (node.type) {
         case 'id':
-        case 'stringText':
-        case 'accessText':
         case 'ref':
             return { ...node, loc };
         case 'rich-text':
@@ -466,10 +452,9 @@ const fromRec = <T>(
             return {
                 ...node,
                 loc,
-                first: toMapInner(node.first, path, nodes, getLoc),
                 templates: node.templates.map((t) => ({
                     expr: toMapInner(t.expr, path, nodes, getLoc),
-                    suffix: toMapInner(t.suffix, path, nodes, getLoc),
+                    suffix: t.suffix,
                 })),
             };
     }

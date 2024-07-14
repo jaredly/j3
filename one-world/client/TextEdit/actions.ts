@@ -21,21 +21,18 @@ import { Toplevel } from '../../shared/toplevels';
 import { KeyAction } from '../keyboard';
 import { getNodeForPath, selectAll, selectNode } from '../selectNode';
 
-export const isText = (node: Node): node is TextT =>
-    node.type === 'id' ||
-    node.type === 'stringText' ||
-    node.type === 'accessText';
+export const isText = (node: Node): node is TextT => node.type === 'id';
+// node.type === 'stringText' ||
+// node.type === 'accessText';
 export const isCollection = (node: Node): node is CollectionT =>
     node.type === 'list' || node.type === 'record' || node.type === 'array';
 export type CollectionT = Extract<Node, { type: 'list' | 'array' | 'record' }>;
-export type TextT = Extract<Node, { type: 'id' | 'stringText' | 'accessText' }>;
+export type TextT = Extract<Node, { type: 'id' }>;
 
 const replaceChild = (node: Node, old: number, nw: number): Node | void => {
     switch (node.type) {
         case 'ref':
-        case 'accessText':
         case 'id':
-        case 'stringText':
             return;
         case 'annot':
             if (node.contents === old) return { ...node, contents: nw };
@@ -70,17 +67,17 @@ const replaceChild = (node: Node, old: number, nw: number): Node | void => {
             return { ...node, items };
         }
         case 'string':
-            if (node.first === old) return { ...node, first: nw };
+            // if (node.first === old) return { ...node, first: nw };
             let found = false;
             const templates = node.templates.map((tpl) => {
                 if (tpl.expr === old) {
                     found = true;
                     return { ...tpl, expr: nw };
                 }
-                if (tpl.suffix === old) {
-                    found = true;
-                    return { ...tpl, suffix: nw };
-                }
+                // if (tpl.suffix === old) {
+                //     found = true;
+                //     return { ...tpl, suffix: nw };
+                // }
                 return tpl;
             });
             if (!found) return;
@@ -170,39 +167,40 @@ export const joinLeft = (
     const parent = top.nodes[ploc];
 
     const node = top.nodes[lloc];
-    if (node.type === 'stringText' && parent.type === 'string') {
-        if (parent.first === lloc) return;
-        const idx = parent.templates.findIndex((t) => t.suffix === lloc);
-        if (idx === -1) return;
-        const prev =
-            idx === 0 ? parent.first : parent.templates[idx - 1].suffix;
-        const pnode = top.nodes[prev];
-        if (pnode.type !== 'stringText') return;
-        const templates = parent.templates.slice();
-        templates.splice(idx, 1);
-        // const up = topUpdate(top.id, { });
-        const npath = pathWithChildren(parentPath(path), prev);
-        return [
-            {
-                type: 'update',
-                update: {
-                    nodes: {
-                        [ploc]: { ...parent, templates },
-                        [prev]: {
-                            ...pnode,
-                            text: pnode.text + rightText.join(''),
-                        },
-                    },
-                },
-            },
-            {
-                type: 'within',
-                cursor: splitGraphemes(pnode.text).length,
-                path: npath,
-                pathKey: serializePath(npath),
-            },
-        ];
-    }
+    // STOP
+    // if (node.type === 'stringText' && parent.type === 'string') {
+    //     if (parent.first === lloc) return;
+    //     const idx = parent.templates.findIndex((t) => t.suffix === lloc);
+    //     if (idx === -1) return;
+    //     const prev =
+    //         idx === 0 ? parent.first : parent.templates[idx - 1].suffix;
+    //     const pnode = top.nodes[prev];
+    //     if (pnode.type !== 'stringText') return;
+    //     const templates = parent.templates.slice();
+    //     templates.splice(idx, 1);
+    //     // const up = topUpdate(top.id, { });
+    //     const npath = pathWithChildren(parentPath(path), prev);
+    //     return [
+    //         {
+    //             type: 'update',
+    //             update: {
+    //                 nodes: {
+    //                     [ploc]: { ...parent, templates },
+    //                     [prev]: {
+    //                         ...pnode,
+    //                         text: pnode.text + rightText.join(''),
+    //                     },
+    //                 },
+    //             },
+    //         },
+    //         {
+    //             type: 'within',
+    //             cursor: splitGraphemes(pnode.text).length,
+    //             path: npath,
+    //             pathKey: serializePath(npath),
+    //         },
+    //     ];
+    // }
 
     if (node.type !== 'id') return;
 
@@ -705,45 +703,45 @@ export const handleAction = (
 
         case 'split': {
             const lastNode = top.nodes[last];
-            if (lastNode.type === 'stringText') {
-                const ploc = path.children[path.children.length - 2];
-                let parent = top.nodes[ploc];
-                if (parent.type !== 'string') return;
-                const tpl = parent.templates.slice();
-                const map: Nodes = {};
-                let nidx = top.nextLoc;
-                const expr = nidx++;
-                const suffix = nidx++;
-                map[expr] = { type: 'id', loc: expr, text: '' };
-                map[suffix] = {
-                    type: 'stringText',
-                    loc: suffix,
-                    text: action.right.join(''),
-                };
-                map[last] = { ...lastNode, text: action.left.join('') };
-                map[ploc] = { ...parent, templates: tpl };
-
-                if (parent.first === last) {
-                    tpl.unshift({ expr, suffix });
-                } else {
-                    const idx = parent.templates.findIndex(
-                        (t) => t.suffix === last,
-                    );
-                    if (idx === -1) return;
-                    tpl.splice(idx + 1, 0, { expr, suffix });
-                }
-                const npath = pathWithChildren(parentPath(path), expr);
-                return justSel(
-                    {
-                        type: 'within',
-                        cursor: 0,
-                        path: npath,
-                        pathKey: serializePath(npath),
-                    },
-                    path.root.doc,
-                    topUpdate(top.id, map, nidx),
-                );
-            }
+            // STOP
+            // if (lastNode.type === 'stringText') {
+            //     const ploc = path.children[path.children.length - 2];
+            //     let parent = top.nodes[ploc];
+            //     if (parent.type !== 'string') return;
+            //     const tpl = parent.templates.slice();
+            //     const map: Nodes = {};
+            //     let nidx = top.nextLoc;
+            //     const expr = nidx++;
+            //     const suffix = nidx++;
+            //     map[expr] = { type: 'id', loc: expr, text: '' };
+            //     map[suffix] = {
+            //         type: 'stringText',
+            //         loc: suffix,
+            //         text: action.right.join(''),
+            //     };
+            //     map[last] = { ...lastNode, text: action.left.join('') };
+            //     map[ploc] = { ...parent, templates: tpl };
+            //     if (parent.first === last) {
+            //         tpl.unshift({ expr, suffix });
+            //     } else {
+            //         const idx = parent.templates.findIndex(
+            //             (t) => t.suffix === last,
+            //         );
+            //         if (idx === -1) return;
+            //         tpl.splice(idx + 1, 0, { expr, suffix });
+            //     }
+            //     const npath = pathWithChildren(parentPath(path), expr);
+            //     return justSel(
+            //         {
+            //             type: 'within',
+            //             cursor: 0,
+            //             path: npath,
+            //             pathKey: serializePath(npath),
+            //         },
+            //         path.root.doc,
+            //         topUpdate(top.id, map, nidx),
+            //     );
+            // }
             if (lastNode.type !== 'id') return; // skipping othersss
             // const left = action.text.slice(0, action.at);
             // const right = action.text.slice(action.at + action.del);
@@ -788,7 +786,7 @@ export const handleAction = (
             } else {
                 const node = top.nodes[loc];
                 if (isText(node) && node.text === '') {
-                    const idx = top.nextLoc;
+                    // const idx = top.nextLoc;
                     const npath = pathWithChildren(path, idx);
                     return justSel(
                         {
@@ -803,30 +801,25 @@ export const handleAction = (
                             {
                                 [loc]: {
                                     type: 'string',
-                                    first: idx,
+                                    first: '',
                                     templates: [],
                                     loc,
                                 },
-                                [idx]: {
-                                    type: 'stringText',
-                                    text: '',
-                                    loc: idx,
-                                },
                             },
-                            top.nextLoc + 1,
+                            // top.nextLoc + 1,
                         ),
                     );
                 }
-                const fidx = nidx++;
-                map[fidx] = { type: 'stringText', text: '', loc: fidx };
-                const sidx = nidx++;
+                // const fidx = nidx++;
+                // map[fidx] = { type: 'stringText', text: '', loc: fidx };
+                // const sidx = nidx++;
                 map[idx] = {
                     type: action.kind,
-                    first: fidx,
-                    templates: [{ expr: loc, suffix: sidx }],
+                    first: '',
+                    templates: [{ expr: loc, suffix: '' }],
                     loc: idx,
                 };
-                map[sidx] = { type: 'stringText', text: '', loc: sidx };
+                // map[sidx] = { type: 'stringText', text: '', loc: sidx };
             }
             const update = replaceWith(top, path, idx);
             if (!update) return;

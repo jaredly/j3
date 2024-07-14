@@ -62,16 +62,6 @@ export const Edit = () => {
                                 selection.path.root.toplevel
                             ].nodes[last];
 
-                        const rawText =
-                            node.type === 'id' ||
-                            node.type === 'accessText' ||
-                            node.type === 'stringText'
-                                ? node.text
-                                : undefined;
-                        const text =
-                            rawText != null && selection.type === 'within'
-                                ? selection.text ?? splitGraphemes(rawText)
-                                : undefined;
                         const mods = {
                             meta: evt.metaKey,
                             shift: evt.shiftKey,
@@ -96,84 +86,6 @@ export const Edit = () => {
                                 console.warn('ignoring action', res);
                             }
                         }
-                        // if (keys[key]) {
-                        //     const what = keys[key]
-                        //     const action = keys[key](
-                        //         selection,
-                        //         mods,
-                        //         rawText,
-                        //     );
-                        //     if (!action) {
-                        //     } else if (action.type === 'update') {
-                        //         store.update(
-                        //             selectionAction(
-                        //                 selection.path,
-                        //                 action.cursor,
-                        //                 action.cursorStart,
-                        //                 sels.slice(0, i),
-                        //                 !action.text ||
-                        //                     action.text.join('') === rawText
-                        //                     ? undefined
-                        //                     : action.text,
-                        //                 sels.slice(i + 1),
-                        //             ),
-                        //         );
-                        //         evt.preventDefault();
-                        //         evt.stopPropagation();
-                        //         return;
-                        //     } else {
-                        //         const state = store.getState();
-                        //         const saction = handleAction(
-                        //             action,
-                        //             selection.path,
-                        //             state,
-                        //             selection,
-                        //         );
-                        //         if (saction) {
-                        //             store.update(saction);
-                        //         } else {
-                        //             console.warn('ignoring action', action);
-                        //         }
-                        //         evt.preventDefault();
-                        //         evt.stopPropagation();
-                        //     }
-                        //     return;
-                        // }
-                        // const extra = splitGraphemes(key);
-                        // if (extra.length > 1) {
-                        //     console.warn(
-                        //         'Too many graphemes? What is this',
-                        //         key,
-                        //         extra,
-                        //     );
-                        //     return;
-                        // }
-
-                        // if (selection.type === 'within' && text) {
-                        //     const editState: EditState = {
-                        //         text,
-                        //         sel: selection.cursor,
-                        //         start: selection.start,
-                        //     };
-
-                        //     const results = textKey(extra, editState, {
-                        //         meta: evt.metaKey,
-                        //         shift: evt.shiftKey,
-                        //         ctrl: evt.ctrlKey,
-                        //     });
-                        //     store.update(
-                        //         selectionAction(
-                        //             selection.path,
-                        //             results.cursor,
-                        //             undefined,
-                        //             sels.slice(0, i),
-                        //             results.text,
-                        //             sels.slice(i + 1),
-                        //         ),
-                        //     );
-                        //     evt.preventDefault();
-                        //     evt.stopPropagation();
-                        // }
                     });
                 }}
                 onBlur={(evt) => {
@@ -337,11 +249,7 @@ export const TopNode = ({
     );
     const { node, selection } = useTopNode(path);
     if (!node) return null;
-    if (
-        node.type === 'id' ||
-        node.type === 'accessText' ||
-        node.type === 'stringText'
-    ) {
+    if (node.type === 'id') {
         // return <Id path={path} node={node} tid={id} />;
         return <ManagedId path={path} node={node} selection={selection} />;
     }
