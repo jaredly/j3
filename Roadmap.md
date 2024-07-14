@@ -2,9 +2,14 @@
 
 Broadly:
 
-- [ ] add in /strings/
+- [x] add in /strings/
   - mostly
 - [ ] select multiple siblings
+
+I ... am somewhat convinced, that I should have: (accessText just be a normal ID)
+and (stringText) should go away, the (string) should own all of the texts.
+
+This would mean that ... NodeSelection would get somewhat more complicated.
 
 
 #

@@ -18,6 +18,38 @@ export type Reference = {
     loc: number;
 };
 
+export type SingleSelection =
+    | {
+          type: 'id';
+          path: Path;
+          pathKey: string;
+          cursor: number;
+          start?: number;
+          text?: string[];
+      }
+    | {
+          type: 'string';
+          path: Path;
+          pathKey: string;
+          cursor: { part: number; char: number };
+          start?: { part: number; char: number };
+          text?: string[][];
+      }
+    | { type: 'other'; location: 'start' | 'end'; path: Path; pathKey: string };
+
+export type NodeSelection_ =
+    | SingleSelection
+    | {
+          type: 'all';
+          start: {
+              path: Path;
+              pathKey: string;
+              children: number[];
+              final: SingleSelection;
+          };
+          end: { path: Path; pathKey: string };
+      };
+
 export type NodeSelection =
     | {
           type: 'within';
