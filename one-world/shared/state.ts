@@ -20,6 +20,7 @@ export type Reference = {
 
 export type SingleSelection =
     | {
+          // id *or* raw-text, I should say.
           type: 'id';
           path: Path;
           pathKey: string;
@@ -35,24 +36,25 @@ export type SingleSelection =
           start?: { part: number; char: number };
           text?: string[][];
       }
+    | { type: 'rich-text'; path: Path; pathKey: string; selection: any }
     | { type: 'other'; location: 'start' | 'end'; path: Path; pathKey: string };
 
-export type NodeSelection_ =
+export type NodeSelection =
     | SingleSelection
     | {
-          type: 'all';
+          type: 'multi';
           start: {
               path: Path;
               pathKey: string;
               children: number[];
               final: SingleSelection;
           };
-          end: { path: Path; pathKey: string };
+          end: null | { path: Path; pathKey: string };
       };
 
-export type NodeSelection =
+export type NodeSelection_ =
     | {
-          type: 'within';
+          type: 'id';
           path: Path;
           pathKey: string;
           cursor: number;

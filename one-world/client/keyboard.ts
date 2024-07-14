@@ -167,7 +167,7 @@ export const keys: {
         '.': stringInsert,
         '{'(sel, mods, node) {
             // STOP
-            // if (sel.type === 'within' && sel.start == null) {
+            // if (sel.type === 'id' && sel.start == null) {
             //     const text = sel.text ?? splitGraphemes(node.text);
             //     if (text[sel.cursor - 1] === '$') {
             //         return {
@@ -187,7 +187,7 @@ export const keys: {
     any: {
         ''(sel, _, node, key) {},
         Tab(selection, { shift }) {
-            if (selection.type === 'within') {
+            if (selection.type === 'id') {
                 return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
             }
             if (selection.type === 'without') {
@@ -269,7 +269,7 @@ export const keys: {
 
         ' '(selection, meta, node) {
             if (selection.type === 'multi') return;
-            if (selection.type !== 'within') {
+            if (selection.type !== 'id') {
                 if (selection.location === 'inside') {
                     return {
                         type: 'inside',
@@ -336,7 +336,7 @@ export const keys: {
 
         ArrowLeft(selection, { shift, ctrl }, rawText) {
             if (ctrl) return { type: 'swap', direction: 'left', into: shift };
-            if (selection.type !== 'within') {
+            if (selection.type !== 'id') {
                 if (selection.type === 'without') {
                     return {
                         type: 'nav',
@@ -373,7 +373,7 @@ export const keys: {
 
         ArrowRight(selection, { shift, ctrl }, node) {
             if (ctrl) return { type: 'swap', direction: 'right', into: shift };
-            if (selection.type !== 'within') {
+            if (selection.type !== 'id') {
                 if (selection.type === 'without') {
                     return {
                         type: 'nav',
@@ -434,9 +434,9 @@ function maybeSurround(
     kind: 'list' | 'array' | 'record' | 'string',
 ): KeyAction {
     const surround =
-        selection.type === 'without'
-            ? selection.location === 'start' || selection.location === 'all'
-            : selection.type === 'within'
+        selection.type === 'other'
+            ? selection.location === 'start'
+            : selection.type === 'id'
             ? selection.cursor === 0
             : false;
     return surround

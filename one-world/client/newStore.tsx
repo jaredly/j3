@@ -49,11 +49,13 @@ export const ensure = <K extends string | number, A>(
 const selPathKeys = (sel: NodeSelection) => {
     switch (sel.type) {
         case 'multi':
-            return sel.start
-                ? [sel.cursor.pathKey, sel.start.pathKey]
-                : [sel.cursor.pathKey];
-        case 'within':
-        case 'without':
+            return sel.end
+                ? [sel.start.pathKey, sel.end.pathKey]
+                : [sel.start.pathKey];
+        case 'id':
+        case 'other':
+        case 'rich-text':
+        case 'string':
             return [sel.pathKey];
     }
 };
@@ -82,12 +84,12 @@ const setupDragger = (store: Store) => {
             store.session,
         ).selections;
         const matching = sels.find(
-            (s) => s.type === 'within' && s.pathKey === dragState!.pathKey,
+            (s) => s.type === 'id' && s.pathKey === dragState!.pathKey,
         );
 
         const range = new Range();
         const sel = getNewSelection(
-            matching?.type === 'within'
+            matching?.type === 'id'
                 ? { start: matching.start, sel: matching.cursor }
                 : null,
             dragState.node,
@@ -102,13 +104,12 @@ const setupDragger = (store: Store) => {
             doc: dragState.path.root.doc,
             selections: [
                 {
-                    type: 'within',
+                    type: 'id',
                     cursor: sel.sel,
                     start: sel.start,
                     path: dragState.path,
                     pathKey: dragState.pathKey,
-                    text:
-                        matching?.type === 'within' ? matching.text : undefined,
+                    text: matching?.type === 'id' ? matching.text : undefined,
                 },
             ],
         });
@@ -190,9 +191,9 @@ export const newStore = (
                             const id = `${session}#${k}`;
                             updated.selections[id] = true;
                             if (
-                                sel.type === 'within' &&
+                                sel.type === 'id' &&
                                 sel.text &&
-                                (!seen[id] || seen[id].type !== 'within')
+                                (!seen[id] || seen[id].type !== 'id')
                             ) {
                                 maybeCommitTextChange(sel, state, extras);
                             }
@@ -279,7 +280,7 @@ function sendUpdates(updated: Updated, evts: Evts) {
 }
 
 function maybeCommitTextChange(
-    sel: Extract<NodeSelection, { type: 'within' }>,
+    sel: Extract<NodeSelection, { type: 'id' }>,
     state: PersistedState,
     extras: Action[],
 ) {

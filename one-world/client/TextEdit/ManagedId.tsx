@@ -47,12 +47,12 @@ export const ManagedId = ({
                 ? colors.string
                 : getRainbowHashColor(
                       fasthash(
-                          (selection?.type === 'within'
+                          (selection?.type === 'id'
                               ? selection.text?.join('')
                               : null) ?? node.text,
                       ),
                   ),
-        [node.text, selection?.type === 'within' ? selection.text : null],
+        [node.text, selection?.type === 'id' ? selection.text : null],
     );
 
     return (
@@ -61,8 +61,7 @@ export const ManagedId = ({
                 // padding: '0 4px',
                 // backgroundColor: '#222',
                 backgroundColor:
-                    selection?.type === 'without' &&
-                    selection.location === 'all'
+                    selection?.type === 'multi'
                         ? colors.nodeSelection
                         : undefined,
                 boxSizing: 'border-box',
@@ -88,12 +87,12 @@ export const ManagedId = ({
                 evt.preventDefault();
                 evt.stopPropagation();
                 const text =
-                    (selection?.type === 'within' ? selection.text : null) ??
+                    (selection?.type === 'id' ? selection.text : null) ??
                     splitGraphemes(node.text);
                 const range = new Range();
 
                 let { sel, start } = getNewSelection(
-                    selection?.type === 'within'
+                    selection?.type === 'id'
                         ? {
                               start: selection.start,
                               sel: selection.cursor,
@@ -106,22 +105,22 @@ export const ManagedId = ({
                     range,
                 );
 
-                const action: Action = selectionAction(
-                    path,
-                    sel,
-                    start,
-                    evt.metaKey
-                        ? store.getDocSession(path.root.doc, store.session)
-                              .selections
-                        : [],
-                    selection?.type === 'within' ? selection.text : undefined,
-                    [],
-                );
-                store.update(action);
+                // const action: Action = selectionAction(
+                //     path,
+                //     sel,
+                //     start,
+                //     evt.metaKey
+                //         ? store.getDocSession(path.root.doc, store.session)
+                //               .selections
+                //         : [],
+                //     selection?.type === 'id' ? selection.text : undefined,
+                //     [],
+                // );
+                // store.update(action);
                 store.startDrag(pathKey, path);
             }}
         >
-            {selection?.type === 'within'
+            {selection?.type === 'id'
                 ? RenderTextAndCursor({
                       state: {
                           start: selection.start,
@@ -147,7 +146,7 @@ export const useDrag = (selection: void | NodeSelection, path: Path) => {
             const selection = latest.current;
             const range = new Range();
             const sel = getNewSelection(
-                selection?.type === 'within'
+                selection?.type === 'id'
                     ? {
                           start: selection.start,
                           sel: selection.cursor,
@@ -166,17 +165,17 @@ export const useDrag = (selection: void | NodeSelection, path: Path) => {
                 doc: path.root.doc,
                 selections: [
                     {
-                        type: 'within',
+                        type: 'id',
                         cursor: sel.sel,
                         start:
                             sel.start ??
-                            (selection?.type === 'within'
+                            (selection?.type === 'id'
                                 ? selection.cursor
                                 : undefined),
                         path,
                         pathKey: serializePath(path),
                         text:
-                            selection?.type === 'within'
+                            selection?.type === 'id'
                                 ? selection.text
                                 : undefined,
                     },
@@ -194,29 +193,29 @@ export const useDrag = (selection: void | NodeSelection, path: Path) => {
     return { ref, setDrag };
 };
 
-export function selectionAction(
-    path: Path,
-    sel: number,
-    start: number | undefined,
-    before: NodeSelection[],
-    text: string[] | undefined,
-    after: NodeSelection[],
-): Action {
-    return {
-        type: 'in-session',
-        action: { type: 'multi', actions: [] },
-        doc: path.root.doc,
-        selections: [
-            ...before,
-            {
-                type: 'within',
-                cursor: sel,
-                start,
-                path,
-                pathKey: serializePath(path),
-                text,
-            },
-            ...after,
-        ],
-    };
-}
+// export function selectionAction(
+//     path: Path,
+//     sel: number,
+//     start: number | undefined,
+//     before: NodeSelection[],
+//     text: string[] | undefined,
+//     after: NodeSelection[],
+// ): Action {
+//     return {
+//         type: 'in-session',
+//         action: { type: 'multi', actions: [] },
+//         doc: path.root.doc,
+//         selections: [
+//             ...before,
+//             {
+//                 type: 'id',
+//                 cursor: sel,
+//                 start,
+//                 path,
+//                 pathKey: serializePath(path),
+//                 text,
+//             },
+//             ...after,
+//         ],
+//     };
+// }

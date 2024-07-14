@@ -183,7 +183,7 @@ const findSelection = (
 ): NodeSelection | void => {
     for (let sel of docSession.selections) {
         switch (sel.type) {
-            case 'within':
+            case 'id':
                 if (sel.pathKey === pathKey) return sel;
                 break;
             case 'without':
@@ -226,7 +226,7 @@ const useTopNode = (path: Path) => {
 
 // const editState = (sel?: NodeSelection): EditState | void => {
 //     if (!sel) return;
-//     if (sel.type === 'within') {
+//     if (sel.type === 'id') {
 //         return { sel: sel.cursor, start: sel.start, text: sel.text };
 //     }
 //     // if (sel.type === 'cursor') {

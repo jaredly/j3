@@ -108,14 +108,6 @@ export const inFromEnd = (
 ): void | NodeSelection => {
     const children = childLocs(node);
     if (!children.length) {
-        if (isCollection(node)) {
-            return {
-                type: 'without',
-                location: 'inside',
-                path,
-                pathKey: serializePath(path),
-            };
-        }
         return;
     }
     const loc = children[children.length - 1];
@@ -129,14 +121,6 @@ export const inFromStart = (
 ): void | NodeSelection => {
     const children = childLocs(node);
     if (children.length === 0) {
-        if (isCollection(node)) {
-            return {
-                type: 'without',
-                location: 'inside',
-                path,
-                pathKey: serializePath(path),
-            };
-        }
         return;
     }
     const loc = children[0];

@@ -144,7 +144,7 @@ const unwrap = (
         },
         selectNode(top.nodes[lloc], npath, 'start'),
         // {
-        //     type: 'within',
+        //     type: 'id',
         //     cursor: 0,
         //     path: npath,
         //     pathKey: serializePath(npath),
@@ -194,7 +194,7 @@ export const joinLeft = (
     //             },
     //         },
     //         {
-    //             type: 'within',
+    //             type: 'id',
     //             cursor: splitGraphemes(pnode.text).length,
     //             path: npath,
     //             pathKey: serializePath(npath),
@@ -263,7 +263,7 @@ export const joinLeft = (
             },
         },
         {
-            type: 'within',
+            type: 'id',
             cursor: splitGraphemes(prevNode.text).length,
             path: ppath,
             pathKey: serializePath(ppath),
@@ -367,7 +367,7 @@ export const addSibling = (
         selection: left
             ? undefined
             : {
-                  type: 'within',
+                  type: 'id',
                   cursor: 0,
                   path: npath,
                   pathKey: serializePath(npath),
@@ -389,7 +389,7 @@ export const handleAction = (
         case 'update': {
             return justSel(
                 {
-                    type: 'within',
+                    type: 'id',
                     cursor: action.cursor,
                     start: action.start,
                     text: action.text,
@@ -413,7 +413,7 @@ export const handleAction = (
                         doc: path.root.doc,
                         selections: [
                             {
-                                type: 'without',
+                                type: 'other',
                                 location: 'end',
                                 path: cpath,
                                 pathKey: serializePath(cpath),
@@ -533,7 +533,7 @@ export const handleAction = (
             if (node.items.length === 0) {
                 return justSel(
                     {
-                        type: 'within',
+                        type: 'id',
                         cursor: 0,
                         path,
                         pathKey: serializePath(path),
@@ -676,7 +676,7 @@ export const handleAction = (
                     doc: path.root.doc,
                     selections: [
                         {
-                            type: 'within',
+                            type: 'id',
                             cursor: 0,
                             path,
                             pathKey: serializePath(path),
@@ -733,7 +733,7 @@ export const handleAction = (
             //     const npath = pathWithChildren(parentPath(path), expr);
             //     return justSel(
             //         {
-            //             type: 'within',
+            //             type: 'id',
             //             cursor: 0,
             //             path: npath,
             //             pathKey: serializePath(npath),
@@ -790,7 +790,7 @@ export const handleAction = (
                     const npath = pathWithChildren(path, idx);
                     return justSel(
                         {
-                            type: 'within',
+                            type: 'id',
                             cursor: 0,
                             path: npath,
                             pathKey: serializePath(npath),
@@ -886,49 +886,48 @@ export const handleAction = (
                 }
 
                 case 'contract':
-                    if (selection.type !== 'without') {
+                    if (selection.type !== 'multi') {
                         return; // what
                     }
-                    if (selection.child) {
-                        if (selection.child.path.length) {
-                            const cpath = pathWithChildren(
-                                path,
-                                selection.child.path[0],
-                            );
-                            return justSel(
-                                {
-                                    type: 'without',
-                                    location: 'all',
-                                    path: cpath,
-                                    pathKey: serializePath(cpath),
-                                    child: {
-                                        path: selection.child.path.slice(1),
-                                        final: selection.child.final,
-                                    },
-                                },
-                                path.root.doc,
-                            );
-                        }
-                        return justSel(selection.child.final, path.root.doc);
+                    if (selection.end) {
+                        return justSel(
+                            { ...selection, end: null },
+                            path.root.doc,
+                        );
                     }
-
-                    return justSel(
-                        selectNode(getNodeForPath(path, state), path, 'start'),
-                        path.root.doc,
-                    );
-
-                case 'expand':
-                    if (
-                        selection?.type !== 'without' ||
-                        selection.location !== 'all'
-                    ) {
+                    if (selection.start.children.length) {
+                        const cpath = pathWithChildren(
+                            path,
+                            selection.start.children[0],
+                        );
                         return justSel(
                             {
-                                type: 'without',
-                                location: 'all',
-                                path,
-                                pathKey: serializePath(path),
-                                child: { path: [], final: selection },
+                                type: 'multi',
+                                start: {
+                                    path: cpath,
+                                    pathKey: serializePath(cpath),
+                                    children: selection.start.children.slice(1),
+                                    final: selection.start.final,
+                                },
+                                end: null,
+                            },
+                            path.root.doc,
+                        );
+                    }
+                    return justSel(selection.start.final, path.root.doc);
+
+                case 'expand':
+                    if (selection?.type !== 'multi') {
+                        return justSel(
+                            {
+                                type: 'multi',
+                                start: {
+                                    path,
+                                    pathKey: serializePath(path),
+                                    children: [],
+                                    final: selection,
+                                },
+                                end: null,
                             },
                             path.root.doc,
                         );
@@ -937,21 +936,17 @@ export const handleAction = (
                         const parent = parentPath(path);
                         return justSel(
                             {
-                                type: 'without',
-                                location: 'all',
-                                path: parent,
-                                pathKey: serializePath(parent),
-                                child: selection.child
-                                    ? {
-                                          ...selection.child,
-                                          path: [
-                                              path.children[
-                                                  path.children.length - 1
-                                              ],
-                                              ...selection.child.path,
-                                          ],
-                                      }
-                                    : { path: [], final: selection },
+                                type: 'multi',
+                                start: {
+                                    path: parent,
+                                    pathKey: serializePath(parent),
+                                    children: [
+                                        path.children[path.children.length - 1],
+                                        ...selection.start.children,
+                                    ],
+                                    final: selection.start.final,
+                                },
+                                end: null,
                             },
                             path.root.doc,
                         );

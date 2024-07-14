@@ -20,10 +20,20 @@ export const setSelection = (store: Store, doc: string, sel: NodeSelection) => {
 };
 
 export const selectAll = (path: Path): NodeSelection => ({
-    type: 'without',
-    location: 'all',
-    path,
-    pathKey: serializePath(path),
+    type: 'multi',
+    start: {
+        path,
+        pathKey: serializePath(path),
+        children: [],
+        // STOPSHIP: This is a little faked
+        final: {
+            type: 'other',
+            location: 'start',
+            path,
+            pathKey: serializePath(path),
+        },
+    },
+    end: null,
 });
 
 export const selectNode = (
@@ -32,16 +42,11 @@ export const selectNode = (
     side: 'start' | 'end' | 'all',
 ): NodeSelection => {
     if (side === 'all') {
-        return {
-            type: 'without',
-            location: 'all',
-            path,
-            pathKey: serializePath(path),
-        };
+        return selectAll(path);
     }
     if (isText(node)) {
         return {
-            type: 'within',
+            type: 'id',
             cursor: side === 'start' ? 0 : splitGraphemes(node.text).length,
             // start: side === 'all' ? 0 : undefined,
             path,
@@ -49,7 +54,7 @@ export const selectNode = (
         };
     }
     return {
-        type: 'without',
+        type: 'other',
         location: side,
         path,
         pathKey: serializePath(path),

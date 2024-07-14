@@ -30,13 +30,12 @@ export const String = ({
         <span
             style={{
                 backgroundColor:
-                    selection?.type === 'without' &&
-                    selection.location === 'all'
+                    selection?.type === 'multi'
                         ? colors.nodeSelection
                         : colors.stringBg,
             }}
         >
-            {selection?.type === 'without' && selection.location === 'start' ? (
+            {selection?.type === 'other' && selection.location === 'start' ? (
                 <span style={cursorStyle(false)}>{'|'}</span>
             ) : null}
             <span
@@ -87,7 +86,7 @@ export const String = ({
             >
                 "
             </span>
-            {selection?.type === 'without' && selection.location === 'end' ? (
+            {selection?.type === 'other' && selection.location === 'end' ? (
                 <span style={cursorStyle(false)}>{'|'}</span>
             ) : null}
         </span>

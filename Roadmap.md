@@ -1,3 +1,14 @@
+
+# Overhauyl the selection
+and textlyness.
+Only ID is text.
+accessText => ID
+stringText => String!!! Let's try not having separate whatsits.
+
+Ok also let's just ditch the concept of an empty list.
+
+
+
 #
 
 Broadly:
