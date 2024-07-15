@@ -1,4 +1,126 @@
 
+# Raw Code
+
+What if raw code was /just/ a template string? and template strings really were doing the thing?
+SO
+you could do
+```clj
+(defn js"" [first rest] ...)
+; and then
+js"Some ${thing} here"
+; which would be
+(js"" "Some " [(, thing " here")])
+```
+that's kinda cool dontchathink
+
+So, in this case, I would actually want both syntax highlighting and block rendering.
+ALTHOUGH what if we do block rendering for /any/ multiline string?
+I meeeeean that does seem kinda cool. And is maybe the whole answer to the multiline string
+editing issue.
+
+okkkkk so now the question is, do I need some special way to ... turn on syntax highlighting?
+I want there to be a way for the editor to associate a given toplevel with certain extra metadata.
+such as `js""` should have javascript syntax highlighting, or xyz should be rendered by default
+by abc render plugin.
+
+Thiss brings me to another point.
+Do .. I want ... the "fixture tests" dealio to actually be handled by a macro?
+like
+
+(#fixtures test-fn [(, a b) (, c d)])
+
+becomes something else that would actually type check?
+How would that play with:
+- error reporting?
+- if some fixtures throw exceptions, it would tank the whole thing right? which I don't want.
+- I really like being able to click on the encountered output to update the test
+
+and yet
+
+so we could still have the `Fixtures` plugin take over and do all the niceness, but this would give
+it runtime semantic value, which seems like a nice idea.
+
+ALSO Q: Is there a way to decouple the `fixtures` plugin from the syntactic representation of the
+list and the tuples? Such that it would be more general, and accommodate other syntaxes?
+My thought is that the `#fixtures` macro could produce some kind of JSON metadata that the fixtures
+plugin would then consume. Does that make sense?
+How would a macro produce such metadata?
+
+Macros are tasked with providing:
+1) the CST
+2) the formatting
+and maybe we could throw in arbtirary metadata as a treat?
+
+it would want to be something like:
+```ts
+{"test": loc, "compare"?: loc, "fixtures": Array<{input: loc, output: loc}>}
+```
+
+
+```clj
+(defn wrap-macro [mfn x]
+  (let [(, cst formatting) (mfn x)]
+    (json (, (, "cst" cst) (, "formatting" formatting)))))
+
+(def #fixtures (wrap-macro (fn [items] ...)))
+```
+
+#macro is a single-item macro
+##macro is a multi-item macro, and has the ability to produce multiple ~toplevels.
+
+... and does the client need to know that?
+o wait. I remember. Macros are *not* ... necessarily prefixed. Like
+- || && ,
+- -> ->>
+- let->
+
+all need to be macros.
+SO macros are just like the rest of us. but we have `defmacro`.
+
+HOWEVER I think there's maybe ... something to be said ... for "toplevel macros" being something different.
+`deriving` for example.
+`deftopmacro name [what]`
+howzaboutthat?
+I could have `defn` be a macro.
+OK BUT the thing about a deftopmacro is it can access the ... definitions ... of things, that are referenced from it. it is called with `[cst get-source]`.
+Is that enough? Does it also need `get-type`? I feel like get-source is probably enough.
+
+should ... all macros have access to get-source? not for now.
+
+
+
+
+
+It would also mean that I could do normal type checking on the macro'd stuff and it would work ~fine,
+except that a type error in one spot would break the whole dealio.
+
+
+Sooo III want, a matrix primitive.
+a table basic.
+(| | |)
+Doooooo Iiiiii have ideas about rows and columns
+like what would the type even be
+of things
+yeah we don't really have the tools for this right
+ohwait. so like.
+it can just be tuples of tuples? instead of an array of tuples
+
+well hrm. So some of the things we /do/ want to have all the same type.
+hoowww would we represent constraints like that.
+lke
+'first row is all X'
+but second row is not.
+wellll ok so that really only comes up when we're testing `eval`, right?
+which breaks rules all the time.
+
+so other than the rule-breaking one ... which ... idk what to do there. maybe just jsonify the result?
+we do want the columns to have the same types.
+So it's fine? I guess.
+
+
+
+
+
 # Overhauyl the selection
 and textlyness.
 Only ID is text.

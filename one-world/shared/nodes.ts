@@ -119,6 +119,14 @@ export const inFromStart = (
     path: Path,
     nodes: Nodes,
 ): void | NodeSelection => {
+    if (node.type === 'string') {
+        return {
+            type: 'string',
+            cursor: { part: 0, char: 0 },
+            path,
+            pathKey: serializePath(path),
+        };
+    }
     const children = childLocs(node);
     if (children.length === 0) {
         return;
@@ -130,6 +138,7 @@ export const inFromStart = (
 export const firstAtom = (path: Path, nodes: Nodes): Path => {
     const loc = path.children[path.children.length - 1];
     const node = nodes[loc];
+    if (node.type === 'string') return path;
     const children = childLocs(node);
     if (!children.length) {
         return path;
@@ -143,6 +152,7 @@ export const firstAtom = (path: Path, nodes: Nodes): Path => {
 export const lastAtom = (path: Path, nodes: Nodes): Path => {
     const loc = path.children[path.children.length - 1];
     const node = nodes[loc];
+    if (node.type === 'string') return path;
     const children = childLocs(node);
     if (!children.length) {
         return path;
@@ -161,6 +171,7 @@ export const nextAtom = (path: Path, nodes: Nodes): Path | void => {
     const loc = path.children[path.children.length - 1];
     const ploc = path.children[path.children.length - 2];
     const parent = nodes[ploc];
+    if (parent.type === 'string') return;
     const children = childLocs(parent);
     if (!children.length) {
         return;
@@ -181,6 +192,7 @@ export const prevAtom = (path: Path, nodes: Nodes): Path | void => {
     const loc = path.children[path.children.length - 1];
     const ploc = path.children[path.children.length - 2];
     const parent = nodes[ploc];
+    if (parent.type === 'string') return;
     const children = childLocs(parent);
     if (!children.length) {
         return;

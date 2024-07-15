@@ -1,17 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Node, Path, Selection, serializePath } from '../shared/nodes';
+import { Path, Selection, serializePath } from '../shared/nodes';
 import { DocSession, NodeSelection } from '../shared/state';
+import { Collection } from './Collection';
 import { Hidden } from './HiddenInput';
 import { useStore } from './StoreContext';
-import { EditState } from './TextEdit/Id';
-import { ManagedId, selectionAction } from './TextEdit/ManagedId';
-import { handleAction } from './TextEdit/actions';
-import { keys, runKey, textKey } from './keyboard';
-import { cursorStyle } from './TextEdit/renderTextAndCursor';
-import { Collection } from './Collection';
 import { String } from './String';
+import { ManagedId } from './TextEdit/ManagedId';
+import { handleAction } from './TextEdit/actions';
+import { runKey } from './keyboard';
 
 const emptyNodes: number[] = [];
 
@@ -186,12 +183,12 @@ const findSelection = (
             case 'id':
                 if (sel.pathKey === pathKey) return sel;
                 break;
-            case 'without':
+            case 'other':
                 if (sel.pathKey === pathKey) return sel;
                 break;
             case 'multi':
-                if (sel.cursor.pathKey === pathKey) return sel;
-                if (sel.start?.pathKey === pathKey) return sel;
+                if (sel.start.pathKey === pathKey) return sel;
+                if (sel.end?.pathKey === pathKey) return sel;
                 break;
         }
     }

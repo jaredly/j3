@@ -14,6 +14,12 @@ export type KeyAction =
     | { type: 'end'; which: 'list' | 'array' | 'record' }
     | { type: 'split'; left: string[]; right: string[] }
     | { type: 'update'; text?: string[]; cursor: number; start?: number }
+    | {
+          type: 'update-string';
+          text?: string[][];
+          cursor: [number, number];
+          start?: number;
+      }
     | { type: 'delete'; direction: 'left' | 'right' | 'blank' }
     | { type: 'unwrap'; direction: 'left' | 'right' }
     | { type: 'shrink'; from: 'start' | 'end' }
@@ -68,6 +74,7 @@ export const runKey = (
     selection: NodeSelection,
 ) => {
     if (mods.meta) return false;
+    debugger;
     // um also ctrl and alt?
     if (node.type === 'string') {
         if (keys.string[key]) {
@@ -108,15 +115,18 @@ const textInsert = (
     node: TextT,
     key: string,
 ): KeyRes => {
-    if (sel.type === 'multi') return;
     const keys = splitGraphemes(key);
     if (keys.length > 1) {
         console.warn('Too many graphemes? What is this', key, keys);
         return;
     }
-    if (sel.type === 'without') {
+    if (sel.type === 'multi' && !sel.end) {
         return { type: 'update', text: keys, cursor: keys.length };
     }
+    if (sel.type !== 'id') return;
+    // if (sel.type === 'other') {
+    //     return { type: 'update', text: keys, cursor: keys.length };
+    // }
     return textKey(
         keys,
         sel.text ?? splitGraphemes(node.text),
@@ -131,15 +141,19 @@ const stringInsert = (
     node: Extract<Node, { type: 'string' }>,
     key: string,
 ): KeyRes => {
-    if (sel.type === 'multi') return;
     const keys = splitGraphemes(key);
     if (keys.length > 1) {
         console.warn('Too many graphemes? What is this', key, keys);
         return;
     }
-    if (sel.type === 'without') {
+    if (sel.type === 'multi' && !sel.end) {
         return { type: 'update', text: keys, cursor: keys.length };
     }
+    if (sel.type !== 'string') {
+    }
+    // if (sel.type === 'without') {
+    //     return { type: 'update', text: keys, cursor: keys.length };
+    // }
     // STOP
     // return textKey(
     //     keys,
@@ -151,6 +165,15 @@ const stringInsert = (
 
 export const keys: {
     any: Record<string, KFn<Node>>;
+    multi: Record<
+        string,
+        (
+            selection: Extract<NodeSelection, { type: 'multi' }>,
+            mods: Mods,
+            node: Node[],
+            key: string,
+        ) => KeyRes
+    >;
     collection: KFns<'list' | 'array' | 'record'>;
     string: KFns<'string'>;
     text: Record<string, KFn<TextT>>;
@@ -184,16 +207,25 @@ export const keys: {
         '': textInsert,
     },
     collection: {},
+    multi: {
+        Tab(selection, { shift }) {
+            return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
+        },
+    },
     any: {
         ''(sel, _, node, key) {},
         Tab(selection, { shift }) {
             if (selection.type === 'id') {
                 return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
             }
-            if (selection.type === 'without') {
-                if (selection.location === 'inside') {
-                    return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
-                }
+            if (selection.type === 'multi') {
+                if (selection.end) return; // TODO
+                return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
+            }
+            if (selection.type === 'other') {
+                // if (selection.location === 'inside') {
+                //     return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
+                // }
                 if (selection.location === (shift ? 'end' : 'start')) {
                     return {
                         type: 'nav',
@@ -206,11 +238,11 @@ export const keys: {
 
         Delete(selection, mods) {
             if (selection.type === 'multi') return;
-            if (selection.type === 'without') {
+            if (selection.type === 'other') {
                 switch (selection.location) {
-                    case 'all':
-                    case 'inside':
-                        return { type: 'delete', direction: 'blank' };
+                    // case 'all':
+                    // case 'inside':
+                    //     return { type: 'delete', direction: 'blank' };
                     case 'end':
                         return { type: 'unwrap', direction: 'right' };
                     case 'start':
@@ -224,11 +256,11 @@ export const keys: {
 
         Backspace(selection, mods, node) {
             if (selection.type === 'multi') return;
-            if (selection.type === 'without') {
+            if (selection.type === 'other') {
                 switch (selection.location) {
-                    case 'all':
-                    case 'inside':
-                        return { type: 'delete', direction: 'blank' };
+                    // case 'all':
+                    // case 'inside':
+                    //     return { type: 'delete', direction: 'blank' };
                     case 'end':
                         if (mods.shift || node.type === 'string') {
                             return { type: 'delete', direction: 'blank' };
@@ -242,7 +274,7 @@ export const keys: {
             if (mods.shift) {
                 return { type: 'delete', direction: 'blank' };
             }
-            if (!isText(node)) return;
+            if (selection.type !== 'id' || node.type !== 'id') return;
             const sel = selection.cursor;
             const text = selection.text ?? splitGraphemes(node.text);
             if (sel === 0) {
@@ -269,23 +301,23 @@ export const keys: {
 
         ' '(selection, meta, node) {
             if (selection.type === 'multi') return;
-            if (selection.type !== 'id') {
-                if (selection.location === 'inside') {
-                    return {
-                        type: 'inside',
-                        nodes: [
-                            { type: 'id', text: '', loc: false },
-                            { type: 'id', text: '', loc: true },
-                        ],
-                    };
-                }
+            if (selection.type === 'other') {
+                // if (selection.location === 'inside') {
+                //     return {
+                //         type: 'inside',
+                //         nodes: [
+                //             { type: 'id', text: '', loc: false },
+                //             { type: 'id', text: '', loc: true },
+                //         ],
+                //     };
+                // }
                 // todo handle multi
                 return {
                     type: selection.location === 'start' ? 'before' : 'after',
                     node: { type: 'id', text: '', loc: true },
                 };
             }
-            if (!isText(node)) return;
+            if (selection.type !== 'id' || node.type !== 'id') return;
             const text = selection.text ?? splitGraphemes(node.text);
             if (
                 (selection.start != null &&
@@ -337,16 +369,16 @@ export const keys: {
         ArrowLeft(selection, { shift, ctrl }, rawText) {
             if (ctrl) return { type: 'swap', direction: 'left', into: shift };
             if (selection.type !== 'id') {
-                if (selection.type === 'without') {
+                if (selection.type === 'other') {
                     return {
                         type: 'nav',
                         dir:
                             selection.location === 'start'
                                 ? 'left'
-                                : selection.location === 'all' ||
-                                  selection.location === 'inside'
-                                ? 'to-start'
-                                : 'inside-end',
+                                : // : selection.location === 'all' ||
+                                  //   selection.location === 'inside'
+                                  // ? 'to-start'
+                                  'inside-end',
                     };
                 }
                 return { type: 'nav', dir: 'left' };
@@ -374,16 +406,16 @@ export const keys: {
         ArrowRight(selection, { shift, ctrl }, node) {
             if (ctrl) return { type: 'swap', direction: 'right', into: shift };
             if (selection.type !== 'id') {
-                if (selection.type === 'without') {
+                if (selection.type === 'other') {
                     return {
                         type: 'nav',
                         dir:
                             selection.location === 'end'
                                 ? 'right'
-                                : selection.location === 'all' ||
-                                  selection.location === 'inside'
-                                ? 'to-end'
-                                : 'inside-start',
+                                : // : selection.location === 'all' ||
+                                  //   selection.location === 'inside'
+                                  // ? 'to-end'
+                                  'inside-start',
                     };
                 }
                 return { type: 'nav', dir: 'right' };

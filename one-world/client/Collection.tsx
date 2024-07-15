@@ -30,14 +30,14 @@ export const Collection = ({
     return (
         <span
             style={
-                selection?.type === 'without' && selection.location === 'all'
+                selection?.type === 'multi' //&& selection.location === 'all'
                     ? {
                           backgroundColor: colors.nodeSelection,
                       }
                     : undefined
             }
         >
-            {selection?.type === 'without' && selection.location === 'start' ? (
+            {selection?.type === 'other' && selection.location === 'start' ? (
                 <span style={cursorStyle(false)}>{'|'}</span>
             ) : null}
             <span
@@ -47,10 +47,10 @@ export const Collection = ({
             >
                 {l}
             </span>
-            {selection?.type === 'without' &&
+            {/* {selection?.type === 'other' &&
             selection.location === 'inside' ? (
                 <span style={cursorStyle(false)}>{'|'}</span>
-            ) : null}
+            ) : null} */}
             {node.items.map((loc, i) => (
                 <React.Fragment key={loc}>
                     {i === 0 ? null : (
@@ -77,7 +77,7 @@ export const Collection = ({
             >
                 {r}
             </span>
-            {selection?.type === 'without' && selection.location === 'end' ? (
+            {selection?.type === 'other' && selection.location === 'end' ? (
                 <span style={cursorStyle(false)}>{'|'}</span>
             ) : null}
         </span>
@@ -116,8 +116,8 @@ const clickBracket = (
     }
 
     setSelection(store, path.root.doc, {
-        type: 'without',
-        location: l === left ? (left ? 'start' : 'end') : 'inside',
+        type: 'other',
+        location: left ? 'start' : 'end', // : 'inside',
         pathKey: serializePath(path),
         path,
     });

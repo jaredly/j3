@@ -26,7 +26,7 @@ export const clickPunctuation = (
     const which = l ? left : right;
     if (which == null) {
         return setSelection(store, path.root.doc, {
-            type: 'without',
+            type: 'other',
             location: l ? 'start' : 'end',
             path,
             pathKey: serializePath(path),

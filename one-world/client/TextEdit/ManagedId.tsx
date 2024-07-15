@@ -105,21 +105,24 @@ export const ManagedId = ({
                     range,
                 );
 
-                // const action: Action = selectionAction(
-                //     path,
-                //     sel,
-                //     start,
-                //     evt.metaKey
-                //         ? store.getDocSession(path.root.doc, store.session)
-                //               .selections
-                //         : [],
-                //     selection?.type === 'id' ? selection.text : undefined,
-                //     [],
-                // );
-                // store.update(action);
+                const action: Action = selectionAction(
+                    path,
+                    sel,
+                    start,
+                    evt.metaKey
+                        ? store.getDocSession(path.root.doc, store.session)
+                              .selections
+                        : [],
+                    selection?.type === 'id' ? selection.text : undefined,
+                    [],
+                );
+                store.update(action);
                 store.startDrag(pathKey, path);
             }}
         >
+            <span data-suffix={node.loc} style={{ width: 0 }}>
+                &nbsp;
+            </span>
             {selection?.type === 'id'
                 ? RenderTextAndCursor({
                       state: {
@@ -193,29 +196,29 @@ export const useDrag = (selection: void | NodeSelection, path: Path) => {
     return { ref, setDrag };
 };
 
-// export function selectionAction(
-//     path: Path,
-//     sel: number,
-//     start: number | undefined,
-//     before: NodeSelection[],
-//     text: string[] | undefined,
-//     after: NodeSelection[],
-// ): Action {
-//     return {
-//         type: 'in-session',
-//         action: { type: 'multi', actions: [] },
-//         doc: path.root.doc,
-//         selections: [
-//             ...before,
-//             {
-//                 type: 'id',
-//                 cursor: sel,
-//                 start,
-//                 path,
-//                 pathKey: serializePath(path),
-//                 text,
-//             },
-//             ...after,
-//         ],
-//     };
-// }
+export function selectionAction(
+    path: Path,
+    sel: number,
+    start: number | undefined,
+    before: NodeSelection[],
+    text: string[] | undefined,
+    after: NodeSelection[],
+): Action {
+    return {
+        type: 'in-session',
+        action: { type: 'multi', actions: [] },
+        doc: path.root.doc,
+        selections: [
+            ...before,
+            {
+                type: 'id',
+                cursor: sel,
+                start,
+                path,
+                pathKey: serializePath(path),
+                text,
+            },
+            ...after,
+        ],
+    };
+}
