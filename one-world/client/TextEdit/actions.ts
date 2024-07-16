@@ -386,6 +386,16 @@ export const handleAction = (
     const top = state.toplevels[tid];
     const last = path.children[path.children.length - 1];
     switch (action.type) {
+        case 'select':
+            return justSel(
+                selectNode(
+                    top.nodes[action.child],
+                    pathWithChildren(path, action.child),
+                    action.location,
+                    top.nodes,
+                ),
+                path.root.doc,
+            );
         case 'update-string': {
             return justSel(
                 {

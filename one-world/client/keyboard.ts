@@ -27,6 +27,7 @@ export type KeyAction =
     | { type: 'swap'; direction: 'left' | 'right'; into: boolean }
     | { type: 'join-left'; text: string[] }
     | { type: 'inside'; nodes: RecNodeT<boolean>[] }
+    | { type: 'select'; location: 'start' | 'end'; child: number }
     | {
           type: 'nav';
           dir:
@@ -430,6 +431,38 @@ export const keys2: {
                 }
             }
             return stringKey(sel, mods, node, '{');
+        },
+        ArrowLeft(selection, { shift, ctrl }, node) {
+            if (ctrl) return { type: 'swap', direction: 'left', into: shift };
+            const { text, start, cursor } = selection;
+            if (shift) {
+                return; // TODO
+                // return {
+                //     type: 'update-string',
+                //     text: text,
+                //     cursor: Math.max(0, cursor - 1),
+                //     start: start ?? cursor,
+                // };
+            }
+            if (cursor.char > 0) {
+                return {
+                    type: 'update-string',
+                    text: text,
+                    cursor: { part: cursor.part, char: cursor.char - 1 },
+                };
+            }
+            if (cursor.part > 0) {
+                return {
+                    type: 'select',
+                    location: 'end',
+                    child: node.templates[cursor.part - 1].expr,
+                };
+            }
+            return {
+                type: 'select',
+                location: 'end',
+                child: node.tag,
+            };
         },
     },
     all: {
