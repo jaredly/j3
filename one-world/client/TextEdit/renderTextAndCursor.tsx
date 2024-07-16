@@ -10,6 +10,7 @@ export const RenderTextAndCursor = ({
     blink: boolean;
 }) => {
     if (start != null && start !== sel) {
+        if (start === -1) start = text.length;
         const [left, right] = start < sel ? [start, sel] : [sel, start];
         return (
             <>

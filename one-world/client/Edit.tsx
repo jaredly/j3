@@ -192,9 +192,8 @@ const findSelection = (
 ): NodeSelection | void => {
     for (let sel of docSession.selections) {
         switch (sel.type) {
+            case 'string':
             case 'id':
-                if (sel.pathKey === pathKey) return sel;
-                break;
             case 'other':
                 if (sel.pathKey === pathKey) return sel;
                 break;
@@ -202,6 +201,8 @@ const findSelection = (
                 if (sel.start.pathKey === pathKey) return sel;
                 if (sel.end?.pathKey === pathKey) return sel;
                 break;
+            default:
+                throw new Error('unexpected selection kind');
         }
     }
 };

@@ -3,7 +3,10 @@ import { Node, Path, pathWithChildren, serializePath } from '../shared/nodes';
 import { NodeSelection } from '../shared/state';
 import { TopNode } from './Edit';
 import { Store, useStore } from './StoreContext';
-import { cursorStyle } from './TextEdit/renderTextAndCursor';
+import {
+    cursorStyle,
+    RenderTextAndCursor,
+} from './TextEdit/renderTextAndCursor';
 import {
     getNodeForPath,
     isLeft,
@@ -13,6 +16,8 @@ import {
 } from './selectNode';
 import { colors } from './TextEdit/colors';
 import { clickPunctuation } from './clickPunctuation';
+import { useBlink } from './TextEdit/ManagedId';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 
 export const String = ({
     node,
@@ -26,6 +31,9 @@ export const String = ({
     selection: void | NodeSelection;
 }) => {
     const store = useStore();
+
+    const blink = useBlink(selection);
+
     return (
         <span
             style={{
@@ -46,6 +54,22 @@ export const String = ({
             >
                 "
             </span>
+            {selection?.type === 'string' && selection.cursor.part === 0
+                ? RenderTextAndCursor({
+                      state: {
+                          start:
+                              selection.start?.part === selection.cursor.part
+                                  ? selection.start.char
+                                  : selection.start
+                                  ? -1
+                                  : undefined,
+                          sel: selection.cursor.char,
+                          text:
+                              selection.text?.[0] ?? splitGraphemes(node.first),
+                      },
+                      blink,
+                  })
+                : node.first}
             {/* <TopNode id={tid} loc={node.first} parentPath={path} /> */}
             {node.templates.map(({ expr, suffix }, i) => (
                 <React.Fragment key={expr}>

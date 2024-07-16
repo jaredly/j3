@@ -17,8 +17,8 @@ export type KeyAction =
     | {
           type: 'update-string';
           text?: string[][];
-          cursor: [number, number];
-          start?: number;
+          cursor: { part: number; char: number };
+          start?: { part: number; char: number };
       }
     | { type: 'delete'; direction: 'left' | 'right' | 'blank' }
     | { type: 'unwrap'; direction: 'left' | 'right' }
@@ -43,6 +43,18 @@ export type KeyAction =
               | 'tab-left';
       }
     | { type: 'after' | 'before'; node: RecNodeT<boolean> };
+
+const cmpCursor = (
+    one: { part: number; char: number },
+    two: { part: number; char: number },
+) => (one.part === two.part ? one.char - two.char : one.part - two.part);
+
+const stringTexts = (node: Extract<Node, { type: 'string' }>) => {
+    return [
+        splitGraphemes(node.first),
+        ...node.templates.map((n) => splitGraphemes(n.suffix)),
+    ];
+};
 
 export const textKey = (
     key: string[],
@@ -96,7 +108,7 @@ export const runKey = (
         if (keys2.all[key]) {
             return keys2.all[key](selection, mods, node, key);
         }
-        // return keys2.string[''](selection, mods, node, key);
+        return keys2.string[''](selection, mods, node, key);
     }
 
     if (selection.type === 'other') {
@@ -373,7 +385,43 @@ export const keys2: {
             };
         },
     },
-    string: {},
+    string: {
+        ''(sel, _, node, key) {
+            console.log('string k', key);
+            const keys = splitGraphemes(key);
+            if (keys.length > 1) {
+                console.warn('Too many graphemes? What is this', key, keys);
+                return;
+            }
+            const texts = sel.text?.slice() ?? stringTexts(node);
+            if (sel.start != null) {
+                const [left, right] =
+                    cmpCursor(sel.cursor, sel.start) < 0
+                        ? [sel.cursor, sel.start]
+                        : [sel.start, sel.cursor];
+                if (right.part !== left.part) return; // TODO
+                texts[left.part] = texts[left.part]
+                    .slice(0, left.char)
+                    .concat(keys)
+                    .concat(texts[left.part].slice(right.char));
+                return {
+                    type: 'update-string',
+                    cursor: { part: left.part, char: left.char + keys.length },
+                    text: texts,
+                };
+            }
+            const { part, char } = sel.cursor;
+            texts[part] = texts[part]
+                .slice(0, char)
+                .concat(keys)
+                .concat(texts[part].slice(char));
+            return {
+                type: 'update-string',
+                cursor: { part, char: char + keys.length },
+                text: texts,
+            };
+        },
+    },
     all: {
         // Tab(selection, _, node) {
         //     // ok

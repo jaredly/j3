@@ -386,6 +386,19 @@ export const handleAction = (
     const top = state.toplevels[tid];
     const last = path.children[path.children.length - 1];
     switch (action.type) {
+        case 'update-string': {
+            return justSel(
+                {
+                    type: 'string',
+                    cursor: action.cursor,
+                    start: action.start,
+                    text: action.text,
+                    path,
+                    pathKey: serializePath(path),
+                },
+                path.root.doc,
+            );
+        }
         case 'update': {
             return justSel(
                 {

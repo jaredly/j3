@@ -13,6 +13,21 @@ import { colors } from './colors';
 
 const blinkTime = 500;
 
+export const useBlink = (dep: null | any) => {
+    const [blink, setBlink] = useState(false);
+    useEffect(() => {
+        if (!dep) {
+            return;
+        }
+        setBlink(false);
+        const iv = setInterval(() => {
+            setBlink((b) => !b);
+        }, blinkTime);
+        return () => clearInterval(iv);
+    }, [dep]);
+    return blink;
+};
+
 export const ManagedId = ({
     path,
     selection,
@@ -27,17 +42,7 @@ export const ManagedId = ({
     };
 }) => {
     const store = useStore();
-    const [blink, setBlink] = useState(false);
-    useEffect(() => {
-        if (!selection) {
-            return;
-        }
-        setBlink(false);
-        const iv = setInterval(() => {
-            setBlink((b) => !b);
-        }, blinkTime);
-        return () => clearInterval(iv);
-    }, [selection]);
+    const blink = useBlink(selection);
 
     const pathKey = useMemo(() => serializePath(path), [path]);
 
@@ -120,9 +125,9 @@ export const ManagedId = ({
                 store.startDrag(pathKey, path);
             }}
         >
-            <span data-suffix={node.loc} style={{ width: 0 }}>
+            {/* <span data-suffix={node.loc} style={{ width: 0 }}>
                 &nbsp;
-            </span>
+            </span> */}
             {selection?.type === 'id'
                 ? RenderTextAndCursor({
                       state: {
