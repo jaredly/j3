@@ -714,6 +714,63 @@ export const handleAction = (
                 : undefined;
         }
 
+        case 'split-string': {
+            const lastNode = top.nodes[last];
+            // STOP
+            if (lastNode.type !== 'string') {
+                return;
+            }
+
+            // const ploc = path.children[path.children.length - 2];
+            // let parent = top.nodes[ploc];
+            // if (parent.type !== 'string') return;
+            const tpl = lastNode.templates.slice();
+            const map: Nodes = {};
+            let nidx = top.nextLoc;
+            const expr = nidx++;
+            const suffix = nidx++;
+            map[expr] = { type: 'id', loc: expr, text: '' };
+
+            tpl.splice(action.left.length - 1, 0, { expr, suffix: '' });
+            const texts = action.left.concat(action.right);
+            tpl.forEach((t, i) => {
+                tpl[i] = { expr: t.expr, suffix: texts[i + 1].join('') };
+            });
+
+            // map[suffix] = {
+            //     type: 'stringText',
+            //     loc: suffix,
+            //     text: action.right.join(''),
+            // };
+            map[last] = {
+                ...lastNode,
+                first: action.left[0].join(''),
+                templates: tpl,
+            };
+
+            // map[ploc] = { ...lastNode, templates: tpl };
+            // if (lastNode.first === last) {
+            //     tpl.unshift({ expr, suffix });
+            // } else {
+            //     const idx = lastNode.templates.findIndex(
+            //         (t) => t.suffix === last,
+            //     );
+            //     if (idx === -1) return;
+            //     tpl.splice(idx + 1, 0, { expr, suffix });
+            // }
+            const npath = pathWithChildren(path, expr);
+            return justSel(
+                {
+                    type: 'id',
+                    cursor: 0,
+                    path: npath,
+                    pathKey: serializePath(npath),
+                },
+                path.root.doc,
+                topUpdate(top.id, map, nidx),
+            );
+        }
+
         case 'split': {
             const lastNode = top.nodes[last];
             // STOP

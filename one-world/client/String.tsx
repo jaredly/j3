@@ -50,7 +50,7 @@ export const String = ({
                 // onMouseDown={(evt) =>
                 //     clickPunctuation(evt, store, null, node.first, path)
                 // }
-                style={{ color: colors.string }}
+                style={{ color: colors.string, whiteSpace: 'pre' }}
             >
                 "
                 {selection?.type === 'string' && selection.cursor.part === 0
@@ -97,6 +97,30 @@ export const String = ({
                     // }
                     >
                         {'}'}
+                    </span>
+                    <span style={{ color: colors.string }}>
+                        {selection?.type === 'string' &&
+                        selection.cursor.part === i + 1
+                            ? RenderTextAndCursor({
+                                  state: {
+                                      start:
+                                          selection.start?.part ===
+                                          selection.cursor.part
+                                              ? selection.start.char
+                                              : selection.start
+                                              ? selection.start.part <
+                                                selection.cursor.part
+                                                  ? 0
+                                                  : -1
+                                              : undefined,
+                                      sel: selection.cursor.char,
+                                      text:
+                                          selection.text?.[i + 1] ??
+                                          splitGraphemes(suffix),
+                                  },
+                                  blink,
+                              })
+                            : suffix}
                     </span>
                     {/* <TopNode id={tid} loc={suffix} parentPath={path} /> */}
                 </React.Fragment>

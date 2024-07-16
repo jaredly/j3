@@ -13,6 +13,7 @@ export type KeyAction =
       }
     | { type: 'end'; which: 'list' | 'array' | 'record' }
     | { type: 'split'; left: string[]; right: string[] }
+    | { type: 'split-string'; left: string[][]; right: string[][] }
     | { type: 'update'; text?: string[]; cursor: number; start?: number }
     | {
           type: 'update-string';
@@ -223,34 +224,6 @@ const textInsert = (
     );
 };
 
-const stringInsert = (
-    sel: NodeSelection,
-    _: Mods,
-    node: Extract<Node, { type: 'string' }>,
-    key: string,
-): KeyRes => {
-    const keys = splitGraphemes(key);
-    if (keys.length > 1) {
-        console.warn('Too many graphemes? What is this', key, keys);
-        return;
-    }
-    if (sel.type === 'multi' && !sel.end) {
-        return { type: 'update', text: keys, cursor: keys.length };
-    }
-    if (sel.type !== 'string') {
-    }
-    // if (sel.type === 'without') {
-    //     return { type: 'update', text: keys, cursor: keys.length };
-    // }
-    // STOP
-    // return textKey(
-    //     keys,
-    //     sel.text ?? splitGraphemes(node.text),
-    //     sel.cursor,
-    //     sel.start,
-    // );
-};
-
 type KeyRecord<Sel, NodeT> = KeyRecordT<Sel, Extract<Node, { type: NodeT }>>;
 
 type KeyRecordT<Sel, Node> = Record<
@@ -426,6 +399,38 @@ export const keys2: {
     },
     string: {
         '': stringKey,
+        ' ': stringKey,
+        '"': stringKey,
+        "'": stringKey,
+        '(': stringKey,
+        ')': stringKey,
+        '}': stringKey,
+        '[': stringKey,
+        ']': stringKey,
+        '.': stringKey,
+        '{'(sel, mods, node, key) {
+            if (sel.start == null) {
+                const text = sel.text ?? stringTexts(node);
+                if (text[sel.cursor.part][sel.cursor.char - 1] === '$') {
+                    return {
+                        type: 'split-string',
+                        left: text
+                            .slice(0, sel.cursor.part)
+                            .concat([
+                                text[sel.cursor.part].slice(
+                                    0,
+                                    sel.cursor.char - 1,
+                                ),
+                            ]),
+                        right: [
+                            text[sel.cursor.part].slice(sel.cursor.char),
+                            ...text.slice(sel.cursor.part),
+                        ],
+                    };
+                }
+            }
+            return stringKey(sel, mods, node, '{');
+        },
     },
     all: {
         // Tab(selection, _, node) {
@@ -463,18 +468,10 @@ export const keys2: {
         ']': () => ({ type: 'end', which: 'array' }),
         '}': () => ({ type: 'end', which: 'record' }),
 
-        '"'(selection) {
-            return maybeSurround(selection, 'string');
-        },
-        '('(selection) {
-            return maybeSurround(selection, 'list');
-        },
-        '['(selection) {
-            return maybeSurround(selection, 'array');
-        },
-        '{'(selection) {
-            return maybeSurround(selection, 'record');
-        },
+        '"': (s) => maybeSurround(s, 'string'),
+        '(': (s) => maybeSurround(s, 'list'),
+        '[': (s) => maybeSurround(s, 'array'),
+        '{': (s) => maybeSurround(s, 'record'),
     },
 };
 
@@ -494,15 +491,6 @@ export const keys: {
     text: Record<string, KFn<TextT>>;
 } = {
     string: {
-        ' ': stringInsert,
-        '"': stringInsert,
-        "'": stringInsert,
-        '(': stringInsert,
-        ')': stringInsert,
-        '}': stringInsert,
-        '[': stringInsert,
-        ']': stringInsert,
-        '.': stringInsert,
         '{'(sel, mods, node) {
             // STOP
             // if (sel.type === 'id' && sel.start == null) {
