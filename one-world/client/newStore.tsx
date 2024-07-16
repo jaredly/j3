@@ -197,6 +197,13 @@ export const newStore = (
                             ) {
                                 maybeCommitTextChange(sel, state, extras);
                             }
+                            if (
+                                sel.type === 'string' &&
+                                sel.text &&
+                                (!seen[id] || seen[id].type !== 'string')
+                            ) {
+                                maybeCommitStringChange(sel, state, extras);
+                            }
                         });
                     });
 
@@ -299,6 +306,44 @@ function maybeCommitTextChange(
             type: 'update',
             update: {
                 nodes: { [node.loc]: { ...node, text: sel.text!.join('') } },
+            },
+        },
+    });
+}
+
+function maybeCommitStringChange(
+    sel: Extract<NodeSelection, { type: 'string' }>,
+    state: PersistedState,
+    extras: Action[],
+) {
+    const last = sel.path.children[sel.path.children.length - 1];
+    const node = state.toplevels[sel.path.root.toplevel].nodes[last];
+    if (node.type !== 'string') {
+        return;
+    }
+    const text = sel.text!.map((t) => t.join(''));
+    if (
+        text[0] === node.first &&
+        node.templates.every((v, i) => v.suffix === text[i + 1])
+    )
+        return;
+
+    extras.push({
+        type: 'toplevel',
+        id: sel.path.root.toplevel,
+        action: {
+            type: 'update',
+            update: {
+                nodes: {
+                    [node.loc]: {
+                        ...node,
+                        first: text[0],
+                        templates: node.templates.map((t, i) => ({
+                            ...t,
+                            suffix: text[i + 1],
+                        })),
+                    },
+                },
             },
         },
     });
