@@ -1,5 +1,6 @@
 //
 
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { selectNode } from '../client/selectNode';
 import { isCollection } from '../client/TextEdit/actions';
 import { NodeSelection } from './state';
@@ -108,6 +109,21 @@ export const inFromEnd = (
     path: Path,
     nodes: Nodes,
 ): void | NodeSelection => {
+    if (node.type === 'string') {
+        return {
+            type: 'string',
+            path,
+            pathKey: serializePath(path),
+            cursor: {
+                part: node.templates.length,
+                char: splitGraphemes(
+                    node.templates.length === 0
+                        ? node.first
+                        : node.templates[node.templates.length - 1].suffix,
+                ).length,
+            },
+        };
+    }
     const children = childLocs(node);
     if (!children.length) {
         return;
@@ -216,6 +232,26 @@ export const toTheRight = (
     path: Path,
     nodes: Nodes,
 ): void | NodeSelection => {
+    if (parent.type === 'string') {
+        const ppath = path; //parentPath(path);
+        const pathKey = serializePath(ppath);
+        if (cloc === parent.tag) {
+            return {
+                type: 'string',
+                path: ppath,
+                pathKey,
+                cursor: { part: 0, char: 0 },
+            };
+        }
+        const at = parent.templates.findIndex((t) => t.expr === cloc);
+        if (at === -1) return;
+        return {
+            type: 'string',
+            path: ppath,
+            pathKey,
+            cursor: { part: at + 1, char: 0 },
+        };
+    }
     const children = childLocs(parent);
     const idx = children.indexOf(cloc);
     if (idx === children.length - 1) {
@@ -231,6 +267,32 @@ export const toTheLeft = (
     path: Path,
     nodes: Nodes,
 ): void | NodeSelection => {
+    if (parent.type === 'string') {
+        if (cloc === parent.tag) {
+            const gparent = path.children[path.children.length - 2];
+            return toTheLeft(
+                nodes[gparent],
+                parent.loc,
+                parentPath(path),
+                nodes,
+            );
+        }
+        const ppath = path; // parentPath(path);
+        const pathKey = serializePath(ppath);
+        const at = parent.templates.findIndex((t) => t.expr === cloc);
+        if (at === -1) return;
+        return {
+            type: 'string',
+            path: ppath,
+            pathKey,
+            cursor: {
+                part: at,
+                char: splitGraphemes(
+                    at === 0 ? parent.first : parent.templates[at - 1].suffix,
+                ).length,
+            },
+        };
+    }
     const children = childLocs(parent);
     const idx = children.indexOf(cloc);
     if (idx === 0) {
