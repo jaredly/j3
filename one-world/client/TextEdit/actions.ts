@@ -142,7 +142,7 @@ const unwrap = (
                 },
             },
         },
-        selectNode(top.nodes[lloc], npath, 'start'),
+        selectNode(top.nodes[lloc], npath, 'start', top.nodes),
         // {
         //     type: 'id',
         //     cursor: 0,
@@ -242,7 +242,7 @@ export const joinLeft = (
                     },
                 },
             },
-            selectNode(prevNode, ppath, 'end'),
+            selectNode(prevNode, ppath, 'end', top.nodes),
         ];
     }
 
@@ -537,6 +537,7 @@ export const handleAction = (
                               top.nodes[node.items[0]],
                               pathWithChildren(parentPath(path), node.items[0]),
                               action.from,
+                              top.nodes,
                           ),
                           path.root.doc,
                           { type: 'toplevel', id: top.id, action: update },
@@ -602,6 +603,7 @@ export const handleAction = (
                         top.nodes[items[idx]],
                         pathWithChildren(parentPath(path), items[idx]),
                         action.from,
+                        top.nodes,
                     ),
                     path.root.doc,
                     up,
@@ -858,10 +860,11 @@ export const handleAction = (
                 if (isText(node) && node.text === '') {
                     // const idx = top.nextLoc;
                     const npath = pathWithChildren(path, idx);
+                    const tid = top.nextLoc;
                     return justSel(
                         {
-                            type: 'id',
-                            cursor: 0,
+                            type: 'string',
+                            cursor: { part: 0, char: 0 },
                             path: npath,
                             pathKey: serializePath(npath),
                         },
@@ -869,23 +872,26 @@ export const handleAction = (
                         topUpdate(
                             top.id,
                             {
+                                [tid]: { type: 'id', loc: tid, text: '' },
                                 [loc]: {
                                     type: 'string',
+                                    tag: tid,
                                     first: '',
                                     templates: [],
                                     loc,
                                 },
                             },
-                            // top.nextLoc + 1,
+                            top.nextLoc + 1,
                         ),
                     );
                 }
-                // const fidx = nidx++;
-                // map[fidx] = { type: 'stringText', text: '', loc: fidx };
+                const fidx = nidx++;
+                map[fidx] = { type: 'id', text: '', loc: fidx };
                 // const sidx = nidx++;
                 map[idx] = {
                     type: action.kind,
                     first: '',
+                    tag: fidx,
                     templates: [{ expr: loc, suffix: '' }],
                     loc: idx,
                 };
@@ -903,7 +909,9 @@ export const handleAction = (
                 type: 'in-session',
                 action: { type: 'toplevel', id: tid, action: update },
                 doc: path.root.doc,
-                selections: [selectNode(top.nodes[loc], npath, 'start')],
+                selections: [
+                    selectNode(top.nodes[loc], npath, 'start', top.nodes),
+                ],
             };
         }
 
@@ -933,12 +941,22 @@ export const handleAction = (
                 }
                 case 'to-end':
                     return justSel(
-                        selectNode(getNodeForPath(path, state), path, 'end'),
+                        selectNode(
+                            getNodeForPath(path, state),
+                            path,
+                            'end',
+                            top.nodes,
+                        ),
                         path.root.doc,
                     );
                 case 'to-start':
                     return justSel(
-                        selectNode(getNodeForPath(path, state), path, 'start'),
+                        selectNode(
+                            getNodeForPath(path, state),
+                            path,
+                            'start',
+                            top.nodes,
+                        ),
                         path.root.doc,
                     );
 
@@ -1102,6 +1120,7 @@ const goLeft = (
                     children: [top.root],
                 },
                 'end',
+                top.nodes,
             );
         }
         let nid = parent.children[idx - 1];
@@ -1118,6 +1137,7 @@ const goLeft = (
                 children: [top.root],
             },
             'end',
+            top.nodes,
         );
     }
 
@@ -1155,6 +1175,7 @@ const goRight = (
                     children: [top.root],
                 },
                 'end',
+                top.nodes,
             );
         }
         let nid = parent.children[idx - 1];
@@ -1171,6 +1192,7 @@ const goRight = (
                 children: [top.root],
             },
             'end',
+            top.nodes,
         );
     }
 

@@ -782,6 +782,7 @@ function maybeSurround(
                   kind === 'string'
                       ? {
                             type: kind,
+                            tag: { type: 'id', loc: false, text: '' },
                             first: '',
                             templates: [],
                             loc: true,

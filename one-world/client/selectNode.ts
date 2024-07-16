@@ -1,6 +1,12 @@
 import React from 'react';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Node, Path, serializePath } from '../shared/nodes';
+import {
+    Node,
+    Nodes,
+    Path,
+    pathWithChildren,
+    serializePath,
+} from '../shared/nodes';
 import { NodeSelection, PersistedState } from '../shared/state';
 import { Store } from './StoreContext';
 import { isCollection, isText } from './TextEdit/actions';
@@ -40,6 +46,7 @@ export const selectNode = (
     node: Node,
     path: Path,
     side: 'start' | 'end' | 'all',
+    nodes: Nodes,
 ): NodeSelection => {
     if (side === 'all') {
         return selectAll(path);
@@ -53,12 +60,24 @@ export const selectNode = (
             pathKey: serializePath(path),
         };
     }
+    if (node.type === 'string' && side === 'start') {
+        return selectNode(
+            nodes[node.tag],
+            pathWithChildren(path, node.tag),
+            'start',
+            nodes,
+        );
+    }
     return {
         type: 'other',
         location: side,
         path,
         pathKey: serializePath(path),
     };
+};
+
+export const getTopForPath = (path: Path, state: PersistedState) => {
+    return state.toplevels[path.root.toplevel];
 };
 
 export const getNodeForPath = (path: Path, state: PersistedState) => {

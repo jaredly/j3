@@ -54,6 +54,7 @@ export type Node =
     | { type: 'list' | 'array' | 'record'; items: number[]; loc: number }
     | {
           type: 'string';
+          tag: number;
           first: string;
           templates: { expr: number; suffix: string }[];
           loc: number;
@@ -78,6 +79,7 @@ export type RecNodeT<Loc> =
     | { type: 'list' | 'array' | 'record'; items: RecNodeT<Loc>[]; loc: Loc }
     | {
           type: 'string';
+          tag: RecNodeT<Loc>;
           first: string;
           templates: { expr: RecNodeT<Loc>; suffix: string }[];
           loc: Loc;
@@ -111,7 +113,7 @@ export const inFromEnd = (
         return;
     }
     const loc = children[children.length - 1];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'end');
+    return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
 };
 
 export const inFromStart = (
@@ -132,7 +134,7 @@ export const inFromStart = (
         return;
     }
     const loc = children[0];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'start');
+    return selectNode(nodes[loc], pathWithChildren(path, loc), 'start', nodes);
 };
 
 export const firstAtom = (path: Path, nodes: Nodes): Path => {
@@ -217,10 +219,10 @@ export const toTheRight = (
     const children = childLocs(parent);
     const idx = children.indexOf(cloc);
     if (idx === children.length - 1) {
-        return selectNode(parent, path, 'end');
+        return selectNode(parent, path, 'end', nodes);
     }
     const loc = children[idx + 1];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'start');
+    return selectNode(nodes[loc], pathWithChildren(path, loc), 'start', nodes);
 };
 
 export const toTheLeft = (
@@ -232,10 +234,10 @@ export const toTheLeft = (
     const children = childLocs(parent);
     const idx = children.indexOf(cloc);
     if (idx === 0) {
-        return selectNode(parent, path, 'start');
+        return selectNode(parent, path, 'start', nodes);
     }
     const loc = children[idx - 1];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'end');
+    return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
 };
 
 export const childLocs = (node: Node) => {
@@ -258,7 +260,7 @@ export const childLocs = (node: Node) => {
         case 'record-access':
             return [node.target, ...node.items];
         case 'string':
-            return node.templates.flatMap((t) => t.expr);
+            return [node.tag, ...node.templates.flatMap((t) => t.expr)];
     }
 };
 
@@ -309,6 +311,7 @@ export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
             return {
                 ...node,
                 loc,
+                tag: fromMap(top, node.tag, nodes),
                 templates: node.templates.map((t) => ({
                     expr: fromMap(top, t.expr, nodes),
                     suffix: t.suffix,
@@ -448,6 +451,7 @@ const fromRec = <T>(
             return {
                 ...node,
                 loc,
+                tag: toMapInner(node.tag, path, nodes, getLoc),
                 templates: node.templates.map((t) => ({
                     expr: toMapInner(t.expr, path, nodes, getLoc),
                     suffix: t.suffix,

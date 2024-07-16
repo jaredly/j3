@@ -43,16 +43,19 @@ export const String = ({
                         : colors.stringBg,
             }}
         >
-            {selection?.type === 'other' && selection.location === 'start' ? (
+            {/* {selection?.type === 'other' && selection.location === 'start' ? (
                 <span style={cursorStyle(false)}>{'|'}</span>
-            ) : null}
+            ) : null} */}
+            <TopNode id={tid} loc={node.tag} parentPath={path} />
             <span
                 // onMouseDown={(evt) =>
                 //     clickPunctuation(evt, store, null, node.first, path)
                 // }
-                style={{ color: colors.string, whiteSpace: 'pre' }}
+                style={{ color: colors.string }}
             >
                 "
+            </span>
+            <span style={{ color: colors.string, whiteSpace: 'pre' }}>
                 {selection?.type === 'string' && selection.cursor.part === 0
                     ? RenderTextAndCursor({
                           state: {
@@ -72,7 +75,6 @@ export const String = ({
                       })
                     : node.first}
             </span>
-            {/* <TopNode id={tid} loc={node.first} parentPath={path} /> */}
             {node.templates.map(({ expr, suffix }, i) => (
                 <React.Fragment key={expr}>
                     <span
@@ -143,33 +145,33 @@ export const String = ({
     );
 };
 
-function clickSpace(
-    evt: React.MouseEvent<HTMLSpanElement, MouseEvent>,
-    path: Path,
-    node: { type: 'list' | 'array' | 'record'; items: number[]; loc: number },
-    i: number,
-    store: Store,
-    loc: number,
-) {
-    if (isLeft(evt)) {
-        const lpath = {
-            ...path,
-            children: path.children.concat([node.items[i - 1]]),
-        };
-        setSelection(
-            store,
-            path.root.doc,
-            selectNode(getNodeForPath(lpath, store.getState()), lpath, 'end'),
-        );
-    } else {
-        const rpath = {
-            ...path,
-            children: path.children.concat([loc]),
-        };
-        setSelection(
-            store,
-            path.root.doc,
-            selectNode(getNodeForPath(rpath, store.getState()), rpath, 'start'),
-        );
-    }
-}
+// function clickSpace(
+//     evt: React.MouseEvent<HTMLSpanElement, MouseEvent>,
+//     path: Path,
+//     node: { type: 'list' | 'array' | 'record'; items: number[]; loc: number },
+//     i: number,
+//     store: Store,
+//     loc: number,
+// ) {
+//     if (isLeft(evt)) {
+//         const lpath = {
+//             ...path,
+//             children: path.children.concat([node.items[i - 1]]),
+//         };
+//         setSelection(
+//             store,
+//             path.root.doc,
+//             selectNode(getNodeForPath(lpath, store.getState()), lpath, 'end'),
+//         );
+//     } else {
+//         const rpath = {
+//             ...path,
+//             children: path.children.concat([loc]),
+//         };
+//         setSelection(
+//             store,
+//             path.root.doc,
+//             selectNode(getNodeForPath(rpath, store.getState()), rpath, 'start'),
+//         );
+//     }
+// }

@@ -7,7 +7,12 @@ import { getNewSelection } from './getNewSelection';
 import { useStore } from '../StoreContext';
 import { useLatest } from '../../../web/custom/useLatest';
 import { Action } from '../../shared/action';
-import { getNodeForPath, selectNode, setSelection } from '../selectNode';
+import {
+    getNodeForPath,
+    getTopForPath,
+    selectNode,
+    setSelection,
+} from '../selectNode';
 import { fasthash, getRainbowHashColor } from '../../../web/custom/rainbow';
 import { colors } from './colors';
 
@@ -85,6 +90,7 @@ export const ManagedId = ({
                         getNodeForPath(path, store.getState()),
                         path,
                         'all',
+                        getTopForPath(path, store.getState()).nodes,
                     ),
                 );
             }}

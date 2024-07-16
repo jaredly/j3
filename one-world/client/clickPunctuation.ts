@@ -2,6 +2,7 @@ import React from 'react';
 import { Path, pathWithChildren, serializePath } from '../shared/nodes';
 import {
     getNodeForPath,
+    getTopForPath,
     isLeft,
     selectAll,
     selectNode,
@@ -41,6 +42,7 @@ export const clickPunctuation = (
             getNodeForPath(cpath, store.getState()),
             cpath,
             l ? 'end' : 'start',
+            getTopForPath(path, store.getState()).nodes,
         ),
     );
 };

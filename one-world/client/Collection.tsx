@@ -6,6 +6,7 @@ import { Store, useStore } from './StoreContext';
 import { cursorStyle } from './TextEdit/renderTextAndCursor';
 import {
     getNodeForPath,
+    getTopForPath,
     isLeft,
     selectAll,
     selectNode,
@@ -110,6 +111,7 @@ const clickBracket = (
                 getNodeForPath(cpath, store.getState()),
                 cpath,
                 left ? 'start' : 'end',
+                getTopForPath(path, store.getState()).nodes,
             ),
         );
         return;
@@ -139,7 +141,12 @@ function clickSpace(
         setSelection(
             store,
             path.root.doc,
-            selectNode(getNodeForPath(lpath, store.getState()), lpath, 'end'),
+            selectNode(
+                getNodeForPath(lpath, store.getState()),
+                lpath,
+                'end',
+                getTopForPath(path, store.getState()).nodes,
+            ),
         );
     } else {
         const rpath = {
@@ -149,7 +156,12 @@ function clickSpace(
         setSelection(
             store,
             path.root.doc,
-            selectNode(getNodeForPath(rpath, store.getState()), rpath, 'start'),
+            selectNode(
+                getNodeForPath(rpath, store.getState()),
+                rpath,
+                'start',
+                getTopForPath(path, store.getState()).nodes,
+            ),
         );
     }
 }
