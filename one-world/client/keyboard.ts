@@ -74,31 +74,68 @@ export const runKey = (
     selection: NodeSelection,
 ) => {
     if (mods.meta) return false;
-    debugger;
-    // um also ctrl and alt?
-    if (node.type === 'string') {
-        if (keys.string[key]) {
-            return keys.string[key](selection, mods, node, key);
+    if (selection.type === 'multi') {
+        if (keys2.multi[key]) {
+            return keys2.multi[key](selection, mods, [node], key);
         }
     }
-    if (isText(node)) {
-        if (keys.text[key]) {
-            return keys.text[key](selection, mods, node, key);
+    if (selection.type === 'id' && node.type === 'id') {
+        if (keys2.id[key]) {
+            return keys2.id[key](selection, mods, node, key);
         }
-        if (keys.any[key]) {
-            return keys.any[key](selection, mods, node, key);
+        if (keys2.all[key]) {
+            return keys2.all[key](selection, mods, node, key);
         }
-        return keys.text[''](selection, mods, node, key);
+        return keys2.id[''](selection, mods, node, key);
     }
-    if (isCollection(node)) {
-        if (keys.collection[key]) {
-            return keys.collection[key](selection, mods, node, key);
+
+    if (selection.type === 'string' && node.type === 'string') {
+        if (keys2.string[key]) {
+            return keys2.string[key](selection, mods, node, key);
         }
+        if (keys2.all[key]) {
+            return keys2.all[key](selection, mods, node, key);
+        }
+        // return keys2.string[''](selection, mods, node, key);
     }
-    if (keys.any[key]) {
-        return keys.any[key](selection, mods, node, key);
+
+    if (selection.type === 'other') {
+        if (keys2.other[key]) {
+            return keys2.other[key](selection, mods, node, key);
+        }
+        // return keys2.other[''](selection, mods, node, key)
     }
-    return keys.any[''](selection, mods, node, key);
+
+    if (keys2.all[key]) {
+        return keys2.all[key](selection, mods, node, key);
+    }
+
+    // if (selection.type === '')
+
+    // // um also ctrl and alt?
+    // if (node.type === 'string') {
+    //     if (keys.string[key]) {
+    //         return keys.string[key](selection, mods, node, key);
+    //     }
+    // }
+    // if (isText(node)) {
+    //     if (keys.text[key]) {
+    //         return keys.text[key](selection, mods, node, key);
+    //     }
+    //     if (keys.any[key]) {
+    //         return keys.any[key](selection, mods, node, key);
+    //     }
+    //     return keys.text[''](selection, mods, node, key);
+    // }
+    // if (isCollection(node)) {
+    //     if (keys.collection[key]) {
+    //         return keys.collection[key](selection, mods, node, key);
+    //     }
+    // }
+    // if (keys.any[key]) {
+    //     return keys.any[key](selection, mods, node, key);
+    // }
+    // return keys.any[''](selection, mods, node, key);
 };
 
 type KFn<T> = (
@@ -161,6 +198,231 @@ const stringInsert = (
     //     sel.cursor,
     //     sel.start,
     // );
+};
+
+type KeyRecord<Sel, NodeT> = KeyRecordT<Sel, Extract<Node, { type: NodeT }>>;
+
+type KeyRecordT<Sel, Node> = Record<
+    string,
+    (
+        sel: Extract<NodeSelection, { type: Sel }>,
+        mods: Mods,
+        node: Node,
+        key: string,
+    ) => KeyRes
+>;
+
+export const keys2: {
+    id: KeyRecord<'id', 'id'>;
+    string: KeyRecord<'string', 'string'>;
+    other: KeyRecord<'other', string>;
+    multi: KeyRecordT<'multi', Node[]>;
+    all: KeyRecordT<string, Node>;
+} = {
+    id: {
+        Backspace(selection, mods, node) {
+            if (mods.shift) {
+                return { type: 'delete', direction: 'blank' };
+            }
+            if (selection.type !== 'id' || node.type !== 'id') return;
+            const sel = selection.cursor;
+            const text = selection.text ?? splitGraphemes(node.text);
+            if (sel === 0) {
+                return {
+                    type: 'join-left',
+                    text: text.slice(selection.start ?? 0),
+                };
+            }
+            const start = selection.start;
+            if (start != null) {
+                const [left, right] = start < sel ? [start, sel] : [sel, start];
+                return {
+                    type: 'update',
+                    text: text.slice(0, left).concat(text.slice(right)),
+                    cursor: left,
+                };
+            }
+            return {
+                type: 'update',
+                text: text.slice(0, sel - 1).concat(text.slice(sel)),
+                cursor: sel - 1,
+            };
+        },
+        ' '(selection, _, node) {
+            const text = selection.text ?? splitGraphemes(node.text);
+            if (
+                (selection.start != null &&
+                    selection.start !== selection.cursor) ||
+                selection.cursor > 0
+            ) {
+                const [left, right] =
+                    selection.start != null
+                        ? selection.cursor < selection.start
+                            ? [selection.cursor, selection.start]
+                            : [selection.start, selection.cursor]
+                        : [selection.cursor, selection.cursor];
+                return {
+                    type: 'split',
+                    left: text.slice(0, left),
+                    right: text.slice(right),
+                };
+            }
+            return {
+                type:
+                    selection.cursor === 0 && text.length > 0
+                        ? 'before'
+                        : 'after',
+                node: { type: 'id', text: '', loc: true },
+            };
+        },
+        ''(sel, _, node, key) {
+            const keys = splitGraphemes(key);
+            if (keys.length > 1) {
+                console.warn('Too many graphemes? What is this', key, keys);
+                return;
+            }
+            return textKey(
+                keys,
+                sel.text ?? splitGraphemes(node.text),
+                sel.cursor,
+                sel.start,
+            );
+        },
+
+        ArrowLeft(selection, { shift, ctrl }, rawText) {
+            if (ctrl) return { type: 'swap', direction: 'left', into: shift };
+            const { text, start, cursor } = selection;
+            if (shift) {
+                return {
+                    type: 'update',
+                    text: text,
+                    cursor: Math.max(0, cursor - 1),
+                    start: start ?? cursor,
+                };
+            }
+            if (cursor > 0) {
+                return {
+                    type: 'update',
+                    text: text,
+                    cursor: Math.max(0, cursor - 1),
+                };
+            } else {
+                return { type: 'nav', dir: 'left' };
+            }
+        },
+
+        ArrowRight(selection, { shift, ctrl }, node) {
+            if (ctrl) return { type: 'swap', direction: 'right', into: shift };
+            if (!isText(node)) return;
+            let { text, start, cursor } = selection;
+            text = text ?? splitGraphemes(node.text);
+            if (shift) {
+                return {
+                    type: 'update',
+                    text,
+                    cursor: Math.min(text.length, cursor + 1),
+                    start: start ?? cursor,
+                };
+            }
+            if (cursor < text.length) {
+                return {
+                    type: 'update',
+                    text,
+                    cursor: Math.min(text.length, cursor + 1),
+                };
+            } else {
+                return { type: 'nav', dir: 'right' };
+            }
+        },
+    },
+    multi: {
+        Tab(selection, { shift }, nodes) {
+            // TODO: get the path ... from the first node?
+            // hrm.
+            return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
+        },
+    },
+    other: {
+        Backspace(selection, mods, node) {
+            if (selection.location === 'start') {
+                return { type: 'nav', dir: 'left' };
+            }
+            if (mods.shift) {
+                return { type: 'delete', direction: 'blank' };
+            }
+            return { type: 'nav', dir: 'inside-end' };
+        },
+        ' '(selection, _, node) {
+            return {
+                type: selection.location === 'start' ? 'before' : 'after',
+                node: { type: 'id', text: '', loc: true },
+            };
+        },
+        ArrowLeft(selection, { shift, ctrl }, rawText) {
+            if (ctrl) return { type: 'swap', direction: 'left', into: shift };
+            return {
+                type: 'nav',
+                dir: selection.location === 'start' ? 'left' : 'inside-end',
+            };
+        },
+        ArrowRight(selection, { shift, ctrl }, rawText) {
+            if (ctrl) return { type: 'swap', direction: 'right', into: shift };
+            return {
+                type: 'nav',
+                dir: selection.location === 'end' ? 'right' : 'inside-start',
+            };
+        },
+    },
+    string: {},
+    all: {
+        // Tab(selection, _, node) {
+        //     // ok
+        //     selection.type;
+        // },
+        Tab(selection, { shift }, nodes) {
+            // TODO: get the path ... from the first node?
+            // hrm.
+            return { type: 'nav', dir: shift ? 'tab-left' : 'tab' };
+        },
+
+        Enter(loc) {},
+
+        Escape() {},
+        Meta() {},
+        Alt() {},
+        Shift() {},
+        Control() {},
+
+        ArrowUp: (_, { shift }) => {
+            if (shift) {
+                return { type: 'nav', dir: 'expand' };
+            }
+            return { type: 'nav', dir: 'up' };
+        },
+        ArrowDown: (_, { shift }) => {
+            if (shift) {
+                return { type: 'nav', dir: 'contract' };
+            }
+            return { type: 'nav', dir: 'down' };
+        },
+
+        ')': () => ({ type: 'end', which: 'list' }),
+        ']': () => ({ type: 'end', which: 'array' }),
+        '}': () => ({ type: 'end', which: 'record' }),
+
+        '"'(selection) {
+            return maybeSurround(selection, 'string');
+        },
+        '('(selection) {
+            return maybeSurround(selection, 'list');
+        },
+        '['(selection) {
+            return maybeSurround(selection, 'array');
+        },
+        '{'(selection) {
+            return maybeSurround(selection, 'record');
+        },
+    },
 };
 
 export const keys: {
@@ -262,10 +524,10 @@ export const keys: {
                     // case 'inside':
                     //     return { type: 'delete', direction: 'blank' };
                     case 'end':
-                        if (mods.shift || node.type === 'string') {
+                        if (mods.shift) {
                             return { type: 'delete', direction: 'blank' };
                         }
-                        return { type: 'shrink', from: 'end' };
+                        return { type: 'nav', dir: 'inside-end' };
                     case 'start':
                         return { type: 'unwrap', direction: 'left' };
                 }

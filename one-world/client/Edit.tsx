@@ -8,7 +8,8 @@ import { useStore } from './StoreContext';
 import { String } from './String';
 import { ManagedId } from './TextEdit/ManagedId';
 import { handleAction } from './TextEdit/actions';
-import { runKey } from './keyboard';
+import { keys, runKey } from './keyboard';
+import { getNodeForPath } from './selectNode';
 
 const emptyNodes: number[] = [];
 
@@ -49,7 +50,24 @@ export const Edit = () => {
                     if (!docSession.selections.length) return;
                     const sels = docSession.selections;
                     docSession.selections.forEach((selection, i) => {
-                        if (selection.type === 'multi') return; // TODO will do this later
+                        const mods = {
+                            meta: evt.metaKey,
+                            shift: evt.shiftKey,
+                            ctrl: evt.ctrlKey,
+                        };
+
+                        if (selection.type === 'multi') {
+                            const node = getNodeForPath(
+                                selection.start.path,
+                                store.getState(),
+                            );
+                            return keys.multi[evt.key]?.(
+                                selection,
+                                mods,
+                                [node],
+                                evt.key,
+                            );
+                        }
                         const last =
                             selection.path.children[
                                 selection.path.children.length - 1
@@ -58,12 +76,6 @@ export const Edit = () => {
                             store.getState().toplevels[
                                 selection.path.root.toplevel
                             ].nodes[last];
-
-                        const mods = {
-                            meta: evt.metaKey,
-                            shift: evt.shiftKey,
-                            ctrl: evt.ctrlKey,
-                        };
 
                         const res = runKey(evt.key, mods, node, selection);
                         if (res === false) return;
