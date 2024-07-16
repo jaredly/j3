@@ -53,23 +53,25 @@ export const String = ({
                 style={{ color: colors.string }}
             >
                 "
+                {selection?.type === 'string' && selection.cursor.part === 0
+                    ? RenderTextAndCursor({
+                          state: {
+                              start:
+                                  selection.start?.part ===
+                                  selection.cursor.part
+                                      ? selection.start.char
+                                      : selection.start
+                                      ? -1
+                                      : undefined,
+                              sel: selection.cursor.char,
+                              text:
+                                  selection.text?.[0] ??
+                                  splitGraphemes(node.first),
+                          },
+                          blink,
+                      })
+                    : node.first}
             </span>
-            {selection?.type === 'string' && selection.cursor.part === 0
-                ? RenderTextAndCursor({
-                      state: {
-                          start:
-                              selection.start?.part === selection.cursor.part
-                                  ? selection.start.char
-                                  : selection.start
-                                  ? -1
-                                  : undefined,
-                          sel: selection.cursor.char,
-                          text:
-                              selection.text?.[0] ?? splitGraphemes(node.first),
-                      },
-                      blink,
-                  })
-                : node.first}
             {/* <TopNode id={tid} loc={node.first} parentPath={path} /> */}
             {node.templates.map(({ expr, suffix }, i) => (
                 <React.Fragment key={expr}>

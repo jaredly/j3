@@ -56,6 +56,46 @@ const stringTexts = (node: Extract<Node, { type: 'string' }>) => {
     ];
 };
 
+export const stringKey = (
+    sel: Extract<NodeSelection, { type: 'string' }>,
+    mods: Mods,
+    node: Extract<Node, { type: 'string' }>,
+    key: string,
+): KeyRes => {
+    const keys = splitGraphemes(key);
+    if (keys.length > 1) {
+        console.warn('Too many graphemes? What is this', key, keys);
+        return;
+    }
+    const texts = sel.text?.slice() ?? stringTexts(node);
+    if (sel.start != null) {
+        const [left, right] =
+            cmpCursor(sel.cursor, sel.start) < 0
+                ? [sel.cursor, sel.start]
+                : [sel.start, sel.cursor];
+        if (right.part !== left.part) return; // TODO
+        texts[left.part] = texts[left.part]
+            .slice(0, left.char)
+            .concat(keys)
+            .concat(texts[left.part].slice(right.char));
+        return {
+            type: 'update-string',
+            cursor: { part: left.part, char: left.char + keys.length },
+            text: texts,
+        };
+    }
+    const { part, char } = sel.cursor;
+    texts[part] = texts[part]
+        .slice(0, char)
+        .concat(keys)
+        .concat(texts[part].slice(char));
+    return {
+        type: 'update-string',
+        cursor: { part, char: char + keys.length },
+        text: texts,
+    };
+};
+
 export const textKey = (
     key: string[],
     text: string[],
@@ -115,7 +155,6 @@ export const runKey = (
         if (keys2.other[key]) {
             return keys2.other[key](selection, mods, node, key);
         }
-        // return keys2.other[''](selection, mods, node, key)
     }
 
     if (keys2.all[key]) {
@@ -386,41 +425,7 @@ export const keys2: {
         },
     },
     string: {
-        ''(sel, _, node, key) {
-            console.log('string k', key);
-            const keys = splitGraphemes(key);
-            if (keys.length > 1) {
-                console.warn('Too many graphemes? What is this', key, keys);
-                return;
-            }
-            const texts = sel.text?.slice() ?? stringTexts(node);
-            if (sel.start != null) {
-                const [left, right] =
-                    cmpCursor(sel.cursor, sel.start) < 0
-                        ? [sel.cursor, sel.start]
-                        : [sel.start, sel.cursor];
-                if (right.part !== left.part) return; // TODO
-                texts[left.part] = texts[left.part]
-                    .slice(0, left.char)
-                    .concat(keys)
-                    .concat(texts[left.part].slice(right.char));
-                return {
-                    type: 'update-string',
-                    cursor: { part: left.part, char: left.char + keys.length },
-                    text: texts,
-                };
-            }
-            const { part, char } = sel.cursor;
-            texts[part] = texts[part]
-                .slice(0, char)
-                .concat(keys)
-                .concat(texts[part].slice(char));
-            return {
-                type: 'update-string',
-                cursor: { part, char: char + keys.length },
-                text: texts,
-            };
-        },
+        '': stringKey,
     },
     all: {
         // Tab(selection, _, node) {
