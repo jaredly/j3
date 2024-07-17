@@ -432,6 +432,49 @@ export const keys2: {
             }
             return stringKey(sel, mods, node, '{');
         },
+
+        ArrowRight(selection, { shift, ctrl }, node) {
+            if (ctrl) return { type: 'swap', direction: 'right', into: shift };
+            let { text, start, cursor } = selection;
+            if (shift) {
+                return; // TODO
+                // return {
+                //     type: 'update-string',
+                //     text: text,
+                //     cursor: Math.max(0, cursor - 1),
+                //     start: start ?? cursor,
+                // };
+            }
+            if (
+                cursor.char <
+                (cursor.part === 0
+                    ? text?.[0]?.length ?? splitGraphemes(node.first).length
+                    : text?.[cursor.part]?.length ??
+                      splitGraphemes(node.templates[cursor.part - 1].suffix)
+                          .length)
+            ) {
+                return {
+                    type: 'update-string',
+                    text: text,
+                    cursor: { part: cursor.part, char: cursor.char + 1 },
+                };
+            }
+            if (cursor.part < node.templates.length) {
+                return {
+                    type: 'select',
+                    location: 'start',
+                    child: node.templates[cursor.part].expr,
+                };
+            }
+            return {
+                // type: 'select',
+                // location: 'end',
+                // child: node.tag,
+                type: 'nav',
+                dir: 'to-end',
+            };
+        },
+
         ArrowLeft(selection, { shift, ctrl }, node) {
             if (ctrl) return { type: 'swap', direction: 'left', into: shift };
             const { text, start, cursor } = selection;

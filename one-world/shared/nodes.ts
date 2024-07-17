@@ -3,6 +3,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { selectNode } from '../client/selectNode';
 import { isCollection } from '../client/TextEdit/actions';
+import { RenderInfo } from './renderables';
 import { NodeSelection } from './state';
 
 export type Loc = Array<[string, number]>;
@@ -45,13 +46,52 @@ export type Cursor = {
     selection: Selection;
 };
 
-type Simple<Loc> =
+/*
+-------- Rich Text ----------
+*/
+
+export type RichBlock =
+    | { type: 'r:h'; level: number; contents: RichInline[] }
+    | { type: 'r:p'; contents: RichInline[] }
+    | { type: 'r:l'; ordered: boolean; contents: RichBlock[] }
+    | { type: 'r:checks'; contents: { check: boolean; block: RichBlock[] }[] }
+    | { type: 'r:opts'; which: number; contents: RichBlock[] }
+    | { type: 'r:indent'; quote: boolean; contents: RichBlock[] }
+    | { type: 'r:table'; rows: RichBlock[][] }
+    | { type: 'r:hr' };
+
+type Style = {
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    color?: string;
+    bgcolor?: string;
+    font?: string;
+};
+
+export type FormatMap = Record<string, RenderInfo>;
+
+export type RichInline =
+    | { type: 'text'; style: Style; text: string }
+    | { type: 'link'; style: Style; text: string; url: string }
+    | { type: 'image'; url: string; style: Style }
+    | { type: 'embed'; node: Node; format?: FormatMap };
+
+/*
+-------- Sexp Syntax Nodes ----------
+*/
+
+type Id<Loc> =
     // id for identifier. "blank" === empty id
-    | { type: 'id'; text: string; loc: Loc }
-    | { type: 'ref'; toplevel: string; kind: string; loc: Loc };
+    {
+        type: 'id';
+        text: string;
+        loc: Loc;
+        ref?: { toplevel: string; loc: number };
+    };
 
 export type Node =
-    | Simple<number>
+    | Id<number>
     | { type: 'list' | 'array' | 'record'; items: number[]; loc: number }
     | {
           type: 'string';
@@ -64,19 +104,19 @@ export type Node =
     | { type: 'annot'; contents: number; annot: number; loc: number }
     | { type: 'record-access'; target: number; items: number[]; loc: number }
     // doooo I want to be embedding some embeds? I kinda want to leave open the option.
-    | { type: 'rich-text'; contents: any; loc: number; embeds: number[] }
-    | {
-          type: 'raw-code';
-          lang: string;
-          raw: string;
-          loc: number;
-          embeds: number[];
-      };
+    | { type: 'rich-text'; contents: any; loc: number; embeds: number[] };
+// | {
+//       type: 'raw-code';
+//       lang: string;
+//       raw: string;
+//       loc: number;
+//       embeds: number[];
+//   };
 
 export type RecNode = RecNodeT<Loc>;
 
 export type RecNodeT<Loc> =
-    | Simple<Loc>
+    | Id<Loc>
     | { type: 'list' | 'array' | 'record'; items: RecNodeT<Loc>[]; loc: Loc }
     | {
           type: 'string';
@@ -93,14 +133,14 @@ export type RecNodeT<Loc> =
           items: RecNodeT<Loc>[];
           loc: Loc;
       }
-    | { type: 'rich-text'; contents: any; loc: Loc; embeds: RecNodeT<Loc>[] }
-    | {
-          type: 'raw-code';
-          lang: string;
-          raw: string;
-          loc: Loc;
-          embeds: RecNodeT<Loc>[];
-      };
+    | { type: 'rich-text'; contents: any; loc: Loc; embeds: RecNodeT<Loc>[] };
+// | {
+//       type: 'raw-code';
+//       lang: string;
+//       raw: string;
+//       loc: Loc;
+//       embeds: RecNodeT<Loc>[];
+//   };
 
 export type Nodes = Record<number, Node>;
 
@@ -305,10 +345,9 @@ export const toTheLeft = (
 export const childLocs = (node: Node) => {
     switch (node.type) {
         case 'id':
-        case 'ref':
             return [];
         case 'rich-text':
-        case 'raw-code':
+            // case 'raw-code':
             return node.embeds;
         case 'list':
         case 'array':
@@ -331,10 +370,9 @@ export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
     const loc: [string, number][] = [[top, node.loc]];
     switch (node.type) {
         case 'id':
-        case 'ref':
             return { ...node, loc };
         case 'rich-text':
-        case 'raw-code':
+            // case 'raw-code':
             return {
                 ...node,
                 loc,
@@ -386,8 +424,6 @@ const foldNode = <V>(v: V, node: RecNode, f: (v: V, node: RecNode) => V): V => {
     switch (node.type) {
         case 'id':
         case 'rich-text':
-        case 'raw-code':
-        case 'ref':
             return f(v, node);
         case 'list':
         case 'array':
@@ -465,10 +501,9 @@ const fromRec = <T>(
 ): Node => {
     switch (node.type) {
         case 'id':
-        case 'ref':
             return { ...node, loc };
         case 'rich-text':
-        case 'raw-code':
+            // case 'raw-code':
             return {
                 ...node,
                 loc,

@@ -1,4 +1,97 @@
 
+NEW PLAN FOR REFS
+idk if there are gonna be big downsides, but:
+- refs will just be a "locked down" id,
+ im that, they won't be separate. Let's do it!
+
+this ... ok so this does mean, that
+matching on IDs gets a little more annoying.
+like
+maybe I'll make it so that if you don't pass in all the args,
+it's no big deal?
+wellll ok so how about: when translating to the `cst/xyz`
+we actually do break it out.
+that's kinda nice? yeah that's great.
+
+
+# Some thoughts about "documentation"
+
+Now that strings are fancy, do I want to make rich-text fancy?
+Thaat is to say, have it really participate in the structured nature of things? Seems like it would be nice.
+AND it would be super cool to have it be a ~first-class value type in the language, so that you could e.g. have your error messages be rich text, including embedding CST nodes and other good stuff. Maybe even react-like whatsits.
+
+Question: Would it be hierarchical?
+Like
+
+block:
+  h(number, inline)
+  p(inline)
+  ul(list(block))
+  ol(list(block))
+  checkboxes(list(bool, block))
+  quote(list(block))
+  table(list(list(block)))
+  hr
+
+inline:
+  text(style, string) // bold, italic, underline, color, bgcolor, font
+  link(url, style, string)
+  image(url)
+  embed(cst, format)
+
+
+## Kinds of things I'd like to have special editors for:
+
+- raw js code (don't need to make this tooo fancy, just highlighting is fine)
+- template strings (can be same as raw js code)
+- rich-text (need to be able to embed CST)
+- react-like something probably
+- musical notation?
+- some kind of graphics (circles, rectangles idk)
+- I can imagine board game configuration editor kindof thing
+- ooh for game of life
+- definitely an editor for "angle" that lets you drag it around
+
+obviously, some of things things I definitely won't be baking in.
+So I want a plugin architecture, where you would specify:
+- the selection type for your node type
+- the id and shape of your node(s)
+- prolly a function to traverse that node type
+- obvs a way to render it
+
+
+Soooo the question becomes:
+- should I try to implement `string` using this plugin architecture?
+and then I can use it for rich text, and the react-like stuff.
+
+Now, one thing that I should probably square with...
+is that, some things would be easier if I broke down and went
+to the `NestedNodes` style of things, where I have an intermediate
+representation that then gets used to do things like:
+- manage selection
+- render html
+- render text
+
+so, someeee things won't fit into the internal representation
+(like rich text)...
+but might be good to have a dumbed-down version for text-export...
+
+
+
+# Getting strings back in gear
+
+- [x] tag! I do like it
+- [ ] surround at start of tag should surround string
+- [ ] space in tag should split off the /prefix/
+- [ ] shift-deleting the string should leave the tag, yes thanks
+- [ ] id" should make the id the tag.
+- [ ] shift-arrow in a string needs to happen
+- [ ] shift-arrow across sub-items should work
+- [ ] newlines in strings should work, and should render as like a text box
+  - if we have a large include in a multiline string, I wonder if I should just block it into its own little line?
+
+
+
 # Raw Code
 
 What if raw code was /just/ a template string? and template strings really were doing the thing?
