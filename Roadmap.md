@@ -1,6 +1,21 @@
 
+# OK hm so
+I like the idea of an IR
+and such.
+BUT doing the layout on the IR
+seems tricky
+well
+I could /mutate/ the IR but I don't really want to?
+like it would be nice if the IR could stay the same
+and the layout change.
+so that rendering is simpler?
 
+ugh ok lets try ... embedding the calculated layout into the IR
+the other way would be to create a new set of IDs which I really dont want to do.
+or like do a weird parallel structure that we're returning.
 
+AGH ok we'll do a bag. I don't like mutating.
+yeah that seems to be fine.
 
 # IR Thoughts
 

@@ -11,6 +11,7 @@ const refStyle: Style = {
 };
 
 export type IR =
+    // TODO allow wrapping text
     | { type: 'text'; text: string; style?: Style }
     | {
           type: 'vert';
@@ -20,9 +21,14 @@ export type IR =
       }
     // | { type: 'squish'; item: IR; maxWidth: number }
     | { type: 'inline'; items: IR[]; style?: Style }
-    | { type: 'horiz'; items: IR[]; style?: Style; wrap?: number } // number indicates indent amount
+    | {
+          type: 'horiz';
+          items: IR[];
+          style?: Style;
+          wrap?: { indent: number; id: number };
+      } // number indicates indent amount
     | { type: 'indent'; item: IR; amount?: number; style?: Style }
-    | { type: 'switch'; options: IR[] }
+    | { type: 'switch'; options: IR[]; id: number }
     | { type: 'loc'; loc: number }
     | { type: 'punct'; text: string; style?: Style };
 
@@ -40,6 +46,11 @@ export type Layout =
     | { type: 'pairs' }
     | { type: 'switch' };
 
+const spaced = (items: IR[]): IR[] =>
+    items.flatMap((item, i) =>
+        i === 0 ? [item] : [{ type: 'punct', text: ' ' }, item],
+    );
+
 export const nodeToIR = (
     node: Node,
     styles: Record<number, Format>,
@@ -47,6 +58,9 @@ export const nodeToIR = (
     names: Record<string, Record<number, string>>,
 ): IR => {
     switch (node.type) {
+        case 'rich-inline':
+        case 'rich-block':
+            throw new Error('not impl yet');
         case 'array':
         case 'list':
         case 'record': {
@@ -69,13 +83,14 @@ export const nodeToIR = (
                             {
                                 type: 'switch',
                                 options: [
-                                    { type: 'horiz', items },
+                                    { type: 'horiz', items: spaced(items) },
                                     {
                                         type: 'vert',
                                         items,
                                         layout: { tightFirst: 1, indent: 2 },
                                     },
                                 ],
+                                id: 0,
                             },
                             { type: 'punct', text: lr[1] },
                         ],
@@ -83,10 +98,11 @@ export const nodeToIR = (
                 case 'horiz':
                     return {
                         type: 'horiz',
-                        wrap: l.wrap,
+                        wrap:
+                            l.wrap != null ? { indent: l.wrap, id: 0 } : l.wrap,
                         items: [
                             { type: 'punct', text: lr[0] },
-                            ...items,
+                            ...spaced(items),
                             { type: 'punct', text: lr[1] },
                         ],
                     };
@@ -149,7 +165,7 @@ export const nodeToIR = (
         case 'record-access':
             return {
                 type: 'horiz',
-                wrap: 2,
+                wrap: { indent: 2, id: 0 },
                 items: [
                     { type: 'loc', loc: node.target },
                     ...node.items.map(
