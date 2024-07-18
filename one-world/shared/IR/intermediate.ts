@@ -85,7 +85,7 @@ export const nodeToIR = (
                 };
             }
 
-            const l = layouts[node.loc] ?? { type: 'horiz', wrap: 2 };
+            const l = layouts[node.loc] ?? { type: 'horiz', wrap: 3 };
 
             const items = node.items.map((loc): IR => ({ type: 'loc', loc }));
 

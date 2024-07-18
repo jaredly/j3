@@ -39,13 +39,13 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                         case 'if':
                             ctx.layouts[getLoc(node.loc)] = {
                                 type: 'vert',
-                                layout: { tightFirst: 2, indent: 2 },
+                                layout: { tightFirst: 2, indent: 4 },
                             };
                             break;
                         case 'let':
                             ctx.layouts[getLoc(node.loc)] = {
                                 type: 'vert',
-                                layout: { tightFirst: 2, indent: 2 },
+                                layout: { tightFirst: 2, indent: 3 },
                             };
                             if (node.items[1]?.type === 'array') {
                                 ctx.layouts[getLoc(node.items[1].loc)] = {
@@ -61,7 +61,7 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                         case 'defn':
                             ctx.layouts[getLoc(node.loc)] = {
                                 type: 'vert',
-                                layout: { tightFirst: 3, indent: 4 },
+                                layout: { tightFirst: 3, indent: 6 },
                             };
                             break;
                     }

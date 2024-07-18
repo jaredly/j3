@@ -1,6 +1,11 @@
 
 # Process of processing
 
+- [x] some layout
+- [x] wrap basic
+- [ ] wrap has a weird bug idk
+
+
 So, right now I'm ironing out layout things.
 right?
 so

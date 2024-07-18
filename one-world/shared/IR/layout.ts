@@ -11,7 +11,7 @@ type LayoutResult = {
     height: number;
 };
 
-export const space = 8;
+// export const space = 8;
 
 export type LayoutChoices = Record<
     number,
@@ -143,13 +143,13 @@ export const layoutIR = (
 
                     groups.push(i);
                     const w2 = layoutIR(
-                        x + ir.wrap.indent * space,
+                        x + ir.wrap.indent,
                         0,
                         item,
                         choices,
                         ctx,
                     );
-                    lineWidth = ir.wrap.indent * space + w2.maxWidth;
+                    lineWidth = ir.wrap.indent + w2.maxWidth;
                     lineHeight = w2.height;
                     inlineHeight = w2.inlineHeight;
                 } else {
@@ -167,7 +167,7 @@ export const layoutIR = (
             return { maxWidth, inlineWidth: lineWidth, height, inlineHeight };
         }
         case 'indent': {
-            const indent = space * (ir.amount ?? 1);
+            const indent = ir.amount ?? 1;
             const res = layoutIR(x + indent, 0, ir.item, choices, ctx);
             return {
                 maxWidth: res.maxWidth + indent,
