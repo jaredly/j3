@@ -32,6 +32,7 @@ export type TextT = Extract<Node, { type: 'id' }>;
 const replaceChild = (node: Node, old: number, nw: number): Node | void => {
     switch (node.type) {
         case 'id':
+        case 'rich-inline':
             return;
         case 'annot':
             if (node.contents === old) return { ...node, contents: nw };
@@ -40,6 +41,7 @@ const replaceChild = (node: Node, old: number, nw: number): Node | void => {
         case 'array':
         case 'list':
         case 'record':
+        case 'rich-block':
             const at = node.items.indexOf(old);
             if (at === -1) return;
             const items = node.items.slice();
@@ -49,14 +51,6 @@ const replaceChild = (node: Node, old: number, nw: number): Node | void => {
         case 'spread':
             if (node.contents === old) return { ...node, contents: nw };
             return;
-        case 'rich-text': {
-            // case 'raw-code': {
-            const at = node.embeds.indexOf(old);
-            if (at === -1) return;
-            const embeds = node.embeds.slice();
-            embeds[at] = nw;
-            return { ...node, embeds };
-        }
         case 'record-access': {
             if (node.target === old) return { ...node, target: nw };
             const at = node.items.indexOf(old);

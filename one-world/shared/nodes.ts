@@ -50,32 +50,84 @@ export type Cursor = {
 -------- Rich Text ----------
 */
 
-export type RichBlock =
-    | { type: 'r:h'; level: number; contents: RichInline[] }
-    | { type: 'r:p'; contents: RichInline[] }
-    | { type: 'r:l'; ordered: boolean; contents: RichBlock[] }
-    | { type: 'r:checks'; contents: { check: boolean; block: RichBlock[] }[] }
-    | { type: 'r:opts'; which: number; contents: RichBlock[] }
-    | { type: 'r:indent'; quote: boolean; contents: RichBlock[] }
-    | { type: 'r:table'; rows: RichBlock[][] }
-    | { type: 'r:hr' };
-
-type Style = {
-    bold?: boolean;
-    italic?: boolean;
-    underline?: boolean;
+export type Style = {
+    fontWeight?: number | string;
+    fontFamily?: string;
+    fontStyle?: string;
+    textDecoration?: string;
+    background?: string;
+    border?: string;
+    outline?: string;
     color?: string;
-    bgcolor?: string;
-    font?: string;
 };
 
-export type FormatMap = Record<string, RenderInfo>;
+// export type RichBlock =
+//     | { type: 'r:h'; level: number; contents: RichInline[] }
+//     | { type: 'r:p'; contents: RichInline[] }
+//     | { type: 'r:l'; ordered: boolean; contents: RichBlock[] }
+//     | { type: 'r:checks'; contents: { check: boolean; block: RichBlock[] }[] }
+//     | { type: 'r:opts'; which: number; contents: RichBlock[] }
+//     | { type: 'r:indent'; quote: boolean; contents: RichBlock[] }
+//     | { type: 'r:table'; rows: RichBlock[][] }
+//     | { type: 'r:hr' };
 
-export type RichInline =
-    | { type: 'text'; style: Style; text: string }
-    | { type: 'link'; style: Style; text: string; url: string }
-    | { type: 'image'; url: string; style: Style }
-    | { type: 'embed'; node: Node; format?: FormatMap };
+// export type RichInline =
+//     | { type: 'text'; style: Style; text: string }
+//     | { type: 'link'; style: Style; text: string; url: string }
+//     | { type: 'image'; url: string; style: Style }
+//     | { type: 'embed'; node: Node; format?: FormatMap };
+
+// export type FormatMap = Record<string, RenderInfo>;
+
+//////// ALTERNATIVE TWO
+
+/*
+
+So the neat thing about this, is that rich-text nodes and sub-nodes
+are ~no different from other syntax nodes.
+
+ooh so the ... I mean ...
+Yeah I like the unity of it.
+
+
+*/
+
+// So, when editing, default is to start with a rich-inline,
+// but if you start needing extra formatting, we wrap in a
+// rich-block.
+export type RichInline<Loc> = {
+    type: 'rich-inline';
+    text: string;
+    kind: InlineKind;
+    style: Style;
+    loc: Loc;
+};
+type InlineKind = { type: 'text' } | { type: 'link' | 'image'; url: string };
+
+export type RichBlock = {
+    type: 'rich-block';
+    items: number[];
+    loc: number;
+    kind: BlockKind;
+    style: Style;
+};
+
+export type RichBlockT<Loc> = {
+    type: 'rich-block';
+    items: RecNodeT<Loc>[];
+    loc: Loc;
+    kind: BlockKind;
+    style: Style;
+};
+
+type BlockKind =
+    | { type: 'header'; level: number }
+    | { type: 'paragraph' }
+    | { type: 'list'; ordered: boolean }
+    | { type: 'checks'; checked: Record<number, boolean> }
+    | { type: 'opts'; which: number }
+    | { type: 'indent'; quote: boolean }
+    | { type: 'hr' };
 
 /*
 -------- Sexp Syntax Nodes ----------
@@ -92,6 +144,8 @@ type Id<Loc> =
 
 export type Node =
     | Id<number>
+    | RichInline<number>
+    | RichBlock
     | { type: 'list' | 'array' | 'record'; items: number[]; loc: number }
     | {
           type: 'string';
@@ -102,9 +156,9 @@ export type Node =
       }
     | { type: 'comment' | 'spread'; contents: number; loc: number }
     | { type: 'annot'; contents: number; annot: number; loc: number }
-    | { type: 'record-access'; target: number; items: number[]; loc: number }
-    // doooo I want to be embedding some embeds? I kinda want to leave open the option.
-    | { type: 'rich-text'; contents: any; loc: number; embeds: number[] };
+    | { type: 'record-access'; target: number; items: number[]; loc: number };
+// doooo I want to be embedding some embeds? I kinda want to leave open the option.
+// | { type: 'rich-text'; contents: any; loc: number; embeds: number[] };
 // | {
 //       type: 'raw-code';
 //       lang: string;
@@ -117,6 +171,8 @@ export type RecNode = RecNodeT<Loc>;
 
 export type RecNodeT<Loc> =
     | Id<Loc>
+    | RichInline<Loc>
+    | RichBlockT<Loc>
     | { type: 'list' | 'array' | 'record'; items: RecNodeT<Loc>[]; loc: Loc }
     | {
           type: 'string';
@@ -132,15 +188,7 @@ export type RecNodeT<Loc> =
           target: RecNodeT<Loc>;
           items: RecNodeT<Loc>[];
           loc: Loc;
-      }
-    | { type: 'rich-text'; contents: any; loc: Loc; embeds: RecNodeT<Loc>[] };
-// | {
-//       type: 'raw-code';
-//       lang: string;
-//       raw: string;
-//       loc: Loc;
-//       embeds: RecNodeT<Loc>[];
-//   };
+      };
 
 export type Nodes = Record<number, Node>;
 
@@ -345,10 +393,10 @@ export const toTheLeft = (
 export const childLocs = (node: Node) => {
     switch (node.type) {
         case 'id':
+        case 'rich-inline':
             return [];
-        case 'rich-text':
-            // case 'raw-code':
-            return node.embeds;
+        case 'rich-block':
+            return node.items;
         case 'list':
         case 'array':
         case 'record':
@@ -370,14 +418,9 @@ export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
     const loc: [string, number][] = [[top, node.loc]];
     switch (node.type) {
         case 'id':
+        case 'rich-inline':
             return { ...node, loc };
-        case 'rich-text':
-            // case 'raw-code':
-            return {
-                ...node,
-                loc,
-                embeds: node.embeds.map((n) => fromMap(top, n, nodes)),
-            };
+        case 'rich-block':
         case 'list':
         case 'array':
         case 'record':
@@ -423,11 +466,12 @@ export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
 const foldNode = <V>(v: V, node: RecNode, f: (v: V, node: RecNode) => V): V => {
     switch (node.type) {
         case 'id':
-        case 'rich-text':
+        case 'rich-inline':
             return f(v, node);
         case 'list':
         case 'array':
         case 'record':
+        case 'rich-block':
             return node.items.reduce(
                 (v, node) => foldNode(v, node, f),
                 f(v, node),
@@ -501,19 +545,12 @@ const fromRec = <T>(
 ): Node => {
     switch (node.type) {
         case 'id':
+        case 'rich-inline':
             return { ...node, loc };
-        case 'rich-text':
-            // case 'raw-code':
-            return {
-                ...node,
-                loc,
-                embeds: node.embeds.map((n) =>
-                    toMapInner(n, path, nodes, getLoc),
-                ),
-            };
         case 'list':
         case 'array':
         case 'record':
+        case 'rich-block':
             return {
                 ...node,
                 loc,

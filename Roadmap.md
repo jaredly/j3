@@ -1,4 +1,186 @@
 
+
+
+
+# IR Thoughts
+
+and such
+
+PAIRS how to do it.
+I thinggg that nodeToIR shoudl already handle the pairs, so that layoutIR doesn't have to think about it at all.
+HOWEVER
+
+for the left-hand side of pairs
+I kindof want a "smaller max-width".
+ya know?
+so it would be like "box" which would have an independent layout constraint.
+that's kinda cool.
+anyway
+so
+
+how does nodeToIR know about pairs?
+
+INTERACTIoNS AROUND PAIRS
+
+[x 1
+ b 2
+ c 3]
+Places we could insert something:
+[(a)x (b)1
+ (c)b (d)2
+ (e)c (f)3]
+at (a, c, e) we should logically insert a new "row".
+QQQ should we actually ... store rows? reified?
+
+HYPOTHESIS: "blanks" should take up a whole row.
+unless they are the second thing in a row.
+that would mean: changing a blank to a non-blank
+would involve /adding/ a blank after it.
+unless we change it to a rich-text or comment
+
+(b,d,f) should ... probably create two new blanks?
+so there's a spot for the ... new left-hand-side
+
+[x _
+ _ 1]
+
+backspace at the first blank, should delete both.
+backspace at the second, should also delete both.
+it's like they're tied together.
+
+UNLESSSSSSS
+these rows have some sort of reification.
+I don't really want to use another list
+[(x 1)
+ (b 2)
+ (c 3)]
+is wayyy too mcuh.
+{(x 1) (y 2) (z 3)}
+yeah I really don't like it.
+
+BUT
+what if we had an invisible ordering?
+how would we know when to use it?
+and what if, you copy/pasted the lines from one spot into another?
+WAIT
+should we
+use significant blanks?
+
+x 1
+y 2
+->
+x _
+1 y
+2
+don't like
+x _
+_ 1
+y 2
+-------
+x 1
+y 2
+->
+x 1
+_
+y 2
+---> it's fine
+x 1
+z _
+y 2
+---> like maybe fine idk
+OR
+x 1
+_ _
+y 2
+---> I feel like that's better?
+but what about deleting one?
+it just deletes both.
+x 1
+;hi
+y 2
+----
+x 1
+y 2
+->
+x 1
+;y
+2 ???
+<<< not great >>>
+what if it comments the whole line?
+um yeah that's much better actually.
+->
+x 1
+;(y 2)
+
+hmmmmmmmmmmmmmmm
+ehhhh should i actually wrap rows?
+hmmm
+or, gasp, significant commas?
+nwa
+I thikn I'm being too precious about this.
+the 90% case is "add two blanks will make it fine"
+and "if turning a blank into a rich-text, eat the right-hand blank"
+
+SO
+bac to the question of, how would the /parser/ inform the /nodeToIR/ that we're doing a "pairs" situation:
+it would be via the `Layout`
+
+ALSO
+
+(x) gets its own line
+BUT
+wait, instead of that do we just do significant blanks?
+yeah I like that better.
+so rich-text is the only thing that gets its own line? yay.
+wellllll
+ok so technically, I'm thinking that rich-text will be usable as a value.
+SHOULD rich-text like have a flag saying "this is ... a comment"?
+if so, how do I indicate that.
+OH LOL I just start it with a `;` comment. easy peasy.
+^ `;` should autocomplete with "rich text" or something
+so that
+
+OK SO
+the parser just says "this loc is a pairsy loc"; vert / tightFirst / pairs
+
+anddd whose job is it to know which child locs are "singles"?
+the parser. OK.
+
+
+SO NOW
+
+- the parser reports "which are singles" when saying that a thing is pairsy.
+- when adding a blank to a pairsy thing, we add two blanks.
+- ~~when removing a blank, if possible, we remove two blanks, otherwise we just don't remove the blank and go left? idk. EH maybe skip this one~~
+
+hrmmm ok so it's actually "locs that can be fullwidth"
+
+
+
+
+# More thoughts on selections
+
+what if
+we go back to just a number
+and that number is just indexed to the ~concatenation
+of all of the `text`s of the IR for a node.
+that would be, pretty clean.
+ALTERNATIVELY
+!all selections could have a `part`.
+which, ok would be better actually.
+ok.
+so ID selections sould just always have part=0
+
+that way we can deal with both interchangeably.
+
+sooooo that means "text" selections are uniform.
+how about other things?
+
+
+
+
+#
+
 NEW PLAN FOR REFS
 idk if there are gonna be big downsides, but:
 - refs will just be a "locked down" id,
@@ -24,8 +206,8 @@ Question: Would it be hierarchical?
 Like
 
 block:
-  h(number, inline)
-  p(inline)
+  h(number, list(inline))
+  p(list(inline))
   ul(list(block))
   ol(list(block))
   checkboxes(list(bool, block))
