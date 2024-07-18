@@ -45,7 +45,7 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                         case 'let':
                             ctx.layouts[getLoc(node.loc)] = {
                                 type: 'vert',
-                                layout: { tightFirst: 2, indent: 3 },
+                                layout: { tightFirst: 2, indent: 2 },
                             };
                             if (node.items[1]?.type === 'array') {
                                 ctx.layouts[getLoc(node.items[1].loc)] = {

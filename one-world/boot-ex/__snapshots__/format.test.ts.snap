@@ -1,23 +1,34 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`opk 1`] = `
-"(hello•folks•lets•see•how•this•goes
+"
+(hello•folks•lets•see•how•this•goes
    and•such•like•that)"
 `;
 
 exports[`let 1`] = `
-"(let•[x•y]
-    one
-    two
-    three )"
+"
+(let•[x•y
+      a•b
+      (one•two•three•6
+         four•five)   ]
+   one
+   two
+   three               )"
 `;
 
 exports[`nesty nest 1`] = `
-"(one•two•(three•four•five•size)
+"
+(one•two•(three•four
+            five•size)
    seven•eight•nine)"
 `;
 
 exports[`smol wrap 1`] = `
-"(one•two•seven•eight
-   nine•ten)"
+"
+(one•two•seven
+   eight•nine•ten
+   eleven•twelve
+   thirteen
+   fourteen)"
 `;

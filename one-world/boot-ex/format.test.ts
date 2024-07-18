@@ -53,7 +53,7 @@ const process = (text: string, maxWidth = 30, leftWidth = 20) => {
     const result = layoutIR(0, 0, irs[root], choices, ctx);
     ctx.layouts[root] = { choices, result };
     const txt = irToText(irs[root], irs, choices, ctx.layouts, '•');
-    return { txt: trimTrailingWhite(txt), result, ctx, parsed };
+    return { txt: '\n' + trimTrailingWhite(txt), result, ctx, parsed };
 };
 
 const trimTrailingWhite = (txt: string) =>
@@ -72,22 +72,24 @@ test('opk', () => {
 });
 
 test('let', () => {
-    const { txt, result, ctx, parsed } = process('(let [x y] one two three)');
+    const { txt, result, ctx, parsed } = process(
+        '(let [x y a b (one two three four five) 6] one two three)',
+    );
     expect(txt).toMatchSnapshot();
 });
 
 test('nesty nest', () => {
     const { txt, result, ctx, parsed } = process(
         '(one two (three four five size) seven eight nine)',
-        30,
+        20,
     );
     expect(txt).toMatchSnapshot();
 });
 
 test('smol wrap', () => {
     const { txt, result, ctx, parsed } = process(
-        '(one two seven eight nine ten)',
-        20,
+        '(one two seven eight nine ten eleven twelve thirteen fourteen)',
+        15,
     );
     expect(txt).toMatchSnapshot();
 });
