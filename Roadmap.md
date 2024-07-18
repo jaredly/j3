@@ -3,7 +3,8 @@
 
 - [x] some layout
 - [x] wrap basic
-- [ ] wrap has a weird bug idk
+- [x] wrap has a weird bug idk
+- [x] pairssss
 
 
 So, right now I'm ironing out layout things.

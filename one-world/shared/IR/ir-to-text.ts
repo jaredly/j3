@@ -136,6 +136,65 @@ export const irToText = (
                 .map((item) => irToText(item, irs, choices, layouts, space))
                 .join('');
         case 'vert':
+            if (ir.pairs) {
+                // ok I'm gonna say, if it's pairs, it's all pairs.
+                const pairs: (
+                    | { type: 'other'; item: string }
+                    | { type: 'pair'; left: string; l: number; right: string }
+                )[] = [];
+                let lw = 0;
+                ir.items.forEach((item) => {
+                    if (item.type === 'horiz' && item.items.length === 2) {
+                        const left = irToText(
+                            item.items[0],
+                            irs,
+                            choices,
+                            layouts,
+                            space,
+                        );
+                        let l = maxLength(left.split('\n'));
+                        lw = Math.max(lw, l);
+                        pairs.push({
+                            type: 'pair',
+                            left,
+                            l,
+                            right: irToText(
+                                item.items[1],
+                                irs,
+                                choices,
+                                layouts,
+                                space,
+                            ),
+                        });
+                    } else {
+                        pairs.push({
+                            type: 'other',
+                            item: irToText(item, irs, choices, layouts, space),
+                        });
+                    }
+                });
+                lw += 1;
+                return pairs
+                    .map((item) =>
+                        item.type === 'other'
+                            ? item.item
+                            : joinChunks([
+                                  item.l < lw
+                                      ? item.left
+                                            .split('\n')
+                                            .map((line) =>
+                                                line.length < lw
+                                                    ? line +
+                                                      white(lw - line.length)
+                                                    : line,
+                                            )
+                                            .join('\n')
+                                      : item.left,
+                                  item.right,
+                              ]),
+                    )
+                    .join('\n');
+            }
             return ir.items
                 .map((item) => irToText(item, irs, choices, layouts, space))
                 .join('\n');

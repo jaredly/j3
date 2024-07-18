@@ -8,9 +8,9 @@ exports[`opk 1`] = `
 
 exports[`let 1`] = `
 "
-(let•[x•y
-      a•b
-      (one•two•three•6
+(let•[x              y
+      a              b
+      (one•two•three 6
          four•five)   ]
    one
    two

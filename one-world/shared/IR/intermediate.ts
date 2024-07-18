@@ -203,6 +203,7 @@ export const nodeToIR = (
                                                   item: {
                                                       type: 'vert',
                                                       items: pairs,
+                                                      pairs: l.layout.pairs,
                                                   },
                                               } satisfies IR,
                                           ]
@@ -213,6 +214,7 @@ export const nodeToIR = (
                             mid = {
                                 type: 'vert',
                                 items: pairs,
+                                pairs: l.layout.pairs,
                             };
                         }
                     } else {
