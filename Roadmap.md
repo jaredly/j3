@@ -1,4 +1,33 @@
 
+We'll want to do text wrapping.
+which means that in addition to `x` we'll want to pass
+`inlineWidth`.
+So we can know what we wrap back to.
+
+anddddd maybe that's almost the end of it?
+
+OH BUT so
+I do think I need the ability to have a "bias" (left/right) to a given (cursor) position. Because, ok so VSCode doesn't support this apparently, but I kinda want to. anyway. Selecting to the right of the space at the end of a wrapped line.
+
+annnd another qusetion, am I in a position to do the full rich-inline and rich-block stuff? maybe? I guess loading images is a bit of a challenge. I'll punt on that for now.
+
+
+Alsooo the ability to have "custom literals" (like "rotation" or "slider" or whatever) is a big thing.
+
+Doooo I really need a JSX mode?
+Wooould having jsx-specific CST nodes make (type cehcking idk) easier for an html-ish library?
+like
+<Hello a=b c=d e />
+could turn into
+(Hello [('a b) ('c d) ('e e)])
+anddd that seems kinda nice
+
+obvs it would be up to the parser to get that done.
+
+now I'm thinking about named arguments.
+so clojure does `(hello :name value :what thing)`
+which honestly could be a thing
+
 # OK hm so
 I like the idea of an IR
 and such.

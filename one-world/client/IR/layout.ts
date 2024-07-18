@@ -15,11 +15,14 @@ export const space = 8;
 
 export type LayoutChoices = Record<
     number,
-    { type: 'hwrap'; groups: number[] } | { type: 'switch'; which: number }
+    | { type: 'hwrap'; groups: number[] }
+    | { type: 'switch'; which: number }
+    | { type: 'text-wrap'; splits: number[] }
 >;
 
 export const layoutIR = (
     x: number,
+    dedent: number,
     ir: IR,
     choices: LayoutChoices,
     ctx: {
@@ -32,7 +35,11 @@ export const layoutIR = (
             { result: LayoutResult; choices: LayoutChoices }
         >;
         // layouts: LayoutCache,
-        textLayout: (text: string, style?: Style) => LayoutResult;
+        textLayout: (
+            text: string,
+            dedent: number,
+            style?: Style,
+        ) => LayoutResult;
     },
 ): LayoutResult => {
     switch (ir.type) {
@@ -40,7 +47,7 @@ export const layoutIR = (
             let res: LayoutResult;
             let which = ir.options.length - 1;
             for (let i = 0; i < ir.options.length; i++) {
-                res = layoutIR(x, ir.options[i], choices, ctx);
+                res = layoutIR(x, dedent, ir.options[i], choices, ctx);
                 if (res.maxWidth + x <= ctx.maxWidth) {
                     which = i;
                     break;
@@ -54,46 +61,62 @@ export const layoutIR = (
 
         case 'loc': {
             const choices: LayoutChoices = {};
-            const result = layoutIR(x, ctx.irs[ir.loc], choices, ctx);
+            const result = layoutIR(x, dedent, ctx.irs[ir.loc], choices, ctx);
             ctx.layouts[ir.loc] = { result, choices };
             return result;
         }
         case 'punct':
         case 'text':
-            return ctx.textLayout(ir.text, ir.style);
+            return ctx.textLayout(ir.text, dedent, ir.style);
+
         case 'inline': {
             let maxWidth = 0;
             let inlineWidth = 0;
             let height = 0;
             let inlineHeight = 0;
             ir.items.forEach((item, i) => {
-                let next = layoutIR(x + inlineWidth, item, choices, ctx);
-                // BUG
-                // this doesn't correctly account for the previous inlineWidth
-                // contributing to the "new maxWidth" of the inner item
-                //
-                // abc|def\nghi
-                // maxWidth should be 6, not 3
+                let next = layoutIR(
+                    x + inlineWidth,
+                    inlineWidth,
+                    item,
+                    choices,
+                    ctx,
+                );
                 if (next.inlineHeight < next.height) {
                     height += next.height - inlineHeight;
                     maxWidth = Math.max(maxWidth, inlineWidth);
                     // we're on a new line
                     inlineWidth = next.inlineWidth;
+                    inlineHeight = next.inlineHeight;
                 } else {
                     inlineHeight = Math.max(inlineHeight, next.inlineHeight);
                     inlineWidth += next.inlineWidth;
                 }
-                inlineHeight = next.inlineHeight;
             });
             return { maxWidth, inlineWidth, inlineHeight, height };
         }
+
+        case 'squish':
+            return layoutIR(x, 0, ir.item, choices, {
+                ...ctx,
+                maxWidth: ctx.leftWidth,
+            });
+
         case 'vert': {
-            let lineWidth = 0;
-            let lineHeight = 0;
+            let inlineWidth = 0;
+            let inlineHeight = 0;
             let maxWidth = 0;
             let height = 0;
 
-            throw new Error('not impl');
+            ir.items.forEach((item, i) => {
+                const next = layoutIR(x, 0, item, choices, ctx);
+                inlineWidth = next.inlineWidth;
+                inlineHeight = next.inlineHeight;
+                maxWidth = Math.max(maxWidth, next.maxWidth);
+                height += next.height;
+            });
+
+            return { inlineWidth, inlineHeight, maxWidth, height };
         }
         case 'horiz': {
             let lineWidth = 0;
@@ -104,7 +127,7 @@ export const layoutIR = (
             const groups: number[] = [0];
 
             ir.items.forEach((item, i) => {
-                const w = layoutIR(x + lineWidth, item, choices, ctx);
+                const w = layoutIR(x + lineWidth, 0, item, choices, ctx);
                 lineWidth += w.maxWidth;
                 inlineHeight = Math.max(inlineHeight, w.inlineHeight);
 
@@ -115,6 +138,7 @@ export const layoutIR = (
                     groups.push(i);
                     const w2 = layoutIR(
                         x + ir.wrap.indent * space,
+                        0,
                         item,
                         choices,
                         ctx,
@@ -138,7 +162,7 @@ export const layoutIR = (
         }
         case 'indent': {
             const indent = space * (ir.amount ?? 1);
-            const res = layoutIR(x + indent, ir.item, choices, ctx);
+            const res = layoutIR(x + indent, 0, ir.item, choices, ctx);
             return {
                 maxWidth: res.maxWidth + indent,
                 inlineWidth: res.inlineWidth + indent,

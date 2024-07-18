@@ -17,9 +17,10 @@ export type IR =
           type: 'vert';
           items: IR[];
           style?: Style;
-          layout?: { tightFirst: number; pairs?: number[]; indent: number };
+          //   layout?: { tightFirst: number; pairs?: number[]; indent: number };
+          pairs?: number[];
       }
-    // | { type: 'squish'; item: IR; maxWidth: number }
+    | { type: 'squish'; item: IR }
     | { type: 'inline'; items: IR[]; style?: Style }
     | {
           type: 'horiz';
@@ -70,6 +71,16 @@ export const nodeToIR = (
                 record: '{}',
             }[node.type];
 
+            if (!node.items.length) {
+                return {
+                    type: 'horiz',
+                    items: [
+                        { type: 'punct', text: lr[0] },
+                        { type: 'punct', text: lr[1] },
+                    ],
+                };
+            }
+
             const l = layouts[node.loc] ?? { type: 'switch' };
 
             const items = node.items.map((loc): IR => ({ type: 'loc', loc }));
@@ -80,18 +91,32 @@ export const nodeToIR = (
                         type: 'horiz',
                         items: [
                             { type: 'punct', text: lr[0] },
-                            {
-                                type: 'switch',
-                                options: [
-                                    { type: 'horiz', items: spaced(items) },
-                                    {
-                                        type: 'vert',
-                                        items,
-                                        layout: { tightFirst: 1, indent: 2 },
-                                    },
-                                ],
-                                id: 0,
-                            },
+                            items.length === 1
+                                ? items[0]
+                                : {
+                                      type: 'switch',
+                                      options: [
+                                          {
+                                              type: 'horiz',
+                                              items: spaced(items),
+                                          },
+                                          {
+                                              type: 'vert',
+                                              items: [
+                                                  items[0],
+                                                  {
+                                                      type: 'indent',
+                                                      amount: 2,
+                                                      item: {
+                                                          type: 'vert',
+                                                          items: items.slice(1),
+                                                      },
+                                                  },
+                                              ],
+                                          },
+                                      ],
+                                      id: 0,
+                                  },
                             { type: 'punct', text: lr[1] },
                         ],
                     };
@@ -106,15 +131,108 @@ export const nodeToIR = (
                             { type: 'punct', text: lr[1] },
                         ],
                     };
-                case 'vert':
+                case 'vert': {
+                    let mid: IR;
+                    if (l.layout.pairs) {
+                        const pairs: IR[] = [];
+                        for (
+                            let i = l.layout.tightFirst;
+                            i < node.items.length;
+                            i += 2
+                        ) {
+                            pairs.push(
+                                i < node.items.length - 1
+                                    ? {
+                                          type: 'horiz',
+                                          items: [
+                                              l.layout.pairs.includes(
+                                                  node.items[i],
+                                              )
+                                                  ? {
+                                                        type: 'loc',
+                                                        loc: node.items[i],
+                                                    }
+                                                  : {
+                                                        type: 'squish',
+                                                        item: {
+                                                            type: 'loc',
+                                                            loc: node.items[i],
+                                                        },
+                                                    },
+                                              {
+                                                  type: 'loc',
+                                                  loc: node.items[i + 1],
+                                              },
+                                          ],
+                                      }
+                                    : { type: 'loc', loc: node.items[i] },
+                            );
+                        }
+                        if (l.layout.tightFirst) {
+                            mid = {
+                                type: 'vert',
+                                items: [
+                                    {
+                                        type: 'horiz',
+                                        items: items.slice(
+                                            0,
+                                            l.layout.tightFirst,
+                                        ),
+                                    },
+                                    ...(l.layout.indent
+                                        ? [
+                                              {
+                                                  type: 'indent',
+                                                  amount: l.layout.indent,
+                                                  item: {
+                                                      type: 'vert',
+                                                      items: pairs,
+                                                  },
+                                              } satisfies IR,
+                                          ]
+                                        : pairs),
+                                ],
+                            };
+                        } else {
+                            mid = {
+                                type: 'vert',
+                                items: pairs,
+                            };
+                        }
+                    } else {
+                        mid = {
+                            type: 'vert',
+                            items: [
+                                {
+                                    type: 'horiz',
+                                    items: items.slice(0, l.layout.tightFirst),
+                                },
+                                ...(l.layout.indent
+                                    ? [
+                                          {
+                                              type: 'indent',
+                                              amount: l.layout.indent,
+                                              item: {
+                                                  type: 'vert',
+                                                  items: items.slice(
+                                                      l.layout.tightFirst,
+                                                  ),
+                                              },
+                                          } satisfies IR,
+                                      ]
+                                    : items),
+                            ],
+                        };
+                    }
                     return {
                         type: 'horiz',
                         items: [
                             { type: 'punct', text: lr[0] },
-                            { type: 'vert', items: items, layout: l.layout },
+                            mid,
                             { type: 'punct', text: lr[1] },
                         ],
                     };
+                }
             }
             throw new Error('unknown layout');
         }
