@@ -38,7 +38,7 @@ const process = (text: string, maxWidth = 30, leftWidth = 20) => {
     const root = toMap(data, nodes);
     const irs: Record<number, IR> = {};
     Object.entries(nodes).forEach(([id, node]) => {
-        irs[+id] = nodeToIR(node, parsed.styles, parsed.layouts, {}, '•');
+        irs[+id] = nodeToIR(node, parsed.styles, parsed.layouts, {});
     });
 
     const ctx: LayoutCtx = {
@@ -52,7 +52,7 @@ const process = (text: string, maxWidth = 30, leftWidth = 20) => {
     const choices: LayoutChoices = {};
     const result = layoutIR(0, 0, irs[root], choices, ctx);
     ctx.layouts[root] = { choices, result };
-    const txt = irToText(irs[root], irs, choices, ctx.layouts);
+    const txt = irToText(irs[root], irs, choices, ctx.layouts, '•');
     return { txt: trimTrailingWhite(txt), result, ctx, parsed };
 };
 

@@ -39,7 +39,7 @@ export const joinChunks = (chunks: string[], pullLast = false) => {
 const addSpaces = (
     items: string[],
     mode: 'all' | 'braced' | 'start' | 'end',
-    space = '.',
+    space = ' ',
 ) => {
     let min = mode === 'all' || mode === 'end' ? 1 : 2;
     let max = items.length - (mode === 'all' || mode === 'start' ? 1 : 2);
@@ -53,11 +53,12 @@ export const irToText = (
     irs: Record<number, IR>,
     choices: LayoutChoices,
     layouts: LayoutCtx['layouts'],
+    space = ' ',
 ): string => {
     switch (ir.type) {
         case 'loc': {
             const { choices } = layouts[ir.loc];
-            return irToText(irs[ir.loc], irs, choices, layouts);
+            return irToText(irs[ir.loc], irs, choices, layouts, space);
         }
         case 'punct':
             return ir.text;
@@ -75,7 +76,7 @@ export const irToText = (
                     // ) {
                     //     last.push()
                     // }
-                    last.push(irToText(item, irs, choices, layouts));
+                    last.push(irToText(item, irs, choices, layouts, space));
                 });
                 return lines
                     .map((chunks, i) => {
@@ -90,7 +91,7 @@ export const irToText = (
                                         ? 'end'
                                         : 'all'
                                     : 'all';
-                            addSpaces(chunks, mode);
+                            addSpaces(chunks, mode, space);
                         }
                         if (i > 0 && ir.wrap!.indent > 0) {
                             chunks.unshift(white(ir.wrap!.indent));
@@ -103,19 +104,19 @@ export const irToText = (
                     .join('\n');
             }
             const chunks = ir.items.map((item) =>
-                irToText(item, irs, choices, layouts),
+                irToText(item, irs, choices, layouts, space),
             );
             if (ir.spaced) {
-                addSpaces(chunks, ir.spaced);
+                addSpaces(chunks, ir.spaced, space);
             }
             return joinChunks(chunks, ir.pullLast);
         case 'indent':
             return joinChunks([
                 white(ir.amount ?? 2),
-                irToText(ir.item, irs, choices, layouts),
+                irToText(ir.item, irs, choices, layouts, space),
             ]);
         case 'squish':
-            return irToText(ir.item, irs, choices, layouts);
+            return irToText(ir.item, irs, choices, layouts, space);
         case 'text':
             return ir.text; // todo wrappp
         case 'switch':
@@ -123,14 +124,20 @@ export const irToText = (
             if (choice?.type !== 'switch') {
                 throw new Error(`switch not resolved ${ir.id}`);
             }
-            return irToText(ir.options[choice.which], irs, choices, layouts);
+            return irToText(
+                ir.options[choice.which],
+                irs,
+                choices,
+                layouts,
+                space,
+            );
         case 'inline':
             return ir.items
-                .map((item) => irToText(item, irs, choices, layouts))
+                .map((item) => irToText(item, irs, choices, layouts, space))
                 .join('');
         case 'vert':
             return ir.items
-                .map((item) => irToText(item, irs, choices, layouts))
+                .map((item) => irToText(item, irs, choices, layouts, space))
                 .join('\n');
     }
 };
