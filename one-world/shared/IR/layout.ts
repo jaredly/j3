@@ -1,4 +1,4 @@
-import { Style } from '../../shared/nodes';
+import { Style } from '../nodes';
 import { IR } from './intermediate';
 
 // type LayoutCache = Record<number, any>

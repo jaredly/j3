@@ -1,4 +1,18 @@
 
+# Process of processing
+
+So, right now I'm ironing out layout things.
+right?
+so
+I should have a way to test things out.
+I meeeeeean probably like with tests? potentially?
+sure.
+
+Ok so we can do it all text-based, which is frankly fine.
+
+
+#
+
 We'll want to do text wrapping.
 which means that in addition to `x` we'll want to pass
 `inlineWidth`.

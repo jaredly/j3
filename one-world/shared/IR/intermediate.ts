@@ -1,7 +1,7 @@
 // An intermediate representation
 
-import { Nodes, Node, Style } from '../../shared/nodes';
-import { ListDisplay, RenderInfo } from '../../shared/renderables';
+import { Nodes, Node, Style } from '../nodes';
+import { ListDisplay, RenderInfo } from '../renderables';
 
 type Format = Style;
 
@@ -27,7 +27,7 @@ export type IR =
           items: IR[];
           style?: Style;
           wrap?: { indent: number; id: number };
-      } // number indicates indent amount
+      }
     | { type: 'indent'; item: IR; amount?: number; style?: Style }
     | { type: 'switch'; options: IR[]; id: number }
     | { type: 'loc'; loc: number }
@@ -174,9 +174,8 @@ export const nodeToIR = (
                                 items: [
                                     {
                                         type: 'horiz',
-                                        items: items.slice(
-                                            0,
-                                            l.layout.tightFirst,
+                                        items: spaced(
+                                            items.slice(0, l.layout.tightFirst),
                                         ),
                                     },
                                     ...(l.layout.indent
@@ -205,7 +204,9 @@ export const nodeToIR = (
                             items: [
                                 {
                                     type: 'horiz',
-                                    items: items.slice(0, l.layout.tightFirst),
+                                    items: spaced(
+                                        items.slice(0, l.layout.tightFirst),
+                                    ),
                                 },
                                 ...(l.layout.indent
                                     ? [
