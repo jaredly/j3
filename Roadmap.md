@@ -6,6 +6,8 @@
 - [x] wrap has a weird bug idk
 - [x] pairssss
 - [ ] now let's look into ... text?
+  - [x] text with inclusions
+  - [ ] letttts try wrapping some text?
 
 
 So, right now I'm ironing out layout things.

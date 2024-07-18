@@ -2,18 +2,18 @@
 
 exports[`basic wrap 1`] = `
 "
-(hello•folks•lets•see
-   how•this•goes•and
-   such•like•that)
+(hello,folks,lets,see
+   how,this,goes,and
+   such,like,that)
 "
 `;
 
 exports[`let + pairs 1`] = `
 "
-(let•[x              y
+(let,[x              y
       a              b
-      (one•two•three 6
-         four•five)   ]
+      (one,two,three 6
+         four,five)   ]
    one
    two
    three               )
@@ -22,17 +22,17 @@ exports[`let + pairs 1`] = `
 
 exports[`nesty nest 1`] = `
 "
-(one•two•(three•four
-            five•size)
-   seven•eight•nine)
+(one,two,(three,four
+            five,size)
+   seven,eight,nine)
 "
 `;
 
 exports[`smol wrap 1`] = `
 "
-(one•two•seven
-   eight•nine•ten
-   eleven•twelve
+(one,two,seven
+   eight,nine,ten
+   eleven,twelve
    thirteen
    fourteen)
 "
@@ -41,6 +41,14 @@ exports[`smol wrap 1`] = `
 exports[`stringsss 1`] = `
 "
 "Here is a string"
+"
+`;
+
+exports[`stringsss nl 1`] = `
+"
+"Here is a                             "
+ string ${a} with things
+ and such. ${(one,two,three)} you know.
 "
 `;
 
