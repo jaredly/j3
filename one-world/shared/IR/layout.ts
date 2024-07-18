@@ -20,27 +20,28 @@ export type LayoutChoices = Record<
     | { type: 'text-wrap'; splits: number[] }
 >;
 
+export type LayoutCtx = {
+    maxWidth: number;
+    // width for LHSs
+    leftWidth: number;
+    irs: IRForLoc;
+    layouts: Record<
+        number,
+        {
+            result: LayoutResult;
+            choices: LayoutChoices;
+        }
+    >;
+    // layouts: LayoutCache,
+    textLayout: (text: string, dedent: number, style?: Style) => LayoutResult;
+};
+
 export const layoutIR = (
     x: number,
     dedent: number,
     ir: IR,
     choices: LayoutChoices,
-    ctx: {
-        maxWidth: number;
-        // width for LHSs
-        leftWidth: number;
-        irs: IRForLoc;
-        layouts: Record<
-            number,
-            { result: LayoutResult; choices: LayoutChoices }
-        >;
-        // layouts: LayoutCache,
-        textLayout: (
-            text: string,
-            dedent: number,
-            style?: Style,
-        ) => LayoutResult;
-    },
+    ctx: LayoutCtx,
 ): LayoutResult => {
     switch (ir.type) {
         case 'switch': {
@@ -131,7 +132,12 @@ export const layoutIR = (
                 lineWidth += w.maxWidth;
                 inlineHeight = Math.max(inlineHeight, w.inlineHeight);
 
-                if (ir.wrap != null && lineWidth + x > ctx.maxWidth && i > 0) {
+                if (
+                    ir.wrap != null &&
+                    lineWidth + x > ctx.maxWidth &&
+                    i > 0 &&
+                    (!ir.pullLast || i < ir.items.length - 1)
+                ) {
                     maxWidth = Math.max(maxWidth, lineWidth - w.maxWidth);
                     height += lineHeight;
 

@@ -10,6 +10,20 @@ sure.
 
 Ok so we can do it all text-based, which is frankly fine.
 
+yay testing is great
+
+ok soooo the 'pullLast' also does tightness, which we need
+BUT ALSO
+the "space" between things in a horiz wrap, needs to get eliminated!
+how to do it tho
+
+
+NOTE doing actual layout of pairs will require...
+maybe a 'row' kind? that expects to be part of a table?
+
+ALTERNATIVELY should the ir HORIZ kind have a "spaced" attribute?
+that would make some things simpler. yeah let's do it.
+
 
 #
 
