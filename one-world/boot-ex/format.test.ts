@@ -53,7 +53,7 @@ const process = (text: string, maxWidth = 30, leftWidth = 20) => {
     const result = layoutIR(0, 0, irs[root], choices, ctx);
     ctx.layouts[root] = { choices, result };
     const txt = irToText(irs[root], irs, choices, ctx.layouts, '•');
-    return { txt: '\n' + trimTrailingWhite(txt), result, ctx, parsed };
+    return { txt: '\n' + trimTrailingWhite(txt) + '\n', result, ctx, parsed };
 };
 
 const trimTrailingWhite = (txt: string) =>
@@ -62,16 +62,15 @@ const trimTrailingWhite = (txt: string) =>
         .map((t) => t.trimEnd())
         .join('\n');
 
-test('opk', () => {
+test('basic wrap', () => {
     const { txt, result } = process(
         '(hello folks lets see how this goes and such like that)',
-        30,
+        20,
     );
     expect(txt).toMatchSnapshot();
-    // expect(result).toMatchSnapshot();
 });
 
-test('let', () => {
+test('let + pairs', () => {
     const { txt, result, ctx, parsed } = process(
         '(let [x y a b (one two three four five) 6] one two three)',
     );
@@ -90,6 +89,19 @@ test('smol wrap', () => {
     const { txt, result, ctx, parsed } = process(
         '(one two seven eight nine ten eleven twelve thirteen fourteen)',
         15,
+    );
+    expect(txt).toMatchSnapshot();
+});
+
+test('stringsss', () => {
+    const { txt } = process('"Here is a string"');
+    expect(txt).toMatchSnapshot();
+});
+
+test('string long one', () => {
+    const { txt } = process(
+        '"Here is a string what in the world here we are it is good"',
+        20,
     );
     expect(txt).toMatchSnapshot();
 });

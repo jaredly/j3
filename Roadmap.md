@@ -5,6 +5,7 @@
 - [x] wrap basic
 - [x] wrap has a weird bug idk
 - [x] pairssss
+- [ ] now let's look into ... text?
 
 
 So, right now I'm ironing out layout things.
