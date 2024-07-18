@@ -130,6 +130,12 @@ export const layoutIR = (
             ir.items.forEach((item, i) => {
                 const w = layoutIR(x + lineWidth, 0, item, choices, ctx);
                 lineWidth += w.maxWidth;
+                if (
+                    (ir.spaced === 'all' && i < ir.items.length - 1) ||
+                    (ir.spaced === 'braced' && i > 0 && i < ir.items.length - 2)
+                ) {
+                    lineWidth += 1;
+                }
                 inlineHeight = Math.max(inlineHeight, w.inlineHeight);
 
                 if (

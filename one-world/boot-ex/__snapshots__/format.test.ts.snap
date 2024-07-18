@@ -2,28 +2,30 @@
 
 exports[`basic wrap 1`] = `
 "
-(hello,folks,lets,see
-   how,this,goes,and
-   such,like,that)
+(hello,folks,lets
+   see,how,this,goes
+   and,such,like,that)
 "
 `;
 
 exports[`let + pairs 1`] = `
 "
-(let,[x              y
-      a              b
-      (one,two,three 6
-         four,five)   ]
+(let,[x             y
+      a             b
+      (one,two      6
+         three,four
+         five)       ]
    one
    two
-   three               )
+   three              )
 "
 `;
 
 exports[`nesty nest 1`] = `
 "
-(one,two,(three,four
-            five,size)
+(one,two
+   (three,four,five
+      size)
    seven,eight,nine)
 "
 `;
@@ -31,8 +33,9 @@ exports[`nesty nest 1`] = `
 exports[`smol wrap 1`] = `
 "
 (one,two,seven
-   eight,nine,ten
-   eleven,twelve
+   eight,nine
+   ten,eleven
+   twelve
    thirteen
    fourteen)
 "

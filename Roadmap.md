@@ -8,6 +8,7 @@
 - [ ] now let's look into ... text?
   - [x] text with inclusions
   - [ ] letttts try wrapping some text?
+- [ ] and then we'll need to try rich text, right?
 
 
 So, right now I'm ironing out layout things.
