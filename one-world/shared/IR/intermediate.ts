@@ -12,7 +12,7 @@ const refStyle: Style = {
 
 export type IR =
     // TODO allow wrapping text
-    | { type: 'text'; text: string; style?: Style }
+    | { type: 'text'; text: string; id: number; style?: Style }
     | {
           type: 'vert';
           items: IR[];
@@ -263,6 +263,7 @@ export const nodeToIR = (
         case 'id':
             return {
                 type: 'text',
+                id: 0,
                 text: node.ref
                     ? names[node.ref.toplevel][node.ref.loc]
                     : node.text,
@@ -275,23 +276,19 @@ export const nodeToIR = (
                 node.templates.some((t) => t.suffix.includes('\n'));
             return {
                 type: 'horiz',
+                pullLast: true,
                 items: [
                     { type: 'loc', loc: node.tag },
                     { type: 'punct', text: '"' },
                     {
-                        type: multi ? 'inline' : 'horiz',
-                        style: multi
-                            ? {
-                                  background: 'red',
-                              }
-                            : undefined,
+                        type: 'inline',
                         items: [
-                            { type: 'text', text: node.first },
-                            ...node.templates.flatMap((t): IR[] => [
+                            { type: 'text', text: node.first, id: 0 },
+                            ...node.templates.flatMap((t, i): IR[] => [
                                 { type: 'punct', text: '${' },
                                 { type: 'loc', loc: t.expr },
                                 { type: 'punct', text: '}' },
-                                { type: 'text', text: t.suffix },
+                                { type: 'text', text: t.suffix, id: i + 1 },
                             ]),
                         ],
                     },

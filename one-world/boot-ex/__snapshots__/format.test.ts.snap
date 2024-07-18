@@ -2,30 +2,28 @@
 
 exports[`basic wrap 1`] = `
 "
-(hello,folks,lets
-   see,how,this,goes
-   and,such,like,that)
+(hello,folks,lets,see,how
+   this,goes,and
+   such,like,that)
 "
 `;
 
 exports[`let + pairs 1`] = `
 "
-(let,[x             y
-      a             b
-      (one,two      6
-         three,four
-         five)       ]
+(let,[x                   y
+      a                   b
+      (one,two            6
+         three,four,five)  ]
    one
    two
-   three              )
+   three                    )
 "
 `;
 
 exports[`nesty nest 1`] = `
 "
 (one,two
-   (three,four,five
-      size)
+   (three,four,five,size)
    seven,eight,nine)
 "
 `;
@@ -33,11 +31,8 @@ exports[`nesty nest 1`] = `
 exports[`smol wrap 1`] = `
 "
 (one,two,seven
-   eight,nine
-   ten,eleven
-   twelve
-   thirteen
-   fourteen)
+   eight,nine,ten,eleven
+   twelve,thirteen,fourteen)
 "
 `;
 
@@ -49,14 +44,34 @@ exports[`stringsss 1`] = `
 
 exports[`stringsss nl 1`] = `
 "
-"Here is a                             "
+"Here is a
  string ${a} with things
- and such. ${(one,two,three)} you know.
+ and such. ${(one,two,three)}you
+ know.                           "
 "
 `;
 
 exports[`string long one 1`] = `
 "
-"Here is a string what in the world here we are it is good"
+"what in the world
+ here we are it is
+ good somewhat
+ things-that tend-to-
+ be splittable
+ insufficiently      "
+"
+`;
+
+exports[`long string with inclusions 1`] = `
+"
+"what in the world ${here}we
+ are
+ it
+ is
+ good
+ somewhat
+ things-
+ that ${tend-to-be}splittable
+ insufficiently               "
 "
 `;

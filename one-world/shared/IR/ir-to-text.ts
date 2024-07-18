@@ -117,8 +117,26 @@ export const irToText = (
             ]);
         case 'squish':
             return irToText(ir.item, irs, choices, layouts, space);
-        case 'text':
+        case 'text': {
+            const splits = choices[ir.id];
+            if (splits?.type === 'text-wrap') {
+                let pieces = [];
+                for (let i = splits.splits.length - 1; i >= 0; i--) {
+                    if (i === splits.splits.length - 1) {
+                        pieces.unshift(ir.text.slice(splits.splits[i]));
+                    } else {
+                        pieces.unshift(
+                            ir.text.slice(
+                                splits.splits[i],
+                                splits.splits[i + 1],
+                            ),
+                        );
+                    }
+                }
+                return pieces.join('\n');
+            }
             return ir.text; // todo wrappp
+        }
         case 'switch':
             const choice = choices[ir.id];
             if (choice?.type !== 'switch') {

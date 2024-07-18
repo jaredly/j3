@@ -2,7 +2,7 @@
 import { test, expect } from 'bun:test';
 import { reader } from './reader';
 import { parse } from './format';
-import { Nodes, Style, toMap } from '../shared/nodes';
+import { Nodes, RecNode, Style, toMap } from '../shared/nodes';
 import { IR, nodeToIR } from '../shared/IR/intermediate';
 import { LayoutChoices, LayoutCtx, layoutIR } from '../shared/IR/layout';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
@@ -28,13 +28,9 @@ const textLayout = (text: string, dedent: number, style?: Style) => {
     return { height, inlineHeight, inlineWidth, maxWidth };
 };
 
-const process = (text: string, maxWidth = 30, leftWidth = 20) => {
-    const data = reader(text, 'a-top');
-    if (!data) {
-        throw new Error('nothing parsed');
-    }
-    const parsed = parse(data);
+const processNode = (data: RecNode, maxWidth = 30, leftWidth = 20) => {
     const nodes: Nodes = {};
+    const parsed = parse(data);
     const root = toMap(data, nodes);
     const irs: Record<number, IR> = {};
     Object.entries(nodes).forEach(([id, node]) => {
@@ -54,6 +50,14 @@ const process = (text: string, maxWidth = 30, leftWidth = 20) => {
     ctx.layouts[root] = { choices, result };
     const txt = irToText(irs[root], irs, choices, ctx.layouts, ',');
     return { txt: '\n' + trimTrailingWhite(txt) + '\n', result, ctx, parsed };
+};
+
+const process = (text: string, maxWidth = 30, leftWidth = 20) => {
+    const data = reader(text, 'a-top');
+    if (!data) {
+        throw new Error('nothing parsed');
+    }
+    return processNode(data, maxWidth, leftWidth);
 };
 
 const trimTrailingWhite = (txt: string) =>
@@ -107,7 +111,15 @@ test('stringsss nl', () => {
 
 test('string long one', () => {
     const { txt } = process(
-        '"Here is a string what in the world here we are it is good"',
+        '"Here is a string what in the world here we are it is good somewhat things-that tend-to-be splittable insufficiently"',
+        20,
+    );
+    expect(txt).toMatchSnapshot();
+});
+
+test('long string with inclusions', () => {
+    const { txt } = process(
+        '"Here is a string what in the world ${here} we are it is good somewhat things-that ${tend-to-be} splittable insufficiently"',
         20,
     );
     expect(txt).toMatchSnapshot();

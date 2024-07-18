@@ -52,8 +52,6 @@ export const layoutIR = (
                 if (res.maxWidth + x <= ctx.maxWidth) {
                     which = i;
                     break;
-                    // ir.which = i;
-                    // return res;
                 }
             }
             choices[ir.id] = { type: 'switch', which };
@@ -67,8 +65,56 @@ export const layoutIR = (
             return result;
         }
         case 'punct':
-        case 'text':
             return ctx.textLayout(ir.text, dedent, ir.style);
+
+        case 'text': {
+            let res = ctx.textLayout(ir.text, dedent, ir.style);
+            if (res.maxWidth + x <= ctx.maxWidth) {
+                return res;
+            }
+            let maxWidth = 0;
+            const newLines = ir.text.split('\n');
+            let lines: string[] = [];
+            const wraps: number[] = [];
+            let index = 0;
+            let height = 0;
+            newLines.forEach((newLine) => {
+                lines.push('');
+                // dumbest way possible
+                const words = [
+                    ...new Intl.Segmenter('en', {
+                        granularity: 'word',
+                    }).segment(newLine),
+                ];
+                let lineHeight = 0;
+                words.forEach((seg) => {
+                    let text = lines[lines.length - 1] + seg.segment;
+                    res = ctx.textLayout(text, dedent, ir.style);
+                    if (res.maxWidth + x > ctx.maxWidth && seg.isWordLike) {
+                        wraps.push(index);
+                        lines.push(seg.segment);
+                        height += lineHeight;
+                        lineHeight = res.inlineHeight;
+                    } else {
+                        lines[lines.length - 1] = text;
+                        maxWidth = Math.max(maxWidth, res.maxWidth);
+                        lineHeight = Math.max(lineHeight, res.inlineHeight);
+                    }
+
+                    index += seg.segment.length;
+                });
+                index += 1; // for the newline
+            });
+
+            choices[ir.id] = { type: 'text-wrap', splits: wraps };
+
+            return {
+                maxWidth,
+                height,
+                inlineHeight: res.inlineHeight,
+                inlineWidth: res.inlineWidth,
+            };
+        }
 
         case 'inline': {
             let maxWidth = 0;
