@@ -75,7 +75,7 @@ export const layoutIR = (
 
         case 'text': {
             let res = ctx.textLayout(ir.text, firstLine, ir.style);
-            if (res.maxWidth + x <= ctx.maxWidth) {
+            if (res.maxWidth + x <= ctx.maxWidth || !ir.wrap) {
                 return res;
             }
             let maxWidth = 0;
@@ -96,7 +96,11 @@ export const layoutIR = (
                 words.forEach((seg) => {
                     let text = lines[lines.length - 1] + seg.segment;
                     res = ctx.textLayout(text, firstLine, ir.style);
-                    if (res.maxWidth + x > ctx.maxWidth && seg.isWordLike) {
+                    if (
+                        res.maxWidth + x > ctx.maxWidth &&
+                        seg.isWordLike &&
+                        lines[lines.length - 1] != ''
+                    ) {
                         wraps.push(index);
                         lines.push(seg.segment);
                         height += lineHeight;
@@ -177,12 +181,6 @@ export const layoutIR = (
             ir.items.forEach((item, i) => {
                 const w = layoutIR(x + lineWidth, 0, item, choices, ctx);
                 lineWidth += w.maxWidth;
-                if (
-                    (ir.spaced === 'all' && i < ir.items.length - 1) ||
-                    (ir.spaced === 'braced' && i > 0 && i < ir.items.length - 2)
-                ) {
-                    lineWidth += 1;
-                }
                 inlineHeight = Math.max(inlineHeight, w.inlineHeight);
 
                 if (
@@ -207,6 +205,12 @@ export const layoutIR = (
                     inlineHeight = w2.inlineHeight;
                 } else {
                     lineHeight = Math.max(lineHeight, w.height);
+                }
+                if (
+                    (ir.spaced === 'all' && i < ir.items.length - 1) ||
+                    (ir.spaced === 'braced' && i > 0 && i < ir.items.length - 2)
+                ) {
+                    lineWidth += 1;
                 }
             });
 

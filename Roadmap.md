@@ -1,4 +1,10 @@
 
+# Word Wrapping
+
+- gotta brak out the work wrapping stuff into testable bits, probably.
+its curently doing some kinda weird stuff
+
+
 # Process of processing
 
 - [x] some layout

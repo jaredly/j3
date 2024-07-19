@@ -65,17 +65,13 @@ export const irToText = (
         case 'horiz':
             const wrap = ir.wrap != null ? choices[ir.wrap.id] : null;
             if (ir.wrap && wrap?.type === 'hwrap') {
+                // const pre = wrap.groups.join(',') + '\n';
                 const lines: string[][] = [];
                 ir.items.forEach((item, i) => {
                     if (wrap.groups.includes(i)) {
                         lines.push([]);
                     }
                     const last = lines[lines.length - 1];
-                    // if (last.length && (
-                    //     ir.spaced === 'all')
-                    // ) {
-                    //     last.push()
-                    // }
                     last.push(irToText(item, irs, choices, layouts, space));
                 });
                 return lines
@@ -119,7 +115,7 @@ export const irToText = (
             return irToText(ir.item, irs, choices, layouts, space);
         case 'text': {
             const splits = choices[ir.id];
-            if (splits?.type === 'text-wrap') {
+            if (splits?.type === 'text-wrap' && splits.splits.length) {
                 let pieces = [];
                 for (let i = splits.splits.length - 1; i >= 0; i--) {
                     if (i === splits.splits.length - 1) {
