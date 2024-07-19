@@ -183,12 +183,7 @@ export const layoutIR = (
                 lineWidth += w.maxWidth;
                 inlineHeight = Math.max(inlineHeight, w.inlineHeight);
 
-                if (
-                    ir.wrap != null &&
-                    lineWidth + x > ctx.maxWidth &&
-                    i > 0 &&
-                    (!ir.pullLast || i < ir.items.length - 1)
-                ) {
+                if (ir.wrap != null && lineWidth + x > ctx.maxWidth && i > 0) {
                     maxWidth = Math.max(maxWidth, lineWidth - w.maxWidth);
                     height += lineHeight;
 
@@ -206,10 +201,7 @@ export const layoutIR = (
                 } else {
                     lineHeight = Math.max(lineHeight, w.height);
                 }
-                if (
-                    (ir.spaced === 'all' && i < ir.items.length - 1) ||
-                    (ir.spaced === 'braced' && i > 0 && i < ir.items.length - 2)
-                ) {
+                if (ir.spaced && i < ir.items.length - 1) {
                     lineWidth += 1;
                 }
             });

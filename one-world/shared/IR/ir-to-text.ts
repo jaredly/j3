@@ -38,7 +38,7 @@ export const joinChunks = (chunks: string[], pullLast = false) => {
 
 const addSpaces = (
     items: string[],
-    mode: 'all' | 'braced' | 'start' | 'end',
+    mode: 'all' | 'start' | 'end',
     space = ' ',
 ) => {
     let min = mode === 'all' || mode === 'end' ? 1 : 2;
@@ -77,17 +77,7 @@ export const irToText = (
                 return lines
                     .map((chunks, i) => {
                         if (ir.spaced) {
-                            const mode =
-                                ir.spaced === 'braced'
-                                    ? lines.length === 1
-                                        ? 'braced'
-                                        : i === 0
-                                        ? 'start'
-                                        : i === lines.length - 1
-                                        ? 'end'
-                                        : 'all'
-                                    : 'all';
-                            addSpaces(chunks, mode, space);
+                            addSpaces(chunks, 'all', space);
                         }
                         if (i > 0 && ir.wrap!.indent > 0) {
                             chunks.unshift(white(ir.wrap!.indent));
@@ -103,7 +93,7 @@ export const irToText = (
                 irToText(item, irs, choices, layouts, space),
             );
             if (ir.spaced) {
-                addSpaces(chunks, ir.spaced, space);
+                addSpaces(chunks, 'all', space);
             }
             return joinChunks(chunks, ir.pullLast);
         case 'indent':

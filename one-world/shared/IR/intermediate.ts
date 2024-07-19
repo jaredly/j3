@@ -25,7 +25,7 @@ export type IR =
     | {
           type: 'horiz';
           items: IR[];
-          spaced?: 'all' | 'braced';
+          spaced?: boolean;
           pullLast?: boolean;
           style?: Style;
           wrap?: { indent: number; id: number };
@@ -103,7 +103,7 @@ export const nodeToIR = (
                                       options: [
                                           {
                                               type: 'horiz',
-                                              spaced: 'all',
+                                              spaced: true,
                                               items: items,
                                           },
                                           {
@@ -127,17 +127,39 @@ export const nodeToIR = (
                         ],
                     };
                 case 'horiz':
+                    if (items.length < 2) {
+                        return {
+                            type: 'horiz',
+                            pullLast: true,
+                            items: [
+                                { type: 'punct', text: lr[0] },
+                                ...items,
+                                { type: 'punct', text: lr[1] },
+                            ],
+                        };
+                    }
                     return {
                         type: 'horiz',
                         pullLast: true,
                         wrap:
                             l.wrap != null ? { indent: l.wrap, id: 0 } : l.wrap,
-                        spaced: 'braced',
+                        spaced: true,
                         items: [
-                            { type: 'punct', text: lr[0] },
-                            ...items,
-                            // ...spaced(items, space),
-                            { type: 'punct', text: lr[1] },
+                            {
+                                type: 'horiz',
+                                items: [
+                                    { type: 'punct', text: lr[0] },
+                                    items[0],
+                                ],
+                            },
+                            ...items.slice(1, -1),
+                            {
+                                type: 'horiz',
+                                items: [
+                                    items[items.length - 1],
+                                    { type: 'punct', text: lr[1] },
+                                ],
+                            },
                         ],
                     };
                 case 'vert': {
@@ -153,7 +175,7 @@ export const nodeToIR = (
                                 i < node.items.length - 1
                                     ? {
                                           type: 'horiz',
-                                          spaced: 'all',
+                                          spaced: true,
                                           items: [
                                               l.layout.pairs.includes(
                                                   node.items[i],
@@ -169,11 +191,6 @@ export const nodeToIR = (
                                                             loc: node.items[i],
                                                         },
                                                     },
-                                              //   {
-                                              //       type: 'punct',
-                                              //       text: space,
-                                              //       kind: 'space',
-                                              //   },
                                               {
                                                   type: 'loc',
                                                   loc: node.items[i + 1],
@@ -189,7 +206,7 @@ export const nodeToIR = (
                                 items: [
                                     {
                                         type: 'horiz',
-                                        spaced: 'all',
+                                        spaced: true,
                                         items: items.slice(
                                             0,
                                             l.layout.tightFirst,
@@ -224,7 +241,7 @@ export const nodeToIR = (
                                 {
                                     type: 'horiz',
                                     items: items.slice(0, l.layout.tightFirst),
-                                    spaced: 'all',
+                                    spaced: true,
                                 },
                                 ...(l.layout.indent
                                     ? [

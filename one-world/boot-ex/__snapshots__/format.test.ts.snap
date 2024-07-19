@@ -57,8 +57,8 @@ exports[`stringsss nl 1`] = `
 "
 "Here is a
  string ${a}with things
- and such. ${(
-    one,two,three)}you know."
+ and such. ${(one
+    two,three)}you know."
 "
 `;
 
@@ -84,8 +84,124 @@ exports[`long string with inclusions 1`] = `
 
 exports[`gradual wrap 1`] = `
 "
+-------------------|
+(a,b,c,d,e,f,g,h,i,j
+   ab,ac,ad,ae,af,ag
+   ah,ai,aj,abc,abcd
+   abcde,abcdef
+   abcdefg)
+------------------|
+(a,b,c,d,e,f,g,h,i
+   j,ab,ac,ad,ae,af
+   ag,ah,ai,aj,abc
+   abcd,abcde
+   abcdef,abcdefg)
+-----------------|
+(a,b,c,d,e,f,g,h,i
+   j,ab,ac,ad,ae
+   af,ag,ah,ai,aj
+   abc,abcd,abcde
+   abcdef,abcdefg)
+----------------|
+(a,b,c,d,e,f,g,h
+   i,j,ab,ac,ad
+   ae,af,ag,ah,ai
+   aj,abc,abcd
+   abcde,abcdef
+   abcdefg)
+---------------|
+(a,b,c,d,e,f,g,h
+   i,j,ab,ac,ad
+   ae,af,ag,ah
+   ai,aj,abc
+   abcd,abcde
+   abcdef
+   abcdefg)
+--------------|
+(a,b,c,d,e,f,g
+   h,i,j,ab,ac
+   ad,ae,af,ag
+   ah,ai,aj,abc
+   abcd,abcde
+   abcdef
+   abcdefg)
+-------------|
+(a,b,c,d,e,f,g
+   h,i,j,ab,ac
+   ad,ae,af,ag
+   ah,ai,aj
+   abc,abcd
+   abcde
+   abcdef
+   abcdefg)
+------------|
+(a,b,c,d,e,f
+   g,h,i,j,ab
+   ac,ad,ae
+   af,ag,ah
+   ai,aj,abc
+   abcd,abcde
+   abcdef
+   abcdefg)
+-----------|
+(a,b,c,d,e,f
+   g,h,i,j
+   ab,ac,ad
+   ae,af,ag
+   ah,ai,aj
+   abc,abcd
+   abcde
+   abcdef
+   abcdefg)
+----------|
+(a,b,c,d,e
+   f,g,h,i
+   j,ab,ac
+   ad,ae,af
+   ag,ah,ai
+   aj,abc
+   abcd
+   abcde
+   abcdef
+   abcdefg)
+---------|
+(a,b,c,d,e
+   f,g,h,i
+   j,ab,ac
+   ad,ae
+   af,ag
+   ah,ai
+   aj,abc
+   abcd
+   abcde
+   abcdef
+   abcdefg)
+--------|
+(a,b,c,d
+   e,f,g
+   h,i,j
+   ab,ac
+   ad,ae
+   af,ag
+   ah,ai
+   aj,abc
+   abcd
+   abcde
+   abcdef
+   abcdefg)
 -------|
-(abc,def
-   ghi,a)
+(a,b,c,d
+   e,f,g
+   h,i,j
+   ab,ac
+   ad,ae
+   af,ag
+   ah,ai
+   aj
+   abc
+   abcd
+   abcde
+   abcdef
+   abcdefg)
 "
 `;
