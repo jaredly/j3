@@ -133,7 +133,7 @@ export const irToText = (
                         );
                     }
                 }
-                return pieces.join('\n');
+                return pieces.join('↩\n');
             }
             return ir.text; // todo wrappp
         }

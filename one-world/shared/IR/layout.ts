@@ -38,7 +38,7 @@ export type LayoutCtx = {
 
 export const layoutIR = (
     x: number,
-    dedent: number,
+    firstLine: number,
     ir: IR,
     choices: LayoutChoices,
     ctx: LayoutCtx,
@@ -48,7 +48,7 @@ export const layoutIR = (
             let res: LayoutResult;
             let which = ir.options.length - 1;
             for (let i = 0; i < ir.options.length; i++) {
-                res = layoutIR(x, dedent, ir.options[i], choices, ctx);
+                res = layoutIR(x, firstLine, ir.options[i], choices, ctx);
                 if (res.maxWidth + x <= ctx.maxWidth) {
                     which = i;
                     break;
@@ -60,15 +60,21 @@ export const layoutIR = (
 
         case 'loc': {
             const choices: LayoutChoices = {};
-            const result = layoutIR(x, dedent, ctx.irs[ir.loc], choices, ctx);
+            const result = layoutIR(
+                x,
+                firstLine,
+                ctx.irs[ir.loc],
+                choices,
+                ctx,
+            );
             ctx.layouts[ir.loc] = { result, choices };
             return result;
         }
         case 'punct':
-            return ctx.textLayout(ir.text, dedent, ir.style);
+            return ctx.textLayout(ir.text, firstLine, ir.style);
 
         case 'text': {
-            let res = ctx.textLayout(ir.text, dedent, ir.style);
+            let res = ctx.textLayout(ir.text, firstLine, ir.style);
             if (res.maxWidth + x <= ctx.maxWidth) {
                 return res;
             }
@@ -89,12 +95,13 @@ export const layoutIR = (
                 let lineHeight = 0;
                 words.forEach((seg) => {
                     let text = lines[lines.length - 1] + seg.segment;
-                    res = ctx.textLayout(text, dedent, ir.style);
+                    res = ctx.textLayout(text, firstLine, ir.style);
                     if (res.maxWidth + x > ctx.maxWidth && seg.isWordLike) {
                         wraps.push(index);
                         lines.push(seg.segment);
                         height += lineHeight;
                         lineHeight = res.inlineHeight;
+                        firstLine = 0;
                     } else {
                         lines[lines.length - 1] = text;
                         maxWidth = Math.max(maxWidth, res.maxWidth);
@@ -118,17 +125,11 @@ export const layoutIR = (
 
         case 'inline': {
             let maxWidth = 0;
-            let inlineWidth = 0;
+            let inlineWidth = firstLine;
             let height = 0;
             let inlineHeight = 0;
             ir.items.forEach((item, i) => {
-                let next = layoutIR(
-                    x + inlineWidth,
-                    inlineWidth,
-                    item,
-                    choices,
-                    ctx,
-                );
+                let next = layoutIR(x, inlineWidth, item, choices, ctx);
                 if (next.inlineHeight < next.height) {
                     height += next.height - inlineHeight;
                     maxWidth = Math.max(maxWidth, inlineWidth);
@@ -166,7 +167,7 @@ export const layoutIR = (
             return { inlineWidth, inlineHeight, maxWidth, height };
         }
         case 'horiz': {
-            let lineWidth = 0;
+            let lineWidth = firstLine;
             let lineHeight = 0;
             let maxWidth = 0;
             let height = 0;

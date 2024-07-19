@@ -42,36 +42,37 @@ exports[`stringsss 1`] = `
 "
 `;
 
+exports[`stringsss 2`] = `
+"
+"Here ${is}a string"
+"
+`;
+
 exports[`stringsss nl 1`] = `
 "
 "Here is a
- string ${a} with things
- and such. ${(one,two,three)}you
- know.                           "
+ string ${a}with things
+ and such. ${(
+    one,two,three)}you know."
 "
 `;
 
 exports[`string long one 1`] = `
 "
-"what in the world
- here we are it is
- good somewhat
- things-that tend-to-
- be splittable
- insufficiently      "
+"what in the world ↩
+ here we are it is ↩
+ good somewhat ↩
+ things-that tend-to-↩
+ be splittable ↩
+ insufficiently       "
 "
 `;
 
 exports[`long string with inclusions 1`] = `
 "
-"what in the world ${here}we
- are
- it
- is
- good
- somewhat
- things-
- that ${tend-to-be}splittable
- insufficiently               "
+"Here is a ${here}we are it is good ↩
+ somewhat things-↩
+ that ${be}splittable ↩
+ insufficiently                      "
 "
 `;

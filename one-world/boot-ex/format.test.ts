@@ -15,14 +15,15 @@ test('joinChunks', () => {
     expect(joinChunks(['a\ncd', 'b', 'abc\na'])).toBe('a babc\ncd a');
 });
 
-const textLayout = (text: string, dedent: number, style?: Style) => {
+const textLayout = (text: string, firstLine: number, style?: Style) => {
     const lines = text.split('\n');
     const height = lines.length;
     const inlineHeight = 1;
-    let inlineWidth = 0;
+    let inlineWidth = firstLine;
     let maxWidth = 0;
-    lines.forEach((line) => {
+    lines.forEach((line, i) => {
         inlineWidth = splitGraphemes(line).length;
+        if (i === 0) inlineWidth += firstLine;
         maxWidth = Math.max(maxWidth, inlineWidth);
     });
     return { height, inlineHeight, inlineWidth, maxWidth };
@@ -100,6 +101,8 @@ test('smol wrap', () => {
 test('stringsss', () => {
     const { txt } = process('"Here is a string"');
     expect(txt).toMatchSnapshot();
+    const r2 = process('"Here ${is} a string"');
+    expect(r2.txt).toMatchSnapshot();
 });
 
 test('stringsss nl', () => {
@@ -119,7 +122,7 @@ test('string long one', () => {
 
 test('long string with inclusions', () => {
     const { txt } = process(
-        '"Here is a string what in the world ${here} we are it is good somewhat things-that ${tend-to-be} splittable insufficiently"',
+        '"Here is a ${here} we are it is good somewhat things-that ${tend-to-be} splittable insufficiently"',
         20,
     );
     expect(txt).toMatchSnapshot();
