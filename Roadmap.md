@@ -1,4 +1,13 @@
 
+# Layout debugging
+
+- [x] wrap with plain children
+- [-] wrap with complex children
+  it ... works? like it's maybe a little funky,
+  and I'm not totally sure what the ideal is
+- [ ] text wrap let's gooo
+
+
 # Word Wrapping
 
 - gotta brak out the work wrapping stuff into testable bits, probably.

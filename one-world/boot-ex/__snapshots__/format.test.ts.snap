@@ -49,22 +49,15 @@ exports[`stringsss 1`] = `
 
 exports[`stringsss 2`] = `
 "
-"Here ${is}a string"
-"
-`;
-
-exports[`stringsss nl 1`] = `
-"
-"Here is a
- string ${a}with things
- and such. ${(one
-    two,three)}you know."
+"Here ${is} ↩
+ a string    "
 "
 `;
 
 exports[`string long one 1`] = `
 "
-"what in the world ↩
+"Here is a string ↩
+ what in the world ↩
  here we are it is ↩
  good somewhat ↩
  things-that tend-to-↩
@@ -75,10 +68,12 @@ exports[`string long one 1`] = `
 
 exports[`long string with inclusions 1`] = `
 "
-"Here is a ${here}we are it is good ↩
+"Here is a ${here} ↩
+ we are it is good ↩
  somewhat things-↩
- that ${tend-to-be}splittable ↩
- insufficiently                      "
+ that ${tend-to-be} ↩
+ splittable ↩
+ insufficiently      "
 "
 `;
 
@@ -203,5 +198,177 @@ exports[`gradual wrap 1`] = `
    abcde
    abcdef
    abcdefg)
+"
+`;
+
+exports[`gradual wrap complex 1`] = `
+"
+-------------------|
+(a,b,c,d,(e,f,g,h,i)
+   j,ab,ac,ad,ae,af
+   ag,ah,ai,aj,abc
+   abcd,abcde,abcdef
+   abcdefg)
+------------------|
+(a,b,c,d,(e,f,g,h
+            i)
+   j,ab,ac,ad,ae,af
+   ag,ah,ai,aj,abc
+   abcd,abcde
+   abcdef,abcdefg)
+-----------------|
+(a,b,c,d,(e,f,g,h
+            i)
+   j,ab,ac,ad,ae
+   af,ag,ah,ai,aj
+   abc,abcd,abcde
+   abcdef,abcdefg)
+----------------|
+(a,b,c,d
+   (e,f,g,h,i),j
+   ab,ac,ad,ae,af
+   ag,ah,ai,aj
+   abc,abcd,abcde
+   abcdef
+   abcdefg)
+"
+`;
+
+exports[`gradual string wrapp 1`] = `
+"
+-------------------|
+"a b c d e f g h i j ↩
+ ab ac ad ae af ag ↩
+ ah ai aj abc abcd ↩
+ abcde abcdef ↩
+ abcdefg              "
+------------------|
+"a b c d e f g h i ↩
+ j ab ac ad ae af ↩
+ ag ah ai aj abc ↩
+ abcd abcde abcdef ↩
+ abcdefg            "
+-----------------|
+"a b c d e f g h i ↩
+ j ab ac ad ae af ↩
+ ag ah ai aj abc ↩
+ abcd abcde abcdef ↩
+ abcdefg            "
+----------------|
+"a b c d e f g h ↩
+ i j ab ac ad ae ↩
+ af ag ah ai aj ↩
+ abc abcd abcde ↩
+ abcdef abcdefg   "
+---------------|
+"a b c d e f g h ↩
+ i j ab ac ad ae ↩
+ af ag ah ai aj ↩
+ abc abcd abcde ↩
+ abcdef abcdefg   "
+--------------|
+"a b c d e f g ↩
+ h i j ab ac ad ↩
+ ae af ag ah ai ↩
+ aj abc abcd ↩
+ abcde abcdef ↩
+ abcdefg         "
+-------------|
+"a b c d e f g ↩
+ h i j ab ac ↩
+ ad ae af ag ↩
+ ah ai aj abc ↩
+ abcd abcde ↩
+ abcdef ↩
+ abcdefg        "
+------------|
+"a b c d e f ↩
+ g h i j ab ↩
+ ac ad ae af ↩
+ ag ah ai aj ↩
+ abc abcd ↩
+ abcde abcdef ↩
+ abcdefg       "
+-----------|
+"a b c d e f ↩
+ g h i j ab ↩
+ ac ad ae af ↩
+ ag ah ai aj ↩
+ abc abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg      "
+----------|
+"a b c d e ↩
+ f g h i j ↩
+ ab ac ad ↩
+ ae af ag ↩
+ ah ai aj ↩
+ abc abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg    "
+---------|
+"a b c d e ↩
+ f g h i j ↩
+ ab ac ad ↩
+ ae af ag ↩
+ ah ai aj ↩
+ abc abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg    "
+--------|
+"a b c d ↩
+ e f g h ↩
+ i j ab ↩
+ ac ad ae ↩
+ af ag ah ↩
+ ai aj ↩
+ abc abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg   "
+-------|
+"a b c d ↩
+ e f g h ↩
+ i j ab ↩
+ ac ad ↩
+ ae af ↩
+ ag ah ↩
+ ai aj ↩
+ abc ↩
+ abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg  "
+------|
+"a b c ↩
+ d e f ↩
+ g h i ↩
+ j ab ↩
+ ac ad ↩
+ ae af ↩
+ ag ah ↩
+ ai aj ↩
+ abc ↩
+ abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg "
+-----|
+"a b c ↩
+ d e f ↩
+ g h i ↩
+ j ab ↩
+ ac ad ↩
+ ae af ↩
+ ag ah ↩
+ ai aj ↩
+ abc ↩
+ abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg "
 "
 `;

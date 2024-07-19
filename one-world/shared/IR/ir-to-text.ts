@@ -118,6 +118,9 @@ export const irToText = (
                             ),
                         );
                     }
+                    if (i === 0) {
+                        pieces.unshift(ir.text.slice(0, splits.splits[0]));
+                    }
                 }
                 return pieces.join('↩\n');
             }
