@@ -12,7 +12,7 @@ const refStyle: Style = {
 
 export type IR =
     // TODO allow wrapping text
-    | { type: 'text'; text: string; id: number; style?: Style; wrap: boolean }
+    | { type: 'text'; text: string; wrap?: number; style?: Style }
     | {
           type: 'vert';
           items: IR[];
@@ -21,7 +21,7 @@ export type IR =
           pairs?: number[];
       }
     | { type: 'squish'; item: IR }
-    | { type: 'inline'; items: IR[]; style?: Style }
+    | { type: 'inline'; items: IR[]; wrap: number; style?: Style }
     | {
           type: 'horiz';
           items: IR[];
@@ -280,8 +280,6 @@ export const nodeToIR = (
         case 'id':
             return {
                 type: 'text',
-                wrap: false,
-                id: 0,
                 text: node.ref
                     ? names[node.ref.toplevel][node.ref.loc]
                     : node.text,
@@ -300,22 +298,26 @@ export const nodeToIR = (
                     { type: 'punct', text: '"' },
                     {
                         type: 'inline',
+                        wrap: -1,
                         items: [
                             {
                                 type: 'text',
                                 text: node.first,
-                                id: 0,
-                                wrap: true,
+                                wrap: 0,
                             },
                             ...node.templates.flatMap((t, i): IR[] => [
-                                { type: 'punct', text: '${' },
-                                { type: 'loc', loc: t.expr },
-                                { type: 'punct', text: '}' },
+                                {
+                                    type: 'horiz',
+                                    items: [
+                                        { type: 'punct', text: '${' },
+                                        { type: 'loc', loc: t.expr },
+                                        { type: 'punct', text: '}' },
+                                    ],
+                                },
                                 {
                                     type: 'text',
                                     text: t.suffix,
-                                    id: i + 1,
-                                    wrap: true,
+                                    wrap: i + 1,
                                 },
                             ]),
                         ],

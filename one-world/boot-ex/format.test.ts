@@ -175,10 +175,9 @@ test('gradual string wrapp', () => {
 });
 
 test('gradual string wrapp with simple inclusions', () => {
-    const orig = //'(abc def ghi a)';
-        '"a b c d e f g h i j ab ${ac} ad ae af ag ah ai aj ${abc} abcd abcde ${abcdef} abcdefg"';
-    const max = 20; // 20
-    const min = 5;
+    const orig = '"e f g ${ac} ah ai aj ${abc} abcd abcde ${abcdef} abcdefg"'; //'(abc def ghi a)';
+    const max = 43; // 20
+    const min = 20;
 
     let res = '';
     for (let i = max; i > min; i--) {

@@ -49,8 +49,7 @@ exports[`stringsss 1`] = `
 
 exports[`stringsss 2`] = `
 "
-"Here ${is} ↩
- a string    "
+"Here ${is} a string"
 "
 `;
 
@@ -379,132 +378,82 @@ exports[`gradual string wrapp 1`] = `
 
 exports[`gradual string wrapp with simple inclusions 1`] = `
 "
--------------------|
-"a b c d e f g h i j ↩
- ab ${ac} ↩
- ad ae af ag ah ai ↩
- aj ${abc} ↩
+------------------------------------------|
+"e f g ${ac} ah ai aj ${abc} abcd abcde ${abcdef} ↩
+ abcdefg                                           "
+-----------------------------------------|
+"e f g ${ac} ah ai aj ${abc} abcd abcde ${abcdef} ↩
+ abcdefg                                           "
+----------------------------------------|
+"e f g ${ac} ah ai aj ${abc} abcd abcde ${abcdef} ↩
+ abcdefg                                           "
+---------------------------------------|
+"e f g ${ac} ah ai aj ${abc} abcd abcde ${abcdef} ↩
+ abcdefg                                           "
+--------------------------------------|
+"e f g ${ac} ah ai aj ${abc} abcd abcde ${abcdef} ↩
+ abcdefg                                           "
+-------------------------------------|
+"e f g ${ac} ah ai aj ${abc} abcd ↩
+ abcde ${abcdef} abcdefg           "
+------------------------------------|
+"e f g ${ac} ah ai aj ${abc} abcd ↩
+ abcde ${abcdef} abcdefg           "
+-----------------------------------|
+"e f g ${ac} ah ai aj ${abc} abcd ↩
+ abcde ${abcdef} abcdefg           "
+----------------------------------|
+"e f g ${ac} ah ai aj ${abc} abcd ↩
+ abcde ${abcdef} abcdefg           "
+---------------------------------|
+"e f g ${ac} ah ai aj ${abc} abcd ↩
+ abcde ${abcdef} abcdefg           "
+--------------------------------|
+"e f g ${ac} ah ai aj ${abc} abcd ↩
+ abcde ${abcdef} abcdefg           "
+-------------------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
+ abcd abcde ${abcdef} abcdefg "
+------------------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
+ abcd abcde ${abcdef} abcdefg "
+-----------------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
+ abcd abcde ${abcdef} abcdefg "
+----------------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
+ abcd abcde ${abcdef} abcdefg "
+---------------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
  abcd abcde ${abcdef} ↩
- abcdefg               "
-------------------|
-"a b c d e f g h i ↩
- j ab ${ac} ↩
- ad ae af ag ah ai ↩
- aj ${abc} ↩
+ abcdefg                      "
+--------------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
  abcd abcde ${abcdef} ↩
- abcdefg               "
------------------|
-"a b c d e f g h i ↩
- j ab ${ac} ↩
- ad ae af ag ah ai ↩
- aj ${abc} ↩
+ abcdefg                      "
+-------------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
  abcd abcde ${abcdef} ↩
- abcdefg               "
-----------------|
-"a b c d e f g h ↩
- i j ab ${ac} ↩
- ad ae af ag ah ↩
- ai aj ${abc} ↩
+ abcdefg                      "
+------------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
  abcd abcde ${abcdef} ↩
- abcdefg               "
----------------|
-"a b c d e f g h ↩
- i j ab ${ac} ↩
- ad ae af ag ah ↩
- ai aj ${abc} ↩
+ abcdefg                      "
+-----------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
  abcd abcde ${abcdef} ↩
- abcdefg               "
---------------|
-"a b c d e f g ↩
- h i j ab ${ac} ↩
- ad ae af ag ah ↩
- ai aj ${abc} ↩
+ abcdefg                      "
+----------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
  abcd abcde ${abcdef} ↩
- abcdefg               "
--------------|
-"a b c d e f g ↩
- h i j ab ${ac} ↩
- ad ae af ag ↩
- ah ai aj ${abc} ↩
+ abcdefg                      "
+---------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
  abcd abcde ${abcdef} ↩
- abcdefg               "
-------------|
-"a b c d e f ↩
- g h i j ab ${ac} ↩
- ad ae af ag ↩
- ah ai aj ${abc} ↩
+ abcdefg                      "
+--------------------|
+"e f g ${ac} ah ai aj ${abc} ↩
  abcd abcde ${abcdef} ↩
- abcdefg               "
------------|
-"a b c d e f ↩
- g h i j ab ${ac} ↩
- ad ae af ag ↩
- ah ai aj ${abc} ↩
- abcd abcde ${abcdef} ↩
- abcdefg               "
-----------|
-"a b c d e ↩
- f g h i j ↩
- ab ${ac} ↩
- ad ae af ↩
- ag ah ai ↩
- aj ${abc} ↩
- abcd abcde ${abcdef} ↩
- abcdefg               "
----------|
-"a b c d e ↩
- f g h i j ↩
- ab ${ac} ↩
- ad ae af ↩
- ag ah ai ↩
- aj ${abc} ↩
- abcd ↩
- abcde ${abcdef} ↩
- abcdefg          "
---------|
-"a b c d ↩
- e f g h ↩
- i j ab ${ac} ↩
- ad ae af ↩
- ag ah ai ↩
- aj ${abc} ↩
- abcd ↩
- abcde ${abcdef} ↩
- abcdefg          "
--------|
-"a b c d ↩
- e f g h ↩
- i j ab ${ac} ↩
- ad ae ↩
- af ag ↩
- ah ai ↩
- aj ${abc} ↩
- abcd ↩
- abcde ${abcdef} ↩
- abcdefg          "
-------|
-"a b c ↩
- d e f ↩
- g h i ↩
- j ab ${ac} ↩
- ad ae ↩
- af ag ↩
- ah ai ↩
- aj ${abc} ↩
- abcd ↩
- abcde ${abcdef} ↩
- abcdefg          "
------|
-"a b c ↩
- d e f ↩
- g h i ↩
- j ab ${ac} ↩
- ad ae ↩
- af ag ↩
- ah ai ↩
- aj ${abc} ↩
- abcd ↩
- abcde ${abcdef} ↩
- abcdefg          "
+ abcdefg                      "
 "
 `;

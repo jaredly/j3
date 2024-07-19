@@ -104,7 +104,8 @@ export const irToText = (
         case 'squish':
             return irToText(ir.item, irs, choices, layouts, space);
         case 'text': {
-            const splits = choices[ir.id];
+            if (ir.wrap == null) return ir.text;
+            const splits = choices[ir.wrap];
             if (splits?.type === 'text-wrap' && splits.splits.length) {
                 let pieces = [];
                 for (let i = splits.splits.length - 1; i >= 0; i--) {

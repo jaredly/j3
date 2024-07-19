@@ -4,6 +4,27 @@ import { IR } from './intermediate';
 // type LayoutCache = Record<number, any>
 type IRForLoc = Record<number, IR>;
 
+/*
+
+Ok, so I ... need to better understand what I mean by these things.
+
+I generally think "inlineWidth" means "the last line"
+
+abcdef
+ghi
+
+would have maxwidth = 6 and inlineWidth = 3
+because it's "how offset do I start this next thing, if we're inline"
+It's based on the passed-in X
+
+so if we start offset
+
+   abc
+
+the inlinewidth should be 6
+
+
+*/
 type LayoutResult = {
     maxWidth: number;
     inlineWidth: number;
@@ -75,7 +96,7 @@ export const layoutIR = (
 
         case 'text': {
             let res = ctx.textLayout(ir.text, firstLine, ir.style);
-            if (res.maxWidth + x <= ctx.maxWidth || !ir.wrap) {
+            if (res.maxWidth + x <= ctx.maxWidth || ir.wrap == null) {
                 return res;
             }
             let maxWidth = 0;
@@ -117,7 +138,7 @@ export const layoutIR = (
                 index += 1; // for the newline
             });
 
-            choices[ir.id] = { type: 'text-wrap', splits: wraps };
+            choices[ir.wrap] = { type: 'text-wrap', splits: wraps };
 
             return {
                 maxWidth,
@@ -132,6 +153,7 @@ export const layoutIR = (
             let inlineWidth = firstLine;
             let height = 0;
             let inlineHeight = 0;
+            const groups: number[] = [0];
             ir.items.forEach((item, i) => {
                 let next = layoutIR(x, inlineWidth, item, choices, ctx);
                 if (next.inlineHeight < next.height) {
@@ -142,9 +164,12 @@ export const layoutIR = (
                     inlineHeight = next.inlineHeight;
                 } else {
                     inlineHeight = Math.max(inlineHeight, next.inlineHeight);
-                    inlineWidth += next.inlineWidth;
+                    inlineWidth = next.inlineWidth;
                 }
             });
+            if (ir.wrap != null) {
+                choices[ir.wrap] = { type: 'hwrap', groups };
+            }
             return { maxWidth, inlineWidth, inlineHeight, height };
         }
 
@@ -168,10 +193,15 @@ export const layoutIR = (
                 height += next.height;
             });
 
-            return { inlineWidth, inlineHeight, maxWidth, height };
+            return {
+                inlineWidth: inlineWidth + firstLine,
+                inlineHeight,
+                maxWidth,
+                height,
+            };
         }
         case 'horiz': {
-            let lineWidth = firstLine;
+            let lineWidth = 0;
             let lineHeight = 0;
             let maxWidth = 0;
             let height = 0;
@@ -213,7 +243,12 @@ export const layoutIR = (
             maxWidth = Math.max(maxWidth, lineWidth);
             height += lineHeight;
 
-            return { maxWidth, inlineWidth: lineWidth, height, inlineHeight };
+            return {
+                maxWidth,
+                inlineWidth: lineWidth + firstLine,
+                height,
+                inlineHeight,
+            };
         }
         case 'indent': {
             const indent = ir.amount ?? 1;
