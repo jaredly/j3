@@ -129,7 +129,6 @@ test('long string with inclusions', () => {
 });
 
 test('gradual wrap', () => {
-    debugger;
     const orig = //'(abc def ghi a)';
         '(a b c d e f g h i j ab ac ad ae af ag ah ai aj abc abcd abcde abcdef abcdefg)';
     const max = 20; // 20
@@ -145,7 +144,6 @@ test('gradual wrap', () => {
 });
 
 test('gradual wrap complex', () => {
-    debugger;
     const orig = //'(abc def ghi a)';
         '(a b c d (e f g h i) j ab ac ad ae af ag ah ai aj abc abcd abcde abcdef abcdefg)';
     // '(a b c d e f g h i j ab ac ad ae af ag ah ai aj abc abcd abcde abcdef abcdefg)';
@@ -162,10 +160,8 @@ test('gradual wrap complex', () => {
 });
 
 test('gradual string wrapp', () => {
-    debugger;
     const orig = //'(abc def ghi a)';
-        '"a b c d e f g h i j ab ac ad ae af ag ah ai aj abc abcd abcde abcdef abcdefg"';
-    // '(a b c d e f g h i j ab ac ad ae af ag ah ai aj abc abcd abcde abcdef abcdefg)';
+        '"a b c d e f g h i j ab ac ad ae af\nag ah ai aj abc abcd abcde abcdef abcdefg"';
     const max = 20; // 20
     const min = 5;
 

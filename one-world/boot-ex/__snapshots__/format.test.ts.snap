@@ -238,53 +238,55 @@ exports[`gradual string wrapp 1`] = `
 "
 -------------------|
 "a b c d e f g h i j ↩
- ab ac ad ae af ag ↩
- ah ai aj abc abcd ↩
- abcde abcdef ↩
+ ab ac ad ae af
+ ag ah ai aj abc ↩
+ abcd abcde abcdef ↩
  abcdefg              "
 ------------------|
 "a b c d e f g h i ↩
- j ab ac ad ae af ↩
+ j ab ac ad ae af
  ag ah ai aj abc ↩
  abcd abcde abcdef ↩
  abcdefg            "
 -----------------|
 "a b c d e f g h i ↩
- j ab ac ad ae af ↩
+ j ab ac ad ae af
  ag ah ai aj abc ↩
  abcd abcde abcdef ↩
  abcdefg            "
 ----------------|
 "a b c d e f g h ↩
  i j ab ac ad ae ↩
- af ag ah ai aj ↩
- abc abcd abcde ↩
+ af
+ ag ah ai aj abc ↩
+ abcd abcde ↩
  abcdef abcdefg   "
 ---------------|
 "a b c d e f g h ↩
  i j ab ac ad ae ↩
- af ag ah ai aj ↩
- abc abcd abcde ↩
+ af
+ ag ah ai aj abc ↩
+ abcd abcde ↩
  abcdef abcdefg   "
 --------------|
 "a b c d e f g ↩
  h i j ab ac ad ↩
- ae af ag ah ai ↩
- aj abc abcd ↩
- abcde abcdef ↩
- abcdefg         "
+ ae af
+ ag ah ai aj ↩
+ abc abcd abcde ↩
+ abcdef abcdefg  "
 -------------|
 "a b c d e f g ↩
  h i j ab ac ↩
- ad ae af ag ↩
- ah ai aj abc ↩
- abcd abcde ↩
- abcdef ↩
+ ad ae af
+ ag ah ai aj ↩
+ abc abcd ↩
+ abcde abcdef ↩
  abcdefg        "
 ------------|
 "a b c d e f ↩
  g h i j ab ↩
- ac ad ae af ↩
+ ac ad ae af
  ag ah ai aj ↩
  abc abcd ↩
  abcde abcdef ↩
@@ -292,7 +294,7 @@ exports[`gradual string wrapp 1`] = `
 -----------|
 "a b c d e f ↩
  g h i j ab ↩
- ac ad ae af ↩
+ ac ad ae af
  ag ah ai aj ↩
  abc abcd ↩
  abcde ↩
@@ -302,19 +304,20 @@ exports[`gradual string wrapp 1`] = `
 "a b c d e ↩
  f g h i j ↩
  ab ac ad ↩
- ae af ag ↩
- ah ai aj ↩
- abc abcd ↩
- abcde ↩
+ ae af
+ ag ah ai ↩
+ aj abc ↩
+ abcd abcde ↩
  abcdef ↩
- abcdefg    "
+ abcdefg     "
 ---------|
 "a b c d e ↩
  f g h i j ↩
  ab ac ad ↩
- ae af ag ↩
- ah ai aj ↩
- abc abcd ↩
+ ae af
+ ag ah ai ↩
+ aj abc ↩
+ abcd ↩
  abcde ↩
  abcdef ↩
  abcdefg    "
@@ -323,9 +326,10 @@ exports[`gradual string wrapp 1`] = `
  e f g h ↩
  i j ab ↩
  ac ad ae ↩
- af ag ah ↩
- ai aj ↩
- abc abcd ↩
+ af
+ ag ah ai ↩
+ aj abc ↩
+ abcd ↩
  abcde ↩
  abcdef ↩
  abcdefg   "
@@ -334,7 +338,7 @@ exports[`gradual string wrapp 1`] = `
  e f g h ↩
  i j ab ↩
  ac ad ↩
- ae af ↩
+ ae af
  ag ah ↩
  ai aj ↩
  abc ↩
@@ -348,7 +352,7 @@ exports[`gradual string wrapp 1`] = `
  g h i ↩
  j ab ↩
  ac ad ↩
- ae af ↩
+ ae af
  ag ah ↩
  ai aj ↩
  abc ↩
@@ -362,7 +366,7 @@ exports[`gradual string wrapp 1`] = `
  g h i ↩
  j ab ↩
  ac ad ↩
- ae af ↩
+ ae af
  ag ah ↩
  ai aj ↩
  abc ↩
