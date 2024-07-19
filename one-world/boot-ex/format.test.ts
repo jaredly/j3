@@ -173,3 +173,18 @@ test('gradual string wrapp', () => {
     }
     expect('\n' + res).toMatchSnapshot();
 });
+
+test('gradual string wrapp with simple inclusions', () => {
+    const orig = //'(abc def ghi a)';
+        '"a b c d e f g h i j ab ${ac} ad ae af ag ah ai aj ${abc} abcd abcde ${abcdef} abcdefg"';
+    const max = 20; // 20
+    const min = 5;
+
+    let res = '';
+    for (let i = max; i > min; i--) {
+        const { txt } = process(orig, i);
+        res += Array(i).join('-') + '|\n';
+        res += txt.trim() + '\n';
+    }
+    expect('\n' + res).toMatchSnapshot();
+});

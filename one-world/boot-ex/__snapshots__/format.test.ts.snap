@@ -376,3 +376,135 @@ exports[`gradual string wrapp 1`] = `
  abcdefg "
 "
 `;
+
+exports[`gradual string wrapp with simple inclusions 1`] = `
+"
+-------------------|
+"a b c d e f g h i j ↩
+ ab ${ac} ↩
+ ad ae af ag ah ai ↩
+ aj ${abc} ↩
+ abcd abcde ${abcdef} ↩
+ abcdefg               "
+------------------|
+"a b c d e f g h i ↩
+ j ab ${ac} ↩
+ ad ae af ag ah ai ↩
+ aj ${abc} ↩
+ abcd abcde ${abcdef} ↩
+ abcdefg               "
+-----------------|
+"a b c d e f g h i ↩
+ j ab ${ac} ↩
+ ad ae af ag ah ai ↩
+ aj ${abc} ↩
+ abcd abcde ${abcdef} ↩
+ abcdefg               "
+----------------|
+"a b c d e f g h ↩
+ i j ab ${ac} ↩
+ ad ae af ag ah ↩
+ ai aj ${abc} ↩
+ abcd abcde ${abcdef} ↩
+ abcdefg               "
+---------------|
+"a b c d e f g h ↩
+ i j ab ${ac} ↩
+ ad ae af ag ah ↩
+ ai aj ${abc} ↩
+ abcd abcde ${abcdef} ↩
+ abcdefg               "
+--------------|
+"a b c d e f g ↩
+ h i j ab ${ac} ↩
+ ad ae af ag ah ↩
+ ai aj ${abc} ↩
+ abcd abcde ${abcdef} ↩
+ abcdefg               "
+-------------|
+"a b c d e f g ↩
+ h i j ab ${ac} ↩
+ ad ae af ag ↩
+ ah ai aj ${abc} ↩
+ abcd abcde ${abcdef} ↩
+ abcdefg               "
+------------|
+"a b c d e f ↩
+ g h i j ab ${ac} ↩
+ ad ae af ag ↩
+ ah ai aj ${abc} ↩
+ abcd abcde ${abcdef} ↩
+ abcdefg               "
+-----------|
+"a b c d e f ↩
+ g h i j ab ${ac} ↩
+ ad ae af ag ↩
+ ah ai aj ${abc} ↩
+ abcd abcde ${abcdef} ↩
+ abcdefg               "
+----------|
+"a b c d e ↩
+ f g h i j ↩
+ ab ${ac} ↩
+ ad ae af ↩
+ ag ah ai ↩
+ aj ${abc} ↩
+ abcd abcde ${abcdef} ↩
+ abcdefg               "
+---------|
+"a b c d e ↩
+ f g h i j ↩
+ ab ${ac} ↩
+ ad ae af ↩
+ ag ah ai ↩
+ aj ${abc} ↩
+ abcd ↩
+ abcde ${abcdef} ↩
+ abcdefg          "
+--------|
+"a b c d ↩
+ e f g h ↩
+ i j ab ${ac} ↩
+ ad ae af ↩
+ ag ah ai ↩
+ aj ${abc} ↩
+ abcd ↩
+ abcde ${abcdef} ↩
+ abcdefg          "
+-------|
+"a b c d ↩
+ e f g h ↩
+ i j ab ${ac} ↩
+ ad ae ↩
+ af ag ↩
+ ah ai ↩
+ aj ${abc} ↩
+ abcd ↩
+ abcde ${abcdef} ↩
+ abcdefg          "
+------|
+"a b c ↩
+ d e f ↩
+ g h i ↩
+ j ab ${ac} ↩
+ ad ae ↩
+ af ag ↩
+ ah ai ↩
+ aj ${abc} ↩
+ abcd ↩
+ abcde ${abcdef} ↩
+ abcdefg          "
+-----|
+"a b c ↩
+ d e f ↩
+ g h i ↩
+ j ab ${ac} ↩
+ ad ae ↩
+ af ag ↩
+ ah ai ↩
+ aj ${abc} ↩
+ abcd ↩
+ abcde ${abcdef} ↩
+ abcdefg          "
+"
+`;
