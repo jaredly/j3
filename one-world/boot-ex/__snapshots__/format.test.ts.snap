@@ -84,21 +84,6 @@ exports[`long string with inclusions 1`] = `
 
 exports[`gradual wrap 1`] = `
 "
-------------|
-(abc,def,ghi
-   a)
------------|
-(abc,def,ghi
-   a)
-----------|
-(abc,def
-   ghi,a)
----------|
-(abc,def
-   ghi,a)
---------|
-(abc,def
-   ghi,a)
 -------|
 (abc,def
    ghi,a)

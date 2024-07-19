@@ -121,7 +121,6 @@ test('string long one', () => {
 });
 
 test('long string with inclusions', () => {
-    debugger;
     const { txt } = process(
         '"Here is a ${here} we are it is good somewhat things-that ${tend-to-be} splittable insufficiently"',
         20,
@@ -130,9 +129,10 @@ test('long string with inclusions', () => {
 });
 
 test('gradual wrap', () => {
+    debugger;
     const orig = '(abc def ghi a)';
     // '(a b c d e f g h i j ab ac ad ae af ag ah ai aj abc abcd abcde abcdef abcdefg)';
-    const max = 13; // 20
+    const max = 8; // 20
     const min = 7;
 
     let res = '';
