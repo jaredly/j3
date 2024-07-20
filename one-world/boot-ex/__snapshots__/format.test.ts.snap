@@ -471,10 +471,11 @@ exports[`gradual string wrapp with simple inclusions 1`] = `
  ab cd abc de ${abcdef} ↩
  abcdefg ab cd ef gh          "
 --------------------------| 27
-"0
- e f g ${ac} ah ai aj ${abc} ↩
- ab cd abc de ${abcdef} ↩
- abcdefg ab cd ef gh          "
+"0,3,5
+ e f g ${ac} ah ai aj !
+ ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab cd ef ↩
+ gh                          "
 -------------------------| 26
 "0,3,5
  e f g ${ac} ah ai aj !
@@ -624,9 +625,9 @@ exports[`gradual string wrapp with simple inclusions 2`] = `
 
 exports[`gradual string wrapp with simple inclusions 3`] = `
 "
-----------------------------------------| 41
+---------------------------------------| 40
 "0,1
- nnnnnnnnnnnnnnnnnnnnnnnnnnn ab cd abc de !
- ${abcdef} abcdefg ab cd ef gh             "
+ nnnnnnnnnnnnnnnnnnnnnnnnnnn ab cd !
+ ${abc} de ${abcdef} abcdefg ab cd ef gh"
 "
 `;

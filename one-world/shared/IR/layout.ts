@@ -165,7 +165,7 @@ export const layoutIR = (
                 if (
                     item.type !== 'inline' &&
                     (item.type !== 'text' || item.wrap == null) &&
-                    next.inlineWidth > ctx.maxWidth
+                    x + next.inlineWidth > ctx.maxWidth
                 ) {
                     groups.push(i);
                     next = layoutIR(x, 0, item, choices, ctx);
@@ -176,17 +176,6 @@ export const layoutIR = (
                 }
                 inlineWidth = next.inlineWidth;
                 inlineHeight = Math.max(next.inlineHeight, inlineHeight);
-
-                // if (next.inlineHeight < next.height) {
-                //     height += next.height - inlineHeight;
-                //     maxWidth = Math.max(maxWidth, inlineWidth);
-                //     // we're on a new line
-                //     inlineWidth = next.inlineWidth;
-                //     inlineHeight = next.inlineHeight;
-                // } else {
-                //     inlineHeight = Math.max(inlineHeight, next.inlineHeight);
-                //     inlineWidth = next.inlineWidth;
-                // }
             });
             choices[ir.wrap] = { type: 'hwrap', groups };
             return { maxWidth, inlineWidth, inlineHeight, height };
