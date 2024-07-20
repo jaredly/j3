@@ -3,7 +3,7 @@ import { test, expect } from 'bun:test';
 import { reader } from './reader';
 import { parse } from './format';
 import { Nodes, RecNode, Style, toMap } from '../shared/nodes';
-import { IR, nodeToIR } from '../shared/IR/intermediate';
+import { Control, IR, nodeToIR } from '../shared/IR/intermediate';
 import { LayoutChoices, LayoutCtx, layoutIR } from '../shared/IR/layout';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { irToText, joinChunks, maxLength } from '../shared/IR/ir-to-text';
@@ -29,6 +29,14 @@ const textLayout = (text: string, firstLine: number, style?: Style) => {
     return { height, inlineHeight, inlineWidth, maxWidth };
 };
 
+const controlLayout = (control: Control) => {
+    let w = 4;
+    if (control.type === 'number') {
+        w = control.width + 3;
+    }
+    return { height: 1, inlineHeight: 1, inlineWidth: w, maxWidth: w };
+};
+
 const processNode = (data: RecNode, maxWidth = 30, leftWidth = 20) => {
     const nodes: Nodes = {};
     const parsed = parse(data);
@@ -44,6 +52,7 @@ const processNode = (data: RecNode, maxWidth = 30, leftWidth = 20) => {
         irs,
         layouts: {},
         textLayout,
+        controlLayout,
     };
 
     const choices: LayoutChoices = {};
@@ -293,5 +302,5 @@ test('rich text or sth', () => {
         max,
     );
     const pre = Array(max).join('-') + `| ${max}\n`;
-    expect(pre + txt.trim()).toMatchSnapshot();
+    expect(pre + txt).toMatchSnapshot();
 });

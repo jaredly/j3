@@ -26,6 +26,28 @@ This that are fine I think
 - header(this is fine, just text + style)
 - blockquote (?horiz + style is probably fine)
 
+QUESTION:
+- does the IR need to be ... interactable?
+- like, with clicks.
+- so, the checkboxes and radio buttons need to be checkable
+
+IDEA `vert` could have a `list indicator` property to allow for ul/ol/checks/opts
+but how to do interactivity? it would have to be, like, an assumption. ALSO the
+checks/opts ought to be [select]able, right? sothat's interesting.
+And the link href, what's my strategy for editing that?
+like
+...
+do I do something principled about it? such that the href is ~selectable? (would show up
+in a hover). How to "move to" that selection from the keyboard?
+Yeah that would definitely be nice. probably meta-k, right?
+so that's a funky little addition to the selection protocol.
+
+{type: 'text', which: 0, cursor: 10, link?: boolean}
+
+anyway, I think that would do it, for now.... although we might come up
+with other renderables that would need interactivity.. although maybe
+those end up being "HTML only"?
+
 
 # Layout debugging
 

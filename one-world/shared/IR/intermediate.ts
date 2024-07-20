@@ -10,9 +10,19 @@ const refStyle: Style = {
     // type: 'text', style: { fontWeight: 'bold' }
 };
 
+export type Control =
+    | {
+          type: 'check' | 'radio';
+          checked: boolean;
+          loc: number;
+      }
+    | { type: 'bullet' }
+    | { type: 'number'; num: number; width: number };
+
 export type IR =
     // TODO allow wrapping text
     | { type: 'text'; text: string; wrap?: number; style?: Style }
+    | { type: 'control'; loc: number; control: Control }
     | {
           type: 'vert';
           items: IR[];
@@ -78,15 +88,31 @@ export const nodeToIR = (
         case 'rich-block':
             switch (node.kind.type) {
                 case 'checks':
-                    const c = node.kind.checked;
+                case 'opts':
+                    let isChecked;
+                    if (node.kind.type === 'checks') {
+                        const c = node.kind.checked;
+                        isChecked = (m: number) => c[m];
+                    } else {
+                        const which = node.kind.which;
+                        isChecked = (m: number) => m === which;
+                    }
                     return {
                         type: 'vert',
                         items: node.items.map((loc, i) => ({
                             type: 'horiz',
                             items: [
                                 {
-                                    type: 'punct',
-                                    text: c[loc] ? `[x] ` : '[ ] ',
+                                    type: 'control',
+                                    loc: node.loc,
+                                    control: {
+                                        type:
+                                            node.kind.type === 'checks'
+                                                ? 'check'
+                                                : 'radio',
+                                        checked: isChecked(loc),
+                                        loc,
+                                    },
                                 },
                                 { type: 'loc', loc },
                             ],
@@ -100,8 +126,16 @@ export const nodeToIR = (
                             type: 'horiz',
                             items: [
                                 {
-                                    type: 'punct',
-                                    text: o ? `${i + 1}) ` : ' - ',
+                                    type: 'control',
+                                    loc: node.loc,
+                                    control: o
+                                        ? {
+                                              type: 'number',
+                                              num: i + 1,
+                                              width: node.items.length.toString()
+                                                  .length,
+                                          }
+                                        : { type: 'bullet' },
                                 },
                                 { type: 'loc', loc },
                             ],

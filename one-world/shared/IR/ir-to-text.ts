@@ -62,6 +62,21 @@ export const irToText = (
             const { choices } = layouts[ir.loc];
             return irToText(irs[ir.loc], irs, choices, layouts, space);
         }
+        case 'control':
+            switch (ir.control.type) {
+                case 'check':
+                    return ir.control.checked ? '[x] ' : '[ ] ';
+                case 'radio':
+                    return ir.control.checked ? '(x) ' : '( ) ';
+                case 'bullet':
+                    return ' - ';
+                case 'number':
+                    return `${ir.control.num
+                        .toString()
+                        .padStart(ir.control.width, ' ')}) `;
+                default:
+                    throw new Error('no');
+            }
         case 'punct':
             return ir.text;
         case 'inline': {

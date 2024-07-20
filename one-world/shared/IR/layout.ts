@@ -1,5 +1,5 @@
 import { Style } from '../nodes';
-import { IR } from './intermediate';
+import { Control, IR } from './intermediate';
 
 // type LayoutCache = Record<number, any>
 type IRForLoc = Record<number, IR>;
@@ -55,6 +55,7 @@ export type LayoutCtx = {
     >;
     // layouts: LayoutCache,
     textLayout: (text: string, dedent: number, style?: Style) => LayoutResult;
+    controlLayout: (control: Control) => LayoutResult;
 };
 
 export const layoutIR = (
@@ -93,6 +94,9 @@ export const layoutIR = (
         }
         case 'punct':
             return ctx.textLayout(ir.text, firstLine, ir.style);
+
+        case 'control':
+            return ctx.controlLayout(ir.control);
 
         case 'text': {
             let res = ctx.textLayout(ir.text, firstLine, ir.style);

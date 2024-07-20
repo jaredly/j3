@@ -815,6 +815,7 @@ Hi folks 𝐭𝐡𝐢𝐬 𝐢𝐬 bolded, a̲n̲d̲ ↩
 
 exports[`rich text or sth 2`] = `
 "---------------------------------------| 40
+
 1) Now we
 2)  - another
     - list
@@ -824,5 +825,6 @@ exports[`rich text or sth 2`] = `
    [ ] checks
    [ ] nice
    [ ] (lol,waht,now,folks)
-6) Yeah"
+6) Yeah
+"
 `;
