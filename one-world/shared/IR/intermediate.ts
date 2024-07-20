@@ -68,10 +68,45 @@ export const nodeToIR = (
                 case 'image':
                     return { type: 'text', text: '🖼️' };
                 default:
-                    return { type: 'text', text: node.text, style: node.style };
+                    return {
+                        type: 'text',
+                        text: node.text,
+                        style: node.style,
+                        wrap: 0,
+                    };
             }
         case 'rich-block':
             switch (node.kind.type) {
+                case 'checks':
+                    const c = node.kind.checked;
+                    return {
+                        type: 'vert',
+                        items: node.items.map((loc, i) => ({
+                            type: 'horiz',
+                            items: [
+                                {
+                                    type: 'punct',
+                                    text: c[loc] ? `[x] ` : '[ ] ',
+                                },
+                                { type: 'loc', loc },
+                            ],
+                        })),
+                    };
+                case 'list':
+                    const o = node.kind.ordered;
+                    return {
+                        type: 'vert',
+                        items: node.items.map((loc, i) => ({
+                            type: 'horiz',
+                            items: [
+                                {
+                                    type: 'punct',
+                                    text: o ? `${i + 1}) ` : ' - ',
+                                },
+                                { type: 'loc', loc },
+                            ],
+                        })),
+                    };
                 case 'paragraph':
                     return {
                         type: 'inline',

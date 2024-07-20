@@ -240,24 +240,55 @@ const text = (t: string, style?: Style): RecNode => ({
     text: t,
 });
 
+const block = (
+    kind: Extract<RecNode, { type: 'rich-block' }>['kind'],
+    items: RecNode[],
+    style?: Style,
+): RecNode => ({
+    type: 'rich-block',
+    kind,
+    items,
+    loc: [],
+    style: style ?? {},
+});
+
 test('rich text or sth', () => {
     const l = [];
-    const max = 45;
+    const max = 40;
     const { txt } = processNode(
-        {
-            type: 'rich-block',
-            kind: { type: 'paragraph' },
-            loc: [],
-            style: {},
-            items: [
-                text('Hi folks '),
-                text('this is', {
-                    fontWeight: 'bold',
-                }),
-                text(' bolded, '),
-                text('and an underline', { textDecoration: 'underline' }),
-            ],
-        },
+        block({ type: 'paragraph' }, [
+            text('Hi folks '),
+            text('this is', {
+                fontWeight: 'bold',
+            }),
+            text(' bolded, '),
+            text('and an underline.', { textDecoration: 'underline' }),
+        ]),
+        max,
+    );
+    const pre = Array(max).join('-') + `| ${max}\n`;
+    expect(pre + txt.trim()).toMatchSnapshot();
+});
+
+test('rich text or sth', () => {
+    const l = [];
+    const max = 40;
+    const { txt } = processNode(
+        block({ type: 'list', ordered: true }, [
+            text('Now we'),
+            block({ type: 'list', ordered: false }, [
+                text('another'),
+                text('list'),
+            ]),
+            text('Got to'),
+            text('Do something'),
+            block({ type: 'checks', checked: { 10: true } }, [
+                text('some'),
+                text('checks'),
+                text('nice'),
+            ]),
+            text('Yeah'),
+        ]),
         max,
     );
     const pre = Array(max).join('-') + `| ${max}\n`;
