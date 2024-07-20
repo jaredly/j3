@@ -5,6 +5,26 @@ now we do ... rich text?
 I mean, it's definitely a thing I want.
 
 but also, it seems like I should be able to make it happen?
+BLOCKS just get (vert)ed, right?
+And then within a block, we do some (inline)s?
+
+ok this is pretty cool!
+~however~ my strategy for (ir-ifying) the rich blocks is ... a little
+bit lacking. like.
+We're just pretending everything is text, which is fine for ir-to-text,
+BUT for actual rendering, we'll want html stuff, and we're losing it all
+in `intermediate`.
+soooo.
+
+this means that the IR needs to be spruced up a touch to accommodate:
+- images(?)
+- links(oh huh yeah I need this)
+- lists (ol/ul/checks/opts)
+- hr?
+
+This that are fine I think
+- header(this is fine, just text + style)
+- blockquote (?horiz + style is probably fine)
 
 
 # Layout debugging

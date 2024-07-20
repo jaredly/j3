@@ -821,7 +821,8 @@ exports[`rich text or sth 2`] = `
 3) Got to
 4) Do something
 5) [ ] some
-   [x] checks
+   [ ] checks
    [ ] nice
+   [ ] (lol,waht,now,folks)
 6) Yeah"
 `;

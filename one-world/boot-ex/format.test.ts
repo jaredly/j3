@@ -286,6 +286,7 @@ test('rich text or sth', () => {
                 text('some'),
                 text('checks'),
                 text('nice'),
+                reader('(lol waht now folks)')!,
             ]),
             text('Yeah'),
         ]),
