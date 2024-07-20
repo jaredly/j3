@@ -119,8 +119,8 @@ export const layoutIR = (
                 let lineHeight = 0;
                 let lineWidth = i === 0 ? firstLine : 0;
                 words.forEach((seg) => {
-                    let text = lines[lines.length - 1] + seg.segment;
-                    res = ctx.textLayout(text, lineWidth, ir.style);
+                    // let text = lines[lines.length - 1] + seg.segment;
+                    res = ctx.textLayout(seg.segment, lineWidth, ir.style);
                     if (
                         res.inlineWidth + x > ctx.maxWidth &&
                         seg.isWordLike &&
@@ -133,7 +133,7 @@ export const layoutIR = (
                         lineHeight = res.inlineHeight;
                         lineWidth = res.inlineWidth;
                     } else {
-                        lines[lines.length - 1] = text;
+                        lines[lines.length - 1] += seg.segment;
                         maxWidth = Math.max(maxWidth, res.maxWidth);
                         lineHeight = Math.max(lineHeight, res.inlineHeight);
                         lineWidth = res.inlineWidth;

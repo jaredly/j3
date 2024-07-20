@@ -190,10 +190,25 @@ test('gradual string wrapp with simple inclusions', () => {
 });
 
 test('gradual string wrapp with simple inclusions', () => {
-    debugger;
     const orig = '"${abcdef} aaa aaaaaaaaabcdnnnnnnnnnnnnnnh"'; //'(abc def ghi a)';
     const max = 35; // 43; // 20
     const min = 10;
+
+    let res = '';
+    for (let i = max; i > min; i--) {
+        const { txt } = process(orig, i);
+        res += Array(i).join('-') + `| ${i}\n`;
+        res += txt.trim() + '\n';
+    }
+    expect('\n' + res).toMatchSnapshot();
+});
+
+test('gradual string wrapp with simple inclusions', () => {
+    debugger;
+    const orig =
+        '"nnnnnnnnnnnnnnnnnnnnnnnnnnn ab cd abc de ${abcdef} abcdefg ab cd ef gh"'; //'(abc def ghi a)';
+    const max = 41; // 20
+    const min = 40;
 
     let res = '';
     for (let i = max; i > min; i--) {

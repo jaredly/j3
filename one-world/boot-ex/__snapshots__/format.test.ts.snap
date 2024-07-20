@@ -58,35 +58,25 @@ exports[`stringsss 2`] = `
 exports[`string long one 1`] = `
 "
 "0
- Here is ↩
- a string ↩
- what in ↩
- the world ↩
- here we ↩
- are it ↩
- is good ↩
- somewhat ↩
- things-↩
- that tend-↩
- to-be ↩
- splittable ↩
- insufficiently"
+ Here is a string ↩
+ what in the world ↩
+ here we are it is ↩
+ good somewhat ↩
+ things-that tend-to-↩
+ be splittable ↩
+ insufficiently       "
 "
 `;
 
 exports[`long string with inclusions 1`] = `
 "
-"0,3
+"0
  Here is a ${here} ↩
- we are ↩
- it is ↩
- good ↩
- somewhat ↩
- things-↩
- that !
- ${tend-to-be} ↩
+ we are it is good ↩
+ somewhat things-↩
+ that ${tend-to-be} ↩
  splittable ↩
- insufficiently     "
+ insufficiently      "
 "
 `;
 
@@ -251,62 +241,129 @@ exports[`gradual string wrapp 1`] = `
 "
 -------------------|
 "0
- a b c ↩
- d e f ↩
- g h i ↩
- j ab ac ↩
- ad ae ↩
- af
- ag ah ↩
- ai aj ↩
- abc abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg   "
+ a b c d e f g h i j ↩
+ ab ac ad ae af
+ ag ah ai aj abc ↩
+ abcd abcde abcdef ↩
+ abcdefg              "
 ------------------|
 "0
- a b c ↩
- d e f ↩
- g h i ↩
- j ab ↩
- ac ad ↩
- ae af
- ag ah ↩
- ai aj ↩
- abc abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg   "
+ a b c d e f g h i ↩
+ j ab ac ad ae af
+ ag ah ai aj abc ↩
+ abcd abcde abcdef ↩
+ abcdefg            "
 -----------------|
 "0
- a b c ↩
- d e f ↩
- g h i ↩
- j ab ↩
- ac ad ↩
- ae af
- ag ah ↩
- ai aj ↩
- abc abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg   "
+ a b c d e f g h i ↩
+ j ab ac ad ae af
+ ag ah ai aj abc ↩
+ abcd abcde abcdef ↩
+ abcdefg            "
 ----------------|
 "0
- a b c ↩
- d e f ↩
- g h i ↩
- j ab ↩
- ac ad ↩
- ae af
- ag ah ↩
- ai aj ↩
- abc abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg   "
+ a b c d e f g h ↩
+ i j ab ac ad ae ↩
+ af
+ ag ah ai aj abc ↩
+ abcd abcde ↩
+ abcdef abcdefg   "
 ---------------|
 "0
+ a b c d e f g h ↩
+ i j ab ac ad ae ↩
+ af
+ ag ah ai aj abc ↩
+ abcd abcde ↩
+ abcdef abcdefg   "
+--------------|
+"0
+ a b c d e f g ↩
+ h i j ab ac ad ↩
+ ae af
+ ag ah ai aj ↩
+ abc abcd abcde ↩
+ abcdef abcdefg  "
+-------------|
+"0
+ a b c d e f g ↩
+ h i j ab ac ↩
+ ad ae af
+ ag ah ai aj ↩
+ abc abcd ↩
+ abcde abcdef ↩
+ abcdefg        "
+------------|
+"0
+ a b c d e f ↩
+ g h i j ab ↩
+ ac ad ae af
+ ag ah ai aj ↩
+ abc abcd ↩
+ abcde abcdef ↩
+ abcdefg       "
+-----------|
+"0
+ a b c d e f ↩
+ g h i j ab ↩
+ ac ad ae af
+ ag ah ai aj ↩
+ abc abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg      "
+----------|
+"0
+ a b c d e ↩
+ f g h i j ↩
+ ab ac ad ↩
+ ae af
+ ag ah ai ↩
+ aj abc ↩
+ abcd abcde ↩
+ abcdef ↩
+ abcdefg     "
+---------|
+"0
+ a b c d e ↩
+ f g h i j ↩
+ ab ac ad ↩
+ ae af
+ ag ah ai ↩
+ aj abc ↩
+ abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg    "
+--------|
+"0
+ a b c d ↩
+ e f g h ↩
+ i j ab ↩
+ ac ad ae ↩
+ af
+ ag ah ai ↩
+ aj abc ↩
+ abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg   "
+-------|
+"0
+ a b c d ↩
+ e f g h ↩
+ i j ab ↩
+ ac ad ↩
+ ae af
+ ag ah ↩
+ ai aj ↩
+ abc ↩
+ abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg  "
+------|
+"0
  a b c ↩
  d e f ↩
  g h i ↩
@@ -315,174 +372,6 @@ exports[`gradual string wrapp 1`] = `
  ae af
  ag ah ↩
  ai aj ↩
- abc abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg   "
---------------|
-"0
- a b ↩
- c d ↩
- e f ↩
- g h ↩
- i j ↩
- ab ac ↩
- ad ae ↩
- af
- ag ah ↩
- ai aj ↩
- abc ↩
- abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg "
--------------|
-"0
- a b ↩
- c d ↩
- e f ↩
- g h ↩
- i j ↩
- ab ac ↩
- ad ae ↩
- af
- ag ah ↩
- ai aj ↩
- abc ↩
- abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg "
-------------|
-"0
- a b ↩
- c d ↩
- e f ↩
- g h ↩
- i j ↩
- ab ac ↩
- ad ae ↩
- af
- ag ah ↩
- ai aj ↩
- abc ↩
- abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg "
------------|
-"0
- a b ↩
- c d ↩
- e f ↩
- g h ↩
- i j ↩
- ab ac ↩
- ad ae ↩
- af
- ag ah ↩
- ai aj ↩
- abc ↩
- abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg "
-----------|
-"0
- a b ↩
- c d ↩
- e f ↩
- g h ↩
- i j ↩
- ab ac ↩
- ad ae ↩
- af
- ag ah ↩
- ai aj ↩
- abc ↩
- abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg "
----------|
-"0
- a b ↩
- c d ↩
- e f ↩
- g h ↩
- i j ↩
- ab ↩
- ac ↩
- ad ↩
- ae ↩
- af
- ag ↩
- ah ↩
- ai ↩
- aj ↩
- abc ↩
- abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg "
---------|
-"0
- a b ↩
- c d ↩
- e f ↩
- g h ↩
- i j ↩
- ab ↩
- ac ↩
- ad ↩
- ae ↩
- af
- ag ↩
- ah ↩
- ai ↩
- aj ↩
- abc ↩
- abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg "
--------|
-"0
- a b ↩
- c d ↩
- e f ↩
- g h ↩
- i j ↩
- ab ↩
- ac ↩
- ad ↩
- ae ↩
- af
- ag ↩
- ah ↩
- ai ↩
- aj ↩
- abc ↩
- abcd ↩
- abcde ↩
- abcdef ↩
- abcdefg "
-------|
-"0
- a b ↩
- c d ↩
- e f ↩
- g h ↩
- i j ↩
- ab ↩
- ac ↩
- ad ↩
- ae ↩
- af
- ag ↩
- ah ↩
- ai ↩
- aj ↩
  abc ↩
  abcd ↩
  abcde ↩
@@ -490,25 +379,14 @@ exports[`gradual string wrapp 1`] = `
  abcdefg "
 -----|
 "0
- a ↩
- b ↩
- c ↩
- d ↩
- e ↩
- f ↩
- g ↩
- h ↩
- i ↩
- j ↩
- ab ↩
- ac ↩
- ad ↩
- ae ↩
- af
- ag ↩
- ah ↩
- ai ↩
- aj ↩
+ a b c ↩
+ d e f ↩
+ g h i ↩
+ j ab ↩
+ ac ad ↩
+ ae af
+ ag ah ↩
+ ai aj ↩
  abc ↩
  abcd ↩
  abcde ↩
@@ -529,132 +407,110 @@ exports[`gradual string wrapp with simple inclusions 1`] = `
  ${abcdef} abcdefg ab cd ef gh             "
 ----------------------------------------| 41
 "0,5
- e f g ${ac} ah ai aj ${abc} ab ↩
- cd abc de !
- ${abcdef} abcdefg ab cd ef gh   "
+ e f g ${ac} ah ai aj ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab cd ef gh             "
 ---------------------------------------| 40
-"0,5
- e f g ${ac} ah ai aj ${abc} ab ↩
- cd abc de !
- ${abcdef} abcdefg ab cd ef gh   "
+"0
+ e f g ${ac} ah ai aj ${abc} ab cd abc ↩
+ de ${abcdef} abcdefg ab cd ef gh       "
 --------------------------------------| 39
-"0,5
- e f g ${ac} ah ai aj ${abc} ab ↩
- cd abc de !
- ${abcdef} abcdefg ab cd ef gh   "
+"0
+ e f g ${ac} ah ai aj ${abc} ab cd abc ↩
+ de ${abcdef} abcdefg ab cd ef gh       "
 -------------------------------------| 38
-"0,5
- e f g ${ac} ah ai aj ${abc} ab ↩
- cd abc de !
- ${abcdef} abcdefg ab cd ef gh   "
+"0
+ e f g ${ac} ah ai aj ${abc} ab cd abc ↩
+ de ${abcdef} abcdefg ab cd ef gh       "
 ------------------------------------| 37
-"0,5
- e f g ${ac} ah ai aj ${abc} ab ↩
- cd abc de !
- ${abcdef} abcdefg ab cd ef gh   "
+"0
+ e f g ${ac} ah ai aj ${abc} ab cd ↩
+ abc de ${abcdef} abcdefg ab cd ef gh"
 -----------------------------------| 36
-"0,5
- e f g ${ac} ah ai aj ${abc} ab ↩
- cd abc de !
- ${abcdef} abcdefg ab cd ef gh   "
+"0
+ e f g ${ac} ah ai aj ${abc} ab cd ↩
+ abc de ${abcdef} abcdefg ab cd ef ↩
+ gh                                 "
 ----------------------------------| 35
-"0,5
- e f g ${ac} ah ai aj ${abc} ab ↩
- cd abc de !
- ${abcdef} abcdefg ab cd ef gh   "
+"0
+ e f g ${ac} ah ai aj ${abc} ab cd ↩
+ abc de ${abcdef} abcdefg ab cd ef ↩
+ gh                                 "
 ---------------------------------| 34
-"0,5
- e f g ${ac} ah ai aj ${abc} ab ↩
- cd abc de !
- ${abcdef} abcdefg ab cd ef gh   "
+"0
+ e f g ${ac} ah ai aj ${abc} ab cd ↩
+ abc de ${abcdef} abcdefg ab cd ef ↩
+ gh                                 "
 --------------------------------| 33
-"0,5
+"0
  e f g ${ac} ah ai aj ${abc} ab ↩
- cd abc de !
- ${abcdef} abcdefg ab cd ef gh   "
+ cd abc de ${abcdef} abcdefg ab ↩
+ cd ef gh                        "
 -------------------------------| 32
-"0,5
+"0
  e f g ${ac} ah ai aj ${abc} ab ↩
- cd abc de !
- ${abcdef} abcdefg ab cd ef gh   "
+ cd abc de ${abcdef} abcdefg ab ↩
+ cd ef gh                        "
 ------------------------------| 31
 "0
- e f g ${ac} ah ai aj ${abc} ↩
- ab cd abc ↩
- de ${abcdef} abcdefg ↩
- ab cd ef ↩
- gh                           "
+ e f g ${ac} ah ai aj ${abc} ab ↩
+ cd abc de ${abcdef} abcdefg ab ↩
+ cd ef gh                        "
 -----------------------------| 30
 "0
  e f g ${ac} ah ai aj ${abc} ↩
- ab cd abc ↩
- de ${abcdef} abcdefg ↩
- ab cd ef ↩
- gh                           "
+ ab cd abc de ${abcdef} ↩
+ abcdefg ab cd ef gh          "
 ----------------------------| 29
 "0
  e f g ${ac} ah ai aj ${abc} ↩
- ab cd abc ↩
- de ${abcdef} abcdefg ↩
- ab cd ef ↩
- gh                           "
+ ab cd abc de ${abcdef} ↩
+ abcdefg ab cd ef gh          "
 ---------------------------| 28
 "0
  e f g ${ac} ah ai aj ${abc} ↩
- ab cd abc ↩
- de ${abcdef} abcdefg ↩
- ab cd ef ↩
- gh                           "
+ ab cd abc de ${abcdef} ↩
+ abcdefg ab cd ef gh          "
 --------------------------| 27
 "0
  e f g ${ac} ah ai aj ${abc} ↩
- ab cd abc ↩
- de ${abcdef} abcdefg ↩
- ab cd ef ↩
- gh                           "
+ ab cd abc de ${abcdef} ↩
+ abcdefg ab cd ef gh          "
 -------------------------| 26
 "0,3,5
  e f g ${ac} ah ai aj !
  ${abc} ab cd abc de !
- ${abcdef} abcdefg ↩
- ab cd ef ↩
- gh                    "
+ ${abcdef} abcdefg ab cd ↩
+ ef gh                    "
 ------------------------| 25
 "0,3,5
  e f g ${ac} ah ai aj !
  ${abc} ab cd abc de !
- ${abcdef} abcdefg ↩
- ab cd ef ↩
- gh                    "
+ ${abcdef} abcdefg ab cd ↩
+ ef gh                    "
 -----------------------| 24
 "0,3,5
  e f g ${ac} ah ai aj !
  ${abc} ab cd abc de !
- ${abcdef} abcdefg ↩
- ab cd ↩
- ef gh                 "
+ ${abcdef} abcdefg ab cd ↩
+ ef gh                    "
 ----------------------| 23
 "0,3,5
  e f g ${ac} ah ai aj !
  ${abc} ab cd abc de !
- ${abcdef} abcdefg ↩
- ab cd ↩
- ef gh                 "
+ ${abcdef} abcdefg ab ↩
+ cd ef gh              "
 ---------------------| 22
 "0,3,5
  e f g ${ac} ah ai aj !
  ${abc} ab cd abc de !
- ${abcdef} abcdefg ↩
- ab cd ↩
- ef gh                 "
+ ${abcdef} abcdefg ab ↩
+ cd ef gh              "
 --------------------| 21
 "0,3,5
- e f g ${ac} ah ↩
- ai aj !
+ e f g ${ac} ah ai aj !
  ${abc} ab cd abc de !
- ${abcdef} abcdefg ↩
- ab cd ↩
- ef gh                "
+ ${abcdef} abcdefg ab ↩
+ cd ef gh              "
 "
 `;
 
@@ -746,8 +602,7 @@ exports[`gradual string wrapp with simple inclusions 2`] = `
  aaaaaaaaabcdnnnnnnnnnnnnnnh"
 -------------| 14
 "0
- ${abcdef} ↩
- aaa ↩
+ ${abcdef} aaa ↩
  aaaaaaaaabcdnnnnnnnnnnnnnnh"
 ------------| 13
 "0
@@ -764,5 +619,14 @@ exports[`gradual string wrapp with simple inclusions 2`] = `
  ${abcdef} ↩
  aaa ↩
  aaaaaaaaabcdnnnnnnnnnnnnnnh"
+"
+`;
+
+exports[`gradual string wrapp with simple inclusions 3`] = `
+"
+----------------------------------------| 41
+"0,1
+ nnnnnnnnnnnnnnnnnnnnnnnnnnn ab cd abc de !
+ ${abcdef} abcdefg ab cd ef gh             "
 "
 `;
