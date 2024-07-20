@@ -108,7 +108,7 @@ export const layoutIR = (
             const wraps: number[] = [];
             let index = 0;
             let height = 0;
-            newLines.forEach((newLine) => {
+            newLines.forEach((newLine, i) => {
                 lines.push('');
                 // dumbest way possible
                 const words = [
@@ -117,23 +117,26 @@ export const layoutIR = (
                     }).segment(newLine),
                 ];
                 let lineHeight = 0;
+                let lineWidth = i === 0 ? firstLine : 0;
                 words.forEach((seg) => {
                     let text = lines[lines.length - 1] + seg.segment;
-                    res = ctx.textLayout(text, firstLine, ir.style);
+                    res = ctx.textLayout(text, lineWidth, ir.style);
                     if (
-                        res.maxWidth + x > ctx.maxWidth &&
+                        res.inlineWidth + x > ctx.maxWidth &&
                         seg.isWordLike &&
                         lines[lines.length - 1] != ''
                     ) {
                         wraps.push(index);
                         lines.push(seg.segment);
+                        res = ctx.textLayout(seg.segment, 0, ir.style);
                         height += lineHeight;
                         lineHeight = res.inlineHeight;
-                        firstLine = 0;
+                        lineWidth = res.inlineWidth;
                     } else {
                         lines[lines.length - 1] = text;
                         maxWidth = Math.max(maxWidth, res.maxWidth);
                         lineHeight = Math.max(lineHeight, res.inlineHeight);
+                        lineWidth = res.inlineWidth;
                     }
 
                     index += seg.segment.length;
@@ -159,7 +162,11 @@ export const layoutIR = (
             const groups: number[] = [0];
             ir.items.forEach((item, i) => {
                 let next = layoutIR(x, inlineWidth, item, choices, ctx);
-                if (next.inlineWidth > ctx.maxWidth) {
+                if (
+                    item.type !== 'inline' &&
+                    (item.type !== 'text' || item.wrap == null) &&
+                    next.inlineWidth > ctx.maxWidth
+                ) {
                     groups.push(i);
                     next = layoutIR(x, 0, item, choices, ctx);
                     inlineHeight = next.inlineHeight;
