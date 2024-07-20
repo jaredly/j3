@@ -631,3 +631,177 @@ exports[`gradual string wrapp with simple inclusions 3`] = `
  ${abc} de ${abcdef} abcdefg ab cd ef gh"
 "
 `;
+
+exports[`gradual string wrapp with simple inclusions 4`] = `
+"
+-------------------------| 26
+"0
+ O k ＄{(let,us,t)} some ↩
+ complex inclusions      "
+------------------------| 25
+"0
+ O k ＄{(let,us,t)} some ↩
+ complex inclusions      "
+-----------------------| 24
+"0
+ O k ＄{(let,us,t)} some ↩
+ complex inclusions      "
+----------------------| 23
+"0
+ O k ＄{(let,us,t)} some ↩
+ complex inclusions      "
+---------------------| 22
+"0
+ O k ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions         "
+--------------------| 21
+"0
+ O k ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions         "
+-------------------| 20
+"0
+ O k ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions         "
+------------------| 19
+"0
+ O k ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions         "
+-----------------| 18
+"0
+ O k ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions         "
+----------------| 17
+"0,1
+ O k !
+ ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions     "
+---------------| 16
+"0,1
+ O k !
+ ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions     "
+--------------| 15
+"0,1
+ O k !
+ ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions     "
+-------------| 14
+"0,1
+ O k !
+ ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions     "
+------------| 13
+"0,1
+ O k !
+ ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions     "
+-----------| 12
+"0,1
+ O k !
+ ＄{(let,us
+      t)  } ↩
+ some ↩
+ complex ↩
+ inclusions  "
+----------| 11
+"0,1
+ O k !
+ ＄{(let,us
+      t)  } ↩
+ some ↩
+ complex ↩
+ inclusions  "
+---------| 10
+"0,1
+ O k !
+ ＄{(let,us
+      t)  } ↩
+ some ↩
+ complex ↩
+ inclusions  "
+--------| 9
+"0,1
+ O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+-------| 8
+"0,1
+ O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+------| 7
+"0,1
+ O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+-----| 6
+"0,1
+ O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+----| 5
+"0,1
+ O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+---| 4
+"0,1
+ O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+--| 3
+"0,1
+ O ↩
+ k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+-| 2
+"0,1
+ O ↩
+ k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+"
+`;

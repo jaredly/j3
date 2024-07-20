@@ -307,6 +307,7 @@ export const nodeToIR = (
                             },
                             ...node.templates.flatMap((t, i): IR[] => [
                                 {
+                                    pullLast: true,
                                     type: 'horiz',
                                     items: [
                                         { type: 'punct', text: '${' },

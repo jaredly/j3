@@ -218,3 +218,18 @@ test('gradual string wrapp with simple inclusions', () => {
     }
     expect('\n' + res).toMatchSnapshot();
 });
+
+test('gradual string wrapp with simple inclusions', () => {
+    debugger;
+    const orig = '"O k ${(let us t)} some complex inclusions"'; //'(abc def ghi a)';
+    const max = 26; // 20
+    const min = 1;
+
+    let res = '';
+    for (let i = max; i > min; i--) {
+        const { txt } = process(orig, i);
+        res += Array(i).join('-') + `| ${i}\n`;
+        res += txt.replace(/\$/g, '＄').trim() + '\n';
+    }
+    expect('\n' + res).toMatchSnapshot();
+});
