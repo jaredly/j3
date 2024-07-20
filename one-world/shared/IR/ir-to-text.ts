@@ -1,5 +1,7 @@
 // yay
 
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
+import { Style } from '../nodes';
 import { IR } from './intermediate';
 import { LayoutChoices, LayoutCtx } from './layout';
 
@@ -122,28 +124,26 @@ export const irToText = (
         case 'squish':
             return irToText(ir.item, irs, choices, layouts, space);
         case 'text': {
-            if (ir.wrap == null) return ir.text;
+            const text = applyFormats(ir.text, ir.style);
+            if (ir.wrap == null) return text;
             const splits = choices[ir.wrap];
             if (splits?.type === 'text-wrap' && splits.splits.length) {
                 let pieces = [];
                 for (let i = splits.splits.length - 1; i >= 0; i--) {
                     if (i === splits.splits.length - 1) {
-                        pieces.unshift(ir.text.slice(splits.splits[i]));
+                        pieces.unshift(text.slice(splits.splits[i]));
                     } else {
                         pieces.unshift(
-                            ir.text.slice(
-                                splits.splits[i],
-                                splits.splits[i + 1],
-                            ),
+                            text.slice(splits.splits[i], splits.splits[i + 1]),
                         );
                     }
                     if (i === 0) {
-                        pieces.unshift(ir.text.slice(0, splits.splits[0]));
+                        pieces.unshift(text.slice(0, splits.splits[0]));
                     }
                 }
                 return pieces.join('↩\n');
             }
-            return ir.text; // todo wrappp
+            return text; // todo wrappp
         }
         case 'switch':
             const choice = choices[ir.id];
@@ -221,4 +221,38 @@ export const irToText = (
                 .map((item) => irToText(item, irs, choices, layouts, space))
                 .join('\n');
     }
+};
+
+const normal = 'abcdefghijklmnopqrstuvwxyz';
+const bold = splitGraphemes('𝐚𝐛𝐜𝐝𝐞𝐟𝐠𝐡𝐢𝐣𝐤𝐥𝐦𝐧𝐨𝐩𝐪𝐫𝐬𝐭𝐮𝐯𝐰𝐱𝐲𝐳');
+const italic = splitGraphemes('𝑎𝑏𝑐𝑑𝑒𝑓𝑔ℎ𝑖𝑗𝑘𝑙𝑚𝑛𝑜𝑝𝑞𝑟𝑠𝑡𝑢𝑣𝑤𝑥𝑦𝑧');
+const bolditalic = splitGraphemes('𝒂𝒃𝒄𝒅𝒆𝒇𝒈𝒉𝒊𝒋𝒌𝒍𝒎𝒏𝒐𝒑𝒒𝒓𝒔𝒕𝒖𝒗𝒘𝒙𝒚𝒛');
+const underline = String.fromCharCode(818);
+
+const applyFormats = (text: string, style?: Style) => {
+    if (!style) return text;
+    if (style.fontWeight === 'bold') {
+        if (style.fontStyle === 'italic') {
+            text = convert(text, bolditalic);
+        } else {
+            text = convert(text, bold);
+        }
+    } else if (style.fontStyle === 'italic') {
+        text = convert(text, italic);
+    }
+    if (style.textDecoration === 'underline') {
+        const emes = splitGraphemes(text);
+        text = emes.map((m) => m + underline).join('');
+    }
+    return text;
+};
+
+const convert = (text: string, alph: string[]) => {
+    let res = '';
+    for (let i = 0; i < text.length; i++) {
+        const idx = normal.indexOf(text[i]);
+        if (idx === -1) res += text[i];
+        else res += alph[idx];
+    }
+    return res;
 };

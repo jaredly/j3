@@ -64,7 +64,21 @@ export const nodeToIR = (
 ): IR => {
     switch (node.type) {
         case 'rich-inline':
+            switch (node.kind.type) {
+                case 'image':
+                    return { type: 'text', text: '🖼️' };
+                default:
+                    return { type: 'text', text: node.text, style: node.style };
+            }
         case 'rich-block':
+            switch (node.kind.type) {
+                case 'paragraph':
+                    return {
+                        type: 'inline',
+                        wrap: 0,
+                        items: node.items.map((loc) => ({ type: 'loc', loc })),
+                    };
+            }
             throw new Error('not impl yet');
         case 'array':
         case 'list':

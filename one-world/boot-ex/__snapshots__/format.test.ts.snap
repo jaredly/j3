@@ -805,3 +805,9 @@ exports[`gradual string wrapp with simple inclusions 4`] = `
  inclusions"
 "
 `;
+
+exports[`rich text or sth 1`] = `
+"--------------------------------------------| 45
+0
+Hi folks 𝐭𝐡𝐢𝐬 𝐢𝐬 bolded, a̲n̲d̲ ̲a̲n̲ ̲u̲n̲d̲e̲r̲l̲i̲n̲e̲"
+`;

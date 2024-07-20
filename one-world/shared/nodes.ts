@@ -500,7 +500,7 @@ const foldNode = <V>(v: V, node: RecNode, f: (v: V, node: RecNode) => V): V => {
 
 const maxLoc = (node: RecNode) => {
     return foldNode(0, node, (max, node) =>
-        Math.max(max, node.loc[node.loc.length - 1][1]),
+        node.loc.length ? Math.max(max, node.loc[node.loc.length - 1][1]) : max,
     );
 };
 

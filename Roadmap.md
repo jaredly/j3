@@ -1,4 +1,12 @@
 
+# Ok so more storyyy
+
+now we do ... rich text?
+I mean, it's definitely a thing I want.
+
+but also, it seems like I should be able to make it happen?
+
+
 # Layout debugging
 
 - [x] wrap with plain children

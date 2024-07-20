@@ -204,7 +204,6 @@ test('gradual string wrapp with simple inclusions', () => {
 });
 
 test('gradual string wrapp with simple inclusions', () => {
-    debugger;
     const orig =
         '"nnnnnnnnnnnnnnnnnnnnnnnnnnn ab cd ${abc} de ${abcdef} abcdefg ab cd ef gh"'; //'(abc def ghi a)';
     const max = 40; // 20
@@ -220,7 +219,6 @@ test('gradual string wrapp with simple inclusions', () => {
 });
 
 test('gradual string wrapp with simple inclusions', () => {
-    debugger;
     const orig = '"O k ${(let us t)} some complex inclusions"'; //'(abc def ghi a)';
     const max = 26; // 20
     const min = 1;
@@ -232,4 +230,36 @@ test('gradual string wrapp with simple inclusions', () => {
         res += txt.replace(/\$/g, '＄').trim() + '\n';
     }
     expect('\n' + res).toMatchSnapshot();
+});
+
+const text = (t: string, style?: Style): RecNode => ({
+    type: 'rich-inline',
+    kind: { type: 'text' },
+    loc: [],
+    style: style ?? {},
+    text: t,
+});
+
+test('rich text or sth', () => {
+    const l = [];
+    const max = 45;
+    const { txt } = processNode(
+        {
+            type: 'rich-block',
+            kind: { type: 'paragraph' },
+            loc: [],
+            style: {},
+            items: [
+                text('Hi folks '),
+                text('this is', {
+                    fontWeight: 'bold',
+                }),
+                text(' bolded, '),
+                text('and an underline', { textDecoration: 'underline' }),
+            ],
+        },
+        max,
+    );
+    const pre = Array(max).join('-') + `| ${max}\n`;
+    expect(pre + txt.trim()).toMatchSnapshot();
 });
