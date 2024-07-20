@@ -97,6 +97,9 @@ export const layoutIR = (
         case 'text': {
             let res = ctx.textLayout(ir.text, firstLine, ir.style);
             if (res.maxWidth + x <= ctx.maxWidth || ir.wrap == null) {
+                if (ir.wrap != null) {
+                    delete choices[ir.wrap];
+                }
                 return res;
             }
             let maxWidth = 0;
@@ -156,20 +159,29 @@ export const layoutIR = (
             const groups: number[] = [0];
             ir.items.forEach((item, i) => {
                 let next = layoutIR(x, inlineWidth, item, choices, ctx);
-                if (next.inlineHeight < next.height) {
-                    height += next.height - inlineHeight;
-                    maxWidth = Math.max(maxWidth, inlineWidth);
-                    // we're on a new line
-                    inlineWidth = next.inlineWidth;
+                if (next.inlineWidth > ctx.maxWidth) {
+                    groups.push(i);
+                    next = layoutIR(x, 0, item, choices, ctx);
                     inlineHeight = next.inlineHeight;
+                    height += next.height;
                 } else {
-                    inlineHeight = Math.max(inlineHeight, next.inlineHeight);
-                    inlineWidth = next.inlineWidth;
+                    height += next.height - inlineHeight;
                 }
+                inlineWidth = next.inlineWidth;
+                inlineHeight = Math.max(next.inlineHeight, inlineHeight);
+
+                // if (next.inlineHeight < next.height) {
+                //     height += next.height - inlineHeight;
+                //     maxWidth = Math.max(maxWidth, inlineWidth);
+                //     // we're on a new line
+                //     inlineWidth = next.inlineWidth;
+                //     inlineHeight = next.inlineHeight;
+                // } else {
+                //     inlineHeight = Math.max(inlineHeight, next.inlineHeight);
+                //     inlineWidth = next.inlineWidth;
+                // }
             });
-            if (ir.wrap != null) {
-                choices[ir.wrap] = { type: 'hwrap', groups };
-            }
+            choices[ir.wrap] = { type: 'hwrap', groups };
             return { maxWidth, inlineWidth, inlineHeight, height };
         }
 

@@ -62,6 +62,24 @@ export const irToText = (
         }
         case 'punct':
             return ir.text;
+        case 'inline': {
+            const wrap = choices[ir.wrap];
+            if (!wrap || wrap.type !== 'hwrap')
+                throw new Error('no wrap for inline ' + ir.wrap);
+
+            const lines: string[][] = [];
+            ir.items.forEach((item, i) => {
+                if (wrap.groups.includes(i)) {
+                    lines.push([]);
+                }
+                const last = lines[lines.length - 1];
+                last.push(irToText(item, irs, choices, layouts, space));
+            });
+
+            const pre = wrap.groups.length ? wrap.groups.join(',') + '\n' : '';
+
+            return pre + lines.map((chunks, i) => chunks.join('')).join('!\n');
+        }
         case 'horiz':
             const wrap = ir.wrap != null ? choices[ir.wrap.id] : null;
             if (ir.wrap && wrap?.type === 'hwrap') {
@@ -139,10 +157,6 @@ export const irToText = (
                 layouts,
                 space,
             );
-        case 'inline':
-            return ir.items
-                .map((item) => irToText(item, irs, choices, layouts, space))
-                .join('');
         case 'vert':
             if (ir.pairs) {
                 // ok I'm gonna say, if it's pairs, it's all pairs.

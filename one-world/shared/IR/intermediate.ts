@@ -298,12 +298,12 @@ export const nodeToIR = (
                     { type: 'punct', text: '"' },
                     {
                         type: 'inline',
-                        wrap: -1,
+                        wrap: 0,
                         items: [
                             {
                                 type: 'text',
                                 text: node.first,
-                                wrap: 0,
+                                wrap: 1,
                             },
                             ...node.templates.flatMap((t, i): IR[] => [
                                 {
@@ -317,7 +317,7 @@ export const nodeToIR = (
                                 {
                                     type: 'text',
                                     text: t.suffix,
-                                    wrap: i + 1,
+                                    wrap: i + 2,
                                 },
                             ]),
                         ],
