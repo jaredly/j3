@@ -8,7 +8,7 @@ import { LayoutChoices, LayoutCtx } from './layout';
 export const maxLength = <T extends { length: number }>(l: T[]) =>
     l.map((l) => l.length).reduce((a, b) => Math.max(a, b));
 
-const white = (num: number) => Array(num + 1).join(' ');
+export const white = (num: number) => Array(num + 1).join(' ');
 
 export const joinChunks = (chunks: string[], pullLast = false) => {
     const lined = chunks.map((c) => c.split('\n'));
@@ -122,9 +122,9 @@ export const irToText = (
                 );
             });
 
-            const pre = wrap.groups.length ? wrap.groups.join(',') + '\n' : '';
+            // const pre = wrap.groups.length ? wrap.groups.join(',') + '\n' : '';
 
-            return pre + lines.map((chunks, i) => chunks.join('')).join('!\n');
+            return lines.map((chunks, i) => chunks.join('')).join('!\n');
         }
         case 'horiz':
             const wrap = ir.wrap != null ? choices[ir.wrap.id] : null;

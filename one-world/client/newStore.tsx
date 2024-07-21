@@ -138,10 +138,10 @@ export const newStore = (
 ): Store => {
     const evts = blankEvts();
     // @ts-ignore
-    window.state = state;
+    // window.state = state;
     const docSessionCache: { [id: string]: DocSession } = {};
     // @ts-ignore
-    window.docSessions = docSessionCache;
+    // window.docSessions = docSessionCache;
 
     const store: Store = {
         session,

@@ -38,7 +38,7 @@ export const StoreProvider = ({ children }: { children: React.ReactNode }) => {
                                 '?ssid=' + data.ssid,
                             );
                         }
-                        setStore(newStore(state, ws, ssid));
+                        setStore(newStore(state, ws, data.ssid));
                     };
                     ws.addEventListener('message', f);
                 };
