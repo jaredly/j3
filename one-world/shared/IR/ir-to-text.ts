@@ -55,7 +55,13 @@ export const irToText = (
     irs: Record<number, IR>,
     choices: LayoutChoices,
     layouts: LayoutCtx['layouts'],
-    selection?: { path: number[]; sel: IRSelection; start?: IRSelection },
+    selection?: {
+        path: number[];
+        sel: IRSelection;
+        start?: IRSelection;
+        cursorChar: string;
+        highlightText: (s: string) => string;
+    },
     space = ' ',
 ): string => {
     switch (ir.type) {
@@ -73,14 +79,14 @@ export const irToText = (
                     selection.sel.type === 'side' &&
                     selection.sel.side === ir.side
                 ) {
-                    return '|';
+                    return selection.cursorChar;
                 }
-                if (
-                    selection.start?.type === 'side' &&
-                    selection.start.side === ir.side
-                ) {
-                    return '.';
-                }
+                // if (
+                //     selection.start?.type === 'side' &&
+                //     selection.start.side === ir.side
+                // ) {
+                //     return '.';
+                // }
             }
             return '';
         case 'control':
