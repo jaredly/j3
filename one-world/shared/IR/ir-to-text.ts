@@ -2,7 +2,7 @@
 
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Style } from '../nodes';
-import { IR } from './intermediate';
+import { IR, IRSelection } from './intermediate';
 import { LayoutChoices, LayoutCtx } from './layout';
 
 export const maxLength = <T extends { length: number }>(l: T[]) =>
@@ -55,13 +55,34 @@ export const irToText = (
     irs: Record<number, IR>,
     choices: LayoutChoices,
     layouts: LayoutCtx['layouts'],
+    selection?: { path: number[]; sel: IRSelection; start?: IRSelection },
     space = ' ',
 ): string => {
     switch (ir.type) {
         case 'loc': {
             const { choices } = layouts[ir.loc];
-            return irToText(irs[ir.loc], irs, choices, layouts, space);
+            const sub =
+                selection?.path[0] === ir.loc
+                    ? { ...selection, path: selection.path.slice(1) }
+                    : undefined;
+            return irToText(irs[ir.loc], irs, choices, layouts, sub, space);
         }
+        case 'cursor':
+            if (selection?.path.length === 0) {
+                if (
+                    selection.sel.type === 'side' &&
+                    selection.sel.side === ir.side
+                ) {
+                    return '|';
+                }
+                if (
+                    selection.start?.type === 'side' &&
+                    selection.start.side === ir.side
+                ) {
+                    return '.';
+                }
+            }
+            return '';
         case 'control':
             switch (ir.control.type) {
                 case 'check':
@@ -90,7 +111,9 @@ export const irToText = (
                     lines.push([]);
                 }
                 const last = lines[lines.length - 1];
-                last.push(irToText(item, irs, choices, layouts, space));
+                last.push(
+                    irToText(item, irs, choices, layouts, selection, space),
+                );
             });
 
             const pre = wrap.groups.length ? wrap.groups.join(',') + '\n' : '';
@@ -107,7 +130,9 @@ export const irToText = (
                         lines.push([]);
                     }
                     const last = lines[lines.length - 1];
-                    last.push(irToText(item, irs, choices, layouts, space));
+                    last.push(
+                        irToText(item, irs, choices, layouts, selection, space),
+                    );
                 });
                 return lines
                     .map((chunks, i) => {
@@ -125,7 +150,7 @@ export const irToText = (
                     .join('\n');
             }
             const chunks = ir.items.map((item) =>
-                irToText(item, irs, choices, layouts, space),
+                irToText(item, irs, choices, layouts, selection, space),
             );
             if (ir.spaced) {
                 addSpaces(chunks, 'all', space);
@@ -134,10 +159,10 @@ export const irToText = (
         case 'indent':
             return joinChunks([
                 white(ir.amount ?? 2),
-                irToText(ir.item, irs, choices, layouts, space),
+                irToText(ir.item, irs, choices, layouts, selection, space),
             ]);
         case 'squish':
-            return irToText(ir.item, irs, choices, layouts, space);
+            return irToText(ir.item, irs, choices, layouts, selection, space);
         case 'text': {
             const text = applyFormats(ir.text, ir.style);
             if (ir.wrap == null) return text;
@@ -170,6 +195,7 @@ export const irToText = (
                 irs,
                 choices,
                 layouts,
+                selection,
                 space,
             );
         case 'vert':
@@ -187,6 +213,7 @@ export const irToText = (
                             irs,
                             choices,
                             layouts,
+                            selection,
                             space,
                         );
                         let l = maxLength(left.split('\n'));
@@ -200,13 +227,21 @@ export const irToText = (
                                 irs,
                                 choices,
                                 layouts,
+                                selection,
                                 space,
                             ),
                         });
                     } else {
                         pairs.push({
                             type: 'other',
-                            item: irToText(item, irs, choices, layouts, space),
+                            item: irToText(
+                                item,
+                                irs,
+                                choices,
+                                layouts,
+                                selection,
+                                space,
+                            ),
                         });
                     }
                 });
@@ -233,7 +268,9 @@ export const irToText = (
                     .join('\n');
             }
             return ir.items
-                .map((item) => irToText(item, irs, choices, layouts, space))
+                .map((item) =>
+                    irToText(item, irs, choices, layouts, selection, space),
+                )
                 .join('\n');
     }
 };

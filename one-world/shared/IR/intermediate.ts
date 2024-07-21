@@ -21,8 +21,16 @@ export type Control =
 
 export type IR =
     // TODO allow wrapping text
-    | { type: 'text'; text: string; wrap?: number; style?: Style }
-    | { type: 'control'; loc: number; control: Control }
+    | {
+          type: 'text';
+          text: string;
+          wrap?: number;
+          style?: Style;
+          index: number;
+          loc: number;
+          link?: string;
+      }
+    | { type: 'control'; loc: number; control: Control; index: number }
     | {
           type: 'vert';
           items: IR[];
@@ -43,7 +51,13 @@ export type IR =
     | { type: 'indent'; item: IR; amount?: number; style?: Style }
     | { type: 'switch'; options: IR[]; id: number }
     | { type: 'loc'; loc: number }
-    | { type: 'punct'; text: string; style?: Style };
+    | { type: 'punct'; text: string; style?: Style }
+    | { type: 'cursor'; side: 'start' | 'inside' | 'end'; loc: number };
+
+export type IRSelection =
+    | { type: 'text'; index: number; cursor: number }
+    | { type: 'side'; side: 'start' | 'inside' | 'end' }
+    | { type: 'control'; index: number };
 
 export type Layout =
     | { type: 'horiz'; wrap?: number }
@@ -76,13 +90,19 @@ export const nodeToIR = (
         case 'rich-inline':
             switch (node.kind.type) {
                 case 'image':
-                    return { type: 'text', text: '🖼️' };
+                    return { type: 'punct', text: '🖼️' };
                 default:
                     return {
                         type: 'text',
                         text: node.text,
                         style: node.style,
                         wrap: 0,
+                        loc: node.loc,
+                        index: 0,
+                        link:
+                            node.kind.type === 'link'
+                                ? node.kind.url
+                                : undefined,
                     };
             }
         case 'rich-block':
@@ -105,6 +125,7 @@ export const nodeToIR = (
                                 {
                                     type: 'control',
                                     loc: node.loc,
+                                    index: i,
                                     control: {
                                         type:
                                             node.kind.type === 'checks'
@@ -128,6 +149,7 @@ export const nodeToIR = (
                                 {
                                     type: 'control',
                                     loc: node.loc,
+                                    index: i,
                                     control: o
                                         ? {
                                               type: 'number',
@@ -162,8 +184,11 @@ export const nodeToIR = (
                 return {
                     type: 'horiz',
                     items: [
+                        { type: 'cursor', loc: node.loc, side: 'start' },
                         { type: 'punct', text: lr[0] },
+                        { type: 'cursor', loc: node.loc, side: 'inside' },
                         { type: 'punct', text: lr[1] },
+                        { type: 'cursor', loc: node.loc, side: 'end' },
                     ],
                 };
             }
@@ -178,6 +203,7 @@ export const nodeToIR = (
                         type: 'horiz',
                         pullLast: true,
                         items: [
+                            { type: 'cursor', loc: node.loc, side: 'start' },
                             { type: 'punct', text: lr[0] },
                             items.length === 1
                                 ? items[0]
@@ -206,7 +232,17 @@ export const nodeToIR = (
                                       ],
                                       id: 0,
                                   },
-                            { type: 'punct', text: lr[1] },
+                            {
+                                type: 'horiz',
+                                items: [
+                                    { type: 'punct', text: lr[1] },
+                                    {
+                                        type: 'cursor',
+                                        loc: node.loc,
+                                        side: 'end',
+                                    },
+                                ],
+                            },
                         ],
                     };
                 case 'horiz':
@@ -215,9 +251,24 @@ export const nodeToIR = (
                             type: 'horiz',
                             pullLast: true,
                             items: [
+                                {
+                                    type: 'cursor',
+                                    loc: node.loc,
+                                    side: 'start',
+                                },
                                 { type: 'punct', text: lr[0] },
                                 ...items,
-                                { type: 'punct', text: lr[1] },
+                                {
+                                    type: 'horiz',
+                                    items: [
+                                        { type: 'punct', text: lr[1] },
+                                        {
+                                            type: 'cursor',
+                                            loc: node.loc,
+                                            side: 'end',
+                                        },
+                                    ],
+                                },
                             ],
                         };
                     }
@@ -347,9 +398,20 @@ export const nodeToIR = (
                         type: 'horiz',
                         pullLast: true,
                         items: [
+                            { type: 'cursor', loc: node.loc, side: 'start' },
                             { type: 'punct', text: lr[0] },
                             mid,
-                            { type: 'punct', text: lr[1] },
+                            {
+                                type: 'horiz',
+                                items: [
+                                    { type: 'punct', text: lr[1] },
+                                    {
+                                        type: 'cursor',
+                                        loc: node.loc,
+                                        side: 'end',
+                                    },
+                                ],
+                            },
                         ],
                     };
                 }
@@ -367,6 +429,8 @@ export const nodeToIR = (
                     ? names[node.ref.toplevel][node.ref.loc]
                     : node.text,
                 style: styles[node.loc] ?? node.ref ? refStyle : undefined,
+                loc: node.loc,
+                index: 0,
             };
 
         case 'string': {
@@ -387,6 +451,8 @@ export const nodeToIR = (
                                 type: 'text',
                                 text: node.first,
                                 wrap: 1,
+                                loc: node.loc,
+                                index: 0,
                             },
                             ...node.templates.flatMap((t, i): IR[] => [
                                 {
@@ -402,11 +468,19 @@ export const nodeToIR = (
                                     type: 'text',
                                     text: t.suffix,
                                     wrap: i + 2,
+                                    loc: node.loc,
+                                    index: i + 1,
                                 },
                             ]),
                         ],
                     },
-                    { type: 'punct', text: '"' },
+                    {
+                        type: 'horiz',
+                        items: [
+                            { type: 'punct', text: '"' },
+                            { type: 'cursor', loc: node.loc, side: 'end' },
+                        ],
+                    },
                 ],
             };
         }
@@ -442,6 +516,7 @@ export const nodeToIR = (
             return {
                 type: 'horiz',
                 items: [
+                    { type: 'cursor', loc: node.loc, side: 'start' },
                     {
                         type: 'punct',
                         text: node.type === 'spread' ? '..' : ';',

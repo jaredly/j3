@@ -66,6 +66,8 @@ export const layoutIR = (
     ctx: LayoutCtx,
 ): LayoutResult => {
     switch (ir.type) {
+        case 'cursor':
+            return { maxWidth: 0, height: 0, inlineHeight: 0, inlineWidth: 0 };
         case 'switch': {
             let res: LayoutResult;
             let which = ir.options.length - 1;

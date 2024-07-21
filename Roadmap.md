@@ -1,4 +1,13 @@
 
+# Anddd now
+what if I do a terminal editor? lol
+
+becaaaause we'll need to do an all new navigation dealio, with selections a little different.
+right?
+
+
+
+
 # Ok so more storyyy
 
 now we do ... rich text?
