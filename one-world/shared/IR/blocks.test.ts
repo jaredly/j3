@@ -131,8 +131,7 @@ const highlightSpan = (text: string, span: BlockEntry['shape']) => {
                 return (
                     chars.slice(0, start).join('') +
                     underlineText(chars.slice(start, end).join('')) +
-                    chars.slice(end).join('') +
-                    `${start}:${end}`
+                    chars.slice(end).join('')
                 );
             }
             return line;
@@ -178,11 +177,15 @@ test('text with wrap on inclusion', () => {
     ).toMatchSnapshot();
 });
 
-// test('showing spans of string with inclusion', () => {
-//     expect(
-//         '\n' + showSpans('"hi this is ${a} something ${abc} that will wrap"'),
-//     ).toMatchSnapshot();
-// });
+test('highlight over wrap', () => {
+    expect('\n' + showSpans('"Hello ${folks} this will."')).toMatchSnapshot();
+});
+
+test('showing spans of string with inclusion', () => {
+    expect(
+        '\n' + showSpans('"hi this is ${a} something ${abc} that will wrap"'),
+    ).toMatchSnapshot();
+});
 
 const fixDollar = (txt: string) =>
     splitGraphemes(txt)

@@ -73,7 +73,13 @@ export const blockToText = (
                                       pos.x0 + block.last,
                                       pos.y + block.height - 1,
                                   ],
-                                  hbounds: [pos.x0, pos.x0 + block.width],
+                                  hbounds: [
+                                      pos.x0,
+                                      Math.max(
+                                          pos.x0 + block.width,
+                                          pos.x + block.first,
+                                      ),
+                                  ],
                               },
                 });
             }

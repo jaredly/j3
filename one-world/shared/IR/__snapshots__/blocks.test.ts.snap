@@ -61,8 +61,8 @@ exports[`showing spans of wrap string 1`] = `
 |"Hello folks this  "
  will wrap, thanks.
 [ # ] {"type":"inline","start":[1,0],"end":[19,1],"hbounds":[1,19]}
-"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲ ̲"1:19
- w̲i̲l̲l̲ ̲w̲r̲a̲p̲,̲ ̲t̲h̲a̲n̲k̲s̲.̲1:19
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲ ̲"
+ w̲i̲l̲l̲ ̲w̲r̲a̲p̲,̲ ̲t̲h̲a̲n̲k̲s̲.̲
 [ # ] {"type":"block","start":[20,0],"width":0,"height":1}
 "Hello folks this  "|
  will wrap, thanks.
@@ -78,8 +78,8 @@ exports[`showing spans of wrap string, short last 1`] = `
 |"Hello folks this "
  will wrap.
 [ # ] {"type":"inline","start":[1,0],"end":[11,1],"hbounds":[1,18]}
-"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲"1:18
- w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲1:11
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲"
+ w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲
 [ # ] {"type":"block","start":[19,0],"width":0,"height":1}
 "Hello folks this "|
  will wrap.
@@ -95,8 +95,8 @@ exports[`showing spans of wrap string, short last 2`] = `
 |"Hello folks this "
  will ＄{a} wrap.
 [ # ] {"type":"inline","start":[1,0],"end":[6,1],"hbounds":[1,18]}
-"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲"1:18
- w̲i̲l̲l̲ ̲＄{a} wrap.1:6
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲"
+ w̲i̲l̲l̲ ̲＄{a} wrap.
 [ # ] {"type":"block","start":[8,1],"width":1,"height":1}
 "Hello folks this "
  will ＄{a̲} wrap.
@@ -123,11 +123,71 @@ exports[`text with wrap on inclusion 1`] = `
 [ # ] {"type":"block","start":[15,0],"width":4,"height":1}
 "Hello folks ＄{t̲h̲i̲s̲} "
  will wrap.
-[ # ] {"type":"inline","start":[20,0],"end":[11,1],"hbounds":[1,11]}
-"Hello folks ＄{this}s ＄{this} "20:11
- w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲1:11
+[ # ] {"type":"inline","start":[20,0],"end":[11,1],"hbounds":[1,21]}
+"Hello folks ＄{this} ̲"
+ w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲
 [ # ] {"type":"block","start":[22,0],"width":0,"height":1}
 "Hello folks ＄{this} "|
  will wrap.
+"
+`;
+
+exports[`highlight over wrap 1`] = `
+"
+"Hello ＄{folks} this "
+ will.
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"Hello ＄{folks} this "
+ will.
+[ # ] {"type":"block","start":[1,0],"width":6,"height":1}
+"H̲e̲l̲l̲o̲ ̲＄{folks} this "
+ will.
+[ # ] {"type":"block","start":[9,0],"width":5,"height":1}
+"Hello ＄{f̲o̲l̲k̲s̲} this "
+ will.
+[ # ] {"type":"inline","start":[15,0],"end":[6,1],"hbounds":[1,21]}
+"Hello ＄{folks} ̲t̲h̲i̲s̲ ̲"
+ w̲i̲l̲l̲.̲
+[ # ] {"type":"block","start":[22,0],"width":0,"height":1}
+"Hello ＄{folks} this "|
+ will.
+"
+`;
+
+exports[`showing spans of string with inclusion 2`] = `
+"
+"hi this is ＄{a}  "
+ something ＄{abc}
+ that will wrap
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"hi this is ＄{a}  "
+ something ＄{abc}
+ that will wrap
+[ # ] {"type":"block","start":[1,0],"width":11,"height":1}
+"h̲i̲ ̲t̲h̲i̲s̲ ̲i̲s̲ ̲＄{a}  "
+ something ＄{abc}
+ that will wrap
+[ # ] {"type":"block","start":[14,0],"width":1,"height":1}
+"hi this is ＄{a̲}  "
+ something ＄{abc}
+ that will wrap
+[ # ] {"type":"inline","start":[16,0],"end":[11,1],"hbounds":[1,17]}
+"hi this is ＄{a} ̲ "
+ s̲o̲m̲e̲t̲h̲i̲n̲g̲ ̲＄{abc}
+ that will wrap
+[ # ] {"type":"block","start":[13,1],"width":3,"height":1}
+"hi this is ＄{a}  "
+ something ＄{a̲b̲c̲}
+ that will wrap
+[ # ] {"type":"inline","start":[17,1],"end":[15,2],"hbounds":[1,18]}
+"hi this is ＄{a}  "
+ something ＄{abc}
+ t̲h̲a̲t̲ ̲w̲i̲l̲l̲ ̲w̲r̲a̲p̲
+[ # ] {"type":"block","start":[19,0],"width":0,"height":1}
+"hi this is ＄{a}  "|
+ something ＄{abc}
+ that will wrap
 "
 `;
