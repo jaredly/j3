@@ -62,6 +62,7 @@ const processNode = (data: RecNode, maxWidth = 30, leftWidth = 20) => {
         space: ',',
         layouts: ctx.layouts,
         annotateNewlines: true,
+        sourceMap: {},
     });
     return { txt: '\n' + trimTrailingWhite(txt) + '\n', result, ctx, parsed };
 };

@@ -3,7 +3,7 @@ import { newStore } from '../newStore';
 import { Store } from '../StoreContext';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { Doc, PersistedState } from '../../shared/state';
-import { irToText, white } from '../../shared/IR/ir-to-text';
+import { irToText, SourceMap, white } from '../../shared/IR/ir-to-text';
 import { fromMap, Style } from '../../shared/nodes';
 import { parse } from '../../boot-ex/format';
 import { Control, IR, nodeToIR } from '../../shared/IR/intermediate';
@@ -129,15 +129,22 @@ const pickDocument = (store: Store, term: termkit.Terminal) => {
 // @ts-ignore
 global.localStorage = {};
 
-const drawDocNode = (id: number, doc: Doc, state: PersistedState): string => {
+const drawDocNode = (
+    id: number,
+    doc: Doc,
+    state: PersistedState,
+    sourceMaps: Record<string, SourceMap>,
+): string => {
     let res = '';
     const node = doc.nodes[id];
     if (id !== 0) {
-        res = drawToplevel(node.toplevel, doc, state);
+        const tres = drawToplevel(node.toplevel, doc, state);
+        sourceMaps[id] = tres.sourceMap;
+        res = tres.txt;
     }
     if (node.children.length) {
         const children = node.children
-            .map((id) => drawDocNode(id, doc, state))
+            .map((id) => drawDocNode(id, doc, state, sourceMaps))
             .join('\n--\n');
         if (id === 0) return children;
         const space = white(4);
@@ -169,7 +176,7 @@ const controlLayout = (control: Control) => {
     return { height: 1, inlineHeight: 1, inlineWidth: w, maxWidth: w };
 };
 
-const drawToplevel = (id: string, doc: Doc, state: PersistedState): string => {
+const drawToplevel = (id: string, doc: Doc, state: PersistedState) => {
     const top = state.toplevels[id];
     const recNode = fromMap(top.id, top.root, top.nodes);
     const parsed = parse(recNode);
@@ -191,13 +198,15 @@ const drawToplevel = (id: string, doc: Doc, state: PersistedState): string => {
     const choices: LayoutChoices = {};
     const result = layoutIR(0, 0, irs[top.root], choices, ctx);
     ctx.layouts[top.root] = { choices, result };
+    const sourceMap: SourceMap = {};
     const txt = irToText(irs[top.root], irs, choices, null, {
         layouts: ctx.layouts,
         space: ' ',
         color: true,
+        sourceMap,
     });
 
-    return txt;
+    return { txt, sourceMap };
 };
 
 const run = async (term: termkit.Terminal) => {
@@ -213,12 +222,13 @@ const run = async (term: termkit.Terminal) => {
     }
 
     const ds = store.getDocSession(sess.doc, store.session);
-    // ds.selections;
 
     const doc = store.getState().documents[sess.doc];
 
+    const sourceMaps: Record<string, SourceMap> = {};
+
     const text =
-        drawDocNode(0, doc, store.getState()) +
+        drawDocNode(0, doc, store.getState(), sourceMaps) +
         '\n' +
         JSON.stringify(ds.selections);
 

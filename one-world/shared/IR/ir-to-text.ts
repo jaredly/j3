@@ -64,13 +64,29 @@ const addSpaces = (
     }
 };
 
-type TextCtx = {
+export type SourceMap = Record<
+    number,
+    | {
+          start: [number, number];
+          end: [number, number];
+          minMax: [number, number];
+          type: 'inline';
+      }
+    | {
+          start: [number, number];
+          end: [number, number];
+          type: 'block';
+      }
+>;
+
+export type TextCtx = {
     space: string;
     // highlightText?(s: string): string;
     // colorText?(s: string, color: string): string;
     layouts: LayoutCtx['layouts'];
     color?: boolean;
     annotateNewlines?: boolean;
+    sourceMap: SourceMap;
 };
 
 export const irToText = (
