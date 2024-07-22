@@ -5,6 +5,16 @@ what if I do a terminal editor? lol
 becaaaause we'll need to do an all new navigation dealio, with selections a little different.
 right?
 
+ok definitely all up in this business.
+butttt so here's the question.
+Like
+how do I source the map
+
+#
+
+I Think ... ir-to-blocks is ready?
+So the whole idea is, that Blocks will allow me to calculate screen positions of elements.
+
 
 
 

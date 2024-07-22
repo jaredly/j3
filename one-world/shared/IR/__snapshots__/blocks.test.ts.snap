@@ -1,0 +1,112 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`gradual string wrapp with simple inclusions 1`] = `
+"
+---------------------------------------| 40
+"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd      "
+ ${abc} de ${abcdef} abcdefg ab cd ef gh
+41x2
+--------------------------------------| 39
+"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd    "
+ ${abc} de ${abcdef} abcdefg ab cd ef
+ gh
+39x3
+-------------------------------------| 38
+"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd    "
+ ${abc} de ${abcdef} abcdefg ab cd ef
+ gh
+39x3
+------------------------------------| 37
+"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd    "
+ ${abc} de ${abcdef} abcdefg ab cd ef
+ gh
+39x3
+-----------------------------------| 36
+"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd "
+ ${abc} de ${abcdef} abcdefg ab cd
+ ef gh
+36x3
+----------------------------------| 35
+"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd "
+ ${abc} de ${abcdef} abcdefg ab cd
+ ef gh
+36x3
+---------------------------------| 34
+"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd "
+ ${abc} de ${abcdef} abcdefg ab cd
+ ef gh
+36x3
+--------------------------------| 33
+"nnnnnn nnnnnnnn nnnnnnnnnnn ab "
+ cd ${abc} de ${abcdef} abcdefg
+ ab cd ef gh
+33x3
+-------------------------------| 32
+"nnnnnn nnnnnnnn nnnnnnnnnnn ab "
+ cd ${abc} de ${abcdef} abcdefg
+ ab cd ef gh
+33x3
+------------------------------| 31
+"nnnnnn nnnnnnnn nnnnnnnnnnn ab "
+ cd ${abc} de ${abcdef} abcdefg
+ ab cd ef gh
+33x3
+-----------------------------| 30
+"nnnnnn nnnnnnnn nnnnnnnnnnn "
+ ab cd ${abc} de ${abcdef}
+ abcdefg ab cd ef gh
+28x3
+----------------------------| 29
+"nnnnnn nnnnnnnn nnnnnnnnnnn "
+ ab cd ${abc} de ${abcdef}
+ abcdefg ab cd ef gh
+28x3
+---------------------------| 28
+"nnnnnn nnnnnnnn nnnnnnnnnnn "
+ ab cd ${abc} de ${abcdef}
+ abcdefg ab cd ef gh
+28x3
+--------------------------| 27
+"nnnnnn nnnnnnnn            "
+ nnnnnnnnnnn ab cd ${abc}
+ de ${abcdef} abcdefg ab cd
+ ef gh
+29x4
+-------------------------| 26
+"nnnnnn nnnnnnnn          "
+ nnnnnnnnnnn ab cd ${abc}
+ de ${abcdef} abcdefg ab
+ cd ef gh
+27x4
+------------------------| 25
+"nnnnnn nnnnnnnn          "
+ nnnnnnnnnnn ab cd ${abc}
+ de ${abcdef} abcdefg ab
+ cd ef gh
+27x4
+-----------------------| 24
+"nnnnnn nnnnnnnn     "
+ nnnnnnnnnnn ab cd
+ ${abc} de ${abcdef}
+ abcdefg ab cd ef gh
+22x4
+----------------------| 23
+"nnnnnn nnnnnnnn     "
+ nnnnnnnnnnn ab cd
+ ${abc} de ${abcdef}
+ abcdefg ab cd ef gh
+22x4
+---------------------| 22
+"nnnnnn nnnnnnnn     "
+ nnnnnnnnnnn ab cd
+ ${abc} de ${abcdef}
+ abcdefg ab cd ef gh
+22x4
+--------------------| 21
+"nnnnnn nnnnnnnn     "
+ nnnnnnnnnnn ab cd
+ ${abc} de ${abcdef}
+ abcdefg ab cd ef gh
+22x4
+"
+`;
