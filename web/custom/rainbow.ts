@@ -9,6 +9,13 @@ for (let i = 0; i < raw.length; i += 6) {
 // We'll start at depth=1, so this just rolls it one over
 rainbow.unshift(rainbow.pop()!);
 
+export const parseHex = (hex: string) => {
+    const r = hex.slice(1, 3);
+    const g = hex.slice(3, 5);
+    const b = hex.slice(5);
+    return { r: parseInt(r, 16), g: parseInt(g, 16), b: parseInt(b, 16) };
+};
+
 export function getRainbowHashColor(hash: string | number) {
     const idx =
         typeof hash === 'number'

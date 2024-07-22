@@ -191,14 +191,11 @@ const drawToplevel = (id: string, doc: Doc, state: PersistedState): string => {
     const choices: LayoutChoices = {};
     const result = layoutIR(0, 0, irs[top.root], choices, ctx);
     ctx.layouts[top.root] = { choices, result };
-    const txt = irToText(
-        irs[top.root],
-        irs,
-        choices,
-        ctx.layouts,
-        undefined,
-        ' ',
-    );
+    const txt = irToText(irs[top.root], irs, choices, null, {
+        layouts: ctx.layouts,
+        space: ' ',
+        color: true,
+    });
 
     return txt;
 };

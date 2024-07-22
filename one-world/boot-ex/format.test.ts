@@ -58,7 +58,11 @@ const processNode = (data: RecNode, maxWidth = 30, leftWidth = 20) => {
     const choices: LayoutChoices = {};
     const result = layoutIR(0, 0, irs[root], choices, ctx);
     ctx.layouts[root] = { choices, result };
-    const txt = irToText(irs[root], irs, choices, ctx.layouts, undefined, ',');
+    const txt = irToText(irs[root], irs, choices, null, {
+        space: ',',
+        layouts: ctx.layouts,
+        annotateNewlines: true,
+    });
     return { txt: '\n' + trimTrailingWhite(txt) + '\n', result, ctx, parsed };
 };
 

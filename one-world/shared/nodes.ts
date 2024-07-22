@@ -55,10 +55,10 @@ export type Style = {
     fontFamily?: string;
     fontStyle?: string;
     textDecoration?: string;
-    background?: string;
+    background?: { r: number; g: number; b: number } | false;
     border?: string;
     outline?: string;
-    color?: string;
+    color?: { r: number; g: number; b: number } | false;
 };
 
 // export type RichBlock =

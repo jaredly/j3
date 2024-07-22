@@ -1,5 +1,10 @@
 // An intermediate representation
 
+import {
+    fasthash,
+    getRainbowHashColor,
+    parseHex,
+} from '../../../web/custom/rainbow';
 import { Nodes, Node, Style } from '../nodes';
 import { ListDisplay, RenderInfo } from '../renderables';
 
@@ -282,6 +287,11 @@ export const nodeToIR = (
                             {
                                 type: 'horiz',
                                 items: [
+                                    {
+                                        type: 'cursor',
+                                        loc: node.loc,
+                                        side: 'start',
+                                    },
                                     { type: 'punct', text: lr[0] },
                                     items[0],
                                 ],
@@ -289,9 +299,20 @@ export const nodeToIR = (
                             ...items.slice(1, -1),
                             {
                                 type: 'horiz',
+                                pullLast: true,
                                 items: [
                                     items[items.length - 1],
-                                    { type: 'punct', text: lr[1] },
+                                    {
+                                        type: 'horiz',
+                                        items: [
+                                            { type: 'punct', text: lr[1] },
+                                            {
+                                                type: 'cursor',
+                                                loc: node.loc,
+                                                side: 'end',
+                                            },
+                                        ],
+                                    },
                                 ],
                             },
                         ],
@@ -422,16 +443,26 @@ export const nodeToIR = (
         // case 'rich-text':
         //     return { type: 'text', text: 'rich' };
 
-        case 'id':
+        case 'id': {
+            const text = node.ref
+                ? names[node.ref.toplevel][node.ref.loc]
+                : node.text;
+
             return {
                 type: 'text',
-                text: node.ref
-                    ? names[node.ref.toplevel][node.ref.loc]
-                    : node.text,
-                style: styles[node.loc] ?? node.ref ? refStyle : undefined,
+                text,
+                style:
+                    styles[node.loc] ?? node.ref
+                        ? refStyle
+                        : {
+                              color: parseHex(
+                                  getRainbowHashColor(fasthash(text)),
+                              ),
+                          },
                 loc: node.loc,
                 index: 0,
             };
+        }
 
         case 'string': {
             const multi =
@@ -439,46 +470,88 @@ export const nodeToIR = (
                 node.templates.some((t) => t.suffix.includes('\n'));
             return {
                 type: 'horiz',
-                pullLast: true,
                 items: [
                     { type: 'loc', loc: node.tag },
-                    { type: 'punct', text: '"' },
-                    {
-                        type: 'inline',
-                        wrap: 0,
-                        items: [
-                            {
-                                type: 'text',
-                                text: node.first,
-                                wrap: 1,
-                                loc: node.loc,
-                                index: 0,
-                            },
-                            ...node.templates.flatMap((t, i): IR[] => [
-                                {
-                                    pullLast: true,
-                                    type: 'horiz',
-                                    items: [
-                                        { type: 'punct', text: '${' },
-                                        { type: 'loc', loc: t.expr },
-                                        { type: 'punct', text: '}' },
-                                    ],
-                                },
-                                {
-                                    type: 'text',
-                                    text: t.suffix,
-                                    wrap: i + 2,
-                                    loc: node.loc,
-                                    index: i + 1,
-                                },
-                            ]),
-                        ],
-                    },
                     {
                         type: 'horiz',
+                        pullLast: true,
+                        style: { background: { r: 50, g: 50, b: 0 } },
                         items: [
-                            { type: 'punct', text: '"' },
-                            { type: 'cursor', loc: node.loc, side: 'end' },
+                            {
+                                type: 'punct',
+                                text: '"',
+                                style: { color: { r: 100, g: 100, b: 0 } },
+                            },
+                            {
+                                type: 'inline',
+                                wrap: 0,
+                                items: [
+                                    {
+                                        type: 'text',
+                                        text: node.first,
+                                        style: {
+                                            color: { r: 100, g: 100, b: 0 },
+                                        },
+                                        wrap: 1,
+                                        loc: node.loc,
+                                        index: 0,
+                                    },
+                                    ...node.templates.flatMap((t, i): IR[] => [
+                                        {
+                                            pullLast: true,
+                                            type: 'horiz',
+                                            items: [
+                                                { type: 'punct', text: '${' },
+                                                {
+                                                    type: 'horiz',
+                                                    items: [
+                                                        {
+                                                            type: 'loc',
+                                                            loc: t.expr,
+                                                        },
+                                                    ],
+                                                    style: {
+                                                        background: false,
+                                                        // {
+                                                        //     r: 0,
+                                                        //     g: 0,
+                                                        //     b: 0,
+                                                        // },
+                                                    },
+                                                },
+                                                { type: 'punct', text: '}' },
+                                            ],
+                                        },
+                                        {
+                                            type: 'text',
+                                            text: t.suffix,
+                                            style: {
+                                                color: { r: 100, g: 100, b: 0 },
+                                            },
+                                            wrap: i + 2,
+                                            loc: node.loc,
+                                            index: i + 1,
+                                        },
+                                    ]),
+                                ],
+                            },
+                            {
+                                type: 'horiz',
+                                items: [
+                                    {
+                                        type: 'punct',
+                                        text: '"',
+                                        style: {
+                                            color: { r: 100, g: 100, b: 0 },
+                                        },
+                                    },
+                                    {
+                                        type: 'cursor',
+                                        loc: node.loc,
+                                        side: 'end',
+                                    },
+                                ],
+                            },
                         ],
                     },
                 ],
