@@ -48,6 +48,7 @@ export type Block =
           )[];
           width: number;
           leftWidth: number;
+          hspace: number;
           height: number;
           style?: Style;
       }
@@ -67,16 +68,24 @@ export type Block =
 // : block.width
 // const blockheight = (block: Block) => block.type === 'inline' ? block.height : block.height
 
-const inlineSize = (
+export const inlineSize = (
     items: Block[],
-): { width: number; height: number; last: number } => {
-    let x = 0;
+    x0 = 0,
+): {
+    width: number;
+    height: number;
+    last: number;
+    positions: { x: number; y: number }[];
+} => {
+    let x = x0;
     let width = 0;
     let height = 0;
     let last = 0;
+    const positions: { x: number; y: number }[] = [];
     const w = (w: number) => (width = Math.max(width, w));
-    items.forEach((item) => {
+    items.forEach((item, i) => {
         if (item.type === 'inline') {
+            positions.push({ x, y: i === 0 ? 0 : height - 1 });
             if (item.height === 1 && x !== 0) {
                 x += item.width;
                 w(x);
@@ -92,6 +101,7 @@ const inlineSize = (
                 last = item.last;
             }
         } else {
+            positions.push({ x, y: x != 0 ? height - 1 : height });
             height += item.height;
             if (x !== 0) {
                 height -= 1;
@@ -103,7 +113,7 @@ const inlineSize = (
             // x = 0;
         }
     });
-    return { width, height, last };
+    return { width, height, last, positions };
 };
 
 const vblock = (contents: Block[], style?: Style): Block => {
@@ -272,7 +282,11 @@ export const irToBlock = (
             return irToBlock(ir.item, irs, choices, selection, ctx);
         case 'text': {
             if (ir.wrap == null) {
-                return line(ir.text, undefined, ir.style);
+                return line(
+                    ir.text,
+                    { type: 'text', index: ir.index, loc: ir.loc },
+                    ir.style,
+                );
             }
             const splits = choices[ir.wrap];
             if (splits?.type === 'text-wrap' && splits.splits.length) {
@@ -295,7 +309,7 @@ export const irToBlock = (
 
                 let maxWidth = 0;
                 pieces.forEach((line) => {
-                    maxWidth = splitGraphemes(line).length;
+                    maxWidth = Math.max(maxWidth, splitGraphemes(line).length);
                 });
 
                 return {
@@ -309,7 +323,11 @@ export const irToBlock = (
                     width: maxWidth,
                 };
             }
-            return line(ir.text, undefined, ir.style);
+            return line(
+                ir.text,
+                { type: 'text', index: ir.index, loc: ir.loc },
+                ir.style,
+            );
         }
         case 'switch':
             const choice = choices[ir.id];
@@ -377,6 +395,7 @@ export const irToBlock = (
                     rows: pairs,
                     style: ir.style,
                     leftWidth,
+                    hspace: 1,
                     width,
                     height,
                 };

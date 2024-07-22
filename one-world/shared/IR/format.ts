@@ -42,6 +42,11 @@ export const blockFormat = (text: string, style?: Style, enable?: boolean) => {
     return text;
 };
 
+export const underlineText = (text: string) =>
+    splitGraphemes(text)
+        .map((m) => m + underline)
+        .join('');
+
 export const applyFormats = (text: string, style?: Style, color?: boolean) => {
     if (!style) return text;
     if (style.fontWeight === 'bold') {

@@ -1,112 +1,133 @@
 // Bun Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`gradual string wrapp with simple inclusions 1`] = `
+exports[`showing spans of simple string 1`] = `
 "
----------------------------------------| 40
-"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd      "
- ${abc} de ${abcdef} abcdefg ab cd ef gh
-41x2
---------------------------------------| 39
-"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd    "
- ${abc} de ${abcdef} abcdefg ab cd ef
- gh
-39x3
--------------------------------------| 38
-"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd    "
- ${abc} de ${abcdef} abcdefg ab cd ef
- gh
-39x3
-------------------------------------| 37
-"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd    "
- ${abc} de ${abcdef} abcdefg ab cd ef
- gh
-39x3
------------------------------------| 36
-"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd "
- ${abc} de ${abcdef} abcdefg ab cd
- ef gh
-36x3
-----------------------------------| 35
-"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd "
- ${abc} de ${abcdef} abcdefg ab cd
- ef gh
-36x3
----------------------------------| 34
-"nnnnnn nnnnnnnn nnnnnnnnnnn ab cd "
- ${abc} de ${abcdef} abcdefg ab cd
- ef gh
-36x3
---------------------------------| 33
-"nnnnnn nnnnnnnn nnnnnnnnnnn ab "
- cd ${abc} de ${abcdef} abcdefg
- ab cd ef gh
-33x3
--------------------------------| 32
-"nnnnnn nnnnnnnn nnnnnnnnnnn ab "
- cd ${abc} de ${abcdef} abcdefg
- ab cd ef gh
-33x3
-------------------------------| 31
-"nnnnnn nnnnnnnn nnnnnnnnnnn ab "
- cd ${abc} de ${abcdef} abcdefg
- ab cd ef gh
-33x3
------------------------------| 30
-"nnnnnn nnnnnnnn nnnnnnnnnnn "
- ab cd ${abc} de ${abcdef}
- abcdefg ab cd ef gh
-28x3
-----------------------------| 29
-"nnnnnn nnnnnnnn nnnnnnnnnnn "
- ab cd ${abc} de ${abcdef}
- abcdefg ab cd ef gh
-28x3
----------------------------| 28
-"nnnnnn nnnnnnnn nnnnnnnnnnn "
- ab cd ${abc} de ${abcdef}
- abcdefg ab cd ef gh
-28x3
---------------------------| 27
-"nnnnnn nnnnnnnn            "
- nnnnnnnnnnn ab cd ${abc}
- de ${abcdef} abcdefg ab cd
- ef gh
-29x4
--------------------------| 26
-"nnnnnn nnnnnnnn          "
- nnnnnnnnnnn ab cd ${abc}
- de ${abcdef} abcdefg ab
- cd ef gh
-27x4
-------------------------| 25
-"nnnnnn nnnnnnnn          "
- nnnnnnnnnnn ab cd ${abc}
- de ${abcdef} abcdefg ab
- cd ef gh
-27x4
------------------------| 24
-"nnnnnn nnnnnnnn     "
- nnnnnnnnnnn ab cd
- ${abc} de ${abcdef}
- abcdefg ab cd ef gh
-22x4
-----------------------| 23
-"nnnnnn nnnnnnnn     "
- nnnnnnnnnnn ab cd
- ${abc} de ${abcdef}
- abcdefg ab cd ef gh
-22x4
----------------------| 22
-"nnnnnn nnnnnnnn     "
- nnnnnnnnnnn ab cd
- ${abc} de ${abcdef}
- abcdefg ab cd ef gh
-22x4
---------------------| 21
-"nnnnnn nnnnnnnn     "
- nnnnnnnnnnn ab cd
- ${abc} de ${abcdef}
- abcdefg ab cd ef gh
-22x4
+"hi"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"hi"
+[ # ] {"type":"block","start":[1,0],"width":2,"height":1}
+"h̲i̲"
+[ # ] {"type":"block","start":[4,0],"width":0,"height":1}
+"hi"|
+"
+`;
+
+exports[`showing spans of id 1`] = `
+"
+hi
+
+[ # ] {"type":"block","start":[0,0],"width":2,"height":1}
+h̲i̲
+"
+`;
+
+exports[`showing spans of string with tag 1`] = `
+"
+js"hi"
+
+[ # ] {"type":"block","start":[0,0],"width":2,"height":1}
+j̲s̲"hi"
+[ # ] {"type":"block","start":[3,0],"width":2,"height":1}
+js"h̲i̲"
+[ # ] {"type":"block","start":[6,0],"width":0,"height":1}
+js"hi"|
+"
+`;
+
+exports[`showing spans of string with inclusion 1`] = `
+"
+"hi＄{abc}ho"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"hi＄{abc}ho"
+[ # ] {"type":"block","start":[1,0],"width":2,"height":1}
+"h̲i̲＄{abc}ho"
+[ # ] {"type":"block","start":[5,0],"width":3,"height":1}
+"hi＄{a̲b̲c̲}ho"
+[ # ] {"type":"block","start":[9,0],"width":2,"height":1}
+"hi＄{abc}h̲o̲"
+[ # ] {"type":"block","start":[12,0],"width":0,"height":1}
+"hi＄{abc}ho"|
+"
+`;
+
+exports[`showing spans of wrap string 1`] = `
+"
+"Hello folks this  "
+ will wrap, thanks.
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"Hello folks this  "
+ will wrap, thanks.
+[ # ] {"type":"inline","start":[1,0],"end":[19,1],"hbounds":[1,19]}
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲ ̲"1:19
+ w̲i̲l̲l̲ ̲w̲r̲a̲p̲,̲ ̲t̲h̲a̲n̲k̲s̲.̲1:19
+[ # ] {"type":"block","start":[20,0],"width":0,"height":1}
+"Hello folks this  "|
+ will wrap, thanks.
+"
+`;
+
+exports[`showing spans of wrap string, short last 1`] = `
+"
+"Hello folks this "
+ will wrap.
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"Hello folks this "
+ will wrap.
+[ # ] {"type":"inline","start":[1,0],"end":[11,1],"hbounds":[1,18]}
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲"1:18
+ w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲1:11
+[ # ] {"type":"block","start":[19,0],"width":0,"height":1}
+"Hello folks this "|
+ will wrap.
+"
+`;
+
+exports[`showing spans of wrap string, short last 2`] = `
+"
+"Hello folks this "
+ will ＄{a} wrap.
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"Hello folks this "
+ will ＄{a} wrap.
+[ # ] {"type":"inline","start":[1,0],"end":[6,1],"hbounds":[1,18]}
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲"1:18
+ w̲i̲l̲l̲ ̲＄{a} wrap.1:6
+[ # ] {"type":"block","start":[8,1],"width":1,"height":1}
+"Hello folks this "
+ will ＄{a̲} wrap.
+[ # ] {"type":"block","start":[10,1],"width":6,"height":1}
+"Hello folks this "
+ will ＄{a} ̲w̲r̲a̲p̲.̲
+[ # ] {"type":"block","start":[19,0],"width":0,"height":1}
+"Hello folks this "|
+ will ＄{a} wrap.
+"
+`;
+
+exports[`text with wrap on inclusion 1`] = `
+"
+"Hello folks ＄{this} "
+ will wrap.
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"Hello folks ＄{this} "
+ will wrap.
+[ # ] {"type":"block","start":[1,0],"width":12,"height":1}
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲＄{this} "
+ will wrap.
+[ # ] {"type":"block","start":[15,0],"width":4,"height":1}
+"Hello folks ＄{t̲h̲i̲s̲} "
+ will wrap.
+[ # ] {"type":"inline","start":[20,0],"end":[11,1],"hbounds":[1,11]}
+"Hello folks ＄{this}s ＄{this} "20:11
+ w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲1:11
+[ # ] {"type":"block","start":[22,0],"width":0,"height":1}
+"Hello folks ＄{this} "|
+ will wrap.
 "
 `;
