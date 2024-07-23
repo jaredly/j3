@@ -200,10 +200,10 @@ nnnnnnnn"!{lol}"
 n̲n̲n̲n̲n̲n̲n̲n̲"!{lol}"
 [ # ] {"type":"block","start":[9,0],"width":0,"height":1}
 nnnnnnnn"|!{lol}"
-[ # ] {"type":"block","start":[11,1],"width":3,"height":1}
-nnnnnnnn"!{lol}"
-[ # ] {"type":"block","start":[15,1],"width":0,"height":1}
-nnnnnnnn"!{lol}"
+[ # ] {"type":"block","start":[11,0],"width":3,"height":1}
+nnnnnnnn"!{l̲o̲l̲}"
+[ # ] {"type":"block","start":[15,0],"width":0,"height":1}
+nnnnnnnn"!{lol}|"
 [ # ] {"type":"block","start":[16,0],"width":0,"height":1}
 nnnnnnnn"!{lol}"|
 "
@@ -217,10 +217,10 @@ nnnnnnnnnnnnnnnnn"!{lol}"
 n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲"!{lol}"
 [ # ] {"type":"block","start":[18,0],"width":0,"height":1}
 nnnnnnnnnnnnnnnnn"|!{lol}"
-[ # ] {"type":"block","start":[20,1],"width":3,"height":1}
-nnnnnnnnnnnnnnnnn"!{lol}"
-[ # ] {"type":"block","start":[24,1],"width":0,"height":1}
-nnnnnnnnnnnnnnnnn"!{lol}"
+[ # ] {"type":"block","start":[20,0],"width":3,"height":1}
+nnnnnnnnnnnnnnnnn"!{l̲o̲l̲}"
+[ # ] {"type":"block","start":[24,0],"width":0,"height":1}
+nnnnnnnnnnnnnnnnn"!{lol}|"
 [ # ] {"type":"block","start":[25,0],"width":0,"height":1}
 nnnnnnnnnnnnnnnnn"!{lol}"|
 "

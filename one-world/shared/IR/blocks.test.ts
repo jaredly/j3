@@ -153,8 +153,16 @@ test('showing spans of string with inclusion', () => {
 // });
 
 test('wow ok so bigbug here', () => {
+    // debugger;
     // const { txt, block, sourceMap } = process('nnnnnnnnnnnnnnn"${one}"', 20);
-    // expect(`\n${txt}\n`).toMatchSnapshot();
+    // expect(
+    //     `\n${txt}\n\n${sourceMap
+    //         .map((m) => JSON.stringify(m.shape))
+    //         .join('\n')}\n\n${JSON.stringify(block, null, 2).replaceAll(
+    //         '$',
+    //         '!',
+    //     )}`,
+    // ).toMatchSnapshot();
     expect('\n' + showSpans('nnnnnnnn"${lol}"')).toMatchSnapshot();
     expect('\n' + showSpans('nnnnnnnnnnnnnnnnn"${lol}"')).toMatchSnapshot();
 });

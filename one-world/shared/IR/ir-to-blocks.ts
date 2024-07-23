@@ -71,10 +71,6 @@ export type Block =
           style?: Style;
       };
 
-// const blockWidth = (block: Block) => block.type === 'inline' ? block.maxWidth
-// : block.width
-// const blockheight = (block: Block) => block.type === 'inline' ? block.height : block.height
-
 export const inlineSize = (
     items: Block[],
     x0 = 0,
@@ -86,38 +82,32 @@ export const inlineSize = (
 } => {
     let x = x0;
     let width = 0;
-    let height = 0;
+    let height = 1;
     let last = 0;
+    let partial = true;
     const positions: { x: number; y: number }[] = [];
     const w = (w: number) => (width = Math.max(width, w));
     items.forEach((item, i) => {
         if (item.type === 'inline') {
-            positions.push({ x, y: i === 0 ? 0 : height - 1 });
-            if (item.height === 1 && x !== 0) {
+            positions.push({ x, y: height - 1 });
+            if (item.height === 1) {
                 x += item.width;
                 w(x);
                 last = x;
             } else {
                 height += item.height;
-                if (x !== 0) {
-                    height -= 1;
-                    w(x + item.first);
-                }
+                height -= 1;
+                w(x + item.first);
                 w(item.width);
                 x = item.last;
                 last = item.last;
             }
         } else {
-            positions.push({ x, y: x != 0 ? height - 1 : height });
-            height += item.height;
-            if (x !== 0) {
-                height -= 1;
-            }
+            positions.push({ x, y: height - 1 });
+            height += item.height - 1;
             x += item.width;
             w(x);
-            // height += item.height;
-            // w(item.width);
-            // x = 0;
+            partial = true;
         }
     });
     return { width, height, last, positions };
