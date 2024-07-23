@@ -1,4 +1,4 @@
-import { blockFormat } from './format';
+import { blockFormat, justify } from './format';
 import { Block, BlockSource, inlineSize } from './ir-to-blocks';
 import { addSpaces, joinChunks, white } from './ir-to-text';
 
@@ -36,8 +36,14 @@ export const blockToText = (
         case 'block': {
             if (block.horizontal !== false) {
                 let x = pos.x;
+                let h = 0;
                 const chunks = block.contents.map((m, i) => {
-                    const res = blockToText({ ...pos, x, x0: x }, m, sourceMap);
+                    h = Math.max(h, m.height);
+                    let y = pos.y;
+                    if (block.pullLast && i === block.contents.length - 1) {
+                        y = pos.y + h - m.height;
+                    }
+                    const res = blockToText({ y, x, x0: x }, m, sourceMap);
                     x +=
                         m.width +
                         (i < block.contents.length - 1
@@ -49,7 +55,7 @@ export const blockToText = (
                     addSpaces(chunks, 'all', white(block.horizontal));
                 }
                 return blockFormat(
-                    applyX0(joinChunks(chunks), pos.x - pos.x0),
+                    applyX0(joinChunks(chunks, block.pullLast), pos.x - pos.x0),
                     block.style,
                 );
             }
@@ -125,6 +131,9 @@ export const blockToText = (
                                 m,
                                 sourceMap,
                             );
+                            if (m.type !== 'inline') {
+                                return justify(res);
+                            }
                             return res;
                         })
                         .join('');

@@ -63,7 +63,7 @@ const processNode = (data: RecNode, maxWidth = 30, leftWidth = 20) => {
     const sourceMap: BlockEntry[] = [];
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, sourceMap);
     return {
-        txt: trimTrailingWhite(txt),
+        txt,
         result,
         ctx,
         parsed,
@@ -163,8 +163,14 @@ test('wow ok so bigbug here', () => {
                 100,
             ),
     ).toMatchSnapshot();
-    debugger;
-    expect('\n' + showSpans('"${(lov -sss)}NNN"', 10, true)).toMatchSnapshot();
+    expect(
+        '\n' +
+            showSpans(
+                'js"sdfgsad${what}asdfjkljsdfk${(loveit and-what"${for}" -what you)}P{} sdfb"',
+                20,
+            ),
+    ).toMatchSnapshot();
+    expect('\n' + showSpans('"${(lov -sss)}NNN"', 10)).toMatchSnapshot();
 });
 
 test('wow ok so bigbug here', () => {
@@ -210,7 +216,7 @@ const blockInfo = (block: Block): string => {
 function showSpans(orig: string, width = 20, x = false) {
     let res = '';
     const { txt, block, sourceMap } = process(orig, width);
-    res += fixDollar(txt) + '\n\n';
+    res += trimTrailingWhite(fixDollar(txt)) + '\n\n';
 
     if (x) {
         res += blockInfo(block) + '\n\n';
@@ -218,7 +224,8 @@ function showSpans(orig: string, width = 20, x = false) {
 
     sourceMap.forEach((item) => {
         res += `[ # ] ` + JSON.stringify(item.shape) + '\n';
-        res += fixDollar(highlightSpan(txt, item.shape)) + '\n';
+        res +=
+            trimTrailingWhite(fixDollar(highlightSpan(txt, item.shape))) + '\n';
     });
     if (x) {
         res += JSON.stringify(block, null, 2);

@@ -9,7 +9,7 @@ const italic = splitGraphemes('𝑎𝑏𝑐𝑑𝑒𝑓𝑔ℎ𝑖𝑗𝑘𝑙�
 const bolditalic = splitGraphemes('𝒂𝒃𝒄𝒅𝒆𝒇𝒈𝒉𝒊𝒋𝒌𝒍𝒎𝒏𝒐𝒑𝒒𝒓𝒔𝒕𝒖𝒗𝒘𝒙𝒚𝒛');
 const underline = String.fromCharCode(818);
 
-const justify = (text: string) => {
+export const justify = (text: string) => {
     const lines = text.split('\n');
     const lls = lines.map(ansis.strip);
     const max = maxLength(lls);

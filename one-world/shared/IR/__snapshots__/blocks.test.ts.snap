@@ -54,141 +54,141 @@ exports[`showing spans of string with inclusion 1`] = `
 
 exports[`showing spans of wrap string 1`] = `
 "
-"Hello folks this  "
- will wrap, thanks.
+"Hello folks this
+ will wrap, thanks."
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|"Hello folks this  "
- will wrap, thanks.
+|"Hello folks this
+ will wrap, thanks."
 [ # ] {"type":"inline","start":[1,0],"end":[19,1],"hbounds":[1,19]}
-"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲ ̲"
- w̲i̲l̲l̲ ̲w̲r̲a̲p̲,̲ ̲t̲h̲a̲n̲k̲s̲.̲
-[ # ] {"type":"block","start":[20,0],"width":0,"height":1}
-"Hello folks this  "|
- will wrap, thanks.
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲ ̲
+ w̲i̲l̲l̲ ̲w̲r̲a̲p̲,̲ ̲t̲h̲a̲n̲k̲s̲.̲"
+[ # ] {"type":"block","start":[20,1],"width":0,"height":1}
+"Hello folks this
+ will wrap, thanks."|
 "
 `;
 
 exports[`showing spans of wrap string, short last 1`] = `
 "
-"Hello folks this "
- will wrap.
+"Hello folks this
+ will wrap.       "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|"Hello folks this "
- will wrap.
+|"Hello folks this
+ will wrap.       "
 [ # ] {"type":"inline","start":[1,0],"end":[11,1],"hbounds":[1,18]}
-"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲"
- w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲
-[ # ] {"type":"block","start":[19,0],"width":0,"height":1}
-"Hello folks this "|
- will wrap.
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲
+ w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲       "
+[ # ] {"type":"block","start":[19,1],"width":0,"height":1}
+"Hello folks this
+ will wrap.       "|
 "
 `;
 
 exports[`showing spans of wrap string, short last 2`] = `
 "
-"Hello folks this "
- will !{a} wrap.
+"Hello folks this
+ will !{a} wrap.  "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|"Hello folks this "
- will !{a} wrap.
+|"Hello folks this
+ will !{a} wrap.  "
 [ # ] {"type":"inline","start":[1,0],"end":[6,1],"hbounds":[1,18]}
-"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲"
- w̲i̲l̲l̲ ̲!{a} wrap.
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲
+ w̲i̲l̲l̲ ̲!{a} wrap.  "
 [ # ] {"type":"block","start":[8,1],"width":1,"height":1}
-"Hello folks this "
- will !{a̲} wrap.
+"Hello folks this
+ will !{a̲} wrap.  "
 [ # ] {"type":"block","start":[10,1],"width":6,"height":1}
-"Hello folks this "
- will !{a} ̲w̲r̲a̲p̲.̲
-[ # ] {"type":"block","start":[19,0],"width":0,"height":1}
-"Hello folks this "|
- will !{a} wrap.
+"Hello folks this
+ will !{a} ̲w̲r̲a̲p̲.̲  "
+[ # ] {"type":"block","start":[19,1],"width":0,"height":1}
+"Hello folks this
+ will !{a} wrap.  "|
 "
 `;
 
 exports[`text with wrap on inclusion 1`] = `
 "
-"Hello folks !{this} "
- will wrap.
+"Hello folks !{this}
+ will wrap.          "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|"Hello folks !{this} "
- will wrap.
+|"Hello folks !{this}
+ will wrap.          "
 [ # ] {"type":"block","start":[1,0],"width":12,"height":1}
-"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲!{this} "
- will wrap.
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲!{this}
+ will wrap.          "
 [ # ] {"type":"block","start":[15,0],"width":4,"height":1}
-"Hello folks !{t̲h̲i̲s̲} "
- will wrap.
+"Hello folks !{t̲h̲i̲s̲}
+ will wrap.          "
 [ # ] {"type":"inline","start":[20,0],"end":[11,1],"hbounds":[1,21]}
-"Hello folks !{this} ̲"
- w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲
-[ # ] {"type":"block","start":[22,0],"width":0,"height":1}
-"Hello folks !{this} "|
- will wrap.
+"Hello folks !{this} ̲
+ w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲          "
+[ # ] {"type":"block","start":[22,1],"width":0,"height":1}
+"Hello folks !{this}
+ will wrap.          "|
 "
 `;
 
 exports[`highlight over wrap 1`] = `
 "
-"Hello !{folks} this "
- will.
+"Hello !{folks} this
+ will.               "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|"Hello !{folks} this "
- will.
+|"Hello !{folks} this
+ will.               "
 [ # ] {"type":"block","start":[1,0],"width":6,"height":1}
-"H̲e̲l̲l̲o̲ ̲!{folks} this "
- will.
+"H̲e̲l̲l̲o̲ ̲!{folks} this
+ will.               "
 [ # ] {"type":"block","start":[9,0],"width":5,"height":1}
-"Hello !{f̲o̲l̲k̲s̲} this "
- will.
+"Hello !{f̲o̲l̲k̲s̲} this
+ will.               "
 [ # ] {"type":"inline","start":[15,0],"end":[6,1],"hbounds":[1,21]}
-"Hello !{folks} ̲t̲h̲i̲s̲ ̲"
- w̲i̲l̲l̲.̲
-[ # ] {"type":"block","start":[22,0],"width":0,"height":1}
-"Hello !{folks} this "|
- will.
+"Hello !{folks} ̲t̲h̲i̲s̲ ̲
+ w̲i̲l̲l̲.̲               "
+[ # ] {"type":"block","start":[22,1],"width":0,"height":1}
+"Hello !{folks} this
+ will.               "|
 "
 `;
 
 exports[`showing spans of string with inclusion 2`] = `
 "
-"hi this is !{a}  "
+"hi this is !{a}
  something !{abc}
- that will wrap
+ that will wrap   "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|"hi this is !{a}  "
+|"hi this is !{a}
  something !{abc}
- that will wrap
+ that will wrap   "
 [ # ] {"type":"block","start":[1,0],"width":11,"height":1}
-"h̲i̲ ̲t̲h̲i̲s̲ ̲i̲s̲ ̲!{a}  "
+"h̲i̲ ̲t̲h̲i̲s̲ ̲i̲s̲ ̲!{a}
  something !{abc}
- that will wrap
+ that will wrap   "
 [ # ] {"type":"block","start":[14,0],"width":1,"height":1}
-"hi this is !{a̲}  "
+"hi this is !{a̲}
  something !{abc}
- that will wrap
+ that will wrap   "
 [ # ] {"type":"inline","start":[16,0],"end":[11,1],"hbounds":[1,17]}
-"hi this is !{a} ̲ "
+"hi this is !{a} ̲
  s̲o̲m̲e̲t̲h̲i̲n̲g̲ ̲!{abc}
- that will wrap
+ that will wrap   "
 [ # ] {"type":"block","start":[13,1],"width":3,"height":1}
-"hi this is !{a}  "
+"hi this is !{a}
  something !{a̲b̲c̲}
- that will wrap
+ that will wrap   "
 [ # ] {"type":"inline","start":[17,1],"end":[15,2],"hbounds":[1,18]}
-"hi this is !{a}  "
+"hi this is !{a}
+ something !{abc} ̲
+ t̲h̲a̲t̲ ̲w̲i̲l̲l̲ ̲w̲r̲a̲p̲   "
+[ # ] {"type":"block","start":[19,2],"width":0,"height":1}
+"hi this is !{a}
  something !{abc}
- t̲h̲a̲t̲ ̲w̲i̲l̲l̲ ̲w̲r̲a̲p̲
-[ # ] {"type":"block","start":[19,0],"width":0,"height":1}
-"hi this is !{a}  "|
- something !{abc}
- that will wrap
+ that will wrap   "|
 "
 `;
 
@@ -271,339 +271,127 @@ js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P{} sdfb"|
 
 exports[`wow ok so bigbug here 4`] = `
 "
-"!{(lov     }  "
-       -sss)NNN
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   and-what"!{for}"
+                                   -what you)      }P{}
+   sdfb                                                                       "
 
-17x2[0x1T-17x2[1x1T-15x2(0x1T|12x2[2x1T-9x2[4x1[4x1[0x1T-1x1T-3x1T]]|9x1[3x1T-5x1[4x1T-1x1[1x1T-0x1T]]]]-1x1T]|3x1T)-1x1[1x1T-0x1T]]]
-
-[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|"!{(lov     }  "
-       -sss)NNN
-[ # ] {"type":"block","start":[1,0],"width":0,"height":1}
-"|!{(lov     }  "
-       -sss)NNN
-[ # ] {"type":"block","start":[3,0],"width":0,"height":1}
-"!{|(lov     }  "
-       -sss)NNN
-[ # ] {"type":"block","start":[4,0],"width":3,"height":1}
-"!{(l̲o̲v̲     }  "
-       -sss)NNN
-[ # ] {"type":"block","start":[7,1],"width":4,"height":1}
-"!{(lov     }  "
-       -̲s̲s̲s̲)NNN
-[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
-"!{(lov     }  "
-       -sss)|NNN
-[ # ] {"type":"block","start":[13,1],"width":3,"height":1}
-"!{(lov     }  "
-       -sss)NN̲N̲
-[ # ] {"type":"block","start":[17,0],"width":0,"height":1}
-"!{(lov     }  "|
-       -sss)NNN
-{
-  "type": "block",
-  "contents": [
-    {
-      "type": "inline",
-      "contents": "",
-      "width": 0,
-      "first": 0,
-      "last": 0,
-      "height": 1,
-      "source": {
-        "type": "text",
-        "index": 0,
-        "loc": 9,
-        "top": ""
-      },
-      "style": {
-        "color": {
-          "r": 27,
-          "g": 158,
-          "b": 119
-        }
-      }
-    },
-    {
-      "type": "block",
-      "contents": [
-        {
-          "type": "inline",
-          "contents": "\"",
-          "width": 1,
-          "first": 1,
-          "last": 1,
-          "height": 1
-        },
-        {
-          "type": "inline",
-          "contents": [
-            [
-              {
-                "type": "inline",
-                "contents": "",
-                "width": 0,
-                "first": 0,
-                "last": 0,
-                "height": 1,
-                "source": {
-                  "type": "text",
-                  "index": 0,
-                  "loc": 0,
-                  "top": ""
-                },
-                "style": {
-                  "color": {
-                    "r": 100,
-                    "g": 100,
-                    "b": 0
-                  }
-                }
-              },
-              {
-                "type": "block",
-                "contents": [
-                  {
-                    "type": "inline",
-                    "contents": "${",
-                    "width": 2,
-                    "first": 2,
-                    "last": 2,
-                    "height": 1
-                  },
-                  {
-                    "type": "block",
-                    "horizontal": false,
-                    "contents": [
-                      {
-                        "type": "block",
-                        "contents": [
-                          {
-                            "type": "block",
-                            "contents": [
-                              {
-                                "type": "inline",
-                                "contents": "",
-                                "width": 0,
-                                "first": 0,
-                                "last": 0,
-                                "height": 1,
-                                "source": {
-                                  "type": "cursor",
-                                  "loc": 3,
-                                  "side": "start",
-                                  "top": ""
-                                }
-                              },
-                              {
-                                "type": "inline",
-                                "contents": "(",
-                                "width": 1,
-                                "first": 1,
-                                "last": 1,
-                                "height": 1
-                              },
-                              {
-                                "type": "inline",
-                                "contents": "lov",
-                                "width": 3,
-                                "first": 3,
-                                "last": 3,
-                                "height": 1,
-                                "source": {
-                                  "type": "text",
-                                  "index": 0,
-                                  "loc": 4,
-                                  "top": ""
-                                },
-                                "style": {
-                                  "color": {
-                                    "r": 231,
-                                    "g": 41,
-                                    "b": 138
-                                  }
-                                }
-                              }
-                            ],
-                            "height": 1,
-                            "width": 4,
-                            "horizontal": 0
-                          }
-                        ],
-                        "height": 1,
-                        "width": 4,
-                        "horizontal": 1
-                      },
-                      {
-                        "type": "block",
-                        "contents": [
-                          {
-                            "type": "inline",
-                            "contents": "   ",
-                            "width": 3,
-                            "first": 3,
-                            "last": 3,
-                            "height": 1
-                          },
-                          {
-                            "type": "block",
-                            "contents": [
-                              {
-                                "type": "inline",
-                                "contents": "-sss",
-                                "width": 4,
-                                "first": 4,
-                                "last": 4,
-                                "height": 1,
-                                "source": {
-                                  "type": "text",
-                                  "index": 0,
-                                  "loc": 8,
-                                  "top": ""
-                                },
-                                "style": {
-                                  "color": {
-                                    "r": 27,
-                                    "g": 158,
-                                    "b": 119
-                                  }
-                                }
-                              },
-                              {
-                                "type": "block",
-                                "contents": [
-                                  {
-                                    "type": "inline",
-                                    "contents": ")",
-                                    "width": 1,
-                                    "first": 1,
-                                    "last": 1,
-                                    "height": 1
-                                  },
-                                  {
-                                    "type": "inline",
-                                    "contents": "",
-                                    "width": 0,
-                                    "first": 0,
-                                    "last": 0,
-                                    "height": 1,
-                                    "source": {
-                                      "type": "cursor",
-                                      "loc": 3,
-                                      "side": "end",
-                                      "top": ""
-                                    }
-                                  }
-                                ],
-                                "height": 1,
-                                "width": 1,
-                                "horizontal": 0
-                              }
-                            ],
-                            "height": 1,
-                            "width": 5,
-                            "horizontal": 0
-                          }
-                        ],
-                        "height": 1,
-                        "width": 9,
-                        "horizontal": 1
-                      }
-                    ],
-                    "height": 2,
-                    "width": 9
-                  },
-                  {
-                    "type": "inline",
-                    "contents": "}",
-                    "width": 1,
-                    "first": 1,
-                    "last": 1,
-                    "height": 1
-                  }
-                ],
-                "height": 2,
-                "width": 12,
-                "horizontal": 0
-              },
-              {
-                "type": "inline",
-                "contents": "NNN",
-                "width": 3,
-                "first": 3,
-                "last": 3,
-                "height": 1,
-                "source": {
-                  "type": "text",
-                  "index": 1,
-                  "loc": 0,
-                  "top": ""
-                },
-                "style": {
-                  "color": {
-                    "r": 100,
-                    "g": 100,
-                    "b": 0
-                  }
-                }
-              }
-            ]
-          ],
-          "first": 0,
-          "last": 15,
-          "width": 15,
-          "height": 2
-        },
-        {
-          "type": "block",
-          "contents": [
-            {
-              "type": "inline",
-              "contents": "\"",
-              "width": 1,
-              "first": 1,
-              "last": 1,
-              "height": 1
-            },
-            {
-              "type": "inline",
-              "contents": "",
-              "width": 0,
-              "first": 0,
-              "last": 0,
-              "height": 1,
-              "source": {
-                "type": "cursor",
-                "loc": 0,
-                "side": "end",
-                "top": ""
-              }
-            }
-          ],
-          "height": 1,
-          "width": 1,
-          "horizontal": 0
-        }
-      ],
-      "height": 2,
-      "width": 17,
-      "horizontal": 0,
-      "style": {
-        "background": {
-          "r": 50,
-          "g": 50,
-          "b": 0
-        }
-      }
-    }
-  ],
-  "height": 2,
-  "width": 17,
-  "horizontal": 0
-}"
+[ # ] {"type":"block","start":[0,0],"width":2,"height":1}
+j̲s̲"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   and-what"!{for}"
+                                   -what you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[3,0],"width":7,"height":1}
+js"s̲d̲f̲g̲s̲a̲d̲!{what}asdfjkljsdfk!{(loveit
+                                   and-what"!{for}"
+                                   -what you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[12,0],"width":4,"height":1}
+js"sdfgsad!{w̲h̲a̲t̲}asdfjkljsdfk!{(loveit
+                                   and-what"!{for}"
+                                   -what you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[17,0],"width":12,"height":1}
+js"sdfgsad!{what}a̲s̲d̲f̲j̲k̲l̲j̲s̲d̲f̲k̲!{(loveit
+                                   and-what"!{for}"
+                                   -what you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[31,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{|(loveit
+                                   and-what"!{for}"
+                                   -what you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[32,0],"width":6,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(l̲o̲v̲e̲i̲t̲
+                                   and-what"!{for}"
+                                   -what you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[35,1],"width":8,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   a̲n̲d̲-̲w̲h̲a̲t̲"!{for}"
+                                   -what you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[44,1],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   and-what"|!{for}"
+                                   -what you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[46,1],"width":3,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   and-what"!{f̲o̲r̲}"
+                                   -what you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[50,1],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   and-what"!{for}|"
+                                   -what you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[51,1],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   and-what"!{for}"|
+                                   -what you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[35,2],"width":5,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   and-what"!{for}"
+                                   -̲w̲h̲a̲t̲ you)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[41,2],"width":3,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   and-what"!{for}"
+                                   -what y̲o̲u̲)      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"block","start":[45,2],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   and-what"!{for}"
+                                   -what you)|      }P{}
+   sdfb                                                                       "
+[ # ] {"type":"inline","start":[52,2],"end":[7,3],"hbounds":[3,56]}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   and-what"!{for}"
+                                   -what you)      }P̲{̲}̲ ̲
+   s̲d̲f̲b̲                                                                       "
+[ # ] {"type":"block","start":[57,3],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit
+                                   and-what"!{for}"
+                                   -what you)      }P{}
+   sdfb                                                  |                     "
+"
 `;
 
 exports[`wow ok so bigbug here 5`] = `
+"
+"!{(lov
+       -sss)}NNN"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"!{(lov
+       -sss)}NNN"
+[ # ] {"type":"block","start":[1,0],"width":0,"height":1}
+"|!{(lov
+       -sss)}NNN"
+[ # ] {"type":"block","start":[3,0],"width":0,"height":1}
+"!{|(lov
+       -sss)}NNN"
+[ # ] {"type":"block","start":[4,0],"width":3,"height":1}
+"!{(l̲o̲v̲
+       -sss)}NNN"
+[ # ] {"type":"block","start":[7,1],"width":4,"height":1}
+"!{(lov
+       -̲s̲s̲s̲)}NNN"
+[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
+"!{(lov
+       -sss)|}NNN"
+[ # ] {"type":"block","start":[13,1],"width":3,"height":1}
+"!{(lov
+       -sss)}N̲N̲N̲"
+[ # ] {"type":"block","start":[17,1],"width":0,"height":1}
+"!{(lov
+       -sss)}NNN"|
+"
+`;
+
+exports[`wow ok so bigbug here 6`] = `
 "
 nnnnnnnn"!{lol}"
 
@@ -620,7 +408,7 @@ nnnnnnnn"!{lol}"|
 "
 `;
 
-exports[`wow ok so bigbug here 6`] = `
+exports[`wow ok so bigbug here 7`] = `
 "
 nnnnnnnnnnnnnnnnn"!{lol}"
 

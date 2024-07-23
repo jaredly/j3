@@ -22,6 +22,10 @@ One char too late. Why is tha?
 FIX THE (first) calculations for inlines.
 
 
+chsing down all the bugs with calculation
+
+I should get pullLast going again
+
 
 
 # Ok so more storyyy

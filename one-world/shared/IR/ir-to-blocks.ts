@@ -43,6 +43,7 @@ export type Block =
           type: 'block';
           contents: Block[];
           horizontal: false | number; // number = space
+          pullLast?: boolean; // NOTE only when horizontal
           width: number;
           height: number;
           style?: Style;
@@ -128,6 +129,7 @@ export const hblock = (
     items: Block[],
     style?: Style,
     spaced?: boolean,
+    pullLast?: boolean,
 ): Block => {
     const height = items.map((l) => l.height).reduce((a, b) => Math.max(a, b));
     let width = items.map((l) => l.width).reduce((a, b) => a + b);
@@ -141,6 +143,7 @@ export const hblock = (
         height,
         width,
         horizontal: spaced ? 1 : 0,
+        pullLast,
         style,
     };
 };
@@ -286,7 +289,7 @@ export const irToBlock = (
             const chunks = ir.items.map((item) =>
                 irToBlock(item, irs, choices, selection, ctx),
             );
-            return hblock(chunks, ir.style);
+            return hblock(chunks, ir.style, ir.spaced, ir.pullLast);
         case 'indent':
             const block = irToBlock(ir.item, irs, choices, selection, ctx);
             return hblock([line(white(ir.amount ?? 2)), block]);
