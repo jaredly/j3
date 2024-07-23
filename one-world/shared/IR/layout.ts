@@ -166,9 +166,14 @@ export const layoutIR = (
             let height = 0;
             let inlineHeight = 0;
             const groups: number[] = [0];
+            // iffff prev group only has one thing
+            // and it's an empty text, let'sss not break after it?
+            // hrm it's a little weird.
             ir.items.forEach((item, i) => {
                 let next = layoutIR(x, inlineWidth, item, choices, ctx);
                 if (
+                    i > 0 &&
+                    maxWidth > 0 &&
                     item.type !== 'inline' &&
                     (item.type !== 'text' || item.wrap == null) &&
                     x + next.inlineWidth > ctx.maxWidth

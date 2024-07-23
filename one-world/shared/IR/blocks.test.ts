@@ -134,9 +134,34 @@ test('showing spans of string with inclusion', () => {
     ).toMatchSnapshot();
 });
 
+// test('showing spans of string with inclusion', () => {
+//     expect(
+//         '\n' +
+//             showSpans(
+//                 '(What ok-folks js"abcd${what}here${(what and such js"ok" and stuff)}")',
+//             ),
+//     ).toMatchSnapshot();
+// });
+
+// test('wow ok so bigbug here', () => {
+//     expect(
+//         '\n' +
+//             showSpans(
+//                 'js"sdfgsad${what}asdfjkljsdfk${(loveit and-what"${for}" -what you)}P{} sdfb"',
+//             ),
+//     ).toMatchSnapshot();
+// });
+
+test('wow ok so bigbug here', () => {
+    // const { txt, block, sourceMap } = process('nnnnnnnnnnnnnnn"${one}"', 20);
+    // expect(`\n${txt}\n`).toMatchSnapshot();
+    expect('\n' + showSpans('nnnnnnnn"${lol}"')).toMatchSnapshot();
+    expect('\n' + showSpans('nnnnnnnnnnnnnnnnn"${lol}"')).toMatchSnapshot();
+});
+
 const fixDollar = (txt: string) =>
     splitGraphemes(txt)
-        .map((t) => (t === '$' ? '＄' : t))
+        .map((t) => (t === '$' ? '!' : t))
         .join('');
 
 function showSpans(orig: string, x = false) {
