@@ -18,18 +18,25 @@ export type TextCtx = {
     layouts: LayoutCtx['layouts'];
     color?: boolean;
     annotateNewlines?: boolean;
-    sourceMap: SourceMap;
+    top: string;
+    // sourceMap: SourceMap;
 };
 
 export type BlockSource =
-    | { type: 'text'; loc: number; index: number }
+    | { type: 'text'; loc: number; index: number; top: string }
     | {
           type: 'control';
           loc: number;
           index: number;
           control: Control;
+          top: string;
       }
-    | { type: 'cursor'; loc: number; side: 'start' | 'inside' | 'end' };
+    | {
+          type: 'cursor';
+          loc: number;
+          side: 'start' | 'inside' | 'end';
+          top: string;
+      };
 
 export type Block =
     | {
@@ -116,7 +123,7 @@ export const inlineSize = (
     return { width, height, last, positions };
 };
 
-const vblock = (contents: Block[], style?: Style): Block => {
+export const vblock = (contents: Block[], style?: Style): Block => {
     return {
         type: 'block',
         horizontal: false,
@@ -127,7 +134,11 @@ const vblock = (contents: Block[], style?: Style): Block => {
     };
 };
 
-const hblock = (items: Block[], style?: Style, spaced?: boolean): Block => {
+export const hblock = (
+    items: Block[],
+    style?: Style,
+    spaced?: boolean,
+): Block => {
     const height = items.map((l) => l.height).reduce((a, b) => Math.max(a, b));
     let width = items.map((l) => l.width).reduce((a, b) => a + b);
     if (spaced) {
@@ -144,7 +155,11 @@ const hblock = (items: Block[], style?: Style, spaced?: boolean): Block => {
     };
 };
 
-const line = (text: string, source?: BlockSource, style?: Style): Block => {
+export const line = (
+    text: string,
+    source?: BlockSource,
+    style?: Style,
+): Block => {
     const w = splitGraphemes(text).length;
     return {
         type: 'inline',
@@ -180,7 +195,12 @@ export const irToBlock = (
             return irToBlock(irs[ir.loc], irs, choices, sub, ctx);
         }
         case 'cursor':
-            return line('', { type: 'cursor', loc: ir.loc, side: ir.side });
+            return line('', {
+                type: 'cursor',
+                loc: ir.loc,
+                side: ir.side,
+                top: ctx.top,
+            });
 
         case 'control':
             const source: BlockSource = {
@@ -188,6 +208,7 @@ export const irToBlock = (
                 control: ir.control,
                 index: ir.index,
                 loc: ir.loc,
+                top: ctx.top,
             };
             switch (ir.control.type) {
                 case 'check':
@@ -252,6 +273,7 @@ export const irToBlock = (
             const wrap = ir.wrap != null ? choices[ir.wrap.id] : null;
             if (ir.wrap && wrap?.type === 'hwrap') {
                 const lines: Block[][] = [];
+                const indent = ir.wrap.indent;
                 ir.items.forEach((item, i) => {
                     if (wrap.groups.includes(i)) {
                         if (indent) {
@@ -263,7 +285,6 @@ export const irToBlock = (
                     const last = lines[lines.length - 1];
                     last.push(irToBlock(item, irs, choices, selection, ctx));
                 });
-                const indent = ir.wrap.indent;
                 const blocks: Block[] = [];
                 lines.forEach((line, i) => {
                     blocks.push(hblock(line, undefined, ir.spaced));
@@ -284,7 +305,12 @@ export const irToBlock = (
             if (ir.wrap == null) {
                 return line(
                     ir.text,
-                    { type: 'text', index: ir.index, loc: ir.loc },
+                    {
+                        type: 'text',
+                        index: ir.index,
+                        loc: ir.loc,
+                        top: ctx.top,
+                    },
                     ir.style,
                 );
             }
@@ -317,7 +343,12 @@ export const irToBlock = (
                     contents: pieces.join('\n'),
                     first: splitGraphemes(pieces[0]).length,
                     last: splitGraphemes(pieces[pieces.length - 1]).length,
-                    source: { type: 'text', index: ir.index, loc: ir.loc },
+                    source: {
+                        type: 'text',
+                        index: ir.index,
+                        loc: ir.loc,
+                        top: ctx.top,
+                    },
                     height: pieces.length,
                     style: ir.style,
                     width: maxWidth,
@@ -325,7 +356,7 @@ export const irToBlock = (
             }
             return line(
                 ir.text,
-                { type: 'text', index: ir.index, loc: ir.loc },
+                { type: 'text', index: ir.index, loc: ir.loc, top: ctx.top },
                 ir.style,
             );
         }

@@ -9,7 +9,7 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { irToText, joinChunks, maxLength } from '../../shared/IR/ir-to-text';
 import { irToBlock } from './ir-to-blocks';
 import { BlockEntry, blockToText } from './block-to-text';
-import { underlineText } from './format';
+import { highlightSpan } from './highlightSpan';
 
 const textLayout = (text: string, firstLine: number, style?: Style) => {
     const lines = text.split('\n');
@@ -58,7 +58,7 @@ const processNode = (data: RecNode, maxWidth = 30, leftWidth = 20) => {
         space: ',',
         layouts: ctx.layouts,
         annotateNewlines: true,
-        sourceMap: {},
+        top: '',
     });
     const sourceMap: BlockEntry[] = [];
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, sourceMap);
@@ -85,59 +85,6 @@ const trimTrailingWhite = (txt: string) =>
         .split('\n')
         .map((t) => t.trimEnd())
         .join('\n');
-
-const highlightSpan = (text: string, span: BlockEntry['shape']) => {
-    const lines = text.split('\n');
-    if (span.type === 'block') {
-        return lines
-            .map((line, i) => {
-                if (
-                    i >= span.start[1] &&
-                    i <= span.start[1] + span.height - 1
-                ) {
-                    const chars = splitGraphemes(line);
-                    if (span.width === 0 && span.height === 1) {
-                        return (
-                            chars.slice(0, span.start[0]).join('') +
-                            '|' +
-                            chars.slice(span.start[0]).join('')
-                        );
-                    }
-                    return (
-                        chars.slice(0, span.start[0]).join('') +
-                        underlineText(
-                            chars
-                                .slice(
-                                    span.start[0],
-                                    span.start[0] + span.width,
-                                )
-                                .join(''),
-                        ) +
-                        chars.slice(span.start[0] + span.width).join('')
-                    );
-                }
-                return line;
-            })
-            .join('\n');
-    }
-    return lines
-        .map((line, i) => {
-            if (i >= span.start[1] && i <= span.end[1]) {
-                const chars = splitGraphemes(line);
-                const start =
-                    i === span.start[1] ? span.start[0] : span.hbounds[0];
-                const end = i === span.end[1] ? span.end[0] : span.hbounds[1];
-                // if (start > end) return line;
-                return (
-                    chars.slice(0, start).join('') +
-                    underlineText(chars.slice(start, end).join('')) +
-                    chars.slice(end).join('')
-                );
-            }
-            return line;
-        })
-        .join('\n');
-};
 
 test('showing spans of simple string', () => {
     expect('\n' + showSpans('"hi"')).toMatchSnapshot();

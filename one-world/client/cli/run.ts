@@ -9,6 +9,16 @@ import { parse } from '../../boot-ex/format';
 import { Control, IR, nodeToIR } from '../../shared/IR/intermediate';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { LayoutChoices, LayoutCtx, layoutIR } from '../../shared/IR/layout';
+import {
+    Block,
+    BlockSource,
+    hblock,
+    irToBlock,
+    line,
+    vblock,
+} from '../../shared/IR/ir-to-blocks';
+import { BlockEntry, blockToText } from '../../shared/IR/block-to-text';
+import { highlightSpan, matchesSpan } from '../../shared/IR/highlightSpan';
 
 process.stdout.write('\x1b[6 q');
 
@@ -129,29 +139,19 @@ const pickDocument = (store: Store, term: termkit.Terminal) => {
 // @ts-ignore
 global.localStorage = {};
 
-const drawDocNode = (
-    id: number,
-    doc: Doc,
-    state: PersistedState,
-    sourceMaps: Record<string, SourceMap>,
-): string => {
-    let res = '';
+const drawDocNode = (id: number, doc: Doc, state: PersistedState): Block => {
     const node = doc.nodes[id];
+    let top: Block | null = null;
     if (id !== 0) {
-        const tres = drawToplevel(node.toplevel, doc, state);
-        sourceMaps[id] = tres.sourceMap;
-        res = tres.txt;
+        top = drawToplevel(node.toplevel, doc, state);
     }
     if (node.children.length) {
-        const children = node.children
-            .map((id) => drawDocNode(id, doc, state, sourceMaps))
-            .join('\n--\n');
-        if (id === 0) return children;
-        const space = white(4);
-        res += '\n' + space + children.replaceAll('\n', '\n' + space);
+        const children = node.children.map((id) => drawDocNode(id, doc, state));
+        if (top == null) return vblock(children);
+        return vblock([top, hblock([line(white(4)), vblock(children)])]);
     }
 
-    return res;
+    return top!;
 };
 
 const textLayout = (text: string, firstLine: number, style?: Style) => {
@@ -176,6 +176,7 @@ const controlLayout = (control: Control) => {
     return { height: 1, inlineHeight: 1, inlineWidth: w, maxWidth: w };
 };
 
+type Pos = { x: number; y: number };
 const drawToplevel = (id: string, doc: Doc, state: PersistedState) => {
     const top = state.toplevels[id];
     const recNode = fromMap(top.id, top.root, top.nodes);
@@ -198,15 +199,19 @@ const drawToplevel = (id: string, doc: Doc, state: PersistedState) => {
     const choices: LayoutChoices = {};
     const result = layoutIR(0, 0, irs[top.root], choices, ctx);
     ctx.layouts[top.root] = { choices, result };
-    const sourceMap: SourceMap = {};
-    const txt = irToText(irs[top.root], irs, choices, null, {
+    const block = irToBlock(irs[top.root], irs, choices, null, {
         layouts: ctx.layouts,
         space: ' ',
         color: true,
-        sourceMap,
+        top: id,
     });
 
-    return { txt, sourceMap };
+    return block;
+};
+
+const resolve = (state: PersistedState, source: BlockSource) => {
+    const top = state.toplevels[source.top];
+    return top.nodes[source.loc];
 };
 
 const run = async (term: termkit.Terminal) => {
@@ -214,7 +219,7 @@ const run = async (term: termkit.Terminal) => {
     const sess = readSess();
     const store = await init(sess);
     term.clear();
-    term.grabInput(true);
+    term.grabInput({ mouse: 'button' });
 
     if (!sess.doc) {
         sess.doc = await pickDocument(store, term);
@@ -225,22 +230,55 @@ const run = async (term: termkit.Terminal) => {
 
     const doc = store.getState().documents[sess.doc];
 
-    const sourceMaps: Record<string, SourceMap> = {};
+    const sourceMaps: BlockEntry[] = [];
 
-    const text =
-        drawDocNode(0, doc, store.getState(), sourceMaps) +
-        '\n' +
-        JSON.stringify(ds.selections);
+    const block = drawDocNode(0, doc, store.getState());
+    const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, sourceMaps);
 
-    term.moveTo(0, 10, text);
+    const text = txt + '\n' + JSON.stringify(ds.selections);
+
+    term.moveTo(0, 2, text);
 
     term.on('key', (key: string) => {
         if (key === 'ESCAPE') {
             return process.exit(0);
         }
         term.clear();
-        term.moveTo(0, 10, text);
+        term.moveTo(0, 2, text);
         term.moveTo(0, 0, 'The key ' + key);
+    });
+    term.on('mouse', (one: string, evt: { x: number; y: number }) => {
+        if (one !== 'MOUSE_LEFT_BUTTON_PRESSED') return;
+        const found = sourceMaps.find((m) =>
+            matchesSpan(evt.x - 1, evt.y - 2, m.shape),
+        );
+        if (found) {
+            term.clear();
+            term.moveTo(0, 2, highlightSpan(text, found.shape));
+            term.moveTo(
+                0,
+                10,
+                `The mouse ${one} ${JSON.stringify(
+                    found.shape,
+                )}\n${JSON.stringify(
+                    resolve(store.getState(), found.source),
+                )}\n${evt.x},${evt.y}`,
+            );
+        } else {
+            term.clear();
+            let res = text;
+            // sourceMaps.forEach((which) => {
+            //     res = highlightSpan(res, which.shape);
+            // });
+            term.moveTo(0, 2, res);
+            term.moveTo(
+                0,
+                10,
+                `The mouse ${one} ${JSON.stringify(evt)} count:${
+                    sourceMaps.length
+                }\nMouse ${evt.x},${evt.y}`,
+            );
+        }
     });
 
     // // let iv;
