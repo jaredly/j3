@@ -502,23 +502,18 @@ export const nodeToIR = (
                                             type: 'horiz',
                                             items: [
                                                 { type: 'punct', text: '${' },
+                                                // {
+                                                //     type: 'horiz',
+                                                //     items: [
                                                 {
-                                                    type: 'horiz',
-                                                    items: [
-                                                        {
-                                                            type: 'loc',
-                                                            loc: t.expr,
-                                                        },
-                                                    ],
-                                                    style: {
-                                                        background: false,
-                                                        // {
-                                                        //     r: 0,
-                                                        //     g: 0,
-                                                        //     b: 0,
-                                                        // },
-                                                    },
+                                                    type: 'loc',
+                                                    loc: t.expr,
                                                 },
+                                                //     ],
+                                                //     style: {
+                                                //         background: false,
+                                                //     },
+                                                // },
                                                 { type: 'punct', text: '}' },
                                             ],
                                         },

@@ -16,6 +16,12 @@ I Think ... ir-to-blocks is ready?
 So the whole idea is, that Blocks will allow me to calculate screen positions of elements.
 
 
+BUG: `"${what is)}"` - the cursor for the suffix of the template ends up in the wrong place.
+One char too late. Why is tha?
+
+FIX THE (first) calculations for inlines.
+
+
 
 
 # Ok so more storyyy

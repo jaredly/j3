@@ -132,7 +132,7 @@ export const hblock = (
     const height = items.map((l) => l.height).reduce((a, b) => Math.max(a, b));
     let width = items.map((l) => l.width).reduce((a, b) => a + b);
     if (spaced) {
-        width += line.length - 1;
+        width += items.length - 1;
     }
 
     return {
@@ -252,6 +252,7 @@ export const irToBlock = (
             return {
                 type: 'inline',
                 contents: chunks,
+                // STOPSHIP this first calculation is wrong!!!
                 first: first.type === 'inline' ? first.first : 0,
                 last,
                 width,
@@ -266,7 +267,7 @@ export const irToBlock = (
                 const indent = ir.wrap.indent;
                 ir.items.forEach((item, i) => {
                     if (wrap.groups.includes(i)) {
-                        if (indent) {
+                        if (i > 0 && indent) {
                             lines.push([line(white(indent))]);
                         } else {
                             lines.push([]);
@@ -331,6 +332,7 @@ export const irToBlock = (
                 return {
                     type: 'inline',
                     contents: pieces.join('\n'),
+                    // STOPSHIP: This (first) calculation is off I'm pretty sure.
                     first: splitGraphemes(pieces[0]).length,
                     last: splitGraphemes(pieces[pieces.length - 1]).length,
                     source: {

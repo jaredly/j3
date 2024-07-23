@@ -194,6 +194,417 @@ exports[`showing spans of string with inclusion 2`] = `
 
 exports[`wow ok so bigbug here 1`] = `
 "
+(what is)
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(what is)
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+(w̲h̲a̲t̲ is)
+[ # ] {"type":"block","start":[6,0],"width":2,"height":1}
+(what i̲s̲)
+[ # ] {"type":"block","start":[9,0],"width":0,"height":1}
+(what is)|
+"
+`;
+
+exports[`wow ok so bigbug here 2`] = `
+"
+"!{(what is)}"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"!{(what is)}"
+[ # ] {"type":"block","start":[1,0],"width":0,"height":1}
+"|!{(what is)}"
+[ # ] {"type":"block","start":[3,0],"width":0,"height":1}
+"!{|(what is)}"
+[ # ] {"type":"block","start":[4,0],"width":4,"height":1}
+"!{(w̲h̲a̲t̲ is)}"
+[ # ] {"type":"block","start":[9,0],"width":2,"height":1}
+"!{(what i̲s̲)}"
+[ # ] {"type":"block","start":[12,0],"width":0,"height":1}
+"!{(what is)|}"
+[ # ] {"type":"block","start":[13,0],"width":0,"height":1}
+"!{(what is)}|"
+[ # ] {"type":"block","start":[14,0],"width":0,"height":1}
+"!{(what is)}"|
+"
+`;
+
+exports[`wow ok so bigbug here 3`] = `
+"
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P{} sdfb"
+
+[ # ] {"type":"block","start":[0,0],"width":2,"height":1}
+j̲s̲"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[3,0],"width":7,"height":1}
+js"s̲d̲f̲g̲s̲a̲d̲!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[12,0],"width":4,"height":1}
+js"sdfgsad!{w̲h̲a̲t̲}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[17,0],"width":12,"height":1}
+js"sdfgsad!{what}a̲s̲d̲f̲j̲k̲l̲j̲s̲d̲f̲k̲!{(loveit and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[31,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{|(loveit and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[32,0],"width":6,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(l̲o̲v̲e̲i̲t̲ and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[39,0],"width":8,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit a̲n̲d̲-̲w̲h̲a̲t̲"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[48,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"|!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[50,0],"width":3,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{f̲o̲r̲}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[54,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}|" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[55,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}"| -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[56,0],"width":5,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -̲w̲h̲a̲t̲ you)}P{} sdfb"
+[ # ] {"type":"block","start":[62,0],"width":3,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what y̲o̲u̲)}P{} sdfb"
+[ # ] {"type":"block","start":[66,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)|}P{} sdfb"
+[ # ] {"type":"block","start":[67,0],"width":8,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P̲{̲}̲ ̲s̲d̲f̲b̲"
+[ # ] {"type":"block","start":[76,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P{} sdfb"|
+"
+`;
+
+exports[`wow ok so bigbug here 4`] = `
+"
+"!{(lov     }  "
+       -sss)NNN
+
+17x2[0x1T-17x2[1x1T-15x2(0x1T|12x2[2x1T-9x2[4x1[4x1[0x1T-1x1T-3x1T]]|9x1[3x1T-5x1[4x1T-1x1[1x1T-0x1T]]]]-1x1T]|3x1T)-1x1[1x1T-0x1T]]]
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"!{(lov     }  "
+       -sss)NNN
+[ # ] {"type":"block","start":[1,0],"width":0,"height":1}
+"|!{(lov     }  "
+       -sss)NNN
+[ # ] {"type":"block","start":[3,0],"width":0,"height":1}
+"!{|(lov     }  "
+       -sss)NNN
+[ # ] {"type":"block","start":[4,0],"width":3,"height":1}
+"!{(l̲o̲v̲     }  "
+       -sss)NNN
+[ # ] {"type":"block","start":[7,1],"width":4,"height":1}
+"!{(lov     }  "
+       -̲s̲s̲s̲)NNN
+[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
+"!{(lov     }  "
+       -sss)|NNN
+[ # ] {"type":"block","start":[13,1],"width":3,"height":1}
+"!{(lov     }  "
+       -sss)NN̲N̲
+[ # ] {"type":"block","start":[17,0],"width":0,"height":1}
+"!{(lov     }  "|
+       -sss)NNN
+{
+  "type": "block",
+  "contents": [
+    {
+      "type": "inline",
+      "contents": "",
+      "width": 0,
+      "first": 0,
+      "last": 0,
+      "height": 1,
+      "source": {
+        "type": "text",
+        "index": 0,
+        "loc": 9,
+        "top": ""
+      },
+      "style": {
+        "color": {
+          "r": 27,
+          "g": 158,
+          "b": 119
+        }
+      }
+    },
+    {
+      "type": "block",
+      "contents": [
+        {
+          "type": "inline",
+          "contents": "\"",
+          "width": 1,
+          "first": 1,
+          "last": 1,
+          "height": 1
+        },
+        {
+          "type": "inline",
+          "contents": [
+            [
+              {
+                "type": "inline",
+                "contents": "",
+                "width": 0,
+                "first": 0,
+                "last": 0,
+                "height": 1,
+                "source": {
+                  "type": "text",
+                  "index": 0,
+                  "loc": 0,
+                  "top": ""
+                },
+                "style": {
+                  "color": {
+                    "r": 100,
+                    "g": 100,
+                    "b": 0
+                  }
+                }
+              },
+              {
+                "type": "block",
+                "contents": [
+                  {
+                    "type": "inline",
+                    "contents": "${",
+                    "width": 2,
+                    "first": 2,
+                    "last": 2,
+                    "height": 1
+                  },
+                  {
+                    "type": "block",
+                    "horizontal": false,
+                    "contents": [
+                      {
+                        "type": "block",
+                        "contents": [
+                          {
+                            "type": "block",
+                            "contents": [
+                              {
+                                "type": "inline",
+                                "contents": "",
+                                "width": 0,
+                                "first": 0,
+                                "last": 0,
+                                "height": 1,
+                                "source": {
+                                  "type": "cursor",
+                                  "loc": 3,
+                                  "side": "start",
+                                  "top": ""
+                                }
+                              },
+                              {
+                                "type": "inline",
+                                "contents": "(",
+                                "width": 1,
+                                "first": 1,
+                                "last": 1,
+                                "height": 1
+                              },
+                              {
+                                "type": "inline",
+                                "contents": "lov",
+                                "width": 3,
+                                "first": 3,
+                                "last": 3,
+                                "height": 1,
+                                "source": {
+                                  "type": "text",
+                                  "index": 0,
+                                  "loc": 4,
+                                  "top": ""
+                                },
+                                "style": {
+                                  "color": {
+                                    "r": 231,
+                                    "g": 41,
+                                    "b": 138
+                                  }
+                                }
+                              }
+                            ],
+                            "height": 1,
+                            "width": 4,
+                            "horizontal": 0
+                          }
+                        ],
+                        "height": 1,
+                        "width": 4,
+                        "horizontal": 1
+                      },
+                      {
+                        "type": "block",
+                        "contents": [
+                          {
+                            "type": "inline",
+                            "contents": "   ",
+                            "width": 3,
+                            "first": 3,
+                            "last": 3,
+                            "height": 1
+                          },
+                          {
+                            "type": "block",
+                            "contents": [
+                              {
+                                "type": "inline",
+                                "contents": "-sss",
+                                "width": 4,
+                                "first": 4,
+                                "last": 4,
+                                "height": 1,
+                                "source": {
+                                  "type": "text",
+                                  "index": 0,
+                                  "loc": 8,
+                                  "top": ""
+                                },
+                                "style": {
+                                  "color": {
+                                    "r": 27,
+                                    "g": 158,
+                                    "b": 119
+                                  }
+                                }
+                              },
+                              {
+                                "type": "block",
+                                "contents": [
+                                  {
+                                    "type": "inline",
+                                    "contents": ")",
+                                    "width": 1,
+                                    "first": 1,
+                                    "last": 1,
+                                    "height": 1
+                                  },
+                                  {
+                                    "type": "inline",
+                                    "contents": "",
+                                    "width": 0,
+                                    "first": 0,
+                                    "last": 0,
+                                    "height": 1,
+                                    "source": {
+                                      "type": "cursor",
+                                      "loc": 3,
+                                      "side": "end",
+                                      "top": ""
+                                    }
+                                  }
+                                ],
+                                "height": 1,
+                                "width": 1,
+                                "horizontal": 0
+                              }
+                            ],
+                            "height": 1,
+                            "width": 5,
+                            "horizontal": 0
+                          }
+                        ],
+                        "height": 1,
+                        "width": 9,
+                        "horizontal": 1
+                      }
+                    ],
+                    "height": 2,
+                    "width": 9
+                  },
+                  {
+                    "type": "inline",
+                    "contents": "}",
+                    "width": 1,
+                    "first": 1,
+                    "last": 1,
+                    "height": 1
+                  }
+                ],
+                "height": 2,
+                "width": 12,
+                "horizontal": 0
+              },
+              {
+                "type": "inline",
+                "contents": "NNN",
+                "width": 3,
+                "first": 3,
+                "last": 3,
+                "height": 1,
+                "source": {
+                  "type": "text",
+                  "index": 1,
+                  "loc": 0,
+                  "top": ""
+                },
+                "style": {
+                  "color": {
+                    "r": 100,
+                    "g": 100,
+                    "b": 0
+                  }
+                }
+              }
+            ]
+          ],
+          "first": 0,
+          "last": 15,
+          "width": 15,
+          "height": 2
+        },
+        {
+          "type": "block",
+          "contents": [
+            {
+              "type": "inline",
+              "contents": "\"",
+              "width": 1,
+              "first": 1,
+              "last": 1,
+              "height": 1
+            },
+            {
+              "type": "inline",
+              "contents": "",
+              "width": 0,
+              "first": 0,
+              "last": 0,
+              "height": 1,
+              "source": {
+                "type": "cursor",
+                "loc": 0,
+                "side": "end",
+                "top": ""
+              }
+            }
+          ],
+          "height": 1,
+          "width": 1,
+          "horizontal": 0
+        }
+      ],
+      "height": 2,
+      "width": 17,
+      "horizontal": 0,
+      "style": {
+        "background": {
+          "r": 50,
+          "g": 50,
+          "b": 0
+        }
+      }
+    }
+  ],
+  "height": 2,
+  "width": 17,
+  "horizontal": 0
+}"
+`;
+
+exports[`wow ok so bigbug here 5`] = `
+"
 nnnnnnnn"!{lol}"
 
 [ # ] {"type":"block","start":[0,0],"width":8,"height":1}
@@ -209,7 +620,7 @@ nnnnnnnn"!{lol}"|
 "
 `;
 
-exports[`wow ok so bigbug here 2`] = `
+exports[`wow ok so bigbug here 6`] = `
 "
 nnnnnnnnnnnnnnnnn"!{lol}"
 

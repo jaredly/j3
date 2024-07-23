@@ -19,6 +19,14 @@ export type BlockEntry = {
           };
 };
 
+const applyX0 = (text: string, x0: number) => {
+    if (x0 === 0) return text;
+    const lines = text.split('\n');
+    if (lines.length === 1) return text;
+    const indent = white(x0);
+    return [lines[0], ...lines.slice(1).map((l) => indent + l)].join('\n');
+};
+
 export const blockToText = (
     pos: { x: number; y: number; x0: number },
     block: Block,
@@ -28,29 +36,39 @@ export const blockToText = (
         case 'block': {
             if (block.horizontal !== false) {
                 let x = pos.x;
-                const chunks = block.contents.map((m) => {
+                const chunks = block.contents.map((m, i) => {
                     const res = blockToText({ ...pos, x, x0: x }, m, sourceMap);
-                    x += m.width + (block.horizontal as number);
+                    x +=
+                        m.width +
+                        (i < block.contents.length - 1
+                            ? (block.horizontal as number)
+                            : 0);
                     return res;
                 });
                 if (block.horizontal > 0) {
                     addSpaces(chunks, 'all', white(block.horizontal));
                 }
-                return blockFormat(joinChunks(chunks), block.style);
+                return blockFormat(
+                    applyX0(joinChunks(chunks), pos.x - pos.x0),
+                    block.style,
+                );
             }
             let y = pos.y;
             return blockFormat(
-                block.contents
-                    .map((m) => {
-                        const res = blockToText(
-                            { ...pos, y, x0: pos.x },
-                            m,
-                            sourceMap,
-                        );
-                        y += m.height;
-                        return res;
-                    })
-                    .join('\n'),
+                applyX0(
+                    block.contents
+                        .map((m) => {
+                            const res = blockToText(
+                                { ...pos, y, x0: pos.x },
+                                m,
+                                sourceMap,
+                            );
+                            y += m.height;
+                            return res;
+                        })
+                        .join('\n'),
+                    pos.x - pos.x0,
+                ),
                 block.style,
             );
         }

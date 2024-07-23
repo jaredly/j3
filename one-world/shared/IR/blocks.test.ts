@@ -7,7 +7,7 @@ import { Control, IR, nodeToIR } from '../../shared/IR/intermediate';
 import { LayoutChoices, LayoutCtx, layoutIR } from '../../shared/IR/layout';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { irToText, joinChunks, maxLength } from '../../shared/IR/ir-to-text';
-import { irToBlock } from './ir-to-blocks';
+import { Block, irToBlock } from './ir-to-blocks';
 import { BlockEntry, blockToText } from './block-to-text';
 import { highlightSpan } from './highlightSpan';
 
@@ -143,14 +143,29 @@ test('showing spans of string with inclusion', () => {
 //     ).toMatchSnapshot();
 // });
 
-// test('wow ok so bigbug here', () => {
-//     expect(
-//         '\n' +
-//             showSpans(
-//                 'js"sdfgsad${what}asdfjkljsdfk${(loveit and-what"${for}" -what you)}P{} sdfb"',
-//             ),
-//     ).toMatchSnapshot();
-// });
+test('wow ok so bigbug here', () => {
+    expect(
+        '\n' + showSpans('(what is)', 100).replaceAll('$', '!'),
+    ).toMatchSnapshot();
+});
+
+test('wow ok so bigbug here', () => {
+    expect(
+        '\n' + showSpans('"${(what is)}"', 100).replaceAll('$', '!'),
+    ).toMatchSnapshot();
+});
+
+test('wow ok so bigbug here', () => {
+    expect(
+        '\n' +
+            showSpans(
+                'js"sdfgsad${what}asdfjkljsdfk${(loveit and-what"${for}" -what you)}P{} sdfb"',
+                100,
+            ),
+    ).toMatchSnapshot();
+    debugger;
+    expect('\n' + showSpans('"${(lov -sss)}NNN"', 10, true)).toMatchSnapshot();
+});
 
 test('wow ok so bigbug here', () => {
     // debugger;
@@ -172,10 +187,35 @@ const fixDollar = (txt: string) =>
         .map((t) => (t === '$' ? '!' : t))
         .join('');
 
-function showSpans(orig: string, x = false) {
+const blockInfo = (block: Block): string => {
+    let res = `${block.width}x${block.height}`;
+    if (block.type === 'inline') {
+        if (typeof block.contents === 'string') {
+            res += 'T';
+        } else {
+            res += `(${block.contents
+                .map((line) => line.map(blockInfo).join('|'))
+                .join('↩')})`;
+        }
+    } else if (block.type === 'block') {
+        res += `[${block.contents
+            .map(blockInfo)
+            .join(block.horizontal === false ? '|' : '-')}]`;
+    } else {
+        res += '[||]';
+    }
+    return res;
+};
+
+function showSpans(orig: string, width = 20, x = false) {
     let res = '';
-    const { txt, block, sourceMap } = process(orig, 20);
+    const { txt, block, sourceMap } = process(orig, width);
     res += fixDollar(txt) + '\n\n';
+
+    if (x) {
+        res += blockInfo(block) + '\n\n';
+    }
+
     sourceMap.forEach((item) => {
         res += `[ # ] ` + JSON.stringify(item.shape) + '\n';
         res += fixDollar(highlightSpan(txt, item.shape)) + '\n';
