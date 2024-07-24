@@ -130,7 +130,7 @@ export const layoutIR = (
                     if (
                         res.inlineWidth + x > ctx.maxWidth &&
                         seg.isWordLike &&
-                        (lines[lines.length - 1] != '' || firstLine != 0)
+                        lines[lines.length - 1] != ''
                     ) {
                         wraps.push(index);
                         lines.push(seg.segment);
@@ -174,8 +174,7 @@ export const layoutIR = (
                 if (
                     i > 0 &&
                     maxWidth > 0 &&
-                    item.type !== 'inline' &&
-                    (item.type !== 'text' || item.wrap == null) &&
+                    next.maxWidth > 0 &&
                     x + next.inlineWidth > ctx.maxWidth
                 ) {
                     groups.push(i);
@@ -185,6 +184,7 @@ export const layoutIR = (
                 } else {
                     height += next.height - inlineHeight;
                 }
+                maxWidth = Math.max(maxWidth, next.maxWidth);
                 inlineWidth = next.inlineWidth;
                 inlineHeight = Math.max(next.inlineHeight, inlineHeight);
             });

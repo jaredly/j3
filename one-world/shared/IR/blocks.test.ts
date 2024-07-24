@@ -143,13 +143,13 @@ test('showing spans of string with inclusion', () => {
 //     ).toMatchSnapshot();
 // });
 
-test('wow ok so bigbug here', () => {
+test('simple list', () => {
     expect(
         '\n' + showSpans('(what is)', 100).replaceAll('$', '!'),
     ).toMatchSnapshot();
 });
 
-test('wow ok so bigbug here', () => {
+test('list in inclusion', () => {
     expect(
         '\n' + showSpans('"${(what is)}"', 100).replaceAll('$', '!'),
     ).toMatchSnapshot();
@@ -189,19 +189,18 @@ test('wow ok so bigbug here', () => {
     ).toMatchSnapshot();
 });
 
-test('wow ok so bigbug here', () => {
-    // debugger;
-    // const { txt, block, sourceMap } = process('nnnnnnnnnnnnnnn"${one}"', 20);
-    // expect(
-    //     `\n${txt}\n\n${sourceMap
-    //         .map((m) => JSON.stringify(m.shape))
-    //         .join('\n')}\n\n${JSON.stringify(block, null, 2).replaceAll(
-    //         '$',
-    //         '!',
-    //     )}`,
-    // ).toMatchSnapshot();
+test('template string', () => {
     expect('\n' + showSpans('nnnnnnnn"${lol}"')).toMatchSnapshot();
     expect('\n' + showSpans('nnnnnnnnnnnnnnnnn"${lol}"')).toMatchSnapshot();
+});
+
+test('small inline', () => {
+    let res = [];
+    for (let i = 10; i < 20; i++) {
+        res.push(showSpans('"One ${two} three"', i));
+    }
+    expect('\n' + res.join('\n')).toMatchSnapshot();
+    // expect('\n' + showSpans('nnnnnnnnnnnnnnnnn"${lol}"')).toMatchSnapshot();
 });
 
 const fixDollar = (txt: string) =>
@@ -230,7 +229,7 @@ export const blockInfo = (block: Block): string => {
 };
 
 function showSpans(orig: string, width = 20, x = false) {
-    let res = '';
+    let res = Array(width).join('-') + `| ${width}\n`;
     const { txt, block, sourceMap } = process(orig, width);
     res += trimTrailingWhite(fixDollar(txt)) + '\n\n';
 
