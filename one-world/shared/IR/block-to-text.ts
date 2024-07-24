@@ -112,7 +112,7 @@ export const blockToText = (
                 });
             }
             const style =
-                ctx.highlight && equal(ctx.highlight, block.source)
+                ctx.highlight && ctx.highlight === block.source
                     ? highlightStyle(block.style)
                     : block.style;
             if (typeof block.contents === 'string') {

@@ -5,7 +5,7 @@ import {
     getRainbowHashColor,
     parseHex,
 } from '../../../web/custom/rainbow';
-import { Nodes, Node, Style } from '../nodes';
+import { Nodes, Node, Style, Path } from '../nodes';
 import { ListDisplay, RenderInfo } from '../renderables';
 
 type Format = Style;
@@ -59,8 +59,17 @@ export type IR =
     | { type: 'punct'; text: string; style?: Style }
     | { type: 'cursor'; side: 'start' | 'inside' | 'end'; loc: number };
 
+export type IRSelection = {
+    start: { path: Path; cursor: IRCursor };
+    end?: Path;
+};
+
 export type IRCursor =
-    | { type: 'text'; index: number; cursor: number }
+    | {
+          type: 'text';
+          start?: { index: number; cursor: number };
+          end: { index: number; cursor: number };
+      }
     | { type: 'side'; side: 'start' | 'inside' | 'end' }
     | { type: 'control'; index: number };
 
@@ -473,7 +482,7 @@ export const nodeToIR = (
                     {
                         type: 'horiz',
                         pullLast: true,
-                        style: { background: { r: 50, g: 50, b: 0 } },
+                        style: { background: { r: 35, g: 35, b: 0 } },
                         items: [
                             {
                                 type: 'punct',

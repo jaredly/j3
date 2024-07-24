@@ -1,15 +1,14 @@
 // testingi t up
-import { test, expect } from 'bun:test';
-import { reader } from '../../boot-ex/reader';
+import { expect, test } from 'bun:test';
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { parse } from '../../boot-ex/format';
-import { Nodes, RecNode, Style, toMap } from '../../shared/nodes';
+import { reader } from '../../boot-ex/reader';
 import { Control, IR, nodeToIR } from '../../shared/IR/intermediate';
 import { LayoutChoices, LayoutCtx, layoutIR } from '../../shared/IR/layout';
-import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { irToText, joinChunks, maxLength } from '../../shared/IR/ir-to-text';
-import { Block, irToBlock } from './ir-to-blocks';
+import { Nodes, RecNode, Style, toMap } from '../../shared/nodes';
 import { BlockEntry, blockToText } from './block-to-text';
 import { highlightSpan } from './highlightSpan';
+import { Block, irToBlock } from './ir-to-blocks';
 
 const textLayout = (text: string, firstLine: number, style?: Style) => {
     const lines = text.split('\n');

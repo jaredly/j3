@@ -1,14 +1,10 @@
-import termkit from 'terminal-kit';
-import { newStore } from '../newStore';
-import { Store } from '../StoreContext';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { Doc, PersistedState } from '../../shared/state';
-import { irToText, SourceMap, white } from '../../shared/IR/ir-to-text';
-import { fromMap, Style } from '../../shared/nodes';
-import { parse } from '../../boot-ex/format';
-import { Control, IR, nodeToIR } from '../../shared/IR/intermediate';
+import termkit from 'terminal-kit';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { LayoutChoices, LayoutCtx, layoutIR } from '../../shared/IR/layout';
+import { parse } from '../../boot-ex/format';
+import { BlockEntry, blockToText } from '../../shared/IR/block-to-text';
+import { matchesSpan } from '../../shared/IR/highlightSpan';
+import { Control, IR, nodeToIR } from '../../shared/IR/intermediate';
 import {
     Block,
     BlockSource,
@@ -17,8 +13,12 @@ import {
     line,
     vblock,
 } from '../../shared/IR/ir-to-blocks';
-import { BlockEntry, blockToText } from '../../shared/IR/block-to-text';
-import { highlightSpan, matchesSpan } from '../../shared/IR/highlightSpan';
+import { white } from '../../shared/IR/ir-to-text';
+import { LayoutChoices, LayoutCtx, layoutIR } from '../../shared/IR/layout';
+import { fromMap, Style } from '../../shared/nodes';
+import { Doc, PersistedState } from '../../shared/state';
+import { newStore } from '../newStore';
+import { Store } from '../StoreContext';
 
 process.stdout.write('\x1b[6 q');
 
