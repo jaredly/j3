@@ -1,4 +1,9 @@
 
+# Ok layout
+I thikn wrapping is kinda fine?
+and now I need a way to apply text formatting stuff.
+
+
 # Anddd now
 what if I do a terminal editor? lol
 

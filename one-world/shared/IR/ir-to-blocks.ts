@@ -1,8 +1,9 @@
 // yay
 
+import ansis from 'ansis';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Style } from '../nodes';
-import { applyFormats, blockFormat } from './format';
+// import { applyFormats, blockFormat } from './format';
 import { Control, IR, IRSelection } from './intermediate';
 import {
     addSpaces,
@@ -69,6 +70,9 @@ export type Block =
           last: number; // length of the last line
           height: number; // number of lines
           source?: BlockSource;
+          // NOTE That this won't work with syntax highlighting,
+          // because we need to be able to colorize sub-spans.
+          // but I'll deal w/ that later.
           style?: Style;
       };
 
@@ -153,7 +157,7 @@ export const line = (
     source?: BlockSource,
     style?: Style,
 ): Block => {
-    const w = splitGraphemes(text).length;
+    const w = splitGraphemes(ansis.strip(text)).length;
     return {
         type: 'inline',
         contents: text,
@@ -222,7 +226,7 @@ export const irToBlock = (
             }
 
         case 'punct':
-            return line(applyFormats(ir.text, ir.style, ctx.color));
+            return line(ir.text, undefined, ir.style);
 
         case 'inline': {
             const wrap = choices[ir.wrap];

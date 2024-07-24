@@ -25,7 +25,7 @@ export const joinChunks = (chunks: string[], pullLast = false) => {
             }
         }
         if (i < lined.length - 1) {
-            const lls = group.map(ansis.strip);
+            const lls = group.map(ansis.strip).map(splitGraphemes);
             const ml = maxLength(lls);
             group.forEach((line, i) => {
                 if (lls[i].length < ml) {

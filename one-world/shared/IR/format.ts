@@ -11,7 +11,7 @@ const underline = String.fromCharCode(818);
 
 export const justify = (text: string) => {
     const lines = text.split('\n');
-    const lls = lines.map(ansis.strip);
+    const lls = lines.map(ansis.strip).map(splitGraphemes);
     const max = maxLength(lls);
     return lines
         .map(
@@ -29,8 +29,6 @@ export const blockFormat = (text: string, style?: Style, enable?: boolean) => {
             style.background.g,
             style.background.b,
         )(justify(text));
-        // } else {
-        //     text = ansis.bgBlack(text);
     } else if (style.background === false) {
         // Background Base
         // text = ansis.reset(text);
@@ -64,6 +62,13 @@ export const applyFormats = (text: string, style?: Style, color?: boolean) => {
     }
     if (color && style.color) {
         text = ansis.rgb(style.color.r, style.color.g, style.color.b)(text);
+    }
+    if (color && style.background) {
+        text = ansis.bgRgb(
+            style.background.r,
+            style.background.g,
+            style.background.b,
+        )(text);
     }
     return text;
 };

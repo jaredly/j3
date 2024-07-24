@@ -148,7 +148,6 @@ const drawDocNode = (id: number, doc: Doc, state: PersistedState): Block => {
     }
     if (node.children.length) {
         const children = node.children.map((id) => drawDocNode(id, doc, state));
-        return children[0];
         if (top == null) {
             return children.length === 1 ? children[0] : vblock(children);
         }
@@ -206,7 +205,7 @@ const drawToplevel = (id: string, doc: Doc, state: PersistedState) => {
     const block = irToBlock(irs[top.root], irs, choices, null, {
         layouts: ctx.layouts,
         space: ' ',
-        color: false,
+        color: true,
         top: id,
     });
 
@@ -237,7 +236,10 @@ const run = async (term: termkit.Terminal) => {
     const sourceMaps: BlockEntry[] = [];
 
     const block = drawDocNode(0, doc, store.getState());
-    const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, sourceMaps);
+    const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
+        sourceMaps,
+        color: true,
+    });
 
     const text =
         txt +
@@ -264,13 +266,18 @@ const run = async (term: termkit.Terminal) => {
             matchesSpan(evt.x - 1, evt.y - 2, m.shape),
         );
         if (found) {
+            const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
+                color: true,
+                highlight: found.source,
+            });
+
             term.clear();
-            term.moveTo(0, 2, highlightSpan(text, found.shape));
+            term.moveTo(0, 2, txt);
             term.moveTo(
                 0,
                 10,
                 `The mouse ${evt.x},${evt.y} ${JSON.stringify(
-                    found.shape,
+                    found.source,
                 )}\n${JSON.stringify(
                     resolve(store.getState(), found.source),
                 )}\n${evt.x},${evt.y}`,
