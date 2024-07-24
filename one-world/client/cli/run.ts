@@ -144,10 +144,14 @@ const drawDocNode = (id: number, doc: Doc, state: PersistedState): Block => {
     let top: Block | null = null;
     if (id !== 0) {
         top = drawToplevel(node.toplevel, doc, state);
+        return top;
     }
     if (node.children.length) {
         const children = node.children.map((id) => drawDocNode(id, doc, state));
-        if (top == null) return vblock(children);
+        return children[0];
+        if (top == null) {
+            return children.length === 1 ? children[0] : vblock(children);
+        }
         return vblock([top, hblock([line(white(4)), vblock(children)])]);
     }
 
@@ -202,7 +206,7 @@ const drawToplevel = (id: string, doc: Doc, state: PersistedState) => {
     const block = irToBlock(irs[top.root], irs, choices, null, {
         layouts: ctx.layouts,
         space: ' ',
-        color: true,
+        color: false,
         top: id,
     });
 
