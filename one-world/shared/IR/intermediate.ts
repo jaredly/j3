@@ -5,6 +5,7 @@ import {
     getRainbowHashColor,
     parseHex,
 } from '../../../web/custom/rainbow';
+import { termColors } from '../../client/TextEdit/colors';
 import { Nodes, Node, Style, Path } from '../nodes';
 import { ListDisplay, RenderInfo } from '../renderables';
 
@@ -61,6 +62,10 @@ export type IR =
 
 export type IRSelection = {
     start: { path: Path; cursor: IRCursor };
+    // for multi-node selections.
+    // NOTE that we normalize this so that start & end have the
+    // same parent, before displaying / working with it at all.
+    // but we hang on to the base paths.
     end?: Path;
 };
 
@@ -461,11 +466,13 @@ export const nodeToIR = (
                 type: 'text',
                 text,
                 style:
-                    // styles[node.loc] ?? node.ref
-                    //     ? refStyle
-                    {
-                        color: parseHex(getRainbowHashColor(fasthash(text))),
-                    },
+                    styles[node.loc] ?? node.ref
+                        ? refStyle
+                        : {
+                              color: parseHex(
+                                  getRainbowHashColor(fasthash(text)),
+                              ),
+                          },
                 loc: node.loc,
                 index: 0,
             };
@@ -482,12 +489,12 @@ export const nodeToIR = (
                     {
                         type: 'horiz',
                         pullLast: true,
-                        style: { background: { r: 35, g: 35, b: 0 } },
+                        style: { background: termColors.stringBg },
                         items: [
                             {
                                 type: 'punct',
                                 text: '"',
-                                style: { color: { r: 100, g: 100, b: 0 } },
+                                style: { color: termColors.string },
                             },
                             {
                                 type: 'inline',
