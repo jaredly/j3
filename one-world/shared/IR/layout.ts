@@ -130,7 +130,7 @@ export const layoutIR = (
                     if (
                         res.inlineWidth + x > ctx.maxWidth &&
                         seg.isWordLike &&
-                        lines[lines.length - 1] != ''
+                        (lines[lines.length - 1] != '' || firstLine != 0)
                     ) {
                         wraps.push(index);
                         lines.push(seg.segment);
