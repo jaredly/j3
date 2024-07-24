@@ -202,7 +202,7 @@ const drawToplevel = (id: string, doc: Doc, state: PersistedState) => {
     const choices: LayoutChoices = {};
     const result = layoutIR(0, 0, irs[top.root], choices, ctx);
     ctx.layouts[top.root] = { choices, result };
-    const block = irToBlock(irs[top.root], irs, choices, null, {
+    const block = irToBlock(irs[top.root], irs, choices, {
         layouts: ctx.layouts,
         space: ' ',
         color: true,

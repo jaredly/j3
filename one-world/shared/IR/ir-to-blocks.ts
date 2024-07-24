@@ -4,7 +4,7 @@ import ansis from 'ansis';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Style } from '../nodes';
 // import { applyFormats, blockFormat } from './format';
-import { Control, IR, IRSelection } from './intermediate';
+import { Control, IR, IRCursor } from './intermediate';
 import {
     addSpaces,
     joinChunks,
@@ -174,22 +174,22 @@ export const irToBlock = (
     ir: IR,
     irs: Record<number, IR>,
     choices: LayoutChoices,
-    selection: null | {
-        path: number[];
-        sel: IRSelection;
-        start?: IRSelection;
-        cursorChar: string;
-    },
+    // selection: null | {
+    //     path: number[];
+    //     sel: IRCursor;
+    //     start?: IRCursor;
+    //     cursorChar: string;
+    // },
     ctx: TextCtx,
 ): Block => {
     switch (ir.type) {
         case 'loc': {
             const { choices } = ctx.layouts[ir.loc];
-            const sub =
-                selection?.path[0] === ir.loc
-                    ? { ...selection, path: selection.path.slice(1) }
-                    : null;
-            return irToBlock(irs[ir.loc], irs, choices, sub, ctx);
+            // const sub =
+            //     selection?.path[0] === ir.loc
+            //         ? { ...path: selection.path.slice(1) }
+            //         : null;
+            return irToBlock(irs[ir.loc], irs, choices, ctx);
         }
         case 'cursor':
             return line('', {
@@ -239,7 +239,7 @@ export const irToBlock = (
                     chunks.push([]);
                 }
                 const last = chunks[chunks.length - 1];
-                last.push(irToBlock(item, irs, choices, selection, ctx));
+                last.push(irToBlock(item, irs, choices, ctx));
             });
 
             const first = chunks[0][0];
@@ -281,7 +281,7 @@ export const irToBlock = (
                         }
                     }
                     const last = lines[lines.length - 1];
-                    last.push(irToBlock(item, irs, choices, selection, ctx));
+                    last.push(irToBlock(item, irs, choices, ctx));
                 });
                 const blocks: Block[] = [];
                 lines.forEach((line, i) => {
@@ -291,14 +291,14 @@ export const irToBlock = (
                 return vblock(blocks, ir.style);
             }
             const chunks = ir.items.map((item) =>
-                irToBlock(item, irs, choices, selection, ctx),
+                irToBlock(item, irs, choices, ctx),
             );
             return hblock(chunks, ir.style, ir.spaced, ir.pullLast);
         case 'indent':
-            const block = irToBlock(ir.item, irs, choices, selection, ctx);
+            const block = irToBlock(ir.item, irs, choices, ctx);
             return hblock([line(white(ir.amount ?? 2)), block]);
         case 'squish':
-            return irToBlock(ir.item, irs, choices, selection, ctx);
+            return irToBlock(ir.item, irs, choices, ctx);
         case 'text': {
             if (ir.wrap == null) {
                 return line(
@@ -364,13 +364,7 @@ export const irToBlock = (
             if (choice?.type !== 'switch') {
                 throw new Error(`switch not resolved ${ir.id}`);
             }
-            return irToBlock(
-                ir.options[choice.which],
-                irs,
-                choices,
-                selection,
-                ctx,
-            );
+            return irToBlock(ir.options[choice.which], irs, choices, ctx);
         case 'vert':
             if (ir.pairs) {
                 // ok I'm gonna say, if it's pairs, it's all pairs.
@@ -387,7 +381,6 @@ export const irToBlock = (
                             item.items[0],
                             irs,
                             choices,
-                            selection,
                             ctx,
                         );
                         leftWidth = Math.max(leftWidth, left.width);
@@ -395,19 +388,12 @@ export const irToBlock = (
                             item.items[1],
                             irs,
                             choices,
-                            selection,
                             ctx,
                         );
                         pairs.push({ type: 'pair', left, right });
                         height += Math.max(left.height, right.height);
                     } else {
-                        const block = irToBlock(
-                            item,
-                            irs,
-                            choices,
-                            selection,
-                            ctx,
-                        );
+                        const block = irToBlock(item, irs, choices, ctx);
                         pairs.push({ type: 'other', item: block });
                         height += block.height;
                         width = Math.max(width, block.width);
@@ -432,7 +418,7 @@ export const irToBlock = (
             }
 
             const contents = ir.items.map((item) =>
-                irToBlock(item, irs, choices, selection, ctx),
+                irToBlock(item, irs, choices, ctx),
             );
             return {
                 type: 'block',

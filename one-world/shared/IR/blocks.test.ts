@@ -54,14 +54,17 @@ const processNode = (data: RecNode, maxWidth = 30, leftWidth = 20) => {
     const choices: LayoutChoices = {};
     const result = layoutIR(0, 0, irs[root], choices, ctx);
     ctx.layouts[root] = { choices, result };
-    const block = irToBlock(irs[root], irs, choices, null, {
+    const block = irToBlock(irs[root], irs, choices, {
         space: ',',
         layouts: ctx.layouts,
         annotateNewlines: true,
         top: '',
     });
     const sourceMap: BlockEntry[] = [];
-    const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, sourceMap);
+    const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
+        sourceMaps: sourceMap,
+        color: false,
+    });
     return {
         txt,
         result,

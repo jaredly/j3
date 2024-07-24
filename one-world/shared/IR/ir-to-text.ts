@@ -3,7 +3,7 @@
 import ansis from 'ansis';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Style } from '../nodes';
-import { IR, IRSelection } from './intermediate';
+import { IR, IRCursor } from './intermediate';
 import { LayoutChoices, LayoutCtx } from './layout';
 import { applyFormats, blockFormat } from './format';
 
@@ -84,8 +84,8 @@ export const irToText = (
     choices: LayoutChoices,
     selection: null | {
         path: number[];
-        sel: IRSelection;
-        start?: IRSelection;
+        sel: IRCursor;
+        start?: IRCursor;
         cursorChar: string;
     },
     ctx: TextCtx,

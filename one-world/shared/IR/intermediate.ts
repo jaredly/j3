@@ -59,7 +59,7 @@ export type IR =
     | { type: 'punct'; text: string; style?: Style }
     | { type: 'cursor'; side: 'start' | 'inside' | 'end'; loc: number };
 
-export type IRSelection =
+export type IRCursor =
     | { type: 'text'; index: number; cursor: number }
     | { type: 'side'; side: 'start' | 'inside' | 'end' }
     | { type: 'control'; index: number };
@@ -451,14 +451,12 @@ export const nodeToIR = (
             return {
                 type: 'text',
                 text,
-                // style:
-                //     styles[node.loc] ?? node.ref
-                //         ? refStyle
-                //         : {
-                //               color: parseHex(
-                //                   getRainbowHashColor(fasthash(text)),
-                //               ),
-                //           },
+                style:
+                    // styles[node.loc] ?? node.ref
+                    //     ? refStyle
+                    {
+                        color: parseHex(getRainbowHashColor(fasthash(text))),
+                    },
                 loc: node.loc,
                 index: 0,
             };
