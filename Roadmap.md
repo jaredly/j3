@@ -24,7 +24,8 @@ FIX THE (first) calculations for inlines.
 
 chsing down all the bugs with calculation
 
-I should get pullLast going again
+- [x] I should get pullLast going again
+- [ ] WHY is the trailing " so far out? what is going on
 
 
 

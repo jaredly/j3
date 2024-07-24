@@ -171,6 +171,22 @@ test('wow ok so bigbug here', () => {
             ),
     ).toMatchSnapshot();
     expect('\n' + showSpans('"${(lov -sss)}NNN"', 10)).toMatchSnapshot();
+    expect(
+        '\n' +
+            showSpans(
+                // STOPSHIP:It should be wrapping before the $(loveit
+                // ALSO: The trailing " is way too far out
+                '(What js"${what}asdfaASDJK ${(loveit and-what"${for}" -what you)}P{} sdfb")',
+                10,
+            ),
+    ).toMatchSnapshot();
+    expect(
+        '\n' +
+            showSpans(
+                '(What ok-folks hs "" js"sdfasdf${what}asdfaASDJK${(loveit and-what"${for}" -what you)}P{} sdfb")',
+                50,
+            ),
+    ).toMatchSnapshot();
 });
 
 test('wow ok so bigbug here', () => {
@@ -193,7 +209,7 @@ const fixDollar = (txt: string) =>
         .map((t) => (t === '$' ? '!' : t))
         .join('');
 
-const blockInfo = (block: Block): string => {
+export const blockInfo = (block: Block): string => {
     let res = `${block.width}x${block.height}`;
     if (block.type === 'inline') {
         if (typeof block.contents === 'string') {

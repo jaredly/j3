@@ -393,6 +393,256 @@ exports[`wow ok so bigbug here 5`] = `
 
 exports[`wow ok so bigbug here 6`] = `
 "
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+(W̲h̲a̲t̲
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[4,1],"width":2,"height":1}
+(What
+    j̲s̲"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[7,1],"width":0,"height":1}
+(What
+    js"|!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[9,1],"width":4,"height":1}
+(What
+    js"!{w̲h̲a̲t̲}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[14,1],"width":11,"height":1}
+(What
+    js"!{what}a̲s̲d̲f̲a̲A̲S̲D̲J̲K̲ ̲!{(loveit
+                               and-what"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[27,1],"width":0,"height":1}
+(What
+    js"!{what}asdfaASDJK !{|(loveit
+                               and-what"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[28,1],"width":6,"height":1}
+(What
+    js"!{what}asdfaASDJK !{(l̲o̲v̲e̲i̲t̲
+                               and-what"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[31,2],"width":8,"height":1}
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               a̲n̲d̲-̲w̲h̲a̲t̲"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[40,2],"width":0,"height":1}
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"|!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[42,2],"width":3,"height":1}
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{f̲o̲r̲}"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[46,2],"width":0,"height":1}
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}|"
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[47,2],"width":0,"height":1}
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"|
+                               -what
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[31,3],"width":5,"height":1}
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -̲w̲h̲a̲t̲
+                               you)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[31,4],"width":3,"height":1}
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -what
+                               y̲o̲u̲)            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"block","start":[35,4],"width":0,"height":1}
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -what
+                               you)|            }P{}
+       sdfb                                                       ")
+[ # ] {"type":"inline","start":[48,4],"end":[11,5],"hbounds":[7,52]}
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -what
+                               you)            }P̲{̲}̲ ̲
+       s̲d̲f̲b̲                                                       ")
+[ # ] {"type":"block","start":[53,5],"width":0,"height":1}
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                          |             ")
+[ # ] {"type":"block","start":[54,5],"width":0,"height":1}
+(What
+    js"!{what}asdfaASDJK !{(loveit
+                               and-what"!{for}"
+                               -what
+                               you)            }P{}
+       sdfb                                           |            ")
+"
+`;
+
+exports[`wow ok so bigbug here 7`] = `
+"
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+(W̲h̲a̲t̲ ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[6,0],"width":8,"height":1}
+(What o̲k̲-̲f̲o̲l̲k̲s̲ hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[15,0],"width":2,"height":1}
+(What ok-folks h̲s̲ "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[18,0],"width":0,"height":1}
+(What ok-folks hs |"" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[19,0],"width":0,"height":1}
+(What ok-folks hs "|" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[20,0],"width":0,"height":1}
+(What ok-folks hs ""| js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[21,0],"width":2,"height":1}
+(What ok-folks hs "" j̲s̲"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[24,0],"width":7,"height":1}
+(What ok-folks hs "" js"s̲d̲f̲a̲s̲d̲f̲!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[33,0],"width":4,"height":1}
+(What ok-folks hs "" js"sdfasdf!{w̲h̲a̲t̲}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[38,0],"width":10,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}a̲s̲d̲f̲a̲A̲S̲D̲J̲K̲!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[50,0],"width":0,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{|(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[51,0],"width":6,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(l̲o̲v̲e̲i̲t̲ and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[58,0],"width":8,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit a̲n̲d̲-̲w̲h̲a̲t̲"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[67,0],"width":0,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"|!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[69,0],"width":3,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{f̲o̲r̲}" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[73,0],"width":0,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}|" -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[74,0],"width":0,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}"| -what
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[75,0],"width":5,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -̲w̲h̲a̲t̲
+                                                      you)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[54,1],"width":3,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      y̲o̲u̲)                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"block","start":[58,1],"width":0,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)|                      }P{}
+                        sdfb                                                                             ")
+[ # ] {"type":"inline","start":[81,1],"end":[28,2],"hbounds":[24,85]}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P̲{̲}̲ ̲
+                        s̲d̲f̲b̲                                                                             ")
+[ # ] {"type":"block","start":[86,2],"width":0,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                          |                   ")
+[ # ] {"type":"block","start":[87,2],"width":0,"height":1}
+(What ok-folks hs "" js"sdfasdf!{what}asdfaASDJK!{(loveit and-what"!{for}" -what
+                                                      you)                      }P{}
+                        sdfb                                                           |                  ")
+"
+`;
+
+exports[`wow ok so bigbug here 8`] = `
+"
 nnnnnnnn"!{lol}"
 
 [ # ] {"type":"block","start":[0,0],"width":8,"height":1}
@@ -408,7 +658,7 @@ nnnnnnnn"!{lol}"|
 "
 `;
 
-exports[`wow ok so bigbug here 7`] = `
+exports[`wow ok so bigbug here 9`] = `
 "
 nnnnnnnnnnnnnnnnn"!{lol}"
 

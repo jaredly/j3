@@ -235,7 +235,14 @@ const run = async (term: termkit.Terminal) => {
     const block = drawDocNode(0, doc, store.getState());
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, sourceMaps);
 
-    const text = txt + '\n' + JSON.stringify(ds.selections);
+    const text =
+        txt +
+        '\n' +
+        JSON.stringify(ds.selections) +
+        '\n\n' +
+        sourceMaps.map((m) => m.shape.start.join(',')).join(' ') +
+        '\n\n' +
+        blockInfo(block);
 
     term.moveTo(0, 2, text);
 
@@ -258,7 +265,7 @@ const run = async (term: termkit.Terminal) => {
             term.moveTo(
                 0,
                 10,
-                `The mouse ${one} ${JSON.stringify(
+                `The mouse ${evt.x},${evt.y} ${JSON.stringify(
                     found.shape,
                 )}\n${JSON.stringify(
                     resolve(store.getState(), found.source),
@@ -273,10 +280,8 @@ const run = async (term: termkit.Terminal) => {
             term.moveTo(0, 2, res);
             term.moveTo(
                 0,
-                10,
-                `The mouse ${one} ${JSON.stringify(evt)} count:${
-                    sourceMaps.length
-                }\nMouse ${evt.x},${evt.y}`,
+                20,
+                `The mouse ${one} ${evt.x},${evt.y} count:${sourceMaps.length}\nMouse ${evt.x},${evt.y}`,
             );
         }
     });
@@ -317,6 +322,26 @@ const run = async (term: termkit.Terminal) => {
     //     //     process.exit(1);
     //     // }
     // });
+};
+
+const blockInfo = (block: Block): string => {
+    let res = `${block.width}x${block.height}`;
+    if (block.type === 'inline') {
+        if (typeof block.contents === 'string') {
+            res += 'T';
+        } else {
+            res += `(${block.contents
+                .map((line) => line.map(blockInfo).join('|'))
+                .join('↩')})`;
+        }
+    } else if (block.type === 'block') {
+        res += `[${block.contents
+            .map(blockInfo)
+            .join(block.horizontal === false ? '|' : '-')}]`;
+    } else {
+        res += '[||]';
+    }
+    return res;
 };
 
 term.then((term) => {
