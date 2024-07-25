@@ -2,7 +2,7 @@ import { Style } from '../nodes';
 import { Control, IR } from './intermediate';
 
 // type LayoutCache = Record<number, any>
-type IRForLoc = Record<number, IR>;
+export type IRForLoc = Record<number, IR>;
 
 /*
 

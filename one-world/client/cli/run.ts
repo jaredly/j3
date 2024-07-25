@@ -26,7 +26,7 @@ import { Doc, PersistedState } from '../../shared/state';
 import { newStore } from '../newStore2';
 import { Store } from '../StoreContext2';
 import { colors, termColors } from '../TextEdit/colors';
-import { IRCache, navLeft, navRight } from '../../shared/IR/nav';
+import { goLeftRight, IRCache } from '../../shared/IR/nav';
 
 process.stdout.write('\x1b[6 q');
 
@@ -239,7 +239,7 @@ const drawToplevel = (
     });
 
     const ctx: LayoutCtx = {
-        maxWidth: 10,
+        maxWidth: 50,
         leftWidth: 20,
         irs,
         layouts: {},
@@ -366,6 +366,7 @@ const renderSelection = (
         );
         if (result) {
             // console.log(result);
+            term.moveTo(0, 25, JSON.stringify(sel.start.cursor));
             term.moveTo(result.pos[0] + 1, result.pos[1] + 2);
         } else {
             // console.log(sel.start);
@@ -423,7 +424,7 @@ const run = async (term: termkit.Terminal) => {
             const ds = store.getDocSession(docId, store.session);
             if (ds.selections.length) {
                 const sel = ds.selections[0];
-                const next = navRight(sel, cache);
+                const next = goLeftRight(sel, cache, false);
                 if (next) {
                     store.update({
                         type: 'in-session',
@@ -440,7 +441,7 @@ const run = async (term: termkit.Terminal) => {
             const ds = store.getDocSession(docId, store.session);
             if (ds.selections.length) {
                 const sel = ds.selections[0];
-                const next = navLeft(sel, cache);
+                const next = goLeftRight(sel, cache, true);
                 if (next) {
                     store.update({
                         type: 'in-session',

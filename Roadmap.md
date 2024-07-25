@@ -11,7 +11,10 @@ and now I need a way to apply text formatting stuff.
     - select within a node (start? cursor)
     - multiselect, and maybe I only support siblings.
 - [x] lil dark/light modus
-- [ ] why am I not wrapping right after a horiz
+- [x] why am I not wrapping right after a horiz
+- [x] now to left/right in general between nodes!
+  - yay its so noice
+- [ ] editinggg
 
 
 is BLOCK the right level of granularity?
