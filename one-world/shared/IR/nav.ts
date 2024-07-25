@@ -30,6 +30,37 @@ const irTexts = (ir: IR): Extract<IR, { type: 'text' }>[] => {
     return [];
 };
 
+export const navLeft = (
+    sel: IRSelection,
+    cache: IRCache,
+): IRSelection | void => {
+    if (sel.start.cursor.type === 'text') {
+        const path = sel.start.path;
+        const ir =
+            cache[path.root.toplevel].irs[
+                path.children[path.children.length - 1]
+            ];
+        const texts = irTexts(ir);
+        const text = texts[sel.start.cursor.end.index];
+        if (!text) return console.warn('text w/ index does not exit');
+        const len = splitGraphemes(text.text).length;
+        if (sel.start.cursor.end.cursor > 0) {
+            return {
+                start: {
+                    ...sel.start,
+                    cursor: {
+                        type: 'text',
+                        end: {
+                            index: sel.start.cursor.end.index,
+                            cursor: sel.start.cursor.end.cursor - 1,
+                        },
+                    },
+                },
+            };
+        }
+    }
+};
+
 export const navRight = (
     sel: IRSelection,
     cache: IRCache,

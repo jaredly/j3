@@ -26,7 +26,7 @@ import { Doc, PersistedState } from '../../shared/state';
 import { newStore } from '../newStore2';
 import { Store } from '../StoreContext2';
 import { colors, termColors } from '../TextEdit/colors';
-import { IRCache, navRight } from '../../shared/IR/nav';
+import { IRCache, navLeft, navRight } from '../../shared/IR/nav';
 
 process.stdout.write('\x1b[6 q');
 
@@ -229,7 +229,7 @@ const drawToplevel = (
     });
 
     const ctx: LayoutCtx = {
-        maxWidth: 20,
+        maxWidth: 10,
         leftWidth: 20,
         irs,
         layouts: {},
@@ -267,25 +267,22 @@ const shapeEnd = (shape: BlockEntry['shape']) => {
 const shapeTextIndex = (
     index: number,
     shape: Extract<BlockEntry['shape'], { type: 'inline' }>,
-    // ir: Extract<IR, { type: 'text' }>,
     wraps: number[],
 ) => {
     if (!wraps.length) {
         return [shape.start[0] + index, shape.start[1]];
     }
     // const chars = splitGraphemes(ir.text);
-    for (let i = 1; i < wraps.length; i++) {
+    for (let i = 0; i < wraps.length; i++) {
         if (wraps[i] > index) {
-            const y = shape.start[1] + i - 1;
+            const y = shape.start[1] + i;
             const x =
-                (i === 1 ? shape.start[0] : shape.hbounds[0]) +
-                (index - wraps[i - 1]);
+                (i === 0 ? shape.start[0] : shape.hbounds[0]) +
+                (index - (i === 0 ? 0 : wraps[i - 1]));
             return [x, y];
         }
     }
-    const x =
-        (wraps.length === 1 ? shape.start[0] : shape.hbounds[0]) +
-        (index - wraps[wraps.length - 1]);
+    const x = shape.hbounds[0] + (index - wraps[wraps.length - 1]);
     return [x, shape.end[1]];
 };
 
@@ -293,7 +290,7 @@ export const selectionLocation = (
     sourceMaps: BlockEntry[],
     path: Path,
     cursor: IRCursor,
-    choices: LayoutChoices,
+    // choices: LayoutChoices,
 ) => {
     const loc = path.children[path.children.length - 1];
     for (let source of sourceMaps) {
@@ -303,34 +300,65 @@ export const selectionLocation = (
             case 'control':
                 if (source.source.type !== 'control') continue;
                 if (cursor.index !== source.source.index) continue;
-                return shapeEnd(source.shape);
+                return { source, pos: shapeEnd(source.shape) };
             case 'side':
                 if (source.source.type !== 'cursor') continue;
                 if (source.source.side !== cursor.side) continue;
-                return source.shape.start;
+                return { source, pos: source.shape.start };
             case 'text':
                 if (source.source.type !== 'text') continue;
                 if (source.source.index !== cursor.end.index) continue;
                 // console.log('got to a text', source.shape, cursor.end);
                 // if (source.shape.type !== 'inline') return console.log('sourse shape not inline'); // no good
-                const ch = choices[loc];
-                if (ch && ch.type !== 'text-wrap') return;
+                // const ch = choices[loc];
+                // if (ch && ch.type !== 'text-wrap') return;
                 if (source.shape.type === 'block') {
-                    if (ch) return console.log('wraps for block');
+                    // if (ch) return console.log('wraps for block');
                     if (source.shape.height !== 1)
                         return console.log('height not 1');
                     const [x, y] = source.shape.start;
                     if (isNaN(x)) throw new Error('what shape');
                     if (isNaN(x + cursor.end.cursor))
                         throw new Error('what cursor');
-                    return [x + cursor.end.cursor, y];
+                    return { source, pos: [x + cursor.end.cursor, y] };
                 }
-                return shapeTextIndex(
-                    cursor.end.cursor,
-                    source.shape,
-                    source.source.wraps,
-                    // ch?.splits ?? [],
-                );
+                return {
+                    source,
+                    pos: shapeTextIndex(
+                        cursor.end.cursor,
+                        source.shape,
+                        source.source.wraps,
+                        // ch?.splits ?? [],
+                    ),
+                };
+        }
+    }
+};
+
+const renderSelection = (
+    term: termkit.Terminal,
+    store: Store,
+    docId: string,
+    sourceMaps: BlockEntry[],
+) => {
+    const ds = store.getDocSession(docId, store.session);
+    const doc = store.getState().documents[docId];
+    if (ds.selections.length) {
+        // term.grabInput(false);
+        const sel = ds.selections[0];
+        const path = sel.start.path;
+        const loc = path.children[path.children.length - 1];
+        const result = selectionLocation(
+            sourceMaps,
+            sel.start.path,
+            sel.start.cursor,
+            // cache[sel.start.path.root.toplevel].layouts[loc],
+        );
+        if (result) {
+            // console.log(result);
+            term.moveTo(result.pos[0] + 1, result.pos[1] + 2);
+        } else {
+            // console.log(sel.start);
         }
     }
 };
@@ -347,24 +375,6 @@ const render = (term: termkit.Terminal, store: Store, docId: string) => {
         styles: new Map(),
     });
     term.moveTo(0, 2, txt);
-    if (ds.selections.length) {
-        // term.grabInput(false);
-        const sel = ds.selections[0];
-        const path = sel.start.path;
-        const loc = path.children[path.children.length - 1];
-        const result = selectionLocation(
-            sourceMaps,
-            sel.start.path,
-            sel.start.cursor,
-            cache[sel.start.path.root.toplevel].layouts[loc],
-        );
-        if (result) {
-            console.log(result);
-            term.moveTo(result[0] + 1, result[1] + 2);
-        } else {
-            // console.log(sel.start);
-        }
-    }
     return { cache, sourceMaps };
 };
 
@@ -383,6 +393,7 @@ const run = async (term: termkit.Terminal) => {
     const docId = sess.doc;
 
     let { sourceMaps, cache } = render(term, store, sess.doc);
+    renderSelection(term, store, docId, sourceMaps);
 
     // let sourceMaps: BlockEntry[] = [];
     // let cache: IRCache = {};
@@ -410,10 +421,30 @@ const run = async (term: termkit.Terminal) => {
                         doc: docId,
                         selections: [next],
                     });
+                    renderSelection(term, store, docId, sourceMaps);
+                    return;
+                }
+            }
+        }
+        if (key === 'LEFT') {
+            const ds = store.getDocSession(docId, store.session);
+            if (ds.selections.length) {
+                const sel = ds.selections[0];
+                const next = navLeft(sel, cache);
+                if (next) {
+                    store.update({
+                        type: 'in-session',
+                        action: { type: 'multi', actions: [] },
+                        doc: docId,
+                        selections: [next],
+                    });
+                    renderSelection(term, store, docId, sourceMaps);
+                    return;
                 }
             }
         }
         ({ sourceMaps, cache } = render(term, store, docId));
+        renderSelection(term, store, docId, sourceMaps);
         // term.clear();
         // term.moveTo(0, 2, txt);
         // term.moveTo(0, 10, 'The key ' + key);
@@ -455,7 +486,8 @@ const run = async (term: termkit.Terminal) => {
                 },
             ],
         });
-        ({ sourceMaps, cache } = render(term, store, docId));
+        renderSelection(term, store, docId, sourceMaps);
+        // ({ sourceMaps, cache } = render(term, store, docId));
         // if (found) {
         //     const styles = new Map();
         //     styles.set(found.source, {
