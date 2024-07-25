@@ -61,19 +61,21 @@ export type IR =
     | { type: 'cursor'; side: 'start' | 'inside' | 'end'; loc: number };
 
 export type IRSelection = {
-    start: { path: Path; cursor: IRCursor };
+    start: { path: Path; key: string; cursor: IRCursor };
     // for multi-node selections.
     // NOTE that we normalize this so that start & end have the
     // same parent, before displaying / working with it at all.
     // but we hang on to the base paths.
-    end?: Path;
+    end?: { path: Path; key: string };
+    // IFF end is a /parent/ of /start/, that means we did a
+    // shift-up
 };
 
 export type IRCursor =
     | {
           type: 'text';
           start?: { index: number; cursor: number };
-          end: { index: number; cursor: number };
+          end: { index: number; cursor: number; text?: string[] };
       }
     | { type: 'side'; side: 'start' | 'inside' | 'end' }
     | { type: 'control'; index: number };
@@ -91,6 +93,31 @@ export type Layout =
       }
     | { type: 'pairs' }
     | { type: 'switch' };
+
+export const updateNodeText = (
+    node: Node,
+    index: number,
+    text: string,
+): Node | void => {
+    switch (node.type) {
+        case 'id':
+            if (node.text === text) return;
+            return { ...node, text };
+        case 'string':
+            if (index === 0) {
+                if (node.first === text) return;
+                return { ...node, first: text };
+            } else if (index <= node.templates.length) {
+                if (node.templates[index - 1].suffix === text) return;
+                const templates = node.templates.slice();
+                templates[index - 1] = {
+                    ...templates[index - 1],
+                    suffix: text,
+                };
+                return { ...node, templates };
+            }
+    }
+};
 
 // const spaced = (items: IR[], space = ' '): IR[] =>
 //     items.flatMap((item, i) =>

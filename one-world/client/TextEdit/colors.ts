@@ -5,7 +5,7 @@ export const colors = {
     stringBg: 'rgba(195, 163, 20, 0.05)',
 };
 
-const dark = false;
+const dark = true;
 export const termColors = dark
     ? {
           stringBg: { r: 35, g: 35, b: 0 },

@@ -413,7 +413,18 @@ export const childLocs = (node: Node) => {
     }
 };
 
-export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
+export const fromMap = (
+    top: string,
+    id: number,
+    nodes: Nodes,
+    paths?: { children: number[]; map: Record<number, number[]> },
+): RecNode => {
+    if (paths) {
+        paths.map[id] = paths.children;
+    }
+    const sub = paths
+        ? { ...paths, children: paths.children.concat([id]) }
+        : undefined;
     const node = nodes[id];
     const loc: [string, number][] = [[top, node.loc]];
     switch (node.type) {
@@ -427,36 +438,36 @@ export const fromMap = (top: string, id: number, nodes: Nodes): RecNode => {
             return {
                 ...node,
                 loc,
-                items: node.items.map((n) => fromMap(top, n, nodes)),
+                items: node.items.map((n) => fromMap(top, n, nodes, sub)),
             };
         case 'comment':
         case 'spread':
             return {
                 ...node,
                 loc,
-                contents: fromMap(top, node.contents, nodes),
+                contents: fromMap(top, node.contents, nodes, sub),
             };
         case 'annot':
             return {
                 ...node,
                 loc,
-                contents: fromMap(top, node.contents, nodes),
-                annot: fromMap(top, node.annot, nodes),
+                contents: fromMap(top, node.contents, nodes, sub),
+                annot: fromMap(top, node.annot, nodes, sub),
             };
         case 'record-access':
             return {
                 ...node,
                 loc,
-                target: fromMap(top, node.target, nodes),
-                items: node.items.map((n) => fromMap(top, n, nodes)),
+                target: fromMap(top, node.target, nodes, sub),
+                items: node.items.map((n) => fromMap(top, n, nodes, sub)),
             };
         case 'string':
             return {
                 ...node,
                 loc,
-                tag: fromMap(top, node.tag, nodes),
+                tag: fromMap(top, node.tag, nodes, sub),
                 templates: node.templates.map((t) => ({
-                    expr: fromMap(top, t.expr, nodes),
+                    expr: fromMap(top, t.expr, nodes, sub),
                     suffix: t.suffix,
                 })),
             };

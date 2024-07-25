@@ -4,7 +4,7 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { parse } from '../../boot-ex/format';
 import { BlockEntry, blockToText } from '../../shared/IR/block-to-text';
 import { matchesSpan } from '../../shared/IR/highlightSpan';
-import { Control, IR, nodeToIR } from '../../shared/IR/intermediate';
+import { Control, IR, IRCursor, nodeToIR } from '../../shared/IR/intermediate';
 import {
     Block,
     BlockSource,
@@ -15,10 +15,16 @@ import {
 } from '../../shared/IR/ir-to-blocks';
 import { white } from '../../shared/IR/ir-to-text';
 import { LayoutChoices, LayoutCtx, layoutIR } from '../../shared/IR/layout';
-import { fromMap, Style } from '../../shared/nodes';
+import {
+    fromMap,
+    Path,
+    PathRoot,
+    serializePath,
+    Style,
+} from '../../shared/nodes';
 import { Doc, PersistedState } from '../../shared/state';
-import { newStore } from '../newStore';
-import { Store } from '../StoreContext';
+import { newStore } from '../newStore2';
+import { Store } from '../StoreContext2';
 import { colors, termColors } from '../TextEdit/colors';
 
 process.stdout.write('\x1b[6 q');
@@ -26,6 +32,9 @@ process.stdout.write('\x1b[6 q');
 const term = new Promise<termkit.Terminal>((res, rej) =>
     termkit.getDetectedTerminal((err, term) => (err ? rej(err) : res(term))),
 );
+
+// @ts-ignore
+global.window = {};
 
 // termkit.getDetectedTerminal((err, term) => {
 //     if (err) {
@@ -140,15 +149,43 @@ const pickDocument = (store: Store, term: termkit.Terminal) => {
 // @ts-ignore
 global.localStorage = {};
 
-const drawDocNode = (id: number, doc: Doc, state: PersistedState): Block => {
+type IRCache = Record<
+    string,
+    {
+        layouts: LayoutCtx['layouts'];
+        irs: LayoutCtx['irs'];
+        paths: Record<number, number[]>;
+        root: PathRoot;
+    }
+>;
+
+const drawDocNode = (
+    id: number,
+    nodes: number[],
+    doc: Doc,
+    state: PersistedState,
+    cache: IRCache,
+): Block => {
     const node = doc.nodes[id];
     let top: Block | null = null;
     if (id !== 0) {
-        top = drawToplevel(node.toplevel, doc, state);
+        top = drawToplevel(
+            node.toplevel,
+            {
+                doc: doc.id,
+                ids: nodes.concat([id]),
+                toplevel: node.toplevel,
+                type: 'doc-node',
+            },
+            state,
+            cache,
+        );
         return top;
     }
     if (node.children.length) {
-        const children = node.children.map((id) => drawDocNode(id, doc, state));
+        const children = node.children.map((id) =>
+            drawDocNode(id, nodes.concat([id]), doc, state, cache),
+        );
         if (top == null) {
             return children.length === 1 ? children[0] : vblock(children);
         }
@@ -181,9 +218,18 @@ const controlLayout = (control: Control) => {
 };
 
 type Pos = { x: number; y: number };
-const drawToplevel = (id: string, doc: Doc, state: PersistedState) => {
+const drawToplevel = (
+    id: string,
+    root: PathRoot,
+    state: PersistedState,
+    cache: IRCache,
+) => {
     const top = state.toplevels[id];
-    const recNode = fromMap(top.id, top.root, top.nodes);
+    const paths: Record<number, number[]> = {};
+    const recNode = fromMap(top.id, top.root, top.nodes, {
+        children: [],
+        map: paths,
+    });
     const parsed = parse(recNode);
 
     const irs: Record<number, IR> = {};
@@ -210,12 +256,117 @@ const drawToplevel = (id: string, doc: Doc, state: PersistedState) => {
         top: id,
     });
 
+    cache[id] = { irs, layouts: ctx.layouts, paths, root };
     return block;
 };
 
 const resolve = (state: PersistedState, source: BlockSource) => {
     const top = state.toplevels[source.top];
     return top.nodes[source.loc];
+};
+
+const shapeEnd = (shape: BlockEntry['shape']) => {
+    if (shape.type === 'block') {
+        const [x, y] = shape.start;
+        return [x + shape.width, y + shape.height - 1];
+    }
+    return shape.end;
+};
+
+const shapeTextIndex = (
+    index: number,
+    shape: Extract<BlockEntry['shape'], { type: 'inline' }>,
+    // ir: Extract<IR, { type: 'text' }>,
+    wraps: number[],
+) => {
+    // const chars = splitGraphemes(ir.text);
+    for (let i = 1; i < wraps.length; i++) {
+        if (wraps[i] > index) {
+            const y = shape.start[1] + i - 1;
+            const x =
+                (i === 1 ? shape.start[0] : shape.hbounds[0]) +
+                (index - wraps[i - 1]);
+            return [x, y];
+        }
+    }
+    const x =
+        (wraps.length === 1 ? shape.start[0] : shape.hbounds[0]) +
+        (index - wraps[wraps.length - 1]);
+    return [x, shape.end[1]];
+};
+
+export const selectionLocation = (
+    sourceMaps: BlockEntry[],
+    path: Path,
+    cursor: IRCursor,
+    choices: LayoutChoices,
+) => {
+    const loc = path.children[path.children.length - 1];
+    for (let source of sourceMaps) {
+        if (source.source.top !== path.root.toplevel) continue;
+        if (source.source.loc !== loc) continue;
+        switch (cursor.type) {
+            case 'control':
+                if (source.source.type !== 'control') continue;
+                if (cursor.index !== source.source.index) continue;
+                return shapeEnd(source.shape);
+            case 'side':
+                if (source.source.type !== 'cursor') continue;
+                if (source.source.side !== cursor.side) continue;
+                return source.shape.start;
+            case 'text':
+                if (source.source.type !== 'text') continue;
+                if (source.source.index !== cursor.end.index) continue;
+                // console.log('got to a text', source.shape, cursor.end);
+                // if (source.shape.type !== 'inline') return console.log('sourse shape not inline'); // no good
+                const ch = choices[loc];
+                if (ch && ch.type !== 'text-wrap') return;
+                if (source.shape.type === 'block') {
+                    if (ch) return console.log('wraps for block');
+                    if (source.shape.height !== 1)
+                        return console.log('height not 1');
+                    const [x, y] = source.shape.start;
+                    return [x + cursor.end.cursor, y];
+                }
+                return shapeTextIndex(
+                    cursor.end.cursor,
+                    source.shape,
+                    ch?.splits ?? [],
+                );
+        }
+    }
+};
+
+const render = (term: termkit.Terminal, store: Store, docId: string) => {
+    const ds = store.getDocSession(docId, store.session);
+    const doc = store.getState().documents[docId];
+    const cache: IRCache = {};
+    const block = drawDocNode(0, [], doc, store.getState(), cache);
+    const sourceMaps: BlockEntry[] = [];
+    const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
+        sourceMaps,
+        color: true,
+        styles: new Map(),
+    });
+    term.moveTo(0, 2, txt);
+    if (ds.selections.length) {
+        // term.grabInput(false);
+        const sel = ds.selections[0];
+        const path = sel.start.path;
+        const loc = path.children[path.children.length - 1];
+        const result = selectionLocation(
+            sourceMaps,
+            sel.start.path,
+            sel.start.cursor,
+            cache[sel.start.path.root.toplevel].layouts[loc],
+        );
+        if (result) {
+            term.moveTo(result[0] + 1, result[1] + 2);
+        } else {
+            // console.log(sel.start);
+        }
+    }
+    return { cache, sourceMaps };
 };
 
 const run = async (term: termkit.Terminal) => {
@@ -234,78 +385,100 @@ const run = async (term: termkit.Terminal) => {
 
     const doc = store.getState().documents[sess.doc];
 
-    const sourceMaps: BlockEntry[] = [];
+    let { sourceMaps, cache } = render(term, store, sess.doc);
 
-    const block = drawDocNode(0, doc, store.getState());
-    const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
-        sourceMaps,
-        color: true,
-        styles: new Map(),
-    });
-
-    const text =
-        txt +
-        '\n' +
-        JSON.stringify(ds.selections) +
-        '\n\n' +
-        sourceMaps.map((m) => m.shape.start.join(',')).join(' ') +
-        '\n\n' +
-        blockInfo(block);
-
-    term.moveTo(0, 2, text);
+    // let sourceMaps: BlockEntry[] = [];
+    // let cache: IRCache = {};
+    // const block = drawDocNode(0, doc, store.getState(), cache);
+    // const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
+    //     sourceMaps,
+    //     color: true,
+    //     styles: new Map(),
+    // });
+    // term.moveTo(0, 2, txt);
 
     term.on('key', (key: string) => {
         if (key === 'ESCAPE') {
             return process.exit(0);
         }
-        term.clear();
-        term.moveTo(0, 2, text);
-        term.moveTo(0, 0, 'The key ' + key);
+        ({ sourceMaps, cache } = render(term, store, sess.doc!));
+        // term.clear();
+        // term.moveTo(0, 2, txt);
+        // term.moveTo(0, 0, 'The key ' + key);
     });
+
     term.on('mouse', (one: string, evt: { x: number; y: number }) => {
         if (one !== 'MOUSE_LEFT_BUTTON_PRESSED') return;
         const found = sourceMaps.find((m) =>
             matchesSpan(evt.x - 1, evt.y - 2, m.shape),
         );
-        if (found) {
-            const styles = new Map();
-            styles.set(found.source, {
-                type: 'full',
-                // type: 'sub',
-                // start: 4,
-                // end: 100,
-                color: termColors.highlight,
-            });
-            const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
-                color: true,
-                // highlight: found.source,
-                styles,
-            });
+        if (!found) return;
+        const top = found.source.top;
+        const path: Path = {
+            root: cache[top].root,
+            children: cache[top].paths[found.source.loc].concat([
+                found.source.loc,
+            ]),
+        };
+        store.update({
+            type: 'in-session',
+            action: { type: 'multi', actions: [] },
+            doc: sess.doc!,
+            selections: [
+                {
+                    start: {
+                        cursor: {
+                            type: 'text',
+                            end: {
+                                index:
+                                    found.source.type === 'text'
+                                        ? found.source.index
+                                        : 0,
+                                cursor: 0,
+                            },
+                        },
+                        key: serializePath(path),
+                        path,
+                    },
+                },
+            ],
+        });
+        ({ sourceMaps, cache } = render(term, store, sess.doc!));
+        // if (found) {
+        //     const styles = new Map();
+        //     styles.set(found.source, {
+        //         type: 'full',
+        //         // type: 'sub',
+        //         // start: 4,
+        //         // end: 100,
+        //         color: termColors.highlight,
+        //     });
+        //     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
+        //         color: true,
+        //         // highlight: found.source,
+        //         styles,
+        //     });
 
-            term.clear();
-            term.moveTo(0, 2, txt);
-            term.moveTo(
-                0,
-                10,
-                `The mouse ${evt.x},${evt.y} ${JSON.stringify(
-                    found.source,
-                )}\n${JSON.stringify(
-                    resolve(store.getState(), found.source),
-                )}\n${evt.x},${evt.y}`,
-            );
-        } else {
-            term.clear();
-            let res = text;
-            // sourceMaps.forEach((which) => {
-            //     res = highlightSpan(res, which.shape);
-            // });
-            term.moveTo(0, 2, res);
-            term.moveTo(
-                0,
-                20,
-                `The mouse ${one} ${evt.x},${evt.y} count:${sourceMaps.length}\nMouse ${evt.x},${evt.y}`,
-            );
-        }
+        //     term.clear();
+        //     term.moveTo(0, 2, txt);
+        //     term.moveTo(
+        //         0,
+        //         10,
+        //         `The mouse ${evt.x},${evt.y} ${JSON.stringify(
+        //             found.source,
+        //         )}\n${JSON.stringify(
+        //             resolve(store.getState(), found.source),
+        //         )}\n${evt.x},${evt.y}`,
+        //     );
+        // } else {
+        //     term.clear();
+        //     term.moveTo(0, 2, txt);
+        //     term.moveTo(
+        //         0,
+        //         20,
+        //         `The mouse ${one} ${evt.x},${evt.y} count:${sourceMaps.length}\nMouse ${evt.x},${evt.y}`,
+        //     );
+        // }
     });
 
     // // let iv;
