@@ -369,6 +369,23 @@ const render = (term: termkit.Terminal, store: Store, docId: string) => {
     return { cache, sourceMaps };
 };
 
+const irTexts = (ir: IR): Extract<IR, { type: 'text' }>[] => {
+    switch (ir.type) {
+        case 'text':
+            return [ir];
+        case 'horiz':
+        case 'vert':
+        case 'inline':
+            return ir.items.flatMap(irTexts);
+        case 'indent':
+        case 'squish':
+            return irTexts(ir.item);
+        case 'switch':
+            return irTexts(ir.options[0]);
+    }
+    return [];
+};
+
 const run = async (term: termkit.Terminal) => {
     console.log('initializing store...');
     const sess = readSess();
@@ -381,9 +398,7 @@ const run = async (term: termkit.Terminal) => {
         writeSess(sess);
     }
 
-    const ds = store.getDocSession(sess.doc, store.session);
-
-    const doc = store.getState().documents[sess.doc];
+    const docId = sess.doc;
 
     let { sourceMaps, cache } = render(term, store, sess.doc);
 
@@ -401,10 +416,52 @@ const run = async (term: termkit.Terminal) => {
         if (key === 'ESCAPE') {
             return process.exit(0);
         }
-        ({ sourceMaps, cache } = render(term, store, sess.doc!));
+        if (key === 'RIGHT') {
+            const ds = store.getDocSession(docId, store.session);
+            if (ds.selections.length) {
+                const sel = ds.selections[0];
+                if (sel.start.cursor.type === 'text') {
+                    const path = sel.start.path;
+                    const ir =
+                        cache[path.root.toplevel].irs[
+                            path.children[path.children.length - 1]
+                        ];
+                    const texts = irTexts(ir);
+                    const text = texts[sel.start.cursor.end.index];
+                    if (!text)
+                        return console.warn('text w/ index does not exit');
+                    const len = splitGraphemes(text.text).length;
+                    if (sel.start.cursor.end.cursor < len) {
+                        store.update({
+                            type: 'in-session',
+                            action: { type: 'multi', actions: [] },
+                            doc: docId,
+                            selections: [
+                                {
+                                    start: {
+                                        ...sel.start,
+                                        cursor: {
+                                            type: 'text',
+                                            end: {
+                                                index: sel.start.cursor.end
+                                                    .index,
+                                                cursor:
+                                                    sel.start.cursor.end
+                                                        .cursor + 1,
+                                            },
+                                        },
+                                    },
+                                },
+                            ],
+                        });
+                    }
+                }
+            }
+        }
+        ({ sourceMaps, cache } = render(term, store, docId));
         // term.clear();
         // term.moveTo(0, 2, txt);
-        // term.moveTo(0, 0, 'The key ' + key);
+        // term.moveTo(0, 10, 'The key ' + key);
     });
 
     term.on('mouse', (one: string, evt: { x: number; y: number }) => {
@@ -423,7 +480,7 @@ const run = async (term: termkit.Terminal) => {
         store.update({
             type: 'in-session',
             action: { type: 'multi', actions: [] },
-            doc: sess.doc!,
+            doc: docId,
             selections: [
                 {
                     start: {
@@ -443,7 +500,7 @@ const run = async (term: termkit.Terminal) => {
                 },
             ],
         });
-        ({ sourceMaps, cache } = render(term, store, sess.doc!));
+        ({ sourceMaps, cache } = render(term, store, docId));
         // if (found) {
         //     const styles = new Map();
         //     styles.set(found.source, {
