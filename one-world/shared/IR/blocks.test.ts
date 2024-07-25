@@ -63,6 +63,7 @@ const processNode = (data: RecNode, maxWidth = 30, leftWidth = 20) => {
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
         sourceMaps: sourceMap,
         color: false,
+        styles: new Map(),
     });
     return {
         txt,

@@ -19,6 +19,7 @@ import { fromMap, Style } from '../../shared/nodes';
 import { Doc, PersistedState } from '../../shared/state';
 import { newStore } from '../newStore';
 import { Store } from '../StoreContext';
+import { colors, termColors } from '../TextEdit/colors';
 
 process.stdout.write('\x1b[6 q');
 
@@ -239,6 +240,7 @@ const run = async (term: termkit.Terminal) => {
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
         sourceMaps,
         color: true,
+        styles: new Map(),
     });
 
     const text =
@@ -266,9 +268,18 @@ const run = async (term: termkit.Terminal) => {
             matchesSpan(evt.x - 1, evt.y - 2, m.shape),
         );
         if (found) {
+            const styles = new Map();
+            styles.set(found.source, {
+                type: 'full',
+                // type: 'sub',
+                // start: 4,
+                // end: 100,
+                color: termColors.highlight,
+            });
             const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
                 color: true,
-                highlight: found.source,
+                // highlight: found.source,
+                styles,
             });
 
             term.clear();

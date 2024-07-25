@@ -5,10 +5,13 @@ and now I need a way to apply text formatting stuff.
 
 - [x] text formatting lookin great
 - [ ] selection!management!
+  - [ ]
   - NEED
     - just a cursor girl living in a lonely world
     - select within a node (start? cursor)
     - multiselect, and maybe I only support siblings.
+- [x] lil dark modus
+
 
 is BLOCK the right level of granularity?
 like that's where we apply formattings.
