@@ -4,13 +4,14 @@ I thikn wrapping is kinda fine?
 and now I need a way to apply text formatting stuff.
 
 - [x] text formatting lookin great
-- [ ] selection!management!
-  - [ ]
+- [x] selection!management!
+  - [x]
   - NEED
     - just a cursor girl living in a lonely world
     - select within a node (start? cursor)
     - multiselect, and maybe I only support siblings.
-- [x] lil dark modus
+- [x] lil dark/light modus
+- [ ] why am I not wrapping right after a horiz
 
 
 is BLOCK the right level of granularity?

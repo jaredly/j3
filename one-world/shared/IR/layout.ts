@@ -27,6 +27,7 @@ the inlinewidth should be 6
 */
 type LayoutResult = {
     maxWidth: number;
+    firstLineWidth: number;
     inlineWidth: number;
     inlineHeight: number;
     height: number;
@@ -67,7 +68,13 @@ export const layoutIR = (
 ): LayoutResult => {
     switch (ir.type) {
         case 'cursor':
-            return { maxWidth: 0, height: 0, inlineHeight: 0, inlineWidth: 0 };
+            return {
+                maxWidth: 0,
+                height: 0,
+                firstLineWidth: firstLine,
+                inlineHeight: 0,
+                inlineWidth: 0,
+            };
         case 'switch': {
             let res: LayoutResult;
             let which = ir.options.length - 1;
@@ -110,12 +117,12 @@ export const layoutIR = (
             }
             let maxWidth = 0;
             const newLines = ir.text.split('\n');
-            let lines: string[] = [];
+            let lines: { text: string; width: number }[] = [];
             const wraps: number[] = [];
             let index = 0;
             let height = 0;
             newLines.forEach((newLine, i) => {
-                lines.push('');
+                lines.push({ text: '', width: 0 });
                 // dumbest way possible
                 const words = [
                     ...new Intl.Segmenter('en', {
@@ -130,17 +137,21 @@ export const layoutIR = (
                     if (
                         res.inlineWidth + x > ctx.maxWidth &&
                         seg.isWordLike &&
-                        lines[lines.length - 1] != ''
+                        lines[lines.length - 1].text != ''
                     ) {
                         wraps.push(index);
-                        lines.push(seg.segment);
                         res = ctx.textLayout(seg.segment, 0, ir.style);
+                        lines.push({ text: seg.segment, width: res.maxWidth });
                         height += lineHeight;
                         lineHeight = res.inlineHeight;
                         lineWidth = res.inlineWidth;
                     } else {
-                        lines[lines.length - 1] += seg.segment;
-                        maxWidth = Math.max(maxWidth, res.maxWidth);
+                        lines[lines.length - 1].text += seg.segment;
+                        lines[lines.length - 1].width += res.inlineWidth;
+                        maxWidth = Math.max(
+                            maxWidth,
+                            lines[lines.length - 1].width,
+                        );
                         lineHeight = Math.max(lineHeight, res.inlineHeight);
                         lineWidth = res.inlineWidth;
                     }
@@ -155,6 +166,7 @@ export const layoutIR = (
             return {
                 maxWidth,
                 height,
+                firstLineWidth: lines[0].width + firstLine,
                 inlineHeight: res.inlineHeight,
                 inlineWidth: res.inlineWidth,
             };
@@ -166,6 +178,7 @@ export const layoutIR = (
             let height = 0;
             let inlineHeight = 0;
             const groups: number[] = [0];
+            let firstLineWidth = 0;
             // iffff prev group only has one thing
             // and it's an empty text, let'sss not break after it?
             // hrm it's a little weird.
@@ -175,8 +188,11 @@ export const layoutIR = (
                     i > 0 &&
                     maxWidth > 0 &&
                     next.maxWidth > 0 &&
-                    x + next.inlineWidth > ctx.maxWidth
+                    x + next.firstLineWidth > ctx.maxWidth
                 ) {
+                    if (groups.length === 1) {
+                        firstLineWidth = inlineWidth;
+                    }
                     groups.push(i);
                     next = layoutIR(x, 0, item, choices, ctx);
                     inlineHeight = next.inlineHeight;
@@ -188,8 +204,17 @@ export const layoutIR = (
                 inlineWidth = next.inlineWidth;
                 inlineHeight = Math.max(next.inlineHeight, inlineHeight);
             });
+            if (groups.length === 1) {
+                firstLineWidth = inlineWidth;
+            }
             choices[ir.wrap] = { type: 'hwrap', groups };
-            return { maxWidth, inlineWidth, inlineHeight, height };
+            return {
+                maxWidth,
+                inlineWidth,
+                inlineHeight,
+                height,
+                firstLineWidth,
+            };
         }
 
         case 'squish':
@@ -214,6 +239,7 @@ export const layoutIR = (
 
             return {
                 inlineWidth: inlineWidth + firstLine,
+                firstLineWidth: maxWidth,
                 inlineHeight,
                 maxWidth,
                 height,
@@ -265,6 +291,7 @@ export const layoutIR = (
             return {
                 maxWidth,
                 inlineWidth: lineWidth + firstLine,
+                firstLineWidth: lineWidth + firstLine,
                 height,
                 inlineHeight,
             };
@@ -274,9 +301,10 @@ export const layoutIR = (
             const res = layoutIR(x + indent, 0, ir.item, choices, ctx);
             return {
                 maxWidth: res.maxWidth + indent,
-                inlineWidth: res.inlineWidth + indent,
+                inlineWidth: res.inlineWidth + indent + firstLine,
                 height: res.height,
                 inlineHeight: res.inlineHeight,
+                firstLineWidth: res.inlineWidth + indent + firstLine,
             };
         }
     }

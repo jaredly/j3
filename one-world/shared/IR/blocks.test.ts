@@ -174,6 +174,27 @@ test('wow ok so bigbug here', () => {
             ),
     ).toMatchSnapshot();
     expect('\n' + showSpans('"${(lov -sss)}NNN"', 10)).toMatchSnapshot();
+
+    debugger;
+    expect(
+        '\n' +
+            showLayout(
+                // STOPSHIP:It should be wrapping before the $(loveit
+                // ALSO: The trailing " is way too far out
+                '(What js"${10}P n sdfb")',
+                10,
+            ),
+    ).toMatchSnapshot();
+    expect(
+        '\n' +
+            showLayout(
+                // STOPSHIP:It should be wrapping before the $(loveit
+                // ALSO: The trailing " is way too far out
+                '(What js"${10}P nnsdfb")',
+                10,
+            ),
+    ).toMatchSnapshot();
+
     expect(
         '\n' +
             showSpans(
@@ -230,6 +251,13 @@ export const blockInfo = (block: Block): string => {
     }
     return res;
 };
+
+function showLayout(orig: string, width = 20, x = false) {
+    let res = Array(width).join('-') + `| ${width}\n`;
+    const { txt, block, sourceMap } = process(orig, width);
+    res += trimTrailingWhite(fixDollar(txt)) + '\n\n';
+    return res;
+}
 
 function showSpans(orig: string, width = 20, x = false) {
     let res = Array(width).join('-') + `| ${width}\n`;
