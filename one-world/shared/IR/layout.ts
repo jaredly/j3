@@ -147,7 +147,7 @@ export const layoutIR = (
                         lineWidth = res.inlineWidth;
                     } else {
                         lines[lines.length - 1].text += seg.segment;
-                        lines[lines.length - 1].width += res.inlineWidth;
+                        lines[lines.length - 1].width += res.maxWidth;
                         maxWidth = Math.max(
                             maxWidth,
                             lines[lines.length - 1].width,
