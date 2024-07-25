@@ -17,14 +17,14 @@ import { LayoutChoices, LayoutCtx } from './layout';
 export type TextCtx = {
     space: string;
     layouts: LayoutCtx['layouts'];
-    color?: boolean;
+    // color?: boolean;
     annotateNewlines?: boolean;
     top: string;
     // sourceMap: SourceMap;
 };
 
 export type BlockSource =
-    | { type: 'text'; loc: number; index: number; top: string }
+    | { type: 'text'; loc: number; index: number; top: string; wraps: number[] }
     | {
           type: 'control';
           loc: number;
@@ -308,6 +308,7 @@ export const irToBlock = (
                         index: ir.index,
                         loc: ir.loc,
                         top: ctx.top,
+                        wraps: [],
                     },
                     ir.style,
                 );
@@ -347,6 +348,7 @@ export const irToBlock = (
                         index: ir.index,
                         loc: ir.loc,
                         top: ctx.top,
+                        wraps: splits.splits,
                     },
                     height: pieces.length,
                     style: ir.style,
@@ -355,7 +357,13 @@ export const irToBlock = (
             }
             return line(
                 ir.text,
-                { type: 'text', index: ir.index, loc: ir.loc, top: ctx.top },
+                {
+                    type: 'text',
+                    index: ir.index,
+                    loc: ir.loc,
+                    top: ctx.top,
+                    wraps: [],
+                },
                 ir.style,
             );
         }

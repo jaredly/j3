@@ -26,6 +26,7 @@ import { Doc, PersistedState } from '../../shared/state';
 import { newStore } from '../newStore2';
 import { Store } from '../StoreContext2';
 import { colors, termColors } from '../TextEdit/colors';
+import { IRCache, navRight } from '../../shared/IR/nav';
 
 process.stdout.write('\x1b[6 q');
 
@@ -149,16 +150,6 @@ const pickDocument = (store: Store, term: termkit.Terminal) => {
 // @ts-ignore
 global.localStorage = {};
 
-type IRCache = Record<
-    string,
-    {
-        layouts: LayoutCtx['layouts'];
-        irs: LayoutCtx['irs'];
-        paths: Record<number, number[]>;
-        root: PathRoot;
-    }
->;
-
 const drawDocNode = (
     id: number,
     nodes: number[],
@@ -238,7 +229,7 @@ const drawToplevel = (
     });
 
     const ctx: LayoutCtx = {
-        maxWidth: 50,
+        maxWidth: 20,
         leftWidth: 20,
         irs,
         layouts: {},
@@ -252,7 +243,7 @@ const drawToplevel = (
     const block = irToBlock(irs[top.root], irs, choices, {
         layouts: ctx.layouts,
         space: ' ',
-        color: true,
+        // color: true,
         top: id,
     });
 
@@ -279,6 +270,9 @@ const shapeTextIndex = (
     // ir: Extract<IR, { type: 'text' }>,
     wraps: number[],
 ) => {
+    if (!wraps.length) {
+        return [shape.start[0] + index, shape.start[1]];
+    }
     // const chars = splitGraphemes(ir.text);
     for (let i = 1; i < wraps.length; i++) {
         if (wraps[i] > index) {
@@ -326,12 +320,16 @@ export const selectionLocation = (
                     if (source.shape.height !== 1)
                         return console.log('height not 1');
                     const [x, y] = source.shape.start;
+                    if (isNaN(x)) throw new Error('what shape');
+                    if (isNaN(x + cursor.end.cursor))
+                        throw new Error('what cursor');
                     return [x + cursor.end.cursor, y];
                 }
                 return shapeTextIndex(
                     cursor.end.cursor,
                     source.shape,
-                    ch?.splits ?? [],
+                    source.source.wraps,
+                    // ch?.splits ?? [],
                 );
         }
     }
@@ -361,29 +359,13 @@ const render = (term: termkit.Terminal, store: Store, docId: string) => {
             cache[sel.start.path.root.toplevel].layouts[loc],
         );
         if (result) {
+            console.log(result);
             term.moveTo(result[0] + 1, result[1] + 2);
         } else {
             // console.log(sel.start);
         }
     }
     return { cache, sourceMaps };
-};
-
-const irTexts = (ir: IR): Extract<IR, { type: 'text' }>[] => {
-    switch (ir.type) {
-        case 'text':
-            return [ir];
-        case 'horiz':
-        case 'vert':
-        case 'inline':
-            return ir.items.flatMap(irTexts);
-        case 'indent':
-        case 'squish':
-            return irTexts(ir.item);
-        case 'switch':
-            return irTexts(ir.options[0]);
-    }
-    return [];
 };
 
 const run = async (term: termkit.Terminal) => {
@@ -420,41 +402,14 @@ const run = async (term: termkit.Terminal) => {
             const ds = store.getDocSession(docId, store.session);
             if (ds.selections.length) {
                 const sel = ds.selections[0];
-                if (sel.start.cursor.type === 'text') {
-                    const path = sel.start.path;
-                    const ir =
-                        cache[path.root.toplevel].irs[
-                            path.children[path.children.length - 1]
-                        ];
-                    const texts = irTexts(ir);
-                    const text = texts[sel.start.cursor.end.index];
-                    if (!text)
-                        return console.warn('text w/ index does not exit');
-                    const len = splitGraphemes(text.text).length;
-                    if (sel.start.cursor.end.cursor < len) {
-                        store.update({
-                            type: 'in-session',
-                            action: { type: 'multi', actions: [] },
-                            doc: docId,
-                            selections: [
-                                {
-                                    start: {
-                                        ...sel.start,
-                                        cursor: {
-                                            type: 'text',
-                                            end: {
-                                                index: sel.start.cursor.end
-                                                    .index,
-                                                cursor:
-                                                    sel.start.cursor.end
-                                                        .cursor + 1,
-                                            },
-                                        },
-                                    },
-                                },
-                            ],
-                        });
-                    }
+                const next = navRight(sel, cache);
+                if (next) {
+                    store.update({
+                        type: 'in-session',
+                        action: { type: 'multi', actions: [] },
+                        doc: docId,
+                        selections: [next],
+                    });
                 }
             }
         }
