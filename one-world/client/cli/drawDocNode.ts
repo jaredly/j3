@@ -1,6 +1,11 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { parse } from '../../boot-ex/format';
-import { Control, IR, nodeToIR } from '../../shared/IR/intermediate';
+import {
+    Control,
+    IR,
+    IRSelection,
+    nodeToIR,
+} from '../../shared/IR/intermediate';
 import {
     Block,
     vblock,
@@ -10,7 +15,7 @@ import {
 } from '../../shared/IR/ir-to-blocks';
 import { white } from '../../shared/IR/ir-to-text';
 import { LayoutCtx, LayoutChoices, layoutIR } from '../../shared/IR/layout';
-import { IRCache } from '../../shared/IR/nav';
+import { IRCache, irNavigable, lastChild } from '../../shared/IR/nav';
 import { Style, PathRoot, fromMap } from '../../shared/nodes';
 import { Doc, PersistedState } from '../../shared/state';
 
@@ -20,6 +25,7 @@ export const drawDocNode = (
     doc: Doc,
     state: PersistedState,
     cache: IRCache,
+    selections: IRSelection[],
 ): Block => {
     const node = doc.nodes[id];
     let top: Block | null = null;
@@ -34,12 +40,13 @@ export const drawDocNode = (
             },
             state,
             cache,
+            selections,
         );
         return top;
     }
     if (node.children.length) {
         const children = node.children.map((id) =>
-            drawDocNode(id, nodes.concat([id]), doc, state, cache),
+            drawDocNode(id, nodes.concat([id]), doc, state, cache, selections),
         );
         if (top == null) {
             return children.length === 1 ? children[0] : vblock(children);
@@ -79,11 +86,13 @@ const controlLayout = (control: Control) => {
         maxWidth: w,
     };
 };
+
 const drawToplevel = (
     id: string,
     root: PathRoot,
     state: PersistedState,
     cache: IRCache,
+    selections: IRSelection[],
 ) => {
     const top = state.toplevels[id];
     const paths: Record<number, number[]> = {};
@@ -98,8 +107,23 @@ const drawToplevel = (
         irs[+id] = nodeToIR(node, parsed.styles, parsed.layouts, {});
     });
 
+    selections.forEach((sel) => {
+        if (sel.start.path.root.toplevel != id) return;
+        if (
+            sel.start.cursor.type === 'text' &&
+            sel.start.cursor.end.text != null
+        ) {
+            const loc = lastChild(sel.start.path);
+            const texts = irNavigable(irs[loc]).filter(
+                (t) => t.type === 'text',
+            ) as Extract<IR, { type: 'text' }>[];
+            const one = texts[sel.start.cursor.end.index];
+            one.text = sel.start.cursor.end.text.join('');
+        }
+    });
+
     const ctx: LayoutCtx = {
-        maxWidth: 13,
+        maxWidth: 50,
         leftWidth: 20,
         irs,
         layouts: {},
@@ -113,7 +137,6 @@ const drawToplevel = (
     const block = irToBlock(irs[top.root], irs, choices, {
         layouts: ctx.layouts,
         space: ' ',
-        // color: true,
         top: id,
     });
 

@@ -23,6 +23,7 @@ export const handleMovement = (
             }
         }
     }
+
     if (key === 'LEFT') {
         const ds = store.getDocSession(docId, store.session);
         if (ds.selections.length) {

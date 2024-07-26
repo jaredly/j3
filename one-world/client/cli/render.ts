@@ -20,7 +20,7 @@ export const renderSelection = (
             sel.start.cursor,
         );
         if (result) {
-            term.moveTo(0, 25, JSON.stringify(sel.start.cursor));
+            // term.moveTo(0, 25, JSON.stringify(sel.start.cursor));
             term.moveTo(result.pos[0] + 1, result.pos[1] + 2);
         } else {
             // console.log(sel.start);
@@ -32,7 +32,14 @@ export const render = (term: termkit.Terminal, store: Store, docId: string) => {
     const ds = store.getDocSession(docId, store.session);
     const doc = store.getState().documents[docId];
     const cache: IRCache = {};
-    const block = drawDocNode(0, [], doc, store.getState(), cache);
+    const block = drawDocNode(
+        0,
+        [],
+        doc,
+        store.getState(),
+        cache,
+        ds.selections,
+    );
     const sourceMaps: BlockEntry[] = [];
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
         sourceMaps,
@@ -40,6 +47,7 @@ export const render = (term: termkit.Terminal, store: Store, docId: string) => {
         styles: new Map(),
     });
     term.moveTo(0, 2, txt);
+    term.moveTo(0, 0);
     return { cache, sourceMaps };
 };
 

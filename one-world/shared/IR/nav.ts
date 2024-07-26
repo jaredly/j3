@@ -70,51 +70,6 @@ export const irNavigable = (ir: IR): IRNavigable[] => {
     return [];
 };
 
-// export const navLeft = (
-//     sel: IRSelection,
-//     cache: IRCache,
-// ): IRSelection | void => {
-//     return modTextSel(sel, cache, (text, { end }) => {
-//         if (end.cursor > 0) {
-//             return {
-//                 start: {
-//                     ...sel.start,
-//                     cursor: {
-//                         type: 'text',
-//                         end: {
-//                             index: end.index,
-//                             cursor: end.cursor - 1,
-//                         },
-//                     },
-//                 },
-//             };
-//         }
-//     });
-// };
-
-// export const navRight = (
-//     sel: IRSelection,
-//     cache: IRCache,
-// ): IRSelection | void => {
-//     return modTextSel(sel, cache, (text, { end }) => {
-//         const len = splitGraphemes(text.text).length;
-//         if (end.cursor < len) {
-//             return {
-//                 start: {
-//                     ...sel.start,
-//                     cursor: {
-//                         type: 'text',
-//                         end: {
-//                             index: end.index,
-//                             cursor: end.cursor + 1,
-//                         },
-//                     },
-//                 },
-//             };
-//         }
-//     });
-// };
-
 export const modTextSel = (
     sel: IRSelection,
     cache: IRCache,
@@ -136,9 +91,10 @@ export const modTextSel = (
     }
 };
 
-const lastChild = (path: Path) => path.children[path.children.length - 1];
+export const lastChild = (path: Path) =>
+    path.children[path.children.length - 1];
 
-const findType = <T extends string>(
+export const findType = <T extends string>(
     irs: IR[],
     type: T,
     index: number,

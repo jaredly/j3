@@ -5,6 +5,7 @@ import { handleMovement } from './handleMovement';
 import { init } from './init';
 import { pickDocument, render, renderSelection } from './render';
 import { readSess, writeSess } from './Sess';
+import { handleUpdate } from './handleUpdate';
 
 // cursor line
 process.stdout.write('\x1b[6 q');
@@ -46,8 +47,14 @@ const run = async (term: termkit.Terminal) => {
             renderSelection(term, store, docId, sourceMaps);
             return;
         }
-        ({ sourceMaps, cache } = render(term, store, docId));
-        renderSelection(term, store, docId, sourceMaps);
+        if (handleUpdate(key, docId, cache, store)) {
+            term.clear()(({ sourceMaps, cache } = render(term, store, docId)));
+            renderSelection(term, store, docId, sourceMaps);
+            return;
+        }
+        term.moveTo(0, 30, key);
+        // ({ sourceMaps, cache } = render(term, store, docId));
+        // renderSelection(term, store, docId, sourceMaps);
     });
 
     term.on('mouse', (one: string, evt: { x: number; y: number }) => {

@@ -15,8 +15,10 @@ and now I need a way to apply text formatting stuff.
 - [x] now to left/right in general between nodes!
   - yay its so noice
 - [ ] editinggg
+  - [x] logic to update selection
+  - [ ] use selection(text) in rendering stuff
 - [ ] up/down
-- [ ] click to individual place
+- [x] click to individual place
 
 
 is BLOCK the right level of granularity?
