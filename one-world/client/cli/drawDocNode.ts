@@ -99,7 +99,7 @@ const drawToplevel = (
     });
 
     const ctx: LayoutCtx = {
-        maxWidth: 50,
+        maxWidth: 13,
         leftWidth: 20,
         irs,
         layouts: {},

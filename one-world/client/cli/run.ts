@@ -1,8 +1,6 @@
 import termkit from 'terminal-kit';
-import { matchesSpan } from '../../shared/IR/highlightSpan';
 import { Block } from '../../shared/IR/ir-to-blocks';
-import { Path, serializePath } from '../../shared/nodes';
-import { Store } from '../StoreContext2';
+import { handleMouse } from './handleMouse';
 import { handleMovement } from './handleMovement';
 import { init } from './init';
 import { pickDocument, render, renderSelection } from './render';
@@ -44,7 +42,8 @@ const run = async (term: termkit.Terminal) => {
         if (key === 'ESCAPE') {
             return process.exit(0);
         }
-        if (handleMovement(term, key, docId, cache, sourceMaps, store)) {
+        if (handleMovement(key, docId, cache, store)) {
+            renderSelection(term, store, docId, sourceMaps);
             return;
         }
         ({ sourceMaps, cache } = render(term, store, docId));
@@ -53,40 +52,7 @@ const run = async (term: termkit.Terminal) => {
 
     term.on('mouse', (one: string, evt: { x: number; y: number }) => {
         if (one !== 'MOUSE_LEFT_BUTTON_PRESSED') return;
-        const found = sourceMaps.find((m) =>
-            matchesSpan(evt.x - 1, evt.y - 2, m.shape),
-        );
-        if (!found) return;
-        const top = found.source.top;
-        const path: Path = {
-            root: cache[top].root,
-            children: cache[top].paths[found.source.loc].concat([
-                found.source.loc,
-            ]),
-        };
-        store.update({
-            type: 'in-session',
-            action: { type: 'multi', actions: [] },
-            doc: docId,
-            selections: [
-                {
-                    start: {
-                        cursor: {
-                            type: 'text',
-                            end: {
-                                index:
-                                    found.source.type === 'text'
-                                        ? found.source.index
-                                        : 0,
-                                cursor: 0,
-                            },
-                        },
-                        key: serializePath(path),
-                        path,
-                    },
-                },
-            ],
-        });
+        handleMouse(docId, sourceMaps, evt, cache, store);
         renderSelection(term, store, docId, sourceMaps);
     });
 };

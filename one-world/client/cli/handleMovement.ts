@@ -1,15 +1,10 @@
-import termkit from 'terminal-kit';
-import { BlockEntry } from '../../shared/IR/block-to-text';
 import { goLeftRight, IRCache } from '../../shared/IR/nav';
 import { Store } from '../StoreContext2';
-import { renderSelection } from './render';
 
 export const handleMovement = (
-    term: termkit.Terminal,
     key: string,
     docId: string,
     cache: IRCache,
-    sourceMaps: BlockEntry[],
     store: Store,
 ): boolean => {
     if (key === 'RIGHT') {
@@ -24,7 +19,6 @@ export const handleMovement = (
                     doc: docId,
                     selections: [next],
                 });
-                renderSelection(term, store, docId, sourceMaps);
                 return true;
             }
         }
@@ -41,7 +35,6 @@ export const handleMovement = (
                     doc: docId,
                     selections: [next],
                 });
-                renderSelection(term, store, docId, sourceMaps);
                 return true;
             }
         }

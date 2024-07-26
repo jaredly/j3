@@ -1,5 +1,5 @@
 import { BlockEntry } from '../../shared/IR/block-to-text';
-import { IRCursor } from '../../shared/IR/intermediate';
+import { IRCursor, IRSelection } from '../../shared/IR/intermediate';
 import { Path } from '../../shared/nodes';
 
 const shapeEnd = (shape: BlockEntry['shape']) => {
@@ -8,6 +8,30 @@ const shapeEnd = (shape: BlockEntry['shape']) => {
         return [x + shape.width, y + shape.height - 1];
     }
     return shape.end;
+};
+
+const shapeTextCursor = (
+    pos: { x: number; y: number },
+    shape: Extract<BlockEntry['shape'], { type: 'inline' }>,
+    wraps: number[],
+): number => {
+    if (!wraps.length) {
+        return pos.x - shape.start[0];
+    }
+    if (pos.y === shape.start[1]) {
+        return pos.x - shape.start[0];
+    }
+    for (let i = 0; i < wraps.length; i++) {
+        const y = shape.start[1] + i + 1;
+        if (y < pos.y) continue;
+        const x0 = shape.hbounds[0];
+        const off = pos.x - x0;
+        if (i < wraps.length - 1 && wraps[i] + off > wraps[i + 1])
+            return wraps[i];
+        return wraps[i] + off;
+    }
+    // TODO fail or sth
+    return 0;
 };
 
 const shapeTextIndex = (
@@ -53,12 +77,7 @@ export const selectionLocation = (
             case 'text':
                 if (source.source.type !== 'text') continue;
                 if (source.source.index !== cursor.end.index) continue;
-                // console.log('got to a text', source.shape, cursor.end);
-                // if (source.shape.type !== 'inline') return console.log('sourse shape not inline'); // no good
-                // const ch = choices[loc];
-                // if (ch && ch.type !== 'text-wrap') return;
                 if (source.shape.type === 'block') {
-                    // if (ch) return console.log('wraps for block');
                     if (source.shape.height !== 1)
                         return console.log('height not 1');
                     const [x, y] = source.shape.start;
@@ -76,5 +95,38 @@ export const selectionLocation = (
                     ),
                 };
         }
+    }
+};
+
+export const selectionFromLocation = (
+    source: BlockEntry,
+    pos: { x: number; y: number },
+): IRCursor => {
+    switch (source.source.type) {
+        case 'control':
+            return { type: 'control', index: source.source.index };
+        case 'cursor':
+            return { type: 'side', side: source.source.side };
+        case 'text':
+            if (source.shape.type === 'block') {
+                return {
+                    type: 'text',
+                    end: {
+                        index: source.source.index,
+                        cursor: pos.x - source.shape.start[0],
+                    },
+                };
+            }
+            return {
+                type: 'text',
+                end: {
+                    index: source.source.index,
+                    cursor: shapeTextCursor(
+                        pos,
+                        source.shape,
+                        source.source.wraps,
+                    ),
+                },
+            };
     }
 };

@@ -14,7 +14,6 @@ export const renderSelection = (
     const ds = store.getDocSession(docId, store.session);
     if (ds.selections.length) {
         const sel = ds.selections[0];
-        const path = sel.start.path;
         const result = selectionLocation(
             sourceMaps,
             sel.start.path,
