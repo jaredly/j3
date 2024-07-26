@@ -1,0 +1,122 @@
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
+import { parse } from '../../boot-ex/format';
+import { Control, IR, nodeToIR } from '../../shared/IR/intermediate';
+import {
+    Block,
+    vblock,
+    hblock,
+    line,
+    irToBlock,
+} from '../../shared/IR/ir-to-blocks';
+import { white } from '../../shared/IR/ir-to-text';
+import { LayoutCtx, LayoutChoices, layoutIR } from '../../shared/IR/layout';
+import { IRCache } from '../../shared/IR/nav';
+import { Style, PathRoot, fromMap } from '../../shared/nodes';
+import { Doc, PersistedState } from '../../shared/state';
+
+export const drawDocNode = (
+    id: number,
+    nodes: number[],
+    doc: Doc,
+    state: PersistedState,
+    cache: IRCache,
+): Block => {
+    const node = doc.nodes[id];
+    let top: Block | null = null;
+    if (id !== 0) {
+        top = drawToplevel(
+            node.toplevel,
+            {
+                doc: doc.id,
+                ids: nodes.concat([id]),
+                toplevel: node.toplevel,
+                type: 'doc-node',
+            },
+            state,
+            cache,
+        );
+        return top;
+    }
+    if (node.children.length) {
+        const children = node.children.map((id) =>
+            drawDocNode(id, nodes.concat([id]), doc, state, cache),
+        );
+        if (top == null) {
+            return children.length === 1 ? children[0] : vblock(children);
+        }
+        return vblock([top, hblock([line(white(4)), vblock(children)])]);
+    }
+
+    return top!;
+};
+const textLayout = (text: string, firstLine: number, style?: Style) => {
+    const lines = text.split('\n');
+    const height = lines.length;
+    const inlineHeight = 1;
+    let inlineWidth = firstLine;
+    let maxWidth = 0;
+    let firstLineWidth = 0;
+    lines.forEach((line, i) => {
+        inlineWidth = splitGraphemes(line).length;
+        if (i === 0) {
+            inlineWidth += firstLine;
+            firstLineWidth = inlineWidth;
+        }
+        maxWidth = Math.max(maxWidth, inlineWidth);
+    });
+    return { height, inlineHeight, inlineWidth, maxWidth, firstLineWidth };
+};
+const controlLayout = (control: Control) => {
+    let w = 4;
+    if (control.type === 'number') {
+        w = control.width + 3;
+    }
+    return {
+        height: 1,
+        inlineHeight: 1,
+        firstLineWidth: w,
+        inlineWidth: w,
+        maxWidth: w,
+    };
+};
+const drawToplevel = (
+    id: string,
+    root: PathRoot,
+    state: PersistedState,
+    cache: IRCache,
+) => {
+    const top = state.toplevels[id];
+    const paths: Record<number, number[]> = {};
+    const recNode = fromMap(top.id, top.root, top.nodes, {
+        children: [],
+        map: paths,
+    });
+    const parsed = parse(recNode);
+
+    const irs: Record<number, IR> = {};
+    Object.entries(top.nodes).forEach(([id, node]) => {
+        irs[+id] = nodeToIR(node, parsed.styles, parsed.layouts, {});
+    });
+
+    const ctx: LayoutCtx = {
+        maxWidth: 50,
+        leftWidth: 20,
+        irs,
+        layouts: {},
+        textLayout,
+        controlLayout,
+    };
+
+    const choices: LayoutChoices = {};
+    const result = layoutIR(0, 0, irs[top.root], choices, ctx);
+    ctx.layouts[top.root] = { choices, result };
+    const block = irToBlock(irs[top.root], irs, choices, {
+        layouts: ctx.layouts,
+        space: ' ',
+        // color: true,
+        top: id,
+    });
+
+    cache[id] = { irs, layouts: ctx.layouts, paths, root };
+    return block;
+};
