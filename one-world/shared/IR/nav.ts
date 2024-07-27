@@ -242,10 +242,42 @@ const goLRFrom = (
     };
 };
 
-const cursorSelect = (
+export const selectNode = (
+    loc: number,
+    path: Path,
+    side: 'start' | 'end',
+    cache: IRForLoc,
+) => {
+    const irs = irNavigable(cache[loc]);
+    return toSelection(
+        cursorSelect(
+            irs[side === 'start' ? 0 : irs.length - 1],
+            path,
+            irs,
+            cache,
+            side === 'end',
+        ),
+    );
+};
+
+const toSelection = ({
+    cursor,
+    path,
+}: {
+    cursor: IRCursor;
+    path: Path;
+}): IRSelection => ({
+    start: {
+        path,
+        key: serializePath(path),
+        cursor,
+    },
+});
+
+export const cursorSelect = (
     ir: IRNavigable,
     path: Path,
-    irs: IRNavigable[],
+    siblings: IRNavigable[],
     cache: IRForLoc,
     end: boolean,
 ): { cursor: IRCursor; path: Path } => {
@@ -255,7 +287,9 @@ const cursorSelect = (
                 cursor: {
                     type: 'text',
                     end: {
-                        index: irs.filter((r) => r.type === 'text').indexOf(ir),
+                        index: siblings
+                            .filter((r) => r.type === 'text')
+                            .indexOf(ir),
                         cursor: end ? splitGraphemes(ir.text).length : 0,
                     },
                 },
@@ -265,7 +299,9 @@ const cursorSelect = (
             return {
                 cursor: {
                     type: 'control',
-                    index: irs.filter((r) => r.type === 'control').indexOf(ir),
+                    index: siblings
+                        .filter((r) => r.type === 'control')
+                        .indexOf(ir),
                 },
                 path,
             };

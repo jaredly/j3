@@ -16,9 +16,12 @@ and now I need a way to apply text formatting stuff.
   - yay its so noice
 - [ ] editinggg
   - [x] logic to update selection
-  - [ ] use selection(text) in rendering stuff
+  - [x] use selection(text) in rendering stuff
+  - [ ] split / join
 - [ ] up/down
 - [x] click to individual place
+
+atttt some point I shuold make sure rich text is functional
 
 
 is BLOCK the right level of granularity?

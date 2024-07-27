@@ -6,8 +6,9 @@ import {
     irNavigable,
     lastChild,
 } from '../../shared/IR/nav';
-import { Path, serializePath } from '../../shared/nodes';
+import { parentPath, Path, serializePath } from '../../shared/nodes';
 import { Store } from '../StoreContext2';
+import { handleMovement } from './handleMovement';
 
 const getIRText = (cache: IRCache, path: Path, index: number) => {
     const irRoot = cache[path.root.toplevel].irs[lastChild(path)];
@@ -24,9 +25,6 @@ export const handleUpdate = (
     cache: IRCache,
     store: Store,
 ): boolean => {
-    const text = key === 'BACKSPACE' ? [] : splitGraphemes(key);
-    if (text.length > 1) return false;
-
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
 
@@ -43,14 +41,21 @@ export const handleUpdate = (
             : [end.cursor, start.cursor]
         : [end.cursor, end.cursor];
 
-    if (key === 'BACKSPACE' && !start && end.cursor > 0) {
-        st -= 1;
+    if (key === 'BACKSPACE' && !start) {
+        if (end.cursor === 0) {
+            // join-left
+            joinLeft(sel.start.path, end.text, end.index, cache, store);
+            return true;
+        } else {
+            st -= 1;
+        }
     }
-
-    // const irRoot = cache[sel.start.path.root.toplevel].irs[]
 
     const current =
         end.text ?? splitGraphemes(getIRText(cache, sel.start.path, end.index));
+
+    const text = key === 'BACKSPACE' ? [] : splitGraphemes(key);
+    if (text.length > 1) return false;
 
     const updated = current.slice(0, st).concat(text).concat(current.slice(ed));
 
@@ -110,4 +115,30 @@ export const handleUpdate = (
     //     }
     // }
     // return false;
+};
+
+export const joinLeft = (
+    path: Path,
+    current: string[] | undefined,
+    index: number,
+    cache: IRCache,
+    store: Store,
+) => {
+    const node =
+        store.getState().toplevels[path.root.toplevel].nodes[lastChild(path)];
+    // Here are the things that can have a `text` IR in them:
+    if (node.type === 'id') {
+        // that's a thing
+        const parent = parentPath(path);
+        const ploc = lastChild(parent);
+        // ->
+    } else if (node.type === 'string') {
+        if (index > 0) {
+            // collapse things
+        }
+        // also a thing
+    } else if (node.type === 'rich-inline') {
+        // otherwise, it should probably be a 'go left' kind of situation.
+        // return handleMovement('LEFT', path.root.doc, cache, store);
+    }
 };

@@ -7,7 +7,7 @@ import { Hidden } from './HiddenInput';
 import { useStore } from './StoreContext';
 import { String } from './String';
 import { ManagedId } from './TextEdit/ManagedId';
-import { handleAction } from './TextEdit/actions';
+// import { handleAction } from './TextEdit/actions';
 import { keys, runKey } from './keyboard';
 import { getNodeForPath } from './selectNode';
 
@@ -83,17 +83,18 @@ export const Edit = () => {
                         evt.stopPropagation();
                         if (res) {
                             const state = store.getState();
-                            const saction = handleAction(
-                                res,
-                                selection.path,
-                                state,
-                                selection,
-                            );
-                            if (saction) {
-                                store.update(saction);
-                            } else {
-                                console.warn('ignoring action', res);
-                            }
+                            // const saction = handleAction(
+                            //     res,
+                            //     selection.path,
+                            //     state,
+                            //     selection,
+                            // );
+                            // if (saction) {
+                            //     store.update(saction);
+                            // } else {
+                            //     console.warn('ignoring action', res);
+                            // }
+                            throw new Error('disabled lol');
                         }
                     });
                 }}
