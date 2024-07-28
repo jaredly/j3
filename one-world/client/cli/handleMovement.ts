@@ -14,8 +14,7 @@ export const handleMovement = (
             const next = goLeftRight(sel, cache, false);
             if (next) {
                 store.update({
-                    type: 'in-session',
-                    action: { type: 'multi', actions: [] },
+                    type: 'selection',
                     doc: docId,
                     selections: [next],
                 });
@@ -31,8 +30,7 @@ export const handleMovement = (
             const next = goLeftRight(sel, cache, true);
             if (next) {
                 store.update({
-                    type: 'in-session',
-                    action: { type: 'multi', actions: [] },
+                    type: 'selection',
                     doc: docId,
                     selections: [next],
                 });

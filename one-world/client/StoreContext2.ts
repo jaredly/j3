@@ -9,7 +9,7 @@ export type Store = {
     session: string;
     getDocSession(doc: string, session: string): DocSession;
     getState(): PersistedState;
-    update(action: Action): void;
+    update(...actions: Action[]): void;
     onSelection(session: string, path: Path, f: () => void): () => void;
     onTop(id: string, f: () => void): () => void;
     onTopNode(top: string, id: number, f: () => void): () => void;

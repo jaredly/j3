@@ -1,13 +1,22 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
+import { Action, ToplevelUpdate } from '../../shared/action2';
 import { IR } from '../../shared/IR/intermediate';
 import {
     goLeftRight,
     IRCache,
     irNavigable,
     lastChild,
+    selectNode,
+    toSelection,
 } from '../../shared/IR/nav';
-import { parentPath, Path, serializePath } from '../../shared/nodes';
+import {
+    parentPath,
+    Path,
+    pathWithChildren,
+    serializePath,
+} from '../../shared/nodes';
 import { Store } from '../StoreContext2';
+import { isCollection } from '../TextEdit/actions';
 import { handleMovement } from './handleMovement';
 
 const getIRText = (cache: IRCache, path: Path, index: number) => {
@@ -60,8 +69,7 @@ export const handleUpdate = (
     const updated = current.slice(0, st).concat(text).concat(current.slice(ed));
 
     store.update({
-        type: 'in-session',
-        action: { type: 'multi', actions: [] },
+        type: 'selection',
         doc: docId,
         selections: [
             {
@@ -117,6 +125,19 @@ export const handleUpdate = (
     // return false;
 };
 
+export const topUpdate = (
+    id: string,
+    nodes: ToplevelUpdate['update']['nodes'],
+    nidx?: number,
+): Action => ({
+    type: 'toplevel',
+    id,
+    action: {
+        type: 'update',
+        update: nidx != null ? { nodes, nextLoc: nidx } : { nodes },
+    },
+});
+
 export const joinLeft = (
     path: Path,
     current: string[] | undefined,
@@ -124,13 +145,57 @@ export const joinLeft = (
     cache: IRCache,
     store: Store,
 ) => {
-    const node =
-        store.getState().toplevels[path.root.toplevel].nodes[lastChild(path)];
+    const state = store.getState();
+    const top = state.toplevels[path.root.toplevel];
+    const loc = lastChild(path);
+    const node = top.nodes[loc];
     // Here are the things that can have a `text` IR in them:
     if (node.type === 'id') {
         // that's a thing
         const parent = parentPath(path);
         const ploc = lastChild(parent);
+        const pnode = top.nodes[ploc];
+        // ugh I probably should just make a type === 'collection'...
+        if (isCollection(pnode)) {
+            const idx = pnode.items.indexOf(loc);
+            if (idx > 0) {
+                const prev = pnode.items[idx - 1];
+                const prevNode = top.nodes[prev];
+                if (prevNode.type === 'id') {
+                    const cursor = splitGraphemes(prevNode.text).length;
+                    const items = pnode.items.slice();
+                    items.splice(idx, 1);
+                    // ok we can do this now.
+                    store.update(
+                        topUpdate(top.id, {
+                            [ploc]: { ...pnode, items },
+                            [node.loc]: undefined,
+                            [prev]: {
+                                ...prevNode,
+                                text:
+                                    prevNode.text +
+                                    (current ? current.join('') : node.text),
+                            },
+                        }),
+                        {
+                            type: 'selection',
+                            doc: path.root.doc,
+                            selections: [
+                                toSelection({
+                                    cursor: {
+                                        type: 'text',
+                                        end: { index: 0, cursor },
+                                    },
+                                    path: pathWithChildren(parent, prev),
+                                }),
+                            ],
+                        },
+                    );
+                }
+            }
+        } else {
+            // ignore it?
+        }
         // ->
     } else if (node.type === 'string') {
         if (index > 0) {

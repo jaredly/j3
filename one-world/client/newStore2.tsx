@@ -161,14 +161,14 @@ export const newStore = (
         getState() {
             return state;
         },
-        update(action) {
+        update(...actions) {
             // console.log('store updat', action);
             const updated: Updated = { toplevels: {}, selections: {} };
 
-            if (action.type === 'in-session') {
-                if (action.selections) {
-                    const extras: Action[] = [];
+            const extras: Action[] = [];
 
+            actions.forEach((action) => {
+                if (action.type === 'selection') {
                     const key = `${action.doc} - ${session}`;
                     const prev = docSessionCache[key].selections;
                     docSessionCache[key].selections = action.selections;
@@ -208,22 +208,21 @@ export const newStore = (
                         });
                     });
 
-                    if (extras.length) {
-                        action.action = {
-                            type: 'multi',
-                            actions: [...extras, action.action],
-                        };
-                    }
-
                     evts.general.selection.forEach((f) => f());
                 }
-            }
 
-            state = update(state, action, updated);
-            // @ts-ignore
-            window.state = state;
+                state = update(state, action, updated);
+                // @ts-ignore
+                window.state = state;
+                ws.send(JSON.stringify({ type: 'action', action }));
+            });
 
-            ws.send(JSON.stringify({ type: 'action', action }));
+            extras.forEach((action) => {
+                state = update(state, action, updated);
+                // @ts-ignore
+                window.state = state;
+                ws.send(JSON.stringify({ type: 'action', action }));
+            });
 
             sendUpdates(updated, evts);
         },

@@ -260,7 +260,7 @@ export const selectNode = (
     );
 };
 
-const toSelection = ({
+export const toSelection = ({
     cursor,
     path,
 }: {

@@ -1077,54 +1077,45 @@ export const idSel = (cursor: number, path: Path): IRSelection => ({
 //     }
 // };
 
-export const jumpOut = (
-    path: Path,
-    top: Toplevel,
-    parent: CollectionT,
-    selection: IRSelection,
-    which: 'first' | 'last',
-) => {
-    const loc = path.children[path.children.length - 1];
-    const ploc = path.children[path.children.length - 2];
+// export const jumpOut = (
+//     path: Path,
+//     top: Toplevel,
+//     parent: CollectionT,
+//     selection: IRSelection,
+//     which: 'first' | 'last',
+// ) => {
+//     const loc = path.children[path.children.length - 1];
+//     const ploc = path.children[path.children.length - 2];
+//     if (path.children.length < 3) return;
+//     const gloc = path.children[path.children.length - 3];
+//     const gparent = top.nodes[gloc];
+//     if (!isCollection(gparent)) return;
+//     const idx = gparent.items.indexOf(ploc);
+//     if (idx === -1) return;
+//     const items = parent.items.slice();
+//     if (which === 'first') {
+//         items.shift();
+//     } else {
+//         items.pop();
+//     }
+//     const gitems = gparent.items.slice();
+//     gitems.splice(idx + (which === 'last' ? 1 : 0), 0, loc);
+//     const dpath = pathWithChildren(parentPath(parentPath(path)), loc);
+//     return justSel(
+//         withPath(selection, dpath),
+//         path.root.doc,
+//         topUpdate(top.id, {
+//             [ploc]: { ...parent, items },
+//             [gloc]: { ...gparent, items: gitems },
+//         }),
+//     );
+// };
 
-    if (path.children.length < 3) return;
-    const gloc = path.children[path.children.length - 3];
-    const gparent = top.nodes[gloc];
-    if (!isCollection(gparent)) return;
-    const idx = gparent.items.indexOf(ploc);
-    if (idx === -1) return;
-    const items = parent.items.slice();
-    if (which === 'first') {
-        items.shift();
-    } else {
-        items.pop();
-    }
-    const gitems = gparent.items.slice();
-    gitems.splice(idx + (which === 'last' ? 1 : 0), 0, loc);
-    const dpath = pathWithChildren(parentPath(parentPath(path)), loc);
-    return justSel(
-        withPath(selection, dpath),
-        path.root.doc,
-        topUpdate(top.id, {
-            [ploc]: { ...parent, items },
-            [gloc]: { ...gparent, items: gitems },
-        }),
-    );
-};
-
-const justSel = (
-    sel: IRSelection | void,
-    doc: string,
-    inner?: Action,
-): Action | void =>
-    sel
-        ? {
-              type: 'in-session',
-              action: inner ?? { type: 'multi', actions: [] },
-              doc,
-              selections: [sel],
-          }
-        : inner;
+const justSel = (sel: IRSelection, doc: string): Action | void => ({
+    type: 'selection',
+    doc,
+    selections: [sel],
+});
 
 // export const goLeft = (
 //     path: Path,

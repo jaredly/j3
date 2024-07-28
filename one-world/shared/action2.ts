@@ -7,12 +7,7 @@ export type Action =
     | { type: 'multi'; actions: Action[] }
     | { type: 'doc'; id: string; action: DocAction }
     | { type: 'toplevel'; id: string; action: ToplevelAction; stage?: string }
-    | {
-          type: 'in-session';
-          doc: string;
-          action: Action;
-          selections?: DocSession['selections'];
-      }
+    | { type: 'selection'; doc: string; selections: DocSession['selections'] }
     | { type: 'namespaces'; action: NamespaceAction }
     | { type: 'stage'; id: string; action: StageAction };
 

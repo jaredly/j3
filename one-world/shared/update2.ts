@@ -14,9 +14,8 @@ export const update = (
     updated: Updated,
 ): PersistedState => {
     switch (action.type) {
-        case 'in-session': {
-            return update(state, action.action, updated);
-        }
+        case 'selection':
+            return state; // ignoreee
         case 'reset':
             return action.state;
         case 'multi':

@@ -25,27 +25,8 @@ export const handleMouse = (
     const cursor = selectionFromLocation(found, { x, y: y });
 
     store.update({
-        type: 'in-session',
-        action: { type: 'multi', actions: [] },
+        type: 'selection',
         doc: docId,
-        selections: [
-            {
-                start: {
-                    cursor,
-                    // {
-                    //     type: 'text',
-                    //     end: {
-                    //         index:
-                    //             found.source.type === 'text'
-                    //                 ? found.source.index
-                    //                 : 0,
-                    //         cursor: 0,
-                    //     },
-                    // },
-                    key: serializePath(path),
-                    path,
-                },
-            },
-        ],
+        selections: [{ start: { cursor, key: serializePath(path), path } }],
     });
 };
