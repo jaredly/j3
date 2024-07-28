@@ -53,7 +53,9 @@ export const handleUpdate = (
     if (key === 'BACKSPACE' && !start) {
         if (end.cursor === 0) {
             // join-left
-            joinLeft(sel.start.path, end.text, end.index, cache, store);
+            if (!joinLeft(sel.start.path, end.text, end.index, cache, store)) {
+                handleMovement('LEFT', sel.start.path.root.doc, cache, store);
+            }
             return true;
         } else {
             st -= 1;
@@ -144,7 +146,7 @@ export const joinLeft = (
     index: number,
     cache: IRCache,
     store: Store,
-) => {
+): boolean => {
     const state = store.getState();
     const top = state.toplevels[path.root.toplevel];
     const loc = lastChild(path);
@@ -191,6 +193,7 @@ export const joinLeft = (
                             ],
                         },
                     );
+                    return true;
                 }
             }
         } else {
@@ -206,4 +209,5 @@ export const joinLeft = (
         // otherwise, it should probably be a 'go left' kind of situation.
         // return handleMovement('LEFT', path.root.doc, cache, store);
     }
+    return false;
 };
