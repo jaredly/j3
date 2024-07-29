@@ -23,6 +23,17 @@ export type TextCtx = {
     // sourceMap: SourceMap;
 };
 
+export const blockSourceKey = (source: BlockSource): string => {
+    switch (source.type) {
+        case 'text':
+            return `${source.top}:${source.loc}:T:${source.index}`;
+        case 'control':
+            return `${source.top}:${source.loc}:C:${source.index}`;
+        case 'cursor':
+            return `${source.top}:${source.loc}:${source.side}`;
+    }
+};
+
 export type BlockSource =
     | { type: 'text'; loc: number; index: number; top: string; wraps: number[] }
     | {

@@ -1,7 +1,7 @@
 import equal from 'fast-deep-equal';
 import { Style } from '../nodes';
 import { applyFormats, blockFormat, justify } from './format';
-import { Block, BlockSource, inlineSize } from './ir-to-blocks';
+import { Block, BlockSource, blockSourceKey, inlineSize } from './ir-to-blocks';
 import { addSpaces, joinChunks, white } from './ir-to-text';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 
@@ -32,17 +32,27 @@ const applyX0 = (text: string, x0: number) => {
 
 export type RGB = { r: number; g: number; b: number };
 
+export type StyleOverrides = Record<
+    string,
+    | {
+          type: 'full';
+          color: RGB;
+      }
+    | {
+          type: 'sub';
+          color: RGB;
+          start: number;
+          end: number;
+      }
+>;
+
 export const blockToText = (
     pos: { x: number; y: number; x0: number },
     block: Block,
     ctx: {
         color: boolean;
         // highlight?: BlockSource;
-        styles: Map<
-            BlockSource,
-            | { type: 'full'; color: RGB }
-            | { type: 'sub'; color: RGB; start: number; end: number }
-        >;
+        styles: StyleOverrides;
         sourceMaps?: BlockEntry[];
     },
 ): string => {
@@ -124,7 +134,7 @@ export const blockToText = (
                 });
             }
             const override = block.source
-                ? ctx.styles.get(block.source)
+                ? ctx.styles[blockSourceKey(block.source)]
                 : undefined;
             if (typeof block.contents === 'string') {
                 if (override?.type === 'full') {

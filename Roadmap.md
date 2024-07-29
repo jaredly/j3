@@ -21,11 +21,11 @@ and now I need a way to apply text formatting stuff.
   - [x] wrap `([{`
   - [x] save partial text on escape
   - [x] unwrap in various ways
-  - [ ] shift-left/right to select within a TEXT
-    - [ ]
-  - [ ] unwrap (backspace at start of collection)
-  - [ ] shift-up/down for increasing/decresing the selection
+  - [x] shift-left/right to select within a TEXT
   - [ ] shift-left/right for multi-selecting siblings
+  - [ ] shift-left/right between [texts] of a node (string)
+  - [x] unwrap (backspace at start of collection)
+  - [ ] shift-up/down for increasing/decresing the selection
   - [ ] ctrl-left/right for swapping (with shift to swap in & out)
     - btw i went back to `key-all` to remind myself how the shift-up/down stuff worked. it was slick.
 
@@ -34,6 +34,7 @@ and now I need a way to apply text formatting stuff.
 - [ ] store.update ... should we add .. the selection, to all thigns?
 
 
+- [ ] BUG there's a weird thing where layout switchings wrapping weirdly. I'm not sure why.
 
 so ... when hot reloading, we're not
 

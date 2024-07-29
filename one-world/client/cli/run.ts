@@ -3,7 +3,12 @@ import { Block } from '../../shared/IR/ir-to-blocks';
 import { handleMouse } from './handleMouse';
 import { handleMovement } from './handleMovement';
 import { init } from './init';
-import { pickDocument, render, renderSelection } from './render';
+import {
+    pickDocument,
+    redrawWithSelection,
+    render,
+    renderSelection,
+} from './render';
 import { readSess, writeSess } from './Sess';
 import { handleUpdate } from './handleUpdate';
 
@@ -36,7 +41,7 @@ const run = async (term: termkit.Terminal) => {
 
     const docId = sess.doc;
 
-    let { sourceMaps, cache } = render(term, store, sess.doc);
+    let { sourceMaps, cache, block } = render(term, store, sess.doc);
     renderSelection(term, store, docId, sourceMaps);
 
     process.on('beforeExit', () => {
@@ -45,7 +50,7 @@ const run = async (term: termkit.Terminal) => {
 
     term.on('resize', (width: number, height: number) => {
         term.clear();
-        ({ sourceMaps, cache } = render(term, store, docId));
+        ({ sourceMaps, cache, block } = render(term, store, docId));
         renderSelection(term, store, docId, sourceMaps);
     });
 
@@ -58,12 +63,19 @@ const run = async (term: termkit.Terminal) => {
             }, 50);
         }
         if (handleMovement(key, docId, cache, store)) {
+            let { txt } = redrawWithSelection(
+                block,
+                store.getDocSession(docId, store.session).selections,
+            );
+            term.moveTo(0, 2, txt);
+            term.moveTo(0, 0);
+
             renderSelection(term, store, docId, sourceMaps);
             return;
         }
         if (handleUpdate(key, docId, cache, store)) {
             term.clear();
-            ({ sourceMaps, cache } = render(term, store, docId));
+            ({ sourceMaps, cache, block } = render(term, store, docId));
             renderSelection(term, store, docId, sourceMaps);
             return;
         }
