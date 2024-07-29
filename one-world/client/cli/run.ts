@@ -44,7 +44,13 @@ const run = async (term: termkit.Terminal) => {
     let { sourceMaps, cache, block } = render(term, store, sess.doc);
     renderSelection(term, store, docId, sourceMaps);
 
+    const unsel = store.on('selection', () => {
+        sess.selection = store.getDocSession(docId, store.session).selections;
+        writeSess(sess);
+    });
+
     process.on('beforeExit', () => {
+        unsel();
         store.update({ type: 'selection', doc: docId, selections: [] });
     });
 
@@ -56,6 +62,7 @@ const run = async (term: termkit.Terminal) => {
 
     term.on('key', (key: string) => {
         if (key === 'ESCAPE') {
+            unsel();
             store.update({ type: 'selection', doc: docId, selections: [] });
 
             setTimeout(() => {
@@ -63,13 +70,11 @@ const run = async (term: termkit.Terminal) => {
             }, 50);
         }
         if (handleMovement(key, docId, cache, store)) {
-            let { txt } = redrawWithSelection(
+            const { txt } = redrawWithSelection(
                 block,
                 store.getDocSession(docId, store.session).selections,
             );
             term.moveTo(0, 2, txt);
-            term.moveTo(0, 0);
-
             renderSelection(term, store, docId, sourceMaps);
             return;
         }
@@ -83,11 +88,28 @@ const run = async (term: termkit.Terminal) => {
         renderSelection(term, store, docId, sourceMaps);
     });
 
-    term.on('mouse', (one: string, evt: { x: number; y: number }) => {
-        if (one !== 'MOUSE_LEFT_BUTTON_PRESSED') return;
-        handleMouse(docId, sourceMaps, evt, cache, store);
-        renderSelection(term, store, docId, sourceMaps);
-    });
+    term.on(
+        'mouse',
+        (
+            one: string,
+            evt: {
+                x: number;
+                y: number;
+                shift: boolean;
+                ctrl: boolean;
+                alt: boolean;
+            },
+        ) => {
+            if (one !== 'MOUSE_LEFT_BUTTON_PRESSED') return;
+            handleMouse(docId, sourceMaps, evt, cache, store);
+            const { txt } = redrawWithSelection(
+                block,
+                store.getDocSession(docId, store.session).selections,
+            );
+            term.moveTo(0, 2, txt);
+            renderSelection(term, store, docId, sourceMaps);
+        },
+    );
 };
 
 const blockInfo = (block: Block): string => {

@@ -20,7 +20,16 @@ export const init = async (sess: Sess) => {
                     sess.ssid = data.ssid;
                     writeSess(sess);
                 }
-                res(newStore(state, ws, sess.ssid));
+                const store = newStore(state, ws, sess.ssid);
+                if (sess.selection && sess.doc != null) {
+                    store.getDocSession(sess.doc, store.session);
+                    store.update({
+                        type: 'selection',
+                        doc: sess.doc,
+                        selections: sess.selection,
+                    });
+                }
+                res(store);
             };
             ws.addEventListener('message', f);
         };
