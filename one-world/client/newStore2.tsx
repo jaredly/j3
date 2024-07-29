@@ -4,6 +4,7 @@ import {
     IRSelection,
     updateNodeText,
 } from '../shared/IR/intermediate';
+import { lastChild } from '../shared/IR/nav';
 import { Path, serializePath } from '../shared/nodes';
 import { DocSession, PersistedState } from '../shared/state2';
 import { update, Updated } from '../shared/update2';
@@ -197,12 +198,20 @@ export const newStore = (
                                     cur.start.cursor.end.index !==
                                         psel.start.cursor.end.index
                                 ) {
-                                    maybeCommitTextChange(
-                                        psel.start.cursor,
-                                        psel.start.path,
-                                        state,
-                                        extras,
-                                    );
+                                    // Only commit if we haven't done an update on that node in this call
+                                    // to .update
+                                    if (
+                                        !updated.toplevels[
+                                            psel.start.path.root.toplevel
+                                        ]?.[lastChild(psel.start.path)]
+                                    ) {
+                                        maybeCommitTextChange(
+                                            psel.start.cursor,
+                                            psel.start.path,
+                                            state,
+                                            extras,
+                                        );
+                                    }
                                 }
                             }
                         });
@@ -292,7 +301,7 @@ function maybeCommitTextChange(
     const last = path.children[path.children.length - 1];
     const node = state.toplevels[path.root.toplevel].nodes[last];
 
-    if (!sel.end.text) return;
+    if (!sel.end.text || !node) return;
     const updated = updateNodeText(node, sel.end.index, sel.end.text.join(''));
     if (!updated) {
         return;

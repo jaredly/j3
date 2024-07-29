@@ -62,6 +62,19 @@ export const handleUpdate = (
         }
     }
 
+    if (key === ' ') {
+        const path = sel.start.path;
+        const node =
+            store.getState().toplevels[path.root.toplevel].nodes[
+                lastChild(path)
+            ];
+        if (node.type === 'id') {
+            split(path, st, ed, end.text, end.index, store);
+            return true;
+        }
+        // otherwise, spaces are fine
+    }
+
     const current =
         end.text ?? splitGraphemes(getIRText(cache, sel.start.path, end.index));
 
@@ -139,6 +152,80 @@ export const topUpdate = (
         update: nidx != null ? { nodes, nextLoc: nidx } : { nodes },
     },
 });
+
+export const split = (
+    path: Path,
+    startCursor: number,
+    endCursor: number,
+    current: string[] | undefined,
+    index: number,
+    store: Store,
+) => {
+    const state = store.getState();
+    const top = state.toplevels[path.root.toplevel];
+    const loc = lastChild(path);
+    const node = top.nodes[loc];
+    // Here are the things that can have a `text` IR in them:
+    if (node.type === 'id') {
+        // that's a thing
+        const parent = parentPath(path);
+        const ploc = lastChild(parent);
+        const pnode = top.nodes[ploc];
+        // ugh I probably should just make a type === 'collection'...
+        if (isCollection(pnode)) {
+            const idx = pnode.items.indexOf(loc);
+            const nidx = top.nextLoc;
+            const items = pnode.items.slice();
+            items.splice(idx + 1, 0, nidx);
+            const text = current ?? splitGraphemes(node.text);
+            // ok we can do this now.
+            store.update(
+                topUpdate(
+                    top.id,
+                    {
+                        [ploc]: { ...pnode, items },
+                        [node.loc]: {
+                            ...node,
+                            text: text.slice(0, startCursor).join(''),
+                        },
+                        [nidx]: {
+                            type: 'id',
+                            text: text.slice(endCursor).join(''),
+                            loc: nidx,
+                        },
+                    },
+                    nidx + 1,
+                ),
+                {
+                    type: 'selection',
+                    doc: path.root.doc,
+                    selections: [
+                        toSelection({
+                            cursor: {
+                                type: 'text',
+                                end: { index: 0, cursor: 0 },
+                            },
+                            path: pathWithChildren(parent, nidx),
+                        }),
+                    ],
+                },
+            );
+            return true;
+        } else {
+            // ignore it?
+        }
+        // ->
+    } else if (node.type === 'string') {
+        if (index > 0) {
+            // collapse things
+        }
+        // also a thing
+    } else if (node.type === 'rich-inline') {
+        // otherwise, it should probably be a 'go left' kind of situation.
+        // return handleMovement('LEFT', path.root.doc, cache, store);
+    }
+    return false;
+};
 
 export const joinLeft = (
     path: Path,
