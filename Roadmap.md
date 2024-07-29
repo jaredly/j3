@@ -20,6 +20,7 @@ and now I need a way to apply text formatting stuff.
   - [x] split / join
   - [x] wrap `([{`
   - [x] save partial text on escape
+  - [x] unwrap in various ways
   - [ ] shift-left/right to select within a TEXT
     - [ ]
   - [ ] unwrap (backspace at start of collection)
@@ -31,6 +32,11 @@ and now I need a way to apply text formatting stuff.
 - [ ] up/down
 - [x] click to individual place
 - [ ] store.update ... should we add .. the selection, to all thigns?
+
+
+
+so ... when hot reloading, we're not
+
 
 atttt some point I shuold make sure rich text is functional
 

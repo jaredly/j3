@@ -179,7 +179,7 @@ export const goLeftRightInner = (
             const text = findType(irs, 'text', cursor.end.index);
             if (!text) return;
             selected = text;
-            if (cursor.start) {
+            if (cursor.start && !shift) {
                 return {
                     start: {
                         ...sel.start,
@@ -195,6 +195,9 @@ export const goLeftRightInner = (
                         cursor: {
                             ...cursor,
                             end: { ...cursor.end, cursor: next },
+                            start: shift
+                                ? cursor.start ?? cursor.end
+                                : undefined,
                         },
                     },
                 };
