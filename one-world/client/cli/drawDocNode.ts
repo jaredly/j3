@@ -26,6 +26,7 @@ export const drawDocNode = (
     state: PersistedState,
     cache: IRCache,
     selections: IRSelection[],
+    maxWidth: number,
 ): Block => {
     const node = doc.nodes[id];
     let top: Block | null = null;
@@ -41,12 +42,21 @@ export const drawDocNode = (
             state,
             cache,
             selections,
+            maxWidth,
         );
         return top;
     }
     if (node.children.length) {
         const children = node.children.map((id) =>
-            drawDocNode(id, nodes.concat([id]), doc, state, cache, selections),
+            drawDocNode(
+                id,
+                nodes.concat([id]),
+                doc,
+                state,
+                cache,
+                selections,
+                maxWidth,
+            ),
         );
         if (top == null) {
             return children.length === 1 ? children[0] : vblock(children);
@@ -93,6 +103,7 @@ const drawToplevel = (
     state: PersistedState,
     cache: IRCache,
     selections: IRSelection[],
+    maxWidth: number,
 ) => {
     const top = state.toplevels[id];
     const paths: Record<number, number[]> = {};
@@ -123,7 +134,7 @@ const drawToplevel = (
     });
 
     const ctx: LayoutCtx = {
-        maxWidth: 50,
+        maxWidth,
         leftWidth: 20,
         irs,
         layouts: {},

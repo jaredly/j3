@@ -39,6 +39,7 @@ export const render = (term: termkit.Terminal, store: Store, docId: string) => {
         store.getState(),
         cache,
         ds.selections,
+        term.width,
     );
     const sourceMaps: BlockEntry[] = [];
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {

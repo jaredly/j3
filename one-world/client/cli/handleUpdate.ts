@@ -2,6 +2,7 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Action, ToplevelUpdate } from '../../shared/action2';
 import { IR } from '../../shared/IR/intermediate';
 import {
+    cursorSelect,
     goLeftRight,
     IRCache,
     irNavigable,
@@ -40,7 +41,18 @@ export const handleUpdate = (
     // TODO multiselect
     const sel = ds.selections[0];
     if (sel.end) return false; // ugh
-    if (sel.start.cursor.type !== 'text') return false; // not a text update
+    if (sel.start.cursor.type !== 'text') {
+        if (key === 'BACKSPACE') {
+            return handleMovement(
+                'LEFT',
+                sel.start.path.root.doc,
+                cache,
+                store,
+            );
+        }
+
+        return false; // not a text update
+    }
     const { start, end } = sel.start.cursor;
     if (start && end.index !== start?.index) return false; // TODO
 
@@ -171,6 +183,51 @@ export const wrapWith = (
     const node = top.nodes[loc];
 
     const parent = parentPath(path);
+
+    if (!parent.children.length) {
+        const nidx = top.nextLoc;
+
+        store.update(
+            {
+                type: 'toplevel',
+                id: top.id,
+                action: {
+                    type: 'update',
+                    update: {
+                        nodes: {
+                            [nidx]: {
+                                type:
+                                    key === '['
+                                        ? 'array'
+                                        : key === '('
+                                        ? 'list'
+                                        : 'record',
+                                items: [node.loc],
+                                loc: nidx,
+                            },
+                        },
+                        root: nidx,
+                        nextLoc: nidx + 1,
+                    },
+                },
+            },
+            {
+                type: 'selection',
+                doc: path.root.doc,
+                selections: [
+                    toSelection({
+                        cursor: {
+                            type: 'text',
+                            end: { index: 0, cursor: 0 },
+                        },
+                        path: pathWithChildren(parent, nidx, node.loc),
+                    }),
+                ],
+            },
+        );
+        return;
+    }
+
     const ploc = lastChild(parent);
     const pnode = top.nodes[ploc];
     // ugh I probably should just make a type === 'collection'...
@@ -231,6 +288,7 @@ export const split = (
     if (node.type === 'id') {
         // that's a thing
         const parent = parentPath(path);
+        if (!parent.children.length) return;
         const ploc = lastChild(parent);
         const pnode = top.nodes[ploc];
         // ugh I probably should just make a type === 'collection'...
@@ -309,44 +367,102 @@ export const joinLeft = (
         // ugh I probably should just make a type === 'collection'...
         if (isCollection(pnode)) {
             const idx = pnode.items.indexOf(loc);
-            if (idx > 0) {
-                const prev = pnode.items[idx - 1];
-                const prevNode = top.nodes[prev];
-                if (prevNode.type === 'id') {
-                    const cursor = splitGraphemes(prevNode.text).length;
-                    const items = pnode.items.slice();
-                    items.splice(idx, 1);
-                    // ok we can do this now.
+            if (idx === 0) {
+                const gparent = parentPath(parent);
+                if (!gparent.children.length) return false;
+                const gploc = lastChild(gparent);
+                const gpnode = top.nodes[gploc];
+
+                if (isCollection(gpnode)) {
+                    const items = gpnode.items.slice();
+                    items.splice(idx, 1, ...pnode.items);
                     store.update(
                         topUpdate(top.id, {
                             [ploc]: { ...pnode, items },
                             [node.loc]: undefined,
-                            [prev]: {
-                                ...prevNode,
-                                text:
-                                    prevNode.text +
-                                    (current ? current.join('') : node.text),
-                            },
                         }),
                         {
                             type: 'selection',
                             doc: path.root.doc,
                             selections: [
-                                toSelection({
-                                    cursor: {
-                                        type: 'text',
-                                        end: { index: 0, cursor },
-                                    },
-                                    path: pathWithChildren(parent, prev),
-                                }),
+                                selectNode(
+                                    loc,
+                                    pathWithChildren(gparent, loc),
+                                    'start',
+                                    cache[top.id].irs,
+                                ),
                             ],
                         },
                     );
+
                     return true;
                 }
+                return false;
+                // if (pnode.items.length > 1) {
+                //     return false;
+                // }
             }
-        } else {
-            // ignore it?
+
+            const prev = pnode.items[idx - 1];
+            const prevNode = top.nodes[prev];
+            if (prevNode.type !== 'id') {
+                if (current ? current.length : node.text.length) {
+                    return false;
+                }
+                const items = pnode.items.slice();
+                items.splice(idx, 1);
+                store.update(
+                    topUpdate(top.id, {
+                        [ploc]: { ...pnode, items },
+                        [node.loc]: undefined,
+                    }),
+                    {
+                        type: 'selection',
+                        doc: path.root.doc,
+                        selections: [
+                            selectNode(
+                                prev,
+                                pathWithChildren(parent, prev),
+                                'end',
+                                cache[top.id].irs,
+                            ),
+                        ],
+                    },
+                );
+                return true;
+            }
+            if (prevNode.type === 'id') {
+                const cursor = splitGraphemes(prevNode.text).length;
+                const items = pnode.items.slice();
+                items.splice(idx, 1);
+                // ok we can do this now.
+                store.update(
+                    topUpdate(top.id, {
+                        [ploc]: { ...pnode, items },
+                        [node.loc]: undefined,
+                        [prev]: {
+                            ...prevNode,
+                            text:
+                                prevNode.text +
+                                (current ? current.join('') : node.text),
+                        },
+                    }),
+                    {
+                        type: 'selection',
+                        doc: path.root.doc,
+                        selections: [
+                            toSelection({
+                                cursor: {
+                                    type: 'text',
+                                    end: { index: 0, cursor },
+                                },
+                                path: pathWithChildren(parent, prev),
+                            }),
+                        ],
+                    },
+                );
+                return true;
+            }
         }
         // ->
     } else if (node.type === 'string') {

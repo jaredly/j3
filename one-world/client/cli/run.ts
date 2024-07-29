@@ -39,16 +39,31 @@ const run = async (term: termkit.Terminal) => {
     let { sourceMaps, cache } = render(term, store, sess.doc);
     renderSelection(term, store, docId, sourceMaps);
 
+    process.on('beforeExit', () => {
+        store.update({ type: 'selection', doc: docId, selections: [] });
+    });
+
+    term.on('resize', (width: number, height: number) => {
+        term.clear();
+        ({ sourceMaps, cache } = render(term, store, docId));
+        renderSelection(term, store, docId, sourceMaps);
+    });
+
     term.on('key', (key: string) => {
         if (key === 'ESCAPE') {
-            return process.exit(0);
+            store.update({ type: 'selection', doc: docId, selections: [] });
+
+            setTimeout(() => {
+                return process.exit(0);
+            }, 50);
         }
         if (handleMovement(key, docId, cache, store)) {
             renderSelection(term, store, docId, sourceMaps);
             return;
         }
         if (handleUpdate(key, docId, cache, store)) {
-            term.clear()(({ sourceMaps, cache } = render(term, store, docId)));
+            term.clear();
+            ({ sourceMaps, cache } = render(term, store, docId));
             renderSelection(term, store, docId, sourceMaps);
             return;
         }

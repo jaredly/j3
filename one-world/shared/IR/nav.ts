@@ -130,8 +130,9 @@ export const goLeftRight = (
     sel: IRSelection,
     cache: IRCache,
     left: boolean,
+    shift: boolean,
 ): IRSelection | void => {
-    const res = goLeftRightInner(sel, cache, left);
+    const res = goLeftRightInner(sel, cache, left, shift);
     if (res) return res;
     let { path } = sel.start;
     while (path.children.length > 1) {
@@ -162,8 +163,10 @@ export const goLeftRightInner = (
     sel: IRSelection,
     cache: IRCache,
     left: boolean,
+    shift: boolean,
 ): IRSelection | void => {
     if (sel.end) {
+        if (shift) return;
         return { start: sel.start };
     }
     const { path, cursor } = sel.start;

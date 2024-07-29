@@ -7,11 +7,11 @@ export const handleMovement = (
     cache: IRCache,
     store: Store,
 ): boolean => {
-    if (key === 'RIGHT') {
+    if (key === 'RIGHT' || key === 'SHIFT_RIGHT') {
         const ds = store.getDocSession(docId, store.session);
         if (ds.selections.length) {
             const sel = ds.selections[0];
-            const next = goLeftRight(sel, cache, false);
+            const next = goLeftRight(sel, cache, false, key === 'SHIFT_RIGHT');
             if (next) {
                 store.update({
                     type: 'selection',
@@ -23,11 +23,11 @@ export const handleMovement = (
         }
     }
 
-    if (key === 'LEFT') {
+    if (key === 'LEFT' || key === 'SHIFT_LEFT') {
         const ds = store.getDocSession(docId, store.session);
         if (ds.selections.length) {
             const sel = ds.selections[0];
-            const next = goLeftRight(sel, cache, true);
+            const next = goLeftRight(sel, cache, true, key === 'SHIFT_LEFT');
             if (next) {
                 store.update({
                     type: 'selection',

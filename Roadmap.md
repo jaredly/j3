@@ -19,7 +19,9 @@ and now I need a way to apply text formatting stuff.
   - [x] use selection(text) in rendering stuff
   - [x] split / join
   - [x] wrap `([{`
+  - [x] save partial text on escape
   - [ ] shift-left/right to select within a TEXT
+    - [ ]
   - [ ] unwrap (backspace at start of collection)
   - [ ] shift-up/down for increasing/decresing the selection
   - [ ] shift-left/right for multi-selecting siblings
