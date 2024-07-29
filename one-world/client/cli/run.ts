@@ -68,8 +68,7 @@ const run = async (term: termkit.Terminal) => {
             return;
         }
         term.moveTo(0, 30, key);
-        // ({ sourceMaps, cache } = render(term, store, docId));
-        // renderSelection(term, store, docId, sourceMaps);
+        renderSelection(term, store, docId, sourceMaps);
     });
 
     term.on('mouse', (one: string, evt: { x: number; y: number }) => {

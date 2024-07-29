@@ -4,24 +4,14 @@ import { IRSelection } from '../../shared/IR/intermediate';
 import { IRForLoc } from '../../shared/IR/layout';
 import { IRCache, selectNode } from '../../shared/IR/nav';
 import {
-    inFromEnd,
-    inFromStart,
-    nextAtom,
     Node,
     Nodes,
-    parentPath,
     Path,
-    pathWithChildren,
-    prevAtom,
     RecNodeT,
     serializePath,
     toMapInner,
-    toTheLeft,
-    toTheRight,
 } from '../../shared/nodes';
-import { PersistedState } from '../../shared/state2';
 import { Toplevel } from '../../shared/toplevels';
-import { KeyAction } from '../keyboard';
 // import { getNodeForPath, selectAll, selectNode } from '../selectNode';
 
 export const isText = (node: Node): node is TextT => node.type === 'id';

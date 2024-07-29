@@ -369,17 +369,51 @@ export const joinLeft = (
             const idx = pnode.items.indexOf(loc);
             if (idx === 0) {
                 const gparent = parentPath(parent);
-                if (!gparent.children.length) return false;
+                if (!gparent.children.length) {
+                    if (pnode.items.length === 1) {
+                        // pnode items
+
+                        store.update(
+                            {
+                                type: 'toplevel',
+                                id: top.id,
+                                action: {
+                                    type: 'update',
+                                    update: {
+                                        nodes: { [ploc]: undefined },
+                                        root: loc,
+                                    },
+                                },
+                            },
+                            {
+                                type: 'selection',
+                                doc: path.root.doc,
+                                selections: [
+                                    selectNode(
+                                        ploc,
+                                        pathWithChildren(gparent, loc),
+                                        'start',
+                                        cache[top.id].irs,
+                                    ),
+                                ],
+                            },
+                        );
+                        return true;
+                    }
+                    return false;
+                }
                 const gploc = lastChild(gparent);
                 const gpnode = top.nodes[gploc];
 
                 if (isCollection(gpnode)) {
                     const items = gpnode.items.slice();
-                    items.splice(idx, 1, ...pnode.items);
+                    const pidx = items.indexOf(ploc);
+                    if (pidx === -1) return false;
+                    items.splice(pidx, 1, ...pnode.items);
                     store.update(
                         topUpdate(top.id, {
-                            [ploc]: { ...pnode, items },
-                            [node.loc]: undefined,
+                            [gploc]: { ...pnode, items },
+                            [ploc]: undefined,
                         }),
                         {
                             type: 'selection',
