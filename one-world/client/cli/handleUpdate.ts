@@ -390,7 +390,7 @@ export const joinLeft = (
                                 doc: path.root.doc,
                                 selections: [
                                     selectNode(
-                                        ploc,
+                                        loc,
                                         pathWithChildren(gparent, loc),
                                         'start',
                                         cache[top.id].irs,
