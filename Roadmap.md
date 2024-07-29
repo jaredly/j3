@@ -17,9 +17,18 @@ and now I need a way to apply text formatting stuff.
 - [ ] editinggg
   - [x] logic to update selection
   - [x] use selection(text) in rendering stuff
-  - [ ] split / join
+  - [x] split / join
+  - [x] wrap `([{`
+  - [ ] shift-left/right to select within a TEXT
+  - [ ] unwrap (backspace at start of collection)
+  - [ ] shift-up/down for increasing/decresing the selection
+  - [ ] shift-left/right for multi-selecting siblings
+  - [ ] ctrl-left/right for swapping (with shift to swap in & out)
+    - btw i went back to `key-all` to remind myself how the shift-up/down stuff worked. it was slick.
+
 - [ ] up/down
 - [x] click to individual place
+- [ ] store.update ... should we add .. the selection, to all thigns?
 
 atttt some point I shuold make sure rich text is functional
 

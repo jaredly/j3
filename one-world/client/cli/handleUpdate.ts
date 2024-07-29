@@ -62,17 +62,23 @@ export const handleUpdate = (
         }
     }
 
-    if (key === ' ') {
-        const path = sel.start.path;
-        const node =
-            store.getState().toplevels[path.root.toplevel].nodes[
-                lastChild(path)
-            ];
-        if (node.type === 'id') {
+    const path = sel.start.path;
+    const node =
+        store.getState().toplevels[path.root.toplevel].nodes[lastChild(path)];
+
+    if (node.type === 'id') {
+        if (key === ' ') {
             split(path, st, ed, end.text, end.index, store);
             return true;
         }
-        // otherwise, spaces are fine
+
+        if (st === ed && st === 0) {
+            if (key === '[' || key === '(' || key === '{') {
+                // only work with empty?
+                wrapWith(key, path, end.text, store);
+                return true;
+            }
+        }
     }
 
     const current =
@@ -152,6 +158,62 @@ export const topUpdate = (
         update: nidx != null ? { nodes, nextLoc: nidx } : { nodes },
     },
 });
+
+export const wrapWith = (
+    key: '[' | '(' | '{',
+    path: Path,
+    current: string[] | undefined,
+    store: Store,
+) => {
+    const state = store.getState();
+    const top = state.toplevels[path.root.toplevel];
+    const loc = lastChild(path);
+    const node = top.nodes[loc];
+
+    const parent = parentPath(path);
+    const ploc = lastChild(parent);
+    const pnode = top.nodes[ploc];
+    // ugh I probably should just make a type === 'collection'...
+    if (isCollection(pnode)) {
+        const idx = pnode.items.indexOf(loc);
+        const nidx = top.nextLoc;
+        const items = pnode.items.slice();
+        items[idx] = nidx;
+
+        store.update(
+            topUpdate(
+                top.id,
+                {
+                    [ploc]: { ...pnode, items },
+                    [nidx]: {
+                        type:
+                            key === '['
+                                ? 'array'
+                                : key === '('
+                                ? 'list'
+                                : 'record',
+                        items: [node.loc],
+                        loc: nidx,
+                    },
+                },
+                nidx + 1,
+            ),
+            {
+                type: 'selection',
+                doc: path.root.doc,
+                selections: [
+                    toSelection({
+                        cursor: {
+                            type: 'text',
+                            end: { index: 0, cursor: 0 },
+                        },
+                        path: pathWithChildren(parent, nidx, node.loc),
+                    }),
+                ],
+            },
+        );
+    }
+};
 
 export const split = (
     path: Path,
