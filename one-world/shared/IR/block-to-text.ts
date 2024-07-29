@@ -51,11 +51,19 @@ export const blockToText = (
     block: Block,
     ctx: {
         color: boolean;
-        // highlight?: BlockSource;
         styles: StyleOverrides;
         sourceMaps?: BlockEntry[];
     },
 ): string => {
+    let nodeStyle = block.style;
+    if (block.node) {
+        const bstyle = ctx.styles[`${block.node.top}:${block.node.loc}`];
+        if (bstyle?.type === 'full') {
+            nodeStyle = nodeStyle
+                ? { ...nodeStyle, background: bstyle.color }
+                : { background: bstyle.color };
+        }
+    }
     switch (block.type) {
         case 'block': {
             if (block.horizontal !== false) {
@@ -80,7 +88,7 @@ export const blockToText = (
                 }
                 return blockFormat(
                     applyX0(joinChunks(chunks, block.pullLast), pos.x - pos.x0),
-                    block.style,
+                    nodeStyle,
                     ctx.color,
                 );
             }
@@ -100,7 +108,7 @@ export const blockToText = (
                         .join('\n'),
                     pos.x - pos.x0,
                 ),
-                block.style,
+                nodeStyle,
                 ctx.color,
             );
         }
@@ -140,31 +148,31 @@ export const blockToText = (
                 if (override?.type === 'full') {
                     return applyFormats(
                         block.contents,
-                        { ...block.style, background: override.color },
+                        { ...nodeStyle, background: override.color },
                         ctx.color,
                     );
                 }
                 if (!override) {
-                    return applyFormats(block.contents, block.style, ctx.color);
+                    return applyFormats(block.contents, nodeStyle, ctx.color);
                 }
                 const chars = splitGraphemes(block.contents);
                 const pre = chars.slice(0, override.start);
                 const mid = chars.slice(override.start, override.end);
                 const post = chars.slice(override.end);
                 return (
-                    applyFormats(pre.join(''), block.style, ctx.color) +
+                    applyFormats(pre.join(''), nodeStyle, ctx.color) +
                     applyFormats(
                         mid.join(''),
-                        { ...block.style, background: override.color },
+                        { ...nodeStyle, background: override.color },
                         ctx.color,
                     ) +
-                    applyFormats(post.join(''), block.style, ctx.color)
+                    applyFormats(post.join(''), nodeStyle, ctx.color)
                 );
             }
             const style: Style | undefined =
                 override?.type === 'full'
-                    ? { ...block.style, background: override.color }
-                    : block.style;
+                    ? { ...nodeStyle, background: override.color }
+                    : nodeStyle;
             let x = pos.x;
             let y = pos.y;
             let x0 = pos.x0;
@@ -262,7 +270,7 @@ export const blockToText = (
                         return res;
                     })
                     .join('\n'),
-                block.style,
+                nodeStyle,
                 ctx.color,
             );
     }

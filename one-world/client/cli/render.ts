@@ -11,6 +11,7 @@ import { selectionLocation } from './selectionLocation';
 import { IRSelection } from '../../shared/IR/intermediate';
 import { Block, blockSourceKey } from '../../shared/IR/ir-to-blocks';
 import { termColors } from '../TextEdit/colors';
+import { Path } from '../../shared/nodes';
 
 export const renderSelection = (
     term: termkit.Terminal,
@@ -111,10 +112,20 @@ export const pickDocument = (store: Store, term: termkit.Terminal) => {
     });
 };
 
+const nodeKey = (path: Path) => `${path.root.toplevel}:${lastChild(path)}`;
+
 function selectionStyleOverrides(selections: IRSelection[]) {
     const styles: StyleOverrides = {};
     selections.forEach((selection) => {
         if (selection.end) {
+            styles[nodeKey(selection.end.path)] = {
+                type: 'full',
+                color: termColors.fullHighlight,
+            };
+            styles[nodeKey(selection.start.path)] = {
+                type: 'full',
+                color: termColors.fullHighlight,
+            };
             // TODO: highlight all the things
         } else if (
             selection.start.cursor.type === 'text' &&

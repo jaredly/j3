@@ -150,6 +150,7 @@ const drawToplevel = (
         space: ' ',
         top: id,
     });
+    block.node = { top: id, loc: top.root };
 
     cache[id] = { irs, layouts: ctx.layouts, paths, root };
     return block;

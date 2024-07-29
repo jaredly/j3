@@ -23,11 +23,12 @@ and now I need a way to apply text formatting stuff.
   - [x] unwrap in various ways
   - [x] shift-left/right to select within a TEXT
   - [x] space after collection creates new
-  - [ ] stringgg lets go
+  - [x] stringgg lets go
+  - [ ] split a string's tag, and left-join a string's tag.
+  - [ ] shift-up/down for increasing/decresing the selection
   - [ ] shift-left/right for multi-selecting siblings
   - [ ] shift-left/right between [texts] of a node (string)
   - [x] unwrap (backspace at start of collection)
-  - [ ] shift-up/down for increasing/decresing the selection
   - [ ] ctrl-left/right for swapping (with shift to swap in & out)
     - btw i went back to `key-all` to remind myself how the shift-up/down stuff worked. it was slick.
 

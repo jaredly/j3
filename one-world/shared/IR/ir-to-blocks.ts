@@ -31,10 +31,13 @@ export const blockSourceKey = (source: BlockSource): string => {
             return `${source.top}:${source.loc}:C:${source.index}`;
         case 'cursor':
             return `${source.top}:${source.loc}:${source.side}`;
+        // case 'loc':
+        //     return `${source.top}:${source.loc}`;
     }
 };
 
 export type BlockSource =
+    // | { type: 'loc'; loc: number; top: string }
     | { type: 'text'; loc: number; index: number; top: string; wraps: number[] }
     | {
           type: 'control';
@@ -55,6 +58,7 @@ export type Block =
           type: 'block';
           contents: Block[];
           horizontal: false | number; // number = space
+          node?: { top: string; loc: number };
           pullLast?: boolean; // NOTE only when horizontal
           width: number;
           height: number;
@@ -71,6 +75,7 @@ export type Block =
           hspace: number;
           height: number;
           style?: Style;
+          node?: { top: string; loc: number };
       }
     // | { type: 'line'; contents: string; width: number }
     | {
@@ -80,6 +85,7 @@ export type Block =
           width: number; // max length of intermediate length
           last: number; // length of the last line
           height: number; // number of lines
+          node?: { top: string; loc: number };
           source?: BlockSource;
           // NOTE That this won't work with syntax highlighting,
           // because we need to be able to colorize sub-spans.
@@ -129,7 +135,11 @@ export const inlineSize = (
     return { width, height, last, positions };
 };
 
-export const vblock = (contents: Block[], style?: Style): Block => {
+export const vblock = (
+    contents: Block[],
+    style?: Style,
+    node?: Block['node'],
+): Block => {
     return {
         type: 'block',
         horizontal: false,
@@ -137,6 +147,7 @@ export const vblock = (contents: Block[], style?: Style): Block => {
         height: contents.map((c) => c.height).reduce((a, b) => a + b),
         width: contents.map((c) => c.width).reduce((a, b) => Math.max(a, b)),
         style,
+        node,
     };
 };
 
@@ -145,6 +156,7 @@ export const hblock = (
     style?: Style,
     spaced?: boolean,
     pullLast?: boolean,
+    node?: Block['node'],
 ): Block => {
     const height = items.map((l) => l.height).reduce((a, b) => Math.max(a, b));
     let width = items.map((l) => l.width).reduce((a, b) => a + b);
@@ -160,6 +172,7 @@ export const hblock = (
         horizontal: spaced ? 1 : 0,
         pullLast,
         style,
+        node,
     };
 };
 
@@ -167,6 +180,7 @@ export const line = (
     text: string,
     source?: BlockSource,
     style?: Style,
+    node?: Block['node'],
 ): Block => {
     const w = splitGraphemes(ansis.strip(text)).length;
     return {
@@ -178,6 +192,7 @@ export const line = (
         height: 1,
         source,
         style,
+        node,
     };
 };
 
@@ -185,22 +200,15 @@ export const irToBlock = (
     ir: IR,
     irs: Record<number, IR>,
     choices: LayoutChoices,
-    // selection: null | {
-    //     path: number[];
-    //     sel: IRCursor;
-    //     start?: IRCursor;
-    //     cursorChar: string;
-    // },
     ctx: TextCtx,
 ): Block => {
     switch (ir.type) {
         case 'loc': {
             const { choices } = ctx.layouts[ir.loc];
-            // const sub =
-            //     selection?.path[0] === ir.loc
-            //         ? { ...path: selection.path.slice(1) }
-            //         : null;
-            return irToBlock(irs[ir.loc], irs, choices, ctx);
+            return {
+                ...irToBlock(irs[ir.loc], irs, choices, ctx),
+                node: { top: ctx.top, loc: ir.loc },
+            };
         }
         case 'cursor':
             return line('', {

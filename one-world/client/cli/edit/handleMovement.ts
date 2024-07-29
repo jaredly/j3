@@ -1,4 +1,5 @@
 import { goLeftRight, IRCache } from '../../../shared/IR/nav';
+import { parentPath, serializePath } from '../../../shared/nodes';
 import { Store } from '../../StoreContext2';
 
 export const handleMovement = (
@@ -7,6 +8,36 @@ export const handleMovement = (
     cache: IRCache,
     store: Store,
 ): boolean => {
+    if (key === 'SHIFT_UP') {
+        const ds = store.getDocSession(docId, store.session);
+        if (ds.selections.length) {
+            const sel = ds.selections[0];
+            const path = sel.end ? parentPath(sel.end.path) : sel.start.path;
+            if (!path.children.length) return;
+            store.update({
+                type: 'selection',
+                doc: docId,
+                selections: [
+                    {
+                        start: sel.start,
+                        end: { path, key: serializePath(path) },
+                    },
+                ],
+            });
+            return true;
+
+            // const next = goLeftRight(sel, cache, false, key === 'SHIFT_RIGHT');
+            // if (next) {
+            //     store.update({
+            //         type: 'selection',
+            //         doc: docId,
+            //         selections: [next],
+            //     });
+            //     return true;
+            // }
+        }
+    }
+
     if (key === 'RIGHT' || key === 'SHIFT_RIGHT') {
         const ds = store.getDocSession(docId, store.session);
         if (ds.selections.length) {
