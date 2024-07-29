@@ -1,7 +1,7 @@
 import termkit from 'terminal-kit';
 import { Block } from '../../shared/IR/ir-to-blocks';
-import { handleMouse } from './handleMouse';
-import { handleMovement } from './handleMovement';
+import { handleMouse } from './edit/handleMouse';
+import { handleMovement } from './edit/handleMovement';
 import { init } from './init';
 import {
     pickDocument,
@@ -10,7 +10,7 @@ import {
     renderSelection,
 } from './render';
 import { readSess, writeSess } from './Sess';
-import { handleUpdate } from './handleUpdate';
+import { handleUpdate } from './edit/handleUpdate';
 
 // cursor line
 process.stdout.write('\x1b[6 q');

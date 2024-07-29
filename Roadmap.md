@@ -22,6 +22,8 @@ and now I need a way to apply text formatting stuff.
   - [x] save partial text on escape
   - [x] unwrap in various ways
   - [x] shift-left/right to select within a TEXT
+  - [x] space after collection creates new
+  - [ ] stringgg lets go
   - [ ] shift-left/right for multi-selecting siblings
   - [ ] shift-left/right between [texts] of a node (string)
   - [x] unwrap (backspace at start of collection)

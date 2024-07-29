@@ -1,9 +1,9 @@
-import { BlockEntry } from '../../shared/IR/block-to-text';
-import { matchesSpan } from '../../shared/IR/highlightSpan';
-import { IRCache } from '../../shared/IR/nav';
-import { Path, serializePath } from '../../shared/nodes';
-import { Store } from '../StoreContext2';
-import { selectionFromLocation } from './selectionLocation';
+import { BlockEntry } from '../../../shared/IR/block-to-text';
+import { matchesSpan } from '../../../shared/IR/highlightSpan';
+import { IRCache } from '../../../shared/IR/nav';
+import { Path, serializePath } from '../../../shared/nodes';
+import { Store } from '../../StoreContext2';
+import { selectionFromLocation } from '../selectionLocation';
 
 export const handleMouse = (
     docId: string,

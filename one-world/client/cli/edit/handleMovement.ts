@@ -1,5 +1,5 @@
-import { goLeftRight, IRCache } from '../../shared/IR/nav';
-import { Store } from '../StoreContext2';
+import { goLeftRight, IRCache } from '../../../shared/IR/nav';
+import { Store } from '../../StoreContext2';
 
 export const handleMovement = (
     key: string,
