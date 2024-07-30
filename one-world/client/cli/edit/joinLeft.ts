@@ -52,7 +52,6 @@ export const joinLeft = (
                                 doc: path.root.doc,
                                 selections: [
                                     selectNode(
-                                        loc,
                                         pathWithChildren(gparent, loc),
                                         'start',
                                         cache[top.id].irs,
@@ -82,7 +81,6 @@ export const joinLeft = (
                             doc: path.root.doc,
                             selections: [
                                 selectNode(
-                                    loc,
                                     pathWithChildren(gparent, loc),
                                     'start',
                                     cache[top.id].irs,
@@ -117,7 +115,6 @@ export const joinLeft = (
                         doc: path.root.doc,
                         selections: [
                             selectNode(
-                                prev,
                                 pathWithChildren(parent, prev),
                                 'end',
                                 cache[top.id].irs,

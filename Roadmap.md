@@ -24,8 +24,10 @@ and now I need a way to apply text formatting stuff.
   - [x] shift-left/right to select within a TEXT
   - [x] space after collection creates new
   - [x] stringgg lets go
+  - [ ] left/right from a multiselect should select the first/last of the ... group
+    - [x] partial, for when the end is just a superset of the start
   - [ ] split a string's tag, and left-join a string's tag.
-  - [ ] shift-up/down for increasing/decresing the selection
+  - [x] shift-up/down for increasing/decresing the selection
   - [ ] shift-left/right for multi-selecting siblings
   - [ ] shift-left/right between [texts] of a node (string)
   - [x] unwrap (backspace at start of collection)

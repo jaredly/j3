@@ -167,7 +167,12 @@ export const goLeftRightInner = (
 ): IRSelection | void => {
     if (sel.end) {
         if (shift) return;
-        return { start: sel.start };
+        return selectNode(
+            sel.end.path,
+            left ? 'start' : 'end',
+            cache[sel.end.path.root.toplevel].irs,
+        );
+        // return { start: sel.start };
     }
     const { path, cursor } = sel.start;
     const irRoot = cache[path.root.toplevel].irs[lastChild(path)];
@@ -249,12 +254,12 @@ const goLRFrom = (
 };
 
 export const selectNode = (
-    loc: number,
+    // loc: number,
     path: Path,
     side: 'start' | 'end',
     cache: IRForLoc,
 ) => {
-    const irs = irNavigable(cache[loc]);
+    const irs = irNavigable(cache[lastChild(path)]);
     return toSelection(
         cursorSelect(
             irs[side === 'start' ? 0 : irs.length - 1],

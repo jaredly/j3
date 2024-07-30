@@ -73,7 +73,9 @@ const run = async (term: termkit.Terminal) => {
             const { txt } = redrawWithSelection(
                 block,
                 store.getDocSession(docId, store.session).selections,
+                store.getState(),
             );
+            term.clear();
             term.moveTo(0, 2, txt);
             renderSelection(term, store, docId, sourceMaps);
             return;
@@ -105,6 +107,7 @@ const run = async (term: termkit.Terminal) => {
             const { txt } = redrawWithSelection(
                 block,
                 store.getDocSession(docId, store.session).selections,
+                store.getState(),
             );
             term.moveTo(0, 2, txt);
             renderSelection(term, store, docId, sourceMaps);

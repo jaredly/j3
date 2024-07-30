@@ -11,7 +11,8 @@ import { selectionLocation } from './selectionLocation';
 import { IRSelection } from '../../shared/IR/intermediate';
 import { Block, blockSourceKey } from '../../shared/IR/ir-to-blocks';
 import { termColors } from '../TextEdit/colors';
-import { Path } from '../../shared/nodes';
+import { childLocs, Path, pathWithChildren } from '../../shared/nodes';
+import { PersistedState } from '../../shared/state2';
 
 export const renderSelection = (
     term: termkit.Terminal,
@@ -49,7 +50,11 @@ export const render = (term: termkit.Terminal, store: Store, docId: string) => {
         ds.selections,
         term.width,
     );
-    const { txt, sourceMaps } = redrawWithSelection(block, ds.selections);
+    const { txt, sourceMaps } = redrawWithSelection(
+        block,
+        ds.selections,
+        store.getState(),
+    );
     term.moveTo(0, 2, txt);
     term.moveTo(0, 0);
     return { cache, sourceMaps, block };
@@ -58,9 +63,10 @@ export const render = (term: termkit.Terminal, store: Store, docId: string) => {
 export const redrawWithSelection = (
     block: Block,
     selections: IRSelection[],
+    state: PersistedState,
 ) => {
     const sourceMaps: BlockEntry[] = [];
-    const styles: StyleOverrides = selectionStyleOverrides(selections);
+    const styles: StyleOverrides = selectionStyleOverrides(selections, state);
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
         sourceMaps,
         color: true,
@@ -114,19 +120,65 @@ export const pickDocument = (store: Store, term: termkit.Terminal) => {
 
 const nodeKey = (path: Path) => `${path.root.toplevel}:${lastChild(path)}`;
 
-function selectionStyleOverrides(selections: IRSelection[]) {
+const nodesForSelection = (start: Path, end: Path, state: PersistedState) => {
+    if (start.root.doc !== end.root.doc) return []; // this should never happen
+    const doc = state.documents[start.root.doc];
+    if (start.root.toplevel !== end.root.toplevel) return []; // TODO handle this later folks
+    const top = state.toplevels[start.root.toplevel];
+    // Case 1: end is a parent of start
+    if (
+        start.children.length >= end.children.length &&
+        end.children.every((loc, i) => start.children[i] === loc)
+    ) {
+        return [end];
+    }
+    // Case 2: there's some kind of sibling thing going on
+    for (let i = 0; i < end.children.length && i < start.children.length; i++) {
+        if (start.children[i] === end.children[i]) continue;
+        if (i === 0) {
+            // no shared parent, this should never happen because the first id would be the
+            // toplevel's root
+            throw new Error('Bad news - first loc different');
+        }
+        const ploc = start.children[i - 1];
+        const children = childLocs(top.nodes[ploc]);
+        const a = children.indexOf(start.children[i]);
+        const b = children.indexOf(end.children[i]);
+        if (a === -1 || b == -1) {
+            throw new Error(
+                `cant find one of these things in the childLocs list ${children.join(
+                    ',',
+                )}: ${a} or ${b}`,
+            );
+        }
+        const [st, ed] = a < b ? [a, b] : [b, a];
+        const locs = children.slice(st, ed + 1);
+        const ppath: Path = {
+            root: start.root,
+            children: start.children.slice(0, i - 1),
+        };
+        return locs.map((loc) => pathWithChildren(ppath, loc));
+    }
+    return [];
+};
+
+function selectionStyleOverrides(
+    selections: IRSelection[],
+    state: PersistedState,
+) {
     const styles: StyleOverrides = {};
     selections.forEach((selection) => {
         if (selection.end) {
-            styles[nodeKey(selection.end.path)] = {
-                type: 'full',
-                color: termColors.fullHighlight,
-            };
-            styles[nodeKey(selection.start.path)] = {
-                type: 'full',
-                color: termColors.fullHighlight,
-            };
-            // TODO: highlight all the things
+            nodesForSelection(
+                selection.start.path,
+                selection.end.path,
+                state,
+            ).forEach((path) => {
+                styles[nodeKey(path)] = {
+                    type: 'full',
+                    color: termColors.fullHighlight,
+                };
+            });
         } else if (
             selection.start.cursor.type === 'text' &&
             selection.start.cursor.start

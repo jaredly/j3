@@ -129,7 +129,7 @@ const unwrap = (
                 },
             },
         },
-        selectNode(lloc, npath, 'start', cache),
+        selectNode(npath, 'start', cache),
         // {
         //     type: 'id',
         //     cursor: 0,
@@ -230,7 +230,7 @@ export const joinLeft = (
                     },
                 },
             },
-            selectNode(prev, ppath, 'end', cache[top.id].irs),
+            selectNode(ppath, 'end', cache[top.id].irs),
         ];
     }
 
