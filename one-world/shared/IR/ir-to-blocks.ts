@@ -38,7 +38,13 @@ export const blockSourceKey = (source: BlockSource): string => {
 
 export type BlockSource =
     // | { type: 'loc'; loc: number; top: string }
-    | { type: 'text'; loc: number; index: number; top: string; wraps: number[] }
+    | {
+          type: 'text';
+          loc: number;
+          index: number;
+          top: string;
+          wraps: number[];
+      }
     | {
           type: 'control';
           loc: number;
@@ -196,6 +202,26 @@ export const line = (
     };
 };
 
+const textWraps = (text: string, splits: number[]): number[] => {
+    const wraps: number[] = [];
+    let x = 0;
+    let j = 0;
+    const lines = text.split('\n');
+    lines.forEach((line, i) => {
+        let nx = x + splitGraphemes(line).length + 1;
+        for (; splits[j] < nx && j < splits.length; j++) {
+            wraps.push(splits[j]);
+        }
+
+        if (i < lines.length - 1) {
+            // wraps.push(nx);
+        }
+        x = nx;
+    });
+
+    return wraps;
+};
+
 export const irToBlock = (
     ir: IR,
     irs: Record<number, IR>,
@@ -327,7 +353,7 @@ export const irToBlock = (
                         index: ir.index,
                         loc: ir.loc,
                         top: ctx.top,
-                        wraps: [],
+                        wraps: textWraps(ir.text, []),
                     },
                     ir.style,
                 );
@@ -367,7 +393,7 @@ export const irToBlock = (
                         index: ir.index,
                         loc: ir.loc,
                         top: ctx.top,
-                        wraps: splits.splits,
+                        wraps: textWraps(ir.text, splits.splits),
                     },
                     height: pieces.length,
                     style: ir.style,
@@ -381,7 +407,7 @@ export const irToBlock = (
                     index: ir.index,
                     loc: ir.loc,
                     top: ctx.top,
-                    wraps: [],
+                    wraps: textWraps(ir.text, []),
                 },
                 ir.style,
             );

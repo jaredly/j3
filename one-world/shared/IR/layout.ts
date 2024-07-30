@@ -76,6 +76,7 @@ export const layoutIR = (
                 inlineHeight: 0,
                 inlineWidth: 0,
             };
+
         case 'switch': {
             let res: LayoutResult;
             let which = ir.options.length - 1;
@@ -102,6 +103,7 @@ export const layoutIR = (
             ctx.layouts[ir.loc] = { result, choices };
             return result;
         }
+
         case 'punct':
             return ctx.textLayout(ir.text, firstLine, ir.style);
 

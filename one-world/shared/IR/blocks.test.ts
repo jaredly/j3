@@ -263,6 +263,7 @@ test('nested wraps', () => {
 test('string with newlines', () => {
     let res = [];
     res.push(showSpans('(one "Hello\nYall" two)', 20));
+    res.push(showSpans('"Hello\nYall"', 20));
     expect('\n' + res.join('\n')).toMatchSnapshot();
 });
 
