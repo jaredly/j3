@@ -31,6 +31,7 @@ const textLayout = (text: string, firstLine: number, style?: Style) => {
         inlineWidth,
         maxWidth,
         firstLineWidth,
+        multiLine: lines.length > 1,
     };
 };
 
@@ -256,6 +257,12 @@ test('nested wraps', () => {
         debugger;
         res.push(showLayout('(one two (three four five) six seven)', i));
     }
+    expect('\n' + res.join('\n')).toMatchSnapshot();
+});
+
+test('string with newlines', () => {
+    let res = [];
+    res.push(showSpans('(one "Hello\nYall" two)', 20));
     expect('\n' + res.join('\n')).toMatchSnapshot();
 });
 

@@ -1119,3 +1119,41 @@ exports[`nested wraps 1`] = `
 
 "
 `;
+
+exports[`string with newlines 1`] = `
+"
+-------------------| 20
+(one "Hello
+      Yall "
+    two)
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(one "Hello
+      Yall "
+    two)
+[ # ] {"type":"block","start":[1,0],"width":3,"height":1}
+(o̲n̲e̲ "Hello
+      Yall "
+    two)
+[ # ] {"type":"block","start":[5,0],"width":0,"height":1}
+(one |"Hello
+      Yall "
+    two)
+[ # ] {"type":"block","start":[6,0],"width":10,"height":1}
+(one "H̲e̲l̲l̲o̲
+      Yall "
+    two)
+[ # ] {"type":"block","start":[17,0],"width":0,"height":1}
+(one "Hello|
+      Yall "
+    two)
+[ # ] {"type":"block","start":[4,1],"width":3,"height":1}
+(one "Hello
+     ̲ ̲Y̲all "
+    two)
+[ # ] {"type":"block","start":[8,1],"width":0,"height":1}
+(one "Hello
+      Ya|ll "
+    two)
+"
+`;
