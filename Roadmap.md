@@ -35,10 +35,11 @@ and now I need a way to apply text formatting stuff.
     - btw i went back to `key-all` to remind myself how the shift-up/down stuff worked. it was slick.
   - [x] UP AND DOWN
     - [ ] fix bugs in up/down
-  - [ ] WRAP FIX
+  - [x] WRAP FIX
     - [x] after one thing goes multiline, we always wrap a hbox.
-    - [ ] OK ALSO.. there's this thing, where, wrapping a thing ... results in too much size.
-    - [ ] hm maybe the trailing space thing needs to be dropped?
+    - [x] OK ALSO.. there's this thing, where, wrapping a thing ... results in too much size.
+    - [x] hm maybe the trailing space thing needs to be dropped?
+  - [ ] cursor placement in a multiline string is wrong.
   - [ ] shift-right past an ID should start into multi-select.
   - [ ] surround multiselect
   - [ ] ctrl-c, ctrl-v pls

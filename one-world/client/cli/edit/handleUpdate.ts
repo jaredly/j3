@@ -161,7 +161,8 @@ export const handleUpdate = (
         }
     }
 
-    const text = key === 'BACKSPACE' ? [] : splitGraphemes(key);
+    const text =
+        key === 'BACKSPACE' ? [] : key === 'ENTER' ? '\n' : splitGraphemes(key);
     if (text.length > 1) return false;
 
     const updated = current.slice(0, st).concat(text).concat(current.slice(ed));

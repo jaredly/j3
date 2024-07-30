@@ -293,7 +293,7 @@ export const irToBlock = (
                 const indent = ir.wrap.indent;
                 ir.items.forEach((item, i) => {
                     if (wrap.groups.includes(i)) {
-                        if (i > 0 && indent) {
+                        if (i > 0) {
                             lines.push([line(white(indent))]);
                         } else {
                             lines.push([]);
@@ -451,10 +451,14 @@ export const irToBlock = (
                 type: 'block',
                 horizontal: false,
                 contents,
-                height: contents.map((c) => c.height).reduce((a, b) => a + b),
-                width: contents
-                    .map((c) => c.width)
-                    .reduce((a, b) => Math.max(a, b)),
+                height: contents.length
+                    ? contents.map((c) => c.height).reduce((a, b) => a + b)
+                    : 1,
+                width: contents.length
+                    ? contents
+                          .map((c) => c.width)
+                          .reduce((a, b) => Math.max(a, b))
+                    : 0,
                 style: ir.style,
             };
     }

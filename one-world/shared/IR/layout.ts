@@ -262,8 +262,15 @@ export const layoutIR = (
             let lastMultiLine = false;
 
             ir.items.forEach((item, i) => {
-                const w = layoutIR(x + lineWidth, 0, item, choices, ctx);
-                lineWidth += w.maxWidth;
+                const space = i > 0 && ir.spaced ? 1 : 0;
+                const w = layoutIR(
+                    x + lineWidth + space,
+                    0,
+                    item,
+                    choices,
+                    ctx,
+                );
+                lineWidth += w.maxWidth + space;
                 inlineHeight = Math.max(inlineHeight, w.inlineHeight);
                 multiLine = multiLine || !!w.multiLine;
 
@@ -272,7 +279,10 @@ export const layoutIR = (
                     (lineWidth + x > ctx.maxWidth || lastMultiLine) &&
                     i > 0
                 ) {
-                    maxWidth = Math.max(maxWidth, lineWidth - w.maxWidth);
+                    maxWidth = Math.max(
+                        maxWidth,
+                        lineWidth - w.maxWidth - space,
+                    );
                     height += lineHeight;
 
                     groups.push(i);
@@ -289,9 +299,9 @@ export const layoutIR = (
                 } else {
                     lineHeight = Math.max(lineHeight, w.height);
                 }
-                if (ir.spaced && i < ir.items.length - 1) {
-                    lineWidth += 1;
-                }
+                // if (ir.spaced && i < ir.items.length - 1) {
+                //     lineWidth += 1;
+                // }
 
                 lastMultiLine = !!w.multiLine;
             });

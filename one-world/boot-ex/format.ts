@@ -67,7 +67,12 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                     }
                 }
             }
+            return;
         case 'array':
+            ctx.layouts[getLoc(node.loc)] = {
+                type: 'horiz',
+                wrap: 0,
+            };
             node.items.map((p) => _parse(p, ctx));
             return;
         case 'record':
