@@ -28,11 +28,12 @@ and now I need a way to apply text formatting stuff.
     - [x] partial, for when the end is just a superset of the start
   - [ ] split a string's tag, and left-join a string's tag.
   - [x] shift-up/down for increasing/decresing the selection
-  - [ ] shift-left/right for multi-selecting siblings
+  - [x] shift-left/right for multi-selecting siblings
   - [ ] shift-left/right between [texts] of a node (string)
   - [x] unwrap (backspace at start of collection)
   - [ ] ctrl-left/right for swapping (with shift to swap in & out)
     - btw i went back to `key-all` to remind myself how the shift-up/down stuff worked. it was slick.
+  - [ ] UP AND DOWN
 
 - [ ] up/down
 - [x] click to individual place

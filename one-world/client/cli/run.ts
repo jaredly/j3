@@ -1,7 +1,7 @@
 import termkit from 'terminal-kit';
 import { Block } from '../../shared/IR/ir-to-blocks';
 import { handleMouse } from './edit/handleMouse';
-import { handleMovement } from './edit/handleMovement';
+import { handleMovement, handleUpDown } from './edit/handleMovement';
 import { init } from './init';
 import {
     pickDocument,
@@ -69,7 +69,10 @@ const run = async (term: termkit.Terminal) => {
                 return process.exit(0);
             }, 50);
         }
-        if (handleMovement(key, docId, cache, store)) {
+        if (
+            handleUpDown(key, docId, cache, store, sourceMaps) ||
+            handleMovement(key, docId, cache, store)
+        ) {
             const { txt } = redrawWithSelection(
                 block,
                 store.getDocSession(docId, store.session).selections,

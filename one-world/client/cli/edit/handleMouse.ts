@@ -22,7 +22,7 @@ export const handleMouse = (
         children: cache[top].paths[found.source.loc].concat([found.source.loc]),
     };
 
-    const cursor = selectionFromLocation(found, { x, y: y });
+    const cursor = selectionFromLocation(found, { x, y });
 
     store.update({
         type: 'selection',
