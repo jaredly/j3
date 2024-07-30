@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { layout } from '../../../src/layout';
+import { layout } from '../../../src/old-layout';
 import { emptyMap } from '../../../src/parse/parse';
 import { paste } from '../../../src/state/clipboard';
 import {

@@ -252,7 +252,8 @@ test('one wrap', () => {
 
 test('nested wraps', () => {
     let res = [];
-    for (let i = 21; i >= 20; i--) {
+    for (let i = 21; i >= 15; i--) {
+        debugger;
         res.push(showLayout('(one two (three four five) six seven)', i));
     }
     expect('\n' + res.join('\n')).toMatchSnapshot();

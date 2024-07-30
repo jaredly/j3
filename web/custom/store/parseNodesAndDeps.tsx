@@ -1,6 +1,6 @@
 import { NUIState, RealizedNamespace } from '../UIState';
 import { Errors, FullEvalator } from '../../ide/ground-up/FullEvalator';
-import { layout } from '../../../src/layout';
+import { layout } from '../../../src/old-layout';
 import { NUIResults } from './Store';
 import { fromMCST } from '../../../src/types/mcst';
 import equal from 'fast-deep-equal';

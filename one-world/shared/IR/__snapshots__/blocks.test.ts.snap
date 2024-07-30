@@ -1082,5 +1082,40 @@ exports[`nested wraps 1`] = `
     (three four five)
     six seven)
 
+
+------------------| 19
+(one two (three
+             four
+             five)
+    six seven)
+
+
+-----------------| 18
+(one two (three
+             four
+             five)
+    six seven)
+
+
+----------------| 17
+(one two (three
+             four
+             five)
+    six seven)
+
+
+---------------| 16
+(one two
+    (three four
+        five)
+    six seven)
+
+
+--------------| 15
+(one two
+    (three four
+        five)
+    six seven)
+
 "
 `;

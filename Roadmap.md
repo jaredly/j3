@@ -38,6 +38,7 @@ and now I need a way to apply text formatting stuff.
   - [ ] WRAP FIX
     - [x] after one thing goes multiline, we always wrap a hbox.
     - [ ] OK ALSO.. there's this thing, where, wrapping a thing ... results in too much size.
+    - [ ] hm maybe the trailing space thing needs to be dropped?
   - [ ] shift-right past an ID should start into multi-select.
   - [ ] surround multiselect
   - [ ] ctrl-c, ctrl-v pls

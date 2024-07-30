@@ -8,7 +8,7 @@ import { NUIResults } from './Store';
 import { LocedName } from './sortTops';
 import { fromMCST, layoutEqual } from '../../../src/types/mcst';
 import equal from 'fast-deep-equal';
-import { layout } from '../../../src/layout';
+import { layout } from '../../../src/old-layout';
 import { plugins } from '../plugins';
 import { AnyEnv } from './getResults';
 import { Sendable } from '../worker/worker';

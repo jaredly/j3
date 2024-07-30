@@ -11,7 +11,7 @@ import {
 } from 'fs';
 import { IncomingMessage, createServer } from 'http';
 import path from 'path';
-import { layout } from './src/layout';
+import { layout } from './src/old-layout';
 import { toMCST } from './src/types/mcst';
 import { NUIState } from './web/custom/UIState';
 import { compressState } from './web/custom/compressState';
