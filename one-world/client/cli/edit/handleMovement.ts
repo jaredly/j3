@@ -1,5 +1,13 @@
-import { goLeftRight, IRCache } from '../../../shared/IR/nav';
-import { parentPath, Path, serializePath } from '../../../shared/nodes';
+import { IRSelection } from '../../../shared/IR/intermediate';
+import { goLeftRight, IRCache, lastChild } from '../../../shared/IR/nav';
+import {
+    childLocs,
+    parentPath,
+    Path,
+    pathWithChildren,
+    serializePath,
+} from '../../../shared/nodes';
+import { PersistedState } from '../../../shared/state2';
 import { Store } from '../../StoreContext2';
 
 export const handleMovement = (
@@ -68,6 +76,28 @@ export const handleMovement = (
         const ds = store.getDocSession(docId, store.session);
         if (ds.selections.length) {
             const sel = ds.selections[0];
+
+            // here we go for real for real
+            if (key === 'SHIFT_RIGHT' && sel.end) {
+                const path = sel.end.path;
+                if (path.children.length > 1) {
+                    const next = getAdjacent(
+                        sel.start,
+                        path,
+                        store.getState(),
+                        'right',
+                    );
+                    if (!next) return true;
+                    store.update({
+                        type: 'selection',
+                        doc: docId,
+                        selections: [next],
+                    });
+                }
+
+                return true;
+            }
+
             const next = goLeftRight(sel, cache, false, key === 'SHIFT_RIGHT');
             if (next) {
                 store.update({
@@ -84,6 +114,28 @@ export const handleMovement = (
         const ds = store.getDocSession(docId, store.session);
         if (ds.selections.length) {
             const sel = ds.selections[0];
+
+            // here we go for real for real
+            if (key === 'SHIFT_LEFT' && sel.end) {
+                const path = sel.end.path;
+                if (path.children.length > 1) {
+                    const next = getAdjacent(
+                        sel.start,
+                        path,
+                        store.getState(),
+                        'left',
+                    );
+                    if (!next) return true;
+                    store.update({
+                        type: 'selection',
+                        doc: docId,
+                        selections: [next],
+                    });
+                }
+
+                return true;
+            }
+
             const next = goLeftRight(sel, cache, true, key === 'SHIFT_LEFT');
             if (next) {
                 store.update({
@@ -96,4 +148,25 @@ export const handleMovement = (
         }
     }
     return false;
+};
+
+const getAdjacent = (
+    start: IRSelection['start'],
+    path: Path,
+    state: PersistedState,
+    dir: 'right' | 'left',
+): IRSelection | null => {
+    const ploc = path.children[path.children.length - 2];
+    const top = state.toplevels[path.root.toplevel];
+    const items = childLocs(top.nodes[ploc]);
+    const at = items.indexOf(lastChild(path));
+    if (at === -1) return null;
+    const next =
+        at === (dir === 'right' ? items.length - 1 : 0)
+            ? parentPath(path)
+            : pathWithChildren(
+                  parentPath(path),
+                  items[at + (dir === 'right' ? 1 : -1)],
+              );
+    return { start, end: { path: next, key: serializePath(next) } };
 };
