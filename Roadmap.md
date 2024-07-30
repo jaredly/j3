@@ -33,7 +33,14 @@ and now I need a way to apply text formatting stuff.
   - [x] unwrap (backspace at start of collection)
   - [ ] ctrl-left/right for swapping (with shift to swap in & out)
     - btw i went back to `key-all` to remind myself how the shift-up/down stuff worked. it was slick.
-  - [ ] UP AND DOWN
+  - [x] UP AND DOWN
+    - [ ] fix bugs in up/down
+  - [ ] WRAP FIX
+    - [x] after one thing goes multiline, we always wrap a hbox.
+    - [ ] OK ALSO.. there's this thing, where, wrapping a thing ... results in too much size.
+  - [ ] shift-right past an ID should start into multi-select.
+  - [ ] surround multiselect
+  - [ ] ctrl-c, ctrl-v pls
 
 - [ ] up/down
 - [x] click to individual place

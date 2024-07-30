@@ -240,7 +240,22 @@ test('small inline', () => {
         res.push(showSpans('"One ${two} three"', i));
     }
     expect('\n' + res.join('\n')).toMatchSnapshot();
-    // expect('\n' + showSpans('nnnnnnnnnnnnnnnnn"${lol}"')).toMatchSnapshot();
+});
+
+test('one wrap', () => {
+    let res = [];
+    for (let i = 12; i >= 7; i--) {
+        res.push(showLayout('(one two 3)', i));
+    }
+    expect('\n' + res.join('\n')).toMatchSnapshot();
+});
+
+test('nested wraps', () => {
+    let res = [];
+    for (let i = 21; i >= 20; i--) {
+        res.push(showLayout('(one two (three four five) six seven)', i));
+    }
+    expect('\n' + res.join('\n')).toMatchSnapshot();
 });
 
 const fixDollar = (txt: string) =>

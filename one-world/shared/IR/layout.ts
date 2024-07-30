@@ -31,6 +31,7 @@ type LayoutResult = {
     inlineWidth: number;
     inlineHeight: number;
     height: number;
+    multiLine?: boolean;
 };
 
 // export const space = 8;
@@ -169,6 +170,7 @@ export const layoutIR = (
                 firstLineWidth: lines[0].width + firstLine,
                 inlineHeight: res.inlineHeight,
                 inlineWidth: res.inlineWidth,
+                multiLine: lines.length > 1,
             };
         }
 
@@ -179,11 +181,13 @@ export const layoutIR = (
             let inlineHeight = 0;
             const groups: number[] = [0];
             let firstLineWidth = 0;
+            let multiLine = false;
             // iffff prev group only has one thing
             // and it's an empty text, let'sss not break after it?
             // hrm it's a little weird.
             ir.items.forEach((item, i) => {
                 let next = layoutIR(x, inlineWidth, item, choices, ctx);
+                multiLine = multiLine || !!next.multiLine;
                 if (
                     i > 0 &&
                     maxWidth > 0 &&
@@ -214,6 +218,7 @@ export const layoutIR = (
                 inlineHeight,
                 height,
                 firstLineWidth,
+                multiLine: multiLine || groups.length > 1,
             };
         }
 
@@ -243,6 +248,7 @@ export const layoutIR = (
                 inlineHeight,
                 maxWidth,
                 height,
+                multiLine: ir.items.length > 1,
             };
         }
         case 'horiz': {
@@ -252,13 +258,20 @@ export const layoutIR = (
             let height = 0;
             let inlineHeight = 0;
             const groups: number[] = [0];
+            let multiLine = false;
+            let lastMultiLine = false;
 
             ir.items.forEach((item, i) => {
                 const w = layoutIR(x + lineWidth, 0, item, choices, ctx);
                 lineWidth += w.maxWidth;
                 inlineHeight = Math.max(inlineHeight, w.inlineHeight);
+                multiLine = multiLine || !!w.multiLine;
 
-                if (ir.wrap != null && lineWidth + x > ctx.maxWidth && i > 0) {
+                if (
+                    ir.wrap != null &&
+                    (lineWidth + x > ctx.maxWidth || lastMultiLine) &&
+                    i > 0
+                ) {
                     maxWidth = Math.max(maxWidth, lineWidth - w.maxWidth);
                     height += lineHeight;
 
@@ -279,6 +292,8 @@ export const layoutIR = (
                 if (ir.spaced && i < ir.items.length - 1) {
                     lineWidth += 1;
                 }
+
+                lastMultiLine = !!w.multiLine;
             });
 
             if (ir.wrap != null) {
@@ -294,6 +309,7 @@ export const layoutIR = (
                 firstLineWidth: lineWidth + firstLine,
                 height,
                 inlineHeight,
+                multiLine: multiLine || groups.length > 1,
             };
         }
         case 'indent': {
@@ -305,6 +321,7 @@ export const layoutIR = (
                 height: res.height,
                 inlineHeight: res.inlineHeight,
                 firstLineWidth: res.inlineWidth + indent + firstLine,
+                multiLine: res.multiLine,
             };
         }
     }

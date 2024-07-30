@@ -10,7 +10,7 @@ export const matchesSpan = (
     if (span.type === 'block') {
         return (
             span.start[0] <= x &&
-            span.start[0] + (span.width || 1) > x &&
+            span.start[0] + span.width >= x &&
             span.start[1] <= y &&
             span.start[1] + span.height > y
         );

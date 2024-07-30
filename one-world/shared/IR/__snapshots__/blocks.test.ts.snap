@@ -1035,3 +1035,52 @@ exports[`small inline 1`] = `
 "One !{two} three"|
 "
 `;
+
+exports[`one wrap 1`] = `
+"
+-----------| 12
+(one two 3)
+
+
+----------| 11
+(one two 3)
+
+
+---------| 10
+(one two
+    3)
+
+
+--------| 9
+(one two
+    3)
+
+
+-------| 8
+(one two
+    3)
+
+
+------| 7
+(one
+    two
+    3)
+
+"
+`;
+
+exports[`nested wraps 1`] = `
+"
+--------------------| 21
+(one two (three four
+             five)
+    six seven)
+
+
+-------------------| 20
+(one two
+    (three four five)
+    six seven)
+
+"
+`;
