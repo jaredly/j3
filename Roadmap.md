@@ -44,6 +44,11 @@ and now I need a way to apply text formatting stuff.
   - [ ] surround multiselect
   - [ ] ctrl-c, ctrl-v pls
 
+
+Inline text wrappingg.... gotta track it right.
+
+
+
 - [ ] up/down
 - [x] click to individual place
 - [ ] store.update ... should we add .. the selection, to all thigns?

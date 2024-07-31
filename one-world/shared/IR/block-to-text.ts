@@ -145,29 +145,50 @@ export const blockToText = (
                 ? ctx.styles[blockSourceKey(block.source)]
                 : undefined;
             if (typeof block.contents === 'string') {
+                const chars = splitGraphemes(block.contents);
+                if (override?.type === 'sub') {
+                    const pre = chars.slice(0, override.start);
+                    const mid = chars.slice(override.start, override.end);
+                    const post = chars.slice(override.end);
+                    if (block.splits) {
+                        for (let i = block.splits.length - 1; i >= 0; i--) {
+                            const split = block.splits[i];
+                            if (split > override.end) {
+                                post.splice(split - override.end, 0, '\n');
+                            } else if (split > override.start) {
+                                mid.splice(split - override.start, 0, '\n');
+                            } else {
+                                pre.splice(split, 0, '\n');
+                            }
+                        }
+                    }
+                    // applySplits
+                    return (
+                        applyFormats(pre.join(''), nodeStyle, ctx.color) +
+                        applyFormats(
+                            mid.join(''),
+                            { ...nodeStyle, background: override.color },
+                            ctx.color,
+                        ) +
+                        applyFormats(post.join(''), nodeStyle, ctx.color)
+                    );
+                }
+
+                if (block.splits) {
+                    for (let i = block.splits.length - 1; i >= 0; i--) {
+                        const split = block.splits[i];
+                        chars.splice(split, 0, '\n');
+                    }
+                }
+
                 if (override?.type === 'full') {
                     return applyFormats(
-                        block.contents,
+                        chars.join(''),
                         { ...nodeStyle, background: override.color },
                         ctx.color,
                     );
                 }
-                if (!override) {
-                    return applyFormats(block.contents, nodeStyle, ctx.color);
-                }
-                const chars = splitGraphemes(block.contents);
-                const pre = chars.slice(0, override.start);
-                const mid = chars.slice(override.start, override.end);
-                const post = chars.slice(override.end);
-                return (
-                    applyFormats(pre.join(''), nodeStyle, ctx.color) +
-                    applyFormats(
-                        mid.join(''),
-                        { ...nodeStyle, background: override.color },
-                        ctx.color,
-                    ) +
-                    applyFormats(post.join(''), nodeStyle, ctx.color)
-                );
+                return applyFormats(chars.join(''), nodeStyle, ctx.color);
             }
             const style: Style | undefined =
                 override?.type === 'full'

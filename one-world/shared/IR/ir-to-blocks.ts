@@ -44,6 +44,7 @@ export type BlockSource =
           index: number;
           top: string;
           wraps: number[];
+          newLines: number[];
       }
     | {
           type: 'control';
@@ -87,6 +88,7 @@ export type Block =
     | {
           type: 'inline';
           contents: string | Block[][];
+          splits?: number[];
           first: number; // length of the first line
           width: number; // max length of intermediate length
           last: number; // length of the last line
@@ -202,25 +204,29 @@ export const line = (
     };
 };
 
-const textWraps = (text: string, splits: number[]): number[] => {
-    const wraps: number[] = [];
-    let x = 0;
-    let j = 0;
-    const lines = text.split('\n');
-    lines.forEach((line, i) => {
-        let nx = x + splitGraphemes(line).length + 1;
-        for (; splits[j] < nx && j < splits.length; j++) {
-            wraps.push(splits[j]);
-        }
-
-        if (i < lines.length - 1) {
-            // wraps.push(nx);
-        }
-        x = nx;
-    });
-
-    return wraps;
+const textNewLines = (text: string): number[] => {
+    const nls: number[] = [];
+    text.replace(/\n/g, (_, idx) => (nls.push(idx), ''));
+    return nls;
 };
+
+// const textWraps = (text: string, splits: number[]): number[] => {
+//     const wraps: number[] = [];
+//     let x = 0;
+//     let j = 0;
+//     const lines = text.split('\n');
+//     lines.forEach((line, i) => {
+//         let nx = x + splitGraphemes(line).length + 1;
+//         for (; splits[j] < nx && j < splits.length; j++) {
+//             wraps.push(splits[j]);
+//         }
+//         if (i < lines.length - 1) {
+//             // wraps.push(nx);
+//         }
+//         x = nx;
+//     });
+//     return wraps;
+// };
 
 export const irToBlock = (
     ir: IR,
@@ -353,7 +359,8 @@ export const irToBlock = (
                         index: ir.index,
                         loc: ir.loc,
                         top: ctx.top,
-                        wraps: textWraps(ir.text, []),
+                        wraps: [],
+                        newLines: textNewLines(ir.text),
                     },
                     ir.style,
                 );
@@ -363,6 +370,8 @@ export const irToBlock = (
                 let pieces: string[] = [];
                 for (let i = splits.splits.length - 1; i >= 0; i--) {
                     if (i === splits.splits.length - 1) {
+                        // NOTE: Is this working with utf8? I think we
+                        // need to splitGraphemes...
                         pieces.unshift(ir.text.slice(splits.splits[i]));
                     } else {
                         pieces.unshift(
@@ -384,18 +393,20 @@ export const irToBlock = (
 
                 return {
                     type: 'inline',
-                    contents: pieces.join('\n'),
+                    contents: ir.text, // pieces.join('\n'),
                     // STOPSHIP: This (first) calculation is off I'm pretty sure.
                     first: splitGraphemes(pieces[0]).length,
                     last: splitGraphemes(pieces[pieces.length - 1]).length,
+                    splits: splits.splits,
                     source: {
                         type: 'text',
                         index: ir.index,
                         loc: ir.loc,
                         top: ctx.top,
-                        wraps: textWraps(ir.text, splits.splits),
+                        wraps: splits.splits,
+                        newLines: textNewLines(ir.text),
                     },
-                    height: pieces.length,
+                    height: ir.text.split('\n').length + splits.splits.length,
                     style: ir.style,
                     width: maxWidth,
                 };
@@ -407,7 +418,8 @@ export const irToBlock = (
                     index: ir.index,
                     loc: ir.loc,
                     top: ctx.top,
-                    wraps: textWraps(ir.text, []),
+                    wraps: [],
+                    newLines: textNewLines(ir.text),
                 },
                 ir.style,
             );

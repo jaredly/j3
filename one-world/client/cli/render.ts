@@ -190,6 +190,7 @@ function selectionStyleOverrides(
                     top: selection.start.path.root.toplevel,
                     loc: lastChild(selection.start.path),
                     index: start.index,
+                    newLines: [],
                     wraps: [],
                 });
                 const [st, ed] =
