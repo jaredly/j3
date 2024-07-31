@@ -19,20 +19,62 @@ const shapeTextCursor = (
     if (!wraps.length && !newLines.length) {
         return pos.x - shape.start[0];
     }
-    if (pos.y === shape.start[1]) {
-        return pos.x - shape.start[0];
+
+    const wrapsByNewLine = organizeWraps(wraps, newLines);
+
+    let y = shape.start[1];
+    for (let i = 0; i < wrapsByNewLine.length; i++) {
+        // if (y === pos.y) {
+        const wraps = wrapsByNewLine[i];
+        // new we're cooking
+        for (let k = 0; k < wraps.length; k++) {
+            if (y === pos.y) {
+                // const y = shape.start[1] + k;
+                const x0 =
+                    y === shape.start[1] ? shape.start[0] : shape.hbounds[0];
+                const dx = pos.x - x0;
+                const index0 =
+                    k === 0 ? (i === 0 ? 0 : newLines[i - 1]) : wraps[k - 1];
+                //  +
+                // (index -
+                // (k === 0
+                //     ? i === 0
+                //         ? 0
+                //         : newLines[i - 1]
+                //     : wraps[k - 1]));
+                return index0 + dx;
+                // return [x, y];
+            }
+            y += 1;
+        }
+        // const start = i === 0 ? 0 : newLines[i - 1];
+        // const off =
+        //     (y === 0 ? shape.start[0] : shape.hbounds[0]) + (index - start);
+        // return [off, y];
+        // }
+        y += 1;
+        // if (i === 0) {
+        //     index--;
+        // }
+        // index--; // ~consuming the newline
     }
-    for (let i = 0; i < wraps.length; i++) {
-        const y = shape.start[1] + i + 1;
-        if (y < pos.y) continue;
-        const x0 = shape.hbounds[0];
-        const off = pos.x - x0;
-        if (i < wraps.length - 1 && wraps[i] + off > wraps[i + 1])
-            return wraps[i];
-        return wraps[i] + off;
-    }
-    // TODO fail or sth
+
     return 0;
+
+    // if (pos.y === shape.start[1]) {
+    //     return pos.x - shape.start[0];
+    // }
+    // for (let i = 0; i < wraps.length; i++) {
+    //     const y = shape.start[1] + i + 1;
+    //     if (y < pos.y) continue;
+    //     const x0 = shape.hbounds[0];
+    //     const off = pos.x - x0;
+    //     if (i < wraps.length - 1 && wraps[i] + off > wraps[i + 1])
+    //         return wraps[i];
+    //     return wraps[i] + off;
+    // }
+    // // TODO fail or sth
+    // return 0;
 };
 
 const organizeWraps = (wraps: number[], newLines: number[]) => {
@@ -65,27 +107,26 @@ const shapeTextIndex = (
     const wrapsByNewLine = organizeWraps(wraps, newLines);
     let y = shape.start[1];
     for (let i = 0; i < wrapsByNewLine.length; i++) {
-        if (i === newLines.length || newLines[i] > index) {
+        if (i === newLines.length || newLines[i] + (i === 0 ? 1 : 0) > index) {
+            const x0 = i === 0 ? 0 : newLines[i - 1];
             const wraps = wrapsByNewLine[i];
             // new we're cooking
             for (let k = 0; k < wraps.length; k++) {
                 if (wraps[k] > index) {
                     // const y = shape.start[1] + k;
                     const x =
-                        (y === 0 ? shape.start[0] : shape.hbounds[0]) +
-                        (index -
-                            (k === 0
-                                ? i === 0
-                                    ? 0
-                                    : newLines[i - 1]
-                                : wraps[k - 1]));
+                        (y === shape.start[1]
+                            ? shape.start[0]
+                            : shape.hbounds[0]) +
+                        (index - (k === 0 ? x0 : wraps[k - 1]));
                     return [x, y];
                 }
                 y += 1;
             }
             const start = i === 0 ? 0 : newLines[i - 1];
             const off =
-                (y === 0 ? shape.start[0] : shape.hbounds[0]) + (index - start);
+                (y === shape.start[1] ? shape.start[0] : shape.hbounds[0]) +
+                (index - start);
             return [off, y];
         }
         y += 1;

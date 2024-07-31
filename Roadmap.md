@@ -3,6 +3,14 @@
 I thikn wrapping is kinda fine?
 and now I need a way to apply text formatting stuff.
 
+
+- [ ] TEXT WRAPPINGS
+  - [ ] newlines+wraps
+    - [x] index -> pos (show)
+    START HERE
+    - [ ] pos -> index (click)
+
+
 - [x] text formatting lookin great
 - [x] selection!management!
   - [x]
