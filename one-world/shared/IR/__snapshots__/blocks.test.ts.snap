@@ -1139,22 +1139,22 @@ exports[`string with newlines 1`] = `
 (one |"Hello
       Yall "
     two)
-[ # ] {"type":"block","start":[6,0],"width":10,"height":1}
+[ # ] {"type":"inline","start":[6,0],"end":[16,1],"hbounds":[6,16]}
 (one "H̲e̲l̲l̲o̲
-      Yall "
+      Y̲a̲l̲l̲ ̲"̲
     two)
-[ # ] {"type":"block","start":[17,0],"width":0,"height":1}
-(one "Hello|
-      Yall "
-    two)
-[ # ] {"type":"block","start":[4,1],"width":3,"height":1}
+[ # ] {"type":"block","start":[17,1],"width":0,"height":1}
 (one "Hello
-     ̲ ̲Y̲all "
+      Yall "|
     two)
-[ # ] {"type":"block","start":[8,1],"width":0,"height":1}
+[ # ] {"type":"block","start":[4,2],"width":3,"height":1}
 (one "Hello
-      Ya|ll "
-    two)
+      Yall "
+    t̲w̲o̲)
+[ # ] {"type":"block","start":[8,2],"width":0,"height":1}
+(one "Hello
+      Yall "
+    two)|
 
 -------------------| 20
 "Hello
@@ -1163,11 +1163,11 @@ exports[`string with newlines 1`] = `
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
 |"Hello
  Yall "
-[ # ] {"type":"block","start":[1,0],"width":10,"height":1}
+[ # ] {"type":"inline","start":[1,0],"end":[11,1],"hbounds":[1,11]}
 "H̲e̲l̲l̲o̲
- Yall "
-[ # ] {"type":"block","start":[12,0],"width":0,"height":1}
-"Hello|
- Yall "
+ Y̲a̲l̲l̲ ̲"̲
+[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
+"Hello
+ Yall "|
 "
 `;

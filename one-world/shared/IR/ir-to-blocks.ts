@@ -197,7 +197,7 @@ export const line = (
         width: w,
         first: w,
         last: w,
-        height: 1,
+        height: text.split('\n').length,
         source,
         style,
         node,

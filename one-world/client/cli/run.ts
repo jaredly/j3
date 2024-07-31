@@ -151,6 +151,7 @@ getTerm().then((term) => {
             console.log('failed I guess');
             console.log(err);
             term.grabInput(false);
+            process.exit(1);
         },
     );
 });

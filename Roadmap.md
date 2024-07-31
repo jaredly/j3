@@ -46,6 +46,9 @@ and now I need a way to apply text formatting stuff.
 
 
 Inline text wrappingg.... gotta track it right.
+- [ ] highlighting wrapped text now works
+- [ ] but with newlines locations dont work
+- [ ] hrm
 
 
 

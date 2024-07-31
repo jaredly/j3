@@ -14,8 +14,9 @@ const shapeTextCursor = (
     pos: { x: number; y: number },
     shape: Extract<BlockEntry['shape'], { type: 'inline' }>,
     wraps: number[],
+    newLines: number[],
 ): number => {
-    if (!wraps.length) {
+    if (!wraps.length && !newLines.length) {
         return pos.x - shape.start[0];
     }
     if (pos.y === shape.start[1]) {
@@ -34,26 +35,66 @@ const shapeTextCursor = (
     return 0;
 };
 
+const organizeWraps = (wraps: number[], newLines: number[]) => {
+    const org: number[][] = [];
+    let j = 0;
+    newLines.forEach((ln, i) => {
+        const line: number[] = [];
+        org.push(line);
+        for (; j < wraps.length && wraps[j] < ln; j++) {
+            line.push(wraps[j]);
+        }
+    });
+    const last: number[] = [];
+    org.push(last);
+    for (; j < wraps.length; j++) {
+        last.push(wraps[j]);
+    }
+    return org;
+};
+
 const shapeTextIndex = (
     index: number,
     shape: Extract<BlockEntry['shape'], { type: 'inline' }>,
     wraps: number[],
+    newLines: number[],
 ) => {
-    if (!wraps.length) {
+    if (!wraps.length && !newLines.length) {
         return [shape.start[0] + index, shape.start[1]];
     }
-    // const chars = splitGraphemes(ir.text);
-    for (let i = 0; i < wraps.length; i++) {
-        if (wraps[i] > index) {
-            const y = shape.start[1] + i;
-            const x =
-                (i === 0 ? shape.start[0] : shape.hbounds[0]) +
-                (index - (i === 0 ? 0 : wraps[i - 1]));
-            return [x, y];
+    const wrapsByNewLine = organizeWraps(wraps, newLines);
+    let y = shape.start[1];
+    for (let i = 0; i < wrapsByNewLine.length; i++) {
+        if (i === newLines.length || newLines[i] > index) {
+            const wraps = wrapsByNewLine[i];
+            // new we're cooking
+            for (let k = 0; k < wraps.length; k++) {
+                if (wraps[k] > index) {
+                    // const y = shape.start[1] + k;
+                    const x =
+                        (y === 0 ? shape.start[0] : shape.hbounds[0]) +
+                        (index -
+                            (k === 0
+                                ? i === 0
+                                    ? 0
+                                    : newLines[i - 1]
+                                : wraps[k - 1]));
+                    return [x, y];
+                }
+                y += 1;
+            }
+            const start = i === 0 ? 0 : newLines[i - 1];
+            const off =
+                (y === 0 ? shape.start[0] : shape.hbounds[0]) + (index - start);
+            return [off, y];
         }
+        y += 1;
+        if (i === 0) {
+            index--;
+        }
+        // index--; // ~consuming the newline
     }
-    const x = shape.hbounds[0] + (index - wraps[wraps.length - 1]);
-    return [x, shape.end[1]];
+    throw new Error(`Logic issue, got to the end of the line`);
 };
 
 export const selectionLocation = (
@@ -86,13 +127,18 @@ export const selectionLocation = (
                         throw new Error('what cursor');
                     return { source, pos: [x + cursor.end.cursor, y] };
                 }
+                const pos = shapeTextIndex(
+                    cursor.end.cursor,
+                    source.shape,
+                    source.source.wraps,
+                    source.source.newLines,
+                );
+                if (isNaN(pos[0]) || isNaN(pos[1])) {
+                    throw new Error('text index pos nan');
+                }
                 return {
                     source,
-                    pos: shapeTextIndex(
-                        cursor.end.cursor,
-                        source.shape,
-                        source.source.wraps,
-                    ),
+                    pos,
                 };
         }
     }
@@ -125,6 +171,7 @@ export const selectionFromLocation = (
                         pos,
                         source.shape,
                         source.source.wraps,
+                        source.source.newLines,
                     ),
                 },
             };
