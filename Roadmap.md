@@ -11,6 +11,7 @@ and now I need a way to apply text formatting stuff.
   - [x] the "end" cursor pos after a string with newlines is in the wrong place.
   - [x] wrappign after an interpolation seems busted.
 
+- [x] deleting strings
 
 
 - [x] text formatting lookin great
