@@ -274,6 +274,13 @@ test('wrap after interpolation', () => {
     expect('\n' + res.join('\n')).toMatchSnapshot();
 });
 
+test('simple a/b', () => {
+    debugger;
+    let res = [];
+    res.push(showSpans('"A\nB"', 20, true));
+    expect('\n' + res.join('\n')).toMatchSnapshot();
+});
+
 test('string with newlines in interp', () => {
     let res = [];
     res.push(showSpans('"A${"B\nC"}D E F"', 20, true));

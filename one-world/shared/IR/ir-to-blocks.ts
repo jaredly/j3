@@ -183,6 +183,20 @@ export const hblock = (
     };
 };
 
+const splitChars = (chars: string[], which = '\n'): string[][] => {
+    let idx = chars.indexOf(which);
+    if (idx === -1) return [chars];
+    const lines = [];
+    let prev = 0;
+    while (idx !== -1) {
+        lines.push(chars.slice(prev, idx));
+        prev = idx + 1;
+        idx = chars.indexOf(which, prev);
+    }
+    lines.push(chars.slice(prev));
+    return lines;
+};
+
 export const line = (
     text: string,
     source?: BlockSource,
@@ -191,7 +205,7 @@ export const line = (
 ): Block => {
     const lines = text.split('\n');
     const lens = lines.map((l) => splitGraphemes(l).length);
-    const maxW = lens.reduce((a, b) => a + b, 0);
+    const maxW = lens.reduce((a, b) => Math.max(a, b), 0);
     return {
         type: 'inline',
         contents: text,
@@ -368,36 +382,43 @@ export const irToBlock = (
             }
             const splits = choices[ir.wrap];
             if (splits?.type === 'text-wrap' && splits.splits.length) {
-                let pieces: string[] = [];
+                let pieces: string[][] = [];
+                const chars = splitGraphemes(ir.text);
                 for (let i = splits.splits.length - 1; i >= 0; i--) {
                     if (i === splits.splits.length - 1) {
                         // NOTE: Is this working with utf8? I think we
                         // need to splitGraphemes...
-                        pieces.unshift(ir.text.slice(splits.splits[i]));
+                        pieces.unshift(
+                            ...splitChars(chars.slice(splits.splits[i])),
+                        );
                     } else {
                         pieces.unshift(
-                            ir.text.slice(
-                                splits.splits[i],
-                                splits.splits[i + 1],
+                            ...splitChars(
+                                chars.slice(
+                                    splits.splits[i],
+                                    splits.splits[i + 1],
+                                ),
                             ),
                         );
                     }
                     if (i === 0) {
-                        pieces.unshift(ir.text.slice(0, splits.splits[0]));
+                        pieces.unshift(
+                            ...splitChars(chars.slice(0, splits.splits[0])),
+                        );
                     }
                 }
 
                 let maxWidth = 0;
                 pieces.forEach((line) => {
-                    maxWidth = Math.max(maxWidth, splitGraphemes(line).length);
+                    maxWidth = Math.max(maxWidth, line.length);
                 });
 
                 return {
                     type: 'inline',
                     contents: ir.text, // pieces.join('\n'),
                     // STOPSHIP: This (first) calculation is off I'm pretty sure.
-                    first: splitGraphemes(pieces[0]).length,
-                    last: splitGraphemes(pieces[pieces.length - 1]).length,
+                    first: pieces[0].length,
+                    last: pieces[pieces.length - 1].length,
                     splits: splits.splits,
                     source: {
                         type: 'text',
