@@ -12,6 +12,7 @@ and now I need a way to apply text formatting stuff.
   - [x] wrappign after an interpolation seems busted.
 
 - [x] deleting strings
+- [ ] backspace from a `start` to delete a previous empty string, should work
 
 
 - [x] text formatting lookin great
@@ -50,7 +51,7 @@ and now I need a way to apply text formatting stuff.
     - [x] after one thing goes multiline, we always wrap a hbox.
     - [x] OK ALSO.. there's this thing, where, wrapping a thing ... results in too much size.
     - [x] hm maybe the trailing space thing needs to be dropped?
-  - [ ] cursor placement in a multiline string is wrong.
+  - [x] cursor placement in a multiline string is wrong.
   - [ ] shift-right past an ID should start into multi-select.
   - [ ] surround multiselect
   - [ ] ctrl-c, ctrl-v pls
