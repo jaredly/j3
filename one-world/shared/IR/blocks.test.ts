@@ -193,7 +193,6 @@ test('wow ok so bigbug here', () => {
     ).toMatchSnapshot();
     expect('\n' + showSpans('"${(lov -sss)}NNN"', 10)).toMatchSnapshot();
 
-    debugger;
     expect(
         '\n' +
             showLayout(
@@ -255,7 +254,6 @@ test('one wrap', () => {
 test('nested wraps', () => {
     let res = [];
     for (let i = 21; i >= 15; i--) {
-        debugger;
         res.push(showLayout('(one two (three four five) six seven)', i));
     }
     expect('\n' + res.join('\n')).toMatchSnapshot();
@@ -271,6 +269,7 @@ test('string with newlines', () => {
 test('wrap after interpolation', () => {
     let res = [];
     for (let i = 12; i >= 10; i--) {
+        debugger;
         res.push(showLayout('"${abc} A B three four"', i));
     }
     expect('\n' + res.join('\n')).toMatchSnapshot();

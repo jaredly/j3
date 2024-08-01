@@ -135,11 +135,10 @@ export const layoutIR = (
                 let lineHeight = 0;
                 let lineWidth = i === 0 ? firstLine : 0;
                 words.forEach((seg) => {
-                    // let text = lines[lines.length - 1] + seg.segment;
                     res = ctx.textLayout(seg.segment, lineWidth, ir.style);
+                    // TODO: support "eliding" trailing whitespace
                     if (
                         res.inlineWidth + x > ctx.maxWidth &&
-                        seg.isWordLike &&
                         lines[lines.length - 1].text != ''
                     ) {
                         wraps.push(index);
@@ -150,7 +149,8 @@ export const layoutIR = (
                         lineWidth = res.inlineWidth;
                     } else {
                         lines[lines.length - 1].text += seg.segment;
-                        lines[lines.length - 1].width += res.maxWidth;
+                        lines[lines.length - 1].width +=
+                            res.maxWidth - lineWidth;
                         maxWidth = Math.max(
                             maxWidth,
                             lines[lines.length - 1].width,

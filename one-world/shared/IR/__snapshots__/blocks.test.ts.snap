@@ -143,24 +143,24 @@ exports[`text with wrap on inclusion 1`] = `
 exports[`highlight over wrap 1`] = `
 "
 -------------------| 20
-"Hello !{folks}
-  this will.   "
+"Hello !{folks} this
+  will.             "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|"Hello !{folks}
-  this will.   "
+|"Hello !{folks} this
+  will.             "
 [ # ] {"type":"block","start":[1,0],"width":6,"height":1}
-"H̲e̲l̲l̲o̲ ̲!{folks}
-  this will.   "
+"H̲e̲l̲l̲o̲ ̲!{folks} this
+  will.             "
 [ # ] {"type":"block","start":[9,0],"width":5,"height":1}
-"Hello !{f̲o̲l̲k̲s̲}
-  this will.   "
-[ # ] {"type":"block","start":[1,1],"width":11,"height":1}
-"Hello !{folks}
-  ̲t̲h̲i̲s̲ ̲w̲i̲l̲l̲.̲   "
-[ # ] {"type":"block","start":[16,1],"width":0,"height":1}
-"Hello !{folks}
-  this will.   "|
+"Hello !{f̲o̲l̲k̲s̲} this
+  will.             "
+[ # ] {"type":"inline","start":[15,0],"end":[7,1],"hbounds":[1,20]}
+"Hello !{folks} ̲t̲h̲i̲s̲
+  ̲w̲i̲l̲l̲.̲             "
+[ # ] {"type":"block","start":[21,1],"width":0,"height":1}
+"Hello !{folks} this
+  will.             "|
 "
 `;
 
@@ -168,37 +168,37 @@ exports[`showing spans of string with inclusion 2`] = `
 "
 -------------------| 20
 "hi this is !{a}
-  something !{abc}
-  that will wrap  "
+ something !{abc}
+ that will wrap   "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
 |"hi this is !{a}
-  something !{abc}
-  that will wrap  "
+ something !{abc}
+ that will wrap   "
 [ # ] {"type":"block","start":[1,0],"width":11,"height":1}
 "h̲i̲ ̲t̲h̲i̲s̲ ̲i̲s̲ ̲!{a}
-  something !{abc}
-  that will wrap  "
+ something !{abc}
+ that will wrap   "
 [ # ] {"type":"block","start":[14,0],"width":1,"height":1}
 "hi this is !{a̲}
-  something !{abc}
-  that will wrap  "
-[ # ] {"type":"block","start":[1,1],"width":11,"height":1}
+ something !{abc}
+ that will wrap   "
+[ # ] {"type":"inline","start":[16,0],"end":[11,1],"hbounds":[1,17]}
+"hi this is !{a} ̲
+ s̲o̲m̲e̲t̲h̲i̲n̲g̲ ̲!{abc}
+ that will wrap   "
+[ # ] {"type":"block","start":[13,1],"width":3,"height":1}
 "hi this is !{a}
-  ̲s̲o̲m̲e̲t̲h̲i̲n̲g̲ ̲!{abc}
-  that will wrap  "
-[ # ] {"type":"block","start":[14,1],"width":3,"height":1}
+ something !{a̲b̲c̲}
+ that will wrap   "
+[ # ] {"type":"inline","start":[17,1],"end":[15,2],"hbounds":[1,18]}
 "hi this is !{a}
-  something !{a̲b̲c̲}
-  that will wrap  "
-[ # ] {"type":"block","start":[1,2],"width":15,"height":1}
-"hi this is !{a}
-  something !{abc}
-  ̲t̲h̲a̲t̲ ̲w̲i̲l̲l̲ ̲w̲r̲a̲p̲  "
+ something !{abc} ̲
+ t̲h̲a̲t̲ ̲w̲i̲l̲l̲ ̲w̲r̲a̲p̲   "
 [ # ] {"type":"block","start":[19,2],"width":0,"height":1}
 "hi this is !{a}
-  something !{abc}
-  that will wrap  "|
+ something !{abc}
+ that will wrap   "|
 "
 `;
 
@@ -477,6 +477,7 @@ exports[`wow ok so bigbug here 6`] = `
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -what
@@ -488,6 +489,7 @@ exports[`wow ok so bigbug here 6`] = `
 |(What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -what
@@ -498,6 +500,7 @@ exports[`wow ok so bigbug here 6`] = `
 (W̲h̲a̲t̲
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -what
@@ -508,6 +511,7 @@ exports[`wow ok so bigbug here 6`] = `
 (What
     j̲s̲"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -what
@@ -518,6 +522,7 @@ exports[`wow ok so bigbug here 6`] = `
 (What
     js"|!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -what
@@ -528,146 +533,161 @@ exports[`wow ok so bigbug here 6`] = `
 (What
     js"!{w̲h̲a̲t̲}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -what
              you)            }
        P{}
        sdfb                   ")
-[ # ] {"type":"block","start":[7,2],"width":11,"height":1}
+[ # ] {"type":"inline","start":[7,2],"end":[8,3],"hbounds":[7,17]}
 (What
     js"!{what}
-       a̲s̲d̲f̲a̲A̲S̲D̲J̲K̲ ̲
+       a̲s̲d̲f̲a̲A̲S̲D̲J̲K̲
+        ̲
        !{(loveit
              and-what"!{for}"
              -what
              you)            }
        P{}
        sdfb                   ")
-[ # ] {"type":"block","start":[9,3],"width":0,"height":1}
+[ # ] {"type":"block","start":[9,4],"width":0,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{|(loveit
              and-what"!{for}"
              -what
              you)            }
        P{}
        sdfb                   ")
-[ # ] {"type":"block","start":[10,3],"width":6,"height":1}
+[ # ] {"type":"block","start":[10,4],"width":6,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(l̲o̲v̲e̲i̲t̲
              and-what"!{for}"
              -what
              you)            }
        P{}
        sdfb                   ")
-[ # ] {"type":"block","start":[13,4],"width":8,"height":1}
+[ # ] {"type":"block","start":[13,5],"width":8,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              a̲n̲d̲-̲w̲h̲a̲t̲"!{for}"
              -what
              you)            }
        P{}
        sdfb                   ")
-[ # ] {"type":"block","start":[22,4],"width":0,"height":1}
+[ # ] {"type":"block","start":[22,5],"width":0,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"|!{for}"
              -what
              you)            }
        P{}
        sdfb                   ")
-[ # ] {"type":"block","start":[24,4],"width":3,"height":1}
+[ # ] {"type":"block","start":[24,5],"width":3,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{f̲o̲r̲}"
              -what
              you)            }
        P{}
        sdfb                   ")
-[ # ] {"type":"block","start":[28,4],"width":0,"height":1}
+[ # ] {"type":"block","start":[28,5],"width":0,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}|"
              -what
              you)            }
        P{}
        sdfb                   ")
-[ # ] {"type":"block","start":[29,4],"width":0,"height":1}
+[ # ] {"type":"block","start":[29,5],"width":0,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"|
              -what
              you)            }
        P{}
        sdfb                   ")
-[ # ] {"type":"block","start":[13,5],"width":5,"height":1}
+[ # ] {"type":"block","start":[13,6],"width":5,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -̲w̲h̲a̲t̲
              you)            }
        P{}
        sdfb                   ")
-[ # ] {"type":"block","start":[13,6],"width":3,"height":1}
+[ # ] {"type":"block","start":[13,7],"width":3,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -what
              y̲o̲u̲)            }
        P{}
        sdfb                   ")
-[ # ] {"type":"block","start":[17,6],"width":0,"height":1}
+[ # ] {"type":"block","start":[17,7],"width":0,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -what
              you)|            }
        P{}
        sdfb                   ")
-[ # ] {"type":"inline","start":[7,7],"end":[11,8],"hbounds":[7,11]}
+[ # ] {"type":"inline","start":[7,8],"end":[11,9],"hbounds":[7,11]}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -what
              you)            }
        P̲{̲}̲ ̲
        s̲d̲f̲b̲                   ")
-[ # ] {"type":"block","start":[31,8],"width":0,"height":1}
+[ # ] {"type":"block","start":[31,9],"width":0,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -what
              you)            }
        P{}
        sdfb                   "|)
-[ # ] {"type":"block","start":[32,8],"width":0,"height":1}
+[ # ] {"type":"block","start":[32,9],"width":0,"height":1}
 (What
     js"!{what}
        asdfaASDJK
+
        !{(loveit
              and-what"!{for}"
              -what
@@ -682,129 +702,129 @@ exports[`wow ok so bigbug here 7`] = `
 -------------------------------------------------| 50
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
 |(What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[1,0],"width":4,"height":1}
 (W̲h̲a̲t̲ ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[6,0],"width":8,"height":1}
 (What o̲k̲-̲f̲o̲l̲k̲s̲ hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[15,0],"width":2,"height":1}
 (What ok-folks h̲s̲ ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[18,0],"width":0,"height":1}
 (What ok-folks hs |""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[19,0],"width":0,"height":1}
 (What ok-folks hs "|"
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[20,0],"width":0,"height":1}
 (What ok-folks hs ""|
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[4,1],"width":2,"height":1}
 (What ok-folks hs ""
     j̲s̲"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[7,1],"width":7,"height":1}
 (What ok-folks hs ""
     js"s̲d̲f̲a̲s̲d̲f̲!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[16,1],"width":4,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{w̲h̲a̲t̲}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[21,1],"width":10,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}a̲s̲d̲f̲a̲A̲S̲D̲J̲K̲
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[9,2],"width":0,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{|(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{|(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[10,2],"width":6,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(l̲o̲v̲e̲i̲t̲ and-what"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(l̲o̲v̲e̲i̲t̲ and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[17,2],"width":8,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit a̲n̲d̲-̲w̲h̲a̲t̲"!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit a̲n̲d̲-̲w̲h̲a̲t̲"!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[26,2],"width":0,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"|!{for}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"|!{for}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[28,2],"width":3,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{f̲o̲r̲}" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{f̲o̲r̲}" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[32,2],"width":0,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}|" -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}|" -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[33,2],"width":0,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}"| -what you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}"| -what you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[34,2],"width":5,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -̲w̲h̲a̲t̲ you)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -̲w̲h̲a̲t̲ you)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[40,2],"width":3,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what y̲o̲u̲)}
-       P{} sdfb                              ")
+       !{(loveit and-what"!{for}" -what y̲o̲u̲)}P{}
+       sdfb                                      ")
 [ # ] {"type":"block","start":[44,2],"width":0,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)|}
-       P{} sdfb                              ")
-[ # ] {"type":"block","start":[7,3],"width":8,"height":1}
+       !{(loveit and-what"!{for}" -what you)|}P{}
+       sdfb                                      ")
+[ # ] {"type":"inline","start":[45,2],"end":[11,3],"hbounds":[7,49]}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P̲{̲}̲ ̲s̲d̲f̲b̲                              ")
-[ # ] {"type":"block","start":[46,3],"width":0,"height":1}
+       !{(loveit and-what"!{for}" -what you)}P̲{̲}̲ ̲
+       s̲d̲f̲b̲                                      ")
+[ # ] {"type":"block","start":[50,3],"width":0,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              "|)
-[ # ] {"type":"block","start":[47,3],"width":0,"height":1}
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      "|)
+[ # ] {"type":"block","start":[51,3],"width":0,"height":1}
 (What ok-folks hs ""
     js"sdfasdf!{what}asdfaASDJK
-       !{(loveit and-what"!{for}" -what you)}
-       P{} sdfb                              ")|
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")|
 "
 `;
 
@@ -849,28 +869,28 @@ exports[`small inline 1`] = `
 ---------| 10
 "One
  !{two}
-  three"
+ three  "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
 |"One
  !{two}
-  three"
+ three  "
 [ # ] {"type":"block","start":[1,0],"width":4,"height":1}
 "O̲n̲e̲ ̲
  !{two}
-  three"
+ three  "
 [ # ] {"type":"block","start":[3,1],"width":3,"height":1}
 "One
  !{t̲w̲o̲}
-  three"
-[ # ] {"type":"block","start":[1,2],"width":6,"height":1}
+ three  "
+[ # ] {"type":"inline","start":[7,1],"end":[6,2],"hbounds":[1,8]}
+"One
+ !{two} ̲
+ t̲h̲r̲e̲e̲  "
+[ # ] {"type":"block","start":[9,2],"width":0,"height":1}
 "One
  !{two}
-  ̲t̲h̲r̲e̲e̲"
-[ # ] {"type":"block","start":[8,2],"width":0,"height":1}
-"One
- !{two}
-  three"|
+ three  "|
 
 ----------| 11
 "One !{two}
@@ -894,103 +914,103 @@ exports[`small inline 1`] = `
 
 -----------| 12
 "One !{two}
-  three    "
+ three      "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
 |"One !{two}
-  three    "
+ three      "
 [ # ] {"type":"block","start":[1,0],"width":4,"height":1}
 "O̲n̲e̲ ̲!{two}
-  three    "
+ three      "
 [ # ] {"type":"block","start":[7,0],"width":3,"height":1}
 "One !{t̲w̲o̲}
-  three    "
-[ # ] {"type":"block","start":[1,1],"width":6,"height":1}
+ three      "
+[ # ] {"type":"inline","start":[11,0],"end":[6,1],"hbounds":[1,12]}
+"One !{two} ̲
+ t̲h̲r̲e̲e̲      "
+[ # ] {"type":"block","start":[13,1],"width":0,"height":1}
 "One !{two}
-  ̲t̲h̲r̲e̲e̲    "
-[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
-"One !{two}
-  three    "|
+ three      "|
 
 ------------| 13
 "One !{two}
-  three    "
+ three      "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
 |"One !{two}
-  three    "
+ three      "
 [ # ] {"type":"block","start":[1,0],"width":4,"height":1}
 "O̲n̲e̲ ̲!{two}
-  three    "
+ three      "
 [ # ] {"type":"block","start":[7,0],"width":3,"height":1}
 "One !{t̲w̲o̲}
-  three    "
-[ # ] {"type":"block","start":[1,1],"width":6,"height":1}
+ three      "
+[ # ] {"type":"inline","start":[11,0],"end":[6,1],"hbounds":[1,12]}
+"One !{two} ̲
+ t̲h̲r̲e̲e̲      "
+[ # ] {"type":"block","start":[13,1],"width":0,"height":1}
 "One !{two}
-  ̲t̲h̲r̲e̲e̲    "
-[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
-"One !{two}
-  three    "|
+ three      "|
 
 -------------| 14
 "One !{two}
-  three    "
+ three      "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
 |"One !{two}
-  three    "
+ three      "
 [ # ] {"type":"block","start":[1,0],"width":4,"height":1}
 "O̲n̲e̲ ̲!{two}
-  three    "
+ three      "
 [ # ] {"type":"block","start":[7,0],"width":3,"height":1}
 "One !{t̲w̲o̲}
-  three    "
-[ # ] {"type":"block","start":[1,1],"width":6,"height":1}
+ three      "
+[ # ] {"type":"inline","start":[11,0],"end":[6,1],"hbounds":[1,12]}
+"One !{two} ̲
+ t̲h̲r̲e̲e̲      "
+[ # ] {"type":"block","start":[13,1],"width":0,"height":1}
 "One !{two}
-  ̲t̲h̲r̲e̲e̲    "
-[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
-"One !{two}
-  three    "|
+ three      "|
 
 --------------| 15
 "One !{two}
-  three    "
+ three      "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
 |"One !{two}
-  three    "
+ three      "
 [ # ] {"type":"block","start":[1,0],"width":4,"height":1}
 "O̲n̲e̲ ̲!{two}
-  three    "
+ three      "
 [ # ] {"type":"block","start":[7,0],"width":3,"height":1}
 "One !{t̲w̲o̲}
-  three    "
-[ # ] {"type":"block","start":[1,1],"width":6,"height":1}
+ three      "
+[ # ] {"type":"inline","start":[11,0],"end":[6,1],"hbounds":[1,12]}
+"One !{two} ̲
+ t̲h̲r̲e̲e̲      "
+[ # ] {"type":"block","start":[13,1],"width":0,"height":1}
 "One !{two}
-  ̲t̲h̲r̲e̲e̲    "
-[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
-"One !{two}
-  three    "|
+ three      "|
 
 ---------------| 16
 "One !{two}
-  three    "
+ three      "
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
 |"One !{two}
-  three    "
+ three      "
 [ # ] {"type":"block","start":[1,0],"width":4,"height":1}
 "O̲n̲e̲ ̲!{two}
-  three    "
+ three      "
 [ # ] {"type":"block","start":[7,0],"width":3,"height":1}
 "One !{t̲w̲o̲}
-  three    "
-[ # ] {"type":"block","start":[1,1],"width":6,"height":1}
+ three      "
+[ # ] {"type":"inline","start":[11,0],"end":[6,1],"hbounds":[1,12]}
+"One !{two} ̲
+ t̲h̲r̲e̲e̲      "
+[ # ] {"type":"block","start":[13,1],"width":0,"height":1}
 "One !{two}
-  ̲t̲h̲r̲e̲e̲    "
-[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
-"One !{two}
-  three    "|
+ three      "|
 
 ----------------| 17
 "One !{two} three"
@@ -1175,22 +1195,20 @@ exports[`string with newlines 1`] = `
 exports[`wrap after interpolation 1`] = `
 "
 -----------| 12
-"!{abc}
-  A B three
- four       "
+"!{abc} A B
+ three four "
 
 
 ----------| 11
-"!{abc}
-  A B three
- four       "
+"!{abc} A B
+  three
+ four      "
 
 
 ---------| 10
-"!{abc}
-  A B
- three
- four  "
+"!{abc} A
+ B three
+ four     "
 
 "
 `;
