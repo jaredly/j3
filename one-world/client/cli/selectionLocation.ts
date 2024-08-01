@@ -34,7 +34,11 @@ const shapeTextCursor = (
                     y === shape.start[1] ? shape.start[0] : shape.hbounds[0];
                 const dx = pos.x - x0;
                 const index0 =
-                    k === 0 ? (i === 0 ? 0 : newLines[i - 1]) : wraps[k - 1];
+                    k === 0
+                        ? i === 0
+                            ? 0
+                            : newLines[i - 1] + 1
+                        : wraps[k - 1];
                 //  +
                 // (index -
                 // (k === 0
@@ -46,6 +50,17 @@ const shapeTextCursor = (
                 // return [x, y];
             }
             y += 1;
+        }
+        if (y === pos.y) {
+            const x0 = y === shape.start[1] ? shape.start[0] : shape.hbounds[0];
+            const dx = pos.x - x0;
+            const index0 =
+                wraps.length === 0
+                    ? i === 0
+                        ? 0
+                        : newLines[i - 1] + 1
+                    : wraps[wraps.length - 1];
+            return index0 + dx;
         }
         // const start = i === 0 ? 0 : newLines[i - 1];
         // const off =
@@ -113,7 +128,6 @@ const shapeTextIndex = (
             // new we're cooking
             for (let k = 0; k < wraps.length; k++) {
                 if (wraps[k] - 1 > index) {
-                    // const y = shape.start[1] + k;
                     const x =
                         (y === shape.start[1]
                             ? shape.start[0]
@@ -138,7 +152,6 @@ const shapeTextIndex = (
         if (i === 0) {
             index--;
         }
-        // index--; // ~consuming the newline
     }
     throw new Error(`Logic issue, got to the end of the line`);
 };

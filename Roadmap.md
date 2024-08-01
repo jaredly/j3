@@ -5,10 +5,12 @@ and now I need a way to apply text formatting stuff.
 
 
 - [ ] TEXT WRAPPINGS
-  - [ ] newlines+wraps
+  - [x] newlines+wraps
     - [x] index -> pos (show)
-    START HERE
-    - [ ] pos -> index (click)
+    - [x] pos -> index (click)
+  - [ ] the "end" cursor pos after a string with newlines is in the wrong place.
+  - [ ] wrappign after an interpolation seems busted.
+
 
 
 - [x] text formatting lookin great
@@ -42,7 +44,7 @@ and now I need a way to apply text formatting stuff.
   - [ ] ctrl-left/right for swapping (with shift to swap in & out)
     - btw i went back to `key-all` to remind myself how the shift-up/down stuff worked. it was slick.
   - [x] UP AND DOWN
-    - [ ] fix bugs in up/down
+    - [x] fix bugs in up/down
   - [x] WRAP FIX
     - [x] after one thing goes multiline, we always wrap a hbox.
     - [x] OK ALSO.. there's this thing, where, wrapping a thing ... results in too much size.
@@ -54,9 +56,9 @@ and now I need a way to apply text formatting stuff.
 
 
 Inline text wrappingg.... gotta track it right.
-- [ ] highlighting wrapped text now works
-- [ ] but with newlines locations dont work
-- [ ] hrm
+- [x] highlighting wrapped text now works
+- [x] but with newlines locations dont work
+- [x] click working in text with newlines and wrapping, all good!
 
 
 

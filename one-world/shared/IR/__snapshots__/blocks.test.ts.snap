@@ -1171,3 +1171,26 @@ exports[`string with newlines 1`] = `
  Yall "|
 "
 `;
+
+exports[`wrap after interpolation 1`] = `
+"
+-----------| 12
+"!{abc}
+  A B three
+ four       "
+
+
+----------| 11
+"!{abc}
+  A B three
+ four       "
+
+
+---------| 10
+"!{abc}
+  A B
+ three
+ four  "
+
+"
+`;

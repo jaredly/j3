@@ -43,7 +43,35 @@ export const handleUpdate = (
 
     // TODO multiselect
     const sel = ds.selections[0];
-    if (sel.end) return false; // ugh
+    if (sel.end) {
+        const path = sel.end.path;
+        if (key === 'BACKSPACE') {
+            store.update(
+                topUpdate(path.root.toplevel, {
+                    [lastChild(path)]: {
+                        type: 'id',
+                        text: '',
+                        loc: lastChild(path),
+                    },
+                }),
+                {
+                    type: 'selection',
+                    doc: path.root.doc,
+                    selections: [
+                        toSelection({
+                            cursor: {
+                                type: 'text',
+                                end: { index: 0, cursor: 0 },
+                            },
+                            path: sel.end.path,
+                        }),
+                    ],
+                },
+            );
+            return true;
+        }
+        return false; // ugh
+    }
     if (sel.start.cursor.type !== 'text') {
         if (key === 'BACKSPACE') {
             return handleMovement(
@@ -102,6 +130,55 @@ export const handleUpdate = (
 
     const current =
         end.text ?? splitGraphemes(getIRText(cache, sel.start.path, end.index));
+
+    if (key === '{' && node.type === 'string') {
+        const top = store.getState().toplevels[path.root.toplevel];
+        const nidx = top.nextLoc;
+        const loc = lastChild(path);
+        const up = { ...node };
+        up.templates = up.templates.slice();
+        if (end.index === 0) {
+            const text = splitGraphemes(up.first);
+            up.first = text.slice(0, end.cursor).join('');
+            up.templates.unshift({
+                expr: nidx,
+                suffix: text.slice(end.cursor).join(''),
+            });
+        } else {
+            const text = splitGraphemes(up.templates[end.index - 1].suffix);
+            up.templates[end.index - 1] = {
+                ...up.templates[end.index - 1],
+                suffix: text.slice(0, end.cursor).join(''),
+            };
+            up.templates.splice(end.index, 0, {
+                expr: nidx,
+                suffix: text.slice(end.cursor).join(''),
+            });
+        }
+        const map: ToplevelUpdate['update']['nodes'] = {
+            [nidx]: {
+                type: 'id',
+                text: '',
+                loc: nidx,
+            },
+            [loc]: up,
+        };
+
+        store.update(topUpdate(top.id, map, nidx + 1), {
+            type: 'selection',
+            doc: path.root.doc,
+            selections: [
+                toSelection({
+                    cursor: {
+                        type: 'text',
+                        end: { index: 0, cursor: 0 },
+                    },
+                    path: pathWithChildren(path, nidx),
+                }),
+            ],
+        });
+        return true;
+    }
 
     if (key === '"' && node.type === 'id') {
         if (st == ed && ed === current.length) {

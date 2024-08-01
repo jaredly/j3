@@ -66,7 +66,8 @@ export const drawDocNode = (
 
     return top!;
 };
-const textLayout = (text: string, firstLine: number, style?: Style) => {
+
+export const textLayout = (text: string, firstLine: number, style?: Style) => {
     const lines = text.split('\n');
     const height = lines.length;
     const inlineHeight = 1;
@@ -76,14 +77,22 @@ const textLayout = (text: string, firstLine: number, style?: Style) => {
     lines.forEach((line, i) => {
         inlineWidth = splitGraphemes(line).length;
         if (i === 0) {
-            inlineWidth += firstLine;
-            firstLineWidth = inlineWidth;
+            firstLineWidth = inlineWidth + firstLine;
         }
+        if (i === 0) inlineWidth += firstLine;
         maxWidth = Math.max(maxWidth, inlineWidth);
     });
-    return { height, inlineHeight, inlineWidth, maxWidth, firstLineWidth };
+    return {
+        height,
+        inlineHeight,
+        inlineWidth,
+        maxWidth,
+        firstLineWidth,
+        multiLine: lines.length > 1,
+    };
 };
-const controlLayout = (control: Control) => {
+
+export const controlLayout = (control: Control) => {
     let w = 4;
     if (control.type === 'number') {
         w = control.width + 3;
