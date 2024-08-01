@@ -4,6 +4,7 @@ import { applyFormats, blockFormat, justify } from './format';
 import { Block, BlockSource, blockSourceKey, inlineSize } from './ir-to-blocks';
 import { addSpaces, joinChunks, white } from './ir-to-text';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
+import ansis from 'ansis';
 
 export type BlockEntry = {
     source: BlockSource;
@@ -56,9 +57,11 @@ export const blockToText = (
     },
 ): string => {
     let nodeStyle = block.style;
+    let override = false;
     if (block.node) {
         const bstyle = ctx.styles[`${block.node.top}:${block.node.loc}`];
         if (bstyle?.type === 'full') {
+            override = true;
             nodeStyle = nodeStyle
                 ? { ...nodeStyle, background: bstyle.color }
                 : { background: bstyle.color };
@@ -86,8 +89,12 @@ export const blockToText = (
                 if (block.horizontal > 0) {
                     addSpaces(chunks, 'all', white(block.horizontal));
                 }
+                let text = joinChunks(chunks, block.pullLast);
+                if (override) {
+                    text = ansis.strip(text);
+                }
                 return blockFormat(
-                    applyX0(joinChunks(chunks, block.pullLast), pos.x - pos.x0),
+                    applyX0(text, pos.x - pos.x0),
                     nodeStyle,
                     ctx.color,
                 );

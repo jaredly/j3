@@ -4,12 +4,12 @@ I thikn wrapping is kinda fine?
 and now I need a way to apply text formatting stuff.
 
 
-- [ ] TEXT WRAPPINGS
+- [x] TEXT WRAPPINGS
   - [x] newlines+wraps
     - [x] index -> pos (show)
     - [x] pos -> index (click)
-  - [ ] the "end" cursor pos after a string with newlines is in the wrong place.
-  - [ ] wrappign after an interpolation seems busted.
+  - [x] the "end" cursor pos after a string with newlines is in the wrong place.
+  - [x] wrappign after an interpolation seems busted.
 
 
 

@@ -1,6 +1,6 @@
 import termkit from 'terminal-kit';
 import { Block } from '../../shared/IR/ir-to-blocks';
-import { handleMouse } from './edit/handleMouse';
+import { handleMouse, handleMouseDrag } from './edit/handleMouse';
 import { handleMovement, handleUpDown } from './edit/handleMovement';
 import { init } from './init';
 import {
@@ -38,7 +38,7 @@ const run = async (term: termkit.Terminal) => {
     const sess = readSess();
     const store = await init(sess);
     term.clear();
-    term.grabInput({ mouse: 'button' });
+    term.grabInput({ mouse: 'drag' });
 
     if (!sess.doc) {
         sess.doc = await pickDocument(store, term);
@@ -111,13 +111,19 @@ const run = async (term: termkit.Terminal) => {
                 alt: boolean;
             },
         ) => {
-            if (one !== 'MOUSE_LEFT_BUTTON_PRESSED') return;
-            handleMouse(docId, sourceMaps, evt, cache, store);
+            if (one === 'MOUSE_DRAG') {
+                handleMouseDrag(docId, sourceMaps, evt, cache, store);
+            } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
+                handleMouse(docId, sourceMaps, evt, cache, store);
+            } else {
+                return;
+            }
             const { txt } = redrawWithSelection(
                 block,
                 store.getDocSession(docId, store.session).selections,
                 store.getState(),
             );
+            term.clear();
             term.moveTo(0, 2, txt);
             renderSelection(term, store, docId, sourceMaps);
         },
