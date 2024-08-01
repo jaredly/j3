@@ -269,9 +269,14 @@ test('string with newlines', () => {
 test('wrap after interpolation', () => {
     let res = [];
     for (let i = 12; i >= 10; i--) {
-        debugger;
         res.push(showLayout('"${abc} A B three four"', i));
     }
+    expect('\n' + res.join('\n')).toMatchSnapshot();
+});
+
+test('string with newlines in interp', () => {
+    let res = [];
+    res.push(showSpans('"A${"B\nC"}D E F"', 20, true));
     expect('\n' + res.join('\n')).toMatchSnapshot();
 });
 
@@ -293,7 +298,7 @@ export const blockInfo = (block: Block): string => {
     } else if (block.type === 'block') {
         res += `[${block.contents
             .map(blockInfo)
-            .join(block.horizontal === false ? '|' : '-')}]`;
+            .join(block.horizontal === false ? '|' : ',')}]`;
     } else {
         res += '[||]';
     }

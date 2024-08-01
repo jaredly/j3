@@ -1,6 +1,5 @@
 // yay
 
-import ansis from 'ansis';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Style } from '../nodes';
 // import { applyFormats, blockFormat } from './format';
@@ -190,14 +189,16 @@ export const line = (
     style?: Style,
     node?: Block['node'],
 ): Block => {
-    const w = splitGraphemes(ansis.strip(text)).length;
+    const lines = text.split('\n');
+    const lens = lines.map((l) => splitGraphemes(l).length);
+    const maxW = lens.reduce((a, b) => a + b, 0);
     return {
         type: 'inline',
         contents: text,
-        width: w,
-        first: w,
-        last: w,
-        height: text.split('\n').length,
+        width: maxW,
+        first: lens[0],
+        last: lens[lens.length - 1],
+        height: lines.length,
         source,
         style,
         node,
