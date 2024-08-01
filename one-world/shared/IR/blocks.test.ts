@@ -283,13 +283,13 @@ test('simple a/b', () => {
 test('simple a/b with interp', () => {
     debugger;
     let res = [];
-    res.push(showSpans('"${0}A\nB"', 20, true));
+    res.push(showSpans('"${0}A\nB"', 20));
     expect('\n' + res.join('\n')).toMatchSnapshot();
 });
 
 test('string with newlines in interp', () => {
     let res = [];
-    res.push(showSpans('"A${"B\nC"}D E F"', 20, true));
+    res.push(showSpans('"A${"B\nC"}D E F"', 20));
     expect('\n' + res.join('\n')).toMatchSnapshot();
 });
 

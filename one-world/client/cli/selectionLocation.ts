@@ -127,12 +127,12 @@ const shapeTextIndex = (
             const wraps = wrapsByNewLine[i];
             // new we're cooking
             for (let k = 0; k < wraps.length; k++) {
-                if (wraps[k] - 1 > index) {
+                if (wraps[k] > index) {
                     const x =
                         (y === shape.start[1]
                             ? shape.start[0]
                             : shape.hbounds[0]) +
-                        (index - (k === 0 ? x0 : wraps[k - 1] - 1));
+                        (index - (k === 0 ? x0 : wraps[k - 1]));
                     return [x, y];
                 }
                 y += 1;
@@ -142,7 +142,7 @@ const shapeTextIndex = (
                     ? i === 0
                         ? 0
                         : newLines[i - 1]
-                    : wraps[wraps.length - 1] - 1;
+                    : wraps[wraps.length - 1];
             const off =
                 (y === shape.start[1] ? shape.start[0] : shape.hbounds[0]) +
                 (index - start);
