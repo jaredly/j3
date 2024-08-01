@@ -1219,8 +1219,6 @@ exports[`simple a/b 1`] = `
 "A
  B"
 
-3x2[0x1T,3x2[1x1T,1x2(1x2T),1x1[1x1T,0x1T]]]
-
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
 |"A
  B"
@@ -1230,6 +1228,32 @@ exports[`simple a/b 1`] = `
 [ # ] {"type":"block","start":[3,1],"width":0,"height":1}
 "A
  B"|
+"
+`;
+
+exports[`simple a/b with interp 1`] = `
+"
+-------------------| 20
+"!{0}A
+ B    "
+
+7x2[0x1T,7x2[1x1T,5x2(0x1T|4x1[2x1T,1x1T,1x1T]|1x2T),1x1[1x1T,0x1T]]]
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"!{0}A
+ B    "
+[ # ] {"type":"block","start":[1,0],"width":0,"height":1}
+"|!{0}A
+ B    "
+[ # ] {"type":"block","start":[3,0],"width":1,"height":1}
+"!{0̲}A
+ B    "
+[ # ] {"type":"inline","start":[5,0],"end":[2,1],"hbounds":[1,6]}
+"!{0}A̲
+ B̲    "
+[ # ] {"type":"block","start":[7,1],"width":0,"height":1}
+"!{0}A
+ B    "|
 {
   "type": "block",
   "contents": [
@@ -1243,7 +1267,7 @@ exports[`simple a/b 1`] = `
       "source": {
         "type": "text",
         "index": 0,
-        "loc": 1,
+        "loc": 4,
         "top": "",
         "wraps": [],
         "newLines": []
@@ -1257,7 +1281,7 @@ exports[`simple a/b 1`] = `
       },
       "node": {
         "top": "",
-        "loc": 1
+        "loc": 4
       }
     },
     {
@@ -1284,6 +1308,81 @@ exports[`simple a/b 1`] = `
             [
               {
                 "type": "inline",
+                "contents": "",
+                "width": 0,
+                "first": 0,
+                "last": 0,
+                "height": 1,
+                "source": {
+                  "type": "text",
+                  "index": 0,
+                  "loc": 0,
+                  "top": "",
+                  "wraps": [],
+                  "newLines": []
+                },
+                "style": {
+                  "color": {
+                    "r": 100,
+                    "g": 100,
+                    "b": 0
+                  }
+                }
+              },
+              {
+                "type": "block",
+                "contents": [
+                  {
+                    "type": "inline",
+                    "contents": "${",
+                    "width": 2,
+                    "first": 2,
+                    "last": 2,
+                    "height": 1
+                  },
+                  {
+                    "type": "inline",
+                    "contents": "0",
+                    "width": 1,
+                    "first": 1,
+                    "last": 1,
+                    "height": 1,
+                    "source": {
+                      "type": "text",
+                      "index": 0,
+                      "loc": 3,
+                      "top": "",
+                      "wraps": [],
+                      "newLines": []
+                    },
+                    "style": {
+                      "color": {
+                        "r": 230,
+                        "g": 171,
+                        "b": 2
+                      }
+                    },
+                    "node": {
+                      "top": "",
+                      "loc": 3
+                    }
+                  },
+                  {
+                    "type": "inline",
+                    "contents": "}",
+                    "width": 1,
+                    "first": 1,
+                    "last": 1,
+                    "height": 1
+                  }
+                ],
+                "height": 1,
+                "width": 4,
+                "horizontal": 0,
+                "pullLast": true
+              },
+              {
+                "type": "inline",
                 "contents": "A\nB",
                 "width": 1,
                 "first": 1,
@@ -1291,7 +1390,7 @@ exports[`simple a/b 1`] = `
                 "height": 2,
                 "source": {
                   "type": "text",
-                  "index": 0,
+                  "index": 1,
                   "loc": 0,
                   "top": "",
                   "wraps": [],
@@ -1309,9 +1408,9 @@ exports[`simple a/b 1`] = `
               }
             ]
           ],
-          "first": 1,
+          "first": 0,
           "last": 1,
-          "width": 1,
+          "width": 5,
           "height": 2
         },
         {
@@ -1353,7 +1452,7 @@ exports[`simple a/b 1`] = `
         }
       ],
       "height": 2,
-      "width": 3,
+      "width": 7,
       "horizontal": 0,
       "pullLast": true,
       "style": {
@@ -1366,7 +1465,7 @@ exports[`simple a/b 1`] = `
     }
   ],
   "height": 2,
-  "width": 3,
+  "width": 7,
   "horizontal": 0
 }"
 `;

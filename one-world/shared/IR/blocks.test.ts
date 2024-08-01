@@ -275,9 +275,15 @@ test('wrap after interpolation', () => {
 });
 
 test('simple a/b', () => {
+    let res = [];
+    res.push(showSpans('"A\nB"', 20));
+    expect('\n' + res.join('\n')).toMatchSnapshot();
+});
+
+test('simple a/b with interp', () => {
     debugger;
     let res = [];
-    res.push(showSpans('"A\nB"', 20, true));
+    res.push(showSpans('"${0}A\nB"', 20, true));
     expect('\n' + res.join('\n')).toMatchSnapshot();
 });
 

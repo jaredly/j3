@@ -11,6 +11,7 @@ import {
 } from './render';
 import { readSess, writeSess } from './Sess';
 import { handleUpdate } from './edit/handleUpdate';
+import { open, openSync, writeSync } from 'fs';
 
 // cursor line
 process.stdout.write('\x1b[6 q');
@@ -19,6 +20,11 @@ process.stdout.write('\x1b[6 q');
 global.window = {};
 // @ts-ignore
 global.localStorage = {};
+
+// const out = openSync('./cli.log', 'W');
+// console.log = (...args) => {
+//     writeSync(out, JSON.stringify(args) + '\n');
+// };
 
 const getTerm = () =>
     new Promise<termkit.Terminal>((res, rej) =>

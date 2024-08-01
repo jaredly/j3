@@ -187,7 +187,6 @@ export const newStore = (
                             const id = `${session}#${k}`;
                             updated.selections[id] = true;
                             if (
-                                !psel.end &&
                                 psel.start.cursor.type === 'text' &&
                                 psel.start.cursor.end.text
                             ) {
