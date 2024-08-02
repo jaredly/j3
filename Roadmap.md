@@ -14,8 +14,8 @@ and now I need a way to apply text formatting stuff.
 - [x] deleting strings
 - [ ] backspace from a `start` to delete a previous empty string, should work
 
-- [ ] swapppp
-- [ ] TABB
+- [x] swapppp
+- [x] TABB
 - [ ] drag & droppp
 
 

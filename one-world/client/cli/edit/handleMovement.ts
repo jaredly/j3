@@ -5,6 +5,7 @@ import {
     goLeftRight,
     IRCache,
     lastChild,
+    selectNode,
     toSelection,
 } from '../../../shared/IR/nav';
 import {
@@ -15,7 +16,9 @@ import {
     serializePath,
 } from '../../../shared/nodes';
 import { PersistedState } from '../../../shared/state2';
+import { Toplevel } from '../../../shared/toplevels';
 import { Store } from '../../StoreContext2';
+import { isCollection } from '../../TextEdit/actions';
 import { selectionFromLocation, selectionLocation } from '../selectionLocation';
 
 export const handleUpDown = (
@@ -59,6 +62,51 @@ export const handleUpDown = (
     }
 };
 
+const firstLastChild = (
+    path: Path,
+    nodes: Toplevel['nodes'],
+    which: 'first' | 'last',
+) => {
+    const loc = lastChild(path);
+    const node = nodes[loc];
+    if (isCollection(node) && node.items.length) {
+        return firstLastChild(
+            pathWithChildren(
+                path,
+                node.items[which === 'first' ? 0 : node.items.length - 1],
+            ),
+            nodes,
+            which,
+        );
+    }
+    return path;
+};
+
+const adjacent = (
+    path: Path,
+    state: PersistedState,
+    side: 'left' | 'right',
+): Path | void => {
+    const top = state.toplevels[path.root.toplevel];
+    for (let i = path.children.length - 2; i >= 0; i--) {
+        const parent = top.nodes[path.children[i]];
+        if (!isCollection(parent)) continue;
+        const items = parent.items.slice();
+        const idx = items.indexOf(path.children[i + 1]);
+        if (side === 'left' ? idx === 0 : idx === items.length - 1) continue;
+        const loc = items[idx + (side === 'left' ? -1 : 1)];
+        const node = top.nodes[loc];
+        return firstLastChild(
+            {
+                root: path.root,
+                children: path.children.slice(0, i + 1).concat([loc]),
+            },
+            top.nodes,
+            side === 'left' ? 'last' : 'first',
+        );
+    }
+};
+
 export const handleMovement = (
     key: string,
     docId: string,
@@ -68,6 +116,30 @@ export const handleMovement = (
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
+
+    if (key === 'TAB' || key === 'SHIFT_TAB') {
+        const next = adjacent(
+            sel.start.path,
+            store.getState(),
+            key === 'TAB' ? 'right' : 'left',
+        );
+        if (!next) return false;
+        const selection = selectNode(
+            next,
+            key === 'TAB' ? 'end' : 'start',
+            cache[next.root.toplevel].irs,
+        );
+        selection.end = {
+            path: selection.start.path,
+            key: selection.start.key,
+        };
+        store.update({
+            type: 'selection',
+            doc: docId,
+            selections: [selection],
+        });
+        return true;
+    }
 
     if (key === 'SHIFT_UP') {
         const path = sel.end ? parentPath(sel.end.path) : sel.start.path;
