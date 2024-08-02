@@ -2,7 +2,7 @@
 # While geting a demo ready:
 
 - [x] closing braces need to close plsss ])}"
-- [ ] some weirdness around cursor placement at the end of collections
+- [x] some weirdness around cursor placement at the end of collections
 - [x] rainbow parens plssss
   - punct - kind "paren"?
     - howw do I "match parens"?

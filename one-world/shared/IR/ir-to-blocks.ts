@@ -489,7 +489,10 @@ export const irToBlock = (
 
                 pairs.forEach((item) => {
                     if (item.type === 'pair') {
-                        width = Math.max(width, leftWidth + item.right.width);
+                        width = Math.max(
+                            width,
+                            leftWidth + item.right.width + 1,
+                        );
                     }
                 });
 

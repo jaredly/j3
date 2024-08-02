@@ -274,7 +274,8 @@ export const blockInfo = (block: Block): string => {
     let res = `${block.width}x${block.height}`;
     if (block.type === 'inline') {
         if (typeof block.contents === 'string') {
-            res += 'T';
+            res += JSON.stringify(block.contents.slice(0, 5));
+            if (block.contents.length > 5) res += '+';
         } else {
             res += `(${block.contents
                 .map((line) => line.map(blockInfo).join('|'))
@@ -284,8 +285,15 @@ export const blockInfo = (block: Block): string => {
         res += `[${block.contents
             .map(blockInfo)
             .join(block.horizontal === false ? '|' : ',')}]`;
-    } else {
-        res += '[||]';
+    } else if (block.type === 'table') {
+        // res += '[||]';
+        res += `[${block.rows
+            .map((row) =>
+                row.type === 'other'
+                    ? blockInfo(row.item)
+                    : `${blockInfo(row.left)}~${blockInfo(row.right)}`,
+            )
+            .join('/')}]`;
     }
     return res;
 };

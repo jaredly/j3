@@ -1306,11 +1306,11 @@ exports[`pairs placement? 1`] = `
 [ # ] {"type":"block","start":[8,0],"width":1,"height":1}
 (let [a b̲]
           )
-[ # ] {"type":"block","start":[9,0],"width":0,"height":1}
+[ # ] {"type":"block","start":[10,0],"width":0,"height":1}
 (let [a b]|
           )
-[ # ] {"type":"block","start":[10,1],"width":0,"height":1}
+[ # ] {"type":"block","start":[11,1],"width":0,"height":1}
 (let [a b]
-          |)
+          )|
 "
 `;
