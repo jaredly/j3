@@ -93,6 +93,7 @@ export type Block =
           last: number; // length of the last line
           height: number; // number of lines
           node?: { top: string; loc: number };
+          brace?: boolean;
           source?: BlockSource;
           // NOTE That this won't work with syntax highlighting,
           // because we need to be able to colorize sub-spans.
@@ -202,12 +203,14 @@ export const line = (
     source?: BlockSource,
     style?: Style,
     node?: Block['node'],
+    brace?: boolean,
 ): Block => {
     const lines = text.split('\n');
     const lens = lines.map((l) => splitGraphemes(l).length);
     const maxW = lens.reduce((a, b) => Math.max(a, b), 0);
     return {
         type: 'inline',
+        brace,
         contents: text,
         width: maxW,
         first: lens[0],
@@ -292,7 +295,13 @@ export const irToBlock = (
             }
 
         case 'punct':
-            return line(ir.text, undefined, ir.style);
+            return line(
+                ir.text,
+                undefined,
+                ir.style,
+                ir.brace != null ? { loc: ir.brace, top: ctx.top } : undefined,
+                ir.brace != null ? true : false,
+            );
 
         case 'inline': {
             const wrap = choices[ir.wrap];

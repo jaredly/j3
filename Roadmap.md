@@ -7,8 +7,8 @@
   - punct - kind "paren"?
     - howw do I "match parens"?
       - orr do I just say "
-  - [ ] match parens pls
-- [ ] and highlight parens probavbly
+  - [x] match parens pls
+- [x] and highlight parens probavbly
 
 
 

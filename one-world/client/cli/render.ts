@@ -19,6 +19,7 @@ import {
     pathWithChildren,
 } from '../../shared/nodes';
 import { PersistedState } from '../../shared/state2';
+import { isCollection } from '../TextEdit/actions';
 
 export const renderSelection = (
     term: termkit.Terminal,
@@ -253,6 +254,32 @@ function selectionStyleOverrides(
                     color: termColors.highlight,
                     type: 'sub',
                 };
+            }
+        }
+        let path = selection.start.path;
+        if (selection.end) {
+            const match = resolveMultiSelect(
+                selection.start.path,
+                selection.end.path,
+                state,
+            );
+            if (match && match.type === 'top') {
+                path = match.parent;
+            }
+        }
+        const top = state.toplevels[path.root.toplevel];
+        let num = 0;
+        for (let i = path.children.length - 1; i >= 0; i--) {
+            const loc = path.children[i];
+            if (isCollection(top.nodes[loc])) {
+                styles[`${top.id}:${loc}:brace`] = {
+                    type: 'full',
+                    color:
+                        num === 0
+                            ? termColors.fullHighlight
+                            : termColors.highlight,
+                };
+                if (++num >= 3) break;
             }
         }
     });

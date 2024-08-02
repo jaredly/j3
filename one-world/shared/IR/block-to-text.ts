@@ -59,7 +59,9 @@ export const blockToText = (
     let nodeStyle = block.style;
     let override = false;
     if (block.node) {
-        const bstyle = ctx.styles[`${block.node.top}:${block.node.loc}`];
+        let key = `${block.node.top}:${block.node.loc}`;
+        if (block.type === 'inline' && block.brace) key += ':brace';
+        const bstyle = ctx.styles[key];
         if (bstyle?.type === 'full') {
             override = true;
             nodeStyle = nodeStyle
