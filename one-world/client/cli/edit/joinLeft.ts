@@ -101,48 +101,8 @@ export const joinLeft = (
             ),
         );
         return true;
-
-        // // delete a string!
-        // if (path.children.length === 1) {
-        //     return false; // replace top root
-        // }
-        // const parent = parentPath(path);
-        // const ploc = lastChild(parent);
-        // const pnode = top.nodes[ploc];
-        // // TODO TODO Mkaae a general "replace this node" dealio
-        // if (!isCollection(pnode)) return false;
-        // const items = pnode.items.slice();
-        // const idx = items.indexOf(loc);
-        // if (idx === -1) return false;
-        // items[idx] = node.tag;
-        // store.update(
-        //     {
-        //         type: 'toplevel',
-        //         id: top.id,
-        //         action: {
-        //             type: 'update',
-        //             update: { nodes: { [ploc]: { ...pnode, items } } },
-        //         },
-        //     },
-        //     {
-        //         type: 'selection',
-        //         doc: path.root.doc,
-        //         selections: [
-        //             selectNode(
-        //                 pathWithChildren(parent, node.tag),
-        //                 'end',
-        //                 cache[top.id].irs,
-        //             ),
-        //         ],
-        //     },
-        // );
-        // return true;
     }
 
-    // Here are the things that can have a `text` IR in them:
-    if (node.type !== 'id') {
-        return false;
-    }
     // that's a thing
     const parent = parentPath(path);
     const ploc = lastChild(parent);
@@ -150,6 +110,11 @@ export const joinLeft = (
 
     // Joining strings!
     if (pnode.type === 'string') {
+        // Here are the things that can have a `text` IR in them:
+        if (node.type !== 'id') {
+            return false;
+        }
+
         if (current ? current.length : node.text.length) {
             // only empty allowed here
             return false;
@@ -269,6 +234,10 @@ export const joinLeft = (
         const prev = pnode.items[idx - 1];
         const prevNode = top.nodes[prev];
         if (prevNode.type !== 'id') {
+            // Here are the things that can have a `text` IR in them:
+            if (node.type !== 'id') {
+                return false;
+            }
             if (current ? current.length : node.text.length) {
                 return false;
             }
@@ -293,38 +262,53 @@ export const joinLeft = (
             );
             return true;
         }
-        if (prevNode.type === 'id') {
-            const cursor = splitGraphemes(prevNode.text).length;
+
+        if (prevNode.text === '') {
             const items = pnode.items.slice();
-            items.splice(idx, 1);
-            // ok we can do this now.
+            items.splice(idx - 1, 1);
             store.update(
                 topUpdate(top.id, {
                     [ploc]: { ...pnode, items },
-                    [node.loc]: undefined,
-                    [prev]: {
-                        ...prevNode,
-                        text:
-                            prevNode.text +
-                            (current ? current.join('') : node.text),
-                    },
+                    // [prev]: undefined,
                 }),
-                {
-                    type: 'selection',
-                    doc: path.root.doc,
-                    selections: [
-                        toSelection({
-                            cursor: {
-                                type: 'text',
-                                end: { index: 0, cursor },
-                            },
-                            path: pathWithChildren(parent, prev),
-                        }),
-                    ],
-                },
             );
             return true;
         }
+
+        // Here are the things that can have a `text` IR in them:
+        if (node.type !== 'id') {
+            return false;
+        }
+        const cursor = splitGraphemes(prevNode.text).length;
+        const items = pnode.items.slice();
+        items.splice(idx, 1);
+        // ok we can do this now.
+        store.update(
+            topUpdate(top.id, {
+                [ploc]: { ...pnode, items },
+                [node.loc]: undefined,
+                [prev]: {
+                    ...prevNode,
+                    text:
+                        prevNode.text +
+                        (current ? current.join('') : node.text),
+                },
+            }),
+            {
+                type: 'selection',
+                doc: path.root.doc,
+                selections: [
+                    toSelection({
+                        cursor: {
+                            type: 'text',
+                            end: { index: 0, cursor },
+                        },
+                        path: pathWithChildren(parent, prev),
+                    }),
+                ],
+            },
+        );
+        return true;
     }
     return false;
 };

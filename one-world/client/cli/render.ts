@@ -55,7 +55,7 @@ export const render = (term: termkit.Terminal, store: Store, docId: string) => {
         store.getState(),
         cache,
         ds.selections,
-        term.width - 1,
+        term.width - 10,
     );
     const { txt, sourceMaps } = redrawWithSelection(
         block,

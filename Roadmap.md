@@ -33,7 +33,7 @@ and now I need a way to apply text formatting stuff.
   - [x] wrappign after an interpolation seems busted.
 
 - [x] deleting strings
-- [ ] backspace from a `start` to delete a previous empty string, should work
+- [ ] backspace from a `start` to delete a previous empty id, should work
 
 - [x] swapppp
 - [x] TABB

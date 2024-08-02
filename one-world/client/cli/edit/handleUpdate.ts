@@ -146,12 +146,14 @@ export const handleUpdate = (
     }
     if (sel.start.cursor.type !== 'text') {
         if (key === 'BACKSPACE') {
-            return handleMovement(
-                'LEFT',
-                sel.start.path.root.doc,
-                cache,
-                store,
-            );
+            if (!joinLeft(sel.start.path, undefined, 0, cache, store)) {
+                return handleMovement(
+                    'LEFT',
+                    sel.start.path.root.doc,
+                    cache,
+                    store,
+                );
+            }
         }
 
         if (key === ' ') {
