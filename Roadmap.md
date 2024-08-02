@@ -1,4 +1,11 @@
 
+# While geting a demo ready:
+
+- [ ] closing braces need to close plsss ])}"
+- [ ] some weirdness around cursor placement at the end of collections
+- [ ] rainbow parens plssss
+
+
 # Ok layout
 I thikn wrapping is kinda fine?
 and now I need a way to apply text formatting stuff.

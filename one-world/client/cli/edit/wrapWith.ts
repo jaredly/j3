@@ -1,8 +1,6 @@
 import { lastChild, toSelection } from '../../../shared/IR/nav';
 import { Path, parentPath, pathWithChildren } from '../../../shared/nodes';
 import { Store } from '../../StoreContext2';
-import { isCollection } from '../../TextEdit/actions';
-import { topUpdate } from './handleUpdate';
 import { replaceNode } from './joinLeft';
 
 export const wrapWith = (
