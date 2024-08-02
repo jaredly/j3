@@ -17,6 +17,9 @@ and now I need a way to apply text formatting stuff.
 - [x] swapppp
 - [x] TABB
 - [ ] drag & droppp
+  - [ ] shift-drag for copying yass
+  - [ ] ctrl-drag to do a "make me a variable pls"? hmmmm will havr to think about that one.
+    will require cooperation from the runtime environment.
 
 
 - [x] text formatting lookin great

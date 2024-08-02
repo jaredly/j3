@@ -13,7 +13,10 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
+import { getNodeForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
+import { isCollection } from '../../TextEdit/actions';
+import { resolveMultiSelect } from '../render';
 import { handleMovement } from './handleMovement';
 import { joinLeft, replaceNode, selAction } from './joinLeft';
 import { newNeighbor } from './newNeighbor';
@@ -63,28 +66,80 @@ export const handleUpdate = (
         }
 
         if (key === 'BACKSPACE') {
-            store.update(
-                topUpdate(path.root.toplevel, {
-                    [lastChild(path)]: {
-                        type: 'id',
-                        text: '',
-                        loc: lastChild(path),
-                    },
-                }),
-                {
-                    type: 'selection',
-                    doc: path.root.doc,
-                    selections: [
-                        toSelection({
-                            cursor: {
-                                type: 'text',
-                                end: { index: 0, cursor: 0 },
-                            },
-                            path: sel.end.path,
-                        }),
-                    ],
-                },
+            const state = store.getState();
+            const which = resolveMultiSelect(
+                sel.start.path,
+                sel.end.path,
+                state,
             );
+            if (!which || which.type === 'doc') return false;
+            if (which.children.length === 1) {
+                store.update(
+                    topUpdate(path.root.toplevel, {
+                        [lastChild(path)]: {
+                            type: 'id',
+                            text: '',
+                            loc: lastChild(path),
+                        },
+                    }),
+                    {
+                        type: 'selection',
+                        doc: path.root.doc,
+                        selections: [
+                            toSelection({
+                                cursor: {
+                                    type: 'text',
+                                    end: { index: 0, cursor: 0 },
+                                },
+                                path: sel.end.path,
+                            }),
+                        ],
+                    },
+                );
+            } else {
+                const ploc = lastChild(which.parent);
+                const top = state.toplevels[which.parent.root.toplevel];
+                const pnode = top.nodes[ploc];
+                if (!pnode || !isCollection(pnode)) return false;
+                const idx = pnode.items.indexOf(which.children[0]);
+                const items = pnode.items.filter(
+                    (loc) => !which.children.includes(loc),
+                );
+                items.splice(idx, 0, top.nextLoc);
+                store.update(
+                    topUpdate(
+                        path.root.toplevel,
+                        {
+                            [ploc]: {
+                                ...pnode,
+                                items,
+                            },
+                            [top.nextLoc]: {
+                                type: 'id',
+                                text: '',
+                                loc: top.nextLoc,
+                            },
+                        },
+                        top.nextLoc + 1,
+                    ),
+                    {
+                        type: 'selection',
+                        doc: path.root.doc,
+                        selections: [
+                            toSelection({
+                                cursor: {
+                                    type: 'text',
+                                    end: { index: 0, cursor: 0 },
+                                },
+                                path: pathWithChildren(
+                                    which.parent,
+                                    top.nextLoc,
+                                ),
+                            }),
+                        ],
+                    },
+                );
+            }
             return true;
         }
         return false; // ugh

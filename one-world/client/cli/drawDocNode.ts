@@ -144,7 +144,7 @@ const drawToplevel = (
 
     const ctx: LayoutCtx = {
         maxWidth,
-        leftWidth: 20,
+        leftWidth: maxWidth / 2,
         irs,
         layouts: {},
         textLayout,

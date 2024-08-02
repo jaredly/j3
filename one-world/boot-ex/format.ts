@@ -32,6 +32,7 @@ const getLoc = (l: Loc) => l[l.length - 1][1];
 const _parse = (node: RecNode, ctx: Ctx) => {
     switch (node.type) {
         case 'list':
+            node.items.map((p) => _parse(p, ctx));
             if (node.items.length > 0) {
                 const first = node.items[0];
                 if (first.type === 'id') {
@@ -40,6 +41,12 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                             ctx.layouts[getLoc(node.loc)] = {
                                 type: 'vert',
                                 layout: { tightFirst: 2, indent: 4 },
+                            };
+                            break;
+                        case 'match':
+                            ctx.layouts[getLoc(node.loc)] = {
+                                type: 'vert',
+                                layout: { tightFirst: 2, indent: 2, pairs: [] },
                             };
                             break;
                         case 'let':
