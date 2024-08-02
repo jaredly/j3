@@ -86,16 +86,21 @@ const run = async (term: termkit.Terminal) => {
             );
             term.clear();
             term.moveTo(0, 2, txt);
+
+            term.moveTo(0, term.height, key);
+
             renderSelection(term, store, docId, sourceMaps);
+
             return;
         }
         if (handleUpdate(key, docId, cache, store)) {
             term.clear();
             ({ sourceMaps, cache, block } = render(term, store, docId));
+            term.moveTo(0, term.height, key);
             renderSelection(term, store, docId, sourceMaps);
             return;
         }
-        term.moveTo(0, 30, key);
+        term.moveTo(0, term.height, key);
         renderSelection(term, store, docId, sourceMaps);
     });
 
