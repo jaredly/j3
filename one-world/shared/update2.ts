@@ -73,6 +73,18 @@ export const updateDoc = (
             return action.doc;
         case 'delete':
             return null;
+        case 'update':
+            if (!doc) throw new Error('trying to update nonexistent toplevel');
+            const nodes = { ...doc.nodes };
+            Object.entries(action.update.nodes ?? {}).forEach(([k, v]) => {
+                if (v === undefined) {
+                    // ignore this, it'll probably get cleaned up?
+                    delete nodes[+k];
+                } else {
+                    nodes[+k] = v;
+                }
+            });
+            return { ...doc, ...action.update, nodes };
     }
 };
 

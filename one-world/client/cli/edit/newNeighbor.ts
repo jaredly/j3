@@ -18,23 +18,13 @@ export const newNeighbor = (path: Path, store: Store, after = true) => {
     // that's a thing
     const parent = parentPath(path);
     if (!parent.children.length) {
-        if (parent.root.ids.length <= 1) return console.log('too few'); // no parent doc node
+        if (parent.root.ids.length <= 1) return false; // no parent doc node
         const doc = state.documents[parent.root.doc];
         const ploc = parent.root.ids[parent.root.ids.length - 2];
         const loc = parent.root.ids[parent.root.ids.length - 1];
         const pnode = doc.nodes[ploc];
         const at = pnode.children.indexOf(loc);
-        if (at === -1)
-            return console.log(
-                'cant find ' +
-                    pnode.children +
-                    ' ' +
-                    loc +
-                    ' in ' +
-                    ploc +
-                    ' , ' +
-                    JSON.stringify(parent.root),
-            );
+        if (at === -1) return false;
         const children = pnode.children.slice();
         children.splice(at + 1, 0, doc.nextLoc);
         const newTop = Math.random().toString(36).slice(2);

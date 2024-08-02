@@ -47,9 +47,9 @@ export const drawDocNode = (
         return top;
     }
     if (node.children.length) {
-        const children = node.children.map((id) =>
+        const children = node.children.map((cid) =>
             drawDocNode(
-                id,
+                cid,
                 nodes.concat([id]),
                 doc,
                 state,
