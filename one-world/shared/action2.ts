@@ -1,5 +1,12 @@
 import { Node } from './nodes';
-import { Doc, DocSession, PersistedState, Reference, Stage } from './state2';
+import {
+    Doc,
+    DocSession,
+    DocumentNode,
+    PersistedState,
+    Reference,
+    Stage,
+} from './state2';
 import { Toplevel } from './toplevels';
 
 export type Action =
@@ -30,4 +37,12 @@ export type ToplevelAction =
     | ToplevelUpdate
     | { type: 'delete' };
 
-export type DocAction = { type: 'reset'; doc: Doc } | { type: 'delete' };
+export type DocAction =
+    | { type: 'reset'; doc: Doc }
+    | { type: 'delete' }
+    | {
+          type: 'update';
+          update: Partial<Omit<Doc, 'nodes'>> & {
+              nodes?: Record<string, DocumentNode | undefined>;
+          };
+      };
