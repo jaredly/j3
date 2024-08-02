@@ -1,9 +1,23 @@
 
 # While geting a demo ready:
 
-- [ ] closing braces need to close plsss ])}"
+- [x] closing braces need to close plsss ])}"
 - [ ] some weirdness around cursor placement at the end of collections
-- [ ] rainbow parens plssss
+- [x] rainbow parens plssss
+  - punct - kind "paren"?
+    - howw do I "match parens"?
+      - orr do I just say "
+  - [ ] match parens pls
+- [ ] and highlight parens probavbly
+
+
+
+DEMO
+
+tab/shift-tab
+ctrl-swap
+shift-up/down
+
 
 
 # Ok layout

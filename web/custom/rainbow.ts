@@ -28,6 +28,8 @@ export function getRainbowHashColor(hash: string | number) {
     return color;
 }
 
+export const rgbRainbow = rainbow.map(parseHex);
+
 // https://github.com/darkskyapp/string-hash/blob/master/index.js
 export function fasthash(str: string) {
     var hash = 5381,

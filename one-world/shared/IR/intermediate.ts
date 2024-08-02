@@ -4,6 +4,8 @@ import {
     fasthash,
     getRainbowHashColor,
     parseHex,
+    rainbow,
+    rgbRainbow,
 } from '../../../web/custom/rainbow';
 import { termColors } from '../../client/TextEdit/colors';
 import { Nodes, Node, Style, Path } from '../nodes';
@@ -57,7 +59,7 @@ export type IR =
     | { type: 'indent'; item: IR; amount?: number; style?: Style }
     | { type: 'switch'; options: IR[]; id: number }
     | { type: 'loc'; loc: number }
-    | { type: 'punct'; text: string; style?: Style }
+    | { type: 'punct'; text: string; style?: Style; brace?: boolean }
     | { type: 'cursor'; side: 'start' | 'inside' | 'end'; loc: number };
 
 export type IRSelection = {
@@ -119,15 +121,15 @@ export const updateNodeText = (
     }
 };
 
-// const spaced = (items: IR[], space = ' '): IR[] =>
-//     items.flatMap((item, i) =>
-//         i === 0
-//             ? [item]
-//             : [{ type: 'punct', text: space, kind: 'space' }, item],
-//     );
+const braceStyle = (depth: number): Style => {
+    return {
+        color: rgbRainbow[depth % rgbRainbow.length],
+    };
+};
 
 export const nodeToIR = (
     node: Node,
+    path: number[],
     styles: Record<number, Format>,
     layouts: Record<number, Layout>,
     names: Record<string, Record<number, string>>,
@@ -231,9 +233,19 @@ export const nodeToIR = (
                     type: 'horiz',
                     items: [
                         { type: 'cursor', loc: node.loc, side: 'start' },
-                        { type: 'punct', text: lr[0] },
+                        {
+                            type: 'punct',
+                            text: lr[0],
+                            brace: true,
+                            style: braceStyle(path.length),
+                        },
                         { type: 'cursor', loc: node.loc, side: 'inside' },
-                        { type: 'punct', text: lr[1] },
+                        {
+                            type: 'punct',
+                            text: lr[1],
+                            brace: true,
+                            style: braceStyle(path.length),
+                        },
                         { type: 'cursor', loc: node.loc, side: 'end' },
                     ],
                 };
@@ -250,7 +262,12 @@ export const nodeToIR = (
                         pullLast: true,
                         items: [
                             { type: 'cursor', loc: node.loc, side: 'start' },
-                            { type: 'punct', text: lr[0] },
+                            {
+                                type: 'punct',
+                                text: lr[0],
+                                brace: true,
+                                style: braceStyle(path.length),
+                            },
                             items.length === 1
                                 ? items[0]
                                 : {
@@ -281,7 +298,12 @@ export const nodeToIR = (
                             {
                                 type: 'horiz',
                                 items: [
-                                    { type: 'punct', text: lr[1] },
+                                    {
+                                        type: 'punct',
+                                        text: lr[1],
+                                        brace: true,
+                                        style: braceStyle(path.length),
+                                    },
                                     {
                                         type: 'cursor',
                                         loc: node.loc,
@@ -302,12 +324,22 @@ export const nodeToIR = (
                                     loc: node.loc,
                                     side: 'start',
                                 },
-                                { type: 'punct', text: lr[0] },
+                                {
+                                    type: 'punct',
+                                    text: lr[0],
+                                    brace: true,
+                                    style: braceStyle(path.length),
+                                },
                                 ...items,
                                 {
                                     type: 'horiz',
                                     items: [
-                                        { type: 'punct', text: lr[1] },
+                                        {
+                                            type: 'punct',
+                                            text: lr[1],
+                                            brace: true,
+                                            style: braceStyle(path.length),
+                                        },
                                         {
                                             type: 'cursor',
                                             loc: node.loc,
@@ -333,7 +365,12 @@ export const nodeToIR = (
                                         loc: node.loc,
                                         side: 'start',
                                     },
-                                    { type: 'punct', text: lr[0] },
+                                    {
+                                        type: 'punct',
+                                        text: lr[0],
+                                        brace: true,
+                                        style: braceStyle(path.length),
+                                    },
                                     items[0],
                                 ],
                             },
@@ -346,7 +383,12 @@ export const nodeToIR = (
                                     {
                                         type: 'horiz',
                                         items: [
-                                            { type: 'punct', text: lr[1] },
+                                            {
+                                                type: 'punct',
+                                                text: lr[1],
+                                                brace: true,
+                                                style: braceStyle(path.length),
+                                            },
                                             {
                                                 type: 'cursor',
                                                 loc: node.loc,
@@ -461,12 +503,22 @@ export const nodeToIR = (
                         pullLast: true,
                         items: [
                             { type: 'cursor', loc: node.loc, side: 'start' },
-                            { type: 'punct', text: lr[0] },
+                            {
+                                type: 'punct',
+                                text: lr[0],
+                                brace: true,
+                                style: braceStyle(path.length),
+                            },
                             mid,
                             {
                                 type: 'horiz',
                                 items: [
-                                    { type: 'punct', text: lr[1] },
+                                    {
+                                        type: 'punct',
+                                        text: lr[1],
+                                        brace: true,
+                                        style: braceStyle(path.length),
+                                    },
                                     {
                                         type: 'cursor',
                                         loc: node.loc,

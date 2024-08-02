@@ -1,3 +1,4 @@
+import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
 import { BlockEntry } from '../../../shared/IR/block-to-text';
 import { matchesSpan } from '../../../shared/IR/highlightSpan';
 import { IRSelection } from '../../../shared/IR/intermediate';
@@ -20,6 +21,7 @@ import { Toplevel } from '../../../shared/toplevels';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { selectionFromLocation, selectionLocation } from '../selectionLocation';
+import { selAction } from './joinLeft';
 
 export const handleUpDown = (
     key: string,
@@ -107,6 +109,101 @@ const adjacent = (
     }
 };
 
+export const handleClose = (
+    key: string,
+    docId: string,
+    cache: IRCache,
+    store: Store,
+): boolean => {
+    const ds = store.getDocSession(docId, store.session);
+    if (!ds.selections.length) return false;
+    const sel = ds.selections[0];
+
+    if (sel.end) return false;
+    if (sel.start.cursor.type === 'text' && sel.start.cursor.start)
+        return false;
+
+    const top = store.getState().toplevels[sel.start.path.root.toplevel];
+
+    switch (key) {
+        case '}': {
+            const loc = lastChild(sel.start.path);
+            const parent = parentPath(sel.start.path);
+            const node = top.nodes[lastChild(parent)];
+            if (node.type === 'string') {
+                const idx = node.templates.findIndex((t) => t.expr === loc);
+                if (idx !== -1) {
+                    store.update(
+                        selAction(
+                            parent,
+                            toSelection({
+                                cursor: {
+                                    type: 'text',
+                                    end: { cursor: 0, index: idx + 1 },
+                                },
+                                path: parent,
+                            }),
+                        ),
+                    );
+                    return true;
+                }
+            }
+        }
+        case ']':
+        case ')':
+            let parent = parentPath(sel.start.path);
+            while (parent.children.length) {
+                const node = top.nodes[lastChild(parent)];
+                if (
+                    (node.type === 'array' && key === ']') ||
+                    (key === ')' && node.type === 'list') ||
+                    (key === '}' && node.type === 'record')
+                ) {
+                    store.update(
+                        selAction(
+                            parent,
+                            selectNode(parent, 'end', cache[top.id].irs),
+                        ),
+                    );
+                    return true;
+                }
+                parent = parentPath(parent);
+            }
+            return false;
+        case '"': {
+            if (sel.start.cursor.type === 'text') {
+                const loc = lastChild(sel.start.path);
+                const node = top.nodes[lastChild(sel.start.path)];
+                if (
+                    node.type === 'string' &&
+                    sel.start.cursor.end.index === node.templates.length
+                ) {
+                    const text = node.templates.length
+                        ? node.templates[node.templates.length - 1].suffix
+                        : node.first;
+                    if (
+                        sel.start.cursor.end.cursor ===
+                        splitGraphemes(text).length
+                    ) {
+                        store.update(
+                            selAction(
+                                sel.start.path,
+                                toSelection({
+                                    cursor: { type: 'side', side: 'end' },
+                                    path: sel.start.path,
+                                }),
+                            ),
+                        );
+
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+};
+
 export const handleMovement = (
     key: string,
     docId: string,
@@ -116,6 +213,10 @@ export const handleMovement = (
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
+
+    if (handleClose(key, docId, cache, store)) {
+        return true;
+    }
 
     if (key === 'TAB' || key === 'SHIFT_TAB') {
         const next = adjacent(

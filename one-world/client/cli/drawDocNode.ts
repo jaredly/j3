@@ -16,7 +16,7 @@ import {
 import { white } from '../../shared/IR/ir-to-text';
 import { LayoutCtx, LayoutChoices, layoutIR } from '../../shared/IR/layout';
 import { IRCache, irNavigable, lastChild } from '../../shared/IR/nav';
-import { Style, PathRoot, fromMap } from '../../shared/nodes';
+import { Style, PathRoot, fromMap, childLocs } from '../../shared/nodes';
 import { Doc, PersistedState } from '../../shared/state';
 
 export const drawDocNode = (
@@ -123,9 +123,24 @@ const drawToplevel = (
     const parsed = parse(recNode);
 
     const irs: Record<number, IR> = {};
-    Object.entries(top.nodes).forEach(([id, node]) => {
-        irs[+id] = nodeToIR(node, parsed.styles, parsed.layouts, {});
-    });
+
+    const process = (id: number, path: number[]) => {
+        irs[id] = nodeToIR(
+            top.nodes[id],
+            path,
+            parsed.styles,
+            parsed.layouts,
+            {},
+        );
+        const children = childLocs(top.nodes[id]);
+        const childPath = path.concat([id]);
+        children.forEach((child) => process(child, childPath));
+    };
+    process(top.root, []);
+
+    // Object.entries(top.nodes).forEach(([id, node]) => {
+    //     irs[+id] = nodeToIR(node, parsed.styles, parsed.layouts, {});
+    // });
 
     selections.forEach((sel) => {
         if (sel.start.path.root.toplevel != id) return;
