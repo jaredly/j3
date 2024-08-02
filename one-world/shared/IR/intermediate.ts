@@ -545,13 +545,14 @@ export const nodeToIR = (
                 type: 'text',
                 text,
                 style:
-                    styles[node.loc] ?? node.ref
+                    styles[node.loc] ??
+                    (node.ref
                         ? refStyle
                         : {
                               color: parseHex(
                                   getRainbowHashColor(fasthash(text)),
                               ),
-                          },
+                          }),
                 loc: node.loc,
                 index: 0,
             };

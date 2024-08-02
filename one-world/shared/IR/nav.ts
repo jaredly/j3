@@ -6,6 +6,7 @@ import {
     pathWithChildren,
     serializePath,
 } from '../nodes';
+import { PersistedState } from '../state';
 import { IR, IRCursor, IRSelection } from './intermediate';
 import { IRForLoc, LayoutCtx } from './layout';
 
@@ -131,6 +132,7 @@ export const goLeftRight = (
     cache: IRCache,
     left: boolean,
     shift: boolean,
+    state: PersistedState,
 ): IRSelection | void => {
     const res = goLeftRightInner(sel, cache, left, shift);
     if (res) return res;
@@ -156,6 +158,54 @@ export const goLeftRight = (
             return;
         }
         path = parentPath(path);
+    }
+
+    const doc = state.documents[path.root.doc];
+    for (let i = path.root.ids.length - 2; i >= 0; i--) {
+        const pid = path.root.ids[i];
+        const nid = path.root.ids[i + 1];
+        const parent = doc.nodes[pid];
+        const idx = parent.children.indexOf(nid);
+        if (idx === -1) return;
+        if (idx === 0 && left) {
+            if (i === 0) return;
+            return selectNode(
+                {
+                    root: {
+                        type: 'doc-node',
+                        doc: doc.id,
+                        ids: path.root.ids.slice(0, i + 1),
+                        toplevel: parent.toplevel,
+                    },
+                    children: [state.toplevels[parent.toplevel].root],
+                },
+                'end',
+                cache[parent.toplevel].irs,
+            );
+        }
+        if (!left && idx === parent.children.length - 1) continue;
+        const sid = parent.children[idx + (left ? -1 : 1)];
+        let ids = path.root.ids.slice(0, i + 1).concat(sid);
+        let sib = doc.nodes[sid];
+        if (left) {
+            while (sib.children.length) {
+                sib = doc.nodes[sib.children[sib.children.length - 1]];
+                ids.push(sib.id);
+            }
+        }
+        return selectNode(
+            {
+                root: {
+                    type: 'doc-node',
+                    doc: doc.id,
+                    ids,
+                    toplevel: sib.toplevel,
+                },
+                children: [state.toplevels[sib.toplevel].root],
+            },
+            left ? 'end' : 'start',
+            cache[sib.toplevel].irs,
+        );
     }
 };
 

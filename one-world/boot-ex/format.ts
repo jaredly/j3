@@ -1,5 +1,6 @@
 // It's a parser, that only does formatting!
 
+import { termColors } from '../client/TextEdit/colors';
 import { Layout } from '../shared/IR/intermediate';
 import { Loc, RecNode, Style } from '../shared/nodes';
 
@@ -42,18 +43,21 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                                 type: 'vert',
                                 layout: { tightFirst: 2, indent: 4 },
                             };
+                            ctx.styles[getLoc(first.loc)] = kwdStyle;
                             break;
                         case 'match':
                             ctx.layouts[getLoc(node.loc)] = {
                                 type: 'vert',
                                 layout: { tightFirst: 2, indent: 2, pairs: [] },
                             };
+                            ctx.styles[getLoc(first.loc)] = kwdStyle;
                             break;
                         case 'let':
                             ctx.layouts[getLoc(node.loc)] = {
                                 type: 'vert',
                                 layout: { tightFirst: 2, indent: 2 },
                             };
+                            ctx.styles[getLoc(first.loc)] = kwdStyle;
                             if (node.items[1]?.type === 'array') {
                                 ctx.layouts[getLoc(node.items[1].loc)] = {
                                     type: 'vert',
@@ -70,6 +74,7 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                                 type: 'vert',
                                 layout: { tightFirst: 3, indent: 6 },
                             };
+                            ctx.styles[getLoc(first.loc)] = kwdStyle;
                             break;
                     }
                 }
@@ -92,4 +97,11 @@ const _parse = (node: RecNode, ctx: Ctx) => {
         // case 'id':
         //     if (node.text)
     }
+};
+
+const kwdStyle: Style = {
+    color: termColors.kwd,
+    // fontStyle: 'italic',
+    // fontWeight: 'bold'
+    // textDecoration: 'underline',
 };

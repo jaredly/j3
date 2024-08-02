@@ -50,9 +50,11 @@ export const handleUpDown = (
         }
         if (!up) return false;
         const top = up.source.top;
+        const ids = cache[top].paths[up.source.loc];
+        if (!ids) return false;
         const path: Path = {
             root: cache[top].root,
-            children: cache[top].paths[up.source.loc].concat([up.source.loc]),
+            children: ids.concat([up.source.loc]),
         };
         const cursor = selectionFromLocation(up, { x, y });
         store.update({
@@ -366,7 +368,13 @@ export const handleMovement = (
             return true;
         }
 
-        const next = goLeftRight(sel, cache, false, key === 'SHIFT_RIGHT');
+        const next = goLeftRight(
+            sel,
+            cache,
+            false,
+            key === 'SHIFT_RIGHT',
+            store.getState(),
+        );
         if (next) {
             store.update({
                 type: 'selection',
@@ -401,7 +409,13 @@ export const handleMovement = (
             return true;
         }
 
-        const next = goLeftRight(sel, cache, true, key === 'SHIFT_LEFT');
+        const next = goLeftRight(
+            sel,
+            cache,
+            true,
+            key === 'SHIFT_LEFT',
+            store.getState(),
+        );
         if (next) {
             store.update({
                 type: 'selection',
