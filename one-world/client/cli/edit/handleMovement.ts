@@ -97,7 +97,6 @@ const adjacent = (
         const idx = items.indexOf(path.children[i + 1]);
         if (side === 'left' ? idx === 0 : idx === items.length - 1) continue;
         const loc = items[idx + (side === 'left' ? -1 : 1)];
-        const node = top.nodes[loc];
         return firstLastChild(
             {
                 root: path.root,
@@ -106,6 +105,60 @@ const adjacent = (
             top.nodes,
             side === 'left' ? 'last' : 'first',
         );
+    }
+    if (path.root.ids.length > 1) {
+        const doc = state.documents[path.root.doc];
+        for (let i = path.root.ids.length - 2; i >= 0; i--) {
+            const parent = doc.nodes[path.root.ids[i]];
+            const idx = parent.children.indexOf(path.root.ids[i + 1]);
+            if (
+                side === 'left' ? idx === 0 : idx === parent.children.length - 1
+            ) {
+                continue;
+            }
+            const loc = parent.children[idx + (side === 'left' ? -1 : 1)];
+            let sib = doc.nodes[loc];
+            if (!sib)
+                throw new Error(
+                    `badloc maybe idx (${idx}) loc (${loc}) children: ${parent.children}`,
+                );
+            if (side === 'right') {
+                const top = state.toplevels[sib.toplevel];
+                return firstLastChild(
+                    {
+                        root: {
+                            doc: doc.id,
+                            toplevel: sib.toplevel,
+                            type: 'doc-node',
+                            ids: path.root.ids.slice(0, i + 1).concat([sib.id]),
+                        },
+                        children: [top.root],
+                    },
+                    top.nodes,
+                    'first',
+                );
+            } else {
+                const ids = path.root.ids.slice(0, i + 1).concat([sib.id]);
+                while (sib.children.length) {
+                    sib = doc.nodes[sib.children[sib.children.length - 1]];
+                    ids.push(sib.id);
+                }
+                const top = state.toplevels[sib.toplevel];
+                return firstLastChild(
+                    {
+                        root: {
+                            doc: doc.id,
+                            toplevel: sib.toplevel,
+                            type: 'doc-node',
+                            ids,
+                        },
+                        children: [top.root],
+                    },
+                    top.nodes,
+                    'last',
+                );
+            }
+        }
     }
 };
 
