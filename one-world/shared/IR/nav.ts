@@ -184,7 +184,12 @@ export const goLeftRightInner = (
             const text = findType(irs, 'text', cursor.end.index);
             if (!text) return;
             selected = text;
-            if (cursor.start && !shift) {
+            if (
+                cursor.start &&
+                !shift &&
+                (cursor.start.index !== cursor.end.index ||
+                    cursor.start.cursor !== cursor.end.cursor)
+            ) {
                 return {
                     start: {
                         ...sel.start,
