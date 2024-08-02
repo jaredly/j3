@@ -15,8 +15,11 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
+import { PersistedState } from '../../../shared/state2';
+import { getNodeForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
+import { resolveMultiSelect } from '../render';
 import { handleMovement } from './handleMovement';
 import { joinLeft, replaceNode, selAction } from './joinLeft';
 import { newNeighbor } from './newNeighbor';
@@ -32,6 +35,38 @@ const getIRText = (cache: IRCache, path: Path, index: number) => {
     return ir.text;
 };
 
+export const swap = (
+    state: PersistedState,
+    start: Path,
+    end: Path,
+    dir: 'left' | 'right',
+): Action[] | void => {
+    const multi = resolveMultiSelect(start, end, state);
+    if (!multi) return;
+    if (multi.type !== 'top') return;
+    const node = getNodeForPath(multi.parent, state);
+    if (isCollection(node)) {
+        const items = node.items.slice();
+        const lidx = items.indexOf(multi.children[0]);
+        const ridx = items.indexOf(multi.children[multi.children.length - 1]);
+        if (dir === 'left' ? lidx === 0 : ridx === items.length - 1) return;
+        if (dir === 'left') {
+            items.splice(ridx + 1, 0, items[lidx - 1]);
+            items.splice(lidx - 1, 1);
+        } else {
+            const [right] = items.splice(ridx + 1, 1);
+            items.splice(lidx, 0, right);
+        }
+
+        return [
+            topUpdate(start.root.toplevel, {
+                [lastChild(multi.parent)]: { ...node, items },
+            }),
+        ];
+    }
+    return;
+};
+
 export const handleUpdate = (
     key: string,
     docId: string,
@@ -45,6 +80,31 @@ export const handleUpdate = (
     const sel = ds.selections[0];
     if (sel.end) {
         const path = sel.end.path;
+
+        if (key === 'CTRL_LEFT') {
+            const ups = swap(
+                store.getState(),
+                sel.start.path,
+                sel.end.path,
+                'left',
+            );
+            if (!ups) return false;
+            store.update(...ups);
+            return true;
+        }
+
+        if (key === 'CTRL_RIGHT') {
+            const ups = swap(
+                store.getState(),
+                sel.start.path,
+                sel.end.path,
+                'right',
+            );
+            if (!ups) return false;
+            store.update(...ups);
+            return true;
+        }
+
         if (key === 'BACKSPACE') {
             store.update(
                 topUpdate(path.root.toplevel, {

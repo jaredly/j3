@@ -37,8 +37,12 @@ export const handleUpDown = (
         );
         if (!result) return false;
         let [x, y] = result.pos;
-        y += key === 'UP' ? -1 : 1;
-        const up = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
+        let up;
+        for (let i = 0; i < 20; i++) {
+            y += key === 'UP' ? -1 : 1;
+            up = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
+            if (up) break;
+        }
         if (!up) return false;
         const top = up.source.top;
         const path: Path = {

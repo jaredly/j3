@@ -14,6 +14,10 @@ and now I need a way to apply text formatting stuff.
 - [x] deleting strings
 - [ ] backspace from a `start` to delete a previous empty string, should work
 
+- [ ] swapppp
+- [ ] TABB
+- [ ] drag & droppp
+
 
 - [x] text formatting lookin great
 - [x] selection!management!
@@ -53,7 +57,7 @@ and now I need a way to apply text formatting stuff.
     - [x] hm maybe the trailing space thing needs to be dropped?
   - [x] cursor placement in a multiline string is wrong.
   - [ ] shift-right past an ID should start into multi-select.
-  - [ ] surround multiselect
+  - [x] surround multiselect
   - [ ] ctrl-c, ctrl-v pls
 
 
