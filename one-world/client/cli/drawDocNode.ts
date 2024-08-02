@@ -162,5 +162,5 @@ const drawToplevel = (
     block.node = { top: id, loc: top.root };
 
     cache[id] = { irs, layouts: ctx.layouts, paths, root };
-    return block;
+    return hblock([line('▶️ '), block]);
 };

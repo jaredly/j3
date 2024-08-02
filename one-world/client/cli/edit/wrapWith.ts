@@ -3,6 +3,7 @@ import { Path, parentPath, pathWithChildren } from '../../../shared/nodes';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { topUpdate } from './handleUpdate';
+import { replaceNode } from './joinLeft';
 
 export const wrapWith = (
     key: '[' | '(' | '{',
@@ -12,95 +13,53 @@ export const wrapWith = (
 ) => {
     const state = store.getState();
     const top = state.toplevels[path.root.toplevel];
-    const loc = lastChild(path);
-    const node = top.nodes[loc];
 
-    const parent = parentPath(path);
+    let loc = lastChild(path);
+    let node = top.nodes[loc];
+    let parent = parentPath(path);
+    if (!parent.children.length) return;
 
-    if (!parent.children.length) {
-        const nidx = top.nextLoc;
-
-        store.update(
-            {
-                type: 'toplevel',
-                id: top.id,
-                action: {
-                    type: 'update',
-                    update: {
-                        nodes: {
-                            [nidx]: {
-                                type:
-                                    key === '['
-                                        ? 'array'
-                                        : key === '('
-                                        ? 'list'
-                                        : 'record',
-                                items: [node.loc],
-                                loc: nidx,
-                            },
-                        },
-                        root: nidx,
-                        nextLoc: nidx + 1,
-                    },
-                },
-            },
-            {
-                type: 'selection',
-                doc: path.root.doc,
-                selections: [
-                    toSelection({
-                        cursor: {
-                            type: 'text',
-                            end: { index: 0, cursor: 0 },
-                        },
-                        path: pathWithChildren(parent, nidx, node.loc),
-                    }),
-                ],
-            },
-        );
-        return;
+    // Go up!!!
+    const pnode = top.nodes[lastChild(parent)];
+    if (pnode.type === 'string' && pnode.tag === loc) {
+        path = parent;
+        parent = parentPath(path);
+        loc = lastChild(path);
+        node = top.nodes[loc];
     }
 
-    const ploc = lastChild(parent);
-    const pnode = top.nodes[ploc];
-    // ugh I probably should just make a type === 'collection'...
-    if (isCollection(pnode)) {
-        const idx = pnode.items.indexOf(loc);
-        const nidx = top.nextLoc;
-        const items = pnode.items.slice();
-        items[idx] = nidx;
+    const update = replaceNode(path, top.nextLoc, top);
+    if (!update) return false;
+    update.nodes = {
+        ...update.nodes,
+        [top.nextLoc]: {
+            type: key === '[' ? 'array' : key === '(' ? 'list' : 'record',
+            items: [node.loc],
+            loc: top.nextLoc,
+        },
+    };
+    update.nextLoc = top.nextLoc + 1;
 
-        store.update(
-            topUpdate(
-                top.id,
-                {
-                    [ploc]: { ...pnode, items },
-                    [nidx]: {
-                        type:
-                            key === '['
-                                ? 'array'
-                                : key === '('
-                                ? 'list'
-                                : 'record',
-                        items: [node.loc],
-                        loc: nidx,
+    store.update(
+        {
+            type: 'toplevel',
+            id: top.id,
+            action: { type: 'update', update },
+        },
+        {
+            type: 'selection',
+            doc: path.root.doc,
+            selections: [
+                toSelection({
+                    cursor: {
+                        type: 'text',
+                        end: { index: 0, cursor: 0 },
                     },
-                },
-                nidx + 1,
-            ),
-            {
-                type: 'selection',
-                doc: path.root.doc,
-                selections: [
-                    toSelection({
-                        cursor: {
-                            type: 'text',
-                            end: { index: 0, cursor: 0 },
-                        },
-                        path: pathWithChildren(parent, nidx, node.loc),
-                    }),
-                ],
-            },
-        );
-    }
+                    path: pathWithChildren(parent, top.nextLoc, node.loc),
+                }),
+            ],
+        },
+    );
+
+    return;
 };

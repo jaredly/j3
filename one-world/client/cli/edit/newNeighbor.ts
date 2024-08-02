@@ -37,6 +37,7 @@ export const newNeighbor = (path: Path, store: Store, after = true) => {
             root: {
                 ...parent.root,
                 ids: parent.root.ids.slice(0, -1).concat([doc.nextLoc]),
+                toplevel: newTop,
             },
             children: [0],
         };

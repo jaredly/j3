@@ -45,6 +45,7 @@ export const saveChanges = (
     if (next.documents !== prev.documents) {
         Object.keys(prev.documents).forEach((k) => {
             if (!next.documents[k]) {
+                console.log('Deleting document', k);
                 unlinkSync(join(base, 'documents', k));
                 changes.push({ type: 'document', id: k, doc: null });
             }

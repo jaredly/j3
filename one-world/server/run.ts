@@ -7,8 +7,8 @@
 // -
 
 import { loadState, saveChanges } from './persistence';
-import { Action } from '../shared/action';
-import { update } from '../shared/update';
+import { Action } from '../shared/action2';
+import { update } from '../shared/update2';
 import { DocSession } from '../shared/state';
 import { ServerWebSocket } from 'bun';
 import { rid } from '../shared/rid';
@@ -114,6 +114,7 @@ Bun.serve({
                     selections: {},
                     toplevels: {},
                 });
+                console.log('action', action);
                 const changes = saveChanges(baseDirectory, state, next);
 
                 state = next;
