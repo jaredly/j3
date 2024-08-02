@@ -1,6 +1,6 @@
 import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
 import { Action, ToplevelUpdate } from '../../../shared/action2';
-import { IR } from '../../../shared/IR/intermediate';
+import { IR, IRSelection } from '../../../shared/IR/intermediate';
 import {
     cursorSelect,
     goLeftRight,
@@ -37,34 +37,71 @@ const getIRText = (cache: IRCache, path: Path, index: number) => {
 
 export const swap = (
     state: PersistedState,
-    start: Path,
+    start: IRSelection['start'],
     end: Path,
     dir: 'left' | 'right',
+    shift: boolean,
 ): Action[] | void => {
-    const multi = resolveMultiSelect(start, end, state);
+    const multi = resolveMultiSelect(start.path, end, state);
     if (!multi) return;
     if (multi.type !== 'top') return;
     const node = getNodeForPath(multi.parent, state);
-    if (isCollection(node)) {
-        const items = node.items.slice();
-        const lidx = items.indexOf(multi.children[0]);
-        const ridx = items.indexOf(multi.children[multi.children.length - 1]);
-        if (dir === 'left' ? lidx === 0 : ridx === items.length - 1) return;
-        if (dir === 'left') {
-            items.splice(ridx + 1, 0, items[lidx - 1]);
-            items.splice(lidx - 1, 1);
-        } else {
-            const [right] = items.splice(ridx + 1, 1);
-            items.splice(lidx, 0, right);
-        }
+    const ploc = lastChild(multi.parent);
+    if (!isCollection(node)) return;
 
-        return [
-            topUpdate(start.root.toplevel, {
-                [lastChild(multi.parent)]: { ...node, items },
-            }),
-        ];
+    const items = node.items.slice();
+    const lidx = items.indexOf(multi.children[0]);
+    const ridx = items.indexOf(multi.children[multi.children.length - 1]);
+
+    const up: ToplevelUpdate['update']['nodes'] = {
+        [lastChild(multi.parent)]: { ...node, items },
+    };
+    let sel: Action | null = null;
+    const moving = items.splice(lidx, ridx + 1 - lidx);
+
+    if (
+        (dir === 'left' && lidx === 0) ||
+        (dir === 'right' && ridx === node.items.length - 1)
+    ) {
+        if (!shift) return;
+        // "Swap out"
+        const gp = parentPath(multi.parent);
+        const gnode = getNodeForPath(gp, state);
+        if (!gnode || !isCollection(gnode)) return;
+        const at = gnode.items.indexOf(ploc);
+        if (at === -1) return;
+        const gitems = gnode.items.slice();
+        gitems.splice(at + (dir === 'left' ? 0 : 1), 0, ...moving);
+        up[lastChild(gp)] = { ...gnode, items: gitems };
+
+        const spath: Path = {
+            children: start.path.children.filter((loc) => loc !== ploc),
+            root: start.path.root,
+        };
+        const epath: Path = {
+            root: end.root,
+            children: end.children.filter((loc) => loc !== ploc),
+        };
+
+        sel = {
+            type: 'selection',
+            doc: end.root.doc,
+            selections: [
+                {
+                    start: {
+                        ...start,
+                        path: spath,
+                        key: serializePath(spath),
+                    },
+                    end: { path: epath, key: serializePath(epath) },
+                },
+            ],
+        };
+    } else {
+        items.splice(lidx + (dir === 'left' ? -1 : 1), 0, ...moving);
     }
-    return;
+
+    return [topUpdate(end.root.toplevel, up), ...(sel ? [sel] : [])];
 };
 
 export const handleUpdate = (
@@ -81,24 +118,18 @@ export const handleUpdate = (
     if (sel.end) {
         const path = sel.end.path;
 
-        if (key === 'CTRL_LEFT') {
+        if (
+            key === 'CTRL_LEFT' ||
+            key === 'CTRL_RIGHT' ||
+            key === 'CTRL_SHIFT_LEFT' ||
+            key === 'CTRL_SHIFT_RIGHT'
+        ) {
             const ups = swap(
                 store.getState(),
-                sel.start.path,
+                sel.start,
                 sel.end.path,
-                'left',
-            );
-            if (!ups) return false;
-            store.update(...ups);
-            return true;
-        }
-
-        if (key === 'CTRL_RIGHT') {
-            const ups = swap(
-                store.getState(),
-                sel.start.path,
-                sel.end.path,
-                'right',
+                key.endsWith('LEFT') ? 'left' : 'right',
+                key.includes('SHIFT'),
             );
             if (!ups) return false;
             store.update(...ups);
