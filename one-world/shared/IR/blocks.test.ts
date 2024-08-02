@@ -3,61 +3,27 @@ import { expect, test } from 'bun:test';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { parse } from '../../boot-ex/format';
 import { reader } from '../../boot-ex/reader';
-import { Control, IR, nodeToIR } from '../../shared/IR/intermediate';
+import { controlLayout, textLayout } from '../../client/cli/drawDocNode';
+import { IR, nodeToIR } from '../../shared/IR/intermediate';
 import { LayoutChoices, LayoutCtx, layoutIR } from '../../shared/IR/layout';
-import { Nodes, RecNode, Style, toMap } from '../../shared/nodes';
+import { childLocs, Nodes, RecNode, toMap } from '../../shared/nodes';
 import { BlockEntry, blockToText } from './block-to-text';
 import { highlightSpan } from './highlightSpan';
 import { Block, irToBlock } from './ir-to-blocks';
-import { controlLayout, textLayout } from '../../client/cli/drawDocNode';
-
-// const textLayout = (text: string, firstLine: number, style?: Style) => {
-//     const lines = text.split('\n');
-//     const height = lines.length;
-//     const inlineHeight = 1;
-//     let inlineWidth = firstLine;
-//     let maxWidth = 0;
-//     let firstLineWidth = 0;
-//     lines.forEach((line, i) => {
-//         inlineWidth = splitGraphemes(line).length;
-//         if (i === 0) {
-//             firstLineWidth = inlineWidth + firstLine;
-//         }
-//         if (i === 0) inlineWidth += firstLine;
-//         maxWidth = Math.max(maxWidth, inlineWidth);
-//     });
-//     return {
-//         height,
-//         inlineHeight,
-//         inlineWidth,
-//         maxWidth,
-//         firstLineWidth,
-//         multiLine: lines.length > 1,
-//     };
-// };
-
-// const controlLayout = (control: Control) => {
-//     let w = 4;
-//     if (control.type === 'number') {
-//         w = control.width + 3;
-//     }
-//     return {
-//         height: 1,
-//         firstLineWidth: w,
-//         inlineHeight: 1,
-//         inlineWidth: w,
-//         maxWidth: w,
-//     };
-// };
 
 const processNode = (data: RecNode, maxWidth = 30, leftWidth = 20) => {
     const nodes: Nodes = {};
     const parsed = parse(data);
     const root = toMap(data, nodes);
     const irs: Record<number, IR> = {};
-    Object.entries(nodes).forEach(([id, node]) => {
-        irs[+id] = nodeToIR(node, parsed.styles, parsed.layouts, {});
-    });
+
+    const process = (id: number, path: number[]) => {
+        irs[id] = nodeToIR(nodes[id], path, parsed.styles, parsed.layouts, {});
+        const children = childLocs(nodes[id]);
+        const childPath = path.concat([id]);
+        children.forEach((child) => process(child, childPath));
+    };
+    process(root, []);
 
     const ctx: LayoutCtx = {
         maxWidth,
@@ -290,6 +256,12 @@ test('simple a/b with interp', () => {
 test('string with newlines in interp', () => {
     let res = [];
     res.push(showSpans('"A${"B\nC"}D E F"', 20));
+    expect('\n' + res.join('\n')).toMatchSnapshot();
+});
+
+test('pairs placement?', () => {
+    let res = [];
+    res.push(showSpans('(let [a b] ))', 10));
     expect('\n' + res.join('\n')).toMatchSnapshot();
 });
 

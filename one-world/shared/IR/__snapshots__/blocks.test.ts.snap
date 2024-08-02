@@ -1284,3 +1284,33 @@ exports[`string with newlines in interp 1`] = `
      C"}D E F"|
 "
 `;
+
+exports[`pairs placement? 1`] = `
+"
+---------| 10
+(let [a b]
+          )
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(let [a b]
+          )
+[ # ] {"type":"block","start":[1,0],"width":3,"height":1}
+(l̲e̲t̲ [a b]
+          )
+[ # ] {"type":"block","start":[5,0],"width":0,"height":1}
+(let |[a b]
+          )
+[ # ] {"type":"block","start":[6,0],"width":1,"height":1}
+(let [a̲ b]
+          )
+[ # ] {"type":"block","start":[8,0],"width":1,"height":1}
+(let [a b̲]
+          )
+[ # ] {"type":"block","start":[9,0],"width":0,"height":1}
+(let [a b]|
+          )
+[ # ] {"type":"block","start":[10,1],"width":0,"height":1}
+(let [a b]
+          |)
+"
+`;
