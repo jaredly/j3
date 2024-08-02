@@ -45,6 +45,7 @@ export const swap = (
     const multi = resolveMultiSelect(start.path, end, state);
     if (!multi) return;
     if (multi.type !== 'top') return;
+    const top = state.toplevels[start.path.root.toplevel];
     const node = getNodeForPath(multi.parent, state);
     const ploc = lastChild(multi.parent);
     if (!isCollection(node)) return;
@@ -98,7 +99,47 @@ export const swap = (
             ],
         };
     } else {
-        items.splice(lidx + (dir === 'left' ? -1 : 1), 0, ...moving);
+        const neighbor = items[lidx + (dir === 'left' ? -1 : 0)];
+        const nnode = top.nodes[neighbor];
+        if (shift && isCollection(nnode)) {
+            const nitems = nnode.items.slice();
+            if (dir === 'left') {
+                nitems.push(...moving);
+            } else {
+                nitems.unshift(...moving);
+            }
+            up[neighbor] = { ...nnode, items: nitems };
+
+            const pos = start.path.children.indexOf(ploc);
+
+            const spath: Path = {
+                children: start.path.children.slice(),
+                root: start.path.root,
+            };
+            const epath: Path = {
+                root: end.root,
+                children: end.children.slice(),
+            };
+            spath.children.splice(pos + 1, 0, neighbor);
+            epath.children.splice(pos + 1, 0, neighbor);
+
+            sel = {
+                type: 'selection',
+                doc: end.root.doc,
+                selections: [
+                    {
+                        start: {
+                            ...start,
+                            path: spath,
+                            key: serializePath(spath),
+                        },
+                        end: { path: epath, key: serializePath(epath) },
+                    },
+                ],
+            };
+        } else {
+            items.splice(lidx + (dir === 'left' ? -1 : 1), 0, ...moving);
+        }
     }
 
     return [topUpdate(end.root.toplevel, up), ...(sel ? [sel] : [])];
