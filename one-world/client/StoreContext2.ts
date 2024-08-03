@@ -3,7 +3,7 @@ import { DocSession, PersistedState } from '../shared/state2';
 import { Action } from '../shared/action2';
 import { Path } from '../shared/nodes';
 
-export type StoreEvt = 'selection';
+export type StoreEvt = 'selection' | 'all';
 
 export type Store = {
     session: string;

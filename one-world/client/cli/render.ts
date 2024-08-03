@@ -44,7 +44,7 @@ export const renderSelection = (
     }
 };
 
-export const render = (term: termkit.Terminal, store: Store, docId: string) => {
+export const render = (maxWidth: number, store: Store, docId: string) => {
     const ds = store.getDocSession(docId, store.session);
     const doc = store.getState().documents[docId];
     const cache: IRCache = {};
@@ -55,16 +55,14 @@ export const render = (term: termkit.Terminal, store: Store, docId: string) => {
         store.getState(),
         cache,
         ds.selections,
-        term.width - 10,
+        maxWidth,
     );
     const { txt, sourceMaps } = redrawWithSelection(
         block,
         ds.selections,
         store.getState(),
     );
-    term.moveTo(0, 2, txt);
-    term.moveTo(0, 0);
-    return { cache, sourceMaps, block };
+    return { cache, sourceMaps, block, txt };
 };
 
 export const redrawWithSelection = (

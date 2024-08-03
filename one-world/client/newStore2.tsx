@@ -15,6 +15,7 @@ import { getNewSelection } from './TextEdit/getNewSelection';
 type Evts = {
     general: {
         selection: (() => void)[];
+        all: (() => void)[];
     };
     selections: Record<string, (() => void)[]>;
     tops: Record<
@@ -37,7 +38,7 @@ const blankEvts = (): Evts => ({
     tops: {},
     docs: {},
     selections: {},
-    general: { selection: [] },
+    general: { selection: [], all: [] },
 });
 const blankFns = (): Evts['docs'][''] => ({ fns: [], nodes: {} });
 
@@ -232,10 +233,17 @@ export const newStore = (
                 ws.send(JSON.stringify({ type: 'action', action }));
             });
 
+            evts.general.all.forEach((f) => f());
+
             sendUpdates(updated, evts);
         },
         on(evt, f) {
-            return listen(evts.general.selection, f);
+            switch (evt) {
+                case 'all':
+                    return listen(evts.general.all, f);
+                case 'selection':
+                    return listen(evts.general.selection, f);
+            }
         },
         onSelection(session, path, f) {
             const id = `${session}#${serializePath(path)}`;

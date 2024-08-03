@@ -70,7 +70,7 @@ const firstLastChild = (
     path: Path,
     nodes: Toplevel['nodes'],
     which: 'first' | 'last',
-) => {
+): Path => {
     const loc = lastChild(path);
     const node = nodes[loc];
     if (isCollection(node) && node.items.length) {

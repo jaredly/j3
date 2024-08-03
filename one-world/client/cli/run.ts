@@ -47,7 +47,13 @@ const run = async (term: termkit.Terminal) => {
 
     const docId = sess.doc;
 
-    let { sourceMaps, cache, block } = render(term, store, sess.doc);
+    let { sourceMaps, cache, block, txt } = render(
+        term.width - 10,
+        store,
+        sess.doc,
+    );
+    term.clear();
+    term.moveTo(0, 2, txt);
     renderSelection(term, store, docId, sourceMaps);
 
     const unsel = store.on('selection', () => {
@@ -60,10 +66,52 @@ const run = async (term: termkit.Terminal) => {
         store.update({ type: 'selection', doc: docId, selections: [] });
     });
 
-    term.on('resize', (width: number, height: number) => {
+    let changed = false;
+    let tid: null | Timer = null;
+
+    const rerender = () => {
+        tid = null;
+
+        let txt;
+
+        if (changed) {
+            ({ sourceMaps, cache, block, txt } = render(
+                term.width - 10,
+                store,
+                docId,
+            ));
+        } else {
+            ({ txt } = redrawWithSelection(
+                block,
+                store.getDocSession(docId, store.session).selections,
+                store.getState(),
+            ));
+        }
         term.clear();
-        ({ sourceMaps, cache, block } = render(term, store, docId));
+        term.moveTo(0, 2, txt);
+
         renderSelection(term, store, docId, sourceMaps);
+
+        changed = false;
+    };
+
+    const kick = () => {
+        if (tid != null) return;
+        tid = setTimeout(rerender, 0);
+    };
+
+    store.on('all', () => {
+        changed = true;
+        kick();
+    });
+
+    store.on('selection', () => {
+        kick();
+    });
+
+    term.on('resize', () => {
+        changed = true;
+        kick();
     });
 
     term.on('key', (key: string) => {
@@ -79,29 +127,29 @@ const run = async (term: termkit.Terminal) => {
             handleUpDown(key, docId, cache, store, sourceMaps) ||
             handleMovement(key, docId, cache, store)
         ) {
-            const { txt } = redrawWithSelection(
-                block,
-                store.getDocSession(docId, store.session).selections,
-                store.getState(),
-            );
-            term.clear();
-            term.moveTo(0, 2, txt);
+            // const { txt } = redrawWithSelection(
+            //     block,
+            //     store.getDocSession(docId, store.session).selections,
+            //     store.getState(),
+            // );
+            // term.clear();
+            // term.moveTo(0, 2, txt);
 
-            term.moveTo(0, term.height, key);
+            // term.moveTo(0, term.height, key);
 
-            renderSelection(term, store, docId, sourceMaps);
+            // renderSelection(term, store, docId, sourceMaps);
 
             return;
         }
         if (handleUpdate(key, docId, cache, store)) {
-            term.clear();
-            ({ sourceMaps, cache, block } = render(term, store, docId));
-            term.moveTo(0, term.height, key);
-            renderSelection(term, store, docId, sourceMaps);
+            // term.clear();
+            // ({ sourceMaps, cache, block } = render(term, store, docId));
+            // term.moveTo(0, term.height, key);
+            // renderSelection(term, store, docId, sourceMaps);
             return;
         }
-        term.moveTo(0, term.height, key);
-        renderSelection(term, store, docId, sourceMaps);
+        // term.moveTo(0, term.height, key);
+        // renderSelection(term, store, docId, sourceMaps);
     });
 
     term.on(
@@ -123,14 +171,14 @@ const run = async (term: termkit.Terminal) => {
             } else {
                 return;
             }
-            const { txt } = redrawWithSelection(
-                block,
-                store.getDocSession(docId, store.session).selections,
-                store.getState(),
-            );
-            term.clear();
-            term.moveTo(0, 2, txt);
-            renderSelection(term, store, docId, sourceMaps);
+            // const { txt } = redrawWithSelection(
+            //     block,
+            //     store.getDocSession(docId, store.session).selections,
+            //     store.getState(),
+            // );
+            // term.clear();
+            // term.moveTo(0, 2, txt);
+            // renderSelection(term, store, docId, sourceMaps);
         },
     );
 };
