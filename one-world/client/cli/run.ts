@@ -47,6 +47,8 @@ const run = async (term: termkit.Terminal) => {
 
     const docId = sess.doc;
 
+    let lastKey = null as null | string;
+
     let { sourceMaps, cache, block, txt } = render(
         term.width - 10,
         store,
@@ -91,6 +93,9 @@ const run = async (term: termkit.Terminal) => {
         term.moveTo(0, 2, txt);
 
         renderSelection(term, store, docId, sourceMaps);
+        if (lastKey) {
+            term.moveTo(0, term.height, lastKey);
+        }
 
         changed = false;
     };
@@ -115,7 +120,8 @@ const run = async (term: termkit.Terminal) => {
     });
 
     term.on('key', (key: string) => {
-        if (key === 'ESCAPE') {
+        lastKey = key;
+        if (key === 'CTRL_C') {
             unsel();
             store.update({ type: 'selection', doc: docId, selections: [] });
 
@@ -127,29 +133,12 @@ const run = async (term: termkit.Terminal) => {
             handleUpDown(key, docId, cache, store, sourceMaps) ||
             handleMovement(key, docId, cache, store)
         ) {
-            // const { txt } = redrawWithSelection(
-            //     block,
-            //     store.getDocSession(docId, store.session).selections,
-            //     store.getState(),
-            // );
-            // term.clear();
-            // term.moveTo(0, 2, txt);
-
-            // term.moveTo(0, term.height, key);
-
-            // renderSelection(term, store, docId, sourceMaps);
-
             return;
         }
         if (handleUpdate(key, docId, cache, store)) {
-            // term.clear();
-            // ({ sourceMaps, cache, block } = render(term, store, docId));
-            // term.moveTo(0, term.height, key);
-            // renderSelection(term, store, docId, sourceMaps);
             return;
         }
-        // term.moveTo(0, term.height, key);
-        // renderSelection(term, store, docId, sourceMaps);
+        term.moveTo(0, term.height, key);
     });
 
     term.on(
