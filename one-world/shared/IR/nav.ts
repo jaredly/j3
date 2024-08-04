@@ -308,6 +308,22 @@ const goLRFrom = (
     };
 };
 
+export const cursorForNode = (
+    // loc: number,
+    parents: number[],
+    side: 'start' | 'end',
+    cache: IRForLoc,
+) => {
+    const irs = irNavigable(cache[parents[parents.length - 1]]);
+    return cursorSelect2(
+        irs[side === 'start' ? 0 : irs.length - 1],
+        parents,
+        irs,
+        cache,
+        side === 'end',
+    );
+};
+
 export const selectNode = (
     // loc: number,
     path: Path,
@@ -339,6 +355,51 @@ export const toSelection = ({
         cursor,
     },
 });
+
+export const cursorSelect2 = (
+    ir: IRNavigable,
+    children: number[],
+    siblings: IRNavigable[],
+    cache: IRForLoc,
+    end: boolean,
+): { cursor: IRCursor; children: number[] } => {
+    switch (ir.type) {
+        case 'text':
+            return {
+                cursor: {
+                    type: 'text',
+                    end: {
+                        index: siblings
+                            .filter((r) => r.type === 'text')
+                            .indexOf(ir),
+                        cursor: end ? splitGraphemes(ir.text).length : 0,
+                    },
+                },
+                children,
+            };
+        case 'control':
+            return {
+                cursor: {
+                    type: 'control',
+                    index: siblings
+                        .filter((r) => r.type === 'control')
+                        .indexOf(ir),
+                },
+                children,
+            };
+        case 'cursor':
+            return { cursor: { type: 'side', side: ir.side }, children };
+        case 'loc':
+            const items = irNavigable(cache[ir.loc]);
+            return cursorSelect2(
+                items[end ? items.length - 1 : 0],
+                children.concat([ir.loc]),
+                items,
+                cache,
+                end,
+            );
+    }
+};
 
 export const cursorSelect = (
     ir: IRNavigable,

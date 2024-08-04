@@ -1,9 +1,17 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Action, ToplevelUpdate } from '../../shared/action2';
-import { IRSelection } from '../../shared/IR/intermediate';
+import { IRCursor, IRSelection, nodeToIR } from '../../shared/IR/intermediate';
 import { IRForLoc } from '../../shared/IR/layout';
-import { IRCache, selectNode } from '../../shared/IR/nav';
 import {
+    cursorForNode,
+    cursorSelect,
+    IRCache,
+    irNavigable,
+    selectNode,
+    toSelection,
+} from '../../shared/IR/nav';
+import {
+    childLocs,
     Node,
     Nodes,
     Path,
@@ -324,19 +332,10 @@ export const addSibling = (
     const idx = parent.items.indexOf(child);
     if (idx === -1) return;
 
-    const nodes: Nodes = {};
-
-    const nidx = { next: top.nextLoc };
-
-    let selected = null as null | number[];
-
-    const nloc = toMapInner(sibling, [], nodes, (node, _, path) => {
-        const id = nidx.next++;
-        if (node.loc === true) {
-            selected = path.concat([id]);
-        }
-        return id;
-    });
+    const { selected, nloc, nodes, nidx } = inflateRecNode(
+        top.nextLoc,
+        sibling,
+    );
 
     if (selected == null) {
         throw new Error(`invalid "sibling"; one node must have loc=true`);
@@ -349,7 +348,9 @@ export const addSibling = (
 
     const npath: Path = {
         root: path.root,
-        children: path.children.slice(0, containerParent + 1).concat(selected),
+        children: path.children
+            .slice(0, containerParent + 1)
+            .concat(selected.children),
     };
 
     return {
@@ -362,13 +363,7 @@ export const addSibling = (
             ? undefined
             : {
                   start: {
-                      cursor: {
-                          type: 'text',
-                          end: {
-                              cursor: 0,
-                              index: 0,
-                          },
-                      },
+                      cursor: selected.cursor,
                       path: npath,
                       key: serializePath(npath),
                   },
@@ -1106,6 +1101,76 @@ const justSel = (sel: IRSelection, doc: string): Action | void => ({
     doc,
     selections: [sel],
 });
+
+export const createIRCache = (
+    root: number,
+    nodes: Record<number, Node>,
+): IRForLoc => {
+    const map: IRForLoc = {};
+    const process = (loc: number) => {
+        const ir = nodeToIR(nodes[loc], [loc], {}, {}, {}); // this will mess up some style things
+        map[loc] = ir;
+        childLocs(nodes[loc]).forEach(process);
+    };
+    process(root);
+    return map;
+};
+
+// export const selectNodeNoIR = (node: Node, path: Path, side: 'start' | 'end') => {
+//     // const sloc = path.children[path.children.length - 1]
+//     const irs = irNavigable(nodeToIR(node, path.children, {}, {}, {}))
+//     const selection = toSelection(
+//         cursorSelect(
+//             irs[side === 'start' ? 0 : irs.length - 1],
+//             path,
+//             irs,
+//             cache,
+//             side === 'end',
+//         ),
+//     );
+// }
+
+export function inflateRecNode(
+    nextLoc: number,
+    sibling: RecNodeT<boolean>,
+): {
+    selected: { children: number[]; cursor: IRCursor };
+    nloc: number;
+    nodes: Nodes;
+    nidx: { next: number };
+} {
+    const nodes: Nodes = {};
+    const nidx = { next: nextLoc };
+    let selected = null as null | number[];
+    const nloc = toMapInner(sibling, [], nodes, (node, _, path) => {
+        const id = nidx.next++;
+        if (node.loc === true) {
+            selected = path.concat([id]);
+        }
+        return id;
+    });
+    if (selected === null) {
+        throw new Error(`invalid "sibling"; one node must have loc=true`);
+    }
+    const sloc = selected[selected.length - 1];
+    // const irs = irNavigable(nodeToIR(nodes[sloc], selected, {}, {}, {}))
+    // const selection = toSelection(
+    //     cursorSelect(
+    //         irs[side === 'start' ? 0 : irs.length - 1],
+    //         path,
+    //         irs,
+    //         cache,
+    //         side === 'end',
+    //     ),
+    // );
+
+    return {
+        selected: cursorForNode(selected, 'end', createIRCache(sloc, nodes)),
+        nloc,
+        nodes,
+        nidx,
+    };
+}
 
 // export const goLeft = (
 //     path: Path,

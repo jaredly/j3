@@ -92,10 +92,11 @@ const run = async (term: termkit.Terminal) => {
         term.clear();
         term.moveTo(0, 2, txt);
 
-        renderSelection(term, store, docId, sourceMaps);
         if (lastKey) {
             term.moveTo(0, term.height, lastKey);
         }
+
+        renderSelection(term, store, docId, sourceMaps);
 
         changed = false;
     };

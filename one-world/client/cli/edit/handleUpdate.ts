@@ -157,7 +157,17 @@ export const handleUpdate = (
         }
 
         if (key === ' ') {
-            return newNeighbor(sel.start.path, store);
+            return newNeighbor(
+                sel.start.path,
+                store,
+                {
+                    type: 'id',
+                    text: '',
+                    loc: true,
+                },
+                sel.start.cursor.type !== 'side' ||
+                    sel.start.cursor.side === 'end',
+            );
         }
 
         return false; // not a text update

@@ -204,10 +204,25 @@ export const resolveMultiSelect = (
     return { type: 'top', parent: parentPath(end), children: [lastChild(end)] };
 };
 
-const nodesForSelection = (start: Path, end: Path, state: PersistedState) => {
+const nodesForSelection = (
+    start: Path,
+    end: Path,
+    state: PersistedState,
+): Path[] => {
     const resolved = resolveMultiSelect(start, end, state);
     if (!resolved) return [];
-    if (resolved.type === 'doc') return [];
+    if (resolved.type === 'doc') {
+        const doc = state.documents[resolved.doc];
+        return resolved.children.map((id) => ({
+            root: {
+                doc: resolved.doc,
+                toplevel: doc.nodes[id].toplevel,
+                ids: resolved.parentIds.concat([id]),
+                type: 'doc-node',
+            },
+            children: [state.toplevels[doc.nodes[id].toplevel].root],
+        }));
+    }
     return resolved.children.map((id) => pathWithChildren(resolved.parent, id));
 };
 
