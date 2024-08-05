@@ -123,8 +123,11 @@ export const joinLeft = (
                 const children = pnode.children.slice();
                 children.splice(idx, 1);
 
-                const sel = goFromDocNode(state, path, true, cache);
-                if (!sel) return false;
+                let sel = goFromDocNode(state, path, true, cache);
+                if (!sel) {
+                    sel = goFromDocNode(state, path, false, cache);
+                    if (!sel) return false;
+                }
 
                 store.update(
                     {
@@ -145,6 +148,7 @@ export const joinLeft = (
                 return true;
             }
         }
+        return false;
     }
 
     const ploc = lastChild(parent);

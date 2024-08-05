@@ -33,7 +33,7 @@ and now I need a way to apply text formatting stuff.
   - [x] wrappign after an interpolation seems busted.
 
 - [x] deleting strings
-- [ ] backspace from a `start` to delete a previous empty id, should work
+- [x] backspace from a `start` to delete a previous empty id, should work
 
 - [x] swapppp
 - [x] TABB
@@ -82,7 +82,7 @@ and now I need a way to apply text formatting stuff.
   - [x] cursor placement in a multiline string is wrong.
   - [ ] shift-right past an ID should start into multi-select.
   - [x] surround multiselect
-  - [ ] ctrl-c, ctrl-v pls
+  - [x] ctrl-c, ctrl-v pls
 
 
 Inline text wrappingg.... gotta track it right.

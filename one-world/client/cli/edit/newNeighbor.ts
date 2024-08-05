@@ -27,7 +27,7 @@ export const newNeighbor = (
     const loc = lastChild(path);
     if (path.children.length < 2) {
         const doc = state.documents[path.root.doc];
-        return newDocNodeAfter(path, doc, store, siblings);
+        return newDocNodeNeighbor(path, doc, store, siblings, after);
     }
     const parent = parentPath(path);
 
@@ -75,11 +75,12 @@ export const newNeighbor = (
     // ->
 };
 
-const newDocNodeAfter = (
+const newDocNodeNeighbor = (
     path: Path,
     doc: Doc,
     store: Store,
     siblings: RecNodeT<boolean>[],
+    after = true,
 ): boolean => {
     if (path.root.ids.length <= 1) return false; // no parent doc node
     const ploc = path.root.ids[path.root.ids.length - 2];
@@ -149,7 +150,7 @@ const newDocNodeAfter = (
         });
     });
 
-    children.splice(at + 1, 0, ...docLocs);
+    children.splice(at + (after ? 1 : 0), 0, ...docLocs);
 
     store.update(
         {
