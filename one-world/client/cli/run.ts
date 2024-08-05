@@ -122,7 +122,7 @@ const run = async (term: termkit.Terminal) => {
 
     term.on('key', (key: string) => {
         lastKey = key;
-        if (key === 'CTRL_C') {
+        if (key === 'ESCAPE') {
             unsel();
             store.update({ type: 'selection', doc: docId, selections: [] });
 

@@ -1150,19 +1150,9 @@ export function inflateRecNode(
         return id;
     });
     if (selected === null) {
-        throw new Error(`invalid "sibling"; one node must have loc=true`);
+        selected = [nloc];
     }
     const sloc = selected[selected.length - 1];
-    // const irs = irNavigable(nodeToIR(nodes[sloc], selected, {}, {}, {}))
-    // const selection = toSelection(
-    //     cursorSelect(
-    //         irs[side === 'start' ? 0 : irs.length - 1],
-    //         path,
-    //         irs,
-    //         cache,
-    //         side === 'end',
-    //     ),
-    // );
 
     return {
         selected: cursorForNode(selected, 'end', createIRCache(sloc, nodes)),

@@ -2,6 +2,7 @@ import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
 import { Action, ToplevelUpdate } from '../../../shared/action2';
 import { IRSelection } from '../../../shared/IR/intermediate';
 import {
+    goFromDocNode,
     IRCache,
     lastChild,
     selectNode,
@@ -105,6 +106,47 @@ export const joinLeft = (
 
     // that's a thing
     const parent = parentPath(path);
+
+    if (parent.children.length === 0) {
+        if (
+            node.type === 'id' &&
+            (current ? current.length === 0 : node.text.length === 0)
+        ) {
+            // we can delete
+            if (path.root.ids.length > 1) {
+                const loc = path.root.ids[path.root.ids.length - 1];
+                const ploc = path.root.ids[path.root.ids.length - 2];
+                const doc = state.documents[path.root.doc];
+                const pnode = doc.nodes[ploc];
+                const idx = pnode.children.indexOf(loc);
+                if (idx === -1) return false;
+                const children = pnode.children.slice();
+                children.splice(idx, 1);
+
+                const sel = goFromDocNode(state, path, true, cache);
+                if (!sel) return false;
+
+                store.update(
+                    {
+                        type: 'doc',
+                        id: doc.id,
+                        action: {
+                            type: 'update',
+                            update: {
+                                nodes: {
+                                    [ploc]: { ...pnode, children },
+                                    [loc]: undefined,
+                                },
+                            },
+                        },
+                    },
+                    { type: 'selection', doc: doc.id, selections: [sel] },
+                );
+                return true;
+            }
+        }
+    }
+
     const ploc = lastChild(parent);
     const pnode = top.nodes[ploc];
 

@@ -160,6 +160,15 @@ export const goLeftRight = (
         path = parentPath(path);
     }
 
+    return goFromDocNode(state, path, left, cache);
+};
+
+export const goFromDocNode = (
+    state: PersistedState,
+    path: Path,
+    left: boolean,
+    cache: IRCache,
+) => {
     const doc = state.documents[path.root.doc];
     for (let i = path.root.ids.length - 2; i >= 0; i--) {
         const pid = path.root.ids[i];

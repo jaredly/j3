@@ -149,12 +149,16 @@ export const newStore = (
                     docSessionCache[id] = JSON.parse(
                         localStorage['doc:ss:' + id],
                     );
+                    if (!docSessionCache[id].clipboard) {
+                        docSessionCache[id].clipboard = [];
+                    }
                 } else {
                     docSessionCache[id] = {
                         doc,
                         history: [],
                         activeStage: null,
                         selections: [],
+                        clipboard: [],
                     };
                 }
             }

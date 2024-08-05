@@ -8,6 +8,7 @@ import {
     toSelection,
 } from '../../../shared/IR/nav';
 import {
+    fromMap,
     parentPath,
     Path,
     pathWithChildren,
@@ -46,6 +47,29 @@ export const handleUpdate = (
     const sel = ds.selections[0];
     if (sel.end) {
         const path = sel.end.path;
+
+        if (key === 'CTRL_C') {
+            const state = store.getState();
+            const which = resolveMultiSelect(
+                sel.start.path,
+                sel.end.path,
+                state,
+            );
+            if (!which) return false;
+            if (which.type === 'doc') {
+                const doc = state.documents[which.doc];
+                ds.clipboard = which.children.map((nid) => {
+                    const top = state.toplevels[doc.nodes[nid].toplevel];
+                    return fromMap(() => false, top.root, top.nodes);
+                });
+            } else {
+                const top = state.toplevels[which.parent.root.toplevel];
+                ds.clipboard = which.children.map((nid) => {
+                    return fromMap(() => false, nid, top.nodes);
+                });
+            }
+            return true;
+        }
 
         if (
             key === 'CTRL_LEFT' ||
@@ -144,27 +168,42 @@ export const handleUpdate = (
         }
         return false; // ugh
     }
+
+    if (key === 'CTRL_V') {
+        if (!ds.clipboard.length) return false;
+        // TODO: If current is empty, replace it
+        return newNeighbor(sel.start.path, store, ds.clipboard);
+    }
+
     if (sel.start.cursor.type !== 'text') {
         if (key === 'BACKSPACE') {
-            if (!joinLeft(sel.start.path, undefined, 0, cache, store)) {
-                return handleMovement(
-                    'LEFT',
-                    sel.start.path.root.doc,
-                    cache,
-                    store,
-                );
+            if (
+                sel.start.cursor.type === 'side' &&
+                sel.start.cursor.side === 'start'
+            ) {
+                if (joinLeft(sel.start.path, undefined, 0, cache, store)) {
+                    return true;
+                }
             }
+            return handleMovement(
+                'LEFT',
+                sel.start.path.root.doc,
+                cache,
+                store,
+            );
         }
 
         if (key === ' ') {
             return newNeighbor(
                 sel.start.path,
                 store,
-                {
-                    type: 'id',
-                    text: '',
-                    loc: true,
-                },
+                [
+                    {
+                        type: 'id',
+                        text: '',
+                        loc: true,
+                    },
+                ],
                 sel.start.cursor.type !== 'side' ||
                     sel.start.cursor.side === 'end',
             );

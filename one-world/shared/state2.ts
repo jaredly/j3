@@ -2,7 +2,7 @@
 // probably persisted or something
 
 import { IRSelection } from './IR/intermediate';
-import { Cursor, Path } from './nodes';
+import { Cursor, Path, RecNodeT } from './nodes';
 import { Toplevels } from './toplevels';
 
 export type TS = { created: number; updated: number };
@@ -53,6 +53,7 @@ export type DocSession = {
     history: any[];
     activeStage: null | string;
     selections: IRSelection[];
+    clipboard: RecNodeT<boolean>[];
     // idTexts: Record<number, string[]>;
     // selection cache???
     // selections: {

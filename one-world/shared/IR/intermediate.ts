@@ -228,9 +228,10 @@ export const nodeToIR = (
                 record: '{}',
             }[node.type];
 
-            if (!node.items.length) {
+            if (node.items.length < 2) {
                 return {
                     type: 'horiz',
+                    pullLast: true,
                     items: [
                         { type: 'cursor', loc: node.loc, side: 'start' },
                         {
@@ -239,7 +240,9 @@ export const nodeToIR = (
                             brace: node.loc,
                             style: braceStyle(path.length),
                         },
-                        { type: 'cursor', loc: node.loc, side: 'inside' },
+                        node.items.length
+                            ? { type: 'loc', loc: node.items[0] }
+                            : { type: 'cursor', loc: node.loc, side: 'inside' },
                         {
                             type: 'punct',
                             text: lr[1],

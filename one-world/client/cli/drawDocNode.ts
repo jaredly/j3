@@ -16,7 +16,7 @@ import {
 import { white } from '../../shared/IR/ir-to-text';
 import { LayoutCtx, LayoutChoices, layoutIR } from '../../shared/IR/layout';
 import { IRCache, irNavigable, lastChild } from '../../shared/IR/nav';
-import { Style, PathRoot, fromMap, childLocs } from '../../shared/nodes';
+import { Style, PathRoot, fromMap, childLocs, Loc } from '../../shared/nodes';
 import { Doc, PersistedState } from '../../shared/state';
 
 export const drawDocNode = (
@@ -116,7 +116,7 @@ const drawToplevel = (
 ) => {
     const top = state.toplevels[id];
     const paths: Record<number, number[]> = {};
-    const recNode = fromMap(top.id, top.root, top.nodes, {
+    const recNode = fromMap((n) => [[top.id, n]] as Loc, top.root, top.nodes, {
         children: [],
         map: paths,
     });
