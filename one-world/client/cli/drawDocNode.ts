@@ -44,7 +44,6 @@ export const drawDocNode = (
             selections,
             maxWidth,
         );
-        return top;
     }
     if (node.children.length) {
         const children = node.children.map((cid) =>
@@ -64,7 +63,7 @@ export const drawDocNode = (
         return vblock([top, hblock([line(white(4)), vblock(children)])]);
     }
 
-    return top!;
+    return top!; //vblock([top!, line(JSON.stringify(node))]);
 };
 
 export const textLayout = (text: string, firstLine: number, style?: Style) => {
@@ -145,10 +144,6 @@ const drawToplevel = (
         children.forEach((child) => process(child, childPath));
     };
     process(top.root, []);
-
-    // Object.entries(top.nodes).forEach(([id, node]) => {
-    //     irs[+id] = nodeToIR(node, parsed.styles, parsed.layouts, {});
-    // });
 
     selections.forEach((sel) => {
         if (sel.start.path.root.toplevel != id) return;

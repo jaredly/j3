@@ -8,6 +8,7 @@ import {
     redrawWithSelection,
     render,
     renderSelection,
+    resolveMultiSelect,
 } from './render';
 import { readSess, writeSess } from './Sess';
 import { handleUpdate } from './edit/handleUpdate';
@@ -74,8 +75,6 @@ const run = async (term: termkit.Terminal) => {
     const rerender = () => {
         tid = null;
 
-        let txt;
-
         if (changed) {
             ({ sourceMaps, cache, block, txt } = render(
                 term.width - 10,
@@ -94,6 +93,22 @@ const run = async (term: termkit.Terminal) => {
 
         if (lastKey) {
             term.moveTo(0, term.height, lastKey);
+            // const sel = store.getDocSession(docId, store.session).selections[0];
+            // const mul =
+            //     sel && sel.end
+            //         ? resolveMultiSelect(
+            //               sel.start.path,
+            //               sel.end.path,
+            //               store.getState(),
+            //           )
+            //         : null;
+            // if (mul) {
+            //     term.moveTo(
+            //         0,
+            //         term.height - 2,
+            //         JSON.stringify([mul, sel.start.path.children.length]),
+            //     );
+            // }
         }
 
         renderSelection(term, store, docId, sourceMaps);

@@ -134,6 +134,7 @@ export const resolveMultiSelect = (
     end: Path,
     state: PersistedState,
 ): MultiSelect | void => {
+    debugger;
     if (start.root.doc !== end.root.doc) return; // this should never happen
     if (start.root.toplevel !== end.root.toplevel) {
         const sids = start.root.ids;
@@ -141,7 +142,6 @@ export const resolveMultiSelect = (
         const doc = state.documents[start.root.doc];
         for (let i = 0; i < sids.length && i < eids.length; i++) {
             if (sids[i] !== eids[i]) {
-                // -
                 if (i === 0) return; // no shared root??
                 const pid = sids[i - 1];
                 const parent = doc.nodes[pid];
@@ -157,6 +157,15 @@ export const resolveMultiSelect = (
                 };
             }
         }
+    }
+
+    if (start.children.length === 1 || end.children.length === 1) {
+        return {
+            type: 'doc',
+            doc: start.root.doc,
+            parentIds: start.root.ids.slice(0, -1),
+            children: [start.root.ids[start.root.ids.length - 1]],
+        };
     }
 
     const top = state.toplevels[start.root.toplevel];

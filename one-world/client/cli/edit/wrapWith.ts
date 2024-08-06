@@ -1,14 +1,73 @@
+import { ToplevelUpdate } from '../../../shared/action2';
 import { lastChild, toSelection } from '../../../shared/IR/nav';
-import { Path, parentPath, pathWithChildren } from '../../../shared/nodes';
+import {
+    Path,
+    parentPath,
+    pathWithChildren,
+    serializePath,
+} from '../../../shared/nodes';
 import { Store } from '../../StoreContext2';
+import { isCollection } from '../../TextEdit/actions';
 import { replaceNode } from './joinLeft';
 
-export const wrapWith = (
+export const wrapNodesWith = (
     key: '[' | '(' | '{',
-    path: Path,
-    current: string[] | undefined,
+    parent: Path,
+    children: number[],
     store: Store,
 ) => {
+    const state = store.getState();
+    const top = state.toplevels[parent.root.toplevel];
+    const ploc = lastChild(parent);
+    const pnode = top.nodes[ploc];
+    if (!isCollection(pnode)) return;
+    const sidx = pnode.items.indexOf(children[0]);
+    const eidx = pnode.items.indexOf(children[children.length - 1]);
+    if (sidx === -1 || eidx === -1) return;
+    const items = pnode.items.slice();
+    const nloc = top.nextLoc;
+    const removed = items.splice(sidx, eidx - sidx + 1, nloc);
+
+    const update: ToplevelUpdate['update'] = {
+        nodes: {
+            [ploc]: { ...pnode, items },
+            [nloc]: {
+                type: key === '[' ? 'array' : key === '(' ? 'list' : 'record',
+                items: removed,
+                loc: nloc,
+            },
+        },
+        nextLoc: nloc + 1,
+    };
+
+    const npath = pathWithChildren(parent, nloc);
+    const pkey = serializePath(npath);
+    store.update(
+        {
+            type: 'toplevel',
+            id: top.id,
+            action: { type: 'update', update },
+        },
+        {
+            type: 'selection',
+            doc: parent.root.doc,
+            selections: [
+                {
+                    start: {
+                        path: npath,
+                        key: pkey,
+                        cursor: { type: 'side', side: 'start' },
+                    },
+                    end: { path: npath, key: pkey },
+                },
+            ],
+        },
+    );
+
+    return;
+};
+
+export const wrapWith = (key: '[' | '(' | '{', path: Path, store: Store) => {
     const state = store.getState();
     const top = state.toplevels[path.root.toplevel];
 

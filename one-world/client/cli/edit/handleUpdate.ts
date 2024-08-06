@@ -23,7 +23,7 @@ import { joinLeft, replaceNode, selAction } from './joinLeft';
 import { newNeighbor } from './newNeighbor';
 import { split } from './split';
 import { swap } from './swap';
-import { wrapWith } from './wrapWith';
+import { wrapNodesWith, wrapWith } from './wrapWith';
 
 const getIRText = (cache: IRCache, path: Path, index: number) => {
     const irRoot = cache[path.root.toplevel].irs[lastChild(path)];
@@ -48,25 +48,30 @@ export const handleUpdate = (
     if (sel.end) {
         const path = sel.end.path;
 
+        const state = store.getState();
+        const multi = resolveMultiSelect(sel.start.path, sel.end.path, state);
+        if (!multi) return false;
+
         if (key === 'CTRL_C') {
-            const state = store.getState();
-            const which = resolveMultiSelect(
-                sel.start.path,
-                sel.end.path,
-                state,
-            );
-            if (!which) return false;
-            if (which.type === 'doc') {
-                const doc = state.documents[which.doc];
-                ds.clipboard = which.children.map((nid) => {
+            if (multi.type === 'doc') {
+                const doc = state.documents[multi.doc];
+                ds.clipboard = multi.children.map((nid) => {
                     const top = state.toplevels[doc.nodes[nid].toplevel];
                     return fromMap(() => false, top.root, top.nodes);
                 });
             } else {
-                const top = state.toplevels[which.parent.root.toplevel];
-                ds.clipboard = which.children.map((nid) => {
+                const top = state.toplevels[multi.parent.root.toplevel];
+                ds.clipboard = multi.children.map((nid) => {
                     return fromMap(() => false, nid, top.nodes);
                 });
+            }
+            return true;
+        }
+
+        if (key === '[' || key === '(' || key === '{') {
+            if (multi.type === 'top') {
+                // only work with empty?
+                wrapNodesWith(key, multi.parent, multi.children, store);
             }
             return true;
         }
@@ -193,7 +198,7 @@ export const handleUpdate = (
             );
         }
 
-        if (key === ' ') {
+        if (key === ' ' || key === 'ENTER') {
             return newNeighbor(
                 sel.start.path,
                 store,
@@ -237,7 +242,7 @@ export const handleUpdate = (
         store.getState().toplevels[path.root.toplevel].nodes[lastChild(path)];
 
     if (node.type === 'id') {
-        if (key === ' ') {
+        if (key === ' ' || key === 'ENTER') {
             split(path, st, ed, end.text, end.index, store);
             return true;
         }
@@ -245,7 +250,7 @@ export const handleUpdate = (
         if (st === ed && st === 0) {
             if (key === '[' || key === '(' || key === '{') {
                 // only work with empty?
-                wrapWith(key, path, end.text, store);
+                wrapWith(key, path, store);
                 return true;
             }
         }

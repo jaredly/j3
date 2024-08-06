@@ -1,9 +1,13 @@
 
 # Broad Next Steps
 
-- [ ] rich texts (includes doing a context menu)
+- [x] indent toplevel nodes
+- [ ] dedent toplevels
+- [x] wrap a multiselect
+- [ ] tab skips docNode children
+- [ ] shift-tab cant get up to parent docNode
 - [ ] drag & dropp
-- [ ] indent/dedent toplevel nodes
+- [ ] rich texts (includes doing a context menu)
 - [ ] ctrl-left/right toplevels to reorder
 - [ ] copy/paste should interact with clipboard (?) looks like pbcopy/pbpaste is maybe The Way
 
@@ -18,7 +22,6 @@
       - orr do I just say "
   - [x] match parens pls
 - [x] and highlight parens probavbly
-
 
 
 DEMO

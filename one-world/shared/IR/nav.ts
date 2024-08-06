@@ -170,6 +170,26 @@ export const goFromDocNode = (
     cache: IRCache,
 ) => {
     const doc = state.documents[path.root.doc];
+    if (!left) {
+        const last = path.root.ids[path.root.ids.length - 1];
+        const node = doc.nodes[last];
+        if (node.children.length) {
+            const child = doc.nodes[node.children[0]];
+            return selectNode(
+                {
+                    root: {
+                        type: 'doc-node',
+                        doc: doc.id,
+                        ids: path.root.ids.concat([child.id]),
+                        toplevel: child.toplevel,
+                    },
+                    children: [state.toplevels[child.toplevel].root],
+                },
+                'start',
+                cache[child.toplevel].irs,
+            );
+        }
+    }
     for (let i = path.root.ids.length - 2; i >= 0; i--) {
         const pid = path.root.ids[i];
         const nid = path.root.ids[i + 1];

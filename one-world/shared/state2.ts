@@ -1,6 +1,7 @@
 // full on state
 // probably persisted or something
 
+import { MultiSelect } from '../client/cli/render';
 import { IRSelection } from './IR/intermediate';
 import { Cursor, Path, RecNodeT } from './nodes';
 import { Toplevels } from './toplevels';
@@ -54,6 +55,12 @@ export type DocSession = {
     activeStage: null | string;
     selections: IRSelection[];
     clipboard: RecNodeT<boolean>[];
+    dragState?: {
+        source: MultiSelect;
+        dest: Path;
+        location: 'before' | 'after' | 'inside';
+    };
+
     // idTexts: Record<number, string[]>;
     // selection cache???
     // selections: {

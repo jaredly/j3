@@ -114,7 +114,7 @@ Bun.serve({
                     selections: {},
                     toplevels: {},
                 });
-                console.log('action', action);
+                // console.log('action', action);
                 const changes = saveChanges(baseDirectory, state, next);
 
                 state = next;

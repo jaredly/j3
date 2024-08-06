@@ -2,11 +2,43 @@ import { Action, ToplevelUpdate } from '../../../shared/action2';
 import { IRSelection } from '../../../shared/IR/intermediate';
 import { lastChild } from '../../../shared/IR/nav';
 import { Path, parentPath, serializePath } from '../../../shared/nodes';
-import { PersistedState } from '../../../shared/state2';
+import { DocumentNode, PersistedState } from '../../../shared/state2';
 import { getNodeForPath } from '../../selectNode';
 import { isCollection } from '../../TextEdit/actions';
-import { resolveMultiSelect } from '../render';
+import { MultiSelect, resolveMultiSelect } from '../render';
 import { topUpdate } from './handleUpdate';
+
+export const swapTop = (
+    multi: Extract<MultiSelect, { type: 'doc' }>,
+    state: PersistedState,
+    dir: 'left' | 'right',
+): Action[] | void => {
+    if (!multi.parentIds.length) return;
+    if (dir === 'left') return;
+    const doc = state.documents[multi.doc];
+    const pnode = doc.nodes[multi.parentIds[multi.parentIds.length - 1]];
+    const sidx = pnode.children.indexOf(multi.children[0]);
+    const eidx = pnode.children.indexOf(
+        multi.children[multi.children.length - 1],
+    );
+    if (sidx === -1 || eidx === -1) return;
+    if (sidx === 0) return; // cant indent if we're at the top
+    const sib = doc.nodes[pnode.children[sidx - 1]];
+    const pchildren = pnode.children.slice();
+    const schildren = sib.children.slice();
+    schildren.push(...pchildren.splice(sidx, eidx - sidx + 1));
+    const up: Record<number, DocumentNode> = {
+        [sib.id]: { ...sib, children: schildren },
+        [pnode.id]: { ...pnode, children: pchildren },
+    };
+    return [
+        {
+            type: 'doc',
+            id: doc.id,
+            action: { type: 'update', update: { nodes: up } },
+        },
+    ];
+};
 
 export const swap = (
     state: PersistedState,
@@ -17,7 +49,9 @@ export const swap = (
 ): Action[] | void => {
     const multi = resolveMultiSelect(start.path, end, state);
     if (!multi) return;
-    if (multi.type !== 'top') return;
+    if (multi.type !== 'top') {
+        return swapTop(multi, state, dir);
+    }
     const top = state.toplevels[start.path.root.toplevel];
     const node = getNodeForPath(multi.parent, state);
     if (!node) return;

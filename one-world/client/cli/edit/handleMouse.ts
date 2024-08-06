@@ -17,6 +17,7 @@ export const handleMouse = (
     const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
     if (!found) return;
     const top = found.source.top;
+    if (!cache[top].paths[found.source.loc]) return;
     const path: Path = {
         root: cache[top].root,
         children: cache[top].paths[found.source.loc].concat([found.source.loc]),
@@ -46,6 +47,7 @@ export const handleMouseDrag = (
     const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
     if (!found) return;
     const top = found.source.top;
+    if (!cache[top].paths[found.source.loc]) return;
     const path: Path = {
         root: cache[top].root,
         children: cache[top].paths[found.source.loc].concat([found.source.loc]),
