@@ -20,6 +20,7 @@ export const swap = (
     if (multi.type !== 'top') return;
     const top = state.toplevels[start.path.root.toplevel];
     const node = getNodeForPath(multi.parent, state);
+    if (!node) return;
     const ploc = lastChild(multi.parent);
     if (!isCollection(node)) return;
 

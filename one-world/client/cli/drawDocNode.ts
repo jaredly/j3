@@ -114,6 +114,8 @@ const drawToplevel = (
     selections: IRSelection[],
     maxWidth: number,
 ) => {
+    const SHOW_IDS = false;
+
     const top = state.toplevels[id];
     const paths: Record<number, number[]> = {};
     const recNode = fromMap((n) => [[top.id, n]] as Loc, top.root, top.nodes, {
@@ -125,13 +127,19 @@ const drawToplevel = (
     const irs: Record<number, IR> = {};
 
     const process = (id: number, path: number[]) => {
-        irs[id] = nodeToIR(
+        const ir = nodeToIR(
             top.nodes[id],
             path,
             parsed.styles,
             parsed.layouts,
             {},
         );
+        irs[id] = SHOW_IDS
+            ? {
+                  type: 'horiz',
+                  items: [{ type: 'punct', text: id + '' }, ir],
+              }
+            : ir;
         const children = childLocs(top.nodes[id]);
         const childPath = path.concat([id]);
         children.forEach((child) => process(child, childPath));
@@ -177,5 +185,5 @@ const drawToplevel = (
     block.node = { top: id, loc: top.root };
 
     cache[id] = { irs, layouts: ctx.layouts, paths, root };
-    return hblock([line('▶️ '), block]);
+    return hblock([line('▶️ ' + (SHOW_IDS ? top.nextLoc + ' ' : '')), block]);
 };

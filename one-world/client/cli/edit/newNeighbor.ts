@@ -72,7 +72,6 @@ export const newNeighbor = (
         ],
     });
     return true;
-    // ->
 };
 
 const newDocNodeNeighbor = (

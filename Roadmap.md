@@ -1,4 +1,13 @@
 
+# Broad Next Steps
+
+- [ ] rich texts (includes doing a context menu)
+- [ ] drag & dropp
+- [ ] indent/dedent toplevel nodes
+- [ ] ctrl-left/right toplevels to reorder
+- [ ] copy/paste should interact with clipboard (?) looks like pbcopy/pbpaste is maybe The Way
+
+
 # While geting a demo ready:
 
 - [x] closing braces need to close plsss ])}"

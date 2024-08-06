@@ -15,15 +15,15 @@ export const wrapWith = (
     let loc = lastChild(path);
     let node = top.nodes[loc];
     let parent = parentPath(path);
-    if (!parent.children.length) return;
-
-    // Go up!!!
-    const pnode = top.nodes[lastChild(parent)];
-    if (pnode.type === 'string' && pnode.tag === loc) {
-        path = parent;
-        parent = parentPath(path);
-        loc = lastChild(path);
-        node = top.nodes[loc];
+    if (parent.children.length) {
+        // Go up!!!
+        const pnode = top.nodes[lastChild(parent)];
+        if (pnode.type === 'string' && pnode.tag === loc) {
+            path = parent;
+            parent = parentPath(path);
+            loc = lastChild(path);
+            node = top.nodes[loc];
+        }
     }
 
     const update = replaceNode(path, top.nextLoc, top);
