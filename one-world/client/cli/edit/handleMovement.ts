@@ -49,13 +49,14 @@ export const handleUpDown = (
             if (up) break;
         }
         if (!up) return false;
-        const top = up.source.top;
-        const ids = cache[top].paths[up.source.loc];
-        if (!ids) return false;
-        const path: Path = {
-            root: cache[top].root,
-            children: ids.concat([up.source.loc]),
-        };
+        // const top = up.source.top;
+        // const ids = cache[top].paths[up.source.loc];
+        // if (!ids) return false;
+        const path: Path = up.source.path;
+        // {
+        //     root: cache[top].root,
+        //     children: ids.concat([up.source.loc]),
+        // };
         const cursor = selectionFromLocation(up, { x, y });
         store.update({
             type: 'selection',

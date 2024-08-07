@@ -1,7 +1,7 @@
 // yay
 
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { Style } from '../nodes';
+import { Path, serializePath, Style } from '../nodes';
 // import { applyFormats, blockFormat } from './format';
 import { Control, IR, IRCursor } from './intermediate';
 import {
@@ -12,6 +12,7 @@ import {
     white,
 } from './ir-to-text';
 import { LayoutChoices, LayoutCtx } from './layout';
+import { lastChild } from './nav';
 
 export type TextCtx = {
     space: string;
@@ -23,15 +24,16 @@ export type TextCtx = {
 };
 
 export const blockSourceKey = (source: BlockSource): string => {
+    const pathKey = serializePath(source.path);
     switch (source.type) {
         case 'text':
-            return `${source.top}:${source.loc}:T:${source.index}`;
+            return `${pathKey}:T:${source.index}`;
         case 'control':
-            return `${source.top}:${source.loc}:C:${source.index}`;
+            return `${pathKey}:C:${source.index}`;
         case 'cursor':
-            return `${source.top}:${source.loc}:${source.side}`;
+            return `${pathKey}:${source.side}`;
         // case 'loc':
-        //     return `${source.top}:${source.loc}`;
+        //     return `${pathKey}`;
     }
 };
 
@@ -39,24 +41,24 @@ export type BlockSource =
     // | { type: 'loc'; loc: number; top: string }
     | {
           type: 'text';
-          loc: number;
+          path: Path;
           index: number;
-          top: string;
+          //   top: string;
           wraps: number[];
           newLines: number[];
       }
     | {
           type: 'control';
-          loc: number;
+          path: Path;
           index: number;
           control: Control;
-          top: string;
+          //   top: string;
       }
     | {
           type: 'cursor';
-          loc: number;
+          path: Path;
           side: 'start' | 'inside' | 'end';
-          top: string;
+          //   top: string;
       };
 
 export type Block =
@@ -64,7 +66,7 @@ export type Block =
           type: 'block';
           contents: Block[];
           horizontal: false | number; // number = space
-          node?: { top: string; loc: number };
+          node?: Path;
           pullLast?: boolean; // NOTE only when horizontal
           width: number;
           height: number;
@@ -81,7 +83,7 @@ export type Block =
           hspace: number;
           height: number;
           style?: Style;
-          node?: { top: string; loc: number };
+          node?: Path;
       }
     // | { type: 'line'; contents: string; width: number }
     | {
@@ -92,7 +94,7 @@ export type Block =
           width: number; // max length of intermediate length
           last: number; // length of the last line
           height: number; // number of lines
-          node?: { top: string; loc: number };
+          node?: Path;
           brace?: boolean;
           source?: BlockSource;
           // NOTE That this won't work with syntax highlighting,
@@ -254,18 +256,18 @@ export const irToBlock = (
 ): Block => {
     switch (ir.type) {
         case 'loc': {
-            const { choices } = ctx.layouts[ir.loc];
+            const { choices } = ctx.layouts[lastChild(ir.path)];
             return {
-                ...irToBlock(irs[ir.loc], irs, choices, ctx),
-                node: { top: ctx.top, loc: ir.loc },
+                ...irToBlock(irs[lastChild(ir.path)], irs, choices, ctx),
+                node: ir.path,
             };
         }
         case 'cursor':
             return line('', {
                 type: 'cursor',
-                loc: ir.loc,
+                path: ir.path,
                 side: ir.side,
-                top: ctx.top,
+                // top: ctx.top,
             });
 
         case 'control':
@@ -273,8 +275,8 @@ export const irToBlock = (
                 type: 'control',
                 control: ir.control,
                 index: ir.index,
-                loc: ir.loc,
-                top: ctx.top,
+                path: ir.path,
+                // top: ctx.top,
             };
             switch (ir.control.type) {
                 case 'check':
@@ -299,7 +301,7 @@ export const irToBlock = (
                 ir.text,
                 undefined,
                 ir.style,
-                ir.brace != null ? { loc: ir.brace, top: ctx.top } : undefined,
+                ir.brace,
                 ir.brace != null ? true : false,
             );
 
@@ -381,8 +383,7 @@ export const irToBlock = (
                     {
                         type: 'text',
                         index: ir.index,
-                        loc: ir.loc,
-                        top: ctx.top,
+                        path: ir.path,
                         wraps: [],
                         newLines: textNewLines(ir.text),
                     },
@@ -432,8 +433,7 @@ export const irToBlock = (
                     source: {
                         type: 'text',
                         index: ir.index,
-                        loc: ir.loc,
-                        top: ctx.top,
+                        path: ir.path,
                         wraps: splits.splits,
                         newLines: textNewLines(ir.text),
                     },
@@ -447,8 +447,7 @@ export const irToBlock = (
                 {
                     type: 'text',
                     index: ir.index,
-                    loc: ir.loc,
-                    top: ctx.top,
+                    path: ir.path,
                     wraps: [],
                     newLines: textNewLines(ir.text),
                 },

@@ -1,5 +1,6 @@
-import { Style } from '../nodes';
+import { serializePath, Style } from '../nodes';
 import { Control, IR } from './intermediate';
+import { lastChild } from './nav';
 
 // type LayoutCache = Record<number, any>
 export type IRForLoc = Record<number, IR>;
@@ -96,11 +97,11 @@ export const layoutIR = (
             const result = layoutIR(
                 x,
                 firstLine,
-                ctx.irs[ir.loc],
+                ctx.irs[lastChild(ir.path)],
                 choices,
                 ctx,
             );
-            ctx.layouts[ir.loc] = { result, choices };
+            ctx.layouts[lastChild(ir.path)] = { result, choices };
             return result;
         }
 

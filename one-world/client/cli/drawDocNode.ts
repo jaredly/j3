@@ -16,7 +16,15 @@ import {
 import { white } from '../../shared/IR/ir-to-text';
 import { LayoutCtx, LayoutChoices, layoutIR } from '../../shared/IR/layout';
 import { IRCache, irNavigable, lastChild } from '../../shared/IR/nav';
-import { Style, PathRoot, fromMap, childLocs, Loc } from '../../shared/nodes';
+import {
+    Style,
+    PathRoot,
+    fromMap,
+    childLocs,
+    Loc,
+    pathWithChildren,
+    Path,
+} from '../../shared/nodes';
 import { Doc, PersistedState } from '../../shared/state';
 
 export const drawDocNode = (
@@ -125,7 +133,8 @@ const drawToplevel = (
 
     const irs: Record<number, IR> = {};
 
-    const process = (id: number, path: number[]) => {
+    const process = (id: number, path: Path) => {
+        const self = pathWithChildren(path, id);
         const ir = nodeToIR(
             top.nodes[id],
             path,
@@ -140,10 +149,10 @@ const drawToplevel = (
               }
             : ir;
         const children = childLocs(top.nodes[id]);
-        const childPath = path.concat([id]);
-        children.forEach((child) => process(child, childPath));
+        // const childPath = path.concat([id]);
+        children.forEach((child) => process(child, self));
     };
-    process(top.root, []);
+    process(top.root, { root, children: [] });
 
     selections.forEach((sel) => {
         if (sel.start.path.root.toplevel != id) return;
@@ -177,7 +186,7 @@ const drawToplevel = (
         space: ' ',
         top: id,
     });
-    block.node = { top: id, loc: top.root };
+    block.node = { root: root, children: [top.root] };
 
     cache[id] = { irs, layouts: ctx.layouts, paths, root };
     return hblock([line('▶️ ' + (SHOW_IDS ? top.nextLoc + ' ' : '')), block]);

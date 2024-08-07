@@ -15,6 +15,8 @@ import {
     Node,
     Nodes,
     Path,
+    PathRoot,
+    pathWithChildren,
     RecNodeT,
     serializePath,
     toMapInner,
@@ -1105,14 +1107,16 @@ const justSel = (sel: IRSelection, doc: string): Action | void => ({
 export const createIRCache = (
     root: number,
     nodes: Record<number, Node>,
+    pathRoot: PathRoot,
 ): IRForLoc => {
     const map: IRForLoc = {};
-    const process = (loc: number) => {
-        const ir = nodeToIR(nodes[loc], [loc], {}, {}, {}); // this will mess up some style things
+    const process = (loc: number, path: Path) => {
+        const self = pathWithChildren(path, loc);
+        const ir = nodeToIR(nodes[loc], self, {}, {}, {}); // this will mess up some style things
         map[loc] = ir;
-        childLocs(nodes[loc]).forEach(process);
+        childLocs(nodes[loc]).forEach((l) => process(l, self));
     };
-    process(root);
+    process(root, { root: pathRoot, children: [] });
     return map;
 };
 
@@ -1155,7 +1159,16 @@ export function inflateRecNode(
     const sloc = selected[selected.length - 1];
 
     return {
-        selected: cursorForNode(selected, 'end', createIRCache(sloc, nodes)),
+        selected: cursorForNode(
+            selected,
+            'end',
+            createIRCache(sloc, nodes, {
+                type: 'doc-node',
+                doc: '',
+                ids: [],
+                toplevel: '',
+            }),
+        ),
         nloc,
         nodes,
         nidx,

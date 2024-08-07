@@ -142,7 +142,9 @@ export const goLeftRight = (
         const parent = path.children[path.children.length - 2];
         const ir = cache[path.root.toplevel].irs[parent];
         const navs = irNavigable(ir);
-        const self = navs.find((r) => r.type === 'loc' && r.loc === last);
+        const self = navs.find(
+            (r) => r.type === 'loc' && lastChild(r.path) === last,
+        );
         if (self) {
             const res = goLRFrom(
                 navs,
@@ -419,10 +421,10 @@ export const cursorSelect2 = (
         case 'cursor':
             return { cursor: { type: 'side', side: ir.side }, children };
         case 'loc':
-            const items = irNavigable(cache[ir.loc]);
+            const items = irNavigable(cache[lastChild(ir.path)]);
             return cursorSelect2(
                 items[end ? items.length - 1 : 0],
-                children.concat([ir.loc]),
+                children.concat([lastChild(ir.path)]),
                 items,
                 cache,
                 end,
@@ -464,10 +466,10 @@ export const cursorSelect = (
         case 'cursor':
             return { cursor: { type: 'side', side: ir.side }, path };
         case 'loc':
-            const items = irNavigable(cache[ir.loc]);
+            const items = irNavigable(cache[lastChild(ir.path)]);
             return cursorSelect(
                 items[end ? items.length - 1 : 0],
-                pathWithChildren(path, ir.loc),
+                pathWithChildren(path, lastChild(ir.path)),
                 items,
                 cache,
                 end,

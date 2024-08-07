@@ -1,5 +1,5 @@
 import equal from 'fast-deep-equal';
-import { Style } from '../nodes';
+import { serializePath, Style } from '../nodes';
 import { applyFormats, blockFormat, justify } from './format';
 import { Block, BlockSource, blockSourceKey, inlineSize } from './ir-to-blocks';
 import { addSpaces, joinChunks, white } from './ir-to-text';
@@ -59,7 +59,7 @@ export const blockToText = (
     let nodeStyle = block.style;
     let override = false;
     if (block.node) {
-        let key = `${block.node.top}:${block.node.loc}`;
+        let key = serializePath(block.node);
         if (block.type === 'inline' && block.brace) key += ':brace';
         const bstyle = ctx.styles[key];
         if (bstyle?.type === 'full') {

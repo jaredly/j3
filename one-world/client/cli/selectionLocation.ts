@@ -1,5 +1,6 @@
 import { BlockEntry } from '../../shared/IR/block-to-text';
 import { IRCursor, IRSelection } from '../../shared/IR/intermediate';
+import { lastChild } from '../../shared/IR/nav';
 import { Path } from '../../shared/nodes';
 
 const shapeEnd = (shape: BlockEntry['shape']) => {
@@ -163,8 +164,8 @@ export const selectionLocation = (
 ) => {
     const loc = path.children[path.children.length - 1];
     for (let source of sourceMaps) {
-        if (source.source.top !== path.root.toplevel) continue;
-        if (source.source.loc !== loc) continue;
+        if (source.source.path.root.toplevel !== path.root.toplevel) continue;
+        if (lastChild(source.source.path) !== loc) continue;
         switch (cursor.type) {
             case 'control':
                 if (source.source.type !== 'control') continue;

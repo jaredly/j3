@@ -16,12 +16,13 @@ export const handleMouse = (
     const y = evt.y - 2;
     const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
     if (!found) return;
-    const top = found.source.top;
-    if (!cache[top].paths[found.source.loc]) return;
-    const path: Path = {
-        root: cache[top].root,
-        children: cache[top].paths[found.source.loc].concat([found.source.loc]),
-    };
+    // const top = found.source.top;
+    // if (!cache[top].paths[found.source.loc]) return;
+    const path: Path = found.source.path;
+    // {
+    //     root: cache[top].root,
+    //     children: cache[top].paths[found.source.loc].concat([found.source.loc]),
+    // };
 
     const cursor = selectionFromLocation(found, { x, y });
 
@@ -46,12 +47,13 @@ export const handleMouseDrag = (
     const y = evt.y - 2;
     const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
     if (!found) return;
-    const top = found.source.top;
-    if (!cache[top].paths[found.source.loc]) return;
-    const path: Path = {
-        root: cache[top].root,
-        children: cache[top].paths[found.source.loc].concat([found.source.loc]),
-    };
+    // const top = found.source.top;
+    // if (!cache[top].paths[found.source.loc]) return;
+    const path: Path = found.source.path;
+    // {
+    //     root: cache[top].root,
+    //     children: cache[top].paths[found.source.loc].concat([found.source.loc]),
+    // };
 
     const cursor = selectionFromLocation(found, { x, y });
 

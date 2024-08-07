@@ -8,7 +8,7 @@ import {
     rgbRainbow,
 } from '../../../web/custom/rainbow';
 import { termColors } from '../../client/TextEdit/colors';
-import { Nodes, Node, Style, Path } from '../nodes';
+import { Nodes, Node, Style, Path, pathWithChildren } from '../nodes';
 import { ListDisplay, RenderInfo } from '../renderables';
 
 type Format = Style;
@@ -35,10 +35,10 @@ export type IR =
           wrap?: number;
           style?: Style;
           index: number;
-          loc: number;
+          path: Path;
           link?: string;
       }
-    | { type: 'control'; loc: number; control: Control; index: number }
+    | { type: 'control'; path: Path; control: Control; index: number }
     | {
           type: 'vert';
           items: IR[];
@@ -58,9 +58,9 @@ export type IR =
       }
     | { type: 'indent'; item: IR; amount?: number; style?: Style }
     | { type: 'switch'; options: IR[]; id: number }
-    | { type: 'loc'; loc: number }
-    | { type: 'punct'; text: string; style?: Style; brace?: number }
-    | { type: 'cursor'; side: 'start' | 'inside' | 'end'; loc: number };
+    | { type: 'loc'; path: Path }
+    | { type: 'punct'; text: string; style?: Style; brace?: Path }
+    | { type: 'cursor'; side: 'start' | 'inside' | 'end'; path: Path };
 
 export type IRSelection = {
     start: { path: Path; key: string; cursor: IRCursor };
@@ -129,7 +129,7 @@ const braceStyle = (depth: number): Style => {
 
 export const nodeToIR = (
     node: Node,
-    path: number[],
+    path: Path,
     styles: Record<number, Format>,
     layouts: Record<number, Layout>,
     names: Record<string, Record<number, string>>,
@@ -145,7 +145,7 @@ export const nodeToIR = (
                         text: node.text,
                         style: node.style,
                         wrap: 0,
-                        loc: node.loc,
+                        path,
                         index: 0,
                         link:
                             node.kind.type === 'link'
@@ -172,7 +172,7 @@ export const nodeToIR = (
                             items: [
                                 {
                                     type: 'control',
-                                    loc: node.loc,
+                                    path,
                                     index: i,
                                     control: {
                                         type:
@@ -183,7 +183,10 @@ export const nodeToIR = (
                                         loc,
                                     },
                                 },
-                                { type: 'loc', loc },
+                                {
+                                    type: 'loc',
+                                    path: pathWithChildren(path, loc),
+                                },
                             ],
                         })),
                     };
@@ -196,7 +199,7 @@ export const nodeToIR = (
                             items: [
                                 {
                                     type: 'control',
-                                    loc: node.loc,
+                                    path,
                                     index: i,
                                     control: o
                                         ? {
@@ -207,7 +210,10 @@ export const nodeToIR = (
                                           }
                                         : { type: 'bullet' },
                                 },
-                                { type: 'loc', loc },
+                                {
+                                    type: 'loc',
+                                    path: pathWithChildren(path, loc),
+                                },
                             ],
                         })),
                     };
@@ -215,7 +221,10 @@ export const nodeToIR = (
                     return {
                         type: 'inline',
                         wrap: 0,
-                        items: node.items.map((loc) => ({ type: 'loc', loc })),
+                        items: node.items.map((loc) => ({
+                            type: 'loc',
+                            path: pathWithChildren(path, loc),
+                        })),
                     };
             }
             throw new Error('not impl yet');
@@ -233,30 +242,38 @@ export const nodeToIR = (
                     type: 'horiz',
                     pullLast: true,
                     items: [
-                        { type: 'cursor', loc: node.loc, side: 'start' },
+                        { type: 'cursor', path, side: 'start' },
                         {
                             type: 'punct',
                             text: lr[0],
-                            brace: node.loc,
-                            style: braceStyle(path.length),
+                            brace: path,
+                            style: braceStyle(path.children.length),
                         },
                         node.items.length
-                            ? { type: 'loc', loc: node.items[0] }
-                            : { type: 'cursor', loc: node.loc, side: 'inside' },
+                            ? {
+                                  type: 'loc',
+                                  path: pathWithChildren(path, node.items[0]),
+                              }
+                            : { type: 'cursor', path, side: 'inside' },
                         {
                             type: 'punct',
                             text: lr[1],
-                            brace: node.loc,
-                            style: braceStyle(path.length),
+                            brace: path,
+                            style: braceStyle(path.children.length),
                         },
-                        { type: 'cursor', loc: node.loc, side: 'end' },
+                        { type: 'cursor', path, side: 'end' },
                     ],
                 };
             }
 
             const l = layouts[node.loc] ?? { type: 'horiz', wrap: 3 };
 
-            const items = node.items.map((loc): IR => ({ type: 'loc', loc }));
+            const items = node.items.map(
+                (loc): IR => ({
+                    type: 'loc',
+                    path: pathWithChildren(path, loc),
+                }),
+            );
 
             switch (l.type) {
                 case 'switch':
@@ -264,12 +281,12 @@ export const nodeToIR = (
                         type: 'horiz',
                         pullLast: true,
                         items: [
-                            { type: 'cursor', loc: node.loc, side: 'start' },
+                            { type: 'cursor', path, side: 'start' },
                             {
                                 type: 'punct',
                                 text: lr[0],
-                                brace: node.loc,
-                                style: braceStyle(path.length),
+                                brace: path,
+                                style: braceStyle(path.children.length),
                             },
                             items.length === 1
                                 ? items[0]
@@ -304,12 +321,12 @@ export const nodeToIR = (
                                     {
                                         type: 'punct',
                                         text: lr[1],
-                                        brace: node.loc,
-                                        style: braceStyle(path.length),
+                                        brace: path,
+                                        style: braceStyle(path.children.length),
                                     },
                                     {
                                         type: 'cursor',
-                                        loc: node.loc,
+                                        path,
                                         side: 'end',
                                     },
                                 ],
@@ -324,14 +341,14 @@ export const nodeToIR = (
                             items: [
                                 {
                                     type: 'cursor',
-                                    loc: node.loc,
+                                    path,
                                     side: 'start',
                                 },
                                 {
                                     type: 'punct',
                                     text: lr[0],
-                                    brace: node.loc,
-                                    style: braceStyle(path.length),
+                                    brace: path,
+                                    style: braceStyle(path.children.length),
                                 },
                                 ...items,
                                 {
@@ -340,12 +357,14 @@ export const nodeToIR = (
                                         {
                                             type: 'punct',
                                             text: lr[1],
-                                            brace: node.loc,
-                                            style: braceStyle(path.length),
+                                            brace: path,
+                                            style: braceStyle(
+                                                path.children.length,
+                                            ),
                                         },
                                         {
                                             type: 'cursor',
-                                            loc: node.loc,
+                                            path,
                                             side: 'end',
                                         },
                                     ],
@@ -365,14 +384,14 @@ export const nodeToIR = (
                                 items: [
                                     {
                                         type: 'cursor',
-                                        loc: node.loc,
+                                        path,
                                         side: 'start',
                                     },
                                     {
                                         type: 'punct',
                                         text: lr[0],
-                                        brace: node.loc,
-                                        style: braceStyle(path.length),
+                                        brace: path,
+                                        style: braceStyle(path.children.length),
                                     },
                                     items[0],
                                 ],
@@ -389,12 +408,14 @@ export const nodeToIR = (
                                             {
                                                 type: 'punct',
                                                 text: lr[1],
-                                                brace: node.loc,
-                                                style: braceStyle(path.length),
+                                                brace: path,
+                                                style: braceStyle(
+                                                    path.children.length,
+                                                ),
                                             },
                                             {
                                                 type: 'cursor',
-                                                loc: node.loc,
+                                                path,
                                                 side: 'end',
                                             },
                                         ],
@@ -423,22 +444,37 @@ export const nodeToIR = (
                                               )
                                                   ? {
                                                         type: 'loc',
-                                                        loc: node.items[i],
+                                                        path: pathWithChildren(
+                                                            path,
+                                                            node.items[i],
+                                                        ),
                                                     }
                                                   : {
                                                         type: 'squish',
                                                         item: {
                                                             type: 'loc',
-                                                            loc: node.items[i],
+                                                            path: pathWithChildren(
+                                                                path,
+                                                                node.items[i],
+                                                            ),
                                                         },
                                                     },
                                               {
                                                   type: 'loc',
-                                                  loc: node.items[i + 1],
+                                                  path: pathWithChildren(
+                                                      path,
+                                                      node.items[i + 1],
+                                                  ),
                                               },
                                           ],
                                       }
-                                    : { type: 'loc', loc: node.items[i] },
+                                    : {
+                                          type: 'loc',
+                                          path: pathWithChildren(
+                                              path,
+                                              node.items[i],
+                                          ),
+                                      },
                             );
                         }
                         if (l.layout.tightFirst) {
@@ -505,12 +541,12 @@ export const nodeToIR = (
                         type: 'horiz',
                         pullLast: true,
                         items: [
-                            { type: 'cursor', loc: node.loc, side: 'start' },
+                            { type: 'cursor', path, side: 'start' },
                             {
                                 type: 'punct',
                                 text: lr[0],
-                                brace: node.loc,
-                                style: braceStyle(path.length),
+                                brace: path,
+                                style: braceStyle(path.children.length),
                             },
                             mid,
                             {
@@ -519,12 +555,12 @@ export const nodeToIR = (
                                     {
                                         type: 'punct',
                                         text: lr[1],
-                                        brace: node.loc,
-                                        style: braceStyle(path.length),
+                                        brace: path,
+                                        style: braceStyle(path.children.length),
                                     },
                                     {
                                         type: 'cursor',
-                                        loc: node.loc,
+                                        path,
                                         side: 'end',
                                     },
                                 ],
@@ -556,7 +592,7 @@ export const nodeToIR = (
                                   getRainbowHashColor(fasthash(text)),
                               ),
                           }),
-                loc: node.loc,
+                path,
                 index: 0,
             };
         }
@@ -568,7 +604,7 @@ export const nodeToIR = (
             return {
                 type: 'horiz',
                 items: [
-                    { type: 'loc', loc: node.tag },
+                    { type: 'loc', path: pathWithChildren(path, node.tag) },
                     {
                         type: 'horiz',
                         pullLast: true,
@@ -590,7 +626,7 @@ export const nodeToIR = (
                                             color: { r: 100, g: 100, b: 0 },
                                         },
                                         wrap: 1,
-                                        loc: node.loc,
+                                        path,
                                         index: 0,
                                     },
                                     ...node.templates.flatMap((t, i): IR[] => [
@@ -599,18 +635,13 @@ export const nodeToIR = (
                                             type: 'horiz',
                                             items: [
                                                 { type: 'punct', text: '${' },
-                                                // {
-                                                //     type: 'horiz',
-                                                //     items: [
                                                 {
                                                     type: 'loc',
-                                                    loc: t.expr,
+                                                    path: pathWithChildren(
+                                                        path,
+                                                        t.expr,
+                                                    ),
                                                 },
-                                                //     ],
-                                                //     style: {
-                                                //         background: false,
-                                                //     },
-                                                // },
                                                 { type: 'punct', text: '}' },
                                             ],
                                         },
@@ -621,7 +652,7 @@ export const nodeToIR = (
                                                 color: { r: 100, g: 100, b: 0 },
                                             },
                                             wrap: i + 2,
-                                            loc: node.loc,
+                                            path,
                                             index: i + 1,
                                         },
                                     ]),
@@ -639,7 +670,7 @@ export const nodeToIR = (
                                     },
                                     {
                                         type: 'cursor',
-                                        loc: node.loc,
+                                        path,
                                         side: 'end',
                                     },
                                 ],
@@ -655,13 +686,16 @@ export const nodeToIR = (
                 type: 'horiz',
                 wrap: { indent: 2, id: 0 },
                 items: [
-                    { type: 'loc', loc: node.target },
+                    { type: 'loc', path: pathWithChildren(path, node.target) },
                     ...node.items.map(
                         (loc): IR => ({
                             type: 'horiz',
                             items: [
                                 { type: 'punct', text: '.' },
-                                { type: 'loc', loc },
+                                {
+                                    type: 'loc',
+                                    path: pathWithChildren(path, loc),
+                                },
                             ],
                         }),
                     ),
@@ -671,9 +705,12 @@ export const nodeToIR = (
             return {
                 type: 'horiz',
                 items: [
-                    { type: 'loc', loc: node.contents },
+                    {
+                        type: 'loc',
+                        path: pathWithChildren(path, node.contents),
+                    },
                     { type: 'punct', text: ':' },
-                    { type: 'loc', loc: node.annot },
+                    { type: 'loc', path: pathWithChildren(path, node.annot) },
                 ],
             };
         case 'comment':
@@ -681,12 +718,15 @@ export const nodeToIR = (
             return {
                 type: 'horiz',
                 items: [
-                    { type: 'cursor', loc: node.loc, side: 'start' },
+                    { type: 'cursor', path, side: 'start' },
                     {
                         type: 'punct',
                         text: node.type === 'spread' ? '..' : ';',
                     },
-                    { type: 'loc', loc: node.contents },
+                    {
+                        type: 'loc',
+                        path: pathWithChildren(path, node.contents),
+                    },
                 ],
             };
     }

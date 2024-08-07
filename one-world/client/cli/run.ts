@@ -158,6 +158,9 @@ const run = async (term: termkit.Terminal) => {
                     const found = sourceMaps.find((m) =>
                         matchesSpan(evt.x - 1, evt.y - 2, m.shape),
                     );
+                    if (found) {
+                        // found.source.loc
+                    }
                 }
             }
 

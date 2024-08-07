@@ -167,8 +167,9 @@ function selectionStyleOverrides(
             if (start.index === end.index) {
                 const key = blockSourceKey({
                     type: 'text',
-                    top: selection.start.path.root.toplevel,
-                    loc: lastChild(selection.start.path),
+                    // top: selection.start.path.root.toplevel,
+                    path: selection.start.path,
+                    // loc: lastChild(selection.start.path),
                     index: start.index,
                     newLines: [],
                     wraps: [],

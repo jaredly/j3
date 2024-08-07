@@ -6,24 +6,37 @@ import { reader } from '../../boot-ex/reader';
 import { controlLayout, textLayout } from '../../client/cli/drawDocNode';
 import { IR, nodeToIR } from '../../shared/IR/intermediate';
 import { LayoutChoices, LayoutCtx, layoutIR } from '../../shared/IR/layout';
-import { childLocs, Nodes, RecNode, toMap } from '../../shared/nodes';
+import {
+    childLocs,
+    Nodes,
+    Path,
+    PathRoot,
+    pathWithChildren,
+    RecNode,
+    toMap,
+} from '../../shared/nodes';
 import { BlockEntry, blockToText } from './block-to-text';
 import { highlightSpan } from './highlightSpan';
 import { Block, irToBlock } from './ir-to-blocks';
 
-const processNode = (data: RecNode, maxWidth = 30, leftWidth = 20) => {
+const processNode = (
+    data: RecNode,
+    pathRoot: PathRoot,
+    maxWidth = 30,
+    leftWidth = 20,
+) => {
     const nodes: Nodes = {};
     const parsed = parse(data);
     const root = toMap(data, nodes);
     const irs: Record<number, IR> = {};
 
-    const process = (id: number, path: number[]) => {
-        irs[id] = nodeToIR(nodes[id], path, parsed.styles, parsed.layouts, {});
+    const process = (id: number, path: Path) => {
+        const self = pathWithChildren(path, id);
+        irs[id] = nodeToIR(nodes[id], self, parsed.styles, parsed.layouts, {});
         const children = childLocs(nodes[id]);
-        const childPath = path.concat([id]);
-        children.forEach((child) => process(child, childPath));
+        children.forEach((child) => process(child, self));
     };
-    process(root, []);
+    process(root, { root: pathRoot, children: [] });
 
     const ctx: LayoutCtx = {
         maxWidth,
@@ -64,7 +77,12 @@ const process = (text: string, maxWidth = 30, leftWidth = 20) => {
     if (!data) {
         throw new Error('nothing parsed');
     }
-    return processNode(data, maxWidth, leftWidth);
+    return processNode(
+        data,
+        { type: 'doc-node', doc: '', ids: [], toplevel: '' },
+        maxWidth,
+        leftWidth,
+    );
 };
 
 const trimTrailingWhite = (txt: string) =>
