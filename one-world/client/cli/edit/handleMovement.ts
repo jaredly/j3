@@ -108,14 +108,50 @@ const adjacent = (
             side === 'left' ? 'last' : 'first',
         );
     }
+
     if (path.root.ids.length > 1) {
         const doc = state.documents[path.root.doc];
+        if (side === 'right') {
+            const last = path.root.ids[path.root.ids.length - 1];
+            const node = doc.nodes[last];
+            if (node.children.length) {
+                const child = doc.nodes[node.children[0]];
+                return {
+                    root: {
+                        type: 'doc-node',
+                        doc: doc.id,
+                        ids: path.root.ids.concat([child.id]),
+                        toplevel: child.toplevel,
+                    },
+                    children: [state.toplevels[child.toplevel].root],
+                };
+            }
+        }
+
         for (let i = path.root.ids.length - 2; i >= 0; i--) {
             const parent = doc.nodes[path.root.ids[i]];
             const idx = parent.children.indexOf(path.root.ids[i + 1]);
-            if (
-                side === 'left' ? idx === 0 : idx === parent.children.length - 1
-            ) {
+            if (side === 'left') {
+                if (idx === 0) {
+                    // const self = doc.nodes[path.root.ids[i + 1]];
+                    const top = state.toplevels[parent.toplevel];
+                    if (!top) return;
+                    // select the toplevel
+                    return firstLastChild(
+                        {
+                            root: {
+                                doc: doc.id,
+                                toplevel: parent.toplevel,
+                                type: 'doc-node',
+                                ids: path.root.ids.slice(0, i + 1),
+                            },
+                            children: [top.root],
+                        },
+                        top.nodes,
+                        'last',
+                    );
+                }
+            } else if (idx === parent.children.length - 1) {
                 continue;
             }
             const loc = parent.children[idx + (side === 'left' ? -1 : 1)];

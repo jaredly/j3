@@ -2,14 +2,17 @@
 # Broad Next Steps
 
 - [x] indent toplevel nodes
-- [ ] dedent toplevels
+- [x] dedent toplevels
+- [x] up/down toplevels
+  - why is this so fun? it's fun.
 - [x] wrap a multiselect
-- [ ] tab skips docNode children
-- [ ] shift-tab cant get up to parent docNode
+- [x] tab skips docNode children
+- [x] shift-tab cant get up to parent docNode
 - [ ] drag & dropp
 - [ ] rich texts (includes doing a context menu)
-- [ ] ctrl-left/right toplevels to reorder
+- [x] ctrl-left/right toplevels to reorder
 - [ ] copy/paste should interact with clipboard (?) looks like pbcopy/pbpaste is maybe The Way
+  - hrm but they can't handle multiple formats, so maybe I have to do something else??
 
 
 # While geting a demo ready:

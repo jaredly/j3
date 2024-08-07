@@ -22,7 +22,7 @@ import { handleMovement } from './handleMovement';
 import { joinLeft, replaceNode, selAction } from './joinLeft';
 import { newNeighbor } from './newNeighbor';
 import { split } from './split';
-import { swap } from './swap';
+import { swap, swapTop } from './swap';
 import { wrapNodesWith, wrapWith } from './wrapWith';
 
 const getIRText = (cache: IRCache, path: Path, index: number) => {
@@ -74,6 +74,29 @@ export const handleUpdate = (
                 wrapNodesWith(key, multi.parent, multi.children, store);
             }
             return true;
+        }
+
+        if (key === 'CTRL_UP' || key === 'CTRL_DOWN') {
+            if (!sel.end) return false;
+            const multi = resolveMultiSelect(
+                sel.start.path,
+                sel.end.path,
+                state,
+            );
+            if (!multi) return false;
+            if (multi.type !== 'top') {
+                const actions = swapTop(
+                    sel.start,
+                    sel.end.path,
+                    multi,
+                    state,
+                    key === 'CTRL_DOWN' ? 'down' : 'up',
+                );
+                if (!actions) return false;
+                store.update(...actions);
+                return true;
+            }
+            return false;
         }
 
         if (

@@ -13,7 +13,7 @@ export const swapTop = (
     end: Path,
     multi: Extract<MultiSelect, { type: 'doc' }>,
     state: PersistedState,
-    dir: 'left' | 'right',
+    dir: 'left' | 'right' | 'up' | 'down',
 ): Action[] | void => {
     if (!multi.parentIds.length) return;
     const doc = state.documents[multi.doc];
@@ -43,7 +43,34 @@ export const swapTop = (
         root: { ...end.root, ids: end.root.ids.slice() },
     };
 
-    if (dir === 'left') {
+    if (dir === 'right') {
+        if (sidx === 0) return; // cant indent if we're at the top
+        const sib = doc.nodes[pnode.children[sidx - 1]];
+        const schildren = sib.children.slice();
+        up[sib.id] = { ...sib, children: schildren };
+        schildren.push(...removed);
+
+        spath.root.ids.splice(idPos + 1, 0, sib.id);
+        epath.root.ids.splice(idPos + 1, 0, sib.id);
+    } else if (dir === 'up') {
+        if (sidx === 0) {
+            if (multi.parentIds.length < 2) return;
+            const gpnode =
+                doc.nodes[multi.parentIds[multi.parentIds.length - 2]];
+            const pidx = gpnode.children.indexOf(pnode.id);
+            if (pidx === -1) return;
+            const gchildren = gpnode.children.slice();
+            gchildren.splice(pidx, 0, ...removed);
+            up[gpnode.id] = { ...gpnode, children: gchildren };
+
+            spath.root.ids.splice(idPos, 1);
+            epath.root.ids.splice(idPos, 1);
+        } else {
+            pchildren.splice(sidx - 1, 0, ...removed);
+        }
+    } else if (dir === 'down' && eidx < pnode.children.length - 1) {
+        pchildren.splice(sidx + 1, 0, ...removed);
+    } else {
         if (multi.parentIds.length < 2) return;
         const gpnode = doc.nodes[multi.parentIds[multi.parentIds.length - 2]];
         const pidx = gpnode.children.indexOf(pnode.id);
@@ -54,15 +81,6 @@ export const swapTop = (
 
         spath.root.ids.splice(idPos, 1);
         epath.root.ids.splice(idPos, 1);
-    } else {
-        if (sidx === 0) return; // cant indent if we're at the top
-        const sib = doc.nodes[pnode.children[sidx - 1]];
-        const schildren = sib.children.slice();
-        up[sib.id] = { ...sib, children: schildren };
-        schildren.push(...removed);
-
-        spath.root.ids.splice(idPos + 1, 0, sib.id);
-        epath.root.ids.splice(idPos + 1, 0, sib.id);
     }
 
     const sel: Action = {
