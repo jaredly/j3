@@ -1112,27 +1112,13 @@ export const createIRCache = (
     const map: IRForLoc = {};
     const process = (loc: number, path: Path) => {
         const self = pathWithChildren(path, loc);
-        const ir = nodeToIR(nodes[loc], path, {}, {}, {}); // this will mess up some style things
+        const ir = nodeToIR(nodes[loc], self, {}, {}, {}); // this will mess up some style things
         map[loc] = ir;
         childLocs(nodes[loc]).forEach((l) => process(l, self));
     };
     process(root, { root: pathRoot, children: [] });
     return map;
 };
-
-// export const selectNodeNoIR = (node: Node, path: Path, side: 'start' | 'end') => {
-//     // const sloc = path.children[path.children.length - 1]
-//     const irs = irNavigable(nodeToIR(node, path.children, {}, {}, {}))
-//     const selection = toSelection(
-//         cursorSelect(
-//             irs[side === 'start' ? 0 : irs.length - 1],
-//             path,
-//             irs,
-//             cache,
-//             side === 'end',
-//         ),
-//     );
-// }
 
 export function inflateRecNode(
     nextLoc: number,

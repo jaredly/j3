@@ -31,6 +31,9 @@ const getIRText = (cache: IRCache, path: Path, index: number) => {
     const ir = irNavigable(irRoot).filter((t) => t.type === 'text')[
         index
     ] as Extract<IR, { type: 'text' }>;
+
+    console.log(irRoot, irNavigable(irRoot));
+
     return ir.text;
 };
 

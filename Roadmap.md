@@ -1,4 +1,17 @@
 
+changing a bunch of stuff, I need a test
+
+- with a complex document
+
+1) start at selectNode(start); hit "right" a bunch of times, and it should:
+  - proceed through all the possible locations
+  - and then "left" your way back. It should always
+    (a) advance to the right or down a row
+    (b) ... produce a valid selection
+2) for every x,y -> clicking there should either (not do anythign) or (produce a selection
+  that maps to that x,y)
+3) hm do I make a "validate the IRs of this dealio" thing?
+
 # Broad Next Steps
 
 - [x] indent toplevel nodes

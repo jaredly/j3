@@ -23,10 +23,10 @@ global.window = {};
 // @ts-ignore
 global.localStorage = {};
 
-// const out = openSync('./cli.log', 'W');
-// console.log = (...args) => {
-//     writeSync(out, JSON.stringify(args) + '\n');
-// };
+const out = openSync('./cli.log', 'W');
+console.log = (...args) => {
+    writeSync(out, JSON.stringify(args) + '\n');
+};
 
 const getTerm = () =>
     new Promise<termkit.Terminal>((res, rej) =>
@@ -94,6 +94,11 @@ const run = async (term: termkit.Terminal) => {
 
         if (lastKey) {
             term.moveTo(0, term.height, lastKey);
+        }
+        const ds = store.getDocSession(docId);
+        const sel = ds.selections[0];
+        if (sel) {
+            term.moveTo(0, term.height - 5, JSON.stringify(sel));
         }
 
         renderSelection(term, store, docId, sourceMaps);

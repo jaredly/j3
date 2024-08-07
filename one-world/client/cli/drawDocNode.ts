@@ -137,7 +137,7 @@ const drawToplevel = (
         const self = pathWithChildren(path, id);
         const ir = nodeToIR(
             top.nodes[id],
-            path,
+            self,
             parsed.styles,
             parsed.layouts,
             {},
