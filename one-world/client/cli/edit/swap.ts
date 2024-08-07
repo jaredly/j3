@@ -9,34 +9,84 @@ import { MultiSelect, resolveMultiSelect } from '../render';
 import { topUpdate } from './handleUpdate';
 
 export const swapTop = (
+    start: IRSelection['start'],
+    end: Path,
     multi: Extract<MultiSelect, { type: 'doc' }>,
     state: PersistedState,
     dir: 'left' | 'right',
 ): Action[] | void => {
     if (!multi.parentIds.length) return;
-    if (dir === 'left') return;
     const doc = state.documents[multi.doc];
     const pnode = doc.nodes[multi.parentIds[multi.parentIds.length - 1]];
+
     const sidx = pnode.children.indexOf(multi.children[0]);
     const eidx = pnode.children.indexOf(
         multi.children[multi.children.length - 1],
     );
     if (sidx === -1 || eidx === -1) return;
-    if (sidx === 0) return; // cant indent if we're at the top
-    const sib = doc.nodes[pnode.children[sidx - 1]];
     const pchildren = pnode.children.slice();
-    const schildren = sib.children.slice();
-    schildren.push(...pchildren.splice(sidx, eidx - sidx + 1));
+    const removed = pchildren.splice(sidx, eidx - sidx + 1);
+
     const up: Record<number, DocumentNode> = {
-        [sib.id]: { ...sib, children: schildren },
         [pnode.id]: { ...pnode, children: pchildren },
     };
+
+    const idPos = start.path.root.ids.indexOf(pnode.id);
+    if (idPos === -1) return;
+
+    const spath: Path = {
+        children: start.path.children,
+        root: { ...start.path.root, ids: start.path.root.ids.slice() },
+    };
+    const epath: Path = {
+        children: end.children,
+        root: { ...end.root, ids: end.root.ids.slice() },
+    };
+
+    if (dir === 'left') {
+        if (multi.parentIds.length < 2) return;
+        const gpnode = doc.nodes[multi.parentIds[multi.parentIds.length - 2]];
+        const pidx = gpnode.children.indexOf(pnode.id);
+        if (pidx === -1) return;
+        const gchildren = gpnode.children.slice();
+        gchildren.splice(pidx + 1, 0, ...removed);
+        up[gpnode.id] = { ...gpnode, children: gchildren };
+
+        spath.root.ids.splice(idPos, 1);
+        epath.root.ids.splice(idPos, 1);
+    } else {
+        if (sidx === 0) return; // cant indent if we're at the top
+        const sib = doc.nodes[pnode.children[sidx - 1]];
+        const schildren = sib.children.slice();
+        up[sib.id] = { ...sib, children: schildren };
+        schildren.push(...removed);
+
+        spath.root.ids.splice(idPos + 1, 0, sib.id);
+        epath.root.ids.splice(idPos + 1, 0, sib.id);
+    }
+
+    const sel: Action = {
+        type: 'selection',
+        doc: end.root.doc,
+        selections: [
+            {
+                start: {
+                    ...start,
+                    path: spath,
+                    key: serializePath(spath),
+                },
+                end: { path: epath, key: serializePath(epath) },
+            },
+        ],
+    };
+
     return [
         {
             type: 'doc',
             id: doc.id,
             action: { type: 'update', update: { nodes: up } },
         },
+        sel,
     ];
 };
 
@@ -50,7 +100,7 @@ export const swap = (
     const multi = resolveMultiSelect(start.path, end, state);
     if (!multi) return;
     if (multi.type !== 'top') {
-        return swapTop(multi, state, dir);
+        return swapTop(start, end, multi, state, dir);
     }
     const top = state.toplevels[start.path.root.toplevel];
     const node = getNodeForPath(multi.parent, state);
