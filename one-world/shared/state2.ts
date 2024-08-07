@@ -1,7 +1,7 @@
 // full on state
 // probably persisted or something
 
-import { MultiSelect } from '../client/cli/render';
+import { MultiSelect } from '../client/cli/resolveMultiSelect';
 import { IRSelection } from './IR/intermediate';
 import { Cursor, Path, RecNodeT } from './nodes';
 import { Toplevels } from './toplevels';

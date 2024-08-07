@@ -17,7 +17,7 @@ import {
 import { getNodeForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
-import { resolveMultiSelect } from '../render';
+import { resolveMultiSelect } from '../resolveMultiSelect';
 import { handleMovement } from './handleMovement';
 import { joinLeft, replaceNode, selAction } from './joinLeft';
 import { newNeighbor } from './newNeighbor';

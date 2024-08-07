@@ -142,7 +142,7 @@ export const newStore = (
 
     const store: Store = {
         session,
-        getDocSession(doc: string, session: string) {
+        getDocSession(doc: string, session: string = store.session) {
             const id = `${doc} - ${session}`;
             if (!docSessionCache[id]) {
                 if (localStorage['doc:ss:' + id]) {

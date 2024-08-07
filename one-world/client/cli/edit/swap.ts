@@ -5,7 +5,7 @@ import { Path, parentPath, serializePath } from '../../../shared/nodes';
 import { DocumentNode, PersistedState } from '../../../shared/state2';
 import { getNodeForPath } from '../../selectNode';
 import { isCollection } from '../../TextEdit/actions';
-import { MultiSelect, resolveMultiSelect } from '../render';
+import { MultiSelect, resolveMultiSelect } from '../resolveMultiSelect';
 import { topUpdate } from './handleUpdate';
 
 export const swapTop = (

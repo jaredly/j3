@@ -8,11 +8,12 @@ import {
     redrawWithSelection,
     render,
     renderSelection,
-    resolveMultiSelect,
 } from './render';
+import { resolveMultiSelect } from './resolveMultiSelect';
 import { readSess, writeSess } from './Sess';
 import { handleUpdate } from './edit/handleUpdate';
 import { open, openSync, writeSync } from 'fs';
+import { matchesSpan } from '../../shared/IR/highlightSpan';
 
 // cursor line
 process.stdout.write('\x1b[6 q');
@@ -60,7 +61,7 @@ const run = async (term: termkit.Terminal) => {
     renderSelection(term, store, docId, sourceMaps);
 
     const unsel = store.on('selection', () => {
-        sess.selection = store.getDocSession(docId, store.session).selections;
+        sess.selection = store.getDocSession(docId).selections;
         writeSess(sess);
     });
 
@@ -84,7 +85,7 @@ const run = async (term: termkit.Terminal) => {
         } else {
             ({ txt } = redrawWithSelection(
                 block,
-                store.getDocSession(docId, store.session).selections,
+                store.getDocSession(docId).selections,
                 store.getState(),
             ));
         }
@@ -93,22 +94,6 @@ const run = async (term: termkit.Terminal) => {
 
         if (lastKey) {
             term.moveTo(0, term.height, lastKey);
-            // const sel = store.getDocSession(docId, store.session).selections[0];
-            // const mul =
-            //     sel && sel.end
-            //         ? resolveMultiSelect(
-            //               sel.start.path,
-            //               sel.end.path,
-            //               store.getState(),
-            //           )
-            //         : null;
-            // if (mul) {
-            //     term.moveTo(
-            //         0,
-            //         term.height - 2,
-            //         JSON.stringify([mul, sel.start.path.children.length]),
-            //     );
-            // }
         }
 
         renderSelection(term, store, docId, sourceMaps);
@@ -157,35 +142,38 @@ const run = async (term: termkit.Terminal) => {
         term.moveTo(0, term.height, key);
     });
 
-    term.on(
-        'mouse',
-        (
-            one: string,
-            evt: {
-                x: number;
-                y: number;
-                shift: boolean;
-                ctrl: boolean;
-                alt: boolean;
-            },
-        ) => {
-            if (one === 'MOUSE_DRAG') {
-                handleMouseDrag(docId, sourceMaps, evt, cache, store);
-            } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
-                handleMouse(docId, sourceMaps, evt, cache, store);
-            } else {
-                return;
+    term.on('mouse', (one: string, evt: MouseEvt) => {
+        if (one === 'MOUSE_DRAG') {
+            handleMouseDrag(docId, sourceMaps, evt, cache, store);
+        } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
+            const ds = store.getDocSession(docId);
+            const sel = ds.selections[0];
+            if (sel?.end) {
+                const multi = resolveMultiSelect(
+                    sel.start.path,
+                    sel.end.path,
+                    store.getState(),
+                );
+                if (multi) {
+                    const found = sourceMaps.find((m) =>
+                        matchesSpan(evt.x - 1, evt.y - 2, m.shape),
+                    );
+                }
             }
-            // const { txt } = redrawWithSelection(
-            //     block,
-            //     store.getDocSession(docId, store.session).selections,
-            //     store.getState(),
-            // );
-            // term.clear();
-            // term.moveTo(0, 2, txt);
-            // renderSelection(term, store, docId, sourceMaps);
-        },
-    );
+
+            handleMouse(docId, sourceMaps, evt, cache, store);
+        } else {
+            return;
+        }
+    });
+};
+
+type MouseEvt = {
+    x: number;
+    y: number;
+    shift: boolean;
+    ctrl: boolean;
+    alt: boolean;
 };
 
 const blockInfo = (block: Block): string => {
