@@ -57,8 +57,7 @@ export type DocSession = {
     clipboard: RecNodeT<boolean>[];
     dragState?: {
         source: MultiSelect;
-        dest: Path;
-        location: 'before' | 'after' | 'inside';
+        dest?: { path: Path; location: 'before' | 'after' | 'inside' };
     };
 
     // idTexts: Record<number, string[]>;

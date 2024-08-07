@@ -1,4 +1,11 @@
 
+# The Blocks -> Paths dealio
+
+- [x] get normal selection working again
+- [x] get multi working again, what is this
+
+#
+
 changing a bunch of stuff, I need a test
 
 - with a complex document

@@ -15,6 +15,7 @@ export type Action =
     | { type: 'doc'; id: string; action: DocAction }
     | { type: 'toplevel'; id: string; action: ToplevelAction; stage?: string }
     | { type: 'selection'; doc: string; selections: DocSession['selections'] }
+    | { type: 'drag'; doc: string; drag: DocSession['dragState'] }
     | { type: 'namespaces'; action: NamespaceAction }
     | { type: 'stage'; id: string; action: StageAction };
 

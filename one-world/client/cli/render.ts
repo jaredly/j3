@@ -11,10 +11,15 @@ import { selectionLocation } from './selectionLocation';
 import { IRSelection } from '../../shared/IR/intermediate';
 import { Block, blockSourceKey } from '../../shared/IR/ir-to-blocks';
 import { termColors } from '../TextEdit/colors';
-import { Path, PathRoot, pathWithChildren } from '../../shared/nodes';
-import { PersistedState } from '../../shared/state2';
+import {
+    Path,
+    PathRoot,
+    pathWithChildren,
+    serializePath,
+} from '../../shared/nodes';
+import { DocSession, PersistedState } from '../../shared/state2';
 import { isCollection } from '../TextEdit/actions';
-import { resolveMultiSelect } from './resolveMultiSelect';
+import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 
 export const renderSelection = (
     term: termkit.Terminal,
@@ -55,6 +60,7 @@ export const render = (maxWidth: number, store: Store, docId: string) => {
     const { txt, sourceMaps } = redrawWithSelection(
         block,
         ds.selections,
+        ds.dragState,
         store.getState(),
     );
     return { cache, sourceMaps, block, txt };
@@ -63,10 +69,15 @@ export const render = (maxWidth: number, store: Store, docId: string) => {
 export const redrawWithSelection = (
     block: Block,
     selections: IRSelection[],
+    dragState: DocSession['dragState'],
     state: PersistedState,
 ) => {
     const sourceMaps: BlockEntry[] = [];
-    const styles: StyleOverrides = selectionStyleOverrides(selections, state);
+    const styles: StyleOverrides = selectionStyleOverrides(
+        selections,
+        dragState,
+        state,
+    );
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
         sourceMaps,
         color: true,
@@ -118,15 +129,12 @@ export const pickDocument = (store: Store, term: termkit.Terminal) => {
     });
 };
 
-const nodeKey = (path: Path) => `${path.root.toplevel}:${lastChild(path)}`;
+const nodeKey = (path: Path) => serializePath(path);
 
-const nodesForSelection = (
-    start: Path,
-    end: Path,
+const nodesForMulti = (
+    resolved: MultiSelect,
     state: PersistedState,
 ): Path[] => {
-    const resolved = resolveMultiSelect(start, end, state);
-    if (!resolved) return [];
     if (resolved.type === 'doc') {
         const doc = state.documents[resolved.doc];
         return resolved.children.map((id) => ({
@@ -142,8 +150,19 @@ const nodesForSelection = (
     return resolved.children.map((id) => pathWithChildren(resolved.parent, id));
 };
 
+const nodesForSelection = (
+    start: Path,
+    end: Path,
+    state: PersistedState,
+): Path[] => {
+    const resolved = resolveMultiSelect(start, end, state);
+    if (!resolved) return [];
+    return nodesForMulti(resolved, state);
+};
+
 function selectionStyleOverrides(
     selections: IRSelection[],
+    dragState: DocSession['dragState'],
     state: PersistedState,
 ) {
     const styles: StyleOverrides = {};
@@ -159,6 +178,11 @@ function selectionStyleOverrides(
                     color: termColors.fullHighlight,
                 };
             });
+            // Whyy doesn't this work? idk
+            // styles[nodeKey(selection.end.path)] = {
+            //     type: 'full',
+            //     color: { r: 255, g: 0, b: 0 },
+            // };
         } else if (
             selection.start.cursor.type === 'text' &&
             selection.start.cursor.start
@@ -213,5 +237,15 @@ function selectionStyleOverrides(
             }
         }
     });
+
+    if (dragState) {
+        nodesForMulti(dragState.source, state).forEach((path) => {
+            styles[nodeKey(path)] = {
+                type: 'full',
+                color: termColors.dragHighlight,
+            };
+        });
+    }
+
     return styles;
 }

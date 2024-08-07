@@ -16,6 +16,8 @@ export const update = (
     switch (action.type) {
         case 'selection':
             return state; // ignoreee
+        case 'drag':
+            return state;
         case 'reset':
             return action.state;
         case 'multi':

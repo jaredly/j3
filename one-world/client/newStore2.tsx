@@ -174,6 +174,12 @@ export const newStore = (
             const extras: Action[] = [];
 
             actions.forEach((action) => {
+                if (action.type === 'drag') {
+                    const ds = store.getDocSession(action.doc);
+                    ds.dragState = action.drag;
+                    evts.general.selection.forEach((f) => f());
+                }
+
                 if (action.type === 'selection') {
                     const key = `${action.doc} - ${session}`;
                     const prev = docSessionCache[key].selections;

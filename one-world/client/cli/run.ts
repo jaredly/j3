@@ -9,7 +9,7 @@ import {
     render,
     renderSelection,
 } from './render';
-import { resolveMultiSelect } from './resolveMultiSelect';
+import { multiSelectContains, resolveMultiSelect } from './resolveMultiSelect';
 import { readSess, writeSess } from './Sess';
 import { handleUpdate } from './edit/handleUpdate';
 import { open, openSync, writeSync } from 'fs';
@@ -148,10 +148,16 @@ const run = async (term: termkit.Terminal) => {
     });
 
     term.on('mouse', (one: string, evt: MouseEvt) => {
+        const ds = store.getDocSession(docId);
         if (one === 'MOUSE_DRAG') {
+            if (ds.dragState) {
+                const found = sourceMaps.find((m) =>
+                    matchesSpan(evt.x - 1, evt.y - 2, m.shape),
+                );
+                return;
+            }
             handleMouseDrag(docId, sourceMaps, evt, cache, store);
         } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
-            const ds = store.getDocSession(docId);
             const sel = ds.selections[0];
             if (sel?.end) {
                 const multi = resolveMultiSelect(
@@ -163,14 +169,31 @@ const run = async (term: termkit.Terminal) => {
                     const found = sourceMaps.find((m) =>
                         matchesSpan(evt.x - 1, evt.y - 2, m.shape),
                     );
-                    if (found) {
-                        // found.source.loc
+                    if (
+                        found &&
+                        multiSelectContains(
+                            multi,
+                            found.source.path,
+                            store.getState(),
+                        )
+                    ) {
+                        store.update({
+                            type: 'drag',
+                            doc: docId,
+                            drag: { source: multi },
+                        });
+                        return;
                     }
                 }
             }
 
             handleMouse(docId, sourceMaps, evt, cache, store);
-        } else {
+        } else if (one === 'MOUSE_LEFT_BUTTON_RELEASED') {
+            const ds = store.getDocSession(docId);
+            if (ds.dragState) {
+                store.update({ type: 'drag', doc: docId, drag: undefined });
+            }
+
             return;
         }
     });
