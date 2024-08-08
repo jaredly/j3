@@ -2,6 +2,7 @@ import termkit from 'terminal-kit';
 import {
     BlockEntry,
     blockToText,
+    DropTarget,
     StyleOverrides,
 } from '../../shared/IR/block-to-text';
 import { IRCache, lastChild } from '../../shared/IR/nav';
@@ -57,13 +58,13 @@ export const render = (maxWidth: number, store: Store, docId: string) => {
         ds.selections,
         maxWidth,
     );
-    const { txt, sourceMaps } = redrawWithSelection(
+    const { txt, sourceMaps, dropTargets } = redrawWithSelection(
         block,
         ds.selections,
         ds.dragState,
         store.getState(),
     );
-    return { cache, sourceMaps, block, txt };
+    return { cache, sourceMaps, dropTargets, block, txt };
 };
 
 export const redrawWithSelection = (
@@ -73,6 +74,7 @@ export const redrawWithSelection = (
     state: PersistedState,
 ) => {
     const sourceMaps: BlockEntry[] = [];
+    const dropTargets: DropTarget[] = [];
     const styles: StyleOverrides = selectionStyleOverrides(
         selections,
         dragState,
@@ -80,11 +82,12 @@ export const redrawWithSelection = (
     );
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
         sourceMaps,
+        dropTargets,
         color: true,
         styles,
     });
 
-    return { txt, sourceMaps };
+    return { txt, sourceMaps, dropTargets };
 };
 
 export const pickDocument = (store: Store, term: termkit.Terminal) => {

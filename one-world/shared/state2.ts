@@ -2,6 +2,7 @@
 // probably persisted or something
 
 import { MultiSelect } from '../client/cli/resolveMultiSelect';
+import { DropTarget } from './IR/block-to-text';
 import { IRSelection } from './IR/intermediate';
 import { Cursor, Path, RecNodeT } from './nodes';
 import { Toplevels } from './toplevels';
@@ -57,7 +58,7 @@ export type DocSession = {
     clipboard: RecNodeT<boolean>[];
     dragState?: {
         source: MultiSelect;
-        dest?: { path: Path; location: 'before' | 'after' | 'inside' };
+        dest?: DropTarget;
     };
 
     // idTexts: Record<number, string[]>;

@@ -1,5 +1,5 @@
 import equal from 'fast-deep-equal';
-import { serializePath, Style } from '../nodes';
+import { Path, serializePath, Style } from '../nodes';
 import { applyFormats, blockFormat, justify } from './format';
 import { Block, BlockSource, blockSourceKey, inlineSize } from './ir-to-blocks';
 import { addSpaces, joinChunks, white } from './ir-to-text';
@@ -47,6 +47,13 @@ export type StyleOverrides = Record<
       }
 >;
 
+export type DropTarget = {
+    path: Path;
+    pos: { x: number; y: number };
+    side: 'before' | 'after';
+    // after: { x: number; y: number };
+};
+
 export const blockToText = (
     pos: { x: number; y: number; x0: number },
     block: Block,
@@ -54,6 +61,7 @@ export const blockToText = (
         color: boolean;
         styles: StyleOverrides;
         sourceMaps?: BlockEntry[];
+        dropTargets?: DropTarget[];
     },
 ): string => {
     let nodeStyle = block.style;
@@ -68,7 +76,25 @@ export const blockToText = (
                 ? { ...nodeStyle, background: bstyle.color }
                 : { background: bstyle.color };
         }
+        if (ctx.dropTargets) {
+            ctx.dropTargets.push({
+                path: block.node,
+                pos: { x: pos.x, y: pos.y },
+                side: 'before',
+            });
+            if (block.width > 0) {
+                ctx.dropTargets.push({
+                    path: block.node,
+                    side: 'after',
+                    pos: {
+                        x: pos.x + block.width,
+                        y: pos.y + block.height - 1,
+                    },
+                });
+            }
+        }
     }
+
     switch (block.type) {
         case 'block': {
             if (block.horizontal !== false) {

@@ -23,10 +23,15 @@ global.window = {};
 // @ts-ignore
 global.localStorage = {};
 
-const out = openSync('./cli.log', 'W');
-console.log = (...args) => {
-    writeSync(out, JSON.stringify(args) + '\n');
+type Coord = { x: number; y: number };
+const dist2 = ({ x, y }: Coord, { x: x2, y: y2 }: Coord) => {
+    return (x - x2) * (x - x2) + (y - y2) * (y - y2);
 };
+
+// const out = openSync('./cli.log', 'W');
+// console.log = (...args) => {
+//     writeSync(out, JSON.stringify(args) + '\n');
+// };
 
 const getTerm = () =>
     new Promise<termkit.Terminal>((res, rej) =>
@@ -51,7 +56,7 @@ const run = async (term: termkit.Terminal) => {
 
     let lastKey = null as null | string;
 
-    let { sourceMaps, cache, block, txt } = render(
+    let { sourceMaps, dropTargets, cache, block, txt } = render(
         term.width - 10,
         store,
         sess.doc,
@@ -77,15 +82,17 @@ const run = async (term: termkit.Terminal) => {
         tid = null;
 
         if (changed) {
-            ({ sourceMaps, cache, block, txt } = render(
+            ({ sourceMaps, dropTargets, cache, block, txt } = render(
                 term.width - 10,
                 store,
                 docId,
             ));
         } else {
+            const ds = store.getDocSession(docId);
             ({ txt } = redrawWithSelection(
                 block,
-                store.getDocSession(docId).selections,
+                ds.selections,
+                ds.dragState,
                 store.getState(),
             ));
         }
@@ -99,6 +106,14 @@ const run = async (term: termkit.Terminal) => {
         const sel = ds.selections[0];
         if (sel) {
             term.moveTo(0, term.height - 5, JSON.stringify(sel));
+        }
+
+        if (ds.dragState?.dest) {
+            term.moveTo(
+                ds.dragState.dest.pos.x + 1,
+                ds.dragState.dest.pos.y + 3,
+                '⬆️',
+            );
         }
 
         renderSelection(term, store, docId, sourceMaps);
@@ -151,9 +166,25 @@ const run = async (term: termkit.Terminal) => {
         const ds = store.getDocSession(docId);
         if (one === 'MOUSE_DRAG') {
             if (ds.dragState) {
-                const found = sourceMaps.find((m) =>
-                    matchesSpan(evt.x - 1, evt.y - 2, m.shape),
-                );
+                const pos = { x: evt.x - 1, y: evt.y - 2 };
+                const found = dropTargets
+                    .map((target) => ({
+                        target,
+                        dx: Math.abs(target.pos.x - pos.x),
+                        dy: Math.abs(target.pos.y - pos.y),
+                        // dist: dist2(target.pos, pos),
+                    }))
+                    .filter((a) => a.dy === 0)
+                    .sort((a, b) => a.dx - b.dx);
+                const best = found[0];
+                store.update({
+                    type: 'drag',
+                    doc: docId,
+                    drag: {
+                        source: ds.dragState.source,
+                        dest: best.target,
+                    },
+                });
                 return;
             }
             handleMouseDrag(docId, sourceMaps, evt, cache, store);
