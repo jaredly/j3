@@ -29,6 +29,9 @@ changing a bunch of stuff, I need a test
 - [x] tab skips docNode children
 - [x] shift-tab cant get up to parent docNode
 - [ ] drag & dropp
+  - [x] drag
+  - [ ] drop
+    - [x] WHYYY CAN"T I select the /first/ - oh I was making drop targets for braces. fixed.
 - [ ] rich texts (includes doing a context menu)
 - [x] ctrl-left/right toplevels to reorder
 - [ ] copy/paste should interact with clipboard (?) looks like pbcopy/pbpaste is maybe The Way

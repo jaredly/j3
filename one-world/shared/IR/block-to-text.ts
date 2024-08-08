@@ -68,7 +68,8 @@ export const blockToText = (
     let override = false;
     if (block.node) {
         let key = serializePath(block.node);
-        if (block.type === 'inline' && block.brace) key += ':brace';
+        const brace = block.type === 'inline' && block.brace;
+        if (brace) key += ':brace';
         const bstyle = ctx.styles[key];
         if (bstyle?.type === 'full') {
             override = true;
@@ -76,11 +77,11 @@ export const blockToText = (
                 ? { ...nodeStyle, background: bstyle.color }
                 : { background: bstyle.color };
         }
-        if (ctx.dropTargets) {
+        if (ctx.dropTargets && !brace) {
             ctx.dropTargets.push({
                 path: block.node,
-                pos: { x: pos.x, y: pos.y },
                 side: 'before',
+                pos: { x: pos.x, y: pos.y },
             });
             if (block.width > 0) {
                 ctx.dropTargets.push({

@@ -12,8 +12,8 @@ import {
 import { multiSelectContains, resolveMultiSelect } from './resolveMultiSelect';
 import { readSess, writeSess } from './Sess';
 import { handleUpdate } from './edit/handleUpdate';
-import { open, openSync, writeSync } from 'fs';
 import { matchesSpan } from '../../shared/IR/highlightSpan';
+import { drop, validDropTargets } from './edit/drop';
 
 // cursor line
 process.stdout.write('\x1b[6 q');
@@ -28,6 +28,7 @@ const dist2 = ({ x, y }: Coord, { x: x2, y: y2 }: Coord) => {
     return (x - x2) * (x - x2) + (y - y2) * (y - y2);
 };
 
+// import { openSync, writeSync } from 'fs';
 // const out = openSync('./cli.log', 'W');
 // console.log = (...args) => {
 //     writeSync(out, JSON.stringify(args) + '\n');
@@ -103,17 +104,20 @@ const run = async (term: termkit.Terminal) => {
             term.moveTo(0, term.height, lastKey);
         }
         const ds = store.getDocSession(docId);
-        const sel = ds.selections[0];
-        if (sel) {
-            term.moveTo(0, term.height - 5, JSON.stringify(sel));
-        }
+        // const sel = ds.selections[0];
+        // if (sel) {
+        //     term.moveTo(0, term.height - 5, JSON.stringify(sel));
+        // }
 
         if (ds.dragState?.dest) {
             term.moveTo(
-                ds.dragState.dest.pos.x + 1,
-                ds.dragState.dest.pos.y + 3,
-                '⬆️',
+                ds.dragState.dest.pos.x +
+                    1 +
+                    (ds.dragState.dest.side === 'after' ? -1 : 0),
+                ds.dragState.dest.pos.y + 1,
+                '⬇️',
             );
+            term.moveTo(0, term.height - 5, JSON.stringify(ds.dragState.dest));
         }
 
         renderSelection(term, store, docId, sourceMaps);
@@ -167,24 +171,36 @@ const run = async (term: termkit.Terminal) => {
         if (one === 'MOUSE_DRAG') {
             if (ds.dragState) {
                 const pos = { x: evt.x - 1, y: evt.y - 2 };
-                const found = dropTargets
+                const found = validDropTargets(
+                    dropTargets,
+                    ds.dragState.source,
+                    store.getState(),
+                )
                     .map((target) => ({
                         target,
                         dx: Math.abs(target.pos.x - pos.x),
                         dy: Math.abs(target.pos.y - pos.y),
-                        // dist: dist2(target.pos, pos),
                     }))
                     .filter((a) => a.dy === 0)
                     .sort((a, b) => a.dx - b.dx);
+                if (!found.length) return;
                 const best = found[0];
-                store.update({
-                    type: 'drag',
-                    doc: docId,
-                    drag: {
-                        source: ds.dragState.source,
-                        dest: best.target,
-                    },
-                });
+                if (
+                    !multiSelectContains(
+                        ds.dragState.source,
+                        best.target.path,
+                        store.getState(),
+                    )
+                ) {
+                    store.update({
+                        type: 'drag',
+                        doc: docId,
+                        drag: {
+                            source: ds.dragState.source,
+                            dest: best.target,
+                        },
+                    });
+                }
                 return;
             }
             handleMouseDrag(docId, sourceMaps, evt, cache, store);
@@ -221,8 +237,14 @@ const run = async (term: termkit.Terminal) => {
             handleMouse(docId, sourceMaps, evt, cache, store);
         } else if (one === 'MOUSE_LEFT_BUTTON_RELEASED') {
             const ds = store.getDocSession(docId);
-            if (ds.dragState) {
+            const dragState = ds.dragState;
+            if (dragState) {
                 store.update({ type: 'drag', doc: docId, drag: undefined });
+                if (!dragState.dest) {
+                    handleMouse(docId, sourceMaps, evt, cache, store);
+                } else {
+                    drop(dragState.source, dragState.dest, store);
+                }
             }
 
             return;

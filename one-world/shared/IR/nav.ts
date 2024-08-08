@@ -1,5 +1,7 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import {
+    Node,
+    Nodes,
     parentPath,
     Path,
     PathRoot,
@@ -7,7 +9,7 @@ import {
     serializePath,
 } from '../nodes';
 import { PersistedState } from '../state';
-import { IR, IRCursor, IRSelection } from './intermediate';
+import { IR, IRCursor, IRSelection, nodeToIR } from './intermediate';
 import { IRForLoc, LayoutCtx } from './layout';
 
 export type IRCache = Record<
@@ -91,6 +93,9 @@ export const modTextSel = (
         return f(text, sel.start.cursor);
     }
 };
+
+export const parentLoc = (path: Path) =>
+    path.children[path.children.length - 2];
 
 export const lastChild = (path: Path) =>
     path.children[path.children.length - 1];
@@ -339,8 +344,38 @@ const goLRFrom = (
     };
 };
 
+// This won't have the right styling or things, but we're just using it for
+// calculating cursor position
+const getSimpleIR = (node: Node) => {
+    return nodeToIR(
+        node,
+        {
+            root: { type: 'doc-node', doc: '', ids: [], toplevel: '' },
+            children: [],
+        },
+        {},
+        {},
+        {},
+    );
+};
+
+export const cursorForNodeNoIR = (
+    parents: number[],
+    side: 'start' | 'end',
+    nodes: Nodes,
+) => {
+    const node = nodes[parents[parents.length - 1]];
+    const irs = irNavigable(getSimpleIR(node));
+    return cursorSelect2(
+        irs[side === 'start' ? 0 : irs.length - 1],
+        parents,
+        irs,
+        (loc) => getSimpleIR(nodes[loc]),
+        side === 'end',
+    );
+};
+
 export const cursorForNode = (
-    // loc: number,
     parents: number[],
     side: 'start' | 'end',
     cache: IRForLoc,
@@ -350,7 +385,7 @@ export const cursorForNode = (
         irs[side === 'start' ? 0 : irs.length - 1],
         parents,
         irs,
-        cache,
+        (loc) => cache[loc],
         side === 'end',
     );
 };
@@ -391,7 +426,8 @@ export const cursorSelect2 = (
     ir: IRNavigable,
     children: number[],
     siblings: IRNavigable[],
-    cache: IRForLoc,
+    getIR: (loc: number) => IR,
+    // cache: IRForLoc,
     end: boolean,
 ): { cursor: IRCursor; children: number[] } => {
     switch (ir.type) {
@@ -421,12 +457,12 @@ export const cursorSelect2 = (
         case 'cursor':
             return { cursor: { type: 'side', side: ir.side }, children };
         case 'loc':
-            const items = irNavigable(cache[lastChild(ir.path)]);
+            const items = irNavigable(getIR(lastChild(ir.path)));
             return cursorSelect2(
                 items[end ? items.length - 1 : 0],
                 children.concat([lastChild(ir.path)]),
                 items,
-                cache,
+                getIR,
                 end,
             );
     }
@@ -439,42 +475,14 @@ export const cursorSelect = (
     cache: IRForLoc,
     end: boolean,
 ): { cursor: IRCursor; path: Path } => {
-    switch (ir.type) {
-        case 'text':
-            return {
-                cursor: {
-                    type: 'text',
-                    end: {
-                        index: siblings
-                            .filter((r) => r.type === 'text')
-                            .indexOf(ir),
-                        cursor: end ? splitGraphemes(ir.text).length : 0,
-                    },
-                },
-                path,
-            };
-        case 'control':
-            return {
-                cursor: {
-                    type: 'control',
-                    index: siblings
-                        .filter((r) => r.type === 'control')
-                        .indexOf(ir),
-                },
-                path,
-            };
-        case 'cursor':
-            return { cursor: { type: 'side', side: ir.side }, path };
-        case 'loc':
-            const items = irNavigable(cache[lastChild(ir.path)]);
-            return cursorSelect(
-                items[end ? items.length - 1 : 0],
-                pathWithChildren(path, lastChild(ir.path)),
-                items,
-                cache,
-                end,
-            );
-    }
+    const { cursor, children } = cursorSelect2(
+        ir,
+        [],
+        siblings,
+        (loc) => cache[loc],
+        end,
+    );
+    return { cursor, path: pathWithChildren(path, ...children) };
 };
 
 function findCursor(
