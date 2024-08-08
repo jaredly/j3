@@ -20,7 +20,7 @@ export const validDropTargets = (
     source: MultiSelect,
     state: PersistedState,
 ) => {
-    if (source.type === 'doc') {
+    if (source.type === 'doc' && source.children.length > 1) {
         return targets.filter((t) => t.path.children.length === 1);
     }
     return targets.filter((t) => {

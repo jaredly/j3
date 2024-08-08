@@ -14,6 +14,7 @@ import { readSess, writeSess } from './Sess';
 import { handleUpdate } from './edit/handleUpdate';
 import { matchesSpan } from '../../shared/IR/highlightSpan';
 import { drop, validDropTargets } from './edit/drop';
+import { cursorForNode } from '../../shared/IR/nav';
 
 // cursor line
 process.stdout.write('\x1b[6 q');
@@ -200,6 +201,14 @@ const run = async (term: termkit.Terminal) => {
                             dest: best.target,
                         },
                     });
+                } else if (ds.dragState.dest) {
+                    store.update({
+                        type: 'drag',
+                        doc: docId,
+                        drag: {
+                            source: ds.dragState.source,
+                        },
+                    });
                 }
                 return;
             }
@@ -212,10 +221,34 @@ const run = async (term: termkit.Terminal) => {
                     sel.end.path,
                     store.getState(),
                 );
+                const x = evt.x - 1;
+                const y = evt.y - 2;
                 if (multi) {
                     const found = sourceMaps.find((m) =>
-                        matchesSpan(evt.x - 1, evt.y - 2, m.shape),
+                        matchesSpan(x, y, m.shape),
                     );
+                    if (!found) {
+                        const closest = dropTargets
+                            .map((target) => ({
+                                target,
+                                dx: Math.abs(target.pos.x - x),
+                                dy: Math.abs(target.pos.y - y),
+                            }))
+                            .filter((a) => a.dy === 0)
+                            .sort((a, b) => a.dx - b.dx);
+                        if (!closest.length) return;
+                        let { path } = closest[0].target;
+                        if (
+                            multiSelectContains(multi, path, store.getState())
+                        ) {
+                            store.update({
+                                type: 'drag',
+                                doc: docId,
+                                drag: { source: multi },
+                            });
+                            return;
+                        }
+                    }
                     if (
                         found &&
                         multiSelectContains(
