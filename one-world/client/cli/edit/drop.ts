@@ -68,10 +68,6 @@ export const drop = (source: MultiSelect, dest: DropTarget, store: Store) => {
     if (!isCollection(parent)) return;
 
     const sloc = lastChild(source.parent);
-    if (sloc === ploc) {
-        // within the same thing
-        return;
-    }
 
     const sparent = top.nodes[sloc];
     if (!isCollection(sparent)) return; // TODO replace with an empty

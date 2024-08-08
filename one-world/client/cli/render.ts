@@ -18,7 +18,7 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../shared/nodes';
-import { DocSession, PersistedState } from '../../shared/state2';
+import { Doc, DocSession, PersistedState } from '../../shared/state2';
 import { isCollection } from '../TextEdit/actions';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 
@@ -134,21 +134,37 @@ export const pickDocument = (store: Store, term: termkit.Terminal) => {
 
 const nodeKey = (path: Path) => serializePath(path);
 
+const docNodePaths = (
+    loc: number,
+    parentIds: number[],
+    doc: Doc,
+    state: PersistedState,
+): Path[] => {
+    const node = doc.nodes[loc];
+    const ids = parentIds.concat([loc]);
+    return [
+        {
+            root: {
+                type: 'doc-node',
+                ids,
+                doc: doc.id,
+                toplevel: node.toplevel,
+            },
+            children: [state.toplevels[node.toplevel].root],
+        },
+        ...node.children.flatMap((id) => docNodePaths(id, ids, doc, state)),
+    ];
+};
+
 const nodesForMulti = (
     resolved: MultiSelect,
     state: PersistedState,
 ): Path[] => {
     if (resolved.type === 'doc') {
         const doc = state.documents[resolved.doc];
-        return resolved.children.map((id) => ({
-            root: {
-                doc: resolved.doc,
-                toplevel: doc.nodes[id].toplevel,
-                ids: resolved.parentIds.concat([id]),
-                type: 'doc-node',
-            },
-            children: [state.toplevels[doc.nodes[id].toplevel].root],
-        }));
+        return resolved.children.flatMap((id) =>
+            docNodePaths(id, resolved.parentIds, doc, state),
+        );
     }
     return resolved.children.map((id) => pathWithChildren(resolved.parent, id));
 };

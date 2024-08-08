@@ -32,6 +32,10 @@ changing a bunch of stuff, I need a test
   - [x] drag
   - [ ] drop
     - [x] WHYYY CAN"T I select the /first/ - oh I was making drop targets for braces. fixed.
+    - [x] in same toplevel
+    - [x] in the same parent
+    - [ ] in different toplevels
+    - [ ] dragging toplevels around
 - [ ] rich texts (includes doing a context menu)
 - [x] ctrl-left/right toplevels to reorder
 - [ ] copy/paste should interact with clipboard (?) looks like pbcopy/pbpaste is maybe The Way

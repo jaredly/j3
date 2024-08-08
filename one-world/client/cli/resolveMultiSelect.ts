@@ -100,11 +100,17 @@ export const resolveMultiSelect = (
         const a = children.indexOf(start.children[i]);
         const b = children.indexOf(end.children[i]);
         if (a === -1 || b == -1) {
-            throw new Error(
+            // throw new Error(
+            //     `cant find one of these things in the childLocs list ${children.join(
+            //         ',',
+            //     )}: ${a} or ${b}`,
+            // );
+            console.error(
                 `cant find one of these things in the childLocs list ${children.join(
                     ',',
                 )}: ${a} or ${b}`,
             );
+            return;
         }
         const [st, ed] = a < b ? [a, b] : [b, a];
         const locs = children.slice(st, ed + 1);
