@@ -1,6 +1,6 @@
 import termkit from 'terminal-kit';
 import { Block } from '../../shared/IR/ir-to-blocks';
-import { handleMouse, handleMouseDrag } from './edit/handleMouse';
+import { handleMouseClick, handleMouseDrag } from './edit/handleMouse';
 import { handleMovement, handleUpDown } from './edit/handleMovement';
 import { init } from './init';
 import {
@@ -234,14 +234,21 @@ const run = async (term: termkit.Terminal) => {
                 }
             }
 
-            handleMouse(docId, sourceMaps, evt, cache, store);
+            handleMouseClick(docId, sourceMaps, dropTargets, evt, cache, store);
         } else if (one === 'MOUSE_LEFT_BUTTON_RELEASED') {
             const ds = store.getDocSession(docId);
             const dragState = ds.dragState;
             if (dragState) {
                 store.update({ type: 'drag', doc: docId, drag: undefined });
                 if (!dragState.dest) {
-                    handleMouse(docId, sourceMaps, evt, cache, store);
+                    handleMouseClick(
+                        docId,
+                        sourceMaps,
+                        dropTargets,
+                        evt,
+                        cache,
+                        store,
+                    );
                 } else {
                     drop(dragState.source, dragState.dest, store);
                 }

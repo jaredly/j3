@@ -130,9 +130,9 @@ const braceStyle = (depth: number): Style => {
 export const nodeToIR = (
     node: Node,
     path: Path,
-    styles: Record<number, Format>,
-    layouts: Record<number, Layout>,
-    names: Record<string, Record<number, string>>,
+    styles: Record<number, Format> = {},
+    layouts: Record<number, Layout> = {},
+    names: Record<string, Record<number, string>> = {},
 ): IR => {
     switch (node.type) {
         case 'rich-inline':

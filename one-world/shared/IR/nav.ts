@@ -347,16 +347,10 @@ const goLRFrom = (
 // This won't have the right styling or things, but we're just using it for
 // calculating cursor position
 const getSimpleIR = (node: Node) => {
-    return nodeToIR(
-        node,
-        {
-            root: { type: 'doc-node', doc: '', ids: [], toplevel: '' },
-            children: [],
-        },
-        {},
-        {},
-        {},
-    );
+    return nodeToIR(node, {
+        root: { type: 'doc-node', doc: '', ids: [], toplevel: '' },
+        children: [],
+    });
 };
 
 export const cursorForNodeNoIR = (
