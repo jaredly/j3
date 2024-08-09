@@ -7,7 +7,13 @@ orrr should I do autocomplete first?
 it'll need similar menu magics
 but maybe different idk.
 
+RichInline is a paragraph.
 
+hm ; ?
+
+soooo.
+
+- [ ] BUG: edit a text then clikc that text loses the tmp text
 
 # The Blocks -> Paths dealio
 

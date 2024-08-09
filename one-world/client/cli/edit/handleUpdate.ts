@@ -49,7 +49,7 @@ export const handleUpdate = (
 
     // TODO multiselect
     const sel = ds.selections[0];
-    if (sel.end) {
+    if (sel.end && sel.end.key !== sel.start.key) {
         const path = sel.end.path;
 
         const state = store.getState();
@@ -188,7 +188,7 @@ export const handleUpdate = (
             : [end.cursor, start.cursor]
         : [end.cursor, end.cursor];
 
-    if (key === 'BACKSPACE' && !start) {
+    if (key === 'BACKSPACE' && !start && !sel.end) {
         if (end.cursor === 0) {
             // join-left
             if (!joinLeft(sel.start.path, end.text, end.index, cache, store)) {
@@ -198,6 +198,15 @@ export const handleUpdate = (
         } else {
             st -= 1;
         }
+    }
+
+    const current =
+        end.text ?? splitGraphemes(getIRText(cache, sel.start.path, end.index));
+
+    if (sel.end) {
+        // the whole thing is selected
+        st = 0;
+        ed = current.length;
     }
 
     const path = sel.start.path;
@@ -218,9 +227,6 @@ export const handleUpdate = (
             }
         }
     }
-
-    const current =
-        end.text ?? splitGraphemes(getIRText(cache, sel.start.path, end.index));
 
     if (node.type === 'id' && current.length === 0 && key === '\\') {
         const top = store.getState().toplevels[path.root.toplevel];

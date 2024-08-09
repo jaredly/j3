@@ -118,6 +118,13 @@ export const updateNodeText = (
                 };
                 return { ...node, templates };
             }
+            return;
+        case 'rich-inline':
+            const span = node.spans[index];
+            if (span.type !== 'text') return;
+            const spans = node.spans.slice();
+            spans[index] = { ...span, text };
+            return { ...node, spans };
     }
 };
 
@@ -163,6 +170,7 @@ export const nodeToIR = (
                 return {
                     type: 'horiz',
                     items: [
+                        { type: 'cursor', path, side: 'start' },
                         { type: 'punct', text: '“' },
                         {
                             type: 'vert',
@@ -172,6 +180,7 @@ export const nodeToIR = (
                             })),
                         },
                         { type: 'punct', text: '”' },
+                        { type: 'cursor', path, side: 'end' },
                     ],
                 };
             }
