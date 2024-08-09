@@ -37,17 +37,19 @@ export const validDropTargets = (
 };
 
 export const drop = (source: MultiSelect, dest: DropTarget, store: Store) => {
+    if (source.type === 'doc') {
+        // move toplevels
+        return;
+    }
+
     //
     if (
         source.type === 'top' &&
         source.parent.root.toplevel !== dest.path.root.toplevel
     ) {
         // move between, this is more different
-        return;
-    }
+        // basically, we need a "copy from one" "paste to the other" kind of thing.
 
-    if (source.type === 'doc') {
-        // move toplevels
         return;
     }
 

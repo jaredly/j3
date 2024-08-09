@@ -14,10 +14,11 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
+import { PersistedState } from '../../../shared/state2';
 import { getNodeForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
-import { resolveMultiSelect } from '../resolveMultiSelect';
+import { MultiSelect, resolveMultiSelect } from '../resolveMultiSelect';
 import { handleMovement } from './handleMovement';
 import { joinLeft, replaceNode, selAction } from './joinLeft';
 import { newNeighbor } from './newNeighbor';
@@ -128,73 +129,9 @@ export const handleUpdate = (
                 state,
             );
             if (!which || which.type === 'doc') return false;
-            if (which.children.length === 1) {
-                store.update(
-                    topUpdate(path.root.toplevel, {
-                        [lastChild(path)]: {
-                            type: 'id',
-                            text: '',
-                            loc: lastChild(path),
-                        },
-                    }),
-                    {
-                        type: 'selection',
-                        doc: path.root.doc,
-                        selections: [
-                            toSelection({
-                                cursor: {
-                                    type: 'text',
-                                    end: { index: 0, cursor: 0 },
-                                },
-                                path: sel.end.path,
-                            }),
-                        ],
-                    },
-                );
-            } else {
-                const ploc = lastChild(which.parent);
-                const top = state.toplevels[which.parent.root.toplevel];
-                const pnode = top.nodes[ploc];
-                if (!pnode || !isCollection(pnode)) return false;
-                const idx = pnode.items.indexOf(which.children[0]);
-                const items = pnode.items.filter(
-                    (loc) => !which.children.includes(loc),
-                );
-                items.splice(idx, 0, top.nextLoc);
-                store.update(
-                    topUpdate(
-                        path.root.toplevel,
-                        {
-                            [ploc]: {
-                                ...pnode,
-                                items,
-                            },
-                            [top.nextLoc]: {
-                                type: 'id',
-                                text: '',
-                                loc: top.nextLoc,
-                            },
-                        },
-                        top.nextLoc + 1,
-                    ),
-                    {
-                        type: 'selection',
-                        doc: path.root.doc,
-                        selections: [
-                            toSelection({
-                                cursor: {
-                                    type: 'text',
-                                    end: { index: 0, cursor: 0 },
-                                },
-                                path: pathWithChildren(
-                                    which.parent,
-                                    top.nextLoc,
-                                ),
-                            }),
-                        ],
-                    },
-                );
-            }
+            const ups = deleteMulti(which, state);
+            if (!ups) return false;
+            store.update(...ups);
             return true;
         }
         return false; // ugh
@@ -422,3 +359,82 @@ export const topUpdate = (
         update: nidx != null ? { nodes, nextLoc: nidx } : { nodes },
     },
 });
+
+export const deleteMulti = (
+    which: MultiSelect,
+    state: PersistedState,
+    leaveABlank = true,
+): Action[] | void => {
+    if (which.type === 'doc') return;
+    if (which.children.length === 1) {
+        return [
+            topUpdate(which.parent.root.toplevel, {
+                [which.children[0]]: {
+                    type: 'id',
+                    text: '',
+                    loc: which.children[0],
+                },
+            }),
+            {
+                type: 'selection',
+                doc: which.parent.root.doc,
+                selections: [
+                    toSelection({
+                        cursor: {
+                            type: 'text',
+                            end: { index: 0, cursor: 0 },
+                        },
+                        path: pathWithChildren(which.parent, which.children[0]),
+                    }),
+                ],
+            },
+        ];
+    } else {
+        const ploc = lastChild(which.parent);
+        const top = state.toplevels[which.parent.root.toplevel];
+        const pnode = top.nodes[ploc];
+        if (!pnode || !isCollection(pnode)) return;
+        const idx = pnode.items.indexOf(which.children[0]);
+        const items = pnode.items.filter(
+            (loc) => !which.children.includes(loc),
+        );
+        if (!leaveABlank) {
+            return [
+                topUpdate(which.parent.root.toplevel, {
+                    [ploc]: { ...pnode, items },
+                }),
+            ];
+        }
+        items.splice(idx, 0, top.nextLoc);
+        return [
+            topUpdate(
+                which.parent.root.toplevel,
+                {
+                    [ploc]: {
+                        ...pnode,
+                        items,
+                    },
+                    [top.nextLoc]: {
+                        type: 'id',
+                        text: '',
+                        loc: top.nextLoc,
+                    },
+                },
+                top.nextLoc + 1,
+            ),
+            {
+                type: 'selection',
+                doc: which.parent.root.doc,
+                selections: [
+                    toSelection({
+                        cursor: {
+                            type: 'text',
+                            end: { index: 0, cursor: 0 },
+                        },
+                        path: pathWithChildren(which.parent, top.nextLoc),
+                    }),
+                ],
+            },
+        ];
+    }
+};
