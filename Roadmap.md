@@ -28,13 +28,13 @@ changing a bunch of stuff, I need a test
 - [x] wrap a multiselect
 - [x] tab skips docNode children
 - [x] shift-tab cant get up to parent docNode
-- [ ] drag & dropp
+- [-] drag & dropp
   - [x] drag
-  - [ ] drop
+  - [-] drop
     - [x] WHYYY CAN"T I select the /first/ - oh I was making drop targets for braces. fixed.
     - [x] in same toplevel
     - [x] in the same parent
-    - [ ] in different toplevels
+    - [x] in different toplevels
     - [ ] dragging toplevels around
 - [ ] rich texts (includes doing a context menu)
 - [x] ctrl-left/right toplevels to reorder
