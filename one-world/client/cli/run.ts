@@ -15,6 +15,7 @@ import { handleUpdate } from './edit/handleUpdate';
 import { matchesSpan } from '../../shared/IR/highlightSpan';
 import { drop, validDropTargets } from './edit/drop';
 import { cursorForNode } from '../../shared/IR/nav';
+import { genId, newDocument } from './edit/newDocument';
 
 // cursor line
 process.stdout.write('\x1b[6 q');
@@ -50,7 +51,14 @@ const run = async (term: termkit.Terminal) => {
     term.grabInput({ mouse: 'drag' });
 
     if (!sess.doc) {
-        sess.doc = await pickDocument(store, term);
+        const picked = await pickDocument(store, term);
+        if (picked === null) {
+            const id = genId();
+            store.update(...newDocument(id));
+            sess.doc = id;
+        } else {
+            sess.doc = picked;
+        }
         writeSess(sess);
     }
 
@@ -105,10 +113,10 @@ const run = async (term: termkit.Terminal) => {
             term.moveTo(0, term.height, lastKey);
         }
         const ds = store.getDocSession(docId);
-        const sel = ds.selections[0];
-        if (sel) {
-            term.moveTo(0, term.height - 5, JSON.stringify(sel));
-        }
+        // const sel = ds.selections[0];
+        // if (sel) {
+        //     term.moveTo(0, term.height - 5, JSON.stringify(sel));
+        // }
 
         if (ds.dragState?.dest) {
             term.moveTo(

@@ -91,7 +91,7 @@ export const redrawWithSelection = (
 };
 
 export const pickDocument = (store: Store, term: termkit.Terminal) => {
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<string | null>((resolve, reject) => {
         const state = store.getState();
         const ids = Object.keys(state.documents);
         let sel = 0;
@@ -99,24 +99,34 @@ export const pickDocument = (store: Store, term: termkit.Terminal) => {
         const draw = () => {
             term.clear();
             // sb.clear()
-            for (let i = 0; i < ids.length; i++) {
-                term.moveTo(0, i);
-                if (sel === i) {
+            for (let i = 0; i <= ids.length; i++) {
+                term.moveTo(0, i + 1);
+                if (i === ids.length) {
+                    if (sel === i) {
+                        term.bgGreen('New Document');
+                    } else {
+                        term('New Document');
+                    }
+                } else if (sel === i) {
                     term.bgGreen(state.documents[ids[i]].title);
                 } else {
                     term(state.documents[ids[i]].title);
                 }
-                // sb.put({})
             }
         };
 
         const key = (key: string) => {
             if (key === 'ENTER') {
                 term.off('key', key);
-                return resolve(ids[sel]);
+                if (sel === ids.length) {
+                    resolve(null);
+                } else {
+                    resolve(ids[sel]);
+                }
+                return;
             }
             if (key === 'DOWN') {
-                sel = Math.min(sel + 1, ids.length - 1);
+                sel = Math.min(sel + 1, ids.length);
             }
             if (key === 'UP') {
                 sel = Math.max(0, sel - 1);

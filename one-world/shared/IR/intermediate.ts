@@ -157,7 +157,7 @@ export const nodeToIR = (
                               type: 'text',
                               text: span.text,
                               style: span.style,
-                              wrap: 0,
+                              wrap: i + 1,
                               path,
                               index: i,
                               link:

@@ -161,6 +161,11 @@ const drawToplevel = (
             sel.start.cursor.end.text != null
         ) {
             const loc = lastChild(sel.start.path);
+            if (loc == null || !irs[loc]) {
+                throw new Error(
+                    `no what ${loc} : ${irs[loc]} : ${Object.keys(irs)}`,
+                );
+            }
             const texts = irNavigable(irs[loc]).filter(
                 (t) => t.type === 'text',
             ) as Extract<IR, { type: 'text' }>[];

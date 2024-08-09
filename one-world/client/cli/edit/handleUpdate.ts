@@ -20,6 +20,7 @@ import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { MultiSelect, resolveMultiSelect } from '../resolveMultiSelect';
 import { handleMovement } from './handleMovement';
+import { handleRichText } from './handleRichText';
 import { joinLeft, replaceNode, selAction } from './joinLeft';
 import { newNeighbor } from './newNeighbor';
 import { split } from './split';
@@ -46,6 +47,10 @@ export const handleUpdate = (
 ): boolean => {
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
+
+    if (handleRichText(key, docId, cache, store)) {
+        return true;
+    }
 
     // TODO multiselect
     const sel = ds.selections[0];

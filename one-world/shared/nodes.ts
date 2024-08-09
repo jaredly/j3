@@ -1,6 +1,7 @@
 //
 
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { filterNulls } from '../../web/custom/old-stuff/filterNulls';
 import { selectNode } from '../client/selectNode';
 import { isCollection } from '../client/TextEdit/actions';
 import { RenderInfo } from './renderables';
@@ -424,8 +425,11 @@ export const toTheLeft = (
 export const childLocs = (node: Node) => {
     switch (node.type) {
         case 'id':
-        case 'rich-inline':
             return [];
+        case 'rich-inline':
+            return node.spans
+                .map((s) => (s.type === 'embed' ? s.item : null))
+                .filter(filterNulls);
         case 'rich-block':
             return node.items;
         case 'list':

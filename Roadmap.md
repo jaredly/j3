@@ -13,6 +13,15 @@ hm ; ?
 
 soooo.
 
+- [x] start a rich text
+- [x] press enter, now you have two
+- [ ] ctrl-b to bold
+- [ ] ctrl-u to underline
+  - join and split spans
+- [ ] join left
+- [ ] left/right across boundaries should work.
+
+
 - [ ] BUG: edit a text then clikc that text loses the tmp text
 
 # The Blocks -> Paths dealio
