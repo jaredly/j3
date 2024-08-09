@@ -6,6 +6,7 @@ import {
     parentLoc,
 } from '../../../shared/IR/nav';
 import {
+    fromMap,
     parentPath,
     pathWithChildren,
     serializePath,
@@ -14,6 +15,8 @@ import { PersistedState } from '../../../shared/state2';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { MultiSelect } from '../resolveMultiSelect';
+import { deleteMulti } from './handleUpdate';
+import { newNeighborActions } from './newNeighbor';
 
 export const validDropTargets = (
     targets: DropTarget[],
@@ -42,6 +45,8 @@ export const drop = (source: MultiSelect, dest: DropTarget, store: Store) => {
         return;
     }
 
+    const state = store.getState();
+
     //
     if (
         source.type === 'top' &&
@@ -49,14 +54,26 @@ export const drop = (source: MultiSelect, dest: DropTarget, store: Store) => {
     ) {
         // move between, this is more different
         // basically, we need a "copy from one" "paste to the other" kind of thing.
-
+        const top = state.toplevels[source.parent.root.toplevel];
+        const items = source.children.map((loc) =>
+            fromMap(() => false, loc, top.nodes),
+        );
+        const ups = deleteMulti(source, state, false);
+        if (!ups) return;
+        const ins = newNeighborActions(
+            dest.path,
+            state,
+            items,
+            dest.side === 'after',
+        );
+        if (!ins) return;
+        store.update(...ups, ...ins);
         return;
     }
 
     const loc = lastChild(dest.path);
     const ppath = parentPath(dest.path);
     const ploc = lastChild(ppath);
-    const state = store.getState();
     const top = state.toplevels[ppath.root.toplevel];
     const parent = top.nodes[ploc];
     const node = top.nodes[loc];

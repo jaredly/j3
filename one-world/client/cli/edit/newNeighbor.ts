@@ -20,21 +20,32 @@ export const newNeighbor = (
     siblings: RecNodeT<boolean>[],
     after = true,
 ) => {
-    if (!siblings.length) return false;
+    const actions = newNeighborActions(path, store.getState(), siblings, after);
+    if (!actions) return false;
+    store.update(...actions);
+    return true;
+};
 
-    const state = store.getState();
+export const newNeighborActions = (
+    path: Path,
+    state: PersistedState,
+    siblings: RecNodeT<boolean>[],
+    after = true,
+): Action[] | void => {
+    if (!siblings.length) return;
+
     const top = state.toplevels[path.root.toplevel];
     const loc = lastChild(path);
     if (path.children.length < 2) {
         const doc = state.documents[path.root.doc];
-        return newDocNodeNeighbor(path, doc, store, siblings, after);
+        return newDocNodeNeighbor(path, doc, siblings, after);
     }
     const parent = parentPath(path);
 
     const ploc = lastChild(parent);
     const pnode = top.nodes[ploc];
     if (!isCollection(pnode)) {
-        return false;
+        return;
     }
     const idx = pnode.items.indexOf(loc);
 
@@ -61,32 +72,33 @@ export const newNeighbor = (
     const selected = selecteds[selecteds.length - 1];
 
     // ok we can do this now.
-    store.update(topUpdate(top.id, allNodes, nextLoc), {
-        type: 'selection',
-        doc: path.root.doc,
-        selections: [
-            toSelection({
-                cursor: selected.cursor,
-                path: pathWithChildren(parent, ...selected.children),
-            }),
-        ],
-    });
-    return true;
+    return [
+        topUpdate(top.id, allNodes, nextLoc),
+        {
+            type: 'selection',
+            doc: path.root.doc,
+            selections: [
+                toSelection({
+                    cursor: selected.cursor,
+                    path: pathWithChildren(parent, ...selected.children),
+                }),
+            ],
+        },
+    ];
 };
 
 const newDocNodeNeighbor = (
     path: Path,
     doc: Doc,
-    store: Store,
     siblings: RecNodeT<boolean>[],
     after = true,
-): boolean => {
-    if (path.root.ids.length <= 1) return false; // no parent doc node
+): Action[] | void => {
+    if (path.root.ids.length <= 1) return;
     const ploc = path.root.ids[path.root.ids.length - 2];
     const loc = path.root.ids[path.root.ids.length - 1];
     const pnode = doc.nodes[ploc];
     const at = pnode.children.indexOf(loc);
-    if (at === -1) return false;
+    if (at === -1) return;
 
     let nextDocNode = doc.nextLoc;
 
@@ -151,7 +163,7 @@ const newDocNodeNeighbor = (
 
     children.splice(at + (after ? 1 : 0), 0, ...docLocs);
 
-    store.update(
+    return [
         {
             type: 'doc',
             id: path.root.doc,
@@ -177,6 +189,5 @@ const newDocNodeNeighbor = (
                 },
             ],
         },
-    );
-    return true;
+    ];
 };
