@@ -70,18 +70,23 @@ export const newNeighborActions = (
     allNodes[ploc] = { ...pnode, items };
 
     const selected = selecteds[selecteds.length - 1];
+    const epath = pathWithChildren(parent, ...selecteds[0].children);
 
     // ok we can do this now.
     return [
         topUpdate(top.id, allNodes, nextLoc),
+        // TODO: I actually want to select the whole thing
         {
             type: 'selection',
             doc: path.root.doc,
             selections: [
-                toSelection({
-                    cursor: selected.cursor,
-                    path: pathWithChildren(parent, ...selected.children),
-                }),
+                {
+                    ...toSelection({
+                        cursor: selected.cursor,
+                        path: pathWithChildren(parent, ...selected.children),
+                    }),
+                    end: { path: epath, key: serializePath(epath) },
+                },
             ],
         },
     ];
