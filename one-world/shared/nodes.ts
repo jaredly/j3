@@ -61,6 +61,12 @@ export type Style = {
     color?: { r: number; g: number; b: number } | false;
 };
 
+type StyleSpan = {
+    style: Style;
+    start: number;
+    end: number;
+};
+
 // export type RichBlock =
 //     | { type: 'r:h'; level: number; contents: RichInline[] }
 //     | { type: 'r:p'; contents: RichInline[] }
@@ -92,42 +98,67 @@ Yeah I like the unity of it.
 
 */
 
-// So, when editing, default is to start with a rich-inline,
-// but if you start needing extra formatting, we wrap in a
-// rich-block.
-export type RichInline<Loc> = {
+export type InlineSpan =
+    | {
+          type: 'text';
+          text: string;
+          style: Style;
+      }
+    | { type: 'link'; text: string; link: string; style: Style }
+    | { type: 'embed'; item: number };
+
+// Rich Paragraph(?)
+export type RichInline = {
     type: 'rich-inline';
-    text: string;
-    kind: InlineKind;
-    style: Style;
-    loc: Loc;
+    spans: InlineSpan[];
+    kind?: InlineKind;
+    loc: number;
 };
-type InlineKind = { type: 'text' } | { type: 'link' | 'image'; url: string };
 
 export type RichBlock = {
     type: 'rich-block';
     items: number[];
     loc: number;
-    kind: BlockKind;
+    kind?: BlockKind;
     style: Style;
+};
+
+// Do we want footnotes? Or "hover for more info"s?
+export type InlineSpanT<Loc> =
+    | {
+          type: 'text';
+          text: string;
+          style: Style;
+      }
+    | { type: 'link'; text: string; link: string; style: Style }
+    | { type: 'embed'; item: RecNodeT<Loc> };
+
+// So, when editing, default is to start with a rich-inline,
+// but if you start needing extra formatting, we wrap in a
+// rich-block.
+export type RichInlineT<Loc> = {
+    type: 'rich-inline';
+    spans: InlineSpanT<Loc>[];
+    kind?: InlineKind;
+    loc: Loc;
 };
 
 export type RichBlockT<Loc> = {
     type: 'rich-block';
     items: RecNodeT<Loc>[];
     loc: Loc;
-    kind: BlockKind;
+    kind?: BlockKind;
     style: Style;
 };
 
+type InlineKind = { type: 'header'; level: number };
+
 type BlockKind =
-    | { type: 'header'; level: number }
-    | { type: 'paragraph' }
     | { type: 'list'; ordered: boolean }
     | { type: 'checks'; checked: Record<number, boolean> }
     | { type: 'opts'; which: number }
     | { type: 'indent'; quote: boolean }
-    | { type: 'hr' };
+    | { type: 'callout'; vibe: 'info' | 'warning' | 'error' };
 
 /*
 -------- Sexp Syntax Nodes ----------
@@ -144,7 +175,7 @@ type Id<Loc> =
 
 export type Node =
     | Id<number>
-    | RichInline<number>
+    | RichInline
     | RichBlock
     | { type: 'list' | 'array' | 'record'; items: number[]; loc: number }
     | {
@@ -171,7 +202,7 @@ export type RecNode = RecNodeT<Loc>;
 
 export type RecNodeT<Loc> =
     | Id<Loc>
-    | RichInline<Loc>
+    | RichInlineT<Loc>
     | RichBlockT<Loc>
     | { type: 'list' | 'array' | 'record'; items: RecNodeT<Loc>[]; loc: Loc }
     | {
@@ -429,7 +460,6 @@ export const fromMap = <Loc>(
     const loc = getLoc(node.loc); // : [string, number][] = [[top, node.loc]];
     switch (node.type) {
         case 'id':
-        case 'rich-inline':
             return { ...node, loc };
         case 'rich-block':
         case 'list':
@@ -460,6 +490,19 @@ export const fromMap = <Loc>(
                 loc,
                 target: fromMap(getLoc, node.target, nodes, sub),
                 items: node.items.map((n) => fromMap(getLoc, n, nodes, sub)),
+            };
+        case 'rich-inline':
+            return {
+                ...node,
+                loc,
+                spans: node.spans.map((t) =>
+                    t.type === 'embed'
+                        ? {
+                              type: 'embed',
+                              item: fromMap(getLoc, t.item, nodes, sub),
+                          }
+                        : t,
+                ),
             };
         case 'string':
             return {
@@ -556,7 +599,6 @@ const fromRec = <T>(
 ): Node => {
     switch (node.type) {
         case 'id':
-        case 'rich-inline':
             return { ...node, loc };
         case 'list':
         case 'array':
@@ -590,6 +632,19 @@ const fromRec = <T>(
                 target: toMapInner(node.target, path, nodes, getLoc),
                 items: node.items.map((n) =>
                     toMapInner(n, path, nodes, getLoc),
+                ),
+            };
+        case 'rich-inline':
+            return {
+                ...node,
+                loc,
+                spans: node.spans.map((t) =>
+                    t.type === 'embed'
+                        ? {
+                              item: toMapInner(t.item, path, nodes, getLoc),
+                              type: 'embed',
+                          }
+                        : t,
                 ),
             };
         case 'string':

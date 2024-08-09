@@ -1,4 +1,14 @@
 
+# The Richness of Text
+
+and the context menu probably
+
+orrr should I do autocomplete first?
+it'll need similar menu magics
+but maybe different idk.
+
+
+
 # The Blocks -> Paths dealio
 
 - [x] get normal selection working again

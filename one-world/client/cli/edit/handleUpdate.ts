@@ -222,6 +222,47 @@ export const handleUpdate = (
     const current =
         end.text ?? splitGraphemes(getIRText(cache, sel.start.path, end.index));
 
+    if (node.type === 'id' && current.length === 0 && key === '\\') {
+        const top = store.getState().toplevels[path.root.toplevel];
+        const npath = pathWithChildren(path, top.nextLoc);
+        store.update(
+            topUpdate(
+                top.id,
+                {
+                    [node.loc]: {
+                        type: 'rich-block',
+                        items: [top.nextLoc],
+                        loc: node.loc,
+                        style: {},
+                    },
+                    [top.nextLoc]: {
+                        type: 'rich-inline',
+                        loc: top.nextLoc,
+                        spans: [{ type: 'text', text: '', style: {} }],
+                    },
+                },
+                top.nextLoc + 1,
+            ),
+            {
+                type: 'selection',
+                doc: path.root.doc,
+                selections: [
+                    {
+                        start: {
+                            path: npath,
+                            key: serializePath(npath),
+                            cursor: {
+                                type: 'text',
+                                end: { index: 0, cursor: 0 },
+                            },
+                        },
+                    },
+                ],
+            },
+        );
+        return true;
+    }
+
     if (
         st === ed &&
         ed > 0 &&

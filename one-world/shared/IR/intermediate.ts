@@ -136,24 +136,45 @@ export const nodeToIR = (
 ): IR => {
     switch (node.type) {
         case 'rich-inline':
-            switch (node.kind.type) {
-                case 'image':
-                    return { type: 'punct', text: '🖼️' };
-                default:
-                    return {
-                        type: 'text',
-                        text: node.text,
-                        style: node.style,
-                        wrap: 0,
-                        path,
-                        index: 0,
-                        link:
-                            node.kind.type === 'link'
-                                ? node.kind.url
-                                : undefined,
-                    };
-            }
+            // TODO: show header stuff
+            return {
+                type: 'inline',
+                wrap: 0,
+                items: node.spans.map((span, i) =>
+                    span.type === 'embed'
+                        ? {
+                              type: 'loc',
+                              path: pathWithChildren(path, span.item),
+                          }
+                        : {
+                              type: 'text',
+                              text: span.text,
+                              style: span.style,
+                              wrap: 0,
+                              path,
+                              index: i,
+                              link:
+                                  span.type === 'link' ? span.link : undefined,
+                          },
+                ),
+            };
         case 'rich-block':
+            if (!node.kind) {
+                return {
+                    type: 'horiz',
+                    items: [
+                        { type: 'punct', text: '“' },
+                        {
+                            type: 'vert',
+                            items: node.items.map((loc) => ({
+                                type: 'loc',
+                                path: pathWithChildren(path, loc),
+                            })),
+                        },
+                        { type: 'punct', text: '”' },
+                    ],
+                };
+            }
             switch (node.kind.type) {
                 case 'checks':
                 case 'opts':
@@ -165,6 +186,7 @@ export const nodeToIR = (
                         const which = node.kind.which;
                         isChecked = (m: number) => m === which;
                     }
+                    const isChecks = node.kind.type === 'checks';
                     return {
                         type: 'vert',
                         items: node.items.map((loc, i) => ({
@@ -175,10 +197,7 @@ export const nodeToIR = (
                                     path,
                                     index: i,
                                     control: {
-                                        type:
-                                            node.kind.type === 'checks'
-                                                ? 'check'
-                                                : 'radio',
+                                        type: isChecks ? 'check' : 'radio',
                                         checked: isChecked(loc),
                                         loc,
                                     },
@@ -215,15 +234,6 @@ export const nodeToIR = (
                                     path: pathWithChildren(path, loc),
                                 },
                             ],
-                        })),
-                    };
-                case 'paragraph':
-                    return {
-                        type: 'inline',
-                        wrap: 0,
-                        items: node.items.map((loc) => ({
-                            type: 'loc',
-                            path: pathWithChildren(path, loc),
                         })),
                     };
             }
