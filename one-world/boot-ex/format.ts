@@ -48,7 +48,7 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                         case 'match':
                             ctx.layouts[getLoc(node.loc)] = {
                                 type: 'vert',
-                                layout: { tightFirst: 2, indent: 2, pairs: [] },
+                                layout: { tightFirst: 2, indent: 2 },
                             };
                             ctx.styles[getLoc(first.loc)] = kwdStyle;
                             break;
@@ -58,16 +58,12 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                                 layout: { tightFirst: 2, indent: 2 },
                             };
                             ctx.styles[getLoc(first.loc)] = kwdStyle;
-                            if (node.items[1]?.type === 'array') {
-                                ctx.layouts[getLoc(node.items[1].loc)] = {
-                                    type: 'vert',
-                                    layout: {
-                                        tightFirst: 0,
-                                        indent: 0,
-                                        pairs: [],
-                                    },
-                                };
-                            }
+                            // if (node.items[1]?.type === 'array') {
+                            //     ctx.layouts[getLoc(node.items[1].loc)] = {
+                            //         type: 'vert',
+                            //         layout: { tightFirst: 0, indent: 0 },
+                            //     };
+                            // }
                             break;
                         case 'defn':
                             ctx.layouts[getLoc(node.loc)] = {
@@ -90,7 +86,7 @@ const _parse = (node: RecNode, ctx: Ctx) => {
         case 'record':
             ctx.layouts[getLoc(node.loc)] = {
                 type: 'vert',
-                layout: { tightFirst: 0, indent: 0, pairs: [] },
+                layout: { tightFirst: 0, indent: 0 },
             };
             node.items.map((p) => _parse(p, ctx));
             return;

@@ -41,6 +41,17 @@ const replaceChild = (node: Node, old: number, nw: number): Node | void => {
             if (node.contents === old) return { ...node, contents: nw };
             if (node.annot === old) return { ...node, annot: nw };
             return;
+        case 'table': {
+            const rows = node.rows.slice();
+            rows.forEach((row, i) => {
+                const at = row.indexOf(old);
+                if (at !== -1) {
+                    rows[i] = row.slice();
+                    rows[i][at] = nw;
+                }
+            });
+            return { ...node, rows };
+        }
         case 'array':
         case 'list':
         case 'record':

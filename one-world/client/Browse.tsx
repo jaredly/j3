@@ -37,60 +37,58 @@ export const Browse = () => {
                         updated: Date.now(),
                     } as const;
                     const tid = id + ':top';
-                    store.update(
-                        {
-                            type: 'toplevel',
-                            id: tid,
-                            action: {
-                                type: 'reset',
-                                toplevel: {
-                                    id: tid,
-                                    macros: {},
-                                    nextLoc: 1,
-                                    nodes: {
-                                        0: {
-                                            type: 'id',
-                                            loc: 0,
-                                            text: '',
-                                        },
+                    store.update({
+                        type: 'toplevel',
+                        id: tid,
+                        action: {
+                            type: 'reset',
+                            toplevel: {
+                                id: tid,
+                                macros: {},
+                                nextLoc: 1,
+                                nodes: {
+                                    0: {
+                                        type: 'id',
+                                        loc: 0,
+                                        text: '',
                                     },
-                                    root: 0,
-                                    ts,
                                 },
+                                root: 0,
+                                ts,
                             },
                         },
-                        {
-                            type: 'doc',
-                            id,
-                            action: {
-                                type: 'reset',
-                                doc: {
-                                    evaluator: [],
-                                    published: false,
-                                    id,
-                                    nextLoc: 2,
-                                    namespace: '',
-                                    nodes: {
-                                        0: {
-                                            id: 0,
-                                            children: [1],
-                                            toplevel: '',
-                                            ts,
-                                        },
-                                        1: {
-                                            id: 1,
-                                            children: [],
-                                            toplevel: tid,
-                                            ts,
-                                        },
+                    });
+                    store.update({
+                        type: 'doc',
+                        id,
+                        action: {
+                            type: 'reset',
+                            doc: {
+                                evaluator: [],
+                                published: false,
+                                id,
+                                nextLoc: 2,
+                                namespace: '',
+                                nodes: {
+                                    0: {
+                                        id: 0,
+                                        children: [1],
+                                        toplevel: '',
+                                        ts,
                                     },
-                                    nsAliases: {},
-                                    title: `Session ${new Date().toLocaleString()}`,
-                                    ts,
+                                    1: {
+                                        id: 1,
+                                        children: [],
+                                        toplevel: tid,
+                                        ts,
+                                    },
                                 },
+                                nsAliases: {},
+                                title: `Session ${new Date().toLocaleString()}`,
+                                ts,
                             },
                         },
-                    );
+                    });
                 }}
             >
                 New Doc Pls

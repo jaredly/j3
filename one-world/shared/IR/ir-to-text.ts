@@ -8,7 +8,7 @@ import { LayoutChoices, LayoutCtx } from './layout';
 import { applyFormats, blockFormat } from './format';
 
 export const maxLength = <T extends { length: number }>(l: T[]) =>
-    l.map((l) => l.length).reduce((a, b) => Math.max(a, b));
+    l.map((l) => l.length).reduce((a, b) => Math.max(a, b), 0);
 
 export const white = (num: number) => Array(num + 1).join(' ');
 

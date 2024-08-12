@@ -178,6 +178,7 @@ export type Node =
     | Id<number>
     | RichInline
     | RichBlock
+    | TableNode
     | { type: 'list' | 'array' | 'record'; items: number[]; loc: number }
     | {
           type: 'string';
@@ -199,10 +200,22 @@ export type Node =
 //       embeds: number[];
 //   };
 
+export type TableNode = {
+    type: 'table';
+    rows: (number | null)[][];
+    loc: number;
+};
+export type TableT<Loc> = {
+    type: 'table';
+    rows: (RecNodeT<Loc> | null)[][];
+    loc: Loc;
+};
+
 export type RecNode = RecNodeT<Loc>;
 
 export type RecNodeT<Loc> =
     | Id<Loc>
+    | TableT<Loc>
     | RichInlineT<Loc>
     | RichBlockT<Loc>
     | { type: 'list' | 'array' | 'record'; items: RecNodeT<Loc>[]; loc: Loc }
@@ -422,7 +435,7 @@ export const toTheLeft = (
     return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
 };
 
-export const childLocs = (node: Node) => {
+export const childLocs = (node: Node): number[] => {
     switch (node.type) {
         case 'id':
             return [];
@@ -430,6 +443,10 @@ export const childLocs = (node: Node) => {
             return node.spans
                 .map((s) => (s.type === 'embed' ? s.item : null))
                 .filter(filterNulls);
+        case 'table':
+            return node.rows.flatMap((m) =>
+                m.filter((m): m is number => m != null),
+            );
         case 'rich-block':
             return node.items;
         case 'list':
@@ -465,6 +482,16 @@ export const fromMap = <Loc>(
     switch (node.type) {
         case 'id':
             return { ...node, loc };
+        case 'table':
+            return {
+                ...node,
+                loc,
+                rows: node.rows.map((row) =>
+                    row.map((r) =>
+                        r != null ? fromMap(getLoc, r, nodes, sub) : null,
+                    ),
+                ),
+            };
         case 'rich-block':
         case 'list':
         case 'array':
@@ -533,6 +560,15 @@ const foldNode = <V>(v: V, node: RecNode, f: (v: V, node: RecNode) => V): V => {
             return node.items.reduce(
                 (v, node) => foldNode(v, node, f),
                 f(v, node),
+            );
+        case 'table':
+            return node.rows.reduce(
+                (v, row) =>
+                    row.reduce(
+                        (v, node) => (node == null ? v : foldNode(v, node, f)),
+                        v,
+                    ),
+                v,
             );
         case 'comment':
         case 'spread':
@@ -613,6 +649,16 @@ const fromRec = <T>(
                 loc,
                 items: node.items.map((n) =>
                     toMapInner(n, path, nodes, getLoc),
+                ),
+            };
+        case 'table':
+            return {
+                ...node,
+                loc,
+                rows: node.rows.map((row) =>
+                    row.map((r) =>
+                        r != null ? toMapInner(r, path, nodes, getLoc) : null,
+                    ),
                 ),
             };
         case 'comment':

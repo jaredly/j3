@@ -168,8 +168,10 @@ export const hblock = (
     pullLast?: boolean,
     node?: Block['node'],
 ): Block => {
-    const height = items.map((l) => l.height).reduce((a, b) => Math.max(a, b));
-    let width = items.map((l) => l.width).reduce((a, b) => a + b);
+    const height = items
+        .map((l) => l.height)
+        .reduce((a, b) => Math.max(a, b), 0);
+    let width = items.map((l) => l.width).reduce((a, b) => a + b, 0);
     if (spaced) {
         width += items.length - 1;
     }
@@ -461,59 +463,59 @@ export const irToBlock = (
             }
             return irToBlock(ir.options[choice.which], irs, choices, ctx);
         case 'vert':
-            if (ir.pairs) {
-                // ok I'm gonna say, if it's pairs, it's all pairs.
-                const pairs: (
-                    | { type: 'other'; item: Block }
-                    | { type: 'pair'; left: Block; right: Block }
-                )[] = [];
-                let leftWidth = 0;
-                let height = 0;
-                let width = 0;
-                ir.items.forEach((item) => {
-                    if (item.type === 'horiz' && item.items.length === 2) {
-                        const left = irToBlock(
-                            item.items[0],
-                            irs,
-                            choices,
-                            ctx,
-                        );
-                        leftWidth = Math.max(leftWidth, left.width);
-                        const right = irToBlock(
-                            item.items[1],
-                            irs,
-                            choices,
-                            ctx,
-                        );
-                        pairs.push({ type: 'pair', left, right });
-                        height += Math.max(left.height, right.height);
-                    } else {
-                        const block = irToBlock(item, irs, choices, ctx);
-                        pairs.push({ type: 'other', item: block });
-                        height += block.height;
-                        width = Math.max(width, block.width);
-                    }
-                });
+            // if (ir.pairs) {
+            //     // ok I'm gonna say, if it's pairs, it's all pairs.
+            //     const pairs: (
+            //         | { type: 'other'; item: Block }
+            //         | { type: 'pair'; left: Block; right: Block }
+            //     )[] = [];
+            //     let leftWidth = 0;
+            //     let height = 0;
+            //     let width = 0;
+            //     ir.items.forEach((item) => {
+            //         if (item.type === 'horiz' && item.items.length === 2) {
+            //             const left = irToBlock(
+            //                 item.items[0],
+            //                 irs,
+            //                 choices,
+            //                 ctx,
+            //             );
+            //             leftWidth = Math.max(leftWidth, left.width);
+            //             const right = irToBlock(
+            //                 item.items[1],
+            //                 irs,
+            //                 choices,
+            //                 ctx,
+            //             );
+            //             pairs.push({ type: 'pair', left, right });
+            //             height += Math.max(left.height, right.height);
+            //         } else {
+            //             const block = irToBlock(item, irs, choices, ctx);
+            //             pairs.push({ type: 'other', item: block });
+            //             height += block.height;
+            //             width = Math.max(width, block.width);
+            //         }
+            //     });
 
-                pairs.forEach((item) => {
-                    if (item.type === 'pair') {
-                        width = Math.max(
-                            width,
-                            leftWidth + item.right.width + 1,
-                        );
-                    }
-                });
+            //     pairs.forEach((item) => {
+            //         if (item.type === 'pair') {
+            //             width = Math.max(
+            //                 width,
+            //                 leftWidth + item.right.width + 1,
+            //             );
+            //         }
+            //     });
 
-                return {
-                    type: 'table',
-                    rows: pairs,
-                    style: ir.style,
-                    leftWidth,
-                    hspace: 1,
-                    width,
-                    height,
-                };
-            }
+            //     return {
+            //         type: 'table',
+            //         rows: pairs,
+            //         style: ir.style,
+            //         leftWidth,
+            //         hspace: 1,
+            //         width,
+            //         height,
+            //     };
+            // }
 
             const contents = ir.items.map((item) =>
                 irToBlock(item, irs, choices, ctx),

@@ -19,7 +19,7 @@ soooo.
 - [ ] ctrl-u to underline
   - join and split spans
 - [ ] join left
-- [ ] left/right across boundaries should work.
+- [ ] left/right across boundaries should work. (that is to say, it should still advance the cursor past the boundary.)
 
 
 - [ ] BUG: edit a text then clikc that text loses the tmp text
