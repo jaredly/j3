@@ -44,9 +44,8 @@ export type IR =
           items: IR[];
           style?: Style;
           //   layout?: { tightFirst: number; pairs?: number[]; indent: number };
-          //   pairs?: number[];
+          pairs?: number[];
       }
-    | { type: 'table'; rows: IR[][]; style?: Style }
     | { type: 'squish'; item: IR }
     | { type: 'inline'; items: IR[]; wrap: number; style?: Style }
     | {
@@ -90,11 +89,11 @@ export type Layout =
           layout: {
               tightFirst: number;
               // This is funny, because it's a list of the LHS locs that shouldn't be squished.
-              //   pairs?: number[];
+              pairs?: number[];
               indent: number;
           };
       }
-    // | { type: 'pairs' }
+    | { type: 'pairs' }
     | { type: 'switch' };
 
 export const updateNodeText = (
@@ -143,11 +142,6 @@ export const nodeToIR = (
     names: Record<string, Record<number, string>> = {},
 ): IR => {
     switch (node.type) {
-        case 'table':
-            return {
-                type: 'vert',
-                items: [],
-            };
         case 'rich-inline':
             // TODO: show header stuff
             return {
@@ -451,91 +445,91 @@ export const nodeToIR = (
                     };
                 case 'vert': {
                     let mid: IR;
-                    if (false) {
-                        // const pairs: IR[] = [];
-                        // for (
-                        //     let i = l.layout.tightFirst;
-                        //     i < node.items.length;
-                        //     i += 2
-                        // ) {
-                        //     pairs.push(
-                        //         i < node.items.length - 1
-                        //             ? {
-                        //                   type: 'horiz',
-                        //                   spaced: true,
-                        //                   items: [
-                        //                       l.layout.pairs.includes(
-                        //                           node.items[i],
-                        //                       )
-                        //                           ? {
-                        //                                 type: 'loc',
-                        //                                 path: pathWithChildren(
-                        //                                     path,
-                        //                                     node.items[i],
-                        //                                 ),
-                        //                             }
-                        //                           : {
-                        //                                 type: 'squish',
-                        //                                 item: {
-                        //                                     type: 'loc',
-                        //                                     path: pathWithChildren(
-                        //                                         path,
-                        //                                         node.items[i],
-                        //                                     ),
-                        //                                 },
-                        //                             },
-                        //                       {
-                        //                           type: 'loc',
-                        //                           path: pathWithChildren(
-                        //                               path,
-                        //                               node.items[i + 1],
-                        //                           ),
-                        //                       },
-                        //                   ],
-                        //               }
-                        //             : {
-                        //                   type: 'loc',
-                        //                   path: pathWithChildren(
-                        //                       path,
-                        //                       node.items[i],
-                        //                   ),
-                        //               },
-                        //     );
-                        // }
-                        // if (l.layout.tightFirst) {
-                        //     mid = {
-                        //         type: 'vert',
-                        //         items: [
-                        //             {
-                        //                 type: 'horiz',
-                        //                 spaced: true,
-                        //                 items: items.slice(
-                        //                     0,
-                        //                     l.layout.tightFirst,
-                        //                 ),
-                        //             },
-                        //             ...(l.layout.indent
-                        //                 ? [
-                        //                       {
-                        //                           type: 'indent',
-                        //                           amount: l.layout.indent,
-                        //                           item: {
-                        //                               type: 'vert',
-                        //                               items: pairs,
-                        //                               pairs: l.layout.pairs,
-                        //                           },
-                        //                       } satisfies IR,
-                        //                   ]
-                        //                 : pairs),
-                        //         ],
-                        //     };
-                        // } else {
-                        //     mid = {
-                        //         type: 'vert',
-                        //         items: pairs,
-                        //         pairs: l.layout.pairs,
-                        //     };
-                        // }
+                    if (l.layout.pairs) {
+                        const pairs: IR[] = [];
+                        for (
+                            let i = l.layout.tightFirst;
+                            i < node.items.length;
+                            i += 2
+                        ) {
+                            pairs.push(
+                                i < node.items.length - 1
+                                    ? {
+                                          type: 'horiz',
+                                          spaced: true,
+                                          items: [
+                                              l.layout.pairs.includes(
+                                                  node.items[i],
+                                              )
+                                                  ? {
+                                                        type: 'loc',
+                                                        path: pathWithChildren(
+                                                            path,
+                                                            node.items[i],
+                                                        ),
+                                                    }
+                                                  : {
+                                                        type: 'squish',
+                                                        item: {
+                                                            type: 'loc',
+                                                            path: pathWithChildren(
+                                                                path,
+                                                                node.items[i],
+                                                            ),
+                                                        },
+                                                    },
+                                              {
+                                                  type: 'loc',
+                                                  path: pathWithChildren(
+                                                      path,
+                                                      node.items[i + 1],
+                                                  ),
+                                              },
+                                          ],
+                                      }
+                                    : {
+                                          type: 'loc',
+                                          path: pathWithChildren(
+                                              path,
+                                              node.items[i],
+                                          ),
+                                      },
+                            );
+                        }
+                        if (l.layout.tightFirst) {
+                            mid = {
+                                type: 'vert',
+                                items: [
+                                    {
+                                        type: 'horiz',
+                                        spaced: true,
+                                        items: items.slice(
+                                            0,
+                                            l.layout.tightFirst,
+                                        ),
+                                    },
+                                    ...(l.layout.indent
+                                        ? [
+                                              {
+                                                  type: 'indent',
+                                                  amount: l.layout.indent,
+                                                  item: {
+                                                      type: 'vert',
+                                                      items: pairs,
+                                                      pairs: l.layout.pairs,
+                                                  },
+                                              } satisfies IR,
+                                          ]
+                                        : pairs),
+                                ],
+                            };
+                        } else {
+                            mid = {
+                                type: 'vert',
+                                items: pairs,
+                                pairs: l.layout.pairs,
+                            };
+                        }
                     } else {
                         mid = {
                             type: 'vert',
