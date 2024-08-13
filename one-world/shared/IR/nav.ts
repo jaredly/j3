@@ -481,7 +481,7 @@ export const cursorSelect = (
 
 function findCursor(
     irs: IR[],
-    cursor: { type: 'side'; side: 'start' | 'inside' | 'end' },
+    cursor: { type: 'side'; side: 'start' | 'inside' | 'end' | string },
 ) {
     for (let ir of irs) {
         if (ir.type === 'cursor' && ir.side === cursor.side) {

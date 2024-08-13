@@ -57,7 +57,7 @@ export type BlockSource =
     | {
           type: 'cursor';
           path: Path;
-          side: 'start' | 'inside' | 'end';
+          side: 'start' | 'inside' | 'end' | string;
           //   top: string;
       };
 
@@ -74,13 +74,10 @@ export type Block =
       }
     | {
           type: 'table';
-          rows: (
-              | { type: 'other'; item: Block }
-              | { type: 'pair'; left: Block; right: Block }
-          )[];
+          rows: Block[][];
           width: number;
-          leftWidth: number;
-          hspace: number;
+          // Excludes the final column...?
+          colWidths: number[];
           height: number;
           style?: Style;
           node?: Path;
@@ -260,6 +257,33 @@ export const irToBlock = (
             return {
                 ...irToBlock(irs[lastChild(ir.path)], irs, choices, ctx),
                 node: ir.path,
+            };
+        }
+        case 'table': {
+            const colWidths: number[] = [];
+            const heights: number[] = [];
+            const rows = ir.rows.map((row, r) =>
+                row.map((cell, c) => {
+                    while (c >= colWidths.length) {
+                        colWidths.push(0);
+                    }
+                    while (r >= heights.length) {
+                        heights.push(0);
+                    }
+                    const res = irToBlock(cell, irs, choices, ctx);
+                    colWidths[c] = Math.max(colWidths[c], res.width);
+                    heights[r] = Math.max(heights[r], res.height);
+                    return res;
+                }),
+            );
+            return {
+                type: 'table',
+                rows,
+                height: heights.reduce((a, b) => a + b, 0),
+                colWidths,
+                width:
+                    colWidths.reduce((w, c) => w + c, 0) + colWidths.length - 1,
+                style: ir.style,
             };
         }
         case 'cursor':
@@ -506,10 +530,12 @@ export const irToBlock = (
 
                 return {
                     type: 'table',
-                    rows: pairs,
+                    rows: pairs.map((p) =>
+                        p.type === 'other' ? [p.item] : [p.left, p.right],
+                    ),
                     style: ir.style,
-                    leftWidth,
-                    hspace: 1,
+                    colWidths: [leftWidth],
+                    // hspace: 1,
                     width,
                     height,
                 };

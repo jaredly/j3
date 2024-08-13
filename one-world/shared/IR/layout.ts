@@ -230,6 +230,32 @@ export const layoutIR = (
                 ...ctx,
                 maxWidth: ctx.leftWidth,
             });
+        case 'table': {
+            const cols = ir.rows.reduce((w, row) => Math.max(w, row.length), 0);
+            const colWidths: number[] = Array(cols).fill(0);
+            const rowHeights: number[] = Array(ir.rows.length).fill(0);
+            for (let c = 0; c < cols; c++) {
+                colWidths.push(0);
+                const left = x + (c === 0 ? 0 : colWidths[c - 1]);
+                ir.rows.forEach((row, r) => {
+                    const next = layoutIR(left, 0, row[c], choices, ctx);
+                    rowHeights[r] = Math.max(rowHeights[r], next.height);
+                    colWidths[c] = Math.max(colWidths[c], next.maxWidth);
+                });
+            }
+
+            const width = colWidths.reduce((a, b) => a + b, 0);
+            const height = rowHeights.reduce((a, b) => a + b, 0);
+
+            return {
+                inlineWidth: firstLine + width,
+                firstLineWidth: firstLine + width,
+                inlineHeight: height,
+                maxWidth: width,
+                height,
+                multiLine: ir.rows.length > 1,
+            };
+        }
 
         case 'vert': {
             let inlineWidth = 0;

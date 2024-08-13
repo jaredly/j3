@@ -151,12 +151,6 @@ const unwrap = (
             },
         },
         selectNode(npath, 'start', cache),
-        // {
-        //     type: 'id',
-        //     cursor: 0,
-        //     path: npath,
-        //     pathKey: serializePath(npath),
-        // },
     ];
 };
 

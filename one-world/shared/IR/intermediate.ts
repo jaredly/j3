@@ -39,6 +39,7 @@ export type IR =
           link?: string;
       }
     | { type: 'control'; path: Path; control: Control; index: number }
+    | { type: 'table'; rows: IR[][]; style?: Style }
     | {
           type: 'vert';
           items: IR[];
@@ -60,7 +61,7 @@ export type IR =
     | { type: 'switch'; options: IR[]; id: number }
     | { type: 'loc'; path: Path }
     | { type: 'punct'; text: string; style?: Style; brace?: Path }
-    | { type: 'cursor'; side: 'start' | 'inside' | 'end'; path: Path };
+    | { type: 'cursor'; side: 'start' | 'inside' | 'end' | string; path: Path };
 
 export type IRSelection = {
     start: { path: Path; key: string; cursor: IRCursor };
@@ -79,7 +80,7 @@ export type IRCursor =
           start?: { index: number; cursor: number };
           end: { index: number; cursor: number; text?: string[] };
       }
-    | { type: 'side'; side: 'start' | 'inside' | 'end' }
+    | { type: 'side'; side: 'start' | 'inside' | 'end' | string }
     | { type: 'control'; index: number };
 
 export type Layout =
@@ -142,6 +143,39 @@ export const nodeToIR = (
     names: Record<string, Record<number, string>> = {},
 ): IR => {
     switch (node.type) {
+        case 'table':
+            return {
+                type: 'horiz',
+                pullLast: true,
+                items: [
+                    { type: 'cursor', path, side: 'start' },
+                    { type: 'punct', text: '⦇' },
+                    {
+                        type: 'table',
+                        rows: node.rows.map((row, r) =>
+                            row.map((loc, c) =>
+                                loc != null
+                                    ? {
+                                          type: 'loc',
+                                          path: pathWithChildren(path, loc),
+                                      }
+                                    : {
+                                          type: 'cursor',
+                                          path,
+                                          side: `${r},${c}`,
+                                      },
+                            ),
+                        ),
+                    },
+                    {
+                        type: 'horiz',
+                        items: [
+                            { type: 'punct', text: '⦈' },
+                            { type: 'cursor', path, side: 'end' },
+                        ],
+                    },
+                ],
+            };
         case 'rich-inline':
             // TODO: show header stuff
             return {
@@ -748,5 +782,8 @@ export const nodeToIR = (
                     },
                 ],
             };
+        default:
+            const _: never = node;
+            throw new Error('not a thing');
     }
 };
