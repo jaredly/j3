@@ -279,7 +279,7 @@ export const blockToText = (
                         let height = 0;
                         for (let i = 0; i < row.length; i++) {
                             if (i > 0) {
-                                chunks.push(' ');
+                                chunks.push(ansis.rgb(20, 20, 20)('|'));
                                 x++;
                             }
                             chunks.push(
@@ -289,7 +289,12 @@ export const blockToText = (
                                     ctx,
                                 ),
                             );
-                            x += row[i].width;
+                            if (row[i].width < block.colWidths[i]) {
+                                chunks.push(
+                                    white(block.colWidths[i] - row[i].width),
+                                );
+                            }
+                            x += block.colWidths[i];
                             height = Math.max(height, row[i].height);
                         }
                         y += height;
