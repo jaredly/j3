@@ -306,11 +306,7 @@ export const blockInfo = (block: Block): string => {
     } else if (block.type === 'table') {
         // res += '[||]';
         res += `[${block.rows
-            .map((row) =>
-                row.type === 'other'
-                    ? blockInfo(row.item)
-                    : `${blockInfo(row.left)}~${blockInfo(row.right)}`,
-            )
+            .map((row) => row.map(blockInfo).join('~'))
             .join('/')}]`;
     }
     return res;

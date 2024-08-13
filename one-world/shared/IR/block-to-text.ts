@@ -274,57 +274,26 @@ export const blockToText = (
             return blockFormat(
                 block.rows
                     .map((row) => {
-                        if (row.type === 'other') {
-                            const res = blockToText(
-                                { ...pos, y, x0: pos.x },
-                                row.item,
-                                ctx,
+                        const chunks: string[] = [];
+                        let x = pos.x;
+                        let height = 0;
+                        for (let i = 0; i < row.length; i++) {
+                            if (i > 0) {
+                                chunks.push(' ');
+                                x++;
+                            }
+                            chunks.push(
+                                blockToText(
+                                    { ...pos, y, x0: x, x },
+                                    row[i],
+                                    ctx,
+                                ),
                             );
-                            y += row.item.height;
-                            return res;
+                            x += row[i].width;
+                            height = Math.max(height, row[i].height);
                         }
-                        if (
-                            row.left.width === block.leftWidth &&
-                            !block.hspace
-                        ) {
-                            const res = joinChunks([
-                                blockToText(
-                                    { ...pos, y, x0: pos.x },
-                                    row.left,
-                                    ctx,
-                                ),
-                                blockToText(
-                                    {
-                                        ...pos,
-                                        y,
-                                        x: pos.x + row.left.width,
-                                        x0: pos.x + row.left.width,
-                                    },
-                                    row.right,
-                                    ctx,
-                                ),
-                            ]);
-                            y += Math.max(row.left.height, row.right.height);
-                            return res;
-                        }
-                        const x = pos.x + block.leftWidth + block.hspace;
-                        const res = joinChunks([
-                            blockToText(
-                                { ...pos, y, x0: pos.x },
-                                row.left,
-                                ctx,
-                            ),
-                            white(
-                                block.leftWidth - row.left.width + block.hspace,
-                            ),
-                            blockToText(
-                                { ...pos, y, x, x0: x },
-                                row.right,
-                                ctx,
-                            ),
-                        ]);
-                        y += Math.max(row.left.height, row.right.height);
-                        return res;
+                        y += height;
+                        return joinChunks(chunks);
                     })
                     .join('\n'),
                 nodeStyle,

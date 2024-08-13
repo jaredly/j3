@@ -491,6 +491,7 @@ export const irToBlock = (
                     | { type: 'other'; item: Block }
                     | { type: 'pair'; left: Block; right: Block }
                 )[] = [];
+                let rightWidth = 0;
                 let leftWidth = 0;
                 let height = 0;
                 let width = 0;
@@ -509,6 +510,7 @@ export const irToBlock = (
                             choices,
                             ctx,
                         );
+                        rightWidth = Math.max(rightWidth, right.width);
                         pairs.push({ type: 'pair', left, right });
                         height += Math.max(left.height, right.height);
                     } else {
@@ -533,11 +535,10 @@ export const irToBlock = (
                     rows: pairs.map((p) =>
                         p.type === 'other' ? [p.item] : [p.left, p.right],
                     ),
-                    style: ir.style,
-                    colWidths: [leftWidth],
-                    // hspace: 1,
                     width,
                     height,
+                    style: ir.style,
+                    colWidths: [leftWidth, rightWidth],
                 };
             }
 

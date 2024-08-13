@@ -144,6 +144,10 @@ export const nodeToIR = (
 ): IR => {
     switch (node.type) {
         case 'table':
+            const columns = node.rows.reduce(
+                (c, row) => Math.max(c, row.length),
+                0,
+            );
             return {
                 type: 'horiz',
                 pullLast: true,
@@ -152,8 +156,8 @@ export const nodeToIR = (
                     { type: 'punct', text: '⦇' },
                     {
                         type: 'table',
-                        rows: node.rows.map((row, r) =>
-                            row.map((loc, c) =>
+                        rows: node.rows.map((row, r) => {
+                            const res: IR[] = row.map((loc, c) =>
                                 loc != null
                                     ? {
                                           type: 'loc',
@@ -164,8 +168,29 @@ export const nodeToIR = (
                                           path,
                                           side: `${r},${c}`,
                                       },
-                            ),
-                        ),
+                            );
+
+                            // Sooo how do I know that a given row is allowed to do a
+                            // "merge across"?
+                            // Like ... if the left-most thing is a Spread or Comment,
+                            // then it is allowed. BUT this is like a second-order issue.
+                            // The parent needs to recalc if the child changes.
+                            // Which, honestly, is fine, right?
+                            // Hrmmm I mean maybe this is the only place that would happen.
+                            // Alternatives inlclude:
+                            // - everything is merged-across but we check on `space` whether
+                            //   to create a new cell for you, based on the type of the current
+                            //   thing. Honestly probably not the worst
+                            // - punt on merging, just do normal tables for the moment.
+                            for (let c = res.length; c < columns; c++) {
+                                res.push({
+                                    type: 'cursor',
+                                    path,
+                                    side: `${r},${c}`,
+                                });
+                            }
+                            return res;
+                        }),
                     },
                     {
                         type: 'horiz',
