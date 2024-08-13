@@ -107,6 +107,7 @@ export const joinLeft = (
     // that's a thing
     const parent = parentPath(path);
 
+    // A toplevel!
     if (parent.children.length === 0) {
         if (
             node.type === 'id' &&
@@ -213,8 +214,8 @@ export const joinLeft = (
         if (idx === 0) {
             const gparent = parentPath(parent);
             if (!gparent.children.length) {
+                // New Root!
                 if (pnode.items.length === 1) {
-                    // pnode items
                     store.update(
                         {
                             type: 'toplevel',
@@ -253,7 +254,7 @@ export const joinLeft = (
                 items.splice(pidx, 1, ...pnode.items);
                 store.update(
                     topUpdate(top.id, {
-                        [gploc]: { ...pnode, items },
+                        [gploc]: { ...gpnode, items },
                         [ploc]: undefined,
                     }),
                     {

@@ -1,4 +1,14 @@
 
+# The Tableness of Things
+
+- [x] make a table Node
+- [x] make a table IR & block
+- [x] use the table IR for `let` and `match` and such
+- [ ] allow you to actually make a table Node
+  - [ ] | in a list should make it folks
+  - [ ] | in a table should add a column
+  - [ ] space should go between things, fill in things that dont exist pls
+
 # The Richness of Text
 
 and the context menu probably
@@ -21,6 +31,9 @@ soooo.
 - [ ] join left
 - [ ] left/right across boundaries should work. (that is to say, it should still advance the cursor past the boundary.)
 
+
+
+- [ ]
 
 - [ ] BUG: edit a text then clikc that text loses the tmp text
 
