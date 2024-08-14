@@ -283,6 +283,12 @@ test('pairs placement?', () => {
     expect('\n' + res.join('\n')).toMatchSnapshot();
 });
 
+test('try a table maybe', () => {
+    let res = [];
+    res.push(showSpans('(|lol|folks\nhi  |ho\n(lol what)|)', 10));
+    expect('\n' + res.join('\n')).toMatchSnapshot();
+});
+
 const fixDollar = (txt: string) =>
     splitGraphemes(txt)
         .map((t) => (t === '$' ? '!' : t))

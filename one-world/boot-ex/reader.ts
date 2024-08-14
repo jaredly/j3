@@ -62,9 +62,35 @@ export const reader = (
         };
     };
 
-    const stops = `"]}) \t\n`;
+    const stops = `|"]}) \t\n`;
     const read = (): RNode | void => {
         if (skipWhite()) return;
+        if (text[i] === '(' && text[i + 1] === '|') {
+            const start = i;
+            i += 2;
+            const rows: RNode[][] = [[]];
+            while (true) {
+                if (text[i] === '\n') {
+                    rows.push([]);
+                    i++;
+                }
+                if (skipWhite()) return;
+                if (text[i] === '|' && text[i + 1] === ')') {
+                    break;
+                }
+                if (text[i] === '|') {
+                    i++;
+                }
+                const next = read();
+                if (!next) break;
+                rows[rows.length - 1].push(next);
+            }
+            return {
+                type: 'table',
+                rows,
+                loc: l(start),
+            };
+        }
         switch (text[i]) {
             case '[':
             case '{':

@@ -279,7 +279,7 @@ export const blockToText = (
                         let height = 0;
                         for (let i = 0; i < row.length; i++) {
                             if (i > 0) {
-                                chunks.push(ansis.rgb(20, 20, 20)('|'));
+                                chunks.push('|');
                                 x++;
                             }
                             chunks.push(

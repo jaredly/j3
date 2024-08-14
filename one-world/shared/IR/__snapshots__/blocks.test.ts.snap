@@ -1288,29 +1288,95 @@ exports[`string with newlines in interp 1`] = `
 exports[`pairs placement? 1`] = `
 "
 ---------| 10
-(let [a b]
+(let [a|b]
           )
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|(let [a b]
+|(let [a|b]
           )
 [ # ] {"type":"block","start":[1,0],"width":3,"height":1}
-(l̲e̲t̲ [a b]
+(l̲e̲t̲ [a|b]
           )
 [ # ] {"type":"block","start":[5,0],"width":0,"height":1}
-(let |[a b]
+(let |[a|b]
           )
 [ # ] {"type":"block","start":[6,0],"width":1,"height":1}
-(let [a̲ b]
+(let [a̲|b]
           )
 [ # ] {"type":"block","start":[8,0],"width":1,"height":1}
-(let [a b̲]
+(let [a|b̲]
           )
 [ # ] {"type":"block","start":[10,0],"width":0,"height":1}
-(let [a b]|
+(let [a|b]|
           )
 [ # ] {"type":"block","start":[11,1],"width":0,"height":1}
-(let [a b]
+(let [a|b]
           )|
+"
+`;
+
+exports[`try a table maybe 1`] = `
+"
+---------| 10
+⦇lol      |folks
+ hi       |ho
+ (lol     |
+     what)      ⦈
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|⦇lol      |folks
+ hi       |ho
+ (lol     |
+     what)      ⦈
+[ # ] {"type":"block","start":[1,0],"width":3,"height":1}
+⦇l̲o̲l̲      |folks
+ hi       |ho
+ (lol     |
+     what)      ⦈
+[ # ] {"type":"block","start":[11,0],"width":5,"height":1}
+⦇lol      |f̲o̲l̲k̲s̲
+ hi       |ho
+ (lol     |
+     what)      ⦈
+[ # ] {"type":"block","start":[1,1],"width":2,"height":1}
+⦇lol      |folks
+ h̲i̲       |ho
+ (lol     |
+     what)      ⦈
+[ # ] {"type":"block","start":[11,1],"width":2,"height":1}
+⦇lol      |folks
+ hi       |h̲o̲
+ (lol     |
+     what)      ⦈
+[ # ] {"type":"block","start":[1,2],"width":0,"height":1}
+⦇lol      |folks
+ hi       |ho
+ |(lol     |
+     what)      ⦈
+[ # ] {"type":"block","start":[2,2],"width":3,"height":1}
+⦇lol      |folks
+ hi       |ho
+ (l̲o̲l̲     |
+     what)      ⦈
+[ # ] {"type":"block","start":[5,3],"width":4,"height":1}
+⦇lol      |folks
+ hi       |ho
+ (lol     |
+     w̲h̲a̲t̲)      ⦈
+[ # ] {"type":"block","start":[10,3],"width":0,"height":1}
+⦇lol      |folks
+ hi       |ho
+ (lol     |
+     what)|      ⦈
+[ # ] {"type":"block","start":[11,2],"width":0,"height":1}
+⦇lol      |folks
+ hi       |ho
+ (lol     ||
+     what)      ⦈
+[ # ] {"type":"block","start":[17,3],"width":0,"height":1}
+⦇lol      |folks
+ hi       |ho
+ (lol     |
+     what)      ⦈|
 "
 `;

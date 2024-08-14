@@ -8,6 +8,7 @@
   - [ ] | in a list should make it folks
   - [ ] | in a table should add a column
   - [ ] space should go between things, fill in things that dont exist pls
+- [ ] get the test parser going
 
 # The Richness of Text
 
