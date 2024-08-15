@@ -1,20 +1,23 @@
 import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
 import { Action, ToplevelUpdate } from '../../../shared/action2';
-import { IR } from '../../../shared/IR/intermediate';
+import { IR, IRCursor, IRSelection } from '../../../shared/IR/intermediate';
 import {
     IRCache,
     irNavigable,
     lastChild,
+    parentLoc,
     toSelection,
 } from '../../../shared/IR/nav';
 import {
     fromMap,
+    Node,
     parentPath,
     Path,
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
-import { PersistedState } from '../../../shared/state2';
+import { DocSession, PersistedState } from '../../../shared/state2';
+import { Toplevel } from '../../../shared/toplevels';
 import { getNodeForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
@@ -52,94 +55,9 @@ export const handleUpdate = (
         return true;
     }
 
-    // TODO multiselect
     const sel = ds.selections[0];
     if (sel.end && sel.end.key !== sel.start.key) {
-        const path = sel.end.path;
-
-        const state = store.getState();
-        const multi = resolveMultiSelect(sel.start.path, sel.end.path, state);
-        if (!multi) return false;
-
-        if (key === 'CTRL_C') {
-            if (multi.type === 'doc') {
-                const doc = state.documents[multi.doc];
-                ds.clipboard = multi.children.map((nid) => {
-                    const top = state.toplevels[doc.nodes[nid].toplevel];
-                    return fromMap(() => false, top.root, top.nodes);
-                });
-            } else {
-                const top = state.toplevels[multi.parent.root.toplevel];
-                ds.clipboard = multi.children.map((nid) => {
-                    return fromMap(() => false, nid, top.nodes);
-                });
-            }
-            return true;
-        }
-
-        if (key === '[' || key === '(' || key === '{') {
-            if (multi.type === 'top') {
-                // only work with empty?
-                wrapNodesWith(key, multi.parent, multi.children, store);
-            }
-            return true;
-        }
-
-        if (key === 'CTRL_UP' || key === 'CTRL_DOWN') {
-            if (!sel.end) return false;
-            const multi = resolveMultiSelect(
-                sel.start.path,
-                sel.end.path,
-                state,
-            );
-            if (!multi) return false;
-            if (multi.type !== 'top') {
-                const actions = swapTop(
-                    sel.start,
-                    sel.end.path,
-                    multi,
-                    state,
-                    key === 'CTRL_DOWN' ? 'down' : 'up',
-                );
-                if (!actions) return false;
-                store.update(...actions);
-                return true;
-            }
-            return false;
-        }
-
-        if (
-            key === 'CTRL_LEFT' ||
-            key === 'CTRL_RIGHT' ||
-            key === 'CTRL_SHIFT_LEFT' ||
-            key === 'CTRL_SHIFT_RIGHT'
-        ) {
-            const ups = swap(
-                store.getState(),
-                sel.start,
-                sel.end.path,
-                key.endsWith('LEFT') ? 'left' : 'right',
-                key.includes('SHIFT'),
-            );
-            if (!ups) return false;
-            store.update(...ups);
-            return true;
-        }
-
-        if (key === 'BACKSPACE') {
-            const state = store.getState();
-            const which = resolveMultiSelect(
-                sel.start.path,
-                sel.end.path,
-                state,
-            );
-            if (!which || which.type === 'doc') return false;
-            const ups = deleteMulti(which, state);
-            if (!ups) return false;
-            store.update(...ups);
-            return true;
-        }
-        return false; // ugh
+        return handleMutliSelect(store, sel, sel.end, key, ds);
     }
 
     if (key === 'CTRL_V') {
@@ -149,41 +67,9 @@ export const handleUpdate = (
     }
 
     if (sel.start.cursor.type !== 'text') {
-        if (key === 'BACKSPACE') {
-            if (
-                sel.start.cursor.type === 'side' &&
-                sel.start.cursor.side === 'start'
-            ) {
-                if (joinLeft(sel.start.path, undefined, 0, cache, store)) {
-                    return true;
-                }
-            }
-            return handleMovement(
-                'LEFT',
-                sel.start.path.root.doc,
-                cache,
-                store,
-            );
-        }
-
-        if (key === ' ' || key === 'ENTER') {
-            return newNeighbor(
-                sel.start.path,
-                store,
-                [
-                    {
-                        type: 'id',
-                        text: '',
-                        loc: true,
-                    },
-                ],
-                sel.start.cursor.type !== 'side' ||
-                    sel.start.cursor.side === 'end',
-            );
-        }
-
-        return false; // not a text update
+        return handleNonTextUpdate(key, sel, cache, store);
     }
+
     const { start, end } = sel.start.cursor;
     if (start && end.index !== start?.index) return false; // TODO
 
@@ -214,71 +100,37 @@ export const handleUpdate = (
         ed = current.length;
     }
 
+    const state = store.getState();
     const path = sel.start.path;
-    const node =
-        store.getState().toplevels[path.root.toplevel].nodes[lastChild(path)];
+    const top = state.toplevels[path.root.toplevel];
+    const node = top.nodes[lastChild(path)];
+
+    // ifff | is at the /end/ of a thing
 
     if (node.type === 'id') {
-        if (key === ' ' || key === 'ENTER') {
-            split(path, st, ed, end.text, end.index, store);
+        if (
+            handleIDUpdate({
+                key,
+                path,
+                st,
+                ed,
+                end,
+                sel,
+                node,
+                current,
+                top,
+                store,
+            })
+        ) {
             return true;
         }
-
-        if (st === ed && st === 0) {
-            if (key === '[' || key === '(' || key === '{') {
-                // only work with empty?
-                wrapWith(key, path, store);
-                return true;
-            }
-        }
-    }
-
-    if (node.type === 'id' && current.length === 0 && key === '\\') {
-        const top = store.getState().toplevels[path.root.toplevel];
-        const npath = pathWithChildren(path, top.nextLoc);
-        store.update(
-            topUpdate(
-                top.id,
-                {
-                    [node.loc]: {
-                        type: 'rich-block',
-                        items: [top.nextLoc],
-                        loc: node.loc,
-                        style: {},
-                    },
-                    [top.nextLoc]: {
-                        type: 'rich-inline',
-                        loc: top.nextLoc,
-                        spans: [{ type: 'text', text: '', style: {} }],
-                    },
-                },
-                top.nextLoc + 1,
-            ),
-            {
-                type: 'selection',
-                doc: path.root.doc,
-                selections: [
-                    {
-                        start: {
-                            path: npath,
-                            key: serializePath(npath),
-                            cursor: {
-                                type: 'text',
-                                end: { index: 0, cursor: 0 },
-                            },
-                        },
-                    },
-                ],
-            },
-        );
-        return true;
     }
 
     if (
+        node.type === 'string' &&
         st === ed &&
         ed > 0 &&
         key === '{' &&
-        node.type === 'string' &&
         current[ed - 1] === '$'
     ) {
         const top = store.getState().toplevels[path.root.toplevel];
@@ -329,47 +181,6 @@ export const handleUpdate = (
         return true;
     }
 
-    if (key === '"' && node.type === 'id') {
-        if (st == ed && ed === current.length) {
-            const path = sel.start.path;
-            const top = store.getState().toplevels[path.root.toplevel];
-            const nidx = top.nextLoc;
-
-            const update = replaceNode(path, nidx, top);
-            if (!update) return false;
-            update.nodes = {
-                ...update.nodes,
-                [nidx]: {
-                    type: 'string',
-                    first: '',
-                    tag: node.loc,
-                    loc: nidx,
-                    templates: [],
-                },
-            };
-            update.nextLoc = nidx + 1;
-
-            store.update(
-                {
-                    type: 'toplevel',
-                    id: top.id,
-                    action: { type: 'update', update },
-                },
-                selAction(
-                    path,
-                    toSelection({
-                        cursor: {
-                            type: 'text',
-                            end: { index: 0, cursor: 0 },
-                        },
-                        path: pathWithChildren(parentPath(path), nidx),
-                    }),
-                ),
-            );
-            return true;
-        }
-    }
-
     const text =
         key === 'BACKSPACE' ? [] : key === 'ENTER' ? '\n' : splitGraphemes(key);
     if (text.length > 1) return false;
@@ -411,6 +222,187 @@ export const topUpdate = (
         update: nidx != null ? { nodes, nextLoc: nidx } : { nodes },
     },
 });
+
+export const handleIDUpdate = ({
+    key,
+    path,
+    st,
+    ed,
+    end,
+    sel,
+    node,
+    current,
+    top,
+    store,
+}: {
+    key: string;
+    path: Path;
+    st: number;
+    ed: number;
+    end: Extract<IRCursor, { type: 'text' }>['end'];
+    sel: IRSelection;
+    node: Extract<Node, { type: 'id' }>;
+    current: string[];
+    top: Toplevel;
+    store: Store;
+}): boolean => {
+    if (key === ' ' || key === 'ENTER') {
+        split(path, st, ed, end.text, end.index, store);
+        return true;
+    }
+
+    if (st === ed && st === 0) {
+        if (key === '[' || key === '(' || key === '{') {
+            // only work with empty?
+            wrapWith(key, path, store);
+            return true;
+        }
+
+        if (key === '|') {
+            const pnode = top.nodes[parentLoc(path)];
+            if (pnode?.type === 'list' && pnode.items.length === 1) {
+                // const idx = pnode.items.indexOf(node.loc)
+                // First item of a `()` list, at the start,
+                // and typing a '|'
+                if (pnode.items[0] === node.loc) {
+                    store.update(
+                        topUpdate(top.id, {
+                            [pnode.loc]: {
+                                type: 'table',
+                                loc: pnode.loc,
+                                rows: [[node.loc]],
+                            },
+                        }),
+                    );
+                    return true;
+                }
+            }
+        }
+    }
+
+    if (current.length === 0 && key === '\\') {
+        const top = store.getState().toplevels[path.root.toplevel];
+        const npath = pathWithChildren(path, top.nextLoc);
+        store.update(
+            topUpdate(
+                top.id,
+                {
+                    [node.loc]: {
+                        type: 'rich-block',
+                        items: [top.nextLoc],
+                        loc: node.loc,
+                        style: {},
+                    },
+                    [top.nextLoc]: {
+                        type: 'rich-inline',
+                        loc: top.nextLoc,
+                        spans: [{ type: 'text', text: '', style: {} }],
+                    },
+                },
+                top.nextLoc + 1,
+            ),
+            {
+                type: 'selection',
+                doc: path.root.doc,
+                selections: [
+                    {
+                        start: {
+                            path: npath,
+                            key: serializePath(npath),
+                            cursor: {
+                                type: 'text',
+                                end: { index: 0, cursor: 0 },
+                            },
+                        },
+                    },
+                ],
+            },
+        );
+        return true;
+    }
+
+    if (key === '"') {
+        if (st == ed && ed === current.length) {
+            const path = sel.start.path;
+            const top = store.getState().toplevels[path.root.toplevel];
+            const nidx = top.nextLoc;
+
+            const update = replaceNode(path, nidx, top);
+            if (!update) return false;
+            update.nodes = {
+                ...update.nodes,
+                [nidx]: {
+                    type: 'string',
+                    first: '',
+                    tag: node.loc,
+                    loc: nidx,
+                    templates: [],
+                },
+            };
+            update.nextLoc = nidx + 1;
+
+            store.update(
+                {
+                    type: 'toplevel',
+                    id: top.id,
+                    action: { type: 'update', update },
+                },
+                selAction(
+                    path,
+                    toSelection({
+                        cursor: {
+                            type: 'text',
+                            end: { index: 0, cursor: 0 },
+                        },
+                        path: pathWithChildren(parentPath(path), nidx),
+                    }),
+                ),
+            );
+            return true;
+        }
+    }
+
+    return false;
+};
+
+export const handleNonTextUpdate = (
+    key: string,
+    sel: IRSelection,
+    cache: IRCache,
+    store: Store,
+) => {
+    if (key === 'BACKSPACE') {
+        if (
+            sel.start.cursor.type === 'side' &&
+            sel.start.cursor.side === 'start'
+        ) {
+            if (joinLeft(sel.start.path, undefined, 0, cache, store)) {
+                return true;
+            }
+        }
+        return handleMovement('LEFT', sel.start.path.root.doc, cache, store);
+    }
+
+    if (key === ' ' || key === 'ENTER') {
+        // If the next thing ... is like ... a sibling,
+        // and it's an empty id, then just go to it
+
+        return newNeighbor(
+            sel.start.path,
+            store,
+            [
+                {
+                    type: 'id',
+                    text: '',
+                    loc: true,
+                },
+            ],
+            sel.start.cursor.type !== 'side' || sel.start.cursor.side === 'end',
+        );
+    }
+
+    return false;
+};
 
 export const deleteMulti = (
     which: MultiSelect,
@@ -489,4 +481,85 @@ export const deleteMulti = (
             },
         ];
     }
+};
+
+export const handleMutliSelect = (
+    store: Store,
+    sel: IRSelection,
+    end: NonNullable<IRSelection['end']>,
+    key: string,
+    ds: DocSession,
+): boolean => {
+    const state = store.getState();
+    const multi = resolveMultiSelect(sel.start.path, end.path, state);
+    if (!multi) return false;
+
+    if (key === 'CTRL_C') {
+        if (multi.type === 'doc') {
+            const doc = state.documents[multi.doc];
+            ds.clipboard = multi.children.map((nid) => {
+                const top = state.toplevels[doc.nodes[nid].toplevel];
+                return fromMap(() => false, top.root, top.nodes);
+            });
+        } else {
+            const top = state.toplevels[multi.parent.root.toplevel];
+            ds.clipboard = multi.children.map((nid) => {
+                return fromMap(() => false, nid, top.nodes);
+            });
+        }
+        return true;
+    }
+
+    if (key === '[' || key === '(' || key === '{') {
+        if (multi.type === 'top') {
+            // only work with empty?
+            wrapNodesWith(key, multi.parent, multi.children, store);
+        }
+        return true;
+    }
+
+    if (key === 'CTRL_UP' || key === 'CTRL_DOWN') {
+        if (multi.type !== 'top') {
+            const actions = swapTop(
+                sel.start,
+                end.path,
+                multi,
+                state,
+                key === 'CTRL_DOWN' ? 'down' : 'up',
+            );
+            if (!actions) return false;
+            store.update(...actions);
+            return true;
+        }
+        return false;
+    }
+
+    if (
+        key === 'CTRL_LEFT' ||
+        key === 'CTRL_RIGHT' ||
+        key === 'CTRL_SHIFT_LEFT' ||
+        key === 'CTRL_SHIFT_RIGHT'
+    ) {
+        const ups = swap(
+            store.getState(),
+            sel.start,
+            end.path,
+            key.endsWith('LEFT') ? 'left' : 'right',
+            key.includes('SHIFT'),
+        );
+        if (!ups) return false;
+        store.update(...ups);
+        return true;
+    }
+
+    if (key === 'BACKSPACE') {
+        const state = store.getState();
+        if (multi.type === 'doc') return false;
+        const ups = deleteMulti(multi, state);
+        if (!ups) return false;
+        store.update(...ups);
+        return true;
+    }
+
+    return false;
 };
