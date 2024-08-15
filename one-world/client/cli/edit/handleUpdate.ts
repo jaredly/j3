@@ -48,13 +48,12 @@ export const handleUpdate = (
     cache: IRCache,
     store: Store,
 ): boolean => {
-    const ds = store.getDocSession(docId, store.session);
-    if (!ds.selections.length) return false;
-
     if (handleRichText(key, docId, cache, store)) {
         return true;
     }
 
+    const ds = store.getDocSession(docId, store.session);
+    if (!ds.selections.length) return false;
     const sel = ds.selections[0];
     if (sel.end && sel.end.key !== sel.start.key) {
         return handleMutliSelect(store, sel, sel.end, key, ds);
@@ -70,34 +69,19 @@ export const handleUpdate = (
         return handleNonTextUpdate(key, sel, cache, store);
     }
 
-    const { start, end } = sel.start.cursor;
-    if (start && end.index !== start?.index) return false; // TODO
+    const norm = normalizeSelection(sel, cache);
+    if (!norm) return false;
 
-    let [st, ed] = start
-        ? start.cursor < end.cursor
-            ? [start.cursor, end.cursor]
-            : [end.cursor, start.cursor]
-        : [end.cursor, end.cursor];
-
-    if (key === 'BACKSPACE' && !start && !sel.end) {
-        if (end.cursor === 0) {
-            // join-left
-            if (!joinLeft(sel.start.path, end.text, end.index, cache, store)) {
+    if (key === 'BACKSPACE' && norm.start == null) {
+        if (norm.end === 0) {
+            if (
+                !joinLeft(sel.start.path, norm.text, norm.index, cache, store)
+            ) {
                 handleMovement('LEFT', sel.start.path.root.doc, cache, store);
             }
             return true;
-        } else {
-            st -= 1;
         }
-    }
-
-    const current =
-        end.text ?? splitGraphemes(getIRText(cache, sel.start.path, end.index));
-
-    if (sel.end) {
-        // the whole thing is selected
-        st = 0;
-        ed = current.length;
+        norm.start = norm.end - 1;
     }
 
     const state = store.getState();
@@ -112,12 +96,9 @@ export const handleUpdate = (
             handleIDUpdate({
                 key,
                 path,
-                st,
-                ed,
-                end,
+                norm,
                 sel,
                 node,
-                current,
                 top,
                 store,
             })
@@ -128,32 +109,30 @@ export const handleUpdate = (
 
     if (
         node.type === 'string' &&
-        st === ed &&
-        ed > 0 &&
+        norm.start == null &&
+        norm.end > 0 &&
         key === '{' &&
-        current[ed - 1] === '$'
+        norm.text[norm.end - 1] === '$'
     ) {
         const top = store.getState().toplevels[path.root.toplevel];
         const nidx = top.nextLoc;
         const loc = lastChild(path);
         const up = { ...node };
         up.templates = up.templates.slice();
-        if (end.index === 0) {
-            // const text = splitGraphemes(up.first);
-            up.first = current.slice(0, end.cursor - 1).join('');
+        if (norm.index === 0) {
+            up.first = norm.text.slice(0, norm.end - 1).join('');
             up.templates.unshift({
                 expr: nidx,
-                suffix: current.slice(end.cursor).join(''),
+                suffix: norm.text.slice(norm.end).join(''),
             });
         } else {
-            // const current = splitGraphemes(up.templates[end.index - 1].suffix);
-            up.templates[end.index - 1] = {
-                ...up.templates[end.index - 1],
-                suffix: current.slice(0, end.cursor - 1).join(''),
+            up.templates[norm.index - 1] = {
+                ...up.templates[norm.index - 1],
+                suffix: norm.text.slice(0, norm.end - 1).join(''),
             };
-            up.templates.splice(end.index, 0, {
+            up.templates.splice(norm.index, 0, {
                 expr: nidx,
-                suffix: current.slice(end.cursor).join(''),
+                suffix: norm.text.slice(norm.end).join(''),
             });
         }
         const map: ToplevelUpdate['update']['nodes'] = {
@@ -185,7 +164,10 @@ export const handleUpdate = (
         key === 'BACKSPACE' ? [] : key === 'ENTER' ? '\n' : splitGraphemes(key);
     if (text.length > 1) return false;
 
-    const updated = current.slice(0, st).concat(text).concat(current.slice(ed));
+    const updated = norm.text
+        .slice(0, norm.start ?? norm.end)
+        .concat(text)
+        .concat(norm.text.slice(norm.end));
 
     store.update({
         type: 'selection',
@@ -198,8 +180,8 @@ export const handleUpdate = (
                     cursor: {
                         type: 'text',
                         end: {
-                            cursor: st + text.length,
-                            index: end.index,
+                            cursor: (norm.start ?? norm.end) + text.length,
+                            index: norm.index,
                             text: updated,
                         },
                     },
@@ -223,35 +205,73 @@ export const topUpdate = (
     },
 });
 
+type CLoc = { start?: number; end: number; text: string[]; index: number };
+
+export const normalizeSelection = (
+    sel: IRSelection,
+    cache: IRCache,
+): CLoc | null => {
+    if (sel.start.cursor.type !== 'text') return null;
+    const { start, end } = sel.start.cursor;
+    if (start && end.index !== start?.index) return null; // TODO
+    const { index } = end;
+
+    const text =
+        end.text ?? splitGraphemes(getIRText(cache, sel.start.path, index));
+
+    if (sel.end) {
+        return { start: 0, end: text.length, text, index };
+    }
+
+    if (!start || start.cursor === end.cursor) {
+        return { start: undefined, end: end.cursor, text, index };
+    }
+
+    if (end.cursor < start.cursor) {
+        return { start: end.cursor, end: start.cursor, text, index };
+    }
+
+    return { start: start.cursor, end: end.cursor, text, index };
+};
+
 export const handleIDUpdate = ({
     key,
     path,
-    st,
-    ed,
-    end,
+    norm,
+    // st,
+    // ed,
+    // end,
     sel,
     node,
-    current,
+    // current,
     top,
     store,
 }: {
     key: string;
     path: Path;
-    st: number;
-    ed: number;
-    end: Extract<IRCursor, { type: 'text' }>['end'];
+    norm: CLoc;
+    // st: number;
+    // ed: number;
+    // end: Extract<IRCursor, { type: 'text' }>['end'];
     sel: IRSelection;
     node: Extract<Node, { type: 'id' }>;
-    current: string[];
+    // current: string[];
     top: Toplevel;
     store: Store;
 }): boolean => {
     if (key === ' ' || key === 'ENTER') {
-        split(path, st, ed, end.text, end.index, store);
+        split(
+            path,
+            norm.start ?? norm.end,
+            norm.end,
+            norm.text,
+            norm.index,
+            store,
+        );
         return true;
     }
 
-    if (st === ed && st === 0) {
+    if (norm.end === 0) {
         if (key === '[' || key === '(' || key === '{') {
             // only work with empty?
             wrapWith(key, path, store);
@@ -280,7 +300,7 @@ export const handleIDUpdate = ({
         }
     }
 
-    if (current.length === 0 && key === '\\') {
+    if (norm.text.length === 0 && key === '\\') {
         const top = store.getState().toplevels[path.root.toplevel];
         const npath = pathWithChildren(path, top.nextLoc);
         store.update(
@@ -322,7 +342,7 @@ export const handleIDUpdate = ({
     }
 
     if (key === '"') {
-        if (st == ed && ed === current.length) {
+        if (norm.start == null && norm.end === norm.text.length) {
             const path = sel.start.path;
             const top = store.getState().toplevels[path.root.toplevel];
             const nidx = top.nextLoc;
