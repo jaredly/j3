@@ -205,7 +205,12 @@ export const topUpdate = (
     },
 });
 
-type CLoc = { start?: number; end: number; text: string[]; index: number };
+export type CLoc = {
+    start?: number;
+    end: number;
+    text: string[];
+    index: number;
+};
 
 export const normalizeSelection = (
     sel: IRSelection,
@@ -234,40 +239,36 @@ export const normalizeSelection = (
     return { start: start.cursor, end: end.cursor, text, index };
 };
 
+const findTableLoc = (node: Extract<Node, { type: 'table' }>, loc: number) => {
+    for (let row = 0; row < node.rows.length; row++) {
+        for (let col = 0; col < node.rows[row].length; col++) {
+            if (node.rows[row][col] === loc) {
+                return { row, col };
+            }
+        }
+    }
+    return { row: 0, col: 0 };
+};
+
 export const handleIDUpdate = ({
     key,
     path,
     norm,
-    // st,
-    // ed,
-    // end,
     sel,
     node,
-    // current,
     top,
     store,
 }: {
     key: string;
     path: Path;
     norm: CLoc;
-    // st: number;
-    // ed: number;
-    // end: Extract<IRCursor, { type: 'text' }>['end'];
     sel: IRSelection;
     node: Extract<Node, { type: 'id' }>;
-    // current: string[];
     top: Toplevel;
     store: Store;
 }): boolean => {
     if (key === ' ' || key === 'ENTER') {
-        split(
-            path,
-            norm.start ?? norm.end,
-            norm.end,
-            norm.text,
-            norm.index,
-            store,
-        );
+        split(path, norm, node, store);
         return true;
     }
 
@@ -297,6 +298,49 @@ export const handleIDUpdate = ({
                     return true;
                 }
             }
+        }
+    }
+
+    if (key === '|' && norm.start == null && norm.end === norm.text.length) {
+        const pnode = top.nodes[parentLoc(path)];
+        if (pnode.type === 'table') {
+            const { row, col } = findTableLoc(pnode, node.loc);
+            const rows = pnode.rows.slice();
+            rows[row] = rows[row].slice();
+            const nidx = top.nextLoc;
+            rows[row].splice(col + 1, 0, nidx);
+            const npath = pathWithChildren(parentPath(path), nidx);
+            store.update(
+                topUpdate(
+                    top.id,
+                    {
+                        [pnode.loc]: {
+                            type: 'table',
+                            loc: pnode.loc,
+                            rows,
+                        },
+                        [nidx]: { type: 'id', loc: nidx, text: '' },
+                    },
+                    nidx + 1,
+                ),
+                {
+                    type: 'selection',
+                    doc: path.root.doc,
+                    selections: [
+                        {
+                            start: {
+                                path: npath,
+                                key: serializePath(npath),
+                                cursor: {
+                                    type: 'text',
+                                    end: { index: 0, cursor: 0 },
+                                },
+                            },
+                        },
+                    ],
+                },
+            );
+            return true;
         }
     }
 
