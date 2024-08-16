@@ -101,6 +101,7 @@ export const handleUpdate = (
                 node,
                 top,
                 store,
+                cache,
             })
         ) {
             return true;
@@ -239,7 +240,10 @@ export const normalizeSelection = (
     return { start: start.cursor, end: end.cursor, text, index };
 };
 
-const findTableLoc = (node: Extract<Node, { type: 'table' }>, loc: number) => {
+export const findTableLoc = (
+    node: Extract<Node, { type: 'table' }>,
+    loc: number,
+) => {
     for (let row = 0; row < node.rows.length; row++) {
         for (let col = 0; col < node.rows[row].length; col++) {
             if (node.rows[row][col] === loc) {
@@ -258,6 +262,7 @@ export const handleIDUpdate = ({
     node,
     top,
     store,
+    cache,
 }: {
     key: string;
     path: Path;
@@ -266,9 +271,10 @@ export const handleIDUpdate = ({
     node: Extract<Node, { type: 'id' }>;
     top: Toplevel;
     store: Store;
+    cache: IRCache;
 }): boolean => {
     if (key === ' ' || key === 'ENTER') {
-        split(path, norm, node, store);
+        split(path, norm, node, store, cache);
         return true;
     }
 

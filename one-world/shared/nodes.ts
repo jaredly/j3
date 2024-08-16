@@ -202,12 +202,12 @@ export type Node =
 
 export type TableNode = {
     type: 'table';
-    rows: (number | null)[][];
+    rows: number[][];
     loc: number;
 };
 export type TableT<Loc> = {
     type: 'table';
-    rows: (RecNodeT<Loc> | null)[][];
+    rows: RecNodeT<Loc>[][];
     loc: Loc;
 };
 
@@ -487,9 +487,7 @@ export const fromMap = <Loc>(
                 ...node,
                 loc,
                 rows: node.rows.map((row) =>
-                    row.map((r) =>
-                        r != null ? fromMap(getLoc, r, nodes, sub) : null,
-                    ),
+                    row.map((r) => fromMap(getLoc, r, nodes, sub)),
                 ),
             };
         case 'rich-block':
@@ -656,9 +654,7 @@ const fromRec = <T>(
                 ...node,
                 loc,
                 rows: node.rows.map((row) =>
-                    row.map((r) =>
-                        r != null ? toMapInner(r, path, nodes, getLoc) : null,
-                    ),
+                    row.map((r) => toMapInner(r, path, nodes, getLoc)),
                 ),
             };
         case 'comment':

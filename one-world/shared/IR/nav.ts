@@ -402,6 +402,17 @@ export const selectNode = (
     );
 };
 
+export const idSelection = (path: Path): IRSelection => ({
+    start: {
+        path,
+        key: serializePath(path),
+        cursor: {
+            type: 'text',
+            end: { index: 0, cursor: 0 },
+        },
+    },
+});
+
 export const toSelection = ({
     cursor,
     path,

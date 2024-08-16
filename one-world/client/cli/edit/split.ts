@@ -1,5 +1,11 @@
 import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
-import { lastChild, toSelection } from '../../../shared/IR/nav';
+import {
+    idSelection,
+    IRCache,
+    lastChild,
+    selectNode,
+    toSelection,
+} from '../../../shared/IR/nav';
 import {
     Node,
     Path,
@@ -8,13 +14,14 @@ import {
 } from '../../../shared/nodes';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
-import { CLoc, topUpdate } from './handleUpdate';
+import { CLoc, findTableLoc, topUpdate } from './handleUpdate';
 
 export const split = (
     path: Path,
     norm: CLoc,
     node: Extract<Node, { type: 'id' }>,
     store: Store,
+    cache: IRCache,
 ) => {
     const state = store.getState();
     const top = state.toplevels[path.root.toplevel];
@@ -65,8 +72,62 @@ export const split = (
             },
         );
         return true;
-    } else {
-        // ignore it?
+    } else if (pnode.type === 'table') {
+        const { row, col } = findTableLoc(pnode, node.loc);
+        const width = pnode.rows.reduce((m, r) => Math.max(m, r.length), 0);
+        const rows = pnode.rows.slice();
+        if (col === rows[row].length - 1) {
+            // STOPSHIP: fill with empty IDs pleaseee
+            rows.splice(row + 1, 0, [top.nextLoc]);
+            store.update(
+                topUpdate(
+                    top.id,
+                    {
+                        [pnode.loc]: {
+                            ...pnode,
+                            rows,
+                        },
+                        [node.loc]: {
+                            ...node,
+                            text: norm.text
+                                .slice(0, norm.start ?? norm.end)
+                                .join(''),
+                        },
+                        [top.nextLoc]: {
+                            type: 'id',
+                            text: norm.text.slice(norm.end).join(''),
+                            loc: top.nextLoc,
+                        },
+                    },
+                    top.nextLoc + 1,
+                ),
+                {
+                    type: 'selection',
+                    doc: path.root.doc,
+                    selections: [
+                        idSelection(
+                            pathWithChildren(parentPath(path), top.nextLoc),
+                        ),
+                    ],
+                },
+            );
+            return true;
+        } else {
+            const next = rows[row][col + 1];
+            store.update({
+                type: 'selection',
+                doc: path.root.doc,
+                selections: [
+                    selectNode(
+                        pathWithChildren(parentPath(path), next),
+                        'start',
+                        cache[top.id].irs,
+                    ),
+                ],
+            });
+
+            return true;
+        }
     }
     // } else if (node.type === 'string') {
     //     if (norm.index > 0) {
