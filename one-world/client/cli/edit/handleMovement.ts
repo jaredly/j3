@@ -19,7 +19,6 @@ import {
 import { PersistedState } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
 import { Store } from '../../StoreContext2';
-import { isCollection } from '../../TextEdit/actions';
 import { selectionFromLocation, selectionLocation } from '../selectionLocation';
 import { selAction } from './joinLeft';
 
@@ -74,11 +73,12 @@ const firstLastChild = (
 ): Path => {
     const loc = lastChild(path);
     const node = nodes[loc];
-    if (isCollection(node) && node.items.length) {
+    const items = childLocs(node);
+    if (items.length) {
         return firstLastChild(
             pathWithChildren(
                 path,
-                node.items[which === 'first' ? 0 : node.items.length - 1],
+                items[which === 'first' ? 0 : items.length - 1],
             ),
             nodes,
             which,
@@ -95,8 +95,7 @@ const adjacent = (
     const top = state.toplevels[path.root.toplevel];
     for (let i = path.children.length - 2; i >= 0; i--) {
         const parent = top.nodes[path.children[i]];
-        if (!isCollection(parent)) continue;
-        const items = parent.items.slice();
+        const items = childLocs(parent);
         const idx = items.indexOf(path.children[i + 1]);
         if (side === 'left' ? idx === 0 : idx === items.length - 1) continue;
         const loc = items[idx + (side === 'left' ? -1 : 1)];

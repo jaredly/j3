@@ -10,6 +10,7 @@ import {
 } from '../../../shared/IR/nav';
 import {
     Node,
+    Nodes,
     Path,
     parentPath,
     pathWithChildren,
@@ -17,7 +18,7 @@ import {
 import { Toplevel } from '../../../shared/toplevels';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
-import { topUpdate } from './handleUpdate';
+import { findTableLoc, topUpdate } from './handleUpdate';
 
 // Handles:
 // - collections
@@ -356,6 +357,106 @@ export const joinLeft = (
             },
         );
         return true;
+    }
+
+    if (pnode.type === 'table') {
+        const { row, col } = findTableLoc(pnode, node.loc);
+        const rows = pnode.rows.slice();
+        if (col === 0 && rows[row].length === 1) {
+            if (row === 0) {
+                if (rows.length === 1) {
+                    // replace the table with this node
+                }
+                return false;
+            }
+            // TODO: if the previous thing is an empty ID, we can just move it.
+            if (node.type !== 'id') return false;
+            const prev = top.nodes[rows[row - 1][rows[row - 1].length - 1]];
+            let sel: IRSelection;
+            const update: Nodes = {};
+
+            rows.splice(row, 1);
+
+            // Remove the row
+            if (current ? current.length === 0 : node.text.length === 0) {
+                // nothing to join
+                sel = selectNode(
+                    pathWithChildren(parentPath(path), prev.loc),
+                    'end',
+                    cache[top.id].irs,
+                );
+            } else {
+                if (prev.type !== 'id') return false;
+                // otherwiseeeee
+                update[prev.loc] = {
+                    ...prev,
+                    text: prev.text + (current ? current.join('') : node.text),
+                };
+                sel = toSelection({
+                    cursor: {
+                        type: 'text',
+                        end: {
+                            index: 0,
+                            cursor: splitGraphemes(prev.text).length,
+                        },
+                    },
+                    path: pathWithChildren(parentPath(path), prev.loc),
+                });
+            }
+
+            store.update(
+                topUpdate(top.id, {
+                    ...update,
+                    [node.loc]: undefined,
+                    [pnode.loc]: { ...pnode, rows },
+                }),
+                { type: 'selection', doc: path.root.doc, selections: [sel] },
+            );
+            return true;
+        } else if (col > 0) {
+            const prev = top.nodes[rows[row][col - 1]];
+            rows[row] = rows[row].slice();
+            rows[row].splice(col, 1);
+            const update: Nodes = {};
+            let sel: IRSelection;
+            // TODO: if the previous thing is an empty ID, we can just move it.
+            if (node.type !== 'id') return false;
+            if (current ? current.length === 0 : node.text.length === 0) {
+                // ok, no need to change things
+                sel = selectNode(
+                    pathWithChildren(parentPath(path), prev.loc),
+                    'end',
+                    cache[top.id].irs,
+                );
+            } else {
+                if (prev.type !== 'id') {
+                    return false;
+                }
+                update[prev.loc] = {
+                    ...prev,
+                    text: prev.text + (current ? current.join('') : node.text),
+                };
+                sel = toSelection({
+                    cursor: {
+                        type: 'text',
+                        end: {
+                            index: 0,
+                            cursor: splitGraphemes(prev.text).length,
+                        },
+                    },
+                    path: pathWithChildren(parentPath(path), prev.loc),
+                });
+            }
+            store.update(
+                topUpdate(top.id, {
+                    ...update,
+                    [node.loc]: undefined,
+                    [pnode.loc]: { ...pnode, rows },
+                }),
+                { type: 'selection', doc: path.root.doc, selections: [sel] },
+            );
+            return true;
+        }
     }
     return false;
 };

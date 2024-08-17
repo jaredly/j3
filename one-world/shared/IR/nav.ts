@@ -32,13 +32,20 @@ export const irTexts = (ir: IR): IRText[] => {
         case 'vert':
         case 'inline':
             return ir.items.flatMap(irTexts);
+        case 'table':
+            return ir.rows.flatMap((row) => row.flatMap(irTexts));
         case 'indent':
         case 'squish':
             return irTexts(ir.item);
         case 'switch':
             return irTexts(ir.options[0]);
+        case 'control':
+        case 'cursor':
+        case 'loc':
+        case 'punct':
+            return [];
     }
-    return [];
+    // return [];
 };
 
 type IRNavigable = Extract<
@@ -56,6 +63,8 @@ export const irNavigable = (ir: IR): IRNavigable[] => {
         case 'control':
         case 'cursor':
             return [ir];
+        case 'table':
+            return ir.rows.flatMap((row) => row.flatMap(irNavigable));
         case 'horiz':
         case 'vert':
         case 'inline':
@@ -70,7 +79,6 @@ export const irNavigable = (ir: IR): IRNavigable[] => {
         case 'punct':
             return [];
     }
-    return [];
 };
 
 export const modTextSel = (

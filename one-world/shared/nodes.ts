@@ -444,9 +444,7 @@ export const childLocs = (node: Node): number[] => {
                 .map((s) => (s.type === 'embed' ? s.item : null))
                 .filter(filterNulls);
         case 'table':
-            return node.rows.flatMap((m) =>
-                m.filter((m): m is number => m != null),
-            );
+            return node.rows.flatMap((m) => m);
         case 'rich-block':
             return node.items;
         case 'list':

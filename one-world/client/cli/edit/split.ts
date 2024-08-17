@@ -8,6 +8,7 @@ import {
 } from '../../../shared/IR/nav';
 import {
     Node,
+    Nodes,
     Path,
     parentPath,
     pathWithChildren,
@@ -77,36 +78,39 @@ export const split = (
         const width = pnode.rows.reduce((m, r) => Math.max(m, r.length), 0);
         const rows = pnode.rows.slice();
         if (col === rows[row].length - 1) {
-            // STOPSHIP: fill with empty IDs pleaseee
-            rows.splice(row + 1, 0, [top.nextLoc]);
+            const newRow = [];
+            let nidx = top.nextLoc;
+            const map: Nodes = {};
+            for (let i = 0; i < width; i++) {
+                map[nidx] = {
+                    type: 'id',
+                    loc: nidx,
+                    text: i === 0 ? norm.text.slice(norm.end).join('') : '',
+                };
+                newRow.push(nidx++);
+            }
+            rows.splice(row + 1, 0, newRow);
             store.update(
                 topUpdate(
                     top.id,
                     {
-                        [pnode.loc]: {
-                            ...pnode,
-                            rows,
-                        },
+                        ...map,
+                        [pnode.loc]: { ...pnode, rows },
                         [node.loc]: {
                             ...node,
                             text: norm.text
                                 .slice(0, norm.start ?? norm.end)
                                 .join(''),
                         },
-                        [top.nextLoc]: {
-                            type: 'id',
-                            text: norm.text.slice(norm.end).join(''),
-                            loc: top.nextLoc,
-                        },
                     },
-                    top.nextLoc + 1,
+                    nidx,
                 ),
                 {
                     type: 'selection',
                     doc: path.root.doc,
                     selections: [
                         idSelection(
-                            pathWithChildren(parentPath(path), top.nextLoc),
+                            pathWithChildren(parentPath(path), newRow[0]),
                         ),
                     ],
                 },

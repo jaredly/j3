@@ -238,6 +238,7 @@ export const layoutIR = (
                 colWidths.push(0);
                 const left = x + (c === 0 ? 0 : colWidths[c - 1]);
                 ir.rows.forEach((row, r) => {
+                    if (c >= row.length) return;
                     const next = layoutIR(left, 0, row[c], choices, ctx);
                     rowHeights[r] = Math.max(rowHeights[r], next.height);
                     colWidths[c] = Math.max(colWidths[c], next.maxWidth);

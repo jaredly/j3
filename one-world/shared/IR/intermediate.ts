@@ -182,13 +182,13 @@ export const nodeToIR = (
                             //   to create a new cell for you, based on the type of the current
                             //   thing. Honestly probably not the worst
                             // - punt on merging, just do normal tables for the moment.
-                            for (let c = res.length; c < columns; c++) {
-                                res.push({
-                                    type: 'cursor',
-                                    path,
-                                    side: `${r},${c}`,
-                                });
-                            }
+                            // for (let c = res.length; c < columns; c++) {
+                            //     res.push({
+                            //         type: 'cursor',
+                            //         path,
+                            //         side: `${r},${c}`,
+                            //     });
+                            // }
                             return res;
                         }),
                     },

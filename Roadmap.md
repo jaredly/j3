@@ -6,8 +6,9 @@
 - [x] use the table IR for `let` and `match` and such
 - [ ] allow you to actually make a table Node
   - [x] | in a list should make it folks
-  - [ ] | in a table should add a column
+  - [x] | in a table should add a column
   - [ ] space should go between things, fill in things that dont exist pls, and make a new row
+  - [ ] backspace should delete the cell you're in
 - [ ] get the test parser going
 
 # The Richness of Text
