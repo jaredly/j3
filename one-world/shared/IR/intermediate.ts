@@ -654,9 +654,21 @@ export const nodeToIR = (
         //     return { type: 'text', text: 'rich' };
 
         case 'id': {
-            const text = node.ref
-                ? names[node.ref.toplevel][node.ref.loc]
-                : node.text;
+            // Thissss probably won't quote work.
+            if (node.ref?.type === 'placeholder' && node.text === '') {
+                return {
+                    type: 'horiz',
+                    items: [
+                        { type: 'text', text: '', index: 0, path },
+                        { type: 'punct', text: node.ref.text },
+                    ],
+                };
+            }
+
+            const text =
+                node.ref?.type === 'toplevel'
+                    ? names[node.ref.toplevel][node.ref.loc]
+                    : node.text;
 
             return {
                 type: 'text',

@@ -1,4 +1,7 @@
 
+# Noww we want to do autocomplete! With ... bjuiltins!
+
+
 # The Tableness of Things
 
 - [x] make a table Node
@@ -10,6 +13,9 @@
   - [ ] space should go between things, fill in things that dont exist pls, and make a new row
   - [ ] backspace should delete the cell you're in
 - [ ] get the test parser going
+- [x] space at the end of () should make a new row
+- [ ] space at end of () should advance to next thing if there is one
+  (this is a general problem)
 
 # The Richness of Text
 

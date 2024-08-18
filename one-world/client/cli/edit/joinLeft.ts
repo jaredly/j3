@@ -50,17 +50,20 @@ export const replaceNode = (
         return { nodes: { [ploc]: { ...pnode, templates: tpl } } };
     }
 
+    if (pnode.type === 'table') {
+        const { row, col } = findTableLoc(pnode, loc);
+        const rows = pnode.rows.slice();
+        rows[row] = rows[row].slice();
+        rows[row][col] = newLoc;
+        return { nodes: { [ploc]: { ...pnode, rows } } };
+    }
+
     if (!isCollection(pnode)) return;
     const items = pnode.items.slice();
     const idx = items.indexOf(loc);
     if (idx === -1) return;
     items[idx] = newLoc;
     return { nodes: { [ploc]: { ...pnode, items } } };
-    // selection: selectNode(
-    //     pathWithChildren(parent, newLoc),
-    //     'end',
-    //     cache[top.id].irs,
-    // ),
 };
 
 export const selAction = (path: Path, sel: IRSelection): Action => {
@@ -271,6 +274,28 @@ export const joinLeft = (
                     },
                 );
 
+                return true;
+            } else if (gpnode.type === 'table' && pnode.items.length === 1) {
+                const update = replaceNode(parent, pnode.items[0], top);
+                if (!update) return false;
+                store.update(
+                    {
+                        type: 'toplevel',
+                        action: { type: 'update', update },
+                        id: top.id,
+                    },
+                    {
+                        type: 'selection',
+                        doc: path.root.doc,
+                        selections: [
+                            selectNode(
+                                pathWithChildren(gparent, pnode.items[0]),
+                                'start',
+                                cache[top.id].irs,
+                            ),
+                        ],
+                    },
+                );
                 return true;
             }
             return false;

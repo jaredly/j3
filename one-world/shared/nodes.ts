@@ -171,7 +171,13 @@ type Id<Loc> =
         type: 'id';
         text: string;
         loc: Loc;
-        ref?: { toplevel: string; loc: number };
+        ref?:
+            | { type: 'toplevel'; toplevel: string; loc: number; kind: string }
+            // Soo this will have a look-uppable name too
+            | { type: 'resource'; id: string; kind: string }
+            | { type: 'builtin'; kind: string }
+            | { type: 'keyword' }
+            | { type: 'placeholder'; text: string };
     };
 
 export type Node =

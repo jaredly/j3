@@ -12,7 +12,7 @@ import {
 import { Doc, PersistedState } from '../../../shared/state2';
 import { Store } from '../../StoreContext2';
 import { inflateRecNode, isCollection } from '../../TextEdit/actions';
-import { topUpdate } from './handleUpdate';
+import { findTableLoc, topUpdate } from './handleUpdate';
 
 export const newNeighbor = (
     path: Path,
@@ -44,10 +44,6 @@ export const newNeighborActions = (
 
     const ploc = lastChild(parent);
     const pnode = top.nodes[ploc];
-    if (!isCollection(pnode)) {
-        return;
-    }
-    const idx = pnode.items.indexOf(loc);
 
     let nextLoc = top.nextLoc;
     const nlocs: number[] = [];
@@ -65,12 +61,53 @@ export const newNeighborActions = (
         selecteds.push(selected);
     });
 
+    const selected = selecteds[selecteds.length - 1];
+    const epath = pathWithChildren(parent, ...selecteds[0].children);
+
+    if (pnode.type === 'table') {
+        // if (siblings.length)
+        const { row, col } = findTableLoc(pnode, loc);
+        const width = pnode.rows.reduce((w, r) => Math.max(w, r.length), 0);
+        const rows = pnode.rows.slice();
+        if (col === rows[row].length - 1) {
+            while (nlocs.length < width) {
+                allNodes[nextLoc] = { type: 'id', text: '', loc: nextLoc };
+                nlocs.push(nextLoc++);
+            }
+            rows.splice(row + 1, 0, nlocs);
+        } else {
+            rows[row] = rows[row].slice();
+            rows[row].splice(col + 1, 0, ...nlocs);
+        }
+        allNodes[pnode.loc] = { ...pnode, rows };
+        return [
+            topUpdate(top.id, allNodes, nextLoc),
+            {
+                type: 'selection',
+                doc: path.root.doc,
+                selections: [
+                    {
+                        ...toSelection({
+                            cursor: selected.cursor,
+                            path: pathWithChildren(
+                                parent,
+                                ...selected.children,
+                            ),
+                        }),
+                        end: { path: epath, key: serializePath(epath) },
+                    },
+                ],
+            },
+        ];
+    }
+
+    if (!isCollection(pnode)) {
+        return;
+    }
+    const idx = pnode.items.indexOf(loc);
     const items = pnode.items.slice();
     items.splice(idx + (after ? 1 : 0), 0, ...nlocs);
     allNodes[ploc] = { ...pnode, items };
-
-    const selected = selecteds[selecteds.length - 1];
-    const epath = pathWithChildren(parent, ...selecteds[0].children);
 
     // ok we can do this now.
     return [
@@ -92,7 +129,7 @@ export const newNeighborActions = (
     ];
 };
 
-const newDocNodeNeighbor = (
+export const newDocNodeNeighbor = (
     path: Path,
     doc: Doc,
     siblings: RecNodeT<boolean>[],

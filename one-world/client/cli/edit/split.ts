@@ -16,6 +16,7 @@ import {
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { CLoc, findTableLoc, topUpdate } from './handleUpdate';
+import { newDocNodeNeighbor } from './newNeighbor';
 
 export const split = (
     path: Path,
@@ -30,7 +31,32 @@ export const split = (
     // Here are the things that can have a `text` IR in them:
     // that's a thing
     const parent = parentPath(path);
-    if (!parent.children.length) return;
+    if (!parent.children.length) {
+        // toplevel folks
+        const actions = newDocNodeNeighbor(
+            path,
+            state.documents[path.root.doc],
+            [
+                {
+                    type: 'id',
+                    text: norm.text.slice(norm.end).join(''),
+                    loc: true,
+                },
+            ],
+        );
+        if (!actions) return false;
+        store.update(
+            topUpdate(top.id, {
+                [node.loc]: {
+                    ...node,
+                    text: norm.text.slice(0, norm.start ?? norm.end).join(''),
+                },
+            }),
+            ...actions,
+        );
+        return true;
+    }
+
     const ploc = lastChild(parent);
     const pnode = top.nodes[ploc];
     // ugh I probably should just make a type === 'collection'...
