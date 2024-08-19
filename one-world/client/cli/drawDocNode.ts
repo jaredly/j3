@@ -154,6 +154,8 @@ const drawToplevel = (
     };
     process(top.root, { root, children: [] });
 
+    // So ... here we are manually updating the IR's
+    // text... which isn't such a great idea.
     selections.forEach((sel) => {
         if (sel.start.path.root.toplevel != id) return;
         if (

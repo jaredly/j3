@@ -1,6 +1,13 @@
 
 # Noww we want to do autocomplete! With ... bjuiltins!
 
+js"ok folks"
+
+(deftest some-name some-fn
+  (|input|output|))
+
+- [ ] make a menuuu, and ... ok so I also need like an Evaluator API
+
 
 # The Tableness of Things
 

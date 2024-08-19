@@ -94,8 +94,6 @@ const _parse = (node: RecNode, ctx: Ctx) => {
             };
             node.items.map((p) => _parse(p, ctx));
             return;
-        // case 'id':
-        //     if (node.text)
     }
 };
 

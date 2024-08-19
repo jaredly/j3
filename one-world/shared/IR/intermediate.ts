@@ -32,6 +32,7 @@ export type IR =
     | {
           type: 'text';
           text: string;
+          placeholder?: string;
           wrap?: number;
           style?: Style;
           index: number;
@@ -654,17 +655,6 @@ export const nodeToIR = (
         //     return { type: 'text', text: 'rich' };
 
         case 'id': {
-            // Thissss probably won't quote work.
-            if (node.ref?.type === 'placeholder' && node.text === '') {
-                return {
-                    type: 'horiz',
-                    items: [
-                        { type: 'text', text: '', index: 0, path },
-                        { type: 'punct', text: node.ref.text },
-                    ],
-                };
-            }
-
             const text =
                 node.ref?.type === 'toplevel'
                     ? names[node.ref.toplevel][node.ref.loc]
@@ -673,6 +663,10 @@ export const nodeToIR = (
             return {
                 type: 'text',
                 text,
+                placeholder:
+                    node.ref?.type === 'placeholder'
+                        ? node.ref.text
+                        : undefined,
                 style:
                     styles[node.loc] ??
                     (node.ref

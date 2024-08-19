@@ -401,15 +401,20 @@ export const irToBlock = (
         case 'squish':
             return irToBlock(ir.item, irs, choices, ctx);
         case 'text': {
+            // Placeholder only with no wrappp
             if (ir.wrap == null) {
+                const text =
+                    ir.text === '' && ir.placeholder != null
+                        ? ir.placeholder
+                        : ir.text;
                 return line(
-                    ir.text,
+                    text,
                     {
                         type: 'text',
                         index: ir.index,
                         path: ir.path,
                         wraps: [],
-                        newLines: textNewLines(ir.text),
+                        newLines: textNewLines(text),
                     },
                     ir.style,
                 );
