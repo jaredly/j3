@@ -5,6 +5,7 @@ import { IRSelection } from '../../../shared/IR/intermediate';
 import {
     goLeftRight,
     IRCache,
+    IRCache2,
     lastChild,
     selectNode,
     toSelection,
@@ -25,7 +26,6 @@ import { selAction } from './joinLeft';
 export const handleUpDown = (
     key: string,
     docId: string,
-    cache: IRCache,
     store: Store,
     sourceMaps: BlockEntry[],
 ) => {
@@ -203,7 +203,7 @@ const adjacent = (
 export const handleClose = (
     key: string,
     docId: string,
-    cache: IRCache,
+    cache: IRCache2<unknown>,
     store: Store,
 ): boolean => {
     const ds = store.getDocSession(docId, store.session);
@@ -298,7 +298,7 @@ export const handleClose = (
 export const handleMovement = (
     key: string,
     docId: string,
-    cache: IRCache,
+    cache: IRCache2<unknown>,
     store: Store,
 ): boolean => {
     const ds = store.getDocSession(docId, store.session);

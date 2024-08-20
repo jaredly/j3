@@ -3,6 +3,7 @@ import { Action, ToplevelUpdate } from '../../../shared/action2';
 import { IR, IRCursor, IRSelection } from '../../../shared/IR/intermediate';
 import {
     IRCache,
+    IRCache2,
     irNavigable,
     lastChild,
     parentLoc,
@@ -30,7 +31,7 @@ import { split } from './split';
 import { swap, swapTop } from './swap';
 import { wrapNodesWith, wrapWith } from './wrapWith';
 
-const getIRText = (cache: IRCache, path: Path, index: number) => {
+const getIRText = (cache: IRCache2<unknown>, path: Path, index: number) => {
     const irRoot = cache[path.root.toplevel].irs[lastChild(path)];
     if (!irRoot) return '';
     const ir = irNavigable(irRoot).filter((t) => t.type === 'text')[
@@ -45,10 +46,10 @@ const getIRText = (cache: IRCache, path: Path, index: number) => {
 export const handleUpdate = (
     key: string,
     docId: string,
-    cache: IRCache,
+    cache: IRCache2<unknown>,
     store: Store,
 ): boolean => {
-    if (handleRichText(key, docId, cache, store)) {
+    if (handleRichText(key, docId, store)) {
         return true;
     }
 
@@ -215,7 +216,7 @@ export type CLoc = {
 
 export const normalizeSelection = (
     sel: IRSelection,
-    cache: IRCache,
+    cache: IRCache2<unknown>,
 ): CLoc | null => {
     if (sel.start.cursor.type !== 'text') return null;
     const { start, end } = sel.start.cursor;
@@ -271,7 +272,7 @@ export const handleIDUpdate = ({
     node: Extract<Node, { type: 'id' }>;
     top: Toplevel;
     store: Store;
-    cache: IRCache;
+    cache: IRCache2<unknown>;
 }): boolean => {
     if (key === ' ' || key === 'ENTER') {
         split(path, norm, node, store, cache);
@@ -438,7 +439,7 @@ export const handleIDUpdate = ({
 export const handleNonTextUpdate = (
     key: string,
     sel: IRSelection,
-    cache: IRCache,
+    cache: IRCache2<unknown>,
     store: Store,
 ) => {
     if (key === 'BACKSPACE') {

@@ -164,7 +164,7 @@ const run = async (term: termkit.Terminal) => {
             }, 50);
         }
         if (
-            handleUpDown(key, docId, cache, store, sourceMaps) ||
+            handleUpDown(key, docId, store, sourceMaps) ||
             handleMovement(key, docId, cache, store)
         ) {
             return;
@@ -220,7 +220,7 @@ const run = async (term: termkit.Terminal) => {
                 }
                 return;
             }
-            handleMouseDrag(docId, sourceMaps, evt, cache, store);
+            handleMouseDrag(docId, sourceMaps, evt, store);
         } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
             const sel = ds.selections[0];
             if (sel?.end) {

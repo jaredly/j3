@@ -149,7 +149,6 @@ const drawToplevel = (
               }
             : ir;
         const children = childLocs(top.nodes[id]);
-        // const childPath = path.concat([id]);
         children.forEach((child) => process(child, self));
     };
     process(top.root, { root, children: [] });

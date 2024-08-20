@@ -1,6 +1,6 @@
 import { BlockEntry, DropTarget } from '../../../shared/IR/block-to-text';
 import { matchesSpan } from '../../../shared/IR/highlightSpan';
-import { cursorForNode, IRCache } from '../../../shared/IR/nav';
+import { cursorForNode, IRCache, IRCache2 } from '../../../shared/IR/nav';
 import { Path, serializePath } from '../../../shared/nodes';
 import { Store } from '../../StoreContext2';
 import { selectionFromLocation } from '../selectionLocation';
@@ -10,7 +10,7 @@ export const handleMouseClick = (
     sourceMaps: BlockEntry[],
     dropTargets: DropTarget[],
     evt: { x: number; y: number },
-    cache: IRCache,
+    cache: IRCache2<unknown>,
     store: Store,
 ) => {
     const x = evt.x - 1;
@@ -58,7 +58,6 @@ export const handleMouseDrag = (
     docId: string,
     sourceMaps: BlockEntry[],
     evt: { x: number; y: number },
-    cache: IRCache,
     store: Store,
 ) => {
     const sels = store.getDocSession(docId, store.session).selections;

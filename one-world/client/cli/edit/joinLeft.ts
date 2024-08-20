@@ -4,6 +4,7 @@ import { IRSelection } from '../../../shared/IR/intermediate';
 import {
     goFromDocNode,
     IRCache,
+    IRCache2,
     lastChild,
     selectNode,
     toSelection,
@@ -74,7 +75,7 @@ export const joinLeft = (
     path: Path,
     current: string[] | undefined,
     index: number,
-    cache: IRCache,
+    cache: IRCache2<unknown>,
     store: Store,
 ): boolean => {
     const state = store.getState();

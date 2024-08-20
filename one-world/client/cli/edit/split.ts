@@ -2,6 +2,7 @@ import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
 import {
     idSelection,
     IRCache,
+    IRCache2,
     lastChild,
     selectNode,
     toSelection,
@@ -23,7 +24,7 @@ export const split = (
     norm: CLoc,
     node: Extract<Node, { type: 'id' }>,
     store: Store,
-    cache: IRCache,
+    cache: IRCache2<unknown>,
 ) => {
     const state = store.getState();
     const top = state.toplevels[path.root.toplevel];

@@ -5,7 +5,7 @@ import {
     DropTarget,
     StyleOverrides,
 } from '../../shared/IR/block-to-text';
-import { IRCache, lastChild } from '../../shared/IR/nav';
+import { IRCache, IRCache2, lastChild } from '../../shared/IR/nav';
 import { Store } from '../StoreContext2';
 import { drawDocNode } from './drawDocNode';
 import { selectionLocation } from './selectionLocation';
@@ -21,6 +21,9 @@ import {
 import { Doc, DocSession, PersistedState } from '../../shared/state2';
 import { isCollection } from '../TextEdit/actions';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
+import { drawDocNode2 } from './drawDocNode2';
+import { docNodeToIR } from './docNodeToIR';
+import { BootExampleEvaluator } from '../../boot-ex';
 
 export const renderSelection = (
     term: termkit.Terminal,
@@ -48,8 +51,11 @@ export const renderSelection = (
 export const render = (maxWidth: number, store: Store, docId: string) => {
     const ds = store.getDocSession(docId, store.session);
     const doc = store.getState().documents[docId];
-    const cache: IRCache = {};
-    const block = drawDocNode(
+    const cache: IRCache2<any> = {};
+
+    docNodeToIR(0, [], doc, store.getState(), cache, BootExampleEvaluator);
+
+    const block = drawDocNode2(
         0,
         [],
         doc,
@@ -58,6 +64,7 @@ export const render = (maxWidth: number, store: Store, docId: string) => {
         ds.selections,
         maxWidth,
     );
+
     const { txt, sourceMaps, dropTargets } = redrawWithSelection(
         block,
         ds.selections,

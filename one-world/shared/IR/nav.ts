@@ -152,7 +152,7 @@ export const findType = <T extends string>(
 
 export const goLeftRight = (
     sel: IRSelection,
-    cache: IRCache,
+    cache: IRCache2<unknown>,
     left: boolean,
     shift: boolean,
     state: PersistedState,
@@ -192,7 +192,7 @@ export const goFromDocNode = (
     state: PersistedState,
     path: Path,
     left: boolean,
-    cache: IRCache,
+    cache: IRCache2<unknown>,
 ) => {
     const doc = state.documents[path.root.doc];
     if (!left) {
@@ -265,7 +265,7 @@ export const goFromDocNode = (
 
 export const goLeftRightInner = (
     sel: IRSelection,
-    cache: IRCache,
+    cache: IRCache2<unknown>,
     left: boolean,
     shift: boolean,
 ): IRSelection | void => {

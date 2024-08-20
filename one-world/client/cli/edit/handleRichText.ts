@@ -66,7 +66,6 @@ const splitSpans = (
 export const handleRichText = (
     key: string,
     docId: string,
-    cache: IRCache,
     store: Store,
 ): boolean => {
     const ds = store.getDocSession(docId, store.session);
