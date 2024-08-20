@@ -7,8 +7,8 @@ import { Loc, RecNode, Style } from '../shared/nodes';
 export const parse = (node: RecNode) => {
     const ctx: Ctx = { layouts: {}, styles: {} };
 
-    const result = _parse(node, ctx);
-    return { result, ...ctx };
+    const top = _parse(node, ctx);
+    return { top, ...ctx };
 };
 
 // type Fmt = { loc: number; info: RenderInfo };

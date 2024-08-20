@@ -2,7 +2,7 @@ import { parse } from './format';
 import { kwds } from './kwds';
 import { Evaluator } from './types';
 
-export const BootExampleEvaluator: Evaluator<void> = {
+export const BootExampleEvaluator: Evaluator<void, void> = {
     kwds: kwds,
     parse(node, cursor) {
         const res = parse(node);
@@ -16,5 +16,8 @@ export const BootExampleEvaluator: Evaluator<void> = {
             };
         }
         return res;
+    },
+    asExpr(top) {
+        return null;
     },
 };

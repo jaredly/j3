@@ -9,6 +9,13 @@ js"ok folks"
 - [ ] make a menuuu, and ... ok so I also need like an Evaluator API
 
 
+- [ ] ok parse is happening at drawToplevel, which is the wrong place.
+
+
+- [ ] QUESTION can we do nodeToIR without knowing the result of parse?
+  like, can we apply the styles post-hoc?
+  NO because we need tightFirst and such. OK it's fine.
+
 # The Tableness of Things
 
 - [x] make a table Node

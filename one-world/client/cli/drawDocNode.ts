@@ -188,6 +188,8 @@ const drawToplevel = (
     const choices: LayoutChoices = {};
     const result = layoutIR(0, 0, irs[top.root], choices, ctx);
     ctx.layouts[top.root] = { choices, result };
+    cache[id] = { irs, layouts: ctx.layouts, paths, root };
+
     const block = irToBlock(irs[top.root], irs, choices, {
         layouts: ctx.layouts,
         space: ' ',
@@ -195,6 +197,5 @@ const drawToplevel = (
     });
     block.node = { root: root, children: [top.root] };
 
-    cache[id] = { irs, layouts: ctx.layouts, paths, root };
     return hblock([line('▶️ ' + (SHOW_IDS ? top.nextLoc + ' ' : '')), block]);
 };

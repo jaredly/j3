@@ -22,7 +22,7 @@ export type Usage = {
 };
 
 export type ParseResult<Top> = {
-    result: Top;
+    top: Top;
     // ok so like, could be macro right?
     // or could be a ... toplevel kwd
     // or could be a type, or something.
@@ -39,7 +39,8 @@ export type ParseResult<Top> = {
     exports?: { loc: number; kind: string }[];
 };
 
-export type Evaluator<Top> = {
+export type Evaluator<Top, Expr> = {
     kwds: Auto[];
     parse(node: RecNode, cursor?: number): ParseResult<Top>;
+    asExpr(top: Top): Expr | null;
 };

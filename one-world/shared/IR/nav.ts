@@ -1,4 +1,5 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
+import { ParseResult } from '../../boot-ex/types';
 import {
     Node,
     Nodes,
@@ -19,6 +20,16 @@ export type IRCache = Record<
         irs: LayoutCtx['irs'];
         paths: Record<number, number[]>;
         root: PathRoot;
+    }
+>;
+
+export type IRCache2<Top> = Record<
+    string,
+    {
+        irs: IRForLoc;
+        paths: Record<number, number[]>;
+        root: PathRoot;
+        result: ParseResult<Top>;
     }
 >;
 
@@ -45,7 +56,6 @@ export const irTexts = (ir: IR): IRText[] => {
         case 'punct':
             return [];
     }
-    // return [];
 };
 
 type IRNavigable = Extract<
