@@ -1,4 +1,8 @@
 
+hrmmmok
+let's have `render` re-use cached stuff? maybe?
+eh, I can do the autocomplete first.
+
 # Noww we want to do autocomplete! With ... bjuiltins!
 
 js"ok folks"

@@ -11,7 +11,15 @@ import { init } from './init';
 import { pickDocument } from './pickDocument';
 import { redrawWithSelection, render, renderSelection } from './render';
 import { multiSelectContains, resolveMultiSelect } from './resolveMultiSelect';
-import { readSess, writeSess } from './Sess';
+import { readSess, Sess, writeSess } from './Sess';
+import { Store } from '../StoreContext2';
+import { IRCache2 } from '/Users/jared/clone/exploration/j3/one-world/shared/IR/nav';
+import {
+    BlockEntry,
+    DropTarget,
+} from '/Users/jared/clone/exploration/j3/one-world/shared/IR/block-to-text';
+import { DocSession } from '../../shared/state2';
+import { IRSelection } from '../../shared/IR/intermediate';
 
 // cursor line
 process.stdout.write('\x1b[6 q');
@@ -63,57 +71,18 @@ const run = async (term: termkit.Terminal) => {
     let lastKey = null as null | string;
 
     let rstate = render(term.width - 10, store, sess.doc, BootExampleEvaluator);
-    term.clear();
-    term.moveTo(0, 2, rstate.txt);
-    renderSelection(term, store, docId, rstate.sourceMaps);
+    drawToTerminal(rstate, term, store, docId, lastKey);
 
-    const unsel = store.on('selection', () => {
-        sess.selection = store.getDocSession(docId).selections;
-        writeSess(sess);
-    });
+    const unsel = trackSelection(store, sess, docId);
 
-    process.on('beforeExit', () => {
-        unsel();
-        store.update({ type: 'selection', doc: docId, selections: [] });
-    });
-
-    // let changed = false;
     let prevState = store.getState();
     let tid: null | Timer = null;
 
     const rerender = () => {
         tid = null;
-
-        // if (changed) {
         rstate = render(term.width - 10, store, docId, BootExampleEvaluator);
-        // } else {
-        //     const ds = store.getDocSession(docId);
-        //     rstate.txt = redrawWithSelection(
-        //         rstate.block,
-        //         ds.selections,
-        //         ds.dragState,
-        //         store.getState(),
-        //     ).txt;
-        // }
-        term.clear();
-        term.moveTo(0, 2, rstate.txt);
-
-        if (lastKey) {
-            term.moveTo(0, term.height, lastKey);
-        }
-        const dragState = store.getDocSession(docId)?.dragState;
-        if (dragState?.dest) {
-            term.moveTo(
-                dragState.dest.pos.x +
-                    1 +
-                    (dragState.dest.side === 'after' ? -1 : 0),
-                dragState.dest.pos.y + 1,
-                '⬇️',
-            );
-            term.moveTo(0, term.height - 5, JSON.stringify(dragState.dest));
-        }
-
-        renderSelection(term, store, docId, rstate.sourceMaps);
+        drawToTerminal(rstate, term, store, docId, lastKey);
+        prevState = store.getState();
     };
 
     const kick = () => {
@@ -150,100 +119,14 @@ const run = async (term: termkit.Terminal) => {
         const ds = store.getDocSession(docId);
         if (one === 'MOUSE_DRAG') {
             if (ds.dragState) {
-                const pos = { x: evt.x - 1, y: evt.y - 2 };
-                const found = validDropTargets(
-                    rstate.dropTargets,
-                    ds.dragState.source,
-                    store.getState(),
-                )
-                    .map((target) => ({
-                        target,
-                        dx: Math.abs(target.pos.x - pos.x),
-                        dy: Math.abs(target.pos.y - pos.y),
-                    }))
-                    .filter((a) => a.dy === 0)
-                    .sort((a, b) => a.dx - b.dx);
-                if (!found.length) return;
-                const best = found[0];
-                if (
-                    !multiSelectContains(
-                        ds.dragState.source,
-                        best.target.path,
-                        store.getState(),
-                    )
-                ) {
-                    store.update({
-                        type: 'drag',
-                        doc: docId,
-                        drag: {
-                            source: ds.dragState.source,
-                            dest: best.target,
-                        },
-                    });
-                } else if (ds.dragState.dest) {
-                    store.update({
-                        type: 'drag',
-                        doc: docId,
-                        drag: {
-                            source: ds.dragState.source,
-                        },
-                    });
-                }
+                handleDrag(evt, docId, rstate, ds.dragState, store);
                 return;
             }
             handleMouseDrag(docId, rstate.sourceMaps, evt, store);
         } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
             const sel = ds.selections[0];
-            if (sel?.end) {
-                const multi = resolveMultiSelect(
-                    sel.start.path,
-                    sel.end.path,
-                    store.getState(),
-                );
-                const x = evt.x - 1;
-                const y = evt.y - 2;
-                if (multi) {
-                    const found = rstate.sourceMaps.find((m) =>
-                        matchesSpan(x, y, m.shape),
-                    );
-                    if (!found) {
-                        const closest = rstate.dropTargets
-                            .map((target) => ({
-                                target,
-                                dx: Math.abs(target.pos.x - x),
-                                dy: Math.abs(target.pos.y - y),
-                            }))
-                            .filter((a) => a.dy === 0)
-                            .sort((a, b) => a.dx - b.dx);
-                        if (!closest.length) return;
-                        let { path } = closest[0].target;
-                        if (
-                            multiSelectContains(multi, path, store.getState())
-                        ) {
-                            store.update({
-                                type: 'drag',
-                                doc: docId,
-                                drag: { source: multi },
-                            });
-                            return;
-                        }
-                    }
-                    if (
-                        found &&
-                        multiSelectContains(
-                            multi,
-                            found.source.path,
-                            store.getState(),
-                        )
-                    ) {
-                        store.update({
-                            type: 'drag',
-                            doc: docId,
-                            drag: { source: multi },
-                        });
-                        return;
-                    }
-                }
+            if (maybeStartDragging(evt, docId, rstate, sel, store)) {
+                return;
             }
 
             handleMouseClick(
@@ -323,3 +206,154 @@ getTerm().then((term) => {
         },
     );
 });
+
+export type RState = {
+    cache: IRCache2<any>;
+    sourceMaps: BlockEntry[];
+    dropTargets: DropTarget[];
+    block: Block;
+    txt: string;
+};
+
+function trackSelection(store: Store, sess: Sess, docId: string) {
+    const unsel = store.on('selection', () => {
+        sess.selection = store.getDocSession(docId).selections;
+        writeSess(sess);
+    });
+
+    process.on('beforeExit', () => {
+        unsel();
+        store.update({ type: 'selection', doc: docId, selections: [] });
+    });
+    return unsel;
+}
+
+function drawToTerminal(
+    rstate: RState,
+    term: termkit.Terminal,
+    store: Store,
+    docId: string,
+    lastKey: string | null,
+) {
+    term.clear();
+    term.moveTo(0, 2, rstate.txt);
+
+    if (lastKey) {
+        term.moveTo(0, term.height, lastKey);
+    }
+    const dragState = store.getDocSession(docId)?.dragState;
+    if (dragState?.dest) {
+        term.moveTo(
+            dragState.dest.pos.x +
+                1 +
+                (dragState.dest.side === 'after' ? -1 : 0),
+            dragState.dest.pos.y + 1,
+            '⬇️',
+        );
+        term.moveTo(0, term.height - 5, JSON.stringify(dragState.dest));
+    }
+
+    renderSelection(term, store, docId, rstate.sourceMaps);
+}
+
+const maybeStartDragging = (
+    evt: MouseEvt,
+    docId: string,
+    rstate: RState,
+    sel: IRSelection,
+    store: Store,
+): boolean => {
+    if (!sel.end) return false;
+    const multi = resolveMultiSelect(
+        sel.start.path,
+        sel.end.path,
+        store.getState(),
+    );
+    const x = evt.x - 1;
+    const y = evt.y - 2;
+    if (!multi) return false;
+
+    const found = rstate.sourceMaps.find((m) => matchesSpan(x, y, m.shape));
+    if (!found) {
+        const closest = rstate.dropTargets
+            .map((target) => ({
+                target,
+                dx: Math.abs(target.pos.x - x),
+                dy: Math.abs(target.pos.y - y),
+            }))
+            .filter((a) => a.dy === 0)
+            .sort((a, b) => a.dx - b.dx);
+        if (!closest.length) return true;
+        let { path } = closest[0].target;
+        if (multiSelectContains(multi, path, store.getState())) {
+            store.update({
+                type: 'drag',
+                doc: docId,
+                drag: { source: multi },
+            });
+            return true;
+        }
+    }
+
+    if (
+        found &&
+        multiSelectContains(multi, found.source.path, store.getState())
+    ) {
+        store.update({
+            type: 'drag',
+            doc: docId,
+            drag: { source: multi },
+        });
+        return true;
+    }
+
+    return false;
+};
+
+const handleDrag = (
+    evt: MouseEvt,
+    docId: string,
+    rstate: RState,
+    dragState: NonNullable<DocSession['dragState']>,
+    store: Store,
+) => {
+    const pos = { x: evt.x - 1, y: evt.y - 2 };
+    const found = validDropTargets(
+        rstate.dropTargets,
+        dragState.source,
+        store.getState(),
+    )
+        .map((target) => ({
+            target,
+            dx: Math.abs(target.pos.x - pos.x),
+            dy: Math.abs(target.pos.y - pos.y),
+        }))
+        .filter((a) => a.dy === 0)
+        .sort((a, b) => a.dx - b.dx);
+    if (!found.length) return;
+    const best = found[0];
+    if (
+        !multiSelectContains(
+            dragState.source,
+            best.target.path,
+            store.getState(),
+        )
+    ) {
+        store.update({
+            type: 'drag',
+            doc: docId,
+            drag: {
+                source: dragState.source,
+                dest: best.target,
+            },
+        });
+    } else if (dragState.dest) {
+        store.update({
+            type: 'drag',
+            doc: docId,
+            drag: {
+                source: dragState.source,
+            },
+        });
+    }
+};
