@@ -1,56 +1,46 @@
-import { IRSelection } from '../../shared/IR/intermediate';
 import {
     Block,
-    vblock,
     hblock,
-    line,
     irToBlock,
+    line,
+    vblock,
 } from '../../shared/IR/ir-to-blocks';
 import { white } from '../../shared/IR/ir-to-text';
-import { LayoutCtx, LayoutChoices, layoutIR } from '../../shared/IR/layout';
+import { IRForLoc, LayoutCtx } from '../../shared/IR/layout';
 import { IRCache2 } from '../../shared/IR/nav';
 import { PathRoot } from '../../shared/nodes';
 import { Doc, PersistedState } from '../../shared/state';
-import { applySelectionText } from './docNodeToIR';
 import { controlLayout, textLayout } from './drawDocNode';
 
-export const drawDocNode2 = <Top>(
+export const docToBlock = <Top>(
     id: number,
-    nodes: number[],
+    ids: number[],
     doc: Doc,
-    state: PersistedState,
+    toplevels: PersistedState['toplevels'],
     cache: IRCache2<Top>,
-    selections: IRSelection[],
-    maxWidth: number,
+    layoutCache: Record<string, LayoutCtx['layouts']>,
 ): Block => {
     const node = doc.nodes[id];
     let top: Block | null = null;
+    const selfIds = ids.concat([id]);
     if (id !== 0) {
-        top = drawToplevel2(
+        const root: PathRoot = {
+            doc: doc.id,
+            ids: selfIds,
+            toplevel: node.toplevel,
+            type: 'doc-node',
+        };
+        top = drawToplevel(
             node.toplevel,
-            {
-                doc: doc.id,
-                ids: nodes.concat([id]),
-                toplevel: node.toplevel,
-                type: 'doc-node',
-            },
-            state.toplevels[node.toplevel].root,
-            cache,
-            selections,
-            maxWidth,
+            root,
+            toplevels[node.toplevel].root,
+            cache[node.toplevel].irs,
+            layoutCache[node.toplevel],
         );
     }
     if (node.children.length) {
         const children = node.children.map((cid) =>
-            drawDocNode2(
-                cid,
-                nodes.concat([id]),
-                doc,
-                state,
-                cache,
-                selections,
-                maxWidth,
-            ),
+            docToBlock(cid, selfIds, doc, toplevels, cache, layoutCache),
         );
         if (top == null) {
             return children.length === 1 ? children[0] : vblock(children);
@@ -60,35 +50,28 @@ export const drawDocNode2 = <Top>(
 
     return top!;
 };
-const drawToplevel2 = <Top>(
+
+export const drawToplevel = <Top>(
     id: string,
     root: PathRoot,
     rootLoc: number,
-    cache: IRCache2<Top>,
-    selections: IRSelection[],
-    maxWidth: number,
+    irs: IRForLoc,
+    layoutCache: LayoutCtx['layouts'],
 ) => {
-    applySelectionText(selections, cache);
-
-    const ctx: LayoutCtx = {
-        maxWidth,
-        leftWidth: maxWidth / 2,
-        irs: cache[id].irs,
-        layouts: {},
-        textLayout,
-        controlLayout,
-    };
-
-    const choices: LayoutChoices = {};
-    const result = layoutIR(0, 0, cache[id].irs[rootLoc], choices, ctx);
-    ctx.layouts[rootLoc] = { choices, result };
-
-    const block = irToBlock(cache[id].irs[rootLoc], cache[id].irs, choices, {
-        layouts: ctx.layouts,
+    const block = irToBlock(irs[rootLoc], irs, layoutCache[rootLoc].choices, {
+        layouts: layoutCache,
         space: ' ',
         top: id,
     });
     block.node = { root: root, children: [rootLoc] };
-
     return hblock([line('▶️ '), block]);
 };
+
+export const layoutCtx = (maxWidth: number, irs: IRForLoc): LayoutCtx => ({
+    maxWidth,
+    leftWidth: maxWidth / 2,
+    irs,
+    layouts: {},
+    textLayout,
+    controlLayout,
+});

@@ -1,46 +1,33 @@
-import { parse } from '../../boot-ex/format';
-import { Evaluator } from '../../boot-ex/types';
-import { IRSelection, IR, nodeToIR } from '../../shared/IR/intermediate';
+import { IRSelection } from '../../shared/IR/intermediate';
 import { IRCache2, lastChild } from '../../shared/IR/nav';
 import { transformIR } from '../../shared/IR/transformIR';
 import {
-    PathRoot,
+    childLocs,
     fromMap,
     Loc,
+    Node,
+    Nodes,
     Path,
+    PathRoot,
     pathWithChildren,
-    childLocs,
 } from '../../shared/nodes';
-import { Doc, PersistedState } from '../../shared/state';
+import { Doc } from '../../shared/state';
+import { DocumentNode } from '../../shared/state2';
+import { Toplevel } from '../../shared/toplevels';
 
-export const docNodeToIR = <Top>(
+export const iterDocNodes = (
     id: number,
-    nodes: number[],
+    ids: number[],
     doc: Doc,
-    state: PersistedState,
-    cache: IRCache2<Top>,
-    ev: Evaluator<Top, any>,
+    f: (n: DocumentNode, ids: number[]) => void,
 ) => {
     const node = doc.nodes[id];
-    if (id !== 0) {
-        toplevelToIR(
-            node.toplevel,
-            {
-                doc: doc.id,
-                ids: nodes.concat([id]),
-                toplevel: node.toplevel,
-                type: 'doc-node',
-            },
-            state,
-            cache,
-            ev,
-        );
+    const cids = ids.concat([id]);
+    // Skip the top docNode's non-toplevel
+    if (node.toplevel !== '') {
+        f(node, cids);
     }
-    if (node.children.length) {
-        node.children.forEach((cid) =>
-            docNodeToIR(cid, nodes.concat([id]), doc, state, cache, ev),
-        );
-    }
+    node.children.forEach((id) => iterDocNodes(id, cids, doc, f));
 };
 
 export const applySelectionText = <Top>(
@@ -71,35 +58,26 @@ export const applySelectionText = <Top>(
     });
 };
 
-const toplevelToIR = <Top>(
-    id: string,
-    root: PathRoot,
-    state: PersistedState,
-    cache: IRCache2<Top>,
-    ev: Evaluator<Top, any>,
-) => {
-    const top = state.toplevels[id];
+export const topFromMap = (top: Toplevel) => {
     const paths: Record<number, number[]> = {};
-    const recNode = fromMap((n) => [[top.id, n]] as Loc, top.root, top.nodes, {
+    const node = fromMap((n) => [[top.id, n]] as Loc, top.root, top.nodes, {
         children: [],
         map: paths,
     });
-    const parsed = ev.parse(recNode);
+    return { paths, node };
+};
 
-    const irs: Record<number, IR> = {};
-
+export const iterTopNodes = (
+    id: number,
+    root: PathRoot,
+    nodes: Nodes,
+    f: (node: Node, path: Path) => void,
+) => {
     const process = (id: number, path: Path) => {
         const self = pathWithChildren(path, id);
-        irs[id] = nodeToIR(
-            top.nodes[id],
-            self,
-            parsed.styles,
-            parsed.layouts,
-            {},
-        );
-        const children = childLocs(top.nodes[id]);
+        f(nodes[id], self);
+        const children = childLocs(nodes[id]);
         children.forEach((child) => process(child, self));
     };
-    process(top.root, { root, children: [] });
-    cache[id] = { irs, paths, root, result: parsed };
+    process(id, { root, children: [] });
 };

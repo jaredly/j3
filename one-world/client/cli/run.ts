@@ -1,21 +1,17 @@
 import termkit from 'terminal-kit';
+import { BootExampleEvaluator } from '../../boot-ex';
+import { matchesSpan } from '../../shared/IR/highlightSpan';
 import { Block } from '../../shared/IR/ir-to-blocks';
+import { drop, validDropTargets } from './edit/drop';
 import { handleMouseClick, handleMouseDrag } from './edit/handleMouse';
 import { handleMovement, handleUpDown } from './edit/handleMovement';
+import { handleUpdate } from './edit/handleUpdate';
+import { genId, newDocument } from './edit/newDocument';
 import { init } from './init';
-import {
-    pickDocument,
-    redrawWithSelection,
-    render,
-    renderSelection,
-} from './render';
+import { pickDocument } from './pickDocument';
+import { redrawWithSelection, render, renderSelection } from './render';
 import { multiSelectContains, resolveMultiSelect } from './resolveMultiSelect';
 import { readSess, writeSess } from './Sess';
-import { handleUpdate } from './edit/handleUpdate';
-import { matchesSpan } from '../../shared/IR/highlightSpan';
-import { drop, validDropTargets } from './edit/drop';
-import { cursorForNode } from '../../shared/IR/nav';
-import { genId, newDocument } from './edit/newDocument';
 
 // cursor line
 process.stdout.write('\x1b[6 q');
@@ -66,14 +62,10 @@ const run = async (term: termkit.Terminal) => {
 
     let lastKey = null as null | string;
 
-    let { sourceMaps, dropTargets, cache, block, txt } = render(
-        term.width - 10,
-        store,
-        sess.doc,
-    );
+    let rstate = render(term.width - 10, store, sess.doc, BootExampleEvaluator);
     term.clear();
-    term.moveTo(0, 2, txt);
-    renderSelection(term, store, docId, sourceMaps);
+    term.moveTo(0, 2, rstate.txt);
+    renderSelection(term, store, docId, rstate.sourceMaps);
 
     const unsel = store.on('selection', () => {
         sess.selection = store.getDocSession(docId).selections;
@@ -85,53 +77,43 @@ const run = async (term: termkit.Terminal) => {
         store.update({ type: 'selection', doc: docId, selections: [] });
     });
 
-    let changed = false;
+    // let changed = false;
+    let prevState = store.getState();
     let tid: null | Timer = null;
 
     const rerender = () => {
         tid = null;
 
-        if (changed) {
-            ({ sourceMaps, dropTargets, cache, block, txt } = render(
-                term.width - 10,
-                store,
-                docId,
-            ));
-        } else {
-            const ds = store.getDocSession(docId);
-            ({ txt } = redrawWithSelection(
-                block,
-                ds.selections,
-                ds.dragState,
-                store.getState(),
-            ));
-        }
+        // if (changed) {
+        rstate = render(term.width - 10, store, docId, BootExampleEvaluator);
+        // } else {
+        //     const ds = store.getDocSession(docId);
+        //     rstate.txt = redrawWithSelection(
+        //         rstate.block,
+        //         ds.selections,
+        //         ds.dragState,
+        //         store.getState(),
+        //     ).txt;
+        // }
         term.clear();
-        term.moveTo(0, 2, txt);
+        term.moveTo(0, 2, rstate.txt);
 
         if (lastKey) {
             term.moveTo(0, term.height, lastKey);
         }
-        const ds = store.getDocSession(docId);
-        // const sel = ds.selections[0];
-        // if (sel) {
-        //     term.moveTo(0, term.height - 5, JSON.stringify(sel));
-        // }
-
-        if (ds.dragState?.dest) {
+        const dragState = store.getDocSession(docId)?.dragState;
+        if (dragState?.dest) {
             term.moveTo(
-                ds.dragState.dest.pos.x +
+                dragState.dest.pos.x +
                     1 +
-                    (ds.dragState.dest.side === 'after' ? -1 : 0),
-                ds.dragState.dest.pos.y + 1,
+                    (dragState.dest.side === 'after' ? -1 : 0),
+                dragState.dest.pos.y + 1,
                 '⬇️',
             );
-            term.moveTo(0, term.height - 5, JSON.stringify(ds.dragState.dest));
+            term.moveTo(0, term.height - 5, JSON.stringify(dragState.dest));
         }
 
-        renderSelection(term, store, docId, sourceMaps);
-
-        changed = false;
+        renderSelection(term, store, docId, rstate.sourceMaps);
     };
 
     const kick = () => {
@@ -139,19 +121,8 @@ const run = async (term: termkit.Terminal) => {
         tid = setTimeout(rerender, 0);
     };
 
-    store.on('all', () => {
-        changed = true;
-        kick();
-    });
-
-    store.on('selection', () => {
-        kick();
-    });
-
-    term.on('resize', () => {
-        changed = true;
-        kick();
-    });
+    store.on('all', () => kick());
+    term.on('resize', () => kick());
 
     term.on('key', (key: string) => {
         lastKey = key;
@@ -164,12 +135,12 @@ const run = async (term: termkit.Terminal) => {
             }, 50);
         }
         if (
-            handleUpDown(key, docId, store, sourceMaps) ||
-            handleMovement(key, docId, cache, store)
+            handleUpDown(key, docId, store, rstate.sourceMaps) ||
+            handleMovement(key, docId, rstate.cache, store)
         ) {
             return;
         }
-        if (handleUpdate(key, docId, cache, store)) {
+        if (handleUpdate(key, docId, rstate.cache, store)) {
             return;
         }
         term.moveTo(0, term.height, key);
@@ -181,7 +152,7 @@ const run = async (term: termkit.Terminal) => {
             if (ds.dragState) {
                 const pos = { x: evt.x - 1, y: evt.y - 2 };
                 const found = validDropTargets(
-                    dropTargets,
+                    rstate.dropTargets,
                     ds.dragState.source,
                     store.getState(),
                 )
@@ -220,7 +191,7 @@ const run = async (term: termkit.Terminal) => {
                 }
                 return;
             }
-            handleMouseDrag(docId, sourceMaps, evt, store);
+            handleMouseDrag(docId, rstate.sourceMaps, evt, store);
         } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
             const sel = ds.selections[0];
             if (sel?.end) {
@@ -232,11 +203,11 @@ const run = async (term: termkit.Terminal) => {
                 const x = evt.x - 1;
                 const y = evt.y - 2;
                 if (multi) {
-                    const found = sourceMaps.find((m) =>
+                    const found = rstate.sourceMaps.find((m) =>
                         matchesSpan(x, y, m.shape),
                     );
                     if (!found) {
-                        const closest = dropTargets
+                        const closest = rstate.dropTargets
                             .map((target) => ({
                                 target,
                                 dx: Math.abs(target.pos.x - x),
@@ -275,7 +246,14 @@ const run = async (term: termkit.Terminal) => {
                 }
             }
 
-            handleMouseClick(docId, sourceMaps, dropTargets, evt, cache, store);
+            handleMouseClick(
+                docId,
+                rstate.sourceMaps,
+                rstate.dropTargets,
+                evt,
+                rstate.cache,
+                store,
+            );
         } else if (one === 'MOUSE_LEFT_BUTTON_RELEASED') {
             const ds = store.getDocSession(docId);
             const dragState = ds.dragState;
@@ -284,10 +262,10 @@ const run = async (term: termkit.Terminal) => {
                 if (!dragState.dest) {
                     handleMouseClick(
                         docId,
-                        sourceMaps,
-                        dropTargets,
+                        rstate.sourceMaps,
+                        rstate.dropTargets,
                         evt,
-                        cache,
+                        rstate.cache,
                         store,
                     );
                 } else {

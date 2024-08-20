@@ -1,29 +1,44 @@
 import termkit from 'terminal-kit';
+import { Evaluator } from '../../boot-ex/types';
 import {
     BlockEntry,
     blockToText,
     DropTarget,
     StyleOverrides,
 } from '../../shared/IR/block-to-text';
-import { IRCache, IRCache2, lastChild } from '../../shared/IR/nav';
-import { Store } from '../StoreContext2';
-import { drawDocNode } from './drawDocNode';
-import { selectionLocation } from './selectionLocation';
-import { IRSelection } from '../../shared/IR/intermediate';
+import { IRSelection, nodeToIR } from '../../shared/IR/intermediate';
 import { Block, blockSourceKey } from '../../shared/IR/ir-to-blocks';
-import { termColors } from '../TextEdit/colors';
+import {
+    IRForLoc,
+    LayoutChoices,
+    LayoutCtx,
+    layoutIR,
+} from '../../shared/IR/layout';
+import { IRCache2, lastChild } from '../../shared/IR/nav';
 import {
     Path,
     PathRoot,
     pathWithChildren,
     serializePath,
 } from '../../shared/nodes';
-import { Doc, DocSession, PersistedState } from '../../shared/state2';
+import {
+    Doc,
+    DocSession,
+    DocumentNode,
+    PersistedState,
+} from '../../shared/state2';
+import { Store } from '../StoreContext2';
 import { isCollection } from '../TextEdit/actions';
+import { termColors } from '../TextEdit/colors';
+import {
+    applySelectionText,
+    iterDocNodes,
+    iterTopNodes,
+    topFromMap,
+} from './docNodeToIR';
+import { docToBlock, layoutCtx } from './drawDocNode2';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
-import { drawDocNode2 } from './drawDocNode2';
-import { docNodeToIR } from './docNodeToIR';
-import { BootExampleEvaluator } from '../../boot-ex';
+import { selectionLocation } from './selectionLocation';
 
 export const renderSelection = (
     term: termkit.Terminal,
@@ -48,28 +63,48 @@ export const renderSelection = (
     }
 };
 
-export const render = (maxWidth: number, store: Store, docId: string) => {
+const root = (doc: string, ids: number[], node: DocumentNode): PathRoot => ({
+    type: 'doc-node',
+    toplevel: node.toplevel,
+    doc,
+    ids,
+});
+
+const cursorLoc = (
+    selections: IRSelection[],
+    id: string,
+): number | undefined => {
+    for (let sel of selections) {
+        if (!sel.end) return;
+        if (
+            sel.start.cursor.type === 'text' &&
+            sel.start.path.root.toplevel === id
+        ) {
+            return lastChild(sel.start.path);
+        }
+    }
+};
+
+export const render = (
+    maxWidth: number,
+    store: Store,
+    docId: string,
+    ev: Evaluator<any, any>,
+) => {
     const ds = store.getDocSession(docId, store.session);
-    const doc = store.getState().documents[docId];
-    const cache: IRCache2<any> = {};
+    const state = store.getState();
+    const doc = state.documents[docId];
 
-    docNodeToIR(0, [], doc, store.getState(), cache, BootExampleEvaluator);
-
-    const block = drawDocNode2(
-        0,
-        [],
-        doc,
-        store.getState(),
-        cache,
-        ds.selections,
-        maxWidth,
-    );
+    const cache = calculateIRs(doc, state, ev, ds);
+    applySelectionText(ds.selections, cache);
+    const layoutCache = calculateLayouts(doc, state, maxWidth, cache);
+    const block = docToBlock(0, [], doc, state.toplevels, cache, layoutCache);
 
     const { txt, sourceMaps, dropTargets } = redrawWithSelection(
         block,
         ds.selections,
         ds.dragState,
-        store.getState(),
+        state,
     );
     return { cache, sourceMaps, dropTargets, block, txt };
 };
@@ -95,58 +130,6 @@ export const redrawWithSelection = (
     });
 
     return { txt, sourceMaps, dropTargets };
-};
-
-export const pickDocument = (store: Store, term: termkit.Terminal) => {
-    return new Promise<string | null>((resolve, reject) => {
-        const state = store.getState();
-        const ids = Object.keys(state.documents);
-        let sel = 0;
-
-        const draw = () => {
-            term.clear();
-            // sb.clear()
-            for (let i = 0; i <= ids.length; i++) {
-                term.moveTo(0, i + 1);
-                if (i === ids.length) {
-                    if (sel === i) {
-                        term.bgGreen('New Document');
-                    } else {
-                        term('New Document');
-                    }
-                } else if (sel === i) {
-                    term.bgGreen(state.documents[ids[i]].title);
-                } else {
-                    term(state.documents[ids[i]].title);
-                }
-            }
-        };
-
-        const key = (key: string) => {
-            if (key === 'ENTER') {
-                term.off('key', key);
-                if (sel === ids.length) {
-                    resolve(null);
-                } else {
-                    resolve(ids[sel]);
-                }
-                return;
-            }
-            if (key === 'DOWN') {
-                sel = Math.min(sel + 1, ids.length);
-            }
-            if (key === 'UP') {
-                sel = Math.max(0, sel - 1);
-            }
-            if (key === 'ESCAPE') {
-                reject('quit');
-            }
-            draw();
-        };
-
-        term.on('key', key);
-        draw();
-    });
 };
 
 const nodeKey = (path: Path) => serializePath(path);
@@ -196,7 +179,67 @@ const nodesForSelection = (
     return nodesForMulti(resolved, state);
 };
 
-function selectionStyleOverrides(
+function calculateLayouts(
+    doc: Doc,
+    state: PersistedState,
+    maxWidth: number,
+    cache: IRCache2<any>,
+): Record<string, LayoutCtx['layouts']> {
+    const layoutCache: Record<string, LayoutCtx['layouts']> = {};
+    iterDocNodes(0, [], doc, (docNode, ids) => {
+        const top = state.toplevels[docNode.toplevel];
+        const pathRoot = root(doc.id, ids, docNode);
+        iterTopNodes(top.root, pathRoot, top.nodes, (node, path) => {
+            const ctx = layoutCtx(maxWidth, cache[top.id].irs);
+            const choices: LayoutChoices = {};
+            const result = layoutIR(
+                0,
+                0,
+                cache[top.id].irs[top.root],
+                choices,
+                ctx,
+            );
+            ctx.layouts[top.root] = { choices, result };
+            layoutCache[top.id] = ctx.layouts;
+        });
+    });
+    return layoutCache;
+}
+
+function calculateIRs(
+    doc: Doc,
+    state: PersistedState,
+    ev: Evaluator<any, any>,
+    ds: DocSession,
+): IRCache2<any> {
+    const cache: IRCache2<any> = {};
+    iterDocNodes(0, [], doc, (docNode, ids) => {
+        const top = state.toplevels[docNode.toplevel];
+        const { paths, node } = topFromMap(top);
+        const parsed = ev.parse(node, cursorLoc(ds.selections, top.id));
+        const irs: IRForLoc = {};
+        const pathRoot = root(doc.id, ids, docNode);
+
+        iterTopNodes(top.root, pathRoot, top.nodes, (node, path) => {
+            irs[node.loc] = nodeToIR(
+                node,
+                path,
+                parsed.styles,
+                parsed.layouts,
+                {},
+            );
+        });
+        cache[docNode.toplevel] = {
+            irs,
+            paths,
+            root: pathRoot,
+            result: parsed,
+        };
+    });
+    return cache;
+}
+
+export function selectionStyleOverrides(
     selections: IRSelection[],
     dragState: DocSession['dragState'],
     state: PersistedState,
@@ -214,11 +257,6 @@ function selectionStyleOverrides(
                     color: termColors.fullHighlight,
                 };
             });
-            // Whyy doesn't this work? idk
-            // styles[nodeKey(selection.end.path)] = {
-            //     type: 'full',
-            //     color: { r: 255, g: 0, b: 0 },
-            // };
         } else if (
             selection.start.cursor.type === 'text' &&
             selection.start.cursor.start
@@ -227,9 +265,7 @@ function selectionStyleOverrides(
             if (start.index === end.index) {
                 const key = blockSourceKey({
                     type: 'text',
-                    // top: selection.start.path.root.toplevel,
                     path: selection.start.path,
-                    // loc: lastChild(selection.start.path),
                     index: start.index,
                     newLines: [],
                     wraps: [],

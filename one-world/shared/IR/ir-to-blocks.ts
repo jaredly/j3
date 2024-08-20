@@ -227,24 +227,6 @@ const textNewLines = (text: string): number[] => {
     return nls;
 };
 
-// const textWraps = (text: string, splits: number[]): number[] => {
-//     const wraps: number[] = [];
-//     let x = 0;
-//     let j = 0;
-//     const lines = text.split('\n');
-//     lines.forEach((line, i) => {
-//         let nx = x + splitGraphemes(line).length + 1;
-//         for (; splits[j] < nx && j < splits.length; j++) {
-//             wraps.push(splits[j]);
-//         }
-//         if (i < lines.length - 1) {
-//             // wraps.push(nx);
-//         }
-//         x = nx;
-//     });
-//     return wraps;
-// };
-
 export const irToBlock = (
     ir: IR,
     irs: Record<number, IR>,
