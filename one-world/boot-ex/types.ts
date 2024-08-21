@@ -44,3 +44,29 @@ export type Evaluator<Top, Expr> = {
     parse(node: RecNode, cursor?: number): ParseResult<Top>;
     asExpr(top: Top): Expr | null;
 };
+
+/**
+        CST
+         |
+         v
+      [parse]
+         |
+         v
+        AST / format / layout / accessories
+         |\________
+INFOS    v         \
+   \->[type-check]  \
+         |           |
+         v          /
+        INFO    __ /
+         |    /
+         v   v
+      [compile]
+         |
+         v
+  IRS   IR
+    \  /
+     \/
+   [print]
+
+*/
