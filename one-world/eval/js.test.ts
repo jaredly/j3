@@ -7,7 +7,7 @@ test('js eval expr', () => {
     const result = JsEvaluator.parse(parsed);
     expect(result.top).toEqual({
         type: 'expr',
-        text: 'return hello();\n',
+        code: 'return hello();\n',
     });
 });
 
@@ -16,6 +16,15 @@ test('js eval defs', () => {
     const result = JsEvaluator.parse(parsed);
     expect(result.top).toEqual({
         type: 'def',
-        text: 'var $_0_ = ;\nvar $_1_ = ;\n\n$env.toplevels["test-top 11"] = $_0_;\n$env.toplevels["test-top 27"] = $_1_;',
+        code: 'var $_0_ = 12;\nvar $_1_ = 100;\n\n$env.toplevels["test-top 11"] = $_0_;\n$env.toplevels["test-top 27"] = $_1_;',
     });
+});
+
+test('js full stack', () => {
+    const parsed = reader('js"23 + 1"')!;
+    const result = JsEvaluator.parse(parsed);
+    if (!result.top) return;
+    const ir = JsEvaluator.compile(result.top, null);
+    const res = JsEvaluator.evaluate(ir, {});
+    expect(res).toEqual(24);
 });

@@ -56,9 +56,7 @@ right? That's fine.
 
 */
 
-type AST =
-    | { type: 'def'; name: number; code: string }
-    | { type: 'test'; name: number; code: string };
+type AST = { type: 'def'; code: string } | { type: 'expr'; code: string };
 
 const locToKey = (loc: Loc) =>
     loc.map(([top, num]) => `${top} ${num}`).join(',');
@@ -103,7 +101,7 @@ const processString = (
     return { text, mapping };
 };
 
-export const JsEvaluator: Evaluator<any, null, string> = {
+export const JsEvaluator: Evaluator<AST, null, string> = {
     kwds: [],
     parse(node, cursor) {
         if (node.type !== 'string') {
@@ -122,14 +120,14 @@ export const JsEvaluator: Evaluator<any, null, string> = {
 
         let trans = ts.transpileModule(text, {
             compilerOptions: { module: ts.ModuleKind.CommonJS },
-            transformers: { before: [returnExpressions()] },
+            transformers: { after: [returnExpressions()] },
         }).outputText;
 
         if (
             parsed.statements.length === 1 &&
             ts.isExpressionStatement(parsed.statements[0])
         ) {
-            return { top: { type: 'expr', text: trans } };
+            return { top: { type: 'expr', code: trans } };
         }
 
         const exports: NonNullable<ParseResult<any>['exports']> = [];
@@ -153,36 +151,51 @@ export const JsEvaluator: Evaluator<any, null, string> = {
             )}] = ${name};`;
         });
 
-        return { top: { type: 'def', text: trans }, exports };
+        return { top: { type: 'def', code: trans }, exports };
     },
     infer(top, infos) {
         return null;
     },
     compile(top, info) {
-        return 'alert("ok")';
+        return top.code;
     },
     print(ir, irs) {
         return { code: ir, sourceMap: [] };
     },
     evaluate(ir, irs) {
-        return new Function(ir)();
+        const text =
+            Object.values(irs)
+                .map((t) => `{${t}}`)
+                .join('\n') + ir;
+        return new Function('$env', text)({ toplevels: {}, resources: {} });
     },
 };
+
 function returnExpressions():
     | ts.TransformerFactory<ts.SourceFile>
     | ts.CustomTransformerFactory {
     return () => (node) => {
         if (ts.isSourceFile(node)) {
-            return ts.factory.createSourceFile(
-                node.statements.map((st) => {
-                    if (ts.isExpressionStatement(st)) {
-                        return ts.factory.createReturnStatement(st.expression);
-                    }
-                    return st;
-                }),
-                ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
-                node.flags,
-            );
+            node.statements.forEach((st, i) => {
+                if (ts.isExpressionStatement(st)) {
+                    // @ts-ignore
+                    node.statements[i] = ts.factory.createReturnStatement(
+                        st.expression,
+                    );
+                }
+            });
+
+            // ugh this does super weird things
+            // return ts.factory.createSourceFile(
+            //     node.statements.map((st) => {
+            //         // if (ts.isExpressionStatement(st)) {
+            //         //     return ts.factory.createReturnStatement(st.expression);
+            //         // }
+            //         return st;
+            //     }),
+            //     ts.factory.createToken(ts.SyntaxKind.EndOfFileToken),
+            //     node.flags,
+            // );
         }
         return node;
     };
