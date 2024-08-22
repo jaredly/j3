@@ -165,6 +165,8 @@ type BlockKind =
 -------- Sexp Syntax Nodes ----------
 */
 
+type FullLoc = Loc;
+
 type Id<Loc> =
     // id for identifier. "blank" === empty id
     {
@@ -172,7 +174,7 @@ type Id<Loc> =
         text: string;
         loc: Loc;
         ref?:
-            | { type: 'toplevel'; toplevel: string; loc: number; kind: string }
+            | { type: 'toplevel'; loc: FullLoc; kind: string }
             // Soo this will have a look-uppable name too
             | { type: 'resource'; id: string; kind: string }
             | { type: 'builtin'; kind: string }

@@ -1,5 +1,5 @@
 import { Layout } from '../shared/IR/intermediate';
-import { RecNode, RecNodeT, Style } from '../shared/nodes';
+import { Loc, RecNode, RecNodeT, Style } from '../shared/nodes';
 
 export type Auto = {
     text: string;
@@ -22,7 +22,7 @@ export type Usage = {
 };
 
 export type ParseResult<Top> = {
-    top: Top;
+    top: Top | null;
     // ok so like, could be macro right?
     // or could be a ... toplevel kwd
     // or could be a type, or something.
@@ -36,13 +36,21 @@ export type ParseResult<Top> = {
     layouts?: Record<number, Layout>;
     styles?: Record<number, Style>;
     usages?: Usage[];
-    exports?: { loc: number; kind: string }[];
+    exports?: { loc: Loc; kind: string }[];
 };
 
-export type Evaluator<Top, Expr> = {
+export type Evaluator<AST, TINFO, IR> = {
     kwds: Auto[];
-    parse(node: RecNode, cursor?: number): ParseResult<Top>;
-    asExpr(top: Top): Expr | null;
+    parse(node: RecNode, cursor?: number): ParseResult<AST>;
+    infer(top: AST, infos: Record<string, TINFO>): TINFO;
+    compile(top: AST, info: TINFO): IR;
+    print(
+        ir: IR,
+        irs: Record<string, IR>,
+    ): { code: string; sourceMap: { loc: Loc; start: number; end: number }[] };
+    // trace
+    // anddd coverage tracking
+    evaluate(ir: IR, irs: Record<string, IR>): any;
 };
 
 /**
