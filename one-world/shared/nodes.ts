@@ -8,6 +8,8 @@ import { RenderInfo } from './renderables';
 import { NodeSelection } from './state';
 
 export type Loc = Array<[string, number]>;
+export const keyForLoc = (loc: Loc) =>
+    loc.map(([top, loc]) => `${top}:${loc}`).join(',');
 
 export type PathRoot = {
     type: 'doc-node';
@@ -174,13 +176,16 @@ type Id<Loc> =
         text: string;
         loc: Loc;
         ref?:
-            | { type: 'toplevel'; loc: FullLoc; kind: string }
-            // Soo this will have a look-uppable name too
-            | { type: 'resource'; id: string; kind: string }
-            | { type: 'builtin'; kind: string }
+            | RefDeps
             | { type: 'keyword' }
             | { type: 'placeholder'; text: string };
     };
+
+type RefDeps =
+    | { type: 'toplevel'; loc: FullLoc; kind: string }
+    // Soo this will have a look-uppable name too
+    | { type: 'resource'; id: string; kind: string }
+    | { type: 'builtin'; kind: string };
 
 export type Node =
     | Id<number>
@@ -552,7 +557,77 @@ export const fromMap = <Loc>(
     }
 };
 
-const foldNode = <V>(v: V, node: RecNode, f: (v: V, node: RecNode) => V): V => {
+const checkMap = <T>(lst: T[], f: (t: T) => T) => {
+    let changed = false;
+    const next = lst.map((t) => {
+        const nt = f(t);
+        if (nt !== t) changed = true;
+        return nt;
+    });
+    return changed ? next : null;
+};
+
+export const mapNode = (
+    node: RecNode,
+    f: (node: RecNode) => RecNode,
+): RecNode => {
+    node = f(node);
+    switch (node.type) {
+        case 'id':
+        case 'rich-inline':
+            return node;
+        case 'list':
+        case 'array':
+        case 'record':
+        case 'rich-block': {
+            const items = checkMap(node.items, (n) => mapNode(n, f));
+            return items ? { ...node, items } : node;
+        }
+        case 'table':
+            const rows = checkMap(
+                node.rows,
+                (row) => checkMap(row, (node) => mapNode(node, f)) ?? row,
+            );
+            return rows ? { ...node, rows } : node;
+        case 'comment':
+        case 'spread':
+            const contents = mapNode(node.contents, f);
+            return contents ? { ...node, contents } : node;
+        case 'annot': {
+            const annot = mapNode(node.annot, f);
+            const contents = mapNode(node.contents, f);
+            return annot || contents
+                ? {
+                      ...node,
+                      annot: annot ?? node.annot,
+                      contents: contents ?? node.contents,
+                  }
+                : node;
+        }
+        case 'record-access':
+            const target = mapNode(node.target, f);
+            const items = checkMap(node.items, (node) => mapNode(node, f));
+            return target || items
+                ? {
+                      ...node,
+                      target: target ?? node.target,
+                      items: items ?? node.items,
+                  }
+                : node;
+        case 'string':
+            const templates = checkMap(node.templates, (tpl) => {
+                const expr = mapNode(tpl.expr, f);
+                return expr ? { ...tpl, expr } : tpl;
+            });
+            return templates ? { ...node, templates } : node;
+    }
+};
+
+export const foldNode = <V>(
+    v: V,
+    node: RecNode,
+    f: (v: V, node: RecNode) => V,
+): V => {
     switch (node.type) {
         case 'id':
         case 'rich-inline':

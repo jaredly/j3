@@ -33,8 +33,8 @@ export type ParseResult<Top> = {
     // defmacro, deftypemacro
     autocomplete?: { kinds: string[]; local: any[] };
     errors?: any[];
-    layouts?: Record<number, Layout>;
-    styles?: Record<number, Style>;
+    layouts: Record<number, Layout>;
+    styles: Record<number, Style>;
     usages?: Usage[];
     exports?: { loc: Loc; kind: string }[];
 };
@@ -53,7 +53,34 @@ export type Evaluator<AST, TINFO, IR> = {
     evaluate(ir: IR, irs: Record<string, IR>): any;
 };
 
-/**
+/*
+
+Ok, so associated terms
+for simplicities sake, we could just
+say that if a term is pulled in, then
+any associated terms are also pulled in.
+we could get fancier by only pulling in the
+associations that are possible to reference
+given the definitions of the macros in question,
+but let's not get fancy for now.
+
+ok ... so....
+um the graph
+what I'm saying is, that macros are *not allowed*
+to produce new dependencies that aren't represented
+in either the macro or the inputs to the macro
+(or /associated terms/ of the same).
+
+This makes is so that we /do/ have the capacity to
+statically generate the dependency graph without
+actually evaluating the macros.
+
+        CST    /-----[eval]--(macros cst)
+         |   macros
+         v  /
+     [macroex]
+         |
+         v
         CST
          |
          v
@@ -73,8 +100,8 @@ INFOS    v         \
          |
          v
   IRS   IR
-    \  /
-     \/
-   [print]
+    \  /__\_
+     \/     \
+   [print]  [eval]
 
 */

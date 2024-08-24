@@ -56,7 +56,10 @@ right? That's fine.
 
 */
 
-type AST = { type: 'def'; code: string } | { type: 'expr'; code: string };
+type AST =
+    | { type: 'def'; code: string }
+    | { type: 'expr'; code: string }
+    | { type: 'test'; code: string };
 
 const locToKey = (loc: Loc) =>
     loc.map(([top, num]) => `${top} ${num}`).join(',');

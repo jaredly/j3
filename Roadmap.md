@@ -1,4 +1,53 @@
 
+Trace thoughts:
+- cst for "formatting"
+- cst for "filter" to limit what gets traced. `_` in that context means "the value under consideration"
+- want to be able to "register tracing formatters" ... not sure how that goes down type-wise.
+  I mean, at base it's a javascript function that gets handed over to the editor.
+  so we could have a language that exposes that directly, or one that says you can
+  `(defformatter targettype formatter)`
+
+parse ->
+exports
+- kind , loc , name
+formatters
+-
+macros
+-
+instances?
+- of, loc ...
+
+shouuuuld types be namespaced absolutely???? maybeeee.
+but that would make json import less absolute. I guess
+I could define something with like a @loose pragma or something.
+Or I could add strictness later? idk.
+
+hrm ok so I do want strictness. let's parse all incoming json.
+
+ALSO let's dispense with the index-based data, and do records all the way.
+-> (some {value}) is more awkward than (some value)
+ok but so we know that (abc {record fields}) is a `econstr` insteaed of `eapp`.
+which is nice.
+
+it does mean that "life with row types" will not be backwards compatible with the
+other way of doing things though.
+WELL except that `abc` will be locked down as a ref with kind `type`, right? or like `constr`.
+Which means we will be able to know what it is?
+it would just mean you can't have a polymorphic record defined inline as the argument to a tconstr.
+which seems reasonable.
+
+->
+
+Let's have a thinggggg indicatingggg that a given toplevel has *unseen* exports, due to macros.
+as a matter of fact, I want to be able to have a builtin macrooo I think.
+hrmmmmm. Default macros?
+Like.
+should they be ... only defined in the compiler? or available in userland?
+that would have some weird ramifications if they could be userland. so I'll say only in the compiler.
+
+
+#
+
 hrmmmok
 let's have `render` re-use cached stuff? maybe?
 eh, I can do the autocomplete first.
