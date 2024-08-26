@@ -169,7 +169,7 @@ type BlockKind =
 
 type FullLoc = Loc;
 
-type Id<Loc> =
+export type Id<Loc> =
     // id for identifier. "blank" === empty id
     {
         type: 'id';
@@ -180,6 +180,8 @@ type Id<Loc> =
             | { type: 'keyword' }
             | { type: 'placeholder'; text: string };
     };
+
+export type IDRef = Id<any>['ref'];
 
 type RefDeps =
     | { type: 'toplevel'; loc: FullLoc; kind: string }

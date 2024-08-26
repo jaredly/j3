@@ -1,4 +1,20 @@
 
+# Thinking about things
+
+```clj
+; howw to indicate `ref`s
+(defn hello [x] (what#12))
+
+(def what hello!)
+```
+
+hello!
+
+
+
+
+
+
 # Associated Terms
 
 So ... associated terms.

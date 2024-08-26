@@ -1,10 +1,11 @@
-import { Loc, RecNode } from '../shared/nodes';
+import { IDRef, Loc, RecNode } from '../shared/nodes';
 
 type RNode = RecNode;
 
 export const reader = (
     text: string,
     top: string = 'test-top',
+    globals: Record<string, IDRef> = {},
 ): RNode | void => {
     let i = 0;
     const pairs = { '[': ']', '{': '}', '(': ')' };
@@ -91,6 +92,7 @@ export const reader = (
                 loc: l(start),
             };
         }
+
         switch (text[i]) {
             case '[':
             case '{':
@@ -133,10 +135,26 @@ export const reader = (
                 let start = i;
                 for (; i < text.length && !stops.includes(text[i]); i++) {}
                 if (start === i) return;
+                let idText = text.slice(start, i);
+                if (idText.includes('#')) {
+                    const [left, right] = idText.split('#');
+                    idText = left;
+                    start = +right;
+                }
+                let ref: IDRef;
+                if (idText.includes('!')) {
+                    const [left, right] = idText.split('!');
+                    idText = left;
+                    ref = globals[right];
+                    if (!globals[right]) {
+                        throw new Error(`global missing: ${right}`);
+                    }
+                }
                 const id: RNode = {
                     type: 'id',
-                    text: text.slice(start, i),
+                    text: idText,
                     loc: l(start),
+                    ref,
                 };
                 if (text[i] === '"') {
                     const string = readString();

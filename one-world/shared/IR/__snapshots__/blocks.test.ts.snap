@@ -1320,63 +1320,58 @@ exports[`try a table maybe 1`] = `
 ---------| 10
 ⦇lol      |folks
  hi       |ho
- (lol     |
+ (lol
      what)      ⦈
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
 |⦇lol      |folks
  hi       |ho
- (lol     |
+ (lol
      what)      ⦈
 [ # ] {"type":"block","start":[1,0],"width":3,"height":1}
 ⦇l̲o̲l̲      |folks
  hi       |ho
- (lol     |
+ (lol
      what)      ⦈
 [ # ] {"type":"block","start":[11,0],"width":5,"height":1}
 ⦇lol      |f̲o̲l̲k̲s̲
  hi       |ho
- (lol     |
+ (lol
      what)      ⦈
 [ # ] {"type":"block","start":[1,1],"width":2,"height":1}
 ⦇lol      |folks
  h̲i̲       |ho
- (lol     |
+ (lol
      what)      ⦈
 [ # ] {"type":"block","start":[11,1],"width":2,"height":1}
 ⦇lol      |folks
  hi       |h̲o̲
- (lol     |
+ (lol
      what)      ⦈
 [ # ] {"type":"block","start":[1,2],"width":0,"height":1}
 ⦇lol      |folks
  hi       |ho
- |(lol     |
+ |(lol
      what)      ⦈
 [ # ] {"type":"block","start":[2,2],"width":3,"height":1}
 ⦇lol      |folks
  hi       |ho
- (l̲o̲l̲     |
+ (l̲o̲l̲
      what)      ⦈
 [ # ] {"type":"block","start":[5,3],"width":4,"height":1}
 ⦇lol      |folks
  hi       |ho
- (lol     |
+ (lol
      w̲h̲a̲t̲)      ⦈
 [ # ] {"type":"block","start":[10,3],"width":0,"height":1}
 ⦇lol      |folks
  hi       |ho
- (lol     |
+ (lol
      what)|      ⦈
-[ # ] {"type":"block","start":[11,2],"width":0,"height":1}
-⦇lol      |folks
- hi       |ho
- (lol     ||
-     what)      ⦈
 [ # ] {"type":"block","start":[17,3],"width":0,"height":1}
 ⦇lol      |folks
  hi       |ho
- (lol     |
+ (lol
      what)      ⦈|
 "
 `;
