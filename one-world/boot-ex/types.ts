@@ -36,8 +36,22 @@ export type ParseResult<Top> = {
     layouts: Record<number, Layout>;
     styles: Record<number, Style>;
     usages?: Usage[];
+
     exports?: { loc: Loc; kind: string }[];
+    associations?: {
+        // should be something exported from this dealio, but I guess it doesn't have to be
+        loc: Loc;
+        // the "thing we're associating with"
+        target: Loc;
+        key: Loc;
+    }[];
 };
+
+// kind is probably 'value' 'type' 'macro' 'formatter' 'association' 'association:multi'?
+// hrm should we have a kind for `evaluator`? hmmmm
+// export type Export =
+//     | { type: 'simple'; loc: Loc; kind: string }
+//     | { type: 'associated'; loc: Loc; target: Loc; key: Loc; kind: string };
 
 export type Evaluator<AST, TINFO, IR> = {
     kwds: Auto[];
@@ -75,25 +89,36 @@ This makes is so that we /do/ have the capacity to
 statically generate the dependency graph without
 actually evaluating the macros.
 
-        CST    /-----[eval]--(macros cst)
-         |   macros
-         v  /
-     [macroex]
-         |
-         v
-        CST
+ooh ok SO what iffff we allow some associated terms to be
+/sets/ not unique, anddd then we could use `defassoc` to
+represent type class instances??? would that work?
+
+like technically it would, but we would want a way to
+prune the dependencies, otherwise *any* change to an
+instance of a typeclass would invalidate all references
+to the type class. which is overeager.
+
+
+    //     CST    /-----[eval]--(macros cst)
+    //      |   macros
+    //      v  /
+    //  [macroex]
+    //      |
+    //      v
+
+        CST <-> with macro cache substituted in
          |
          v
       [parse]
          |
          v
-        AST / format / layout / accessories
-         |\________
-INFOS    v         \
-   \->[type-check]  \
+ [tc]    AST / format / layout / accessories
+  |      |\_________
+INFOS    v  /-ASTs  \
+   \->[type-check]   \
          |           |
-         v          /
-        INFO    __ /
+         v           /
+        INFO    ____/
          |    /
          v   v
       [compile]

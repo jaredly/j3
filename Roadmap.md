@@ -1,4 +1,117 @@
 
+# Associated Terms
+
+So ... associated terms.
+For example, a `person=` associated with `person`, as `person.=`.
+
+Where does the /connection/ live?
+- at the toplevel of `person`
+- at the toplevel of `person=`
+- only in cache
+
+if it's only in cache, that feels ... risky? prone to cache invalidation issues?
+or rather ...
+the thing that's risky is: knowing what things are associated with `person` relies on
+all of the `person=` toplevels to not only be "loaded in memory" but also "parsed & macroexpanded".
+
+and why is that an issue?
+well macroexpansion requires evaluation.
+(UNLESS it doesn't? like unless I persist the macroexpansions. hmm ok honestly that might be good.)
+
+the main thing is; I want to be able to get a fully resolved dependency tree, statically.
+ideally without even calling `parse`. Is that a thing I can do?
+well if macros get persisted, then yes, right?
+
+-> what would that look like?
+--> when making a (change), we check to see if any macros are impacted, and we
+    <do the work to macroexpand> and /add it to the change/. So the toplevel macros
+    cache is always up to date.
+
+Ok I do like that very much actually.
+
+Ok. What about (a change to a macro definition). The problem with caching the macro there
+is that it wouldn't necessarily update downstream. Or it would update downstream, and be
+kindof a big deal. Because it would change the persisted macro expansions of everything.
+OK SO the sqlite database will need to be able to efficiently search for "anything referencing this macro". Shouldn't be too hard.
+
+BUT now we get to the question of: `person.=` -- does that get resolved actually to `person=`, OR
+instead do we just `search for all of the accessories to person` when evaluating or typechecking
+`person` and lump them in? Seems like we probably lump them in.
+
+Ok but at what point are we allowed to resolve it?
+NOT at macroexpansion time, because that would be calcifying 'state of the universe' stuff in the
+cache, which we want to avoid.
+
+Just type-check and print/eval, right?
+Yeah I think that's right.
+
+infer(ast, infos, associations)
+eval(ir, irs, associations)
+
+# Ok so I thiiiink associated terms are making sense now.
+
+BUT
+here's the big dealio.
+we can have some recursive dealios.
+(need to watch out for attempted recursion when evaluating a macro btw)
+
+QUESTION:
+would it really be so bad to require explicit mutual recursion?
+like, if things are going to be recursive, require that they ...
+... be defined in the same toplevel?
+
+...
+it would certainly make some things clearer. (if a type error is happening it hangs the whole thing)
+but it would make other things more cumbersome.
+I like being able to nest things under different functions.
+
+OK so `tinfo`, because `type-check` MIGHT take multiple ASTs if there's a cyclic dependency somewhere.
+
+yeah so basically, one tinfo will have the actual data and the others will be pointers.
+that sounds nice, right? fairly simple?
+
+
+Here's our scenario:
+
+We load up a document.
+It has some number of document nodes.
+we then get our set of toplevels that are ~loaded.
+
+(we follow upstream all the way)
+(we follow downstream to see if there are any `deftests` that we need to be evaluating)
+
+produce a directed dependency graph of that set of toplevels, following all dependencies
+both upstream *and downstream*. Make special note of any deftests.
+
+/associated terms/ count as a downstream dependency... or maybe a circular dependency?
+wait no I think downstream should be fine. jk circular.
+
+NOTE that we don't ... care about downstreams OF THE UPSTREAMS. For that reason,
+/associated terms/ should count as circulars, because we do care about associated
+terms of upstreams.
+
+jmmmmmmmmmmmmmmmmmmmm we also ... don't need the upstreams of the downstreams? right?
+like we should have everything in the persistant cache that we need. I would think.
+
+I definitely need to make a little picture of all this.
+to determine /what we can load from cache/ and /what happens if (x) is changed/.
+
+like, downstreams might need to re-type-check if our type changes.
+but I guess presumably the downstreams don't need to re-parse... so we
+can use that cache anyway.
+hm I guess maybe we don't need to load downstreams? as long as the cache stuff is there.
+
+
+
+
+
+
+
+
+
+
+#
+
 Trace thoughts:
 - cst for "formatting"
 - cst for "filter" to limit what gets traced. `_` in that context means "the value under consideration"
