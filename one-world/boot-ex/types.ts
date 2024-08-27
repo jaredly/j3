@@ -53,6 +53,8 @@ export type ParseResult<Top> = {
 //     | { type: 'simple'; loc: Loc; kind: string }
 //     | { type: 'associated'; loc: Loc; target: Loc; key: Loc; kind: string };
 
+export type AnyEvaluator = Evaluator<any, any, any>;
+
 export type Evaluator<AST, TINFO, IR> = {
     kwds: Auto[];
     parse(node: RecNode, cursor?: number): ParseResult<AST>;

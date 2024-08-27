@@ -3,9 +3,10 @@
 import { termColors } from '../client/TextEdit/colors';
 import { Layout } from '../shared/IR/intermediate';
 import { Loc, RecNode, Style } from '../shared/nodes';
+import { ParseResult } from './types';
 
-export const parse = (node: RecNode) => {
-    const ctx: Ctx = { layouts: {}, styles: {} };
+export const parse = (node: RecNode): ParseResult<void> => {
+    const ctx: Ctx = { layouts: {}, styles: {}, exports: [] };
 
     const top = _parse(node, ctx);
     return { top, ...ctx };
@@ -19,7 +20,7 @@ type Ctx = {
     layouts: Record<number, Layout>;
     styles: Record<number, Style>;
     // usages: Usage[];
-    // exports: { loc: number; kind: string }[];
+    exports: { loc: Loc; kind: string }[];
 };
 
 // const tights: Record<string, Layout> = {
@@ -74,6 +75,13 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                                 type: 'vert',
                                 layout: { tightFirst: 3, indent: 6 },
                             };
+                            const second = node.items[1];
+                            if (second.type === 'id') {
+                                ctx.exports.push({
+                                    loc: second.loc,
+                                    kind: 'value',
+                                });
+                            }
                             ctx.styles[getLoc(first.loc)] = kwdStyle;
                             break;
                     }

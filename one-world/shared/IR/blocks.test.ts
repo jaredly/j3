@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { showLayout, showSpans } from './test-utils';
+import { multi, showLayout, showSpans } from './test-utils';
 
 test('showing spans of simple string', () => {
     expect('\n' + showSpans('"hi"')).toMatchSnapshot();
@@ -196,5 +196,26 @@ test('pairs placement?', () => {
 test('try a table maybe', () => {
     let res = [];
     res.push(showSpans('(|lol|folks\nhi  |ho\n(lol what)|)', 10));
+    expect('\n' + res.join('\n')).toMatchSnapshot();
+});
+
+test('parsing refs', () => {
+    const text = multi([`(defn hello [x] 10)`, `(+ x hello!)`]);
+    expect(text).toMatchSnapshot();
+});
+
+test('parsing refs with diff name', () => {
+    const text = multi([`(defn hello [x] 10)`, `(+ x hi!hello)`]);
+    expect(text).toMatchSnapshot();
+});
+
+test('placeholders thanks', () => {
+    const text = multi([`(this is a !placeholder)`]);
+    expect(text).toMatchSnapshot();
+});
+
+test('try a table maybe', () => {
+    let res = [];
+    res.push(showSpans('(a !placeholder is here)', 10));
     expect('\n' + res.join('\n')).toMatchSnapshot();
 });

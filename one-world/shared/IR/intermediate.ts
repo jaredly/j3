@@ -8,7 +8,14 @@ import {
     rgbRainbow,
 } from '../../../web/custom/rainbow';
 import { termColors } from '../../client/TextEdit/colors';
-import { Nodes, Node, Style, Path, pathWithChildren } from '../nodes';
+import {
+    Nodes,
+    Node,
+    Style,
+    Path,
+    pathWithChildren,
+    keyForLoc,
+} from '../nodes';
 import { ListDisplay, RenderInfo } from '../renderables';
 
 type Format = Style;
@@ -141,7 +148,7 @@ export const nodeToIR = (
     path: Path,
     styles: Record<number, Format> = {},
     layouts: Record<number, Layout> = {},
-    names: Record<string, Record<number, string>> = {},
+    names: Record<string, string> = {},
 ): IR => {
     switch (node.type) {
         case 'table':
@@ -657,7 +664,7 @@ export const nodeToIR = (
         case 'id': {
             const text =
                 node.ref?.type === 'toplevel'
-                    ? names[node.ref.toplevel][node.ref.loc]
+                    ? names[keyForLoc(node.ref.loc)]
                     : node.text;
 
             return {

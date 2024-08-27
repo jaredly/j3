@@ -145,9 +145,14 @@ export const reader = (
                 if (idText.includes('!')) {
                     const [left, right] = idText.split('!');
                     idText = left;
-                    ref = globals[right];
-                    if (!globals[right]) {
-                        throw new Error(`global missing: ${right}`);
+                    const key = right.length ? right : left;
+                    if (left === '') {
+                        ref = { type: 'placeholder', text: right };
+                    } else {
+                        ref = globals[key];
+                        if (!globals[key]) {
+                            throw new Error(`global missing: ${key}`);
+                        }
                     }
                 }
                 const id: RNode = {

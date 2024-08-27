@@ -1,12 +1,22 @@
 // testingi t up
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
+import { BootExampleEvaluator } from '../../boot-ex';
 import { parse } from '../../boot-ex/format';
 import { reader } from '../../boot-ex/reader';
+import { iterTopNodes } from '../../client/cli/docNodeToIR';
 import { controlLayout, textLayout } from '../../client/cli/drawDocNode';
+import { layoutCtx } from '../../client/cli/drawDocNode2';
 import { IR, nodeToIR } from '../../shared/IR/intermediate';
-import { LayoutChoices, LayoutCtx, layoutIR } from '../../shared/IR/layout';
+import {
+    IRForLoc,
+    LayoutChoices,
+    LayoutCtx,
+    layoutIR,
+} from '../../shared/IR/layout';
 import {
     childLocs,
+    IDRef,
+    keyForLoc,
     Nodes,
     Path,
     PathRoot,
@@ -17,6 +27,74 @@ import {
 import { BlockEntry, blockToText } from './block-to-text';
 import { highlightSpan } from './highlightSpan';
 import { Block, irToBlock } from './ir-to-blocks';
+
+export const multi = (texts: string[], ev = BootExampleEvaluator) => {
+    const globals: Record<string, IDRef> = {};
+    const results: string[] = [];
+    const names: Record<string, string> = {};
+    texts.forEach((string, i) => {
+        const tid = `top-${i}`;
+        const recNode = reader(string, tid, globals);
+        if (!recNode) return;
+        const parsed = ev.parse(recNode);
+        const nodes: Nodes = {};
+        const root = toMap(recNode, nodes);
+        parsed.exports?.forEach((exp) => {
+            const loc = exp.loc[0][1];
+            const node = nodes[loc];
+            if (node?.type === 'id') {
+                if (globals[node.text]) {
+                    throw new Error(`duplicate definition`);
+                }
+                globals[node.text] = {
+                    type: 'toplevel',
+                    kind: exp.kind,
+                    loc: exp.loc,
+                };
+                names[keyForLoc(exp.loc)] = node.text;
+            }
+        });
+
+        const irs: IRForLoc = {};
+        const pathRoot: PathRoot = {
+            type: 'doc-node',
+            doc: '',
+            ids: [],
+            toplevel: tid,
+        };
+        iterTopNodes(root, pathRoot, nodes, (node, path) => {
+            irs[node.loc] = nodeToIR(
+                node,
+                path,
+                parsed.styles,
+                parsed.layouts,
+                names,
+            );
+        });
+
+        const ctx = layoutCtx(50, irs);
+
+        const choices: LayoutChoices = {};
+        const result = layoutIR(0, 0, irs[root], choices, ctx);
+        ctx.layouts[root] = { choices, result };
+        const block = irToBlock(irs[root], irs, choices, {
+            space: ',',
+            layouts: ctx.layouts,
+            annotateNewlines: true,
+            top: '',
+        });
+        const sourceMap: BlockEntry[] = [];
+        const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
+            sourceMaps: sourceMap,
+            color: false,
+            styles: {},
+        });
+
+        results.push(txt);
+    });
+
+    return results.join('\n\n');
+};
 
 const processNode = (
     data: RecNode,

@@ -1,5 +1,5 @@
 import termkit from 'terminal-kit';
-import { Evaluator } from '../../boot-ex/types';
+import { AnyEvaluator, Evaluator } from '../../boot-ex/types';
 import {
     BlockEntry,
     blockToText,
@@ -89,7 +89,7 @@ export const render = (
     maxWidth: number,
     store: Store,
     docId: string,
-    ev: Evaluator<any, any>,
+    ev: AnyEvaluator,
 ) => {
     const ds = store.getDocSession(docId, store.session);
     const state = store.getState();
@@ -206,10 +206,10 @@ function calculateLayouts(
     return layoutCache;
 }
 
-function calculateIRs(
+export function calculateIRs(
     doc: Doc,
     state: PersistedState,
-    ev: Evaluator<any, any>,
+    ev: AnyEvaluator,
     ds: DocSession,
 ): IRCache2<any> {
     const cache: IRCache2<any> = {};

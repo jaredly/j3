@@ -1375,3 +1375,46 @@ exports[`try a table maybe 1`] = `
      what)      ⦈|
 "
 `;
+
+exports[`parsing refs 1`] = `
+"(defn hello [x]
+       10      )
+
+(+ x 𝐡𝐞𝐥𝐥𝐨)"
+`;
+
+exports[`parsing refs with diff name 1`] = `
+"(defn hello [x]
+       10      )
+
+(+ x 𝐡𝐞𝐥𝐥𝐨)"
+`;
+
+exports[`placeholders thanks 1`] = `"(this is a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫)"`;
+
+exports[`try a table maybe 2`] = `
+"
+---------| 10
+(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+    here)
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+    here)
+[ # ] {"type":"block","start":[1,0],"width":1,"height":1}
+(a̲ 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+    here)
+[ # ] {"type":"block","start":[3,0],"width":11,"height":1}
+(a 𝐩̲𝐥̲𝐚̲𝐜̲𝐞̲𝐡̲𝐨̲𝐥̲𝐝̲𝐞̲𝐫̲ is
+    here)
+[ # ] {"type":"block","start":[15,0],"width":2,"height":1}
+(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 i̲s̲
+    here)
+[ # ] {"type":"block","start":[4,1],"width":4,"height":1}
+(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+    h̲e̲r̲e̲)
+[ # ] {"type":"block","start":[9,1],"width":0,"height":1}
+(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+    here)|
+"
+`;
