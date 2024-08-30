@@ -101,12 +101,12 @@ instance of a typeclass would invalidate all references
 to the type class. which is overeager.
 
 
-    //     CST    /-----[eval]--(macros cst)
-    //      |   macros
-    //      v  /
-    //  [macroex]
-    //      |
-    //      v
+        CST    /-----[eval]--(macros cst)
+         |   macros
+         v  /
+     [macroex]
+         |
+         v
 
         CST <-> with macro cache substituted in
          |

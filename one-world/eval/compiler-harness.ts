@@ -32,13 +32,18 @@ type ExecutionCache<AST, TINFO, IR> = {
 type GraphNode = {
     type: 'parse' | 'infer' | 'eval' | 'compile' | 'print' | 'macroex';
     top: string;
+    // TODO: move to `id`s? So it's possible to break and re-forge?
+    // yeah we can use the `nodes` key
     deps: GraphNode[];
 };
 
 // 'value' 'type' 'macro' ... other things maybe?
 type Dep = { loc: Loc; kind: string };
 
-export const assembleGraph = (getTop: (id: string) => RecNode) => {
+export const assembleGraph = (
+    getTop: (id: string) => RecNode,
+    getAccessories?: (id: string) => Loc[],
+) => {
     const nodes: Record<string, GraphNode> = {};
 
     const get = (top: string, type: GraphNode['type']) =>
@@ -62,7 +67,6 @@ export const assembleGraph = (getTop: (id: string) => RecNode) => {
         const current = get(top, 'parse');
         if (current) return current;
         const node = add({ type: 'parse', top, deps: [] });
-        // node.deps.push(macroex(top, deps));
         return node;
     };
 
@@ -74,6 +78,11 @@ export const assembleGraph = (getTop: (id: string) => RecNode) => {
         deps.forEach((dep) => {
             node.deps.push(infer(dep.loc[0][0]));
         });
+        if (getAccessories) {
+            getAccessories(top).forEach((acc) => {
+                node.deps.push(infer(acc[0][0]));
+            });
+        }
         node.deps.push(parse(top, deps));
 
         return node;
@@ -94,6 +103,11 @@ export const assembleGraph = (getTop: (id: string) => RecNode) => {
         const deps = dependencies(getTop(top));
         node.deps.push(compile(top, deps));
         deps.forEach((dep) => node.deps.push(compile(dep.loc[0][0])));
+        if (getAccessories) {
+            getAccessories(top).forEach((acc) => {
+                node.deps.push(compile(acc[0][0]));
+            });
+        }
 
         return node;
     };

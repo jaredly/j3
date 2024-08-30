@@ -1,4 +1,277 @@
 
+# Alllright I think the thing I want
+is to try just building some stuff, and see what I need.
+
+```clj
+
+(typealias loc (list (, string int)))
+
+(defmacro defn [cst loc]
+; layoutssss
+; styles
+(match cst
+(|[id]          |(ok (` def #id))
+  [id args]     |(ok (` def #id (fn args)))
+  [id args body]|(ok (` def #id (fn #args #body)))
+  _             |(err "Three args expected")               |)))
+
+(defmacro -> [cst loc]
+(match cst
+(|[target ..rest]|(ok (loop rest (fn [items recur]
+                                 (match items
+                                 (|[]          |target
+                                   [one ..rest]|(let (|inner|(recur rest)|)
+                                                (` #one #inner)) |)))))
+  []             |(` ())                                                        |)))
+
+(defmacro if [cst loc]
+(match cst
+(|[cond yes no]|(` match cond true yes false no)
+  [cond yes]   |(` match cond true yes false ())|)))
+
+(defmacro and [cst loc]
+(loop cst (fn [items recur]
+          (match items
+          (|[]          |(` true)
+            [one]       |one
+            [one ..rest]|(let (|inner|(recur rest)|)
+                         (` if #one #inner false)))))))
+
+(defmacro or [cst loc]
+(loop cst (fn [items recur]
+            (match items
+              (|[]          |(` true)
+                [one]       |one
+                [one ..rest]|(let (|inner|(recur rest)|)
+                             (` if #one true #inner)))))))
+
+(deftype (pair one two) (pair one two))
+(deftype (result good bad) (ok good) (err bad))
+(deftype (option value) (some value) (none))
+(deftype (list item) (cons item (list item)) (nil))
+
+(defmacro , [cst loc]
+(loop cst (fn [items recur]
+          (match items
+          (|[]          |(` ())
+            [one ..rest]|(let (|inner|(recur rest)|)
+                         (` pair #one #inner))    |)))))
+
+(defmacro let-> [cst loc]
+...)
+
+(defmacro if-let [cst loc]
+...)
+
+```
+
+
+
+
+
+
+# Macrosss
+
+OK so we can't store the macro-expanded CST right on the toplevel, because
+it ~might be different depending on the evaluator. Program semantics aren't guaranteed to
+be transferrable.
+
+SO
+
+it needs to be a durable cache.
+AND dependency analysis /uses the durable cache/.
+
+OK OK who can defined dependencies for what?
+
+(base cst) statically defines `macroex` dependencies.
+ \- recursion at this point is ... hmm actually maybe it's ok? because macros aren't type checked as such
+
+(macroexpanded cst) statically defines `infer` dependencies
+    \-> hrmmm ok the cst alone can't tell us what things are exported though,
+        as well as accessory dependencies. gotta be the parsed version of it.
+
+(type info) and (macroexpanded cst) define the `print/eval` dependencies
+
+SO
+we need durable searchable caches of:
+
+1) macroexpanded CST + parsed AST (incl exports and accessories)
+
+2) type info ... along with any runtime dependencies that were determined
+  - ok so my idea with this is that when doing type inference we would lock down
+    type class instance dependencies ... but idk if that makes sense.
+  For now we could ignore the 'add dependencies' bit and come back to it later.
+
+howww to resolve things?
+ok so what iff
+
+
+OK IDEA: I think it might be cool for there
+to be different kinds of accessories
+like ones for types distinct from ones for values.
+and then doing `somevalue.typeacc` would do the thing for the `typeof somevalue`.
+wouldn't that be cool.
+
+anywwway. So the problem I think comes down to the combination of these two things:
+- macros
+- accessories
+
+accessories being defined /separately/ from the thing they're targetting, but at the same
+time not being statically known (only known by the parsing).
+
+soooo question: how annoying would it be to have like a first-class CST node that is
+like `accessory def` or something. would that be too much?
+HRMMM Ok but that wouldn't actually solve it because we still need to potentially evaluate
+macros, right?
+yeah let's ditch that idea.
+
+
+
+# hrmmm
+
+
+So ... it's like: first we need to macroexpand everything.
+BUT to do that, we need to resolve accessories, which means
+we need to parse everything.
+BUT to do that, we need to macroexpand everything.
+
+There's gotta be a way to cordon some things off.
+like
+
+Soooo
+- you can't define an accessory without
+  - either having an explicit reference to the accessory OR
+  - referencing a macro that has an explicit reference to that accessory.
+
+AND
+if a subgraph has no reference to an accessory, you can be sure it doesn't depend on it
+
+SO in macros, we've gotta make a distinction between a runtime dependency and a generated dependency.
+otherwise it's gonna be whack.
+so basically: 'is this reference quoted'.
+
+TO resolve a macro,
+you need to handle all the non-quoted dependencies. obvs.
+
+and then you eval the macro, and it brings in (some) of the quoted deps.
+
+ok so this seems tractable.
+
+hrmmmmmm.
+
+~parse.
+ok so any given thing has 2 potential sets of `dependencies`.
+There's `static` dependencies, and `quoted` dependencies.
+it's possible that I can get away with just flat out ignoring quoted dependencies for now.
+we will see.
+
+
+
+# Thinking about type classessss
+This is a higher level of difficulty for dependency analysis, because
+at first blush it absolutely requires inference before you can determine dependencies.
+
+
+## Simpler is `deriving eq`, let's make sure that's all nailed down.
+
+```clj
+; defines an accessory label
+(defacc =)
+
+(deriving eq
+(deftype person
+ (person {name string address .})))
+
+->
+(defn string.= [one two] ...)
+(deftype address (address {firstLine string zip int}))
+(defn address.= [one two] ...)
+
+(deftype person
+ (person {name string address .}))
+(defn person.= [one two]
+  (and (string.= one.name two.name)
+       (address.= one.address two.address)))
+```
+
+Options include:
+1) macros are given a function, say `resolveAccessory` that allows them to
+   lock down the `string.=` into an actual loc reference. This makes
+   dependency analysis straightforward.
+   - BUT it might mean you need to kick the macro ... if accessory definitions change?
+     which feels kinda weird.
+     like, ideally it's "set it and forget it" right?
+     or rather, macro re-evaluation is only required if ... the actual text of the
+     macro invocation changes, or the macro definition changes.
+
+     WELL ok so the "persistently cache macro invocations in the toplevel" means
+     that if I update a macro, we need a separate "now re-evaluate all macro
+     invocations" step, which ... is a little interesting.
+     and probably need a way to mark that a macro invocation is stale?
+     ->> ok so the /usages text/ above a macro definition should list (# usages) as well as (# stale),
+     with the ability to click the # stale and refresh them all.
+
+    I think ... that means I want to maintain ... a `hash` of the contents of a macro?
+    and maybe of all toplevels? hrm idk. yeah it's probably a good idea.
+
+    -> tbh it probably wants to be a hash of the ... IR, right? no maybe the AST? hrmmm.
+
+2) macros just assemble an `accessory` CST node, resolving `string` and `=`.
+   The resolution of `string.=` gets punted to `infer` or `compile` or even `print/eval`.
+   This means that EITHER:
+   - any change to accessories labeled `=` OR
+   - any change to accessories of `string`
+   would trigger re-computation of those steps.
+   This seems less desirable,
+   BUT it means that stale macro invocations are ... less of a problem? ok I mean they're still
+   a problem, but not in this direction.
+
+So, for `deriving eq` I lean toward #1, but what about type classes?
+
+
+```clj
+(defclass eq [T]
+  {= (fn [T T] bool)})
+
+(defclass ord [T]
+  {< (fn [T T] bool)
+   > (fn [T T] bool)
+   <= (fn [T T] bool)
+   >= (fn [T T] bool)})
+
+(definstance (eq person)
+  {= (fn [one two] ...)})
+
+(defn has [needle haystack]
+  (any (fn [a] (= needle a)) kaystack))
+
+
+; this invocation needs to pass in an implementation of `eq` for `person`
+; but it can't know any number of things statically.
+; The definition of `person1` and `person-list` MUST eventually have
+; an explicit dependency on the `person` type (by a constructor if nothing else)
+; but they wouldn't statically have a dependency on the eq instance for person.
+; UNLESS `definstance` ~registers the instance as an accessory.
+; Two possible modes:
+; - accessory on `person` ... although with multi-arg type-classes, that might
+;   get weird? I mean I could just define it on both...
+; - accessory on `eq`. So the dependency on `=` in `has` would track back to `eq`
+;   which would pull in any accessories of `eq`.
+;
+; IN BOTH CASES: in order to include things, we would need to decide that
+; X *depends* on all accessories of X.
+; this is ... annoying. but maybe unavoidable?
+;
+; OK SO ... it kinda seems like this dependency link ... should be toggleable, at
+; the discretion of the evaluator. configurable. `linkAllAccessories` as a thing.
+;
+; OK so ... at what level is the dependency introduced?
+; `infer` and ... `compile`? or `print/eval`?
+(has person1 person-list)
+
+```
+
+
 # Thinking about things
 
 ```clj
@@ -9,6 +282,54 @@
 ```
 
 hello!
+
+Did some testing with printing refs to make sure it worked at all.
+
+next up, ...
+we should really think about assembling the graphpp
+
+so like
+the general idea is
+
+- have graph
+- on edit to a toplevel, invalidate a node
+  - on evaluating a node, invalidate children if output changes
+  - that's it, right?
+
+- macro expansion is *not* part of the graph. macros are evaluated "when you edit a toplevel".
+
+HOW CAN THE GRAPH CHANGE
+
+-> is ittt only when editing a given toplevel?
+  - note that we might be modifying multiple toplevels at the same time. should support that.
+
+
+Ways the graph can change:
+- added an upstream dependency
+- removed an upstream dependency
+- added ... an export?
+  -> which it's possible for some things to ~already be depending on.
+    (in an undo/redo situation)
+  - which would add downstream dependencies
+  - remove a bunch of downstream dependencies
+
+do any of these things ... cause problems?
+- seems like probably not.
+
+Change propagation just starts at the thing that was edited and spirals from there.
+NOTE that when removing downstream dependencies, those dependencies must still be re-evaluated.
+(or ... like "put on ice"?)
+
+yeah I feel like I need a thing for "downstream deps are on ice because we have a type error here".
+
+ugh.
+
+options include:
+- downstream deps get to keep living their lives referencing the old version of this term
+- downstream deps /know you are erroring/ and have like a placeholder where your reference
+  is, but can still ~infer around it
+- downstream deps just get /frozen/ while they wait for you to get fixed
+  - this is easiest but probably worst.
 
 
 
