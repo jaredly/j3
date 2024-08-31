@@ -1,4 +1,9 @@
 
+# Ergonomics
+
+- | at the end of a lsit doesn't make a new column
+- how to delete an empty first row of a table?
+
 # Alllright I think the thing I want
 is to try just building some stuff, and see what I need.
 
@@ -63,18 +68,16 @@ is to try just building some stuff, and see what I need.
 (defmacro if-let [cst loc]
 ...)
 
-
 (defassocated =)
 
 (defn make-rows [items]
 (map items
-  (fn [item]
-    (match item
-      (|(` #id ..#args)|(let (|(, pat-one pat-two args-check)|(eq-args args)|)
-                          [(` , (#id ..#pat-one) (#id ..#pat-two))
-                           args-check                             ])
-        _              |(fatal "ok")                                          |)
-        ))))
+  (match
+    (|(` #id ..#args)|(let (|(, pat-one pat-two args-check)|(eq-args args)|)
+                        [(` , (#id ..#pat-one) (#id ..#pat-two))
+                         args-check                             ])
+      _              |(fatal "ok")                                          |)
+      )))
 
 (defmacro derive-eq [cst loc]
 (unless-let (|[single]|cst|)
@@ -110,6 +113,9 @@ idk sounds fine to me?
 
 OK so for now, I can just "bake in" that quote is ` and unquote is #, but I can make 'find-macros' be a thing later if I want.
 
+
+Question: should I just implement if-let instead of match? would that somehow be easier? nah match is the more general, and
+exhaustiveness lives in match.
 
 
 # Macrosss
