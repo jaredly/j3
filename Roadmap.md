@@ -63,10 +63,52 @@ is to try just building some stuff, and see what I need.
 (defmacro if-let [cst loc]
 ...)
 
+
+(defassocated =)
+
+(defn make-rows [items]
+(map items
+  (fn [item]
+    (match item
+      (|(` #id ..#args)|(let (|(, pat-one pat-two args-check)|(eq-args args)|)
+                          [(` , (#id ..#pat-one) (#id ..#pat-two))
+                           args-check                             ])
+        _              |(fatal "ok")                                          |)
+        ))))
+
+(defmacro derive-eq [cst loc]
+(unless-let (|[single]|cst|)
+  (fatal "expected a single cst node")
+(match single
+  (|(` deftype #id ..#items)|(let (|rows|(make-rows items)|)
+                              (` defassoc #id.= (fn [one two]
+                                                  (match (, one two)
+                                                    (|..#rows|))))
+  |)))))
+
+; sooo macro, must be able to return multiple toplevels
+
+(derive-eq
+(deftype person (person {name string address address})))
+
 ```
 
 
+hrmmmm so the thing about ... quoted vs unquoted, does that tie me more to a specific syntax?
+when I'm trying to be agnostic.
+so I guess, given that I'm going to be parsing stuff anyway,
+I'll use the /output/ of the parse to determine what needs immediate resolution?
+hrm. but.
+macro expansion.
+how do I know what things to expand /now/ and what things are /quoted/ so shouldn't be expanded yet?
+Should I have like a `pre-parse` that just tells me "what macros should be expanded"? ... I guess that's a way to do it.
 
+Sooo should I allow macros to make macros?
+like multilevel quoting.
+`` and ## and such.
+idk sounds fine to me?
+
+OK so for now, I can just "bake in" that quote is ` and unquote is #, but I can make 'find-macros' be a thing later if I want.
 
 
 
