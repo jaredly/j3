@@ -388,6 +388,24 @@ export const joinLeft = (
     if (pnode.type === 'table') {
         const { row, col } = findTableLoc(pnode, node.loc);
         const rows = pnode.rows.slice();
+        if (col === 0 && row > 0) {
+            const prev = rows[row - 1];
+            if (prev.length === 1) {
+                const prevNode = top.nodes[prev[0]];
+                if (prevNode.type === 'id' && prevNode.text.length === 0) {
+                    rows.splice(row - 1, 1);
+
+                    store.update(
+                        topUpdate(top.id, {
+                            [prevNode.loc]: undefined,
+                            [pnode.loc]: { ...pnode, rows },
+                        }),
+                    );
+                    return true;
+                }
+            }
+        }
+
         if (col === 0 && rows[row].length === 1) {
             if (row === 0) {
                 if (rows.length === 1) {
@@ -396,13 +414,13 @@ export const joinLeft = (
                 return false;
             }
             // TODO: if the previous thing is an empty ID, we can just move it.
-            if (node.type !== 'id') return false;
             const prev = top.nodes[rows[row - 1][rows[row - 1].length - 1]];
             let sel: IRSelection;
             const update: Nodes = {};
 
             rows.splice(row, 1);
 
+            if (node.type !== 'id') return false;
             // Remove the row
             if (current ? current.length === 0 : node.text.length === 0) {
                 // nothing to join

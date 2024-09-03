@@ -450,6 +450,34 @@ export const toTheLeft = (
     return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
 };
 
+export const childNodes = (node: RecNode): RecNode[] => {
+    switch (node.type) {
+        case 'id':
+            return [];
+        case 'rich-inline':
+            return node.spans
+                .map((s) => (s.type === 'embed' ? s.item : null))
+                .filter(filterNulls);
+        case 'table':
+            return node.rows.flatMap((m) => m);
+        case 'rich-block':
+            return node.items;
+        case 'list':
+        case 'array':
+        case 'record':
+            return node.items;
+        case 'comment':
+        case 'spread':
+            return [node.contents];
+        case 'annot':
+            return [node.contents, node.annot];
+        case 'record-access':
+            return [node.target, ...node.items];
+        case 'string':
+            return [node.tag, ...node.templates.flatMap((t) => t.expr)];
+    }
+};
+
 export const childLocs = (node: Node): number[] => {
     switch (node.type) {
         case 'id':

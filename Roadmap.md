@@ -1,8 +1,70 @@
 
 # Ergonomics
 
-- | at the end of a lsit doesn't make a new column
-- how to delete an empty first row of a table?
+- [ ] whyyy is paren highlighting not working anymoreee
+- [ ] | at the end of a list doesn't make a new column
+- [x] how to delete an empty first row of a table?
+- [ ] producing a new column should add blanks for all rows.
+- [ ] when deleting a cell, if all other rows have blanks in that column,
+  remove the column.
+- [ ]
+
+
+```clj
+; how to minimally
+
+(defmacro if
+  (|(` (|..#rows|) #yes #no)|(` if-let (|..#rows|) #yes #no)
+    (` #cond #yes #no)      |(` if-let (|true|#cond|) #yes #no)|))
+
+(defassoc if.autocomplete
+  [
+    (autocomplete
+      {title "if condition"
+       cst (` if !cond !yes !no)})
+    (autocomplete
+      {title "if let"
+       cst (` if (|!pattern|!value|) !yes !no)})
+  ]
+)
+
+(defassoc if.format
+  (fn [cst] (fmt/vertical {tightFirst 2})))
+
+; can we do a `defassoc if.format` to take care of formattings?
+; that would be nice.
+
+(defmacro match
+  (|(` #target #body)|
+      (` ((match #body) #target))
+    (` (|..#rows|))        |
+      (let (|ok|(loop rows
+                  (fn [rows recur]
+                    (if-let (|[[pattern body] ..rest]|rows|))
+                      (let (|otherwise|(recur rest)|)
+                        (` if-let (|#pattern|value|) #body #otherwise|))
+                      (` fatal "No match")))|)
+        (` fn [value] #ok))|))
+
+(defassoc match.autocomplete
+  [
+    (autocomplete
+      {title "match"
+       cst (` match !value (|!pattern|!body|))})
+    (autocomplete
+      {title "match function"
+       cst (` match (|!pattern|!body|))})
+  ])
+
+; hrmmm
+(defassoc match.formt
+  )
+
+```
+
+
+
+
 
 # Alllright I think the thing I want
 is to try just building some stuff, and see what I need.
