@@ -16,6 +16,7 @@ import {
 } from '../../shared/IR/layout';
 import { IRCache2, lastChild } from '../../shared/IR/nav';
 import {
+    parentPath,
     Path,
     PathRoot,
     pathWithChildren,
@@ -295,10 +296,10 @@ export function selectionStyleOverrides(
         }
         const top = state.toplevels[path.root.toplevel];
         let num = 0;
-        for (let i = path.children.length - 1; i >= 0; i--) {
-            const loc = path.children[i];
-            if (isCollection(top.nodes[loc])) {
-                styles[`${top.id}:${loc}:brace`] = {
+        let tmp = path;
+        while (tmp.children.length) {
+            if (isCollection(top.nodes[lastChild(tmp)])) {
+                styles[nodeKey(tmp) + `:brace`] = {
                     type: 'full',
                     color:
                         num === 0
@@ -307,6 +308,7 @@ export function selectionStyleOverrides(
                 };
                 if (++num >= 3) break;
             }
+            tmp = parentPath(tmp);
         }
     });
 
