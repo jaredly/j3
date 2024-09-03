@@ -298,7 +298,8 @@ export function selectionStyleOverrides(
         let num = 0;
         let tmp = path;
         while (tmp.children.length) {
-            if (isCollection(top.nodes[lastChild(tmp)])) {
+            const node = top.nodes[lastChild(tmp)];
+            if (isCollection(node) || node.type === 'table') {
                 styles[nodeKey(tmp) + `:brace`] = {
                     type: 'full',
                     color:

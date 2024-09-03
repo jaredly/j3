@@ -161,7 +161,7 @@ export const nodeToIR = (
                 pullLast: true,
                 items: [
                     { type: 'cursor', path, side: 'start' },
-                    { type: 'punct', text: '⦇' },
+                    { type: 'punct', text: '⦇', brace: path },
                     {
                         type: 'table',
                         rows: node.rows.map((row, r) => {
@@ -203,7 +203,7 @@ export const nodeToIR = (
                     {
                         type: 'horiz',
                         items: [
-                            { type: 'punct', text: '⦈' },
+                            { type: 'punct', text: '⦈', brace: path },
                             { type: 'cursor', path, side: 'end' },
                         ],
                     },
