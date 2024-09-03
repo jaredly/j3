@@ -324,3 +324,10 @@ export function selectionStyleOverrides(
 
     return styles;
 }
+export type RState = {
+    cache: IRCache2<any>;
+    sourceMaps: BlockEntry[];
+    dropTargets: DropTarget[];
+    block: Block;
+    txt: string;
+};
