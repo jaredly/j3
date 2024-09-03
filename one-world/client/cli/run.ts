@@ -113,6 +113,7 @@ const run = async (term: termkit.Terminal) => {
             return;
         }
         term.moveTo(0, term.height, key);
+        renderSelection(term, store, docId, rstate.sourceMaps);
     });
 
     term.on('mouse', (one: string, evt: MouseEvt) => {

@@ -1,13 +1,13 @@
 
 # Ergonomics
 
-- [ ] whyyy is paren highlighting not working anymoreee
+- [x] whyyy is paren highlighting not working anymoreee
 - [ ] | at the end of a list doesn't make a new column
 - [x] how to delete an empty first row of a table?
 - [ ] producing a new column should add blanks for all rows.
 - [ ] when deleting a cell, if all other rows have blanks in that column,
   remove the column.
-- [ ]
+- [ ] then I'm really gonna need to do autocomplete folks
 
 
 ```clj
