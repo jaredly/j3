@@ -476,6 +476,20 @@ export const joinLeft = (
                     'end',
                     cache[top.id].irs,
                 );
+
+                const removeColumn = pnode.rows.every((irow, ri) => {
+                    const node = top.nodes[irow[col]];
+                    return (
+                        ri === row || (node.type === 'id' && node.text === '')
+                    );
+                });
+                if (removeColumn) {
+                    for (let i = 0; i < rows.length; i++) {
+                        if (i === row) continue;
+                        rows[i] = rows[i].slice();
+                        rows[i].splice(col, 1);
+                    }
+                }
             } else {
                 if (prev.type !== 'id') {
                     return false;
