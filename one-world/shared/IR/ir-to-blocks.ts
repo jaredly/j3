@@ -1,6 +1,7 @@
 // yay
 
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
+import { SHOW_IDS } from '../../client/cli/drawDocNode2';
 import { Path, serializePath, Style } from '../nodes';
 // import { applyFormats, blockFormat } from './format';
 import { Control, IR, IRCursor } from './intermediate';
@@ -236,10 +237,14 @@ export const irToBlock = (
     switch (ir.type) {
         case 'loc': {
             const { choices } = ctx.layouts[lastChild(ir.path)];
-            return {
+            const inner = {
                 ...irToBlock(irs[lastChild(ir.path)], irs, choices, ctx),
                 node: ir.path,
             };
+            if (SHOW_IDS) {
+                return hblock([line('' + lastChild(ir.path)), inner]);
+            }
+            return inner;
         }
         case 'table': {
             const colWidths: number[] = [];

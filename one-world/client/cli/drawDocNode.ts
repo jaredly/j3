@@ -26,6 +26,7 @@ import {
     Path,
 } from '../../shared/nodes';
 import { Doc, PersistedState } from '../../shared/state';
+import { SHOW_IDS } from './drawDocNode2';
 
 export const drawDocNode = (
     id: number,
@@ -121,8 +122,6 @@ const drawToplevel = (
     selections: IRSelection[],
     maxWidth: number,
 ) => {
-    const SHOW_IDS = false;
-
     const top = state.toplevels[id];
     const paths: Record<number, number[]> = {};
     const recNode = fromMap((n) => [[top.id, n]] as Loc, top.root, top.nodes, {

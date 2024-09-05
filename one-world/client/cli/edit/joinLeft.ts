@@ -55,6 +55,7 @@ export const replaceNode = (
         const { row, col } = findTableLoc(pnode, loc);
         const rows = pnode.rows.slice();
         rows[row] = rows[row].slice();
+        if (col === -1) throw new Error('cant do ti');
         rows[row][col] = newLoc;
         return { nodes: { [ploc]: { ...pnode, rows } } };
     }
@@ -388,6 +389,7 @@ export const joinLeft = (
     if (pnode.type === 'table') {
         const { row, col } = findTableLoc(pnode, node.loc);
         const rows = pnode.rows.slice();
+        // Remove an empty previous row
         if (col === 0 && row > 0) {
             const prev = rows[row - 1];
             if (prev.length === 1) {
@@ -406,6 +408,7 @@ export const joinLeft = (
             }
         }
 
+        // Collapse one-cell row with the previous row
         if (col === 0 && rows[row].length === 1) {
             if (row === 0) {
                 if (rows.length === 1) {
@@ -458,6 +461,7 @@ export const joinLeft = (
             );
             return true;
         } else if (col > 0) {
+            // Remove a cell
             const prev = top.nodes[rows[row][col - 1]];
             rows[row] = rows[row].slice();
             rows[row].splice(col, 1);

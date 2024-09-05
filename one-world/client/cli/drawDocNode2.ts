@@ -36,6 +36,7 @@ export const docToBlock = <Top>(
             toplevels[node.toplevel].root,
             cache[node.toplevel].irs,
             layoutCache[node.toplevel],
+            toplevels[node.toplevel].nextLoc,
         );
     }
     if (node.children.length) {
@@ -51,12 +52,15 @@ export const docToBlock = <Top>(
     return top!;
 };
 
-export const drawToplevel = <Top>(
+export const SHOW_IDS = false;
+
+export const drawToplevel = (
     id: string,
     root: PathRoot,
     rootLoc: number,
     irs: IRForLoc,
     layoutCache: LayoutCtx['layouts'],
+    next: number,
 ) => {
     const block = irToBlock(irs[rootLoc], irs, layoutCache[rootLoc].choices, {
         layouts: layoutCache,
@@ -64,7 +68,9 @@ export const drawToplevel = <Top>(
         top: id,
     });
     block.node = { root: root, children: [rootLoc] };
-    return hblock([line('▶️ '), block]);
+    let prefix = '▶️ ';
+    if (SHOW_IDS) prefix += next + ' ';
+    return hblock([line(prefix), block]);
 };
 
 export const layoutCtx = (maxWidth: number, irs: IRForLoc): LayoutCtx => ({

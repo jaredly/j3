@@ -40,7 +40,6 @@ export const resolveMultiSelect = (
     end: Path,
     state: PersistedState,
 ): MultiSelect | void => {
-    debugger;
     if (start.root.doc !== end.root.doc) return; // this should never happen
     if (start.root.toplevel !== end.root.toplevel) {
         const sids = start.root.ids;

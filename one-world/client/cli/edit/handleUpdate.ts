@@ -12,6 +12,7 @@ import {
 import {
     fromMap,
     Node,
+    Nodes,
     parentPath,
     Path,
     pathWithChildren,
@@ -418,23 +419,33 @@ export const addTableColumn = (
     const { row, col } = findTableLoc(pnode, loc);
     const rows = pnode.rows.slice();
     rows[row] = rows[row].slice();
-    const nidx = nextLoc;
+    const nidx = nextLoc++;
     rows[row].splice(col + 1, 0, nidx);
     const npath = pathWithChildren(parentPath(path), nidx);
+    const update: Nodes = {
+        [pnode.loc]: {
+            type: 'table',
+            loc: pnode.loc,
+            kind: pnode.kind,
+            rows,
+        },
+        [nidx]: { type: 'id', loc: nidx, text: '' },
+    };
+
+    const maxCols = pnode.rows.reduce((m, r) => Math.max(m, r.length), 0);
+    if (pnode.rows[row].length === maxCols) {
+        // add to everything
+        for (let i = 0; i < rows.length; i++) {
+            if (i === row) continue;
+            rows[i] = rows[i].slice();
+            const loc = nextLoc++;
+            rows[i].splice(col + 1, 0, loc);
+            update[loc] = { type: 'id', loc, text: '' };
+        }
+    }
+
     return [
-        topUpdate(
-            topId,
-            {
-                [pnode.loc]: {
-                    type: 'table',
-                    loc: pnode.loc,
-                    kind: pnode.kind,
-                    rows,
-                },
-                [nidx]: { type: 'id', loc: nidx, text: '' },
-            },
-            nidx + 1,
-        ),
+        topUpdate(topId, update, nextLoc),
         {
             type: 'selection',
             doc: path.root.doc,
