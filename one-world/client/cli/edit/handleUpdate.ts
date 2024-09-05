@@ -288,9 +288,9 @@ export const handleIDUpdate = ({
 
         if (key === '|') {
             const pnode = top.nodes[parentLoc(path)];
-            if (pnode?.type === 'list' && pnode.items.length === 1) {
+            if (isCollection(pnode) && pnode.items.length === 1) {
                 // const idx = pnode.items.indexOf(node.loc)
-                // First item of a `()` list, at the start,
+                // First item of a `() {} []` collection, at the start,
                 // and typing a '|'
                 if (pnode.items[0] === node.loc) {
                     store.update(
@@ -299,6 +299,12 @@ export const handleIDUpdate = ({
                                 type: 'table',
                                 loc: pnode.loc,
                                 rows: [[node.loc]],
+                                kind:
+                                    pnode.type === 'list'
+                                        ? '('
+                                        : pnode.type === 'array'
+                                        ? '['
+                                        : '{',
                             },
                         }),
                     );
@@ -311,42 +317,8 @@ export const handleIDUpdate = ({
     if (key === '|' && norm.start == null && norm.end === norm.text.length) {
         const pnode = top.nodes[parentLoc(path)];
         if (pnode.type === 'table') {
-            const { row, col } = findTableLoc(pnode, node.loc);
-            const rows = pnode.rows.slice();
-            rows[row] = rows[row].slice();
-            const nidx = top.nextLoc;
-            rows[row].splice(col + 1, 0, nidx);
-            const npath = pathWithChildren(parentPath(path), nidx);
-            store.update(
-                topUpdate(
-                    top.id,
-                    {
-                        [pnode.loc]: {
-                            type: 'table',
-                            loc: pnode.loc,
-                            rows,
-                        },
-                        [nidx]: { type: 'id', loc: nidx, text: '' },
-                    },
-                    nidx + 1,
-                ),
-                {
-                    type: 'selection',
-                    doc: path.root.doc,
-                    selections: [
-                        {
-                            start: {
-                                path: npath,
-                                key: serializePath(npath),
-                                cursor: {
-                                    type: 'text',
-                                    end: { index: 0, cursor: 0 },
-                                },
-                            },
-                        },
-                    ],
-                },
-            );
+            const actions = addTableColumn(pnode, path, top.id, top.nextLoc);
+            store.update(...actions);
             return true;
         }
     }
@@ -434,6 +406,52 @@ export const handleIDUpdate = ({
     }
 
     return false;
+};
+
+export const addTableColumn = (
+    pnode: Extract<Node, { type: 'table' }>,
+    path: Path,
+    topId: string,
+    nextLoc: number,
+): Action[] => {
+    const loc = lastChild(path);
+    const { row, col } = findTableLoc(pnode, loc);
+    const rows = pnode.rows.slice();
+    rows[row] = rows[row].slice();
+    const nidx = nextLoc;
+    rows[row].splice(col + 1, 0, nidx);
+    const npath = pathWithChildren(parentPath(path), nidx);
+    return [
+        topUpdate(
+            topId,
+            {
+                [pnode.loc]: {
+                    type: 'table',
+                    loc: pnode.loc,
+                    kind: pnode.kind,
+                    rows,
+                },
+                [nidx]: { type: 'id', loc: nidx, text: '' },
+            },
+            nidx + 1,
+        ),
+        {
+            type: 'selection',
+            doc: path.root.doc,
+            selections: [
+                {
+                    start: {
+                        path: npath,
+                        key: serializePath(npath),
+                        cursor: {
+                            type: 'text',
+                            end: { index: 0, cursor: 0 },
+                        },
+                    },
+                },
+            ],
+        },
+    ];
 };
 
 export const handleNonTextUpdate = (

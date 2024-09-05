@@ -218,11 +218,13 @@ export type Node =
 export type TableNode = {
     type: 'table';
     rows: number[][];
+    kind: '[' | '(' | '{';
     loc: number;
 };
 export type TableT<Loc> = {
     type: 'table';
     rows: RecNodeT<Loc>[][];
+    kind: '[' | '(' | '{';
     loc: Loc;
 };
 

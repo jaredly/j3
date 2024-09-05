@@ -84,6 +84,10 @@ const run = async (term: termkit.Terminal) => {
 
     term.on('key', (key: string) => {
         lastKey = key;
+        if (key === 'CTRL_W') {
+            writeSess({ ssid: sess.ssid });
+            return;
+        }
         if (key === 'ESCAPE') {
             unsel();
             store.update({ type: 'selection', doc: docId, selections: [] });
@@ -114,8 +118,10 @@ const run = async (term: termkit.Terminal) => {
             }
             handleMouseDrag(docId, rstate.sourceMaps, evt, store);
         } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
-            const sel = ds.selections[0];
-            if (maybeStartDragging(evt, docId, rstate, sel, store)) {
+            if (
+                ds.selections.length &&
+                maybeStartDragging(evt, docId, rstate, ds.selections[0], store)
+            ) {
                 return;
             }
 

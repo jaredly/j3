@@ -161,7 +161,16 @@ export const nodeToIR = (
                 pullLast: true,
                 items: [
                     { type: 'cursor', path, side: 'start' },
-                    { type: 'punct', text: '⦇', brace: path },
+                    {
+                        type: 'punct',
+                        text:
+                            node.kind === '{'
+                                ? '⦃'
+                                : node.kind === '['
+                                ? '⟦'
+                                : '⦇',
+                        brace: path,
+                    },
                     {
                         type: 'table',
                         rows: node.rows.map((row, r) => {
@@ -203,7 +212,16 @@ export const nodeToIR = (
                     {
                         type: 'horiz',
                         items: [
-                            { type: 'punct', text: '⦈', brace: path },
+                            {
+                                type: 'punct',
+                                text:
+                                    node.kind === '{'
+                                        ? '⦄'
+                                        : node.kind === '['
+                                        ? '⟧'
+                                        : '⦈',
+                                brace: path,
+                            },
                             { type: 'cursor', path, side: 'end' },
                         ],
                     },
