@@ -443,7 +443,11 @@ export const irToBlock = (
                         wraps: [],
                         newLines: textNewLines(text),
                     },
-                    ir.style,
+                    ir.placeholder && ir.text === ''
+                        ? {
+                              fontStyle: 'italic',
+                          }
+                        : ir.style,
                 );
             }
             const splits = choices[ir.wrap];

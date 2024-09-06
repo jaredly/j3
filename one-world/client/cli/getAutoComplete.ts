@@ -1,6 +1,7 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { AnyEvaluator } from '../../boot-ex/types';
-import { IRCursor } from '../../shared/IR/intermediate';
+import { Action } from '../../shared/action2';
+import { IRCursor, IRSelection } from '../../shared/IR/intermediate';
 import {
     Block,
     hblock,
@@ -9,10 +10,19 @@ import {
     vblock,
 } from '../../shared/IR/ir-to-blocks';
 import { lastChild, toSelection } from '../../shared/IR/nav';
-import { Nodes, Path, Style } from '../../shared/nodes';
+import {
+    Node,
+    Nodes,
+    parentPath,
+    Path,
+    pathWithChildren,
+    RecNodeT,
+    Style,
+} from '../../shared/nodes';
 import { DocSession } from '../../shared/state2';
 import { getNodeForPath } from '../selectNode';
 import { Store } from '../StoreContext2';
+import { inflateRecNode } from '../TextEdit/actions';
 import { normalizeSelection, topUpdate } from './edit/handleUpdate';
 import { RState } from './render';
 
@@ -173,24 +183,14 @@ export const getAutoComplete = (
                 title: auto.text,
                 subtitle: tpl.docs ?? auto.docs,
                 action() {
-                    const cursor: IRCursor = {
-                        type: 'text',
-                        end: {
-                            index: 0,
-                            cursor: splitGraphemes(auto.text).length,
-                        },
-                    };
                     store.update(
-                        topUpdate(path.root.toplevel, {
-                            [node.loc]: { ...node, text: auto.text },
-                        }),
-                        {
-                            type: 'selection',
-                            doc: path.root.doc,
-                            selections: [
-                                toSelection({ cursor, path: sel.start.path }),
-                            ],
-                        },
+                        ...applyTemplate(
+                            store,
+                            sel,
+                            auto.text,
+                            node,
+                            tpl.template,
+                        ),
                     );
                 },
             }));
@@ -207,4 +207,80 @@ export const getAutoComplete = (
         // };
         return [];
     });
+};
+
+const applyTemplate = (
+    store: Store,
+    sel: IRSelection,
+    text: string,
+    node: Extract<Node, { type: 'id' }>,
+    tpl: RecNodeT<boolean>[],
+): Action[] => {
+    const path = sel.start.path;
+    const state = store.getState();
+    const top = state.toplevels[path.root.toplevel];
+
+    const cursor: IRCursor = {
+        type: 'text',
+        end: {
+            index: 0,
+            cursor: splitGraphemes(text).length,
+        },
+    };
+
+    if (path.children.length === 1) {
+        let nextLoc = top.nextLoc;
+        const allNodes: Nodes = {};
+        // let selecteds: {
+        //     cursor: IRCursor;
+        //     children: number[];
+        //     node: RecNodeT<boolean>;
+        // }[] = [];
+        const nlocs: number[] = [lastChild(path)];
+        let root = nextLoc++;
+        allNodes[root] = { type: 'list', items: nlocs, loc: root };
+        allNodes[node.loc] = { ...node, text };
+
+        tpl.forEach((sibling) => {
+            const { selected, nloc, nodes, nidx } = inflateRecNode(
+                nextLoc,
+                sibling,
+            );
+            nextLoc = nidx.next;
+            nlocs.push(nloc);
+            Object.assign(allNodes, nodes);
+            // selecteds.push({ ...selected, node: sibling });
+        });
+
+        const selPath = pathWithChildren(parentPath(path), root, node.loc);
+
+        return [
+            {
+                type: 'toplevel',
+                id: top.id,
+                action: {
+                    type: 'update',
+                    update: { nextLoc, root, nodes: allNodes },
+                },
+            },
+            {
+                type: 'selection',
+                doc: path.root.doc,
+                selections: [toSelection({ cursor, path: selPath })],
+            },
+        ];
+    }
+    // orr if we are the only child
+
+    // Non-template
+    return [
+        topUpdate(path.root.toplevel, {
+            [node.loc]: { ...node, text: text },
+        }),
+        {
+            type: 'selection',
+            doc: path.root.doc,
+            selections: [toSelection({ cursor, path: sel.start.path })],
+        },
+    ];
 };

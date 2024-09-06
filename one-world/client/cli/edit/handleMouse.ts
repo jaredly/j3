@@ -63,6 +63,19 @@ export const handleMouseClick = (
     if (!found) return;
     const { selection, exact } = found;
 
+    const cur = store.getDocSession(docId).selections[0];
+    if (
+        cur &&
+        cur.start.key === selection.start.key &&
+        cur.start.cursor.type === 'text' &&
+        cur.start.cursor.end.text &&
+        selection.start.cursor.type === 'text'
+    ) {
+        if (cur.start.cursor.end.index === selection.start.cursor.end.index) {
+            selection.start.cursor.end.text = cur.start.cursor.end.text;
+        }
+    }
+
     store.update({
         type: 'selection',
         doc: docId,

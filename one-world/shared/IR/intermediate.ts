@@ -679,7 +679,7 @@ export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
                         : undefined,
                 style:
                     ctx.styles[node.loc] ??
-                    (node.ref
+                    (node.ref && node.ref.type !== 'placeholder'
                         ? refStyle
                         : {
                               color: parseHex(

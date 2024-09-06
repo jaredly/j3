@@ -3,9 +3,11 @@
 
 - [x] just navigating to a thing probably shouldn't trigger the autocomplete
   - maybeeee should an /update/ have to opt in to autocomplete recompute? prolly.
-- [ ] ok, so maybe I shouldn't do {ref: keyword}. Like what is it trying to do even.
+- [x] ok, so maybe I shouldn't do {ref: keyword}. Like what is it trying to do even.
   because, it would make it seem like you can have a local that is a keyword and it
   uses a separate namespace. which would be strange.
+- [x] wrapping a placeholder shoudl strip the placeholderness
+- [x] clicking in a tmp thing shouldn't ditch the text
 
 ##
 

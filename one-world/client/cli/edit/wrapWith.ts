@@ -85,17 +85,21 @@ export const wrapWith = (key: '[' | '(' | '{', path: Path, store: Store) => {
         }
     }
 
-    const update = replaceNode(path, top.nextLoc, top);
+    const wrapperLoc = top.nextLoc;
+    const update = replaceNode(path, wrapperLoc, top);
     if (!update) return false;
     update.nodes = {
         ...update.nodes,
-        [top.nextLoc]: {
+        [wrapperLoc]: {
             type: key === '[' ? 'array' : key === '(' ? 'list' : 'record',
             items: [node.loc],
-            loc: top.nextLoc,
+            loc: wrapperLoc,
         },
     };
-    update.nextLoc = top.nextLoc + 1;
+    if (node.type === 'id' && node.ref?.type === 'placeholder') {
+        update.nodes[node.loc] = { ...node, ref: undefined };
+    }
+    update.nextLoc = wrapperLoc + 1;
 
     store.update(
         {
@@ -112,7 +116,7 @@ export const wrapWith = (key: '[' | '(' | '{', path: Path, store: Store) => {
                         type: 'text',
                         end: { index: 0, cursor: 0 },
                     },
-                    path: pathWithChildren(parent, top.nextLoc, node.loc),
+                    path: pathWithChildren(parent, wrapperLoc, node.loc),
                 }),
             ],
         },
