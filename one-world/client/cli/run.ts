@@ -258,7 +258,7 @@ function drawToTerminal(
                 const pos = selectionPos(store, docId, rstate.sourceMaps);
                 if (pos) {
                     txt.split('\n').forEach((line, i) => {
-                        term.moveTo(pos[0] + 1, pos[1] + 2 + i, line);
+                        term.moveTo(pos[0] + 1, pos[1] + 3 + i, line);
                     });
                 }
             }

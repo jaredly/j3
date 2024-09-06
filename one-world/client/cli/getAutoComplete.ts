@@ -140,6 +140,7 @@ export const getAutoComplete = (
         return;
     }
     const text = selText ? selText.join('') : node.text;
+    if (!text.length) return; // don't give autocomplete with no text
 
     const filter = (auto: (typeof autos)[0]) => {
         if (auto.text.includes(text)) {
