@@ -66,6 +66,7 @@ export const multi = (texts: string[], ev = BootExampleEvaluator) => {
             irs[node.loc] = nodeToIR(node, path, {
                 styles: parsed.styles,
                 layouts: parsed.layouts,
+                tableHeaders: parsed.tableHeaders,
                 names,
             });
         });
@@ -110,6 +111,7 @@ const processNode = (
         irs[id] = nodeToIR(nodes[id], self, {
             styles: parsed.styles,
             layouts: parsed.layouts,
+            tableHeaders: parsed.tableHeaders,
             names: {},
         });
         const children = childLocs(nodes[id]);

@@ -225,6 +225,7 @@ export function calculateIRs(
             irs[node.loc] = nodeToIR(node, path, {
                 styles: parsed.styles,
                 layouts: parsed.layouts,
+                tableHeaders: parsed.tableHeaders,
                 names: {},
             });
         });

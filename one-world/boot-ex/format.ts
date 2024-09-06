@@ -59,10 +59,17 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                                     (m, r) => Math.max(m, r.length),
                                     0,
                                 );
-                                ctx.tableHeaders[getLoc(table.loc)] =
-                                    width === 2
-                                        ? ['pattern', 'body']
-                                        : ['pattern', 'if', 'body'];
+                                const headers =
+                                    // width === 2
+                                    //     ? ['pattern', 'body']
+                                    //     :
+                                    width === 3
+                                        ? ['pattern', 'if', 'body']
+                                        : undefined;
+                                if (headers) {
+                                    ctx.tableHeaders[getLoc(table.loc)] =
+                                        headers;
+                                }
                             }
                             break;
                         case 'let':

@@ -137,6 +137,7 @@ const drawToplevel = (
         const ir = nodeToIR(top.nodes[id], self, {
             styles: parsed.styles,
             layouts: parsed.layouts,
+            tableHeaders: parsed.tableHeaders,
             names: {},
         });
         irs[id] = SHOW_IDS

@@ -148,9 +148,15 @@ type IRCtx = {
     styles: Record<number, Format>;
     layouts: Record<number, Layout>;
     names: Record<string, string>;
+    tableHeaders: Record<number, string[]>;
 };
 
-const emptyCtx: IRCtx = { styles: {}, layouts: {}, names: {} };
+const emptyCtx: IRCtx = {
+    styles: {},
+    layouts: {},
+    names: {},
+    tableHeaders: {},
+};
 
 export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
     switch (node.type) {
@@ -159,6 +165,16 @@ export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
             //     (c, row) => Math.max(c, row.length),
             //     0,
             // );
+            const headers = ctx.tableHeaders[node.loc];
+            const rows: IR[][] = node.rows.map((row, r) =>
+                row.map((loc, c) => ({
+                    type: 'loc',
+                    path: pathWithChildren(path, loc),
+                })),
+            );
+            if (headers) {
+                rows.unshift(headers.map((text) => ({ type: 'punct', text })));
+            }
             return {
                 type: 'horiz',
                 pullLast: true,
@@ -176,41 +192,7 @@ export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
                     },
                     {
                         type: 'table',
-                        rows: node.rows.map((row, r) => {
-                            const res: IR[] = row.map((loc, c) =>
-                                loc != null
-                                    ? {
-                                          type: 'loc',
-                                          path: pathWithChildren(path, loc),
-                                      }
-                                    : {
-                                          type: 'cursor',
-                                          path,
-                                          side: `${r},${c}`,
-                                      },
-                            );
-
-                            // Sooo how do I know that a given row is allowed to do a
-                            // "merge across"?
-                            // Like ... if the left-most thing is a Spread or Comment,
-                            // then it is allowed. BUT this is like a second-order issue.
-                            // The parent needs to recalc if the child changes.
-                            // Which, honestly, is fine, right?
-                            // Hrmmm I mean maybe this is the only place that would happen.
-                            // Alternatives inlclude:
-                            // - everything is merged-across but we check on `space` whether
-                            //   to create a new cell for you, based on the type of the current
-                            //   thing. Honestly probably not the worst
-                            // - punt on merging, just do normal tables for the moment.
-                            // for (let c = res.length; c < columns; c++) {
-                            //     res.push({
-                            //         type: 'cursor',
-                            //         path,
-                            //         side: `${r},${c}`,
-                            //     });
-                            // }
-                            return res;
-                        }),
+                        rows,
                     },
                     {
                         type: 'horiz',
