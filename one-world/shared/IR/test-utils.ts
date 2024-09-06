@@ -63,13 +63,11 @@ export const multi = (texts: string[], ev = BootExampleEvaluator) => {
             toplevel: tid,
         };
         iterTopNodes(root, pathRoot, nodes, (node, path) => {
-            irs[node.loc] = nodeToIR(
-                node,
-                path,
-                parsed.styles,
-                parsed.layouts,
+            irs[node.loc] = nodeToIR(node, path, {
+                styles: parsed.styles,
+                layouts: parsed.layouts,
                 names,
-            );
+            });
         });
 
         const ctx = layoutCtx(50, irs);
@@ -109,7 +107,11 @@ const processNode = (
 
     const process = (id: number, path: Path) => {
         const self = pathWithChildren(path, id);
-        irs[id] = nodeToIR(nodes[id], self, parsed.styles, parsed.layouts, {});
+        irs[id] = nodeToIR(nodes[id], self, {
+            styles: parsed.styles,
+            layouts: parsed.layouts,
+            names: {},
+        });
         const children = childLocs(nodes[id]);
         children.forEach((child) => process(child, self));
     };

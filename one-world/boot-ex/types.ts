@@ -35,7 +35,11 @@ export type ParseResult<Top> = {
     errors?: any[];
     layouts: Record<number, Layout>;
     styles: Record<number, Style>;
+    tableHeaders: Record<number, string[]>;
     usages?: Usage[];
+    // NEED a thing for "prefixes" or whatnot, for like the
+    // test result stuff. sidecars?
+    // there'd need to be a "kind" that adds a whole column to a table.
 
     exports?: { loc: Loc; kind: string }[];
     associations?: {

@@ -108,10 +108,12 @@ export const JsEvaluator: Evaluator<AST, null, string> = {
     kwds: [],
     parse(node, cursor) {
         if (node.type !== 'string') {
-            return { top: null };
+            throw new Error('no');
+            // return { top: null };
         }
         if (node.tag.type !== 'id' || node.tag.text !== 'js') {
-            return { top: null };
+            throw new Error('no');
+            // return { top: null };
         }
         const { text, mapping } = processString(node.first, node.templates);
         const parsed = ts.createSourceFile(
@@ -130,7 +132,8 @@ export const JsEvaluator: Evaluator<AST, null, string> = {
             parsed.statements.length === 1 &&
             ts.isExpressionStatement(parsed.statements[0])
         ) {
-            return { top: { type: 'expr', code: trans } };
+            throw new Error('no');
+            // return { top: { type: 'expr', code: trans } };
         }
 
         const exports: NonNullable<ParseResult<any>['exports']> = [];
@@ -154,7 +157,13 @@ export const JsEvaluator: Evaluator<AST, null, string> = {
             )}] = ${name};`;
         });
 
-        return { top: { type: 'def', code: trans }, exports };
+        return {
+            top: { type: 'def', code: trans },
+            exports,
+            layouts: {},
+            styles: {},
+            tableHeaders: {},
+        };
     },
     infer(top, infos) {
         return null;

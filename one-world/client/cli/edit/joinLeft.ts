@@ -406,13 +406,64 @@ export const joinLeft = (
                     return true;
                 }
             }
+
+            const isEmpty = (node: Node) =>
+                node.type === 'id' && node.text === '';
+
+            const allEmpty =
+                node.type === 'id' &&
+                (current ? current.length === 0 : node.text.length === 0) &&
+                rows[row].every((id, c) => c === col || isEmpty(top.nodes[id]));
+
+            if (allEmpty) {
+                const prev = top.nodes[rows[row - 1][rows[row - 1].length - 1]];
+                const sel = selectNode(
+                    pathWithChildren(parentPath(path), prev.loc),
+                    'end',
+                    cache[top.id].irs,
+                );
+                const update: ToplevelUpdate['update']['nodes'] = {};
+                rows[row].forEach((id) => (update[id] = undefined));
+                rows.splice(row, 1);
+
+                store.update(
+                    topUpdate(top.id, {
+                        ...update,
+                        [pnode.loc]: { ...pnode, rows },
+                    }),
+                    {
+                        type: 'selection',
+                        doc: path.root.doc,
+                        selections: [sel],
+                    },
+                );
+                return true;
+            }
         }
 
         // Collapse one-cell row with the previous row
         if (col === 0 && rows[row].length === 1) {
             if (row === 0) {
                 if (rows.length === 1) {
-                    // replace the table with this node
+                    const up = replaceNode(parent, node.loc, top);
+                    if (!up) return false;
+                    store.update(
+                        {
+                            type: 'toplevel',
+                            action: { type: 'update', update: up },
+                            id: top.id,
+                        },
+                        selAction(
+                            path,
+                            selectNode(
+                                pathWithChildren(parentPath(parent), node.loc),
+                                'start',
+                                cache[top.id].irs,
+                            ),
+                        ),
+                    );
+
+                    return true;
                 }
                 return false;
             }

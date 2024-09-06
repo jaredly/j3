@@ -1117,7 +1117,7 @@ export const createIRCache = (
     const map: IRForLoc = {};
     const process = (loc: number, path: Path) => {
         const self = pathWithChildren(path, loc);
-        const ir = nodeToIR(nodes[loc], self, {}, {}, {}); // this will mess up some style things
+        const ir = nodeToIR(nodes[loc], self); // this will mess up some style things
         map[loc] = ir;
         childLocs(nodes[loc]).forEach((l) => process(l, self));
     };

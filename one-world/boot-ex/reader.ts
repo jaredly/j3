@@ -88,6 +88,7 @@ export const reader = (
             }
             return {
                 type: 'table',
+                kind: '(',
                 rows,
                 loc: l(start),
             };

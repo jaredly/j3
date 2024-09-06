@@ -21,12 +21,15 @@ global.window = {};
 // @ts-ignore
 global.localStorage = {};
 
+import { openSync, writeSync } from 'fs';
 // NOTE: Uncomment to route logs to a file
-// import { openSync, writeSync } from 'fs';
-// const out = openSync('./cli.log', 'W');
-// console.log = (...args) => {
-//     writeSync(out, JSON.stringify(args) + '\n');
-// };
+const REDIRECT_OUT = false;
+if (REDIRECT_OUT) {
+    const out = openSync('./cli.log', 'W');
+    console.log = (...args) => {
+        writeSync(out, JSON.stringify(args) + '\n');
+    };
+}
 
 export type MouseEvt = {
     x: number;
@@ -168,7 +171,7 @@ function drawToTerminal(
     term.moveTo(0, 2, rstate.txt);
 
     if (lastKey) {
-        term.moveTo(0, term.height, lastKey);
+        term.moveTo(0, term.height, lastKey === ' ' ? 'SPACE' : lastKey);
     }
     const dragState = store.getDocSession(docId)?.dragState;
     if (dragState?.dest) {

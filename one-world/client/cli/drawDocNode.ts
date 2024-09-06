@@ -134,13 +134,11 @@ const drawToplevel = (
 
     const process = (id: number, path: Path) => {
         const self = pathWithChildren(path, id);
-        const ir = nodeToIR(
-            top.nodes[id],
-            self,
-            parsed.styles,
-            parsed.layouts,
-            {},
-        );
+        const ir = nodeToIR(top.nodes[id], self, {
+            styles: parsed.styles,
+            layouts: parsed.layouts,
+            names: {},
+        });
         irs[id] = SHOW_IDS
             ? {
                   type: 'horiz',

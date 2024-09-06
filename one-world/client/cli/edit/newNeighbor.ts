@@ -26,6 +26,7 @@ export const newNeighbor = (
     return true;
 };
 
+// NOTE This does a /multiselect/ on the created node, UNLESS it's an empty ID.
 export const newNeighborActions = (
     path: Path,
     state: PersistedState,
@@ -48,7 +49,11 @@ export const newNeighborActions = (
     let nextLoc = top.nextLoc;
     const nlocs: number[] = [];
     const allNodes: Nodes = {};
-    let selecteds: { cursor: IRCursor; children: number[] }[] = [];
+    let selecteds: {
+        cursor: IRCursor;
+        children: number[];
+        node: RecNodeT<boolean>;
+    }[] = [];
     // const nidx = top.nextLoc;
     siblings.forEach((sibling) => {
         const { selected, nloc, nodes, nidx } = inflateRecNode(
@@ -58,11 +63,14 @@ export const newNeighborActions = (
         nextLoc = nidx.next;
         nlocs.push(nloc);
         Object.assign(allNodes, nodes);
-        selecteds.push(selected);
+        selecteds.push({ ...selected, node: sibling });
     });
 
     const selected = selecteds[selecteds.length - 1];
     const epath = pathWithChildren(parent, ...selecteds[0].children);
+
+    const isEmpty = (node: RecNodeT<boolean>) =>
+        node.type === 'id' && node.text === '';
 
     if (pnode.type === 'table') {
         // if (siblings.length)
@@ -94,7 +102,9 @@ export const newNeighborActions = (
                                 ...selected.children,
                             ),
                         }),
-                        end: { path: epath, key: serializePath(epath) },
+                        end: isEmpty(selected.node)
+                            ? undefined
+                            : { path: epath, key: serializePath(epath) },
                     },
                 ],
             },
@@ -112,7 +122,6 @@ export const newNeighborActions = (
     // ok we can do this now.
     return [
         topUpdate(top.id, allNodes, nextLoc),
-        // TODO: I actually want to select the whole thing
         {
             type: 'selection',
             doc: path.root.doc,
@@ -122,7 +131,9 @@ export const newNeighborActions = (
                         cursor: selected.cursor,
                         path: pathWithChildren(parent, ...selected.children),
                     }),
-                    end: { path: epath, key: serializePath(epath) },
+                    end: isEmpty(selected.node)
+                        ? undefined
+                        : { path: epath, key: serializePath(epath) },
                 },
             ],
         },

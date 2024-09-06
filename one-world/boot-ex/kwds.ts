@@ -28,6 +28,7 @@ export const kwds: Auto[] = [
                 template: [
                     {
                         type: 'table',
+                        kind: '(',
                         loc: false,
                         rows: [[place('pattern', true), place('value')]],
                     },
@@ -45,6 +46,7 @@ export const kwds: Auto[] = [
                     place('value', true),
                     {
                         type: 'table',
+                        kind: '(',
                         loc: false,
                         rows: [[place('pattern', true), place('value')]],
                     },
@@ -97,6 +99,7 @@ export const kwds: Auto[] = [
                     place('function'),
                     {
                         type: 'table',
+                        kind: '(',
                         loc: false,
                         rows: [[place('input'), place('output')]],
                     },

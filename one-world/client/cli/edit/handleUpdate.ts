@@ -7,12 +7,12 @@ import {
     irNavigable,
     lastChild,
     parentLoc,
+    selectNode,
     toSelection,
 } from '../../../shared/IR/nav';
 import {
     fromMap,
     Node,
-    Nodes,
     parentPath,
     Path,
     pathWithChildren,
@@ -24,6 +24,7 @@ import { getNodeForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { MultiSelect, resolveMultiSelect } from '../resolveMultiSelect';
+import { addTableColumn } from './addTableColumn';
 import { handleMovement } from './handleMovement';
 import { handleRichText } from './handleRichText';
 import { joinLeft, replaceNode, selAction } from './joinLeft';
@@ -409,62 +410,6 @@ export const handleIDUpdate = ({
     return false;
 };
 
-export const addTableColumn = (
-    pnode: Extract<Node, { type: 'table' }>,
-    path: Path,
-    topId: string,
-    nextLoc: number,
-): Action[] => {
-    const loc = lastChild(path);
-    const { row, col } = findTableLoc(pnode, loc);
-    const rows = pnode.rows.slice();
-    rows[row] = rows[row].slice();
-    const nidx = nextLoc++;
-    rows[row].splice(col + 1, 0, nidx);
-    const npath = pathWithChildren(parentPath(path), nidx);
-    const update: Nodes = {
-        [pnode.loc]: {
-            type: 'table',
-            loc: pnode.loc,
-            kind: pnode.kind,
-            rows,
-        },
-        [nidx]: { type: 'id', loc: nidx, text: '' },
-    };
-
-    const maxCols = pnode.rows.reduce((m, r) => Math.max(m, r.length), 0);
-    if (pnode.rows[row].length === maxCols) {
-        // add to everything
-        for (let i = 0; i < rows.length; i++) {
-            if (i === row) continue;
-            rows[i] = rows[i].slice();
-            const loc = nextLoc++;
-            rows[i].splice(col + 1, 0, loc);
-            update[loc] = { type: 'id', loc, text: '' };
-        }
-    }
-
-    return [
-        topUpdate(topId, update, nextLoc),
-        {
-            type: 'selection',
-            doc: path.root.doc,
-            selections: [
-                {
-                    start: {
-                        path: npath,
-                        key: serializePath(npath),
-                        cursor: {
-                            type: 'text',
-                            end: { index: 0, cursor: 0 },
-                        },
-                    },
-                },
-            ],
-        },
-    ];
-};
-
 export const handleNonTextUpdate = (
     key: string,
     sel: IRSelection,
@@ -483,9 +428,48 @@ export const handleNonTextUpdate = (
         return handleMovement('LEFT', sel.start.path.root.doc, cache, store);
     }
 
+    if (
+        key === '|' &&
+        (sel.start.cursor.type !== 'side' || sel.start.cursor.side === 'end')
+    ) {
+        const path = sel.start.path;
+        const top = store.getState().toplevels[path.root.toplevel];
+        const pnode = top.nodes[parentLoc(path)];
+        if (pnode.type === 'table') {
+            const actions = addTableColumn(pnode, path, top.id, top.nextLoc);
+            store.update(...actions);
+            return true;
+        }
+    }
+
     if (key === ' ' || key === 'ENTER') {
         // If the next thing ... is like ... a sibling,
         // and it's an empty id, then just go to it
+        // hrmmm does adding ...
+        // TODO: if parent is a table, bail
+        const path = sel.start.path;
+        const top = store.getState().toplevels[path.root.toplevel];
+        const pnode = top.nodes[parentLoc(path)];
+        if (pnode && pnode.type === 'table') {
+            const { row, col } = findTableLoc(pnode, lastChild(path));
+            if (col < pnode.rows[row].length - 1) {
+                // Just select the next thing
+                const next = pnode.rows[row][col + 1];
+                store.update({
+                    type: 'selection',
+                    doc: path.root.doc,
+                    selections: [
+                        selectNode(
+                            pathWithChildren(parentPath(path), next),
+                            'start',
+                            cache[top.id].irs,
+                        ),
+                    ],
+                });
+
+                return true;
+            }
+        }
 
         return newNeighbor(
             sel.start.path,

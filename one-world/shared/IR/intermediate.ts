@@ -1,5 +1,6 @@
 // An intermediate representation
 
+import { layout } from '../../../src/old-layout';
 import {
     fasthash,
     getRainbowHashColor,
@@ -143,19 +144,21 @@ const braceStyle = (depth: number): Style => {
     };
 };
 
-export const nodeToIR = (
-    node: Node,
-    path: Path,
-    styles: Record<number, Format> = {},
-    layouts: Record<number, Layout> = {},
-    names: Record<string, string> = {},
-): IR => {
+type IRCtx = {
+    styles: Record<number, Format>;
+    layouts: Record<number, Layout>;
+    names: Record<string, string>;
+};
+
+const emptyCtx: IRCtx = { styles: {}, layouts: {}, names: {} };
+
+export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
     switch (node.type) {
         case 'table':
-            const columns = node.rows.reduce(
-                (c, row) => Math.max(c, row.length),
-                0,
-            );
+            // const columns = node.rows.reduce(
+            //     (c, row) => Math.max(c, row.length),
+            //     0,
+            // );
             return {
                 type: 'horiz',
                 pullLast: true,
@@ -370,7 +373,7 @@ export const nodeToIR = (
                 };
             }
 
-            const l = layouts[node.loc] ?? { type: 'horiz', wrap: 3 };
+            const l = ctx.layouts[node.loc] ?? { type: 'horiz', wrap: 3 };
 
             const items = node.items.map(
                 (loc): IR => ({
@@ -682,7 +685,7 @@ export const nodeToIR = (
         case 'id': {
             const text =
                 node.ref?.type === 'toplevel'
-                    ? names[keyForLoc(node.ref.loc)]
+                    ? ctx.names[keyForLoc(node.ref.loc)]
                     : node.text;
 
             return {
@@ -693,7 +696,7 @@ export const nodeToIR = (
                         ? node.ref.text
                         : undefined,
                 style:
-                    styles[node.loc] ??
+                    ctx.styles[node.loc] ??
                     (node.ref
                         ? refStyle
                         : {

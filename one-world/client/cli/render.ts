@@ -222,13 +222,11 @@ export function calculateIRs(
         const pathRoot = root(doc.id, ids, docNode);
 
         iterTopNodes(top.root, pathRoot, top.nodes, (node, path) => {
-            irs[node.loc] = nodeToIR(
-                node,
-                path,
-                parsed.styles,
-                parsed.layouts,
-                {},
-            );
+            irs[node.loc] = nodeToIR(node, path, {
+                styles: parsed.styles,
+                layouts: parsed.layouts,
+                names: {},
+            });
         });
         cache[docNode.toplevel] = {
             irs,

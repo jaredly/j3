@@ -6,7 +6,7 @@ import { Loc, RecNode, Style } from '../shared/nodes';
 import { ParseResult } from './types';
 
 export const parse = (node: RecNode): ParseResult<void> => {
-    const ctx: Ctx = { layouts: {}, styles: {}, exports: [] };
+    const ctx: Ctx = { layouts: {}, styles: {}, exports: [], tableHeaders: {} };
 
     const top = _parse(node, ctx);
     return { top, ...ctx };
@@ -19,6 +19,7 @@ type Ctx = {
     // fmt: Fmt[];
     layouts: Record<number, Layout>;
     styles: Record<number, Style>;
+    tableHeaders: Record<number, string[]>;
     // usages: Usage[];
     exports: { loc: Loc; kind: string }[];
 };
@@ -52,6 +53,17 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                                 layout: { tightFirst: 2, indent: 2, pairs: [] },
                             };
                             ctx.styles[getLoc(first.loc)] = kwdStyle;
+                            const table = node.items[2];
+                            if (table && table.type === 'table') {
+                                const width = table.rows.reduce(
+                                    (m, r) => Math.max(m, r.length),
+                                    0,
+                                );
+                                ctx.tableHeaders[getLoc(table.loc)] =
+                                    width === 2
+                                        ? ['pattern', 'body']
+                                        : ['pattern', 'if', 'body'];
+                            }
                             break;
                         case 'let':
                             ctx.layouts[getLoc(node.loc)] = {
@@ -70,10 +82,17 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                                 };
                             }
                             break;
+                        case 'def':
+                            ctx.layouts[getLoc(node.loc)] = {
+                                type: 'vert',
+                                layout: { tightFirst: 2, indent: 2 },
+                            };
+                            ctx.styles[getLoc(first.loc)] = kwdStyle;
+                            break;
                         case 'defn':
                             ctx.layouts[getLoc(node.loc)] = {
                                 type: 'vert',
-                                layout: { tightFirst: 3, indent: 6 },
+                                layout: { tightFirst: 3, indent: 2 },
                             };
                             const second = node.items[1];
                             if (second.type === 'id') {
@@ -87,6 +106,11 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                     }
                 }
             }
+            return;
+        case 'table':
+            node.rows.forEach((row) =>
+                row.forEach((cell) => _parse(cell, ctx)),
+            );
             return;
         case 'array':
             ctx.layouts[getLoc(node.loc)] = {

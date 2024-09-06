@@ -279,7 +279,7 @@ export const blockToText = (
                         let height = 0;
                         for (let i = 0; i < row.length; i++) {
                             if (i > 0) {
-                                chunks.push('|');
+                                chunks.push('⋮');
                                 x++;
                             }
                             chunks.push(

@@ -1,4 +1,10 @@
 
+So I kinda want to be able to have ... the (macro?) or (parser?)
+optionally produce a (headings) for a given (table). And have that be displayed.
+
+Andd I think like `match` by default wouldn't show a heading, but if you have 3 columns,
+then it would show them.
+
 # Ergonomics
 
 - [x] whyyy is paren highlighting not working anymoreee
