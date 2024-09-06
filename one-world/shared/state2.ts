@@ -68,7 +68,7 @@ export type DocSession = {
 
     dropdown?: {
         selection: number[];
-        dismissed: boolean;
+        dismissed?: string;
     };
 
     // idTexts: Record<number, string[]>;

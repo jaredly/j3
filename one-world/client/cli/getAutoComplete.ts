@@ -9,7 +9,9 @@ import {
 import { lastChild } from '../../shared/IR/nav';
 import { Style } from '../../shared/nodes';
 import { DocSession } from '../../shared/state2';
+import { getNodeForPath } from '../selectNode';
 import { Store } from '../StoreContext2';
+import { normalizeSelection } from './edit/handleUpdate';
 import { RState } from './render';
 
 export type MenuItem =
@@ -44,7 +46,7 @@ export const menuToBlocks = (
         menu.map((item, i) => {
             const style: Style | undefined =
                 i === norm[0]
-                    ? { background: { r: 0, g: 0, b: 255 } }
+                    ? { background: { r: 30, g: 80, b: 100 } }
                     : undefined;
             switch (item.type) {
                 case 'header':
@@ -113,7 +115,10 @@ export const getAutoComplete = (
     ev: AnyEvaluator,
 ): MenuItem[] | void => {
     if (!ds.selections.length) return;
-    const path = ds.selections[0].start.path;
+    const sel = ds.selections[0];
+    if (sel.end || sel.start.cursor.type !== 'text') return;
+    const selText = sel.start.cursor.end.text;
+    const path = sel.start.path;
     // const loc = lastChild(path);
     const cache = rstate.cache[path.root.toplevel];
     if (!cache) throw new Error(`no cache for selected toplevel`);
@@ -130,7 +135,20 @@ export const getAutoComplete = (
         // idk do something with this
     });
 
-    return autos.flatMap((auto) => {
+    const node = getNodeForPath(path, store.getState());
+    if (!node || node.type !== 'id' || (node.ref && !selText)) {
+        return;
+    }
+    const text = selText ? selText.join('') : node.text;
+
+    const filter = (auto: (typeof autos)[0]) => {
+        if (auto.text.includes(text)) {
+            return true;
+        }
+        return false;
+    };
+
+    return autos.filter(filter).flatMap((auto) => {
         if (auto.templates.length) {
             return auto.templates.map((tpl) => ({
                 type: 'action',

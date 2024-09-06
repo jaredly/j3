@@ -29,6 +29,8 @@ import { openSync, writeSync } from 'fs';
 import { AnyEvaluator } from '../../boot-ex/types';
 import { getAutoComplete, menuToBlocks } from './getAutoComplete';
 import { blockToText } from '../../shared/IR/block-to-text';
+import { DocSession } from '../../shared/state2';
+import { serializePath } from '../../shared/nodes';
 // NOTE: Uncomment to route logs to a file
 const REDIRECT_OUT = true;
 if (REDIRECT_OUT) {
@@ -109,14 +111,6 @@ const run = async (term: termkit.Terminal) => {
             writeSess({ ssid: sess.ssid });
             return;
         }
-        if (key === 'ESCAPE') {
-            unsel();
-            store.update({ type: 'selection', doc: docId, selections: [] });
-
-            setTimeout(() => {
-                return process.exit(0);
-            }, 50);
-        }
 
         if (handleDropdown(key, docId, store, rstate, kick)) {
             return;
@@ -131,6 +125,16 @@ const run = async (term: termkit.Terminal) => {
         if (handleUpdate(key, docId, rstate.cache, store)) {
             return;
         }
+
+        if (key === 'ESCAPE') {
+            unsel();
+            store.update({ type: 'selection', doc: docId, selections: [] });
+
+            setTimeout(() => {
+                return process.exit(0);
+            }, 50);
+        }
+
         term.moveTo(0, term.height, key);
         renderSelection(term, store, docId, rstate.sourceMaps);
     });
@@ -183,6 +187,14 @@ const run = async (term: termkit.Terminal) => {
     });
 };
 
+const differentDropdown = (ds: DocSession) => {
+    const sel = ds.selections[0];
+    if (!sel) return false;
+    const key = ds.dropdown?.dismissed;
+    if (!key) return false;
+    return key !== serializePath(sel.start.path);
+};
+
 function recalcDropdown(
     store: Store,
     docId: string,
@@ -195,10 +207,12 @@ function recalcDropdown(
     },
 ) {
     const ds = store.getDocSession(docId);
-    if (!ds.dropdown) {
+    if (!ds.dropdown || (ds.dropdown.dismissed && differentDropdown(ds))) {
         const auto = getAutoComplete(store, rstate, ds, BootExampleEvaluator);
         if (auto?.length) {
-            ds.dropdown = { selection: [0], dismissed: false };
+            ds.dropdown = { selection: [0] };
+        } else {
+            ds.dropdown = undefined;
         }
     }
 }

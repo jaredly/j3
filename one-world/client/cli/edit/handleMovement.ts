@@ -36,6 +36,19 @@ export const handleDropdown = (
 ): boolean => {
     const ds = store.getDocSession(docId);
     if (!ds.dropdown || ds.dropdown.dismissed) return false;
+    const autocomplete = getAutoComplete(
+        store,
+        rstate,
+        ds,
+        BootExampleEvaluator,
+    );
+    if (!autocomplete) return false;
+    if (!autocomplete.length) return false;
+    if (key === 'ESCAPE') {
+        ds.dropdown.dismissed = serializePath(ds.selections[0].start.path);
+        rerender();
+        return true;
+    }
     if (key === 'UP') {
         ds.dropdown.selection[ds.dropdown.selection.length - 1]--;
         rerender();
@@ -47,15 +60,6 @@ export const handleDropdown = (
         return true;
     }
     if (key === 'ENTER') {
-        const autocomplete = getAutoComplete(
-            store,
-            rstate,
-            ds,
-            BootExampleEvaluator,
-        );
-        if (!autocomplete) return false;
-        if (!autocomplete.length) return false;
-
         const selected = findMenuItem(autocomplete, ds.dropdown.selection);
         if (!selected) return false;
         if (selected.type === 'submenu') {
@@ -64,7 +68,7 @@ export const handleDropdown = (
         }
         if (selected.type === 'action' || selected.type === 'toggle') {
             selected.action();
-            ds.dropdown.dismissed = true;
+            ds.dropdown.dismissed = serializePath(ds.selections[0].start.path);
             rerender();
             return true;
         }
