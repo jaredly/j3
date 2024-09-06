@@ -8,13 +8,13 @@ then it would show them.
 # Ergonomics
 
 - [x] whyyy is paren highlighting not working anymoreee
-- [ ] | at the end of a list doesn't make a new column
+- [x] | at the end of a list doesn't make a new column
 - [x] how to delete an empty first row of a table?
 - [x] producing a new column should add blanks for all rows.
 - [x] when deleting a cell, if all other rows have blanks in that column,
   remove the column.
+- [x] " at the end of a string should close it
 - [ ] then I'm really gonna need to do autocomplete folks
-- [ ] " at the end of a string should close it
 
 
 ```clj

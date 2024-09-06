@@ -2,6 +2,7 @@ import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
 import { Action, ToplevelUpdate } from '../../../shared/action2';
 import { IR, IRCursor, IRSelection } from '../../../shared/IR/intermediate';
 import {
+    goLeftRight,
     IRCache,
     IRCache2,
     irNavigable,
@@ -108,6 +109,26 @@ export const handleUpdate = (
             })
         ) {
             return true;
+        }
+    }
+
+    if (
+        key === '"' &&
+        node.type === 'string' &&
+        norm.start == null &&
+        norm.end == norm.text.length &&
+        norm.index === node.templates.length
+    ) {
+        const next = goLeftRight(sel, cache, false, false, store.getState());
+        if (next) {
+            store.update({
+                type: 'selection',
+                doc: docId,
+                selections: [next],
+            });
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -367,7 +388,10 @@ export const handleIDUpdate = ({
     }
 
     if (key === '"') {
-        if (norm.start == null && norm.end === norm.text.length) {
+        if (
+            (norm.start == null || norm.start === norm.text.length) &&
+            norm.end === norm.text.length
+        ) {
             const path = sel.start.path;
             const top = store.getState().toplevels[path.root.toplevel];
             const nidx = top.nextLoc;
