@@ -1,7 +1,7 @@
 // yay
 
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { SHOW_IDS } from '../../client/cli/drawDocNode2';
+import { SHOW_IDS } from '../../client/cli/drawDocNode';
 import { Path, serializePath, Style } from '../nodes';
 // import { applyFormats, blockFormat } from './format';
 import { Control, IR, IRCursor } from './intermediate';

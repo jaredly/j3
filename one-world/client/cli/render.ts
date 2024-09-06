@@ -37,7 +37,7 @@ import {
     iterTopNodes,
     topFromMap,
 } from './docNodeToIR';
-import { docToBlock, layoutCtx } from './drawDocNode2';
+import { docToBlock, layoutCtx } from './drawDocNode';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 import { selectionLocation } from './selectionLocation';
 
