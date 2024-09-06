@@ -213,6 +213,7 @@ export const handleUpdate = (
                 },
             },
         ],
+        autocomplete: true,
     });
     return true;
 };

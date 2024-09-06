@@ -1,4 +1,11 @@
 
+# Autocomplete thoughts
+
+- [ ] just navigating to a thing probably shouldn't trigger the autocomplete
+  - maybeeee should an /update/ have to opt in to autocomplete recompute? prolly.
+
+##
+
 What iff
 the whole thing was doing graph stuff?
 like

@@ -38,7 +38,7 @@ const _parse = (node: RecNode, ctx: Ctx) => {
             node.items.map((p) => _parse(p, ctx));
             if (node.items.length > 0) {
                 const first = node.items[0];
-                if (first.type === 'id') {
+                if (first.type === 'id' && first.ref?.type === 'keyword') {
                     switch (first.text) {
                         case 'if':
                             ctx.layouts[getLoc(node.loc)] = {
@@ -102,7 +102,7 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                                 layout: { tightFirst: 3, indent: 2 },
                             };
                             const second = node.items[1];
-                            if (second.type === 'id') {
+                            if (second?.type === 'id') {
                                 ctx.exports.push({
                                     loc: second.loc,
                                     kind: 'value',
@@ -138,6 +138,7 @@ const _parse = (node: RecNode, ctx: Ctx) => {
 
 const kwdStyle: Style = {
     color: termColors.kwd,
+
     // fontStyle: 'italic',
     // fontWeight: 'bold'
     // textDecoration: 'underline',

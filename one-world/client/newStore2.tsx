@@ -1,3 +1,4 @@
+import { BootExampleEvaluator } from '../boot-ex';
 import { Action } from '../shared/action2';
 import {
     IRCursor,
@@ -8,13 +9,15 @@ import { lastChild } from '../shared/IR/nav';
 import { Path, serializePath } from '../shared/nodes';
 import { DocSession, PersistedState } from '../shared/state2';
 import { update, Updated } from '../shared/update2';
+import { getAutoComplete } from './cli/getAutoComplete';
+import { RState } from './cli/render';
 import { listen } from './listen';
 import { Store } from './StoreContext2';
 import { getNewSelection } from './TextEdit/getNewSelection';
 
 type Evts = {
     general: {
-        selection: (() => void)[];
+        selection: ((autocomplete?: boolean) => void)[];
         all: (() => void)[];
     };
     selections: Record<string, (() => void)[]>;
@@ -128,6 +131,26 @@ const setupDragger = (store: Store) => {
     return { textRefs, startDrag };
 };
 
+const differentDropdown = (ds: DocSession) => {
+    const sel = ds.selections[0];
+    if (!sel) return false;
+    const key = ds.dropdown?.dismissed;
+    if (!key) return false;
+    return key !== serializePath(sel.start.path);
+};
+
+export function recalcDropdown(store: Store, docId: string, rstate: RState) {
+    const ds = store.getDocSession(docId);
+    if (!ds.dropdown || ds.dropdown.dismissed) {
+        const auto = getAutoComplete(store, rstate, ds, BootExampleEvaluator);
+        if (auto?.length) {
+            ds.dropdown = { selection: [0] };
+        } else {
+            ds.dropdown = undefined;
+        }
+    }
+}
+
 export const newStore = (
     state: PersistedState,
     ws: WebSocket,
@@ -229,7 +252,9 @@ export const newStore = (
                         });
                     });
 
-                    evts.general.selection.forEach((f) => f());
+                    evts.general.selection.forEach((f) =>
+                        f(action.autocomplete),
+                    );
                 }
 
                 state = update(state, action, updated);

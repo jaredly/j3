@@ -28,9 +28,15 @@ global.localStorage = {};
 import { openSync, writeSync } from 'fs';
 import { AnyEvaluator } from '../../boot-ex/types';
 import { getAutoComplete, menuToBlocks } from './getAutoComplete';
-import { blockToText } from '../../shared/IR/block-to-text';
+import {
+    BlockEntry,
+    blockToText,
+    DropTarget,
+} from '../../shared/IR/block-to-text';
 import { DocSession } from '../../shared/state2';
 import { serializePath } from '../../shared/nodes';
+import { IRCache2 } from '../../shared/IR/nav';
+import { recalcDropdown } from '../newStore2';
 // NOTE: Uncomment to route logs to a file
 const REDIRECT_OUT = true;
 if (REDIRECT_OUT) {
@@ -72,7 +78,7 @@ const run = async (term: termkit.Terminal) => {
     let lastKey = null as null | string;
 
     let rstate = render(term.width - 10, store, sess.doc, BootExampleEvaluator);
-    recalcDropdown(store, docId, rstate);
+    // recalcDropdown(store, docId, rstate);
     drawToTerminal(rstate, term, store, docId, lastKey, BootExampleEvaluator);
 
     const unsel = trackSelection(store, sess, docId);
@@ -99,8 +105,14 @@ const run = async (term: termkit.Terminal) => {
         tid = setTimeout(rerender, 0);
     };
 
+    store.on('selection', (autocomplete) => {
+        if (autocomplete) {
+            recalcDropdown(store, docId, rstate);
+            kick();
+        }
+    });
+
     store.on('all', () => {
-        recalcDropdown(store, docId, rstate);
         kick();
     });
     term.on('resize', () => kick());
@@ -187,36 +199,6 @@ const run = async (term: termkit.Terminal) => {
     });
 };
 
-const differentDropdown = (ds: DocSession) => {
-    const sel = ds.selections[0];
-    if (!sel) return false;
-    const key = ds.dropdown?.dismissed;
-    if (!key) return false;
-    return key !== serializePath(sel.start.path);
-};
-
-function recalcDropdown(
-    store: Store,
-    docId: string,
-    rstate: {
-        cache: import('/Users/jared/clone/exploration/j3/one-world/shared/IR/nav').IRCache2<any>;
-        sourceMaps: import('/Users/jared/clone/exploration/j3/one-world/shared/IR/block-to-text').BlockEntry[];
-        dropTargets: import('/Users/jared/clone/exploration/j3/one-world/shared/IR/block-to-text').DropTarget[];
-        block: Block;
-        txt: string;
-    },
-) {
-    const ds = store.getDocSession(docId);
-    if (!ds.dropdown || (ds.dropdown.dismissed && differentDropdown(ds))) {
-        const auto = getAutoComplete(store, rstate, ds, BootExampleEvaluator);
-        if (auto?.length) {
-            ds.dropdown = { selection: [0] };
-        } else {
-            ds.dropdown = undefined;
-        }
-    }
-}
-
 function drawToTerminal(
     rstate: RState,
     term: termkit.Terminal,
@@ -229,7 +211,11 @@ function drawToTerminal(
     term.moveTo(0, 2, rstate.txt);
 
     if (lastKey) {
-        term.moveTo(0, term.height, lastKey === ' ' ? 'SPACE' : lastKey);
+        term.moveTo(
+            0,
+            term.height,
+            (lastKey === ' ' ? 'SPACE' : lastKey) + '           ',
+        );
     }
     const ds = store.getDocSession(docId);
     const dragState = ds.dragState;

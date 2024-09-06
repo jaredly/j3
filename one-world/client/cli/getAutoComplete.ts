@@ -1,3 +1,4 @@
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { AnyEvaluator } from '../../boot-ex/types';
 import {
     Block,
@@ -11,7 +12,7 @@ import { Style } from '../../shared/nodes';
 import { DocSession } from '../../shared/state2';
 import { getNodeForPath } from '../selectNode';
 import { Store } from '../StoreContext2';
-import { normalizeSelection } from './edit/handleUpdate';
+import { normalizeSelection, topUpdate } from './edit/handleUpdate';
 import { RState } from './render';
 
 export type MenuItem =
@@ -62,6 +63,7 @@ export const menuToBlocks = (
             }
         }),
         true,
+        { background: { r: 50, g: 50, b: 50 } },
     );
 };
 
@@ -156,17 +158,48 @@ export const getAutoComplete = (
                 title: auto.text,
                 subtitle: tpl.docs ?? auto.docs,
                 action() {
+                    store.update(
+                        topUpdate(path.root.toplevel, {
+                            [node.loc]: {
+                                ...node,
+                                text: auto.text,
+                                ref: { type: 'keyword' },
+                            },
+                        }),
+                        {
+                            type: 'selection',
+                            doc: path.root.doc,
+                            selections: [
+                                {
+                                    start: {
+                                        cursor: {
+                                            type: 'text',
+                                            end: {
+                                                index: 0,
+                                                cursor: splitGraphemes(
+                                                    auto.text,
+                                                ).length,
+                                            },
+                                        },
+                                        key: sel.start.key,
+                                        path: sel.start.path,
+                                    },
+                                },
+                            ],
+                        },
+                    );
                     // TODO
                 },
             }));
         }
-        return {
-            type: 'action',
-            title: auto.text,
-            subtitle: auto.docs ?? '',
-            action() {
-                // TODO
-            },
-        };
+        // return {
+        //     type: 'action',
+        //     title: auto.text,
+        //     subtitle: auto.docs ?? '',
+        //     action() {
+        //         // TODO
+        //     },
+        // };
+        return [];
     });
 };

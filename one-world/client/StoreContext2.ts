@@ -15,7 +15,8 @@ export type Store = {
     onTopNode(top: string, id: number, f: () => void): () => void;
     onDoc(id: string, f: () => void): () => void;
     onDocNode(doc: string, id: number, f: () => void): () => void;
-    on(evt: StoreEvt, f: () => void): () => void;
+    on(evt: 'selection', f: (autocomplete?: boolean) => void): () => void;
+    on(evt: 'all', f: () => void): () => void;
     // focus and drag management
     textRef(path: Path, pathKey: string): RefObject<HTMLElement>;
     startDrag(pathKey: string, path: Path): void;
