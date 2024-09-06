@@ -67,7 +67,7 @@ export type DocSession = {
     verticalLodeStone?: number;
 
     dropdown?: {
-        index: number;
+        selection: number[];
         dismissed: boolean;
     };
 

@@ -6,7 +6,7 @@ what if /render/ was also a graph node?
 
 
 
-- [x] up/down nav should not jump between lines if possible.
+- [ ] up/down nav should not jump between lines if possible.
       BUT it should "remember" the column you're "trying" to get to
 
 

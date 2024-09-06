@@ -1,4 +1,5 @@
 import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
+import { BootExampleEvaluator } from '../../../boot-ex';
 import { BlockEntry, DropTarget } from '../../../shared/IR/block-to-text';
 import { matchesSpan } from '../../../shared/IR/highlightSpan';
 import { IRSelection } from '../../../shared/IR/intermediate';
@@ -20,10 +21,79 @@ import {
 import { PersistedState } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
 import { Store } from '../../StoreContext2';
+import { findMenuItem, getAutoComplete } from '../getAutoComplete';
 import { RState } from '../render';
 import { selectionFromLocation, selectionLocation } from '../selectionLocation';
 import { selectionForPos } from './handleMouse';
 import { selAction } from './joinLeft';
+
+export const handleDropdown = (
+    key: string,
+    docId: string,
+    store: Store,
+    rstate: RState,
+    rerender: () => void,
+): boolean => {
+    const ds = store.getDocSession(docId);
+    if (!ds.dropdown || ds.dropdown.dismissed) return false;
+    if (key === 'UP') {
+        ds.dropdown.selection[ds.dropdown.selection.length - 1]--;
+        rerender();
+        return true;
+    }
+    if (key === 'DOWN') {
+        ds.dropdown.selection[ds.dropdown.selection.length - 1]++;
+        rerender();
+        return true;
+    }
+    if (key === 'ENTER') {
+        const autocomplete = getAutoComplete(
+            store,
+            rstate,
+            ds,
+            BootExampleEvaluator,
+        );
+        if (!autocomplete) return false;
+        if (!autocomplete.length) return false;
+
+        const selected = findMenuItem(autocomplete, ds.dropdown.selection);
+        if (!selected) return false;
+        if (selected.type === 'submenu') {
+            ds.dropdown.selection.push(0);
+            return true;
+        }
+        if (selected.type === 'action' || selected.type === 'toggle') {
+            selected.action();
+            ds.dropdown.dismissed = true;
+            rerender();
+            return true;
+        }
+    }
+    if (key === 'LEFT') {
+        if (ds.dropdown.selection.length > 1) {
+            ds.dropdown.selection.pop();
+            rerender();
+            return true;
+        }
+    }
+    if (key === 'RIGHT') {
+        const autocomplete = getAutoComplete(
+            store,
+            rstate,
+            ds,
+            BootExampleEvaluator,
+        );
+        if (!autocomplete) return false;
+        if (!autocomplete.length) return false;
+        const selected = findMenuItem(autocomplete, ds.dropdown.selection);
+        if (!selected) return false;
+        if (selected.type === 'submenu') {
+            ds.dropdown.selection.push(0);
+            return true;
+        }
+    }
+    return false;
+};
 
 export const handleUpDown = (
     key: string,

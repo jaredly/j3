@@ -13,3 +13,17 @@ jerd is
 | type system | 90% | 50% |
 | projectional editor | 80% | 30% |
 | stdlib | 50% | 20% |
+
+## Lol none of that is accurate
+
+## For the old version
+```
+p web
+p server
+```
+
+## For the cli one
+```
+p ows
+p owc
+```

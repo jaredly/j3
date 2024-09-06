@@ -3,7 +3,11 @@ import { BootExampleEvaluator } from '../../boot-ex';
 import { Block } from '../../shared/IR/ir-to-blocks';
 import { drop } from './edit/drop';
 import { handleMouseClick, handleMouseDrag } from './edit/handleMouse';
-import { handleMovement, handleUpDown } from './edit/handleMovement';
+import {
+    handleDropdown,
+    handleMovement,
+    handleUpDown,
+} from './edit/handleMovement';
 import { handleUpdate } from './edit/handleUpdate';
 import { genId, newDocument } from './edit/newDocument';
 import { init } from './init';
@@ -22,9 +26,8 @@ global.window = {};
 global.localStorage = {};
 
 import { openSync, writeSync } from 'fs';
-import { DocSession } from '../../shared/state2';
-import { lastChild } from '../../shared/IR/nav';
 import { AnyEvaluator } from '../../boot-ex/types';
+import { getAutoComplete } from './getAutoComplete';
 // NOTE: Uncomment to route logs to a file
 const REDIRECT_OUT = false;
 if (REDIRECT_OUT) {
@@ -109,6 +112,11 @@ const run = async (term: termkit.Terminal) => {
                 return process.exit(0);
             }, 50);
         }
+
+        if (handleDropdown(key, docId, store, rstate, kick)) {
+            return;
+        }
+
         if (
             handleUpDown(key, docId, store, rstate) ||
             handleMovement(key, docId, rstate.cache, store)
@@ -197,32 +205,13 @@ function drawToTerminal(
         term.moveTo(0, term.height - 5, JSON.stringify(dragState.dest));
     }
 
-    const autocomplete = getAutoComplete(rstate, ds, ev);
+    const autocomplete = getAutoComplete(store, rstate, ds, ev);
     if (autocomplete?.length) {
         // render the autocomplete thanks
     }
 
     renderSelection(term, store, docId, rstate.sourceMaps);
 }
-
-const getAutoComplete = (rstate: RState, ds: DocSession, ev: AnyEvaluator) => {
-    if (!ds.selections.length) return;
-    const path = ds.selections[0].start.path;
-    const loc = lastChild(path);
-    const cache = rstate.cache[path.root.toplevel];
-    if (!cache) throw new Error(`no cache for selected toplevel`);
-    if (!cache.result.autocomplete) return;
-    const autos = ev.kwds.slice();
-    const { kinds, local } = cache.result.autocomplete;
-    local.forEach((node) => {
-        // TODO: make an autocomplete for the local node.
-        // would be great to include type info too if we can
-    });
-    kinds.forEach((kind) => {
-        // idk do something with this
-    });
-    return autos;
-};
 
 const getTerm = () =>
     new Promise<termkit.Terminal>((res, rej) =>
