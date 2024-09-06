@@ -12,7 +12,7 @@ import { handleUpdate } from './edit/handleUpdate';
 import { genId, newDocument } from './edit/newDocument';
 import { init } from './init';
 import { pickDocument } from './pickDocument';
-import { render, renderSelection, RState } from './render';
+import { render, renderSelection, RState, selectionPos } from './render';
 import { readSess, trackSelection, writeSess } from './Sess';
 import { Store } from '../StoreContext2';
 import { handleDrag, maybeStartDragging } from './handleDrag';
@@ -27,9 +27,10 @@ global.localStorage = {};
 
 import { openSync, writeSync } from 'fs';
 import { AnyEvaluator } from '../../boot-ex/types';
-import { getAutoComplete } from './getAutoComplete';
+import { getAutoComplete, menuToBlocks } from './getAutoComplete';
+import { blockToText } from '../../shared/IR/block-to-text';
 // NOTE: Uncomment to route logs to a file
-const REDIRECT_OUT = false;
+const REDIRECT_OUT = true;
 if (REDIRECT_OUT) {
     const out = openSync('./cli.log', 'W');
     console.log = (...args) => {
@@ -69,6 +70,7 @@ const run = async (term: termkit.Terminal) => {
     let lastKey = null as null | string;
 
     let rstate = render(term.width - 10, store, sess.doc, BootExampleEvaluator);
+    recalcDropdown(store, docId, rstate);
     drawToTerminal(rstate, term, store, docId, lastKey, BootExampleEvaluator);
 
     const unsel = trackSelection(store, sess, docId);
@@ -95,7 +97,10 @@ const run = async (term: termkit.Terminal) => {
         tid = setTimeout(rerender, 0);
     };
 
-    store.on('all', () => kick());
+    store.on('all', () => {
+        recalcDropdown(store, docId, rstate);
+        kick();
+    });
     term.on('resize', () => kick());
 
     term.on('key', (key: string) => {
@@ -178,6 +183,26 @@ const run = async (term: termkit.Terminal) => {
     });
 };
 
+function recalcDropdown(
+    store: Store,
+    docId: string,
+    rstate: {
+        cache: import('/Users/jared/clone/exploration/j3/one-world/shared/IR/nav').IRCache2<any>;
+        sourceMaps: import('/Users/jared/clone/exploration/j3/one-world/shared/IR/block-to-text').BlockEntry[];
+        dropTargets: import('/Users/jared/clone/exploration/j3/one-world/shared/IR/block-to-text').DropTarget[];
+        block: Block;
+        txt: string;
+    },
+) {
+    const ds = store.getDocSession(docId);
+    if (!ds.dropdown) {
+        const auto = getAutoComplete(store, rstate, ds, BootExampleEvaluator);
+        if (auto?.length) {
+            ds.dropdown = { selection: [0], dismissed: false };
+        }
+    }
+}
+
 function drawToTerminal(
     rstate: RState,
     term: termkit.Terminal,
@@ -205,9 +230,26 @@ function drawToTerminal(
         term.moveTo(0, term.height - 5, JSON.stringify(dragState.dest));
     }
 
-    const autocomplete = getAutoComplete(store, rstate, ds, ev);
-    if (autocomplete?.length) {
-        // render the autocomplete thanks
+    if (ds.dropdown && !ds.dropdown.dismissed) {
+        const autocomplete = getAutoComplete(store, rstate, ds, ev);
+        if (autocomplete?.length) {
+            const block = menuToBlocks(autocomplete, ds.dropdown?.selection);
+            if (block) {
+                const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
+                    sourceMaps: [],
+                    dropTargets: [],
+                    color: true,
+                    styles: {},
+                });
+                const pos = selectionPos(store, docId, rstate.sourceMaps);
+                if (pos) {
+                    txt.split('\n').forEach((line, i) => {
+                        term.moveTo(pos[0] + 1, pos[1] + 2 + i, line);
+                    });
+                }
+            }
+            // render the autocomplete thanks
+        }
     }
 
     renderSelection(term, store, docId, rstate.sourceMaps);

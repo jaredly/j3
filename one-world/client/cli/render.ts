@@ -41,8 +41,7 @@ import { docToBlock, layoutCtx } from './drawDocNode';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 import { selectionLocation } from './selectionLocation';
 
-export const renderSelection = (
-    term: termkit.Terminal,
+export const selectionPos = (
     store: Store,
     docId: string,
     sourceMaps: BlockEntry[],
@@ -55,12 +54,19 @@ export const renderSelection = (
             sel.start.path,
             sel.start.cursor,
         );
-        if (result) {
-            // term.moveTo(0, 25, JSON.stringify(sel.start.cursor));
-            term.moveTo(result.pos[0] + 1, result.pos[1] + 2);
-        } else {
-            // console.log(sel.start);
-        }
+        return result?.pos;
+    }
+};
+
+export const renderSelection = (
+    term: termkit.Terminal,
+    store: Store,
+    docId: string,
+    sourceMaps: BlockEntry[],
+) => {
+    const pos = selectionPos(store, docId, sourceMaps);
+    if (pos) {
+        term.moveTo(pos[0] + 1, pos[1] + 2);
     }
 };
 
@@ -76,7 +82,7 @@ const cursorLoc = (
     id: string,
 ): number | undefined => {
     for (let sel of selections) {
-        if (!sel.end) return;
+        if (sel.end) return;
         if (
             sel.start.cursor.type === 'text' &&
             sel.start.path.root.toplevel === id

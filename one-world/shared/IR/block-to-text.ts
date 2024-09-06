@@ -276,6 +276,10 @@ export const blockToText = (
                     .map((row) => {
                         const chunks: string[] = [];
                         let x = pos.x;
+                        if (block.sides) {
+                            chunks.push('⋮');
+                            x++;
+                        }
                         let height = 0;
                         for (let i = 0; i < row.length; i++) {
                             if (i > 0) {
@@ -296,6 +300,10 @@ export const blockToText = (
                             }
                             x += block.colWidths[i];
                             height = Math.max(height, row[i].height);
+                        }
+                        if (block.sides) {
+                            chunks.push('⋮');
+                            x++;
                         }
                         y += height;
                         return joinChunks(chunks);

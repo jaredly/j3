@@ -17,29 +17,29 @@ type Ctx = {
     exports: { loc: number; kind: string }[];
 };
 
-const parse = (node: RecNode, cursor?: number) => {
-    const ctx: Ctx = {
-        cursor: cursor ? { loc: cursor } : undefined,
-        errors: [],
-        fmt: [],
-        usages: [],
-        exports: [],
-    };
-    const result = _parse(node, ctx);
-    return { result, ...ctx };
-};
+// const parse = (node: RecNode, cursor?: number) => {
+//     const ctx: Ctx = {
+//         cursor: cursor ? { loc: cursor } : undefined,
+//         errors: [],
+//         fmt: [],
+//         usages: [],
+//         exports: [],
+//     };
+//     const result = _parse(node, ctx);
+//     return { result, ...ctx };
+// };
 
-const _parse = (node: RecNode, ctx: Ctx) => {
-    // do the thing
-    //
-    // parse gives us
-    // - the node
-    // - any accumilated juices .. .I mean errors
-    // - formatting infos
-    // - usages (for "rename symbol" and highlight-under-cursor)
-    // - exports (locs of identifiers that are "exports", along with a "kind" (e.g. value, type, effect))
-    // - autocomplete infos if we have a cursor here
-};
+// const _parse = (node: RecNode, ctx: Ctx) => {
+//     // do the thing
+//     //
+//     // parse gives us
+//     // - the node
+//     // - any accumilated juices .. .I mean errors
+//     // - formatting infos
+//     // - usages (for "rename symbol" and highlight-under-cursor)
+//     // - exports (locs of identifiers that are "exports", along with a "kind" (e.g. value, type, effect))
+//     // - autocomplete infos if we have a cursor here
+// };
 
 // DO I NEED
 // to have a "parse expression" form?

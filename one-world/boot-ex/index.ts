@@ -6,7 +6,7 @@ export const BootExampleEvaluator: Evaluator<void, void, void> = {
     kwds: kwds,
     parse(node, cursor) {
         const res = parse(node);
-        if (cursor) {
+        if (cursor != null) {
             return {
                 ...res,
                 autocomplete: {

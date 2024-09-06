@@ -82,6 +82,7 @@ export type Block =
           height: number;
           style?: Style;
           node?: Path;
+          sides?: boolean;
       }
     // | { type: 'line'; contents: string; width: number }
     | {
@@ -141,6 +142,43 @@ export const inlineSize = (
         }
     });
     return { width, height, last, positions };
+};
+
+export const table = (
+    contents: Block[][],
+    sides: boolean,
+    style?: Style,
+    node?: Block['node'],
+): Block => {
+    const colWidths: number[] = [];
+    const heights: number[] = [];
+    contents.map((row, r) => {
+        row.map((cell, c) => {
+            while (c >= colWidths.length) {
+                colWidths.push(0);
+            }
+            while (r >= heights.length) {
+                heights.push(0);
+            }
+
+            colWidths[c] = Math.max(colWidths[c], cell.width);
+            heights[r] = Math.max(heights[r], cell.height);
+        });
+    });
+    return {
+        type: 'table',
+        rows: contents,
+        height: heights.reduce((a, b) => a + b, 0),
+        colWidths,
+        width:
+            colWidths.reduce((w, c) => w + c, 0) +
+            colWidths.length -
+            1 +
+            (sides ? 2 : 0),
+        style,
+        node,
+        sides,
+    };
 };
 
 export const vblock = (
@@ -271,6 +309,8 @@ export const irToBlock = (
                 width:
                     colWidths.reduce((w, c) => w + c, 0) + colWidths.length - 1,
                 style: ir.style,
+                // TODO: do I want to enable sides?
+                sides: false,
             };
         }
         case 'cursor':
