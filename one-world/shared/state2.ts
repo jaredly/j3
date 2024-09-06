@@ -60,6 +60,11 @@ export type DocSession = {
         source: MultiSelect;
         dest?: DropTarget;
     };
+    // TODO: 'jump' history. for backtracking selections
+
+    // The 'column' position that the cursor is pulled back to
+    // for making up/down navigation better.
+    verticalLodeStone?: number;
 
     // idTexts: Record<number, string[]>;
     // selection cache???

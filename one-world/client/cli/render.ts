@@ -96,7 +96,9 @@ export const render = (
     const state = store.getState();
     const doc = state.documents[docId];
 
+    // This is where we /parse/ and such
     const cache = calculateIRs(doc, state, ev, ds);
+
     applySelectionText(ds.selections, cache);
     const layoutCache = calculateLayouts(doc, state, maxWidth, cache);
     const block = docToBlock(0, [], doc, state.toplevels, cache, layoutCache);

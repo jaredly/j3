@@ -1,17 +1,14 @@
 import { Layout } from '../shared/IR/intermediate';
 import { Loc, RecNode, RecNodeT, Style } from '../shared/nodes';
 
+// TODO: Make this better than string. maybe cst or something
+type Docs = string;
 export type Auto = {
     text: string;
+    // Only allowed at the top level?
     toplevel?: boolean;
-    // TODO: Better than string. maybe cst or something
-    docs?: string;
-    // Sooo I kinda want there to be able to be multiple templates to choose from?
-    // idk like (fn x) and (fn [a] x) right?
-    // idk if it's too niche.
-    // like macros can totally admit muiltiple forms.
-    // ok I'll do it now.
-    templates: { template: RecNodeT<boolean>[]; docs?: string }[];
+    docs?: Docs;
+    templates: { template: RecNodeT<boolean>[]; docs?: Docs }[];
 };
 
 // For internal references, not global ones.

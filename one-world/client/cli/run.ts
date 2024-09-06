@@ -22,6 +22,9 @@ global.window = {};
 global.localStorage = {};
 
 import { openSync, writeSync } from 'fs';
+import { DocSession } from '../../shared/state2';
+import { lastChild } from '../../shared/IR/nav';
+import { AnyEvaluator } from '../../boot-ex/types';
 // NOTE: Uncomment to route logs to a file
 const REDIRECT_OUT = false;
 if (REDIRECT_OUT) {
@@ -63,7 +66,7 @@ const run = async (term: termkit.Terminal) => {
     let lastKey = null as null | string;
 
     let rstate = render(term.width - 10, store, sess.doc, BootExampleEvaluator);
-    drawToTerminal(rstate, term, store, docId, lastKey);
+    drawToTerminal(rstate, term, store, docId, lastKey, BootExampleEvaluator);
 
     const unsel = trackSelection(store, sess, docId);
 
@@ -73,7 +76,14 @@ const run = async (term: termkit.Terminal) => {
     const rerender = () => {
         tid = null;
         rstate = render(term.width - 10, store, docId, BootExampleEvaluator);
-        drawToTerminal(rstate, term, store, docId, lastKey);
+        drawToTerminal(
+            rstate,
+            term,
+            store,
+            docId,
+            lastKey,
+            BootExampleEvaluator,
+        );
         prevState = store.getState();
     };
 
@@ -100,7 +110,7 @@ const run = async (term: termkit.Terminal) => {
             }, 50);
         }
         if (
-            handleUpDown(key, docId, store, rstate.sourceMaps) ||
+            handleUpDown(key, docId, store, rstate) ||
             handleMovement(key, docId, rstate.cache, store)
         ) {
             return;
@@ -166,6 +176,7 @@ function drawToTerminal(
     store: Store,
     docId: string,
     lastKey: string | null,
+    ev: AnyEvaluator,
 ) {
     term.clear();
     term.moveTo(0, 2, rstate.txt);
@@ -173,7 +184,8 @@ function drawToTerminal(
     if (lastKey) {
         term.moveTo(0, term.height, lastKey === ' ' ? 'SPACE' : lastKey);
     }
-    const dragState = store.getDocSession(docId)?.dragState;
+    const ds = store.getDocSession(docId);
+    const dragState = ds.dragState;
     if (dragState?.dest) {
         term.moveTo(
             dragState.dest.pos.x +
@@ -185,8 +197,32 @@ function drawToTerminal(
         term.moveTo(0, term.height - 5, JSON.stringify(dragState.dest));
     }
 
+    const autocomplete = getAutoComplete(rstate, ds, ev);
+    if (autocomplete?.length) {
+        // render the autocomplete thanks
+    }
+
     renderSelection(term, store, docId, rstate.sourceMaps);
 }
+
+const getAutoComplete = (rstate: RState, ds: DocSession, ev: AnyEvaluator) => {
+    if (!ds.selections.length) return;
+    const path = ds.selections[0].start.path;
+    const loc = lastChild(path);
+    const cache = rstate.cache[path.root.toplevel];
+    if (!cache) throw new Error(`no cache for selected toplevel`);
+    if (!cache.result.autocomplete) return;
+    const autos = ev.kwds.slice();
+    const { kinds, local } = cache.result.autocomplete;
+    local.forEach((node) => {
+        // TODO: make an autocomplete for the local node.
+        // would be great to include type info too if we can
+    });
+    kinds.forEach((kind) => {
+        // idk do something with this
+    });
+    return autos;
+};
 
 const getTerm = () =>
     new Promise<termkit.Terminal>((res, rej) =>

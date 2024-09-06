@@ -184,6 +184,8 @@ export const newStore = (
                     const key = `${action.doc} - ${session}`;
                     const prev = docSessionCache[key].selections;
                     docSessionCache[key].selections = action.selections;
+                    docSessionCache[key].verticalLodeStone =
+                        action.verticalLodeStone;
                     const seen: Record<string, IRSelection> = {};
                     action.selections.forEach((sel) => {
                         selPathKeys(sel).forEach((k) => {

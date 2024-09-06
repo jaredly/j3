@@ -1,4 +1,22 @@
 
+What iff
+the whole thing was doing graph stuff?
+like
+what if /render/ was also a graph node?
+
+
+
+- [ ] up/down nav should not jump between lines if possible.
+      BUT it should "remember" the column you're "trying" to get to
+
+
+#
+
+parseeeee
+gottta get some autocomplete thanksss
+
+#
+
 So I kinda want to be able to have ... the (macro?) or (parser?)
 optionally produce a (headings) for a given (table). And have that be displayed.
 

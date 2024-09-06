@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
-import { BlockEntry } from '../../../shared/IR/block-to-text';
+import { BlockEntry, DropTarget } from '../../../shared/IR/block-to-text';
 import { matchesSpan } from '../../../shared/IR/highlightSpan';
 import { IRSelection } from '../../../shared/IR/intermediate';
 import {
@@ -20,14 +20,16 @@ import {
 import { PersistedState } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
 import { Store } from '../../StoreContext2';
+import { RState } from '../render';
 import { selectionFromLocation, selectionLocation } from '../selectionLocation';
+import { selectionForPos } from './handleMouse';
 import { selAction } from './joinLeft';
 
 export const handleUpDown = (
     key: string,
     docId: string,
     store: Store,
-    sourceMaps: BlockEntry[],
+    rstate: RState,
 ) => {
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
@@ -35,32 +37,41 @@ export const handleUpDown = (
 
     if (key === 'UP' || key === 'DOWN') {
         const result = selectionLocation(
-            sourceMaps,
+            rstate.sourceMaps,
             sel.start.path,
             sel.start.cursor,
         );
         if (!result) return false;
         let [x, y] = result.pos;
+        if (ds.verticalLodeStone) x = ds.verticalLodeStone;
         let up;
         for (let i = 0; i < 20; i++) {
             y += key === 'UP' ? -1 : 1;
-            up = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
-            if (up) break;
+            const sel = selectionForPos(
+                x,
+                y,
+                rstate.sourceMaps,
+                rstate.dropTargets,
+                rstate.cache,
+            );
+            if (sel) {
+                up = sel;
+                break;
+            }
+            // up = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
+            // if (up) break;
         }
         if (!up) return false;
-        // const top = up.source.top;
-        // const ids = cache[top].paths[up.source.loc];
-        // if (!ids) return false;
-        const path: Path = up.source.path;
-        // {
-        //     root: cache[top].root,
-        //     children: ids.concat([up.source.loc]),
-        // };
-        const cursor = selectionFromLocation(up, { x, y });
+        // const path: Path = up.source.path;
+        // const cursor = selectionFromLocation(up, { x, y });
         store.update({
             type: 'selection',
             doc: docId,
-            selections: [toSelection({ cursor, path })],
+            selections: [
+                up.selection,
+                // toSelection({ cursor, path })
+            ],
+            verticalLodeStone: up.exact ? undefined : x,
         });
         return true;
     }
