@@ -17,6 +17,7 @@ import {
     Path,
     pathWithChildren,
     RecNodeT,
+    serializePath,
     Style,
 } from '../../shared/nodes';
 import { DocSession } from '../../shared/state2';
@@ -24,6 +25,7 @@ import { getNodeForPath } from '../selectNode';
 import { Store } from '../StoreContext2';
 import { inflateRecNode } from '../TextEdit/actions';
 import { normalizeSelection, topUpdate } from './edit/handleUpdate';
+import { replaceNode } from './edit/joinLeft';
 import { RState } from './render';
 
 export type MenuItem =
@@ -228,59 +230,114 @@ const applyTemplate = (
         },
     };
 
-    if (path.children.length === 1) {
-        let nextLoc = top.nextLoc;
-        const allNodes: Nodes = {};
-        // let selecteds: {
-        //     cursor: IRCursor;
-        //     children: number[];
-        //     node: RecNodeT<boolean>;
-        // }[] = [];
-        const nlocs: number[] = [lastChild(path)];
-        let root = nextLoc++;
-        allNodes[root] = { type: 'list', items: nlocs, loc: root };
-        allNodes[node.loc] = { ...node, text };
+    let fillOut:
+        | 'wrap'
+        | Extract<Node, { type: 'list' | 'array' | 'record' }>
+        | null = 'wrap';
 
-        tpl.forEach((sibling) => {
-            const { selected, nloc, nodes, nidx } = inflateRecNode(
-                nextLoc,
-                sibling,
-            );
-            nextLoc = nidx.next;
-            nlocs.push(nloc);
-            Object.assign(allNodes, nodes);
-            // selecteds.push({ ...selected, node: sibling });
-        });
+    /*
+    ok so the behavior is:
+    - if we are the first child of a list that has other children,
+        dont template
+    - otherwise, if we are the only child of a list
+        template into that list
+    - otherwise, wrap it up.
+    */
 
-        const selPath = pathWithChildren(parentPath(path), root, node.loc);
+    if (path.children.length > 1) {
+        const pnode = top.nodes[path.children[path.children.length - 2]];
 
+        if (pnode.type === 'list') {
+            if (pnode.items.length > 1 && pnode.items[0] === node.loc) {
+                fillOut = null;
+            } else if (pnode.items.length === 1) {
+                fillOut = pnode;
+            }
+        }
+    }
+
+    if (fillOut == null) {
+        // Non-template
         return [
-            {
-                type: 'toplevel',
-                id: top.id,
-                action: {
-                    type: 'update',
-                    update: { nextLoc, root, nodes: allNodes },
-                },
-            },
+            topUpdate(path.root.toplevel, {
+                [node.loc]: { ...node, text: text },
+            }),
             {
                 type: 'selection',
                 doc: path.root.doc,
-                selections: [toSelection({ cursor, path: selPath })],
+                selections: [toSelection({ cursor, path: sel.start.path })],
             },
         ];
     }
-    // orr if we are the only child
 
-    // Non-template
+    let nextLoc = top.nextLoc;
+    const allNodes: Nodes = {};
+    const nlocs: number[] = [lastChild(path)];
+    allNodes[node.loc] = { ...node, text };
+
+    let root = top.root;
+    let selecteds: {
+        cursor: IRCursor;
+        children: number[];
+        node: RecNodeT<boolean>;
+    }[] = [];
+
+    tpl.forEach((sibling) => {
+        const { selected, nloc, nodes, nidx } = inflateRecNode(
+            nextLoc,
+            sibling,
+        );
+        nextLoc = nidx.next;
+        nlocs.push(nloc);
+        Object.assign(allNodes, nodes);
+        selecteds.push({ ...selected, node: sibling });
+    });
+
+    let parent = parentPath(path);
+    if (fillOut === 'wrap') {
+        const wrapper = nextLoc++;
+        allNodes[wrapper] = { type: 'list', items: nlocs, loc: wrapper };
+
+        const update = replaceNode(path, wrapper, top);
+        if (!update) return [];
+        if (update.nodes) {
+            Object.assign(allNodes, update.nodes);
+        }
+        if (update.root != null) {
+            root = update.root;
+        }
+
+        parent = pathWithChildren(parentPath(path), wrapper);
+    } else {
+        allNodes[fillOut.loc] = { ...fillOut, items: nlocs };
+    }
+
+    const selected = selecteds[0];
+    // const epath = pathWithChildren(parent, ...selecteds[0].children);
+
+    const selPath = pathWithChildren(parent, ...selected.children);
+
     return [
-        topUpdate(path.root.toplevel, {
-            [node.loc]: { ...node, text: text },
-        }),
+        {
+            type: 'toplevel',
+            id: top.id,
+            action: {
+                type: 'update',
+                update: { nextLoc, root, nodes: allNodes },
+            },
+        },
         {
             type: 'selection',
             doc: path.root.doc,
-            selections: [toSelection({ cursor, path: sel.start.path })],
+            selections: [
+                {
+                    ...toSelection({
+                        cursor: selected.cursor,
+                        path: selPath,
+                    }),
+                    end: { path: selPath, key: serializePath(selPath) },
+                },
+            ],
         },
     ];
 };

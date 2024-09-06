@@ -38,7 +38,7 @@ const _parse = (node: RecNode, ctx: Ctx) => {
             node.items.map((p) => _parse(p, ctx));
             if (node.items.length > 0) {
                 const first = node.items[0];
-                if (first.type === 'id' && first.ref?.type === 'keyword') {
+                if (first.type === 'id') {
                     switch (first.text) {
                         case 'if':
                             ctx.layouts[getLoc(node.loc)] = {
