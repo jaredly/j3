@@ -1,5 +1,6 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { AnyEvaluator } from '../../boot-ex/types';
+import { IRCursor } from '../../shared/IR/intermediate';
 import {
     Block,
     hblock,
@@ -7,8 +8,8 @@ import {
     table,
     vblock,
 } from '../../shared/IR/ir-to-blocks';
-import { lastChild } from '../../shared/IR/nav';
-import { Style } from '../../shared/nodes';
+import { lastChild, toSelection } from '../../shared/IR/nav';
+import { Nodes, Path, Style } from '../../shared/nodes';
 import { DocSession } from '../../shared/state2';
 import { getNodeForPath } from '../selectNode';
 import { Store } from '../StoreContext2';
@@ -110,6 +111,14 @@ export const findMenuItem = (
     return found;
 };
 
+const isToplevel = (path: Path, nodes: Nodes) => {
+    if (path.children.length === 1) return true;
+    if (path.children.length !== 2) return false;
+    const [parent, self] = path.children;
+    const pnode = nodes[parent];
+    return pnode.type === 'list' && pnode.items[0] === self;
+};
+
 export const getAutoComplete = (
     store: Store,
     rstate: RState,
@@ -144,7 +153,13 @@ export const getAutoComplete = (
     const text = selText ? selText.join('') : node.text;
     if (!text.length) return; // don't give autocomplete with no text
 
+    const top = isToplevel(
+        path,
+        store.getState().toplevels[path.root.toplevel].nodes,
+    );
+
     const filter = (auto: (typeof autos)[0]) => {
+        if (auto.toplevel && !top) return false;
         if (auto.text.includes(text)) {
             return true;
         }
@@ -158,40 +173,30 @@ export const getAutoComplete = (
                 title: auto.text,
                 subtitle: tpl.docs ?? auto.docs,
                 action() {
+                    const cursor: IRCursor = {
+                        type: 'text',
+                        end: {
+                            index: 0,
+                            cursor: splitGraphemes(auto.text).length,
+                        },
+                    };
                     store.update(
                         topUpdate(path.root.toplevel, {
-                            [node.loc]: {
-                                ...node,
-                                text: auto.text,
-                                ref: { type: 'keyword' },
-                            },
+                            [node.loc]: { ...node, text: auto.text },
                         }),
                         {
                             type: 'selection',
                             doc: path.root.doc,
                             selections: [
-                                {
-                                    start: {
-                                        cursor: {
-                                            type: 'text',
-                                            end: {
-                                                index: 0,
-                                                cursor: splitGraphemes(
-                                                    auto.text,
-                                                ).length,
-                                            },
-                                        },
-                                        key: sel.start.key,
-                                        path: sel.start.path,
-                                    },
-                                },
+                                toSelection({ cursor, path: sel.start.path }),
                             ],
                         },
                     );
-                    // TODO
                 },
             }));
         }
+
+        // Somethinggg
         // return {
         //     type: 'action',
         //     title: auto.text,

@@ -255,6 +255,10 @@ export const newStore = (
                     evts.general.selection.forEach((f) =>
                         f(action.autocomplete),
                     );
+
+                    if (!action.autocomplete) {
+                        docSessionCache[key].dropdown = undefined;
+                    }
                 }
 
                 state = update(state, action, updated);

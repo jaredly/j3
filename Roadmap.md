@@ -1,8 +1,11 @@
 
 # Autocomplete thoughts
 
-- [ ] just navigating to a thing probably shouldn't trigger the autocomplete
+- [x] just navigating to a thing probably shouldn't trigger the autocomplete
   - maybeeee should an /update/ have to opt in to autocomplete recompute? prolly.
+- [ ] ok, so maybe I shouldn't do {ref: keyword}. Like what is it trying to do even.
+  because, it would make it seem like you can have a local that is a keyword and it
+  uses a separate namespace. which would be strange.
 
 ##
 
@@ -13,7 +16,7 @@ what if /render/ was also a graph node?
 
 
 
-- [ ] up/down nav should not jump between lines if possible.
+- [x] up/down nav should not jump between lines if possible.
       BUT it should "remember" the column you're "trying" to get to
 
 

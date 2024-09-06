@@ -63,6 +63,17 @@ export const handleUpdate = (
         return handleMutliSelect(store, sel, sel.end, key, ds);
     }
 
+    // ctrl-space apparently
+    if (key === 'NUL') {
+        store.update({
+            type: 'selection',
+            doc: docId,
+            selections: ds.selections,
+            autocomplete: true,
+        });
+        return true;
+    }
+
     if (key === 'CTRL_V') {
         if (!ds.clipboard.length) return false;
         // TODO: If current is empty, replace it
