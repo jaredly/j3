@@ -66,6 +66,11 @@ export type DocSession = {
     // for making up/down navigation better.
     verticalLodeStone?: number;
 
+    dropdown?: {
+        index: number;
+        dismissed: boolean;
+    };
+
     // idTexts: Record<number, string[]>;
     // selection cache???
     // selections: {

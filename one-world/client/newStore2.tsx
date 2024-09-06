@@ -14,6 +14,7 @@ import { getNewSelection } from './TextEdit/getNewSelection';
 
 type Evts = {
     general: {
+        dropdown: (() => void)[];
         selection: (() => void)[];
         all: (() => void)[];
     };
@@ -38,7 +39,7 @@ const blankEvts = (): Evts => ({
     tops: {},
     docs: {},
     selections: {},
-    general: { selection: [], all: [] },
+    general: { selection: [], dropdown: [], all: [] },
 });
 const blankFns = (): Evts['docs'][''] => ({ fns: [], nodes: {} });
 
@@ -180,6 +181,13 @@ export const newStore = (
                     evts.general.selection.forEach((f) => f());
                 }
 
+                if (action.type === 'dropdown') {
+                    const key = `${action.doc} - ${session}`;
+                    const prev = docSessionCache[key].dropdown;
+                    docSessionCache[key].dropdown = action.dropdown;
+                    evts.general.dropdown.forEach((f) => f());
+                }
+
                 if (action.type === 'selection') {
                     const key = `${action.doc} - ${session}`;
                     const prev = docSessionCache[key].selections;
@@ -255,6 +263,8 @@ export const newStore = (
                     return listen(evts.general.all, f);
                 case 'selection':
                     return listen(evts.general.selection, f);
+                case 'dropdown':
+                    return listen(evts.general.dropdown, f);
             }
         },
         onSelection(session, path, f) {

@@ -20,6 +20,7 @@ export type Action =
           selections: DocSession['selections'];
           verticalLodeStone?: number;
       }
+    | { type: 'dropdown'; doc: string; dropdown: DocSession['dropdown'] }
     | { type: 'drag'; doc: string; drag: DocSession['dragState'] }
     | { type: 'namespaces'; action: NamespaceAction }
     | { type: 'stage'; id: string; action: StageAction };
