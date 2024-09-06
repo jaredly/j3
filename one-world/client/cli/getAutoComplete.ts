@@ -313,7 +313,6 @@ const applyTemplate = (
     }
 
     const selected = selecteds[0];
-    // const epath = pathWithChildren(parent, ...selecteds[0].children);
 
     const selPath = pathWithChildren(parent, ...selected.children);
 
