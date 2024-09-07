@@ -230,25 +230,29 @@ export const getAutoComplete = (
         result.exports.forEach(({ loc, kind }) => {
             const got = byLoc[keyForLoc(loc)];
             if (got && got.type === 'id') {
-                items.push({
-                    type: 'action',
-                    title: got.text,
-                    action() {
-                        store.update(
-                            ...applyTemplate(store, sel, got.text, idNode, [], {
-                                type: 'toplevel',
-                                kind,
-                                loc,
-                            }),
-                        );
-                    },
-                });
-                // autos.push({
-                //     text: got.text,
-                //     templates: [{ template: [] }],
-                // });
+                if (got.text.includes(text)) {
+                    items.push({
+                        type: 'action',
+                        title: got.text,
+                        action() {
+                            store.update(
+                                ...applyTemplate(
+                                    store,
+                                    sel,
+                                    got.text,
+                                    idNode,
+                                    [],
+                                    {
+                                        type: 'toplevel',
+                                        kind,
+                                        loc,
+                                    },
+                                ),
+                            );
+                        },
+                    });
+                }
             }
-            // sooo then we find ... the
         });
     });
 

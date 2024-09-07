@@ -22,8 +22,8 @@
   - would it be a ctrl-p command or something
     - huh I kinda want a ctrl-p
 
-- [ ] toplevel refs - should reflect renames seamlessly
-- [ ] dont autocomplete on a name
+- [x] toplevel refs - should reflect renames seamlessly
+- [x] dont autocomplete on a defn name
 
 
 ##

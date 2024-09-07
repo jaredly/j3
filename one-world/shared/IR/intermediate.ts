@@ -23,7 +23,8 @@ import { ListDisplay, RenderInfo } from '../renderables';
 type Format = Style;
 
 const refStyle: Style = {
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
+    textDecoration: 'underline',
     // type: 'text', style: { fontWeight: 'bold' }
 };
 
@@ -678,15 +679,12 @@ export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
                     node.ref?.type === 'placeholder'
                         ? node.ref.text
                         : undefined,
-                style:
-                    ctx.styles[node.loc] ??
-                    (node.ref && node.ref.type !== 'placeholder'
+                style: ctx.styles[node.loc] ?? {
+                    color: parseHex(getRainbowHashColor(fasthash(text))),
+                    ...(node.ref && node.ref.type !== 'placeholder'
                         ? refStyle
-                        : {
-                              color: parseHex(
-                                  getRainbowHashColor(fasthash(text)),
-                              ),
-                          }),
+                        : undefined),
+                },
                 path,
                 index: 0,
             };
