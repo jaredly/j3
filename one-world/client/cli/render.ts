@@ -45,6 +45,7 @@ export const selectionPos = (
     store: Store,
     docId: string,
     sourceMaps: BlockEntry[],
+    nodeStart = false,
 ) => {
     const ds = store.getDocSession(docId, store.session);
     if (ds.selections.length) {
@@ -54,6 +55,9 @@ export const selectionPos = (
             sel.start.path,
             sel.start.cursor,
         );
+        if (nodeStart) {
+            return result?.source.shape.start;
+        }
         return result?.pos;
     }
 };

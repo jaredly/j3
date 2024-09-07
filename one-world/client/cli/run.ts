@@ -35,6 +35,7 @@ import {
 } from '../../shared/IR/block-to-text';
 import { DocSession } from '../../shared/state2';
 import { recalcDropdown } from '../newStore2';
+import { drawToTerminal } from './drawToTerminal';
 // NOTE: Uncomment to route logs to a file
 const REDIRECT_OUT = false;
 if (REDIRECT_OUT) {
@@ -77,7 +78,6 @@ const run = async (term: termkit.Terminal) => {
     let lastKey = null as null | string;
 
     let rstate = render(term.width - 10, store, sess.doc, BootExampleEvaluator);
-    // recalcDropdown(store, docId, rstate);
     drawToTerminal(rstate, term, store, docId, lastKey, BootExampleEvaluator);
 
     const unsel = trackSelection(store, sess, docId);
@@ -197,62 +197,6 @@ const run = async (term: termkit.Terminal) => {
         }
     });
 };
-
-function drawToTerminal(
-    rstate: RState,
-    term: termkit.Terminal,
-    store: Store,
-    docId: string,
-    lastKey: string | null,
-    ev: AnyEvaluator,
-) {
-    term.clear();
-    term.moveTo(0, 2, rstate.txt);
-
-    if (lastKey) {
-        term.moveTo(
-            0,
-            term.height,
-            (lastKey === ' ' ? 'SPACE' : lastKey) + '           ',
-        );
-    }
-    const ds = store.getDocSession(docId);
-    const dragState = ds.dragState;
-    if (dragState?.dest) {
-        term.moveTo(
-            dragState.dest.pos.x +
-                1 +
-                (dragState.dest.side === 'after' ? -1 : 0),
-            dragState.dest.pos.y + 1,
-            '⬇️',
-        );
-        term.moveTo(0, term.height - 5, JSON.stringify(dragState.dest));
-    }
-
-    if (ds.dropdown && !ds.dropdown.dismissed) {
-        const autocomplete = getAutoComplete(store, rstate, ds, ev);
-        if (autocomplete?.length) {
-            const block = menuToBlocks(autocomplete, ds.dropdown?.selection);
-            if (block) {
-                const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
-                    sourceMaps: [],
-                    dropTargets: [],
-                    color: true,
-                    styles: {},
-                });
-                const pos = selectionPos(store, docId, rstate.sourceMaps);
-                if (pos) {
-                    txt.split('\n').forEach((line, i) => {
-                        term.moveTo(pos[0] + 1, pos[1] + 3 + i, line);
-                    });
-                }
-            }
-            // render the autocomplete thanks
-        }
-    }
-
-    renderSelection(term, store, docId, rstate.sourceMaps);
-}
 
 const getTerm = () =>
     new Promise<termkit.Terminal>((res, rej) =>
