@@ -36,8 +36,9 @@ import {
 import { DocSession } from '../../shared/state2';
 import { recalcDropdown } from '../newStore2';
 // NOTE: Uncomment to route logs to a file
-const REDIRECT_OUT = true;
+const REDIRECT_OUT = false;
 if (REDIRECT_OUT) {
+    console.log('redirecting output to cli.log');
     const out = openSync('./cli.log', 'W');
     console.log = (...args) => {
         writeSync(out, JSON.stringify(args) + '\n');
