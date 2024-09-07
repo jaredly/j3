@@ -16,6 +16,7 @@ import {
     Path,
     pathWithChildren,
     keyForLoc,
+    Loc,
 } from '../nodes';
 import { ListDisplay, RenderInfo } from '../renderables';
 
@@ -147,14 +148,14 @@ const braceStyle = (depth: number): Style => {
 type IRCtx = {
     styles: Record<number, Format>;
     layouts: Record<number, Layout>;
-    names: Record<string, string>;
+    getName(loc: Loc): string | null;
     tableHeaders: Record<number, string[]>;
 };
 
 const emptyCtx: IRCtx = {
     styles: {},
     layouts: {},
-    names: {},
+    getName: () => null,
     tableHeaders: {},
 };
 
@@ -667,7 +668,7 @@ export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
         case 'id': {
             const text =
                 node.ref?.type === 'toplevel'
-                    ? ctx.names[keyForLoc(node.ref.loc)]
+                    ? ctx.getName(node.ref.loc) ?? '[unresolved]'
                     : node.text;
 
             return {

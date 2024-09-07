@@ -226,6 +226,13 @@ export function calculateIRs(
     ds: DocSession,
 ): IRCache2<any> {
     const cache: IRCache2<any> = {};
+
+    // OK we need to parse everything first
+    // before we can IR things
+    // right?
+    // I mean techinally we only need to .. parse ...things
+    // that are depended on by a given node.
+
     iterDocNodes(0, [], doc, (docNode, ids) => {
         const top = state.toplevels[docNode.toplevel];
         const { paths, node } = topFromMap(top);
@@ -238,7 +245,16 @@ export function calculateIRs(
                 styles: parsed.styles,
                 layouts: parsed.layouts,
                 tableHeaders: parsed.tableHeaders,
-                names: {},
+                getName(loc) {
+                    if (loc.length > 1) return null;
+                    const [tid, idx] = loc[0];
+                    // TODO THis will not work with macros.
+                    // we'll have to do the actual graph resolution for that.
+                    const node = state.toplevels[tid].nodes[idx];
+                    // HRM ok so ... what if we want to report the ... temporary name?
+                    // seemsl ike that would be nice.
+                    return node.type === 'id' ? node.text : null;
+                },
             });
         });
         cache[docNode.toplevel] = {

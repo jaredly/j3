@@ -15,6 +15,7 @@
   - hrm ok. so ... parse ... and then, use that somehow.
 
 - [x] dropdown should be aligned-left to anchor node
+- [ ] autocomplete toplevel should do the /ref/ thing
 
 - [ ] how do I get toplevels to ... have docstrings?
   - would it be a ctrl-p command or something

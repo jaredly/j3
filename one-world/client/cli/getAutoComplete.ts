@@ -11,6 +11,7 @@ import {
 } from '../../shared/IR/ir-to-blocks';
 import { lastChild, toSelection } from '../../shared/IR/nav';
 import {
+    IDRef,
     iterNodes,
     keyForLoc,
     Node,
@@ -155,7 +156,28 @@ export const getAutoComplete = (
     if (!cache.result.autocomplete) {
         return;
     }
-    const autos = ev.kwds.slice();
+
+    const idNode = getNodeForPath(path, store.getState());
+    if (!idNode || idNode.type !== 'id' || (idNode.ref && !selText)) {
+        return;
+    }
+    const text = selText ? selText.join('') : idNode.text;
+    if (!text.length) return; // don't give autocomplete with no text
+
+    const top = isToplevel(
+        path,
+        store.getState().toplevels[path.root.toplevel].nodes,
+    );
+
+    const filter = (auto: (typeof ev.kwds)[0]) => {
+        if (auto.toplevel && !top) return false;
+        if (auto.text.includes(text)) {
+            return true;
+        }
+        return false;
+    };
+    const autos = ev.kwds.filter(filter);
+
     const { kinds, local } = cache.result.autocomplete;
     local.forEach((node) => {
         // TODO: make an autocomplete for the local node.
@@ -164,48 +186,9 @@ export const getAutoComplete = (
     kinds.forEach((kind) => {
         // idk do something with this
     });
-    const state = store.getState();
+    // const state = store.getState();
 
-    Object.entries(rstate.cache).forEach(([tid, { result, node }]) => {
-        if (!result.exports?.length) {
-            return;
-        }
-        const byLoc: Record<string, RecNode> = {};
-        iterNodes(node, (node) => (byLoc[keyForLoc(node.loc)] = node));
-
-        result.exports.forEach(({ loc, kind }) => {
-            const got = byLoc[keyForLoc(loc)];
-            if (got && got.type === 'id') {
-                autos.push({
-                    text: got.text,
-                    templates: [{ template: [] }],
-                });
-            }
-            // sooo then we find ... the
-        });
-    });
-
-    const node = getNodeForPath(path, store.getState());
-    if (!node || node.type !== 'id' || (node.ref && !selText)) {
-        return;
-    }
-    const text = selText ? selText.join('') : node.text;
-    if (!text.length) return; // don't give autocomplete with no text
-
-    const top = isToplevel(
-        path,
-        store.getState().toplevels[path.root.toplevel].nodes,
-    );
-
-    const filter = (auto: (typeof autos)[0]) => {
-        if (auto.toplevel && !top) return false;
-        if (auto.text.includes(text)) {
-            return true;
-        }
-        return false;
-    };
-
-    return autos.filter(filter).flatMap((auto) => {
+    const items: MenuItem[] = autos.flatMap((auto) => {
         if (auto.templates.length) {
             return auto.templates.map((tpl) => ({
                 type: 'action',
@@ -217,7 +200,7 @@ export const getAutoComplete = (
                             store,
                             sel,
                             auto.text,
-                            node,
+                            idNode,
                             tpl.template,
                         ),
                     );
@@ -225,17 +208,51 @@ export const getAutoComplete = (
             }));
         }
 
-        // Somethinggg
-        // return {
-        //     type: 'action',
-        //     title: auto.text,
-        //     subtitle: auto.docs ?? '',
-        //     action() {
-        //         // TODO
-        //     },
-        // };
-        return [];
+        return {
+            type: 'action',
+            title: auto.text,
+            subtitle: auto.docs ?? '',
+            action() {
+                store.update(
+                    ...applyTemplate(store, sel, auto.text, idNode, []),
+                );
+            },
+        };
     });
+
+    Object.entries(rstate.cache).forEach(([tid, { result, node }]) => {
+        if (!result.exports?.length) {
+            return;
+        }
+        const byLoc: Record<string, RecNode> = {};
+        iterNodes(node, (node) => (byLoc[keyForLoc(node.loc)] = node));
+
+        result.exports.forEach(({ loc, kind }) => {
+            const got = byLoc[keyForLoc(loc)];
+            if (got && got.type === 'id') {
+                items.push({
+                    type: 'action',
+                    title: got.text,
+                    action() {
+                        store.update(
+                            ...applyTemplate(store, sel, got.text, idNode, [], {
+                                type: 'toplevel',
+                                kind,
+                                loc,
+                            }),
+                        );
+                    },
+                });
+                // autos.push({
+                //     text: got.text,
+                //     templates: [{ template: [] }],
+                // });
+            }
+            // sooo then we find ... the
+        });
+    });
+
+    return items;
 };
 
 const applyTemplate = (
@@ -244,6 +261,7 @@ const applyTemplate = (
     text: string,
     node: Extract<Node, { type: 'id' }>,
     tpl: RecNodeT<boolean>[],
+    link?: IDRef,
 ): Action[] => {
     const path = sel.start.path;
     const state = store.getState();
@@ -287,7 +305,7 @@ const applyTemplate = (
         // Non-template
         return [
             topUpdate(path.root.toplevel, {
-                [node.loc]: { ...node, text: text },
+                [node.loc]: { ...node, text: text, ref: link },
             }),
             {
                 type: 'selection',
@@ -300,7 +318,7 @@ const applyTemplate = (
     let nextLoc = top.nextLoc;
     const allNodes: Nodes = {};
     const nlocs: number[] = [lastChild(path)];
-    allNodes[node.loc] = { ...node, text };
+    allNodes[node.loc] = { ...node, text, ref: link };
 
     let root = top.root;
     let selecteds: {

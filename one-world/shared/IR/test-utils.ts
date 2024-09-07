@@ -67,7 +67,7 @@ export const multi = (texts: string[], ev = BootExampleEvaluator) => {
                 styles: parsed.styles,
                 layouts: parsed.layouts,
                 tableHeaders: parsed.tableHeaders,
-                names,
+                getName: () => null,
             });
         });
 
@@ -112,7 +112,7 @@ const processNode = (
             styles: parsed.styles,
             layouts: parsed.layouts,
             tableHeaders: parsed.tableHeaders,
-            names: {},
+            getName: () => null,
         });
         const children = childLocs(nodes[id]);
         children.forEach((child) => process(child, self));
