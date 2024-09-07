@@ -39,14 +39,14 @@ export type MenuItem =
           type: 'action';
           title: string;
           subtitle?: string;
-          action(): void;
+          action(canApplyTemplate: boolean): boolean;
       }
     | {
           type: 'toggle';
           title: string;
           subtitle?: string;
           checked: boolean;
-          action(): void;
+          action(canApplyTemplate: boolean): boolean;
       }
     | {
           type: 'submenu';
@@ -194,16 +194,16 @@ export const getAutoComplete = (
                 type: 'action',
                 title: auto.text,
                 subtitle: tpl.docs ?? auto.docs,
-                action() {
-                    store.update(
-                        ...applyTemplate(
-                            store,
-                            sel,
-                            auto.text,
-                            idNode,
-                            tpl.template,
-                        ),
+                action(canApplyTemplate) {
+                    const { template, actions } = applyTemplate(
+                        store,
+                        sel,
+                        auto.text,
+                        idNode,
+                        canApplyTemplate ? tpl.template : [],
                     );
+                    store.update(...actions);
+                    return !template;
                 },
             }));
         }
@@ -212,10 +212,16 @@ export const getAutoComplete = (
             type: 'action',
             title: auto.text,
             subtitle: auto.docs ?? '',
-            action() {
-                store.update(
-                    ...applyTemplate(store, sel, auto.text, idNode, []),
+            action(canApplyTemplate) {
+                const { template, actions } = applyTemplate(
+                    store,
+                    sel,
+                    auto.text,
+                    idNode,
+                    [],
                 );
+                store.update(...actions);
+                return !template;
             },
         };
     });
@@ -234,21 +240,17 @@ export const getAutoComplete = (
                     items.push({
                         type: 'action',
                         title: got.text,
-                        action() {
-                            store.update(
-                                ...applyTemplate(
-                                    store,
-                                    sel,
-                                    got.text,
-                                    idNode,
-                                    [],
-                                    {
-                                        type: 'toplevel',
-                                        kind,
-                                        loc,
-                                    },
-                                ),
+                        action(canApplyTemplate) {
+                            const { template, actions } = applyTemplate(
+                                store,
+                                sel,
+                                got.text,
+                                idNode,
+                                [],
+                                { type: 'toplevel', kind, loc },
                             );
+                            store.update(...actions);
+                            return !template;
                         },
                     });
                 }
@@ -266,7 +268,7 @@ const applyTemplate = (
     node: Extract<Node, { type: 'id' }>,
     tpl: RecNodeT<boolean>[],
     link?: IDRef,
-): Action[] => {
+): { template: boolean; actions: Action[] } => {
     const path = sel.start.path;
     const state = store.getState();
     const top = state.toplevels[path.root.toplevel];
@@ -307,16 +309,19 @@ const applyTemplate = (
 
     if (fillOut == null || tpl.length === 0) {
         // Non-template
-        return [
-            topUpdate(path.root.toplevel, {
-                [node.loc]: { ...node, text: text, ref: link },
-            }),
-            {
-                type: 'selection',
-                doc: path.root.doc,
-                selections: [toSelection({ cursor, path: sel.start.path })],
-            },
-        ];
+        return {
+            template: false,
+            actions: [
+                topUpdate(path.root.toplevel, {
+                    [node.loc]: { ...node, text: text, ref: link },
+                }),
+                {
+                    type: 'selection',
+                    doc: path.root.doc,
+                    selections: [toSelection({ cursor, path: sel.start.path })],
+                },
+            ],
+        };
     }
 
     let nextLoc = top.nextLoc;
@@ -348,7 +353,7 @@ const applyTemplate = (
         allNodes[wrapper] = { type: 'list', items: nlocs, loc: wrapper };
 
         const update = replaceNode(path, wrapper, top);
-        if (!update) return [];
+        if (!update) return { template: false, actions: [] };
         if (update.nodes) {
             Object.assign(allNodes, update.nodes);
         }
@@ -365,27 +370,30 @@ const applyTemplate = (
 
     const selPath = pathWithChildren(parent, ...selected.children);
 
-    return [
-        {
-            type: 'toplevel',
-            id: top.id,
-            action: {
-                type: 'update',
-                update: { nextLoc, root, nodes: allNodes },
-            },
-        },
-        {
-            type: 'selection',
-            doc: path.root.doc,
-            selections: [
-                {
-                    ...toSelection({
-                        cursor: selected.cursor,
-                        path: selPath,
-                    }),
-                    end: { path: selPath, key: serializePath(selPath) },
+    return {
+        template: true,
+        actions: [
+            {
+                type: 'toplevel',
+                id: top.id,
+                action: {
+                    type: 'update',
+                    update: { nextLoc, root, nodes: allNodes },
                 },
-            ],
-        },
-    ];
+            },
+            {
+                type: 'selection',
+                doc: path.root.doc,
+                selections: [
+                    {
+                        ...toSelection({
+                            cursor: selected.cursor,
+                            path: selPath,
+                        }),
+                        end: { path: selPath, key: serializePath(selPath) },
+                    },
+                ],
+            },
+        ],
+    };
 };

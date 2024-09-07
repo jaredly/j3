@@ -310,6 +310,9 @@ export const handleIDUpdate = ({
     cache: IRCache2<unknown>;
 }): boolean => {
     if (key === ' ' || key === 'ENTER') {
+        // OK so ...
+        // if we have an autocomplete open, we don't actually want to split.
+
         split(path, norm, node, store, cache);
         return true;
     }

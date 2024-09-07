@@ -67,10 +67,21 @@ export const handleDropdown = (
             return true;
         }
         if (selected.type === 'action' || selected.type === 'toggle') {
-            selected.action();
+            const shouldContinue = selected.action(true);
             ds.dropdown.dismissed = serializePath(ds.selections[0].start.path);
             rerender();
-            return true;
+            return !shouldContinue;
+        }
+    }
+    if (key === ' ' || key === ')' || key === '}' || key === ']') {
+        const selected = findMenuItem(autocomplete, ds.dropdown.selection);
+        if (!selected) return false;
+        // TODO: might have to space multiple times?
+        if (selected.type === 'action' || selected.type === 'toggle') {
+            const shouldContinue = selected.action(key === ' ');
+            ds.dropdown.dismissed = serializePath(ds.selections[0].start.path);
+            rerender();
+            return !shouldContinue;
         }
     }
     if (key === 'LEFT') {

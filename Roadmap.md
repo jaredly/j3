@@ -9,6 +9,29 @@
 - [x] wrapping a placeholder shoudl strip the placeholderness
 - [x] clicking in a tmp thing shouldn't ditch the text
 
+- [ ] space should trigger autocomplete
+
+BUT it also needs to execute it's own stuff afterwards.
+HOWEVER
+...
+ok so
+- if there's a template, and we press /enter/ or /space/, we apply the template.
+  If we press something else, like ])} etc., we don't apply the template, and we
+  still need to execute the next thing.
+- IF we press /space/ and there's no template, then we need to still execute the next thing
+
+THIS MEANS:
+
+the action() should have:
+- "canApplyTemplate" as an input, and
+- "shouldContinue" as an output. Right?
+
+| canApplyTemplate | shouldContinue
+| true             | true   | there was no template
+| true             | false  | there was a template
+| false            | true   | all is well
+| false            | false  | probably shouldn't happen?
+
 ## NExr streps
 
 - [x] autocomplete other toplevel definitions!!
@@ -24,6 +47,12 @@
 
 - [x] toplevel refs - should reflect renames seamlessly
 - [x] dont autocomplete on a defn name
+
+- [ ] huh ok so `space` needs to trigger the autocomplete
+  yeah defs.
+
+- [ ] sure would be cool if the /table/ node could keep track of the placeholders
+  for each column. that might replace the role of headers entirely?
 
 
 ##
