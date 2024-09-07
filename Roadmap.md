@@ -9,6 +9,11 @@
 - [x] wrapping a placeholder shoudl strip the placeholderness
 - [x] clicking in a tmp thing shouldn't ditch the text
 
+## NExr streps
+
+- [ ] autocomplete other toplevel definitions!!
+  - hrm ok. so ... parse ... and then, use that somehow.
+
 ##
 
 What iff

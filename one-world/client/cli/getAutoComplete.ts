@@ -11,11 +11,14 @@ import {
 } from '../../shared/IR/ir-to-blocks';
 import { lastChild, toSelection } from '../../shared/IR/nav';
 import {
+    iterNodes,
+    keyForLoc,
     Node,
     Nodes,
     parentPath,
     Path,
     pathWithChildren,
+    RecNode,
     RecNodeT,
     serializePath,
     Style,
@@ -67,10 +70,14 @@ export const menuToBlocks = (
                     return [line(item.title, undefined, style)];
                 case 'action':
                 case 'toggle':
-                    return [
-                        line(item.title, undefined, style),
-                        line(item.subtitle || '', undefined, style),
-                    ];
+                    if (item.subtitle) {
+                        return [
+                            line(item.title, undefined, style),
+                            line(item.subtitle || '', undefined, style),
+                        ];
+                    } else {
+                        return [line(item.title, undefined, style)];
+                    }
                 default:
                     return [line('[unknown]', undefined, style)];
             }
@@ -156,6 +163,26 @@ export const getAutoComplete = (
     });
     kinds.forEach((kind) => {
         // idk do something with this
+    });
+    const state = store.getState();
+
+    Object.entries(rstate.cache).forEach(([tid, { result, node }]) => {
+        if (!result.exports?.length) {
+            return;
+        }
+        const byLoc: Record<string, RecNode> = {};
+        iterNodes(node, (node) => (byLoc[keyForLoc(node.loc)] = node));
+
+        result.exports.forEach(({ loc, kind }) => {
+            const got = byLoc[keyForLoc(loc)];
+            if (got && got.type === 'id') {
+                autos.push({
+                    text: got.text,
+                    templates: [{ template: [] }],
+                });
+            }
+            // sooo then we find ... the
+        });
     });
 
     const node = getNodeForPath(path, store.getState());
@@ -256,7 +283,7 @@ const applyTemplate = (
         }
     }
 
-    if (fillOut == null) {
+    if (fillOut == null || tpl.length === 0) {
         // Non-template
         return [
             topUpdate(path.root.toplevel, {

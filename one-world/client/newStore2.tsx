@@ -131,14 +131,6 @@ const setupDragger = (store: Store) => {
     return { textRefs, startDrag };
 };
 
-const differentDropdown = (ds: DocSession) => {
-    const sel = ds.selections[0];
-    if (!sel) return false;
-    const key = ds.dropdown?.dismissed;
-    if (!key) return false;
-    return key !== serializePath(sel.start.path);
-};
-
 export function recalcDropdown(store: Store, docId: string, rstate: RState) {
     const ds = store.getDocSession(docId);
     if (!ds.dropdown || ds.dropdown.dismissed) {

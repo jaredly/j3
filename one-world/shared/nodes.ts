@@ -480,6 +480,11 @@ export const childNodes = (node: RecNode): RecNode[] => {
     }
 };
 
+export const iterNodes = (node: RecNode, f: (node: RecNode) => void) => {
+    f(node);
+    childNodes(node).forEach((node) => iterNodes(node, f));
+};
+
 export const childLocs = (node: Node): number[] => {
     switch (node.type) {
         case 'id':

@@ -239,6 +239,7 @@ export function calculateIRs(
         });
         cache[docNode.toplevel] = {
             irs,
+            node,
             paths,
             root: pathRoot,
             result: parsed,

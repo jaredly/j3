@@ -34,8 +34,6 @@ import {
     DropTarget,
 } from '../../shared/IR/block-to-text';
 import { DocSession } from '../../shared/state2';
-import { serializePath } from '../../shared/nodes';
-import { IRCache2 } from '../../shared/IR/nav';
 import { recalcDropdown } from '../newStore2';
 // NOTE: Uncomment to route logs to a file
 const REDIRECT_OUT = true;

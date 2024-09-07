@@ -7,6 +7,7 @@ import {
     Path,
     PathRoot,
     pathWithChildren,
+    RecNode,
     serializePath,
 } from '../nodes';
 import { PersistedState } from '../state';
@@ -30,6 +31,7 @@ export type IRCache2<Top> = Record<
         paths: Record<number, number[]>;
         root: PathRoot;
         result: ParseResult<Top>;
+        node: RecNode;
     }
 >;
 
