@@ -9,7 +9,8 @@
 - [x] wrapping a placeholder shoudl strip the placeholderness
 - [x] clicking in a tmp thing shouldn't ditch the text
 
-- [ ] space should trigger autocomplete
+- [x] space should trigger autocomplete
+- [x] need a way to break refs.
 
 BUT it also needs to execute it's own stuff afterwards.
 HOWEVER
@@ -48,7 +49,7 @@ the action() should have:
 - [x] toplevel refs - should reflect renames seamlessly
 - [x] dont autocomplete on a defn name
 
-- [ ] huh ok so `space` needs to trigger the autocomplete
+- [x] huh ok so `space` needs to trigger the autocomplete
   yeah defs.
 
 - [ ] sure would be cool if the /table/ node could keep track of the placeholders

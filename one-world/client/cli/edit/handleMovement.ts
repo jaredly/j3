@@ -68,7 +68,11 @@ export const handleDropdown = (
         }
         if (selected.type === 'action' || selected.type === 'toggle') {
             const shouldContinue = selected.action(true);
-            ds.dropdown.dismissed = serializePath(ds.selections[0].start.path);
+            if (ds.dropdown) {
+                ds.dropdown.dismissed = serializePath(
+                    ds.selections[0].start.path,
+                );
+            }
             rerender();
             return !shouldContinue;
         }
@@ -79,7 +83,11 @@ export const handleDropdown = (
         // TODO: might have to space multiple times?
         if (selected.type === 'action' || selected.type === 'toggle') {
             const shouldContinue = selected.action(key === ' ');
-            ds.dropdown.dismissed = serializePath(ds.selections[0].start.path);
+            if (ds.dropdown) {
+                ds.dropdown.dismissed = serializePath(
+                    ds.selections[0].start.path,
+                );
+            }
             rerender();
             return !shouldContinue;
         }

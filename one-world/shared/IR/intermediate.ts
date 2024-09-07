@@ -116,7 +116,7 @@ export const updateNodeText = (
     switch (node.type) {
         case 'id':
             if (node.text === text) return;
-            return { ...node, text };
+            return { ...node, text, ref: undefined };
         case 'string':
             if (index === 0) {
                 if (node.first === text) return;
