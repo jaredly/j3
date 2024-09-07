@@ -18,3 +18,9 @@ I recommend `pnpm` for installing the dependencies.
 ## The Compiler Tutorial
 
 I've written a compiler (and type-checker) tutorial using the previous version of the Language Development Environment, which can be viewed at https://compiler.jaredforsyth.com. There's a lot of good stuff there, but I want to rewrite it entirely, and as a part of that I realized I needed to rebuild the LDE from the ground up. As one does.
+
+## Repo organization
+it is not
+
+most of the new work is happening in the `one-world` directory.
+other directories contain various previous versions.
