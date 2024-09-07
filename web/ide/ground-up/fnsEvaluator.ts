@@ -165,6 +165,9 @@ export const fnsEvaluator = (
                 ) {
                     return;
                 }
+                // if (group[0].top.top === target) {
+                //     debugger;
+                // }
                 const result = this.addStatements(
                     group.map((g) => ({ stmt: g.stmt, names: g.allNames })),
                     env,
@@ -179,6 +182,10 @@ export const fnsEvaluator = (
                     } else {
                         console.error(`result for target top doesnt have js`);
                         console.log(result);
+                        console.warn('Display!');
+                        Object.keys(result.display).forEach((k) => {
+                            console.log(result.display[+k]);
+                        });
                     }
                     return;
                 }
@@ -281,7 +288,9 @@ export const fnsEvaluator = (
                 const js = compiler.compileExpr(expr, typeInfo, meta);
                 const fn = new Function(
                     needed.length
-                        ? `{$env,${needed.map(sanitize).join(', ')}}`
+                        ? `{${unique(
+                              needed.map(sanitize).concat(['$env']),
+                          ).join(', ')}}`
                         : '_',
                     'return ' + js,
                 );
@@ -378,7 +387,9 @@ const compileStmt = ({
 
         const fn = new Function(
             needed.length
-                ? `{${needed.map(sanitize).concat(['$env']).join(', ')}}`
+                ? `{${unique(needed.map(sanitize).concat(['$env'])).join(
+                      ', ',
+                  )}}`
                 : '_',
             `{${
                 stmts.length === 1 && !namedValues?.length ? `return ${js}` : js
@@ -440,7 +451,18 @@ const compileStmt = ({
                     withTracing(traceMap, top, san.$setTracer, env);
                 }
                 const result = fn(values);
-                if (result != null) {
+                if (result && result.$type === 'thunk') {
+                    display.push({
+                        type: 'trigger',
+                        f: (ok) =>
+                            result.f(
+                                env.values,
+                                (produce: ProduceItem[], waiting: boolean) => {
+                                    ok(produce, waiting);
+                                },
+                            ),
+                    });
+                } else if (result != null) {
                     display.push(...renderValue(result));
                 } else {
                     display.push(`<null>`);

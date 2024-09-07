@@ -1,3 +1,4 @@
+import { ProduceItem } from '../../ide/ground-up/FullEvalator';
 import { blankAllNames } from '../../ide/ground-up/evaluators/analyze';
 import { AllNames } from '../../ide/ground-up/evaluators/interface';
 import { MetaDataMap } from '../UIState';
@@ -233,13 +234,13 @@ export function updateState(
                     state.evaluator!,
                     tenv,
                 );
-                typesAndLocs.forEach(({ loc, type }) => {
-                    add(
-                        state.results!.tops[group[0].id].hover,
-                        loc,
-                        hoverType(type),
-                    );
-                });
+                // typesAndLocs.forEach(({ loc, type }) => {
+                //     add(
+                //         state.results!.tops[group[0].id].hover,
+                //         loc,
+                //         hoverType(type),
+                //     );
+                // });
                 state.results.tops[group[0].id].usages = usages;
                 if (result.type === 'err') {
                     state.results.groups[groupKey].typeFailed = true;
@@ -274,7 +275,9 @@ export function updateState(
             try {
                 res = state.evaluator.inference.infer(stmts, tenv);
             } catch (err) {
-                debugger;
+                // debugger;
+                console.log(err);
+                console.log((err as Error).stack);
                 group.forEach((item) => {
                     state.results!.tops[item.id].produce.push({
                         type: 'error',
@@ -331,7 +334,7 @@ export function updateState(
                                 type: 'error',
                                 message: `Cant stringify type ${JSON.stringify(
                                     type,
-                                )} : ${err.message}`,
+                                )} : ${(err as Error).message}`,
                             });
                         }
                     });
@@ -394,9 +397,9 @@ export function updateState(
             }
             res.typesAndLocs.forEach(({ loc, type }) => {
                 if (!state.results!.tops[topForLoc[loc]]) {
-                    if (loc !== -1) {
-                        console.warn('no top', topForLoc[loc], loc);
-                    }
+                    // if (loc !== -1) {
+                    //     console.warn('no top', topForLoc[loc], loc);
+                    // }
                     return;
                 }
 
@@ -519,13 +522,36 @@ export function updateState(
         });
 
         Object.entries(added.display).forEach(([key, produce]) => {
-            state.results!.tops[+key].produce.push(
-                ...(Array.isArray(produce) ? produce : [produce]),
-            );
+            const items = Array.isArray(produce) ? produce : [produce];
+            handleAsyncFunctions(items, state);
+            state.results!.tops[+key].produce.push(...items);
         });
     }
 
     return { ...state, nodes };
+}
+
+function handleAsyncFunctions(items: ProduceItem[], state: State) {
+    items.forEach((item) => {
+        if (typeof item !== 'string') {
+            if (item.type === 'trigger' && typeof item.f === 'function') {
+                const id = state.asyncFns.nid++;
+                const f = item.f;
+                state.asyncFns.fns[id] = ((ok) => {
+                    f((produce: ProduceItem[], waiting: boolean) => {
+                        handleAsyncFunctions(produce, state);
+                        ok(produce, waiting);
+                    });
+                }) as (v: any) => void;
+                item.f = id;
+            }
+            if (item.type === 'ask' && typeof item.f === 'function') {
+                const id = state.asyncFns.nid++;
+                state.asyncFns.fns[id] = item.f as (v: any) => void;
+                item.f = id;
+            }
+        }
+    });
 }
 
 function processUsages(
@@ -539,9 +565,9 @@ function processUsages(
         }
         locs.forEach((loc) => {
             if (!state.results!.tops[topForLoc[loc]]) {
-                if (loc !== -1) {
-                    console.warn('no top', topForLoc[loc], loc);
-                }
+                // if (loc !== -1) {
+                //     console.warn('no top', topForLoc[loc], loc);
+                // }
                 return;
             }
             add(state.results!.tops[topForLoc[loc]].usages, +key, loc);

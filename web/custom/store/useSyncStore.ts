@@ -14,6 +14,7 @@ import { Message, Sendable, ToPage } from '../worker/worker';
 import { calcChangedNodes } from './calcChangedNodes';
 import { collectPaths, pathForIdx } from '../../ide/ground-up/pathForIdx';
 import equal from 'fast-deep-equal';
+import { ProduceItem } from '../../ide/ground-up/FullEvalator';
 // import Worker from '../worker?worker'
 
 export const useSyncStore = (
@@ -33,6 +34,25 @@ export type WorkerResults = {
     traces: TraceMap;
     usages: Record<number, number[]>;
     // probably more stuff? traces maybe?
+};
+
+export type AsyncResults = {
+    triggers: {
+        [key: number]: {
+            items: ProduceItem[];
+            waiting: boolean;
+            ns: number;
+        };
+    };
+    asks: {
+        [key: number]:
+            | {
+                  kind: 'int';
+                  value: number;
+              }
+            | { kind: 'string'; value: string }
+            | { kind: 'bool'; value: boolean };
+    };
 };
 
 export const setupSyncStore = (
@@ -70,6 +90,7 @@ export const setupSyncStore = (
     let evaluator = initialEvaluator ?? null;
 
     let workerResults: WorkerResults = { nodes: {}, traces: {}, usages: {} };
+    const asyncResults: AsyncResults = { triggers: {}, asks: {} };
 
     if (!initialEvaluator && state.evaluator) {
         console.error(
@@ -92,6 +113,7 @@ export const setupSyncStore = (
 
     let pending: number[] = [];
     const send = (msg: Message) => {
+        console.log('sending>', msg.type);
         pending.push(msg.id);
         // console.log('->> pending', pending.length);
         evtListeners.pending.forEach((f) => f(state, pending.length));
@@ -106,6 +128,7 @@ export const setupSyncStore = (
 
     worker.addEventListener('message', (evt) => {
         const msg: ToPage = evt.data;
+        console.log('<msg', msg.type);
         // console.log(`got back`, pending, msg);
         pending = pending.filter((p) => p > msg.id);
         evtListeners.pending.forEach((f) => f(state, pending.length));
@@ -159,16 +182,51 @@ export const setupSyncStore = (
                 evtListeners.results.forEach((f) => f(state));
 
                 store.dispatch({ type: 'highlight' });
+                break;
             }
+            case 'async':
+                // TODO: make a produceItem that's nested, like "asyncProduce"
+                // and we replace that each time. Would be great.
+                const obj = asyncResults.triggers[msg.tid];
+                obj.waiting = msg.waiting;
+                obj.items = msg.produce;
+                nodeListeners[`ns:${obj.ns}`]?.forEach((f) =>
+                    f(
+                        state,
+                        results.nodes[obj.ns],
+                        workerResults.nodes[obj.ns],
+                        false,
+                    ),
+                );
+                // msg.
+                break;
+            default:
+                console.log('droppping message', msg);
         }
     });
 
     const store: Store = {
+        asyncResults,
         setDebug(execOrder, disableEvaluation, showJs) {
             // throw new Error(`todo`);
             // console.error('ignoring sotry');
             send({ type: 'debug', execOrder, id: msgid++, showJs });
         },
+
+        respond: {
+            trigger(ns, id) {
+                asyncResults.triggers[id] = { ns, items: [], waiting: true };
+                nodeListeners[`ns:${ns}`]?.forEach((f) =>
+                    f(state, results.nodes[ns], workerResults.nodes[ns], false),
+                );
+
+                send({ type: 'trigger', id: msgid++, tid: id });
+            },
+            ask(ns, id, value) {
+                send({ type: 'ask:response', id: msgid++, tid: id, value });
+            },
+        },
+
         dispatch(action) {
             if (action.type === 'jump-to-definition') {
                 const changed = getJumpToAction(

@@ -1,11 +1,6 @@
 import * as React from 'react';
-import { parse } from '../src/grammar';
-import { newEvalCtx } from './store';
-import { addDef } from '../src/to-ast/to-ast';
-import { newCtx, noForm } from '../src/to-ast/Ctx';
-import { idxLines } from '../src/to-ast/utils';
-import { nodeToExpr } from '../src/to-ast/nodeToExpr';
-import { getType, Report } from '../src/get-type/get-types-new';
+// import { newEvalCtx } from './store';
+// import { getType, Report } from '../src/get-type/get-types-new';
 
 export const useLocalStorage = <T,>(key: string, initial: () => T) => {
     const [state, setState] = React.useState<T>(

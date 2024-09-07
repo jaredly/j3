@@ -1,12 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Path } from '../../src/state/path';
-// import { ReactCodeJar } from 'react-codejar';
 import { CodeJar } from 'codejar';
+import { NewThing } from '../../src/state/getKeyUpdate';
+import { newNodeAfter } from '../../src/state/newNodeBefore';
 import { useGetStore, useSubscribe } from './store/StoreCtx';
 import { lastPath, useAutoFocus } from './useAutoFocus';
-import { newNodeAfter } from '../../src/state/newNodeBefore';
-import { NewThing } from '../../src/state/getKeyUpdate';
-import { useLatest } from './useLatest';
 
 export const RawCode = ({
     initial,
@@ -96,14 +94,11 @@ export const RawCode = ({
         }
         focus.current?.();
     });
-    // console.log(store.getState().at);
 
     return (
         <div
             style={{
-                // backgroundColor: '#224',
                 backgroundColor: 'rgb(28 28 28)',
-                // padding: 8,
                 padding: toplevel ? 8 : '0 8px',
                 borderRadius: 4,
             }}
@@ -114,7 +109,6 @@ export const RawCode = ({
                 focus.current?.();
             }}
         >
-            {/* <textarea defaultValue={initial} /> */}
             <div
                 className="editor"
                 ref={ref}

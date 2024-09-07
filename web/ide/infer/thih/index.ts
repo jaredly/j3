@@ -16,7 +16,7 @@ import {
 
 import { parse } from './parse';
 import { type Scheme as typ, printScheme as typToString } from './types';
-import { register } from '../types';
+// import { register } from '../types';
 export const builtins: Assump[] = [
     {
         type: 'Assump',
@@ -137,10 +137,10 @@ export const infer = (builtins: Assump[], expr: Expr, display: any): Scheme => {
     return assump[0].scheme; //.scheme.qual.head;
 };
 
-register('thih', {
-    builtins,
-    getTrace,
-    infer,
-    parse,
-    typToString,
-});
+// register('thih', {
+//     builtins,
+//     getTrace,
+//     infer,
+//     parse,
+//     typToString,
+// });

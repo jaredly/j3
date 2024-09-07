@@ -1,13 +1,23 @@
 import { MNode } from '../../src/types/mcst';
 
 const raw = '1b9e77d95f027570b3e7298a66a61ee6ab02a6761d666666';
-export const rainbow: string[] = ['#669'];
+export const rainbow: string[] = ['#666699'];
 for (let i = 0; i < raw.length; i += 6) {
     rainbow.push('#' + raw.slice(i, i + 6));
 }
 
 // We'll start at depth=1, so this just rolls it one over
 rainbow.unshift(rainbow.pop()!);
+
+export const parseHex = (hex: string) => {
+    const r = hex.slice(1, 3);
+    const g = hex.slice(3, 5);
+    const b = hex.slice(5);
+    if (hex.length !== 7) {
+        throw new Error('invalid hex');
+    }
+    return { r: parseInt(r, 16), g: parseInt(g, 16), b: parseInt(b, 16) };
+};
 
 export function getRainbowHashColor(hash: string | number) {
     const idx =
@@ -18,8 +28,10 @@ export function getRainbowHashColor(hash: string | number) {
     return color;
 }
 
+export const rgbRainbow = rainbow.map(parseHex);
+
 // https://github.com/darkskyapp/string-hash/blob/master/index.js
-function fasthash(str: string) {
+export function fasthash(str: string) {
     var hash = 5381,
         i = str.length;
 

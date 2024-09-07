@@ -1,5 +1,3 @@
-import { NUIState } from '../../web/custom/UIState';
-import { UpdateMap } from '../state/getKeyUpdate';
 import {
     accessText,
     Attachment,
@@ -82,7 +80,6 @@ export type WithLoc<T> = T & { loc: Loc };
 export type Map = {
     [key: number]: MNode;
 };
-export type NsMap = NUIState['nsMap'];
 
 export const layoutEqual = (one?: Layout, two?: Layout) => {
     if (one?.type !== two?.type) return false;
@@ -280,3 +277,4 @@ export const toMCST = (node: Node, map: UpdateMap): number => {
     };
     return node.loc;
 };
+export type UpdateMap = { [key: string]: null | Map[0] };

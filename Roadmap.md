@@ -1,4 +1,2424 @@
 
+# Autocomplete thoughts
+
+- [x] just navigating to a thing probably shouldn't trigger the autocomplete
+  - maybeeee should an /update/ have to opt in to autocomplete recompute? prolly.
+- [x] ok, so maybe I shouldn't do {ref: keyword}. Like what is it trying to do even.
+  because, it would make it seem like you can have a local that is a keyword and it
+  uses a separate namespace. which would be strange.
+- [x] wrapping a placeholder shoudl strip the placeholderness
+- [x] clicking in a tmp thing shouldn't ditch the text
+
+## NExr streps
+
+- [ ] autocomplete other toplevel definitions!!
+  - hrm ok. so ... parse ... and then, use that somehow.
+
+##
+
+What iff
+the whole thing was doing graph stuff?
+like
+what if /render/ was also a graph node?
+
+
+
+- [x] up/down nav should not jump between lines if possible.
+      BUT it should "remember" the column you're "trying" to get to
+
+
+#
+
+parseeeee
+gottta get some autocomplete thanksss
+
+#
+
+So I kinda want to be able to have ... the (macro?) or (parser?)
+optionally produce a (headings) for a given (table). And have that be displayed.
+
+Andd I think like `match` by default wouldn't show a heading, but if you have 3 columns,
+then it would show them.
+
+# Ergonomics
+
+- [x] whyyy is paren highlighting not working anymoreee
+- [x] | at the end of a list doesn't make a new column
+- [x] how to delete an empty first row of a table?
+- [x] producing a new column should add blanks for all rows.
+- [x] when deleting a cell, if all other rows have blanks in that column,
+  remove the column.
+- [x] " at the end of a string should close it
+- [ ] then I'm really gonna need to do autocomplete folks
+
+
+```clj
+; how to minimally
+
+(defmacro if
+  (|(` (|..#rows|) #yes #no)|(` if-let (|..#rows|) #yes #no)
+    (` #cond #yes #no)      |(` if-let (|true|#cond|) #yes #no)|))
+
+(defassoc if.autocomplete
+  [
+    (autocomplete
+      {title "if condition"
+       cst (` if !cond !yes !no)})
+    (autocomplete
+      {title "if let"
+       cst (` if (|!pattern|!value|) !yes !no)})
+  ]
+)
+
+(defassoc if.format
+  (fn [cst] (fmt/vertical {tightFirst 2})))
+
+; can we do a `defassoc if.format` to take care of formattings?
+; that would be nice.
+
+(defmacro match
+  (|(` #target #body)|
+      (` ((match #body) #target))
+    (` (|..#rows|))        |
+      (let (|ok|(loop rows
+                  (fn [rows recur]
+                    (if-let (|[[pattern body] ..rest]|rows|))
+                      (let (|otherwise|(recur rest)|)
+                        (` if-let (|#pattern|value|) #body #otherwise|))
+                      (` fatal "No match")))|)
+        (` fn [value] #ok))|))
+
+(defassoc match.autocomplete
+  [
+    (autocomplete
+      {title "match"
+       cst (` match !value (|!pattern|!body|))})
+    (autocomplete
+      {title "match function"
+       cst (` match (|!pattern|!body|))})
+  ])
+
+; hrmmm
+(defassoc match.formt
+  )
+
+```
+
+
+
+
+
+# Alllright I think the thing I want
+is to try just building some stuff, and see what I need.
+
+```clj
+
+(typealias loc (list (, string int)))
+
+(defmacro defn [cst loc]
+; layoutssss
+; styles
+(match cst
+(|[id]          |(ok (` def #id))
+  [id args]     |(ok (` def #id (fn args)))
+  [id args body]|(ok (` def #id (fn #args #body)))
+  _             |(err "Three args expected")               |)))
+
+(defmacro -> [cst loc]
+(match cst
+(|[target ..rest]|(ok (loop rest (fn [items recur]
+                                 (match items
+                                 (|[]          |target
+                                   [one ..rest]|(let (|inner|(recur rest)|)
+                                                (` #one #inner)) |)))))
+  []             |(` ())                                                        |)))
+
+(defmacro if [cst loc]
+(match cst
+(|[cond yes no]|(` match cond true yes false no)
+  [cond yes]   |(` match cond true yes false ())|)))
+
+(defmacro and [cst loc]
+(loop cst (fn [items recur]
+          (match items
+          (|[]          |(` true)
+            [one]       |one
+            [one ..rest]|(let (|inner|(recur rest)|)
+                         (` if #one #inner false)))))))
+
+(defmacro or [cst loc]
+(loop cst (fn [items recur]
+            (match items
+              (|[]          |(` true)
+                [one]       |one
+                [one ..rest]|(let (|inner|(recur rest)|)
+                             (` if #one true #inner)))))))
+
+(deftype (pair one two) (pair one two))
+(deftype (result good bad) (ok good) (err bad))
+(deftype (option value) (some value) (none))
+(deftype (list item) (cons item (list item)) (nil))
+
+(defmacro , [cst loc]
+(loop cst (fn [items recur]
+          (match items
+          (|[]          |(` ())
+            [one ..rest]|(let (|inner|(recur rest)|)
+                         (` pair #one #inner))    |)))))
+
+(defmacro let-> [cst loc]
+...)
+
+(defmacro if-let [cst loc]
+...)
+
+(defassocated =)
+
+(defn make-rows [items]
+(map items
+  (match
+    (|(` #id ..#args)|(let (|(, pat-one pat-two args-check)|(eq-args args)|)
+                        [(` , (#id ..#pat-one) (#id ..#pat-two))
+                         args-check                             ])
+      _              |(fatal "ok")                                          |)
+      )))
+
+(defmacro derive-eq [cst loc]
+(unless-let (|[single]|cst|)
+  (fatal "expected a single cst node")
+(match single
+  (|(` deftype #id ..#items)|(let (|rows|(make-rows items)|)
+                              (` defassoc #id.= (fn [one two]
+                                                  (match (, one two)
+                                                    (|..#rows|))))
+  |)))))
+
+; sooo macro, must be able to return multiple toplevels
+
+(derive-eq
+(deftype person (person {name string address address})))
+
+```
+
+
+hrmmmm so the thing about ... quoted vs unquoted, does that tie me more to a specific syntax?
+when I'm trying to be agnostic.
+so I guess, given that I'm going to be parsing stuff anyway,
+I'll use the /output/ of the parse to determine what needs immediate resolution?
+hrm. but.
+macro expansion.
+how do I know what things to expand /now/ and what things are /quoted/ so shouldn't be expanded yet?
+Should I have like a `pre-parse` that just tells me "what macros should be expanded"? ... I guess that's a way to do it.
+
+Sooo should I allow macros to make macros?
+like multilevel quoting.
+`` and ## and such.
+idk sounds fine to me?
+
+OK so for now, I can just "bake in" that quote is ` and unquote is #, but I can make 'find-macros' be a thing later if I want.
+
+
+Question: should I just implement if-let instead of match? would that somehow be easier? nah match is the more general, and
+exhaustiveness lives in match.
+
+
+# Macrosss
+
+OK so we can't store the macro-expanded CST right on the toplevel, because
+it ~might be different depending on the evaluator. Program semantics aren't guaranteed to
+be transferrable.
+
+SO
+
+it needs to be a durable cache.
+AND dependency analysis /uses the durable cache/.
+
+OK OK who can defined dependencies for what?
+
+(base cst) statically defines `macroex` dependencies.
+ \- recursion at this point is ... hmm actually maybe it's ok? because macros aren't type checked as such
+
+(macroexpanded cst) statically defines `infer` dependencies
+    \-> hrmmm ok the cst alone can't tell us what things are exported though,
+        as well as accessory dependencies. gotta be the parsed version of it.
+
+(type info) and (macroexpanded cst) define the `print/eval` dependencies
+
+SO
+we need durable searchable caches of:
+
+1) macroexpanded CST + parsed AST (incl exports and accessories)
+
+2) type info ... along with any runtime dependencies that were determined
+  - ok so my idea with this is that when doing type inference we would lock down
+    type class instance dependencies ... but idk if that makes sense.
+  For now we could ignore the 'add dependencies' bit and come back to it later.
+
+howww to resolve things?
+ok so what iff
+
+
+OK IDEA: I think it might be cool for there
+to be different kinds of accessories
+like ones for types distinct from ones for values.
+and then doing `somevalue.typeacc` would do the thing for the `typeof somevalue`.
+wouldn't that be cool.
+
+anywwway. So the problem I think comes down to the combination of these two things:
+- macros
+- accessories
+
+accessories being defined /separately/ from the thing they're targetting, but at the same
+time not being statically known (only known by the parsing).
+
+soooo question: how annoying would it be to have like a first-class CST node that is
+like `accessory def` or something. would that be too much?
+HRMMM Ok but that wouldn't actually solve it because we still need to potentially evaluate
+macros, right?
+yeah let's ditch that idea.
+
+
+
+# hrmmm
+
+
+So ... it's like: first we need to macroexpand everything.
+BUT to do that, we need to resolve accessories, which means
+we need to parse everything.
+BUT to do that, we need to macroexpand everything.
+
+There's gotta be a way to cordon some things off.
+like
+
+Soooo
+- you can't define an accessory without
+  - either having an explicit reference to the accessory OR
+  - referencing a macro that has an explicit reference to that accessory.
+
+AND
+if a subgraph has no reference to an accessory, you can be sure it doesn't depend on it
+
+SO in macros, we've gotta make a distinction between a runtime dependency and a generated dependency.
+otherwise it's gonna be whack.
+so basically: 'is this reference quoted'.
+
+TO resolve a macro,
+you need to handle all the non-quoted dependencies. obvs.
+
+and then you eval the macro, and it brings in (some) of the quoted deps.
+
+ok so this seems tractable.
+
+hrmmmmmm.
+
+~parse.
+ok so any given thing has 2 potential sets of `dependencies`.
+There's `static` dependencies, and `quoted` dependencies.
+it's possible that I can get away with just flat out ignoring quoted dependencies for now.
+we will see.
+
+
+
+# Thinking about type classessss
+This is a higher level of difficulty for dependency analysis, because
+at first blush it absolutely requires inference before you can determine dependencies.
+
+
+## Simpler is `deriving eq`, let's make sure that's all nailed down.
+
+```clj
+; defines an accessory label
+(defacc =)
+
+(deriving eq
+(deftype person
+ (person {name string address .})))
+
+->
+(defn string.= [one two] ...)
+(deftype address (address {firstLine string zip int}))
+(defn address.= [one two] ...)
+
+(deftype person
+ (person {name string address .}))
+(defn person.= [one two]
+  (and (string.= one.name two.name)
+       (address.= one.address two.address)))
+```
+
+Options include:
+1) macros are given a function, say `resolveAccessory` that allows them to
+   lock down the `string.=` into an actual loc reference. This makes
+   dependency analysis straightforward.
+   - BUT it might mean you need to kick the macro ... if accessory definitions change?
+     which feels kinda weird.
+     like, ideally it's "set it and forget it" right?
+     or rather, macro re-evaluation is only required if ... the actual text of the
+     macro invocation changes, or the macro definition changes.
+
+     WELL ok so the "persistently cache macro invocations in the toplevel" means
+     that if I update a macro, we need a separate "now re-evaluate all macro
+     invocations" step, which ... is a little interesting.
+     and probably need a way to mark that a macro invocation is stale?
+     ->> ok so the /usages text/ above a macro definition should list (# usages) as well as (# stale),
+     with the ability to click the # stale and refresh them all.
+
+    I think ... that means I want to maintain ... a `hash` of the contents of a macro?
+    and maybe of all toplevels? hrm idk. yeah it's probably a good idea.
+
+    -> tbh it probably wants to be a hash of the ... IR, right? no maybe the AST? hrmmm.
+
+2) macros just assemble an `accessory` CST node, resolving `string` and `=`.
+   The resolution of `string.=` gets punted to `infer` or `compile` or even `print/eval`.
+   This means that EITHER:
+   - any change to accessories labeled `=` OR
+   - any change to accessories of `string`
+   would trigger re-computation of those steps.
+   This seems less desirable,
+   BUT it means that stale macro invocations are ... less of a problem? ok I mean they're still
+   a problem, but not in this direction.
+
+So, for `deriving eq` I lean toward #1, but what about type classes?
+
+
+```clj
+(defclass eq [T]
+  {= (fn [T T] bool)})
+
+(defclass ord [T]
+  {< (fn [T T] bool)
+   > (fn [T T] bool)
+   <= (fn [T T] bool)
+   >= (fn [T T] bool)})
+
+(definstance (eq person)
+  {= (fn [one two] ...)})
+
+(defn has [needle haystack]
+  (any (fn [a] (= needle a)) kaystack))
+
+
+; this invocation needs to pass in an implementation of `eq` for `person`
+; but it can't know any number of things statically.
+; The definition of `person1` and `person-list` MUST eventually have
+; an explicit dependency on the `person` type (by a constructor if nothing else)
+; but they wouldn't statically have a dependency on the eq instance for person.
+; UNLESS `definstance` ~registers the instance as an accessory.
+; Two possible modes:
+; - accessory on `person` ... although with multi-arg type-classes, that might
+;   get weird? I mean I could just define it on both...
+; - accessory on `eq`. So the dependency on `=` in `has` would track back to `eq`
+;   which would pull in any accessories of `eq`.
+;
+; IN BOTH CASES: in order to include things, we would need to decide that
+; X *depends* on all accessories of X.
+; this is ... annoying. but maybe unavoidable?
+;
+; OK SO ... it kinda seems like this dependency link ... should be toggleable, at
+; the discretion of the evaluator. configurable. `linkAllAccessories` as a thing.
+;
+; OK so ... at what level is the dependency introduced?
+; `infer` and ... `compile`? or `print/eval`?
+(has person1 person-list)
+
+```
+
+
+# Thinking about things
+
+```clj
+; howw to indicate `ref`s
+(defn hello [x] (what#12))
+
+(def what hello!)
+```
+
+hello!
+
+Did some testing with printing refs to make sure it worked at all.
+
+next up, ...
+we should really think about assembling the graphpp
+
+so like
+the general idea is
+
+- have graph
+- on edit to a toplevel, invalidate a node
+  - on evaluating a node, invalidate children if output changes
+  - that's it, right?
+
+- macro expansion is *not* part of the graph. macros are evaluated "when you edit a toplevel".
+
+HOW CAN THE GRAPH CHANGE
+
+-> is ittt only when editing a given toplevel?
+  - note that we might be modifying multiple toplevels at the same time. should support that.
+
+
+Ways the graph can change:
+- added an upstream dependency
+- removed an upstream dependency
+- added ... an export?
+  -> which it's possible for some things to ~already be depending on.
+    (in an undo/redo situation)
+  - which would add downstream dependencies
+  - remove a bunch of downstream dependencies
+
+do any of these things ... cause problems?
+- seems like probably not.
+
+Change propagation just starts at the thing that was edited and spirals from there.
+NOTE that when removing downstream dependencies, those dependencies must still be re-evaluated.
+(or ... like "put on ice"?)
+
+yeah I feel like I need a thing for "downstream deps are on ice because we have a type error here".
+
+ugh.
+
+options include:
+- downstream deps get to keep living their lives referencing the old version of this term
+- downstream deps /know you are erroring/ and have like a placeholder where your reference
+  is, but can still ~infer around it
+- downstream deps just get /frozen/ while they wait for you to get fixed
+  - this is easiest but probably worst.
+
+
+
+
+
+
+# Associated Terms
+
+So ... associated terms.
+For example, a `person=` associated with `person`, as `person.=`.
+
+Where does the /connection/ live?
+- at the toplevel of `person`
+- at the toplevel of `person=`
+- only in cache
+
+if it's only in cache, that feels ... risky? prone to cache invalidation issues?
+or rather ...
+the thing that's risky is: knowing what things are associated with `person` relies on
+all of the `person=` toplevels to not only be "loaded in memory" but also "parsed & macroexpanded".
+
+and why is that an issue?
+well macroexpansion requires evaluation.
+(UNLESS it doesn't? like unless I persist the macroexpansions. hmm ok honestly that might be good.)
+
+the main thing is; I want to be able to get a fully resolved dependency tree, statically.
+ideally without even calling `parse`. Is that a thing I can do?
+well if macros get persisted, then yes, right?
+
+-> what would that look like?
+--> when making a (change), we check to see if any macros are impacted, and we
+    <do the work to macroexpand> and /add it to the change/. So the toplevel macros
+    cache is always up to date.
+
+Ok I do like that very much actually.
+
+Ok. What about (a change to a macro definition). The problem with caching the macro there
+is that it wouldn't necessarily update downstream. Or it would update downstream, and be
+kindof a big deal. Because it would change the persisted macro expansions of everything.
+OK SO the sqlite database will need to be able to efficiently search for "anything referencing this macro". Shouldn't be too hard.
+
+BUT now we get to the question of: `person.=` -- does that get resolved actually to `person=`, OR
+instead do we just `search for all of the accessories to person` when evaluating or typechecking
+`person` and lump them in? Seems like we probably lump them in.
+
+Ok but at what point are we allowed to resolve it?
+NOT at macroexpansion time, because that would be calcifying 'state of the universe' stuff in the
+cache, which we want to avoid.
+
+Just type-check and print/eval, right?
+Yeah I think that's right.
+
+infer(ast, infos, associations)
+eval(ir, irs, associations)
+
+# Ok so I thiiiink associated terms are making sense now.
+
+BUT
+here's the big dealio.
+we can have some recursive dealios.
+(need to watch out for attempted recursion when evaluating a macro btw)
+
+QUESTION:
+would it really be so bad to require explicit mutual recursion?
+like, if things are going to be recursive, require that they ...
+... be defined in the same toplevel?
+
+...
+it would certainly make some things clearer. (if a type error is happening it hangs the whole thing)
+but it would make other things more cumbersome.
+I like being able to nest things under different functions.
+
+OK so `tinfo`, because `type-check` MIGHT take multiple ASTs if there's a cyclic dependency somewhere.
+
+yeah so basically, one tinfo will have the actual data and the others will be pointers.
+that sounds nice, right? fairly simple?
+
+
+Here's our scenario:
+
+We load up a document.
+It has some number of document nodes.
+we then get our set of toplevels that are ~loaded.
+
+(we follow upstream all the way)
+(we follow downstream to see if there are any `deftests` that we need to be evaluating)
+
+produce a directed dependency graph of that set of toplevels, following all dependencies
+both upstream *and downstream*. Make special note of any deftests.
+
+/associated terms/ count as a downstream dependency... or maybe a circular dependency?
+wait no I think downstream should be fine. jk circular.
+
+NOTE that we don't ... care about downstreams OF THE UPSTREAMS. For that reason,
+/associated terms/ should count as circulars, because we do care about associated
+terms of upstreams.
+
+jmmmmmmmmmmmmmmmmmmmm we also ... don't need the upstreams of the downstreams? right?
+like we should have everything in the persistant cache that we need. I would think.
+
+I definitely need to make a little picture of all this.
+to determine /what we can load from cache/ and /what happens if (x) is changed/.
+
+like, downstreams might need to re-type-check if our type changes.
+but I guess presumably the downstreams don't need to re-parse... so we
+can use that cache anyway.
+hm I guess maybe we don't need to load downstreams? as long as the cache stuff is there.
+
+
+
+
+
+
+
+
+
+
+#
+
+Trace thoughts:
+- cst for "formatting"
+- cst for "filter" to limit what gets traced. `_` in that context means "the value under consideration"
+- want to be able to "register tracing formatters" ... not sure how that goes down type-wise.
+  I mean, at base it's a javascript function that gets handed over to the editor.
+  so we could have a language that exposes that directly, or one that says you can
+  `(defformatter targettype formatter)`
+
+parse ->
+exports
+- kind , loc , name
+formatters
+-
+macros
+-
+instances?
+- of, loc ...
+
+shouuuuld types be namespaced absolutely???? maybeeee.
+but that would make json import less absolute. I guess
+I could define something with like a @loose pragma or something.
+Or I could add strictness later? idk.
+
+hrm ok so I do want strictness. let's parse all incoming json.
+
+ALSO let's dispense with the index-based data, and do records all the way.
+-> (some {value}) is more awkward than (some value)
+ok but so we know that (abc {record fields}) is a `econstr` insteaed of `eapp`.
+which is nice.
+
+it does mean that "life with row types" will not be backwards compatible with the
+other way of doing things though.
+WELL except that `abc` will be locked down as a ref with kind `type`, right? or like `constr`.
+Which means we will be able to know what it is?
+it would just mean you can't have a polymorphic record defined inline as the argument to a tconstr.
+which seems reasonable.
+
+->
+
+Let's have a thinggggg indicatingggg that a given toplevel has *unseen* exports, due to macros.
+as a matter of fact, I want to be able to have a builtin macrooo I think.
+hrmmmmm. Default macros?
+Like.
+should they be ... only defined in the compiler? or available in userland?
+that would have some weird ramifications if they could be userland. so I'll say only in the compiler.
+
+
+#
+
+hrmmmok
+let's have `render` re-use cached stuff? maybe?
+eh, I can do the autocomplete first.
+
+# Noww we want to do autocomplete! With ... bjuiltins!
+
+js"ok folks"
+
+(deftest some-name some-fn
+  (|input|output|))
+
+- [ ] make a menuuu, and ... ok so I also need like an Evaluator API
+
+
+- [ ] ok parse is happening at drawToplevel, which is the wrong place.
+
+
+- [ ] QUESTION can we do nodeToIR without knowing the result of parse?
+  like, can we apply the styles post-hoc?
+  NO because we need tightFirst and such. OK it's fine.
+
+# The Tableness of Things
+
+- [x] make a table Node
+- [x] make a table IR & block
+- [x] use the table IR for `let` and `match` and such
+- [ ] allow you to actually make a table Node
+  - [x] | in a list should make it folks
+  - [x] | in a table should add a column
+  - [ ] space should go between things, fill in things that dont exist pls, and make a new row
+  - [ ] backspace should delete the cell you're in
+- [ ] get the test parser going
+- [x] space at the end of () should make a new row
+- [ ] space at end of () should advance to next thing if there is one
+  (this is a general problem)
+
+# The Richness of Text
+
+and the context menu probably
+
+orrr should I do autocomplete first?
+it'll need similar menu magics
+but maybe different idk.
+
+RichInline is a paragraph.
+
+hm ; ?
+
+soooo.
+
+- [x] start a rich text
+- [x] press enter, now you have two
+- [ ] ctrl-b to bold
+- [ ] ctrl-u to underline
+  - join and split spans
+- [ ] join left
+- [ ] left/right across boundaries should work. (that is to say, it should still advance the cursor past the boundary.)
+
+
+
+- [ ]
+
+- [ ] BUG: edit a text then clikc that text loses the tmp text
+
+# The Blocks -> Paths dealio
+
+- [x] get normal selection working again
+- [x] get multi working again, what is this
+
+#
+
+changing a bunch of stuff, I need a test
+
+- with a complex document
+
+1) start at selectNode(start); hit "right" a bunch of times, and it should:
+  - proceed through all the possible locations
+  - and then "left" your way back. It should always
+    (a) advance to the right or down a row
+    (b) ... produce a valid selection
+2) for every x,y -> clicking there should either (not do anythign) or (produce a selection
+  that maps to that x,y)
+3) hm do I make a "validate the IRs of this dealio" thing?
+
+# Broad Next Steps
+
+- [x] indent toplevel nodes
+- [x] dedent toplevels
+- [x] up/down toplevels
+  - why is this so fun? it's fun.
+- [x] wrap a multiselect
+- [x] tab skips docNode children
+- [x] shift-tab cant get up to parent docNode
+- [-] drag & dropp
+  - [x] drag
+  - [-] drop
+    - [x] WHYYY CAN"T I select the /first/ - oh I was making drop targets for braces. fixed.
+    - [x] in same toplevel
+    - [x] in the same parent
+    - [x] in different toplevels
+    - [ ] dragging toplevels around
+- [ ] rich texts (includes doing a context menu)
+- [x] ctrl-left/right toplevels to reorder
+- [ ] copy/paste should interact with clipboard (?) looks like pbcopy/pbpaste is maybe The Way
+  - hrm but they can't handle multiple formats, so maybe I have to do something else??
+
+
+# While geting a demo ready:
+
+- [x] closing braces need to close plsss ])}"
+- [x] some weirdness around cursor placement at the end of collections
+- [x] rainbow parens plssss
+  - punct - kind "paren"?
+    - howw do I "match parens"?
+      - orr do I just say "
+  - [x] match parens pls
+- [x] and highlight parens probavbly
+
+
+DEMO
+
+tab/shift-tab
+ctrl-swap
+shift-up/down
+
+
+
+# Ok layout
+I thikn wrapping is kinda fine?
+and now I need a way to apply text formatting stuff.
+
+
+- [x] TEXT WRAPPINGS
+  - [x] newlines+wraps
+    - [x] index -> pos (show)
+    - [x] pos -> index (click)
+  - [x] the "end" cursor pos after a string with newlines is in the wrong place.
+  - [x] wrappign after an interpolation seems busted.
+
+- [x] deleting strings
+- [x] backspace from a `start` to delete a previous empty id, should work
+
+- [x] swapppp
+- [x] TABB
+- [ ] drag & droppp
+  - [ ] shift-drag for copying yass
+  - [ ] ctrl-drag to do a "make me a variable pls"? hmmmm will havr to think about that one.
+    will require cooperation from the runtime environment.
+
+
+- [x] text formatting lookin great
+- [x] selection!management!
+  - [x]
+  - NEED
+    - just a cursor girl living in a lonely world
+    - select within a node (start? cursor)
+    - multiselect, and maybe I only support siblings.
+- [x] lil dark/light modus
+- [x] why am I not wrapping right after a horiz
+- [x] now to left/right in general between nodes!
+  - yay its so noice
+- [ ] editinggg
+  - [x] logic to update selection
+  - [x] use selection(text) in rendering stuff
+  - [x] split / join
+  - [x] wrap `([{`
+  - [x] save partial text on escape
+  - [x] unwrap in various ways
+  - [x] shift-left/right to select within a TEXT
+  - [x] space after collection creates new
+  - [x] stringgg lets go
+  - [ ] left/right from a multiselect should select the first/last of the ... group
+    - [x] partial, for when the end is just a superset of the start
+  - [ ] split a string's tag, and left-join a string's tag.
+  - [x] shift-up/down for increasing/decresing the selection
+  - [x] shift-left/right for multi-selecting siblings
+  - [ ] shift-left/right between [texts] of a node (string)
+  - [x] unwrap (backspace at start of collection)
+  - [ ] ctrl-left/right for swapping (with shift to swap in & out)
+    - btw i went back to `key-all` to remind myself how the shift-up/down stuff worked. it was slick.
+  - [x] UP AND DOWN
+    - [x] fix bugs in up/down
+  - [x] WRAP FIX
+    - [x] after one thing goes multiline, we always wrap a hbox.
+    - [x] OK ALSO.. there's this thing, where, wrapping a thing ... results in too much size.
+    - [x] hm maybe the trailing space thing needs to be dropped?
+  - [x] cursor placement in a multiline string is wrong.
+  - [ ] shift-right past an ID should start into multi-select.
+  - [x] surround multiselect
+  - [x] ctrl-c, ctrl-v pls
+
+
+Inline text wrappingg.... gotta track it right.
+- [x] highlighting wrapped text now works
+- [x] but with newlines locations dont work
+- [x] click working in text with newlines and wrapping, all good!
+
+
+
+- [ ] up/down
+- [x] click to individual place
+- [ ] store.update ... should we add .. the selection, to all thigns?
+
+
+- [ ] BUG there's a weird thing where layout switchings wrapping weirdly. I'm not sure why.
+
+so ... when hot reloading, we're not
+
+
+atttt some point I shuold make sure rich text is functional
+
+
+is BLOCK the right level of granularity?
+like that's where we apply formattings.
+so.
+that makes sense.
+
+
+
+# Anddd now
+what if I do a terminal editor? lol
+
+becaaaause we'll need to do an all new navigation dealio, with selections a little different.
+right?
+
+ok definitely all up in this business.
+butttt so here's the question.
+Like
+how do I source the map
+
+#
+
+I Think ... ir-to-blocks is ready?
+So the whole idea is, that Blocks will allow me to calculate screen positions of elements.
+
+
+BUG: `"${what is)}"` - the cursor for the suffix of the template ends up in the wrong place.
+One char too late. Why is tha?
+
+FIX THE (first) calculations for inlines.
+
+
+chsing down all the bugs with calculation
+
+- [x] I should get pullLast going again
+- [ ] WHY is the trailing " so far out? what is going on
+
+
+
+# Ok so more storyyy
+
+now we do ... rich text?
+I mean, it's definitely a thing I want.
+
+but also, it seems like I should be able to make it happen?
+BLOCKS just get (vert)ed, right?
+And then within a block, we do some (inline)s?
+
+ok this is pretty cool!
+~however~ my strategy for (ir-ifying) the rich blocks is ... a little
+bit lacking. like.
+We're just pretending everything is text, which is fine for ir-to-text,
+BUT for actual rendering, we'll want html stuff, and we're losing it all
+in `intermediate`.
+soooo.
+
+this means that the IR needs to be spruced up a touch to accommodate:
+- images(?)
+- links(oh huh yeah I need this)
+- lists (ol/ul/checks/opts)
+- hr?
+
+This that are fine I think
+- header(this is fine, just text + style)
+- blockquote (?horiz + style is probably fine)
+
+QUESTION:
+- does the IR need to be ... interactable?
+- like, with clicks.
+- so, the checkboxes and radio buttons need to be checkable
+
+IDEA `vert` could have a `list indicator` property to allow for ul/ol/checks/opts
+but how to do interactivity? it would have to be, like, an assumption. ALSO the
+checks/opts ought to be [select]able, right? sothat's interesting.
+And the link href, what's my strategy for editing that?
+like
+...
+do I do something principled about it? such that the href is ~selectable? (would show up
+in a hover). How to "move to" that selection from the keyboard?
+Yeah that would definitely be nice. probably meta-k, right?
+so that's a funky little addition to the selection protocol.
+
+{type: 'text', which: 0, cursor: 10, link?: boolean}
+
+anyway, I think that would do it, for now.... although we might come up
+with other renderables that would need interactivity.. although maybe
+those end up being "HTML only"?
+
+
+# Layout debugging
+
+- [x] wrap with plain children
+- [-] wrap with complex children
+  it ... works? like it's maybe a little funky,
+  and I'm not totally sure what the ideal is
+- [ ] text wrap let's gooo
+
+
+# Word Wrapping
+
+- gotta brak out the work wrapping stuff into testable bits, probably.
+its curently doing some kinda weird stuff
+
+
+# Process of processing
+
+- [x] some layout
+- [x] wrap basic
+- [x] wrap has a weird bug idk
+- [x] pairssss
+- [ ] now let's look into ... text?
+  - [x] text with inclusions
+  - [ ] letttts try wrapping some text?
+- [ ] and then we'll need to try rich text, right?
+
+
+So, right now I'm ironing out layout things.
+right?
+so
+I should have a way to test things out.
+I meeeeeean probably like with tests? potentially?
+sure.
+
+Ok so we can do it all text-based, which is frankly fine.
+
+yay testing is great
+
+ok soooo the 'pullLast' also does tightness, which we need
+BUT ALSO
+the "space" between things in a horiz wrap, needs to get eliminated!
+how to do it tho
+
+
+NOTE doing actual layout of pairs will require...
+maybe a 'row' kind? that expects to be part of a table?
+
+ALTERNATIVELY should the ir HORIZ kind have a "spaced" attribute?
+that would make some things simpler. yeah let's do it.
+
+
+#
+
+We'll want to do text wrapping.
+which means that in addition to `x` we'll want to pass
+`inlineWidth`.
+So we can know what we wrap back to.
+
+anddddd maybe that's almost the end of it?
+
+OH BUT so
+I do think I need the ability to have a "bias" (left/right) to a given (cursor) position. Because, ok so VSCode doesn't support this apparently, but I kinda want to. anyway. Selecting to the right of the space at the end of a wrapped line.
+
+annnd another qusetion, am I in a position to do the full rich-inline and rich-block stuff? maybe? I guess loading images is a bit of a challenge. I'll punt on that for now.
+
+
+Alsooo the ability to have "custom literals" (like "rotation" or "slider" or whatever) is a big thing.
+
+Doooo I really need a JSX mode?
+Wooould having jsx-specific CST nodes make (type cehcking idk) easier for an html-ish library?
+like
+<Hello a=b c=d e />
+could turn into
+(Hello [('a b) ('c d) ('e e)])
+anddd that seems kinda nice
+
+obvs it would be up to the parser to get that done.
+
+now I'm thinking about named arguments.
+so clojure does `(hello :name value :what thing)`
+which honestly could be a thing
+
+# OK hm so
+I like the idea of an IR
+and such.
+BUT doing the layout on the IR
+seems tricky
+well
+I could /mutate/ the IR but I don't really want to?
+like it would be nice if the IR could stay the same
+and the layout change.
+so that rendering is simpler?
+
+ugh ok lets try ... embedding the calculated layout into the IR
+the other way would be to create a new set of IDs which I really dont want to do.
+or like do a weird parallel structure that we're returning.
+
+AGH ok we'll do a bag. I don't like mutating.
+yeah that seems to be fine.
+
+# IR Thoughts
+
+and such
+
+PAIRS how to do it.
+I thinggg that nodeToIR shoudl already handle the pairs, so that layoutIR doesn't have to think about it at all.
+HOWEVER
+
+for the left-hand side of pairs
+I kindof want a "smaller max-width".
+ya know?
+so it would be like "box" which would have an independent layout constraint.
+that's kinda cool.
+anyway
+so
+
+how does nodeToIR know about pairs?
+
+INTERACTIoNS AROUND PAIRS
+
+[x 1
+ b 2
+ c 3]
+Places we could insert something:
+[(a)x (b)1
+ (c)b (d)2
+ (e)c (f)3]
+at (a, c, e) we should logically insert a new "row".
+QQQ should we actually ... store rows? reified?
+
+HYPOTHESIS: "blanks" should take up a whole row.
+unless they are the second thing in a row.
+that would mean: changing a blank to a non-blank
+would involve /adding/ a blank after it.
+unless we change it to a rich-text or comment
+
+(b,d,f) should ... probably create two new blanks?
+so there's a spot for the ... new left-hand-side
+
+[x _
+ _ 1]
+
+backspace at the first blank, should delete both.
+backspace at the second, should also delete both.
+it's like they're tied together.
+
+UNLESSSSSSS
+these rows have some sort of reification.
+I don't really want to use another list
+[(x 1)
+ (b 2)
+ (c 3)]
+is wayyy too mcuh.
+{(x 1) (y 2) (z 3)}
+yeah I really don't like it.
+
+BUT
+what if we had an invisible ordering?
+how would we know when to use it?
+and what if, you copy/pasted the lines from one spot into another?
+WAIT
+should we
+use significant blanks?
+
+x 1
+y 2
+->
+x _
+1 y
+2
+don't like
+x _
+_ 1
+y 2
+-------
+x 1
+y 2
+->
+x 1
+_
+y 2
+---> it's fine
+x 1
+z _
+y 2
+---> like maybe fine idk
+OR
+x 1
+_ _
+y 2
+---> I feel like that's better?
+but what about deleting one?
+it just deletes both.
+x 1
+;hi
+y 2
+----
+x 1
+y 2
+->
+x 1
+;y
+2 ???
+<<< not great >>>
+what if it comments the whole line?
+um yeah that's much better actually.
+->
+x 1
+;(y 2)
+
+hmmmmmmmmmmmmmmm
+ehhhh should i actually wrap rows?
+hmmm
+or, gasp, significant commas?
+nwa
+I thikn I'm being too precious about this.
+the 90% case is "add two blanks will make it fine"
+and "if turning a blank into a rich-text, eat the right-hand blank"
+
+SO
+bac to the question of, how would the /parser/ inform the /nodeToIR/ that we're doing a "pairs" situation:
+it would be via the `Layout`
+
+ALSO
+
+(x) gets its own line
+BUT
+wait, instead of that do we just do significant blanks?
+yeah I like that better.
+so rich-text is the only thing that gets its own line? yay.
+wellllll
+ok so technically, I'm thinking that rich-text will be usable as a value.
+SHOULD rich-text like have a flag saying "this is ... a comment"?
+if so, how do I indicate that.
+OH LOL I just start it with a `;` comment. easy peasy.
+^ `;` should autocomplete with "rich text" or something
+so that
+
+OK SO
+the parser just says "this loc is a pairsy loc"; vert / tightFirst / pairs
+
+anddd whose job is it to know which child locs are "singles"?
+the parser. OK.
+
+
+SO NOW
+
+- the parser reports "which are singles" when saying that a thing is pairsy.
+- when adding a blank to a pairsy thing, we add two blanks.
+- ~~when removing a blank, if possible, we remove two blanks, otherwise we just don't remove the blank and go left? idk. EH maybe skip this one~~
+
+hrmmm ok so it's actually "locs that can be fullwidth"
+
+
+
+
+# More thoughts on selections
+
+what if
+we go back to just a number
+and that number is just indexed to the ~concatenation
+of all of the `text`s of the IR for a node.
+that would be, pretty clean.
+ALTERNATIVELY
+!all selections could have a `part`.
+which, ok would be better actually.
+ok.
+so ID selections sould just always have part=0
+
+that way we can deal with both interchangeably.
+
+sooooo that means "text" selections are uniform.
+how about other things?
+
+
+
+
+#
+
+NEW PLAN FOR REFS
+idk if there are gonna be big downsides, but:
+- refs will just be a "locked down" id,
+ im that, they won't be separate. Let's do it!
+
+this ... ok so this does mean, that
+matching on IDs gets a little more annoying.
+like
+maybe I'll make it so that if you don't pass in all the args,
+it's no big deal?
+wellll ok so how about: when translating to the `cst/xyz`
+we actually do break it out.
+that's kinda nice? yeah that's great.
+
+
+# Some thoughts about "documentation"
+
+Now that strings are fancy, do I want to make rich-text fancy?
+Thaat is to say, have it really participate in the structured nature of things? Seems like it would be nice.
+AND it would be super cool to have it be a ~first-class value type in the language, so that you could e.g. have your error messages be rich text, including embedding CST nodes and other good stuff. Maybe even react-like whatsits.
+
+Question: Would it be hierarchical?
+Like
+
+block:
+  h(number, list(inline))
+  p(list(inline))
+  ul(list(block))
+  ol(list(block))
+  checkboxes(list(bool, block))
+  quote(list(block))
+  table(list(list(block)))
+  hr
+
+inline:
+  text(style, string) // bold, italic, underline, color, bgcolor, font
+  link(url, style, string)
+  image(url)
+  embed(cst, format)
+
+
+## Kinds of things I'd like to have special editors for:
+
+- raw js code (don't need to make this tooo fancy, just highlighting is fine)
+- template strings (can be same as raw js code)
+- rich-text (need to be able to embed CST)
+- react-like something probably
+- musical notation?
+- some kind of graphics (circles, rectangles idk)
+- I can imagine board game configuration editor kindof thing
+- ooh for game of life
+- definitely an editor for "angle" that lets you drag it around
+
+obviously, some of things things I definitely won't be baking in.
+So I want a plugin architecture, where you would specify:
+- the selection type for your node type
+- the id and shape of your node(s)
+- prolly a function to traverse that node type
+- obvs a way to render it
+
+
+Soooo the question becomes:
+- should I try to implement `string` using this plugin architecture?
+and then I can use it for rich text, and the react-like stuff.
+
+Now, one thing that I should probably square with...
+is that, some things would be easier if I broke down and went
+to the `NestedNodes` style of things, where I have an intermediate
+representation that then gets used to do things like:
+- manage selection
+- render html
+- render text
+
+so, someeee things won't fit into the internal representation
+(like rich text)...
+but might be good to have a dumbed-down version for text-export...
+
+
+
+# Getting strings back in gear
+
+- [x] tag! I do like it
+- [ ] surround at start of tag should surround string
+- [ ] space in tag should split off the /prefix/
+- [ ] shift-deleting the string should leave the tag, yes thanks
+- [ ] id" should make the id the tag.
+- [ ] shift-arrow in a string needs to happen
+- [ ] shift-arrow across sub-items should work
+- [ ] newlines in strings should work, and should render as like a text box
+  - if we have a large include in a multiline string, I wonder if I should just block it into its own little line?
+
+
+
+# Raw Code
+
+What if raw code was /just/ a template string? and template strings really were doing the thing?
+SO
+you could do
+```clj
+(defn js"" [first rest] ...)
+; and then
+js"Some ${thing} here"
+; which would be
+(js"" "Some " [(, thing " here")])
+```
+that's kinda cool dontchathink
+
+So, in this case, I would actually want both syntax highlighting and block rendering.
+ALTHOUGH what if we do block rendering for /any/ multiline string?
+I meeeeean that does seem kinda cool. And is maybe the whole answer to the multiline string
+editing issue.
+
+okkkkk so now the question is, do I need some special way to ... turn on syntax highlighting?
+I want there to be a way for the editor to associate a given toplevel with certain extra metadata.
+such as `js""` should have javascript syntax highlighting, or xyz should be rendered by default
+by abc render plugin.
+
+Thiss brings me to another point.
+Do .. I want ... the "fixture tests" dealio to actually be handled by a macro?
+like
+
+(#fixtures test-fn [(, a b) (, c d)])
+
+becomes something else that would actually type check?
+How would that play with:
+- error reporting?
+- if some fixtures throw exceptions, it would tank the whole thing right? which I don't want.
+- I really like being able to click on the encountered output to update the test
+
+and yet
+
+so we could still have the `Fixtures` plugin take over and do all the niceness, but this would give
+it runtime semantic value, which seems like a nice idea.
+
+ALSO Q: Is there a way to decouple the `fixtures` plugin from the syntactic representation of the
+list and the tuples? Such that it would be more general, and accommodate other syntaxes?
+My thought is that the `#fixtures` macro could produce some kind of JSON metadata that the fixtures
+plugin would then consume. Does that make sense?
+How would a macro produce such metadata?
+
+Macros are tasked with providing:
+1) the CST
+2) the formatting
+and maybe we could throw in arbtirary metadata as a treat?
+
+it would want to be something like:
+```ts
+{"test": loc, "compare"?: loc, "fixtures": Array<{input: loc, output: loc}>}
+```
+
+
+```clj
+(defn wrap-macro [mfn x]
+  (let [(, cst formatting) (mfn x)]
+    (json (, (, "cst" cst) (, "formatting" formatting)))))
+
+(def #fixtures (wrap-macro (fn [items] ...)))
+```
+
+#macro is a single-item macro
+##macro is a multi-item macro, and has the ability to produce multiple ~toplevels.
+
+... and does the client need to know that?
+o wait. I remember. Macros are *not* ... necessarily prefixed. Like
+- || && ,
+- -> ->>
+- let->
+
+all need to be macros.
+SO macros are just like the rest of us. but we have `defmacro`.
+
+HOWEVER I think there's maybe ... something to be said ... for "toplevel macros" being something different.
+`deriving` for example.
+`deftopmacro name [what]`
+howzaboutthat?
+I could have `defn` be a macro.
+OK BUT the thing about a deftopmacro is it can access the ... definitions ... of things, that are referenced from it. it is called with `[cst get-source]`.
+Is that enough? Does it also need `get-type`? I feel like get-source is probably enough.
+
+should ... all macros have access to get-source? not for now.
+
+
+
+
+
+It would also mean that I could do normal type checking on the macro'd stuff and it would work ~fine,
+except that a type error in one spot would break the whole dealio.
+
+
+Sooo III want, a matrix primitive.
+a table basic.
+(| | |)
+Doooooo Iiiiii have ideas about rows and columns
+like what would the type even be
+of things
+yeah we don't really have the tools for this right
+ohwait. so like.
+it can just be tuples of tuples? instead of an array of tuples
+
+well hrm. So some of the things we /do/ want to have all the same type.
+hoowww would we represent constraints like that.
+lke
+'first row is all X'
+but second row is not.
+wellll ok so that really only comes up when we're testing `eval`, right?
+which breaks rules all the time.
+
+so other than the rule-breaking one ... which ... idk what to do there. maybe just jsonify the result?
+we do want the columns to have the same types.
+So it's fine? I guess.
+
+
+
+
+
+# Overhauyl the selection
+and textlyness.
+Only ID is text.
+accessText => ID
+stringText => String!!! Let's try not having separate whatsits.
+
+Ok also let's just ditch the concept of an empty list.
+
+
+
+#
+
+Broadly:
+
+- [x] add in /strings/
+  - mostly
+- [ ] select multiple siblings
+
+I ... am somewhat convinced, that I should have: (accessText just be a normal ID)
+and (stringText) should go away, the (string) should own all of the texts.
+
+This would mean that ... NodeSelection would get somewhat more complicated.
+
+
+#
+
+- [ ] space in a string interpolation, seems like it should produce a list
+
+
+
+Thoughts...
+Do I want to:
+support highlighting the opening or closing bracket, so you can switch it to something else?
+seems a little nice.
+
+- [x] slurp and slap is coolio
+- [x] space at start of an id selects wrong
+- [ ] wihtout[all] on double click, so left=select start, right=select end.
+- [ ] unwrap replace should select/all
+- [x] space at end pls
+- [x] tabbinhg away shouldn't kill focus
+- [ ] gotta get some undo/redo in here, it's very needed.
+- [x] tab / shift-tab pls
+  - it's not perfect, but it's something
+  - erps, no I don't want it quite this way.
+
+- [ ] multi select is definitely needed.
+- [x] I want a way to swap children
+- [x] implement the 'into' (+shift) part of swap, for bring things back into
+  - and maybe "pulling out" should be reserved for +shift as well....
+- [ ] the 'inside' place for a collection (reachable by "swapping" the only item out of it)
+  is currently quite borked
+  - [x] deleting an empty collection now works
+  - [ ] anotherrr option, don't let swapping make a collection empty. produce a new blank for it.
+    - [ ] and if you try to swap the blank out ... just refuse? idk maybe. although that's a little complex.
+- [x] shift-del to remove a whole node, all the time
+
+ok ... it is a little weird to have multiple ways to splurge.
+
+- [x] tabbb shouold probably do a 'select all' on things.
+
+
+Ok so far I've been pretty much ignoring multi-cursor.
+but, that needs to stop.
+hoWEVER,
+I might want ids anyway?
+eh, indices will prolly work. right?
+-> maybe. anyway, I think I'll want to /group/ all of the updates,
+   and then send them at once. yes.
+
+
+
+
+# So high level
+
+- Basic arrow nav
+  - [x] left/right
+  - [ ] up/down unsolved
+    - let's be honest though, might want to get formatting working first though
+  - [70%] tab/shift-tab
+  - [80%] swap
+
+
+
+Node types, I should probably flesh these out before doing too much more nav work.
+- [x] id
+- [x] list/array/record
+- [ ] strings
+- [ ] comment / spread
+- [ ] record
+- [ ] annot
+- [ ] rich-text (let's do it!!!)
+- [ ] raw-codeeeee
+
+
+BIG QQQQ Is there a purpose to having (id) be different from (stringText)?
+-> I mean, they have very different rules for ... what is allowed.
+-> buttttt it's enough to ...
+
+
+
+
+
+Ok folks, I think we'll want to do centralized selection state management now.
+
+- [x] start up centralized selection management
+- [x] edit
+- [x] RecNode should have a Loc param where we can do false/true
+- [x] yay looks like we are preserving selection state through a bunch of editings.
+- [x] unwrap, lookin slick
+
+NEXT UP: A bit of navigation
+- [x] Ok I also need my `Hidden` input to reclaim focus at .. all times?
+- [x] then I'll need a blinker for the start & end of collections.
+- [x] dbl click to select all
+- [ ] Arrow Left & Right if you please
+
+
+ENUMERATING ALL THE PLACES SELECTION CAN HAPPEN
+- text (subtext)
+- start/end of a listlike or string
+- start of a comment or spread
+- ... is that it? interseting.
+
+
+
+### Basic Identifier Edit
+
+- [x] selection (represent, render, move)
+- [x] click, shift+click
+- [x] click+drag
+  - so the thing about shift drag, is it's going to be impacting much more
+    than just one thing.
+    Sooo given that in part it'll have to be handled higher up, should I do that already?
+    oRRR should I allow the in-node drag to just be handled locally, but the external drag to be up the chain?
+    that sounds pretty good actually.
+
+- [x] clean up refactors
+
+- [x] on blur, we gots to commit any changes
+  - into a stage, right? the current stage?
+- [x] notify nodes that changed
+
+- [x] some multi node!
+- [x] surround
+- [x] split
+- [x] before
+- [x] after
+- [x] delete
+- [x] join left
+- [x] why does 'after' jump out of the current list?
+- [ ] make a clickable 'start' and 'end' for collections
+
+#### Selection management!
+gotta manage it centrally, my dear.
+
+- [ ] have a ... doc-session data thing? saved to localstorage probably
+  and it has the /selection/ infos
+- [ ] /updates/ should mod the selection as well.
+  probably needs to be managed by the store, so it can be coordinated with /updates/
+
+...
+I do need {clicking on punctuation} to do useful things.
+
+- [x] the blinker doesn't work right, and it bothers me.
+    I need the blink to happen better.
+    FIXED
+
+- [ ] eventually I'll want the {presence} reporting stuff to also include "pending text changes"
+  so that typing really shows up.
+
+
+## Ok so
+do I really need the /renderable/ stuff? And the nestedNodes dealio? like
+... does it do anything for me?
+oh yeah, it was to produce ... text as well ... right?
+but maybe I don't need it that way?
+
+ok wait, I need something to run the layoiut algorithm on.
+maybe that's what we're doing here.
+Yeah.
+
+
+## The JS Runtime
+
+This time let's use a typescript parser
+and strip the annotations?
+maybe?
+ugh maybe not.
+No typescript for you.
+BUT we can at least parse the JS to reliably find exports and imports.
+
+OHH EAIT so the fact that we're switching to `cst/ref`s makes this mor complicated.
+
+hmm does that mean ... that I'm bout to
+yeah getting fancy w/ js is not on my todo list. Soo
+this means that, we also want the /parser/ to be able to report *extra* global usages?
+
+ORRR we just make a special allowance for toplevel raw-code's.
+hm but how would that interact with namespaces? and such?
+ok ok ok. so.
+let's say that the 'evaluator as such' is responsible for reporting (externals & global usages).
+ergh. but then what do we do about autocomplete? hrm I guess that's not too bad really. we just deny it categorically.
+ok but then ... how do we actually do resolution?
+grrr.
+
+ok, we might be getting fancy with the javascripts as well.
+buuut wasn't the point of the js eval to not get fancy?
+like.
+
+among the issues:
+- if we have multiple defns in a raw-code, how to identify them? (only one [loc] for that raw-code node)
+  - can solve that by only allowing a single defn per dealio.
+- if there's one loc and it's the whole node, then cst/ref's won't render correctly, as they expect a `cst/id` that they can grab the `.text` off of.
+  - ok I guess we can solve that by allowing a very basic form `(def x [raw-code])`.
+    - I guess that's not horrid.
+
+and we'll just agree that update things will be a little buggy, but that's what you get.
+
+
+
+
+## COVERAGE
+
+So another thing that would be super nice, along with the "tests" integration, is tracking coverage ~automatically.
+
+Seems like it ought to be as simple as updating a `$coverage` map whenever anything happens ...
+... do I want a separate compilation ... mode ... to enable it?
+
+maybe. Maybe just enable it for "things on screen"? That ought to be fine, right?
+
+So yeah, a compilation flag should probably be had.
+buut I can probably do without it to start with.
+
+## Macross
+
+Ok so this time we're going hard on macros folks, I really do think.
+This'll make a variety of things very interesting.
+
+Macros we'll be making:
+- , (yesss this is a macro! happening at expr, pat, and type.) -> it'll transform into the `pair` type constructor. yes thanks.
+- -> and ->> let's get some nice thread macros thankss
+- let->
+- if, easy one
+- oooh `and` and `or`, right? late binding ftw
+
+OH OK SO here's the thing folks.
+MACROS ALSO NEED TO GIVE ME FORMATTING INFOS. yes indeed.
+so that we know that `let->` should render with pairs and such.
+And that `->` should have 1 tightFirst
+
+---> one thing that might be a little complex, is that the macro *and* the parser might have conflicting ideas about what formatting should happen. In that case, the macro wins.
+
+ALSO the parser might be parsing the ~same stuff multiple times depending on macro-ness. So we'll just arbitrarily decide that the first one wins.
+
+Macros get saved in the toplevel.
+
+##
+
+Having a thought about ... visual callouts.
+So, it might be nice, if you're like scrolling through stuff, to show "here's an error" or something a little louder than an underline.
+Like a red icon or something.
+BUT we don't want to jump the cursor around, if you're /editing that line/. SO the story is, if your cursor is on the same line, we *suppress* the show/hide of the little icon. BUT once your cursor leaves, we can have it show up, making things easier to find.
+
+----
+
+What about ...
+allowing you to compile & run things with type errors?
+I think hazel does this.
+
+(paper rabbit hole)
+Here's hazel's latest paper https://hazel.org/papers/marking-popl24.pdf
+using bidirectional type checking, which I don't know if I've tried? Or is it the same as HM(X)?
+- there's this https://arxiv.org/pdf/1908.05839 which is maybe too formal for me
+- or this https://www.cl.cam.ac.uk/~nk480/bidir.pdf
+- or this one https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/putting.pdf which might be pratical enough for me to grok
+- or this https://www.cis.upenn.edu/~bcpierce/papers/lti-toplas.pdf
+
+ahhhh hrm.. does bidirectional type checking necessarily assume that some type annotations are required?
+Then I'm not interested, sorry....
+
+buuuut it kinda looks like the hazel paper doesn't rely on type annotations? Not sure.
+
+Ok interesting.
+So, the hazel inference algorithm : returns *both* an inferred type, and a set of constraints.
+Does that make sense?
+
+
+ok ... so ....
+alright, the way that hazel deals with "running code with type errors" is that it has a full "partial evaluation" so it doesn't /have/ to know ahead of time what will be ... "correct".
+Yeah, so
+
+```
+let m = fun (x) -> (x +3, x(23)) in (m(2), m(fun (y) -> y + 2))
+```
+
+gives you
+```
+((5, <partial>), (<partial>, 25))
+```
+
+which would be completely unusable in any optimized compilation environment.
+
+... would it be interesting to have a de-opt compilation environment available for evaluating forms that have type errors?
+I feel like that might get really weird in the world where I need type information in order to compile (e.g. type classes).
+
+, and, I don't think I'm really quite that invested in allowing you to run code that contains type errors.
+
+Ok, so let's consider that top be settled. I will *not* allow you to run code with type errors.
+unless at some very future time I decide to.
+
+
+
+# Ok
+so I've been going back and forth on the "stages" thing.
+but I think my final answer is that:
+- I want things to be green by default
+- if you want to make changes outside of the current "stage", you can
+  - stash them
+  - open a new tab
+
+NOTE that now that we have `eref`s for global references, we can compile them differently (using `$env[toplevel + loc]`), which means we don't have to ... ... ... sanitize them anymore. (locals still need it though).
+HOwever, do need to think about `builtins`, and what toplevel they end up referencing. I mean, probably the actual one they came from? Maybe? Or the compiler? hrmmmm.
+
+
+
+dinifetly a thing: HiddenInfo just does a listener model.
+if no listeners, then don't grab focus?
+
+If you're editing an ID, the edited text is *local state* until
+(a) a timeout
+(b) you focus elsewhere
+(c) you accept an autocomplete
+Then it gets committed back to the store, and we process stuff
+
+btW I think I want `blank`s to be significant now, at least in some places.
+
+
+
+#
+
+mOre thoughts about documents:
+- by default, a new document is a "scratch" document, e.g. it's probably not meant for public consumption. Just a place to do stuff. If you then give it a name, it gets upgraded to something that shows up places.
+
+
+#
+
+Let's talk aboit evaluators and tests
+
+-> a test toplevel gets registered to one or more evaluators.
+That's how we know "what needs to stay green".
+-> alsooo if you're in a doc w/ an evaluator, and you grab a test toplevel that's not registered to it, it renders disabled or something.
+-> Adding that test case to the current evaluator would then happen /within/ a stage.
+
+yeah taht sounds rad.
+because changes to toplevels get staged.
+
+
+
+
+
+----
+OK so best of both worlds:
+- if a tab tries to connect, it first uses the localstorage'd id
+  - if there's already an option connection, it gets a new ID, and that gets pushState'd into the URL. Very nice.
+
+
+I think I want the "session id" to be persistent in a browser.
+so saving stuff to localstorage.
+Anddd that means we'll need to coordinate across tabs if we want to ensure that everything's handled in the proper order.
+whiiiich is gonna be a pain. idk.
+eh, for now, we'll *not* have it be persistent, and see how far we get.
+There should be a way to "list current stages" and resume someone else's stage.
+
+
+
+
+# July 5 morning thoughts
+
+- all changes to /main/ get checkpointed (committed)
+- you can "name" a checkpoint (add a commit message) which means it won't be garbage collected
+
+- all changes go into an "automatic stage" which is unique per-user-session.
+  - merging back to `main` is debounced (not more than every 10 seconds idk, or if you switch the toplevel you're editing. If you're editing a rich-text, I might bump the timeout to 1 minute or so? they're more expensive to checkpoint.) and of course everything has to be green.
+
+Indicate the "pending stage" whatnot with a status bar at the bottom, saying like "28 pending changes, 3 errors".
+
+IFF you want to "try again" starting from /main/, or if you want to branch off the current stage, that's when we get into multiple stages. Althought to be honest, maybe that's a bad idea? Like doing a rebase sounds super annoying.
+Maybe I /do/ actually want "stash"? That sounds better I think.
+So "revert" just drops the staged changes.
+And "stash" drops the changes in a stash, where they can be re-staged at a later time.
+
+ALSO: Changes to a /stage/ are checkpointed with some frequency. Like a lot. Maybe every change? idk. Anyway. And then the cool thing is, all those checkpoints can be dropped kindof aggressively. Like, "any staged checkpoints older than a day".
+-> UI undo/redo ... do we say it only applies within the /stage/?
+  -> it seems like you should be able to "re-enter" the most recently committed staging history. Right? Seems like it.
+-> OK but so here's the story:
+  - if you're out of staging, then: undo/redo *changes your view* but doesn't make any changes to the state.
+    -> So you enter "history viewing mode" and you have the opportunity to say "revert to here". You can also like copy/paste things.
+
+BROAD STROKES:
+- While you're still in staging, undo/redo works as you might expect, because we have a change history for you to mess in. (undo/redo does reverts of history items)
+- Once you're out of staging (either by undoing your way out of staging, or things are green), undo/redo:
+  - jump your view between commits to /main/
+    - if we still have staging history for a given change, you can scrub within the change.
+
+>> So we'd show a scrubber timeline along the bottom.
+  >> We'd also limit you to showing commits that impact ... the current ... namespace (or document??? idk. like anything open in or referenced by the current document.).
+
+
+BIG QUESTION: What do we do about /document/ versioning?
+Obvs if I /undo/ the creation of a toplevel, the documenet node referencing it is going to have a bad time.
+Do we checkpoint documents at the same time?
+And do the undo/redo history within a stage?
+
+
+Ahhhhh ok so I think I'm going to YOLO the document node changes during a staging. If there's a document node that doesn't correspond to a known toplevel, we'll just ignore it. I think it'll be fine?
+
+
+
+it feels a little ... weird ... but maybe I don't see why not? And I don't see any other normal way to ensure that they stay reasonably synced.
+
+yeah, gotta have them synced as well.
+
+
+
+
+
+
+
+SIDE NOTE: It would be nice to be able to "multi-select toplevels" for copying / moving etc. Like "checkboxes on the side". Probably triggered (visibility) by holding down a key?
+
+Q: Can I get sub-toplevel structural sharing for checkpoints? Sooo probably the /staging/ checkpoints would actually just be persisting the /change history/, such that you could recreate the past.
+And then /main/ checkpoints as just doing a full-on hash of each toplevel.
+
+
+
+
+
+
+
+
+# Implementing one-world
+
+cheapest way to start is to say we're all just one big json blob
+again.
+
+buttt I also will want ... /changes/ to be, like, pretty well structured.
+So that server chatter isn't too bad.
+and then we can make p2p also work, right?
+
+
+
+#
+
+HiddenInput provides itself on context, and allows
+... text ... items to register themselves. And I guess
+blinkers as well?
+
+Ok so nodes will control their own cursor, which honestly
+is a good idea, so we don't get the cursor out of alignment
+when formatting comes in and such.
+
+Also my cursor path will no longer have indexes in it,
+so adding multiple things to the same node shouldn't be a problem.
+
+alsooo the HiddenInput, when dispatching the keydown event to listeners,
+will wrap it in a thing that will tell the central store to
+batch changes into one change (and one historyItem)
+
+
+
+
+# Things to represent
+
+- documents
+- document nodes
+- toplevels (with a node map)
+- namespaces -> hashes
+- hashes -> a serialization of a toplevel
+  -> gonna have to maintain a strict reverse mapping of "what references this hash" so I can do eager garbage collection.
+
+
+so, second guessing the whole "hash" thing.
+Cannn I, instead:
+-> just have document nodes, that have multiple toplevels listed?
+  ->
+
+
+ifff you edit the name of something, that has dependents.
+-> it gets staged. And to "commit" the stage, you have the option to (a) keep all dependencies (b) break all dependencies.
+
+Because, "I want to switch between these two impls" is not terribly uncommon.
+hrmmm maybe I'll need a special command for that.
+
+I think the default behavior should just be "update all users, it's fine".
+Deleting a thing from the document doesn't mean deleting it from the library.
+-> and so, doesn't trigger staging.
+- NOTE that stagingness is a library-level thing, not a document-level thing.
+Deleting a thing from the library which has dependents will both break all references, and put you into staging. And you can't get out until you've fixed the issues.
+
+
+
+
+
+hrmmm so how do I ... ensure ...
+
+what I mean to say is, that:
+
+document-node -> does it point at
+1) a namespace library path (so it can pull up all alternatives from different stagings)
+OR
+2) a toplevel id ... in which case, it would not.
+
+and to make matters worse -- if I make a change to a toplevel, prompting a staging split, does that mean we generate a new toplevel id?
+seems a little ... drastic. I guess it would only happen the first time? or something
+
+
+
+ok backup, what if the thing we're /staging/ isn't based on "multiple namespace mappings" but rather "multiple toplevelid bodies"?
+and then we're back to "refs point to toplevelids, and namespaces are just a way to give them names".
+
+you know there's really something nice about that
+because
+you'd have
+state: { toplevels: { [somid]: {nodes}, ...other things }}
+and then
+staging_state: { toplevels: {[somid]: {nodes} }}
+and you could have structural sharing with all non-edited nodes from the `nodes` map.
+
+ok on principle, I think I find this quite appealing.
+
+
+
+
+
+
+
+
+
+
+
+
+# More one world thoughts
+
+collaborative editing .... should in principle not be too bad, right?
+undo/redo gets a little weird, but we just need to flag history items based on originator, and say you only undo the changes you make.
+
+
+
+oooh so what about:
+- the ability to "pin" a reference, which means that we're basically doing hash-addressed for that (and all descendents), BUT it's *lazy*; so IF something gets edited that is pinned, the toplevel gets copied (as deep as needed) and the pinner is updated to point to that thing.
+That'd be a neat trick.
+- I also waaant best-in-class dead code detection. because nothing can have effects.
+
+
+
+## Things I need to do before one world is ready
+
+[0] remove all dead code, for real
+  - ok that was a lot. not like, alllll all, but a lot.
+
+[1] locs are strings
+  - .... hmm so currently I have the notion of "finding the max loc"
+    is that just not a thing anymore? ??
+  - make the code changes
+  - convert all existing .json files
+  - done?
+
+ok I do declare, that this is actually a bad idea.
+
+[2] should I build things from the ground up again? like, I've learned some things...
+
+
+
+
+
+
+
+- locs need to be strings (right? so I can "namespace" a loc by the toplevel id)
+- toplevel references need to be locked down.
+  - cst/id, cst/global (is a global reference)
+  - node type=global
+  - which means I need to be able to resolve global references ...
+    - it would be the definition id, which should be a cst/id
+    - anyway, it would be something like `id=[toplevelid]:[loc]`
+      orr should it be split out? `{type: 'global', top: number, idx: number}`?
+    - would that be compatible with other things?
+      soooo I kinda rely on locs being globally unique, when I'm e.g. reporting type errors.
+      I think it's probably just better that way.
+
+
+
+
+## make an sqlite orm layer or something to handle the checkpointing.
+- read is normal
+- on write, check the `table_name$history` table, and if there's not a `checkpointid = 'staging'` entry for the row to be altered, make on to save the current value. otherwise leave it be.
+- then the "commit" action is taking all rows with `checkpointid = 'staging'` and giving them a checkpointid.
+  - do I care about branching and stuff? hrmm I mean probably? idk.
+
+^ ok so orr I could just lean on git again, because it's a lot better at things
+or rather, it is quite reliable.
+I could have file-based normal git for the start, and move to an in-memory git repo later if I want to.
+- toplevels would be stored as a file w/ the clj first and then the json after
+- namespaces would be the path/to/the/thing and then the file contents would be a whatsit
+
+What's the downside? oh yeah, searching is much harder. is that a thing I care about? ...
+
+potential file structure
+
+settings.json
+ns/[name]/[space]/[path]
+top/[id].json
+doc/[id]/doc.json
+doc/[id]/ns.txt -> just the namespace where the doc lives. for easier searching
+doc/[id]/[doc-node-id].json
+
+yeah I think that makes sense
+
+
+ok anyway: we have
+- global settings
+  - list of evaluators (aliases, name -> full evaluator path)
+    - name
+    - toplevel id + checkpoint
+      - ok so what if this was just the full chain?
+      - like,
+        - {toplevel id, checkpoint}[]
+        - with the full list going back to the start, which was evaluated by `js evaluator`?
+        - seems legit
+        - shouldn't be too many hops, right? Like I mean, definitely under 10. So it's not out of control.
+        - ok so really this is a list of aliases. which means it doesn't have to be checkpointed itself.
+          - I do like that.
+        - the full "path" would be used as the ID, both in documents, and in the "cache", where we save the evaluator's code.
+        - yeah that's pretty slick.
+
+- toplevels
+  - map (MCST)
+  - root = 0?
+  - docstring (rich-text? prolly)
+  - is this where we specify namespaces? idk seems like that would be somewhere else.
+- namespaces
+  - full ... name?
+  - the toplevel id we're mapping it to
+  - idk I mean we could represent it as an actual tree, but then we wouldn't get db uniqueness nicities.
+  - yeah getting uniqueness for free seems worth it.
+- documents
+  - title
+  - set the evaluator to use
+  - toplevel namespace (also determines "where the document lives" logically)
+  - namespace "imports" (aliases really)
+  - toplevel document node id <- actually document node IDs can be prefixed by the document's ID. so the root is always like `some-doc-id:0`
+    - because it's not like we'll be moving document nodes between documents. copying maybe, but that's fine.
+- document nodes
+  - has the `metaMap` to indicate what is traced
+    - this means that tracing configs are isolated to a single document, which I think makes a lot of sense
+  - has display configuration & plugin settings ... and probably *earmuffs*-default-values
+  - might have a "default namespace for all children"
+
+
+
+
+
+
+# Language features I still want:
+- records with ... optional items? might wreak havok with the unification algorithm
+- how about records with defaul values? hmmmmm might be possible. maybe if the default values thing was a subordinate record (type variable?)
+  - like (trow spread-vbl default-values-vbl (list fields))? seems worth exploring
+- we could do functions with default arguments, but we'd have to switch to non-curried. and like it wouldn't be usable everywhere? idk.
+
+- (match x 'A 'B y y) should eliminate `'A`. check-exahustiveness should report, for every `tany`, the options available, and the subset that apply (so we know what to eliminate)
+
+- ok also need to bring the type class dealio into the new effects whatsit
+  - which means, some more things
+    - but I don't want to add type classes until ... I have records? or something?
+- $ for record punning
+
+
+# Um ok so the "movies" exampel is old and stuff
+
+let's compare to roc's tasks
+- https://www.roc-lang.org/examples/Tasks/README.html this'll be a nice comparison
+- https://www.roc-lang.org/examples/TaskLoop/README.html this is a walk in the park.
+
+
+and thennnnn oooooohhhhh that's right
+enum restriction, gotta have it plssss
+
+`(fn [x] (match x 'A 'B y y))`
+should take the 'A out of the result. Not that it cant be put back in, but it shouldn't be there in our result.
+
+
+# OK SO NOW
+we do a real test of the type sistem
+
+and it comes up wanting so much
+
+ok, it would really be nice for:
+```clj
+(defn parse-int [v]
+    (match (string-to-int v)
+        (some v) ('Ok v)
+        _        ('Err ('NotAnInt v))))
+```
+to have the 'Err term with an /open/ enum, so it
+could merge with other things.
+CMON the thing I want, is for enums to be able to merge,
+if I want them to. but not if I don't. is that so hard?
+it appears to be moderately hard.
+
+^ like, can I just have ... an enum with an open-ishness,
+where it doesn't force a catchall in a match, but is willing
+to merge with other things?
+seems like kindof a stretch.
+
+------- ok so Roc does this right, now to figure out howwwwww
+
+
+ALSO
+`!fail` having an actual return value variable is not turning
+out so hot, because it's being locked down, and now it won't jive
+with other dealios.
+SO I think we should go back to `!fail` not actually having
+a return value.
+
+... that's all of the bugs for now.
+
+
+
+# Ugh still not
+quite on it
+
+
+```clj
+(defn c-> [n f]
+    (provide (f)
+        (k <-c ()) (c-> (+ n 1) (fn (k n)))))
+
+; does not work
+(c-> 0 (fn (, (c-> 100 (fn (, <-c <-c))) <-c)))
+
+; does work
+(c-> 0 (fn (, (c-> 100 (fn <-c)) <-c)))
+```
+
+
+```js
+const $find = (ef, name) => {
+  for (let i=ef.length - 1; i>=0; i--) {
+    if (ef[name]) {
+      return ef[name]
+    }
+  }
+  throw new Error(`cant find ef ${name}`)
+}
+
+const c_ = ($effects, n, f, $kont) => {
+  let odone = $kont
+  const $provided = {
+    'c->': ($effects, _any, $k) => {
+      $effects = $effects.filter(m => m !== $provided);
+      c_($effects, n + 1, ($ef, _, $do) => $k($ef, n, $do), $kont)
+    }
+  };
+  f($unit, [...$effects, $provided], $kont)
+}
+
+c_(
+  [],
+  0,
+  ($ef, _, $d) => c_(
+    $ef,
+    100,
+    ($ef, _, $d) => ,
+    $d,
+  ),
+  ($ef, value, $d) => {
+    console.log(value, 'final done, and the done fn is', $d)
+  })
+
+
+```
+
+
+
+
+
+
+# OH wow ok
+so I have not understood the drill here
+
+```
+ability C where
+    cC : () ->{C} Nat
+
+ign : '{g, C} (Nat, Nat) ->{g} (Nat, (Nat, Nat))
+ign f = handle !f with cases
+    { pure } -> (10, pure)
+    { cC _ -> k } -> (100, (100, 100))
+
+> handle (5, !cC) with cases
+    { pure } -> (1, (3, pure))
+    { cC _ -> k } -> (2, ign '(k 51))
+
+-> (2, (10, (5, 51)))
+```
+
+so, it looks like "pure" definitely is needed, in order for types to make sense.
+but pure gets skipped on the one hand, because cC is called, but its used on the second hand indeed.
+
+```
+(2, <- comes from the final ness of the cC handler
+    (10, <- comes from the pure case of ign
+         (5, <- from the main expression
+             51 <- from the value passed to `k`
+                )))
+```
+
+pretty crazy.
+So, gotta fix that for sure.
+and the inference around it too.
+
+
+
+
+
+
+
+
+
+alsoooo wow unison can't infer the removal of an effect????
+like, this annotation is *required* for it to work right. ouch.
+```
+ign : '{g, C} (Nat, Nat) ->{g} (Nat, (Nat, Nat))
+ign f = handle !f with cases
+    { pure } -> (10, pure)
+    { cC _ -> k } -> (100, (100, 100))
+```
+
+
+
+# One world thoughts
+
+ok, so we've established that: to register a compiler, you need to ... like take an action.
+Right?
+and ... ok so maybe a "compiler" is /ought to be a "namespace that fits a certain whatsit"?
+welllll but there's the "convert this fn into something legible by the js backend"
+... I wonder if I should abstract that out at all ...
+yeahh ok, so the "compiler" is "a toplevel expression that evaluates to an object fitting the expected shape".
+
+Anyway, so then you've registered your compiler ... although, should we still allow the mix & match of
+different /aspects/ of the compiler? seems nice to iterate on them separately. yeah.
+so ... but then they'd get bundled together? yeah nvm let's have it all be one thing.
+we can use normal abstraction things to split things out.
+
+OK OK OK
+so
+there's a table somewhere, with:
+- the toplevel id where this compiler came from
+- what this compiler has been named (established at "time of compilation" maybe idk)
+- timestamp of compilation
+- the produced sourcecode
+
+
+
+hmmm do I want shallow handlers? I think so? that's what unison does, at least..
+
+
+#
+
+NEXTT UP:
+- where we have `ndone` in the eprovider gen, we
+- make a vbl for the effects obj, but uninitialized
+- then `ndone` actually becomes a lambda where we remove our effects...
+  - using the now-set variable
+- and so, when we have our effects obj, we actually do `(our_effects = theobj)`.
+  GREAT!
+
+I think it should work.
+
+
+oof.
+ok
+so, the thing is, we have been replaced.
+
+
+
+
+
+// MAYBE IDK
+wait no we need to do it before then.
+- acccctually it's like, as soon as we show up in the provider handler, right? (ACTUALLY I think this is working.)
+  -> OR if we don't, then definitely afterwards. right?
+    -> OK so ... it's the "main course" next that
+
+
+# Name ideas
+
+"an area to do stuff, to try stuff out"
+"sandbox" "playground"
+"porch" "stoop"
+(stoic js)
+
+#
+
+
+BUG I think there's an issue .. with ... the way that effects are overridden.
+
+- [ ] YES I think we'll have to keep a ... list of things ... and then a "most recent top" thing.
+  So we can determine what's the main dealio
+
+- [ ] whyyyy does it sometimes come back "max stack size reached"? hrmmm maybe the max size is lower if there's memory pressure or something?
+
+ok OOF we have some bug
+
+
+
+
+
+
+EASE OF USE things
+- (f)
+- (fn x)
+
+
+- [x] let's try having `k = (a, b, c) => $k(a, {...$k_effects, ...b}, c)`
+  - [x] yay that fixed it
+
+
+# OOf to get around the stack limit thing
+had to roll my own map.
+
+```
+const map = (values) => (f) => {
+    let top = nil;
+    let last = null;
+    while (values.type === 'cons') {
+        const nv = { type: 'cons', 0: f(values[0]), 1: nil };
+        if (top === nil) {
+            top = nv;
+        } else {
+            last[1] = nv;
+        }
+        last = nv;
+        values = values[1];
+    }
+    return top;
+};
+```
+
+
+
+# I should really clean up the "produceItems" concept.
+like ... really there should be (0-1) product, (0-1) type maybe, (0-n) errors
+
+THEN I can only throttle the height of the errors, which is what causes things to bork around.
+welll and the appearance / disappearance of a product. Although I also want to be smarter about that, and display the most recently working product, with a "stale" marker if it is stale.
+Which would also be enabled by this change.
+
+
+OK BUT BEFORE
+I go off on that chase, let's close the loop on `ask`s, and make a working "guess this number" game.
+
+TYPE SIGNATURES Shoudl also "debounce" on changes to the inferred height.
+
+a `do` block is short for (let [() a () b () c] d)
+
+# IDEAS
+
+- effecvts like http routes, e.g. a `platform` could do a star match on requested effects to e.g. provide a typed k/v store?
+- toplevel exprs that are missing earmuffs shouldn't just have a default filled in. MAYBE have aalue saved on the namespace. not sure how the undo stack would look for that. I guess it's fine. I can just rack up a bunch of changes.
+- also had some thoughts about wasm, and ... c, I guess. I'll want to monomorphize all over the place. right?
+  unless everything's just on the heap. which is maybe fine? at any rate, I'd need to have type information a lot more than I currently do.
+  - the thing about monomorphizing. I could have a tree-like cache of monomorphized code, where the code for one toplevel also has pointers to the other toplevels that it depends on.
+  - anyway, then we'd be able to have relatively quick compilations. Right? maybe.
+
+
 # Effects are alive!
 
 - [ ] now what's the story with top-level expressions that need effects?
@@ -15,9 +2435,11 @@
       `thunk: (env: {any}, update: (items: ProduceItem[], stillWorking: boolean) => void) => void`
       how do I slide in the builtin-effects? idk. maybe pass in the `env`, which should have them on it? sure.
 
-```
 
-```
+- [ ] {$type: thunk}
+- [ ] return a produceItem that's like ... {type: 'trigger'} that renders a little play button
+  - oof vscode is strugglin
+- [ ]
 
 
 # Visualizing Algorithm W

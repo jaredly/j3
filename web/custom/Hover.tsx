@@ -1,9 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Ctx } from '../../src/to-ast/library';
-import { nodeForType } from '../../src/to-cst/nodeForType';
-import { nodeToString } from '../../src/to-cst/nodeToString';
 import { nodesEqual } from '../../src/types/cst';
-import type { Error } from '../../src/types/types';
+import { fromMCST } from '../../src/types/mcst';
 import { advancePath } from '../ide/ground-up/findTops';
 import { subRect } from './Cursors';
 import { RenderStatic } from './RenderStatic';
@@ -11,7 +8,6 @@ import { NUIState, UIState } from './UIState';
 import { CombinedResults } from './store/Store';
 import { useGetStore, useSubscribe } from './store/StoreCtx';
 import { HoverContents } from './worker/types';
-import { fromMCST } from '../../src/types/mcst';
 
 const getRegNode = (idx: number, regs: UIState['regs']) => {
     const got = regs[idx];

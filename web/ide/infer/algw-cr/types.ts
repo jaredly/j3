@@ -1,4 +1,4 @@
-import { Display } from '../../../../src/to-ast/library';
+// import { Display } from '../../../../src/to-ast/library';
 
 export type Exp =
     | { type: 'Var'; name: string; loc: number }
@@ -159,7 +159,7 @@ export type TIState = { supply: number; subst: Subst };
 
 export const initState = (): TIState => ({ supply: 0, subst: {} });
 
-export type Ctx = { state: TIState; display: { [key: number]: Display } };
+export type Ctx = { state: TIState; display: { [key: number]: any } };
 
 export const newTyVarWith = (
     kind: Kind,

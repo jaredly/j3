@@ -22,6 +22,17 @@ export type Message =
           nodes: ImmediateResults<any>['nodes'];
           id: number;
       }
+    | {
+          type: 'trigger';
+          tid: number;
+          id: number;
+      }
+    | {
+          type: 'ask:response';
+          tid: number;
+          value: any;
+          id: number;
+      }
     | { type: 'debug'; execOrder: boolean; id: number; showJs: boolean };
 // | { type: 'plugin'; id: number; top: number };
 
@@ -42,12 +53,20 @@ export type Sendable = {
     pluginResults: any;
 };
 
-export type ToPage = {
-    type: 'results';
-    results: Record<number, Sendable>;
-    traces: TraceMap;
-    id: number;
-};
+export type ToPage =
+    | {
+          type: 'results';
+          results: Record<number, Sendable>;
+          traces: TraceMap;
+          id: number;
+      }
+    | {
+          type: 'async';
+          tid: number;
+          produce: ProduceItem[];
+          waiting: boolean;
+          id: number;
+      };
 // | { type: 'plugin'; id: number };
 
 const sendBack = (msg: ToPage) => postMessage(msg);
@@ -99,6 +118,7 @@ const handleMessage = async (
                 return {
                     evaluator: null,
                     nodes: msg.nodes,
+                    asyncFns: { fns: {}, nid: 0 },
                 };
             }
 
@@ -108,6 +128,34 @@ const handleMessage = async (
             if (!state) throw new Error(`cant update`);
             return updateState(state, msg.nodes);
         }
+        case 'trigger': {
+            if (!state) return null;
+            state.asyncFns.fns[msg.tid](
+                (produce: ProduceItem[], waiting: boolean) => {
+                    sendBack({
+                        type: 'async',
+                        id: msg.id,
+                        produce,
+                        tid: msg.tid,
+                        waiting,
+                    });
+                },
+            );
+            // delete state.asyncFns.fns[msg.tid];
+            return state;
+        }
+        case 'ask:response': {
+            if (!state) return null;
+            if (!state.asyncFns.fns[msg.tid]) {
+                console.warn('ask already responded...');
+                return state;
+            }
+            state.asyncFns.fns[msg.tid](msg.value);
+            delete state.asyncFns.fns[msg.tid];
+            return state;
+        }
+        default:
+            console.log('unexpected message', msg);
     }
     return null;
 };
@@ -122,7 +170,11 @@ const next = async () => {
     running = true;
     const msg = queue.shift()!;
     state = await handleMessage(msg, state);
-    if (state?.results) {
+    if (
+        state?.results &&
+        msg.type !== 'trigger' &&
+        msg.type !== 'ask:response'
+    ) {
         const updated: Record<number, Sendable> = {};
         const traces: TraceMap = {};
         Object.values(state.results.groups).forEach((group) => {

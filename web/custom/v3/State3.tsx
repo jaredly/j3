@@ -1,6 +1,7 @@
 // This is like ... a database? idk
 
-import { Cursor, UpdateMap } from '../../../src/state/getKeyUpdate';
+import { Cursor } from '../../../src/state/getKeyUpdate';
+import { UpdateMap } from '../../../src/types/mcst';
 import { Map } from '../../../src/types/mcst';
 import { MetaDataMap } from '../UIState';
 

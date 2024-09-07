@@ -1,0 +1,736 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`basic wrap 1`] = `
+"
+(hello,folks,lets
+   see,how,this,goes
+   and,such,like
+   that)
+"
+`;
+
+exports[`let + pairs 1`] = `
+"
+(let,[x              y
+      a              b
+      (one,two,three 6
+         four,five)   ]
+   one
+   two
+   three               )
+"
+`;
+
+exports[`nesty nest 1`] = `
+"
+(one,two
+   (three,four,five
+      size)
+   seven,eight,nine)
+"
+`;
+
+exports[`smol wrap 1`] = `
+"
+(one,two,seven
+   eight,nine
+   ten,eleven
+   twelve
+   thirteen
+   fourteen)
+"
+`;
+
+exports[`stringsss 1`] = `
+"
+"Here is a string"
+"
+`;
+
+exports[`stringsss 2`] = `
+"
+"Here ${is} a string"
+"
+`;
+
+exports[`string long one 1`] = `
+"
+"Here is a string ↩
+ what in the world ↩
+ here we are it is ↩
+ good somewhat ↩
+ things-that tend-to-↩
+ be splittable ↩
+ insufficiently       "
+"
+`;
+
+exports[`long string with inclusions 1`] = `
+"
+"Here is a ${here} ↩
+ we are it is good ↩
+ somewhat things-↩
+ that ${tend-to-be} ↩
+ splittable ↩
+ insufficiently      "
+"
+`;
+
+exports[`gradual wrap 1`] = `
+"
+-------------------|
+(a,b,c,d,e,f,g,h,i,j
+   ab,ac,ad,ae,af,ag
+   ah,ai,aj,abc,abcd
+   abcde,abcdef
+   abcdefg)
+------------------|
+(a,b,c,d,e,f,g,h,i
+   j,ab,ac,ad,ae,af
+   ag,ah,ai,aj,abc
+   abcd,abcde
+   abcdef,abcdefg)
+-----------------|
+(a,b,c,d,e,f,g,h,i
+   j,ab,ac,ad,ae
+   af,ag,ah,ai,aj
+   abc,abcd,abcde
+   abcdef,abcdefg)
+----------------|
+(a,b,c,d,e,f,g,h
+   i,j,ab,ac,ad
+   ae,af,ag,ah,ai
+   aj,abc,abcd
+   abcde,abcdef
+   abcdefg)
+---------------|
+(a,b,c,d,e,f,g,h
+   i,j,ab,ac,ad
+   ae,af,ag,ah
+   ai,aj,abc
+   abcd,abcde
+   abcdef
+   abcdefg)
+--------------|
+(a,b,c,d,e,f,g
+   h,i,j,ab,ac
+   ad,ae,af,ag
+   ah,ai,aj,abc
+   abcd,abcde
+   abcdef
+   abcdefg)
+-------------|
+(a,b,c,d,e,f,g
+   h,i,j,ab,ac
+   ad,ae,af,ag
+   ah,ai,aj
+   abc,abcd
+   abcde
+   abcdef
+   abcdefg)
+------------|
+(a,b,c,d,e,f
+   g,h,i,j,ab
+   ac,ad,ae
+   af,ag,ah
+   ai,aj,abc
+   abcd,abcde
+   abcdef
+   abcdefg)
+-----------|
+(a,b,c,d,e,f
+   g,h,i,j
+   ab,ac,ad
+   ae,af,ag
+   ah,ai,aj
+   abc,abcd
+   abcde
+   abcdef
+   abcdefg)
+----------|
+(a,b,c,d,e
+   f,g,h,i
+   j,ab,ac
+   ad,ae,af
+   ag,ah,ai
+   aj,abc
+   abcd
+   abcde
+   abcdef
+   abcdefg)
+---------|
+(a,b,c,d,e
+   f,g,h,i
+   j,ab,ac
+   ad,ae
+   af,ag
+   ah,ai
+   aj,abc
+   abcd
+   abcde
+   abcdef
+   abcdefg)
+--------|
+(a,b,c,d
+   e,f,g
+   h,i,j
+   ab,ac
+   ad,ae
+   af,ag
+   ah,ai
+   aj,abc
+   abcd
+   abcde
+   abcdef
+   abcdefg)
+-------|
+(a,b,c,d
+   e,f,g
+   h,i,j
+   ab,ac
+   ad,ae
+   af,ag
+   ah,ai
+   aj
+   abc
+   abcd
+   abcde
+   abcdef
+   abcdefg)
+"
+`;
+
+exports[`gradual wrap complex 1`] = `
+"
+-------------------|
+(a,b,c,d,(e,f,g,h,i)
+   j,ab,ac,ad,ae,af
+   ag,ah,ai,aj,abc
+   abcd,abcde,abcdef
+   abcdefg)
+------------------|
+(a,b,c,d,(e,f,g,h
+            i)
+   j,ab,ac,ad,ae,af
+   ag,ah,ai,aj,abc
+   abcd,abcde
+   abcdef,abcdefg)
+-----------------|
+(a,b,c,d,(e,f,g,h
+            i)
+   j,ab,ac,ad,ae
+   af,ag,ah,ai,aj
+   abc,abcd,abcde
+   abcdef,abcdefg)
+----------------|
+(a,b,c,d
+   (e,f,g,h,i),j
+   ab,ac,ad,ae,af
+   ag,ah,ai,aj
+   abc,abcd,abcde
+   abcdef
+   abcdefg)
+"
+`;
+
+exports[`gradual string wrapp 1`] = `
+"
+-------------------|
+"a b c d e f g h i j ↩
+ ab ac ad ae af
+ ag ah ai aj abc ↩
+ abcd abcde abcdef ↩
+ abcdefg              "
+------------------|
+"a b c d e f g h i ↩
+ j ab ac ad ae af
+ ag ah ai aj abc ↩
+ abcd abcde abcdef ↩
+ abcdefg            "
+-----------------|
+"a b c d e f g h i ↩
+ j ab ac ad ae af
+ ag ah ai aj abc ↩
+ abcd abcde abcdef ↩
+ abcdefg            "
+----------------|
+"a b c d e f g h ↩
+ i j ab ac ad ae ↩
+ af
+ ag ah ai aj abc ↩
+ abcd abcde ↩
+ abcdef abcdefg   "
+---------------|
+"a b c d e f g h ↩
+ i j ab ac ad ae ↩
+ af
+ ag ah ai aj abc ↩
+ abcd abcde ↩
+ abcdef abcdefg   "
+--------------|
+"a b c d e f g ↩
+ h i j ab ac ad ↩
+ ae af
+ ag ah ai aj ↩
+ abc abcd abcde ↩
+ abcdef abcdefg  "
+-------------|
+"a b c d e f g ↩
+ h i j ab ac ↩
+ ad ae af
+ ag ah ai aj ↩
+ abc abcd ↩
+ abcde abcdef ↩
+ abcdefg        "
+------------|
+"a b c d e f ↩
+ g h i j ab ↩
+ ac ad ae af
+ ag ah ai aj ↩
+ abc abcd ↩
+ abcde abcdef ↩
+ abcdefg       "
+-----------|
+"a b c d e f ↩
+ g h i j ab ↩
+ ac ad ae af
+ ag ah ai aj ↩
+ abc abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg      "
+----------|
+"a b c d e ↩
+ f g h i j ↩
+ ab ac ad ↩
+ ae af
+ ag ah ai ↩
+ aj abc ↩
+ abcd abcde ↩
+ abcdef ↩
+ abcdefg     "
+---------|
+"a b c d e ↩
+ f g h i j ↩
+ ab ac ad ↩
+ ae af
+ ag ah ai ↩
+ aj abc ↩
+ abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg    "
+--------|
+"a b c d ↩
+ e f g h ↩
+ i j ab ↩
+ ac ad ae ↩
+ af
+ ag ah ai ↩
+ aj abc ↩
+ abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg   "
+-------|
+"a b c d ↩
+ e f g h ↩
+ i j ab ↩
+ ac ad ↩
+ ae af
+ ag ah ↩
+ ai aj ↩
+ abc ↩
+ abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg  "
+------|
+"a b c ↩
+ d e f ↩
+ g h i ↩
+ j ab ↩
+ ac ad ↩
+ ae af
+ ag ah ↩
+ ai aj ↩
+ abc ↩
+ abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg "
+-----|
+"a b c ↩
+ d e f ↩
+ g h i ↩
+ j ab ↩
+ ac ad ↩
+ ae af
+ ag ah ↩
+ ai aj ↩
+ abc ↩
+ abcd ↩
+ abcde ↩
+ abcdef ↩
+ abcdefg "
+"
+`;
+
+exports[`gradual string wrapp with simple inclusions 1`] = `
+"
+------------------------------------------| 43
+"e f g ${ac} ah ai aj ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab cd ef gh             "
+-----------------------------------------| 42
+"e f g ${ac} ah ai aj ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab cd ef gh             "
+----------------------------------------| 41
+"e f g ${ac} ah ai aj ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab cd ef gh             "
+---------------------------------------| 40
+"e f g ${ac} ah ai aj ${abc} ab cd abc ↩
+ de ${abcdef} abcdefg ab cd ef gh       "
+--------------------------------------| 39
+"e f g ${ac} ah ai aj ${abc} ab cd abc ↩
+ de ${abcdef} abcdefg ab cd ef gh       "
+-------------------------------------| 38
+"e f g ${ac} ah ai aj ${abc} ab cd abc ↩
+ de ${abcdef} abcdefg ab cd ef gh       "
+------------------------------------| 37
+"e f g ${ac} ah ai aj ${abc} ab cd ↩
+ abc de ${abcdef} abcdefg ab cd ef gh"
+-----------------------------------| 36
+"e f g ${ac} ah ai aj ${abc} ab cd ↩
+ abc de ${abcdef} abcdefg ab cd ef ↩
+ gh                                 "
+----------------------------------| 35
+"e f g ${ac} ah ai aj ${abc} ab cd ↩
+ abc de ${abcdef} abcdefg ab cd ef ↩
+ gh                                 "
+---------------------------------| 34
+"e f g ${ac} ah ai aj ${abc} ab cd ↩
+ abc de ${abcdef} abcdefg ab cd ef ↩
+ gh                                 "
+--------------------------------| 33
+"e f g ${ac} ah ai aj ${abc} ab ↩
+ cd abc de ${abcdef} abcdefg ab ↩
+ cd ef gh                        "
+-------------------------------| 32
+"e f g ${ac} ah ai aj ${abc} ab ↩
+ cd abc de ${abcdef} abcdefg ab ↩
+ cd ef gh                        "
+------------------------------| 31
+"e f g ${ac} ah ai aj ${abc} ab ↩
+ cd abc de ${abcdef} abcdefg ab ↩
+ cd ef gh                        "
+-----------------------------| 30
+"e f g ${ac} ah ai aj ${abc} ↩
+ ab cd abc de ${abcdef} ↩
+ abcdefg ab cd ef gh          "
+----------------------------| 29
+"e f g ${ac} ah ai aj ${abc} ↩
+ ab cd abc de ${abcdef} ↩
+ abcdefg ab cd ef gh          "
+---------------------------| 28
+"e f g ${ac} ah ai aj ${abc} ↩
+ ab cd abc de ${abcdef} ↩
+ abcdefg ab cd ef gh          "
+--------------------------| 27
+"e f g ${ac} ah ai aj !
+ ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab cd ef ↩
+ gh                          "
+-------------------------| 26
+"e f g ${ac} ah ai aj !
+ ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab cd ↩
+ ef gh                    "
+------------------------| 25
+"e f g ${ac} ah ai aj !
+ ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab cd ↩
+ ef gh                    "
+-----------------------| 24
+"e f g ${ac} ah ai aj !
+ ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab cd ↩
+ ef gh                    "
+----------------------| 23
+"e f g ${ac} ah ai aj !
+ ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab ↩
+ cd ef gh              "
+---------------------| 22
+"e f g ${ac} ah ai aj !
+ ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab ↩
+ cd ef gh              "
+--------------------| 21
+"e f g ${ac} ah ai aj !
+ ${abc} ab cd abc de !
+ ${abcdef} abcdefg ab ↩
+ cd ef gh              "
+"
+`;
+
+exports[`gradual string wrapp with simple inclusions 2`] = `
+"
+----------------------------------| 35
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+---------------------------------| 34
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+--------------------------------| 33
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+-------------------------------| 32
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+------------------------------| 31
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+-----------------------------| 30
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+----------------------------| 29
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+---------------------------| 28
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+--------------------------| 27
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+-------------------------| 26
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+------------------------| 25
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+-----------------------| 24
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+----------------------| 23
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+---------------------| 22
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+--------------------| 21
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+-------------------| 20
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+------------------| 19
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+-----------------| 18
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+----------------| 17
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+---------------| 16
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+--------------| 15
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+-------------| 14
+"${abcdef} aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+------------| 13
+"${abcdef} ↩
+ aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+-----------| 12
+"${abcdef} ↩
+ aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+----------| 11
+"${abcdef} ↩
+ aaa ↩
+ aaaaaaaaabcdnnnnnnnnnnnnnnh"
+"
+`;
+
+exports[`gradual string wrapp with simple inclusions 3`] = `
+"
+---------------------------------------| 40
+"nnnnnnnnnnnnnnnnnnnnnnnnnnn ab cd !
+ ${abc} de ${abcdef} abcdefg ab cd ef gh"
+"
+`;
+
+exports[`gradual string wrapp with simple inclusions 4`] = `
+"
+-------------------------| 26
+"O k ＄{(let,us,t)} some ↩
+ complex inclusions      "
+------------------------| 25
+"O k ＄{(let,us,t)} some ↩
+ complex inclusions      "
+-----------------------| 24
+"O k ＄{(let,us,t)} some ↩
+ complex inclusions      "
+----------------------| 23
+"O k ＄{(let,us,t)} some ↩
+ complex inclusions      "
+---------------------| 22
+"O k ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions         "
+--------------------| 21
+"O k ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions         "
+-------------------| 20
+"O k ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions         "
+------------------| 19
+"O k ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions         "
+-----------------| 18
+"O k ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions         "
+----------------| 17
+"O k !
+ ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions     "
+---------------| 16
+"O k !
+ ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions     "
+--------------| 15
+"O k !
+ ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions     "
+-------------| 14
+"O k !
+ ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions     "
+------------| 13
+"O k !
+ ＄{(let,us,t)} ↩
+ some complex ↩
+ inclusions     "
+-----------| 12
+"O k !
+ ＄{(let,us
+      t)  } ↩
+ some ↩
+ complex ↩
+ inclusions  "
+----------| 11
+"O k !
+ ＄{(let,us
+      t)  } ↩
+ some ↩
+ complex ↩
+ inclusions  "
+---------| 10
+"O k !
+ ＄{(let,us
+      t)  } ↩
+ some ↩
+ complex ↩
+ inclusions  "
+--------| 9
+"O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+-------| 8
+"O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+------| 7
+"O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+-----| 6
+"O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+----| 5
+"O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+---| 4
+"O k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+--| 3
+"O ↩
+ k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+-| 2
+"O ↩
+ k !
+ ＄{(let
+      us
+      t)} ↩
+ some ↩
+ complex ↩
+ inclusions"
+"
+`;
+
+exports[`rich text or sth 1`] = `
+"---------------------------------------| 40
+Hi folks 𝐭𝐡𝐢𝐬 𝐢𝐬 bolded, a̲n̲d̲ ̲a̲n̲ ̲↩̲
+̲u̲n̲d̲e̲r̲l̲i̲n̲e̲.̲"
+`;
+
+exports[`rich text or sth 2`] = `
+"---------------------------------------| 40
+
+1) Now we
+2)  - another
+    - list
+3) Got to
+4) Do something
+5) [ ] some
+   [ ] checks
+   [ ] nice
+   [ ] (lol,waht,now,folks)
+6) Yeah
+"
+`;

@@ -5,7 +5,7 @@ import { RenderNNode } from './Render';
 import { getNestedNodes } from '../../src/state/nestedNodes/getNestedNodes';
 import { getDeepNestedNodes } from '../../src/state/nestedNodes/getNodes';
 import React from 'react';
-import { layout } from '../../src/layout';
+import { layout } from '../../src/old-layout';
 import { Display } from '../../src/to-ast/library';
 import { Path } from '../store';
 import { useNode } from './store/useNode';

@@ -14,6 +14,15 @@ export const valueToString = (v: any): string => {
                 return 'invalid list';
             }
         }
+        if (v.type === ',') {
+            const items = [v[0]];
+            while (v[1] && v[1].type === ',') {
+                v = v[1];
+                items.push(v[0]);
+            }
+            items.push(v[1]);
+            return `(, ${items.map(valueToString).join(' ')})`;
+        }
 
         let args = [];
         for (let i = 0; i in v; i++) {
@@ -38,9 +47,11 @@ export const valueToString = (v: any): string => {
     if (v === undefined) return 'undefined';
     if (typeof v === 'object') {
         if ('tag' in v && 'arg' in v) {
-            return `('${v.tag} ${valueToString(v.arg)})`
+            return `('${v.tag} ${valueToString(v.arg)})`;
         }
-        return `{${Object.keys(v).map(k => `${k} ${valueToString(v[k])}`).join(' ')}}`
+        return `{${Object.keys(v)
+            .map((k) => `${k} ${valueToString(v[k])}`)
+            .join(' ')}}`;
     }
 
     return '' + v;

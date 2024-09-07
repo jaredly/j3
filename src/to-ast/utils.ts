@@ -4,9 +4,6 @@
 
 import { Type } from '../types/ast';
 import { Node } from '../types/cst';
-import { transformNode } from '../types/transform-cst';
-import { Ctx } from './Ctx';
-import { nodeToType } from './nodeToType';
 
 export const idxLines = (raw: string) => {
     const starts: number[] = [];

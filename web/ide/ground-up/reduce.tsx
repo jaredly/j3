@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { layout } from '../../../src/layout';
+import { layout } from '../../../src/old-layout';
 import { emptyMap } from '../../../src/parse/parse';
 import { paste } from '../../../src/state/clipboard';
 import {
@@ -9,9 +9,7 @@ import {
     getKeyUpdate,
     isRootPath,
 } from '../../../src/state/getKeyUpdate';
-import { CompilationResults, Ctx } from '../../../src/to-ast/library';
-import { Node } from '../../../src/types/cst';
-import { ListLikeContents, fromMCST } from '../../../src/types/mcst';
+import { moveNode } from '../../../src/state/moveNode';
 import {
     Action,
     NUIState,
@@ -24,16 +22,10 @@ import {
     calcHistoryItem,
     undoRedo,
 } from '../../custom/old-stuff/reduce';
-import { filterNulls } from '../../custom/old-stuff/filterNulls';
-import { verticalMove } from '../../custom/verticalMove';
-import { newResults } from '../newResults';
-import { Algo, Trace } from '../infer/types';
-import { findTops, verifyPath } from './findTops';
-import { evalExpr } from './round-1/bootstrap';
-import { parseStmt, stmt } from './round-1/parse';
-import { moveNode } from '../../../src/state/moveNode';
 import { ResultsCache } from '../../custom/store/ResultsCache';
-import { valueToString } from './valueToString';
+import { verticalMove } from '../../custom/verticalMove';
+// import { newResults } from '../newResults';
+import { findTops, verifyPath } from './findTops';
 import { urlForId } from './urlForId';
 import { white } from './white';
 
@@ -316,78 +308,78 @@ export const actionToUpdate = (
 //     });
 // }
 
-export function calcResults(
-    state: NUIState,
-    { builtins, getTrace, infer, parse, typToString }: Algo<any, any, any>,
-    doLayout = true,
-) {
-    const tops = (state.map[state.root] as ListLikeContents).values;
-    const results: Ctx['results'] & {
-        tops: {
-            [key: number]: {
-                summary: string;
-                data: Trace[];
-                failed: boolean;
-                expr?: any;
-            };
-        };
-        typs: { [loc: number]: any };
-    } = {
-        display: {},
-        errors: {},
-        globalNames: {},
-        hashNames: {},
-        localMap: {
-            terms: {},
-            types: {},
-        },
-        mods: {},
-        toplevel: {},
-        tops: {},
-        typs: {},
-    };
+// export function calcResults(
+//     state: NUIState,
+//     { builtins, getTrace, infer, parse, typToString }: Algo<any, any, any>,
+//     doLayout = true,
+// ) {
+//     const tops = (state.map[state.root] as ListLikeContents).values;
+//     const results: Ctx['results'] & {
+//         tops: {
+//             [key: number]: {
+//                 summary: string;
+//                 data: Trace[];
+//                 failed: boolean;
+//                 expr?: any;
+//             };
+//         };
+//         typs: { [loc: number]: any };
+//     } = {
+//         display: {},
+//         errors: {},
+//         globalNames: {},
+//         hashNames: {},
+//         localMap: {
+//             terms: {},
+//             types: {},
+//         },
+//         mods: {},
+//         toplevel: {},
+//         tops: {},
+//         typs: {},
+//     };
 
-    tops.forEach((top) => {
-        const node = fromMCST(top, state.map);
-        const errors = {};
-        const expr = parse(node, { errors, display: results.display });
-        if (expr) {
-            try {
-                const typ = infer(builtins, expr, {
-                    display: results.display,
-                    typs: results.typs,
-                });
-                const trace = getTrace();
-                // console.log(typ);
-                results.tops[top] = {
-                    summary: typToString(typ),
-                    data: trace,
-                    failed: false,
-                    expr,
-                };
-            } catch (err) {
-                // console.log('no typ sorry', err);
-                results.tops[top] = {
-                    summary: 'Type Error: ' + (err as Error).message,
-                    data: getTrace(),
-                    failed: true,
-                };
-            }
-        } else {
-            results.tops[top] = {
-                summary: 'not parse: ' + Object.values(errors).join('; '),
-                data: getTrace(),
-                failed: true,
-            };
-        }
+//     tops.forEach((top) => {
+//         const node = fromMCST(top, state.map);
+//         const errors = {};
+//         const expr = parse(node, { errors, display: results.display });
+//         if (expr) {
+//             try {
+//                 const typ = infer(builtins, expr, {
+//                     display: results.display,
+//                     typs: results.typs,
+//                 });
+//                 const trace = getTrace();
+//                 // console.log(typ);
+//                 results.tops[top] = {
+//                     summary: typToString(typ),
+//                     data: trace,
+//                     failed: false,
+//                     expr,
+//                 };
+//             } catch (err) {
+//                 // console.log('no typ sorry', err);
+//                 results.tops[top] = {
+//                     summary: 'Type Error: ' + (err as Error).message,
+//                     data: getTrace(),
+//                     failed: true,
+//                 };
+//             }
+//         } else {
+//             results.tops[top] = {
+//                 summary: 'not parse: ' + Object.values(errors).join('; '),
+//                 data: getTrace(),
+//                 failed: true,
+//             };
+//         }
 
-        if (doLayout) {
-            layout(top, 0, state.map, results.display, results.hashNames, true);
-        }
-    });
+//         if (doLayout) {
+//             layout(top, 0, state.map, results.display, results.hashNames, true);
+//         }
+//     });
 
-    return results;
-}
+//     return results;
+// }
 
 /**
  * Debounce a function.
@@ -466,40 +458,39 @@ const stripCache = (cache?: ResultsCache<any>) => {
     return { ...cache, results: {}, lastState: null };
 };
 
-let saveQueue = {};
+let saveQueue: { [key: string]: NUIState } = {};
 let saving = false;
 
-const listeners = [];
-export const onSaveState = (fn) => {
-	listeners.push(fn);
-	return () => {
-		const idx = listeners.indexOf(fn)
-		if (idx !== -1) listeners.splice(idx, 1)
-	};
-}
-
+const listeners: Function[] = [];
+export const onSaveState = (fn: Function) => {
+    listeners.push(fn);
+    return () => {
+        const idx = listeners.indexOf(fn);
+        if (idx !== -1) listeners.splice(idx, 1);
+    };
+};
 
 export const saveState = async (
     id: string,
     state: NUIState,
     cache?: ResultsCache<any>,
-) => {
-	if (saving) {
-		saveQueue[id] = state;
-		return;
-	}
-	saving = true
-	listeners.forEach(f => f(true));
-	delete saveQueue[id];
+): Promise<void> => {
+    if (saving) {
+        saveQueue[id] = state;
+        return;
+    }
+    saving = true;
+    listeners.forEach((f) => f(true));
+    delete saveQueue[id];
     let ti = 0; // setTimeout(() => alert('Saving taking too long!'), 10000);
     let now = Date.now();
     try {
         const res = await fetch(urlForId(id), {
             method: 'POST',
-            body: JSON.stringify( state ),
+            body: JSON.stringify(state),
             headers: { 'Content-type': 'application/json' },
         });
-	listeners.forEach(f => f(false));
+        listeners.forEach((f) => f(false));
         console.log(`saving took ${Date.now() - now}ms`);
         if (res.status !== 200) {
             alert(
@@ -512,11 +503,11 @@ export const saveState = async (
         alert(`Error ${(err as Error).message} while saving state!`);
     }
 
-	saving = false;
-	const keys = Object.keys(saveQueue)
-	if (keys.length) {
-		return saveState(keys[0], saveQueue[keys[0]])
-	}
+    saving = false;
+    const keys = Object.keys(saveQueue);
+    if (keys.length) {
+        return saveState(keys[0], saveQueue[keys[0]]);
+    }
 };
 
 export function loadState(state: NUIState = initialState()) {
@@ -671,10 +662,10 @@ export const traverseNS = (
 };
 
 export const verifyState = (state: NUIState) => {
-    const results = newResults();
+    // const results = newResults();
     const all = findTops(state);
     all.map(({ top }) => {
-        layout(top, 0, state.map, results.display, results.hashNames, true);
+        layout(top, 0, state.map, {}, {}, true);
     });
 
     const seen: { [key: number]: number } = {};

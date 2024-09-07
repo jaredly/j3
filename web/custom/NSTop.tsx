@@ -76,7 +76,7 @@ function NSTop({
     debug,
     setPin,
     setZoom,
-    zoom
+    zoom,
 }: {
     idx: number;
     nsReg: NsReg;
@@ -85,7 +85,7 @@ function NSTop({
     debug: Debug;
     setPin: (pin: number | null) => void;
     setZoom: (pin: Path[] | null) => void;
-    zoom: Path[] | null
+    zoom: Path[] | null;
 }) {
     const store = useGetStore();
     const { ns, produce } = useNamespace(idx, path);
@@ -102,21 +102,31 @@ function NSTop({
         .map((p) => (p.type === 'ns' ? `${p.idx}$${p.child}` : `${p.idx}`))
         .join(':');
 
-    if (zoom != null && !equal(path.slice(0, zoom.length), zoom.slice(0, path.length))) {
-        return null // zoomed out
+    if (
+        zoom != null &&
+        !equal(path.slice(0, zoom.length), zoom.slice(0, path.length))
+    ) {
+        return null; // zoomed out
     }
 
-    let type = null
-    let otherProduce = produce.slice()
+    let type = null;
+    let otherProduce = produce.slice();
     const numTypes = otherProduce.filter(
         (p) => typeof p !== 'string' && p.type === 'type',
     ).length;
     if (numTypes > 1) {
-        otherProduce = otherProduce.filter((p) => typeof p === 'string' || p.type !== 'type');
+        otherProduce = otherProduce.filter(
+            (p) => typeof p === 'string' || p.type !== 'type',
+        );
     }
-    const tidx = otherProduce.findIndex(p => typeof p !== 'string' && p.type === 'type')
+    const tidx = otherProduce.findIndex(
+        (p) => typeof p !== 'string' && p.type === 'type',
+    );
     if (tidx !== -1) {
-        type = otherProduce.splice(tidx, 1)[0] as Extract<ProduceItem, {type: 'type'}>
+        type = otherProduce.splice(tidx, 1)[0] as Extract<
+            ProduceItem,
+            { type: 'type' }
+        >;
     }
 
     return (
@@ -163,13 +173,23 @@ function NSTop({
                                 }
                             }}
                         >
-                            {type?.cst
-                            ? <div style={{display: 'flex', fontSize: '80%', borderLeft: '4px solid rgb(0, 80, 0)', paddingLeft: 8, }}>
-                                <span style={{marginRight: 8, opacity: 0.7}}>
-                                type:
-                                </span>
-                                <RenderStatic node={type.cst} />
-                            </div> : null}
+                            {type?.cst ? (
+                                <div
+                                    style={{
+                                        display: 'flex',
+                                        fontSize: '80%',
+                                        borderLeft: '4px solid rgb(0, 80, 0)',
+                                        paddingLeft: 8,
+                                    }}
+                                >
+                                    <span
+                                        style={{ marginRight: 8, opacity: 0.7 }}
+                                    >
+                                        type:
+                                    </span>
+                                    <RenderStatic node={type.cst} />
+                                </div>
+                            ) : null}
                             {ns.plugin ? (
                                 <PluginRender
                                     ns={ns}
@@ -435,7 +455,7 @@ const RenderProduce = ({
             >
                 {value?.map((item, i) => (
                     <div key={i}>
-                        <RenderProduceItem value={item} />
+                        <RenderProduceItem value={item} ns={ns} />
                     </div>
                 ))}
                 {tooLong && (show || collapsed === 'pinned') ? (

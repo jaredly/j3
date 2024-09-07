@@ -1,5 +1,5 @@
-import { Display } from '../../../../src/to-ast/library';
-import { register } from '../types';
+// import { Display } from '../../../../src/to-ast/library';
+// import { register } from '../types';
 import { Env, Union_find, chop, run } from './hmx-solve';
 import { parse } from './parse-hmx';
 
@@ -485,7 +485,7 @@ export let infer = (
     builtins: Env,
     expr: term,
     // typs: { [loc: number]: ty },
-    display: Display,
+    // display: Display,
 ): ty => {
     next = 0;
     const typs: { [loc: number]: ty } = {};
@@ -505,10 +505,10 @@ export let infer = (
     return ty?.ty ?? { type: 'const', name: 'lol', loc: -2 };
 };
 
-register('hmx', {
-    builtins,
-    getTrace,
-    infer,
-    parse,
-    typToString,
-});
+// register('hmx', {
+//     builtins,
+//     getTrace,
+//     infer,
+//     parse,
+//     typToString,
+// });

@@ -1,6 +1,6 @@
 import { repr } from './Evaluators';
 // import { bootstrap } from './bootstrap';
-import { FullEvalator } from './FullEvalator';
+import { FullEvalator, ProduceItem } from './FullEvalator';
 import { expr, stmt } from './round-1/parse';
 import { sanitize } from './round-1/sanitize';
 import { NUIState } from '../../custom/UIState';
@@ -27,7 +27,12 @@ export const loadEv = async (
 ): Promise<null | FullEvalator<any, any, any>> => {
     const res = await Promise.all(
         ids.map((id) =>
-            fetch(jsUrl(id) + (location.hostname === 'localhost' ? '' : '?cache-bust=' + Math.random().toString(32)))
+            fetch(
+                jsUrl(id) +
+                    (location.hostname === 'localhost'
+                        ? ''
+                        : '?cache-bust=' + Math.random().toString(32)),
+            )
                 .then((res) => res.text())
                 .then((text) => ({ id, text })),
         ),
@@ -133,9 +138,8 @@ export const evaluatorFromText = (
                 ? basicParser(data)
                 : undefined;
         const comp =
-            (data['compile'] && data['compile_stmt']) || (
-data['compile2'] && data['compile_stmt2']
-            )
+            (data['compile'] && data['compile_stmt']) ||
+            (data['compile2'] && data['compile_stmt2'])
                 ? compiler(data)
                 : undefined;
         const ann =

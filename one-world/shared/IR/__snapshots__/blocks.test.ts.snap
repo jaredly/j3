@@ -1,0 +1,1420 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`showing spans of simple string 1`] = `
+"
+-------------------| 20
+"hi"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"hi"
+[ # ] {"type":"block","start":[1,0],"width":2,"height":1}
+"h̲i̲"
+[ # ] {"type":"block","start":[4,0],"width":0,"height":1}
+"hi"|
+"
+`;
+
+exports[`showing spans of id 1`] = `
+"
+-------------------| 20
+hi
+
+[ # ] {"type":"block","start":[0,0],"width":2,"height":1}
+h̲i̲
+"
+`;
+
+exports[`showing spans of string with tag 1`] = `
+"
+-------------------| 20
+js"hi"
+
+[ # ] {"type":"block","start":[0,0],"width":2,"height":1}
+j̲s̲"hi"
+[ # ] {"type":"block","start":[3,0],"width":2,"height":1}
+js"h̲i̲"
+[ # ] {"type":"block","start":[6,0],"width":0,"height":1}
+js"hi"|
+"
+`;
+
+exports[`showing spans of string with inclusion 1`] = `
+"
+-------------------| 20
+"hi!{abc}ho"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"hi!{abc}ho"
+[ # ] {"type":"block","start":[1,0],"width":2,"height":1}
+"h̲i̲!{abc}ho"
+[ # ] {"type":"block","start":[5,0],"width":3,"height":1}
+"hi!{a̲b̲c̲}ho"
+[ # ] {"type":"block","start":[9,0],"width":2,"height":1}
+"hi!{abc}h̲o̲"
+[ # ] {"type":"block","start":[12,0],"width":0,"height":1}
+"hi!{abc}ho"|
+"
+`;
+
+exports[`showing spans of wrap string 1`] = `
+"
+-------------------| 20
+"Hello folks this
+ will wrap, thanks."
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"Hello folks this
+ will wrap, thanks."
+[ # ] {"type":"inline","start":[1,0],"end":[19,1],"hbounds":[1,19]}
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲ ̲
+ w̲i̲l̲l̲ ̲w̲r̲a̲p̲,̲ ̲t̲h̲a̲n̲k̲s̲.̲"
+[ # ] {"type":"block","start":[20,1],"width":0,"height":1}
+"Hello folks this
+ will wrap, thanks."|
+"
+`;
+
+exports[`showing spans of wrap string, short last 1`] = `
+"
+-------------------| 20
+"Hello folks this
+ will wrap.       "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"Hello folks this
+ will wrap.       "
+[ # ] {"type":"inline","start":[1,0],"end":[11,1],"hbounds":[1,18]}
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲
+ w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲       "
+[ # ] {"type":"block","start":[19,1],"width":0,"height":1}
+"Hello folks this
+ will wrap.       "|
+"
+`;
+
+exports[`showing spans of wrap string, short last 2`] = `
+"
+-------------------| 20
+"Hello folks this
+ will !{a} wrap.  "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"Hello folks this
+ will !{a} wrap.  "
+[ # ] {"type":"inline","start":[1,0],"end":[6,1],"hbounds":[1,18]}
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲t̲h̲i̲s̲ ̲
+ w̲i̲l̲l̲ ̲!{a} wrap.  "
+[ # ] {"type":"block","start":[8,1],"width":1,"height":1}
+"Hello folks this
+ will !{a̲} wrap.  "
+[ # ] {"type":"block","start":[10,1],"width":6,"height":1}
+"Hello folks this
+ will !{a} ̲w̲r̲a̲p̲.̲  "
+[ # ] {"type":"block","start":[19,1],"width":0,"height":1}
+"Hello folks this
+ will !{a} wrap.  "|
+"
+`;
+
+exports[`text with wrap on inclusion 1`] = `
+"
+-------------------| 20
+"Hello folks !{this}
+  will wrap.        "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"Hello folks !{this}
+  will wrap.        "
+[ # ] {"type":"block","start":[1,0],"width":12,"height":1}
+"H̲e̲l̲l̲o̲ ̲f̲o̲l̲k̲s̲ ̲!{this}
+  will wrap.        "
+[ # ] {"type":"block","start":[15,0],"width":4,"height":1}
+"Hello folks !{t̲h̲i̲s̲}
+  will wrap.        "
+[ # ] {"type":"block","start":[1,1],"width":11,"height":1}
+"Hello folks !{this}
+  ̲w̲i̲l̲l̲ ̲w̲r̲a̲p̲.̲        "
+[ # ] {"type":"block","start":[21,1],"width":0,"height":1}
+"Hello folks !{this}
+  will wrap.        "|
+"
+`;
+
+exports[`highlight over wrap 1`] = `
+"
+-------------------| 20
+"Hello !{folks} this
+  will.             "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"Hello !{folks} this
+  will.             "
+[ # ] {"type":"block","start":[1,0],"width":6,"height":1}
+"H̲e̲l̲l̲o̲ ̲!{folks} this
+  will.             "
+[ # ] {"type":"block","start":[9,0],"width":5,"height":1}
+"Hello !{f̲o̲l̲k̲s̲} this
+  will.             "
+[ # ] {"type":"inline","start":[15,0],"end":[7,1],"hbounds":[1,20]}
+"Hello !{folks} ̲t̲h̲i̲s̲
+  ̲w̲i̲l̲l̲.̲             "
+[ # ] {"type":"block","start":[21,1],"width":0,"height":1}
+"Hello !{folks} this
+  will.             "|
+"
+`;
+
+exports[`showing spans of string with inclusion 2`] = `
+"
+-------------------| 20
+"hi this is !{a}
+ something !{abc}
+ that will wrap   "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"hi this is !{a}
+ something !{abc}
+ that will wrap   "
+[ # ] {"type":"block","start":[1,0],"width":11,"height":1}
+"h̲i̲ ̲t̲h̲i̲s̲ ̲i̲s̲ ̲!{a}
+ something !{abc}
+ that will wrap   "
+[ # ] {"type":"block","start":[14,0],"width":1,"height":1}
+"hi this is !{a̲}
+ something !{abc}
+ that will wrap   "
+[ # ] {"type":"inline","start":[16,0],"end":[11,1],"hbounds":[1,17]}
+"hi this is !{a} ̲
+ s̲o̲m̲e̲t̲h̲i̲n̲g̲ ̲!{abc}
+ that will wrap   "
+[ # ] {"type":"block","start":[13,1],"width":3,"height":1}
+"hi this is !{a}
+ something !{a̲b̲c̲}
+ that will wrap   "
+[ # ] {"type":"inline","start":[17,1],"end":[15,2],"hbounds":[1,18]}
+"hi this is !{a}
+ something !{abc} ̲
+ t̲h̲a̲t̲ ̲w̲i̲l̲l̲ ̲w̲r̲a̲p̲   "
+[ # ] {"type":"block","start":[19,2],"width":0,"height":1}
+"hi this is !{a}
+ something !{abc}
+ that will wrap   "|
+"
+`;
+
+exports[`simple list 1`] = `
+"
+---------------------------------------------------------------------------------------------------| 100
+(what is)
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(what is)
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+(w̲h̲a̲t̲ is)
+[ # ] {"type":"block","start":[6,0],"width":2,"height":1}
+(what i̲s̲)
+[ # ] {"type":"block","start":[9,0],"width":0,"height":1}
+(what is)|
+"
+`;
+
+exports[`list in inclusion 1`] = `
+"
+---------------------------------------------------------------------------------------------------| 100
+"!{(what is)}"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"!{(what is)}"
+[ # ] {"type":"block","start":[1,0],"width":0,"height":1}
+"|!{(what is)}"
+[ # ] {"type":"block","start":[3,0],"width":0,"height":1}
+"!{|(what is)}"
+[ # ] {"type":"block","start":[4,0],"width":4,"height":1}
+"!{(w̲h̲a̲t̲ is)}"
+[ # ] {"type":"block","start":[9,0],"width":2,"height":1}
+"!{(what i̲s̲)}"
+[ # ] {"type":"block","start":[12,0],"width":0,"height":1}
+"!{(what is)|}"
+[ # ] {"type":"block","start":[13,0],"width":0,"height":1}
+"!{(what is)}|"
+[ # ] {"type":"block","start":[14,0],"width":0,"height":1}
+"!{(what is)}"|
+"
+`;
+
+exports[`wow ok so bigbug here 1`] = `
+"
+---------------------------------------------------------------------------------------------------| 100
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P{} sdfb"
+
+[ # ] {"type":"block","start":[0,0],"width":2,"height":1}
+j̲s̲"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[3,0],"width":7,"height":1}
+js"s̲d̲f̲g̲s̲a̲d̲!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[12,0],"width":4,"height":1}
+js"sdfgsad!{w̲h̲a̲t̲}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[17,0],"width":12,"height":1}
+js"sdfgsad!{what}a̲s̲d̲f̲j̲k̲l̲j̲s̲d̲f̲k̲!{(loveit and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[31,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{|(loveit and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[32,0],"width":6,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(l̲o̲v̲e̲i̲t̲ and-what"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[39,0],"width":8,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit a̲n̲d̲-̲w̲h̲a̲t̲"!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[48,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"|!{for}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[50,0],"width":3,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{f̲o̲r̲}" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[54,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}|" -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[55,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}"| -what you)}P{} sdfb"
+[ # ] {"type":"block","start":[56,0],"width":5,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -̲w̲h̲a̲t̲ you)}P{} sdfb"
+[ # ] {"type":"block","start":[62,0],"width":3,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what y̲o̲u̲)}P{} sdfb"
+[ # ] {"type":"block","start":[66,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)|}P{} sdfb"
+[ # ] {"type":"block","start":[67,0],"width":8,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P̲{̲}̲ ̲s̲d̲f̲b̲"
+[ # ] {"type":"block","start":[76,0],"width":0,"height":1}
+js"sdfgsad!{what}asdfjkljsdfk!{(loveit and-what"!{for}" -what you)}P{} sdfb"|
+"
+`;
+
+exports[`wow ok so bigbug here 2`] = `
+"
+-------------------| 20
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{for}"
+         -what you)      }
+   P{} sdfb               "
+
+[ # ] {"type":"block","start":[0,0],"width":2,"height":1}
+j̲s̲"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{for}"
+         -what you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[3,0],"width":7,"height":1}
+js"s̲d̲f̲g̲s̲a̲d̲!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{for}"
+         -what you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[12,0],"width":4,"height":1}
+js"sdfgsad!{w̲h̲a̲t̲}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{for}"
+         -what you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[3,1],"width":12,"height":1}
+js"sdfgsad!{what}
+   a̲s̲d̲f̲j̲k̲l̲j̲s̲d̲f̲k̲
+   !{(loveit
+         and-what"!{for}"
+         -what you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[5,2],"width":0,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{|(loveit
+         and-what"!{for}"
+         -what you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[6,2],"width":6,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(l̲o̲v̲e̲i̲t̲
+         and-what"!{for}"
+         -what you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[9,3],"width":8,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         a̲n̲d̲-̲w̲h̲a̲t̲"!{for}"
+         -what you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[18,3],"width":0,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"|!{for}"
+         -what you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[20,3],"width":3,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{f̲o̲r̲}"
+         -what you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[24,3],"width":0,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{for}|"
+         -what you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[25,3],"width":0,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{for}"|
+         -what you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[9,4],"width":5,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{for}"
+         -̲w̲h̲a̲t̲ you)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[15,4],"width":3,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{for}"
+         -what y̲o̲u̲)      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[19,4],"width":0,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{for}"
+         -what you)|      }
+   P{} sdfb               "
+[ # ] {"type":"block","start":[3,5],"width":8,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{for}"
+         -what you)      }
+   P̲{̲}̲ ̲s̲d̲f̲b̲               "
+[ # ] {"type":"block","start":[27,5],"width":0,"height":1}
+js"sdfgsad!{what}
+   asdfjkljsdfk
+   !{(loveit
+         and-what"!{for}"
+         -what you)      }
+   P{} sdfb               "|
+"
+`;
+
+exports[`wow ok so bigbug here 3`] = `
+"
+---------| 10
+"!{(lov
+       -sss)}
+ NNN         "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"!{(lov
+       -sss)}
+ NNN         "
+[ # ] {"type":"block","start":[1,0],"width":0,"height":1}
+"|!{(lov
+       -sss)}
+ NNN         "
+[ # ] {"type":"block","start":[3,0],"width":0,"height":1}
+"!{|(lov
+       -sss)}
+ NNN         "
+[ # ] {"type":"block","start":[4,0],"width":3,"height":1}
+"!{(l̲o̲v̲
+       -sss)}
+ NNN         "
+[ # ] {"type":"block","start":[7,1],"width":4,"height":1}
+"!{(lov
+       -̲s̲s̲s̲)}
+ NNN         "
+[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
+"!{(lov
+       -sss)|}
+ NNN         "
+[ # ] {"type":"block","start":[1,2],"width":3,"height":1}
+"!{(lov
+       -sss)}
+ N̲N̲N̲         "
+[ # ] {"type":"block","start":[14,2],"width":0,"height":1}
+"!{(lov
+       -sss)}
+ NNN         "|
+"
+`;
+
+exports[`wow ok so bigbug here 4`] = `
+"
+---------| 10
+(What
+    js"!{10}
+       P n
+       sdfb ")
+
+"
+`;
+
+exports[`wow ok so bigbug here 5`] = `
+"
+---------| 10
+(What
+    js"!{10}
+       P
+       nnsdfb")
+
+"
+`;
+
+exports[`wow ok so bigbug here 6`] = `
+"
+---------| 10
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+(W̲h̲a̲t̲
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[4,1],"width":2,"height":1}
+(What
+    j̲s̲"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[7,1],"width":0,"height":1}
+(What
+    js"|!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[9,1],"width":4,"height":1}
+(What
+    js"!{w̲h̲a̲t̲}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"inline","start":[7,2],"end":[8,3],"hbounds":[7,17]}
+(What
+    js"!{what}
+       a̲s̲d̲f̲a̲A̲S̲D̲J̲K̲
+        ̲
+       !{(loveit
+             and-what"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[9,4],"width":0,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{|(loveit
+             and-what"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[10,4],"width":6,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(l̲o̲v̲e̲i̲t̲
+             and-what"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[13,5],"width":8,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             a̲n̲d̲-̲w̲h̲a̲t̲"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[22,5],"width":0,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"|!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[24,5],"width":3,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{f̲o̲r̲}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[28,5],"width":0,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}|"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[29,5],"width":0,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"|
+             -what
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[13,6],"width":5,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -̲w̲h̲a̲t̲
+             you)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[13,7],"width":3,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -what
+             y̲o̲u̲)            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"block","start":[17,7],"width":0,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -what
+             you)|            }
+       P{}
+       sdfb                   ")
+[ # ] {"type":"inline","start":[7,8],"end":[11,9],"hbounds":[7,11]}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -what
+             you)            }
+       P̲{̲}̲ ̲
+       s̲d̲f̲b̲                   ")
+[ # ] {"type":"block","start":[31,9],"width":0,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   "|)
+[ # ] {"type":"block","start":[32,9],"width":0,"height":1}
+(What
+    js"!{what}
+       asdfaASDJK
+
+       !{(loveit
+             and-what"!{for}"
+             -what
+             you)            }
+       P{}
+       sdfb                   ")|
+"
+`;
+
+exports[`wow ok so bigbug here 7`] = `
+"
+-------------------------------------------------| 50
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+(W̲h̲a̲t̲ ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[6,0],"width":8,"height":1}
+(What o̲k̲-̲f̲o̲l̲k̲s̲ hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[15,0],"width":2,"height":1}
+(What ok-folks h̲s̲ ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[18,0],"width":0,"height":1}
+(What ok-folks hs |""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[19,0],"width":0,"height":1}
+(What ok-folks hs "|"
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[20,0],"width":0,"height":1}
+(What ok-folks hs ""|
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[4,1],"width":2,"height":1}
+(What ok-folks hs ""
+    j̲s̲"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[7,1],"width":7,"height":1}
+(What ok-folks hs ""
+    js"s̲d̲f̲a̲s̲d̲f̲!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[16,1],"width":4,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{w̲h̲a̲t̲}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[21,1],"width":10,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}a̲s̲d̲f̲a̲A̲S̲D̲J̲K̲
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[9,2],"width":0,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{|(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[10,2],"width":6,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(l̲o̲v̲e̲i̲t̲ and-what"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[17,2],"width":8,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit a̲n̲d̲-̲w̲h̲a̲t̲"!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[26,2],"width":0,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"|!{for}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[28,2],"width":3,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{f̲o̲r̲}" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[32,2],"width":0,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}|" -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[33,2],"width":0,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}"| -what you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[34,2],"width":5,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -̲w̲h̲a̲t̲ you)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[40,2],"width":3,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what y̲o̲u̲)}P{}
+       sdfb                                      ")
+[ # ] {"type":"block","start":[44,2],"width":0,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)|}P{}
+       sdfb                                      ")
+[ # ] {"type":"inline","start":[45,2],"end":[11,3],"hbounds":[7,49]}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P̲{̲}̲ ̲
+       s̲d̲f̲b̲                                      ")
+[ # ] {"type":"block","start":[50,3],"width":0,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      "|)
+[ # ] {"type":"block","start":[51,3],"width":0,"height":1}
+(What ok-folks hs ""
+    js"sdfasdf!{what}asdfaASDJK
+       !{(loveit and-what"!{for}" -what you)}P{}
+       sdfb                                      ")|
+"
+`;
+
+exports[`template string 1`] = `
+"
+-------------------| 20
+nnnnnnnn"!{lol}"
+
+[ # ] {"type":"block","start":[0,0],"width":8,"height":1}
+n̲n̲n̲n̲n̲n̲n̲n̲"!{lol}"
+[ # ] {"type":"block","start":[9,0],"width":0,"height":1}
+nnnnnnnn"|!{lol}"
+[ # ] {"type":"block","start":[11,0],"width":3,"height":1}
+nnnnnnnn"!{l̲o̲l̲}"
+[ # ] {"type":"block","start":[15,0],"width":0,"height":1}
+nnnnnnnn"!{lol}|"
+[ # ] {"type":"block","start":[16,0],"width":0,"height":1}
+nnnnnnnn"!{lol}"|
+"
+`;
+
+exports[`template string 2`] = `
+"
+-------------------| 20
+nnnnnnnnnnnnnnnnn"!{lol}"
+
+[ # ] {"type":"block","start":[0,0],"width":17,"height":1}
+n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲n̲"!{lol}"
+[ # ] {"type":"block","start":[18,0],"width":0,"height":1}
+nnnnnnnnnnnnnnnnn"|!{lol}"
+[ # ] {"type":"block","start":[20,0],"width":3,"height":1}
+nnnnnnnnnnnnnnnnn"!{l̲o̲l̲}"
+[ # ] {"type":"block","start":[24,0],"width":0,"height":1}
+nnnnnnnnnnnnnnnnn"!{lol}|"
+[ # ] {"type":"block","start":[25,0],"width":0,"height":1}
+nnnnnnnnnnnnnnnnn"!{lol}"|
+"
+`;
+
+exports[`small inline 1`] = `
+"
+---------| 10
+"One
+ !{two}
+ three  "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"One
+ !{two}
+ three  "
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+"O̲n̲e̲ ̲
+ !{two}
+ three  "
+[ # ] {"type":"block","start":[3,1],"width":3,"height":1}
+"One
+ !{t̲w̲o̲}
+ three  "
+[ # ] {"type":"inline","start":[7,1],"end":[6,2],"hbounds":[1,8]}
+"One
+ !{two} ̲
+ t̲h̲r̲e̲e̲  "
+[ # ] {"type":"block","start":[9,2],"width":0,"height":1}
+"One
+ !{two}
+ three  "|
+
+----------| 11
+"One !{two}
+  three    "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"One !{two}
+  three    "
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+"O̲n̲e̲ ̲!{two}
+  three    "
+[ # ] {"type":"block","start":[7,0],"width":3,"height":1}
+"One !{t̲w̲o̲}
+  three    "
+[ # ] {"type":"block","start":[1,1],"width":6,"height":1}
+"One !{two}
+  ̲t̲h̲r̲e̲e̲    "
+[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
+"One !{two}
+  three    "|
+
+-----------| 12
+"One !{two}
+ three      "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"One !{two}
+ three      "
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+"O̲n̲e̲ ̲!{two}
+ three      "
+[ # ] {"type":"block","start":[7,0],"width":3,"height":1}
+"One !{t̲w̲o̲}
+ three      "
+[ # ] {"type":"inline","start":[11,0],"end":[6,1],"hbounds":[1,12]}
+"One !{two} ̲
+ t̲h̲r̲e̲e̲      "
+[ # ] {"type":"block","start":[13,1],"width":0,"height":1}
+"One !{two}
+ three      "|
+
+------------| 13
+"One !{two}
+ three      "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"One !{two}
+ three      "
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+"O̲n̲e̲ ̲!{two}
+ three      "
+[ # ] {"type":"block","start":[7,0],"width":3,"height":1}
+"One !{t̲w̲o̲}
+ three      "
+[ # ] {"type":"inline","start":[11,0],"end":[6,1],"hbounds":[1,12]}
+"One !{two} ̲
+ t̲h̲r̲e̲e̲      "
+[ # ] {"type":"block","start":[13,1],"width":0,"height":1}
+"One !{two}
+ three      "|
+
+-------------| 14
+"One !{two}
+ three      "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"One !{two}
+ three      "
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+"O̲n̲e̲ ̲!{two}
+ three      "
+[ # ] {"type":"block","start":[7,0],"width":3,"height":1}
+"One !{t̲w̲o̲}
+ three      "
+[ # ] {"type":"inline","start":[11,0],"end":[6,1],"hbounds":[1,12]}
+"One !{two} ̲
+ t̲h̲r̲e̲e̲      "
+[ # ] {"type":"block","start":[13,1],"width":0,"height":1}
+"One !{two}
+ three      "|
+
+--------------| 15
+"One !{two}
+ three      "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"One !{two}
+ three      "
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+"O̲n̲e̲ ̲!{two}
+ three      "
+[ # ] {"type":"block","start":[7,0],"width":3,"height":1}
+"One !{t̲w̲o̲}
+ three      "
+[ # ] {"type":"inline","start":[11,0],"end":[6,1],"hbounds":[1,12]}
+"One !{two} ̲
+ t̲h̲r̲e̲e̲      "
+[ # ] {"type":"block","start":[13,1],"width":0,"height":1}
+"One !{two}
+ three      "|
+
+---------------| 16
+"One !{two}
+ three      "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"One !{two}
+ three      "
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+"O̲n̲e̲ ̲!{two}
+ three      "
+[ # ] {"type":"block","start":[7,0],"width":3,"height":1}
+"One !{t̲w̲o̲}
+ three      "
+[ # ] {"type":"inline","start":[11,0],"end":[6,1],"hbounds":[1,12]}
+"One !{two} ̲
+ t̲h̲r̲e̲e̲      "
+[ # ] {"type":"block","start":[13,1],"width":0,"height":1}
+"One !{two}
+ three      "|
+
+----------------| 17
+"One !{two} three"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"One !{two} three"
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+"O̲n̲e̲ ̲!{two} three"
+[ # ] {"type":"block","start":[7,0],"width":3,"height":1}
+"One !{t̲w̲o̲} three"
+[ # ] {"type":"block","start":[11,0],"width":6,"height":1}
+"One !{two} ̲t̲h̲r̲e̲e̲"
+[ # ] {"type":"block","start":[18,0],"width":0,"height":1}
+"One !{two} three"|
+
+-----------------| 18
+"One !{two} three"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"One !{two} three"
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+"O̲n̲e̲ ̲!{two} three"
+[ # ] {"type":"block","start":[7,0],"width":3,"height":1}
+"One !{t̲w̲o̲} three"
+[ # ] {"type":"block","start":[11,0],"width":6,"height":1}
+"One !{two} ̲t̲h̲r̲e̲e̲"
+[ # ] {"type":"block","start":[18,0],"width":0,"height":1}
+"One !{two} three"|
+
+------------------| 19
+"One !{two} three"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"One !{two} three"
+[ # ] {"type":"block","start":[1,0],"width":4,"height":1}
+"O̲n̲e̲ ̲!{two} three"
+[ # ] {"type":"block","start":[7,0],"width":3,"height":1}
+"One !{t̲w̲o̲} three"
+[ # ] {"type":"block","start":[11,0],"width":6,"height":1}
+"One !{two} ̲t̲h̲r̲e̲e̲"
+[ # ] {"type":"block","start":[18,0],"width":0,"height":1}
+"One !{two} three"|
+"
+`;
+
+exports[`one wrap 1`] = `
+"
+-----------| 12
+(one two 3)
+
+
+----------| 11
+(one two 3)
+
+
+---------| 10
+(one two
+    3)
+
+
+--------| 9
+(one two
+    3)
+
+
+-------| 8
+(one two
+    3)
+
+
+------| 7
+(one
+    two
+    3)
+
+"
+`;
+
+exports[`nested wraps 1`] = `
+"
+--------------------| 21
+(one two (three four
+             five)
+    six seven)
+
+
+-------------------| 20
+(one two (three four
+             five)
+    six seven)
+
+
+------------------| 19
+(one two (three
+             four
+             five)
+    six seven)
+
+
+-----------------| 18
+(one two (three
+             four
+             five)
+    six seven)
+
+
+----------------| 17
+(one two (three
+             four
+             five)
+    six seven)
+
+
+---------------| 16
+(one two
+    (three four
+        five)
+    six seven)
+
+
+--------------| 15
+(one two
+    (three four
+        five)
+    six seven)
+
+"
+`;
+
+exports[`string with newlines 1`] = `
+"
+-------------------| 20
+(one "Hello
+      Yall "
+    two)
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(one "Hello
+      Yall "
+    two)
+[ # ] {"type":"block","start":[1,0],"width":3,"height":1}
+(o̲n̲e̲ "Hello
+      Yall "
+    two)
+[ # ] {"type":"block","start":[5,0],"width":0,"height":1}
+(one |"Hello
+      Yall "
+    two)
+[ # ] {"type":"inline","start":[6,0],"end":[10,1],"hbounds":[6,11]}
+(one "H̲e̲l̲l̲o̲
+      Y̲a̲l̲l̲ "
+    two)
+[ # ] {"type":"block","start":[12,1],"width":0,"height":1}
+(one "Hello
+      Yall "|
+    two)
+[ # ] {"type":"block","start":[4,2],"width":3,"height":1}
+(one "Hello
+      Yall "
+    t̲w̲o̲)
+[ # ] {"type":"block","start":[8,2],"width":0,"height":1}
+(one "Hello
+      Yall "
+    two)|
+
+-------------------| 20
+"Hello
+ Yall "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"Hello
+ Yall "
+[ # ] {"type":"inline","start":[1,0],"end":[5,1],"hbounds":[1,6]}
+"H̲e̲l̲l̲o̲
+ Y̲a̲l̲l̲ "
+[ # ] {"type":"block","start":[7,1],"width":0,"height":1}
+"Hello
+ Yall "|
+"
+`;
+
+exports[`wrap after interpolation 1`] = `
+"
+-----------| 12
+"!{abc} A B
+ three four "
+
+
+----------| 11
+"!{abc} A B
+  three
+ four      "
+
+
+---------| 10
+"!{abc} A
+ B three
+ four     "
+
+"
+`;
+
+exports[`simple a/b 1`] = `
+"
+-------------------| 20
+"A
+ B"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"A
+ B"
+[ # ] {"type":"inline","start":[1,0],"end":[2,1],"hbounds":[1,2]}
+"A̲
+ B̲"
+[ # ] {"type":"block","start":[3,1],"width":0,"height":1}
+"A
+ B"|
+"
+`;
+
+exports[`simple a/b with interp 1`] = `
+"
+-------------------| 20
+"!{0}A
+ B    "
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"!{0}A
+ B    "
+[ # ] {"type":"block","start":[1,0],"width":0,"height":1}
+"|!{0}A
+ B    "
+[ # ] {"type":"block","start":[3,0],"width":1,"height":1}
+"!{0̲}A
+ B    "
+[ # ] {"type":"inline","start":[5,0],"end":[2,1],"hbounds":[1,6]}
+"!{0}A̲
+ B̲    "
+[ # ] {"type":"block","start":[7,1],"width":0,"height":1}
+"!{0}A
+ B    "|
+"
+`;
+
+exports[`string with newlines in interp 1`] = `
+"
+-------------------| 20
+"A!{"B
+     C"}D E F"
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|"A!{"B
+     C"}D E F"
+[ # ] {"type":"block","start":[1,0],"width":1,"height":1}
+"A̲!{"B
+     C"}D E F"
+[ # ] {"type":"block","start":[4,0],"width":0,"height":1}
+"A!{|"B
+     C"}D E F"
+[ # ] {"type":"inline","start":[5,0],"end":[6,1],"hbounds":[5,6]}
+"A!{"B̲
+     C̲"}D E F"
+[ # ] {"type":"block","start":[7,1],"width":0,"height":1}
+"A!{"B
+     C"|}D E F"
+[ # ] {"type":"block","start":[8,1],"width":5,"height":1}
+"A!{"B
+     C"}D̲ ̲E̲ ̲F̲"
+[ # ] {"type":"block","start":[14,1],"width":0,"height":1}
+"A!{"B
+     C"}D E F"|
+"
+`;
+
+exports[`pairs placement? 1`] = `
+"
+---------| 10
+(let [a|b]
+          )
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(let [a|b]
+          )
+[ # ] {"type":"block","start":[1,0],"width":3,"height":1}
+(l̲e̲t̲ [a|b]
+          )
+[ # ] {"type":"block","start":[5,0],"width":0,"height":1}
+(let |[a|b]
+          )
+[ # ] {"type":"block","start":[6,0],"width":1,"height":1}
+(let [a̲|b]
+          )
+[ # ] {"type":"block","start":[8,0],"width":1,"height":1}
+(let [a|b̲]
+          )
+[ # ] {"type":"block","start":[10,0],"width":0,"height":1}
+(let [a|b]|
+          )
+[ # ] {"type":"block","start":[11,1],"width":0,"height":1}
+(let [a|b]
+          )|
+"
+`;
+
+exports[`try a table maybe 1`] = `
+"
+---------| 10
+⦇lol      |folks
+ hi       |ho
+ (lol
+     what)      ⦈
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|⦇lol      |folks
+ hi       |ho
+ (lol
+     what)      ⦈
+[ # ] {"type":"block","start":[1,0],"width":3,"height":1}
+⦇l̲o̲l̲      |folks
+ hi       |ho
+ (lol
+     what)      ⦈
+[ # ] {"type":"block","start":[11,0],"width":5,"height":1}
+⦇lol      |f̲o̲l̲k̲s̲
+ hi       |ho
+ (lol
+     what)      ⦈
+[ # ] {"type":"block","start":[1,1],"width":2,"height":1}
+⦇lol      |folks
+ h̲i̲       |ho
+ (lol
+     what)      ⦈
+[ # ] {"type":"block","start":[11,1],"width":2,"height":1}
+⦇lol      |folks
+ hi       |h̲o̲
+ (lol
+     what)      ⦈
+[ # ] {"type":"block","start":[1,2],"width":0,"height":1}
+⦇lol      |folks
+ hi       |ho
+ |(lol
+     what)      ⦈
+[ # ] {"type":"block","start":[2,2],"width":3,"height":1}
+⦇lol      |folks
+ hi       |ho
+ (l̲o̲l̲
+     what)      ⦈
+[ # ] {"type":"block","start":[5,3],"width":4,"height":1}
+⦇lol      |folks
+ hi       |ho
+ (lol
+     w̲h̲a̲t̲)      ⦈
+[ # ] {"type":"block","start":[10,3],"width":0,"height":1}
+⦇lol      |folks
+ hi       |ho
+ (lol
+     what)|      ⦈
+[ # ] {"type":"block","start":[17,3],"width":0,"height":1}
+⦇lol      |folks
+ hi       |ho
+ (lol
+     what)      ⦈|
+"
+`;
+
+exports[`parsing refs 1`] = `
+"(defn hello [x]
+       10      )
+
+(+ x 𝐡𝐞𝐥𝐥𝐨)"
+`;
+
+exports[`parsing refs with diff name 1`] = `
+"(defn hello [x]
+       10      )
+
+(+ x 𝐡𝐞𝐥𝐥𝐨)"
+`;
+
+exports[`placeholders thanks 1`] = `"(this is a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫)"`;
+
+exports[`try a table maybe 2`] = `
+"
+---------| 10
+(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+    here)
+
+[ # ] {"type":"block","start":[0,0],"width":0,"height":1}
+|(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+    here)
+[ # ] {"type":"block","start":[1,0],"width":1,"height":1}
+(a̲ 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+    here)
+[ # ] {"type":"block","start":[3,0],"width":11,"height":1}
+(a 𝐩̲𝐥̲𝐚̲𝐜̲𝐞̲𝐡̲𝐨̲𝐥̲𝐝̲𝐞̲𝐫̲ is
+    here)
+[ # ] {"type":"block","start":[15,0],"width":2,"height":1}
+(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 i̲s̲
+    here)
+[ # ] {"type":"block","start":[4,1],"width":4,"height":1}
+(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+    h̲e̲r̲e̲)
+[ # ] {"type":"block","start":[9,1],"width":0,"height":1}
+(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+    here)|
+"
+`;

@@ -2,28 +2,26 @@ import equal from 'fast-deep-equal';
 import React from 'react';
 import { splitNamespaces } from '../../src/db/hash-tree';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { stringBgColor } from '../../src/state/nestedNodes/getNestedNodes';
 import { NNode } from '../../src/state/nestedNodes/NNode';
-import { Ctx } from '../../src/to-ast/Ctx';
+import { stringBgColor } from '../../src/state/nestedNodes/getNestedNodes';
+// import { Ctx } from '../../src/to-ast/Ctx';
 import { MNode } from '../../src/types/mcst';
-import { pathForIdx } from '../ide/ground-up/pathForIdx';
+import { blockToHtml } from '../ide/ground-up/blockToText';
 import { Path } from '../store';
+import { RawCode } from './RawCode';
 import { RichText } from './RichText';
+import { colors, getRainbowHashColor, nodeColor, rainbow } from './rainbow';
 import { Values } from './store/Store';
 import { useGetStore } from './store/StoreCtx';
 import { useNode } from './store/useNode';
 import { RenderProps } from './types';
-import { RawCode } from './RawCode';
-import { colors, getRainbowHashColor, nodeColor, rainbow } from './rainbow';
-import { useCreateBlockNote } from '@blocknote/react';
-import { BlockNoteEditor } from '@blocknote/core';
-import { blockToHtml } from '../ide/ground-up/blockToText';
+import { Display } from '../../src/to-ast/library';
 
 const columnRecords = true;
 
 const textStyle = (
     node: MNode,
-    display?: Ctx['display'][0],
+    display?: Display[0],
 ): React.CSSProperties | undefined => {
     const color = nodeColor(
         node.type,

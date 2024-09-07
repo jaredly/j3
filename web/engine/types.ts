@@ -1,8 +1,6 @@
 // So types for things I guess
 
-import { UpdateMap } from '../../src/state/getKeyUpdate';
-import { AutoCompleteResult } from '../../src/to-ast/Ctx';
-import { Selection } from '../store';
+// import { Selection } from '../store';
 
 /*
 CST
@@ -34,9 +32,9 @@ export type PathItemInner =
           type: 'string:prefix';
       };
 
-export type Node = NodeInner & NodeCommon;
+// export type Node = NodeInner & NodeCommon;
 
-export type Update = { map?: UpdateMap; selection?: Selection };
+// export type Update = { map?: UpdateMap; selection?: Selection };
 
 export type NodeCommon = {
     // TODO: Should these actually return like a command?
@@ -53,30 +51,30 @@ export type NodeCommon = {
     style?: React.CSSProperties;
 };
 
-export type Input = {
-    type: 'input';
-    text: string;
-    idx: number;
-    onKeyDown: (key: string) => Update;
-    onInput: (text: string) => Update;
-};
-export type Blinker = {
-    type: 'blinker';
-    onKeyDown: (key: string) => Update;
-};
+// export type Input = {
+//     type: 'input';
+//     text: string;
+//     idx: number;
+//     onKeyDown: (key: string) => Update;
+//     onInput: (text: string) => Update;
+// };
+// export type Blinker = {
+//     type: 'blinker';
+//     onKeyDown: (key: string) => Update;
+// };
 
-export type NodeInner =
-    | Input
-    | Blinker
-    | {
-          type: 'group';
-          children: Node[];
-          idx: number;
-      }
-    | {
-          type: 'dressing';
-          onMouseDown: (left: boolean) => Selection;
-      };
+// export type NodeInner =
+//     | Input
+//     | Blinker
+//     | {
+//           type: 'group';
+//           children: Node[];
+//           idx: number;
+//       }
+//     | {
+//           type: 'dressing';
+//           onMouseDown: (left: boolean) => Selection;
+//       };
 
 // ok but
 /*
@@ -91,9 +89,9 @@ maybe events don't live on there.
 it's just 'onKeyDown' and 'onInput' and stuff
 I think?
 */
-export type UIState = {
-    tree: Node;
-    map: { [idx: number]: (Input | Blinker) & NodeCommon };
-    menu: { selection: number; items: AutoCompleteResult }[];
-    hover: string[];
-};
+// export type UIState = {
+//     tree: Node;
+//     map: { [idx: number]: (Input | Blinker) & NodeCommon };
+//     menu: { selection: number; items: AutoCompleteResult }[];
+//     hover: string[];
+// };

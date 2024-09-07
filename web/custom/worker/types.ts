@@ -72,6 +72,7 @@ export type AsyncResults = {
 export type State = {
     evaluator: AnyEnv | null;
     nodes: ImmediateResults<any>['nodes'];
+    asyncFns: { nid: number; fns: { [key: number]: (v: any) => void } };
     results?: AsyncResults;
     debugExecOrder?: boolean;
     debugShowJs?: boolean;

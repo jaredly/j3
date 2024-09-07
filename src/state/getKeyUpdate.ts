@@ -2,27 +2,24 @@ import equal from 'fast-deep-equal';
 import {
     Card,
     MetaDataUpdateMap,
-    NUIState,
-    RealizedNamespace,
     RegMap,
     SandboxNamespace,
+    NsMap,
 } from '../../web/custom/UIState';
 import { plugins } from '../../web/custom/plugins';
+import { idText } from '../parse/idText';
 import { pathPos } from '../parse/parse';
 import { splitGraphemes } from '../parse/splitGraphemes';
-import { idText } from '../parse/idText';
-import { Ctx, NodeStyle } from '../to-ast/Ctx';
 import { Type } from '../types/ast';
-import { Map, MNode, NsMap } from '../types/mcst';
-import { ClipboardItem } from './clipboard';
+import { MNode, Map } from '../types/mcst';
 import { closeListLike } from './closeListLike';
+import { goLeft, goLeftUntil } from './goLeftUntil';
+import { goRight, goRightUntil } from './goRightUntil';
 import { handleBackspace } from './handleBackspace';
 import { handleStringText } from './handleStringText';
 import { modChildren } from './modChildren';
 import { selectStart } from './navigate';
-import { goRight, goRightUntil } from './goRightUntil';
-import { goLeft, goLeftUntil } from './goLeftUntil';
-import { newNodeBefore, newNodeAfter } from './newNodeBefore';
+import { newNodeAfter, newNodeBefore } from './newNodeBefore';
 import {
     mergeNew,
     newAccessText,
@@ -37,6 +34,7 @@ import {
 } from './newNodes';
 import { Path } from './path';
 import { replacePathWith } from './replacePathWith';
+import { UpdateMap } from '../types/mcst';
 
 export const wrappable: Path['type'][] = [
     'spread-contents',
@@ -141,7 +139,6 @@ export type State = {
     at: Cursor[];
     menu?: { selection: number; dismissed?: boolean };
 };
-export type UpdateMap = { [key: string]: null | Map[0] };
 export type NsUpdateMap = { [key: string]: null | SandboxNamespace };
 
 export const applyUpdateMap = (map: Map, updateMap: UpdateMap) => {

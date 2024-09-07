@@ -1,17 +1,17 @@
-import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
+// import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 import { type ClipboardItem } from '../../src/state/clipboard';
 import {
     State,
     Mods,
     StateChange,
     StateUpdate,
-    UpdateMap,
 } from '../../src/state/getKeyUpdate';
+import { UpdateMap } from '../../src/types/mcst';
 import { Path } from '../../src/state/path';
 import { Def, DefType, Node } from '../../src/types/ast';
-import { Ctx, HistoryItem } from '../../src/to-ast/library';
+import { HistoryItem } from '../../src/to-ast/library';
 import { NNode } from '../../src/state/nestedNodes/NNode';
-import { Map, NsMap } from '../../src/types/mcst';
+import { Map } from '../../src/types/mcst';
 import { NUIResults, Store } from './store/Store';
 import {
     AnyEnv,
@@ -24,6 +24,7 @@ import { TraceMap } from '../ide/ground-up/loadEv';
 import { displayFunctionIds } from './store/displayFunction';
 import { AllNames } from '../ide/ground-up/evaluators/interface';
 import { TypeEnv } from '../ide/infer/algw-cr/types';
+import { AutoCompleteReplace } from '../../src/to-ast/Ctx';
 
 export type MetaData = {
     trace?: {
@@ -40,6 +41,7 @@ export type MetaData = {
 
 export type MetaDataMap = { [key: number]: MetaData };
 export type MetaDataUpdateMap = { [key: number]: MetaData | null };
+export type NsMap = { [key: number]: RealizedNamespace };
 
 export type NUIState = {
     regs: RegMap;
@@ -53,7 +55,7 @@ export type NUIState = {
     };
     history: HistoryItem[];
     cards: Card[];
-    nsMap: { [key: number]: RealizedNamespace };
+    nsMap: NsMap;
     meta: MetaDataMap;
     evaluator?: string | string[] | null;
 
@@ -285,7 +287,7 @@ export type SandboxNamespace =
     //   }
     RealizedNamespace;
 
-export type UIState = { ctx: Ctx } & NUIState;
+export type UIState = NUIState;
 
 export type RegMap = {
     [key: number]: {

@@ -1,10 +1,11 @@
 // hmm
+import { NsMap } from '../../web/custom/UIState';
 import { Mods, State, applyUpdate } from '../state/getKeyUpdate';
 import { Path, cmpFullPath } from '../state/path';
 import { AutoCompleteReplace } from '../to-ast/Ctx';
 import { applyMenuItem } from '../to-ast/autoComplete';
-import { CompilationResults } from '../to-ast/library';
-import { Map, NsMap } from '../types/mcst';
+import { Display } from '../to-ast/library';
+import { Map } from '../types/mcst';
 import { splitGraphemes } from './splitGraphemes';
 export const idxSource = () => {
     let idx = 0;
@@ -48,10 +49,7 @@ function determineKey(text: string[], i: number, mods: Mods) {
     return { key, i };
 }
 
-export function getAutoCompleteUpdate(
-    state: State,
-    display: CompilationResults['display'],
-) {
+export function getAutoCompleteUpdate(state: State, display: Display) {
     const idx = state.at[0].start[state.at[0].start.length - 1].idx;
     const exacts = display[idx]?.autoComplete?.filter(
         (s) => s.type === 'update' && s.exact,
@@ -61,10 +59,7 @@ export function getAutoCompleteUpdate(
         : null;
 }
 
-export function autoCompleteIfNeeded(
-    state: State,
-    display: CompilationResults['display'],
-) {
+export function autoCompleteIfNeeded(state: State, display: Display) {
     const update = getAutoCompleteUpdate(state, display);
     if (update) {
         state = applyUpdate(state, 0, update);

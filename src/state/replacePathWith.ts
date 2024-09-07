@@ -8,7 +8,8 @@ import {
     MCString,
     MNodeExtra,
 } from '../types/mcst';
-import { NsUpdateMap, UpdateMap } from './getKeyUpdate';
+import { NsUpdateMap } from './getKeyUpdate';
+import { UpdateMap } from '../types/mcst';
 import { clearAllChildren, NewThing, StateUpdate } from './getKeyUpdate';
 import { Path } from './path';
 

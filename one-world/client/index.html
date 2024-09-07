@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <!-- <link
+            rel="stylesheet"
+            href="//brick.a.ssl.fastly.net/Linux+Libertine:400,400i,700,700i/Merriweather:200,200i,400,400i,700,700i/Open+Sans:400,400i,700,700i"
+        /> -->
+        <title>j3 playground</title>
+        <link rel="favorite icon" href="favicon.png" />
+        <script src="/static/prism.js" data-manual></script>
+        <link rel="stylesheet" href="/static/prism.css" />
+        <style>
+            /* ::selection {
+                background-color: rgba(255, 255, 200, 0.3);
+            } */
+
+            :root {
+                color-scheme: dark light;
+            }
+
+            @font-face {
+                font-family: 'Fira Code VF';
+                src: url('/static/FiraCode-VF.woff2') format('woff2-variations');
+                font-weight: 100 900;
+                font-style: normal;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('/static/Merriweather-Regular.ttf');
+                font-weight: normal;
+                font-style: normal;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('/static/Merriweather-Italic.ttf');
+                font-weight: normal;
+                font-style: italic;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('/static/Merriweather-Bold.ttf');
+                font-weight: bold;
+                font-style: normal;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('/static/Merriweather-BoldItalic.ttf');
+                font-weight: bold;
+                font-style: italic;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('/static/Merriweather-Light.ttf');
+                font-weight: 200;
+                font-style: normal;
+            }
+
+            @font-face {
+                font-family: 'Merriweather';
+                src: url('/static/Merriweather-LightItalic.ttf');
+                font-weight: 200;
+                font-style: italic;
+            }
+
+            @font-face {
+                font-family: 'Jet Brains';
+                src: url('/static/JetBrainsMono[wght].ttf');
+                font-weight: 100 900;
+                font-style: normal;
+            }
+
+            @font-face {
+                font-family: 'Jet Brains Italic';
+                src: url('/static/JetBrainsMono-Italic[wght].ttf');
+                font-weight: 100 900;
+                font-style: normal;
+            }
+
+            @font-face {
+                font-family: 'Monoid';
+                src: url('/static/Monoid-Retina.ttf');
+                /* font-weight: 100 900; */
+                /* font-style: normal; */
+            }
+
+            @keyframes blink {
+                from {
+                    opacity: 1;
+                }
+                1% {
+                    opacity: 0;
+                }
+
+                50% {
+                    opacity: 0;
+                }
+                51% {
+                    opacity: 1;
+                }
+
+                to {
+                    opacity: 1;
+                }
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
+            html,
+            body {
+                padding: 0;
+                margin: 0;
+                background-color: #080811;
+                /* font-family: 'Jet Brains' !important;
+                font-variation-settings: 'wght' 100, 'wdth' 100; */
+                color: #aaa;
+                /* font-family: 'Monoid' !important; */
+                font-family: system-ui, -apple-system, BlinkMacSystemFont,
+                    'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans',
+                    'Helvetica Neue', sans-serif;
+                font-weight: 200;
+                /* font-variation-settings: 'wght' 100, 'wdth' 100; */
+            }
+
+            @media (prefers-color-scheme: light) {
+                html,
+                body {
+                    background-color: white;
+                }
+            }
+
+            [data-prefix]::before {
+                content: attr(data-prefix);
+                padding-right: 4px;
+                font-size: 80%;
+            }
+            [data-message]::before {
+                cursor: pointer;
+            }
+            [data-suffix]::after {
+                content: attr(data-suffix);
+                padding-right: 4px;
+                font-size: 80%;
+                opacity: 0.5;
+            }
+            [data-suffix-message]::after {
+                cursor: pointer;
+            }
+            .menu-row.selected > div {
+                background-color: #a00;
+            }
+            .menu-row:hover > div {
+                background-color: #a33;
+            }
+            .hover-bg:hover {
+                background-color: var(--hover-bg);
+            }
+            .hover {
+                outline: 2px solid transparent;
+            }
+            .hover:hover {
+                outline-color: rgba(255, 0, 200, 0.2);
+            }
+            .menu-hover {
+                border-radius: 2px;
+            }
+            .menu-hover:hover {
+                background-color: #222;
+            }
+            span.idlike:empty {
+                position: relative;
+            }
+            span.idlike:empty::after {
+                content: '';
+                width: 4px;
+                height: 4px;
+                background-color: currentColor;
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                margin-left: -2px;
+                margin-top: -2px;
+                opacity: 0.3;
+                border-radius: 2px;
+                cursor: text;
+            }
+            span:empty {
+                min-height: 1.3em;
+                vertical-align: bottom;
+                display: inline-block;
+                width: 1px;
+                margin-right: -1px;
+            }
+            span[contenteditable]:empty {
+                min-width: 0;
+                outline: none !important;
+            }
+            pre {
+                font-family: inherit;
+                margin: 0;
+                padding: 0;
+            }
+
+            .traced::before {
+                width: 5px;
+                height: 5px;
+                background-color: green;
+                border-radius: 5px;
+                content: ' ';
+                display: inline-block;
+                margin-left: -5px;
+                position: absolute;
+            }
+
+            .bn-container[data-color-scheme] {
+                /* --bn-font-family: 'Merriweather'; */
+                /* font-weight: 200; */
+            }
+            .bn-container * {
+                font-weight: 200;
+            }
+
+            .rich-text .bn-default-styles {
+                font-size: 20px;
+            }
+            .rich-text .bn-block-outer {
+                line-height: 1.7;
+            }
+
+            .bn-container a {
+                color: #aaa;
+                text-decoration-color: #777;
+            }
+
+            .bn-editor {
+                padding-inline: 8px !important;
+            }
+            .bn-editor strong {
+                /* font-family: monospace !important; */
+                font-weight: 400;
+            }
+
+            .bn-block code,
+            .bn-inline-content code {
+                font-family: Jet Brains !important;
+                /* font-family: 'Merriweather' !important; */
+                font-variant-ligatures: normal;
+                color: #86b8ff;
+                white-space: nowrap;
+            }
+
+            .editor-container {
+                /* background: #2d2d2d; */
+                color: #b6b6b6;
+                position: relative;
+                padding: 0 6px;
+                font-family: 'Merriweather';
+                font-weight: 200;
+                border-radius: 3px;
+                /* min-width: 50px; */
+            }
+
+            .editor-container h1,
+            .editor-container h2,
+            .editor-container h3,
+            .editor-container h4 {
+                margin: 0;
+            }
+
+            /* strong {
+                font-family: Arial, Helvetica, sans-serif;
+            } */
+
+            .editor-input {
+                /* min-height: 150px; */
+                resize: none;
+                /* font-size: 15px; */
+                /* caret-color: rgb(5, 5, 5); */
+                position: relative;
+                tab-size: 1;
+                outline: 0;
+                /* padding: 15px 10px; */
+                /* caret-color: #444; */
+            }
+
+            .editor-placeholder {
+                color: white;
+                overflow: hidden;
+                position: absolute;
+                text-overflow: ellipsis;
+                top: 4px;
+                left: 8px;
+                font-style: italic;
+                font-size: 15px;
+                user-select: none;
+                display: inline-block;
+                pointer-events: none;
+            }
+
+            .editor-paragraph {
+                /* margin: 0 0 15px 0; */
+                margin: 0;
+                position: relative;
+            }
+        </style>
+    </head>
+    <body>
+        <script src="./run.tsx" type="module"></script>
+        <!-- <script src="./run.tsx" type="module"></script> -->
+        <div
+            style="
+                font-family: Jet Brains;
+                visibility: hidden;
+                position: absolute;
+                pointer-events: none;
+            "
+        >
+            &nbsp;
+        </div>
+    </body>
+</html>

@@ -1,9 +1,10 @@
 import equal from 'fast-deep-equal';
-import { NUIState, RealizedNamespace } from '../../web/custom/UIState';
-import { StateChange, UpdateMap } from './getKeyUpdate';
+import { NUIState, NsMap, RealizedNamespace } from '../../web/custom/UIState';
+import { StateChange } from './getKeyUpdate';
+import { UpdateMap } from '../types/mcst';
 import { Path } from './path';
 import { newNodeAfter, newNodeBefore } from './newNodeBefore';
-import { ListLikeContents, Map, NsMap } from '../types/mcst';
+import { ListLikeContents, Map } from '../types/mcst';
 
 export const moveNode = (
     { path, idx }: { path: Path[]; idx: number },

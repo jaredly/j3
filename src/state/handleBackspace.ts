@@ -1,14 +1,14 @@
-import { ListLikeContents, Map, MNode, MNodeExtra, NsMap } from '../types/mcst';
+import { ListLikeContents, Map, MNode, MNodeExtra } from '../types/mcst';
 import { newBlank } from './newNodes';
 import { selectEnd } from './navigate';
 import { goLeft } from './goLeftUntil';
 import {
     Mods,
     StateChange,
-    UpdateMap,
     clearAllChildren,
     maybeClearParentList,
 } from './getKeyUpdate';
+import { UpdateMap } from '../types/mcst';
 import { replacePath, replacePathWith } from './replacePathWith';
 import { orderStartAndEnd, pathPos } from '../parse/parse';
 import { splitGraphemes } from '../parse/splitGraphemes';
@@ -17,9 +17,8 @@ import { accessText, Identifier, stringText } from '../types/cst';
 import { collectNodes } from './clipboard';
 import { Path } from './path';
 import { removeNodes } from './removeNodes';
-import { Ctx } from '../to-ast/Ctx';
 import { modChildren } from './modChildren';
-import { Card, RealizedNamespace } from '../../web/custom/UIState';
+import { Card, NsMap, RealizedNamespace } from '../../web/custom/UIState';
 
 // const backspacers: ((node: MNode, last:Path) => StateChange | void)[] = [
 //     (node, last) => {

@@ -1,0 +1,229 @@
+const evaluate = (node, scope) => {
+    if (!scope) throw new Error(`evaluate called without scope`);
+    switch (node.type) {
+        // For primitives, we trivially produce the contained value
+        case 'eprim':
+            return node[0][0];
+        // For strings, we need to handle escapes correctly (e.g. the AST node will have "a\\n", which needs to become "a\n" at runtime) and evaluate
+        // any contained template expressions
+        case 'estr':
+            return (
+                unescapeSlashes(node[0]) +
+                unwrapList(node[1])
+                    .map(
+                        ({ 0: exp, 1: { 0: suf } }) =>
+                            evaluate(exp, scope) + unescapeSlashes(suf),
+                    )
+                    .join('')
+            );
+        // For variables, we look up the name in the `scope` map that we pass everywhere.
+        // We use `sanitize` for compatability with the structured editor environment, which expects variable names to be valid javascript names.
+        case 'evar':
+            var name = node[0];
+            if (name === '()') return null;
+            if (!Object.hasOwn(scope, name)) {
+                throw new Error(
+                    `Variable not in scope: ${name} (${node[1]}). ${Object.keys(
+                        scope,
+                    ).join(', ')}`,
+                );
+            }
+            return scope[name];
+        // For lambdas, we're producing an arrow function that accepts the right number of (curried) arguments, matches each provided value with the
+        // corresponding pattern, and then evaluates the body with the `scope` map having all of the resulting bindings.
+        // Note that auto-currying means that `(fn [a b] c)` becomes `a => b => c` instead of `(a, b) => c`.
+        case 'elambda':
+            return unwrapList(node[0]).reduceRight(
+                (body, arg) => (scope) => (v) =>
+                    body({ ...scope, ...evalPat(arg, v) }),
+                (scope) => evaluate(node[1], scope),
+            )(scope);
+        // Application is also curried, so we need to loop through the arguments list so that `(eapp t [a b])` becomes `t(a)(b)`.
+        case 'eapp':
+            return unwrapList(node[1]).reduce(
+                (f, arg) => f(evaluate(arg, scope)),
+                evaluate(node[0], scope),
+            );
+        // For `let`, we go through each binding, evaluate the provided `init` against the pattern, and add any bindings to the scope.
+        // We're doing the evaluations in *series* instead of *parallel* to allow later bindings to refer to previous ones.
+        // so you can do `(let [a 2 b (+ a 4)] b)` and have it evaluate correctly.
+        // Note that this method doesn't allow for self-recursion in let bindings. We'll relax that restriction in the self-hosted compiler.
+        case 'elet':
+            const inner = unwrapList(node[0]).reduce(
+                (scope, { 0: pat, 1: init }) => {
+                    const value = evaluate(init, scope);
+                    const match = evalPat(pat, value);
+                    if (match == null)
+                        throw new Error(
+                            `let pattern didnt't match! ${JSON.stringify(
+                                value,
+                            )} vs ${valueToString(pat)}`,
+                        );
+                    return { ...scope, ...match };
+                },
+                scope,
+            );
+            return evaluate(node[1], inner);
+        // Match walks through each case, checks to see if the patterns matches the value, and if it does, evaluates the body with any bindings from that
+        // pattern added onto the scope.
+        // If no cases match, we throw an error.
+        case 'ematch':
+            const target = evaluate(node[0], scope);
+            for (let { 0: pat, 1: body } of unwrapList(node[1])) {
+                const got = evalPat(pat, target);
+                if (got) {
+                    return evaluate(body, { ...scope, ...got });
+                }
+            }
+            throw new Error(
+                `match failed (${node[2]}): ${JSON.stringify(
+                    target,
+                )} - ${JSON.stringify(node[0])}`,
+            );
+        // `equot` trivially produces the contained data structure; whether it's CST or AST.
+        case 'equot':
+            return node[0][0];
+    }
+    throw new Error(`cant evaluatoe ${node.type}`);
+};
+
+// This is our way of figuring out what bindings should result from the application of a
+// pattern to a given value.
+// If `evalPat` returns `null`, that means that pattern *does not* match the value; otherwise
+// it returns a mapping of variable names to bound values.
+const evalPat = (node, v) => {
+    switch (node.type) {
+        case 'pany':
+            return {};
+        case 'pprim':
+            return v === node[0][0] ? {} : null;
+        case 'pstr':
+            return v === node[0];
+        case 'pvar':
+            return { [node[0]]: v };
+        case 'pcon':
+            if (node[0] === '()') return v === null ? {} : null;
+            if (v.type === node[0]) {
+                const args = unwrapList(node[2]);
+                const scope = {};
+                for (let i = 0; i < args.length; i++) {
+                    const sub = evalPat(args[i], v[i]);
+                    if (!sub) return null;
+                    Object.assign(scope, sub);
+                }
+                return scope;
+            }
+            return null;
+    }
+    throw new Error(`Unexpected pat ${JSON.stringify(node)}`);
+};
+
+const testEnv = {
+    ',': (a) => (b) => pair(a, b),
+    cons: (a) => (b) => ({ type: 'cons', 0: a, 1: b }),
+    nil: { type: 'nil' },
+    some: (a) => ({ type: 'some', 0: a }),
+    none: { type: 'none' },
+    '<': (a) => (b) => a < b,
+    '+': (a) => (b) => a + b,
+    '-': (a) => (b) => a - b,
+    '()': null,
+};
+
+// "A\\nB" -> "A\nB"
+const unescapeSlashes = (n) =>
+    n.replaceAll(/\\./g, (m) => {
+        if (m[1] === 'n') {
+            return '\n';
+        }
+        if (m[1] === 't') {
+            return '\t';
+        }
+        if (m[1] === 'r') {
+            return '\r';
+        }
+        return m[1];
+    });
+
+const evaluateTop = (node, env) => {
+    switch (node.type) {
+        case 'texpr':
+            return evaluate(node[0], env);
+        case 'tdef':
+            const value = evaluate(node[2], env);
+            env[node[0]] = value;
+            return value;
+        case 'tdeftype':
+            const res = {};
+            unwrapList(node[3]).forEach(
+                ({
+                    0: name,
+                    1: {
+                        1: { 0: args },
+                    },
+                }) => {
+                    res[name] = env[name] = constrFn(name, args);
+                },
+            );
+            return res;
+    }
+};
+
+// this little helper function produces a "constructor function" for a given type constructor definition.
+// so `(cons a (list a))` produces `a => b => ({type: 'cons', 0: a, 1: b})`
+// and `(ok v)` produces `a => ({type: 'ok', 0: a})`
+// and `(nil)` produces `({type: 'nil'})`
+const constrFn = (name, args) => {
+    const next = (args) => {
+        if (args.type === 'nil') return (values) => ({ type: name, ...values });
+        return (values) => (arg) => next(args[1])([...values, arg]);
+    };
+    return next(args)([]);
+};
+
+const evalTops = (tops) => {
+    if (tops.type !== 'array') throw new Error('need array');
+    const env = { ...testEnv }; // evaluateTop might mutate the `env` so we need to make a new obj here
+    let res;
+    filterBlanks(tops.values).forEach((top) => {
+        res = evaluateTop(parseTop(top), env);
+    });
+    return valueToString(res);
+};
+
+// Convert an identifier into a valid js identifier, replacing special characters, and accounting for keywords.
+const sanitize = (raw) => {
+    for (let [key, val] of Object.entries(sanMap)) {
+        raw = raw.replaceAll(key, val);
+    }
+    if (kwds.includes(raw)) return '$' + raw;
+    return raw;
+};
+
+const sanMap = {
+    // '$$$$' gets interpreted by replaceAll as '$$', for reasons
+    $: '$$$$',
+    '-': '_',
+    '+': '$pl',
+    '*': '$ti',
+    '=': '$eq',
+    '>': '$gt',
+    '<': '$lt',
+    "'": '$qu',
+    '.': '$do',
+    '"': '$dq',
+    ',': '$co',
+    '/': '$sl',
+    ';': '$semi',
+    '@': '$at',
+    ':': '$cl',
+    '#': '$ha',
+    '!': '$ex',
+    '|': '$bar',
+    '()': '$unit',
+    '?': '$qe',
+};
+const kwds =
+    'case new var const let if else return super break while for default eval'.split(
+        ' ',
+    );

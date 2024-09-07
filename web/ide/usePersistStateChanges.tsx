@@ -9,7 +9,7 @@ import {
 import { Db } from '../../src/db/tables';
 import { HashedTree } from '../../src/db/hash-tree';
 import { addDefinitions, addNamespaces } from '../../src/db/library';
-import { UpdateMap } from '../../src/state/getKeyUpdate';
+import { UpdateMap } from '../../src/types/mcst';
 
 // so
 // like the sandbox meta
@@ -71,68 +71,68 @@ export const applyChanges = async (db: Db, changes: DBUpdate[]) => {
     });
 };
 
-export function collectDatabaseChanges(
-    last: UIState,
-    next: UIState,
-    id: string,
-) {
-    const changes: DBUpdate[] = [];
-    if (last.ctx.global.library !== next.ctx.global.library) {
-        // console.log('library change');
-        const lg = last.ctx.global.library;
-        const ng = next.ctx.global.library;
-        if (lg.definitions !== ng.definitions) {
-            const definitions: Library['definitions'] = {};
-            Object.keys(ng.definitions).forEach((k) => {
-                if (!lg.definitions[k]) {
-                    definitions[k] = ng.definitions[k];
-                }
-            });
-            changes.push({ type: 'definitions', definitions });
-        }
-        if (lg.namespaces !== ng.namespaces) {
-            const ns: HashedTree = {};
-            Object.keys(ng.namespaces).forEach((k) => {
-                if (!lg.namespaces[k]) {
-                    ns[k] = ng.namespaces[k];
-                }
-            });
-            if (ng.history[0].hash !== ng.root) {
-                throw new Error(
-                    `Inconsistent root vs history in new namespaces`,
-                );
-            }
-            changes.push({
-                type: 'names',
-                namespaces: ns,
-                root: ng.history[0],
-            });
-        }
-    }
-    if (last.history !== next.history) {
-        // Possibilities:
-        // - we've done an `undo`
-        //
+// export function collectDatabaseChanges(
+//     last: UIState,
+//     next: UIState,
+//     id: string,
+// ) {
+//     const changes: DBUpdate[] = [];
+//     if (last.ctx.global.library !== next.ctx.global.library) {
+//         // console.log('library change');
+//         const lg = last.ctx.global.library;
+//         const ng = next.ctx.global.library;
+//         if (lg.definitions !== ng.definitions) {
+//             const definitions: Library['definitions'] = {};
+//             Object.keys(ng.definitions).forEach((k) => {
+//                 if (!lg.definitions[k]) {
+//                     definitions[k] = ng.definitions[k];
+//                 }
+//             });
+//             changes.push({ type: 'definitions', definitions });
+//         }
+//         if (lg.namespaces !== ng.namespaces) {
+//             const ns: HashedTree = {};
+//             Object.keys(ng.namespaces).forEach((k) => {
+//                 if (!lg.namespaces[k]) {
+//                     ns[k] = ng.namespaces[k];
+//                 }
+//             });
+//             if (ng.history[0].hash !== ng.root) {
+//                 throw new Error(
+//                     `Inconsistent root vs history in new namespaces`,
+//                 );
+//             }
+//             changes.push({
+//                 type: 'names',
+//                 namespaces: ns,
+//                 root: ng.history[0],
+//             });
+//         }
+//     }
+//     if (last.history !== next.history) {
+//         // Possibilities:
+//         // - we've done an `undo`
+//         //
 
-        const map: UpdateMap = {};
-        const hist: HistoryItem[] = [];
-        for (let i = 0; i < next.history.length; i++) {
-            if (next.history[i] !== last.history[i]) {
-                Object.assign(map, next.history[i].map);
-                hist.push(next.history[i]);
-            }
-        }
-        changes.push({ type: 'sandbox-nodes', map, id });
-        changes.push({ type: 'sandbox-history', history: hist, id });
-        changes.push({
-            type: 'sandbox-updated',
-            id,
-            updated: Date.now() / 1000,
-            node_count: Object.keys(next.map).length,
-        });
-    }
-    return changes;
-}
+//         const map: UpdateMap = {};
+//         const hist: HistoryItem[] = [];
+//         for (let i = 0; i < next.history.length; i++) {
+//             if (next.history[i] !== last.history[i]) {
+//                 Object.assign(map, next.history[i].map);
+//                 hist.push(next.history[i]);
+//             }
+//         }
+//         changes.push({ type: 'sandbox-nodes', map, id });
+//         changes.push({ type: 'sandbox-history', history: hist, id });
+//         changes.push({
+//             type: 'sandbox-updated',
+//             id,
+//             updated: Date.now() / 1000,
+//             node_count: Object.keys(next.map).length,
+//         });
+//     }
+//     return changes;
+// }
 
 // export function usePersistStateChanges(db: Db, state: IDEState) {
 //     const enqueueChanges = useMemo(() => {

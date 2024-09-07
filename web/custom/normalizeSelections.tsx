@@ -1,6 +1,6 @@
 import { orderStartAndEnd } from '../../src/parse/parse';
 import { Cursor } from '../../src/state/getKeyUpdate';
-import { NsMap } from '../../src/types/mcst';
+import { NsMap } from './UIState';
 
 export function normalizeSelections(at: Cursor[], nsMap: NsMap): Cursor[] {
     return at

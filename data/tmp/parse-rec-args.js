@@ -82,7 +82,7 @@ const sanMap = {
     '#': '$ha',
     '!': '$ex',
     '|': '$bar',
-    '()': '$unit',
+    '()': '$unit', '(': '$lb', ')': '$rb',
     '?': '$qe',
   };
 const kwds =

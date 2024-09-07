@@ -1,8 +1,13 @@
-import { Map, NsMap } from '../types/mcst';
+import { Map } from '../types/mcst';
 import { getNodes } from './nestedNodes/getNodes';
 import { StateSelect } from './getKeyUpdate';
 import { Path } from './path';
-import { Card, RealizedNamespace, RegMap } from '../../web/custom/UIState';
+import {
+    Card,
+    NsMap,
+    RealizedNamespace,
+    RegMap,
+} from '../../web/custom/UIState';
 import { isValidCursorLocation } from '../../web/custom/isValidCursorLocation';
 import { selectStart, pathSelForNode, pathChildEqual } from './navigate';
 

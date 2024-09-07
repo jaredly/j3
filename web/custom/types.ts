@@ -1,7 +1,4 @@
-import { Ctx } from '../../src/to-ast/Ctx';
-import { Map } from '../../src/types/mcst';
 import { Path } from '../../src/state/path';
-import { Action, UIState } from './UIState';
 
 export type Reg = (
     node: HTMLSpanElement | null,
