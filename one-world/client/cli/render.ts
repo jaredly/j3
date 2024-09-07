@@ -251,6 +251,18 @@ export function calculateIRs(
                     // TODO THis will not work with macros.
                     // we'll have to do the actual graph resolution for that.
                     const node = state.toplevels[tid].nodes[idx];
+                    const sel = ds.selections.find(
+                        (s) =>
+                            s.start.path.root.toplevel === tid &&
+                            lastChild(s.start.path) === idx,
+                    );
+                    if (
+                        sel &&
+                        sel.start.cursor.type === 'text' &&
+                        sel.start.cursor.end.text
+                    ) {
+                        return sel.start.cursor.end.text.join('');
+                    }
                     // HRM ok so ... what if we want to report the ... temporary name?
                     // seemsl ike that would be nice.
                     return node.type === 'id' ? node.text : null;

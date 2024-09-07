@@ -15,7 +15,8 @@
   - hrm ok. so ... parse ... and then, use that somehow.
 
 - [x] dropdown should be aligned-left to anchor node
-- [ ] autocomplete toplevel should do the /ref/ thing
+- [x] autocomplete toplevel should do the /ref/ thing
+- [x] I kinda want `getName` to return the selection-tmp-text stuff, if possible.
 
 - [ ] how do I get toplevels to ... have docstrings?
   - would it be a ctrl-p command or something
