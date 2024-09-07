@@ -1,7 +1,7 @@
 // Compress...
 
 import { readFileSync, writeFileSync } from 'fs';
-import { NUIState } from '../web/custom/UIState';
+import { NUIState } from '../custom/UIState';
 
 let [_, __, ...files] = process.argv;
 // if (!out) out = inp;

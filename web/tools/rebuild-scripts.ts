@@ -1,10 +1,10 @@
 // What do we want to build?
 
 import { readFileSync, writeFileSync } from 'fs';
-import { NUIState } from '../web/custom/UIState';
-import { AnyEnv } from '../web/ide/ground-up/FullEvalator';
-import { jsEvaluator } from '../web/ide/ground-up/jsEvaluator';
-import { evaluatorFromText } from '../web/ide/ground-up/loadEv';
+import { NUIState } from '../custom/UIState';
+import { AnyEnv } from '../ide/ground-up/FullEvalator';
+import { jsEvaluator } from '../ide/ground-up/jsEvaluator';
+import { evaluatorFromText } from '../ide/ground-up/loadEv';
 import { join } from 'path';
 
 // A key premise here is that the evaluator should *not* influence the runtime behavior, only (potentially) the performance.

@@ -5,3 +5,4 @@ dist
 ok.js
 .ow-data
 .cli.sess
+cli.log

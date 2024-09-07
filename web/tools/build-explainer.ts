@@ -5,8 +5,8 @@ import {
     copyFileSync,
     existsSync,
 } from 'fs';
-import { NUIState } from '../web/custom/UIState';
-import { pages } from '../web/ide/explainer/pages';
+import { NUIState } from '../custom/UIState';
+import { pages } from '../ide/explainer/pages';
 
 const files = `
 toc.json

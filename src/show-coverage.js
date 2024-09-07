@@ -1,4 +1,4 @@
-const data = require('./coverage/coverage-final.json');
+const data = require('../coverage/coverage-final.json');
 
 const tpl = `
 <html>
@@ -31,4 +31,4 @@ ${Object.keys(data)
 </div>
 `;
 
-require('fs').writeFileSync('./show-coverage.html', tpl);
+require('fs').writeFileSync('../show-coverage.html', tpl);

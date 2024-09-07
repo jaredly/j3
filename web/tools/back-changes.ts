@@ -1,5 +1,5 @@
 import { readFileSync, writeFileSync } from 'fs';
-import { NUIState } from '../web/custom/UIState';
+import { NUIState } from '../custom/UIState';
 import equal from 'fast-deep-equal';
 
 const [_, __, source, sink, message] = process.argv;
