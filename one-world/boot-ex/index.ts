@@ -5,17 +5,7 @@ import { Evaluator } from './types';
 export const BootExampleEvaluator: Evaluator<void, void, void> = {
     kwds: kwds,
     parse(node, cursor) {
-        const res = parse(node);
-        if (cursor != null) {
-            return {
-                ...res,
-                autocomplete: {
-                    kinds: ['kwd', 'value', 'kwd:toplevel'],
-                    local: [],
-                },
-            };
-        }
-        return res;
+        return parse(node, cursor);
     },
     compile(top, info) {},
     evaluate(ir, irs) {},

@@ -3,20 +3,34 @@
 import { termColors } from '../client/TextEdit/colors';
 import { Layout } from '../shared/IR/intermediate';
 import { Loc, RecNode, Style } from '../shared/nodes';
-import { ParseResult } from './types';
+import { AutoCompleteConfig, ParseResult } from './types';
 
-export const parse = (node: RecNode): ParseResult<void> => {
-    const ctx: Ctx = { layouts: {}, styles: {}, exports: [], tableHeaders: {} };
+export const parse = (node: RecNode, cursor?: number): ParseResult<void> => {
+    const ctx: Ctx = {
+        layouts: {},
+        styles: {},
+        exports: [],
+        tableHeaders: {},
+        autocomplete: undefined,
+        cursor,
+    };
 
     const top = _parse(node, ctx);
     return { top, ...ctx };
 };
+
+// {
+// kinds: ['kwd', 'value', 'kwd:toplevel'],
+// local: [],
+// }
 
 // type Fmt = { loc: number; info: RenderInfo };
 type Ctx = {
     // cursor?: { loc: number; autocomplete?: Autocomplete };
     // errors: ParseError[];
     // fmt: Fmt[];
+    cursor?: number;
+    autocomplete?: AutoCompleteConfig;
     layouts: Record<number, Layout>;
     styles: Record<number, Style>;
     tableHeaders: Record<number, string[]>;
@@ -32,7 +46,16 @@ type Ctx = {
 
 const getLoc = (l: Loc) => l[l.length - 1][1];
 
+const isCursor = (node: RecNode, ctx: Ctx) =>
+    node.loc.length === 1 && node.loc[0][1] === ctx.cursor;
+
 const _parse = (node: RecNode, ctx: Ctx) => {
+    if (isCursor(node, ctx)) {
+        ctx.autocomplete = {
+            kinds: ['kwd', 'value'],
+            local: [],
+        };
+    }
     switch (node.type) {
         case 'list':
             node.items.map((p) => _parse(p, ctx));
@@ -95,6 +118,12 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                                 layout: { tightFirst: 2, indent: 2 },
                             };
                             ctx.styles[getLoc(first.loc)] = kwdStyle;
+                            if (
+                                node.items.length > 1 &&
+                                isCursor(node.items[1], ctx)
+                            ) {
+                                ctx.autocomplete = undefined;
+                            }
                             break;
                         case 'defn':
                             ctx.layouts[getLoc(node.loc)] = {
@@ -107,6 +136,12 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                                     loc: second.loc,
                                     kind: 'value',
                                 });
+                            }
+                            if (
+                                node.items.length > 1 &&
+                                isCursor(node.items[1], ctx)
+                            ) {
+                                ctx.autocomplete = undefined;
                             }
                             ctx.styles[getLoc(first.loc)] = kwdStyle;
                             break;

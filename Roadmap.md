@@ -13,11 +13,16 @@
 
 - [x] autocomplete other toplevel definitions!!
   - hrm ok. so ... parse ... and then, use that somehow.
+
 - [x] dropdown should be aligned-left to anchor node
 
 - [ ] how do I get toplevels to ... have docstrings?
   - would it be a ctrl-p command or something
     - huh I kinda want a ctrl-p
+
+- [ ] toplevel refs - should reflect renames seamlessly
+- [ ] dont autocomplete on a name
+
 
 ##
 

@@ -18,6 +18,8 @@ export type Usage = {
     kind: string;
 };
 
+export type AutoCompleteConfig = { kinds: string[]; local: any[] };
+
 export type ParseResult<Top> = {
     top: Top | null;
     // ok so like, could be macro right?
@@ -28,7 +30,7 @@ export type ParseResult<Top> = {
     // value = ref(value) + macro(value)
     // type = ref(type) + macro(type)
     // defmacro, deftypemacro
-    autocomplete?: { kinds: string[]; local: any[] };
+    autocomplete?: AutoCompleteConfig;
     errors?: any[];
     layouts: Record<number, Layout>;
     styles: Record<number, Style>;
