@@ -1,4 +1,108 @@
 
+# Now I think we graph.
+
+AHA
+ok so thinking during the sabbath
+always a productive endeavor
+
+ok so the status is thusly:
+- we're going to take namespaces (or I guess "modules") seriously
+- module dependencies form a DAG. cycles are errors
+- within a module, you can have mutual recursion
+- you cannot use a macro in the same module where it's defined.
+  - this eliminates issues of a macro recursion weirdness
+- you can only define accessory terms from the module where the `target` is defined
+  - this limits the scope of "what we need to process in order to ensure we've got everything"
+
+
+
+
+# Ok some more thoughts
+
+
+v- one thing that this means is that documentation is also
+   something that would be reported post-parse, not just yoinked
+   from the raw data.
+   this is ~cool because it means that macros/parsers can impact it...
+   like so if you have docs on your args, the parser could combine that
+   into the documentation on the term.
+   that's cool actually.
+
+"Some documentation"
+(deriving eq show)
+(deftype (option a) (some a) (none))
+
+So there are two "auxiliaries".
+An auxiliary macro is different than a normal macro.
+- A normal macro just gets the contents.
+- A toplevel macro gets the contents and any non-macro auxiliaries
+- An auxiliary macro gets (a) the args if any, ~~(b) other auxiliaries /after/ it~~, (c) the toplevel itself
+  - hermmm I think I'm going to nix the (b) one. if you want to pass it arguments, you already had your chance.
+    - OK so, macro auxiliaries get compiled away. Question is:
+      - if a macro auxiliary produces multiple toplevels, and there are multiple macros, how do they play together?
+        - so there's a non-complicated way that just says "they produce a single thing and the next one gets to deal with it".
+          anddddd ok maybe I'm tempted to just go with that. Yeah it's fine.
+
+the `parse` function gets any auxiliaries that haven't been /handled/ by macros, and the toplevel.
+
+ALSO let's talk associated terms
+A Macro (parsed) MUST:
+- report what associated terms it might generate. Options include:
+  - none
+  - a static list of associations for the toplevel it is an auxiliary to
+    - so there'd be a macro called `derive-eq` and `derive-show`, but not `(derive eq show)`.
+      - the only way I could imagine `(derive eq show)` working is if eq and show, associateds
+        in their own rights, could have an associated `.deriver` or something, which is itself
+        a macro. That seems like a little much to be statically declarable.
+        So we'll stick with `derive-eq` which can declare that it will produce a `.eq` for
+        the toplevel it's attached to.
+  - a static list of associations for the first argument given to it
+
+SO I'm imaginig jerd's parser seeing something like
+```clj
+"Some docstring"
+(associates eq)
+(defmacro-aux derive-eq [args toplevel]
+  ...)
+```
+And it spits out
+`{macros: [{type: 'aux', loc: #derive-eq, associates: [#eq]}]}`
+
+
+OK SO thinking about `definstance`.
+oh wait but that's not a macro, is it. Yeah, so that's fine.
+but just for the sake of it
+
+```clj
+(definstance eq person
+  {|=|(fn [a b] ...)|})
+```
+parse (or ... would it be 'determine-associations'?)
+
+
+
+sooo what things need to be known without ... macro expansion?
+that's the thing, right? macro expansion requires code execution,
+and we'd like to know things statically, so we need to be able to
+analyze pre-macro-expanded code, which means it needs to be pre-parse
+as well.
+And the thing we need to know is:
+- what associations is this toplevel going to produce?
+do we ... care as much about dependencies?
+seems like deps need to be determined post-macro-expansion.
+So why are we worrying about associations?
+*because* associations might impact the dependency trees of
+other random things. So we're being stricter about them.
+
+
+Now, the question remains:
+- is there a way to only do dependency analysis post-expansion?
+  what issues would it have?
+  I need to try to construct a pathalogical case.
+
+
+
+
 # Autocomplete thoughts
 
 - [x] just navigating to a thing probably shouldn't trigger the autocomplete

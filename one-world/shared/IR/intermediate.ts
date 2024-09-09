@@ -241,6 +241,7 @@ export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
             if (!node.kind) {
                 return {
                     type: 'horiz',
+                    pullLast: true,
                     items: [
                         { type: 'cursor', path, side: 'start' },
                         { type: 'punct', text: '“' },
@@ -251,8 +252,13 @@ export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
                                 path: pathWithChildren(path, loc),
                             })),
                         },
-                        { type: 'punct', text: '”' },
-                        { type: 'cursor', path, side: 'end' },
+                        {
+                            type: 'horiz',
+                            items: [
+                                { type: 'punct', text: '”' },
+                                { type: 'cursor', path, side: 'end' },
+                            ],
+                        },
                     ],
                 };
             }

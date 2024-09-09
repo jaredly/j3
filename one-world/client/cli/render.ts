@@ -251,6 +251,7 @@ export function calculateIRs(
                     // TODO THis will not work with macros.
                     // we'll have to do the actual graph resolution for that.
                     const node = state.toplevels[tid].nodes[idx];
+                    if (!node) return null;
                     const sel = ds.selections.find(
                         (s) =>
                             s.start.path.root.toplevel === tid &&
