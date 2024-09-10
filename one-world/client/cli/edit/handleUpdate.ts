@@ -741,6 +741,10 @@ function handleNamespaceUpdate(
     }
 
     const parts = splitGraphemes(key);
+    if (parts.length > 1) {
+        return false;
+    }
+
     updated.splice(at, 0, ...parts);
     at += parts.length;
 

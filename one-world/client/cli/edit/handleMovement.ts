@@ -127,16 +127,9 @@ export const handleUpDown = (
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
-    if (sel.type !== 'ir') {
-        return false;
-    }
 
     if (key === 'UP' || key === 'DOWN') {
-        const result = selectionLocation(
-            rstate.sourceMaps,
-            sel.start.path,
-            sel.start.cursor,
-        );
+        const result = selectionLocation(rstate.sourceMaps, sel);
         if (!result) return false;
         let [x, y] = result.pos;
         if (ds.verticalLodeStone) x = ds.verticalLodeStone;
@@ -154,19 +147,12 @@ export const handleUpDown = (
                 up = sel;
                 break;
             }
-            // up = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
-            // if (up) break;
         }
         if (!up) return false;
-        // const path: Path = up.source.path;
-        // const cursor = selectionFromLocation(up, { x, y });
         store.update({
             type: 'selection',
             doc: docId,
-            selections: [
-                up.selection,
-                // toSelection({ cursor, path })
-            ],
+            selections: [up.selection],
             verticalLodeStone: up.exact ? undefined : x,
         });
         return true;

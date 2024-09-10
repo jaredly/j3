@@ -40,6 +40,25 @@ export const selectionForPos = (
         };
     }
 
+    for (let sm of sourceMaps) {
+        if (
+            sm.source.type === 'namespace' &&
+            sm.shape.type === 'block' &&
+            sm.shape.start[1] === y
+        ) {
+            const start = Math.min(x - sm.shape.start[0], sm.shape.width);
+            return {
+                selection: {
+                    type: 'namespace',
+                    root: sm.source.path.root,
+                    start,
+                    end: start,
+                },
+                exact: false,
+            };
+        }
+    }
+
     // Otherwise, search for the "next best thing"
     const closest = dropTargets
         .map((target) => ({

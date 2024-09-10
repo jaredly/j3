@@ -41,7 +41,6 @@ import {
 import { docToBlock, layoutCtx } from './drawDocNode';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 import { selectionLocation } from './selectionLocation';
-import equal from 'fast-deep-equal';
 
 export const selectionPos = (
     store: Store,
@@ -52,23 +51,7 @@ export const selectionPos = (
     const ds = store.getDocSession(docId, store.session);
     if (ds.selections.length) {
         const sel = ds.selections[0];
-        if (sel.type !== 'ir') {
-            const got = sourceMaps.find(
-                (sm) =>
-                    sm.source.type === 'namespace' &&
-                    equal(sm.source.path.root, sel.root),
-            );
-            if (got) {
-                const [x, y] = got?.shape.start;
-                return [x + sel.end, y];
-            }
-            return;
-        }
-        const result = selectionLocation(
-            sourceMaps,
-            sel.start.path,
-            sel.start.cursor,
-        );
+        const result = selectionLocation(sourceMaps, sel);
         if (nodeStart) {
             return result?.source.shape.start;
         }
@@ -116,7 +99,7 @@ export const render = (
     store: Store,
     docId: string,
     ev: AnyEvaluator,
-) => {
+): RState => {
     const ds = store.getDocSession(docId, store.session);
     const state = store.getState();
     const doc = state.documents[docId];
@@ -391,6 +374,7 @@ export function selectionStyleOverrides(
 
     return styles;
 }
+
 export type RState = {
     cache: IRCache2<any>;
     sourceMaps: BlockEntry[];

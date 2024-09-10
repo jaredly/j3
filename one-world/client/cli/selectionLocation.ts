@@ -1,7 +1,9 @@
+import equal from 'fast-deep-equal';
 import { BlockEntry } from '../../shared/IR/block-to-text';
 import { IRCursor, IRSelection } from '../../shared/IR/intermediate';
 import { lastChild } from '../../shared/IR/nav';
 import { Path } from '../../shared/nodes';
+import { DocSelection } from '../../shared/state2';
 
 const shapeEnd = (shape: BlockEntry['shape']) => {
     if (shape.type === 'block') {
@@ -159,9 +161,18 @@ const shapeTextIndex = (
 
 export const selectionLocation = (
     sourceMaps: BlockEntry[],
-    path: Path,
-    cursor: IRCursor,
+    sel: DocSelection,
 ) => {
+    if (sel.type !== 'ir') {
+        for (let source of sourceMaps) {
+            if (source.source.type !== 'namespace') continue;
+            if (!equal(source.source.path.root, sel.root)) continue;
+            const [x, y] = source.shape.start;
+            return { source, pos: [x + sel.end, y] };
+        }
+        return;
+    }
+    const { path, cursor } = sel.start;
     const loc = path.children[path.children.length - 1];
     for (let source of sourceMaps) {
         if (source.source.path.root.toplevel !== path.root.toplevel) continue;
