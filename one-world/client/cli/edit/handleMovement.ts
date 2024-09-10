@@ -445,6 +445,7 @@ export const handleMovement = (
             doc: docId,
             selections: [
                 {
+                    type: 'ir',
                     start: sel.start,
                     end: { path, key: serializePath(path) },
                 },
@@ -476,6 +477,7 @@ export const handleMovement = (
             doc: docId,
             selections: [
                 {
+                    type: 'ir',
                     start: sel.start,
                     end: path ? { path, key: serializePath(path) } : undefined,
                 },
@@ -586,5 +588,9 @@ const getAdjacent = (
                   parentPath(path),
                   items[at + (dir === 'right' ? 1 : -1)],
               );
-    return { start, end: { path: next, key: serializePath(next) } };
+    return {
+        type: 'ir',
+        start,
+        end: { path: next, key: serializePath(next) },
+    };
 };

@@ -1,5 +1,6 @@
 import { BlockEntry, DropTarget } from '../../../shared/IR/block-to-text';
 import { matchesSpan } from '../../../shared/IR/highlightSpan';
+import { IRSelection } from '../../../shared/IR/intermediate';
 import { cursorForNode, IRCache, IRCache2 } from '../../../shared/IR/nav';
 import { Path, serializePath } from '../../../shared/nodes';
 import { Store } from '../../StoreContext2';
@@ -11,14 +12,17 @@ export const selectionForPos = (
     sourceMaps: BlockEntry[],
     dropTargets: DropTarget[],
     cache: IRCache2<unknown>,
-) => {
+): { selection: IRSelection; exact: boolean } | void => {
     const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
     if (found) {
         const path: Path = found.source.path;
         const cursor = selectionFromLocation(found, { x, y });
 
         return {
-            selection: { start: { cursor, key: serializePath(path), path } },
+            selection: {
+                type: 'ir',
+                start: { cursor, key: serializePath(path), path },
+            },
             exact: true,
         };
     }
@@ -44,7 +48,10 @@ export const selectionForPos = (
     path = { ...path, children };
 
     return {
-        selection: { start: { cursor, key: serializePath(path), path } },
+        selection: {
+            type: 'ir',
+            start: { cursor, key: serializePath(path), path },
+        },
         exact: false,
     };
 };
@@ -117,6 +124,7 @@ export const handleMouseDrag = (
             doc: docId,
             selections: [
                 {
+                    type: 'ir',
                     start: {
                         cursor: {
                             type: 'text',
@@ -134,7 +142,9 @@ export const handleMouseDrag = (
         store.update({
             type: 'selection',
             doc: docId,
-            selections: [{ start: sel.start, end: { path, key: pk } }],
+            selections: [
+                { type: 'ir', start: sel.start, end: { path, key: pk } },
+            ],
         });
     }
 };

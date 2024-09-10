@@ -266,6 +266,7 @@ export const joinLeft = (
             },
         },
         {
+            type: 'ir',
             start: {
                 path: ppath,
                 key: serializePath(ppath),
@@ -282,7 +283,10 @@ export const joinLeft = (
 };
 
 const withPath = (sel: IRSelection, path: Path): IRSelection | void => {
-    return { start: { ...sel.start, path, key: serializePath(path) } };
+    return {
+        type: 'ir',
+        start: { ...sel.start, path, key: serializePath(path) },
+    };
 };
 
 export const remove = (path: Path, top: Toplevel): void | ToplevelUpdate => {
@@ -369,6 +373,7 @@ export const addSibling = (
         selection: left
             ? undefined
             : {
+                  type: 'ir',
                   start: {
                       cursor: selected.cursor,
                       path: npath,
@@ -379,6 +384,7 @@ export const addSibling = (
 };
 
 export const idSel = (cursor: number, path: Path): IRSelection => ({
+    type: 'ir',
     start: {
         cursor: { type: 'text', end: { cursor, index: 0 } },
         path,

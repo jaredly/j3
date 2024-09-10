@@ -234,6 +234,7 @@ export const newDocNodeNeighbor = (
             doc: path.root.doc,
             selections: [
                 {
+                    type: 'ir',
                     start: selections[0].start,
                     end: {
                         path: selections[selections.length - 1].start.path,

@@ -52,6 +52,7 @@ export const addTableColumn = (
             doc: path.root.doc,
             selections: [
                 {
+                    type: 'ir',
                     start: {
                         path: npath,
                         key: serializePath(npath),

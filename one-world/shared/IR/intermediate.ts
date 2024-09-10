@@ -75,6 +75,7 @@ export type IR =
     | { type: 'cursor'; side: 'start' | 'inside' | 'end' | string; path: Path };
 
 export type IRSelection = {
+    type: 'ir';
     start: { path: Path; key: string; cursor: IRCursor };
     // for multi-node selections.
     // NOTE that we normalize this so that start & end have the

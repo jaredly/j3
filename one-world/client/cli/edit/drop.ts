@@ -139,6 +139,7 @@ export const drop = (source: MultiSelect, dest: DropTarget, store: Store) => {
             doc: ppath.root.doc,
             selections: [
                 {
+                    type: 'ir',
                     start: {
                         path: selStart,
                         key: serializePath(selStart),

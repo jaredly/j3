@@ -88,6 +88,7 @@ export const swapTop = (
         doc: end.root.doc,
         selections: [
             {
+                type: 'ir',
                 start: {
                     ...start,
                     path: spath,
@@ -165,6 +166,7 @@ export const swap = (
             doc: end.root.doc,
             selections: [
                 {
+                    type: 'ir',
                     start: {
                         ...start,
                         path: spath,
@@ -204,6 +206,7 @@ export const swap = (
                 doc: end.root.doc,
                 selections: [
                     {
+                        type: 'ir',
                         start: {
                             ...start,
                             path: spath,

@@ -297,6 +297,7 @@ export const goLeftRightInner = (
                     cursor.start.cursor !== cursor.end.cursor)
             ) {
                 return {
+                    type: 'ir',
                     start: {
                         ...sel.start,
                         cursor: { ...cursor, start: undefined },
@@ -306,6 +307,7 @@ export const goLeftRightInner = (
             const next = cursor.end.cursor + (left ? -1 : 1);
             if (next >= 0 && next <= splitGraphemes(text.text).length) {
                 return {
+                    type: 'ir',
                     start: {
                         ...sel.start,
                         cursor: {
@@ -356,6 +358,7 @@ const goLRFrom = (
         left,
     );
     return {
+        type: 'ir',
         start: {
             path: cpath,
             key: serializePath(cpath),
@@ -423,6 +426,7 @@ export const selectNode = (
 };
 
 export const idSelection = (path: Path): IRSelection => ({
+    type: 'ir',
     start: {
         path,
         key: serializePath(path),
@@ -440,6 +444,7 @@ export const toSelection = ({
     cursor: IRCursor;
     path: Path;
 }): IRSelection => ({
+    type: 'ir',
     start: {
         path,
         key: serializePath(path),

@@ -210,6 +210,7 @@ export const handleUpdate = (
         doc: docId,
         selections: [
             {
+                type: 'ir',
                 start: {
                     path: sel.start.path,
                     key: serializePath(sel.start.path),
@@ -387,6 +388,7 @@ export const handleIDUpdate = ({
                 doc: path.root.doc,
                 selections: [
                     {
+                        type: 'ir',
                         start: {
                             path: npath,
                             key: serializePath(npath),

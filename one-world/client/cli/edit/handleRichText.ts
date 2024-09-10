@@ -109,6 +109,7 @@ export const handleRichText = (
                 doc: docId,
                 selections: [
                     {
+                        type: 'ir',
                         start: {
                             path: spath,
                             key: serializePath(spath),
@@ -157,6 +158,7 @@ export const handleRichText = (
                 doc: docId,
                 selections: [
                     {
+                        type: 'ir',
                         start: {
                             path: spath,
                             key: serializePath(spath),

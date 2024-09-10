@@ -53,6 +53,7 @@ export const wrapNodesWith = (
             doc: parent.root.doc,
             selections: [
                 {
+                    type: 'ir',
                     start: {
                         path: npath,
                         key: pkey,
