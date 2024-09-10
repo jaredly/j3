@@ -1,9 +1,12 @@
 
 # Namespace, gotta haver it
 
-- [ ] selection type namespace, make the types work
-- [ ] render it
+- [x] selection type namespace, make the types work
+- [x] render it
+- [x] handle click
+- [ ] handle dragggg
 - [ ] handle movement; up/down/left/right typing n stuff
+- [ ] spoof / to // folks
 
 # Now I think we graph.
 

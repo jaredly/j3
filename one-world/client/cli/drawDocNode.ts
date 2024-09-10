@@ -9,7 +9,7 @@ import { white } from '../../shared/IR/ir-to-text';
 import { IRForLoc, LayoutCtx } from '../../shared/IR/layout';
 import { IRCache2 } from '../../shared/IR/nav';
 import { PathRoot } from '../../shared/nodes';
-import { Doc, PersistedState } from '../../shared/state2';
+import { Doc, DocSelection, PersistedState } from '../../shared/state2';
 import { controlLayout, textLayout } from './textLayout';
 
 export const docToBlock = <Top>(
@@ -19,6 +19,7 @@ export const docToBlock = <Top>(
     toplevels: PersistedState['toplevels'],
     cache: IRCache2<Top>,
     layoutCache: Record<string, LayoutCtx['layouts']>,
+    selections: DocSelection[],
 ): Block => {
     const node = doc.nodes[id];
     let top: Block | null = null;
@@ -30,11 +31,24 @@ export const docToBlock = <Top>(
             toplevel: node.toplevel,
             type: 'doc-node',
         };
+        let nsText = node.namespace;
+        const sel = selections.find(
+            (s) => s.type === 'namespace' && s.root.toplevel === node.toplevel,
+        );
+        if (sel?.type === 'namespace' && sel.text != null) {
+            nsText = sel.text.join('');
+        }
         top = vblock([
-            line('namespace-please', {
-                type: 'namespace',
-                path: { root, children: [] },
-            }),
+            line(
+                nsText ?? 'namespace',
+                {
+                    type: 'namespace',
+                    path: { root, children: [] },
+                },
+                {
+                    fontStyle: nsText != null ? undefined : 'italic',
+                },
+            ),
             drawToplevel(
                 node.toplevel,
                 root,
@@ -47,7 +61,15 @@ export const docToBlock = <Top>(
     }
     if (node.children.length) {
         const children = node.children.map((cid) =>
-            docToBlock(cid, selfIds, doc, toplevels, cache, layoutCache),
+            docToBlock(
+                cid,
+                selfIds,
+                doc,
+                toplevels,
+                cache,
+                layoutCache,
+                selections,
+            ),
         );
         if (top == null) {
             return children.length === 1 ? children[0] : vblock(children);

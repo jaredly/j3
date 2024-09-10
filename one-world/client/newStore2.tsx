@@ -213,7 +213,11 @@ export const newStore = (
                     });
 
                     prev.forEach((psel) => {
-                        if (psel.type !== 'ir') return;
+                        if (psel.type !== 'ir') {
+                            // If you don't manually "commit" a namespace change,
+                            // we just reset it.
+                            return;
+                        }
                         selPathKeys(psel).forEach((k) => {
                             const id = `${session}#${k}`;
                             updated.selections[id] = true;

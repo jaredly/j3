@@ -57,6 +57,7 @@ export type DocSelection =
           root: PathRoot;
           start: number;
           end: number;
+          text?: string[];
       };
 
 export type DocSession = {

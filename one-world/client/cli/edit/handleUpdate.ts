@@ -19,7 +19,11 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
-import { DocSession, PersistedState } from '../../../shared/state2';
+import {
+    DocSelection,
+    DocSession,
+    PersistedState,
+} from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
 import { getNodeForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
@@ -59,7 +63,10 @@ export const handleUpdate = (
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
-    if (sel.type !== 'ir') return false;
+    if (sel.type !== 'ir') {
+        return handleNamespaceUpdate(key, docId, sel, cache, store);
+    }
+
     if (sel.end && sel.end.key !== sel.start.key) {
         return handleMutliSelect(store, sel, sel.end, key, ds);
     }
@@ -689,3 +696,58 @@ export const handleMutliSelect = (
 
     return false;
 };
+
+function handleNamespaceUpdate(
+    key: string,
+    docId: string,
+    sel: Extract<DocSelection, { type: 'namespace' }>,
+    cache: IRCache2<unknown>,
+    store: Store,
+): boolean {
+    if (key === 'LEFT') {
+        const start = Math.max(0, sel.end - 1);
+        store.update({
+            type: 'selection',
+            doc: docId,
+            selections: [{ ...sel, start, end: start }],
+        });
+        return true;
+    }
+    const nid = sel.root.ids[sel.root.ids.length - 1];
+    const node = store.getState().documents[docId].nodes[nid];
+    const text = sel.text ?? splitGraphemes(node.namespace ?? '');
+
+    if (key === 'RIGHT') {
+        const start = Math.min(text.length, sel.end + 1);
+        store.update({
+            type: 'selection',
+            doc: docId,
+            selections: [{ ...sel, start, end: start }],
+        });
+        return true;
+    }
+    const updated = text.slice();
+    let at = Math.min(Math.max(0, sel.end), text.length);
+
+    if (key === 'BACKSPACE') {
+        if (at === 0) return false;
+        updated.splice(at - 1, 1);
+        at--;
+        key = '';
+    }
+
+    if (key === '/') {
+        key = '⫽';
+    }
+
+    const parts = splitGraphemes(key);
+    updated.splice(at, 0, ...parts);
+    at += parts.length;
+
+    store.update({
+        type: 'selection',
+        doc: docId,
+        selections: [{ ...sel, start: at, end: at, text: updated }],
+    });
+    return true;
+}

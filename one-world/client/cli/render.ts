@@ -126,7 +126,15 @@ export const render = (
 
     applySelectionText(ds.selections, cache);
     const layoutCache = calculateLayouts(doc, state, maxWidth, cache);
-    const block = docToBlock(0, [], doc, state.toplevels, cache, layoutCache);
+    const block = docToBlock(
+        0,
+        [],
+        doc,
+        state.toplevels,
+        cache,
+        layoutCache,
+        ds.selections,
+    );
 
     const { txt, sourceMaps, dropTargets } = redrawWithSelection(
         block,
