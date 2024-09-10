@@ -16,7 +16,7 @@ export const newDocument = (id: string): Action[] => {
                 type: 'reset',
                 toplevel: {
                     id: tid,
-                    macros: {},
+                    auxiliaries: [],
                     nextLoc: 1,
                     nodes: { 0: { type: 'id', loc: 0, text: '' } },
                     root: 0,

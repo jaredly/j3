@@ -91,6 +91,9 @@ export const loadState = (base: string): PersistedState => {
     mkdirSync(tl, { recursive: true });
     readdirSync(tl).forEach((id) => {
         state.toplevels[id] = JSON.parse(readFileSync(join(tl, id), 'utf8'));
+        if (!state.toplevels[id].auxiliaries) {
+            state.toplevels[id].auxiliaries = [];
+        }
     });
 
     const doc = join(base, 'documents');

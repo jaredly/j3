@@ -204,7 +204,7 @@ export const newDocNodeNeighbor = (
                 type: 'reset',
                 toplevel: {
                     id: newTop,
-                    macros: {},
+                    auxiliaries: [],
                     nextLoc: nidx.next,
                     nodes,
                     root: nloc,

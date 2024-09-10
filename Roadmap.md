@@ -15,6 +15,15 @@ ok so the status is thusly:
   - this limits the scope of "what we need to process in order to ensure we've got everything"
 
 
+THEREFORE:
+
+when considering a given term, it will be necessary to:
+- parse & macroexpand all terms in that module, to ensure that accessory terms are collected
+- and then we can statically construct a dependency tree.
+- /ideally/ we'd have most or all of that in the persistent cache.
+
+
+
 
 
 # Ok some more thoughts

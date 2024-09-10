@@ -1,6 +1,7 @@
 // full on state
 // probably persisted or something
 
+import { ParseResult } from '../boot-ex/types';
 import { Cursor, Path } from './nodes';
 import { Toplevels } from './toplevels';
 
@@ -92,6 +93,10 @@ export type DocSession = {
     //     sels: { start?: Cursor; cursor: Cursor }[];
     //     cache: Record<number, {idx: number}>
     // }
+};
+
+export type ParseCache = {
+    toplevels: Record<string, ParseResult<any>>;
 };
 
 export type PersistedState = {

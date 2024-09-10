@@ -44,7 +44,7 @@ export const Browse = () => {
                             type: 'reset',
                             toplevel: {
                                 id: tid,
-                                macros: {},
+                                auxiliaries: [],
                                 nextLoc: 1,
                                 nodes: {
                                     0: {

@@ -1,5 +1,5 @@
 import { Layout } from '../shared/IR/intermediate';
-import { Loc, RecNode, RecNodeT, Style } from '../shared/nodes';
+import { IDRef, Loc, RecNode, RecNodeT, Style } from '../shared/nodes';
 
 // TODO: Make this better than string. maybe cst or something
 type Docs = string;
@@ -35,11 +35,12 @@ export type ParseResult<Top> = {
     layouts: Record<number, Layout>;
     styles: Record<number, Style>;
     tableHeaders: Record<number, string[]>;
-    usages?: Usage[];
+    localUsages?: Usage[];
     // NEED a thing for "prefixes" or whatnot, for like the
     // test result stuff. sidecars?
     // there'd need to be a "kind" that adds a whole column to a table.
 
+    references?: { loc: Loc; ref: IDRef }[];
     exports?: { loc: Loc; kind: string }[];
     associations?: {
         // should be something exported from this dealio, but I guess it doesn't have to be
@@ -61,6 +62,7 @@ export type AnyEvaluator = Evaluator<any, any, any>;
 export type Evaluator<AST, TINFO, IR> = {
     kwds: Auto[];
     parse(node: RecNode, cursor?: number): ParseResult<AST>;
+    macrosToExpand(node: RecNode): Loc[];
     infer(top: AST, infos: Record<string, TINFO>): TINFO;
     compile(top: AST, info: TINFO): IR;
     print(

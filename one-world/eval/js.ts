@@ -106,6 +106,9 @@ const processString = (
 
 export const JsEvaluator: Evaluator<AST, null, string> = {
     kwds: [],
+    macrosToExpand(node) {
+        return [];
+    },
     parse(node, cursor) {
         if (node.type !== 'string') {
             throw new Error('no');
