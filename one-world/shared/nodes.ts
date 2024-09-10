@@ -2,10 +2,10 @@
 
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { filterNulls } from '../../web/custom/old-stuff/filterNulls';
-import { selectNode } from '../client/selectNode';
+// import { selectNode } from '../client/selectNode';
 import { isCollection } from '../client/TextEdit/actions';
 import { RenderInfo } from './renderables';
-import { NodeSelection } from './state';
+// import { NodeSelection } from './state2';
 
 export type Loc = Array<[string, number]>;
 export const keyForLoc = (loc: Loc) =>
@@ -254,54 +254,54 @@ export type RecNodeT<Loc> =
 
 export type Nodes = Record<number, Node>;
 
-export const inFromEnd = (
-    node: Node,
-    path: Path,
-    nodes: Nodes,
-): void | NodeSelection => {
-    if (node.type === 'string') {
-        return {
-            type: 'string',
-            path,
-            pathKey: serializePath(path),
-            cursor: {
-                part: node.templates.length,
-                char: splitGraphemes(
-                    node.templates.length === 0
-                        ? node.first
-                        : node.templates[node.templates.length - 1].suffix,
-                ).length,
-            },
-        };
-    }
-    const children = childLocs(node);
-    if (!children.length) {
-        return;
-    }
-    const loc = children[children.length - 1];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
-};
+// export const inFromEnd = (
+//     node: Node,
+//     path: Path,
+//     nodes: Nodes,
+// ): void | NodeSelection => {
+//     if (node.type === 'string') {
+//         return {
+//             type: 'string',
+//             path,
+//             pathKey: serializePath(path),
+//             cursor: {
+//                 part: node.templates.length,
+//                 char: splitGraphemes(
+//                     node.templates.length === 0
+//                         ? node.first
+//                         : node.templates[node.templates.length - 1].suffix,
+//                 ).length,
+//             },
+//         };
+//     }
+//     const children = childLocs(node);
+//     if (!children.length) {
+//         return;
+//     }
+//     const loc = children[children.length - 1];
+//     return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
+// };
 
-export const inFromStart = (
-    node: Node,
-    path: Path,
-    nodes: Nodes,
-): void | NodeSelection => {
-    if (node.type === 'string') {
-        return {
-            type: 'string',
-            cursor: { part: 0, char: 0 },
-            path,
-            pathKey: serializePath(path),
-        };
-    }
-    const children = childLocs(node);
-    if (children.length === 0) {
-        return;
-    }
-    const loc = children[0];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'start', nodes);
-};
+// export const inFromStart = (
+//     node: Node,
+//     path: Path,
+//     nodes: Nodes,
+// ): void | NodeSelection => {
+//     if (node.type === 'string') {
+//         return {
+//             type: 'string',
+//             cursor: { part: 0, char: 0 },
+//             path,
+//             pathKey: serializePath(path),
+//         };
+//     }
+//     const children = childLocs(node);
+//     if (children.length === 0) {
+//         return;
+//     }
+//     const loc = children[0];
+//     return selectNode(nodes[loc], pathWithChildren(path, loc), 'start', nodes);
+// };
 
 export const firstAtom = (path: Path, nodes: Nodes): Path => {
     const loc = path.children[path.children.length - 1];
@@ -376,81 +376,81 @@ export const prevAtom = (path: Path, nodes: Nodes): Path | void => {
     );
 };
 
-export const toTheRight = (
-    parent: Node,
-    cloc: number,
-    path: Path,
-    nodes: Nodes,
-): void | NodeSelection => {
-    if (parent.type === 'string') {
-        const ppath = path; //parentPath(path);
-        const pathKey = serializePath(ppath);
-        if (cloc === parent.tag) {
-            return {
-                type: 'string',
-                path: ppath,
-                pathKey,
-                cursor: { part: 0, char: 0 },
-            };
-        }
-        const at = parent.templates.findIndex((t) => t.expr === cloc);
-        if (at === -1) return;
-        return {
-            type: 'string',
-            path: ppath,
-            pathKey,
-            cursor: { part: at + 1, char: 0 },
-        };
-    }
-    const children = childLocs(parent);
-    const idx = children.indexOf(cloc);
-    if (idx === children.length - 1) {
-        return selectNode(parent, path, 'end', nodes);
-    }
-    const loc = children[idx + 1];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'start', nodes);
-};
+// export const toTheRight = (
+//     parent: Node,
+//     cloc: number,
+//     path: Path,
+//     nodes: Nodes,
+// ): void | NodeSelection => {
+//     if (parent.type === 'string') {
+//         const ppath = path; //parentPath(path);
+//         const pathKey = serializePath(ppath);
+//         if (cloc === parent.tag) {
+//             return {
+//                 type: 'string',
+//                 path: ppath,
+//                 pathKey,
+//                 cursor: { part: 0, char: 0 },
+//             };
+//         }
+//         const at = parent.templates.findIndex((t) => t.expr === cloc);
+//         if (at === -1) return;
+//         return {
+//             type: 'string',
+//             path: ppath,
+//             pathKey,
+//             cursor: { part: at + 1, char: 0 },
+//         };
+//     }
+//     const children = childLocs(parent);
+//     const idx = children.indexOf(cloc);
+//     if (idx === children.length - 1) {
+//         return selectNode(parent, path, 'end', nodes);
+//     }
+//     const loc = children[idx + 1];
+//     return selectNode(nodes[loc], pathWithChildren(path, loc), 'start', nodes);
+// };
 
-export const toTheLeft = (
-    parent: Node,
-    cloc: number,
-    path: Path,
-    nodes: Nodes,
-): void | NodeSelection => {
-    if (parent.type === 'string') {
-        if (cloc === parent.tag) {
-            const gparent = path.children[path.children.length - 2];
-            return toTheLeft(
-                nodes[gparent],
-                parent.loc,
-                parentPath(path),
-                nodes,
-            );
-        }
-        const ppath = path; // parentPath(path);
-        const pathKey = serializePath(ppath);
-        const at = parent.templates.findIndex((t) => t.expr === cloc);
-        if (at === -1) return;
-        return {
-            type: 'string',
-            path: ppath,
-            pathKey,
-            cursor: {
-                part: at,
-                char: splitGraphemes(
-                    at === 0 ? parent.first : parent.templates[at - 1].suffix,
-                ).length,
-            },
-        };
-    }
-    const children = childLocs(parent);
-    const idx = children.indexOf(cloc);
-    if (idx === 0) {
-        return selectNode(parent, path, 'start', nodes);
-    }
-    const loc = children[idx - 1];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
-};
+// export const toTheLeft = (
+//     parent: Node,
+//     cloc: number,
+//     path: Path,
+//     nodes: Nodes,
+// ): void | NodeSelection => {
+//     if (parent.type === 'string') {
+//         if (cloc === parent.tag) {
+//             const gparent = path.children[path.children.length - 2];
+//             return toTheLeft(
+//                 nodes[gparent],
+//                 parent.loc,
+//                 parentPath(path),
+//                 nodes,
+//             );
+//         }
+//         const ppath = path; // parentPath(path);
+//         const pathKey = serializePath(ppath);
+//         const at = parent.templates.findIndex((t) => t.expr === cloc);
+//         if (at === -1) return;
+//         return {
+//             type: 'string',
+//             path: ppath,
+//             pathKey,
+//             cursor: {
+//                 part: at,
+//                 char: splitGraphemes(
+//                     at === 0 ? parent.first : parent.templates[at - 1].suffix,
+//                 ).length,
+//             },
+//         };
+//     }
+//     const children = childLocs(parent);
+//     const idx = children.indexOf(cloc);
+//     if (idx === 0) {
+//         return selectNode(parent, path, 'start', nodes);
+//     }
+//     const loc = children[idx - 1];
+//     return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
+// };
 
 export const childNodes = (node: RecNode): RecNode[] => {
     switch (node.type) {

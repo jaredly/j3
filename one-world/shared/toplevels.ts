@@ -23,7 +23,7 @@ Toplevel
 
 import objectHash from 'object-hash';
 import { Nodes } from './nodes';
-import { EvaluatorPath, TS } from './state';
+import { EvaluatorPath, TS } from './state2';
 
 export type Toplevel = {
     id: string;

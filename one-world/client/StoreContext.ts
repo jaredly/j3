@@ -1,5 +1,5 @@
 import { createContext, RefObject, useContext } from 'react';
-import { DocSession, PersistedState } from '../shared/state';
+import { DocSession, PersistedState } from '../shared/state2';
 import { Action } from '../shared/action';
 import { Path } from '../shared/nodes';
 

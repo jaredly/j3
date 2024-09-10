@@ -1,5 +1,5 @@
 import { Node } from './nodes';
-import { Doc, DocSession, PersistedState, Reference, Stage } from './state';
+import { Doc, DocSession, PersistedState, Reference, Stage } from './state2';
 import { Toplevel } from './toplevels';
 
 export type Action =

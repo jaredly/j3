@@ -9,7 +9,7 @@
 import { loadState, saveChanges } from './persistence';
 import { Action } from '../shared/action2';
 import { update } from '../shared/update2';
-import { DocSession } from '../shared/state';
+import { DocSession } from '../shared/state2';
 import { ServerWebSocket } from 'bun';
 import { rid } from '../shared/rid';
 

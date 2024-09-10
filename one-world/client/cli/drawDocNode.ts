@@ -9,7 +9,7 @@ import { white } from '../../shared/IR/ir-to-text';
 import { IRForLoc, LayoutCtx } from '../../shared/IR/layout';
 import { IRCache2 } from '../../shared/IR/nav';
 import { PathRoot } from '../../shared/nodes';
-import { Doc, PersistedState } from '../../shared/state';
+import { Doc, PersistedState } from '../../shared/state2';
 import { controlLayout, textLayout } from './textLayout';
 
 export const docToBlock = <Top>(

@@ -1,4 +1,4 @@
-import { Doc, PersistedState, Stage } from '../shared/state';
+import { Doc, PersistedState, Stage } from '../shared/state2';
 import {
     existsSync,
     mkdirSync,

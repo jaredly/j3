@@ -11,7 +11,7 @@ import {
     PathRoot,
     pathWithChildren,
 } from '../../shared/nodes';
-import { Doc } from '../../shared/state';
+import { Doc } from '../../shared/state2';
 import { DocumentNode } from '../../shared/state2';
 import { Toplevel } from '../../shared/toplevels';
 

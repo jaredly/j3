@@ -1,6 +1,6 @@
-import { ensure } from '../client/newStore';
+import { ensure } from '../client/newStore2';
 import { Action, DocAction, ToplevelAction } from './action2';
-import { Doc, PersistedState } from './state';
+import { Doc, PersistedState } from './state2';
 import { Toplevel } from './toplevels';
 
 export type Updated = {

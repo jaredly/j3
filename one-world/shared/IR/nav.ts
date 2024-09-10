@@ -10,7 +10,7 @@ import {
     RecNode,
     serializePath,
 } from '../nodes';
-import { PersistedState } from '../state';
+import { PersistedState } from '../state2';
 import { IR, IRCursor, IRSelection, nodeToIR } from './intermediate';
 import { IRForLoc, LayoutCtx } from './layout';
 
