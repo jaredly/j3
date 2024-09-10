@@ -84,7 +84,8 @@ const setupDragger = (store: Store) => {
             store.session,
         ).selections;
         const matching = sels.find(
-            (s) => !s.end && s.start.key === dragState!.pathKey,
+            (s) =>
+                s.type === 'ir' && !s.end && s.start.key === dragState!.pathKey,
         );
 
         const range = new Range();
@@ -203,6 +204,7 @@ export const newStore = (
                         action.verticalLodeStone;
                     const seen: Record<string, IRSelection> = {};
                     action.selections.forEach((sel) => {
+                        if (sel.type !== 'ir') return;
                         selPathKeys(sel).forEach((k) => {
                             const id = `${session}#${k}`;
                             seen[id] = sel;
@@ -211,6 +213,7 @@ export const newStore = (
                     });
 
                     prev.forEach((psel) => {
+                        if (psel.type !== 'ir') return;
                         selPathKeys(psel).forEach((k) => {
                             const id = `${session}#${k}`;
                             updated.selections[id] = true;

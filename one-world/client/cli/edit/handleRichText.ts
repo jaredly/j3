@@ -71,6 +71,7 @@ export const handleRichText = (
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
+    if (sel.type !== 'ir') return false;
     if (sel.end) return false; //
 
     const state = store.getState();

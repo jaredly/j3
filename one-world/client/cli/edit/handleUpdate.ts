@@ -59,6 +59,7 @@ export const handleUpdate = (
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
+    if (sel.type !== 'ir') return false;
     if (sel.end && sel.end.key !== sel.start.key) {
         return handleMutliSelect(store, sel, sel.end, key, ds);
     }

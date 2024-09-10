@@ -24,6 +24,7 @@ import {
 } from '../../shared/nodes';
 import {
     Doc,
+    DocSelection,
     DocSession,
     DocumentNode,
     PersistedState,
@@ -50,6 +51,7 @@ export const selectionPos = (
     const ds = store.getDocSession(docId, store.session);
     if (ds.selections.length) {
         const sel = ds.selections[0];
+        if (sel.type !== 'ir') return;
         const result = selectionLocation(
             sourceMaps,
             sel.start.path,
@@ -82,10 +84,11 @@ const root = (doc: string, ids: number[], node: DocumentNode): PathRoot => ({
 });
 
 const cursorLoc = (
-    selections: IRSelection[],
+    selections: DocSelection[],
     id: string,
 ): number | undefined => {
     for (let sel of selections) {
+        if (sel.type !== 'ir') return;
         if (sel.end) return;
         if (
             sel.start.cursor.type === 'text' &&
@@ -124,7 +127,7 @@ export const render = (
 
 export const redrawWithSelection = (
     block: Block,
-    selections: IRSelection[],
+    selections: DocSelection[],
     dragState: DocSession['dragState'],
     state: PersistedState,
 ) => {
@@ -254,11 +257,13 @@ export function calculateIRs(
                     if (!node) return null;
                     const sel = ds.selections.find(
                         (s) =>
+                            s.type === 'ir' &&
                             s.start.path.root.toplevel === tid &&
                             lastChild(s.start.path) === idx,
                     );
                     if (
                         sel &&
+                        sel.type === 'ir' &&
                         sel.start.cursor.type === 'text' &&
                         sel.start.cursor.end.text
                     ) {
@@ -282,12 +287,13 @@ export function calculateIRs(
 }
 
 export function selectionStyleOverrides(
-    selections: IRSelection[],
+    selections: DocSelection[],
     dragState: DocSession['dragState'],
     state: PersistedState,
 ) {
     const styles: StyleOverrides = {};
     selections.forEach((selection) => {
+        if (selection.type !== 'ir') return;
         if (selection.end) {
             nodesForSelection(
                 selection.start.path,

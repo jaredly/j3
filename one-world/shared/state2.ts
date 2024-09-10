@@ -4,7 +4,7 @@
 import { MultiSelect } from '../client/cli/resolveMultiSelect';
 import { DropTarget } from './IR/block-to-text';
 import { IRSelection } from './IR/intermediate';
-import { Cursor, Path, RecNodeT } from './nodes';
+import { Cursor, Path, PathRoot, RecNodeT } from './nodes';
 import { Toplevels } from './toplevels';
 
 export type TS = { created: number; updated: number };
@@ -50,11 +50,20 @@ export type Reference = {
 //           cursor: { path: Path; pathKey: string };
 //       };
 
+export type DocSelection =
+    | IRSelection
+    | {
+          type: 'namespace';
+          root: PathRoot;
+          start: number;
+          end: number;
+      };
+
 export type DocSession = {
     doc: string;
     history: any[];
     activeStage: null | string;
-    selections: IRSelection[];
+    selections: DocSelection[];
     clipboard: RecNodeT<boolean>[];
     dragState?: {
         source: MultiSelect;

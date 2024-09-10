@@ -1,9 +1,10 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { IRSelection } from '../../shared/IR/intermediate';
 import { Store } from '../StoreContext2';
+import { DocSelection } from '../../shared/state2';
 
 const sessFile = './.cli.sess';
-export type Sess = { ssid: string; doc?: string; selection?: IRSelection[] };
+export type Sess = { ssid: string; doc?: string; selection?: DocSelection[] };
 export const readSess = (): Sess => {
     if (existsSync(sessFile)) {
         return JSON.parse(readFileSync('./.cli.sess', 'utf-8'));

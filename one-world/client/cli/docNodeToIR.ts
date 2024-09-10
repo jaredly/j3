@@ -11,7 +11,7 @@ import {
     PathRoot,
     pathWithChildren,
 } from '../../shared/nodes';
-import { Doc } from '../../shared/state2';
+import { Doc, DocSelection } from '../../shared/state2';
 import { DocumentNode } from '../../shared/state2';
 import { Toplevel } from '../../shared/toplevels';
 
@@ -31,10 +31,11 @@ export const iterDocNodes = (
 };
 
 export const applySelectionText = <Top>(
-    selections: IRSelection[],
+    selections: DocSelection[],
     cache: IRCache2<Top>,
 ) => {
     selections.forEach((sel) => {
+        if (sel.type !== 'ir') return;
         if (
             sel.start.cursor.type === 'text' &&
             sel.start.cursor.end.text != null

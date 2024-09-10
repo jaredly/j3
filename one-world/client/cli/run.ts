@@ -159,9 +159,11 @@ const run = async (term: termkit.Terminal) => {
             }
             handleMouseDrag(docId, rstate.sourceMaps, evt, store);
         } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
+            const sel = ds.selections[0];
             if (
+                sel.type === 'ir' &&
                 ds.selections.length &&
-                maybeStartDragging(evt, docId, rstate, ds.selections[0], store)
+                maybeStartDragging(evt, docId, rstate, sel, store)
             ) {
                 return;
             }

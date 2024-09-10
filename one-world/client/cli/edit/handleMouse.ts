@@ -73,6 +73,7 @@ export const handleMouseClick = (
     const cur = store.getDocSession(docId).selections[0];
     if (
         cur &&
+        cur.type === 'ir' &&
         cur.start.key === selection.start.key &&
         cur.start.cursor.type === 'text' &&
         cur.start.cursor.end.text &&
@@ -99,6 +100,7 @@ export const handleMouseDrag = (
     const sels = store.getDocSession(docId, store.session).selections;
     if (!sels.length) return;
     const sel = sels[0];
+    if (sel.type !== 'ir') return;
     const x = evt.x - 1;
     const y = evt.y - 2;
     const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));

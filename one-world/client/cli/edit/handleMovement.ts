@@ -44,8 +44,12 @@ export const handleDropdown = (
     );
     if (!autocomplete) return false;
     if (!autocomplete.length) return false;
+
+    const sel = ds.selections[0];
+    if (sel.type !== 'ir') return false;
+
     if (key === 'ESCAPE') {
-        ds.dropdown.dismissed = serializePath(ds.selections[0].start.path);
+        ds.dropdown.dismissed = serializePath(sel.start.path);
         rerender();
         return true;
     }
@@ -69,9 +73,7 @@ export const handleDropdown = (
         if (selected.type === 'action' || selected.type === 'toggle') {
             const shouldContinue = selected.action(true);
             if (ds.dropdown) {
-                ds.dropdown.dismissed = serializePath(
-                    ds.selections[0].start.path,
-                );
+                ds.dropdown.dismissed = serializePath(sel.start.path);
             }
             rerender();
             return !shouldContinue;
@@ -84,9 +86,7 @@ export const handleDropdown = (
         if (selected.type === 'action' || selected.type === 'toggle') {
             const shouldContinue = selected.action(key === ' ');
             if (ds.dropdown) {
-                ds.dropdown.dismissed = serializePath(
-                    ds.selections[0].start.path,
-                );
+                ds.dropdown.dismissed = serializePath(sel.start.path);
             }
             rerender();
             return !shouldContinue;
@@ -127,6 +127,9 @@ export const handleUpDown = (
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
+    if (sel.type !== 'ir') {
+        return false;
+    }
 
     if (key === 'UP' || key === 'DOWN') {
         const result = selectionLocation(
@@ -313,6 +316,7 @@ export const handleClose = (
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
+    if (sel.type !== 'ir') return false;
 
     if (sel.end) return false;
     if (sel.start.cursor.type === 'text' && sel.start.cursor.start)
@@ -408,6 +412,7 @@ export const handleMovement = (
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
+    if (sel.type !== 'ir') return false;
 
     if (handleClose(key, docId, cache, store)) {
         return true;
@@ -455,7 +460,8 @@ export const handleMovement = (
     }
 
     if (key === 'SHIFT_DOWN') {
-        const sel = ds.selections[0];
+        // const sel = ds.selections[0];
+        // if (sel.type !== 'ir') return false;
         if (!sel.end) return false;
 
         const slen = sel.start.path.children.length;
@@ -487,7 +493,7 @@ export const handleMovement = (
     }
 
     if (key === 'RIGHT' || key === 'SHIFT_RIGHT') {
-        const sel = ds.selections[0];
+        // const sel = ds.selections[0];
 
         // here we go for real for real
         if (key === 'SHIFT_RIGHT' && sel.end) {
@@ -528,7 +534,7 @@ export const handleMovement = (
     }
 
     if (key === 'LEFT' || key === 'SHIFT_LEFT') {
-        const sel = ds.selections[0];
+        // const sel = ds.selections[0];
 
         // here we go for real for real
         if (key === 'SHIFT_LEFT' && sel.end) {
