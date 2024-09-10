@@ -27,6 +27,8 @@ export type TextCtx = {
 export const blockSourceKey = (source: BlockSource): string => {
     const pathKey = serializePath(source.path);
     switch (source.type) {
+        case 'namespace':
+            return `${pathKey}:N`;
         case 'text':
             return `${pathKey}:T:${source.index}`;
         case 'control':
@@ -39,6 +41,7 @@ export const blockSourceKey = (source: BlockSource): string => {
 };
 
 export type BlockSource =
+    | { type: 'namespace'; path: Path }
     // | { type: 'loc'; loc: number; top: string }
     | {
           type: 'text';

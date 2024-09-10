@@ -3,6 +3,7 @@ import { matchesSpan } from '../../../shared/IR/highlightSpan';
 import { IRSelection } from '../../../shared/IR/intermediate';
 import { cursorForNode, IRCache, IRCache2 } from '../../../shared/IR/nav';
 import { Path, serializePath } from '../../../shared/nodes';
+import { DocSelection } from '../../../shared/state2';
 import { Store } from '../../StoreContext2';
 import { selectionFromLocation } from '../selectionLocation';
 
@@ -12,10 +13,22 @@ export const selectionForPos = (
     sourceMaps: BlockEntry[],
     dropTargets: DropTarget[],
     cache: IRCache2<unknown>,
-): { selection: IRSelection; exact: boolean } | void => {
+): { selection: DocSelection; exact: boolean } | void => {
     const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
     if (found) {
         const path: Path = found.source.path;
+        if (found.source.type === 'namespace') {
+            const start = x - found.shape.start[0];
+            return {
+                selection: {
+                    type: 'namespace',
+                    root: path.root,
+                    start,
+                    end: start,
+                },
+                exact: true,
+            };
+        }
         const cursor = selectionFromLocation(found, { x, y });
 
         return {
@@ -74,6 +87,7 @@ export const handleMouseClick = (
     if (
         cur &&
         cur.type === 'ir' &&
+        selection.type === 'ir' &&
         cur.start.key === selection.start.key &&
         cur.start.cursor.type === 'text' &&
         cur.start.cursor.end.text &&

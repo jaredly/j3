@@ -30,14 +30,20 @@ export const docToBlock = <Top>(
             toplevel: node.toplevel,
             type: 'doc-node',
         };
-        top = drawToplevel(
-            node.toplevel,
-            root,
-            toplevels[node.toplevel].root,
-            cache[node.toplevel].irs,
-            layoutCache[node.toplevel],
-            toplevels[node.toplevel].nextLoc,
-        );
+        top = vblock([
+            line('namespace-please', {
+                type: 'namespace',
+                path: { root, children: [] },
+            }),
+            drawToplevel(
+                node.toplevel,
+                root,
+                toplevels[node.toplevel].root,
+                cache[node.toplevel].irs,
+                layoutCache[node.toplevel],
+                toplevels[node.toplevel].nextLoc,
+            ),
+        ]);
     }
     if (node.children.length) {
         const children = node.children.map((cid) =>

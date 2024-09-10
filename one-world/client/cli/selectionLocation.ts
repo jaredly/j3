@@ -209,6 +209,14 @@ export const selectionFromLocation = (
     pos: { x: number; y: number },
 ): IRCursor => {
     switch (source.source.type) {
+        case 'namespace':
+            return {
+                type: 'text',
+                end: {
+                    index: 0,
+                    cursor: pos.x - source.shape.start[0],
+                },
+            };
         case 'control':
             return { type: 'control', index: source.source.index };
         case 'cursor':

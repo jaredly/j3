@@ -1,4 +1,10 @@
 
+# Namespace, gotta haver it
+
+- [ ] selection type namespace, make the types work
+- [ ] render it
+- [ ] handle movement; up/down/left/right typing n stuff
+
 # Now I think we graph.
 
 AHA
