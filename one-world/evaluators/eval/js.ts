@@ -1,6 +1,6 @@
-import { Evaluator, ParseResult } from '../evaluators/boot-ex/types';
-import { Loc, RecNode, RecNodeT } from '../shared/nodes';
-import { RenderInfo } from '../shared/renderables';
+import { Evaluator, ParseResult } from '../boot-ex/types';
+import { Loc, RecNode, RecNodeT } from '../../shared/nodes';
+import { RenderInfo } from '../../shared/renderables';
 // import { parse } from './parse-js';
 import * as ts from 'typescript';
 

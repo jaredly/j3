@@ -83,9 +83,6 @@ const _parse = (node: RecNode, ctx: Ctx) => {
                                     0,
                                 );
                                 const headers =
-                                    // width === 2
-                                    //     ? ['pattern', 'body']
-                                    //     :
                                     width === 3
                                         ? ['pattern', 'if', 'body']
                                         : undefined;

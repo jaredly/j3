@@ -1,7 +1,7 @@
 //
 
-import { Evaluator } from '../evaluators/boot-ex/types';
-import { Layout } from '../shared/IR/intermediate';
+import { Evaluator } from '../boot-ex/types';
+import { Layout } from '../../shared/IR/intermediate';
 import {
     foldNode,
     keyForLoc,
@@ -9,7 +9,7 @@ import {
     mapNode,
     RecNode,
     Style,
-} from '../shared/nodes';
+} from '../../shared/nodes';
 
 /*
 So, things we want this to do:
