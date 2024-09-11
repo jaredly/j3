@@ -1,8 +1,8 @@
 // It's a parser, that only does formatting!
 
-import { termColors } from '../client/TextEdit/colors';
-import { Layout } from '../shared/IR/intermediate';
-import { Loc, RecNode, Style } from '../shared/nodes';
+import { termColors } from '../../client/TextEdit/colors';
+import { Layout } from '../../shared/IR/intermediate';
+import { Loc, RecNode, Style } from '../../shared/nodes';
 import { AutoCompleteConfig, ParseResult } from './types';
 
 export const parse = (node: RecNode, cursor?: number): ParseResult<void> => {

@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
-import { BootExampleEvaluator } from '../../../boot-ex';
+import { BootExampleEvaluator } from '../../../evaluators/boot-ex';
 import { BlockEntry, DropTarget } from '../../../shared/IR/block-to-text';
 import { matchesSpan } from '../../../shared/IR/highlightSpan';
 import { IRSelection } from '../../../shared/IR/intermediate';

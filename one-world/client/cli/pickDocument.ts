@@ -3,9 +3,10 @@ import { Store } from '../StoreContext2';
 
 export const pickDocument = (store: Store, term: termkit.Terminal) => {
     return new Promise<string | null>((resolve, reject) => {
-        const state = store.getState();
+        let state = store.getState();
         const ids = Object.keys(state.documents);
         let sel = 0;
+        let renaming: null | { text: string; cursor: number } = null;
 
         const draw = () => {
             term.clear();
@@ -19,14 +20,67 @@ export const pickDocument = (store: Store, term: termkit.Terminal) => {
                         term('New Document');
                     }
                 } else if (sel === i) {
-                    term.bgGreen(state.documents[ids[i]].title);
+                    if (renaming) {
+                        term.bgBlue(renaming.text);
+                    } else {
+                        term.bgGreen(state.documents[ids[i]].title);
+                    }
                 } else {
                     term(state.documents[ids[i]].title);
                 }
             }
         };
 
+        store.on('all', () => {
+            state = store.getState();
+            draw();
+        });
+
         const key = (key: string) => {
+            if (renaming) {
+                if (key === 'ENTER') {
+                    store.update({
+                        type: 'doc',
+                        action: {
+                            type: 'update',
+                            update: { title: renaming.text },
+                        },
+                        id: ids[sel],
+                    });
+                    renaming = null;
+                    draw();
+                    return;
+                }
+                if (key === 'ESCAPE') {
+                    renaming = null;
+                    draw();
+                    return;
+                }
+                if (key === 'LEFT') {
+                    renaming.cursor = Math.max(0, renaming.cursor - 1);
+                } else if (key === 'RIGHT') {
+                    renaming.cursor = Math.min(
+                        renaming.text.length,
+                        renaming.cursor + 1,
+                    );
+                } else if (key === 'BACKSPACE') {
+                    if (renaming.cursor > 0) {
+                        renaming.text =
+                            renaming.text.slice(0, renaming.cursor - 1) +
+                            renaming.text.slice(renaming.cursor);
+                        renaming.cursor--;
+                    }
+                } else if (key.length === 1) {
+                    renaming.text =
+                        renaming.text.slice(0, renaming.cursor) +
+                        key +
+                        renaming.text.slice(renaming.cursor);
+                    renaming.cursor++;
+                }
+                draw();
+                term.moveTo(renaming.cursor + 1, sel + 1);
+                return;
+            }
             if (key === 'ENTER') {
                 term.off('key', key);
                 if (sel === ids.length) {
@@ -38,14 +92,23 @@ export const pickDocument = (store: Store, term: termkit.Terminal) => {
             }
             if (key === 'DOWN') {
                 sel = Math.min(sel + 1, ids.length);
+                renaming = null;
             }
             if (key === 'UP') {
                 sel = Math.max(0, sel - 1);
+                renaming = null;
             }
             if (key === 'ESCAPE') {
                 reject('quit');
             }
+            if (key === 'r') {
+                const title = state.documents[ids[sel]].title;
+                renaming = { text: title, cursor: title.length };
+            }
             draw();
+            if (renaming) {
+                term.moveTo(renaming.cursor + 1, sel + 1);
+            }
         };
 
         term.on('key', key);

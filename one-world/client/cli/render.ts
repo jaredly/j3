@@ -1,5 +1,5 @@
 import termkit from 'terminal-kit';
-import { AnyEvaluator, Evaluator } from '../../boot-ex/types';
+import { AnyEvaluator, Evaluator } from '../../evaluators/boot-ex/types';
 import {
     BlockEntry,
     blockToText,

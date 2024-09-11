@@ -1,6 +1,6 @@
 // testingi t up
 import { expect, test } from 'bun:test';
-import { joinChunks } from '../shared/IR/ir-to-text';
+import { joinChunks } from '../../shared/IR/ir-to-text';
 
 test('joinChunks', () => {
     expect(joinChunks(['a', 'b'])).toBe('ab');

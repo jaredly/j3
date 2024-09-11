@@ -1,8 +1,8 @@
 // testingi t up
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { BootExampleEvaluator } from '../../boot-ex';
-import { parse } from '../../boot-ex/format';
-import { reader } from '../../boot-ex/reader';
+import { BootExampleEvaluator } from '../../evaluators/boot-ex';
+import { parse } from '../../evaluators/boot-ex/format';
+import { reader } from '../../evaluators/boot-ex/reader';
 import { iterTopNodes } from '../../client/cli/docNodeToIR';
 import { controlLayout, textLayout } from '../../client/cli/textLayout';
 import { layoutCtx } from '../../client/cli/drawDocNode';

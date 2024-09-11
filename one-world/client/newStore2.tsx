@@ -1,4 +1,4 @@
-import { BootExampleEvaluator } from '../boot-ex';
+import { BootExampleEvaluator } from '../evaluators/boot-ex';
 import { Action } from '../shared/action2';
 import {
     IRCursor,

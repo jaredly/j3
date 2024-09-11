@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { AnyEvaluator } from '../../boot-ex/types';
+import { AnyEvaluator } from '../../evaluators/boot-ex/types';
 import { Action } from '../../shared/action2';
 import { IRCursor, IRSelection } from '../../shared/IR/intermediate';
 import {

@@ -1,5 +1,5 @@
-import { Layout } from '../shared/IR/intermediate';
-import { IDRef, Loc, RecNode, RecNodeT, Style } from '../shared/nodes';
+import { Layout } from '../../shared/IR/intermediate';
+import { IDRef, Loc, RecNode, RecNodeT, Style } from '../../shared/nodes';
 
 // TODO: Make this better than string. maybe cst or something
 type Docs = string;

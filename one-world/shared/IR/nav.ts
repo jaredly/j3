@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { ParseResult } from '../../boot-ex/types';
+import { ParseResult } from '../../evaluators/boot-ex/types';
 import {
     Node,
     Nodes,

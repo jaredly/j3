@@ -1,7 +1,7 @@
 import termkit from 'terminal-kit';
 import { Store } from '../StoreContext2';
 import { renderSelection, RState, selectionPos } from './render';
-import { AnyEvaluator } from '../../boot-ex/types';
+import { AnyEvaluator } from '../../evaluators/boot-ex/types';
 import { blockToText } from '../../shared/IR/block-to-text';
 import { getAutoComplete, menuToBlocks } from './getAutoComplete';
 

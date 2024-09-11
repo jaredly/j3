@@ -1,5 +1,5 @@
-import { RecNode } from '../shared/nodes';
-import { RenderInfo } from '../shared/renderables';
+import { RecNode } from '../../shared/nodes';
+import { RenderInfo } from '../../shared/renderables';
 
 type Fmt = { loc: number; info: RenderInfo };
 type Usage = { decl: number; usage?: number };

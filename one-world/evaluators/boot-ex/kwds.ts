@@ -1,6 +1,6 @@
 // builtin forms, idk. autocomplete kind = kwd
 
-import { RecNodeT } from '../shared/nodes';
+import { RecNodeT } from '../../shared/nodes';
 
 type Auto = {
     text: string;

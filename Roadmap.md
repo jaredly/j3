@@ -1,12 +1,73 @@
 
+# What's my full story?
+
+side note:
+- how do ... I decide ... what /values/ to output n stuff?
+  - ok so how bout, the compiler can return
+    named: Record<string, IR>,
+    evaluate?: IR,
+    and if there's an evaluate, it gets evaluated and the result is displayed.
+
+
+## Simpler (just macros)
+```clj
+(defmacro and [cst]
+  (match cst
+    (|(` #one #two)|(` if #one #two false)
+      _            |(fatal "bad karma")|)))
+
+(defmacro or [cst]
+  (match cst
+    (|(` #one #two)|(` if #one true #two)
+      _            |(fatal "bad macra")|)))
+
+(def x 3)
+(def y 15)
+
+(if (and (< x 5) (> y 10))
+  "Hello"
+  "World")
+```
+
+## Simplest (no macros)
+```clj
+(def x 3)
+
+(if (< x 5)
+  "Hello"
+  "World")
+```
+
+
+
+# Scrolllllioliol
+
+Gotta have scrollllll
+
+
 # Namespace, gotta haver it
 
 - [x] selection type namespace, make the types work
 - [x] render it
 - [x] handle click
 - [ ] handle dragggg
-- [ ] handle movement; up/down/left/right typing n stuff
-- [ ] spoof / to // folks
+- [x] handle movement; up/down/left/right typing n stuff
+- [x] spoof / to // folks
+- [ ]
+
+
+Graphing the deps
+
+- [term-ref].[term-ref] is always going to be an association.
+  - can they be nested??? I think probably nottt. let's not do it.
+  - might want to render the . as like a hollow circle or something to make things clear.
+
+therefore, once we have a macro-expanded CST, we can statically determine
+HRM ok so with type-classes, we don't necessarily know what things we'll be
+depending on. ...
+
+
+
 
 # Now I think we graph.
 

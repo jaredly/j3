@@ -1,6 +1,6 @@
 import { test, expect } from 'bun:test';
 import { JsEvaluator } from './js';
-import { reader } from '../boot-ex/reader';
+import { reader } from '../evaluators/boot-ex/reader';
 
 test('js eval expr', () => {
     const parsed = reader('js"hello()"')!;

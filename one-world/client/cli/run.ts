@@ -1,6 +1,5 @@
 import termkit from 'terminal-kit';
-import { BootExampleEvaluator } from '../../boot-ex';
-import { Block } from '../../shared/IR/ir-to-blocks';
+import { BootExampleEvaluator } from '../../evaluators/boot-ex';
 import { drop } from './edit/drop';
 import { handleMouseClick, handleMouseDrag } from './edit/handleMouse';
 import {
@@ -10,12 +9,11 @@ import {
 } from './edit/handleMovement';
 import { handleUpdate } from './edit/handleUpdate';
 import { genId, newDocument } from './edit/newDocument';
+import { handleDrag, maybeStartDragging } from './handleDrag';
 import { init } from './init';
 import { pickDocument } from './pickDocument';
-import { render, renderSelection, RState, selectionPos } from './render';
+import { render, renderSelection } from './render';
 import { readSess, trackSelection, writeSess } from './Sess';
-import { Store } from '../StoreContext2';
-import { handleDrag, maybeStartDragging } from './handleDrag';
 
 // cursor line instead of square
 process.stdout.write('\x1b[6 q');
@@ -26,14 +24,6 @@ global.window = {};
 global.localStorage = {};
 
 import { openSync, writeSync } from 'fs';
-import { AnyEvaluator } from '../../boot-ex/types';
-import { getAutoComplete, menuToBlocks } from './getAutoComplete';
-import {
-    BlockEntry,
-    blockToText,
-    DropTarget,
-} from '../../shared/IR/block-to-text';
-import { DocSession } from '../../shared/state2';
 import { recalcDropdown } from '../newStore2';
 import { drawToTerminal } from './drawToTerminal';
 // NOTE: Uncomment to route logs to a file
@@ -161,7 +151,7 @@ const run = async (term: termkit.Terminal) => {
         } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
             const sel = ds.selections[0];
             if (
-                sel.type === 'ir' &&
+                sel?.type === 'ir' &&
                 ds.selections.length &&
                 maybeStartDragging(evt, docId, rstate, sel, store)
             ) {

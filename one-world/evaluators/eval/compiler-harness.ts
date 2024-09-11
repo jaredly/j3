@@ -1,6 +1,6 @@
 //
 
-import { Evaluator } from '../boot-ex/types';
+import { Evaluator } from '../evaluators/boot-ex/types';
 import { Layout } from '../shared/IR/intermediate';
 import {
     foldNode,

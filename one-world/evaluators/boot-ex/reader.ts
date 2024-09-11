@@ -1,4 +1,4 @@
-import { IDRef, Loc, RecNode } from '../shared/nodes';
+import { IDRef, Loc, RecNode } from '../../shared/nodes';
 
 type RNode = RecNode;
 
