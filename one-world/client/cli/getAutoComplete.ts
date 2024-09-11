@@ -202,6 +202,7 @@ export const getAutoComplete = (
                         auto.text,
                         idNode,
                         canApplyTemplate ? tpl.template : [],
+                        auto.reference,
                     );
                     store.update(...actions);
                     return !template;
@@ -220,6 +221,7 @@ export const getAutoComplete = (
                     auto.text,
                     idNode,
                     [],
+                    auto.reference,
                 );
                 store.update(...actions);
                 return !template;

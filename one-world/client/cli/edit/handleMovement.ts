@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
-import { BootExampleEvaluator } from '../../../evaluators/boot-ex';
+import { AnyEvaluator } from '../../../evaluators/boot-ex/types';
 import { BlockEntry, DropTarget } from '../../../shared/IR/block-to-text';
 import { matchesSpan } from '../../../shared/IR/highlightSpan';
 import { IRSelection } from '../../../shared/IR/intermediate';
@@ -33,15 +33,11 @@ export const handleDropdown = (
     store: Store,
     rstate: RState,
     rerender: () => void,
+    ev: AnyEvaluator,
 ): boolean => {
     const ds = store.getDocSession(docId);
     if (!ds.dropdown || ds.dropdown.dismissed) return false;
-    const autocomplete = getAutoComplete(
-        store,
-        rstate,
-        ds,
-        BootExampleEvaluator,
-    );
+    const autocomplete = getAutoComplete(store, rstate, ds, ev);
     if (!autocomplete) return false;
     if (!autocomplete.length) return false;
 
@@ -100,12 +96,7 @@ export const handleDropdown = (
         }
     }
     if (key === 'RIGHT') {
-        const autocomplete = getAutoComplete(
-            store,
-            rstate,
-            ds,
-            BootExampleEvaluator,
-        );
+        const autocomplete = getAutoComplete(store, rstate, ds, ev);
         if (!autocomplete) return false;
         if (!autocomplete.length) return false;
         const selected = findMenuItem(autocomplete, ds.dropdown.selection);

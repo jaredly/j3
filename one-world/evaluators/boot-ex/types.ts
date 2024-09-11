@@ -9,6 +9,7 @@ export type Auto = {
     toplevel?: boolean;
     docs?: Docs;
     templates: { template: RecNodeT<boolean>[]; docs?: Docs }[];
+    reference?: IDRef;
 };
 
 // For internal references, not global ones.
@@ -64,7 +65,10 @@ export type Evaluator<AST, TINFO, IR> = {
     parse(node: RecNode, cursor?: number): ParseResult<AST>;
     macrosToExpand(node: RecNode): Loc[];
     infer(top: AST, infos: Record<string, TINFO>): TINFO;
-    compile(top: AST, info: TINFO): IR;
+    compile(
+        top: AST,
+        info: TINFO,
+    ): { named: Record<string, IR>; evaluate?: IR };
     print(
         ir: IR,
         irs: Record<string, IR>,

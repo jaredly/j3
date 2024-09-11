@@ -22,11 +22,17 @@ type Expr =
 
 type TINFO = void;
 
-type IR = string;
+type IR = Expr;
 
 type CTX = Omit<ParseResult<Top>, 'top'> & { cursor?: number };
 
 const kwds: Auto[] = [
+    {
+        text: '<',
+        templates: [],
+        docs: 'less than',
+        reference: { type: 'builtin', kind: 'value' },
+    },
     {
         text: 'def',
         toplevel: true,
@@ -67,13 +73,13 @@ const forms: Record<
 > = {
     if(ctx, loc, cond, yes, no) {
         if (!cond || !yes || !no) return;
-        const econd = parseExpr(ctx, cond);
-        const eyes = parseExpr(ctx, yes);
-        const eno = parseExpr(ctx, no);
         ctx.layouts[getLoc(loc)] = {
             type: 'vert',
             layout: { tightFirst: 2, indent: 4 },
         };
+        const econd = parseExpr(ctx, cond);
+        const eyes = parseExpr(ctx, yes);
+        const eno = parseExpr(ctx, no);
         return econd && eyes && eno
             ? { type: 'if', cond: econd, yes: eyes, no: eno }
             : undefined;
@@ -115,23 +121,56 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
                     return forms[id](ctx, value.loc, ...value.items.slice(1));
                 }
             }
+            if (value.items.length > 1) {
+                const target = parseExpr(ctx, value.items[0]);
+                const args = value.items
+                    .slice(1)
+                    .map((arg) => parseExpr(ctx, arg));
+                return target && args.every((arg) => !!arg)
+                    ? { type: 'apply', target, args }
+                    : undefined;
+            }
     }
     throw new Error(`invalid expr`);
 };
 
 const parseTop = (ctx: CTX, node: RecNode): Top | null => {
-    if (
-        node.type === 'list' &&
-        node.items.length > 0 &&
-        node.items[0].type === 'id'
-    ) {
-        const id = node.items[0].text;
-        if (topForms[id]) {
-            return topForms[id](ctx, node.loc, ...node.items.slice(1)) ?? null;
+    try {
+        if (
+            node.type === 'list' &&
+            node.items.length > 0 &&
+            node.items[0].type === 'id'
+        ) {
+            const id = node.items[0].text;
+            if (topForms[id]) {
+                return (
+                    topForms[id](ctx, node.loc, ...node.items.slice(1)) ?? null
+                );
+            }
         }
+        const expr = parseExpr(ctx, node);
+        return expr ? { type: 'expr', expr } : null;
+    } catch (err) {
+        return null;
     }
-    const expr = parseExpr(ctx, node);
-    return expr ? { type: 'expr', expr } : null;
+};
+
+const evaluate = (ir: IR, irs: Record<string, IR>): any => {
+    switch (ir.type) {
+        case 'string':
+            return ir.value;
+        case 'int':
+            return ir.value;
+        case 'apply':
+            return evaluate(
+                ir.target,
+                irs,
+            )(...ir.args.map((arg) => evaluate(arg, irs)));
+        case 'builtin':
+            switch (ir.name) {
+                case '<':
+            }
+    }
 };
 
 export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
@@ -150,7 +189,12 @@ export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
     },
     macrosToExpand: () => [],
     compile(top, info) {
-        return 'lol';
+        switch (top.type) {
+            case 'def':
+                return { named: { [top.name]: top.value } };
+            case 'expr':
+                return { named: {}, evaluate: top.expr };
+        }
     },
     evaluate(ir, irs) {
         return 'ok';

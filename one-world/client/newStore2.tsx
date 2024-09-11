@@ -1,4 +1,4 @@
-import { BootExampleEvaluator } from '../evaluators/boot-ex';
+import { AnyEvaluator } from '../evaluators/boot-ex/types';
 import { Action } from '../shared/action2';
 import {
     IRCursor,
@@ -13,7 +13,6 @@ import { getAutoComplete } from './cli/getAutoComplete';
 import { RState } from './cli/render';
 import { listen } from './listen';
 import { Store } from './StoreContext2';
-import { getNewSelection } from './TextEdit/getNewSelection';
 
 type Evts = {
     general: {
@@ -132,10 +131,15 @@ const setupDragger = (store: Store) => {
     return { textRefs, startDrag };
 };
 
-export function recalcDropdown(store: Store, docId: string, rstate: RState) {
+export function recalcDropdown(
+    store: Store,
+    docId: string,
+    rstate: RState,
+    ev: AnyEvaluator,
+) {
     const ds = store.getDocSession(docId);
     if (!ds.dropdown || ds.dropdown.dismissed) {
-        const auto = getAutoComplete(store, rstate, ds, BootExampleEvaluator);
+        const auto = getAutoComplete(store, rstate, ds, ev);
         if (auto?.length) {
             ds.dropdown = { selection: [0] };
         } else {

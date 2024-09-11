@@ -25,6 +25,7 @@ test('js full stack', () => {
     const result = JsEvaluator.parse(parsed);
     if (!result.top) return;
     const ir = JsEvaluator.compile(result.top, null);
-    const res = JsEvaluator.evaluate(ir, {});
+    if (!ir.evaluate) return;
+    const res = JsEvaluator.evaluate(ir.evaluate, {});
     expect(res).toEqual(24);
 });

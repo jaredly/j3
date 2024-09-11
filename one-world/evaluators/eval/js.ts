@@ -172,7 +172,7 @@ export const JsEvaluator: Evaluator<AST, null, string> = {
         return null;
     },
     compile(top, info) {
-        return top.code;
+        return { named: {}, evaluate: top.code };
     },
     print(ir, irs) {
         return { code: ir, sourceMap: [] };

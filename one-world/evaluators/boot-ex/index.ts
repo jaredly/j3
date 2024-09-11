@@ -10,7 +10,9 @@ export const BootExampleEvaluator: Evaluator<void, void, void> = {
     macrosToExpand(node) {
         return [];
     },
-    compile(top, info) {},
+    compile(top, info) {
+        return { named: {} };
+    },
     evaluate(ir, irs) {},
     infer(top, infos) {},
     print(ir, irs) {

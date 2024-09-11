@@ -26,6 +26,7 @@ global.localStorage = {};
 import { openSync, writeSync } from 'fs';
 import { recalcDropdown } from '../newStore2';
 import { drawToTerminal } from './drawToTerminal';
+import { SimplestEvaluator } from '../../evaluators/simplest';
 // NOTE: Uncomment to route logs to a file
 const REDIRECT_OUT = false;
 if (REDIRECT_OUT) {
@@ -51,6 +52,8 @@ const run = async (term: termkit.Terminal) => {
     term.clear();
     term.grabInput({ mouse: 'drag' });
 
+    const ev = SimplestEvaluator;
+
     if (!sess.doc) {
         const picked = await pickDocument(store, term);
         if (picked === null) {
@@ -67,8 +70,8 @@ const run = async (term: termkit.Terminal) => {
 
     let lastKey = null as null | string;
 
-    let rstate = render(term.width - 10, store, sess.doc, BootExampleEvaluator);
-    drawToTerminal(rstate, term, store, docId, lastKey, BootExampleEvaluator);
+    let rstate = render(term.width - 10, store, sess.doc, ev);
+    drawToTerminal(rstate, term, store, docId, lastKey, ev);
 
     const unsel = trackSelection(store, sess, docId);
 
@@ -77,15 +80,8 @@ const run = async (term: termkit.Terminal) => {
 
     const rerender = () => {
         tid = null;
-        rstate = render(term.width - 10, store, docId, BootExampleEvaluator);
-        drawToTerminal(
-            rstate,
-            term,
-            store,
-            docId,
-            lastKey,
-            BootExampleEvaluator,
-        );
+        rstate = render(term.width - 10, store, docId, ev);
+        drawToTerminal(rstate, term, store, docId, lastKey, ev);
         prevState = store.getState();
     };
 
@@ -96,7 +92,7 @@ const run = async (term: termkit.Terminal) => {
 
     store.on('selection', (autocomplete) => {
         if (autocomplete) {
-            recalcDropdown(store, docId, rstate);
+            recalcDropdown(store, docId, rstate, ev);
             kick();
         }
     });
@@ -113,7 +109,7 @@ const run = async (term: termkit.Terminal) => {
             return;
         }
 
-        if (handleDropdown(key, docId, store, rstate, kick)) {
+        if (handleDropdown(key, docId, store, rstate, kick, ev)) {
             return;
         }
 
