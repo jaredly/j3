@@ -68,7 +68,7 @@ export type Evaluator<AST, TINFO, IR> = {
     compile(
         top: AST,
         info: TINFO,
-    ): { named: Record<string, IR>; evaluate?: IR };
+    ): { byLoc: Record<string, IR>; evaluate?: IR };
     print(
         ir: IR,
         irs: Record<string, IR>,

@@ -1,6 +1,7 @@
 import { Action } from '../../../shared/action2';
 
-export const genId = () => Math.random().toString(36).slice(2);
+export const genId = () =>
+    Date.now().toString(36) + Math.random().toString(36).slice(2);
 
 export const newDocument = (id: string): Action[] => {
     const ts = {

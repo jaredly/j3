@@ -1,4 +1,4 @@
-import { Loc, RecNode, RecNodeT } from '../../shared/nodes';
+import { keyForLoc, Loc, RecNode, RecNodeT } from '../../shared/nodes';
 import { Auto, Evaluator, ParseResult } from '../boot-ex/types';
 
 const place = (text: string, focus = false): RecNodeT<boolean> => ({
@@ -9,7 +9,7 @@ const place = (text: string, focus = false): RecNodeT<boolean> => ({
 });
 
 type Top =
-    | { type: 'def'; name: string; value: Expr }
+    | { type: 'def'; loc: Loc; value: Expr }
     | { type: 'expr'; expr: Expr };
 
 type Expr =
@@ -61,7 +61,8 @@ const topForms: Record<
     def(ctx, loc, name, value) {
         if (!name || !value || name.type !== 'id') return;
         const expr = parseExpr(ctx, value);
-        return expr ? { type: 'def', name: name.text, value: expr } : undefined;
+        ctx.exports?.push({ kind: 'value', loc });
+        return expr ? { type: 'def', loc: name.loc, value: expr } : undefined;
     },
 };
 
@@ -127,7 +128,7 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
                     .slice(1)
                     .map((arg) => parseExpr(ctx, arg));
                 return target && args.every((arg) => !!arg)
-                    ? { type: 'apply', target, args }
+                    ? { type: 'apply', target, args: args as Expr[] }
                     : undefined;
             }
     }
@@ -169,8 +170,17 @@ const evaluate = (ir: IR, irs: Record<string, IR>): any => {
         case 'builtin':
             switch (ir.name) {
                 case '<':
+                    return (a: number, b: number) => a < b;
+                case '>':
+                    return (a: number, b: number) => a > b;
             }
+            throw new Error('unknown builtin');
+        case 'if':
+            return evaluate(ir.cond, irs)
+                ? evaluate(ir.yes, irs)
+                : evaluate(ir.no, irs);
     }
+    throw new Error('cant evaluate');
 };
 
 export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
@@ -191,13 +201,13 @@ export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
     compile(top, info) {
         switch (top.type) {
             case 'def':
-                return { named: { [top.name]: top.value } };
+                return { byLoc: { [keyForLoc(top.loc)]: top.value } };
             case 'expr':
-                return { named: {}, evaluate: top.expr };
+                return { byLoc: {}, evaluate: top.expr };
         }
     },
     evaluate(ir, irs) {
-        return 'ok';
+        return evaluate(ir, irs);
     },
     infer(top, infos) {},
     print(ir, irs) {

@@ -1,4 +1,18 @@
 
+# OK Let's talk about mutual recursion for a second
+because I'm gonna have to deal with it
+
+```clj
+(def even (fn [x] (if (= x 1) false (not (odd (- x 1))))))
+(def odd (fn [x] (if (= x 0) false (not (even (- x 1))))))
+```
+
+Here's what I think:
+the evaluator needs to provide a function to turn a list of toplevels into
+a single toplevel.
+And then that single toplevel gets passed in to the normal process.
+
+
 # What's my full story?
 
 side note:
@@ -7,6 +21,12 @@ side note:
     named: Record<string, IR>,
     evaluate?: IR,
     and if there's an evaluate, it gets evaluated and the result is displayed.
+
+Doing the SimplestEvaluator
+- make .. it .. work?
+
+hrmmmmmmm ok so now ... like ... I want ... a like observables thing or something.
+eh I should probably just make it myself.
 
 
 ## Simpler (just macros)

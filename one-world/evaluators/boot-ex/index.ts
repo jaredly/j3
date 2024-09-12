@@ -11,7 +11,7 @@ export const BootExampleEvaluator: Evaluator<void, void, void> = {
         return [];
     },
     compile(top, info) {
-        return { named: {} };
+        return { byLoc: {} };
     },
     evaluate(ir, irs) {},
     infer(top, infos) {},
