@@ -32,7 +32,7 @@ export type ParseResult<Top> = {
     // type = ref(type) + macro(type)
     // defmacro, deftypemacro
     autocomplete?: AutoCompleteConfig;
-    errors?: any[];
+    errors: { loc: Loc; text: string }[];
     layouts: Record<number, Layout>;
     styles: Record<number, Style>;
     tableHeaders: Record<number, string[]>;
@@ -41,8 +41,8 @@ export type ParseResult<Top> = {
     // test result stuff. sidecars?
     // there'd need to be a "kind" that adds a whole column to a table.
 
-    references?: { loc: Loc; ref: IDRef }[];
-    exports?: { loc: Loc; kind: string }[];
+    references: { loc: Loc; ref: IDRef }[];
+    exports: { loc: Loc; kind: string }[];
     associations?: {
         // should be something exported from this dealio, but I guess it doesn't have to be
         loc: Loc;

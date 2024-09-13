@@ -62,7 +62,7 @@ const topForms: Record<
     def(ctx, loc, name, value) {
         if (!name || !value || name.type !== 'id') return;
         const expr = parseExpr(ctx, value);
-        ctx.exports?.push({ kind: 'value', loc });
+        ctx.exports?.push({ kind: 'value', loc: name.loc });
         return expr ? { type: 'def', loc: name.loc, value: expr } : undefined;
     },
 };
@@ -94,6 +94,7 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
             return { type: 'string', value: value.first };
         case 'id':
             if (value.ref?.type === 'toplevel') {
+                ctx.references.push({ loc: value.loc, ref: value.ref });
                 return {
                     type: 'ref',
                     loc: value.ref.loc,
@@ -101,6 +102,7 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
                 };
             }
             if (value.ref?.type === 'builtin') {
+                ctx.references.push({ loc: value.loc, ref: value.ref });
                 return {
                     type: 'builtin',
                     name: value.text,
@@ -153,8 +155,16 @@ const parseTop = (ctx: CTX, node: RecNode): Top | null => {
         const expr = parseExpr(ctx, node);
         return expr ? { type: 'expr', expr } : null;
     } catch (err) {
+        ctx.errors.push({ loc: node.loc, text: (err as Error).message });
         return null;
     }
+};
+
+export const builtins: Record<string, any> = {
+    '<': (a: number, b: number) => a < b,
+    '>': (a: number, b: number) => a > b,
+    '-': (a: number, b: number) => a - b,
+    '+': (a: number, b: number) => a + b,
 };
 
 const evaluate = (ir: IR, irs: Record<string, IR>): any => {
@@ -170,13 +180,11 @@ const evaluate = (ir: IR, irs: Record<string, IR>): any => {
                 irs,
             )(...ir.args.map((arg) => evaluate(arg, irs)));
         case 'builtin':
-            switch (ir.name) {
-                case '<':
-                    return (a: number, b: number) => a < b;
-                case '>':
-                    return (a: number, b: number) => a > b;
+            if (builtins[ir.name]) {
+                return builtins[ir.name];
             }
-            throw new Error('unknown builtin');
+
+            throw new Error('unknown builtin: ' + ir.name);
         case 'if':
             return evaluate(ir.cond, irs)
                 ? evaluate(ir.yes, irs)
@@ -189,7 +197,7 @@ const evaluate = (ir: IR, irs: Record<string, IR>): any => {
             }
             return evaluate(irs[key], irs);
     }
-    throw new Error(`cant evaluate ${ir.type}`);
+    throw new Error(`cant evaluate ${(ir as any).type}`);
 };
 
 export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
@@ -199,8 +207,10 @@ export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
             layouts: {},
             styles: {},
             exports: [],
+            errors: [],
             tableHeaders: {},
             autocomplete: undefined,
+            references: [],
             cursor,
         };
         const top = parseTop(ctx, node);

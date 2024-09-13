@@ -181,7 +181,7 @@ export type Id<Loc> =
             | { type: 'placeholder'; text: string };
     };
 
-export type IDRef = Id<any>['ref'];
+export type IDRef = NonNullable<Id<any>['ref']>;
 
 type RefDeps =
     | { type: 'toplevel'; loc: FullLoc; kind: string }
