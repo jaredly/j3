@@ -1,4 +1,13 @@
 
+# so
+
+I kinda feel like the result from /compile/ should ... be
+different based on ... the [kind].
+but I guess that's a thing I can do on the inside.
+
+
+
+
 # OK Let's talk about mutual recursion for a second
 because I'm gonna have to deal with it
 

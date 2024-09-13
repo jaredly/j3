@@ -7,6 +7,7 @@ export const BootExampleEvaluator: Evaluator<void, void, void> = {
     parse(node, cursor) {
         return parse(node, cursor);
     },
+    combineMutuallyRecursive(tops) {},
     macrosToExpand(node) {
         return [];
     },
@@ -14,7 +15,9 @@ export const BootExampleEvaluator: Evaluator<void, void, void> = {
         return { byLoc: {} };
     },
     evaluate(ir, irs) {},
-    infer(top, infos) {},
+    infer(top, infos) {
+        return { errors: [], typeForLoc: [], info: null };
+    },
     print(ir, irs) {
         return { code: '// printed', sourceMap: [] };
     },

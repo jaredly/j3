@@ -10,7 +10,8 @@ const place = (text: string, focus = false): RecNodeT<boolean> => ({
 
 type Top =
     | { type: 'def'; loc: Loc; value: Expr }
-    | { type: 'expr'; expr: Expr };
+    | { type: 'expr'; expr: Expr }
+    | { type: 'multi'; tops: Top[] };
 
 type Expr =
     | { type: 'string'; value: string }
@@ -20,7 +21,7 @@ type Expr =
     | { type: 'apply'; target: Expr; args: Expr[] }
     | { type: 'if'; cond: Expr; yes: Expr; no: Expr };
 
-type TINFO = void;
+type TINFO = true;
 
 type IR = Expr;
 
@@ -157,6 +158,7 @@ const parseTop = (ctx: CTX, node: RecNode): Top | null => {
 };
 
 const evaluate = (ir: IR, irs: Record<string, IR>): any => {
+    if (!ir) throw new Error(`evaluate empty`);
     switch (ir.type) {
         case 'string':
             return ir.value;
@@ -179,8 +181,15 @@ const evaluate = (ir: IR, irs: Record<string, IR>): any => {
             return evaluate(ir.cond, irs)
                 ? evaluate(ir.yes, irs)
                 : evaluate(ir.no, irs);
+        case 'ref':
+            const key = keyForLoc(ir.loc);
+            if (!irs[key]) {
+                console.log(irs);
+                throw new Error(`cant resolve ref: ${key}`);
+            }
+            return evaluate(irs[key], irs);
     }
-    throw new Error('cant evaluate');
+    throw new Error(`cant evaluate ${ir.type}`);
 };
 
 export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
@@ -198,18 +207,35 @@ export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
         return { ...ctx, top };
     },
     macrosToExpand: () => [],
+    combineMutuallyRecursive(tops) {
+        return { type: 'multi', tops };
+    },
     compile(top, info) {
-        switch (top.type) {
-            case 'def':
-                return { byLoc: { [keyForLoc(top.loc)]: top.value } };
-            case 'expr':
-                return { byLoc: {}, evaluate: top.expr };
-        }
+        const res: { byLoc: Record<string, Expr>; evaluate?: Expr } = {
+            byLoc: {},
+            evaluate: undefined,
+        };
+        const add = (top: Top) => {
+            switch (top.type) {
+                case 'def':
+                    res.byLoc[keyForLoc(top.loc)] = top.value;
+                    return;
+                case 'expr':
+                    res.evaluate = top.expr;
+                    return;
+                case 'multi':
+                    return top.tops.forEach(add);
+            }
+        };
+        add(top);
+        return res;
     },
     evaluate(ir, irs) {
         return evaluate(ir, irs);
     },
-    infer(top, infos) {},
+    infer(top, infos) {
+        return { errors: [], typeForLoc: [], info: true };
+    },
     print(ir, irs) {
         return {
             code: 'lol',

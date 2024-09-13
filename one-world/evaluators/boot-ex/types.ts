@@ -64,7 +64,25 @@ export type Evaluator<AST, TINFO, IR> = {
     kwds: Auto[];
     parse(node: RecNode, cursor?: number): ParseResult<AST>;
     macrosToExpand(node: RecNode): Loc[];
-    infer(top: AST, infos: Record<string, TINFO>): TINFO;
+    combineMutuallyRecursive(tops: AST[]): AST;
+    // sooo the infos ... is tht by loc, or just by toplevel?
+    // seems like inference is happening by toplevel.
+    // I feel like the general behavior is just going to be
+    // "merge all the infos together" and then use that
+    // as the type environment.
+    // Which sounds reasonable to me. so honestly it could
+    // be a list if we wanted. but a record sounds better.
+    // HOWEVER: we do need to be able to report errors.
+    // and such.
+    // also "type for loc".
+    infer(
+        top: AST,
+        infos: Record<string, TINFO>,
+    ): {
+        info: TINFO | null;
+        errors: { loc: Loc; text: string }[];
+        typeForLoc: { loc: Loc; type: string }[];
+    };
     compile(
         top: AST,
         info: TINFO,

@@ -168,8 +168,11 @@ export const JsEvaluator: Evaluator<AST, null, string> = {
             tableHeaders: {},
         };
     },
+    combineMutuallyRecursive(tops) {
+        return { type: 'def', code: 'recursives' };
+    },
     infer(top, infos) {
-        return null;
+        return { errors: [], typeForLoc: [], info: null };
     },
     compile(top, info) {
         return { byLoc: {}, evaluate: top.code };
