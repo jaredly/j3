@@ -1,0 +1,171 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`ok 1`] = `
+{
+  "items": [
+    {
+      "loc": [
+        [
+          "term1",
+          1,
+        ],
+      ],
+      "ref": undefined,
+      "text": "def",
+      "type": "id",
+    },
+    {
+      "loc": [
+        [
+          "term1",
+          5,
+        ],
+      ],
+      "ref": undefined,
+      "text": "x",
+      "type": "id",
+    },
+    {
+      "loc": [
+        [
+          "term1",
+          7,
+        ],
+      ],
+      "ref": undefined,
+      "text": "3",
+      "type": "id",
+    },
+  ],
+  "loc": [
+    [
+      "term1",
+      0,
+    ],
+  ],
+  "type": "list",
+}
+`;
+
+exports[`ok 2`] = `
+{
+  "items": [
+    {
+      "loc": [
+        [
+          "term2",
+          1,
+        ],
+      ],
+      "ref": undefined,
+      "text": "if",
+      "type": "id",
+    },
+    {
+      "items": [
+        {
+          "loc": [
+            [
+              "term2",
+              5,
+            ],
+          ],
+          "ref": {
+            "kind": "value",
+            "type": "builtin",
+          },
+          "text": "<",
+          "type": "id",
+        },
+        {
+          "loc": [
+            [
+              "term2",
+              7,
+            ],
+          ],
+          "ref": {
+            "kind": "value",
+            "loc": [
+              [
+                "term1",
+                5,
+              ],
+            ],
+            "type": "toplevel",
+          },
+          "text": "x",
+          "type": "id",
+        },
+        {
+          "loc": [
+            [
+              "term2",
+              9,
+            ],
+          ],
+          "ref": undefined,
+          "text": "5",
+          "type": "id",
+        },
+      ],
+      "loc": [
+        [
+          "term2",
+          4,
+        ],
+      ],
+      "type": "list",
+    },
+    {
+      "first": "Hello",
+      "loc": [
+        [
+          "term2",
+          12,
+        ],
+      ],
+      "tag": {
+        "loc": [
+          [
+            "term2",
+            12,
+          ],
+        ],
+        "text": "",
+        "type": "id",
+      },
+      "templates": [],
+      "type": "string",
+    },
+    {
+      "first": "World",
+      "loc": [
+        [
+          "term2",
+          20,
+        ],
+      ],
+      "tag": {
+        "loc": [
+          [
+            "term2",
+            20,
+          ],
+        ],
+        "text": "",
+        "type": "id",
+      },
+      "templates": [],
+      "type": "string",
+    },
+  ],
+  "loc": [
+    [
+      "term2",
+      0,
+    ],
+  ],
+  "type": "list",
+}
+`;
