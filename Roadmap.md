@@ -1,4 +1,11 @@
 
+# Getting a basic by hand going:
+
+- [x] basic dependencies and eval
+- [ ] noww let's try 'detecting and handling cycles'
+  - ideally, without "having to process the whole module at once"
+
+
 # so
 
 I kinda feel like the result from /compile/ should ... be

@@ -60,7 +60,10 @@ const topForms: Record<
     (ctx: CTX, loc: Loc, ...args: RecNode[]) => Top | void
 > = {
     def(ctx, loc, name, value) {
-        if (!name || !value || name.type !== 'id') return;
+        if (!name || !value || name.type !== 'id') {
+            ctx.errors.push({ loc, text: 'bad form' });
+            return;
+        }
         const expr = parseExpr(ctx, value);
         ctx.exports?.push({ kind: 'value', loc: name.loc });
         return expr ? { type: 'def', loc: name.loc, value: expr } : undefined;
@@ -113,7 +116,9 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
             if (Number.isInteger(num)) {
                 return { type: 'int', value: num };
             }
-            throw new Error(`locals not supported ${value.text}`);
+            ctx.errors.push({ loc: value.loc, text: 'locals not supported' });
+            return;
+        // throw new Error(`locals not supported ${value.text}`);
         case 'list':
             if (
                 value.type === 'list' &&
