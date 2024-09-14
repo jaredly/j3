@@ -1,5 +1,5 @@
 import { IR } from '.';
-import { keyForLoc } from '../../shared/nodes';
+import { keyForLoc, mapNode, RecNode } from '../../shared/nodes';
 
 export const builtins: Record<string, any> = {
     '=': (a: number, b: number) => a === b,
@@ -12,6 +12,7 @@ export const builtins: Record<string, any> = {
     false: false,
     true: true,
 };
+
 const handlers: {
     [key in IR['type']]: (
         ir: Extract<IR, { type: key }>,
@@ -19,6 +20,24 @@ const handlers: {
         locals: Record<string, any>,
     ) => any;
 } = {
+    quote(ir, irs, locals): RecNode {
+        const sub = (node: RecNode) => {
+            if (node.type === 'id' && !node.ref && node.text.startsWith('#')) {
+                const name = node.text.slice(1);
+                if (name in locals) {
+                    return locals[name];
+                }
+                throw new Error(`quoted local not found: ${name}`);
+            }
+            return node;
+        };
+        const nodes = ir.items.map((node) => mapNode(node, sub));
+        if (nodes.length === 1) {
+            return nodes[0];
+        }
+        return { type: 'list', loc: ir.loc, items: nodes };
+    },
+
     string: (ir) => ir.value,
     int: (ir) => ir.value,
     apply: (ir, irs, locals) =>
@@ -69,6 +88,7 @@ const handlers: {
         };
     },
 };
+
 export const evaluate = (
     ir: IR,
     irs: Record<string, IR>,

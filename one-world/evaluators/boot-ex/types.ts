@@ -63,7 +63,9 @@ export type AnyEvaluator = Evaluator<any, any, any>;
 export type Evaluator<AST, TINFO, IR> = {
     kwds: Auto[];
     parse(node: RecNode, cursor?: number): ParseResult<AST>;
-    macrosToExpand(node: RecNode): Loc[];
+    macrosToExpand(
+        node: RecNode,
+    ): { loc: Loc; ref: Extract<IDRef, { type: 'toplevel' }> }[];
     combineMutuallyRecursive(tops: AST[]): AST;
     // sooo the infos ... is tht by loc, or just by toplevel?
     // seems like inference is happening by toplevel.

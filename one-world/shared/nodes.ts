@@ -606,9 +606,14 @@ const checkMap = <T>(lst: T[], f: (t: T) => T) => {
 
 export const mapNode = (
     node: RecNode,
-    f: (node: RecNode) => RecNode,
+    f: (node: RecNode) => RecNode | false,
 ): RecNode => {
-    node = f(node);
+    const res = f(node);
+    // Don't recurse
+    if (res === false) {
+        return node;
+    }
+    node = res;
     switch (node.type) {
         case 'id':
         case 'rich-inline':

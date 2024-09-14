@@ -6,7 +6,7 @@ const topForms: Record<
     (ctx: CTX, loc: Loc, ...args: RecNode[]) => Top | void
 > = {
     def(ctx, loc, name, value) {
-        if (!name || !value || name.type !== 'id') {
+        if (!name || !value || name.type !== 'id' || name.ref) {
             ctx.errors.push({ loc, text: 'bad form' });
             return;
         }
@@ -15,7 +15,7 @@ const topForms: Record<
         return expr ? { type: 'def', loc: name.loc, value: expr } : undefined;
     },
     defn(ctx, loc, name, args, value) {
-        if (!name || !args || !value || name.type !== 'id') {
+        if (!name || !args || !value || name.type !== 'id' || name.ref) {
             ctx.errors.push({ loc, text: 'bad form' });
             return;
         }
@@ -24,12 +24,42 @@ const topForms: Record<
         const fn = forms.fn(ctx, loc, args, value);
         return fn ? { type: 'def', loc: name.loc, value: fn } : undefined;
     },
+    defmacro(ctx, loc, name, args, value) {
+        if (
+            !name ||
+            !args ||
+            !value ||
+            name.type !== 'id' ||
+            name.ref ||
+            args.type !== 'array' ||
+            !args.items.every((item) => item.type === 'id')
+        ) {
+            ctx.errors.push({ loc, text: 'bad form' });
+            return;
+        }
+
+        ctx.exports?.push({ kind: 'macro', loc: name.loc });
+        const body = parseExpr(ctx, value);
+        return body
+            ? {
+                  type: 'defmacro',
+                  args: args.items.map((arg) => arg.text),
+                  loc: name.loc,
+                  body,
+              }
+            : undefined;
+    },
 };
+
 const getLoc = (l: Loc) => l[l.length - 1][1];
+
 const forms: Record<
     string,
     (ctx: CTX, loc: Loc, ...args: RecNode[]) => Expr | void
 > = {
+    '`'(ctx, loc, ...items) {
+        return { type: 'quote', items, loc };
+    },
     if(ctx, loc, cond, yes, no) {
         if (!cond || !yes || !no) return;
         ctx.layouts[getLoc(loc)] = {
@@ -63,6 +93,7 @@ const forms: Record<
             : undefined;
     },
 };
+
 const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
     switch (value.type) {
         case 'string':
@@ -122,6 +153,7 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
     }
     throw new Error(`invalid expr`);
 };
+
 export const parseTop = (ctx: CTX, node: RecNode): Top | null => {
     try {
         if (

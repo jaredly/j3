@@ -1,4 +1,4 @@
-import { keyForLoc, Loc, RecNodeT } from '../../shared/nodes';
+import { keyForLoc, Loc, mapNode, RecNode, RecNodeT } from '../../shared/nodes';
 import { Auto, Evaluator, ParseResult } from '../boot-ex/types';
 import { evaluate } from './evaluate';
 import { parseTop } from './parseTop';
@@ -14,10 +14,12 @@ const place = (text: string, focus = false): RecNodeT<boolean> => ({
 
 export type Top =
     | { type: 'def'; loc: Loc; value: Expr }
+    | { type: 'defmacro'; loc: Loc; args: string[]; body: Expr }
     | { type: 'expr'; expr: Expr }
     | { type: 'multi'; tops: Top[] };
 
 export type Expr =
+    | { type: 'quote'; items: RecNode[]; loc: Loc }
     | { type: 'string'; value: string }
     | { type: 'int'; value: number }
     | { type: 'ref'; loc: Loc; kind: string }
@@ -78,7 +80,29 @@ export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
         const top = parseTop(ctx, node);
         return { ...ctx, top };
     },
-    macrosToExpand: () => [],
+    macrosToExpand(node) {
+        const found: ReturnType<(typeof SimplestEvaluator)['macrosToExpand']> =
+            [];
+        mapNode(node, (node) => {
+            if (
+                node.type === 'list' &&
+                node.items.length > 0 &&
+                node.items[0].type === 'id' &&
+                node.items[0].text === '`'
+            ) {
+                return false;
+            }
+            if (
+                node.type === 'id' &&
+                node.ref?.type === 'toplevel' &&
+                node.ref.kind === 'macro'
+            ) {
+                found.push({ loc: node.loc, ref: node.ref });
+            }
+            return node;
+        });
+        return found;
+    },
     combineMutuallyRecursive(tops) {
         return { type: 'multi', tops };
     },
@@ -89,6 +113,13 @@ export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
         };
         const add = (top: Top) => {
             switch (top.type) {
+                case 'defmacro':
+                    res.byLoc[keyForLoc(top.loc)] = {
+                        type: 'fn',
+                        args: top.args,
+                        body: top.body,
+                    };
+                    return;
                 case 'def':
                     res.byLoc[keyForLoc(top.loc)] = top.value;
                     return;
