@@ -264,6 +264,14 @@ export const getAutoComplete = (
         });
     });
 
+    // if there are no single-length autocomplets, don't do a completion
+    if (
+        text.length === 1 &&
+        !items.some((item) => item.type === 'action' && item.title.length === 1)
+    ) {
+        return;
+    }
+
     return items;
 };
 

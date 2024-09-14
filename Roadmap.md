@@ -1,14 +1,29 @@
 
+# Namespaces / modules
+Ok so we're really doing modules, and toplevels will have module ID that they are attached to,
+and documents will have a module id that they represent.
+
+
+lolol I DOSed it with too high a fibonacci number.
+soooo this means:
+- I should definitely get evaluation running in a separate ... thread(?)
+- would be interesting to compile to go, and .. run it async for like macro resolution n stuff
+
+
 # lol how fast can I get glsl pipeline up and running
 like ... do I wait to self host it?
+naw might as well get it implemented in ts first
+work out the kinks
 
+
+# Completion thoughts
 Can I get compilation and stuff replacing selections?
 
 - [ ] Enter or Space, if there is something after the current thing,
   shouldn't produce a new blank after it.
   or if we're at the top level.
 
-- [ ] QUESTION should the /eval/ also auto-fill the autocomplete? that would be interesting.
+- [ ] QUESTION should the /eval/ also auto-fill the currently selected autocomplete item (ref)? that would be interesting.
   (in the same way that it applies pending text selection texts)
 
 - [ ] disallow duplicate names
@@ -20,6 +35,8 @@ Can I get compilation and stuff replacing selections?
   - OK so we recalcDropdown, but the /rstate/ is stale. How do we indicate .. that we need
     it to be better.
    - yay it is fixed.
+
+- [x] if the text is 1 char long, ignore any autcompletes that are more than 1 char long.
 
 # How are we lookin
 
