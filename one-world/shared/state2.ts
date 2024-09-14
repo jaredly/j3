@@ -92,7 +92,8 @@ export type DocSession = {
 export type PersistedState = {
     toplevels: Toplevels;
     documents: Record<string, Doc>;
-    namespaces: Record<string, Reference>;
+    // moduleid -> (name -> moduleid)
+    modules: Record<string, Record<string, string>>;
     stages: Record<string, Stage>;
 };
 

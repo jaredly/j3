@@ -65,7 +65,7 @@ export const saveChanges = (
         });
     }
 
-    if (next.namespaces !== prev.namespaces) {
+    if (next.modules !== prev.modules) {
         throw new Error('not save yet');
     }
     if (next.stages !== prev.stages) {
@@ -83,7 +83,7 @@ export const loadState = (base: string): PersistedState => {
     const state: PersistedState = {
         toplevels: {},
         documents: {},
-        namespaces: {},
+        modules: {},
         stages: {},
     };
 
@@ -118,9 +118,9 @@ export const loadState = (base: string): PersistedState => {
         state.stages[id] = stage;
     });
 
-    if (existsSync(join(base, 'namespaces.json'))) {
-        state.namespaces = JSON.parse(
-            readFileSync(join(base, 'namespaces.json'), 'utf-8'),
+    if (existsSync(join(base, 'modules.json'))) {
+        state.modules = JSON.parse(
+            readFileSync(join(base, 'modules.json'), 'utf-8'),
         );
     }
 
