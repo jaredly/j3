@@ -105,7 +105,7 @@ export type Doc = {
     id: string;
     title: string;
     published: boolean;
-    namespace: string;
+    module: string;
     nsAliases: Record<string, string>;
     nodes: Record<number, DocumentNode>;
     evaluator: EvaluatorPath;

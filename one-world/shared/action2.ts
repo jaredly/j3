@@ -11,6 +11,7 @@ import { Toplevel } from './toplevels';
 
 export type Action =
     | { type: 'reset'; state: PersistedState }
+    | { type: 'module'; action: ModuleAction }
     | { type: 'multi'; actions: Action[] }
     | { type: 'doc'; id: string; action: DocAction }
     | { type: 'toplevel'; id: string; action: ToplevelAction; stage?: string }
@@ -22,15 +23,29 @@ export type Action =
           autocomplete?: boolean;
       }
     | { type: 'drag'; doc: string; drag: DocSession['dragState'] }
-    | { type: 'namespaces'; action: NamespaceAction }
+    // | { type: 'namespaces'; action: NamespaceAction }
     | { type: 'stage'; id: string; action: StageAction };
 
 export type StageAction = { type: 'reset'; stage: Stage } | { type: 'delete' };
+export type ModuleAction =
+    | {
+          type: 'add';
+          parent: string;
+          id: string;
+          name: string;
+      }
+    | {
+          type: 'move';
+          from: string;
+          to: string;
+          id: string;
+          name: string;
+      };
 
-export type NamespaceAction = {
-    type: 'update';
-    map: Record<string, Reference | null>;
-};
+// export type NamespaceAction = {
+//     type: 'update';
+//     map: Record<string, Reference | null>;
+// };
 
 export type ToplevelUpdate = {
     type: 'update';

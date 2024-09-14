@@ -161,7 +161,7 @@ export const compile = <Top, Tinfo, IR>(
                     JSON.stringify(caches.parse[id].result.errors),
             };
         }
-        asts.push(caches.parse[id].result.top);
+        asts.push(caches.parse[id].result.top!);
     }
     const ast = asts.length > 1 ? ev.combineMutuallyRecursive(asts) : asts[0];
     const deps = assembleDeps(mutuals, getRefs, ctx);

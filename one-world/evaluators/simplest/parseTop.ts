@@ -1,5 +1,5 @@
 import { CTX, Top, Expr } from '.';
-import { Loc, RecNode } from '../../shared/nodes';
+import { Id, Loc, RecNode } from '../../shared/nodes';
 
 const topForms: Record<
     string,
@@ -43,7 +43,7 @@ const topForms: Record<
         return body
             ? {
                   type: 'defmacro',
-                  args: args.items.map((arg) => arg.text),
+                  args: args.items.map((arg) => (arg as Id<Loc>).text),
                   loc: name.loc,
                   body,
               }
@@ -90,7 +90,7 @@ const forms: Record<
         return expr
             ? {
                   type: 'fn',
-                  args: args.items.map((arg) => arg.text),
+                  args: args.items.map((arg) => (arg as Id<Loc>).text),
                   body: expr,
               }
             : undefined;

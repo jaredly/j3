@@ -68,7 +68,7 @@ const evaluate = (
     cache: Record<string, Result | true>,
 ): Result => {
     if (cache[top] === true) throw new Error(`Cycle!`);
-    if (cache[top]) return cache[top];
+    if (cache[top]) return cache[top] as Result;
     cache[top] = true;
     const cst = module[top];
     if (!cst) throw new Error(`unknown top referenced`);
@@ -97,8 +97,8 @@ const evaluate = (
     if (ir.evaluate) {
         value = ev.evaluate(ir.evaluate, irs);
     }
-    cache[top] = { value, tinfo: tinfo.info, ir };
-    return cache[top];
+    const res = (cache[top] = { value, tinfo: tinfo.info, ir });
+    return res;
 };
 
 const terms = [

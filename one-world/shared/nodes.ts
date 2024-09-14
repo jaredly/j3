@@ -1,10 +1,7 @@
 //
 
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { filterNulls } from '../../web/custom/old-stuff/filterNulls';
 // import { selectNode } from '../client/selectNode';
-import { isCollection } from '../client/TextEdit/actions';
-import { RenderInfo } from './renderables';
 // import { NodeSelection } from './state2';
 
 export type Loc = Array<[string, number]>;

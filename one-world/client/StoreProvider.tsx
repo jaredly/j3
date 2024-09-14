@@ -1,8 +1,4 @@
-import * as React from 'react';
-import { useEffect, useState } from 'react';
-import { StoreContext, Store } from './StoreContext';
 import { rid } from '../shared/rid';
-import { newStore } from './newStore2';
 
 const lskey = 'stoa:ssid';
 

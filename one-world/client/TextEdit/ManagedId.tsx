@@ -1,20 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { Path, serializePath } from '../../shared/nodes';
+import { useEffect, useState } from 'react';
 // import { NodeSelection } from '../../shared/state2';
-import { RenderTextAndCursor } from './renderTextAndCursor';
-import { getNewSelection } from './getNewSelection';
-import { useStore } from '../StoreContext';
-import { useLatest } from '../../../web/custom/useLatest';
-import { Action } from '../../shared/action';
-import {
-    getNodeForPath,
-    getTopForPath,
-    // selectNode,
-    // setSelection,
-} from '../selectNode';
-import { fasthash, getRainbowHashColor } from '../../../web/custom/rainbow';
-import { colors } from './colors';
 
 const blinkTime = 500;
 

@@ -9,6 +9,7 @@ export const newDocument = (id: string): Action[] => {
         updated: Date.now(),
     } as const;
     const tid = id + ':top';
+    const mid = id + ':mod';
     return [
         {
             type: 'toplevel',
@@ -17,12 +18,22 @@ export const newDocument = (id: string): Action[] => {
                 type: 'reset',
                 toplevel: {
                     id: tid,
+                    module: mid,
                     auxiliaries: [],
                     nextLoc: 1,
                     nodes: { 0: { type: 'id', loc: 0, text: '' } },
                     root: 0,
                     ts,
                 },
+            },
+        },
+        {
+            type: 'module',
+            action: {
+                type: 'add',
+                parent: 'root',
+                id: mid,
+                name: 'session:' + id,
             },
         },
         {
@@ -35,7 +46,7 @@ export const newDocument = (id: string): Action[] => {
                     published: false,
                     id,
                     nextLoc: 2,
-                    namespace: '',
+                    module: mid,
                     nodes: {
                         0: { id: 0, children: [1], toplevel: '', ts },
                         1: { id: 1, children: [], toplevel: tid, ts },

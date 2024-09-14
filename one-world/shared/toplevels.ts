@@ -30,6 +30,9 @@ export type Toplevel = {
     nodes: Nodes;
     root: number;
     nextLoc: number;
+
+    module: string; // an ID
+
     ts: TS;
     auxiliaries: number[];
     // plugin?

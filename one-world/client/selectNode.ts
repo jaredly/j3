@@ -1,15 +1,6 @@
 import React from 'react';
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import {
-    Node,
-    Nodes,
-    Path,
-    pathWithChildren,
-    serializePath,
-} from '../shared/nodes';
+import { Path } from '../shared/nodes';
 import { PersistedState } from '../shared/state2';
-import { Store } from './StoreContext';
-import { isCollection, isText } from './TextEdit/actions';
 
 export const isLeft = (evt: React.MouseEvent) => {
     const box = evt.currentTarget.getBoundingClientRect();

@@ -166,6 +166,8 @@ export const JsEvaluator: Evaluator<AST, null, string> = {
             layouts: {},
             styles: {},
             tableHeaders: {},
+            errors: [],
+            references: [],
         };
     },
     combineMutuallyRecursive(tops) {

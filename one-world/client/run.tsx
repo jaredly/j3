@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { createBrowserRouter } from 'react-router-dom';
 
-import { Browse } from './Browse';
+// import { Browse } from './Browse';
 // import { Edit } from './Edit';
 // import { StoreProvider } from './StoreProvider';
 
