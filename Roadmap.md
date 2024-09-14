@@ -1,9 +1,52 @@
 
+# lol how fast can I get glsl pipeline up and running
+like ... do I wait to self host it?
+
+Can I get compilation and stuff replacing selections?
+
+- [ ] Enter or Space, if there is something after the current thing,
+  shouldn't produce a new blank after it.
+  or if we're at the top level.
+
+- [ ] QUESTION should the /eval/ also auto-fill the autocomplete? that would be interesting.
+  (in the same way that it applies pending text selection texts)
+
+- [ ] disallow duplicate names
+- [ ] actually parse locals pls
+- [ ] autoselect on space ... isn't as nice as I thought it would be.
+  but ... maybe it would be nice if there was an autofill for locals? hmmm.
+
+- [x] why isn't autocomplete triggering
+  - OK so we recalcDropdown, but the /rstate/ is stale. How do we indicate .. that we need
+    it to be better.
+   - yay it is fixed.
+
+# How are we lookin
+
+- [x] basic parse cache
+- [x] basic evaluate
+- [x] mutual recursion, love it
+- [ ] cache parse with macros, how to do it
+  - if we can cache evaluation (make a hash for the evaled result)
+    then we can check if macros are the same, and skip running them.
+- [ ] cache infer and compile
+- [ ] cache evaluation pls
+- [ ] bust a cache, how to do it
+  - need to ... crawl down the dependency tree
+- [ ] figure out how to propagate changes down the depndendency tree
+  so that we can re-render and such
+
+although for quick and dirty I can just hook it up, right?
+
+
 # Getting a basic by hand going:
 
 - [x] basic dependencies and eval
-- [ ] noww let's try 'detecting and handling cycles'
+- [x] noww let's try 'detecting and handling cycles'
   - ideally, without "having to process the whole module at once"
+ok this is actually looking quite good!
+what will it take to start evaluating in my editor?
+
 
 
 # so

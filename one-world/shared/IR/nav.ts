@@ -32,6 +32,10 @@ export type IRCache2<Top> = Record<
         root: PathRoot;
         result: ParseResult<Top>;
         node: RecNode;
+        output?:
+            | { type: 'nothing' }
+            | { type: 'error'; text: string }
+            | { type: 'success'; value: any };
     }
 >;
 

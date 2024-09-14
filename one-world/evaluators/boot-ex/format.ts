@@ -10,6 +10,8 @@ export const parse = (node: RecNode, cursor?: number): ParseResult<void> => {
         layouts: {},
         styles: {},
         exports: [],
+        errors: [],
+        references: [],
         tableHeaders: {},
         autocomplete: undefined,
         cursor,
@@ -27,7 +29,8 @@ export const parse = (node: RecNode, cursor?: number): ParseResult<void> => {
 // type Fmt = { loc: number; info: RenderInfo };
 type Ctx = {
     // cursor?: { loc: number; autocomplete?: Autocomplete };
-    // errors: ParseError[];
+    errors: ParseResult<any>['errors'];
+    references: ParseResult<any>['references'];
     // fmt: Fmt[];
     cursor?: number;
     autocomplete?: AutoCompleteConfig;

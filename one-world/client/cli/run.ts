@@ -1,5 +1,5 @@
 import termkit from 'terminal-kit';
-import { BootExampleEvaluator } from '../../evaluators/boot-ex';
+// import { BootExampleEvaluator } from '../../evaluators/boot-ex';
 import { drop } from './edit/drop';
 import { handleMouseClick, handleMouseDrag } from './edit/handleMouse';
 import {
@@ -28,7 +28,7 @@ import { recalcDropdown } from '../newStore2';
 import { drawToTerminal } from './drawToTerminal';
 import { SimplestEvaluator } from '../../evaluators/simplest';
 // NOTE: Uncomment to route logs to a file
-const REDIRECT_OUT = false;
+const REDIRECT_OUT = true;
 if (REDIRECT_OUT) {
     console.log('redirecting output to cli.log');
     const out = openSync('./cli.log', 'W');
@@ -77,10 +77,15 @@ const run = async (term: termkit.Terminal) => {
 
     let prevState = store.getState();
     let tid: null | Timer = null;
+    let needsDropdownRecalc = false;
 
     const rerender = () => {
         tid = null;
         rstate = render(term.width - 10, store, docId, ev);
+        if (needsDropdownRecalc) {
+            recalcDropdown(store, docId, rstate, ev);
+            needsDropdownRecalc = false;
+        }
         drawToTerminal(rstate, term, store, docId, lastKey, ev);
         prevState = store.getState();
     };
@@ -92,7 +97,7 @@ const run = async (term: termkit.Terminal) => {
 
     store.on('selection', (autocomplete) => {
         if (autocomplete) {
-            recalcDropdown(store, docId, rstate, ev);
+            needsDropdownRecalc = true;
             kick();
         }
     });

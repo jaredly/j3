@@ -38,6 +38,7 @@ export const parse = <Top, Tinfo, IR>(
     ctx: Context,
     caches: Caches<Top>,
     ev: Evaluator<Top, Tinfo, IR>,
+    cursor?: number,
 ) => {
     if (!ctx.tops[top]) throw new Error(`unknown top ${top}`);
 
@@ -116,12 +117,12 @@ export const parse = <Top, Tinfo, IR>(
 
     // ok, with macros, we can't just rely on the hash, now can we.
 
-    const result = ev.parse(node);
+    const result = ev.parse(node, cursor);
     caches.parse[top] = { hash, result, top };
     return caches.parse[top];
 };
 
-const compile = <Top, Tinfo, IR>(
+export const compile = <Top, Tinfo, IR>(
     top: string,
     ctx: Context,
     ev: Evaluator<Top, Tinfo, IR>,
@@ -155,7 +156,9 @@ const compile = <Top, Tinfo, IR>(
         if (!caches.parse[id].result.top) {
             return {
                 type: 'error',
-                text: `parse error for ${id} (dep of ${top})`,
+                text:
+                    `parse error for ${id} (dep of ${top})` +
+                    JSON.stringify(caches.parse[id].result.errors),
             };
         }
         asts.push(caches.parse[id].result.top);
@@ -184,22 +187,28 @@ const compile = <Top, Tinfo, IR>(
     return { type: 'success', irs, value: ir.evaluate, tinfo: tinfo.info };
 };
 
-const evaluate = <Top, Tinfo, IR>(
+export const evaluate = <Top, Tinfo, IR>(
     top: string,
     ctx: Context,
     ev: Evaluator<Top, Tinfo, IR>,
     caches: Caches<Top>,
-): { type: 'error'; text: string } | { type: 'success'; value: any } => {
+):
+    | { type: 'error'; text: string }
+    | { type: 'success'; value: any }
+    | { type: 'nothing' } => {
+    const node = ctx.tops[top];
+    if (node.node.type === 'id' && !node.node.ref && node.node.text === '') {
+        console.log('ignore empty what');
+        return { type: 'nothing' };
+    }
+
     const result = compile(top, ctx, ev, caches);
     if (result.type === 'error') {
         return result;
     }
 
     if (!result.value) {
-        return {
-            type: 'error',
-            text: `toplevel ${top} has no expression to evaluate`,
-        };
+        return { type: 'nothing' };
     }
 
     try {
@@ -235,7 +244,7 @@ function assembleDeps(
     return deps.sort();
 }
 
-const init = <Top>(): { ctx: Context; caches: Caches<Top> } => {
+export const init = <Top>(): { ctx: Context; caches: Caches<Top> } => {
     return {
         ctx: {
             components: {},
@@ -351,6 +360,9 @@ export const full = (raw: Record<string, string[]>) => {
     const result = evaluate(last, ctx, ev, caches);
     if (result.type === 'error') {
         throw new Error(result.text);
+    }
+    if (result.type === 'nothing') {
+        throw new Error(`not a toplevel expr`);
     }
     return result.value;
 };

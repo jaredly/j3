@@ -16,6 +16,7 @@ import {
 } from '../../shared/IR/layout';
 import { IRCache2, lastChild } from '../../shared/IR/nav';
 import {
+    mapNode,
     parentPath,
     Path,
     PathRoot,
@@ -41,6 +42,8 @@ import {
 import { docToBlock, layoutCtx } from './drawDocNode';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 import { selectionLocation } from './selectionLocation';
+import { evaluate, init, parse } from '../../graphh/by-hand';
+import objectHash from 'object-hash';
 
 export const selectionPos = (
     store: Store,
@@ -238,11 +241,69 @@ export function calculateIRs(
     // right?
     // I mean techinally we only need to .. parse ...things
     // that are depended on by a given node.
+    const { ctx, caches } = init();
+
+    const tids: string[] = [];
 
     iterDocNodes(0, [], doc, (docNode, ids) => {
         const top = state.toplevels[docNode.toplevel];
+        tids.push(docNode.toplevel);
         const { paths, node } = topFromMap(top);
-        const parsed = ev.parse(node, cursorLoc(ds.selections, top.id));
+        let texts: Record<number, { text: string[]; index: number }> = {};
+        let found = false;
+        ds.selections.forEach((sel) => {
+            if (
+                sel.type === 'ir' &&
+                sel.start.cursor.type === 'text' &&
+                sel.start.path.root.toplevel === docNode.toplevel &&
+                sel.start.cursor.end.text
+            ) {
+                found = true;
+                texts[lastChild(sel.start.path)] = {
+                    text: sel.start.cursor.end.text,
+                    index: sel.start.cursor.end.index,
+                };
+            }
+        });
+        let runNode = node;
+        if (found) {
+            runNode = mapNode(node, (node) => {
+                if (
+                    node.loc.length === 1 &&
+                    node.loc[0][0] === top.id &&
+                    texts[node.loc[0][1]]
+                ) {
+                    const repl = texts[node.loc[0][1]];
+                    if (node.type === 'id') {
+                        return { ...node, text: repl.text.join('') };
+                    }
+                    if (node.type === 'string') {
+                        if (repl.index === 0) {
+                            return { ...node, first: repl.text.join('') };
+                        }
+                        const tpl = node.templates.slice();
+                        tpl[repl.index - 1] = {
+                            ...tpl[repl.index - 1],
+                            suffix: repl.text.join(''),
+                        };
+                        return { ...node, templates: tpl };
+                    }
+                }
+                return node;
+            });
+        }
+
+        // const parsed = ev.parse(node, cursorLoc(ds.selections, top.id));
+        ctx.tops[top.id] = { hash: objectHash(runNode), node: runNode };
+        const parseResult = parse(
+            top.id,
+            ctx,
+            caches,
+            ev,
+            cursorLoc(ds.selections, top.id),
+        );
+        const parsed = parseResult.result;
+        // (node, cursorLoc(ds.selections, top.id));
         const irs: IRForLoc = {};
         const pathRoot = root(doc.id, ids, docNode);
 
@@ -286,6 +347,11 @@ export function calculateIRs(
             result: parsed,
         };
     });
+
+    tids.forEach((tid) => {
+        cache[tid].output = evaluate(tid, ctx, ev, caches);
+    });
+
     return cache;
 }
 

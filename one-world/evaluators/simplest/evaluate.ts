@@ -11,6 +11,7 @@ export const builtins: Record<string, any> = {
     trace: (text: string, v: any) => (console.log(text, v), v),
     false: false,
     true: true,
+    null: null,
 };
 
 const handlers: {
@@ -38,7 +39,9 @@ const handlers: {
         return { type: 'list', loc: ir.loc, items: nodes };
     },
 
-    string: (ir) => ir.value,
+    string: (ir, irs, locals) =>
+        ir.first +
+        ir.templates.map((tpl) => evaluate(tpl.expr, irs, locals) + tpl.suffix),
     int: (ir) => ir.value,
     apply: (ir, irs, locals) =>
         evaluate(
@@ -68,6 +71,9 @@ const handlers: {
     local({ name }, _, locals) {
         if (name in locals) {
             return locals[name];
+        }
+        if (name === '') {
+            throw new Error(`unhandled blank node`);
         }
         throw new Error(`no local ${name}`);
     },

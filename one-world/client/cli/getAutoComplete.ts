@@ -147,8 +147,9 @@ export const getAutoComplete = (
 ): MenuItem[] | void => {
     if (!ds.selections.length) return;
     const sel = ds.selections[0];
-    if (sel.type !== 'ir' || sel.end || sel.start.cursor.type !== 'text')
+    if (sel.type !== 'ir' || sel.end || sel.start.cursor.type !== 'text') {
         return;
+    }
     const selText = sel.start.cursor.end.text;
     const path = sel.start.path;
     // const loc = lastChild(path);
@@ -163,7 +164,9 @@ export const getAutoComplete = (
         return;
     }
     const text = selText ? selText.join('') : idNode.text;
-    if (!text.length) return; // don't give autocomplete with no text
+    if (!text.length) {
+        return; // don't give autocomplete with no text
+    }
 
     const top = isToplevel(
         path,

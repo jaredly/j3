@@ -1,6 +1,6 @@
 import { keyForLoc, Loc, mapNode, RecNode, RecNodeT } from '../../shared/nodes';
 import { Auto, Evaluator, ParseResult } from '../boot-ex/types';
-import { evaluate } from './evaluate';
+import { builtins, evaluate } from './evaluate';
 import { parseTop } from './parseTop';
 
 export { builtins } from './evaluate';
@@ -20,7 +20,11 @@ export type Top =
 
 export type Expr =
     | { type: 'quote'; items: RecNode[]; loc: Loc }
-    | { type: 'string'; value: string }
+    | {
+          type: 'string';
+          first: string;
+          templates: { expr: Expr; suffix: string }[];
+      }
     | { type: 'int'; value: number }
     | { type: 'ref'; loc: Loc; kind: string }
     | { type: 'local'; name: string; loc: Loc }
@@ -37,12 +41,12 @@ export type IR = Expr;
 export type CTX = Omit<ParseResult<Top>, 'top'> & { cursor?: number };
 
 const kwds: Auto[] = [
-    {
-        text: '<',
-        templates: [],
-        docs: 'less than',
-        reference: { type: 'builtin', kind: 'value' },
-    },
+    // {
+    //     text: '<',
+    //     templates: [],
+    //     docs: 'less than',
+    //     reference: { type: 'builtin', kind: 'value' },
+    // },
     {
         text: 'def',
         toplevel: true,
@@ -50,6 +54,20 @@ const kwds: Auto[] = [
             {
                 template: [place('name', true), place('value')],
                 docs: 'global definition',
+            },
+        ],
+    },
+    {
+        text: 'defn',
+        toplevel: true,
+        templates: [
+            {
+                template: [
+                    place('name', true),
+                    { type: 'array', items: [place('pattern')], loc: false },
+                    place('body'),
+                ],
+                docs: 'global function definition',
             },
         ],
     },
@@ -63,6 +81,15 @@ const kwds: Auto[] = [
         ],
     },
 ];
+
+Object.keys(builtins).forEach((key) => {
+    kwds.push({
+        text: key,
+        templates: [],
+        docs: 'a builtin',
+        reference: { type: 'builtin', kind: 'value' },
+    });
+});
 
 export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
     kwds,

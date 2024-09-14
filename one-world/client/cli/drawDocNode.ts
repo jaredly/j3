@@ -46,9 +46,9 @@ export const docToBlock = <Top>(
         if (sel?.type === 'namespace' && sel.text != null) {
             nsText = sel.text.join('');
         }
-        top = vblock([
+        const items = [
             line(
-                nsText ?? 'namespace',
+                nsText ?? '',
                 {
                     type: 'namespace',
                     path: { root, children: [] },
@@ -65,7 +65,20 @@ export const docToBlock = <Top>(
                 layoutCache[node.toplevel],
                 toplevels[node.toplevel].nextLoc,
             ),
-        ]);
+        ];
+        const output = cache[node.toplevel].output;
+        if (output?.type === 'success') {
+            items.push(
+                line(
+                    typeof output.value === 'function'
+                        ? '<function>'
+                        : JSON.stringify(output.value),
+                ),
+            );
+        } else if (output?.type === 'error') {
+            items.push(line('failed to execute: ' + output.text));
+        }
+        top = vblock(items);
     }
     if (node.children.length) {
         const children = node.children.map((cid) =>

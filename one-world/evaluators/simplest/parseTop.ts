@@ -61,14 +61,17 @@ const forms: Record<
         return { type: 'quote', items, loc };
     },
     if(ctx, loc, cond, yes, no) {
-        if (!cond || !yes || !no) return;
         ctx.layouts[getLoc(loc)] = {
             type: 'vert',
             layout: { tightFirst: 2, indent: 4 },
         };
-        const econd = parseExpr(ctx, cond);
-        const eyes = parseExpr(ctx, yes);
-        const eno = parseExpr(ctx, no);
+        const econd = cond ? parseExpr(ctx, cond) : undefined;
+        const eyes = yes ? parseExpr(ctx, yes) : undefined;
+        const eno = no ? parseExpr(ctx, no) : undefined;
+        if (!cond || !yes || !no) {
+            ctx.errors.push({ loc, text: 'bad form' });
+            return;
+        }
         return econd && eyes && eno
             ? { type: 'if', cond: econd, yes: eyes, no: eno }
             : undefined;
@@ -97,7 +100,13 @@ const forms: Record<
 const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
     switch (value.type) {
         case 'string':
-            return { type: 'string', value: value.first };
+            const templates = [];
+            for (let item of value.templates) {
+                const expr = parseExpr(ctx, item.expr);
+                if (!expr) return;
+                templates.push({ expr, suffix: item.suffix });
+            }
+            return { type: 'string', first: value.first, templates };
         case 'array': {
             const items: Expr[] = [];
             for (let item of value.items) {
@@ -124,9 +133,23 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
                     kind: value.ref.kind,
                 };
             }
-            const num = Number(value.text);
-            if (Number.isInteger(num)) {
-                return { type: 'int', value: num };
+            if (value.text.length > 0) {
+                const num = Number(value.text);
+                if (Number.isInteger(num)) {
+                    return { type: 'int', value: num };
+                }
+            }
+            if (ctx.cursor === value.loc[0][1]) {
+                ctx.autocomplete = {
+                    local: [],
+                    kinds: ['kwd', 'value'],
+                };
+                // } else if (ctx.cursor != null) {
+                //     console.log('an id', ctx.cursor, value.loc[0][1]);
+            }
+            if (value.text === '') {
+                ctx.errors.push({ loc: value.loc, text: 'blank' });
+                return;
             }
             return { type: 'local', loc: value.loc, name: value.text };
 
@@ -141,6 +164,17 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
                     return forms[id](ctx, value.loc, ...value.items.slice(1));
                 }
             }
+            if (value.items.length === 0) {
+                return { type: 'builtin', kind: 'value', name: 'null' };
+            }
+            if (
+                value.items.length === 1 &&
+                value.items[0].type === 'id' &&
+                !value.items[0].ref &&
+                value.items[0].text === ''
+            ) {
+                return { type: 'builtin', kind: 'value', name: 'null' };
+            }
             if (value.items.length > 1) {
                 const target = parseExpr(ctx, value.items[0]);
                 const args = value.items
@@ -150,6 +184,7 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
                     ? { type: 'apply', target, args: args as Expr[] }
                     : undefined;
             }
+            return parseExpr(ctx, value.items[0]);
     }
     throw new Error(`invalid expr`);
 };
@@ -163,6 +198,12 @@ export const parseTop = (ctx: CTX, node: RecNode): Top | null => {
         ) {
             const id = node.items[0].text;
             if (topForms[id]) {
+                if (
+                    node.items[0].loc[0][1] === ctx.cursor &&
+                    node.items.length === 1
+                ) {
+                    ctx.autocomplete = { kinds: ['kwd'], local: [] };
+                }
                 return (
                     topForms[id](ctx, node.loc, ...node.items.slice(1)) ?? null
                 );
