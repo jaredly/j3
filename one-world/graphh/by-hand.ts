@@ -187,16 +187,13 @@ const replaceRefs =
         return node;
     };
 
-const add = (
-    text: string,
-    module: string,
+const addExports = (
+    top: string,
     ctx: Context,
     names: Record<string, IDRef>,
     exports: (node: RecNode) => { loc: Loc; kind: string }[],
 ) => {
-    const id = `term${Object.keys(ctx.tops).length}`;
-    const node = reader(text, id);
-    if (!node) throw new Error(`failed to read: ${text}`);
+    const node = ctx.tops[top].node;
 
     const ids: Record<string, string> = {};
     foldNode(null, node, (_, node) => {
@@ -215,8 +212,24 @@ const add = (
         if (names[name]) throw new Error(`duplicate declaration: ${name}`);
         names[name] = { type: 'toplevel', loc: exp.loc, kind: exp.kind };
     });
+};
+
+const updateRefs = (
+    top: string,
+    ctx: Context,
+    names: Record<string, IDRef>,
+) => {
+    const node = ctx.tops[top].node;
     const mapped = mapNode(node, replaceRefs(names));
-    ctx.tops[id] = { hash: objectHash(mapped), node: mapped };
+    ctx.tops[top] = { hash: objectHash(mapped), node: mapped };
+};
+
+const add = (text: string, module: string, ctx: Context) => {
+    const id = `term${Object.keys(ctx.tops).length}`;
+    const node = reader(text, id);
+    if (!node) throw new Error(`failed to read: ${text}`);
+
+    ctx.tops[id] = { hash: objectHash(node), node };
     ctx.moduleForTop[id] = module;
     if (!ctx.modules[module]) {
         ctx.modules[module] = [id];
@@ -377,14 +390,7 @@ const add = (
 // };
 
 const full = (ev: AnyEvaluator, raw: Record<string, string[]>) => {
-    const exports = (node: RecNode) => {
-        const res = ev.parse(node);
-        // if (!res.top) {
-        //     console.log(res);
-        //     throw new Error('failed');
-        // }
-        return res.exports;
-    };
+    const exports = (node: RecNode) => ev.parse(node).exports;
     const { ctx, caches } = init();
     const names: Record<string, IDRef> = {};
     Object.keys(builtins).forEach((name) => {
@@ -393,8 +399,10 @@ const full = (ev: AnyEvaluator, raw: Record<string, string[]>) => {
 
     const ids = [];
     for (let [mod, terms] of Object.entries(raw)) {
-        ids.push(...terms.map((text) => add(text, mod, ctx, names, exports)));
+        ids.push(...terms.map((text) => add(text, mod, ctx)));
     }
+    ids.forEach((id) => addExports(id, ctx, names, exports));
+    ids.forEach((id) => updateRefs(id, ctx, names));
 
     const last = ids[ids.length - 1];
     const result = evaluate(last, ctx, ev, caches);
@@ -427,6 +435,18 @@ full(SimplestEvaluator, {
 
 full(SimplestEvaluator, {
     one: [`((fn [x] (+ x 10)) 34)`],
+});
+
+full(SimplestEvaluator, {
+    one: [`(defn hi [x] (+ x 10))`, `(hi 34)`],
+});
+
+full(SimplestEvaluator, {
+    one: [
+        `(defn even [x] (if (= x 0) true (odd (- x 1))))`,
+        `(defn odd [x] (not (even x)))`,
+        `[(even 4) (even 3) (even 2)]`,
+    ],
 });
 
 // Ok now we get serious. gotta support functions I guess

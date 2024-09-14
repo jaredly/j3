@@ -17,6 +17,9 @@ type Expr =
     | { type: 'string'; value: string }
     | { type: 'int'; value: number }
     | { type: 'ref'; loc: Loc; kind: string }
+    | { type: 'local'; name: string; loc: Loc }
+    | { type: 'list'; items: Expr[]; loc: Loc }
+    | { type: 'fn'; args: string[]; body: Expr }
     | { type: 'builtin'; name: string; kind: string }
     | { type: 'apply'; target: Expr; args: Expr[] }
     | { type: 'if'; cond: Expr; yes: Expr; no: Expr };
@@ -68,6 +71,16 @@ const topForms: Record<
         ctx.exports?.push({ kind: 'value', loc: name.loc });
         return expr ? { type: 'def', loc: name.loc, value: expr } : undefined;
     },
+    defn(ctx, loc, name, args, value) {
+        if (!name || !args || !value || name.type !== 'id') {
+            ctx.errors.push({ loc, text: 'bad form' });
+            return;
+        }
+
+        ctx.exports?.push({ kind: 'value', loc: name.loc });
+        const fn = forms.fn(ctx, loc, args, value);
+        return fn ? { type: 'def', loc: name.loc, value: fn } : undefined;
+    },
 };
 
 const getLoc = (l: Loc) => l[l.length - 1][1];
@@ -89,12 +102,40 @@ const forms: Record<
             ? { type: 'if', cond: econd, yes: eyes, no: eno }
             : undefined;
     },
+    fn(ctx, loc, args, body) {
+        if (
+            !args ||
+            !body ||
+            args.type !== 'array' ||
+            !args.items.every((arg) => arg.type === 'id')
+        ) {
+            ctx.errors.push({ loc, text: 'bad form' });
+            return;
+        }
+        const expr = parseExpr(ctx, body);
+        return expr
+            ? {
+                  type: 'fn',
+                  args: args.items.map((arg) => arg.text),
+                  body: expr,
+              }
+            : undefined;
+    },
 };
 
 const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
     switch (value.type) {
         case 'string':
             return { type: 'string', value: value.first };
+        case 'array': {
+            const items: Expr[] = [];
+            for (let item of value.items) {
+                const parsed = parseExpr(ctx, item);
+                if (!parsed) return;
+                items.push(parsed);
+            }
+            return { type: 'list', items, loc: value.loc };
+        }
         case 'id':
             if (value.ref?.type === 'toplevel') {
                 ctx.references.push({ loc: value.loc, ref: value.ref });
@@ -116,9 +157,8 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
             if (Number.isInteger(num)) {
                 return { type: 'int', value: num };
             }
-            ctx.errors.push({ loc: value.loc, text: 'locals not supported' });
-            return;
-        // throw new Error(`locals not supported ${value.text}`);
+            return { type: 'local', loc: value.loc, name: value.text };
+
         case 'list':
             if (
                 value.type === 'list' &&
@@ -166,13 +206,22 @@ const parseTop = (ctx: CTX, node: RecNode): Top | null => {
 };
 
 export const builtins: Record<string, any> = {
+    '=': (a: number, b: number) => a === b,
     '<': (a: number, b: number) => a < b,
     '>': (a: number, b: number) => a > b,
     '-': (a: number, b: number) => a - b,
     '+': (a: number, b: number) => a + b,
+    not: (b: boolean) => !b,
+    trace: (text: string, v: any) => (console.log(text, v), v),
+    false: false,
+    true: true,
 };
 
-const evaluate = (ir: IR, irs: Record<string, IR>): any => {
+const evaluate = (
+    ir: IR,
+    irs: Record<string, IR>,
+    locals: Record<string, any>,
+): any => {
     if (!ir) throw new Error(`evaluate empty`);
     switch (ir.type) {
         case 'string':
@@ -183,24 +232,44 @@ const evaluate = (ir: IR, irs: Record<string, IR>): any => {
             return evaluate(
                 ir.target,
                 irs,
-            )(...ir.args.map((arg) => evaluate(arg, irs)));
+                locals,
+            )(...ir.args.map((arg) => evaluate(arg, irs, locals)));
+        case 'list':
+            return ir.items.map((item) => evaluate(item, irs, locals));
         case 'builtin':
-            if (builtins[ir.name]) {
+            if (ir.name in builtins) {
                 return builtins[ir.name];
             }
-
             throw new Error('unknown builtin: ' + ir.name);
         case 'if':
-            return evaluate(ir.cond, irs)
-                ? evaluate(ir.yes, irs)
-                : evaluate(ir.no, irs);
+            return evaluate(ir.cond, irs, locals)
+                ? evaluate(ir.yes, irs, locals)
+                : evaluate(ir.no, irs, locals);
         case 'ref':
             const key = keyForLoc(ir.loc);
             if (!irs[key]) {
                 console.log(irs);
                 throw new Error(`cant resolve ref: ${key}`);
             }
-            return evaluate(irs[key], irs);
+            return evaluate(irs[key], irs, locals);
+        case 'local':
+            if (ir.name in locals) {
+                return locals[ir.name];
+            }
+            throw new Error(`no local ${ir.name}`);
+        case 'fn':
+            return (...args: any[]) => {
+                if (args.length !== ir.args.length) {
+                    throw new Error(
+                        `wrong number of args expected ${ir.args.length}, found ${args.length}`,
+                    );
+                }
+                const sub = { ...locals };
+                args.forEach((arg, i) => {
+                    sub[ir.args[i]] = arg;
+                });
+                return evaluate(ir.body, irs, sub);
+            };
     }
     throw new Error(`cant evaluate ${(ir as any).type}`);
 };
@@ -246,7 +315,7 @@ export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
         return res;
     },
     evaluate(ir, irs) {
-        return evaluate(ir, irs);
+        return evaluate(ir, irs, {});
     },
     infer(top, infos) {
         return { errors: [], typeForLoc: [], info: true };
