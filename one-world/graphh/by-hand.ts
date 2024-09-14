@@ -61,7 +61,7 @@ export const parse = <Top, Tinfo, IR>(
             if (omod === module) {
                 throw new Error(`cant have a macro in the same module`);
             }
-            const got = compile(mtop, ctx, ev, caches);
+            const got = compile(mtop, ctx, ev, caches, [module]);
             if (got.type === 'error') {
                 throw new Error(`failed to compile macrooo`);
             }
@@ -126,6 +126,7 @@ const compile = <Top, Tinfo, IR>(
     ctx: Context,
     ev: Evaluator<Top, Tinfo, IR>,
     caches: Caches<Top>,
+    moduleParents: string[] = [],
 ):
     | { type: 'error'; text: string }
     | {
@@ -138,7 +139,13 @@ const compile = <Top, Tinfo, IR>(
         parse(top, ctx, caches, ev).result.references.map((r) => r.ref);
     const getMod = (top: string) => ctx.moduleForTop[top];
 
-    collectModuleComponents(top, ctx.components, [], getRefs, getMod);
+    collectModuleComponents(
+        top,
+        ctx.components,
+        moduleParents,
+        getRefs,
+        getMod,
+    );
 
     const module = ctx.moduleForTop[top];
     const head = ctx.components[module].pointers[top];

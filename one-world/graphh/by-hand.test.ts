@@ -109,3 +109,43 @@ test("let's do a macrooo", () => {
         }),
     ).toEqual([false, true, true, false]);
 });
+
+test('macro in the same module', () => {
+    expect(() =>
+        full({
+            main: [
+                '(defmacro and [one two] (` if @one @two false))',
+                '(and true false)',
+            ],
+        }),
+    ).toThrow('macro in the same module');
+});
+
+test('macro cross-module recursion', () => {
+    expect(() =>
+        full({
+            macros: [
+                '(defmacro and [one two] (if (go false) (` if @one @two false) (` true)))',
+            ],
+            main: [
+                '(defn go [x] (if x true (and false true)))',
+                '(and true false)',
+            ],
+        }),
+    ).toThrow('dependency cycle');
+});
+
+test('macro cross-module recursion through two modules', () => {
+    expect(() =>
+        full({
+            macros: [
+                '(defmacro and [one two] (if (lol false) (` if @one @two false) (` true)))',
+            ],
+            two: ['(def lol go)'],
+            main: [
+                '(defn go [x] (if x true (and false true)))',
+                '(and true false)',
+            ],
+        }),
+    ).toThrow('dependency cycle');
+});
