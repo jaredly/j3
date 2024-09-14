@@ -1,3 +1,5 @@
+import { ParseResult } from '../../evaluators/boot-ex/types';
+import { blockToText } from '../../shared/IR/block-to-text';
 import {
     Block,
     hblock,
@@ -6,10 +8,16 @@ import {
     vblock,
 } from '../../shared/IR/ir-to-blocks';
 import { white } from '../../shared/IR/ir-to-text';
-import { IRForLoc, LayoutCtx } from '../../shared/IR/layout';
+import {
+    IRForLoc,
+    LayoutChoices,
+    LayoutCtx,
+    layoutIR,
+} from '../../shared/IR/layout';
 import { IRCache2 } from '../../shared/IR/nav';
-import { PathRoot } from '../../shared/nodes';
+import { Nodes, PathRoot, RecNode, toMap } from '../../shared/nodes';
 import { Doc, DocSelection, PersistedState } from '../../shared/state2';
+import { createIRCache } from '../TextEdit/actions';
 import { controlLayout, textLayout } from './textLayout';
 
 export const docToBlock = <Top>(
@@ -81,6 +89,37 @@ export const docToBlock = <Top>(
 };
 
 export const SHOW_IDS = false;
+
+// Only for debug n stuff I guess
+export const recNodeToText = (
+    node: RecNode,
+    result: ParseResult<any>,
+    maxWidth: number,
+) => {
+    const nodes: Nodes = {};
+    const root = toMap(node, nodes);
+    const irs = createIRCache(
+        root,
+        nodes,
+        { doc: '', ids: [], toplevel: '', type: 'doc-node' },
+        result,
+    );
+
+    const ctx = layoutCtx(maxWidth, irs);
+    const choices: LayoutChoices = {};
+    layoutIR(0, 0, irs[root], choices, ctx);
+
+    const block = irToBlock(irs[root], irs, choices, {
+        layouts: ctx.layouts,
+        space: ' ',
+        top: 'top',
+    });
+
+    return blockToText({ x: 0, y: 0, x0: 0 }, block, {
+        color: false,
+        styles: {},
+    });
+};
 
 export const drawToplevel = (
     id: string,

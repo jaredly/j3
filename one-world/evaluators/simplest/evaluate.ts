@@ -22,7 +22,7 @@ const handlers: {
 } = {
     quote(ir, irs, locals): RecNode {
         const sub = (node: RecNode) => {
-            if (node.type === 'id' && !node.ref && node.text.startsWith('#')) {
+            if (node.type === 'id' && !node.ref && node.text.startsWith('@')) {
                 const name = node.text.slice(1);
                 if (name in locals) {
                     return locals[name];

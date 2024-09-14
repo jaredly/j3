@@ -1,4 +1,5 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
+import { ParseResult } from '../../evaluators/boot-ex/types';
 import { Action, ToplevelUpdate } from '../../shared/action2';
 import { IRCursor, IRSelection, nodeToIR } from '../../shared/IR/intermediate';
 import { IRForLoc } from '../../shared/IR/layout';
@@ -1119,11 +1120,20 @@ export const createIRCache = (
     root: number,
     nodes: Record<number, Node>,
     pathRoot: PathRoot,
+    parsed?: ParseResult<any>,
 ): IRForLoc => {
     const map: IRForLoc = {};
+    const ctx = parsed
+        ? {
+              styles: parsed.styles,
+              layouts: parsed.layouts,
+              getName: () => null,
+              tableHeaders: parsed.tableHeaders,
+          }
+        : undefined;
     const process = (loc: number, path: Path) => {
         const self = pathWithChildren(path, loc);
-        const ir = nodeToIR(nodes[loc], self); // this will mess up some style things
+        const ir = nodeToIR(nodes[loc], self, ctx); // this will mess up some style things
         map[loc] = ir;
         childLocs(nodes[loc]).forEach((l) => process(l, self));
     };

@@ -141,8 +141,11 @@ export const reader = (
                     const [left, right] = idText.split('#');
                     idText = left;
                     start = +right;
+                    if (isNaN(start)) {
+                        throw new Error(`invalid hash`);
+                    }
                 }
-                let ref: IDRef;
+                let ref: IDRef | undefined = undefined;
                 if (idText.includes('!')) {
                     const [left, right] = idText.split('!');
                     idText = left;

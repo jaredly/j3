@@ -14,6 +14,7 @@ import {
     collectModuleComponents,
     ComponentsByModule,
 } from './collapse-components';
+import { recNodeToText } from '../client/cli/drawDocNode';
 
 export type Context = {
     tops: Record<string, { hash: string; node: RecNode }>;
@@ -40,12 +41,14 @@ export const parse = <Top, Tinfo, IR>(
 ) => {
     if (!ctx.tops[top]) throw new Error(`unknown top ${top}`);
 
-    const { hash, node } = ctx.tops[top];
+    let { hash, node } = ctx.tops[top];
 
     const macros = ev.macrosToExpand(node);
     if (macros.length === 0) {
         if (caches.parse[top]?.hash === hash) return caches.parse[top];
     } else {
+        // TODO: figure out caching if we have macros in play
+
         const toFind: Record<string, Loc> = {};
         macros.forEach(({ ref: { loc } }) => {
             toFind[keyForLoc(loc)] = loc;
@@ -56,11 +59,60 @@ export const parse = <Top, Tinfo, IR>(
             const mtop = loc[0][0];
             const omod = ctx.moduleForTop[mtop];
             if (omod === module) {
-                // const got = compile(mtop, ctx, ev, caches);
+                throw new Error(`cant have a macro in the same module`);
             }
+            const got = compile(mtop, ctx, ev, caches);
+            if (got.type === 'error') {
+                throw new Error(`failed to compile macrooo`);
+            }
+            const key = keyForLoc(loc);
+            const ir = got.irs[key];
+            if (!ir) {
+                throw new Error(`ir not found: ${key}`);
+            }
+            const fn = ev.evaluate(ir, got.irs);
+            if (typeof fn !== 'function') {
+                throw new Error(`macro not a function: ${key}`);
+            }
+            loaded[keyForLoc(loc)] = fn;
         });
+
+        let macroi = 0;
+        node = mapNode(node, (node) => {
+            if (node.type === 'list' && node.items[0].type === 'id') {
+                const first = node.items[0];
+                if (
+                    first.type === 'id' &&
+                    first.ref?.type === 'toplevel' &&
+                    first.ref.kind === 'macro'
+                ) {
+                    const key = keyForLoc(first.ref.loc);
+                    if (key in loaded) {
+                        const result = mapNode(
+                            loaded[key](...node.items.slice(1)),
+                            (node) => {
+                                return {
+                                    ...node,
+                                    loc: node.loc.concat([[key, macroi++]]),
+                                };
+                            },
+                        );
+                        // console.log(
+                        //     JSON.stringify(result),
+                        //     recNodeToText(result, ev.parse(result), 50),
+                        // );
+                        return result;
+                    }
+                }
+            }
+            return node;
+        });
+        // let i = 0;
+        // const reloced = mapNode(node, (node) => {
+        //     return { ...node, loc: [['test', i++]] };
+        // });
+        // console.log(recNodeToText(reloced, ev.parse(reloced), 50));
     }
-    // TODO: figure out caching if we have macros in play
 
     // ok, with macros, we can't just rely on the hash, now can we.
 
@@ -82,7 +134,6 @@ const compile = <Top, Tinfo, IR>(
           irs: Record<string, IR>;
           value?: IR;
       } => {
-    console.log('please compile', top);
     const getRefs = (top: string) =>
         parse(top, ctx, caches, ev).result.references.map((r) => r.ref);
     const getMod = (top: string) => ctx.moduleForTop[top];
@@ -236,7 +287,25 @@ const updateRefs = (
     names: Record<string, IDRef>,
 ) => {
     const node = ctx.tops[top].node;
-    const mapped = mapNode(node, replaceRefs(names));
+    let mapped;
+    if (
+        node.type === 'list' &&
+        node.items[0]?.type === 'id' &&
+        ['def', 'defn', 'defmacro'].includes(node.items[0].text)
+    ) {
+        mapped = {
+            ...node,
+            items: [
+                node.items[0],
+                node.items[1],
+                ...node.items
+                    .slice(2)
+                    .map((child) => mapNode(child, replaceRefs(names))),
+            ],
+        };
+    } else {
+        mapped = mapNode(node, replaceRefs(names));
+    }
     ctx.tops[top] = { hash: objectHash(mapped), node: mapped };
 };
 

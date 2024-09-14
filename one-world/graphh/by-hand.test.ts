@@ -99,13 +99,13 @@ test('cant recurse across modules', () => {
 test("let's do a macrooo", () => {
     expect(
         full({
-            zero: [
-                `(defmacro and [one two] (\` if #one #two false))`,
-                `(defmacro or [one two] (\` if #one true #two))`,
+            booleans: [
+                '(defmacro and [one two] (` if @one @two false))',
+                '(defmacro or [one two] (` if @one true @two))',
             ],
-            one: [
-                `[(and true false) (and true true) (or true false) (or false false)]`,
+            main: [
+                '[(and true false) (and true true) (or true false) (or false false)]',
             ],
         }),
-    ).toEqual([true, false, true]);
+    ).toEqual([false, true, true, false]);
 });
