@@ -1,4 +1,3 @@
-import termkit from 'terminal-kit';
 import { drop } from './edit/drop';
 import { handleMouseClick, handleMouseDrag } from './edit/handleMouse';
 import {
@@ -12,9 +11,9 @@ import { handleDrag, maybeStartDragging } from './handleDrag';
 import { init } from './init';
 import { pickDocument } from './pickDocument';
 import { render, renderSelection } from './render';
-import { readSess, trackSelection, writeSess } from './Sess';
+import { Sess, trackSelection } from './Sess';
 
-import { openSync, writeSync } from 'fs';
+import { SimplestEvaluator } from '../../evaluators/simplest';
 import { recalcDropdown } from '../newStore2';
 import {
     drawToTerminal,
@@ -22,13 +21,16 @@ import {
     MouseKind,
     Terminal,
 } from './drawToTerminal';
-import { SimplestEvaluator } from '../../evaluators/simplest';
 
 // TODO NEXT STEP
 // refactor this out, so that we can use xtermjs as well
 // because that would be super cool
 
-export const run = async (term: Terminal) => {
+export const run = async (
+    term: Terminal,
+    readSess: () => Sess,
+    writeSess: (s: Sess) => void,
+) => {
     console.log('initializing store...');
     const sess = readSess();
     const store = await init(sess);

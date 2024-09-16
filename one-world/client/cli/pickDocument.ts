@@ -12,14 +12,15 @@ export const pickDocument = (store: Store, term: Terminal) => {
 
         const draw = () => {
             term.clear();
-            // sb.clear()
             for (let i = 0; i <= ids.length; i++) {
                 term.moveTo(0, i + 1);
                 if (i === ids.length) {
                     if (sel === i) {
                         term.write(ansis.bgGreen('New Document'));
                     } else {
-                        term.write('New Document');
+                        const bl = ansis.blue('New Document');
+                        console.log(bl);
+                        term.write(ansis.blue('New Document'));
                     }
                 } else if (sel === i) {
                     if (renaming) {

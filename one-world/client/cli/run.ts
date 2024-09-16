@@ -2,6 +2,7 @@ import { openSync, writeSync } from 'fs';
 import termkit from 'terminal-kit';
 import { run } from './main';
 import { Terminal } from './drawToTerminal';
+import { readSess, writeSess } from './Sess';
 
 const REDIRECT_OUT = false;
 if (REDIRECT_OUT) {
@@ -60,7 +61,7 @@ getTerm().then((term) => {
     });
     term.clear();
     term.grabInput({ mouse: 'drag' });
-    run(tkTerm(term)).then(
+    run(tkTerm(term), readSess, writeSess).then(
         () => {
             // console.log('finished turns out');
             // term.grabInput(false);
