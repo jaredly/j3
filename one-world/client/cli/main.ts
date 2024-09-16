@@ -27,6 +27,10 @@ export type MouseEvt = {
     alt: boolean;
 };
 
+// TODO NEXT STEP
+// refactor this out, so that we can use xtermjs as well
+// because that would be super cool
+
 export const run = async (term: termkit.Terminal) => {
     console.log('initializing store...');
     const sess = readSess();
@@ -87,26 +91,11 @@ export const run = async (term: termkit.Terminal) => {
     store.on('all', () => {
         kick();
     });
+
     term.on('resize', () => kick());
 
     term.on('key', (key: string) => {
-        lastKey = key;
-        if (key === 'CTRL_W') {
-            writeSess({ ssid: sess.ssid });
-            return;
-        }
-
-        if (handleDropdown(key, docId, store, rstate, kick, ev)) {
-            return;
-        }
-
-        if (
-            handleUpDown(key, docId, store, rstate) ||
-            handleMovement(key, docId, rstate.cache, store)
-        ) {
-            return;
-        }
-        if (handleUpdate(key, docId, rstate.cache, store)) {
+        if (onKey(key)) {
             return;
         }
 
@@ -123,15 +112,46 @@ export const run = async (term: termkit.Terminal) => {
         renderSelection(term, store, docId, rstate.sourceMaps);
     });
 
-    term.on('mouse', (one: string, evt: MouseEvt) => {
+    term.on('mouse', (evtKind: MouseKind, evt: MouseEvt) => {
+        onMouse(evtKind, evt);
+    });
+
+    const onKey = (key: string) => {
+        lastKey = key;
+        if (key === 'CTRL_W') {
+            writeSess({ ssid: sess.ssid });
+            return true;
+        }
+
+        if (handleDropdown(key, docId, store, rstate, kick, ev)) {
+            return true;
+        }
+
+        if (
+            handleUpDown(key, docId, store, rstate) ||
+            handleMovement(key, docId, rstate.cache, store)
+        ) {
+            return true;
+        }
+        if (handleUpdate(key, docId, rstate.cache, store)) {
+            return true;
+        }
+    };
+
+    type MouseKind =
+        | 'MOUSE_DRAG'
+        | 'MOUSE_LEFT_BUTTON_PRESSED'
+        | 'MOUSE_LEFT_BUTTON_RELEASED';
+
+    const onMouse = (evtKind: MouseKind, evt: MouseEvt) => {
         const ds = store.getDocSession(docId);
-        if (one === 'MOUSE_DRAG') {
+        if (evtKind === 'MOUSE_DRAG') {
             if (ds.dragState) {
                 handleDrag(evt, docId, rstate, ds.dragState, store);
                 return;
             }
             handleMouseDrag(docId, rstate.sourceMaps, evt, store);
-        } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
+        } else if (evtKind === 'MOUSE_LEFT_BUTTON_PRESSED') {
             const sel = ds.selections[0];
             if (
                 sel?.type === 'ir' &&
@@ -149,7 +169,7 @@ export const run = async (term: termkit.Terminal) => {
                 rstate.cache,
                 store,
             );
-        } else if (one === 'MOUSE_LEFT_BUTTON_RELEASED') {
+        } else if (evtKind === 'MOUSE_LEFT_BUTTON_RELEASED') {
             const ds = store.getDocSession(docId);
             const dragState = ds.dragState;
             if (dragState) {
@@ -170,5 +190,5 @@ export const run = async (term: termkit.Terminal) => {
 
             return;
         }
-    });
+    };
 };
