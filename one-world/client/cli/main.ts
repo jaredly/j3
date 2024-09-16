@@ -16,27 +16,22 @@ import { readSess, trackSelection, writeSess } from './Sess';
 
 import { openSync, writeSync } from 'fs';
 import { recalcDropdown } from '../newStore2';
-import { drawToTerminal } from './drawToTerminal';
+import {
+    drawToTerminal,
+    MouseEvt,
+    MouseKind,
+    Terminal,
+} from './drawToTerminal';
 import { SimplestEvaluator } from '../../evaluators/simplest';
-
-export type MouseEvt = {
-    x: number;
-    y: number;
-    shift: boolean;
-    ctrl: boolean;
-    alt: boolean;
-};
 
 // TODO NEXT STEP
 // refactor this out, so that we can use xtermjs as well
 // because that would be super cool
 
-export const run = async (term: termkit.Terminal) => {
+export const run = async (term: Terminal) => {
     console.log('initializing store...');
     const sess = readSess();
     const store = await init(sess);
-    term.clear();
-    term.grabInput({ mouse: 'drag' });
 
     const ev = SimplestEvaluator;
 
@@ -92,9 +87,9 @@ export const run = async (term: termkit.Terminal) => {
         kick();
     });
 
-    term.on('resize', () => kick());
+    term.onResize(() => kick());
 
-    term.on('key', (key: string) => {
+    term.onKey((key: string) => {
         if (onKey(key)) {
             return;
         }
@@ -112,7 +107,7 @@ export const run = async (term: termkit.Terminal) => {
         renderSelection(term, store, docId, rstate.sourceMaps);
     });
 
-    term.on('mouse', (evtKind: MouseKind, evt: MouseEvt) => {
+    term.onMouse((evtKind: MouseKind, evt: MouseEvt) => {
         onMouse(evtKind, evt);
     });
 
@@ -137,11 +132,6 @@ export const run = async (term: termkit.Terminal) => {
             return true;
         }
     };
-
-    type MouseKind =
-        | 'MOUSE_DRAG'
-        | 'MOUSE_LEFT_BUTTON_PRESSED'
-        | 'MOUSE_LEFT_BUTTON_RELEASED';
 
     const onMouse = (evtKind: MouseKind, evt: MouseEvt) => {
         const ds = store.getDocSession(docId);

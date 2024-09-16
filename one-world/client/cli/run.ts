@@ -1,6 +1,7 @@
 import { openSync, writeSync } from 'fs';
 import termkit from 'terminal-kit';
 import { run } from './main';
+import { Terminal } from './drawToTerminal';
 
 const REDIRECT_OUT = false;
 if (REDIRECT_OUT) {
@@ -26,11 +27,40 @@ const getTerm = () =>
         ),
     );
 
+const tkTerm = (term: termkit.Terminal): Terminal =>
+    Object.defineProperties(
+        {
+            moveTo: term.moveTo,
+            write: term,
+            clear: term.clear,
+            onKey(fn) {
+                term.on('key', fn);
+                return () => term.off('key', fn);
+            },
+            onResize(fn) {
+                term.on('resize', fn);
+                return () => term.off('key', fn);
+            },
+            onMouse(fn) {
+                term.on('mouse', fn);
+                return () => term.off('key', fn);
+            },
+            height: 0,
+            width: 0,
+        },
+        {
+            height: { get: () => term.height },
+            width: { get: () => term.width },
+        },
+    );
+
 getTerm().then((term) => {
     process.on('beforeExit', () => {
         term.grabInput(false);
     });
-    run(term).then(
+    term.clear();
+    term.grabInput({ mouse: 'drag' });
+    run(tkTerm(term)).then(
         () => {
             // console.log('finished turns out');
             // term.grabInput(false);

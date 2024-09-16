@@ -6,7 +6,7 @@ const node = document.createElement('div');
 document.body.append(node);
 
 var term = new Terminal();
-term.isTTY = true;
+// term.isTTY = true;
 term.open(node);
 term.write('Hello from \x1B[1;3;31mxterm.js\x1B[0m $ ');
 term.onKey((key) => {

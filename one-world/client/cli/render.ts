@@ -44,6 +44,7 @@ import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 import { selectionLocation } from './selectionLocation';
 import { evaluate, init, parse } from '../../graphh/by-hand';
 import objectHash from 'object-hash';
+import { Terminal } from './drawToTerminal';
 
 export const selectionPos = (
     store: Store,
@@ -63,7 +64,7 @@ export const selectionPos = (
 };
 
 export const renderSelection = (
-    term: termkit.Terminal,
+    term: Terminal,
     store: Store,
     docId: string,
     sourceMaps: BlockEntry[],

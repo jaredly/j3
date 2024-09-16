@@ -5,9 +5,40 @@ import { AnyEvaluator } from '../../evaluators/boot-ex/types';
 import { blockToText } from '../../shared/IR/block-to-text';
 import { getAutoComplete, menuToBlocks } from './getAutoComplete';
 
+export const moveTo = (write: Write, x: number, y: number, text?: string) => {
+    write(`\x1B[${y},${x}M`);
+    if (text) {
+        write(text);
+    }
+};
+export type Write = (text: string) => void;
+
+export type Terminal = {
+    moveTo(x: number, y: number, text?: string): void;
+    write(text: string): void;
+    clear(): void;
+    height: number;
+    width: number;
+    onKey(fn: (key: string) => void): () => void;
+    onResize(fn: () => void): () => void;
+    onMouse(fn: (kind: MouseKind, evt: MouseEvt) => void): () => void;
+};
+
+export type MouseKind =
+    | 'MOUSE_DRAG'
+    | 'MOUSE_LEFT_BUTTON_PRESSED'
+    | 'MOUSE_LEFT_BUTTON_RELEASED';
+export type MouseEvt = {
+    x: number;
+    y: number;
+    shift: boolean;
+    ctrl: boolean;
+    alt: boolean;
+};
+
 export function drawToTerminal(
     rstate: RState,
-    term: termkit.Terminal,
+    term: Terminal,
     store: Store,
     docId: string,
     lastKey: string | null,

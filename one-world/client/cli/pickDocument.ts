@@ -1,7 +1,9 @@
-import termkit from 'terminal-kit';
+// import termkit from 'terminal-kit';
+import ansis from 'ansis';
 import { Store } from '../StoreContext2';
+import { Terminal } from './drawToTerminal';
 
-export const pickDocument = (store: Store, term: termkit.Terminal) => {
+export const pickDocument = (store: Store, term: Terminal) => {
     return new Promise<string | null>((resolve, reject) => {
         let state = store.getState();
         const ids = Object.keys(state.documents);
@@ -15,18 +17,20 @@ export const pickDocument = (store: Store, term: termkit.Terminal) => {
                 term.moveTo(0, i + 1);
                 if (i === ids.length) {
                     if (sel === i) {
-                        term.bgGreen('New Document');
+                        term.write(ansis.bgGreen('New Document'));
                     } else {
-                        term('New Document');
+                        term.write('New Document');
                     }
                 } else if (sel === i) {
                     if (renaming) {
-                        term.bgBlue(renaming.text);
+                        term.write(ansis.bgBlue(renaming.text));
                     } else {
-                        term.bgGreen(state.documents[ids[i]].title);
+                        term.write(
+                            ansis.bgGreen(state.documents[ids[i]].title),
+                        );
                     }
                 } else {
-                    term(state.documents[ids[i]].title);
+                    term.write(state.documents[ids[i]].title);
                 }
             }
         };
@@ -36,7 +40,7 @@ export const pickDocument = (store: Store, term: termkit.Terminal) => {
             draw();
         });
 
-        const key = (key: string) => {
+        const keyListener = (key: string) => {
             if (renaming) {
                 if (key === 'ENTER') {
                     store.update({
@@ -82,7 +86,7 @@ export const pickDocument = (store: Store, term: termkit.Terminal) => {
                 return;
             }
             if (key === 'ENTER') {
-                term.off('key', key);
+                removeKeyListener();
                 if (sel === ids.length) {
                     resolve(null);
                 } else {
@@ -111,7 +115,7 @@ export const pickDocument = (store: Store, term: termkit.Terminal) => {
             }
         };
 
-        term.on('key', key);
+        const removeKeyListener = term.onKey(keyListener);
         draw();
     });
 };

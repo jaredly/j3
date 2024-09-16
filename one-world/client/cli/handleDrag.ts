@@ -4,7 +4,7 @@ import { DocSession } from '../../shared/state2';
 import { Store } from '../StoreContext2';
 import { validDropTargets } from './edit/drop';
 import { resolveMultiSelect, multiSelectContains } from './resolveMultiSelect';
-import { MouseEvt } from './main';
+import { MouseEvt } from './drawToTerminal';
 import { RState } from './render';
 
 export const maybeStartDragging = (
