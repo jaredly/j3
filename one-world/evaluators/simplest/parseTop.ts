@@ -179,6 +179,9 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
                 const target = parseExpr(ctx, value.items[0]);
                 const args = value.items
                     .slice(1)
+                    .filter(
+                        (t) => !(t.type === 'id' && !t.ref && t.text === ''),
+                    )
                     .map((arg) => parseExpr(ctx, arg));
                 return target && args.every((arg) => !!arg)
                     ? { type: 'apply', target, args: args as Expr[] }

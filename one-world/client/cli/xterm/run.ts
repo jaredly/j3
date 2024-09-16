@@ -110,6 +110,8 @@ const keymap: { [key: string]: string } = {
     '\x1B[D': 'LEFT',
     '\x1B[C': 'RIGHT',
     '\r': 'ENTER',
+    '\x7F': 'BACKSPACE',
+    '\x1B[3~': 'DELETE',
     '\x1B': 'ESCAPE',
 };
 
