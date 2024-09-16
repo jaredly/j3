@@ -16,6 +16,7 @@ import {
 } from '../../shared/IR/layout';
 import { IRCache2, lastChild, ParseCache } from '../../shared/IR/nav';
 import {
+    Loc,
     mapNode,
     parentPath,
     Path,
@@ -110,60 +111,13 @@ export const render = (
     const state = store.getState();
     const doc = state.documents[docId];
 
-    // OK we need to parse everything first
-    // before we can IR things
-    // right?
-    // I mean techinally we only need to .. parse ...things
-    // that are depended on by a given node.
-    const { ctx, caches } = init();
-    const parseCache: ParseCache<unknown> = {};
+    // The parse
+    const { parseCache, caches, ctx } = parseAndCache(state, doc, ds, ev);
 
-    iterDocNodes(0, [], doc, (docNode, ids) => {
-        const top = state.toplevels[docNode.toplevel];
-        const { paths, node } = topFromMap(top);
-
-        let texts: Record<number, { text: string[]; index: number }> = {};
-        let found = false;
-        ds.selections.forEach((sel) => {
-            if (
-                sel.type === 'ir' &&
-                sel.start.cursor.type === 'text' &&
-                sel.start.path.root.toplevel === docNode.toplevel &&
-                sel.start.cursor.end.text
-            ) {
-                found = true;
-                texts[lastChild(sel.start.path)] = {
-                    text: sel.start.cursor.end.text,
-                    index: sel.start.cursor.end.index,
-                };
-            }
-        });
-
-        let runNode = node;
-        if (found) {
-            runNode = mapNode(node, makeRunNode(top, texts));
-        }
-
-        // const parsed = ev.parse(node, cursorLoc(ds.selections, top.id));
-        ctx.tops[top.id] = { hash: objectHash(runNode), node: runNode };
-        const parseResult = parse(
-            top.id,
-            ctx,
-            caches,
-            ev,
-            cursorLoc(ds.selections, top.id),
-        );
-
-        parseCache[top.id] = {
-            node,
-            paths,
-            parseResult: parseResult.result,
-        };
-    });
-
-    // This is where we /parse/ and such
+    // The IRs
     const cache = calculateIRs(doc, state, ds, parseCache);
 
+    // The eval
     Object.keys(cache).forEach((tid) => {
         cache[tid].output = evaluate(tid, ctx, ev, caches);
     });
@@ -316,44 +270,74 @@ function calculateLayouts(
     return layoutCache;
 }
 
+export const parseAndCache = (
+    state: PersistedState,
+    doc: Doc,
+    ds: DocSession,
+    ev: AnyEvaluator,
+) => {
+    const { ctx, caches } = init();
+    const parseCache: ParseCache<unknown> = {};
+
+    iterDocNodes(0, [], doc, (docNode) => {
+        const top = state.toplevels[docNode.toplevel];
+        const { paths, node } = topFromMap(top);
+
+        let texts: Record<number, { text: string[]; index: number }> = {};
+        let found = false;
+        ds.selections.forEach((sel) => {
+            if (
+                sel.type === 'ir' &&
+                sel.start.cursor.type === 'text' &&
+                sel.start.path.root.toplevel === docNode.toplevel &&
+                sel.start.cursor.end.text
+            ) {
+                found = true;
+                texts[lastChild(sel.start.path)] = {
+                    text: sel.start.cursor.end.text,
+                    index: sel.start.cursor.end.index,
+                };
+            }
+        });
+
+        let runNode = node;
+        if (found) {
+            runNode = mapNode(node, makeRunNode(top, texts));
+        }
+
+        // const parsed = ev.parse(node, cursorLoc(ds.selections, top.id));
+        ctx.tops[top.id] = { hash: objectHash(runNode), node: runNode };
+        const parseResult = parse(
+            top.id,
+            ctx,
+            caches,
+            ev,
+            cursorLoc(ds.selections, top.id),
+        );
+
+        parseCache[top.id] = {
+            node,
+            paths,
+            parseResult: parseResult.result,
+        };
+    });
+
+    return { parseCache, caches, ctx };
+};
+
 export function calculateIRs(
     doc: Doc,
     state: PersistedState,
     ds: DocSession,
     parseCache: ParseCache<unknown>,
-    // ev: AnyEvaluator,
-    // ctx: Context,
-    // caches: Caches<unknown>,
 ): IRCache2<any> {
     const cache: IRCache2<any> = {};
 
-    const tids: string[] = [];
-
     iterDocNodes(0, [], doc, (docNode, ids) => {
         const top = state.toplevels[docNode.toplevel];
-        tids.push(docNode.toplevel);
 
         const { parseResult: parsed } = parseCache[docNode.toplevel];
-        // const { paths, node } = topFromMap(top);
-        // let texts: Record<number, { text: string[]; index: number }> = {};
-        // let found = false;
-        // ds.selections.forEach((sel) => {
-        //     if (
-        //         sel.type === 'ir' &&
-        //         sel.start.cursor.type === 'text' &&
-        //         sel.start.path.root.toplevel === docNode.toplevel &&
-        //         sel.start.cursor.end.text
-        //     ) {
-        //         found = true;
-        //         texts[lastChild(sel.start.path)] = {
-        //             text: sel.start.cursor.end.text,
-        //             index: sel.start.cursor.end.index,
-        //         };
-        //     }
-        // });
 
-        // const parsed = parseResult;
-        // (node, cursorLoc(ds.selections, top.id));
         const irs: IRForLoc = {};
         const pathRoot = root(doc.id, ids, docNode);
 
@@ -362,31 +346,7 @@ export function calculateIRs(
                 styles: parsed.styles,
                 layouts: parsed.layouts,
                 tableHeaders: parsed.tableHeaders,
-                getName(loc) {
-                    if (loc.length > 1) return null;
-                    const [tid, idx] = loc[0];
-                    // TODO THis will not work with macros.
-                    // we'll have to do the actual graph resolution for that.
-                    const node = state.toplevels[tid].nodes[idx];
-                    if (!node) return null;
-                    const sel = ds.selections.find(
-                        (s) =>
-                            s.type === 'ir' &&
-                            s.start.path.root.toplevel === tid &&
-                            lastChild(s.start.path) === idx,
-                    );
-                    if (
-                        sel &&
-                        sel.type === 'ir' &&
-                        sel.start.cursor.type === 'text' &&
-                        sel.start.cursor.end.text
-                    ) {
-                        return sel.start.cursor.end.text.join('');
-                    }
-                    // HRM ok so ... what if we want to report the ... temporary name?
-                    // seemsl ike that would be nice.
-                    return node.type === 'id' ? node.text : null;
-                },
+                getName: getName(state, ds),
             });
         });
         cache[docNode.toplevel] = {
@@ -397,6 +357,37 @@ export function calculateIRs(
     });
 
     return cache;
+}
+
+function getName(
+    state: PersistedState,
+    ds: DocSession,
+): (loc: Loc) => string | null {
+    return (loc) => {
+        if (loc.length > 1) return null;
+        const [tid, idx] = loc[0];
+        // TODO THis will not work with macros.
+        // we'll have to do the actual graph resolution for that.
+        const node = state.toplevels[tid].nodes[idx];
+        if (!node) return null;
+        const sel = ds.selections.find(
+            (s) =>
+                s.type === 'ir' &&
+                s.start.path.root.toplevel === tid &&
+                lastChild(s.start.path) === idx,
+        );
+        if (
+            sel &&
+            sel.type === 'ir' &&
+            sel.start.cursor.type === 'text' &&
+            sel.start.cursor.end.text
+        ) {
+            return sel.start.cursor.end.text.join('');
+        }
+        // HRM ok so ... what if we want to report the ... temporary name?
+        // seemsl ike that would be nice.
+        return node.type === 'id' ? node.text : null;
+    };
 }
 
 export function selectionStyleOverrides(
