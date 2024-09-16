@@ -24,14 +24,21 @@ export type IRCache = Record<
     }
 >;
 
+export type ParseCache<Top> = Record<
+    string,
+    {
+        paths: Record<number, number[]>;
+        node: RecNode;
+        parseResult: ParseResult<Top>;
+    }
+>;
+
 export type IRCache2<Top> = Record<
     string,
     {
         irs: IRForLoc;
-        paths: Record<number, number[]>;
         root: PathRoot;
         result: ParseResult<Top>;
-        node: RecNode;
         output?:
             | { type: 'nothing' }
             | { type: 'error'; text: string }

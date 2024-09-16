@@ -232,10 +232,11 @@ export const getAutoComplete = (
         };
     });
 
-    Object.entries(rstate.cache).forEach(([tid, { result, node }]) => {
+    Object.entries(rstate.cache).forEach(([tid, { result }]) => {
         if (!result.exports?.length) {
             return;
         }
+        const { node } = rstate.parseCache[tid];
         const byLoc: Record<string, RecNode> = {};
         iterNodes(node, (node) => (byLoc[keyForLoc(node.loc)] = node));
 

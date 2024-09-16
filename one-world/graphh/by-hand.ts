@@ -23,7 +23,7 @@ export type Context = {
     components: ComponentsByModule;
 };
 
-type Caches<Top> = {
+export type Caches<Top> = {
     parse: ParseCache<Top>;
     evaluate: Record<string, any>;
 };

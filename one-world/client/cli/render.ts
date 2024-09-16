@@ -14,13 +14,14 @@ import {
     LayoutCtx,
     layoutIR,
 } from '../../shared/IR/layout';
-import { IRCache2, lastChild } from '../../shared/IR/nav';
+import { IRCache2, lastChild, ParseCache } from '../../shared/IR/nav';
 import {
     mapNode,
     parentPath,
     Path,
     PathRoot,
     pathWithChildren,
+    RecNode,
     serializePath,
 } from '../../shared/nodes';
 import {
@@ -42,9 +43,10 @@ import {
 import { docToBlock, layoutCtx } from './drawDocNode';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 import { selectionLocation } from './selectionLocation';
-import { evaluate, init, parse } from '../../graphh/by-hand';
+import { Caches, Context, evaluate, init, parse } from '../../graphh/by-hand';
 import objectHash from 'object-hash';
 import { Terminal } from './drawToTerminal';
+import { Toplevel } from '../../shared/toplevels';
 
 export const selectionPos = (
     store: Store,
@@ -108,8 +110,63 @@ export const render = (
     const state = store.getState();
     const doc = state.documents[docId];
 
+    // OK we need to parse everything first
+    // before we can IR things
+    // right?
+    // I mean techinally we only need to .. parse ...things
+    // that are depended on by a given node.
+    const { ctx, caches } = init();
+    const parseCache: ParseCache<unknown> = {};
+
+    iterDocNodes(0, [], doc, (docNode, ids) => {
+        const top = state.toplevels[docNode.toplevel];
+        const { paths, node } = topFromMap(top);
+
+        let texts: Record<number, { text: string[]; index: number }> = {};
+        let found = false;
+        ds.selections.forEach((sel) => {
+            if (
+                sel.type === 'ir' &&
+                sel.start.cursor.type === 'text' &&
+                sel.start.path.root.toplevel === docNode.toplevel &&
+                sel.start.cursor.end.text
+            ) {
+                found = true;
+                texts[lastChild(sel.start.path)] = {
+                    text: sel.start.cursor.end.text,
+                    index: sel.start.cursor.end.index,
+                };
+            }
+        });
+
+        let runNode = node;
+        if (found) {
+            runNode = mapNode(node, makeRunNode(top, texts));
+        }
+
+        // const parsed = ev.parse(node, cursorLoc(ds.selections, top.id));
+        ctx.tops[top.id] = { hash: objectHash(runNode), node: runNode };
+        const parseResult = parse(
+            top.id,
+            ctx,
+            caches,
+            ev,
+            cursorLoc(ds.selections, top.id),
+        );
+
+        parseCache[top.id] = {
+            node,
+            paths,
+            parseResult: parseResult.result,
+        };
+    });
+
     // This is where we /parse/ and such
-    const cache = calculateIRs(doc, state, ev, ds);
+    const cache = calculateIRs(doc, state, ds, parseCache);
+
+    Object.keys(cache).forEach((tid) => {
+        cache[tid].output = evaluate(tid, ctx, ev, caches);
+    });
 
     applySelectionText(ds.selections, cache);
     const layoutCache = calculateLayouts(doc, state, maxWidth, cache);
@@ -129,7 +186,7 @@ export const render = (
         ds.dragState,
         state,
     );
-    return { cache, sourceMaps, dropTargets, block, txt };
+    return { cache, sourceMaps, dropTargets, block, txt, parseCache };
 };
 
 export const redrawWithSelection = (
@@ -202,6 +259,36 @@ const nodesForSelection = (
     return nodesForMulti(resolved, state);
 };
 
+function makeRunNode(
+    top: Toplevel,
+    texts: Record<number, { text: string[]; index: number }>,
+): (node: RecNode) => RecNode | false {
+    return (node) => {
+        if (
+            node.loc.length === 1 &&
+            node.loc[0][0] === top.id &&
+            texts[node.loc[0][1]]
+        ) {
+            const repl = texts[node.loc[0][1]];
+            if (node.type === 'id') {
+                return { ...node, text: repl.text.join('') };
+            }
+            if (node.type === 'string') {
+                if (repl.index === 0) {
+                    return { ...node, first: repl.text.join('') };
+                }
+                const tpl = node.templates.slice();
+                tpl[repl.index - 1] = {
+                    ...tpl[repl.index - 1],
+                    suffix: repl.text.join(''),
+                };
+                return { ...node, templates: tpl };
+            }
+        }
+        return node;
+    };
+}
+
 function calculateLayouts(
     doc: Doc,
     state: PersistedState,
@@ -232,78 +319,40 @@ function calculateLayouts(
 export function calculateIRs(
     doc: Doc,
     state: PersistedState,
-    ev: AnyEvaluator,
     ds: DocSession,
+    parseCache: ParseCache<unknown>,
+    // ev: AnyEvaluator,
+    // ctx: Context,
+    // caches: Caches<unknown>,
 ): IRCache2<any> {
     const cache: IRCache2<any> = {};
-
-    // OK we need to parse everything first
-    // before we can IR things
-    // right?
-    // I mean techinally we only need to .. parse ...things
-    // that are depended on by a given node.
-    const { ctx, caches } = init();
 
     const tids: string[] = [];
 
     iterDocNodes(0, [], doc, (docNode, ids) => {
         const top = state.toplevels[docNode.toplevel];
         tids.push(docNode.toplevel);
-        const { paths, node } = topFromMap(top);
-        let texts: Record<number, { text: string[]; index: number }> = {};
-        let found = false;
-        ds.selections.forEach((sel) => {
-            if (
-                sel.type === 'ir' &&
-                sel.start.cursor.type === 'text' &&
-                sel.start.path.root.toplevel === docNode.toplevel &&
-                sel.start.cursor.end.text
-            ) {
-                found = true;
-                texts[lastChild(sel.start.path)] = {
-                    text: sel.start.cursor.end.text,
-                    index: sel.start.cursor.end.index,
-                };
-            }
-        });
-        let runNode = node;
-        if (found) {
-            runNode = mapNode(node, (node) => {
-                if (
-                    node.loc.length === 1 &&
-                    node.loc[0][0] === top.id &&
-                    texts[node.loc[0][1]]
-                ) {
-                    const repl = texts[node.loc[0][1]];
-                    if (node.type === 'id') {
-                        return { ...node, text: repl.text.join('') };
-                    }
-                    if (node.type === 'string') {
-                        if (repl.index === 0) {
-                            return { ...node, first: repl.text.join('') };
-                        }
-                        const tpl = node.templates.slice();
-                        tpl[repl.index - 1] = {
-                            ...tpl[repl.index - 1],
-                            suffix: repl.text.join(''),
-                        };
-                        return { ...node, templates: tpl };
-                    }
-                }
-                return node;
-            });
-        }
 
-        // const parsed = ev.parse(node, cursorLoc(ds.selections, top.id));
-        ctx.tops[top.id] = { hash: objectHash(runNode), node: runNode };
-        const parseResult = parse(
-            top.id,
-            ctx,
-            caches,
-            ev,
-            cursorLoc(ds.selections, top.id),
-        );
-        const parsed = parseResult.result;
+        const { parseResult: parsed } = parseCache[docNode.toplevel];
+        // const { paths, node } = topFromMap(top);
+        // let texts: Record<number, { text: string[]; index: number }> = {};
+        // let found = false;
+        // ds.selections.forEach((sel) => {
+        //     if (
+        //         sel.type === 'ir' &&
+        //         sel.start.cursor.type === 'text' &&
+        //         sel.start.path.root.toplevel === docNode.toplevel &&
+        //         sel.start.cursor.end.text
+        //     ) {
+        //         found = true;
+        //         texts[lastChild(sel.start.path)] = {
+        //             text: sel.start.cursor.end.text,
+        //             index: sel.start.cursor.end.index,
+        //         };
+        //     }
+        // });
+
+        // const parsed = parseResult;
         // (node, cursorLoc(ds.selections, top.id));
         const irs: IRForLoc = {};
         const pathRoot = root(doc.id, ids, docNode);
@@ -342,15 +391,9 @@ export function calculateIRs(
         });
         cache[docNode.toplevel] = {
             irs,
-            node,
-            paths,
             root: pathRoot,
             result: parsed,
         };
-    });
-
-    tids.forEach((tid) => {
-        cache[tid].output = evaluate(tid, ctx, ev, caches);
     });
 
     return cache;
@@ -444,6 +487,7 @@ export function selectionStyleOverrides(
 
 export type RState = {
     cache: IRCache2<any>;
+    parseCache: ParseCache<any>;
     sourceMaps: BlockEntry[];
     dropTargets: DropTarget[];
     block: Block;
