@@ -45,15 +45,16 @@ export function drawToTerminal(
     ev: AnyEvaluator,
 ) {
     term.clear();
-    term.moveTo(0, 2, rstate.txt);
+    term.moveTo(1, 1, rstate.txt);
 
     if (lastKey) {
         term.moveTo(
             0,
-            term.height,
+            term.height - 1,
             (lastKey === ' ' ? 'SPACE' : lastKey) + '           ',
         );
     }
+    term.moveTo(0, term.height, store.getState().documents[docId].title);
     const ds = store.getDocSession(docId);
     const dragState = ds.dragState;
     if (dragState?.dest) {

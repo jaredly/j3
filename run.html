@@ -1,0 +1,28 @@
+<html>
+    <body>
+        <link
+            rel="stylesheet"
+            href="./node_modules/@xterm/xterm/css/xterm.css"
+        />
+        <script>
+            window.process = {
+                env: {
+                    FORCE_COLOR: true,
+                    'xterm-256color': 'truecolor',
+                    TERM: 'xterm-256color',
+                    COLORTERM: 'truecolor',
+                },
+                on() {},
+            };
+        </script>
+        <style>
+            body {
+                background-color: #111 !important;
+            }
+            .xterm-viewport {
+                background-color: #111 !important;
+            }
+        </style>
+        <script src="./run.js"></script>
+    </body>
+</html>

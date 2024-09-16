@@ -56,7 +56,7 @@ export const run = async (
     let rstate = render(term.width - 10, store, sess.doc, ev);
     drawToTerminal(rstate, term, store, docId, lastKey, ev);
 
-    const unsel = trackSelection(store, sess, docId);
+    const unsel = trackSelection(store, sess, docId, writeSess);
 
     let prevState = store.getState();
     let tid: null | Timer = null;

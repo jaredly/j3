@@ -13,7 +13,12 @@ export const readSess = (): Sess => {
 };
 export const writeSess = (sess: Sess) =>
     writeFileSync(sessFile, JSON.stringify(sess));
-export function trackSelection(store: Store, sess: Sess, docId: string) {
+export function trackSelection(
+    store: Store,
+    sess: Sess,
+    docId: string,
+    writeSess: (sess: Sess) => void,
+) {
     const unsel = store.on('selection', () => {
         sess.selection = store.getDocSession(docId).selections;
         writeSess(sess);

@@ -198,7 +198,7 @@ export const evaluate = <Top, Tinfo, IR>(
     | { type: 'nothing' } => {
     const node = ctx.tops[top];
     if (node.node.type === 'id' && !node.node.ref && node.node.text === '') {
-        console.log('ignore empty what');
+        // console.log('ignore empty what');
         return { type: 'nothing' };
     }
 

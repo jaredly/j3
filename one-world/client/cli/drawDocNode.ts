@@ -47,16 +47,6 @@ export const docToBlock = <Top>(
             nsText = sel.text.join('');
         }
         const items = [
-            line(
-                nsText ?? '',
-                {
-                    type: 'namespace',
-                    path: { root, children: [] },
-                },
-                {
-                    fontStyle: nsText != null ? undefined : 'italic',
-                },
-            ),
             drawToplevel(
                 node.toplevel,
                 root,
@@ -66,6 +56,20 @@ export const docToBlock = <Top>(
                 toplevels[node.toplevel].nextLoc,
             ),
         ];
+        if (nsText || sel?.type === 'namespace') {
+            items.unshift(
+                line(
+                    nsText ?? '',
+                    {
+                        type: 'namespace',
+                        path: { root, children: [] },
+                    },
+                    {
+                        fontStyle: nsText != null ? undefined : 'italic',
+                    },
+                ),
+            );
+        }
         const output = cache[node.toplevel].output;
         if (output?.type === 'success') {
             items.push(

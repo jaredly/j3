@@ -71,7 +71,7 @@ export const renderSelection = (
 ) => {
     const pos = selectionPos(store, docId, sourceMaps);
     if (pos) {
-        term.moveTo(pos[0] + 1, pos[1] + 2);
+        term.moveTo(pos[0] + 1, pos[1] + 1);
     }
 };
 

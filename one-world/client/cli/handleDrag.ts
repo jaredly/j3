@@ -21,7 +21,7 @@ export const maybeStartDragging = (
         store.getState(),
     );
     const x = evt.x - 1;
-    const y = evt.y - 2;
+    const y = evt.y - 1;
     if (!multi) return false;
 
     const found = rstate.sourceMaps.find((m) => matchesSpan(x, y, m.shape));
@@ -67,7 +67,7 @@ export const handleDrag = (
     dragState: NonNullable<DocSession['dragState']>,
     store: Store,
 ) => {
-    const pos = { x: evt.x - 1, y: evt.y - 2 };
+    const pos = { x: evt.x - 1, y: evt.y - 1 };
     const found = validDropTargets(
         rstate.dropTargets,
         dragState.source,

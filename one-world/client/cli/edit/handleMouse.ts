@@ -97,7 +97,7 @@ export const handleMouseClick = (
     store: Store,
 ) => {
     const x = evt.x - 1;
-    const y = evt.y - 2;
+    const y = evt.y - 1;
     const found = selectionForPos(x, y, sourceMaps, dropTargets, cache);
     if (!found) return;
     const { selection, exact } = found;
@@ -135,7 +135,7 @@ export const handleMouseDrag = (
     const sel = sels[0];
     if (sel.type !== 'ir') return;
     const x = evt.x - 1;
-    const y = evt.y - 2;
+    const y = evt.y - 1;
     const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
     if (!found) return;
     // const top = found.source.top;
