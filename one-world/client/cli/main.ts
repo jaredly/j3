@@ -10,7 +10,7 @@ import { genId, newDocument } from './edit/newDocument';
 import { handleDrag, maybeStartDragging } from './handleDrag';
 import { init } from './init';
 import { pickDocument } from './pickDocument';
-import { render, renderSelection } from './render';
+import { EvalCache, parseAndCache, render, renderSelection } from './render';
 import { Sess, trackSelection } from './Sess';
 
 import { Expr, SimplestEvaluator, Top } from '../../evaluators/simplest';
@@ -23,6 +23,7 @@ import {
 } from './drawToTerminal';
 import { Evaluator } from '../../evaluators/boot-ex/types';
 import { Store } from '../StoreContext2';
+import { evaluate } from '../../graphh/by-hand';
 
 // TODO NEXT STEP
 // refactor this out, so that we can use xtermjs as well
@@ -89,6 +90,8 @@ export function runDocument(
     let lastKey = null as null | string;
     const ev = SimplestEvaluator;
 
+    // const worker = new Worker('./worker.ts');
+
     let resolve = (quit: boolean) => {};
     const finisher = new Promise<boolean>((res) => (resolve = res));
 
@@ -102,7 +105,24 @@ export function runDocument(
         resolve(quit);
     };
 
-    let rstate = render(term.width - 10, store, docId, ev);
+    // The parse
+    const { parseCache, caches, ctx } = parseAndCache(store, docId, ev);
+
+    // The eval
+    const evalCache: EvalCache = {};
+    Object.keys(caches.parse).forEach((tid) => {
+        evalCache[tid] = evaluate(tid, ctx, ev, caches);
+    });
+
+    let rstate = render(
+        term.width - 10,
+        store,
+        docId,
+        parseCache,
+        evalCache,
+        ev,
+    );
+
     drawToTerminal(rstate, term, store, docId, lastKey, ev);
 
     clean(trackSelection(store, sess, docId, writeSess));
@@ -113,7 +133,24 @@ export function runDocument(
 
     const rerender = () => {
         tid = null;
-        rstate = render(term.width - 10, store, docId, ev);
+
+        // The parse
+        const { parseCache, caches, ctx } = parseAndCache(store, docId, ev);
+
+        // The eval
+        const evalCache: EvalCache = {};
+        Object.keys(caches.parse).forEach((tid) => {
+            evalCache[tid] = evaluate(tid, ctx, ev, caches);
+        });
+
+        rstate = render(
+            term.width - 10,
+            store,
+            docId,
+            parseCache,
+            evalCache,
+            ev,
+        );
         if (needsDropdownRecalc) {
             recalcDropdown(store, docId, rstate, ev);
             needsDropdownRecalc = false;

@@ -101,26 +101,22 @@ const cursorLoc = (
     }
 };
 
+export type EvalCache = Record<string, any>;
+
 export const render = (
     maxWidth: number,
     store: Store,
     docId: string,
+    parseCache: ParseCache<any>,
+    evalCache: EvalCache,
     ev: AnyEvaluator,
 ): RState => {
     const ds = store.getDocSession(docId, store.session);
     const state = store.getState();
     const doc = state.documents[docId];
 
-    // The parse
-    const { parseCache, caches, ctx } = parseAndCache(state, doc, ds, ev);
-
     // The IRs
-    const cache = calculateIRs(doc, state, ds, parseCache);
-
-    // The eval
-    Object.keys(cache).forEach((tid) => {
-        cache[tid].output = evaluate(tid, ctx, ev, caches);
-    });
+    const cache = calculateIRs(doc, state, ds, parseCache, evalCache);
 
     applySelectionText(ds.selections, cache);
     const layoutCache = calculateLayouts(doc, state, maxWidth, cache);
@@ -278,11 +274,16 @@ function calculateLayouts(
 }
 
 export const parseAndCache = (
-    state: PersistedState,
-    doc: Doc,
-    ds: DocSession,
+    store: Store,
+    docId: string,
+    // state: PersistedState,
+    // doc: Doc,
+    // ds: DocSession,
     ev: AnyEvaluator,
 ) => {
+    const state = store.getState();
+    const doc = state.documents[docId];
+    const ds = store.getDocSession(docId);
     const { ctx, caches } = init();
     const parseCache: ParseCache<unknown> = {};
 
@@ -337,6 +338,7 @@ export function calculateIRs(
     state: PersistedState,
     ds: DocSession,
     parseCache: ParseCache<unknown>,
+    evalCache: EvalCache,
 ): IRCache2<any> {
     const cache: IRCache2<any> = {};
 
@@ -360,6 +362,7 @@ export function calculateIRs(
             irs,
             root: pathRoot,
             result: parsed,
+            output: evalCache[docNode.toplevel],
         };
     });
 
