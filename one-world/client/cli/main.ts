@@ -24,6 +24,7 @@ import {
 import { Evaluator } from '../../evaluators/boot-ex/types';
 import { Store } from '../StoreContext2';
 import { evaluate } from '../../graphh/by-hand';
+import { IncomingMessage, OutgoingMessage } from './worker';
 
 // TODO NEXT STEP
 // refactor this out, so that we can use xtermjs as well
@@ -90,7 +91,7 @@ export function runDocument(
     let lastKey = null as null | string;
     const ev = SimplestEvaluator;
 
-    // const worker = new Worker('./worker.ts');
+    const worker = new Worker('./one-world/client/cli/worker.ts');
 
     let resolve = (quit: boolean) => {};
     const finisher = new Promise<boolean>((res) => (resolve = res));
@@ -109,9 +110,9 @@ export function runDocument(
     const { parseCache, caches, ctx } = parseAndCache(store, docId, ev);
 
     // The eval
-    Object.keys(parseCache).forEach((tid) => {
-        parseCache[tid].output = evaluate(tid, ctx, ev, caches);
-    });
+    // Object.keys(parseCache).forEach((tid) => {
+    //     parseCache[tid].output = evaluate(tid, ctx, ev, caches);
+    // });
 
     let rstate = render(term.width - 10, store, docId, parseCache);
 
@@ -129,11 +130,11 @@ export function runDocument(
         // The parse
         const { parseCache, caches, ctx } = parseAndCache(store, docId, ev);
 
-        // The eval
-        const evalCache: EvalCache = {};
-        Object.keys(caches.parse).forEach((tid) => {
-            evalCache[tid] = evaluate(tid, ctx, ev, caches);
-        });
+        // // The eval
+        // const evalCache: EvalCache = {};
+        // Object.keys(caches.parse).forEach((tid) => {
+        //     evalCache[tid] = evaluate(tid, ctx, ev, caches);
+        // });
 
         rstate = render(term.width - 10, store, docId, parseCache);
         if (needsDropdownRecalc) {
@@ -142,6 +143,30 @@ export function runDocument(
         }
         drawToTerminal(rstate, term, store, docId, lastKey, ev);
         prevState = store.getState();
+
+        worker.postMessage(
+            JSON.stringify({
+                type: 'evaluates',
+                ctx,
+                evid: 'simplest',
+                caches,
+                tops: Object.keys(caches.parse),
+            } satisfies IncomingMessage),
+        );
+    };
+
+    worker.onmessage = (evt) => {
+        const msg: OutgoingMessage = JSON.parse(evt.data);
+        Object.keys(msg.output).forEach((id) => {
+            rstate.parseAndEval[id].output = msg.output[id];
+        });
+
+        rstate = render(term.width - 10, store, docId, rstate.parseAndEval);
+        if (needsDropdownRecalc) {
+            recalcDropdown(store, docId, rstate, ev);
+            needsDropdownRecalc = false;
+        }
+        drawToTerminal(rstate, term, store, docId, lastKey, ev);
     };
 
     const kick = () => {
