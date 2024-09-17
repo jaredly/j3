@@ -19,6 +19,7 @@
         "ows": "env PORT=8227 bun --watch run one-world/server/run.ts",
         "owc": "bun --watch one-world/client/cli/run.ts",
         "oww": "bun build --watch one-world/client/cli/xterm/run.ts --outfile run.js --sourcemap=inline",
+        "owk": "bun build --watch ./one-world/client/cli/worker.ts --outfile worker.js --sourcemap=inline",
         "build-web": "vite build web --config vite.config.js",
         "make-walk": "cd ../j2; yarn tx ../j3/src/types/ast.ts ../j3/src/types/walk-ast.ts",
         "gram": "node ./make-grammar.js",

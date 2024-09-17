@@ -1,8 +1,8 @@
 import { newStore } from '../newStore2';
 import { Store } from '../StoreContext2';
-import { Sess, writeSess } from './Sess';
+import { Sess } from './Sess';
 
-export const init = async (sess: Sess) => {
+export const init = async (sess: Sess, writeSess: (s: Sess) => void) => {
     const res = await fetch('http://localhost:8227');
     const state = await res.json();
     // const ssid = 'cli';

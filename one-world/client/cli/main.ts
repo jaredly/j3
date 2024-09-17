@@ -55,7 +55,7 @@ export const run = async (
 ) => {
     console.log('initializing store...');
     const sess = readSess();
-    const store = await init(sess);
+    const store = await init(sess, writeSess);
 
     if (!sess.doc) {
         await handleDocument(sess, store, term, writeSess);
@@ -91,7 +91,9 @@ export function runDocument(
     let lastKey = null as null | string;
     const ev = SimplestEvaluator;
 
-    const worker = new Worker('./one-world/client/cli/worker.ts');
+    const worker = self.location
+        ? new Worker('./worker.js')
+        : new Worker('./one-world/client/cli/worker.ts');
 
     let resolve = (quit: boolean) => {};
     const finisher = new Promise<boolean>((res) => (resolve = res));

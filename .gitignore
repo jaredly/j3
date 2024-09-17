@@ -7,3 +7,4 @@ ok.js
 .cli.sess
 cli.log
 run.js
+worker.js
