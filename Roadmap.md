@@ -5,7 +5,8 @@
       might be kindof a lot of data...
 
 
-- [ ] editing the text of a ref should ~remove the refliness
+- [x] editing the text of a ref should ~remove the refliness
+- [x] clicking over an output should seelct somethign at least
 
 
 # Namespaces / modules

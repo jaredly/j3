@@ -16,6 +16,7 @@ export type Top =
     | { type: 'def'; loc: Loc; value: Expr }
     | { type: 'defmacro'; loc: Loc; args: string[]; body: Expr }
     | { type: 'expr'; expr: Expr }
+    | { type: 'empty' }
     | { type: 'multi'; tops: Top[] };
 
 export type Expr =

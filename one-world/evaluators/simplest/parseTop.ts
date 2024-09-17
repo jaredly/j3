@@ -196,6 +196,9 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
 };
 
 export const parseTop = (ctx: CTX, node: RecNode): Top | null => {
+    if (node.type === 'rich-block') {
+        return { type: 'empty' };
+    }
     try {
         if (
             node.type === 'list' &&

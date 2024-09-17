@@ -66,8 +66,8 @@ export const selectionForPos = (
             dx: Math.abs(target.pos.x - x),
             dy: Math.abs(target.pos.y - y),
         }))
-        .filter((a) => a.dy === 0)
-        .sort((a, b) => a.dx - b.dx);
+        // .filter((a) => a.dy === 0)
+        .sort((a, b) => (a.dy === b.dy ? a.dx - b.dx : a.dy - b.dy));
     if (!closest.length) return;
     let { path, side } = closest[0].target;
 
