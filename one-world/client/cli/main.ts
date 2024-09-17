@@ -81,6 +81,34 @@ export const run = async (
     }, 50);
 };
 
+const WORKER_TIMEOUT = 1000;
+
+const timeoutTracker = (fn: () => void) => {
+    let msgId = 0;
+    let waiting: { id: number; timer: Timer }[] = [];
+    const restart = () => {
+        waiting.forEach((w) => clearTimeout(w.timer));
+        waiting = [];
+        fn();
+    };
+    return {
+        nextMsgId() {
+            const id = msgId++;
+            waiting.push({
+                id,
+                timer: setTimeout(restart, WORKER_TIMEOUT),
+            });
+            return id;
+        },
+        receivedMessage(id: number) {
+            const got = waiting.find((w) => w.id === id);
+            if (!got) return;
+            waiting.splice(waiting.indexOf(got), 1);
+            clearTimeout(got.timer);
+        },
+    };
+};
+
 export function runDocument(
     term: Terminal,
     store: Store,
@@ -91,12 +119,13 @@ export function runDocument(
     let lastKey = null as null | string;
     const ev = SimplestEvaluator;
 
-    const worker = self.location
+    let worker = self.location
         ? new Worker('./worker.js')
         : new Worker('./one-world/client/cli/worker.ts');
 
-    worker.onmessage = (evt) => {
+    const handleMessage = (evt: MessageEvent) => {
         const msg: OutgoingMessage = JSON.parse(evt.data);
+        tracker.receivedMessage(msg.id);
         Object.keys(msg.output).forEach((id) => {
             rstate.parseAndEval[id].output = msg.output[id];
         });
@@ -108,6 +137,18 @@ export function runDocument(
         }
         drawToTerminal(rstate, term, store, docId, lastKey, ev);
     };
+
+    const restartWorker = () => {
+        worker.terminate();
+        // console.log('breaking workier');
+        worker = self.location
+            ? new Worker('./worker.js')
+            : new Worker('./one-world/client/cli/worker.ts');
+        worker.onmessage = handleMessage;
+    };
+    const tracker = timeoutTracker(restartWorker);
+
+    worker.onmessage = handleMessage;
 
     let resolve = (quit: boolean) => {};
     const finisher = new Promise<boolean>((res) => (resolve = res));
@@ -127,6 +168,7 @@ export function runDocument(
     worker.postMessage(
         JSON.stringify({
             type: 'evaluates',
+            id: tracker.nextMsgId(),
             ctx,
             evid: 'simplest',
             caches,
@@ -177,6 +219,7 @@ export function runDocument(
         worker.postMessage(
             JSON.stringify({
                 type: 'evaluates',
+                id: tracker.nextMsgId(),
                 ctx,
                 evid: 'simplest',
                 caches,

@@ -14,11 +14,13 @@ export type IncomingMessage = {
     evid: string;
     caches: Caches<unknown>;
     tops: string[];
+    id: number;
 };
 
 export type OutgoingMessage = {
-    type: 'evalauted';
+    type: 'evaluated';
     output: Record<string, any>;
+    id: number;
 };
 
 self.onmessage = (event: MessageEvent) => {
@@ -32,5 +34,11 @@ self.onmessage = (event: MessageEvent) => {
         output[tid] = evaluate(tid, data.ctx, ev, data.caches);
     });
 
-    postMessage(JSON.stringify({ type: 'evaluated', output }));
+    postMessage(
+        JSON.stringify({
+            type: 'evaluated',
+            output,
+            id: data.id,
+        } satisfies OutgoingMessage),
+    );
 };
