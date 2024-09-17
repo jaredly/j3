@@ -1,12 +1,13 @@
-import termkit from 'terminal-kit';
-import { AnyEvaluator, Evaluator } from '../../evaluators/boot-ex/types';
+import objectHash from 'object-hash';
+import { AnyEvaluator } from '../../evaluators/boot-ex/types';
+import { init, parse } from '../../graphh/by-hand';
 import {
     BlockEntry,
     blockToText,
     DropTarget,
     StyleOverrides,
 } from '../../shared/IR/block-to-text';
-import { IRSelection, nodeToIR } from '../../shared/IR/intermediate';
+import { nodeToIR } from '../../shared/IR/intermediate';
 import { Block, blockSourceKey } from '../../shared/IR/ir-to-blocks';
 import {
     IRForLoc,
@@ -14,7 +15,7 @@ import {
     LayoutCtx,
     layoutIR,
 } from '../../shared/IR/layout';
-import { IRCache2, lastChild, ParseCache } from '../../shared/IR/nav';
+import { IRCache2, lastChild, ParseAndEval } from '../../shared/IR/nav';
 import {
     Loc,
     mapNode,
@@ -32,6 +33,7 @@ import {
     DocumentNode,
     PersistedState,
 } from '../../shared/state2';
+import { Toplevel } from '../../shared/toplevels';
 import { Store } from '../StoreContext2';
 import { isCollection } from '../TextEdit/actions';
 import { termColors } from '../TextEdit/colors';
@@ -42,12 +44,9 @@ import {
     topFromMap,
 } from './docNodeToIR';
 import { docToBlock, layoutCtx } from './drawDocNode';
+import { Terminal } from './drawToTerminal';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 import { selectionLocation } from './selectionLocation';
-import { Caches, Context, evaluate, init, parse } from '../../graphh/by-hand';
-import objectHash from 'object-hash';
-import { Terminal } from './drawToTerminal';
-import { Toplevel } from '../../shared/toplevels';
 
 export const selectionPos = (
     store: Store,
@@ -107,16 +106,14 @@ export const render = (
     maxWidth: number,
     store: Store,
     docId: string,
-    parseCache: ParseCache<any>,
-    evalCache: EvalCache,
-    ev: AnyEvaluator,
+    parseAndEval: ParseAndEval<any>,
 ): RState => {
     const ds = store.getDocSession(docId, store.session);
     const state = store.getState();
     const doc = state.documents[docId];
 
     // The IRs
-    const cache = calculateIRs(doc, state, ds, parseCache, evalCache);
+    const cache = calculateIRs(doc, state, ds, parseAndEval);
 
     applySelectionText(ds.selections, cache);
     const layoutCache = calculateLayouts(doc, state, maxWidth, cache);
@@ -136,7 +133,7 @@ export const render = (
         ds.dragState,
         state,
     );
-    return { cache, sourceMaps, dropTargets, block, txt, parseCache };
+    return { cache, sourceMaps, dropTargets, block, txt, parseAndEval };
 };
 
 export const redrawWithSelection = (
@@ -285,7 +282,7 @@ export const parseAndCache = (
     const doc = state.documents[docId];
     const ds = store.getDocSession(docId);
     const { ctx, caches } = init();
-    const parseCache: ParseCache<unknown> = {};
+    const parseCache: ParseAndEval<unknown> = {};
 
     iterDocNodes(0, [], doc, (docNode) => {
         const top = state.toplevels[docNode.toplevel];
@@ -337,8 +334,7 @@ export function calculateIRs(
     doc: Doc,
     state: PersistedState,
     ds: DocSession,
-    parseCache: ParseCache<unknown>,
-    evalCache: EvalCache,
+    parseCache: ParseAndEval<unknown>,
 ): IRCache2<any> {
     const cache: IRCache2<any> = {};
 
@@ -362,7 +358,7 @@ export function calculateIRs(
             irs,
             root: pathRoot,
             result: parsed,
-            output: evalCache[docNode.toplevel],
+            output: parseCache[docNode.toplevel].output,
         };
     });
 
@@ -488,7 +484,7 @@ export function selectionStyleOverrides(
 
 export type RState = {
     cache: IRCache2<any>;
-    parseCache: ParseCache<any>;
+    parseAndEval: ParseAndEval<any>;
     sourceMaps: BlockEntry[];
     dropTargets: DropTarget[];
     block: Block;

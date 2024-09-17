@@ -14,7 +14,6 @@ import {
     collectModuleComponents,
     ComponentsByModule,
 } from './collapse-components';
-import { recNodeToText } from '../client/cli/drawDocNode';
 
 export type Context = {
     tops: Record<string, { hash: string; node: RecNode }>;

@@ -24,12 +24,13 @@ export type IRCache = Record<
     }
 >;
 
-export type ParseCache<Top> = Record<
+export type ParseAndEval<Top> = Record<
     string,
     {
         paths: Record<number, number[]>;
         node: RecNode;
         parseResult: ParseResult<Top>;
+        output?: any;
     }
 >;
 

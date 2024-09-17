@@ -236,7 +236,7 @@ export const getAutoComplete = (
         if (!result.exports?.length) {
             return;
         }
-        const { node } = rstate.parseCache[tid];
+        const { node } = rstate.parseAndEval[tid];
         const byLoc: Record<string, RecNode> = {};
         iterNodes(node, (node) => (byLoc[keyForLoc(node.loc)] = node));
 

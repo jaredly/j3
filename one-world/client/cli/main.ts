@@ -109,19 +109,11 @@ export function runDocument(
     const { parseCache, caches, ctx } = parseAndCache(store, docId, ev);
 
     // The eval
-    const evalCache: EvalCache = {};
-    Object.keys(caches.parse).forEach((tid) => {
-        evalCache[tid] = evaluate(tid, ctx, ev, caches);
+    Object.keys(parseCache).forEach((tid) => {
+        parseCache[tid].output = evaluate(tid, ctx, ev, caches);
     });
 
-    let rstate = render(
-        term.width - 10,
-        store,
-        docId,
-        parseCache,
-        evalCache,
-        ev,
-    );
+    let rstate = render(term.width - 10, store, docId, parseCache);
 
     drawToTerminal(rstate, term, store, docId, lastKey, ev);
 
@@ -143,14 +135,7 @@ export function runDocument(
             evalCache[tid] = evaluate(tid, ctx, ev, caches);
         });
 
-        rstate = render(
-            term.width - 10,
-            store,
-            docId,
-            parseCache,
-            evalCache,
-            ev,
-        );
+        rstate = render(term.width - 10, store, docId, parseCache);
         if (needsDropdownRecalc) {
             recalcDropdown(store, docId, rstate, ev);
             needsDropdownRecalc = false;
