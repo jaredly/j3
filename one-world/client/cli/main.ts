@@ -23,7 +23,7 @@ import {
 } from './drawToTerminal';
 import { Evaluator } from '../../evaluators/boot-ex/types';
 import { Store } from '../StoreContext2';
-import { evaluate } from '../../graphh/by-hand';
+import { Caches, Context, evaluate } from '../../graphh/by-hand';
 import { IncomingMessage, OutgoingMessage } from './worker';
 
 // TODO NEXT STEP
@@ -145,10 +145,25 @@ export function runDocument(
             ? new Worker('./worker.js')
             : new Worker('./one-world/client/cli/worker.ts');
         worker.onmessage = handleMessage;
+        // Send latest infos
+        const { caches, ctx } = parseAndCache(store, docId, {}, ev);
+        sendToWorker(caches, ctx);
     };
     const tracker = timeoutTracker(restartWorker);
 
     worker.onmessage = handleMessage;
+    const sendToWorker = (caches: Caches<unknown>, ctx: Context) => {
+        worker.postMessage(
+            JSON.stringify({
+                type: 'evaluates',
+                id: tracker.nextMsgId(),
+                ctx,
+                evid: 'simplest',
+                caches,
+                tops: Object.keys(caches.parse),
+            } satisfies IncomingMessage),
+        );
+    };
 
     let resolve = (quit: boolean) => {};
     const finisher = new Promise<boolean>((res) => (resolve = res));
@@ -165,16 +180,7 @@ export function runDocument(
 
     // The parse
     const { parseCache, caches, ctx } = parseAndCache(store, docId, {}, ev);
-    worker.postMessage(
-        JSON.stringify({
-            type: 'evaluates',
-            id: tracker.nextMsgId(),
-            ctx,
-            evid: 'simplest',
-            caches,
-            tops: Object.keys(caches.parse),
-        } satisfies IncomingMessage),
-    );
+    sendToWorker(caches, ctx);
 
     // The eval
     // Object.keys(parseCache).forEach((tid) => {
@@ -216,16 +222,7 @@ export function runDocument(
         drawToTerminal(rstate, term, store, docId, lastKey, ev);
         prevState = store.getState();
 
-        worker.postMessage(
-            JSON.stringify({
-                type: 'evaluates',
-                id: tracker.nextMsgId(),
-                ctx,
-                evid: 'simplest',
-                caches,
-                tops: Object.keys(caches.parse),
-            } satisfies IncomingMessage),
-        );
+        sendToWorker(caches, ctx);
     };
 
     const kick = () => {
