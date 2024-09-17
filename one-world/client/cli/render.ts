@@ -273,6 +273,7 @@ function calculateLayouts(
 export const parseAndCache = (
     store: Store,
     docId: string,
+    oldCache: ParseAndEval<unknown>,
     // state: PersistedState,
     // doc: Doc,
     // ds: DocSession,
@@ -325,6 +326,9 @@ export const parseAndCache = (
             paths,
             parseResult: parseResult.result,
         };
+        if (oldCache[top.id]) {
+            parseCache[top.id].output = oldCache[top.id].output;
+        }
     });
 
     return { parseCache, caches, ctx };

@@ -95,6 +95,20 @@ export function runDocument(
         ? new Worker('./worker.js')
         : new Worker('./one-world/client/cli/worker.ts');
 
+    worker.onmessage = (evt) => {
+        const msg: OutgoingMessage = JSON.parse(evt.data);
+        Object.keys(msg.output).forEach((id) => {
+            rstate.parseAndEval[id].output = msg.output[id];
+        });
+
+        rstate = render(term.width - 10, store, docId, rstate.parseAndEval);
+        if (needsDropdownRecalc) {
+            recalcDropdown(store, docId, rstate, ev);
+            needsDropdownRecalc = false;
+        }
+        drawToTerminal(rstate, term, store, docId, lastKey, ev);
+    };
+
     let resolve = (quit: boolean) => {};
     const finisher = new Promise<boolean>((res) => (resolve = res));
 
@@ -109,7 +123,16 @@ export function runDocument(
     };
 
     // The parse
-    const { parseCache, caches, ctx } = parseAndCache(store, docId, ev);
+    const { parseCache, caches, ctx } = parseAndCache(store, docId, {}, ev);
+    worker.postMessage(
+        JSON.stringify({
+            type: 'evaluates',
+            ctx,
+            evid: 'simplest',
+            caches,
+            tops: Object.keys(caches.parse),
+        } satisfies IncomingMessage),
+    );
 
     // The eval
     // Object.keys(parseCache).forEach((tid) => {
@@ -130,7 +153,12 @@ export function runDocument(
         tid = null;
 
         // The parse
-        const { parseCache, caches, ctx } = parseAndCache(store, docId, ev);
+        const { parseCache, caches, ctx } = parseAndCache(
+            store,
+            docId,
+            rstate.parseAndEval,
+            ev,
+        );
 
         // // The eval
         // const evalCache: EvalCache = {};
@@ -155,20 +183,6 @@ export function runDocument(
                 tops: Object.keys(caches.parse),
             } satisfies IncomingMessage),
         );
-    };
-
-    worker.onmessage = (evt) => {
-        const msg: OutgoingMessage = JSON.parse(evt.data);
-        Object.keys(msg.output).forEach((id) => {
-            rstate.parseAndEval[id].output = msg.output[id];
-        });
-
-        rstate = render(term.width - 10, store, docId, rstate.parseAndEval);
-        if (needsDropdownRecalc) {
-            recalcDropdown(store, docId, rstate, ev);
-            needsDropdownRecalc = false;
-        }
-        drawToTerminal(rstate, term, store, docId, lastKey, ev);
     };
 
     const kick = () => {
