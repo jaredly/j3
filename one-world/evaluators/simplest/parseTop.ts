@@ -138,6 +138,9 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
                 if (Number.isInteger(num)) {
                     return { type: 'int', value: num };
                 }
+                if (Number.isFinite(num)) {
+                    return { type: 'float', value: num };
+                }
             }
             if (ctx.cursor === value.loc[0][1]) {
                 ctx.autocomplete = {

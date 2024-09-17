@@ -18,8 +18,6 @@ export const pickDocument = (store: Store, term: Terminal) => {
                     if (sel === i) {
                         term.write(ansis.bgGreen('New Document'));
                     } else {
-                        const bl = ansis.blue('New Document');
-                        console.log(bl);
                         term.write(ansis.blue('New Document'));
                     }
                 } else if (sel === i) {

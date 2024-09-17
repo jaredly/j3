@@ -1,4 +1,13 @@
 
+- [ ] I want ... to ... asynchronously eval. can I?
+  - yeah what would that involve.
+    - passing .. the parse cache over the bridge?
+      might be kindof a lot of data...
+
+
+- [ ] editing the text of a ref should ~remove the refliness
+
+
 # Namespaces / modules
 Ok so we're really doing modules, and toplevels will have module ID that they are attached to,
 and documents will have a module id that they represent.

@@ -225,7 +225,14 @@ function makeRunNode(
         ) {
             const repl = texts[node.loc[0][1]];
             if (node.type === 'id') {
-                return { ...node, text: repl.text.join('') };
+                const text = repl.text.join('');
+                if (text !== node.text) {
+                    return {
+                        ...node,
+                        text: repl.text.join(''),
+                        ref: undefined,
+                    };
+                }
             }
             if (node.type === 'string') {
                 if (repl.index === 0) {

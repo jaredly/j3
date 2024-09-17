@@ -157,8 +157,10 @@ export const compile = <Top, Tinfo, IR>(
             return {
                 type: 'error',
                 text:
-                    `parse error for ${id} (dep of ${top})` +
-                    JSON.stringify(caches.parse[id].result.errors),
+                    `parse error for ${id} (dep of ${top})\n` +
+                    caches.parse[id].result.errors
+                        .map((err) => keyForLoc(err.loc) + ' : ' + err.text)
+                        .join('\n'),
             };
         }
         asts.push(caches.parse[id].result.top!);

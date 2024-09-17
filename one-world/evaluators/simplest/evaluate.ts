@@ -43,6 +43,7 @@ const handlers: {
         ir.first +
         ir.templates.map((tpl) => evaluate(tpl.expr, irs, locals) + tpl.suffix),
     int: (ir) => ir.value,
+    float: (ir) => ir.value,
     apply: (ir, irs, locals) =>
         evaluate(
             ir.target,

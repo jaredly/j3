@@ -26,6 +26,7 @@ export type Expr =
           templates: { expr: Expr; suffix: string }[];
       }
     | { type: 'int'; value: number }
+    | { type: 'float'; value: number }
     | { type: 'ref'; loc: Loc; kind: string }
     | { type: 'local'; name: string; loc: Loc }
     | { type: 'list'; items: Expr[]; loc: Loc }

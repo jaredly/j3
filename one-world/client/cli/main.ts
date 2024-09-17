@@ -13,7 +13,7 @@ import { pickDocument } from './pickDocument';
 import { render, renderSelection } from './render';
 import { Sess, trackSelection } from './Sess';
 
-import { SimplestEvaluator } from '../../evaluators/simplest';
+import { Expr, SimplestEvaluator, Top } from '../../evaluators/simplest';
 import { recalcDropdown } from '../newStore2';
 import {
     drawToTerminal,
@@ -21,10 +21,30 @@ import {
     MouseKind,
     Terminal,
 } from './drawToTerminal';
+import { Evaluator } from '../../evaluators/boot-ex/types';
+import { Store } from '../StoreContext2';
 
 // TODO NEXT STEP
 // refactor this out, so that we can use xtermjs as well
 // because that would be super cool
+
+const handleDocument = async (
+    sess: Sess,
+    store: Store,
+    term: Terminal,
+    writeSess: (s: Sess) => void,
+) => {
+    const picked = await pickDocument(store, term);
+    if (picked === null) {
+        const id = genId();
+        store.update(...newDocument(id));
+        sess.doc = id;
+    } else {
+        sess.doc = picked;
+    }
+    writeSess(sess);
+    return sess.doc;
+};
 
 export const run = async (
     term: Terminal,
@@ -35,28 +55,57 @@ export const run = async (
     const sess = readSess();
     const store = await init(sess);
 
-    const ev = SimplestEvaluator;
-
     if (!sess.doc) {
-        const picked = await pickDocument(store, term);
-        if (picked === null) {
-            const id = genId();
-            store.update(...newDocument(id));
-            sess.doc = id;
-        } else {
-            sess.doc = picked;
-        }
-        writeSess(sess);
+        await handleDocument(sess, store, term, writeSess);
     }
 
-    const docId = sess.doc;
+    while (true) {
+        const finish = await runDocument(
+            term,
+            store,
+            sess,
+            sess.doc!,
+            writeSess,
+        );
+        if (finish) {
+            break;
+        } else {
+            await handleDocument(sess, store, term, writeSess);
+        }
+    }
 
+    setTimeout(() => {
+        return process.exit(0);
+    }, 50);
+};
+
+export function runDocument(
+    term: Terminal,
+    store: Store,
+    sess: Sess,
+    docId: string,
+    writeSess: (s: Sess) => void,
+) {
     let lastKey = null as null | string;
+    const ev = SimplestEvaluator;
 
-    let rstate = render(term.width - 10, store, sess.doc, ev);
+    let resolve = (quit: boolean) => {};
+    const finisher = new Promise<boolean>((res) => (resolve = res));
+
+    const cleanup: (() => void)[] = [
+        () => store.update({ type: 'selection', doc: docId, selections: [] }),
+    ];
+    const clean = (v: () => void) => cleanup.push(v);
+
+    const finish = (quit: boolean) => {
+        cleanup.forEach((v) => v());
+        resolve(quit);
+    };
+
+    let rstate = render(term.width - 10, store, docId, ev);
     drawToTerminal(rstate, term, store, docId, lastKey, ev);
 
-    const unsel = trackSelection(store, sess, docId, writeSess);
+    clean(trackSelection(store, sess, docId, writeSess));
 
     let prevState = store.getState();
     let tid: null | Timer = null;
@@ -78,40 +127,47 @@ export const run = async (
         tid = setTimeout(rerender, 0);
     };
 
-    store.on('selection', (autocomplete) => {
-        if (autocomplete) {
-            needsDropdownRecalc = true;
+    clean(
+        store.on('selection', (autocomplete) => {
+            if (autocomplete) {
+                needsDropdownRecalc = true;
+                kick();
+            }
+        }),
+    );
+
+    clean(
+        store.on('all', () => {
             kick();
-        }
-    });
+        }),
+    );
 
-    store.on('all', () => {
-        kick();
-    });
+    clean(term.onResize(() => kick()));
 
-    term.onResize(() => kick());
+    clean(
+        term.onKey((key: string) => {
+            if (onKey(key)) {
+                return;
+            }
 
-    term.onKey((key: string) => {
-        if (onKey(key)) {
-            return;
-        }
+            if (key === 'ESCAPE') {
+                return finish(true);
+            }
+            if (key === 'CTRL_W') {
+                console.log('don???');
+                return finish(false);
+            }
 
-        if (key === 'ESCAPE') {
-            unsel();
-            store.update({ type: 'selection', doc: docId, selections: [] });
+            term.moveTo(0, term.height, key);
+            renderSelection(term, store, docId, rstate.sourceMaps);
+        }),
+    );
 
-            setTimeout(() => {
-                return process.exit(0);
-            }, 50);
-        }
-
-        term.moveTo(0, term.height, key);
-        renderSelection(term, store, docId, rstate.sourceMaps);
-    });
-
-    term.onMouse((evtKind: MouseKind, evt: MouseEvt) => {
-        onMouse(evtKind, evt);
-    });
+    clean(
+        term.onMouse((evtKind: MouseKind, evt: MouseEvt) => {
+            onMouse(evtKind, evt);
+        }),
+    );
 
     const onKey = (key: string) => {
         lastKey = key;
@@ -153,6 +209,8 @@ export const run = async (
                 return;
             }
 
+            // if (evt.y >= term.height - 1) {
+            // }
             handleMouseClick(
                 docId,
                 rstate.sourceMaps,
@@ -183,4 +241,6 @@ export const run = async (
             return;
         }
     };
-};
+
+    return finisher;
+}
