@@ -189,7 +189,7 @@ const write = (text: ABlock) => {
             }
             ctx.fillStyle = chunk.style?.color
                 ? rgb(chunk.style.color)
-                : 'white';
+                : '#ddd';
             ctx.fillText(chunk.text, pos.x * TEXTW, pos.y * TEXTH);
             pos.x += chunk.len;
         });

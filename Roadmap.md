@@ -11,6 +11,10 @@
   That would be cool.
 
 - [ ] the canvas renderer doesn't handle cursor, which would be nice if it did
+- [ ] blinking sounds useful
+- [ ] let's get undo/redo folks
+- [ ] up/down jumping over a blank space, we're not aligning totally column-wise
+- [ ] better drag (selforpos)
 
 
 #

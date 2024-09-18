@@ -14,9 +14,10 @@ export const selectionForPos = (
     dropTargets: DropTarget[],
     cache: IRCache2<unknown>,
     yBias?: 'up' | 'down',
+    onlyIR = false,
 ): { selection: DocSelection; exact: boolean } | void => {
     const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
-    if (found) {
+    if (found && (!onlyIR || found.source.type !== 'namespace')) {
         const path: Path = found.source.path;
         if (found.source.type === 'namespace') {
             const start = x - found.shape.start[0];
@@ -45,7 +46,8 @@ export const selectionForPos = (
         if (
             sm.source.type === 'namespace' &&
             sm.shape.type === 'block' &&
-            sm.shape.start[1] === y
+            sm.shape.start[1] === y &&
+            !onlyIR
         ) {
             const start = Math.min(x - sm.shape.start[0], sm.shape.width);
             return {
@@ -131,6 +133,8 @@ export const handleMouseDrag = (
     sourceMaps: BlockEntry[],
     evt: { x: number; y: number },
     store: Store,
+    dropTargets: DropTarget[],
+    cache: IRCache2<unknown>,
 ) => {
     const sels = store.getDocSession(docId, store.session).selections;
     if (!sels.length) return;
@@ -138,21 +142,27 @@ export const handleMouseDrag = (
     if (sel.type !== 'ir') return;
     const x = evt.x - 1;
     const y = evt.y - 1;
-    const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
-    if (!found) return;
-    // const top = found.source.top;
-    // if (!cache[top].paths[found.source.loc]) return;
-    const path: Path = found.source.path;
-    // {
-    //     root: cache[top].root,
-    //     children: cache[top].paths[found.source.loc].concat([found.source.loc]),
-    // };
 
-    const cursor = selectionFromLocation(found, { x, y });
+    const newSel = selectionForPos(
+        x,
+        y,
+        sourceMaps,
+        dropTargets,
+        cache,
+        undefined,
+        true,
+    );
+    if (!newSel) return;
+    if (newSel.selection.type !== 'ir') return; // should never happen, to appease TS
 
-    const pk = serializePath(path);
+    // const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
+    // if (!found) return;
+    // const path: Path = found.source.path;
+    // const cursor = selectionFromLocation(found, { x, y });
+    // const pk = serializePath(path);
+    const { key, cursor, path } = newSel.selection.start;
     if (
-        pk === sel.start.key &&
+        key === sel.start.key &&
         sel.start.cursor.type === 'text' &&
         cursor.type === 'text'
     ) {
@@ -169,7 +179,7 @@ export const handleMouseDrag = (
                             start:
                                 sel.start.cursor.start ?? sel.start.cursor.end,
                         },
-                        key: serializePath(path),
+                        key,
                         path,
                     },
                 },
@@ -179,9 +189,7 @@ export const handleMouseDrag = (
         store.update({
             type: 'selection',
             doc: docId,
-            selections: [
-                { type: 'ir', start: sel.start, end: { path, key: pk } },
-            ],
+            selections: [{ type: 'ir', start: sel.start, end: { path, key } }],
         });
     }
 };

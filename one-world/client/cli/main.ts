@@ -294,7 +294,14 @@ export function runDocument(
                 handleDrag(evt, docId, rstate, ds.dragState, store);
                 return;
             }
-            handleMouseDrag(docId, rstate.sourceMaps, evt, store);
+            handleMouseDrag(
+                docId,
+                rstate.sourceMaps,
+                evt,
+                store,
+                rstate.dropTargets,
+                rstate.cache,
+            );
         } else if (evtKind === 'MOUSE_LEFT_BUTTON_PRESSED') {
             const sel = ds.selections[0];
             if (
