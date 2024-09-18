@@ -1,4 +1,20 @@
 
+# Webliness
+
+/Renderer/
+
+- instead of ABlock, what if we go directly to IR?
+  and then the renderer turns that into (whatever),
+  and keeps track of screen position and such.
+  so the renderer then reports click locations,
+  keyboard movement (selectionForPos) stuff?
+  That would be cool.
+
+- [ ] the canvas renderer doesn't handle cursor, which would be nice if it did
+
+
+#
+
 - [ ] I want ... to ... asynchronously eval. can I?
   - yeah what would that involve.
     - passing .. the parse cache over the bridge?

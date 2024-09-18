@@ -18,7 +18,7 @@ export const moveTo = (write: Write, x: number, y: number, text?: string) => {
 };
 export type Write = (text: string) => void;
 
-export type Terminal = {
+export type Renderer = {
     moveTo(x: number, y: number, text?: ABlock): void;
     write(text: ABlock): void;
     clear(): void;
@@ -43,7 +43,7 @@ export type MouseEvt = {
 
 export function drawToTerminal(
     rstate: RState,
-    term: Terminal,
+    term: Renderer,
     store: Store,
     docId: string,
     lastKey: string | null,

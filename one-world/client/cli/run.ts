@@ -1,7 +1,7 @@
 import { openSync, writeSync } from 'fs';
 import termkit from 'terminal-kit';
 import { run } from './main';
-import { Terminal } from './drawToTerminal';
+import { Renderer } from './drawToTerminal';
 import { readSess, writeSess } from './Sess';
 
 const REDIRECT_OUT = false;
@@ -28,7 +28,7 @@ const getTerm = () =>
         ),
     );
 
-const tkTerm = (term: termkit.Terminal): Terminal =>
+const tkTerm = (term: termkit.Terminal): Renderer =>
     Object.defineProperties(
         {
             moveTo: term.moveTo,

@@ -43,7 +43,7 @@ import {
     topFromMap,
 } from './docNodeToIR';
 import { docToBlock, layoutCtx } from './drawDocNode';
-import { Terminal } from './drawToTerminal';
+import { Renderer } from './drawToTerminal';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 import { selectionLocation } from './selectionLocation';
 import {
@@ -70,7 +70,7 @@ export const selectionPos = (
 };
 
 export const renderSelection = (
-    term: Terminal,
+    term: Renderer,
     store: Store,
     docId: string,
     sourceMaps: BlockEntry[],

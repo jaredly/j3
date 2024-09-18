@@ -178,9 +178,9 @@ const write = (text: ABlock) => {
                 ctx.fillStyle = rgb(chunk.style.background);
                 ctx.fillRect(
                     pos.x * TEXTW,
-                    (pos.y - 1 / 1.5) * TEXTH,
+                    (pos.y - 1 / 1.3) * TEXTH,
                     w.width + 1,
-                    TEXTH / 1.2,
+                    TEXTH,
                 );
             }
             ctx.fillStyle = chunk.style?.color

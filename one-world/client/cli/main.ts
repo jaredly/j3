@@ -19,7 +19,7 @@ import {
     drawToTerminal,
     MouseEvt,
     MouseKind,
-    Terminal,
+    Renderer,
 } from './drawToTerminal';
 import { Evaluator } from '../../evaluators/boot-ex/types';
 import { Store } from '../StoreContext2';
@@ -34,7 +34,7 @@ import { toChunk } from '../../shared/IR/block-to-attributed-text';
 const handleDocument = async (
     sess: Sess,
     store: Store,
-    term: Terminal,
+    term: Renderer,
     writeSess: (s: Sess) => void,
 ) => {
     const picked = await pickDocument(store, term);
@@ -50,7 +50,7 @@ const handleDocument = async (
 };
 
 export const run = async (
-    term: Terminal,
+    term: Renderer,
     readSess: () => Sess,
     writeSess: (s: Sess) => void,
 ) => {
@@ -111,7 +111,7 @@ const timeoutTracker = (fn: () => void) => {
 };
 
 export function runDocument(
-    term: Terminal,
+    term: Renderer,
     store: Store,
     sess: Sess,
     docId: string,

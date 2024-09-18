@@ -1,10 +1,10 @@
 // import termkit from 'terminal-kit';
 import ansis from 'ansis';
 import { Store } from '../StoreContext2';
-import { Terminal } from './drawToTerminal';
+import { Renderer } from './drawToTerminal';
 import { toABlock } from '../../shared/IR/block-to-attributed-text';
 
-export const pickDocument = (store: Store, term: Terminal) => {
+export const pickDocument = (store: Store, term: Renderer) => {
     return new Promise<string | null>((resolve, reject) => {
         let state = store.getState();
         const ids = Object.keys(state.documents);
