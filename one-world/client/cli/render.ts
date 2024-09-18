@@ -460,6 +460,9 @@ export function selectionStyleOverrides(
             }
         }
         const top = state.toplevels[path.root.toplevel];
+        if (!top) {
+            return;
+        }
         let num = 0;
         let tmp = path;
         while (tmp.children.length) {

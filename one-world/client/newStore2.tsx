@@ -350,7 +350,7 @@ function maybeCommitTextChange(
     extras: Action[],
 ) {
     const last = path.children[path.children.length - 1];
-    const node = state.toplevels[path.root.toplevel].nodes[last];
+    const node = state.toplevels[path.root.toplevel]?.nodes[last];
 
     if (!sel.end.text || !node) return;
     const updated = updateNodeText(node, sel.end.index, sel.end.text.join(''));

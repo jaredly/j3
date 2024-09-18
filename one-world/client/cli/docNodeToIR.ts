@@ -40,6 +40,10 @@ export const applySelectionText = <Top>(
             sel.start.cursor.type === 'text' &&
             sel.start.cursor.end.text != null
         ) {
+            if (!cache[sel.start.path.root.toplevel]) {
+                console.log('no cache for toplevel');
+                return;
+            }
             const irs = { ...cache[sel.start.path.root.toplevel].irs };
             const loc = lastChild(sel.start.path);
             if (loc == null || !irs[loc]) {

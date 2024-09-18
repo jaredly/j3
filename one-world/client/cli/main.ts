@@ -181,18 +181,10 @@ export function runDocument(
 
     // The parse
     const { parseCache, caches, ctx } = parseAndCache(store, docId, {}, ev);
-    sendToWorker(caches, ctx);
-
-    // The eval
-    // Object.keys(parseCache).forEach((tid) => {
-    //     parseCache[tid].output = evaluate(tid, ctx, ev, caches);
-    // });
-
     let rstate = render(term.width - 10, store, docId, parseCache);
-
     drawToTerminal(rstate, term, store, docId, lastKey, ev);
-
     clean(trackSelection(store, sess, docId, writeSess));
+    sendToWorker(caches, ctx);
 
     let prevState = store.getState();
     let tid: null | Timer = null;

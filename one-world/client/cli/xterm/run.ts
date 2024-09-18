@@ -41,6 +41,9 @@ document.addEventListener('keydown', (evt) => {
     if (evt.shiftKey) {
         key = 'SHIFT_' + key;
     }
+    if (evt.altKey) {
+        key = 'ALT_' + key;
+    }
     if (evt.metaKey) {
         key = 'META_' + key;
     }
