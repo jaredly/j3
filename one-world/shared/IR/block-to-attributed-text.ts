@@ -1,5 +1,6 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Path, serializePath, Style } from '../nodes';
+import { applyFormats } from './format';
 import { Block, BlockSource, blockSourceKey, inlineSize } from './ir-to-blocks';
 
 const charLen = (text: string) => splitGraphemes(text).length;
@@ -45,7 +46,7 @@ export const justify = (text: ABlock) => {
     text.forEach((line, i) => {
         if (lls[i] < max) {
             const wh = white(max - lls[i]);
-            line.unshift({ text: wh, len: wh.length });
+            line.push({ text: wh, len: wh.length });
         }
     });
     return text;
@@ -166,15 +167,33 @@ type ABlock = {
     style?: Style;
 }[][];
 
-export const blockToText = (
-    pos: { x: number; y: number; x0: number },
+export const aBlockToString = (block: ABlock, color: boolean) => {
+    return block
+        .map((line) =>
+            line
+                .map((chunk) => applyFormats(chunk.text, chunk.style, color))
+                .join(''),
+        )
+        .join('\n');
+};
+
+export type BlockCtx = {
+    color: boolean;
+    styles: StyleOverrides;
+    sourceMaps?: BlockEntry[];
+    dropTargets?: DropTarget[];
+};
+
+export type BlockPos = {
+    x: number;
+    y: number;
+    x0: number;
+};
+
+export const blockToABlock = (
+    pos: BlockPos,
     block: Block,
-    ctx: {
-        color: boolean;
-        styles: StyleOverrides;
-        sourceMaps?: BlockEntry[];
-        dropTargets?: DropTarget[];
-    },
+    ctx: BlockCtx,
 ): ABlock => {
     let nodeStyle = block.style;
     let override = false;
@@ -219,7 +238,7 @@ export const blockToText = (
                     if (block.pullLast && i === block.contents.length - 1) {
                         y = pos.y + h - m.height;
                     }
-                    const res = blockToText({ y, x, x0: x }, m, ctx);
+                    const res = blockToABlock({ y, x, x0: x }, m, ctx);
                     x +=
                         m.width +
                         (i < block.contents.length - 1
@@ -243,7 +262,7 @@ export const blockToText = (
                 applyX0(
                     block.contents
                         .map((m) => {
-                            const res = blockToText(
+                            const res = blockToABlock(
                                 { ...pos, y, x0: pos.x },
                                 m,
                                 ctx,
@@ -377,7 +396,7 @@ export const blockToText = (
                         const res = joinInline(
                             line.map((m, i) => {
                                 const start = positions[i];
-                                const res = blockToText(
+                                const res = blockToABlock(
                                     {
                                         x: x0 + start.x,
                                         y: y + start.y,
@@ -420,7 +439,7 @@ export const blockToText = (
                                 x++;
                             }
                             chunks.push(
-                                blockToText(
+                                blockToABlock(
                                     { ...pos, y, x0: x, x },
                                     row[i],
                                     ctx,

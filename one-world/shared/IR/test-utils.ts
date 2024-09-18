@@ -24,9 +24,20 @@ import {
     RecNode,
     toMap,
 } from '../../shared/nodes';
-import { BlockEntry, blockToText } from './block-to-text';
+import { BlockEntry } from './block-to-text';
 import { highlightSpan } from './highlightSpan';
 import { Block, irToBlock } from './ir-to-blocks';
+import {
+    aBlockToString,
+    BlockCtx,
+    BlockPos,
+    blockToABlock,
+} from './block-to-attributed-text';
+
+const blockToText = (pos: BlockPos, block: Block, ctx: BlockCtx) => {
+    const ablock = blockToABlock(pos, block, ctx);
+    return aBlockToString(ablock, ctx.color);
+};
 
 export const multi = (texts: string[], ev = BootExampleEvaluator) => {
     const globals: Record<string, IDRef> = {};
