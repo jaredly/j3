@@ -232,10 +232,6 @@ export function runDocument(
 
     clean(
         store.on('selection', (autocomplete) => {
-            const sel = store.getDocSession(docId).selections[0];
-            if (sel.type === 'ir') {
-                console.log(sel.start.key);
-            }
             if (autocomplete) {
                 needsDropdownRecalc = true;
                 kick();
