@@ -58,6 +58,12 @@ const mergeStyle = (one?: Style, two?: Style) => {
     return { ...one, ...two };
 };
 
+export { blockToText } from './block-to-text';
+// export const blockToText = (pos: BlockPos, block: Block, ctx: BlockCtx) => {
+//     const ablock = blockToABlock(pos, block, ctx);
+//     return aBlockToString(ablock, ctx.color);
+// };
+
 export const blockFormat = (text: ABlock, style?: Style) => {
     if (!style) return text;
     return text.map((line) =>

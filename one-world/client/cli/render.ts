@@ -3,7 +3,6 @@ import { AnyEvaluator } from '../../evaluators/boot-ex/types';
 import { init, parse } from '../../graphh/by-hand';
 import {
     BlockEntry,
-    blockToText,
     DropTarget,
     StyleOverrides,
 } from '../../shared/IR/block-to-text';
@@ -47,6 +46,7 @@ import { docToBlock, layoutCtx } from './drawDocNode';
 import { Terminal } from './drawToTerminal';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 import { selectionLocation } from './selectionLocation';
+import { blockToText } from '../../shared/IR/block-to-attributed-text';
 
 export const selectionPos = (
     store: Store,

@@ -118,27 +118,31 @@ export const handleUpDown = (
     const ds = store.getDocSession(docId, store.session);
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
+    console.log('up down');
 
     if (key === 'UP' || key === 'DOWN') {
         const result = selectionLocation(rstate.sourceMaps, sel);
         if (!result) return false;
         let [x, y] = result.pos;
         if (ds.verticalLodeStone) x = ds.verticalLodeStone;
-        let up;
-        for (let i = 0; i < 20; i++) {
-            y += key === 'UP' ? -1 : 1;
-            const sel = selectionForPos(
-                x,
-                y,
-                rstate.sourceMaps,
-                rstate.dropTargets,
-                rstate.cache,
-            );
-            if (sel) {
-                up = sel;
-                break;
-            }
-        }
+        y += key === 'UP' ? -1 : 1;
+        // let up;
+        // for (let i = 0; i < 20; i++) {
+        //     y += key === 'UP' ? -1 : 1;
+        const up = selectionForPos(
+            x,
+            y,
+            rstate.sourceMaps,
+            rstate.dropTargets,
+            rstate.cache,
+            key === 'DOWN' ? 'down' : 'up',
+        );
+        console.log('got', up);
+        // if (up) {
+        //     up = up;
+        //     break;
+        // }
+        // }
         if (!up) return false;
         store.update({
             type: 'selection',

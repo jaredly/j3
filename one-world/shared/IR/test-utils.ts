@@ -32,12 +32,8 @@ import {
     BlockCtx,
     BlockPos,
     blockToABlock,
+    blockToText,
 } from './block-to-attributed-text';
-
-const blockToText = (pos: BlockPos, block: Block, ctx: BlockCtx) => {
-    const ablock = blockToABlock(pos, block, ctx);
-    return aBlockToString(ablock, ctx.color);
-};
 
 export const multi = (texts: string[], ev = BootExampleEvaluator) => {
     const globals: Record<string, IDRef> = {};

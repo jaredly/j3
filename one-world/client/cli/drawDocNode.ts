@@ -1,5 +1,5 @@
 import { ParseResult } from '../../evaluators/boot-ex/types';
-import { blockToText } from '../../shared/IR/block-to-text';
+import { blockToText } from '../../shared/IR/block-to-attributed-text';
 import {
     Block,
     hblock,

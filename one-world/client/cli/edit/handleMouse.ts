@@ -13,6 +13,7 @@ export const selectionForPos = (
     sourceMaps: BlockEntry[],
     dropTargets: DropTarget[],
     cache: IRCache2<unknown>,
+    yBias?: 'up' | 'down',
 ): { selection: DocSelection; exact: boolean } | void => {
     const found = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
     if (found) {
@@ -66,7 +67,7 @@ export const selectionForPos = (
             dx: Math.abs(target.pos.x - x),
             dy: Math.abs(target.pos.y - y),
         }))
-        // .filter((a) => a.dy === 0)
+        .filter((a) => (!yBias ? true : yBias === 'up' ? a.dy <= 0 : a.dy >= 0))
         .sort((a, b) => (a.dy === b.dy ? a.dx - b.dx : a.dy - b.dy));
     if (!closest.length) return;
     let { path, side } = closest[0].target;

@@ -2,7 +2,7 @@ import termkit from 'terminal-kit';
 import { Store } from '../StoreContext2';
 import { renderSelection, RState, selectionPos } from './render';
 import { AnyEvaluator } from '../../evaluators/boot-ex/types';
-import { blockToText } from '../../shared/IR/block-to-text';
+import { blockToText } from '../../shared/IR/block-to-attributed-text';
 import { getAutoComplete, menuToBlocks } from './getAutoComplete';
 
 export const moveTo = (write: Write, x: number, y: number, text?: string) => {
