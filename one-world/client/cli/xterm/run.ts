@@ -34,16 +34,30 @@ const keymap: { [key: string]: string } = {
 };
 
 document.addEventListener('keydown', (evt) => {
-    // key
-    keyListeners.forEach((fn) => fn(keymap[evt.key] ?? evt.key));
+    let key = keymap[evt.key] ?? evt.key;
+    if (evt.ctrlKey) {
+        key = 'CTRL_' + key;
+    }
+    if (evt.shiftKey) {
+        key = 'SHIFT_' + key;
+    }
+    if (evt.metaKey) {
+        key = 'META_' + key;
+    }
+    keyListeners.forEach((fn) => fn(key));
 });
+
 const evtPos = (evt: MouseEvent) => {
     const box = node.getBoundingClientRect();
     const x = (evt.clientX - box.left) * 2;
     const y = (evt.clientY - box.top) * 2;
     return { x: (x / TEXTW - 2) | 0, y: (y / TEXTH) | 0 };
 };
+
+let down = false;
+
 node.onmousedown = (evt) => {
+    down = true;
     const { x, y } = evtPos(evt);
     sendMouseEvent('MOUSE_LEFT_BUTTON_PRESSED', {
         x,
@@ -53,8 +67,9 @@ node.onmousedown = (evt) => {
         shift: evt.shiftKey,
     });
 };
-node.onmouseup = (evt) => {
-    // up
+
+window.onmouseup = (evt) => {
+    down = false;
     const { x, y } = evtPos(evt);
     sendMouseEvent('MOUSE_LEFT_BUTTON_RELEASED', {
         x,
@@ -65,6 +80,16 @@ node.onmouseup = (evt) => {
     });
 };
 node.onmousemove = (evt) => {
+    if (down) {
+        const { x, y } = evtPos(evt);
+        sendMouseEvent('MOUSE_DRAG', {
+            x,
+            y,
+            alt: evt.altKey,
+            ctrl: evt.ctrlKey,
+            shift: evt.shiftKey,
+        });
+    }
     // move
 };
 
@@ -137,13 +162,26 @@ const sz = ctx.measureText('M');
 const TEXTW = sz.width;
 const TEXTH = fontSize * 1.5;
 
+const rgb = (color: { r: number; g: number; b: number }) =>
+    `rgb(${color.r},${color.g},${color.b})`;
+
 const write = (text: ABlock) => {
     const x0 = pos.x;
     text.forEach((line) => {
         pos.x = x0;
         line.forEach((chunk) => {
+            if (chunk.style?.background) {
+                const w = ctx.measureText(chunk.text);
+                ctx.fillStyle = rgb(chunk.style.background);
+                ctx.fillRect(
+                    pos.x * TEXTW,
+                    (pos.y - 1 / 1.5) * TEXTH,
+                    w.width + 1,
+                    TEXTH / 1.2,
+                );
+            }
             ctx.fillStyle = chunk.style?.color
-                ? `rgb(${chunk.style.color.r},${chunk.style.color.g},${chunk.style.color.b})`
+                ? rgb(chunk.style.color)
                 : 'white';
             ctx.fillText(chunk.text, pos.x * TEXTW, pos.y * TEXTH);
             pos.x += chunk.len;
@@ -166,7 +204,7 @@ run(
                         x * TEXTW,
                         (y - 1 / 1.5) * TEXTH,
                         TEXTW / 10,
-                        TEXTH / 1.5,
+                        TEXTH / 1.2,
                     );
                 }
             },
