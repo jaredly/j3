@@ -27,6 +27,7 @@ const keymap: { [key: string]: string } = {
     ArrowRight: 'RIGHT',
     Enter: 'ENTER',
     Backspace: 'BACKSPACE',
+    Tab: 'TAB',
     // '\r': 'ENTER',
     // '\x7F': 'BACKSPACE',
     // '\x1B[3~': 'DELETE',
@@ -38,7 +39,7 @@ document.addEventListener('keydown', (evt) => {
     if (evt.ctrlKey) {
         key = 'CTRL_' + key;
     }
-    if (evt.shiftKey) {
+    if (evt.shiftKey && !'(){}~!@#$%^&*|_+<>?:"'.includes(key)) {
         key = 'SHIFT_' + key;
     }
     if (evt.altKey) {
@@ -48,6 +49,9 @@ document.addEventListener('keydown', (evt) => {
         key = 'META_' + key;
     }
     keyListeners.forEach((fn) => fn(key));
+    if (evt.key === 'Tab') {
+        evt.preventDefault();
+    }
 });
 
 const evtPos = (evt: MouseEvent) => {
