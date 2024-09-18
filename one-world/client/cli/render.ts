@@ -46,7 +46,11 @@ import { docToBlock, layoutCtx } from './drawDocNode';
 import { Terminal } from './drawToTerminal';
 import { MultiSelect, resolveMultiSelect } from './resolveMultiSelect';
 import { selectionLocation } from './selectionLocation';
-import { blockToText } from '../../shared/IR/block-to-attributed-text';
+import {
+    ABlock,
+    blockToABlock,
+    blockToText,
+} from '../../shared/IR/block-to-attributed-text';
 
 export const selectionPos = (
     store: Store,
@@ -149,7 +153,7 @@ export const redrawWithSelection = (
         dragState,
         state,
     );
-    const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
+    const txt = blockToABlock({ x: 0, y: 0, x0: 0 }, block, {
         sourceMaps,
         dropTargets,
         color: true,
@@ -492,5 +496,5 @@ export type RState = {
     sourceMaps: BlockEntry[];
     dropTargets: DropTarget[];
     block: Block;
-    txt: string;
+    txt: ABlock;
 };

@@ -4,11 +4,14 @@ import { applyFormats } from './format';
 import { Block, BlockSource, blockSourceKey, inlineSize } from './ir-to-blocks';
 
 const charLen = (text: string) => splitGraphemes(text).length;
-const toChunk = (text: string, style?: Style): ABlock[0][0] => ({
+export const toChunk = (text: string, style?: Style): ABlock[0][0] => ({
     text,
     len: charLen(text),
     style,
 });
+export const toABlock = (text: string, style?: Style) => [
+    [toChunk(text, style)],
+];
 
 const breakByLines = (line: ABlock[0]) => {
     const res: ABlock = [[]];
@@ -167,7 +170,7 @@ export type DropTarget = {
 
 // outer list is lines
 // inner list is for different styles
-type ABlock = {
+export type ABlock = {
     text: string;
     len: number;
     style?: Style;

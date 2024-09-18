@@ -2,6 +2,7 @@
 import ansis from 'ansis';
 import { Store } from '../StoreContext2';
 import { Terminal } from './drawToTerminal';
+import { toABlock } from '../../shared/IR/block-to-attributed-text';
 
 export const pickDocument = (store: Store, term: Terminal) => {
     return new Promise<string | null>((resolve, reject) => {
@@ -16,20 +17,22 @@ export const pickDocument = (store: Store, term: Terminal) => {
                 term.moveTo(0, i + 1);
                 if (i === ids.length) {
                     if (sel === i) {
-                        term.write(ansis.bgGreen('New Document'));
+                        term.write(toABlock(ansis.bgGreen('New Document')));
                     } else {
-                        term.write(ansis.blue('New Document'));
+                        term.write(toABlock(ansis.blue('New Document')));
                     }
                 } else if (sel === i) {
                     if (renaming) {
-                        term.write(ansis.bgBlue(renaming.text));
+                        term.write(toABlock(ansis.bgBlue(renaming.text)));
                     } else {
                         term.write(
-                            ansis.bgGreen(state.documents[ids[i]].title),
+                            toABlock(
+                                ansis.bgGreen(state.documents[ids[i]].title),
+                            ),
                         );
                     }
                 } else {
-                    term.write(state.documents[ids[i]].title);
+                    term.write(toABlock(state.documents[ids[i]].title));
                 }
             }
         };

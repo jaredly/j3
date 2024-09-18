@@ -25,6 +25,7 @@ import { Evaluator } from '../../evaluators/boot-ex/types';
 import { Store } from '../StoreContext2';
 import { Caches, Context, evaluate } from '../../graphh/by-hand';
 import { IncomingMessage, OutgoingMessage } from './worker';
+import { toChunk } from '../../shared/IR/block-to-attributed-text';
 
 // TODO NEXT STEP
 // refactor this out, so that we can use xtermjs as well
@@ -261,7 +262,7 @@ export function runDocument(
                 return finish(false);
             }
 
-            term.moveTo(0, term.height, key);
+            term.moveTo(0, term.height, [[toChunk(key)]]);
             renderSelection(term, store, docId, rstate.sourceMaps);
         }),
     );

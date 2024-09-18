@@ -1,5 +1,5 @@
 import { ParseResult } from '../../evaluators/boot-ex/types';
-import { blockToText } from '../../shared/IR/block-to-attributed-text';
+import { blockToABlock } from '../../shared/IR/block-to-attributed-text';
 import {
     Block,
     hblock,
@@ -76,7 +76,7 @@ export const docToBlock = <Top>(
                 line(
                     typeof output.value === 'function'
                         ? '<function>'
-                        : JSON.stringify(output.value),
+                        : JSON.stringify(output.value) ?? '',
                 ),
             );
         } else if (output?.type === 'error') {
@@ -132,7 +132,7 @@ export const recNodeToText = (
         top: 'top',
     });
 
-    return blockToText({ x: 0, y: 0, x0: 0 }, block, {
+    return blockToABlock({ x: 0, y: 0, x0: 0 }, block, {
         color: false,
         styles: {},
     });

@@ -2,7 +2,12 @@ import termkit from 'terminal-kit';
 import { Store } from '../StoreContext2';
 import { renderSelection, RState, selectionPos } from './render';
 import { AnyEvaluator } from '../../evaluators/boot-ex/types';
-import { blockToText } from '../../shared/IR/block-to-attributed-text';
+import {
+    ABlock,
+    blockToText,
+    toABlock,
+    toChunk,
+} from '../../shared/IR/block-to-attributed-text';
 import { getAutoComplete, menuToBlocks } from './getAutoComplete';
 
 export const moveTo = (write: Write, x: number, y: number, text?: string) => {
@@ -14,8 +19,8 @@ export const moveTo = (write: Write, x: number, y: number, text?: string) => {
 export type Write = (text: string) => void;
 
 export type Terminal = {
-    moveTo(x: number, y: number, text?: string): void;
-    write(text: string): void;
+    moveTo(x: number, y: number, text?: ABlock): void;
+    write(text: ABlock): void;
     clear(): void;
     height: number;
     width: number;
@@ -51,10 +56,14 @@ export function drawToTerminal(
         term.moveTo(
             0,
             term.height - 1,
-            (lastKey === ' ' ? 'SPACE' : lastKey) + '           ',
+            toABlock((lastKey === ' ' ? 'SPACE' : lastKey) + '           '),
         );
     }
-    term.moveTo(0, term.height, store.getState().documents[docId].title);
+    term.moveTo(
+        0,
+        term.height,
+        toABlock(store.getState().documents[docId].title),
+    );
     const ds = store.getDocSession(docId);
     const dragState = ds.dragState;
     if (dragState?.dest) {
@@ -63,9 +72,13 @@ export function drawToTerminal(
                 1 +
                 (dragState.dest.side === 'after' ? -1 : 0),
             dragState.dest.pos.y + 1,
-            '⬇️',
+            toABlock('⬇️'),
         );
-        term.moveTo(0, term.height - 5, JSON.stringify(dragState.dest));
+        term.moveTo(
+            0,
+            term.height - 5,
+            toABlock(JSON.stringify(dragState.dest)),
+        );
     }
 
     if (ds.dropdown && !ds.dropdown.dismissed) {
@@ -82,7 +95,7 @@ export function drawToTerminal(
                 const pos = selectionPos(store, docId, rstate.sourceMaps, true);
                 if (pos) {
                     txt.split('\n').forEach((line, i) => {
-                        term.moveTo(pos[0] + 1, pos[1] + 3 + i, line);
+                        term.moveTo(pos[0] + 1, pos[1] + 3 + i, toABlock(line));
                     });
                 }
             }
