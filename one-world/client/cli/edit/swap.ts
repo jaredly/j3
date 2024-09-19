@@ -3,7 +3,7 @@ import { IRSelection } from '../../../shared/IR/intermediate';
 import { lastChild } from '../../../shared/IR/nav';
 import { Path, parentPath, serializePath } from '../../../shared/nodes';
 import { DocumentNode, getDoc, PersistedState } from '../../../shared/state2';
-import { getNodeForPath } from '../../selectNode';
+import { getNodeForPath, getTopForPath } from '../../selectNode';
 import { isCollection } from '../../TextEdit/actions';
 import { MultiSelect, resolveMultiSelect } from '../resolveMultiSelect';
 import { topUpdate } from './handleUpdate';
@@ -121,7 +121,7 @@ export const swap = (
     if (multi.type !== 'top') {
         return swapTop(start, end, multi, state, dir);
     }
-    const top = state.toplevels[start.path.root.toplevel];
+    const top = getTopForPath(start.path, state);
     const node = getNodeForPath(multi.parent, state);
     if (!node) return;
     const ploc = lastChild(multi.parent);

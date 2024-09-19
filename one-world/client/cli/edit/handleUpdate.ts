@@ -23,10 +23,11 @@ import {
     DocSelection,
     DocSession,
     getDoc,
+    getTop,
     PersistedState,
 } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
-import { getNodeForPath } from '../../selectNode';
+import { getNodeForPath, getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { MultiSelect, resolveMultiSelect } from '../resolveMultiSelect';
@@ -110,7 +111,7 @@ export const handleUpdate = (
 
     const state = store.getState();
     const path = sel.start.path;
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     const node = top.nodes[lastChild(path)];
 
     // ifff | is at the /end/ of a thing
@@ -159,7 +160,7 @@ export const handleUpdate = (
         key === '{' &&
         norm.text[norm.end - 1] === '$'
     ) {
-        const top = store.getState().toplevels[path.root.toplevel];
+        const top = getTopForPath(path, store.getState());
         const nidx = top.nextLoc;
         const loc = lastChild(path);
         const up = { ...node };
@@ -372,7 +373,7 @@ export const handleIDUpdate = ({
     }
 
     if (norm.text.length === 0 && key === '\\') {
-        const top = store.getState().toplevels[path.root.toplevel];
+        const top = getTopForPath(path, store.getState());
         const npath = pathWithChildren(path, top.nextLoc);
         store.update(
             topUpdate(
@@ -419,7 +420,7 @@ export const handleIDUpdate = ({
             norm.end === norm.text.length
         ) {
             const path = sel.start.path;
-            const top = store.getState().toplevels[path.root.toplevel];
+            const top = getTopForPath(path, store.getState());
             const nidx = top.nextLoc;
 
             const update = replaceNode(path, nidx, top);
@@ -483,7 +484,7 @@ export const handleNonTextUpdate = (
         (sel.start.cursor.type !== 'side' || sel.start.cursor.side === 'end')
     ) {
         const path = sel.start.path;
-        const top = store.getState().toplevels[path.root.toplevel];
+        const top = getTopForPath(path, store.getState());
         const pnode = top.nodes[parentLoc(path)];
         if (pnode.type === 'table') {
             const actions = addTableColumn(pnode, path, top.id, top.nextLoc);
@@ -498,7 +499,7 @@ export const handleNonTextUpdate = (
         // hrmmm does adding ...
         // TODO: if parent is a table, bail
         const path = sel.start.path;
-        const top = store.getState().toplevels[path.root.toplevel];
+        const top = getTopForPath(path, store.getState());
         const pnode = top.nodes[parentLoc(path)];
         if (pnode && pnode.type === 'table') {
             const { row, col } = findTableLoc(pnode, lastChild(path));
@@ -569,7 +570,7 @@ export const deleteMulti = (
         ];
     } else {
         const ploc = lastChild(which.parent);
-        const top = state.toplevels[which.parent.root.toplevel];
+        const top = getTopForPath(which.parent, state);
         const pnode = top.nodes[ploc];
         if (!pnode || !isCollection(pnode)) return;
         const idx = pnode.items.indexOf(which.children[0]);
@@ -632,11 +633,11 @@ export const handleMutliSelect = (
         if (multi.type === 'doc') {
             const doc = getDoc(state, multi.doc);
             ds.clipboard = multi.children.map((nid) => {
-                const top = state.toplevels[doc.nodes[nid].toplevel];
+                const top = getTop(state, doc.id, doc.nodes[nid].toplevel);
                 return fromMap(() => false, top.root, top.nodes);
             });
         } else {
-            const top = state.toplevels[multi.parent.root.toplevel];
+            const top = getTopForPath(multi.parent, state);
             ds.clipboard = multi.children.map((nid) => {
                 return fromMap(() => false, nid, top.nodes);
             });

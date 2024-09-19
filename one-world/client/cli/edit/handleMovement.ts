@@ -18,8 +18,9 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
-import { getDoc, PersistedState } from '../../../shared/state2';
+import { getDoc, getTop, PersistedState } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { findMenuItem, getAutoComplete } from '../getAutoComplete';
 import { RState } from '../render';
@@ -171,7 +172,7 @@ const adjacent = (
     state: PersistedState,
     side: 'left' | 'right',
 ): Path | void => {
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     for (let i = path.children.length - 2; i >= 0; i--) {
         const parent = top.nodes[path.children[i]];
         const items = childLocs(parent);
@@ -195,6 +196,7 @@ const adjacent = (
             const node = doc.nodes[last];
             if (node.children.length) {
                 const child = doc.nodes[node.children[0]];
+                const top = getTop(state, doc.id, child.toplevel);
                 return {
                     root: {
                         type: 'doc-node',
@@ -202,7 +204,7 @@ const adjacent = (
                         ids: path.root.ids.concat([child.id]),
                         toplevel: child.toplevel,
                     },
-                    children: [state.toplevels[child.toplevel].root],
+                    children: [top.root],
                 };
             }
         }
@@ -213,7 +215,7 @@ const adjacent = (
             if (side === 'left') {
                 if (idx === 0) {
                     // const self = doc.nodes[path.root.ids[i + 1]];
-                    const top = state.toplevels[parent.toplevel];
+                    const top = getTop(state, doc.id, parent.toplevel);
                     if (!top) return;
                     // select the toplevel
                     return firstLastChild(
@@ -240,7 +242,7 @@ const adjacent = (
                     `badloc maybe idx (${idx}) loc (${loc}) children: ${parent.children}`,
                 );
             if (side === 'right') {
-                const top = state.toplevels[sib.toplevel];
+                const top = getTop(state, doc.id, sib.toplevel);
                 return firstLastChild(
                     {
                         root: {
@@ -260,7 +262,7 @@ const adjacent = (
                     sib = doc.nodes[sib.children[sib.children.length - 1]];
                     ids.push(sib.id);
                 }
-                const top = state.toplevels[sib.toplevel];
+                const top = getTop(state, doc.id, sib.toplevel);
                 return firstLastChild(
                     {
                         root: {
@@ -294,7 +296,7 @@ export const handleClose = (
     if (sel.start.cursor.type === 'text' && sel.start.cursor.start)
         return false;
 
-    const top = store.getState().toplevels[sel.start.path.root.toplevel];
+    const top = getTopForPath(sel.start.path, store.getState());
 
     switch (key) {
         case '}': {
@@ -555,7 +557,7 @@ const getAdjacent = (
     dir: 'right' | 'left',
 ): IRSelection | null => {
     const ploc = path.children[path.children.length - 2];
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     const items = childLocs(top.nodes[ploc]);
     const at = items.indexOf(lastChild(path));
     if (at === -1) return null;

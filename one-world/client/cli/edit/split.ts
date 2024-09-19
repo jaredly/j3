@@ -15,6 +15,7 @@ import {
     pathWithChildren,
 } from '../../../shared/nodes';
 import { getDoc } from '../../../shared/state2';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { CLoc, findTableLoc, topUpdate } from './handleUpdate';
@@ -28,7 +29,7 @@ export const split = (
     cache: IRCache2<unknown>,
 ) => {
     const state = store.getState();
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     const loc = lastChild(path);
     // Here are the things that can have a `text` IR in them:
     // that's a thing

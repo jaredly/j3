@@ -7,6 +7,7 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { topUpdate } from './handleUpdate';
 
@@ -75,7 +76,7 @@ export const handleRichText = (
     if (sel.end) return false; //
 
     const state = store.getState();
-    const top = state.toplevels[sel.start.path.root.toplevel];
+    const top = getTopForPath(sel.start.path, state);
     const node = top.nodes[lastChild(sel.start.path)];
     if (node.type !== 'rich-inline') return false;
     const parent = top.nodes[parentLoc(sel.start.path)];

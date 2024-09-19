@@ -18,6 +18,7 @@ import {
 } from '../../../shared/nodes';
 import { getDoc } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { findTableLoc, topUpdate } from './handleUpdate';
@@ -81,7 +82,7 @@ export const joinLeft = (
     store: Store,
 ): boolean => {
     const state = store.getState();
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     const loc = lastChild(path);
     const node = top.nodes[loc];
 

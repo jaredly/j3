@@ -10,6 +10,7 @@ import {
     serializePath,
 } from '../../../shared/nodes';
 import { Doc, getDoc, PersistedState } from '../../../shared/state2';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { inflateRecNode, isCollection } from '../../TextEdit/actions';
 import { findTableLoc, topUpdate } from './handleUpdate';
@@ -35,7 +36,7 @@ export const newNeighborActions = (
 ): Action[] | void => {
     if (!siblings.length) return;
 
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     const loc = lastChild(path);
     if (path.children.length < 2) {
         const doc = getDoc(state, path.root.doc);

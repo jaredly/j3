@@ -25,7 +25,7 @@ import {
     Style,
 } from '../../shared/nodes';
 import { DocSession } from '../../shared/state2';
-import { getNodeForPath } from '../selectNode';
+import { getNodeForPath, getTopForPath } from '../selectNode';
 import { Store } from '../StoreContext2';
 import { inflateRecNode } from '../TextEdit/actions';
 import { normalizeSelection, topUpdate } from './edit/handleUpdate';
@@ -168,13 +168,11 @@ export const getAutoComplete = (
         return; // don't give autocomplete with no text
     }
 
-    const top = isToplevel(
-        path,
-        store.getState().toplevels[path.root.toplevel].nodes,
-    );
+    const top = getTopForPath(path, store.getState());
+    const isAtTheTop = isToplevel(path, top.nodes);
 
     const filter = (auto: (typeof ev.kwds)[0]) => {
-        if (auto.toplevel && !top) return false;
+        if (auto.toplevel && !isAtTheTop) return false;
         if (auto.text.includes(text)) {
             return true;
         }
@@ -286,7 +284,7 @@ const applyTemplate = (
 ): { template: boolean; actions: Action[] } => {
     const path = sel.start.path;
     const state = store.getState();
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
 
     const cursor: IRCursor = {
         type: 'text',
