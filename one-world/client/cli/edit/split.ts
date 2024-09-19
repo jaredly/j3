@@ -45,7 +45,7 @@ export const split = (
         ]);
         if (!actions) return false;
         store.update(
-            topUpdate(top.id, {
+            topUpdate(top.id, path.root.doc, {
                 [node.loc]: {
                     ...node,
                     text: norm.text.slice(0, norm.start ?? norm.end).join(''),
@@ -69,6 +69,7 @@ export const split = (
         store.update(
             topUpdate(
                 top.id,
+                path.root.doc,
                 {
                     [ploc]: { ...pnode, items },
                     [node.loc]: {
@@ -118,6 +119,7 @@ export const split = (
             store.update(
                 topUpdate(
                     top.id,
+                    path.root.doc,
                     {
                         ...map,
                         [pnode.loc]: { ...pnode, rows },

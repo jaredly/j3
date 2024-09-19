@@ -46,7 +46,7 @@ export const addTableColumn = (
     }
 
     return [
-        topUpdate(topId, update, nextLoc),
+        topUpdate(topId, path.root.doc, update, nextLoc),
         {
             type: 'selection',
             doc: path.root.doc,

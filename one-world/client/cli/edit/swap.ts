@@ -221,5 +221,8 @@ export const swap = (
         }
     }
 
-    return [topUpdate(end.root.toplevel, up), ...(sel ? [sel] : [])];
+    return [
+        topUpdate(end.root.toplevel, end.root.doc, up),
+        ...(sel ? [sel] : []),
+    ];
 };

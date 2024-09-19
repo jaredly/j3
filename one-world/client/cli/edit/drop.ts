@@ -133,6 +133,7 @@ export const drop = (source: MultiSelect, dest: DropTarget, store: Store) => {
         {
             type: 'toplevel',
             id: top.id,
+            doc: ppath.root.doc,
             action: { type: 'update', update: up },
         },
         {

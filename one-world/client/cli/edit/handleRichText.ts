@@ -94,6 +94,7 @@ export const handleRichText = (
         store.update(
             topUpdate(
                 top.id,
+                sel.start.path.root.doc,
                 {
                     [top.nextLoc]: {
                         type: 'rich-inline',
@@ -148,6 +149,7 @@ export const handleRichText = (
         store.update(
             topUpdate(
                 top.id,
+                sel.start.path.root.doc,
                 {
                     [node.loc]: undefined,
                     [prev]: { ...pnode, spans: pnode.spans.concat(node.spans) },

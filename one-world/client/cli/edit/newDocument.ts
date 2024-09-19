@@ -14,6 +14,7 @@ export const newDocument = (id: string): Action[] => {
         {
             type: 'toplevel',
             id: tid,
+            doc: id,
             action: {
                 type: 'reset',
                 toplevel: {

@@ -110,19 +110,6 @@ const replaceWith = (
     return { type: 'update', update: { root: loc } };
 };
 
-const topUpdate = (
-    id: string,
-    nodes: ToplevelUpdate['update']['nodes'],
-    nidx?: number,
-): Action => ({
-    type: 'toplevel',
-    id,
-    action: {
-        type: 'update',
-        update: nidx != null ? { nodes, nextLoc: nidx } : { nodes },
-    },
-});
-
 const unwrap = (
     path: Path,
     top: Toplevel,

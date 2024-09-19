@@ -325,7 +325,7 @@ const applyTemplate = (
         return {
             template: false,
             actions: [
-                topUpdate(path.root.toplevel, {
+                topUpdate(path.root.toplevel, path.root.doc, {
                     [node.loc]: { ...node, text: text, ref: link },
                 }),
                 {
@@ -389,6 +389,7 @@ const applyTemplate = (
             {
                 type: 'toplevel',
                 id: top.id,
+                doc: path.root.doc,
                 action: {
                     type: 'update',
                     update: { nextLoc, root, nodes: allNodes },

@@ -7,7 +7,13 @@ export type Action =
     | { type: 'module'; action: ModuleAction }
     | { type: 'multi'; actions: Action[] }
     | { type: 'doc'; id: string; action: DocAction }
-    | { type: 'toplevel'; id: string; action: ToplevelAction; stage?: string }
+    | {
+          type: 'toplevel';
+          id: string;
+          doc: string;
+          action: ToplevelAction;
+          stage?: string;
+      }
     | {
           type: 'selection';
           doc: string;

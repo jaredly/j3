@@ -190,7 +190,7 @@ export const handleUpdate = (
             [loc]: up,
         };
 
-        store.update(topUpdate(top.id, map, nidx + 1), {
+        store.update(topUpdate(top.id, path.root.doc, map, nidx + 1), {
             type: 'selection',
             doc: path.root.doc,
             selections: [
@@ -242,11 +242,13 @@ export const handleUpdate = (
 
 export const topUpdate = (
     id: string,
+    doc: string,
     nodes: ToplevelUpdate['update']['nodes'],
     nidx?: number,
 ): Action => ({
     type: 'toplevel',
     id,
+    doc,
     action: {
         type: 'update',
         update: nidx != null ? { nodes, nextLoc: nidx } : { nodes },
@@ -343,7 +345,7 @@ export const handleIDUpdate = ({
                 // and typing a '|'
                 if (pnode.items[0] === node.loc) {
                     store.update(
-                        topUpdate(top.id, {
+                        topUpdate(top.id, path.root.doc, {
                             [pnode.loc]: {
                                 type: 'table',
                                 loc: pnode.loc,
@@ -378,6 +380,7 @@ export const handleIDUpdate = ({
         store.update(
             topUpdate(
                 top.id,
+                path.root.doc,
                 {
                     [node.loc]: {
                         type: 'rich-block',
@@ -441,6 +444,7 @@ export const handleIDUpdate = ({
                 {
                     type: 'toplevel',
                     id: top.id,
+                    doc: path.root.doc,
                     action: { type: 'update', update },
                 },
                 selAction(
@@ -547,7 +551,7 @@ export const deleteMulti = (
     if (which.type === 'doc') return;
     if (which.children.length === 1) {
         return [
-            topUpdate(which.parent.root.toplevel, {
+            topUpdate(which.parent.root.toplevel, which.parent.root.doc, {
                 [which.children[0]]: {
                     type: 'id',
                     text: '',
@@ -579,7 +583,7 @@ export const deleteMulti = (
         );
         if (!leaveABlank) {
             return [
-                topUpdate(which.parent.root.toplevel, {
+                topUpdate(which.parent.root.toplevel, which.parent.root.doc, {
                     [ploc]: { ...pnode, items },
                 }),
             ];
@@ -588,6 +592,7 @@ export const deleteMulti = (
         return [
             topUpdate(
                 which.parent.root.toplevel,
+                which.parent.root.doc,
                 {
                     [ploc]: {
                         ...pnode,

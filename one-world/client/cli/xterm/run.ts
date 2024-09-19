@@ -1,10 +1,7 @@
 import { run } from '../main';
 import { Sess } from '../Sess';
 import { MouseEvt, MouseKind } from '../drawToTerminal';
-import {
-    ABlock,
-    aBlockToString,
-} from '../../../shared/IR/block-to-attributed-text';
+import { ABlock } from '../../../shared/IR/block-to-attributed-text';
 
 const node = document.createElement('canvas');
 document.body.append(node);

@@ -12,6 +12,7 @@ import { update, Updated } from '../shared/update2';
 import { getAutoComplete } from './cli/getAutoComplete';
 import { RState } from './cli/render';
 import { listen } from './listen';
+import { getTopForPath } from './selectNode';
 import { Store } from './StoreContext2';
 
 type Evts = {
@@ -248,7 +249,6 @@ export const newStore = (
                                             psel.start.path,
                                             state,
                                             extras,
-                                            psel.start.path.root.doc,
                                         );
                                     }
                                 }
@@ -349,10 +349,9 @@ function maybeCommitTextChange(
     path: Path,
     state: PersistedState,
     extras: Action[],
-    docId: string,
 ) {
     const last = path.children[path.children.length - 1];
-    const node = getTop(state, docId, path.root.toplevel)?.nodes[last];
+    const node = getTopForPath(path, state)?.nodes[last];
 
     if (!sel.end.text || !node) return;
     const updated = updateNodeText(node, sel.end.index, sel.end.text.join(''));
@@ -363,6 +362,7 @@ function maybeCommitTextChange(
     extras.push({
         type: 'toplevel',
         id: path.root.toplevel,
+        doc: path.root.doc,
         action: {
             type: 'update',
             update: { nodes: { [node.loc]: updated } },

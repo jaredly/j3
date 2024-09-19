@@ -47,6 +47,7 @@ export const wrapNodesWith = (
         {
             type: 'toplevel',
             id: top.id,
+            doc: parent.root.doc,
             action: { type: 'update', update },
         },
         {
@@ -107,6 +108,7 @@ export const wrapWith = (key: '[' | '(' | '{', path: Path, store: Store) => {
         {
             type: 'toplevel',
             id: top.id,
+            doc: parent.root.doc,
             action: { type: 'update', update },
         },
         {

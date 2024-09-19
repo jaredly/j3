@@ -33,6 +33,12 @@ export const init = async (sess: Sess, writeSess: (s: Sess) => void) => {
             };
             ws.addEventListener('message', f);
         };
+        ws.onclose = () => {
+            console.log('closed ... reloading');
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        };
     });
     return store;
 };

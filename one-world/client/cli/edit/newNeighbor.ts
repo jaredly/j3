@@ -90,7 +90,7 @@ export const newNeighborActions = (
         }
         allNodes[pnode.loc] = { ...pnode, rows };
         return [
-            topUpdate(top.id, allNodes, nextLoc),
+            topUpdate(top.id, path.root.doc, allNodes, nextLoc),
             {
                 type: 'selection',
                 doc: path.root.doc,
@@ -122,7 +122,7 @@ export const newNeighborActions = (
 
     // ok we can do this now.
     return [
-        topUpdate(top.id, allNodes, nextLoc),
+        topUpdate(top.id, path.root.doc, allNodes, nextLoc),
         {
             type: 'selection',
             doc: path.root.doc,
@@ -201,6 +201,7 @@ export const newDocNodeNeighbor = (
         topActions.push({
             type: 'toplevel',
             id: newTop,
+            doc: path.root.doc,
             action: {
                 type: 'reset',
                 toplevel: {

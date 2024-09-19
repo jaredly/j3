@@ -1,6 +1,7 @@
 import { lastChild } from '../../shared/IR/nav';
 import { Path, parentPath, childLocs } from '../../shared/nodes';
 import { getDoc, getTop, PersistedState } from '../../shared/state2';
+import { getTopForPath } from '../selectNode';
 
 export type MultiSelect =
     | { type: 'top'; parent: Path; children: number[] }
@@ -73,7 +74,7 @@ export const resolveMultiSelect = (
         };
     }
 
-    const top = getTop(state, start.root.doc, start.root.toplevel);
+    const top = getTopForPath(start, state);
     // Case 1: end is a parent of start
     if (
         start.children.length >= end.children.length &&
