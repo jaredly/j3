@@ -6,17 +6,32 @@
 // - get me this document, hydrated with the toplevels I'll need
 // -
 
-import { loadState, saveChanges } from './persistence';
+import { Change, loadState, saveChanges } from './persistence';
 import { Action } from '../shared/action2';
 import { update } from '../shared/update2';
-import { DocSession } from '../shared/state2';
+import { DocSelection, DocSession } from '../shared/state2';
 import { ServerWebSocket } from 'bun';
 import { rid } from '../shared/rid';
 
-type Session = {
+export type Session = {
     ws: ServerWebSocket<unknown>;
     selections: DocSession['selections'];
 };
+
+export type ClientMessage =
+    | {
+          type: 'presence';
+          selections: DocSelection[];
+      }
+    | { type: 'action'; action: Action };
+
+export type ServerMessage =
+    | {
+          type: 'presence';
+          id: string;
+          selections: DocSelection[];
+      }
+    | { type: 'changes'; changes: Change[] };
 
 const baseDirectory = './.ow-data';
 
@@ -89,7 +104,7 @@ Bun.serve({
         },
         // handler called when a message is received
         async message(ws, message) {
-            const msg = JSON.parse(String(message));
+            const msg: ClientMessage = JSON.parse(String(message));
             const ssid: string = (ws.data as any).ssid;
             if (msg.type === 'presence') {
                 sessions[ssid].selections = msg.selections;
@@ -101,20 +116,17 @@ Bun.serve({
                                 type: 'presence',
                                 selections: msg.selections,
                                 id: ssid,
-                            }),
+                            } satisfies ServerMessage),
                         );
                     }
                 });
             } else if (msg.type === 'action') {
-                const action: Action = msg.action;
-
                 // NOTE: this can be sooo much more efficient, by having update
                 // also report on what changed.
-                const next = update(state, action, {
+                const next = update(state, msg.action, {
                     selections: {},
                     toplevels: {},
                 });
-                // console.log('action', action);
                 const changes = saveChanges(baseDirectory, state, next);
 
                 state = next;
@@ -122,7 +134,10 @@ Bun.serve({
                 Object.keys(sessions).forEach((k) => {
                     if (k !== ssid) {
                         sessions[k].ws.send(
-                            JSON.stringify({ type: 'changes', changes }),
+                            JSON.stringify({
+                                type: 'changes',
+                                changes,
+                            } satisfies ServerMessage),
                         );
                     }
                 });

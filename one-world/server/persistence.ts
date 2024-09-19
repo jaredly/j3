@@ -12,7 +12,8 @@ import { Toplevel } from '../shared/toplevels';
 
 export type Change =
     | { type: 'toplevel'; id: string; tl: null | Toplevel }
-    | { type: 'document'; id: string; doc: null | Doc };
+    | { type: 'document'; id: string; doc: null | Doc }
+    | { type: 'stage'; id: string; stage: null | DocStage };
 
 export const saveChanges = (
     base: string,
@@ -65,12 +66,42 @@ export const saveChanges = (
         });
     }
 
+    if (next.stages !== prev.stages) {
+        Object.keys(prev.stages).forEach((k) => {
+            if (!next.stages[k]) {
+                console.log('Deleting stage', k);
+                unlinkSync(join(base, 'stages', k));
+                changes.push({ type: 'stage', id: k, stage: null });
+            }
+        });
+        Object.keys(next.stages).forEach((k) => {
+            if (next.stages[k] !== prev.stages[k]) {
+                writeFileSync(
+                    join(base, 'stages', k),
+                    JSON.stringify({ ...next.stages[k], toplevels: {} }),
+                );
+                Object.keys(next.stages[k].toplevels).forEach((id) => {
+                    const nwt = next.stages[k].toplevels;
+                    const owt = prev.stages[k]?.toplevels;
+                    if (nwt !== owt) {
+                        writeFileSync(
+                            join(base, 'stages', k, 'toplevels', id),
+                            JSON.stringify(nwt),
+                        );
+                    }
+                });
+                changes.push({ type: 'stage', id: k, stage: next.stages[k] });
+            }
+        });
+    }
+
     if (next.modules !== prev.modules) {
         throw new Error('not save yet');
     }
-    // if (next.stages !== prev.stages) {
-    //     throw new Error('not save yet');
-    // }
+
+    if (next.stages !== prev.stages) {
+        throw new Error('not save yet');
+    }
 
     return changes;
 };

@@ -5,6 +5,12 @@ this means... I'm going to start using stages? irhgt?
 - hrm I should have a function for
   /getDoc/ and /getTop/
   because it'll depend on the stage.
+- [x] getDoc
+- [x] getTop
+- [x] top updates include doc id
+- [ ] load & save the stage
+- [ ] top and doc updates update the stage isntead
+- [ ] make a 'commit' action
 
 # Webliness
 
