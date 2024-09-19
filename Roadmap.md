@@ -1,6 +1,29 @@
 
 # Webliness
 
+NExt for web:
+- [ ] let's get undo/redo folks
+  - that's ... going to live in the stage, right?
+- [ ] an in-process storage (to localstorage prolly for noww)
+- [ ] then add support for a couple more things to the parser/evaluator
+  - let
+  - match
+  - lists
+  - ... records?
+  - ... quotes/unquotes?
+  - like can we get macros with that little effort?
+- [ ] copy & paste, gotta have it
+- [ ] not being able to select across subitems of a rich text is annoying,
+  and does need fixing.
+
+
+should quotes be:
+@@ @t @p @...
+and then unquotes be
+`var or #var or sth
+`name seems fine.
+
+
 /Renderer/
 
 - instead of ABlock, what if we go directly to IR?
@@ -12,10 +35,8 @@
 
 - [ ] the canvas renderer doesn't handle cursor, which would be nice if it did
 - [ ] blinking sounds useful
-- [ ] let's get undo/redo folks
-  - that's ... going to live in the stage, right?
-- [ ] up/down jumping over a blank space, we're not aligning totally column-wise
-- [ ] better drag (selforpos)
+- [x] up/down jumping over a blank space, we're not aligning totally column-wise
+- [x] better drag (selforpos)
 
 
 #
