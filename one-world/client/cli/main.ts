@@ -10,22 +10,21 @@ import { genId, newDocument } from './edit/newDocument';
 import { handleDrag, maybeStartDragging } from './handleDrag';
 import { init } from './init';
 import { pickDocument } from './pickDocument';
-import { EvalCache, parseAndCache, render, renderSelection } from './render';
+import { parseAndCache, render, renderSelection } from './render';
 import { Sess, trackSelection } from './Sess';
 
-import { Expr, SimplestEvaluator, Top } from '../../evaluators/simplest';
+import { SimplestEvaluator } from '../../evaluators/simplest';
+import { Caches, Context } from '../../graphh/by-hand';
+import { toChunk } from '../../shared/IR/block-to-attributed-text';
 import { recalcDropdown } from '../newStore2';
+import { Store } from '../StoreContext2';
 import {
     drawToTerminal,
     MouseEvt,
     MouseKind,
     Renderer,
 } from './drawToTerminal';
-import { Evaluator } from '../../evaluators/boot-ex/types';
-import { Store } from '../StoreContext2';
-import { Caches, Context, evaluate } from '../../graphh/by-hand';
 import { IncomingMessage, OutgoingMessage } from './worker';
-import { toChunk } from '../../shared/IR/block-to-attributed-text';
 
 // TODO NEXT STEP
 // refactor this out, so that we can use xtermjs as well

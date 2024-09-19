@@ -3,6 +3,7 @@ import termkit from 'terminal-kit';
 import { run } from './main';
 import { Renderer } from './drawToTerminal';
 import { readSess, writeSess } from './Sess';
+import { aBlockToString } from '../../shared/IR/block-to-attributed-text';
 
 const REDIRECT_OUT = false;
 if (REDIRECT_OUT) {
@@ -31,8 +32,22 @@ const getTerm = () =>
 const tkTerm = (term: termkit.Terminal): Renderer =>
     Object.defineProperties(
         {
-            moveTo: term.moveTo,
-            write: term,
+            moveTo(x, y, text) {
+                term.moveTo(x, y);
+                if (text) {
+                    aBlockToString(text, true)
+                        .split('\n')
+                        .forEach((line, i) => {
+                            if (i > 0) {
+                                term.moveTo(x, y + i);
+                            }
+                            term(line);
+                        });
+                }
+            },
+            write(text) {
+                term(aBlockToString(text, true));
+            },
             clear: term.clear,
             onKey(fn) {
                 term.on('key', fn);

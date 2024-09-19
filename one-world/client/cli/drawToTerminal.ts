@@ -4,6 +4,7 @@ import { renderSelection, RState, selectionPos } from './render';
 import { AnyEvaluator } from '../../evaluators/boot-ex/types';
 import {
     ABlock,
+    blockToABlock,
     blockToText,
     toABlock,
     toChunk,
@@ -71,7 +72,7 @@ export function drawToTerminal(
             dragState.dest.pos.x +
                 1 +
                 (dragState.dest.side === 'after' ? -1 : 0),
-            dragState.dest.pos.y + 1,
+            dragState.dest.pos.y,
             toABlock('⬇️'),
         );
         term.moveTo(
@@ -86,7 +87,7 @@ export function drawToTerminal(
         if (autocomplete?.length) {
             const block = menuToBlocks(autocomplete, ds.dropdown?.selection);
             if (block) {
-                const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
+                const txt = blockToABlock({ x: 0, y: 0, x0: 0 }, block, {
                     sourceMaps: [],
                     dropTargets: [],
                     color: true,
@@ -94,9 +95,7 @@ export function drawToTerminal(
                 });
                 const pos = selectionPos(store, docId, rstate.sourceMaps, true);
                 if (pos) {
-                    txt.split('\n').forEach((line, i) => {
-                        term.moveTo(pos[0] + 1, pos[1] + 3 + i, toABlock(line));
-                    });
+                    term.moveTo(pos[0] + 1, pos[1] + 2, txt);
                 }
             }
             // render the autocomplete thanks

@@ -72,7 +72,8 @@ export const handleDropdown = (
                 ds.dropdown.dismissed = serializePath(sel.start.path);
             }
             rerender();
-            return !shouldContinue;
+            // never continue after an enter
+            return true; // !shouldContinue;
         }
     }
     if (key === ' ' || key === ')' || key === '}' || key === ']') {

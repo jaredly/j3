@@ -14,6 +14,7 @@ export const termColors = dark
           fullHighlight: { r: 20, g: 50, b: 50 },
           dragHighlight: { r: 200, g: 100, b: 100 },
           kwd: { r: 100, g: 150, b: 200 },
+          topHandle: { r: 100, g: 100, b: 100 },
       }
     : {
           stringBg: { r: 255, g: 255, b: 200 },
@@ -22,4 +23,5 @@ export const termColors = dark
           fullHighlight: { r: 200, g: 250, b: 250 },
           dragHighlight: { r: 200, g: 100, b: 100 },
           kwd: { r: 200, g: 100, b: 100 },
+          topHandle: { r: 50, g: 50, b: 50 },
       };

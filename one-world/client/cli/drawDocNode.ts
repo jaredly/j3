@@ -18,6 +18,7 @@ import { IRCache2 } from '../../shared/IR/nav';
 import { Nodes, PathRoot, RecNode, toMap } from '../../shared/nodes';
 import { Doc, DocSelection, PersistedState } from '../../shared/state2';
 import { createIRCache } from '../TextEdit/actions';
+import { termColors } from '../TextEdit/colors';
 import { controlLayout, textLayout } from './textLayout';
 
 export const docToBlock = <Top>(
@@ -154,7 +155,12 @@ export const drawToplevel = (
     block.node = { root: root, children: [rootLoc] };
     let prefix = '▶️ ';
     if (SHOW_IDS) prefix += next + ' ';
-    return hblock([line(prefix), block]);
+    return hblock([
+        line(prefix, undefined, {
+            color: termColors.topHandle,
+        }),
+        block,
+    ]);
 };
 
 export const layoutCtx = (maxWidth: number, irs: IRForLoc): LayoutCtx => ({

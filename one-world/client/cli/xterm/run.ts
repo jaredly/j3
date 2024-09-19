@@ -106,46 +106,6 @@ const keyListeners: ((key: string) => void)[] = [];
 const sendMouseEvent = (which: MouseKind, evt: MouseEvt) =>
     mouseListners.forEach((f) => f(which, evt));
 
-// term.onData((data) => {
-//     // console.log('data', JSON.stringify(data));
-//     const fmt = /\u001b\[<(\d+);(\d+);(\d+)([Mm])/;
-//     const match = data.match(fmt);
-//     if (match) {
-//         const [_, which, col, row, down] = match;
-//         switch (which) {
-//             case '0':
-//                 return sendMouseEvent(
-//                     down === 'M'
-//                         ? 'MOUSE_LEFT_BUTTON_PRESSED'
-//                         : 'MOUSE_LEFT_BUTTON_RELEASED',
-//                     {
-//                         x: +col,
-//                         y: +row,
-//                         alt: false,
-//                         ctrl: false,
-//                         shift: false,
-//                     },
-//                 );
-//             case '32':
-//                 return sendMouseEvent('MOUSE_DRAG', {
-//                     x: +col,
-//                     y: +row,
-//                     alt: false,
-//                     ctrl: false,
-//                     shift: false,
-//                 });
-//             case '40': // middle drag
-//             case '64': // scroll up
-//             case '65':
-//                 // scroll down
-//                 break;
-//         }
-//     }
-// });
-// term.onSelectionChange((what) => {
-//     console.log('sel', term.getSelectionPosition());
-// });
-
 const key = 'j3:cli:sess';
 
 const readSess = (): Sess => {
@@ -162,8 +122,6 @@ let pos: { x: number; y: number } = { x: 1, y: 1 };
 const ctx = node.getContext('2d')!;
 
 const fontSize = 30;
-// const TEXTW = 5;
-// const TEXTH = 12;
 ctx.font = `${fontSize}px monospace`;
 const sz = ctx.measureText('M');
 const TEXTW = sz.width;
@@ -177,20 +135,35 @@ const write = (text: ABlock) => {
     text.forEach((line) => {
         pos.x = x0;
         line.forEach((chunk) => {
+            let w;
             if (chunk.style?.background) {
-                const w = ctx.measureText(chunk.text);
+                w = ctx.measureText(chunk.text);
                 ctx.fillStyle = rgb(chunk.style.background);
                 ctx.fillRect(
                     pos.x * TEXTW,
                     (pos.y - 1 / 1.3) * TEXTH,
-                    w.width + 1,
+                    Math.max(w.width, TEXTW) + 1,
                     TEXTH,
                 );
+            }
+            if (chunk.style?.fontStyle) {
+                ctx.font = `${chunk.style.fontStyle} ${fontSize}px monospace`;
+            } else {
+                ctx.font = `${fontSize}px monospace`;
             }
             ctx.fillStyle = chunk.style?.color
                 ? rgb(chunk.style.color)
                 : '#ddd';
             ctx.fillText(chunk.text, pos.x * TEXTW, pos.y * TEXTH);
+            if (chunk.style?.textDecoration === 'underline') {
+                if (!w) w = ctx.measureText(chunk.text);
+                ctx.fillRect(
+                    pos.x * TEXTW,
+                    pos.y * TEXTH + TEXTH / 8,
+                    w.width,
+                    2,
+                );
+            }
             pos.x += chunk.len;
         });
         pos.y++;
