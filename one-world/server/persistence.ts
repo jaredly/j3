@@ -20,23 +20,23 @@ export const saveChanges = (
     next: PersistedState,
 ) => {
     const changes: Change[] = [];
-    if (next.toplevels !== prev.toplevels) {
-        Object.keys(prev.toplevels).forEach((k) => {
-            if (!next.toplevels[k]) {
+    if (next._toplevels !== prev._toplevels) {
+        Object.keys(prev._toplevels).forEach((k) => {
+            if (!next._toplevels[k]) {
                 unlinkSync(join(base, 'toplevels', k));
                 changes.push({ type: 'toplevel', id: k, tl: null });
             }
         });
-        Object.keys(next.toplevels).forEach((k) => {
-            if (next.toplevels[k] !== prev.toplevels[k]) {
+        Object.keys(next._toplevels).forEach((k) => {
+            if (next._toplevels[k] !== prev._toplevels[k]) {
                 writeFileSync(
                     join(base, 'toplevels', k),
-                    JSON.stringify(next.toplevels[k]),
+                    JSON.stringify(next._toplevels[k]),
                 );
                 changes.push({
                     type: 'toplevel',
                     id: k,
-                    tl: next.toplevels[k],
+                    tl: next._toplevels[k],
                 });
             }
         });
@@ -81,7 +81,7 @@ export const saveChanges = (
 // would that actually save time/effort?
 export const loadState = (base: string): PersistedState => {
     const state: PersistedState = {
-        toplevels: {},
+        _toplevels: {},
         _documents: {},
         modules: {},
         stages: {},
@@ -90,9 +90,9 @@ export const loadState = (base: string): PersistedState => {
     const tl = join(base, 'toplevels');
     mkdirSync(tl, { recursive: true });
     readdirSync(tl).forEach((id) => {
-        state.toplevels[id] = JSON.parse(readFileSync(join(tl, id), 'utf8'));
-        if (!state.toplevels[id].auxiliaries) {
-            state.toplevels[id].auxiliaries = [];
+        state._toplevels[id] = JSON.parse(readFileSync(join(tl, id), 'utf8'));
+        if (!state._toplevels[id].auxiliaries) {
+            state._toplevels[id].auxiliaries = [];
         }
     });
 

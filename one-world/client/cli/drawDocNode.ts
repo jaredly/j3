@@ -16,7 +16,7 @@ import {
 } from '../../shared/IR/layout';
 import { IRCache2 } from '../../shared/IR/nav';
 import { Nodes, PathRoot, RecNode, toMap } from '../../shared/nodes';
-import { Doc, DocSelection, PersistedState } from '../../shared/state2';
+import { Doc, DocSelection, getTop, PersistedState } from '../../shared/state2';
 import { createIRCache } from '../TextEdit/actions';
 import { termColors } from '../TextEdit/colors';
 import { controlLayout, textLayout } from './textLayout';
@@ -25,7 +25,7 @@ export const docToBlock = <Top>(
     id: number,
     ids: number[],
     doc: Doc,
-    toplevels: PersistedState['toplevels'],
+    state: PersistedState,
     cache: IRCache2<Top>,
     layoutCache: Record<string, LayoutCtx['layouts']>,
     selections: DocSelection[],
@@ -47,14 +47,15 @@ export const docToBlock = <Top>(
         if (sel?.type === 'namespace' && sel.text != null) {
             nsText = sel.text.join('');
         }
+        const toplevel = getTop(state, doc.id, node.toplevel);
         const items = [
             drawToplevel(
                 node.toplevel,
                 root,
-                toplevels[node.toplevel].root,
+                toplevel.root,
                 cache[node.toplevel].irs,
                 layoutCache[node.toplevel],
-                toplevels[node.toplevel].nextLoc,
+                toplevel.nextLoc,
             ),
         ];
         if (nsText || sel?.type === 'namespace') {
@@ -91,7 +92,7 @@ export const docToBlock = <Top>(
                 cid,
                 selfIds,
                 doc,
-                toplevels,
+                state,
                 cache,
                 layoutCache,
                 selections,

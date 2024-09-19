@@ -7,7 +7,7 @@ import {
 } from '../shared/IR/intermediate';
 import { lastChild } from '../shared/IR/nav';
 import { Path, serializePath } from '../shared/nodes';
-import { DocSession, PersistedState } from '../shared/state2';
+import { DocSession, getTop, PersistedState } from '../shared/state2';
 import { update, Updated } from '../shared/update2';
 import { getAutoComplete } from './cli/getAutoComplete';
 import { RState } from './cli/render';
@@ -248,6 +248,7 @@ export const newStore = (
                                             psel.start.path,
                                             state,
                                             extras,
+                                            psel.start.path.root.doc,
                                         );
                                     }
                                 }
@@ -348,9 +349,10 @@ function maybeCommitTextChange(
     path: Path,
     state: PersistedState,
     extras: Action[],
+    docId: string,
 ) {
     const last = path.children[path.children.length - 1];
-    const node = state.toplevels[path.root.toplevel]?.nodes[last];
+    const node = getTop(state, docId, path.root.toplevel)?.nodes[last];
 
     if (!sel.end.text || !node) return;
     const updated = updateNodeText(node, sel.end.index, sel.end.text.join(''));

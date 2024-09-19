@@ -31,6 +31,7 @@ import {
     DocSession,
     DocumentNode,
     getDoc,
+    getTop,
     PersistedState,
 } from '../../shared/state2';
 import { Toplevel } from '../../shared/toplevels';
@@ -52,6 +53,7 @@ import {
     blockToABlock,
     blockToText,
 } from '../../shared/IR/block-to-attributed-text';
+import { getTopForPath } from '../selectNode';
 
 export const selectionPos = (
     store: Store,
@@ -126,7 +128,7 @@ export const render = (
         0,
         [],
         doc,
-        state.toplevels,
+        state,
         cache,
         layoutCache,
         ds.selections,
@@ -182,7 +184,7 @@ const docNodePaths = (
                 doc: doc.id,
                 toplevel: node.toplevel,
             },
-            children: [state.toplevels[node.toplevel].root],
+            children: [getTop(state, doc.id, node.toplevel).root],
         },
         ...node.children.flatMap((id) => docNodePaths(id, ids, doc, state)),
     ];
@@ -256,7 +258,7 @@ function calculateLayouts(
 ): Record<string, LayoutCtx['layouts']> {
     const layoutCache: Record<string, LayoutCtx['layouts']> = {};
     iterDocNodes(0, [], doc, (docNode, ids) => {
-        const top = state.toplevels[docNode.toplevel];
+        const top = getTop(state, doc.id, docNode.toplevel);
         const pathRoot = root(doc.id, ids, docNode);
         iterTopNodes(top.root, pathRoot, top.nodes, (node, path) => {
             const ctx = layoutCtx(maxWidth, cache[top.id].irs);
@@ -291,7 +293,7 @@ export const parseAndCache = (
     const parseCache: ParseAndEval<unknown> = {};
 
     iterDocNodes(0, [], doc, (docNode) => {
-        const top = state.toplevels[docNode.toplevel];
+        const top = getTop(state, doc.id, docNode.toplevel);
         const { paths, node } = topFromMap(top);
 
         let texts: Record<number, { text: string[]; index: number }> = {};
@@ -348,7 +350,7 @@ export function calculateIRs(
     const cache: IRCache2<any> = {};
 
     iterDocNodes(0, [], doc, (docNode, ids) => {
-        const top = state.toplevels[docNode.toplevel];
+        const top = getTop(state, doc.id, docNode.toplevel);
 
         const { parseResult: parsed } = parseCache[docNode.toplevel];
 
@@ -383,7 +385,7 @@ function getName(
         const [tid, idx] = loc[0];
         // TODO THis will not work with macros.
         // we'll have to do the actual graph resolution for that.
-        const node = state.toplevels[tid].nodes[idx];
+        const node = getTop(state, ds.doc, tid).nodes[idx];
         if (!node) return null;
         const sel = ds.selections.find(
             (s) =>
@@ -460,7 +462,7 @@ export function selectionStyleOverrides(
                 path = match.parent;
             }
         }
-        const top = state.toplevels[path.root.toplevel];
+        const top = getTopForPath(path, state);
         if (!top) {
             return;
         }

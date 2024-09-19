@@ -1,6 +1,6 @@
 import React from 'react';
 import { Path } from '../shared/nodes';
-import { PersistedState } from '../shared/state2';
+import { getTop, PersistedState } from '../shared/state2';
 
 export const isLeft = (evt: React.MouseEvent) => {
     const box = evt.currentTarget.getBoundingClientRect();
@@ -68,11 +68,11 @@ export const isLeft = (evt: React.MouseEvent) => {
 // };
 
 export const getTopForPath = (path: Path, state: PersistedState) => {
-    return state.toplevels[path.root.toplevel];
+    return getTop(state, path.root.doc, path.root.toplevel);
 };
 
 export const getNodeForPath = (path: Path, state: PersistedState) => {
-    return state.toplevels[path.root.toplevel].nodes[
+    return getTop(state, path.root.doc, path.root.toplevel).nodes[
         path.children[path.children.length - 1]
     ];
 };

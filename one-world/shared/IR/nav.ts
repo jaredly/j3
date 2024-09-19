@@ -10,7 +10,7 @@ import {
     RecNode,
     serializePath,
 } from '../nodes';
-import { getDoc, PersistedState } from '../state2';
+import { getDoc, getTop, PersistedState } from '../state2';
 import { IR, IRCursor, IRSelection, nodeToIR } from './intermediate';
 import { IRForLoc, LayoutCtx } from './layout';
 
@@ -222,7 +222,9 @@ export const goFromDocNode = (
                         ids: path.root.ids.concat([child.id]),
                         toplevel: child.toplevel,
                     },
-                    children: [state.toplevels[child.toplevel].root],
+                    children: [
+                        getTop(state, path.root.doc, child.toplevel).root,
+                    ],
                 },
                 'start',
                 cache[child.toplevel].irs,
@@ -245,7 +247,9 @@ export const goFromDocNode = (
                         ids: path.root.ids.slice(0, i + 1),
                         toplevel: parent.toplevel,
                     },
-                    children: [state.toplevels[parent.toplevel].root],
+                    children: [
+                        getTop(state, path.root.doc, parent.toplevel).root,
+                    ],
                 },
                 'end',
                 cache[parent.toplevel].irs,
@@ -269,7 +273,7 @@ export const goFromDocNode = (
                     ids,
                     toplevel: sib.toplevel,
                 },
-                children: [state.toplevels[sib.toplevel].root],
+                children: [getTop(state, path.root.doc, sib.toplevel).root],
             },
             left ? 'end' : 'start',
             cache[sib.toplevel].irs,

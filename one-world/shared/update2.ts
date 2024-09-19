@@ -26,6 +26,7 @@ export const update = (
             });
             return state;
         case 'doc': {
+            // STOP this needs to update the stage
             const doc = updateDoc(state._documents[action.id], action.action);
             if (!doc) {
                 state = { ...state };
@@ -42,21 +43,22 @@ export const update = (
             };
         }
         case 'toplevel': {
+            // STOP this needs to update the stage
             const tl = updateTL(
-                state.toplevels[action.id],
+                state._toplevels[action.id],
                 action.action,
                 ensure(updated.toplevels, action.id, () => ({})),
             );
             if (!tl) {
                 state = { ...state };
-                state.toplevels = { ...state.toplevels };
-                delete state.toplevels[action.id];
+                state._toplevels = { ...state._toplevels };
+                delete state._toplevels[action.id];
                 return state;
             }
             return {
                 ...state,
-                toplevels: {
-                    ...state.toplevels,
+                _toplevels: {
+                    ...state._toplevels,
                     [action.id]: tl,
                 },
             };

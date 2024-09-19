@@ -66,14 +66,11 @@ export const getTop = (
     doc: string,
     id: string,
 ): Toplevel => {
-    const stage = state.stages[doc];
-    const top = state.toplevels[id];
-    if (!stage || !stage.toplevels[id]) return top;
-    return stage.toplevels[id];
+    return state.stages[doc]?.toplevels[id] ?? state._toplevels[id];
 };
 
 export type PersistedState = {
-    toplevels: Toplevels;
+    _toplevels: Toplevels;
     _documents: Record<string, Doc>;
     // moduleid -> (name -> moduleid)
     modules: Record<string, Record<string, string>>;
