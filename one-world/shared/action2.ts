@@ -1,6 +1,18 @@
 import { Node } from './nodes';
-import { Doc, DocSession, DocumentNode, PersistedState } from './state2';
+import {
+    Doc,
+    DocSelection,
+    DocSession,
+    DocumentNode,
+    PersistedState,
+} from './state2';
 import { Toplevel } from './toplevels';
+
+export type LocalOnlyAction = {
+    type: 'presence';
+    id: string;
+    selections: DocSelection[];
+};
 
 export type Action =
     | { type: 'reset'; state: PersistedState }
@@ -21,7 +33,8 @@ export type Action =
           verticalLodeStone?: number;
           autocomplete?: boolean;
       }
-    | { type: 'drag'; doc: string; drag: DocSession['dragState'] };
+    | { type: 'drag'; doc: string; drag: DocSession['dragState'] }
+    | LocalOnlyAction;
 // | { type: 'namespaces'; action: NamespaceAction }
 // | { type: 'stage'; id: string; action: StageAction };
 

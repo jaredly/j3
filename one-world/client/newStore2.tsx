@@ -1,4 +1,5 @@
 import { AnyEvaluator } from '../evaluators/boot-ex/types';
+import { ServerMessage } from '../server/run';
 import { Action } from '../shared/action2';
 import {
     IRCursor,
@@ -7,7 +8,12 @@ import {
 } from '../shared/IR/intermediate';
 import { lastChild } from '../shared/IR/nav';
 import { Path, serializePath } from '../shared/nodes';
-import { DocSession, getTop, PersistedState } from '../shared/state2';
+import {
+    DocSelection,
+    DocSession,
+    getTop,
+    PersistedState,
+} from '../shared/state2';
 import { update, Updated } from '../shared/update2';
 import { getAutoComplete } from './cli/getAutoComplete';
 import { RState } from './cli/render';
@@ -155,11 +161,9 @@ export const newStore = (
     session: string,
 ): Store => {
     const evts = blankEvts();
-    // @ts-ignore
-    // window.state = state;
     const docSessionCache: { [id: string]: DocSession } = {};
-    // @ts-ignore
-    // window.docSessions = docSessionCache;
+    // TODO have a way to identify other users, name, pic, etc.
+    const presence: Record<string, DocSelection[]> = {};
 
     const store: Store = {
         session,
@@ -193,6 +197,8 @@ export const newStore = (
             const updated: Updated = { toplevels: {}, selections: {} };
 
             const extras: Action[] = [];
+
+            let presenceChanged = false;
 
             actions.forEach((action) => {
                 if (action.type === 'drag') {
@@ -265,20 +271,28 @@ export const newStore = (
                     }
                 }
 
+                if (action.type === 'presence') {
+                    presence[action.id] = action.selections;
+                    presenceChanged = true;
+                    // Don't send to websocket!
+                    return;
+                }
+
                 state = update(state, action, updated);
-                // @ts-ignore
-                window.state = state;
                 ws.send(JSON.stringify({ type: 'action', action }));
             });
 
             extras.forEach((action) => {
                 state = update(state, action, updated);
-                // @ts-ignore
-                window.state = state;
                 ws.send(JSON.stringify({ type: 'action', action }));
             });
 
             evts.general.all.forEach((f) => f());
+
+            // @ts-ignore
+            window.state = state;
+
+            // TODO:if (presenceChanged) evts.general.presence.forEach(f => f());
 
             sendUpdates(updated, evts);
         },
@@ -325,6 +339,18 @@ export const newStore = (
             dragger.startDrag(pathKey, path);
         },
     };
+
+    ws.addEventListener('message', (evt) => {
+        const data: ServerMessage = JSON.parse(evt.data);
+        switch (data.type) {
+            case 'presence':
+                store.update(data);
+                return;
+            case 'changes':
+                // TOOD process
+                return;
+        }
+    });
 
     const dragger = setupDragger(store);
 
