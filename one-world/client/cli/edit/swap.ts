@@ -2,7 +2,7 @@ import { Action, ToplevelUpdate } from '../../../shared/action2';
 import { IRSelection } from '../../../shared/IR/intermediate';
 import { lastChild } from '../../../shared/IR/nav';
 import { Path, parentPath, serializePath } from '../../../shared/nodes';
-import { DocumentNode, PersistedState } from '../../../shared/state2';
+import { DocumentNode, getDoc, PersistedState } from '../../../shared/state2';
 import { getNodeForPath } from '../../selectNode';
 import { isCollection } from '../../TextEdit/actions';
 import { MultiSelect, resolveMultiSelect } from '../resolveMultiSelect';
@@ -16,7 +16,7 @@ export const swapTop = (
     dir: 'left' | 'right' | 'up' | 'down',
 ): Action[] | void => {
     if (!multi.parentIds.length) return;
-    const doc = state.documents[multi.doc];
+    const doc = getDoc(state, multi.doc);
     const pnode = doc.nodes[multi.parentIds[multi.parentIds.length - 1]];
 
     const sidx = pnode.children.indexOf(multi.children[0]);

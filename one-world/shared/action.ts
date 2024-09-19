@@ -1,5 +1,5 @@
 import { Node } from './nodes';
-import { Doc, DocSession, PersistedState, Reference, Stage } from './state2';
+import { Doc, DocSession, PersistedState, Reference } from './state2';
 import { Toplevel } from './toplevels';
 
 // export type Action =
@@ -32,7 +32,7 @@ import { Toplevel } from './toplevels';
 //           name: string;
 //       };
 
-export type StageAction = { type: 'reset'; stage: Stage } | { type: 'delete' };
+// export type StageAction = { type: 'reset'; stage: Stage } | { type: 'delete' };
 
 // export type NamespaceAction = {
 //     type: 'update';

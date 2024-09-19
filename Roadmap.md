@@ -1,4 +1,11 @@
 
+# UNDO/reudo
+
+this means... I'm going to start using stages? irhgt?
+- hrm I should have a function for
+  /getDoc/ and /getTop/
+  because it'll depend on the stage.
+
 # Webliness
 
 NExt for web:
@@ -15,6 +22,8 @@ NExt for web:
 - [ ] copy & paste, gotta have it
 - [ ] not being able to select across subitems of a rich text is annoying,
   and does need fixing.
+
+- CHANGE CURSOR COLOR/STYLE for multiselect. aw yeah.
 
 
 should quotes be:

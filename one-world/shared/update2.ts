@@ -26,17 +26,17 @@ export const update = (
             });
             return state;
         case 'doc': {
-            const doc = updateDoc(state.documents[action.id], action.action);
+            const doc = updateDoc(state._documents[action.id], action.action);
             if (!doc) {
                 state = { ...state };
-                state.documents = { ...state.documents };
-                delete state.documents[action.id];
+                state._documents = { ...state._documents };
+                delete state._documents[action.id];
                 return state;
             }
             return {
                 ...state,
-                documents: {
-                    ...state.documents,
+                _documents: {
+                    ...state._documents,
                     [action.id]: doc,
                 },
             };

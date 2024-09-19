@@ -175,7 +175,7 @@ export const newStore = (
                 } else {
                     docSessionCache[id] = {
                         doc,
-                        history: [],
+                        jumpHistory: [],
                         activeStage: null,
                         selections: [],
                         clipboard: [],

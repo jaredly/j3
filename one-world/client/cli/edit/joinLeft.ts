@@ -16,6 +16,7 @@ import {
     parentPath,
     pathWithChildren,
 } from '../../../shared/nodes';
+import { getDoc } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
@@ -123,7 +124,7 @@ export const joinLeft = (
             if (path.root.ids.length > 1) {
                 const loc = path.root.ids[path.root.ids.length - 1];
                 const ploc = path.root.ids[path.root.ids.length - 2];
-                const doc = state.documents[path.root.doc];
+                const doc = getDoc(state, path.root.doc);
                 const pnode = doc.nodes[ploc];
                 const idx = pnode.children.indexOf(loc);
                 if (idx === -1) return false;

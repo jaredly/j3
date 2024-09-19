@@ -1,6 +1,6 @@
 import { lastChild } from '../../shared/IR/nav';
 import { Path, parentPath, childLocs } from '../../shared/nodes';
-import { PersistedState } from '../../shared/state2';
+import { getDoc, PersistedState } from '../../shared/state2';
 
 export type MultiSelect =
     | { type: 'top'; parent: Path; children: number[] }
@@ -12,7 +12,7 @@ export const multiSelectContains = (
     state: PersistedState,
 ) => {
     if (multi.type === 'doc') {
-        const doc = state.documents[multi.doc];
+        const doc = getDoc(state, multi.doc);
         const tops = multi.children.map((loc) => doc.nodes[loc].toplevel);
         return tops.includes(path.root.toplevel);
     } else {
@@ -44,7 +44,7 @@ export const resolveMultiSelect = (
     if (start.root.toplevel !== end.root.toplevel) {
         const sids = start.root.ids;
         const eids = end.root.ids;
-        const doc = state.documents[start.root.doc];
+        const doc = getDoc(state, start.root.doc);
         for (let i = 0; i < sids.length && i < eids.length; i++) {
             if (sids[i] !== eids[i]) {
                 if (i === 0) return; // no shared root??

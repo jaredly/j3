@@ -22,6 +22,7 @@ import {
 import {
     DocSelection,
     DocSession,
+    getDoc,
     PersistedState,
 } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
@@ -629,7 +630,7 @@ export const handleMutliSelect = (
 
     if (key === 'CTRL_C') {
         if (multi.type === 'doc') {
-            const doc = state.documents[multi.doc];
+            const doc = getDoc(state, multi.doc);
             ds.clipboard = multi.children.map((nid) => {
                 const top = state.toplevels[doc.nodes[nid].toplevel];
                 return fromMap(() => false, top.root, top.nodes);
@@ -714,7 +715,7 @@ function handleNamespaceUpdate(
         return true;
     }
     const nid = sel.root.ids[sel.root.ids.length - 1];
-    const node = store.getState().documents[docId].nodes[nid];
+    const node = getDoc(store.getState(), docId).nodes[nid];
     const text = sel.text ?? splitGraphemes(node.namespace ?? '');
 
     if (key === 'RIGHT') {

@@ -10,6 +10,7 @@ import {
     toChunk,
 } from '../../shared/IR/block-to-attributed-text';
 import { getAutoComplete, menuToBlocks } from './getAutoComplete';
+import { getDoc } from '../../shared/state2';
 
 export const moveTo = (write: Write, x: number, y: number, text?: string) => {
     write(`\x1B[${y},${x}M`);
@@ -63,7 +64,7 @@ export function drawToTerminal(
     term.moveTo(
         0,
         term.height,
-        toABlock(store.getState().documents[docId].title),
+        toABlock(getDoc(store.getState(), docId).title),
     );
     const ds = store.getDocSession(docId);
     const dragState = ds.dragState;

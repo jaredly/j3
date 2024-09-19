@@ -139,12 +139,21 @@ const write = (text: ABlock) => {
             if (chunk.style?.background) {
                 w = ctx.measureText(chunk.text);
                 ctx.fillStyle = rgb(chunk.style.background);
-                ctx.fillRect(
-                    pos.x * TEXTW,
-                    (pos.y - 1 / 1.3) * TEXTH,
-                    Math.max(w.width, TEXTW) + 1,
-                    TEXTH,
-                );
+                if (chunk.text === '') {
+                    // ctx.fillRect(
+                    //     pos.x * TEXTW - TEXTW / 2,
+                    //     (pos.y - 1 / 1.3) * TEXTH,
+                    //     TEXTW,
+                    //     TEXTH,
+                    // );
+                } else {
+                    ctx.fillRect(
+                        pos.x * TEXTW,
+                        (pos.y - 1 / 1.3) * TEXTH,
+                        Math.max(w.width, TEXTW) + 1,
+                        TEXTH,
+                    );
+                }
             }
             if (chunk.style?.fontStyle) {
                 ctx.font = `${chunk.style.fontStyle} ${fontSize}px monospace`;
@@ -181,7 +190,7 @@ run(
                 } else {
                     ctx.fillStyle = 'white';
                     ctx.fillRect(
-                        x * TEXTW,
+                        x * TEXTW - TEXTW / 20,
                         (y - 1 / 1.5) * TEXTH,
                         TEXTW / 10,
                         TEXTH / 1.2,

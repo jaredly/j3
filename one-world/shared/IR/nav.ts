@@ -10,7 +10,7 @@ import {
     RecNode,
     serializePath,
 } from '../nodes';
-import { PersistedState } from '../state2';
+import { getDoc, PersistedState } from '../state2';
 import { IR, IRCursor, IRSelection, nodeToIR } from './intermediate';
 import { IRForLoc, LayoutCtx } from './layout';
 
@@ -208,7 +208,7 @@ export const goFromDocNode = (
     left: boolean,
     cache: IRCache2<unknown>,
 ) => {
-    const doc = state.documents[path.root.doc];
+    const doc = getDoc(state, path.root.doc);
     if (!left) {
         const last = path.root.ids[path.root.ids.length - 1];
         const node = doc.nodes[last];

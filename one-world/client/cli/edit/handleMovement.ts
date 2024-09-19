@@ -18,7 +18,7 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
-import { PersistedState } from '../../../shared/state2';
+import { getDoc, PersistedState } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
 import { Store } from '../../StoreContext2';
 import { findMenuItem, getAutoComplete } from '../getAutoComplete';
@@ -189,7 +189,7 @@ const adjacent = (
     }
 
     if (path.root.ids.length > 1) {
-        const doc = state.documents[path.root.doc];
+        const doc = getDoc(state, path.root.doc);
         if (side === 'right') {
             const last = path.root.ids[path.root.ids.length - 1];
             const node = doc.nodes[last];

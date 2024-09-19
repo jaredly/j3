@@ -1,12 +1,5 @@
 import { Node } from './nodes';
-import {
-    Doc,
-    DocSession,
-    DocumentNode,
-    PersistedState,
-    Reference,
-    Stage,
-} from './state2';
+import { Doc, DocSession, DocumentNode, PersistedState } from './state2';
 import { Toplevel } from './toplevels';
 
 export type Action =
@@ -22,11 +15,11 @@ export type Action =
           verticalLodeStone?: number;
           autocomplete?: boolean;
       }
-    | { type: 'drag'; doc: string; drag: DocSession['dragState'] }
-    // | { type: 'namespaces'; action: NamespaceAction }
-    | { type: 'stage'; id: string; action: StageAction };
+    | { type: 'drag'; doc: string; drag: DocSession['dragState'] };
+// | { type: 'namespaces'; action: NamespaceAction }
+// | { type: 'stage'; id: string; action: StageAction };
 
-export type StageAction = { type: 'reset'; stage: Stage } | { type: 'delete' };
+// export type StageAction = { type: 'reset'; stage: Stage } | { type: 'delete' };
 export type ModuleAction =
     | {
           type: 'add';

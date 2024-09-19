@@ -5,50 +5,14 @@ import { MultiSelect } from '../client/cli/resolveMultiSelect';
 import { DropTarget } from './IR/block-to-text';
 import { IRSelection } from './IR/intermediate';
 import { Cursor, Path, PathRoot, RecNodeT } from './nodes';
-import { Toplevels } from './toplevels';
+import { Toplevel, Toplevels } from './toplevels';
 
 export type TS = { created: number; updated: number };
-
-export type Stage = {
-    id: string;
-    title?: string;
-    toplevels: Toplevels;
-    ts: TS;
-};
 
 export type Reference = {
     toplevel: string;
     loc: number;
 };
-
-// export type NodeSelection_ =
-//     | {
-//           type: 'id';
-//           path: Path;
-//           pathKey: string;
-//           cursor: number;
-//           start?: number;
-//           text?: string[];
-//       }
-//     | {
-//           type: 'without';
-//           path: Path;
-//           pathKey: string;
-//           child?: {
-//               path: number[];
-//               final: NodeSelection;
-//           };
-//           location: 'start' | 'end' | 'inside' | 'all';
-//       }
-//     | {
-//           type: 'multi';
-//           start?: {
-//               path: Path;
-//               pathKey: string;
-//               location: 'start' | 'end' | 'inside' | number;
-//           };
-//           cursor: { path: Path; pathKey: string };
-//       };
 
 export type DocSelection =
     | IRSelection
@@ -62,7 +26,7 @@ export type DocSelection =
 
 export type DocSession = {
     doc: string;
-    history: any[];
+    // history: any[];
     activeStage: null | string;
     selections: DocSelection[];
     clipboard: RecNodeT<boolean>[];
@@ -71,6 +35,7 @@ export type DocSession = {
         dest?: DropTarget;
     };
     // TODO: 'jump' history. for backtracking selections
+    jumpHistory: Path[];
 
     // The 'column' position that the cursor is pulled back to
     // for making up/down navigation better.
@@ -89,12 +54,30 @@ export type DocSession = {
     // }
 };
 
+export const getDoc = (state: PersistedState, id: string): Doc => {
+    const stage = state.stages[id];
+    const doc = state._documents[id];
+    if (!stage) return doc;
+    return { ...doc, nodes: { ...doc.nodes, ...stage.nodes } };
+};
+
+export const getTop = (
+    state: PersistedState,
+    doc: string,
+    id: string,
+): Toplevel => {
+    const stage = state.stages[doc];
+    const top = state.toplevels[id];
+    if (!stage || !stage.toplevels[id]) return top;
+    return stage.toplevels[id];
+};
+
 export type PersistedState = {
     toplevels: Toplevels;
-    documents: Record<string, Doc>;
+    _documents: Record<string, Doc>;
     // moduleid -> (name -> moduleid)
     modules: Record<string, Record<string, string>>;
-    stages: Record<string, Stage>;
+    stages: Record<string, DocStage>;
 };
 
 export type EvaluatorPath = {
@@ -112,6 +95,31 @@ export type Doc = {
     evaluator: EvaluatorPath;
     nextLoc: number;
     ts: TS;
+};
+
+// export type Stage = {
+//     id: string;
+//     title?: string;
+//     toplevels: Toplevels;
+//     ts: TS;
+// };
+
+type HistoryItem = {
+    session: string;
+    toplevels?: Toplevels;
+    prevToplevels?: Toplevels;
+    nodes?: Record<number, DocumentNode>;
+    prevNodes?: Record<number, DocumentNode>;
+    selections: DocSelection[];
+    prevSelections: DocSelection[];
+};
+
+export type DocStage = {
+    docId: string;
+    toplevels: Toplevels;
+    nodes: Record<number, DocumentNode>;
+    evaluator?: EvaluatorPath;
+    history: HistoryItem[];
 };
 
 export type DocumentNode = {

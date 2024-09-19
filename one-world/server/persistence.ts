@@ -1,4 +1,4 @@
-import { Doc, PersistedState, Stage } from '../shared/state2';
+import { Doc, DocStage, PersistedState } from '../shared/state2';
 import {
     existsSync,
     mkdirSync,
@@ -42,24 +42,24 @@ export const saveChanges = (
         });
     }
 
-    if (next.documents !== prev.documents) {
-        Object.keys(prev.documents).forEach((k) => {
-            if (!next.documents[k]) {
+    if (next._documents !== prev._documents) {
+        Object.keys(prev._documents).forEach((k) => {
+            if (!next._documents[k]) {
                 console.log('Deleting document', k);
                 unlinkSync(join(base, 'documents', k));
                 changes.push({ type: 'document', id: k, doc: null });
             }
         });
-        Object.keys(next.documents).forEach((k) => {
-            if (next.documents[k] !== prev.documents[k]) {
+        Object.keys(next._documents).forEach((k) => {
+            if (next._documents[k] !== prev._documents[k]) {
                 writeFileSync(
                     join(base, 'documents', k),
-                    JSON.stringify(next.documents[k]),
+                    JSON.stringify(next._documents[k]),
                 );
                 changes.push({
                     type: 'document',
                     id: k,
-                    doc: next.documents[k],
+                    doc: next._documents[k],
                 });
             }
         });
@@ -68,9 +68,9 @@ export const saveChanges = (
     if (next.modules !== prev.modules) {
         throw new Error('not save yet');
     }
-    if (next.stages !== prev.stages) {
-        throw new Error('not save yet');
-    }
+    // if (next.stages !== prev.stages) {
+    //     throw new Error('not save yet');
+    // }
 
     return changes;
 };
@@ -82,7 +82,7 @@ export const saveChanges = (
 export const loadState = (base: string): PersistedState => {
     const state: PersistedState = {
         toplevels: {},
-        documents: {},
+        _documents: {},
         modules: {},
         stages: {},
     };
@@ -99,14 +99,14 @@ export const loadState = (base: string): PersistedState => {
     const doc = join(base, 'documents');
     mkdirSync(doc, { recursive: true });
     readdirSync(doc).forEach((id) => {
-        state.documents[id] = JSON.parse(readFileSync(join(doc, id), 'utf8'));
+        state._documents[id] = JSON.parse(readFileSync(join(doc, id), 'utf8'));
     });
 
     const stages = join(base, 'stages');
     mkdirSync(stages, { recursive: true });
     readdirSync(stages).forEach((id) => {
         const dr = join(base, 'stages', id);
-        const stage: Stage = {
+        const stage: DocStage = {
             ...JSON.parse(readFileSync(join(dr, 'info.json'), 'utf8')),
             toplevels: {},
         };

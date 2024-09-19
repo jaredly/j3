@@ -30,6 +30,7 @@ import {
     DocSelection,
     DocSession,
     DocumentNode,
+    getDoc,
     PersistedState,
 } from '../../shared/state2';
 import { Toplevel } from '../../shared/toplevels';
@@ -114,7 +115,7 @@ export const render = (
 ): RState => {
     const ds = store.getDocSession(docId, store.session);
     const state = store.getState();
-    const doc = state.documents[docId];
+    const doc = getDoc(state, docId);
 
     // The IRs
     const cache = calculateIRs(doc, state, ds, parseAndEval);
@@ -192,7 +193,7 @@ const nodesForMulti = (
     state: PersistedState,
 ): Path[] => {
     if (resolved.type === 'doc') {
-        const doc = state.documents[resolved.doc];
+        const doc = getDoc(state, resolved.doc);
         return resolved.children.flatMap((id) =>
             docNodePaths(id, resolved.parentIds, doc, state),
         );
@@ -284,7 +285,7 @@ export const parseAndCache = (
     ev: AnyEvaluator,
 ) => {
     const state = store.getState();
-    const doc = state.documents[docId];
+    const doc = getDoc(state, docId);
     const ds = store.getDocSession(docId);
     const { ctx, caches } = init();
     const parseCache: ParseAndEval<unknown> = {};

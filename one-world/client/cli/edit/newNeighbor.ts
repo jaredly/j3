@@ -9,7 +9,7 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
-import { Doc, PersistedState } from '../../../shared/state2';
+import { Doc, getDoc, PersistedState } from '../../../shared/state2';
 import { Store } from '../../StoreContext2';
 import { inflateRecNode, isCollection } from '../../TextEdit/actions';
 import { findTableLoc, topUpdate } from './handleUpdate';
@@ -38,7 +38,7 @@ export const newNeighborActions = (
     const top = state.toplevels[path.root.toplevel];
     const loc = lastChild(path);
     if (path.children.length < 2) {
-        const doc = state.documents[path.root.doc];
+        const doc = getDoc(state, path.root.doc);
         return newDocNodeNeighbor(path, doc, siblings, after);
     }
     const parent = parentPath(path);

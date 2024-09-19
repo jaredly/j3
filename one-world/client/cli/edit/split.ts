@@ -14,6 +14,7 @@ import {
     parentPath,
     pathWithChildren,
 } from '../../../shared/nodes';
+import { getDoc } from '../../../shared/state2';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { CLoc, findTableLoc, topUpdate } from './handleUpdate';
@@ -34,17 +35,13 @@ export const split = (
     const parent = parentPath(path);
     if (!parent.children.length) {
         // toplevel folks
-        const actions = newDocNodeNeighbor(
-            path,
-            state.documents[path.root.doc],
-            [
-                {
-                    type: 'id',
-                    text: norm.text.slice(norm.end).join(''),
-                    loc: true,
-                },
-            ],
-        );
+        const actions = newDocNodeNeighbor(path, getDoc(state, path.root.doc), [
+            {
+                type: 'id',
+                text: norm.text.slice(norm.end).join(''),
+                loc: true,
+            },
+        ]);
         if (!actions) return false;
         store.update(
             topUpdate(top.id, {
