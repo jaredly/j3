@@ -102,6 +102,8 @@ export type Doc = {
 // };
 
 type HistoryItem = {
+    id: string;
+    reverts?: string;
     session: string;
     toplevels?: Toplevels;
     prevToplevels?: Toplevels;
@@ -111,12 +113,16 @@ type HistoryItem = {
     prevSelections: DocSelection[];
 };
 
-export type DocStage = {
-    docId: string;
+export type DocStage = Doc & {
     toplevels: Toplevels;
-    nodes: Record<number, DocumentNode>;
-    evaluator?: EvaluatorPath;
     history: HistoryItem[];
+
+    // docId: string;
+    // nodes: Record<number, DocumentNode>;
+    // nextLoc: number;
+    // nsAliases: Record<string, string>;
+    // evaluator: EvaluatorPath;
+    // module: string;
 };
 
 export type DocumentNode = {

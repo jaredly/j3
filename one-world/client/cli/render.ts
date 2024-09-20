@@ -281,9 +281,6 @@ export const parseAndCache = (
     store: Store,
     docId: string,
     oldCache: ParseAndEval<unknown>,
-    // state: PersistedState,
-    // doc: Doc,
-    // ds: DocSession,
     ev: AnyEvaluator,
 ) => {
     const state = store.getState();

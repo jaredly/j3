@@ -1,6 +1,6 @@
 import { ensure } from '../client/newStore2';
 import { Action, DocAction, ToplevelAction } from './action2';
-import { Doc, PersistedState } from './state2';
+import { Doc, DocStage, PersistedState } from './state2';
 import { Toplevel } from './toplevels';
 
 export type Updated = {
@@ -28,41 +28,72 @@ export const update = (
             });
             return state;
         case 'doc': {
-            // STOP this needs to update the stage
-            const doc = updateDoc(state._documents[action.id], action.action);
-            if (!doc) {
-                state = { ...state };
-                state._documents = { ...state._documents };
-                delete state._documents[action.id];
-                return state;
+            if (action.action.type === 'reset') {
+                return {
+                    ...state,
+                    _documents: {
+                        ...state._documents,
+                        [action.id]: action.action.doc,
+                    },
+                };
             }
+            if (action.action.type === 'delete') {
+                const _documents = { ...state._documents };
+                delete _documents[action.id];
+                return { ...state, _documents };
+            }
+
+            let stage: DocStage = state.stages[action.id];
+            if (!stage) {
+                let doc: Doc = state._documents[action.id];
+                if (!doc) {
+                    throw new Error('no doc yet idk gotta initialize');
+                }
+                stage = {
+                    ...doc,
+                    history: [],
+                    toplevels: {},
+                };
+            }
+            const nodes = { ...stage.nodes };
+            Object.entries(action.action.update.nodes ?? {}).forEach(
+                ([k, v]) => {
+                    if (v === undefined) {
+                        // ignore this, it'll probably get cleaned up?
+                        delete nodes[+k];
+                    } else {
+                        nodes[+k] = v;
+                    }
+                },
+            );
+            stage = { ...stage, ...action.action.update, nodes };
+
             return {
                 ...state,
-                _documents: {
-                    ...state._documents,
-                    [action.id]: doc,
-                },
+                stages: { ...state.stages, [action.id]: stage },
             };
         }
         case 'toplevel': {
-            // STOP this needs to update the stage
+            let stage: DocStage = state.stages[action.doc] ?? {
+                docId: action.doc,
+                history: [],
+                nodes: {},
+                toplevels: {},
+            };
             const tl = updateTL(
-                state._toplevels[action.id],
+                stage.toplevels[action.id] ?? state._toplevels[action.id],
                 action.action,
                 ensure(updated.toplevels, action.id, () => ({})),
             );
+            stage = { ...stage, toplevels: { ...stage.toplevels } };
             if (!tl) {
-                state = { ...state };
-                state._toplevels = { ...state._toplevels };
-                delete state._toplevels[action.id];
-                return state;
+                delete stage.toplevels[action.id];
+            } else {
+                stage.toplevels[action.id] = tl;
             }
             return {
                 ...state,
-                _toplevels: {
-                    ...state._toplevels,
-                    [action.id]: tl,
-                },
+                stages: { ...state.stages, [action.doc]: stage },
             };
         }
     }

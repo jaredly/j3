@@ -76,18 +76,17 @@ export const saveChanges = (
         });
         Object.keys(next.stages).forEach((k) => {
             if (next.stages[k] !== prev.stages[k]) {
+                const tdir = join(base, 'stages', k, 'toplevels');
+                mkdirSync(tdir, { recursive: true });
                 writeFileSync(
-                    join(base, 'stages', k),
+                    join(base, 'stages', k, 'info.json'),
                     JSON.stringify({ ...next.stages[k], toplevels: {} }),
                 );
                 Object.keys(next.stages[k].toplevels).forEach((id) => {
-                    const nwt = next.stages[k].toplevels;
-                    const owt = prev.stages[k]?.toplevels;
+                    const nwt = next.stages[k].toplevels[id];
+                    const owt = prev.stages[k]?.toplevels[id];
                     if (nwt !== owt) {
-                        writeFileSync(
-                            join(base, 'stages', k, 'toplevels', id),
-                            JSON.stringify(nwt),
-                        );
+                        writeFileSync(join(tdir, id), JSON.stringify(nwt));
                     }
                 });
                 changes.push({ type: 'stage', id: k, stage: next.stages[k] });
@@ -96,10 +95,6 @@ export const saveChanges = (
     }
 
     if (next.modules !== prev.modules) {
-        throw new Error('not save yet');
-    }
-
-    if (next.stages !== prev.stages) {
         throw new Error('not save yet');
     }
 

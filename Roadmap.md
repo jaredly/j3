@@ -8,9 +8,13 @@ this means... I'm going to start using stages? irhgt?
 - [x] getDoc
 - [x] getTop
 - [x] top updates include doc id
-- [ ] load & save the stage
-- [ ] top and doc updates update the stage isntead
+- [x] load & save the stage
+  - [x] appears to be working
+- [x] top and doc updates update the stage isntead
+- [ ] when making a change to a stage, make a historyitem
+- [ ] undo/redo yasss
 - [ ] make a 'commit' action
+- [ ] have ... a way to pull in toplevels to a document, so I can test ... editing a toplevel from two diff documents.
 
 # Webliness
 
