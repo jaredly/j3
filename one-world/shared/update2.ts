@@ -53,14 +53,14 @@ export const update = (
                     ...doc,
                     history: [],
                     toplevels: {},
+                    nodes: {},
                 };
             }
             const nodes = { ...stage.nodes };
             Object.entries(action.action.update.nodes ?? {}).forEach(
                 ([k, v]) => {
                     if (v === undefined) {
-                        // ignore this, it'll probably get cleaned up?
-                        delete nodes[+k];
+                        nodes[+k] = null;
                     } else {
                         nodes[+k] = v;
                     }

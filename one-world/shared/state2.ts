@@ -45,20 +45,19 @@ export type DocSession = {
         selection: number[];
         dismissed?: string;
     };
-
-    // idTexts: Record<number, string[]>;
-    // selection cache???
-    // selections: {
-    //     sels: { start?: Cursor; cursor: Cursor }[];
-    //     cache: Record<number, {idx: number}>
-    // }
 };
 
 export const getDoc = (state: PersistedState, id: string): Doc => {
     const stage = state.stages[id];
     const doc = state._documents[id];
     if (!stage) return doc;
-    return { ...doc, nodes: { ...doc.nodes, ...stage.nodes } };
+    const nodes = { ...doc.nodes };
+    Object.keys(stage.nodes).forEach((k) => {
+        if (stage.nodes[+k]) {
+            nodes[+k] = stage.nodes[+k]!;
+        }
+    });
+    return { ...doc, nodes };
 };
 
 export const getTop = (
@@ -94,13 +93,6 @@ export type Doc = {
     ts: TS;
 };
 
-// export type Stage = {
-//     id: string;
-//     title?: string;
-//     toplevels: Toplevels;
-//     ts: TS;
-// };
-
 type HistoryItem = {
     id: string;
     reverts?: string;
@@ -113,16 +105,10 @@ type HistoryItem = {
     prevSelections: DocSelection[];
 };
 
-export type DocStage = Doc & {
+export type DocStage = Omit<Doc, 'nodes'> & {
     toplevels: Toplevels;
     history: HistoryItem[];
-
-    // docId: string;
-    // nodes: Record<number, DocumentNode>;
-    // nextLoc: number;
-    // nsAliases: Record<string, string>;
-    // evaluator: EvaluatorPath;
-    // module: string;
+    nodes: Record<number, DocumentNode | null>;
 };
 
 export type DocumentNode = {
