@@ -11,6 +11,8 @@ import {
 } from '../../shared/IR/block-to-attributed-text';
 import { getAutoComplete, menuToBlocks } from './getAutoComplete';
 import { getDoc } from '../../shared/state2';
+import { Sess } from './Sess';
+import { IncomingMessage, OutgoingMessage } from './worker';
 
 export const moveTo = (write: Write, x: number, y: number, text?: string) => {
     write(`\x1B[${y},${x}M`);
@@ -29,6 +31,13 @@ export type Renderer = {
     onKey(fn: (key: string) => void): () => void;
     onResize(fn: () => void): () => void;
     onMouse(fn: (kind: MouseKind, evt: MouseEvt) => void): () => void;
+    spawnWorker(onMessage: (data: OutgoingMessage) => void): {
+        terminate(): void;
+        sendMessage(msg: IncomingMessage): void;
+    };
+    init(sess: Sess): Promise<Store>;
+    readSess: () => Sess;
+    writeSess: (s: Sess) => void;
 };
 
 export type MouseKind =

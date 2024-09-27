@@ -2,6 +2,7 @@ import { run } from '../main';
 import { Sess } from '../Sess';
 import { MouseEvt, MouseKind } from '../drawToTerminal';
 import { ABlock } from '../../../shared/IR/block-to-attributed-text';
+import { init } from '../init';
 
 const node = document.createElement('canvas');
 document.body.append(node);
@@ -220,14 +221,31 @@ run(
                     if (idx !== -1) mouseListners.splice(idx, 1);
                 };
             },
+            readSess,
+            writeSess,
+            spawnWorker(onMessage) {
+                const worker = self.location
+                    ? new Worker('./worker.js')
+                    : new Worker('./one-world/client/cli/worker.ts');
+                worker.onmessage = (evt) => {
+                    onMessage(JSON.parse(evt.data));
+                };
+                return {
+                    sendMessage(msg) {
+                        worker.postMessage(JSON.stringify(msg));
+                    },
+                    terminate() {
+                        worker.terminate();
+                    },
+                };
+            },
+            init: (sess) => init(sess, writeSess),
         },
         {
             height: { get: () => (node.height / TEXTH) | 0 },
             width: { get: () => (node.width / TEXTW) | 0 },
         },
     ),
-    readSess,
-    writeSess,
 ).then(
     (ok) => {
         console.log('good');

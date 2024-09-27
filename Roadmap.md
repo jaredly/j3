@@ -1,4 +1,13 @@
 
+# hmmm
+dunno if we have undo/redo totally locked doown just yet
+but my fgolks its time for testssss
+yes indeedydoo
+
+ok but it's been long enoguh I don't remember what I had to replace
+o rite, websocket andddd worker. yes pls.
+
+
 # UNDO/reudo
 
 this means... I'm going to start using stages? irhgt?

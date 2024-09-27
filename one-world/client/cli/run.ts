@@ -4,6 +4,7 @@ import { run } from './main';
 import { Renderer } from './drawToTerminal';
 import { readSess, writeSess } from './Sess';
 import { aBlockToString } from '../../shared/IR/block-to-attributed-text';
+import { init } from './init';
 
 const REDIRECT_OUT = false;
 if (REDIRECT_OUT) {
@@ -63,6 +64,26 @@ const tkTerm = (term: termkit.Terminal): Renderer =>
             },
             height: 0,
             width: 0,
+            readSess,
+            writeSess,
+            spawnWorker(onMessage) {
+                // const msg: OutgoingMessage = JSON.parse(evt.data);
+                const worker = self.location
+                    ? new Worker('./worker.js')
+                    : new Worker('./one-world/client/cli/worker.ts');
+                worker.onmessage = (evt) => {
+                    onMessage(JSON.parse(evt.data));
+                };
+                return {
+                    sendMessage(msg) {
+                        worker.postMessage(JSON.stringify(msg));
+                    },
+                    terminate() {
+                        worker.terminate();
+                    },
+                };
+            },
+            init: (sess) => init(sess, writeSess),
         },
         {
             height: { get: () => term.height },
@@ -76,7 +97,7 @@ getTerm().then((term) => {
     });
     term.clear();
     term.grabInput({ mouse: 'drag' });
-    run(tkTerm(term), readSess, writeSess).then(
+    run(tkTerm(term)).then(
         () => {
             // console.log('finished turns out');
             // term.grabInput(false);

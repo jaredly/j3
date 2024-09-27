@@ -5,6 +5,7 @@ import { Sess } from '../Sess';
 import ansis from 'ansis';
 import { MouseEvt, MouseKind } from '../drawToTerminal';
 import { aBlockToString } from '../../../shared/IR/block-to-attributed-text';
+import { init } from '../init';
 
 const node = document.createElement('div');
 document.body.append(node);
@@ -152,22 +153,31 @@ run(
                     if (idx !== -1) mouseListners.splice(idx, 1);
                 };
             },
-            // on(evt: 'key' | 'resize' | 'mouse', fn: Function) {
-            //     switch (evt) {
-            //         case 'key':
-            //             term.onKey(evt)
-            //     }
-            // },
-            // off(evt: 'key' | 'resize' | 'mouse', fn: Function) {
-            // }
+            readSess,
+            writeSess,
+            spawnWorker(onMessage) {
+                const worker = self.location
+                    ? new Worker('./worker.js')
+                    : new Worker('./one-world/client/cli/worker.ts');
+                worker.onmessage = (evt) => {
+                    onMessage(JSON.parse(evt.data));
+                };
+                return {
+                    sendMessage(msg) {
+                        worker.postMessage(JSON.stringify(msg));
+                    },
+                    terminate() {
+                        worker.terminate();
+                    },
+                };
+            },
+            init: (sess) => init(sess, writeSess),
         },
         {
             height: { get: () => term.rows },
             width: { get: () => term.cols },
         },
     ),
-    readSess,
-    writeSess,
 ).then(
     (ok) => {
         console.log('good');

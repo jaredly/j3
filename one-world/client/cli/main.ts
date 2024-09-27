@@ -30,12 +30,7 @@ import { IncomingMessage, OutgoingMessage } from './worker';
 // refactor this out, so that we can use xtermjs as well
 // because that would be super cool
 
-const handleDocument = async (
-    sess: Sess,
-    store: Store,
-    term: Renderer,
-    writeSess: (s: Sess) => void,
-) => {
+const handleDocument = async (sess: Sess, store: Store, term: Renderer) => {
     const picked = await pickDocument(store, term);
     if (picked === null) {
         const id = genId();
@@ -44,35 +39,25 @@ const handleDocument = async (
     } else {
         sess.doc = picked;
     }
-    writeSess(sess);
+    term.writeSess(sess);
     return sess.doc;
 };
 
-export const run = async (
-    term: Renderer,
-    readSess: () => Sess,
-    writeSess: (s: Sess) => void,
-) => {
+export const run = async (term: Renderer) => {
     console.log('initializing store...');
-    const sess = readSess();
-    const store = await init(sess, writeSess);
+    const sess = term.readSess();
+    const store = await init(sess, term.writeSess);
 
     if (!sess.doc) {
-        await handleDocument(sess, store, term, writeSess);
+        await handleDocument(sess, store, term);
     }
 
     while (true) {
-        const finish = await runDocument(
-            term,
-            store,
-            sess,
-            sess.doc!,
-            writeSess,
-        );
+        const finish = await runDocument(term, store, sess, sess.doc!);
         if (finish) {
             break;
         } else {
-            await handleDocument(sess, store, term, writeSess);
+            await handleDocument(sess, store, term);
         }
     }
 
@@ -114,17 +99,11 @@ export function runDocument(
     store: Store,
     sess: Sess,
     docId: string,
-    writeSess: (s: Sess) => void,
 ) {
     let lastKey = null as null | string;
     const ev = SimplestEvaluator;
 
-    let worker = self.location
-        ? new Worker('./worker.js')
-        : new Worker('./one-world/client/cli/worker.ts');
-
-    const handleMessage = (evt: MessageEvent) => {
-        const msg: OutgoingMessage = JSON.parse(evt.data);
+    const handleMessage = (msg: OutgoingMessage) => {
         tracker.receivedMessage(msg.id);
         Object.keys(msg.output).forEach((id) => {
             rstate.parseAndEval[id].output = msg.output[id];
@@ -138,31 +117,35 @@ export function runDocument(
         drawToTerminal(rstate, term, store, docId, lastKey, ev);
     };
 
+    let worker = term.spawnWorker(handleMessage);
+    // self.location
+    //     ? new Worker('./worker.js')
+    //     : new Worker('./one-world/client/cli/worker.ts');
+
     const restartWorker = () => {
         worker.terminate();
         // console.log('breaking workier');
-        worker = self.location
-            ? new Worker('./worker.js')
-            : new Worker('./one-world/client/cli/worker.ts');
-        worker.onmessage = handleMessage;
+        worker = term.spawnWorker(handleMessage);
+        // worker = self.location
+        //     ? new Worker('./worker.js')
+        //     : new Worker('./one-world/client/cli/worker.ts');
+        // worker.onmessage = handleMessage;
         // Send latest infos
         const { caches, ctx } = parseAndCache(store, docId, {}, ev);
         sendToWorker(caches, ctx);
     };
     const tracker = timeoutTracker(restartWorker);
 
-    worker.onmessage = handleMessage;
+    // worker.onmessage = handleMessage;
     const sendToWorker = (caches: Caches<unknown>, ctx: Context) => {
-        worker.postMessage(
-            JSON.stringify({
-                type: 'evaluates',
-                id: tracker.nextMsgId(),
-                ctx,
-                evid: 'simplest',
-                caches,
-                tops: Object.keys(caches.parse),
-            } satisfies IncomingMessage),
-        );
+        worker.sendMessage({
+            type: 'evaluates',
+            id: tracker.nextMsgId(),
+            ctx,
+            evid: 'simplest',
+            caches,
+            tops: Object.keys(caches.parse),
+        });
     };
 
     let resolve = (quit: boolean) => {};
@@ -182,7 +165,7 @@ export function runDocument(
     const { parseCache, caches, ctx } = parseAndCache(store, docId, {}, ev);
     let rstate = render(term.width - 10, store, docId, parseCache);
     drawToTerminal(rstate, term, store, docId, lastKey, ev);
-    clean(trackSelection(store, sess, docId, writeSess));
+    clean(trackSelection(store, sess, docId, term.writeSess));
     sendToWorker(caches, ctx);
 
     let prevState = store.getState();
@@ -267,7 +250,7 @@ export function runDocument(
     const onKey = (key: string) => {
         lastKey = key;
         if (key === 'CTRL_W') {
-            writeSess({ ssid: sess.ssid });
+            term.writeSess({ ssid: sess.ssid });
             return true;
         }
 

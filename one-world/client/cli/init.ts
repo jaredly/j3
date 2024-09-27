@@ -2,10 +2,12 @@ import { newStore } from '../newStore2';
 import { Store } from '../StoreContext2';
 import { Sess } from './Sess';
 
-export const init = async (sess: Sess, writeSess: (s: Sess) => void) => {
+export const init = async (
+    sess: Sess,
+    writeSess: (s: Sess) => void,
+): Promise<Store> => {
     const res = await fetch('http://localhost:8227');
     const state = await res.json();
-    // const ssid = 'cli';
     const ws = new WebSocket('ws://localhost:8227/ws?ssid=' + sess.ssid);
     const store = await new Promise<Store>((res, rej) => {
         ws.onerror = (err) => rej(err);
