@@ -18,18 +18,30 @@ export const pickDocument = (store: Store, term: Renderer) => {
                 term.moveTo(0, i + 1);
                 if (i === ids.length) {
                     if (sel === i) {
-                        term.write(toABlock(ansis.bgGreen('New Document')));
+                        term.write(
+                            toABlock('New Document', {
+                                background: { r: 0, g: 255, b: 0 },
+                            }),
+                        );
                     } else {
-                        term.write(toABlock(ansis.blue('New Document')));
+                        term.write(
+                            toABlock('New Document', {
+                                color: { r: 0, g: 0, b: 255 },
+                            }),
+                        );
                     }
                 } else if (sel === i) {
                     if (renaming) {
-                        term.write(toABlock(ansis.bgBlue(renaming.text)));
+                        term.write(
+                            toABlock(renaming.text, {
+                                background: { r: 0, g: 0, b: 255 },
+                            }),
+                        );
                     } else {
                         term.write(
-                            toABlock(
-                                ansis.bgGreen(state._documents[ids[i]].title),
-                            ),
+                            toABlock(state._documents[ids[i]].title, {
+                                background: { r: 0, g: 255, b: 0 },
+                            }),
                         );
                     }
                 } else {

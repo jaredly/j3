@@ -46,7 +46,7 @@ const handleDocument = async (sess: Sess, store: Store, term: Renderer) => {
 export const run = async (term: Renderer) => {
     console.log('initializing store...');
     const sess = term.readSess();
-    const store = await init(sess, term.writeSess);
+    const store = await term.init(sess);
 
     if (!sess.doc) {
         await handleDocument(sess, store, term);

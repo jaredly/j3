@@ -1,5 +1,5 @@
 import { AnyEvaluator } from '../evaluators/boot-ex/types';
-import { ServerMessage } from '../server/run';
+import { ClientMessage, ServerMessage } from '../server/run';
 import { Action } from '../shared/action2';
 import {
     IRCursor,
@@ -17,6 +17,7 @@ import {
 import { update, Updated } from '../shared/update2';
 import { getAutoComplete } from './cli/getAutoComplete';
 import { RState } from './cli/render';
+import { IncomingMessage, OutgoingMessage } from './cli/worker';
 import { listen } from './listen';
 import { getTopForPath } from './selectNode';
 import { Store } from './StoreContext2';
@@ -157,8 +158,12 @@ export function recalcDropdown(
 
 export const newStore = (
     state: PersistedState,
-    ws: WebSocket,
+    ws: {
+        send(msg: ClientMessage): void;
+        onMessage(fn: (msg: ServerMessage) => void): void;
+    },
     session: string,
+    loadSession: (id: string) => DocSession | null,
 ): Store => {
     const evts = blankEvts();
     const docSessionCache: { [id: string]: DocSession } = {};
@@ -170,21 +175,15 @@ export const newStore = (
         getDocSession(doc: string, session: string = store.session) {
             const id = `${doc} - ${session}`;
             if (!docSessionCache[id]) {
-                if (localStorage['doc:ss:' + id]) {
-                    docSessionCache[id] = JSON.parse(
-                        localStorage['doc:ss:' + id],
-                    );
-                    if (!docSessionCache[id].clipboard) {
-                        docSessionCache[id].clipboard = [];
-                    }
-                } else {
-                    docSessionCache[id] = {
-                        doc,
-                        jumpHistory: [],
-                        activeStage: null,
-                        selections: [],
-                        clipboard: [],
-                    };
+                docSessionCache[id] = loadSession(id) ?? {
+                    doc,
+                    jumpHistory: [],
+                    activeStage: null,
+                    selections: [],
+                    clipboard: [],
+                };
+                if (!docSessionCache[id].clipboard) {
+                    docSessionCache[id].clipboard = [];
                 }
             }
             return docSessionCache[id];
@@ -279,18 +278,18 @@ export const newStore = (
                 }
 
                 state = update(state, action, updated);
-                ws.send(JSON.stringify({ type: 'action', action }));
+                ws.send({ type: 'action', action });
             });
 
             extras.forEach((action) => {
                 state = update(state, action, updated);
-                ws.send(JSON.stringify({ type: 'action', action }));
+                ws.send({ type: 'action', action });
             });
 
             evts.general.all.forEach((f) => f());
 
             // @ts-ignore
-            window.state = state;
+            self.state = state;
 
             // TODO:if (presenceChanged) evts.general.presence.forEach(f => f());
 
@@ -340,8 +339,7 @@ export const newStore = (
         },
     };
 
-    ws.addEventListener('message', (evt) => {
-        const data: ServerMessage = JSON.parse(evt.data);
+    ws.onMessage((data) => {
         switch (data.type) {
             case 'presence':
                 store.update(data);

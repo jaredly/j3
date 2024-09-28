@@ -22,15 +22,17 @@ export const moveTo = (write: Write, x: number, y: number, text?: string) => {
 };
 export type Write = (text: string) => void;
 
+export type KeyFn = (key: string) => void;
+export type MouseFn = (kind: MouseKind, evt: MouseEvt) => void;
 export type Renderer = {
     moveTo(x: number, y: number, text?: ABlock): void;
     write(text: ABlock): void;
     clear(): void;
     height: number;
     width: number;
-    onKey(fn: (key: string) => void): () => void;
+    onKey(fn: KeyFn): () => void;
     onResize(fn: () => void): () => void;
-    onMouse(fn: (kind: MouseKind, evt: MouseEvt) => void): () => void;
+    onMouse(fn: MouseFn): () => void;
     spawnWorker(onMessage: (data: OutgoingMessage) => void): {
         terminate(): void;
         sendMessage(msg: IncomingMessage): void;

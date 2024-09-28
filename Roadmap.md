@@ -1,4 +1,37 @@
 
+# Ok thinking through version control stuff:
+
+- backend db looks like
+  - table: toplevels
+    key: hash & id
+    module, nodes, ...
+  - table: documents
+    key: hash & id
+    module, nodes, ...
+  - table: edited-documents
+    key: id
+    (everything from documents)
+  - table: edited-documents-toplevels
+    key: id (toplevelid)
+    docid, hash (of the base toplevel), (everything from toplevels)
+  - table: latest-toplevels
+    key: id
+    hash, module, ts
+  - table: latest-documents
+    key: id
+    hash, module, ts
+  - table: parse-cache
+    key: hash & id & evaluator
+    exports, imports, mcst, ast, ...
+
+yeahh.. I think that'll do it?
+
+
+
+#
+
+maybe https://typeof.net/Iosevka
+
 # hmmm
 dunno if we have undo/redo totally locked doown just yet
 but my fgolks its time for testssss
@@ -7,6 +40,7 @@ yes indeedydoo
 ok but it's been long enoguh I don't remember what I had to replace
 o rite, websocket andddd worker. yes pls.
 
+ok I thikn I am ready to do a little testttt
 
 # UNDO/reudo
 

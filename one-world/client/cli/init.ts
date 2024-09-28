@@ -22,7 +22,24 @@ export const init = async (
                     sess.ssid = data.ssid;
                     writeSess(sess);
                 }
-                const store = newStore(state, ws, sess.ssid);
+                const store = newStore(
+                    state,
+                    {
+                        onMessage(fn) {
+                            ws.addEventListener('message', (evt) => {
+                                fn(JSON.parse(evt.data));
+                            });
+                        },
+                        send(msg) {
+                            ws.send(JSON.stringify(msg));
+                        },
+                    },
+                    sess.ssid,
+                    (id) => {
+                        const raw = localStorage['doc:ss:' + id];
+                        return raw ? JSON.parse(raw) : null;
+                    },
+                );
                 if (sess.selection && sess.doc != null) {
                     store.getDocSession(sess.doc, store.session);
                     store.update({
