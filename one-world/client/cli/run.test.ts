@@ -27,10 +27,9 @@ const init = (): Buffer => ({
     pos: { x: 0, y: 0 },
     prints: [],
 });
-const moveTo = (buf: Buffer, x: number, y: number) => ({
-    ...buf,
-    pos: { x, y },
-});
+const moveTo = (buf: Buffer, x: number, y: number) => {
+    buf.pos = { x, y };
+};
 const setWidth = (buf: Buffer, width: number) => {
     if (width <= buf.width) return;
     const extra: string[] = [];
@@ -69,7 +68,7 @@ const write = (buf: Buffer, text: ABlock) => {
     for (let y = 0; y < lines.length; y++) {
         const ri = buf.pos.y + y;
         const line = lines[y];
-        buf.rows[y].splice(buf.pos.x, line.length, ...line);
+        buf.rows[ri].splice(buf.pos.x, line.length, ...line);
     }
     buf.pos.y += lines.length - 1;
     buf.pos.x += lines[lines.length - 1].length;
@@ -77,8 +76,14 @@ const write = (buf: Buffer, text: ABlock) => {
 
 const print = (buf: Buffer) =>
     buf.rows.map((row) => row.join('').trimEnd()).join('\n');
+// '\n' +
+// JSON.stringify(buf.prints, null, 2);
 
-const testRenderer = (state?: PersistedState, docSess?: DocSession) => {
+const testRenderer = (
+    { width, height }: { width: number; height: number },
+    state?: PersistedState,
+    docSess?: DocSession,
+) => {
     const keys: KeyFn[] = [];
     const mouse: MouseFn[] = [];
     const buf = init();
@@ -93,8 +98,8 @@ const testRenderer = (state?: PersistedState, docSess?: DocSession) => {
     let store: Store | null = null;
 
     const term: Renderer = {
-        width: 300,
-        height: 300,
+        width,
+        height,
         moveTo(x, y, text) {
             moveTo(buf, x, y);
             if (text) {
@@ -174,14 +179,14 @@ const testRenderer = (state?: PersistedState, docSess?: DocSession) => {
 const wait = (n: number) => new Promise((res) => setTimeout(res, n));
 
 test('basic empty', async () => {
-    const renderer = testRenderer();
+    const renderer = testRenderer({ width: 200, height: 5 });
     run(renderer.term);
     await wait(10);
-    expect(renderer.print()).toEqual('New Document');
+    expect(renderer.print()).toEqual('\nNew Document');
 });
 
 test('basic empty, make doc', async () => {
-    const renderer = testRenderer();
+    const renderer = testRenderer({ width: 200, height: 3 });
     run(renderer.term);
     await wait(10);
     renderer.key('ENTER');
