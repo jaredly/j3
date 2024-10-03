@@ -34,6 +34,10 @@ const rebuild = bounce(10, () => {
 });
 
 watch('.', { recursive: true }, (event, filename) => {
+    if (filename.startsWith('.git/') || filename.startsWith('node_modules/')) {
+        // ignore
+        return;
+    }
     if (filename.match(/\.tsx?$/)) {
         edited.push(filename);
         rebuild();
