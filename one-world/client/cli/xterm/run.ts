@@ -11,6 +11,13 @@ node.width = 1600;
 node.style.width = node.width / 2 + 'px';
 node.style.height = node.height / 2 + 'px';
 
+const button = document.createElement('button');
+button.onclick = () => {
+    clearSess();
+};
+button.textContent = 'Clear Session';
+document.body.append(button);
+
 Object.assign(node.style, { padding: '16px' });
 node.oncontextmenu = (evt) => evt.preventDefault();
 
@@ -115,6 +122,7 @@ const readSess = (): Sess => {
 };
 
 const writeSess = (s: Sess) => (localStorage[key] = JSON.stringify(s));
+const clearSess = () => localStorage.removeItem(key);
 
 let pos: { x: number; y: number } = { x: 1, y: 1 };
 const ctx = node.getContext('2d')!;
