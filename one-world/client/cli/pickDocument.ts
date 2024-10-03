@@ -63,10 +63,14 @@ export const pickDocument = (
             }
         };
 
-        store.on('all', () => {
-            state = store.getState();
-            draw();
-        });
+        const cleanup: (() => void)[] = [];
+
+        cleanup.push(
+            store.on('all', () => {
+                state = store.getState();
+                draw();
+            }),
+        );
 
         const keyListener = (key: string) => {
             if (renaming) {
@@ -115,7 +119,7 @@ export const pickDocument = (
                 return;
             }
             if (key === 'ENTER') {
-                removeKeyListener();
+                cleanup.forEach((f) => f());
                 if (sel === ids.length) {
                     resolve(null);
                 } else {
@@ -132,6 +136,7 @@ export const pickDocument = (
                 renaming = null;
             }
             if (key === 'ESCAPE') {
+                cleanup.forEach((f) => f());
                 reject('quit');
             }
             if (key === 'r') {
@@ -145,7 +150,7 @@ export const pickDocument = (
             }
         };
 
-        const removeKeyListener = term.onKey(keyListener);
+        cleanup.push(term.onKey(keyListener));
         draw();
     });
 };

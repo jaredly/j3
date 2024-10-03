@@ -1,4 +1,6 @@
 
+- [x] pickDocumenet isn't cleaned up somehow
+
 # Ok thinking through version control stuff:
 
 Ohhhhg so. the rename is at tehe stake level isnt it.
