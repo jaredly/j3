@@ -100,6 +100,9 @@ const testRenderer = (
     const term: Renderer = {
         width,
         height,
+        drawCursor() {
+            // noop
+        },
         moveTo(x, y, text) {
             moveTo(buf, x, y);
             if (text) {
