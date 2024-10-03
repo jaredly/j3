@@ -48,16 +48,7 @@ export type DocSession = {
 };
 
 export const getDoc = (state: PersistedState, id: string): Doc => {
-    const stage = state.stages[id];
-    const doc = state._documents[id];
-    if (!stage) return doc;
-    const nodes = { ...doc.nodes };
-    Object.keys(stage.nodes).forEach((k) => {
-        if (stage.nodes[+k]) {
-            nodes[+k] = stage.nodes[+k]!;
-        }
-    });
-    return { ...doc, ...stage, nodes };
+    return state.stages[id] ?? state._documents[id];
 };
 
 export const getTop = (
@@ -105,10 +96,9 @@ type HistoryItem = {
     prevSelections: DocSelection[];
 };
 
-export type DocStage = Omit<Doc, 'nodes'> & {
+export type DocStage = Doc & {
     toplevels: Toplevels;
     history: HistoryItem[];
-    nodes: Record<number, DocumentNode | null>;
 };
 
 export type DocumentNode = {

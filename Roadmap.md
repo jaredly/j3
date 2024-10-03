@@ -1,6 +1,12 @@
 
 - [x] pickDocumenet isn't cleaned up somehow
 
+Ok, so:
+- adding a new toplevel looks like it's not incrementing the ... nextId of the document.
+
+
+
+
 # Ok thinking through version control stuff:
 
 Ohhhhg so. the rename is at tehe stake level isnt it.

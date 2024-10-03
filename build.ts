@@ -33,8 +33,17 @@ const rebuild = bounce(10, () => {
         });
 });
 
+const ignore = [
+    '.git/',
+    'node_modules/',
+    '.ow-data/',
+    '.cli.sess',
+    'worker.js',
+    'run.js',
+];
+
 watch('.', { recursive: true }, (event, filename) => {
-    if (filename.startsWith('.git/') || filename.startsWith('node_modules/')) {
+    if (ignore.some((n) => filename.startsWith(n))) {
         // ignore
         return;
     }
