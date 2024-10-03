@@ -4,6 +4,10 @@
 Ok, so:
 - adding a new toplevel looks like it's not incrementing the ... nextId of the document.
 
+# Sooooo
+
+oh right, should we ... make this available on the web?
+- I do want history. can I has history?
 
 
 
@@ -12,26 +16,40 @@ Ok, so:
 Ohhhhg so. the rename is at tehe stake level isnt it.
 
 - backend db looks like
+  // When you "commit", this is where it goes
   - table: toplevels
     key: hash & id
     module, nodes, ...
   - table: documents
     key: hash & id
     module, nodes, ...
+
+  // When you're editing, this is what you're messing with
   - table: edited-documents
     key: id
     (everything from documents)
+    (nodes are just a blob rite)
   - table: edited-documents-toplevels
-    key: id (toplevelid)
-    docid, hash (of the base toplevel), (everything from toplevels)
+    key: docid & toplevelid
+    hash (of the base toplevel)
+    (everything from toplevels)
+  - table: edited-documents-history
+    key: id & idx
+    reverts (nullable idx)
+    ... somehow record changes
+    ... to the edited-document as well as ... toplevels
+
+  // here's how we know "what is the tip of the iceberg"
   - table: latest-toplevels
     key: id
     hash, module, ts
   - table: latest-documents
     key: id
     hash, module, ts
+
+  // this is used for dependency trawling
   - table: parse-cache
-    key: hash & id & evaluator
+    key: tl-hash & tl-id & evaluator
     exports, imports, mcst, ast, ...
 
 yeahh.. I think that'll do it?
