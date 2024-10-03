@@ -17,7 +17,7 @@ export const pickDocument = (
         const draw = () => {
             term.clear();
             for (let i = 0; i <= ids.length; i++) {
-                term.moveTo(0, i + 1);
+                term.moveTo(1, i + 1);
                 if (i === ids.length) {
                     if (sel === i) {
                         term.write(
@@ -111,6 +111,7 @@ export const pickDocument = (
                 }
                 draw();
                 term.moveTo(renaming.cursor + 1, sel + 1);
+                term.drawCursor();
                 return;
             }
             if (key === 'ENTER') {
@@ -140,6 +141,7 @@ export const pickDocument = (
             draw();
             if (renaming) {
                 term.moveTo(renaming.cursor + 1, sel + 1);
+                term.drawCursor();
             }
         };
 

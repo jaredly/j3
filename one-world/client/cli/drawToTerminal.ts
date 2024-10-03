@@ -25,6 +25,7 @@ export type Write = (text: string) => void;
 export type KeyFn = (key: string) => void;
 export type MouseFn = (kind: MouseKind, evt: MouseEvt) => void;
 export type Renderer = {
+    drawCursor(): void;
     moveTo(x: number, y: number, text?: ABlock): void;
     write(text: ABlock): void;
     clear(): void;
@@ -67,13 +68,13 @@ export function drawToTerminal(
 
     if (lastKey) {
         term.moveTo(
-            0,
+            1,
             term.height - 1,
             toABlock((lastKey === ' ' ? 'SPACE' : lastKey) + '           '),
         );
     }
     term.moveTo(
-        0,
+        1,
         term.height,
         toABlock(getDoc(store.getState(), docId).title),
     );
@@ -88,7 +89,7 @@ export function drawToTerminal(
             toABlock('⬇️'),
         );
         term.moveTo(
-            0,
+            1,
             term.height - 5,
             toABlock(JSON.stringify(dragState.dest)),
         );

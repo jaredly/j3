@@ -197,15 +197,16 @@ run(
                 pos = { x, y };
                 if (text) {
                     write(text);
-                } else {
-                    ctx.fillStyle = 'white';
-                    ctx.fillRect(
-                        x * TEXTW - TEXTW / 20,
-                        (y - 1 / 1.5) * TEXTH,
-                        TEXTW / 10,
-                        TEXTH / 1.2,
-                    );
                 }
+            },
+            drawCursor() {
+                ctx.fillStyle = 'white';
+                ctx.fillRect(
+                    pos.x * TEXTW - TEXTW / 20,
+                    (pos.y - 1 / 1.5) * TEXTH,
+                    TEXTW / 10,
+                    TEXTH / 1.2,
+                );
             },
             write: (t) => {
                 write(t);

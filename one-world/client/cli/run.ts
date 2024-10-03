@@ -46,6 +46,9 @@ const tkTerm = (term: termkit.Terminal): Renderer =>
                         });
                 }
             },
+            drawCursor() {
+                // nvm
+            },
             write(text) {
                 term(aBlockToString(text, true));
             },
