@@ -44,7 +44,11 @@ document.addEventListener('keydown', (evt) => {
     if (evt.ctrlKey) {
         key = 'CTRL_' + key;
     }
-    if (evt.shiftKey && !'(){}~!@#$%^&*|_+<>?:"'.includes(key)) {
+    if (
+        evt.shiftKey &&
+        !'(){}~!@#$%^&*|_+<>?:"'.includes(key) &&
+        !key.match(/^[A-Z]$/)
+    ) {
         key = 'SHIFT_' + key;
     }
     if (evt.altKey) {

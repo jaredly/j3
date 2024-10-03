@@ -8,14 +8,13 @@ import {
 import { handleUpdate } from './edit/handleUpdate';
 import { genId, newDocument } from './edit/newDocument';
 import { handleDrag, maybeStartDragging } from './handleDrag';
-import { init } from './init';
 import { pickDocument } from './pickDocument';
 import { parseAndCache, render, renderSelection } from './render';
 import { Sess, trackSelection } from './Sess';
 
 import { SimplestEvaluator } from '../../evaluators/simplest';
 import { Caches, Context } from '../../graphh/by-hand';
-import { toChunk } from '../../shared/IR/block-to-attributed-text';
+import { ABlock, toChunk } from '../../shared/IR/block-to-attributed-text';
 import { recalcDropdown } from '../newStore2';
 import { Store } from '../StoreContext2';
 import {
@@ -24,14 +23,13 @@ import {
     MouseKind,
     Renderer,
 } from './drawToTerminal';
-import { IncomingMessage, OutgoingMessage } from './worker';
-
-// TODO NEXT STEP
-// refactor this out, so that we can use xtermjs as well
-// because that would be super cool
+import { OutgoingMessage } from './worker';
+import { previewDocument } from './previewDocument';
 
 const handleDocument = async (sess: Sess, store: Store, term: Renderer) => {
-    const picked = await pickDocument(store, term);
+    const picked = await pickDocument(store, term, (id) => {
+        term.moveTo(50, 3, previewDocument(store, id));
+    });
     if (picked === null) {
         const id = genId();
         store.update(...newDocument(id));

@@ -1,11 +1,13 @@
-// import termkit from 'terminal-kit';
-import ansis from 'ansis';
-import { Store } from '../StoreContext2';
-import { Renderer } from './drawToTerminal';
 import { toABlock } from '../../shared/IR/block-to-attributed-text';
 import { getDoc } from '../../shared/state2';
+import { Store } from '../StoreContext2';
+import { Renderer } from './drawToTerminal';
 
-export const pickDocument = (store: Store, term: Renderer) => {
+export const pickDocument = (
+    store: Store,
+    term: Renderer,
+    previewDoc: (id: string) => void,
+) => {
     return new Promise<string | null>((resolve, reject) => {
         let state = store.getState();
         const ids = Object.keys(state._documents);
@@ -20,7 +22,7 @@ export const pickDocument = (store: Store, term: Renderer) => {
                     if (sel === i) {
                         term.write(
                             toABlock('New Document', {
-                                background: { r: 0, g: 255, b: 0 },
+                                background: { r: 0, g: 100, b: 0 },
                             }),
                         );
                     } else {
@@ -31,6 +33,7 @@ export const pickDocument = (store: Store, term: Renderer) => {
                         );
                     }
                 } else if (sel === i) {
+                    const doc = getDoc(state, ids[i]);
                     if (renaming) {
                         term.write(
                             toABlock(renaming.text, {
@@ -39,14 +42,24 @@ export const pickDocument = (store: Store, term: Renderer) => {
                         );
                     } else {
                         term.write(
-                            toABlock(state._documents[ids[i]].title, {
-                                background: { r: 0, g: 255, b: 0 },
-                            }),
+                            toABlock(
+                                doc.title + ' (' + ids[i].slice(0, 5) + ')',
+                                {
+                                    background: { r: 0, g: 100, b: 0 },
+                                },
+                            ),
                         );
                     }
                 } else {
-                    term.write(toABlock(state._documents[ids[i]].title));
+                    const doc = getDoc(state, ids[i]);
+                    term.write(
+                        toABlock(doc.title + ' (' + ids[i].slice(0, 5) + ')'),
+                    );
                 }
+            }
+            const id = ids[sel];
+            if (id) {
+                previewDoc(ids[sel]);
             }
         };
 

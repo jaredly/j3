@@ -121,6 +121,7 @@ Bun.serve({
                     }
                 });
             } else if (msg.type === 'action') {
+                console.log('action', msg.action);
                 // NOTE: this can be sooo much more efficient, by having update
                 // also report on what changed.
                 const next = update(state, msg.action, {

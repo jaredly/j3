@@ -1,6 +1,8 @@
 
 # Ok thinking through version control stuff:
 
+Ohhhhg so. the rename is at tehe stake level isnt it.
+
 - backend db looks like
   - table: toplevels
     key: hash & id

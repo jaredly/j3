@@ -57,7 +57,7 @@ export const getDoc = (state: PersistedState, id: string): Doc => {
             nodes[+k] = stage.nodes[+k]!;
         }
     });
-    return { ...doc, nodes };
+    return { ...doc, ...stage, nodes };
 };
 
 export const getTop = (

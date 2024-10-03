@@ -250,7 +250,7 @@ function makeRunNode(
     };
 }
 
-function calculateLayouts(
+export function calculateLayouts(
     doc: Doc,
     state: PersistedState,
     maxWidth: number,

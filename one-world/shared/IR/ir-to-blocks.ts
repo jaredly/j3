@@ -278,8 +278,10 @@ export const irToBlock = (
     switch (ir.type) {
         case 'loc': {
             const { choices } = ctx.layouts[lastChild(ir.path)];
+            const nir = irs[lastChild(ir.path)];
+            if (!nir) return line('<missing loc>');
             const inner = {
-                ...irToBlock(irs[lastChild(ir.path)], irs, choices, ctx),
+                ...irToBlock(nir, irs, choices, ctx),
                 node: ir.path,
             };
             if (SHOW_IDS) {
