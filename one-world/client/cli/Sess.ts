@@ -4,12 +4,12 @@ import { Store } from '../StoreContext2';
 import { DocSelection } from '../../shared/state2';
 
 const sessFile = './.cli.sess';
-export type Sess = { ssid: string; doc?: string; selection?: DocSelection[] };
-export const readSess = (): Sess => {
+export type Sess = { ssid: string; doc: string; selection: DocSelection[] };
+export const readSess = (): Sess | null => {
     if (existsSync(sessFile)) {
         return JSON.parse(readFileSync('./.cli.sess', 'utf-8'));
     }
-    return { ssid: 'cli' };
+    return null;
 };
 export const writeSess = (sess: Sess) =>
     writeFileSync(sessFile, JSON.stringify(sess));

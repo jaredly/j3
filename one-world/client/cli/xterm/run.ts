@@ -120,10 +120,10 @@ const sendMouseEvent = (which: MouseKind, evt: MouseEvt) =>
 
 const key = 'j3:cli:sess';
 
-const readSess = (): Sess => {
+const readSess = (): Sess | null => {
     const data = localStorage[key];
     if (!data) {
-        return { ssid: 'web' };
+        return null;
     }
     return JSON.parse(data);
 };

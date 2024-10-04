@@ -90,15 +90,21 @@ term.onData((data) => {
 
 const key = 'j3:cli:sess';
 
-const readSess = (): Sess => {
+const readSess = (): Sess | null => {
     const data = localStorage[key];
     if (!data) {
-        return { ssid: 'web' };
+        return null;
     }
     return JSON.parse(data);
 };
 
-const writeSess = (s: Sess) => (localStorage[key] = JSON.stringify(s));
+const writeSess = (s: Sess | null) => {
+    if (!s) {
+        localStorage.removeItem(key);
+    } else {
+        localStorage[key] = JSON.stringify(s);
+    }
+};
 
 ansis.isSupported();
 

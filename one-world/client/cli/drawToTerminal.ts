@@ -10,7 +10,7 @@ import {
     toChunk,
 } from '../../shared/IR/block-to-attributed-text';
 import { getAutoComplete, menuToBlocks } from './getAutoComplete';
-import { getDoc } from '../../shared/state2';
+import { DocStage, getDoc } from '../../shared/state2';
 import { Sess } from './Sess';
 import { IncomingMessage, OutgoingMessage } from './worker';
 import { Style } from '../../shared/nodes';
@@ -42,10 +42,12 @@ export type Renderer = {
         sendMessage(msg: IncomingMessage): void;
     };
     init(sess: Sess): Promise<Store>;
-    readSess: () => Sess;
-    writeSess: (s: Sess) => void;
+    readSess: () => Sess | null;
+    writeSess: (s: Sess | null) => void;
 
-    // docList(): Promise<{ id: string; title: string }[]>;
+    docList(): Promise<{ id: string; title: string }[]>;
+    newDoc(title: string): Promise<DocStage>;
+    loadDoc(id: string): Promise<DocStage>;
 };
 
 export type MouseKind =
