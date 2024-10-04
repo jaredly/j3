@@ -81,7 +81,13 @@ export const renderSelection = (
     const pos = selectionPos(store, docId, sourceMaps);
     if (pos) {
         term.moveTo(pos[0] + 1, pos[1] + 1);
-        term.drawCursor();
+        const ds = store.getDocSession(docId);
+        term.drawCursor(
+            ds.selections[0].end
+                ? termColors.cursorHighlight
+                : termColors.cursor,
+            !!ds.selections[0].end,
+        );
     }
 };
 

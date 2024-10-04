@@ -202,12 +202,12 @@ run(
                     write(text);
                 }
             },
-            drawCursor() {
-                ctx.fillStyle = 'white';
+            drawCursor(color, wide) {
+                ctx.fillStyle = color ? rgb(color) : 'white';
                 ctx.fillRect(
-                    pos.x * TEXTW - TEXTW / 20,
+                    pos.x * TEXTW - TEXTW / (wide ? 5 : 20),
                     (pos.y - 1 / 1.5) * TEXTH,
-                    TEXTW / 10,
+                    TEXTW / (wide ? 2.5 : 10),
                     TEXTH / 1.2,
                 );
             },

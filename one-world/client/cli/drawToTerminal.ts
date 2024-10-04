@@ -13,6 +13,7 @@ import { getAutoComplete, menuToBlocks } from './getAutoComplete';
 import { getDoc } from '../../shared/state2';
 import { Sess } from './Sess';
 import { IncomingMessage, OutgoingMessage } from './worker';
+import { Style } from '../../shared/nodes';
 
 export const moveTo = (write: Write, x: number, y: number, text?: string) => {
     write(`\x1B[${y},${x}M`);
@@ -25,7 +26,7 @@ export type Write = (text: string) => void;
 export type KeyFn = (key: string) => void;
 export type MouseFn = (kind: MouseKind, evt: MouseEvt) => void;
 export type Renderer = {
-    drawCursor(): void;
+    drawCursor(color: Style['background'], wide: boolean): void;
     moveTo(x: number, y: number, text?: ABlock): void;
     write(text: ABlock): void;
     clear(): void;

@@ -12,11 +12,15 @@ export const termColors = dark
           string: { r: 100, g: 100, b: 0 },
           highlight: { r: 15, g: 30, b: 100 },
           fullHighlight: { r: 20, g: 50, b: 50 },
+          cursor: { r: 255, g: 255, b: 255 },
+          cursorHighlight: { r: 200, g: 255, b: 200 },
           dragHighlight: { r: 200, g: 100, b: 100 },
           kwd: { r: 100, g: 150, b: 200 },
           topHandle: { r: 100, g: 100, b: 100 },
       }
     : {
+          cursor: { r: 0, g: 0, b: 0 },
+          cursorHighlight: { r: 0, g: 100, b: 0 },
           stringBg: { r: 255, g: 255, b: 200 },
           string: { r: 200, g: 200, b: 0 },
           highlight: { r: 200, g: 220, b: 250 },

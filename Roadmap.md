@@ -1,4 +1,34 @@
 
+# What I need for the new version control world:
+
+- the `PersistedState` that I'm passing around, should be much pared down
+  - just an EditedDocument
+  - and a DocSession
+  ... right?
+
+do paths ... need to have a doc attached?
+what about, the abilitiy to have multiple
+docs open at once? Is that something I want to
+be thinking about?
+hm but then DocSession ... would be duplicated,right
+yaeh its fine
+
+
+hrm so what does /store/ actually look like n stuff
+
+do I need a different store
+for the toplevel?
+
+ok maybe first step is:
+- [ ] make the toplevel and pickDocument not use the store
+- [ ] construct the store anew for each document, async w/ data fetched
+- [ ] then change PersistedState to be what I want.
+
+
+
+
+##
+
 - [x] pickDocumenet isn't cleaned up somehow
 
 - [ ] it looks like ... DocSessions arent being persisted? but they're ... trying to be loaded?

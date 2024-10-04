@@ -120,6 +120,7 @@ const keymap: { [key: string]: string } = {
 run(
     Object.defineProperties(
         {
+            drawCursor() {},
             moveTo(x, y, text) {
                 term.write(`\x1B[${y};${x}H`);
                 if (text) {

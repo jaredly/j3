@@ -1,6 +1,7 @@
 import { toABlock } from '../../shared/IR/block-to-attributed-text';
 import { getDoc } from '../../shared/state2';
 import { Store } from '../StoreContext2';
+import { termColors } from '../TextEdit/colors';
 import { Renderer } from './drawToTerminal';
 
 export const pickDocument = (
@@ -116,7 +117,7 @@ export const pickDocument = (
                 }
                 draw();
                 term.moveTo(renaming.cursor + 1, sel + 1);
-                term.drawCursor();
+                term.drawCursor(termColors.cursor, false);
                 return;
             }
             if (key === 'ENTER') {
@@ -147,7 +148,7 @@ export const pickDocument = (
             draw();
             if (renaming) {
                 term.moveTo(renaming.cursor + 1, sel + 1);
-                term.drawCursor();
+                term.drawCursor(termColors.cursor, false);
             }
         };
 
