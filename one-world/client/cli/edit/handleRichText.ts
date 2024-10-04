@@ -181,6 +181,10 @@ export const handleRichText = (
         return true;
     }
 
+    if (key === 'CTRL_B') {
+        // let's make it a bold, or unbold, as the case may be.
+    }
+
     if (key === ' ' && !sel.start.cursor.start && node.spans.length === 1) {
         const span = node.spans[sel.start.cursor.end.index];
         const text =

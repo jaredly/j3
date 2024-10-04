@@ -69,8 +69,11 @@ export const handleUpdate = (
         return handleNamespaceUpdate(key, docId, sel, cache, store);
     }
 
-    if (sel.end && sel.end.key !== sel.start.key) {
-        return handleMutliSelect(store, sel, sel.end, key, ds);
+    if (sel.end) {
+        const handled = handleMutliSelect(store, sel, sel.end, key, ds);
+        if (handled || sel.end.key !== sel.start.key) {
+            return handled;
+        }
     }
 
     // ctrl-space apparently
@@ -632,7 +635,10 @@ export const handleMutliSelect = (
 ): boolean => {
     const state = store.getState();
     const multi = resolveMultiSelect(sel.start.path, end.path, state);
-    if (!multi) return false;
+    if (!multi) {
+        console.log('cant resolve', multi);
+        return false;
+    }
 
     if (key === 'CTRL_C') {
         if (multi.type === 'doc') {
@@ -687,6 +693,7 @@ export const handleMutliSelect = (
             key.endsWith('LEFT') ? 'left' : 'right',
             key.includes('SHIFT'),
         );
+        console.log('swap', ups);
         if (!ups) return false;
         store.update(...ups);
         return true;

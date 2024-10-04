@@ -6,7 +6,7 @@ import { clearState, init, initLocal } from '../init';
 
 const node = document.createElement('canvas');
 document.body.append(node);
-node.height = 1600;
+node.height = 2000;
 node.width = 1600;
 node.style.width = node.width / 2 + 'px';
 node.style.height = node.height / 2 + 'px';
@@ -30,10 +30,6 @@ Object.assign(node.style, { padding: '16px' });
 node.oncontextmenu = (evt) => evt.preventDefault();
 
 const keymap: { [key: string]: string } = {
-    // '\x1B[1;2A': 'SHIFT_UP',
-    // '\x1B[1;2B': 'SHIFT_DOWN',
-    // '\x1B[1;2C': 'SHIFT_RIGHT',
-    // '\x1B[1;2D': 'SHIFT_LEFT',
     ArrowUp: 'UP',
     ArrowDown: 'DOWN',
     ArrowLeft: 'LEFT',
@@ -41,16 +37,15 @@ const keymap: { [key: string]: string } = {
     Enter: 'ENTER',
     Backspace: 'BACKSPACE',
     Tab: 'TAB',
-    // '\r': 'ENTER',
-    // '\x7F': 'BACKSPACE',
-    // '\x1B[3~': 'DELETE',
-    // '\x1B': 'ESCAPE',
 };
 
 document.addEventListener('keydown', (evt) => {
     let key = keymap[evt.key] ?? evt.key;
+    if (['Control', 'Meta', 'Shift', 'Alt'].includes(key)) {
+        return;
+    }
     if (evt.ctrlKey) {
-        key = 'CTRL_' + key;
+        key = 'CTRL_' + key.toUpperCase();
     }
     if (
         evt.shiftKey &&
@@ -75,7 +70,7 @@ const evtPos = (evt: MouseEvent) => {
     const box = node.getBoundingClientRect();
     const x = (evt.clientX - box.left) * 2;
     const y = (evt.clientY - box.top) * 2;
-    return { x: (x / TEXTW - 2) | 0, y: (y / TEXTH) | 0 };
+    return { x: (x / TEXTW - 1) | 0, y: (y / TEXTH) | 0 };
 };
 
 let down = false;

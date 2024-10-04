@@ -46,12 +46,12 @@ export const initLocal = (
             return raw ? JSON.parse(raw) : null;
         },
     );
-    // console.log('init local?');
+    // @ts-ignore
     window.state = store.getState();
 
     store.on('all', () => {
-        // console.log('ok here');
         save(key, store.getState());
+        // @ts-ignore
         window.state = store.getState();
     });
 

@@ -178,7 +178,6 @@ export const newStore = (
                 docSessionCache[id] = loadSession(id) ?? {
                     doc,
                     jumpHistory: [],
-                    activeStage: null,
                     selections: [],
                     clipboard: [],
                 };

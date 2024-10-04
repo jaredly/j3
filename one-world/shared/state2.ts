@@ -26,8 +26,6 @@ export type DocSelection =
 
 export type DocSession = {
     doc: string;
-    // history: any[];
-    activeStage: null | string;
     selections: DocSelection[];
     clipboard: RecNodeT<boolean>[];
     dragState?: {
@@ -57,6 +55,11 @@ export const getTop = (
     id: string,
 ): Toplevel => {
     return state.stages[doc]?.toplevels[id] ?? state._toplevels[id];
+};
+
+export type DocState = {
+    stage: DocStage;
+    session: DocSession;
 };
 
 export type PersistedState = {

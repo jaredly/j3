@@ -59,6 +59,10 @@ export const run = async (term: Renderer) => {
         if (finish) {
             break;
         } else {
+            sess.doc = undefined;
+            sess.selection = undefined;
+            term.writeSess(sess);
+
             await handleDocument(sess, store, term);
         }
     }
@@ -160,7 +164,9 @@ export function runDocument(
 
     const finish = (quit: boolean) => {
         cleanup.forEach((v) => v());
-        resolve(quit);
+        setTimeout(() => {
+            resolve(quit);
+        }, 50);
     };
 
     // The parse
@@ -233,12 +239,10 @@ export function runDocument(
             if (key === 'ESCAPE') {
                 return finish(true);
             }
-            if (key === 'CTRL_W') {
-                console.log('don???');
-                return finish(false);
-            }
 
-            term.moveTo(0, term.height, [[toChunk(key)]]);
+            term.moveTo(1, term.height - 1, [
+                [toChunk(key, { background: { r: 0, g: 0, b: 0 } })],
+            ]);
             renderSelection(term, store, docId, rstate.sourceMaps);
         }),
     );
@@ -252,7 +256,7 @@ export function runDocument(
     const onKey = (key: string) => {
         lastKey = key;
         if (key === 'CTRL_W') {
-            term.writeSess({ ssid: sess.ssid });
+            finish(false);
             return true;
         }
 

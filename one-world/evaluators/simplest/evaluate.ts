@@ -12,6 +12,7 @@ export const builtins: Record<string, any> = {
     false: false,
     true: true,
     null: null,
+    "'": (...args: any[]) => args,
 };
 
 const handlers: {

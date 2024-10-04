@@ -15,6 +15,7 @@ export const pickDocument = (
         let renaming: null | { text: string; cursor: number } = null;
 
         const draw = () => {
+            console.log('darw pick doc');
             term.clear();
             for (let i = 0; i <= ids.length; i++) {
                 term.moveTo(1, i + 1);

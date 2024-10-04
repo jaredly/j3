@@ -79,10 +79,16 @@ export const docToBlock = <Top>(
                     typeof output.value === 'function'
                         ? '<function>'
                         : JSON.stringify(output.value) ?? '',
+                    undefined,
+                    { color: { r: 100, g: 150, b: 200 } },
                 ),
             );
         } else if (output?.type === 'error') {
-            items.push(line('failed to execute: ' + output.text));
+            items.push(
+                line('failed to execute: ' + output.text, undefined, {
+                    color: { r: 100, g: 50, b: 50 },
+                }),
+            );
         }
         top = vblock(items);
     }
