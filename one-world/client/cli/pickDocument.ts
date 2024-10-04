@@ -5,22 +5,20 @@ import { termColors } from '../TextEdit/colors';
 import { Renderer } from './drawToTerminal';
 
 export const pickDocument = (
-    store: Store,
+    documents: { id: string; title: string }[],
     term: Renderer,
     previewDoc: (id: string) => void,
 ) => {
     return new Promise<string | null>((resolve, reject) => {
-        let state = store.getState();
-        const ids = Object.keys(state._documents);
         let sel = 0;
-        let renaming: null | { text: string; cursor: number } = null;
+        let renaming = null as null | { text: string; cursor: number };
 
         const draw = () => {
             console.log('darw pick doc');
             term.clear();
-            for (let i = 0; i <= ids.length; i++) {
+            for (let i = 0; i <= documents.length; i++) {
                 term.moveTo(1, i + 1);
-                if (i === ids.length) {
+                if (i === documents.length) {
                     if (sel === i) {
                         term.write(
                             toABlock('New Document', {
@@ -35,7 +33,6 @@ export const pickDocument = (
                         );
                     }
                 } else if (sel === i) {
-                    const doc = getDoc(state, ids[i]);
                     if (renaming) {
                         term.write(
                             toABlock(renaming.text, {
@@ -45,7 +42,10 @@ export const pickDocument = (
                     } else {
                         term.write(
                             toABlock(
-                                doc.title + ' (' + ids[i].slice(0, 5) + ')',
+                                documents[i].title +
+                                    ' (' +
+                                    documents[i].id.slice(0, 5) +
+                                    ')',
                                 {
                                     background: { r: 0, g: 100, b: 0 },
                                 },
@@ -53,38 +53,44 @@ export const pickDocument = (
                         );
                     }
                 } else {
-                    const doc = getDoc(state, ids[i]);
                     term.write(
-                        toABlock(doc.title + ' (' + ids[i].slice(0, 5) + ')'),
+                        toABlock(
+                            documents[i].title +
+                                ' (' +
+                                documents[i].id.slice(0, 5) +
+                                ')',
+                        ),
                     );
                 }
             }
-            const id = ids[sel];
+            const id = documents[sel];
             if (id) {
-                previewDoc(ids[sel]);
+                previewDoc(documents[sel].id);
             }
         };
 
         const cleanup: (() => void)[] = [];
 
-        cleanup.push(
-            store.on('all', () => {
-                state = store.getState();
-                draw();
-            }),
-        );
+        // cleanup.push(
+        //     store.on('all', () => {
+        //         state = store.getState();
+        //         draw();
+        //     }),
+        // );
 
         const keyListener = (key: string) => {
             if (renaming) {
                 if (key === 'ENTER') {
-                    store.update({
-                        type: 'doc',
-                        action: {
-                            type: 'update',
-                            update: { title: renaming.text },
-                        },
-                        id: ids[sel],
-                    });
+                    // store.update({
+                    //     type: 'doc',
+                    //     action: {
+                    //         type: 'update',
+                    //         update: { title: renaming.text },
+                    //     },
+                    //     id: documents[sel],
+                    // });
+                    documents[sel].title = renaming.text;
+                    // TODO: persist lol
                     renaming = null;
                     draw();
                     return;
@@ -122,15 +128,15 @@ export const pickDocument = (
             }
             if (key === 'ENTER') {
                 cleanup.forEach((f) => f());
-                if (sel === ids.length) {
+                if (sel === documents.length) {
                     resolve(null);
                 } else {
-                    resolve(ids[sel]);
+                    resolve(documents[sel].id);
                 }
                 return;
             }
             if (key === 'DOWN') {
-                sel = Math.min(sel + 1, ids.length);
+                sel = Math.min(sel + 1, documents.length);
                 renaming = null;
             }
             if (key === 'UP') {
@@ -142,14 +148,14 @@ export const pickDocument = (
                 reject('quit');
             }
             if (key === 'r') {
-                const title = getDoc(state, ids[sel]).title;
-                renaming = { text: title, cursor: title.length };
+                // const title = getDoc(state, documents[sel]).title;
+                // renaming = { text: title, cursor: title.length };
             }
             draw();
-            if (renaming) {
-                term.moveTo(renaming.cursor + 1, sel + 1);
-                term.drawCursor(termColors.cursor, false);
-            }
+            // if (renaming) {
+            //     term.moveTo(renaming.cursor + 1, sel + 1);
+            //     term.drawCursor(termColors.cursor, false);
+            // }
         };
 
         cleanup.push(term.onKey(keyListener));

@@ -25,6 +25,9 @@ ok maybe first step is:
 - [ ] then change PersistedState to be what I want.
 
 
+- [x] fat cursor on multiselect thanks
+
+
 
 
 ##

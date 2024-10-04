@@ -27,9 +27,16 @@ import { OutgoingMessage } from './worker';
 import { previewDocument } from './previewDocument';
 
 const handleDocument = async (sess: Sess, store: Store, term: Renderer) => {
-    const picked = await pickDocument(store, term, (id) => {
-        term.moveTo(50, 3, previewDocument(store, id));
-    });
+    const picked = await pickDocument(
+        Object.entries(store.getState()._documents).map(([k, v]) => ({
+            id: k,
+            title: v.title,
+        })),
+        term,
+        (id) => {
+            term.moveTo(50, 3, previewDocument(store, id));
+        },
+    );
     if (picked === null) {
         const id = genId();
         store.update(...newDocument(id));
