@@ -35,6 +35,8 @@ export type Renderer = {
     onKey(fn: KeyFn): () => void;
     onResize(fn: () => void): () => void;
     onMouse(fn: MouseFn): () => void;
+
+    // these are definitely not 'renderer'like things
     spawnWorker(onMessage: (data: OutgoingMessage) => void): {
         terminate(): void;
         sendMessage(msg: IncomingMessage): void;
@@ -42,6 +44,8 @@ export type Renderer = {
     init(sess: Sess): Promise<Store>;
     readSess: () => Sess;
     writeSess: (s: Sess) => void;
+
+    // docList(): Promise<{ id: string; title: string }[]>;
 };
 
 export type MouseKind =

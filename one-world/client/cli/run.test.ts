@@ -129,6 +129,7 @@ const testRenderer = (
                     send(msg) {
                         //
                     },
+                    close() {},
                 },
                 'test-sess',
                 (id) => docSess ?? null,

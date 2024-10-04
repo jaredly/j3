@@ -39,6 +39,7 @@ export const initLocal = (
                 // console.log('not sending', msg);
                 // ws.send(JSON.stringify(msg));
             },
+            close() {},
         },
         sess.ssid,
         (id) => {
@@ -101,6 +102,9 @@ export const init = async (
                         },
                         send(msg) {
                             ws.send(JSON.stringify(msg));
+                        },
+                        close() {
+                            ws.close();
                         },
                     },
                     sess.ssid,

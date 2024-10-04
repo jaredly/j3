@@ -20,6 +20,7 @@ export type Store = {
     // focus and drag management
     textRef(path: Path, pathKey: string): RefObject<HTMLElement>;
     startDrag(pathKey: string, path: Path): void;
+    dispose(): void;
 };
 
 export const StoreContext = createContext<Store>(null as any);

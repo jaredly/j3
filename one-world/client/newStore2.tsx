@@ -161,6 +161,7 @@ export const newStore = (
     ws: {
         send(msg: ClientMessage): void;
         onMessage(fn: (msg: ServerMessage) => void): void;
+        close(): void;
     },
     session: string,
     loadSession: (id: string) => DocSession | null,
@@ -172,6 +173,13 @@ export const newStore = (
 
     const store: Store = {
         session,
+        dispose() {
+            ws.close();
+            evts.docs = {};
+            evts.general = { all: [], selection: [] };
+            evts.selections = {};
+            evts.tops = {};
+        },
         getDocSession(doc: string, session: string = store.session) {
             const id = `${doc} - ${session}`;
             if (!docSessionCache[id]) {
