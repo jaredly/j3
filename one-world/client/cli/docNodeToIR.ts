@@ -22,6 +22,11 @@ export const iterDocNodes = (
     f: (n: DocumentNode, ids: number[]) => void,
 ) => {
     const node = doc.nodes[id];
+    if (!node) {
+        // debugger;
+        console.warn('iter didnt find', id);
+        return;
+    }
     const cids = ids.concat([id]);
     // Skip the top docNode's non-toplevel
     if (node.toplevel !== '') {

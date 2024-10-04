@@ -12,6 +12,24 @@ export const newDocument = (id: string): Action[] => {
     const mid = id + ':mod';
     return [
         {
+            type: 'doc',
+            id,
+            action: {
+                type: 'reset',
+                doc: {
+                    evaluator: [],
+                    published: false,
+                    id,
+                    nextLoc: 2,
+                    module: mid,
+                    nodes: { 0: { id: 0, children: [], toplevel: '', ts } },
+                    nsAliases: {},
+                    title: `Session ${new Date().toLocaleString()}`,
+                    ts,
+                },
+            },
+        },
+        {
             type: 'toplevel',
             id: tid,
             doc: id,
@@ -41,20 +59,14 @@ export const newDocument = (id: string): Action[] => {
             type: 'doc',
             id,
             action: {
-                type: 'reset',
-                doc: {
-                    evaluator: [],
-                    published: false,
-                    id,
+                type: 'update',
+                // type: 'reset',
+                update: {
                     nextLoc: 2,
-                    module: mid,
                     nodes: {
                         0: { id: 0, children: [1], toplevel: '', ts },
                         1: { id: 1, children: [], toplevel: tid, ts },
                     },
-                    nsAliases: {},
-                    title: `Session ${new Date().toLocaleString()}`,
-                    ts,
                 },
             },
         },

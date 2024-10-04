@@ -104,6 +104,10 @@ export const docToBlock = <Top>(
         return vblock([top, hblock([line(white(4)), vblock(children)])]);
     }
 
+    if (top == null) {
+        return line('no top, no thing');
+    }
+
     return top!;
 };
 

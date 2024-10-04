@@ -73,12 +73,22 @@ export const update = (
             };
         }
         case 'toplevel': {
+            if (!state._documents[action.doc]) {
+                debugger;
+                throw new Error('no doc');
+            }
             let stage: DocStage = state.stages[action.doc] ?? {
-                docId: action.doc,
+                ...state._documents[action.doc],
                 history: [],
-                nodes: {},
+                // got to populate it with all of the toplevels from nodes
                 toplevels: {},
             };
+            Object.keys(stage.nodes).forEach((k) => {
+                const top = stage.nodes[+k].toplevel;
+                if (top !== '' && !stage.toplevels[top]) {
+                    stage.toplevels[top] = { ...state._toplevels[top] };
+                }
+            });
             const tl = updateTL(
                 stage.toplevels[action.id] ?? state._toplevels[action.id],
                 action.action,

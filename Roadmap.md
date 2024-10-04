@@ -1,6 +1,9 @@
 
 - [x] pickDocumenet isn't cleaned up somehow
 
+- [ ] it looks like ... DocSessions arent being persisted? but they're ... trying to be loaded?
+  not sure what is going on there.
+
 Ok, so:
 - adding a new toplevel looks like it's not incrementing the ... nextId of the document.
 
@@ -9,6 +12,22 @@ Ok, so:
 oh right, should we ... make this available on the web?
 - I do want history. can I has history?
 
+
+gonna have to think about async loading of things at some point.
+hopefully soon.
+So like
+`PersistedState` is gonna want to look different than it does.
+and like
+just expose an interface really.
+
+I mean, EditedDocument ... contains all you need, right?
+well, not necessarily all you need to /evaluate/, orrrr
+actually parse, because macros could be needed. SO there
+definitely needs to be a mode where we're like
+"sorry, loading macros, back in a second".
+
+Anyway, but bascially EditedDocument does contain everything
+that goes on the screen.
 
 
 # Ok thinking through version control stuff:

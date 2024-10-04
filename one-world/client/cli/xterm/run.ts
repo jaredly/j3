@@ -2,7 +2,7 @@ import { run } from '../main';
 import { Sess } from '../Sess';
 import { MouseEvt, MouseKind } from '../drawToTerminal';
 import { ABlock } from '../../../shared/IR/block-to-attributed-text';
-import { init } from '../init';
+import { clearState, init, initLocal } from '../init';
 
 const node = document.createElement('canvas');
 document.body.append(node);
@@ -11,12 +11,20 @@ node.width = 1600;
 node.style.width = node.width / 2 + 'px';
 node.style.height = node.height / 2 + 'px';
 
-const button = document.createElement('button');
-button.onclick = () => {
-    clearSess();
+const addButton = (name: string, action: () => void) => {
+    const button = document.createElement('button');
+    button.onclick = () => action();
+    button.textContent = name;
+    document.body.append(button);
 };
-button.textContent = 'Clear Session';
-document.body.append(button);
+addButton('Clear Session', () => {
+    clearSess();
+});
+
+addButton('Clear all', () => {
+    clearState();
+    clearSess();
+});
 
 Object.assign(node.style, { padding: '16px' });
 node.oncontextmenu = (evt) => evt.preventDefault();
@@ -252,7 +260,7 @@ run(
                     },
                 };
             },
-            init: (sess) => init(sess, writeSess),
+            init: (sess) => initLocal(sess),
         },
         {
             height: { get: () => (node.height / TEXTH) | 0 },

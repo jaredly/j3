@@ -46,6 +46,10 @@ export const run = async (term: Renderer) => {
     const sess = term.readSess();
     const store = await term.init(sess);
 
+    if (sess.doc != null && !store.getState()._documents[sess.doc]) {
+        sess.doc = undefined;
+    }
+
     if (!sess.doc) {
         await handleDocument(sess, store, term);
     }
