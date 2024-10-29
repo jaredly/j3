@@ -3,6 +3,8 @@ import { Sess } from '../Sess';
 import { MouseEvt, MouseKind } from '../drawToTerminal';
 import { ABlock } from '../../../shared/IR/block-to-attributed-text';
 import { clearState, init, initLocal } from '../init';
+import { PersistedState } from '../../../shared/state2';
+import { newStore } from '../../newStore2';
 
 const node = document.createElement('canvas');
 document.body.append(node);
@@ -204,11 +206,28 @@ run({
         const res = await fetch('http://localhost:8227/docs');
         return res.json();
     },
-    newDoc(title) {
+    async newDoc(title) {
         throw new Error('nnot impl');
     },
-    loadDoc(id) {
-        throw new Error('nnot impl');
+    async loadDoc(id) {
+        const res = await fetch('http://localhost:8227/doc?id=' + id);
+        const doc: PersistedState = await res.json();
+        return newStore(
+            doc,
+            {
+                onMessage(fn) {
+                    // ws.addEventListener('message', (evt) => {
+                    //     fn(JSON.parse(evt.data));
+                    // });
+                },
+                send(msg) {
+                    // console.log('not sending', msg);
+                    // ws.send(JSON.stringify(msg));
+                },
+                close() {},
+            },
+            null,
+        );
     },
     moveTo(x, y, text) {
         pos = { x, y };

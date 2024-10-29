@@ -8,7 +8,7 @@ export type Updated = {
     selections: Record<string, true>;
 };
 
-const useStage = true;
+// const useStage = true;
 
 export const update = (
     state: PersistedState,

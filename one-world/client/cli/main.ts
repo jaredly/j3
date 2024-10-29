@@ -26,6 +26,7 @@ import {
 import { OutgoingMessage } from './worker';
 import { previewDocument } from './previewDocument';
 import { timeoutTracker } from './timeoutTracker';
+import { genId } from './edit/newDocument';
 
 export const run = async (term: Renderer) => {
     console.log('initializing store...');
@@ -35,6 +36,7 @@ export const run = async (term: Renderer) => {
         // TODO:
         const docs = await term.docList();
         const picked = await pickDocument(docs, term, (id) => {});
+        console.log('picked', picked);
         if (picked.id === null) {
             const store = await term.newDoc(picked.title);
             return runDocument(term, store, {
@@ -51,7 +53,12 @@ export const run = async (term: Renderer) => {
             // the `DocStage`, which contains a copy of
             // all relevant toplevels.
         }
-        return;
+        const store = await term.loadDoc(picked.id);
+        return runDocument(term, store, {
+            doc: picked.id,
+            selection: [],
+            ssid: genId(),
+        });
     }
 
     const store = await term.loadDoc(sess.doc);
@@ -63,6 +70,7 @@ export const run = async (term: Renderer) => {
 };
 
 export function runDocument(term: Renderer, store: Store, sess: Sess) {
+    console.log('running a doc', store);
     // const store = await term.init(sess);
     const docId = store.getState().id;
 

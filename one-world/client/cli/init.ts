@@ -42,11 +42,12 @@ export const initLocal = (
             },
             close() {},
         },
-        sess.ssid,
-        (id) => {
-            const raw = localStorage['doc:ss:' + id];
-            return raw ? JSON.parse(raw) : null;
-        },
+        null,
+        // sess.ssid,
+        // (id) => {
+        //     const raw = localStorage['doc:ss:' + id];
+        //     return raw ? JSON.parse(raw) : null;
+        // },
     );
     // @ts-ignore
     window.state = store.getState();
@@ -104,11 +105,12 @@ export const init = async (
                             ws.close();
                         },
                     },
-                    sess.ssid,
-                    (id): DocSession => {
-                        const raw = localStorage['doc:ss:' + id];
-                        return raw ? JSON.parse(raw) : null;
-                    },
+                    null,
+                    // sess.ssid,
+                    // (id): DocSession => {
+                    //     const raw = localStorage['doc:ss:' + id];
+                    //     return raw ? JSON.parse(raw) : null;
+                    // },
                 );
                 if (sess.selection && sess.doc != null) {
                     store.getDocSession(sess.doc, store.session);

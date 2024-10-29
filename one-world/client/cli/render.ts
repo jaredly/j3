@@ -298,6 +298,12 @@ export const parseAndCache = (
 
     iterDocNodes(0, [], doc, (docNode) => {
         const top = getTop(state, doc.id, docNode.toplevel);
+        if (!top)
+            throw new Error(
+                `no top ${docNode.toplevel} in ${doc.id}: ${JSON.stringify(
+                    Object.keys(state.toplevels),
+                )}`,
+            );
         const { paths, node } = topFromMap(top);
 
         let texts: Record<number, { text: string[]; index: number }> = {};

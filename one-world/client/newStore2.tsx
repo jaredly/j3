@@ -163,16 +163,24 @@ export const newStore = (
         onMessage(fn: (msg: ServerMessage) => void): void;
         close(): void;
     },
-    session: string,
-    loadSession: (id: string) => DocSession | null,
+    session: DocSession | null,
 ): Store => {
     const evts = blankEvts();
-    const docSessionCache: { [id: string]: DocSession } = {};
+    // const docSessionCache: { [id: string]: DocSession } = {};
     // TODO have a way to identify other users, name, pic, etc.
     const presence: Record<string, DocSelection[]> = {};
 
+    if (!session) {
+        session = {
+            doc: state.id,
+            jumpHistory: [],
+            selections: [],
+            clipboard: [],
+        };
+    }
+
     const store: Store = {
-        session,
+        session: 'nop',
         dispose() {
             ws.close();
             evts.docs = {};
@@ -180,20 +188,8 @@ export const newStore = (
             evts.selections = {};
             evts.tops = {};
         },
-        getDocSession(doc: string, session: string = store.session) {
-            const id = `${doc} - ${session}`;
-            if (!docSessionCache[id]) {
-                docSessionCache[id] = loadSession(id) ?? {
-                    doc,
-                    jumpHistory: [],
-                    selections: [],
-                    clipboard: [],
-                };
-                if (!docSessionCache[id].clipboard) {
-                    docSessionCache[id].clipboard = [];
-                }
-            }
-            return docSessionCache[id];
+        getDocSession() {
+            return session;
         },
         getState() {
             return state;
@@ -215,10 +211,9 @@ export const newStore = (
 
                 if (action.type === 'selection') {
                     const key = `${action.doc} - ${session}`;
-                    const prev = docSessionCache[key].selections;
-                    docSessionCache[key].selections = action.selections;
-                    docSessionCache[key].verticalLodeStone =
-                        action.verticalLodeStone;
+                    const prev = session.selections;
+                    session.selections = action.selections;
+                    session.verticalLodeStone = action.verticalLodeStone;
                     const seen: Record<string, IRSelection> = {};
                     action.selections.forEach((sel) => {
                         if (sel.type !== 'ir') return;
@@ -273,7 +268,7 @@ export const newStore = (
                     );
 
                     if (!action.autocomplete) {
-                        docSessionCache[key].dropdown = undefined;
+                        session.dropdown = undefined;
                     }
                 }
 
