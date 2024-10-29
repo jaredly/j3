@@ -12,11 +12,17 @@ import { update } from '../shared/update2';
 import { DocSelection, DocSession } from '../shared/state2';
 import { ServerWebSocket } from 'bun';
 import { rid } from '../shared/rid';
+import { genId } from '../client/cli/edit/newDocument';
 
 export type Session = {
     ws: ServerWebSocket<unknown>;
     selections: DocSession['selections'];
 };
+
+const CORS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+} as const;
 
 export type ClientMessage =
     | {
@@ -56,7 +62,7 @@ const serverUpdate = (
 
 Bun.serve({
     port: process.env.PORT,
-    fetch(req, server) {
+    async fetch(req, server) {
         console.log(req.url);
         const url = new URL(req.url);
         if (url.pathname === '/ws') {
@@ -72,11 +78,7 @@ Bun.serve({
             if (
                 server.upgrade(req, {
                     data: { ssid, doc },
-                    headers: {
-                        'Access-Control-Allow-Origin': '*',
-                        'Access-Control-Allow-Methods':
-                            'GET, POST, PUT, DELETE, OPTIONS',
-                    },
+                    headers: CORS,
                 })
             ) {
                 return; // do not return a Response
@@ -96,9 +98,7 @@ Bun.serve({
                         status: 200,
                         headers: {
                             'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*',
-                            'Access-Control-Allow-Methods':
-                                'GET, POST, PUT, DELETE, OPTIONS',
+                            ...CORS,
                         },
                     },
                 );
@@ -135,9 +135,7 @@ Bun.serve({
                     status: 200,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*',
-                        'Access-Control-Allow-Methods':
-                            'GET, POST, PUT, DELETE, OPTIONS',
+                        ...CORS,
                     },
                 });
             }
@@ -145,18 +143,60 @@ Bun.serve({
                 status: 200,
                 headers: {
                     'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods':
-                        'GET, POST, PUT, DELETE, OPTIONS',
+                    ...CORS,
                 },
             });
         }
+        if (req.method === 'POST' && url.pathname === '/doc') {
+            const title = await req.text();
+            const id = genId();
+
+            const ts = {
+                created: Date.now(),
+                updated: Date.now(),
+            } as const;
+            const tid = id + ':top';
+            const mid = id + ':mod';
+
+            const next = { ...state };
+
+            next._documents = { ...next._documents };
+            next._toplevels = { ...next._toplevels };
+            next.modules = { ...next.modules };
+
+            next._documents[id] = {
+                evaluator: [],
+                published: false,
+                id,
+                nextLoc: 2,
+                module: mid,
+                nodes: { 0: { id: 0, children: [], toplevel: '', ts } },
+                nsAliases: {},
+                title: title,
+                ts,
+            };
+            next._toplevels[tid] = {
+                id: tid,
+                module: mid,
+                auxiliaries: [],
+                nextLoc: 1,
+                nodes: { 0: { type: 'id', loc: 0, text: '' } },
+                root: 0,
+                ts,
+            };
+            next.modules[mid] = {};
+            next.modules.root = { ...next.modules.root };
+            next.modules.root[mid] = title;
+
+            // const next = serverUpdate(state, msg.action, doc);
+            const changes = saveChanges(baseDirectory, state, next);
+
+            state = next;
+            return new Response(id, { headers: CORS });
+        }
+
         return new Response('ok', {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods':
-                    'GET, POST, PUT, DELETE, OPTIONS',
-            },
+            headers: CORS,
         });
     },
     websocket: {

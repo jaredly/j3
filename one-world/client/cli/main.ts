@@ -39,26 +39,18 @@ export const run = async (term: Renderer) => {
         const picked = await pickDocument(docs, term, (id) => {});
         console.log('picked', picked);
         if (picked.id === null) {
-            const store = await term.newDoc(picked.title);
+            const id = await term.newDoc(picked.title);
             const sess: Sess = {
-                doc: store.getState().id,
+                doc: id,
                 ssid: genId(),
                 selection: [],
             };
+            const store = await term.loadDoc(sess);
             return runDocument(term, store, sess);
-            // OK SO here, I think we ...
-            // ... initialize a store around that stage?
-            // I think.
-            // like, the main idea is that we're shrinking
-            // the visible surface area of `persistedstate`
-            // and the store generally, to just encompass
-            // the `DocStage`, which contains a copy of
-            // all relevant toplevels.
         }
-        const ssid = genId();
         const sess: Sess = {
             doc: picked.id,
-            ssid,
+            ssid: genId(),
             selection: [],
         };
         term.writeSess(sess);

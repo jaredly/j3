@@ -1,4 +1,44 @@
 
+# Ah 10/29
+I can't remember what my latest decision on "modules" was.
+like
+- is a module a string?
+- does a module ... have a reference to its children?
+Ok what I think I remember is this:
+
+- toplevels point to a module id
+- state.modules is a mapping of [moduleId] to [childName: moduleId]
+
+So a module does not define its own name. it is defined in the context
+of the parent.
+naturally, the root module has no name. and is probably called `root` or
+something like that.
+IMPORTANTLY, for the moment, the "module name mapping" has no bearing on compilation.
+the only thing that matters for compilation is "what is in the same module as myself",
+not parent/child relationships.
+
+IF I were to change things such that descendent module relationships had a bearing on
+compilation, I would have to change the `DocStage` dealio to encompass that stuff.
+
+Ok, yeah that all sounds right.
+
+ALSO, creating a new document creates a new module for that document, by default...
+unless you're like looking at a module, and want to add a document to it, obvs.
+
+
+# So, things that I'm interseted in
+
+- like, showing the UX of my canvas-based thing maybeeee
+- but also, maybe I should dive into react?
+- getting the whole round trip of:
+  - like,
+
+Ok, I want to be able to:
+- define a self-hosting whatsit
+- whichh means, we want a `js` builting template right?
+
+
+
 ## [ Multiple runtime backends ] ##
 
 a runtime, ought to be able to load up compilation artifacts...

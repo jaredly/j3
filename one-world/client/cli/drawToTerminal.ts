@@ -46,7 +46,7 @@ export type Renderer = {
     writeSess: (s: Sess | null) => void;
 
     docList(): Promise<{ id: string; title: string }[]>;
-    newDoc(title: string): Promise<Store>;
+    newDoc(title: string): Promise<string>;
     loadDoc(sess: Sess): Promise<Store>;
 };
 

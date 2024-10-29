@@ -206,7 +206,11 @@ run({
         return res.json();
     },
     async newDoc(title) {
-        throw new Error('nnot impl');
+        const res = await fetch('http://localhost:8227/doc', {
+            method: 'POST',
+            body: title,
+        });
+        return res.text();
     },
     async loadDoc(sess) {
         return init(sess, writeSess);
