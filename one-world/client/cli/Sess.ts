@@ -18,20 +18,20 @@ export const writeSess = (sess: Sess | null) => {
         writeFileSync(sessFile, JSON.stringify(sess));
     }
 };
-export function trackSelection(
-    store: Store,
-    sess: Sess,
-    docId: string,
-    writeSess: (sess: Sess) => void,
-) {
-    const unsel = store.on('selection', () => {
-        sess.selection = store.getDocSession(docId).selections;
-        writeSess(sess);
-    });
 
-    process.on('beforeExit', () => {
-        unsel();
-        store.update({ type: 'selection', doc: docId, selections: [] });
-    });
-    return unsel;
-}
+// export function trackSelection(
+//     store: Store,
+//     docId: string,
+//     writeSess: () => void,
+// ) {
+//     const unsel = store.on('selection', () => {
+//         sess.selection = store.getDocSession(docId).selections;
+//         writeSess(sess);
+//     });
+
+//     process.on('beforeExit', () => {
+//         unsel();
+//         store.update({ type: 'selection', doc: docId, selections: [] });
+//     });
+//     return unsel;
+// }

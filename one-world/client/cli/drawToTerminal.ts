@@ -47,7 +47,7 @@ export type Renderer = {
 
     docList(): Promise<{ id: string; title: string }[]>;
     newDoc(title: string): Promise<Store>;
-    loadDoc(id: string): Promise<Store>;
+    loadDoc(sess: Sess): Promise<Store>;
 };
 
 export type MouseKind =

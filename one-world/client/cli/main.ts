@@ -10,7 +10,7 @@ import { handleUpdate } from './edit/handleUpdate';
 import { handleDrag, maybeStartDragging } from './handleDrag';
 import { pickDocument } from './pickDocument';
 import { parseAndCache, render, renderSelection } from './render';
-import { Sess, trackSelection } from './Sess';
+// import { Sess, trackSelection } from './Sess';
 
 import { SimplestEvaluator } from '../../evaluators/simplest';
 import { Caches, Context } from '../../graphh/by-hand';
@@ -39,11 +39,7 @@ export const run = async (term: Renderer) => {
         console.log('picked', picked);
         if (picked.id === null) {
             const store = await term.newDoc(picked.title);
-            return runDocument(term, store, {
-                doc: store.getState().id,
-                selection: [],
-                ssid: store.session,
-            });
+            return runDocument(term, store);
             // OK SO here, I think we ...
             // ... initialize a store around that stage?
             // I think.
@@ -53,23 +49,24 @@ export const run = async (term: Renderer) => {
             // the `DocStage`, which contains a copy of
             // all relevant toplevels.
         }
-        const store = await term.loadDoc(picked.id);
-        return runDocument(term, store, {
+        const ssid = genId();
+        const store = await term.loadDoc({
             doc: picked.id,
+            ssid,
             selection: [],
-            ssid: genId(),
         });
+        return runDocument(term, store);
     }
 
-    const store = await term.loadDoc(sess.doc);
-    await runDocument(term, store, sess);
+    const store = await term.loadDoc(sess);
+    await runDocument(term, store);
 
     setTimeout(() => {
         return process.exit(0);
     }, 50);
 };
 
-export function runDocument(term: Renderer, store: Store, sess: Sess) {
+export function runDocument(term: Renderer, store: Store) {
     console.log('running a doc', store);
     // const store = await term.init(sess);
     const docId = store.getState().id;
@@ -132,8 +129,17 @@ export function runDocument(term: Renderer, store: Store, sess: Sess) {
     const { parseCache, caches, ctx } = parseAndCache(store, docId, {}, ev);
     let rstate = render(term.width - 10, store, docId, parseCache);
     drawToTerminal(rstate, term, store, docId, lastKey, ev);
-    clean(trackSelection(store, sess, docId, term.writeSess));
+    // clean(trackSelection(store, docId, term.writeSess));
     sendToWorker(caches, ctx);
+
+    clean(
+        store.on('selection', () => {
+            // const ds = store.getDocSession('', '')
+            // sess.selection = store.getDocSession(docId).selections;
+            // writeSess(sess);
+            // term.writeSess
+        }),
+    );
 
     let prevState = store.getState();
     let tid: null | Timer = null;

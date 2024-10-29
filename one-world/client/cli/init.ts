@@ -74,9 +74,11 @@ export const init = async (
     sess: Sess,
     writeSess: (s: Sess) => void,
 ): Promise<Store> => {
-    const res = await fetch('http://localhost:8227');
+    const res = await fetch('http://localhost:8227/doc?id=' + sess.doc);
     const state = await res.json();
-    const ws = new WebSocket('ws://localhost:8227/ws?ssid=' + sess.ssid);
+    const ws = new WebSocket(
+        `ws://localhost:8227/ws?ssid=${sess.ssid}&doc=${sess.doc}`,
+    );
     const store = await new Promise<Store>((res, rej) => {
         ws.onerror = (err) => rej(err);
         ws.onopen = () => {
@@ -90,6 +92,7 @@ export const init = async (
                     sess.ssid = data.ssid;
                     writeSess(sess);
                 }
+                const docSess = localStorage['doc:ss' + sess.ssid];
                 const store = newStore(
                     state,
                     {
@@ -105,7 +108,7 @@ export const init = async (
                             ws.close();
                         },
                     },
-                    null,
+                    docSess ? JSON.parse(docSess) : null,
                     // sess.ssid,
                     // (id): DocSession => {
                     //     const raw = localStorage['doc:ss:' + id];
