@@ -1,4 +1,12 @@
 
+PALLAS https://opfn.gitbook.io/pallas/plan/in-depth
+Scrapscript
+lambda-mountain https://github.com/andrew-johnson-4/lambda-mountain/tree/main
+uxn https://wiki.xxiivv.com/site/uxn.html
+  - and maybe https://wiki.xxiivv.com/site/secd.html
+
+https://clickhouse.com/blog/a-new-powerful-json-data-type-for-clickhouse
+
 https://www.youtube.com/watch?v=Q61dh87WGrE
 
 ...

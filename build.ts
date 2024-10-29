@@ -26,7 +26,7 @@ const rebuild = bounce(10, () => {
         }),
     ])
         .then(([one, two]) => {
-            console.log(one.logs, two.logs);
+            // console.log(one.logs, two.logs);
         })
         .catch((err) => {
             console.log('failed? idk');

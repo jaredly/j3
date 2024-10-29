@@ -25,6 +25,7 @@ import {
 } from './drawToTerminal';
 import { OutgoingMessage } from './worker';
 import { previewDocument } from './previewDocument';
+import { timeoutTracker } from './timeoutTracker';
 
 export const run = async (term: Renderer) => {
     console.log('initializing store...');
@@ -59,34 +60,6 @@ export const run = async (term: Renderer) => {
     setTimeout(() => {
         return process.exit(0);
     }, 50);
-};
-
-const WORKER_TIMEOUT = 1000;
-
-const timeoutTracker = (fn: () => void) => {
-    let msgId = 0;
-    let waiting: { id: number; timer: Timer }[] = [];
-    const restart = () => {
-        waiting.forEach((w) => clearTimeout(w.timer));
-        waiting = [];
-        fn();
-    };
-    return {
-        nextMsgId() {
-            const id = msgId++;
-            waiting.push({
-                id,
-                timer: setTimeout(restart, WORKER_TIMEOUT),
-            });
-            return id;
-        },
-        receivedMessage(id: number) {
-            const got = waiting.find((w) => w.id === id);
-            if (!got) return;
-            waiting.splice(waiting.indexOf(got), 1);
-            clearTimeout(got.timer);
-        },
-    };
 };
 
 export function runDocument(term: Renderer, store: Store, sess: Sess) {

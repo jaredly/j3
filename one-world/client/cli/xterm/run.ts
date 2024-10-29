@@ -199,85 +199,78 @@ const write = (text: ABlock) => {
     pos.y--;
 };
 
-run(
-    Object.defineProperties(
-        {
-            docList() {
-                throw new Error('nnot impl');
+run({
+    async docList() {
+        const res = await fetch('http://localhost:8227/docs');
+        return res.json();
+    },
+    newDoc(title) {
+        throw new Error('nnot impl');
+    },
+    loadDoc(id) {
+        throw new Error('nnot impl');
+    },
+    moveTo(x, y, text) {
+        pos = { x, y };
+        if (text) {
+            write(text);
+        }
+    },
+    drawCursor(color, wide) {
+        ctx.fillStyle = color ? rgb(color) : 'white';
+        ctx.fillRect(
+            pos.x * TEXTW - TEXTW / (wide ? 5 : 20),
+            (pos.y - 1 / 1.5) * TEXTH,
+            TEXTW / (wide ? 2.5 : 10),
+            TEXTH / 1.2,
+        );
+    },
+    write: (t) => {
+        write(t);
+    },
+    clear: () => {
+        ctx.clearRect(0, 0, node.width, node.height);
+    },
+    onKey(fn) {
+        keyListeners.push(fn);
+        return () => {
+            const idx = keyListeners.indexOf(fn);
+            if (idx !== -1) keyListeners.splice(idx, 1);
+        };
+    },
+    onResize(fn) {
+        // ignoreee
+        return () => {};
+    },
+    onMouse(fn) {
+        mouseListners.push(fn);
+        return () => {
+            const idx = mouseListners.indexOf(fn);
+            if (idx !== -1) mouseListners.splice(idx, 1);
+        };
+    },
+    readSess,
+    writeSess,
+    spawnWorker(onMessage) {
+        const worker = self.location
+            ? new Worker('./worker.js')
+            : new Worker('./one-world/client/cli/worker.ts');
+        worker.onmessage = (evt) => {
+            onMessage(JSON.parse(evt.data));
+        };
+        return {
+            sendMessage(msg) {
+                worker.postMessage(JSON.stringify(msg));
             },
-            newDoc(title) {
-                throw new Error('nnot impl');
+            terminate() {
+                worker.terminate();
             },
-            loadDoc(id) {
-                throw new Error('nnot impl');
-            },
-            moveTo(x, y, text) {
-                pos = { x, y };
-                if (text) {
-                    write(text);
-                }
-            },
-            drawCursor(color, wide) {
-                ctx.fillStyle = color ? rgb(color) : 'white';
-                ctx.fillRect(
-                    pos.x * TEXTW - TEXTW / (wide ? 5 : 20),
-                    (pos.y - 1 / 1.5) * TEXTH,
-                    TEXTW / (wide ? 2.5 : 10),
-                    TEXTH / 1.2,
-                );
-            },
-            write: (t) => {
-                write(t);
-            },
-            clear: () => {
-                ctx.clearRect(0, 0, node.width, node.height);
-            },
-            height: 0,
-            width: 0,
-            onKey(fn) {
-                keyListeners.push(fn);
-                return () => {
-                    const idx = keyListeners.indexOf(fn);
-                    if (idx !== -1) keyListeners.splice(idx, 1);
-                };
-            },
-            onResize(fn) {
-                // ignoreee
-                return () => {};
-            },
-            onMouse(fn) {
-                mouseListners.push(fn);
-                return () => {
-                    const idx = mouseListners.indexOf(fn);
-                    if (idx !== -1) mouseListners.splice(idx, 1);
-                };
-            },
-            readSess,
-            writeSess,
-            spawnWorker(onMessage) {
-                const worker = self.location
-                    ? new Worker('./worker.js')
-                    : new Worker('./one-world/client/cli/worker.ts');
-                worker.onmessage = (evt) => {
-                    onMessage(JSON.parse(evt.data));
-                };
-                return {
-                    sendMessage(msg) {
-                        worker.postMessage(JSON.stringify(msg));
-                    },
-                    terminate() {
-                        worker.terminate();
-                    },
-                };
-            },
-            // init: (sess) => initLocal(sess),
-        },
-        {
-            height: { get: () => (node.height / TEXTH) | 0 },
-            width: { get: () => (node.width / TEXTW) | 0 },
-        },
-    ),
-).then(
+        };
+    },
+    height: (node.height / TEXTH) | 0,
+    width: (node.width / TEXTW) | 0,
+    // init: (sess) => initLocal(sess),
+}).then(
     (ok) => {
         console.log('good');
     },

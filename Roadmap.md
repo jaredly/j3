@@ -1,4 +1,41 @@
 
+## [ Multiple runtime backends ] ##
+
+a runtime, ought to be able to load up compilation artifacts...
+
+for PLAN it would be the laws, compiled and ready as bytearrays
+
+sooooooooo
+ok so the backend
+actually it can just be like an attribute of the object we're calling an 'evaluator'
+BUT
+the tricky thing is making it so you can access a backend written in another language.
+So we're doing like an FFI thing here.
+and we'd specify it using the same `hash array` structure, daisy-chaining evaluators,
+as we do for specifying the `evaluator` of a doc.
+
+btw when creating a new doc you'll be asked to specify an evaluator, with "recently used"
+evaluators listed out for you.
+
+anyway for FFI goodness, that does mean that /somewhere/ we'll want to hang on to like a list
+of "exported things" or something. Of the following categories:
+- evaluators
+- "backends"
+- hmmmm is this where we put "pins"? Yeah maybe.
+- so like a "visualization" or something.
+
+I do want a way to make this somewhat TYPED, so we have some level of confidence in the
+interface exported under the various categories.
+BUT given that we'll be interacting across what may be quite varied runtime & memory
+& type stories, that seems like it might be hard?
+hmm.
+
+well I mean at the end of the day, the glue code we'll be using is javascript, which does
+have a defined type story.
+
+
+
+
 # What I need for the new version control world:
 
 - the `PersistedState` that I'm passing around, should be much pared down
@@ -20,7 +57,7 @@ do I need a different store
 for the toplevel?
 
 ok maybe first step is:
-- [ ] make the toplevel and pickDocument not use the store
+- [x] make the toplevel and pickDocument not use the store
 - [ ] construct the store anew for each document, async w/ data fetched
 - [ ] then change PersistedState to be what I want.
 

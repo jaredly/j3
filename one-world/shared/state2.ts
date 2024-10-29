@@ -65,13 +65,13 @@ export type DocState = {
 };
 
 export type PersistedState = DocStage;
-// {
-//     _toplevels: Toplevels;
-//     _documents: Record<string, Doc>;
-//     // moduleid -> (name -> moduleid)
-//     modules: Record<string, Record<string, string>>;
-//     stages: Record<string, DocStage>;
-// };
+export type FullState = {
+    _toplevels: Toplevels;
+    _documents: Record<string, Doc>;
+    // moduleid -> (name -> moduleid)
+    modules: Record<string, Record<string, string>>;
+    stages: Record<string, DocStage>;
+};
 
 export type EvaluatorPath = {
     toplevel: string;
