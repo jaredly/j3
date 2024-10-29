@@ -69,7 +69,7 @@ export const handleRichText = (
     docId: string,
     store: Store,
 ): boolean => {
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
     if (sel.type !== 'ir') return false;

@@ -106,7 +106,7 @@ export const handleMouseClick = (
     if (!found) return;
     const { selection, exact } = found;
 
-    const cur = store.getDocSession(docId).selections[0];
+    const cur = store.docSession.selections[0];
     if (
         cur &&
         cur.type === 'ir' &&
@@ -136,7 +136,7 @@ export const handleMouseDrag = (
     dropTargets: DropTarget[],
     cache: IRCache2<unknown>,
 ) => {
-    const sels = store.getDocSession(docId, store.session).selections;
+    const sels = store.docSession.selections;
     if (!sels.length) return;
     const sel = sels[0];
     if (sel.type !== 'ir') return;

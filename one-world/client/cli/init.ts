@@ -59,7 +59,6 @@ export const initLocal = (
     });
 
     if (sess.selection && sess.doc != null) {
-        store.getDocSession(sess.doc, store.session);
         store.update({
             type: 'selection',
             doc: sess.doc,
@@ -116,7 +115,7 @@ export const init = async (
                     // },
                 );
                 if (sess.selection && sess.doc != null) {
-                    store.getDocSession(sess.doc, store.session);
+                    store.docSession;
                     store.update({
                         type: 'selection',
                         doc: sess.doc,

@@ -62,7 +62,7 @@ export const handleUpdate = (
         return true;
     }
 
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
     if (sel.type !== 'ir') {

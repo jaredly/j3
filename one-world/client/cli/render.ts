@@ -61,7 +61,7 @@ export const selectionPos = (
     sourceMaps: BlockEntry[],
     nodeStart = false,
 ) => {
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     if (ds.selections.length) {
         const sel = ds.selections[0];
         const result = selectionLocation(sourceMaps, sel);
@@ -81,7 +81,7 @@ export const renderSelection = (
     const pos = selectionPos(store, docId, sourceMaps);
     if (pos) {
         term.moveTo(pos[0] + 1, pos[1] + 1);
-        const ds = store.getDocSession(docId);
+        const ds = store.docSession;
         term.drawCursor(
             ds.selections[0].end
                 ? termColors.cursorHighlight
@@ -122,7 +122,7 @@ export const render = (
     docId: string,
     parseAndEval: ParseAndEval<any>,
 ): RState => {
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     const state = store.getState();
     const doc = getDoc(state, docId);
 
@@ -292,7 +292,7 @@ export const parseAndCache = (
 ) => {
     const state = store.getState();
     const doc = getDoc(state, docId);
-    const ds = store.getDocSession(docId);
+    const ds = store.docSession;
     const { ctx, caches } = init();
     const parseCache: ParseAndEval<unknown> = {};
 

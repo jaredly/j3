@@ -86,10 +86,7 @@ const setupDragger = (store: Store) => {
     const mouseMove = (evt: MouseEvent) => {
         if (!dragState) return;
 
-        const sels = store.getDocSession(
-            dragState.path.root.doc,
-            store.session,
-        ).selections;
+        const sels = store.docSession.selections;
         const matching = sels.find(
             (s) =>
                 s.type === 'ir' && !s.end && s.start.key === dragState!.pathKey,
@@ -145,7 +142,7 @@ export function recalcDropdown(
     rstate: RState,
     ev: AnyEvaluator,
 ) {
-    const ds = store.getDocSession(docId);
+    const ds = store.docSession;
     if (!ds.dropdown || ds.dropdown.dismissed) {
         const auto = getAutoComplete(store, rstate, ds, ev);
         if (auto?.length) {
@@ -188,9 +185,7 @@ export const newStore = (
             evts.selections = {};
             evts.tops = {};
         },
-        getDocSession() {
-            return session;
-        },
+        docSession: session,
         getState() {
             return state;
         },
@@ -204,7 +199,7 @@ export const newStore = (
 
             actions.forEach((action) => {
                 if (action.type === 'drag') {
-                    const ds = store.getDocSession(action.doc);
+                    const ds = this.docSession;
                     ds.dragState = action.drag;
                     evts.general.selection.forEach((f) => f());
                 }

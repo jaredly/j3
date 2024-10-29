@@ -35,7 +35,7 @@ export const previewDocument = (store: Store, docId: string) => {
         };
     });
 
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     const cache = calculateIRs(doc, state, ds, pav);
 
     const layoutCache = calculateLayouts(doc, state, 300, cache);

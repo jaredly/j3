@@ -124,6 +124,13 @@ Bun.serve({
                     });
                 }
 
+                Object.values(state.stages[id].nodes).forEach((node) => {
+                    if (!state.stages[id].toplevels[node.toplevel]) {
+                        state.stages[id].toplevels[node.toplevel] =
+                            state._toplevels[node.toplevel];
+                    }
+                });
+
                 return new Response(JSON.stringify(state.stages[id]), {
                     status: 200,
                     headers: {

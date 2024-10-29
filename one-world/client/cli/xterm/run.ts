@@ -211,24 +211,6 @@ run({
     },
     async loadDoc(sess) {
         return init(sess, writeSess);
-        // const res = await fetch('http://localhost:8227/doc?id=' + id);
-        // const doc: PersistedState = await res.json();
-        // return newStore(
-        //     doc,
-        //     {
-        //         onMessage(fn) {
-        //             // ws.addEventListener('message', (evt) => {
-        //             //     fn(JSON.parse(evt.data));
-        //             // });
-        //         },
-        //         send(msg) {
-        //             // console.log('not sending', msg);
-        //             // ws.send(JSON.stringify(msg));
-        //         },
-        //         close() {},
-        //     },
-        //     null,
-        // );
     },
     moveTo(x, y, text) {
         pos = { x, y };

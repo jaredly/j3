@@ -27,6 +27,7 @@ import { OutgoingMessage } from './worker';
 import { previewDocument } from './previewDocument';
 import { timeoutTracker } from './timeoutTracker';
 import { genId } from './edit/newDocument';
+import { Sess } from './Sess';
 
 export const run = async (term: Renderer) => {
     console.log('initializing store...');
@@ -50,11 +51,13 @@ export const run = async (term: Renderer) => {
             // all relevant toplevels.
         }
         const ssid = genId();
-        const store = await term.loadDoc({
+        const sess: Sess = {
             doc: picked.id,
             ssid,
             selection: [],
-        });
+        };
+        term.writeSess(sess);
+        const store = await term.loadDoc(sess);
         return runDocument(term, store);
     }
 
@@ -237,7 +240,7 @@ export function runDocument(term: Renderer, store: Store) {
     };
 
     const onMouse = (evtKind: MouseKind, evt: MouseEvt) => {
-        const ds = store.getDocSession(docId);
+        const ds = store.docSession;
         if (evtKind === 'MOUSE_DRAG') {
             if (ds.dragState) {
                 handleDrag(evt, docId, rstate, ds.dragState, store);
@@ -272,7 +275,7 @@ export function runDocument(term: Renderer, store: Store) {
                 store,
             );
         } else if (evtKind === 'MOUSE_LEFT_BUTTON_RELEASED') {
-            const ds = store.getDocSession(docId);
+            const ds = store.docSession;
             const dragState = ds.dragState;
             if (dragState) {
                 store.update({ type: 'drag', doc: docId, drag: undefined });

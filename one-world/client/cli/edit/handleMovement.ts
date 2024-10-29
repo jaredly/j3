@@ -36,7 +36,7 @@ export const handleDropdown = (
     rerender: () => void,
     ev: AnyEvaluator,
 ): boolean => {
-    const ds = store.getDocSession(docId);
+    const ds = store.docSession;
     if (!ds.dropdown || ds.dropdown.dismissed) return false;
     const autocomplete = getAutoComplete(store, rstate, ds, ev);
     if (!autocomplete) return false;
@@ -117,7 +117,7 @@ export const handleUpDown = (
     store: Store,
     rstate: RState,
 ) => {
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
 
@@ -287,7 +287,7 @@ export const handleClose = (
     cache: IRCache2<unknown>,
     store: Store,
 ): boolean => {
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
     if (sel.type !== 'ir') return false;
@@ -383,7 +383,7 @@ export const handleMovement = (
     cache: IRCache2<unknown>,
     store: Store,
 ): boolean => {
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
     if (sel.type !== 'ir') return false;

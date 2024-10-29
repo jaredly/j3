@@ -85,7 +85,7 @@ export function drawToTerminal(
         term.height,
         toABlock(getDoc(store.getState(), docId).title),
     );
-    const ds = store.getDocSession(docId);
+    const ds = store.docSession;
     const dragState = ds.dragState;
     if (dragState?.dest) {
         term.moveTo(
