@@ -198,6 +198,7 @@ Bun.serve({
                 // console.log('action', msg.action);
                 // NOTE: this can be sooo much more efficient, by having update
                 // also report on what changed.
+                console.log('upppd', msg.action.type);
                 const next = serverUpdate(state, msg.action, doc);
                 const changes = saveChanges(baseDirectory, state, next);
 

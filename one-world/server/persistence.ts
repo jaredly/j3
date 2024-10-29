@@ -76,6 +76,7 @@ export const saveChanges = (
         });
         Object.keys(next.stages).forEach((k) => {
             if (next.stages[k] !== prev.stages[k]) {
+                console.log('stage up', k);
                 const tdir = join(base, 'stages', k, 'toplevels');
                 mkdirSync(tdir, { recursive: true });
                 writeFileSync(

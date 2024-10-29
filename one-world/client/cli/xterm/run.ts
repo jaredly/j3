@@ -1,10 +1,8 @@
+import { ABlock } from '../../../shared/IR/block-to-attributed-text';
+import { MouseEvt, MouseKind } from '../drawToTerminal';
+import { clearState, init } from '../init';
 import { run } from '../main';
 import { Sess } from '../Sess';
-import { MouseEvt, MouseKind } from '../drawToTerminal';
-import { ABlock } from '../../../shared/IR/block-to-attributed-text';
-import { clearState, init, initLocal } from '../init';
-import { PersistedState } from '../../../shared/state2';
-import { newStore } from '../../newStore2';
 
 const node = document.createElement('canvas');
 document.body.append(node);
@@ -21,6 +19,7 @@ const addButton = (name: string, action: () => void) => {
 };
 addButton('Clear Session', () => {
     clearSess();
+    location.reload();
 });
 
 addButton('Clear all', () => {

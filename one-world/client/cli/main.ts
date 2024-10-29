@@ -40,7 +40,12 @@ export const run = async (term: Renderer) => {
         console.log('picked', picked);
         if (picked.id === null) {
             const store = await term.newDoc(picked.title);
-            return runDocument(term, store);
+            const sess: Sess = {
+                doc: store.getState().id,
+                ssid: genId(),
+                selection: [],
+            };
+            return runDocument(term, store, sess);
             // OK SO here, I think we ...
             // ... initialize a store around that stage?
             // I think.
@@ -58,18 +63,18 @@ export const run = async (term: Renderer) => {
         };
         term.writeSess(sess);
         const store = await term.loadDoc(sess);
-        return runDocument(term, store);
+        return runDocument(term, store, sess);
     }
 
     const store = await term.loadDoc(sess);
-    await runDocument(term, store);
+    await runDocument(term, store, sess);
 
     setTimeout(() => {
         return process.exit(0);
     }, 50);
 };
 
-export function runDocument(term: Renderer, store: Store) {
+export function runDocument(term: Renderer, store: Store, sess: Sess) {
     console.log('running a doc', store);
     // const store = await term.init(sess);
     const docId = store.getState().id;
@@ -137,6 +142,8 @@ export function runDocument(term: Renderer, store: Store) {
 
     clean(
         store.on('selection', () => {
+            sess.selection = store.docSession.selections;
+            term.writeSess(sess);
             // const ds = store.getDocSession('', '')
             // sess.selection = store.getDocSession(docId).selections;
             // writeSess(sess);
