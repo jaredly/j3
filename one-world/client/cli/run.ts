@@ -33,6 +33,15 @@ const getTerm = () =>
 const tkTerm = (term: termkit.Terminal): Renderer =>
     Object.defineProperties(
         {
+            docList() {
+                throw new Error('nnot impl');
+            },
+            newDoc(title) {
+                throw new Error('nnot impl');
+            },
+            loadDoc(id) {
+                throw new Error('nnot impl');
+            },
             moveTo(x, y, text) {
                 term.moveTo(x, y);
                 if (text) {

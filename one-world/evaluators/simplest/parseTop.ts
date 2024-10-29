@@ -19,6 +19,10 @@ const topForms: Record<
             ctx.errors.push({ loc, text: 'bad form' });
             return;
         }
+        ctx.layouts[getLoc(loc)] = {
+            type: 'vert',
+            layout: { tightFirst: 3, indent: 4 },
+        };
 
         ctx.exports?.push({ kind: 'value', loc: name.loc });
         const fn = forms.fn(ctx, loc, args, value);
@@ -142,7 +146,7 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
                     return { type: 'float', value: num };
                 }
             }
-            if (ctx.cursor === value.loc[0][1]) {
+            if (ctx.cursor != null && ctx.cursor === value.loc[0][1]) {
                 ctx.autocomplete = {
                     local: [],
                     kinds: ['kwd', 'value'],
@@ -208,6 +212,7 @@ export const parseTop = (ctx: CTX, node: RecNode): Top | null => {
             const id = node.items[0].text;
             if (topForms[id]) {
                 if (
+                    ctx.cursor != null &&
                     node.items[0].loc[0][1] === ctx.cursor &&
                     node.items.length === 1
                 ) {

@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'fs';
 import { IRSelection } from '../../shared/IR/intermediate';
 import { Store } from '../StoreContext2';
 import { DocSelection } from '../../shared/state2';
@@ -11,8 +11,13 @@ export const readSess = (): Sess | null => {
     }
     return null;
 };
-export const writeSess = (sess: Sess) =>
-    writeFileSync(sessFile, JSON.stringify(sess));
+export const writeSess = (sess: Sess | null) => {
+    if (sess == null) {
+        unlinkSync(sessFile);
+    } else {
+        writeFileSync(sessFile, JSON.stringify(sess));
+    }
+};
 export function trackSelection(
     store: Store,
     sess: Sess,

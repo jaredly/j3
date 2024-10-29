@@ -46,7 +46,7 @@ export const underlineText = (text: string) =>
         .join('');
 
 export const applyFormats = (text: string, style?: Style, color?: boolean) => {
-    if (!style) return text;
+    if (!style || !color) return text;
     if (style.fontWeight === 'bold') {
         if (style.fontStyle === 'italic') {
             text = convert(text, bolditalic);

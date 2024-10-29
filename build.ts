@@ -56,6 +56,7 @@ watch('.', { recursive: true }, (event, filename) => {
 });
 
 const service = Bun.serve({
+    port: 3128,
     async fetch(req) {
         let pathname = new URL(req.url).pathname;
         if (pathname === '/') {

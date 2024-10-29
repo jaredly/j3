@@ -451,6 +451,7 @@ export const irToBlock = (
                     ir.placeholder && ir.text === ''
                         ? {
                               fontStyle: 'italic',
+                              color: { r: 100, g: 100, b: 100 },
                           }
                         : ir.style,
                 );

@@ -1,4 +1,6 @@
 {
+    "name": "j3",
+    "version": "0.0.0",
     "devDependencies": {
         "@types/better-sqlite3": "^7.6.4",
         "@types/bun": "^1.0.8",

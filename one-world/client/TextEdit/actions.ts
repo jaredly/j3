@@ -13,6 +13,7 @@ import {
 } from '../../shared/IR/nav';
 import {
     childLocs,
+    Loc,
     Node,
     Nodes,
     Path,
@@ -1108,13 +1109,14 @@ export const createIRCache = (
     nodes: Record<number, Node>,
     pathRoot: PathRoot,
     parsed?: ParseResult<any>,
+    getName: (loc: Loc) => string | null = () => null,
 ): IRForLoc => {
     const map: IRForLoc = {};
     const ctx = parsed
         ? {
               styles: parsed.styles,
               layouts: parsed.layouts,
-              getName: () => null,
+              getName,
               tableHeaders: parsed.tableHeaders,
           }
         : undefined;

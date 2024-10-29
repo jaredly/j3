@@ -26,53 +26,32 @@ import {
 import { OutgoingMessage } from './worker';
 import { previewDocument } from './previewDocument';
 
-const handleDocument = async (sess: Sess, store: Store, term: Renderer) => {
-    const picked = await pickDocument(
-        Object.entries(store.getState()._documents).map(([k, v]) => ({
-            id: k,
-            title: v.title,
-        })),
-        term,
-        (id) => {
-            term.moveTo(50, 3, previewDocument(store, id));
-        },
-    );
-    if (picked === null) {
-        const id = genId();
-        store.update(...newDocument(id));
-        sess.doc = id;
-    } else {
-        sess.doc = picked;
-    }
-    term.writeSess(sess);
-    return sess.doc;
-};
-
 export const run = async (term: Renderer) => {
     console.log('initializing store...');
-    const sess = term.readSess();
-    const store = await term.init(sess);
+    let sess = term.readSess();
 
-    if (sess.doc != null && !store.getState()._documents[sess.doc]) {
-        sess.doc = undefined;
-    }
-
-    if (!sess.doc) {
-        await handleDocument(sess, store, term);
-    }
-
-    while (true) {
-        const finish = await runDocument(term, store, sess, sess.doc!);
-        if (finish) {
-            break;
-        } else {
-            sess.doc = undefined;
-            sess.selection = undefined;
-            term.writeSess(sess);
-
-            await handleDocument(sess, store, term);
+    if (!sess) {
+        // TODO:
+        const docs = await term.docList();
+        const picked = await pickDocument(docs, term, (id) => {});
+        if (picked.id === null) {
+            const stage = await term.newDoc(picked.title);
+            throw new Error('not really doing anything useful atm');
+            // OK SO here, I think we ...
+            // ... initialize a store around that stage?
+            // I think.
+            // like, the main idea is that we're shrinking
+            // the visible surface area of `persistedstate`
+            // and the store generally, to just encompass
+            // the `DocStage`, which contains a copy of
+            // all relevant toplevels.
         }
+        return;
     }
+
+    // const store = await term.init(sess);
+
+    await runDocument(term, sess, sess.doc!);
 
     setTimeout(() => {
         return process.exit(0);
@@ -107,12 +86,9 @@ const timeoutTracker = (fn: () => void) => {
     };
 };
 
-export function runDocument(
-    term: Renderer,
-    store: Store,
-    sess: Sess,
-    docId: string,
-) {
+export async function runDocument(term: Renderer, sess: Sess, docId: string) {
+    const store = await term.init(sess);
+
     let lastKey = null as null | string;
     const ev = SimplestEvaluator;
 
@@ -131,25 +107,16 @@ export function runDocument(
     };
 
     let worker = term.spawnWorker(handleMessage);
-    // self.location
-    //     ? new Worker('./worker.js')
-    //     : new Worker('./one-world/client/cli/worker.ts');
 
     const restartWorker = () => {
         worker.terminate();
-        // console.log('breaking workier');
         worker = term.spawnWorker(handleMessage);
-        // worker = self.location
-        //     ? new Worker('./worker.js')
-        //     : new Worker('./one-world/client/cli/worker.ts');
-        // worker.onmessage = handleMessage;
         // Send latest infos
         const { caches, ctx } = parseAndCache(store, docId, {}, ev);
         sendToWorker(caches, ctx);
     };
     const tracker = timeoutTracker(restartWorker);
 
-    // worker.onmessage = handleMessage;
     const sendToWorker = (caches: Caches<unknown>, ctx: Context) => {
         worker.sendMessage({
             type: 'evaluates',
@@ -198,11 +165,7 @@ export function runDocument(
             ev,
         );
 
-        // // The eval
-        // const evalCache: EvalCache = {};
-        // Object.keys(caches.parse).forEach((tid) => {
-        //     evalCache[tid] = evaluate(tid, ctx, ev, caches);
-        // });
+        // The eval now happens in the worker
 
         rstate = render(term.width - 10, store, docId, parseCache);
         if (needsDropdownRecalc) {

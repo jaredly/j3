@@ -601,6 +601,56 @@ const checkMap = <T>(lst: T[], f: (t: T) => T) => {
     return changed ? next : null;
 };
 
+export const transformLocs = <L1, L2>(
+    node: RecNodeT<L1>,
+    f: (loc: L1) => L2,
+): RecNodeT<L2> => {
+    const loc = f(node.loc);
+    const rec = (n: RecNodeT<L1>) => transformLocs(n, f);
+    switch (node.type) {
+        case 'id':
+            return { ...node, loc };
+        case 'rich-inline':
+            throw new Error('sorry not yet');
+        case 'list':
+        case 'array':
+        case 'record':
+        case 'rich-block': {
+            return { ...node, items: node.items.map(rec), loc };
+        }
+        case 'table':
+            return { ...node, loc, rows: node.rows.map((r) => r.map(rec)) };
+        case 'comment':
+        case 'spread':
+            return { ...node, loc, contents: rec(node.contents) };
+        case 'annot': {
+            return {
+                ...node,
+                loc,
+                annot: rec(node.annot),
+                contents: rec(node.contents),
+            };
+        }
+        case 'record-access':
+            return {
+                ...node,
+                loc,
+                target: rec(node.target),
+                items: node.items.map(rec),
+            };
+        case 'string':
+            return {
+                ...node,
+                loc,
+                templates: node.templates.map(({ expr, suffix }) => ({
+                    expr: rec(expr),
+                    suffix,
+                })),
+                tag: rec(node.tag),
+            };
+    }
+};
+
 export const mapNode = (
     node: RecNode,
     f: (node: RecNode) => RecNode | false,
@@ -658,7 +708,14 @@ export const mapNode = (
                 const expr = mapNode(tpl.expr, f);
                 return expr ? { ...tpl, expr } : tpl;
             });
-            return templates ? { ...node, templates } : node;
+            const tag = mapNode(node.tag, f);
+            return templates || tag
+                ? {
+                      ...node,
+                      templates: templates ?? node.templates,
+                      tag: tag ?? node.tag,
+                  }
+                : node;
     }
 };
 

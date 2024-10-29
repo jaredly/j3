@@ -15,7 +15,7 @@ import {
     layoutIR,
 } from '../../shared/IR/layout';
 import { IRCache2 } from '../../shared/IR/nav';
-import { Nodes, PathRoot, RecNode, toMap } from '../../shared/nodes';
+import { Loc, Nodes, PathRoot, RecNode, toMap } from '../../shared/nodes';
 import { Doc, DocSelection, getTop, PersistedState } from '../../shared/state2';
 import { createIRCache } from '../TextEdit/actions';
 import { termColors } from '../TextEdit/colors';
@@ -119,11 +119,11 @@ export const docToBlock = <Top>(
 
 export const SHOW_IDS = false;
 
-// Only for debug n stuff I guess
-export const recNodeToText = (
+export const recNodeToBlock = (
     node: RecNode,
     result: ParseResult<any>,
     maxWidth: number,
+    getName?: (loc: Loc) => string | null,
 ) => {
     const nodes: Nodes = {};
     const root = toMap(node, nodes);
@@ -132,6 +132,7 @@ export const recNodeToText = (
         nodes,
         { doc: '', ids: [], toplevel: '', type: 'doc-node' },
         result,
+        getName,
     );
 
     const ctx = layoutCtx(maxWidth, irs);
@@ -143,11 +144,24 @@ export const recNodeToText = (
         space: ' ',
         top: 'top',
     });
+    return block;
+};
 
-    return blockToABlock({ x: 0, y: 0, x0: 0 }, block, {
-        color: false,
-        styles: {},
-    });
+// Only for debug n stuff I guess
+export const recNodeToText = (
+    node: RecNode,
+    result: ParseResult<any>,
+    maxWidth: number,
+    getName?: (loc: Loc) => string | null,
+) => {
+    return blockToABlock(
+        { x: 0, y: 0, x0: 0 },
+        recNodeToBlock(node, result, maxWidth, getName),
+        {
+            color: false,
+            styles: {},
+        },
+    );
 };
 
 export const drawToplevel = (

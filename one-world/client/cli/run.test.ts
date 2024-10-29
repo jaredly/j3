@@ -87,12 +87,16 @@ const testRenderer = (
     const keys: KeyFn[] = [];
     const mouse: MouseFn[] = [];
     const buf = init();
-    let sess: Sess = { ssid: 'test-sess' };
+    let sess: Sess | null = null;
     if (docSess && state) {
         if (!state._documents[docSess.doc]) {
             throw new Error(`missing doc ${docSess.doc} in state`);
         }
-        sess.doc = docSess.doc;
+        sess = {
+            ssid: 'test',
+            doc: docSess.doc,
+            selection: docSess.selections,
+        };
     }
 
     let store: Store | null = null;
@@ -100,6 +104,17 @@ const testRenderer = (
     const term: Renderer = {
         width,
         height,
+
+        docList() {
+            throw new Error('nnot impl');
+        },
+        newDoc(title) {
+            throw new Error('nnot impl');
+        },
+        loadDoc(id) {
+            throw new Error('nnot impl');
+        },
+
         drawCursor() {
             // noop
         },

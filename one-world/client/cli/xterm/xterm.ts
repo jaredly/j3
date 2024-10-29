@@ -126,6 +126,15 @@ const keymap: { [key: string]: string } = {
 run(
     Object.defineProperties(
         {
+            docList() {
+                throw new Error('not impl');
+            },
+            loadDoc(id) {
+                throw new Error('not impl');
+            },
+            newDoc(title) {
+                throw new Error('not impl');
+            },
             drawCursor() {},
             moveTo(x, y, text) {
                 term.write(`\x1B[${y};${x}H`);

@@ -128,7 +128,13 @@ const readSess = (): Sess | null => {
     return JSON.parse(data);
 };
 
-const writeSess = (s: Sess) => (localStorage[key] = JSON.stringify(s));
+const writeSess = (s: Sess | null) => {
+    if (s == null) {
+        delete localStorage[key];
+    } else {
+        localStorage[key] = JSON.stringify(s);
+    }
+};
 const clearSess = () => localStorage.removeItem(key);
 
 let pos: { x: number; y: number } = { x: 1, y: 1 };
@@ -196,6 +202,15 @@ const write = (text: ABlock) => {
 run(
     Object.defineProperties(
         {
+            docList() {
+                throw new Error('nnot impl');
+            },
+            newDoc(title) {
+                throw new Error('nnot impl');
+            },
+            loadDoc(id) {
+                throw new Error('nnot impl');
+            },
             moveTo(x, y, text) {
                 pos = { x, y };
                 if (text) {

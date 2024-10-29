@@ -3,7 +3,7 @@ import { Action } from '../../../shared/action2';
 export const genId = () =>
     Date.now().toString(36) + Math.random().toString(36).slice(2);
 
-export const newDocument = (id: string): Action[] => {
+export const newDocument = (id: string, title?: string): Action[] => {
     const ts = {
         created: Date.now(),
         updated: Date.now(),
@@ -24,7 +24,7 @@ export const newDocument = (id: string): Action[] => {
                     module: mid,
                     nodes: { 0: { id: 0, children: [], toplevel: '', ts } },
                     nsAliases: {},
-                    title: `Session ${new Date().toLocaleString()}`,
+                    title: title ?? `Session ${new Date().toLocaleString()}`,
                     ts,
                 },
             },

@@ -57,7 +57,7 @@ export const initLocal = (
     });
 
     if (sess.doc != null && !store.getState()._documents[sess.doc]) {
-        sess.doc = undefined;
+        throw new Error(`unrecognized document ${sess.doc}`);
     }
 
     if (sess.selection && sess.doc != null) {

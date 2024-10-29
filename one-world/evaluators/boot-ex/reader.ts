@@ -1,4 +1,4 @@
-import { IDRef, Loc, RecNode } from '../../shared/nodes';
+import { IDRef, Loc, RecNode, RecNodeT } from '../../shared/nodes';
 
 type RNode = RecNode;
 
@@ -7,13 +7,24 @@ export const reader = (
     top: string = 'test-top',
     globals: Record<string, IDRef> = {},
 ): RNode | void => {
-    let i = 0;
+    return readerMulti<Loc>(0, text, top, globals)?.node;
+};
+
+export const readerMulti = <Loc>(
+    i: number,
+    text: string,
+    top: string = 'test-top',
+    globals: Record<string, IDRef> = {},
+    specials = true,
+    l: (start: number, end: number) => Loc = (n) => [[top, n]] as Loc,
+): { i: number; node: RecNodeT<Loc> } | void => {
     const pairs = { '[': ']', '{': '}', '(': ')' };
     const skipWhite = () => {
         while (i < text.length && text[i].match(/\s/)) i++;
         return i >= text.length;
     };
-    const l = (num: number): Loc => [[top, num]];
+
+    type RNode = RecNodeT<Loc>;
 
     const readString = (): Extract<RNode, { type: 'string' }> | void => {
         const loc = i;
@@ -51,15 +62,14 @@ export const reader = (
                 continue;
             }
             current += text[i];
-            // console.log('a', current, text[i])
         }
         next();
         return {
             first,
             templates,
             type: 'string',
-            loc: l(loc),
-            tag: { type: 'id', text: '', loc: l(loc) },
+            loc: l(loc, i),
+            tag: { type: 'id', text: '', loc: l(loc, i) },
         };
     };
 
@@ -90,7 +100,7 @@ export const reader = (
                 type: 'table',
                 kind: '(',
                 rows,
-                loc: l(start),
+                loc: l(start, i),
             };
         }
 
@@ -120,17 +130,26 @@ export const reader = (
                             ? 'list'
                             : 'record',
                     items,
-                    loc: l(start),
+                    loc: l(start, i),
                 };
             case '"':
                 return readString();
+            case ';':
+                while (i < text.length && text[i] != '\n') {
+                    i++;
+                }
+                return read();
             case '.':
                 if (text[i + 1] === '.') {
-                    const loc = l(i);
+                    const start = i;
                     i += 2;
                     const inner = read();
                     if (!inner) return;
-                    return { type: 'spread', contents: inner, loc };
+                    return {
+                        type: 'spread',
+                        contents: inner,
+                        loc: l(start, i),
+                    };
                 }
             default: {
                 let start = i;
@@ -146,7 +165,7 @@ export const reader = (
                     }
                 }
                 let ref: IDRef | undefined = undefined;
-                if (idText.includes('!')) {
+                if (idText.includes('!') && specials) {
                     const [left, right] = idText.split('!');
                     idText = left;
                     const key = right.length ? right : left;
@@ -162,7 +181,7 @@ export const reader = (
                 const id: RNode = {
                     type: 'id',
                     text: idText,
-                    loc: l(start),
+                    loc: l(start, i),
                     ref,
                 };
                 if (text[i] === '"') {
@@ -174,5 +193,6 @@ export const reader = (
             }
         }
     };
-    return read();
+    const node = read();
+    return node ? { node, i } : node;
 };
