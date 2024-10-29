@@ -41,13 +41,13 @@ export type Renderer = {
         terminate(): void;
         sendMessage(msg: IncomingMessage): void;
     };
-    init(sess: Sess): Promise<Store>;
+    // init(sess: Sess): Promise<Store>;
     readSess: () => Sess | null;
     writeSess: (s: Sess | null) => void;
 
     docList(): Promise<{ id: string; title: string }[]>;
-    newDoc(title: string): Promise<DocStage>;
-    loadDoc(id: string): Promise<DocStage>;
+    newDoc(title: string): Promise<Store>;
+    loadDoc(id: string): Promise<Store>;
 };
 
 export type MouseKind =

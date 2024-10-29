@@ -72,11 +72,11 @@ export type ToplevelAction =
     | { type: 'delete' };
 
 export type DocAction =
-    | { type: 'reset'; doc: Doc }
-    | { type: 'delete' }
-    | {
-          type: 'update';
-          update: Partial<Omit<Doc, 'nodes'>> & {
-              nodes?: Record<string, DocumentNode | undefined>;
-          };
-      };
+    // | { type: 'reset'; doc: Doc }
+    // | { type: 'delete' }
+    {
+        type: 'update';
+        update: Partial<Omit<Doc, 'nodes'>> & {
+            nodes?: Record<string, DocumentNode | undefined>;
+        };
+    };

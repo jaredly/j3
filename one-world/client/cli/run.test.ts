@@ -89,9 +89,9 @@ const testRenderer = (
     const buf = init();
     let sess: Sess | null = null;
     if (docSess && state) {
-        if (!state._documents[docSess.doc]) {
-            throw new Error(`missing doc ${docSess.doc} in state`);
-        }
+        // if (!state._documents[docSess.doc]) {
+        //     throw new Error(`missing doc ${docSess.doc} in state`);
+        // }
         sess = {
             ssid: 'test',
             doc: docSess.doc,
@@ -128,29 +128,29 @@ const testRenderer = (
             buf.rows = [[]];
             buf.width = 0;
         },
-        async init(sess) {
-            // hrm
-            store = newStore(
-                state ?? {
-                    _toplevels: {},
-                    _documents: {},
-                    modules: {},
-                    stages: {},
-                },
-                {
-                    onMessage(fn) {
-                        //
-                    },
-                    send(msg) {
-                        //
-                    },
-                    close() {},
-                },
-                'test-sess',
-                (id) => docSess ?? null,
-            );
-            return store;
-        },
+        // async init(sess) {
+        //     // hrm
+        //     store = newStore(
+        //         state ?? {
+        //             _toplevels: {},
+        //             _documents: {},
+        //             modules: {},
+        //             stages: {},
+        //         },
+        //         {
+        //             onMessage(fn) {
+        //                 //
+        //             },
+        //             send(msg) {
+        //                 //
+        //             },
+        //             close() {},
+        //         },
+        //         'test-sess',
+        //         (id) => docSess ?? null,
+        //     );
+        //     return store;
+        // },
         onKey(fn) {
             keys.push(fn);
             return () => keys.splice(keys.indexOf(fn), 1);

@@ -6,7 +6,7 @@ import {
     handleUpDown,
 } from './edit/handleMovement';
 import { handleUpdate } from './edit/handleUpdate';
-import { genId, newDocument } from './edit/newDocument';
+// import { genId, newDocument } from './edit/newDocument';
 import { handleDrag, maybeStartDragging } from './handleDrag';
 import { pickDocument } from './pickDocument';
 import { parseAndCache, render, renderSelection } from './render';
@@ -35,8 +35,12 @@ export const run = async (term: Renderer) => {
         const docs = await term.docList();
         const picked = await pickDocument(docs, term, (id) => {});
         if (picked.id === null) {
-            const stage = await term.newDoc(picked.title);
-            throw new Error('not really doing anything useful atm');
+            const store = await term.newDoc(picked.title);
+            return runDocument(term, store, {
+                doc: store.getState().id,
+                selection: [],
+                ssid: store.session,
+            });
             // OK SO here, I think we ...
             // ... initialize a store around that stage?
             // I think.
@@ -49,9 +53,8 @@ export const run = async (term: Renderer) => {
         return;
     }
 
-    // const store = await term.init(sess);
-
-    await runDocument(term, sess, sess.doc!);
+    const store = await term.loadDoc(sess.doc);
+    await runDocument(term, store, sess);
 
     setTimeout(() => {
         return process.exit(0);
@@ -86,8 +89,9 @@ const timeoutTracker = (fn: () => void) => {
     };
 };
 
-export async function runDocument(term: Renderer, sess: Sess, docId: string) {
-    const store = await term.init(sess);
+export function runDocument(term: Renderer, store: Store, sess: Sess) {
+    // const store = await term.init(sess);
+    const docId = store.getState().id;
 
     let lastKey = null as null | string;
     const ev = SimplestEvaluator;

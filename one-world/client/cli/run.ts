@@ -95,7 +95,7 @@ const tkTerm = (term: termkit.Terminal): Renderer =>
                     },
                 };
             },
-            init: (sess) => init(sess, writeSess),
+            // init: (sess) => init(sess, writeSess),
         },
         {
             height: { get: () => term.height },

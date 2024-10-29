@@ -46,7 +46,8 @@ export type DocSession = {
 };
 
 export const getDoc = (state: PersistedState, id: string): Doc => {
-    return state.stages[id] ?? state._documents[id];
+    if (id !== state.id) throw new Error(`cant wrong doc`);
+    return state;
 };
 
 export const getTop = (
@@ -54,7 +55,8 @@ export const getTop = (
     doc: string,
     id: string,
 ): Toplevel => {
-    return state.stages[doc]?.toplevels[id] ?? state._toplevels[id];
+    return state.toplevels[id];
+    // return state.stages[doc]?.toplevels[id] ?? state._toplevels[id];
 };
 
 export type DocState = {
@@ -62,13 +64,14 @@ export type DocState = {
     session: DocSession;
 };
 
-export type PersistedState = {
-    _toplevels: Toplevels;
-    _documents: Record<string, Doc>;
-    // moduleid -> (name -> moduleid)
-    modules: Record<string, Record<string, string>>;
-    stages: Record<string, DocStage>;
-};
+export type PersistedState = DocStage;
+// {
+//     _toplevels: Toplevels;
+//     _documents: Record<string, Doc>;
+//     // moduleid -> (name -> moduleid)
+//     modules: Record<string, Record<string, string>>;
+//     stages: Record<string, DocStage>;
+// };
 
 export type EvaluatorPath = {
     toplevel: string;

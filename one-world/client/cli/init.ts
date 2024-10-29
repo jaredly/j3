@@ -4,15 +4,16 @@ import { Store } from '../StoreContext2';
 import { Sess } from './Sess';
 
 const load = (key: string): PersistedState => {
-    const data = localStorage[key];
-    if (!data)
-        return {
-            _toplevels: {},
-            _documents: {},
-            modules: {},
-            stages: {},
-        };
-    return JSON.parse(data);
+    throw new Error('no');
+    // const data = localStorage[key];
+    // if (!data)
+    //     return {
+    //         _toplevels: {},
+    //         _documents: {},
+    //         modules: {},
+    //         stages: {},
+    //     };
+    // return JSON.parse(data);
 };
 
 const save = (key: string, state: PersistedState) => {
@@ -55,10 +56,6 @@ export const initLocal = (
         // @ts-ignore
         window.state = store.getState();
     });
-
-    if (sess.doc != null && !store.getState()._documents[sess.doc]) {
-        throw new Error(`unrecognized document ${sess.doc}`);
-    }
 
     if (sess.selection && sess.doc != null) {
         store.getDocSession(sess.doc, store.session);

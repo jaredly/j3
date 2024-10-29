@@ -28,34 +28,34 @@ export const update = (
             });
             return state;
         case 'doc': {
-            if (action.action.type === 'reset') {
-                return {
-                    ...state,
-                    _documents: {
-                        ...state._documents,
-                        [action.id]: action.action.doc,
-                    },
-                };
-            }
-            if (action.action.type === 'delete') {
-                const _documents = { ...state._documents };
-                delete _documents[action.id];
-                return { ...state, _documents };
-            }
+            // if (action.action.type === 'reset') {
+            //     return {
+            //         ...state,
+            //         _documents: {
+            //             ...state._documents,
+            //             [action.id]: action.action.doc,
+            //         },
+            //     };
+            // }
+            // if (action.action.type === 'delete') {
+            //     const _documents = { ...state._documents };
+            //     delete _documents[action.id];
+            //     return { ...state, _documents };
+            // }
 
-            let stage: DocStage = state.stages[action.id];
-            if (!stage) {
-                let doc: Doc = state._documents[action.id];
-                if (!doc) {
-                    throw new Error('no doc yet idk gotta initialize');
-                }
-                stage = {
-                    ...doc,
-                    history: [],
-                    toplevels: {},
-                };
-            }
-            const nodes = { ...stage.nodes };
+            // let stage: DocStage = state.stages[action.id];
+            // if (!stage) {
+            //     let doc: Doc = state._documents[action.id];
+            //     if (!doc) {
+            //         throw new Error('no doc yet idk gotta initialize');
+            //     }
+            //     stage = {
+            //         ...doc,
+            //         history: [],
+            //         toplevels: {},
+            //     };
+            // }
+            const nodes = { ...state.nodes };
             Object.entries(action.action.update.nodes ?? {}).forEach(
                 ([k, v]) => {
                     if (v === undefined) {
@@ -65,45 +65,21 @@ export const update = (
                     }
                 },
             );
-            stage = { ...stage, ...action.action.update, nodes };
-
-            return {
-                ...state,
-                stages: { ...state.stages, [action.id]: stage },
-            };
+            return { ...state, ...action.action.update, nodes };
         }
         case 'toplevel': {
-            if (!state._documents[action.doc]) {
-                debugger;
-                throw new Error('no doc');
-            }
-            let stage: DocStage = state.stages[action.doc] ?? {
-                ...state._documents[action.doc],
-                history: [],
-                // got to populate it with all of the toplevels from nodes
-                toplevels: {},
-            };
-            Object.keys(stage.nodes).forEach((k) => {
-                const top = stage.nodes[+k].toplevel;
-                if (top !== '' && !stage.toplevels[top]) {
-                    stage.toplevels[top] = { ...state._toplevels[top] };
-                }
-            });
             const tl = updateTL(
-                stage.toplevels[action.id] ?? state._toplevels[action.id],
+                state.toplevels[action.id],
                 action.action,
                 ensure(updated.toplevels, action.id, () => ({})),
             );
-            stage = { ...stage, toplevels: { ...stage.toplevels } };
+            state = { ...state, toplevels: { ...state.toplevels } };
             if (!tl) {
-                delete stage.toplevels[action.id];
+                delete state.toplevels[action.id];
             } else {
-                stage.toplevels[action.id] = tl;
+                state.toplevels[action.id] = tl;
             }
-            return {
-                ...state,
-                stages: { ...state.stages, [action.doc]: stage },
-            };
+            return state;
         }
     }
     console.warn('skipping action', action.type);
@@ -115,10 +91,10 @@ export const updateDoc = (
     action: DocAction,
 ): Doc | null => {
     switch (action.type) {
-        case 'reset':
-            return action.doc;
-        case 'delete':
-            return null;
+        // case 'reset':
+        //     return action.doc;
+        // case 'delete':
+        //     return null;
         case 'update':
             if (!doc) throw new Error('trying to update nonexistent toplevel');
             const nodes = { ...doc.nodes };

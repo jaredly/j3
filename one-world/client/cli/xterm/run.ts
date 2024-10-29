@@ -270,7 +270,7 @@ run(
                     },
                 };
             },
-            init: (sess) => initLocal(sess),
+            // init: (sess) => initLocal(sess),
         },
         {
             height: { get: () => (node.height / TEXTH) | 0 },

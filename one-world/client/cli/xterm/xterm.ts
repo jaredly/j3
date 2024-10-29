@@ -187,7 +187,7 @@ run(
                     },
                 };
             },
-            init: (sess) => init(sess, writeSess),
+            // init: (sess) => init(sess, writeSess),
         },
         {
             height: { get: () => term.rows },
