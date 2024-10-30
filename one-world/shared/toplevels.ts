@@ -27,11 +27,13 @@ import { EvaluatorPath, TS } from './state2';
 
 export type Toplevel = {
     id: string;
+    // This is a hash of the object (obvs with the /hash/ zeroed out)
+    hash?: string;
+    module: string; // an ID
+
     nodes: Nodes;
     root: number;
     nextLoc: number;
-
-    module: string; // an ID
 
     ts: TS;
     auxiliaries: number[];
@@ -42,8 +44,6 @@ export type Toplevel = {
         config: any;
         evaluators: EvaluatorPath[];
     };
-    // This is a hash of the object (obvs with the /hash/ zeroed out)
-    hash?: string;
 };
 
 export const hashToplevel = (top: Toplevel): Toplevel => {

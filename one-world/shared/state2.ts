@@ -74,11 +74,12 @@ export type EvaluatorPath = {
 export type Doc = {
     id: string;
     title: string;
-    published: boolean;
+    published: null | number;
     module: string;
+    evaluator: EvaluatorPath;
+
     nsAliases: Record<string, string>;
     nodes: Record<number, DocumentNode>;
-    evaluator: EvaluatorPath;
     nextLoc: number;
     ts: TS;
 };

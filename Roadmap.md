@@ -1,6 +1,8 @@
 
 # NExt ups
 
+- [x] refactor the server to get ready for sqlite
+
 - [ ] make adding a new document work
 - [ ] make /committing/ possible
 - [ ] showww the module tree

@@ -104,7 +104,7 @@ export const jsonGitBackend = (base: string): ServerBackend => {
 
             const doc: Doc = {
                 evaluator: [],
-                published: false,
+                published: null,
                 id,
                 nextLoc: 2,
                 module: mid,
