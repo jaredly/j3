@@ -6,14 +6,12 @@
 // - get me this document, hydrated with the toplevels I'll need
 // -
 
-import { Change, FullServerState, loadState, saveChanges } from './persistence';
-import { Action } from '../shared/action2';
-import { update } from '../shared/update2';
-import { DocSelection, DocSession } from '../shared/state2';
 import { ServerWebSocket } from 'bun';
+import { Action } from '../shared/action2';
 import { rid } from '../shared/rid';
-import { genId } from '../client/cli/edit/newDocument';
+import { DocSelection, DocSession } from '../shared/state2';
 import { jsonGitBackend } from './json-git';
+import { Change } from './persistence';
 
 export type Session = {
     ws: ServerWebSocket<unknown>;
@@ -42,24 +40,7 @@ export type ServerMessage =
 
 const baseDirectory = './.ow-data';
 
-// let state = loadState(baseDirectory);
-// let ssid = 0;
 const sessions: Record<string, Session> = {};
-
-const serverUpdate = (
-    state: FullServerState,
-    action: Action,
-    docId: string,
-): FullServerState => {
-    const stage = state.stages[docId];
-    if (!stage)
-        throw new Error(`handling action, but stage doesnt exist ${docId}`);
-    const next = update(stage, action, {
-        selections: {},
-        toplevels: {},
-    });
-    return { ...state, stages: { ...state.stages, [docId]: next } };
-};
 
 const backend = jsonGitBackend(baseDirectory);
 
@@ -90,22 +71,13 @@ Bun.serve({
         }
         if (req.method === 'GET') {
             if (url.pathname === '/docs') {
-                return new Response(
-                    JSON.stringify(
-                        await backend.docsList(),
-                        // Object.values(state._documents).map((doc) => ({
-                        //     id: doc.id,
-                        //     title: doc.title,
-                        // })),
-                    ),
-                    {
-                        status: 200,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...CORS,
-                        },
+                return new Response(JSON.stringify(await backend.docsList()), {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...CORS,
                     },
-                );
+                });
             }
             if (url.pathname === '/doc') {
                 const id = url.searchParams.get('id');
@@ -113,93 +85,22 @@ Bun.serve({
                     return new Response('no id provided', { status: 400 });
                 }
                 const doc = await backend.doc(id);
-                // if (!state._documents[id]) {
                 if (!doc) {
                     return new Response('Doc not found', { status: 404 });
                 }
-                // if (!state.stages[id]) {
-                //     state.stages[id] = {
-                //         ...state._documents[id],
-                //         history: [],
-                //         toplevels: {},
-                //     };
-                //     // TODO: do we prune here? maybe?
-                //     Object.values(state.stages[id].nodes).forEach((node) => {
-                //         state.stages[id].toplevels[node.toplevel] =
-                //             state._toplevels[node.toplevel];
-                //     });
-                // }
-
-                // Object.values(state.stages[id].nodes).forEach((node) => {
-                //     if (!state.stages[id].toplevels[node.toplevel]) {
-                //         state.stages[id].toplevels[node.toplevel] =
-                //             state._toplevels[node.toplevel];
-                //     }
-                // });
-
-                return new Response(
-                    JSON.stringify(
-                        await backend.doc(id),
-                        // state.stages[id]
-                    ),
-                    {
-                        status: 200,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            ...CORS,
-                        },
+                return new Response(JSON.stringify(await backend.doc(id)), {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...CORS,
                     },
-                );
+                });
             }
             return new Response('Sorry what', { status: 404, headers: CORS });
         }
         if (req.method === 'POST' && url.pathname === '/doc') {
             const title = await req.text();
             const id = await backend.newDoc(title);
-
-            // const id = genId();
-
-            // const ts = {
-            //     created: Date.now(),
-            //     updated: Date.now(),
-            // } as const;
-            // const tid = id + ':top';
-            // const mid = id + ':mod';
-
-            // const next = { ...state };
-
-            // next._documents = { ...next._documents };
-            // next._toplevels = { ...next._toplevels };
-            // next.modules = { ...next.modules };
-
-            // next._documents[id] = {
-            //     evaluator: [],
-            //     published: false,
-            //     id,
-            //     nextLoc: 2,
-            //     module: mid,
-            //     nodes: { 0: { id: 0, children: [], toplevel: '', ts } },
-            //     nsAliases: {},
-            //     title: title,
-            //     ts,
-            // };
-            // next._toplevels[tid] = {
-            //     id: tid,
-            //     module: mid,
-            //     auxiliaries: [],
-            //     nextLoc: 1,
-            //     nodes: { 0: { type: 'id', loc: 0, text: '' } },
-            //     root: 0,
-            //     ts,
-            // };
-            // next.modules[mid] = {};
-            // next.modules.root = { ...next.modules.root };
-            // next.modules.root[mid] = title;
-
-            // // const next = serverUpdate(state, msg.action, doc);
-            // const changes = saveChanges(baseDirectory, state, next);
-
-            // state = next;
             return new Response(id, { headers: CORS });
         }
 
@@ -243,15 +144,7 @@ Bun.serve({
                     }
                 });
             } else if (msg.type === 'action') {
-                // console.log('action', msg.action);
-                // NOTE: this can be sooo much more efficient, by having update
-                // also report on what changed.
-
                 const changes = await backend.update(msg.action, doc);
-
-                // const next = serverUpdate(state, msg.action, doc);
-                // const changes = saveChanges(baseDirectory, state, next);
-                // state = next;
 
                 // notify others of the changes
                 Object.keys(sessions).forEach((k) => {
