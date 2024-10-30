@@ -96,7 +96,8 @@ export const saveChanges = (
     }
 
     if (next.modules !== prev.modules) {
-        throw new Error('not save yet');
+        writeFileSync(join(base, 'modules.json'), JSON.stringify(next.modules));
+        // TODO: add to /changes/ pls
     }
 
     return changes;

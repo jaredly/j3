@@ -1,4 +1,12 @@
 
+# NExt ups
+
+- [ ] make adding a new document work
+- [ ] make /committing/ possible
+- [ ] showww the module tree
+- [ ] allow editing an existing thing
+
+
 # Ah 10/29
 I can't remember what my latest decision on "modules" was.
 like
