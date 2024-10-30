@@ -13,6 +13,7 @@ import { DocSelection, DocSession } from '../shared/state2';
 import { ServerWebSocket } from 'bun';
 import { rid } from '../shared/rid';
 import { genId } from '../client/cli/edit/newDocument';
+import { jsonGitBackend } from './json-git';
 
 export type Session = {
     ws: ServerWebSocket<unknown>;
@@ -41,7 +42,7 @@ export type ServerMessage =
 
 const baseDirectory = './.ow-data';
 
-let state = loadState(baseDirectory);
+// let state = loadState(baseDirectory);
 // let ssid = 0;
 const sessions: Record<string, Session> = {};
 
@@ -59,6 +60,8 @@ const serverUpdate = (
     });
     return { ...state, stages: { ...state.stages, [docId]: next } };
 };
+
+const backend = jsonGitBackend(baseDirectory);
 
 Bun.serve({
     port: process.env.PORT,
@@ -89,10 +92,11 @@ Bun.serve({
             if (url.pathname === '/docs') {
                 return new Response(
                     JSON.stringify(
-                        Object.values(state._documents).map((doc) => ({
-                            id: doc.id,
-                            title: doc.title,
-                        })),
+                        await backend.docsList(),
+                        // Object.values(state._documents).map((doc) => ({
+                        //     id: doc.id,
+                        //     title: doc.title,
+                        // })),
                     ),
                     {
                         status: 200,
@@ -108,90 +112,94 @@ Bun.serve({
                 if (!id) {
                     return new Response('no id provided', { status: 400 });
                 }
-                if (!state._documents[id]) {
+                const doc = await backend.doc(id);
+                // if (!state._documents[id]) {
+                if (!doc) {
                     return new Response('Doc not found', { status: 404 });
                 }
-                if (!state.stages[id]) {
-                    state.stages[id] = {
-                        ...state._documents[id],
-                        history: [],
-                        toplevels: {},
-                    };
-                    // TODO: do we prune here? maybe?
-                    Object.values(state.stages[id].nodes).forEach((node) => {
-                        state.stages[id].toplevels[node.toplevel] =
-                            state._toplevels[node.toplevel];
-                    });
-                }
+                // if (!state.stages[id]) {
+                //     state.stages[id] = {
+                //         ...state._documents[id],
+                //         history: [],
+                //         toplevels: {},
+                //     };
+                //     // TODO: do we prune here? maybe?
+                //     Object.values(state.stages[id].nodes).forEach((node) => {
+                //         state.stages[id].toplevels[node.toplevel] =
+                //             state._toplevels[node.toplevel];
+                //     });
+                // }
 
-                Object.values(state.stages[id].nodes).forEach((node) => {
-                    if (!state.stages[id].toplevels[node.toplevel]) {
-                        state.stages[id].toplevels[node.toplevel] =
-                            state._toplevels[node.toplevel];
-                    }
-                });
+                // Object.values(state.stages[id].nodes).forEach((node) => {
+                //     if (!state.stages[id].toplevels[node.toplevel]) {
+                //         state.stages[id].toplevels[node.toplevel] =
+                //             state._toplevels[node.toplevel];
+                //     }
+                // });
 
-                return new Response(JSON.stringify(state.stages[id]), {
-                    status: 200,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...CORS,
+                return new Response(
+                    JSON.stringify(
+                        await backend.doc(id),
+                        // state.stages[id]
+                    ),
+                    {
+                        status: 200,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...CORS,
+                        },
                     },
-                });
+                );
             }
-            return new Response(JSON.stringify(state), {
-                status: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...CORS,
-                },
-            });
+            return new Response('Sorry what', { status: 404, headers: CORS });
         }
         if (req.method === 'POST' && url.pathname === '/doc') {
             const title = await req.text();
-            const id = genId();
+            const id = await backend.newDoc(title);
 
-            const ts = {
-                created: Date.now(),
-                updated: Date.now(),
-            } as const;
-            const tid = id + ':top';
-            const mid = id + ':mod';
+            // const id = genId();
 
-            const next = { ...state };
+            // const ts = {
+            //     created: Date.now(),
+            //     updated: Date.now(),
+            // } as const;
+            // const tid = id + ':top';
+            // const mid = id + ':mod';
 
-            next._documents = { ...next._documents };
-            next._toplevels = { ...next._toplevels };
-            next.modules = { ...next.modules };
+            // const next = { ...state };
 
-            next._documents[id] = {
-                evaluator: [],
-                published: false,
-                id,
-                nextLoc: 2,
-                module: mid,
-                nodes: { 0: { id: 0, children: [], toplevel: '', ts } },
-                nsAliases: {},
-                title: title,
-                ts,
-            };
-            next._toplevels[tid] = {
-                id: tid,
-                module: mid,
-                auxiliaries: [],
-                nextLoc: 1,
-                nodes: { 0: { type: 'id', loc: 0, text: '' } },
-                root: 0,
-                ts,
-            };
-            next.modules[mid] = {};
-            next.modules.root = { ...next.modules.root };
-            next.modules.root[mid] = title;
+            // next._documents = { ...next._documents };
+            // next._toplevels = { ...next._toplevels };
+            // next.modules = { ...next.modules };
 
-            // const next = serverUpdate(state, msg.action, doc);
-            const changes = saveChanges(baseDirectory, state, next);
+            // next._documents[id] = {
+            //     evaluator: [],
+            //     published: false,
+            //     id,
+            //     nextLoc: 2,
+            //     module: mid,
+            //     nodes: { 0: { id: 0, children: [], toplevel: '', ts } },
+            //     nsAliases: {},
+            //     title: title,
+            //     ts,
+            // };
+            // next._toplevels[tid] = {
+            //     id: tid,
+            //     module: mid,
+            //     auxiliaries: [],
+            //     nextLoc: 1,
+            //     nodes: { 0: { type: 'id', loc: 0, text: '' } },
+            //     root: 0,
+            //     ts,
+            // };
+            // next.modules[mid] = {};
+            // next.modules.root = { ...next.modules.root };
+            // next.modules.root[mid] = title;
 
-            state = next;
+            // // const next = serverUpdate(state, msg.action, doc);
+            // const changes = saveChanges(baseDirectory, state, next);
+
+            // state = next;
             return new Response(id, { headers: CORS });
         }
 
@@ -238,11 +246,13 @@ Bun.serve({
                 // console.log('action', msg.action);
                 // NOTE: this can be sooo much more efficient, by having update
                 // also report on what changed.
-                console.log('upppd', msg.action.type);
-                const next = serverUpdate(state, msg.action, doc);
-                const changes = saveChanges(baseDirectory, state, next);
 
-                state = next;
+                const changes = await backend.update(msg.action, doc);
+
+                // const next = serverUpdate(state, msg.action, doc);
+                // const changes = saveChanges(baseDirectory, state, next);
+                // state = next;
+
                 // notify others of the changes
                 Object.keys(sessions).forEach((k) => {
                     if (k !== ssid) {
