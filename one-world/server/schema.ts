@@ -13,11 +13,16 @@ const ts = {
 const topShared = {
     module: text('module').notNull(),
     recursives: text('recursives').notNull(), // a list of IDs that are mutually recursive. sorted lexigraphically.
-    accessories: text('accessories').notNull(), // a list of backlinks to siblings (in the same module) that accessorize some export of this toplevel
+    // a list of backlinks to siblings (in the same module) that accessorize some export of this toplevel
+    // I guess I probably want it to be {topid: string, loc: number, myloc: number}[]
+    // for the sake of completeness.
+    accessories: text('accessories').notNull(),
     // jsonified nodes, root, nextLoc, auxiliaries, testConfig(??)
     body: text('body').notNull(),
     ...ts,
 } as const;
+
+// MARK: ByHash
 
 export const toplevelsTable = sqliteTable(
     'toplevels',
@@ -52,6 +57,21 @@ export const documentsTable = sqliteTable(
     }),
 );
 
+export const modules = sqliteTable(
+    'modules',
+    {
+        id: text('id').notNull(),
+        hash: text('hash').notNull(),
+        children: text('children').notNull(), // json mapping of [name]: [id:hash]
+        evaluators: text('evaluators').notNull(), // the evaluators that are enabled for this module
+    },
+    (table) => ({
+        pk: primaryKey({ columns: [table.id, table.hash] }),
+    }),
+);
+
+// MARK: Editeds
+
 export const editedDocuments = sqliteTable('edited_documents', {
     id: text('id').primaryKey(),
     ...docShared,
@@ -75,14 +95,16 @@ export const editedDocumentsHistory = sqliteTable(
     {
         doc: text('doc').notNull(),
         idx: int('idx').notNull(),
-        reverts: int('revert'),
-        changes: text('changes').notNull(),
-        // hrm
+        reverts: int('reverts'),
+        changes: text('changes').notNull(), // json blob
+        created: ts.created,
     },
     (table) => ({
         pk: primaryKey({ columns: [table.doc, table.idx] }),
     }),
 );
+
+// MARK: Latest
 
 export const latestToplevels = sqliteTable('latest_toplevels', {
     id: text('id').primaryKey(),
@@ -97,6 +119,14 @@ export const latestDocuments = sqliteTable('latest_documents', {
     module: text('module').notNull(),
     ...ts,
 });
+
+export const latestModules = sqliteTable('latest_modules', {
+    id: text('id').primaryKey(),
+    hash: text('hash').notNull(),
+    ...ts,
+});
+
+// MARK: Caches
 
 export const parseCache = sqliteTable(
     'parse_cache',
@@ -118,6 +148,16 @@ export const parseCache = sqliteTable(
         }),
     }),
 );
+
+// GOTTA BE
+export const typeCache = sqliteTable('type_cache', {
+    topHash: text('topHash').notNull(),
+    // So, here we only do one type per hash, meaning that
+    // mutually recursive things get lumped together. That makes sense, right?
+    // topId: text('topId').notNull(),
+    evaluator: text('evaluator').notNull(),
+    tinfo: text('tinfo').notNull(), // json blob
+});
 
 /*
 
@@ -267,35 +307,11 @@ yeahhh ok, so what we have is:
 
 
 
-Ok, and I'm feeling like it'll be a similar story for accessories.
+Question: with this change, does that mean that I don't have to care so much about module
+boundaries? hmmmmm. Not sure.
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+ohhh so here's another thing:
+- a module definition keeps track of what evaluators it is "enabled for".
 
 */
-
-// GOTTA BE
-export const typeCache = sqliteTable('type_cache', {
-    topHash: text('topHash').notNull(),
-    topId: text('topId').notNull(),
-    evaluator: text('evaluator').notNull(),
-});
