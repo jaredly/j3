@@ -70,6 +70,44 @@ export const modules = sqliteTable(
     }),
 );
 
+/*
+Ok folks, so if we actually hash the modules,
+that means that we'll want to refer to modules by their hashes
+from documents and toplevels, right?
+otherwise what would be the point.
+
+so, and also, what you would want is to not just
+refer to the individual module, but probably also
+the ... path? hrmmm. yeah ok path has to be unique
+in order for this to mean anything.
+BUT we could get away with just the root, if we
+really wanted.
+
+on the other hand, we could have modules actually be the source of truth
+and like, a persistent dealio. like a merkle trie ya know.
+would that be nice?
+
+That would remove the need for specifying /module/ on stuff.
+
+so like
+
+module:
+    id
+    hash
+    submodules: {[name]: {id, hash}}
+    toplevels: {[name]: {id, hash, idx?}}
+    evaluators: EvPath[]
+
+so that's kinda cool, right?
+it feels like it locks things down better
+
+and it gives you, a way to know "the state of the world at X time"
+which my other thing ... doesn't.
+
+Does it make ... merges harder? or worse in some way?
+
+*/
+
 // MARK: Editeds
 
 export const editedDocuments = sqliteTable('edited_documents', {
