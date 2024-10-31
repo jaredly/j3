@@ -159,6 +159,7 @@ Ohhhhg so. the rename is at tehe stake level isnt it.
   - table: toplevels
     key: hash & id
     module, nodes, ...
+
   - table: documents
     key: hash & id
     module, nodes, ...

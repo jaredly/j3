@@ -46,7 +46,7 @@ export type ParseResult<Top> = {
     associations?: {
         // should be something exported from this dealio, but I guess it doesn't have to be
         loc: Loc;
-        // the "thing we're associating with"
+        // the "thing we're associating with, the associatee"
         target: Loc;
         key: Loc;
     }[];
