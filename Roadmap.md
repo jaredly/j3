@@ -92,6 +92,24 @@ wait but how does that mesh with 'using a document to literately document your P
 alllllsoooooo hm. Iff I am allowing different branches, I certainly need to allow
 different edited_documents, per branch. right?
 
+Yeah.
+Ok, so for like the PR dealio
+what's to stop you from having a document called 'PR.md', right?
+and that outlines the changes.
+
+Would want to be able to have like a node that shows the diff between two hashes of a given
+toplevel. but I'll want that all over the place.
+- would that be ... like a plugin? or something? or would I just implement that in code,
+  and have the output be a 'report of the changes'? that might be cool.
+  like, a, ... macro? could it be a macro? hmm. I don't currently allow macros to get
+  the source code of the thing we're operating on, but it might be something to think about.
+  like that would allow all kinds of great things.
+
+- [ ] MACROs should have access to the source code of all things passed into it. maybe?
+
+yeah being able to do `(generate-serialization #some-type)` would be rad.
+andd being able to do `(show-diff one-thing#hash1 one-thing#hash2)` feels like a super-power.
+
 
 # NExt ups
 
