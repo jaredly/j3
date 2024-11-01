@@ -200,22 +200,28 @@ which I think is something I want.
 
 // MARK: Editeds
 
-export const editedDocuments = sqliteTable('edited_documents', {
-    id: text('id').primaryKey(),
-    root: text('root').notNull(), // the 'root' hash of the whole module tree that we're based on.
-    ...docShared,
-});
+export const editedDocuments = sqliteTable(
+    'edited_documents',
+    {
+        id: text('id').notNull(),
+        branch: text('branch').notNull(),
+        root: text('root').notNull(), // the 'root' hash of the whole module tree that we're based on.
+        ...docShared,
+    },
+    (table) => ({ pk: primaryKey({ columns: [table.id, table.branch] }) }),
+);
 
 export const editedDocumentsToplevels = sqliteTable(
     'edited_documents_toplevels',
     {
         topid: text('topid').notNull(),
         docid: text('docid').notNull(),
+        branch: text('branch').notNull(),
         hash: text('hash'), // might be null if this is a new toplevel
         ...topShared,
     },
     (table) => ({
-        pk: primaryKey({ columns: [table.docid, table.topid] }),
+        pk: primaryKey({ columns: [table.docid, table.branch, table.topid] }),
     }),
 );
 
@@ -223,13 +229,14 @@ export const editedDocumentsHistory = sqliteTable(
     'edited_documents_history',
     {
         doc: text('doc').notNull(),
+        branch: text('branch').notNull(),
         idx: int('idx').notNull(),
         reverts: int('reverts'),
         changes: text('changes', { mode: 'json' }).notNull(), // json blob
         created: ts.created,
     },
     (table) => ({
-        pk: primaryKey({ columns: [table.doc, table.idx] }),
+        pk: primaryKey({ columns: [table.doc, table.branch, table.idx] }),
     }),
 );
 

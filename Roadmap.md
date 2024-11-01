@@ -68,6 +68,31 @@ Because, for PRs, we'll just 'pull in a new pr doc' into the module
 where it's based, and you can then commit it from there. /the end result ought to be idential hashes, at least for the relevant tops/.
 
 
+
+ok but nother quich questions.
+What does a "PR" look like, for a document?
+like 'hey I made a change to this document'.
+things that would be changed:
+- probably some toplevels
+- but also maybe some nodes.
+  - hmm what if it was, like...
+    some doc nodes have an attribute indicating added/removed? that could be interesting.
+
+waitwait.
+you just /save the document/ to a hash on another branch, and then have normal tools for
+comparing/merging different versions of a document.
+ok yeah that's normal.
+
+hm. so the general idea is: 'pull a branch with the changes, both to documents and toplevels'
+and then merge those in? hmmm.
+and it'll use some known common base as the base for the changes.
+
+wait but how does that mesh with 'using a document to literately document your PR'
+
+alllllsoooooo hm. Iff I am allowing different branches, I certainly need to allow
+different edited_documents, per branch. right?
+
+
 # NExt ups
 
 - [x] refactor the server to get ready for sqlite
