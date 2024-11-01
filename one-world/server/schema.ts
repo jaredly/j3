@@ -2,12 +2,12 @@ import { sql } from 'drizzle-orm';
 import { int, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
 const ts = {
-    created: text('created')
+    created: int('created')
         .notNull()
-        .default(sql`(current_timestamp)`),
-    updated: text('updated')
+        .default(sql`(unixepoch(current_timestamp))`),
+    updated: int('updated')
         .notNull()
-        .default(sql`(current_timestamp)`),
+        .default(sql`(unixepoch(current_timestamp))`),
 } as const;
 
 const topShared = {
@@ -72,6 +72,8 @@ export const modules = sqliteTable(
         toplevels: text('toplevels').notNull(), // {[name]: {id, hash, idx?}}
         documents: text('documents').notNull(), // {[title]: {id, hash}}
         evaluators: text('evaluators').notNull(), // EvPath[]
+
+        ...ts,
     },
     (table) => ({
         pk: primaryKey({ columns: [table.id, table.hash] }),

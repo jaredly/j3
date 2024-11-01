@@ -66,10 +66,7 @@ export type DocState = {
 
 export type PersistedState = DocStage;
 
-export type EvaluatorPath = {
-    toplevel: string;
-    commit: string;
-}[];
+export type EvaluatorPath = { id: string; hash: string }[];
 
 export type Doc = {
     id: string;
