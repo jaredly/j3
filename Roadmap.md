@@ -1,4 +1,35 @@
 
+# THinking about pull requests and syncing
+
+- an edited-doc should have the `root` that it's based on
+- a pull-request is just an edited-doc, with the edited topelvels being the changes.
+  and the cool part is you can like do a full literate-programming dealio, explaining
+  each change, using non-exported toplevels.
+
+BUT what about doing like a "diff" of my tree and your tree?
+how do I tell which things have changed?
+hrm I guess I could do a full "pull" of your tree, using the merkle tree
+for efficiency, and then make a new /branch/ for it, and then locally...
+figure out the differences?
+- yeah ok so that's where it gets a little fuzzy, because I also
+  probably need the /git history/ of your stuff, in order to determine
+  ...common ancestors of edited things? idk.
+  but anyway, I think I fundamentally do have the information, it's
+  just a matter of moving it around.
+
+so ... hm. There's this thing where, in order to diff two branches,
+first I'll find the TOPs that have different hashes, and then I'll
+need to "find the common ancestor" ... probably? In order to do
+the merge in the ~best way possible.
+
+Now, to start I can just bail with saying "the user will figure out how to reconcile".
+And in the ~worst case, they can split the world.
+
+ok anyway, like I said, I don't think I fundamentally need to make any changes?
+wellll ok maybe I want toplevels to hang on to the /previous hash/ as well.
+
+
+
 # What does seeding the db look like?
 
 - obvs need a root module and an initial commit containing that root, and the branch /main/ pointing to it.
@@ -24,6 +55,17 @@ HRMMM also a table for "assets". Where do I talk about that?
 
 what ifffff like ... exports were ... just defined on the `module`,
 and didn't ... like exist for themselves anywhere?
+
+
+I should think about unison https://www.unison-lang.org/docs/projects/
+and what they've done.
+For example, what would a "pull request" look like in this line of work?
+
+anddddd is there possibly a way to just use git? lol
+
+OK SO I ... probably want a way to archive a document as well.
+Because, for PRs, we'll just 'pull in a new pr doc' into the module
+where it's based, and you can then commit it from there. /the end result ought to be idential hashes, at least for the relevant tops/.
 
 
 # NExt ups

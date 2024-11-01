@@ -35,6 +35,9 @@ export const toplevelsTable = sqliteTable(
     {
         id: text('id').notNull(),
         hash: text('hash').notNull(),
+        // the 'previous hash' of this toplevel. used for ordering revisions of a toplevel, for finding "least common ancestor"
+        // this is /not/ included in the 'hash' calculation, but is only used for local record-keeping
+        prevHash: text('hash'),
         ...topShared,
     },
     (table) => ({
@@ -62,6 +65,7 @@ export const documentsTable = sqliteTable(
     {
         id: text('id').notNull(),
         hash: text('hash').notNull(),
+        archived: int('archived'), // datetime of archival, if present
         ...docShared,
     },
     idHash,
@@ -198,6 +202,7 @@ which I think is something I want.
 
 export const editedDocuments = sqliteTable('edited_documents', {
     id: text('id').primaryKey(),
+    root: text('root').notNull(), // the 'root' hash of the whole module tree that we're based on.
     ...docShared,
 });
 

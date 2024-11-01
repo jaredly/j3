@@ -1,4 +1,10 @@
 
+https://github.com/vnglst/particle-life
+
+https://github.com/HigherOrderCO/Bend
+
+CapJS https://capjs.3d2k.com/ & Dwitter https://www.dwitter.net/
+
 PALLAS https://opfn.gitbook.io/pallas/plan/in-depth
 Scrapscript
 lambda-mountain https://github.com/andrew-johnson-4/lambda-mountain/tree/main
