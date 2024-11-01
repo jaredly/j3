@@ -1,5 +1,12 @@
 import { sql } from 'drizzle-orm';
-import { int, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import {
+    blob,
+    int,
+    primaryKey,
+    SQLiteColumn,
+    sqliteTable,
+    text,
+} from 'drizzle-orm/sqlite-core';
 
 const ts = {
     created: int('created')
@@ -11,14 +18,13 @@ const ts = {
 } as const;
 
 const topShared = {
-    module: text('module').notNull(),
-    recursives: text('recursives').notNull(), // a list of IDs that are mutually recursive. sorted lexigraphically.
+    recursives: text('recursives', { mode: 'json' }).notNull(), // a list of IDs that are mutually recursive. sorted lexigraphically.
     // a list of backlinks to siblings (in the same module) that accessorize some export of this toplevel
     // I guess I probably want it to be {topid: string, loc: number, myloc: number}[]
     // for the sake of completeness.
-    accessories: text('accessories').notNull(),
+    accessories: text('accessories', { mode: 'json' }).notNull(),
     // jsonified nodes, root, nextLoc, auxiliaries, testConfig(??)
-    body: text('body').notNull(),
+    body: text('body', { mode: 'json' }).notNull(),
     ...ts,
 } as const;
 
@@ -38,12 +44,18 @@ export const toplevelsTable = sqliteTable(
 
 const docShared = {
     title: text('title').notNull(),
-    published: text('published').notNull(),
-    module: text('module').notNull(),
-    evaluator: text('evaluator').notNull(),
-    body: text('body').notNull(), // jsonified nodes, nextLoc, nsAliases
+    published: int('published'), // datetime of publishment, if present
+    evaluator: text('evaluator', { mode: 'json' }).notNull(),
+    body: text('body', { mode: 'json' }).notNull(), // jsonified nodes, nextLoc, nsAliases
     ...ts,
 } as const;
+
+const idHash = (table: {
+    id: ReturnType<typeof text>;
+    hash: ReturnType<typeof text>;
+}) => ({
+    pk: primaryKey({ columns: [table.id, table.hash] }),
+});
 
 export const documentsTable = sqliteTable(
     'documents',
@@ -52,9 +64,7 @@ export const documentsTable = sqliteTable(
         hash: text('hash').notNull(),
         ...docShared,
     },
-    (table) => ({
-        pk: primaryKey({ columns: [table.id, table.hash] }),
-    }),
+    idHash,
 );
 
 export const modules = sqliteTable(
@@ -68,16 +78,36 @@ export const modules = sqliteTable(
         id: text('id').notNull(),
         hash: text('hash').notNull(),
 
-        submodules: text('submodules').notNull(), // {[name]: {id, hash}}
-        toplevels: text('toplevels').notNull(), // {[name]: {id, hash, idx?}}
-        documents: text('documents').notNull(), // {[title]: {id, hash}}
-        evaluators: text('evaluators').notNull(), // EvPath[]
+        assets: text('assets', { mode: 'json' }).notNull().default('{}'), // {[name]: {id, hash}}
+        submodules: text('submodules', { mode: 'json' })
+            .notNull()
+            .default('{}'), // {[name]: {id, hash}}
+        toplevels: text('toplevels', { mode: 'json' }).notNull().default('{}'), // {[name]: {id, hash, idx?}}
+        documents: text('documents', { mode: 'json' }).notNull().default('{}'), // {[title]: {id, hash}}
+        evaluators: text('evaluators', { mode: 'json' })
+            .notNull()
+            .default('[]'), // EvPath[]
+
+        // does that seem like a reasonable place to put them?
+        // kinda seems like it to me tbh.
+        // {[name]: {id, hash, evaluator: EvPath[], kind: 'evaluator' | 'ffi' | 'backend' | 'visual'}}
+        artifacts: text('artifacts', { mode: 'json' }).notNull().default('{}'),
 
         ...ts,
     },
-    (table) => ({
-        pk: primaryKey({ columns: [table.id, table.hash] }),
-    }),
+    idHash,
+);
+
+export const assets = sqliteTable(
+    'assets',
+    {
+        id: text('id').notNull(),
+        hash: text('hash').notNull(),
+        data: blob('data').notNull(),
+        mime: text('mime').notNull(),
+        meta: text('meta', { mode: 'json' }), // like width/height for images
+    },
+    idHash,
 );
 
 // MARK: Versioning
@@ -85,6 +115,7 @@ export const modules = sqliteTable(
 export const commits = sqliteTable('commits', {
     hash: text('hash').primaryKey(), // a hash of the commit
     root: text('root').notNull(), // hash of the root module? yeah. root module has id "root"
+    sourceDoc: text('sourceDoc'), // If this commit originated from a document, the id of the document. Can look up the hash in the /parent/
     message: text('message').notNull(),
     parent: text('parent'), // root commit has no parent
     author: text('author'),
@@ -189,7 +220,7 @@ export const editedDocumentsHistory = sqliteTable(
         doc: text('doc').notNull(),
         idx: int('idx').notNull(),
         reverts: int('reverts'),
-        changes: text('changes').notNull(), // json blob
+        changes: text('changes', { mode: 'json' }).notNull(), // json blob
         created: ts.created,
     },
     (table) => ({
@@ -226,13 +257,13 @@ export const parseCache = sqliteTable(
     {
         topHash: text('topHash').notNull(),
         topId: text('topId').notNull(),
-        evaluator: text('evaluator').notNull(),
+        evaluator: text('evaluator', { mode: 'json' }).notNull(),
 
-        exports: text('exports').notNull(), // string[]
-        references: text('references').notNull(), // string[], the topids of referenced things
-        accessories: text('accessories').notNull(), // string[], the topids of the "targets" of the association
+        exports: text('exports', { mode: 'json' }).notNull(), // string[]
+        references: text('references', { mode: 'json' }).notNull(), // string[], the topids of referenced things
+        accessories: text('accessories', { mode: 'json' }).notNull(), // string[], the topids of the "targets" of the association
 
-        body: text('body').notNull(), // the jsonified full parseResult
+        body: text('body', { mode: 'json' }).notNull(), // the jsonified full parseResult
         ...ts,
     },
     (table) => ({
@@ -248,8 +279,8 @@ export const typeCache = sqliteTable('type_cache', {
     // So, here we only do one type per hash, meaning that
     // mutually recursive things get lumped together. That makes sense, right?
     // topId: text('topId').notNull(),
-    evaluator: text('evaluator').notNull(),
-    tinfo: text('tinfo').notNull(), // json blob
+    evaluator: text('evaluator', { mode: 'json' }).notNull(),
+    tinfo: text('tinfo', { mode: 'json' }).notNull(), // json blob
 });
 
 /*

@@ -14,16 +14,27 @@ type Module = {
     toplevels: Record<string, { id: string; hash: string; idx?: number }>;
     documents: Record<string, { id: string; hash: string }>;
     evaluators: EvaluatorPath[];
+    assets: Record<string, { id: string; hash: string }>;
+    artifacts: Record<
+        string,
+        {
+            id: string;
+            hash: string;
+            evaluator: EvaluatorPath;
+            kind: 'evaluator' | 'ffi' | 'backend' | 'visual';
+        }
+    >;
     created: number;
     updated: number;
 };
 
 type Commit = {
     hash?: string;
+    sourceDoc?: string;
     root: string;
     message: string;
     parent?: string;
-    author: string;
+    author?: string;
     created: number;
 };
 
@@ -70,12 +81,12 @@ async function seed() {
         toplevels: {},
         documents: {},
         evaluators: [],
+        assets: {},
+        artifacts: {},
         created: Date.now(),
         updated: Date.now(),
     };
-    const t = hashModule(module);
-    console.log(t);
-    const moduleHash = hashit(t, hasher);
+    const moduleHash = hashit(hashModule(module), hasher);
 
     const commit: Commit = {
         root: moduleHash,

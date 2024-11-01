@@ -1,4 +1,31 @@
 
+# What does seeding the db look like?
+
+- obvs need a root module and an initial commit containing that root, and the branch /main/ pointing to it.
+- thennn we probably want ... a basic scaffolding of modules.
+- might as well make a commit of it, right?
+
+Basic modules structure:
+
+root/
+  sessions/
+    wait ok so if you start a new document, it plops you in here
+    with a brand new module all of your very own.
+    you can choose to move it somewhere else though if you want.
+  projects/
+    here's for like, whatever random thing
+  evaluators/
+    here's where we define the languages, right?
+  vendor/
+    it's for community libraries you pull in
+
+OHHH WAIT I need a table for ... like ... "exports", right?
+HRMMM also a table for "assets". Where do I talk about that?
+
+what ifffff like ... exports were ... just defined on the `module`,
+and didn't ... like exist for themselves anywhere?
+
+
 # NExt ups
 
 - [x] refactor the server to get ready for sqlite
