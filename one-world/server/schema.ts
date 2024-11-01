@@ -60,17 +60,51 @@ export const documentsTable = sqliteTable(
 export const modules = sqliteTable(
     'modules',
     {
+        // Q: do we need an `id` that's separate from the ... `hash`?
+        // hm it would be for tracking ~identity over time. which I do
+        // think is something I'm interested in. Yeah.
+        // and for like, in-memory representation, I think I'll be passing
+        // around module ids, not hashes. And then we compute the hashes.
         id: text('id').notNull(),
         hash: text('hash').notNull(),
-        children: text('children').notNull(), // json mapping of [name]: [id:hash]
-        evaluators: text('evaluators').notNull(), // the evaluators that are enabled for this module
+
+        submodules: text('submodules').notNull(), // {[name]: {id, hash}}
+        toplevels: text('toplevels').notNull(), // {[name]: {id, hash, idx?}}
+        documents: text('documents').notNull(), // {[title]: {id, hash}}
+        evaluators: text('evaluators').notNull(), // EvPath[]
     },
     (table) => ({
         pk: primaryKey({ columns: [table.id, table.hash] }),
     }),
 );
 
+// MARK: Versioning
+
+export const commits = sqliteTable('commits', {
+    hash: text('hash').primaryKey(), // a hash of the commit
+    root: text('root').notNull(), // hash of the root module? yeah. root module has id "root"
+    message: text('message').notNull(),
+    parent: text('parent'), // root commit has no parent
+    author: text('author'),
+    created: ts.created,
+});
+
+export const branches = sqliteTable('branches', {
+    name: text('name').primaryKey(), // `main` branch will be our only one to start
+    head: text('head').notNull(), // commit hash,
+});
+
 /*
+lol am I literally reinventing git here?
+like I might as well just use git, right?
+
+naw, or at least not at first. I'll use my own thing,
+and maybe decide there's a way to have git be the backend at some point,
+but not just yet.
+
+
+
+
 Ok folks, so if we actually hash the modules,
 that means that we'll want to refer to modules by their hashes
 from documents and toplevels, right?
@@ -95,7 +129,12 @@ module:
     id
     hash
     submodules: {[name]: {id, hash}}
+    // So IDX here is /withihn the toplevel/, not, as
+    // might be assumed, the index into a mutually recursive collection of toplevels
+    // that all share the same hash. right?
+    // Yeah I think that's right.
     toplevels: {[name]: {id, hash, idx?}}
+    documents: {[title]: {id, hash}}
     evaluators: EvPath[]
 
 so that's kinda cool, right?
@@ -105,6 +144,20 @@ and it gives you, a way to know "the state of the world at X time"
 which my other thing ... doesn't.
 
 Does it make ... merges harder? or worse in some way?
+
+Ok so answering the question "is this [hash] the latest hash for [this toplevel]"
+becomes a bit less straightforward...
+
+it does open up the possiblity of branches, which ... I'm not sure if I'm sold on?
+
+yeahh it has a better handle on rewinding history, which is definitely a thing that I want.
+
+and I like that we've got structural sharing.
+
+Ok I think I'm sold on it.
+
+ALSO a nice thing is that it enforces name-uniqueness for toplevels in a given module.
+which I think is something I want.
 
 */
 
@@ -144,25 +197,25 @@ export const editedDocumentsHistory = sqliteTable(
 
 // MARK: Latest
 
-export const latestToplevels = sqliteTable('latest_toplevels', {
-    id: text('id').primaryKey(),
-    hash: text('hash').notNull(),
-    module: text('module').notNull(),
-    ...ts,
-});
+// export const latestToplevels = sqliteTable('latest_toplevels', {
+//     id: text('id').primaryKey(),
+//     hash: text('hash').notNull(),
+//     module: text('module').notNull(),
+//     ...ts,
+// });
 
-export const latestDocuments = sqliteTable('latest_documents', {
-    id: text('id').primaryKey(),
-    hash: text('hash').notNull(),
-    module: text('module').notNull(),
-    ...ts,
-});
+// export const latestDocuments = sqliteTable('latest_documents', {
+//     id: text('id').primaryKey(),
+//     hash: text('hash').notNull(),
+//     module: text('module').notNull(),
+//     ...ts,
+// });
 
-export const latestModules = sqliteTable('latest_modules', {
-    id: text('id').primaryKey(),
-    hash: text('hash').notNull(),
-    ...ts,
-});
+// export const latestModules = sqliteTable('latest_modules', {
+//     id: text('id').primaryKey(),
+//     hash: text('hash').notNull(),
+//     ...ts,
+// });
 
 // MARK: Caches
 
