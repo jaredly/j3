@@ -1,4 +1,37 @@
 
+# Ohhhk, so I think I've hashed out a lot of what things would look like.
+To summarize:
+- a pull-request would include, like a Doc that has (show-diff) on
+  the relevant things we're bringing in, with commentary.
+And it would have a 'base hash'
+
+And you could bring it in as a branch, play around with it, read the commentary,
+and then choose what to bring over, via 'create a new EditedDoc with the changes'.
+
+
+hmmmmm `show-diff` relying on the runtime miiiight be a stretch? idk like I might
+not want to rely on the runtime for this.
+because I think I want to be able to have like a `Create a "PR" doc with the changes since [commit]`
+hmmmm but actually I could have a dialog that says "select the show-diff macro, if you have one".
+hmmmmmmm orrr there could like be a ... rich-text embed type that is just like 'show the source code'?
+yeah actualy maybe that's best.
+So: RichInline embed, should include the hash pls.
+nice. yeah I like that.
+Q: how about comments? do I want to be able to inline-comment on a diff? hrm.
+I could see adding something to the InlineSpan type, that would be fine.
+
+
+
+
+
+
+
+
+
+
+
+
+
 # THinking about pull requests and syncing
 
 - an edited-doc should have the `root` that it's based on

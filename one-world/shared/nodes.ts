@@ -105,7 +105,13 @@ export type InlineSpan =
           style: Style;
       }
     | { type: 'link'; text: string; link: string; style: Style }
-    | { type: 'embed'; item: number };
+    | { type: 'embed'; item: number }
+    | { type: 'include'; id: string; hash: string }
+    | {
+          type: 'diff';
+          before: { id: string; hash: string };
+          after: { id: string; hash: string };
+      };
 
 // Rich Paragraph(?)
 export type RichInline = {
@@ -131,7 +137,13 @@ export type InlineSpanT<Loc> =
           style: Style;
       }
     | { type: 'link'; text: string; link: string; style: Style }
-    | { type: 'embed'; item: RecNodeT<Loc> };
+    | { type: 'embed'; item: RecNodeT<Loc> }
+    | { type: 'include'; id: string; hash: string }
+    | {
+          type: 'diff';
+          before: { id: string; hash: string };
+          after: { id: string; hash: string };
+      };
 
 // So, when editing, default is to start with a rich-inline,
 // but if you start needing extra formatting, we wrap in a
