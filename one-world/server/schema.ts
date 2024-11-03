@@ -53,13 +53,6 @@ const docShared = {
     ...ts,
 } as const;
 
-const idHash = (table: {
-    id: ReturnType<typeof text>;
-    hash: ReturnType<typeof text>;
-}) => ({
-    pk: primaryKey({ columns: [table.id, table.hash] }),
-});
-
 export const documentsTable = sqliteTable(
     'documents',
     {
@@ -68,8 +61,25 @@ export const documentsTable = sqliteTable(
         archived: int('archived'), // datetime of archival, if present
         ...docShared,
     },
-    idHash,
+    (table) => ({
+        pk: primaryKey({ columns: [table.id, table.hash] }),
+    }),
 );
+
+const modulesShared = {
+    assets: text('assets', { mode: 'json' }).notNull().default('{}'), // {[name]: {id, hash}}
+    submodules: text('submodules', { mode: 'json' }).notNull().default('{}'), // {[name]: {id, hash}}
+    toplevels: text('toplevels', { mode: 'json' }).notNull().default('{}'), // {[name]: {id, hash, idx?}}
+    documents: text('documents', { mode: 'json' }).notNull().default('{}'), // {[title]: {id, hash}}
+    evaluators: text('evaluators', { mode: 'json' }).notNull().default('[]'), // EvPath[]
+
+    // does that seem like a reasonable place to put them?
+    // kinda seems like it to me tbh.
+    // {[name]: {id, hash, evaluator: EvPath[], kind: 'evaluator' | 'ffi' | 'backend' | 'visual'}}
+    artifacts: text('artifacts', { mode: 'json' }).notNull().default('{}'),
+
+    ...ts,
+} as const;
 
 export const modules = sqliteTable(
     'modules',
@@ -82,24 +92,11 @@ export const modules = sqliteTable(
         id: text('id').notNull(),
         hash: text('hash').notNull(),
 
-        assets: text('assets', { mode: 'json' }).notNull().default('{}'), // {[name]: {id, hash}}
-        submodules: text('submodules', { mode: 'json' })
-            .notNull()
-            .default('{}'), // {[name]: {id, hash}}
-        toplevels: text('toplevels', { mode: 'json' }).notNull().default('{}'), // {[name]: {id, hash, idx?}}
-        documents: text('documents', { mode: 'json' }).notNull().default('{}'), // {[title]: {id, hash}}
-        evaluators: text('evaluators', { mode: 'json' })
-            .notNull()
-            .default('[]'), // EvPath[]
-
-        // does that seem like a reasonable place to put them?
-        // kinda seems like it to me tbh.
-        // {[name]: {id, hash, evaluator: EvPath[], kind: 'evaluator' | 'ffi' | 'backend' | 'visual'}}
-        artifacts: text('artifacts', { mode: 'json' }).notNull().default('{}'),
-
-        ...ts,
+        ...modulesShared,
     },
-    idHash,
+    (table) => ({
+        pk: primaryKey({ columns: [table.id, table.hash] }),
+    }),
 );
 
 export const assets = sqliteTable(
@@ -111,7 +108,9 @@ export const assets = sqliteTable(
         mime: text('mime').notNull(),
         meta: text('meta', { mode: 'json' }), // like width/height for images
     },
-    idHash,
+    (table) => ({
+        pk: primaryKey({ columns: [table.id, table.hash] }),
+    }),
 );
 
 // MARK: Versioning
@@ -222,6 +221,20 @@ export const editedDocumentsToplevels = sqliteTable(
     },
     (table) => ({
         pk: primaryKey({ columns: [table.docid, table.branch, table.topid] }),
+    }),
+);
+
+export const editedDocumentsModules = sqliteTable(
+    'modules',
+    {
+        id: text('id').notNull(),
+        docid: text('docid').notNull(),
+        branch: text('branch').notNull(),
+        hash: text('hash'), // might be null if this is a new module
+        ...modulesShared,
+    },
+    (table) => ({
+        pk: primaryKey({ columns: [table.docid, table.branch, table.id] }),
     }),
 );
 

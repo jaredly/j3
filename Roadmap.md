@@ -1,4 +1,40 @@
 
+# Let's talk through the basics of an editing session, end to end
+
+- we are on a branch
+- we create a new document in a module
+  - the ... hrm ok I think it does have to get auto-committed
+- ok new place, we're editing an existing document
+- this creates an editedDocument, w/ toplevels copied in
+  for all of the toplevels of that document.
+  and ... modules copied in for all of the modules represented.
+  ... like, the modules that the toplevels are in.
+  this will require doing a reverse-search to get the modules
+  for the toplevels.
+- the editedDocument will have a record of the root hash at time
+  of creation, so we know what to compare to.
+- modules and toplevels will also have the hashes of their base,
+  although that techincally could be derived from the root hash. (? maynbe)
+
+- now, we do some edits. editedDocumentsToplevels receives updates,
+  as does editedDocuments (for nodes changes), and ... potentially
+  editedDocumentsModules. I guess when saving a toplevel, we do parse
+  it, and if it produces exports we toss them into the modules.
+- we can also ... add assets, or artifacts, or other things that impact
+  a module.
+
+- once we're done, and potentailly only if all tests are green, we
+  do a commit.
+  This (a) writes to /modules/ and /toplevels/ and /documents/,
+  (b) make a commit row, linking the new root hash, and the old
+  parent commit, and the document we were editing. (c) updates
+  the branch to point to our new commit.
+
+
+
+
+
+
 # Ohhhk, so I think I've hashed out a lot of what things would look like.
 To summarize:
 - a pull-request would include, like a Doc that has (show-diff) on
@@ -22,7 +58,33 @@ I could see adding something to the InlineSpan type, that would be fine.
 
 
 
+# Ok, so:
 
+- on branch main
+- fork to a new branch, why not
+- make some changes probably
+- then make a "PR document" that highlights the changes
+
+At this point, what role does edited-document play?
+It is the 'staging area'. it is the 'working tree'
+
+Alright. My Backend interface should probably be modified
+to account for branches?
+
+orrr we just say "the server backend represents a branch that is static"
+
+Operations include:
+- retrieve a full modules story
+- retrieve a single document (view-only)
+- retrieve a document for editing (may create)
+- update an edited document
+- create a new document (at a module ...)
+- commit a document's changes.
+
+hmmm when creating a new document, does it start staged?
+Do you have to /commit/ to actually produce it? That seems like a reasonable idea.
+
+Alsoo, editedDocuments now need to ... encompass module changes as well.
 
 
 
