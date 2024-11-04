@@ -1,9 +1,65 @@
 
+# Commits, and git, and whatnot.
+
+- IS there a way to make merging of non-conflicting commits seamless?
+
+like...
+hrmmm ok I guess the logical conclusion would be some kind of CRDT
+whichhhh isn't really what I'm going for?
+yeahhh because some concurrent changes would actually produce
+conflicts, like if two different folks introduce the same name
+into a given module.
+ok, I'll leave that as a potential future exercise.
+for now, we'll do /merge commits/ with potential conflicts
+that will need to be manually resolved.
+
+
+
+
+
+# Thikning about projects, and dependencies
+
+One thing about projects, is depenedencies.
+If you're in a world where you have multiple versions of a library, how are you
+supposed to know what version to autocomplete?
+
+Basic idea:
+- autocomplete will grab anything in the same module or a descendent
+- OR an /alias/ that exists in an ancestor (?) hmm.
+
+So like
+
+/
+/vendored
+/sessions
+/projects
+  /one-thing
+  /two-thing
+    /~lol = /vendored/lol/2.34
+    /some/deep/module
+                /child/and/such
+                /second
+                /~nother = /vendored/nother/1.11
+                ...
+                so here, we autocomplete
+                - child, child/and, child/and/such
+                - second
+                - ~nother
+                - ~lol
+
+You can technically depend on anything from anywhere, but we won't
+autocomplete it for you. And we'll probably call out non-aliased
+foreign dependencies.
+
+
+
+
 # Let's talk through the basics of an editing session, end to end
 
 - we are on a branch
 - we create a new document in a module
   - the ... hrm ok I think it does have to get auto-committed
+  - nope! It doesn't. The editedDocument just records the module where it will be saved to.
 - ok new place, we're editing an existing document
 - this creates an editedDocument, w/ toplevels copied in
   for all of the toplevels of that document.

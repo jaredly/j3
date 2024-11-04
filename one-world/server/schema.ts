@@ -118,11 +118,18 @@ export const assets = sqliteTable(
 export const commits = sqliteTable('commits', {
     hash: text('hash').primaryKey(), // a hash of the commit
     root: text('root').notNull(), // hash of the root module? yeah. root module has id "root"
-    sourceDoc: text('sourceDoc'), // If this commit originated from a document, the id of the document. Can look up the hash in the /parent/
     message: text('message').notNull(),
     parent: text('parent'), // root commit has no parent
     author: text('author'),
     created: ts.created,
+});
+
+// When we commit, we squash all the granular history into a single row here, which we can
+// hydrate if we want to get fine-grained history of a past commit.
+export const commitEditedHistory = sqliteTable('commit_edited_history', {
+    hash: text('hash').primaryKey(), // the hash of the commit
+    doc: text('doc').notNull(), // the document this came from
+    history: text('history', { mode: 'json' }).notNull(), // jsonified blob of all history items for this commit
 });
 
 export const branches = sqliteTable('branches', {
@@ -205,6 +212,9 @@ export const editedDocuments = sqliteTable(
         id: text('id').notNull(),
         branch: text('branch').notNull(),
         root: text('root').notNull(), // the 'root' hash of the whole module tree that we're based on.
+        // This is the module that the document will be saved to.
+        // it also serves as the "base" module for any new toplevels added.
+        module: text('module').notNull(),
         ...docShared,
     },
     (table) => ({ pk: primaryKey({ columns: [table.id, table.branch] }) }),
