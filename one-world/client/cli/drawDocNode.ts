@@ -40,7 +40,7 @@ export const docToBlock = <Top>(
             toplevel: node.toplevel,
             type: 'doc-node',
         };
-        let nsText = node.namespace;
+        let nsText = null; // node.namespace;
         const sel = selections.find(
             (s) => s.type === 'namespace' && s.root.toplevel === node.toplevel,
         );

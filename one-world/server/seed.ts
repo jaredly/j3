@@ -10,14 +10,13 @@ import {
 } from './hashings';
 import * as tb from './schema';
 
-export async function seed(db: BunSQLiteDatabase<Record<string, never>>) {
+export async function seed(db: BunSQLiteDatabase<typeof tb>) {
     const hasher = await createBLAKE3();
 
     const module: Module = {
         id: 'root',
         submodules: {},
-        toplevels: {},
-        documents: {},
+        terms: {},
         evaluators: [],
         assets: {},
         artifacts: {},
@@ -43,8 +42,8 @@ export async function seed(db: BunSQLiteDatabase<Record<string, never>>) {
         ...module,
         hash: moduleHash,
         submodules: JSON.stringify(module.submodules),
-        toplevels: JSON.stringify(module.toplevels),
-        documents: JSON.stringify(module.documents),
+        terms: JSON.stringify(module.terms),
+        // documents: JSON.stringify(module.documents),
         evaluators: JSON.stringify(module.evaluators),
     });
 

@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm';
+import { relations, sql } from 'drizzle-orm';
 import {
     blob,
     int,
@@ -18,6 +18,14 @@ const ts = {
 } as const;
 
 const topShared = {
+    // this is the module that this toplevel thinks it belongs do.
+    // when it gets yoinked into a document, and this module is not the same
+    // as the one where it lands, we'll indicate that in the UI.
+    // Q: if a toplevel has multiple exports, can they be rearranged to live in
+    // different modules? nopedynope.
+    // When this toplevel is parsed, and there are exports, they get plopped onto
+    // this /module/'s `toplevels` thing. although it probably shouldn't be called `toplevels` tbh.
+    module: text('module').notNull(),
     recursives: text('recursives', { mode: 'json' }).notNull(), // a list of IDs that are mutually recursive. sorted lexigraphically.
     // a list of backlinks to siblings (in the same module) that accessorize some export of this toplevel
     // I guess I probably want it to be {topid: string, loc: number, myloc: number}[]
@@ -53,7 +61,7 @@ const docShared = {
     ...ts,
 } as const;
 
-export const documentsTable = sqliteTable(
+export const documents = sqliteTable(
     'documents',
     {
         id: text('id').notNull(),
@@ -69,9 +77,11 @@ export const documentsTable = sqliteTable(
 const modulesShared = {
     assets: text('assets', { mode: 'json' }).notNull().default('{}'), // {[name]: {id, hash}}
     submodules: text('submodules', { mode: 'json' }).notNull().default('{}'), // {[name]: {id, hash}}
-    toplevels: text('toplevels', { mode: 'json' }).notNull().default('{}'), // {[name]: {id, hash, idx?}}
+    // exports from toplevels y'all
+    terms: text('terms', { mode: 'json' }).notNull().default('{}'), // {[name]: {id, hash, idx?}}
     documents: text('documents', { mode: 'json' }).notNull().default('{}'), // {[title]: {id, hash}}
     evaluators: text('evaluators', { mode: 'json' }).notNull().default('[]'), // EvPath[]
+    aliases: text('aliases', { mode: 'json' }).notNull().default('[]'), // {[name]: module-id}
 
     // does that seem like a reasonable place to put them?
     // kinda seems like it to me tbh.
@@ -124,6 +134,13 @@ export const commits = sqliteTable('commits', {
     created: ts.created,
 });
 
+export const commitRelations = relations(commits, ({ one }) => ({
+    module: one(modules, {
+        fields: [commits.root],
+        references: [modules.hash],
+    }),
+}));
+
 // When we commit, we squash all the granular history into a single row here, which we can
 // hydrate if we want to get fine-grained history of a past commit.
 export const commitEditedHistory = sqliteTable('commit_edited_history', {
@@ -136,6 +153,13 @@ export const branches = sqliteTable('branches', {
     name: text('name').primaryKey(), // `main` branch will be our only one to start
     head: text('head').notNull(), // commit hash,
 });
+
+export const branchRelations = relations(branches, ({ one }) => ({
+    commit: one(commits, {
+        fields: [branches.head],
+        references: [commits.hash],
+    }),
+}));
 
 /*
 lol am I literally reinventing git here?
@@ -212,9 +236,10 @@ export const editedDocuments = sqliteTable(
         id: text('id').notNull(),
         branch: text('branch').notNull(),
         root: text('root').notNull(), // the 'root' hash of the whole module tree that we're based on.
-        // This is the module that the document will be saved to.
+        // This is the module path that the document will be saved to.
         // it also serves as the "base" module for any new toplevels added.
-        module: text('module').notNull(),
+        // it might contain IDs of modules that don't exist yet.
+        modulePath: text('modulePath', { mode: 'json' }).notNull(),
         ...docShared,
     },
     (table) => ({ pk: primaryKey({ columns: [table.id, table.branch] }) }),
@@ -234,6 +259,19 @@ export const editedDocumentsToplevels = sqliteTable(
     }),
 );
 
+export const editedDocumentsToplevelsRelations = relations(
+    editedDocumentsToplevels,
+    ({ one }) => ({
+        document: one(editedDocuments, {
+            fields: [
+                editedDocumentsToplevels.docid,
+                editedDocumentsToplevels.branch,
+            ],
+            references: [editedDocuments.id, editedDocuments.branch],
+        }),
+    }),
+);
+
 export const editedDocumentsModules = sqliteTable(
     'modules',
     {
@@ -248,11 +286,25 @@ export const editedDocumentsModules = sqliteTable(
     }),
 );
 
+export const editedDocumentsModulesRelations = relations(
+    editedDocumentsModules,
+    ({ one }) => ({
+        document: one(editedDocuments, {
+            fields: [
+                editedDocumentsModules.docid,
+                editedDocumentsModules.branch,
+            ],
+            references: [editedDocuments.id, editedDocuments.branch],
+        }),
+    }),
+);
+
 export const editedDocumentsHistory = sqliteTable(
     'edited_documents_history',
     {
         doc: text('doc').notNull(),
         branch: text('branch').notNull(),
+        session: text('session').notNull(),
         idx: int('idx').notNull(),
         reverts: int('reverts'),
         changes: text('changes', { mode: 'json' }).notNull(), // json blob
@@ -260,6 +312,25 @@ export const editedDocumentsHistory = sqliteTable(
     },
     (table) => ({
         pk: primaryKey({ columns: [table.doc, table.branch, table.idx] }),
+    }),
+);
+
+export const editedDocumentsHistoryRelations = relations(
+    editedDocumentsHistory,
+    ({ one }) => ({
+        document: one(editedDocuments, {
+            fields: [editedDocumentsHistory.doc, editedDocumentsHistory.branch],
+            references: [editedDocuments.id, editedDocuments.branch],
+        }),
+    }),
+);
+
+export const editedDocumentsRelations = relations(
+    editedDocuments,
+    ({ many }) => ({
+        toplevels: many(editedDocumentsToplevels),
+        modules: many(editedDocumentsModules),
+        history: many(editedDocumentsHistory),
     }),
 );
 

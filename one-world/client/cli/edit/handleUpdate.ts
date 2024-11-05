@@ -729,7 +729,8 @@ function handleNamespaceUpdate(
     }
     const nid = sel.root.ids[sel.root.ids.length - 1];
     const node = getDoc(store.getState(), docId).nodes[nid];
-    const text = sel.text ?? splitGraphemes(node.namespace ?? '');
+    const ns = ''; // TODO: translate node.module into a /name/space/name
+    const text = sel.text ?? splitGraphemes(ns ?? '');
 
     if (key === 'RIGHT') {
         const start = Math.min(text.length, sel.end + 1);

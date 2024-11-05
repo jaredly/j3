@@ -208,7 +208,7 @@ export const newDocNodeNeighbor = (
                     id: newTop,
                     auxiliaries: [],
                     nextLoc: nidx.next,
-                    module: doc.module,
+                    // module: doc.module,
                     nodes,
                     root: nloc,
                     ts,

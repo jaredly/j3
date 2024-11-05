@@ -16,8 +16,13 @@ const splitSpan = (
     cursor: number,
     text?: string[],
 ): [InlineSpan, InlineSpan] => {
-    if (span.type === 'embed')
+    if (
+        span.type === 'embed' ||
+        span.type === 'diff' ||
+        span.type === 'include'
+    ) {
         return [{ type: 'text', text: '', style: {} }, span];
+    }
     const chars = text ?? splitGraphemes(span.text);
     return [
         { ...span, text: chars.slice(0, cursor).join('') },

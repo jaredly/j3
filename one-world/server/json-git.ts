@@ -107,21 +107,22 @@ export const jsonGitBackend = (base: string): ServerBackend => {
                 published: null,
                 id,
                 nextLoc: 2,
-                module: mid,
+                // module: mid,
                 nodes: { 0: { id: 0, children: [], toplevel: '', ts } },
-                nsAliases: {},
                 title: title,
                 ts,
             };
+
             const top: Toplevel = {
                 id: tid,
-                module: mid,
+                // module: mid,
                 auxiliaries: [],
                 nextLoc: 1,
                 nodes: { 0: { type: 'id', loc: 0, text: '' } },
                 root: 0,
                 ts,
             };
+
             writeFileSync(docPath(id), JSON.stringify(doc));
             writeFileSync(topPath(tid), JSON.stringify(top));
             const modules = JSON.parse(readFileSync(modPath, 'utf8'));

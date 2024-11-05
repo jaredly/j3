@@ -5,8 +5,7 @@ export type Module = {
     hash?: string;
     id: string;
     submodules: Record<string, { id: string; hash: string }>;
-    toplevels: Record<string, { id: string; hash: string; idx?: number }>;
-    documents: Record<string, { id: string; hash: string }>;
+    terms: Record<string, { id: string; hash: string; idx?: number }>;
     evaluators: EvaluatorPath[];
     assets: Record<string, { id: string; hash: string }>;
     artifacts: Record<

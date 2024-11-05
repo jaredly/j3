@@ -226,7 +226,8 @@ export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
                               type: 'loc',
                               path: pathWithChildren(path, span.item),
                           }
-                        : {
+                        : span.type === 'text' || span.type === 'link'
+                        ? {
                               type: 'text',
                               text: span.text,
                               style: span.style,
@@ -235,7 +236,8 @@ export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
                               index: i,
                               link:
                                   span.type === 'link' ? span.link : undefined,
-                          },
+                          }
+                        : { type: 'loc', path },
                 ),
             };
         case 'rich-block':

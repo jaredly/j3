@@ -75,13 +75,13 @@ CREATE TABLE IF NOT EXISTS edited_documents_history (
 )
 `);
 
-export const sqliteBackend = (dbPath: string): ServerBackend => {
-    const db = sqlite(dbPath);
+// export const sqliteBackend = (dbPath: string): ServerBackend => {
+//     const db = sqlite(dbPath);
 
-    db.prepare(
-        `
-      `,
-    ).run();
+//     db.prepare(
+//         `
+//       `,
+//     ).run();
 
-    return {};
-};
+//     // return {};
+// };

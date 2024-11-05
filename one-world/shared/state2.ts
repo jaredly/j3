@@ -72,29 +72,58 @@ export type Doc = {
     id: string;
     title: string;
     published: null | number;
-    module: string;
+    // module: string;
     evaluator: EvaluatorPath;
 
-    nsAliases: Record<string, string>;
     nodes: Record<number, DocumentNode>;
     nextLoc: number;
     ts: TS;
 };
 
-type HistoryItem = {
-    id: string;
-    reverts?: string;
+export type HistoryItem = {
+    idx: number;
+    reverts?: number;
     session: string;
-    toplevels?: Toplevels;
-    prevToplevels?: Toplevels;
-    nodes?: Record<number, DocumentNode>;
-    prevNodes?: Record<number, DocumentNode>;
-    selections: DocSelection[];
-    prevSelections: DocSelection[];
+    changes: {
+        toplevels?: Toplevels;
+        prevToplevels?: Toplevels;
+        nodes?: Record<number, DocumentNode>;
+        prevNodes?: Record<number, DocumentNode>;
+        selections: DocSelection[];
+        prevSelections: DocSelection[];
+    };
+};
+
+export type Mod = {
+    id: string;
+    // hash: string,
+    assets: Record<
+        string,
+        { id: string; hash: string; data?: any; mime: string; meta: any }
+    >;
+    submodules: Record<string, string>; // id of the submodule
+    // documents: Record<string, string>; // the document id. if equal to self, that's how we know.
+    aliases: Record<string, string>; // name to module id
+    toplevels: Record<string, { id: string; idx?: number }>;
+
+    // These are the evaluators that are /enabled/ for the current module.
+    evaluators: Record<string, EvaluatorPath>;
+
+    // These are ... aliases, if you will. Named things, including evaluators, but also pinns.
+    artifacts: Record<
+        string,
+        {
+            id: string;
+            hash: string;
+            evaluator: EvaluatorPath;
+            kind: 'evaluator' | 'ffi' | 'backend' | 'visual';
+        }
+    >;
 };
 
 export type DocStage = Doc & {
     toplevels: Toplevels;
+    modules: Record<string, Mod>;
     history: HistoryItem[];
 };
 
@@ -104,7 +133,11 @@ export type DocumentNode = {
     children: number[];
     ts: TS;
 
-    namespace?: string;
+    // the location where the exports of the associated toplevel should live.
+    // and any children. If unspecified, inherits from parent.
+    module?: string;
+
+    // namespace?: string;
     // encapsulates plugins as welll
     display?: { id: string; options: any };
     trace?: {

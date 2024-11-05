@@ -1,4 +1,89 @@
 
+Q: should documents have their own implicit module?
+like, terms show up as children of the document?
+and the ... name of a module ... is the ... name of the document?
+that seems like it would be a little interesting.
+
+like a nice way to have all modules, be a little bit documented.
+
+OK SO, this means ... hm. like. but if I want a document to be ....
+able to grab stuff from (and edit) its parent, what gives?
+hmm.
+well, there's a root ... documentNode? no, it doesn't have a toplevel.
+
+whattt if it was documentNodes that had `module`s?
+honestly that does kinda seem like the right place to put it.
+yeah ok, so then the root documentNode could set the tone for where
+to put toplevels that we define here.
+
+So, in summary:
+- every document is a module
+- every module is a document
+
+and, the root, well it would be a document too.
+
+how does that impact the git-liness of it all?
+
+hashing the root document, yeah that sounds legit.
+
+Do a document has nodes, and also
+- sub-documents
+-
+
+Ifff I'm editing a document, like the root document,
+I dont want to have to like ... hydrate all the documents out there.
+
+oooooh alsossoooo
+what does this mean for staging areas?
+what does it mean, could you ... be like staging changes to sub-documents
+as part of the same stage?
+hmmmmm.
+does that make the case for a global stage?
+
+might I, concievably, want to make changes to multiple documents, as part
+of a single commit?
+
+on the other hand, the thing I can imagine most likely doing is:
+- re-arranging the hierarchy of things. without really touching anything else.
+
+THIS makes the case for separating out the "module hierarchy" stuff from the "document" stuff.
+
+which, hm, yeah is maybe a good idea.
+
+SO: document : module is still 1:1, we'll have the same ID n stuff.
+moving one around is the same as moving the other.
+
+BUT document : stage is also 1:0/1, when editing a document, you can modify other modules,
+but not other documents.
+Yeah I like that conceptual separation.
+
+
+# Ok next steps:
+
+- [ ] let's like, make a test, where we fire up a fresh database (?)
+
+
+having to recon with CRDTs, again.
+Howw do I think about HistoryItems.
+
+Iff I'm really hoping to have real-time collaboration,
+I need a way to decide who gets what.
+I'm fine with having a central server.
+
+So, a client sends back "here's my history item and this is the index"
+and the server sees "wait the number has already been used,
+I'll add your item, but it gets this new index"
+and then the client sees the response, and does the necessary internal reordering.
+yeah. let's just go with indices.
+
+
+
+Getting real about modules.
+So, toplevels, they gotta keep track of where they're going to sit in the world.
+
+
+
+
 # Commits, and git, and whatnot.
 
 - IS there a way to make merging of non-conflicting commits seamless?
@@ -12,10 +97,6 @@ into a given module.
 ok, I'll leave that as a potential future exercise.
 for now, we'll do /merge commits/ with potential conflicts
 that will need to be manually resolved.
-
-
-
-
 
 # Thikning about projects, and dependencies
 
