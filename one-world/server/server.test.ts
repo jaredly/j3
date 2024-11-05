@@ -20,7 +20,7 @@ import { DocStage, getDoc } from '../shared/state2';
 import { Toplevel } from '../shared/toplevels';
 import { DrizzleDb, getEditedDoc, newDocument } from './drizzle';
 import { newStore, WS } from '../client/newStore2';
-import { parseAndCache, render } from '../client/cli/render';
+import { parseAndCache, render, RState } from '../client/cli/render';
 import { NopEvaluator, SimplestEvaluator } from '../evaluators/simplest';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import {
@@ -36,6 +36,7 @@ import {
 } from '../shared/IR/block-to-attributed-text';
 import { Path, serializePath } from '../shared/nodes';
 import { selectEODoc } from '../shared/IR/nav';
+import { AnyEvaluator } from '../evaluators/boot-ex/types';
 
 const prepare = (async () => {
     const prev = await dk.generateSQLiteDrizzleJson({});
@@ -96,63 +97,68 @@ Full end-to-end:
 
 const nows: WS = { close() {}, onMessage(fn) {}, send(msg) {} };
 
+const reval = (
+    caches: Caches<unknown>,
+    ctx: Context,
+    rstate: RState,
+    ev: AnyEvaluator,
+) => {
+    Object.keys(caches.parse).forEach((tid) => {
+        rstate.parseAndEval[tid].output = evaluate(tid, ctx, ev, caches);
+    });
+};
+
 const runText = (ds: DocStage, text: string) => {
     const store = newStore(ds!, nows, null);
-    const id = ds.id;
 
     const W = 200;
 
     const ev = NopEvaluator;
-    const { parseCache, caches, ctx } = parseAndCache(store, id, {}, ev);
-    let rstate = render(W, store, id, parseCache);
+    const { parseCache, caches, ctx } = parseAndCache(store, ds.id, {}, ev);
+    let rstate = render(W, store, ds.id, parseCache);
 
     // Select the end of the document!
     const sel = selectEODoc(ds!, rstate.cache);
     expect(sel).toBeTruthy();
-    store.update({ type: 'selection', doc: id, selections: [sel!] });
+    store.update({ type: 'selection', doc: ds.id, selections: [sel!] });
 
-    const reval = (caches: Caches<unknown>, ctx: Context) => {
-        Object.keys(caches.parse).forEach((tid) => {
-            rstate.parseAndEval[tid].output = evaluate(tid, ctx, ev, caches);
-        });
-    };
+    reval(caches, ctx, rstate, ev);
 
-    reval(caches, ctx);
+    splitGraphemes(text).forEach((key) => {
+        rstate = render(W, store, ds.id, parseCache);
 
-    const rerender = () => {
-        const { parseCache, caches, ctx } = parseAndCache(
-            store,
-            id,
-            rstate.parseAndEval,
-            ev,
-        );
-
-        rstate = render(W, store, id, parseCache);
-        reval(caches, ctx);
-    };
-
-    const keys = splitGraphemes(text);
-
-    const kick = () => {};
-
-    keys.forEach((key) => {
-        if (handleDropdown(key, id, store, rstate, kick, ev)) {
+        if (handleDropdown(key, ds.id, store, rstate, () => {}, ev)) {
             return true;
         }
 
         if (
-            handleUpDown(key, id, store, rstate) ||
-            handleMovement(key, id, rstate.cache, store)
+            handleUpDown(key, ds.id, store, rstate) ||
+            handleMovement(key, ds.id, rstate.cache, store)
         ) {
             return true;
         }
-        if (handleUpdate(key, id, rstate.cache, store)) {
+
+        if (handleUpdate(key, ds.id, rstate.cache, store)) {
             return true;
         }
     });
 
-    rerender();
+    store.update({ type: 'selection', doc: ds.id, selections: [] });
 
+    return store.getState();
+};
+
+const editorToString = (ds: DocStage, W = 200) => {
+    const store = newStore(ds!, nows, null);
+    const { parseCache, caches, ctx } = parseAndCache(
+        store,
+        ds.id,
+        {},
+        NopEvaluator,
+    );
+    let rstate = render(W, store, ds.id, parseCache);
+    reval(caches, ctx, rstate, NopEvaluator);
+    rstate = render(W, store, ds.id, parseCache);
     return aBlockToString(rstate.txt, false);
 };
 
@@ -160,24 +166,41 @@ test('noww to like, make a new document?', async () => {
     const db = await emptyDb();
     const root = await getHeadRoot(db, 'main');
     const id = await newDocument(db, root, 'main');
-    const ds = (await getEditedDoc(db, id, 'main'))!;
+    const ds = await getEditedDoc(db, id, 'main');
     expect(ds).toBeTruthy();
 
-    const text = runText(ds, 'hello-folks');
+    const text = editorToString(runText(ds!, 'hello-folks'));
 
     expect(text).toEqual('▶️ hello-folks');
 });
 
-test('and now for a little more fun...', async () => {
+const fullRun = async (text: string) => {
     const db = await emptyDb();
     const root = await getHeadRoot(db, 'main');
     const id = await newDocument(db, root, 'main');
-    const ds = (await getEditedDoc(db, id, 'main'))!;
+    const ds = await getEditedDoc(db, id, 'main');
     expect(ds).toBeTruthy();
 
-    const text = runText(ds, '(hello');
+    return editorToString(runText(ds!, text));
+};
 
-    expect(text).toEqual('▶️ (hello)');
+test('and now for a little more fun...', async () => {
+    expect(await fullRun('(hello')).toEqual('▶️ (hello)');
+    expect(await fullRun('(goodbye folks')).toEqual('▶️ (goodbye folks)');
+    expect(await fullRun('(goodbye folks)')).toEqual('▶️ (goodbye folks)');
+    expect(await fullRun('(hello folks [and such] things')).toEqual(
+        '▶️ (hello folks [and such] things)',
+    );
+});
+
+test('hrm. what next then?', async () => {
+    // const db = await emptyDb();
+    // const root = await getHeadRoot(db, 'main');
+    // const id = await newDocument(db, root, 'main');
+    // const ds = (await getEditedDoc(db, id, 'main'))!;
+    // expect(ds).toBeTruthy();
+    // const text = runText(ds, '(hello folks');
+    // expect(text).toEqual('▶️ (hello folks)');
 });
 
 /*

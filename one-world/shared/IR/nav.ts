@@ -450,7 +450,12 @@ export const selectNode = (
     side: 'start' | 'end',
     cache: IRForLoc,
 ) => {
-    const irs = irNavigable(cache[lastChild(path)]);
+    const loc = lastChild(path);
+    if (!cache[loc])
+        throw new Error(
+            `Stale IR Cache: missing for ${loc} (${Object.keys(cache)})`,
+        );
+    const irs = irNavigable(cache[loc]);
     return toSelection(
         cursorSelect(
             irs[side === 'start' ? 0 : irs.length - 1],

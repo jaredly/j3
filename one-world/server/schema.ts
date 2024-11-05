@@ -199,14 +199,14 @@ export const editedDocuments = sqliteTable(
 export const editedDocumentsToplevels = sqliteTable(
     'edited_documents_toplevels',
     {
-        topid: text('topid').notNull(),
+        id: text('id').notNull(),
         docid: text('docid').notNull(),
         branch: text('branch').notNull(),
         hash: text('hash'), // might be null if this is a new toplevel
         ...topShared,
     },
     (table) => ({
-        pk: primaryKey({ columns: [table.docid, table.branch, table.topid] }),
+        pk: primaryKey({ columns: [table.docid, table.branch, table.id] }),
     }),
 );
 

@@ -8,22 +8,14 @@ import * as tb from './schema';
 
 export type DrizzleDb = BunSQLiteDatabase<typeof tb>;
 
-export const newDocument = async (
-    db: DrizzleDb,
-    root: string,
-    branch: string,
-) => {
-    const id = genId();
+export const newStage = (id: string, now: number, title = 'Untitled') => {
     const tid = id + ':top';
 
-    const ts = {
-        created: Date.now(),
-        updated: Date.now(),
-    } as const;
+    const ts = { created: now, updated: now } as const;
 
     const doc: DocStage = {
         id,
-        title: 'Untitled',
+        title,
         history: [],
         toplevels: {
             [tid]: {
@@ -59,6 +51,16 @@ export const newDocument = async (
         ts,
     };
 
+    return doc;
+};
+
+export const newDocument = async (
+    db: DrizzleDb,
+    root: string,
+    branch: string,
+) => {
+    const doc = newStage(genId(), Date.now());
+
     await db.insert(tb.editedDocuments).values([
         {
             id: doc.id,
@@ -75,20 +77,14 @@ export const newDocument = async (
 
     await Promise.all(
         Object.values(doc.modules).map((module) => {
+            const { ts, ...rest } = module;
             return db.insert(tb.editedDocumentsModules).values([
                 {
-                    id: module.id,
-                    docid: id,
+                    docid: doc.id,
                     branch,
-                    hash: module.hash,
-                    terms: module.terms,
-                    assets: module.assets,
-                    aliases: module.aliases,
-                    evaluators: module.evaluators,
-                    artifacts: module.artifacts,
-                    created: module.ts.created,
-                    updated: module.ts.updated,
-                    submodules: module.submodules,
+                    ...rest,
+                    created: ts.created,
+                    updated: ts.updated,
                 },
             ]);
         }),
@@ -96,22 +92,19 @@ export const newDocument = async (
 
     await Promise.all(
         Object.values(doc.toplevels).map((top) => {
+            const { nodes, nextLoc, root, ts, ...rest } = top;
             return db.insert(tb.editedDocumentsToplevels).values([
                 {
-                    topid: top.id,
+                    ...rest,
                     docid: doc.id,
                     branch,
-                    hash: top.hash,
+                    body: { nodes, nextLoc, root },
+                    updated: ts.updated,
+                    created: ts.created,
+                    // Denormalization! Which, ... ok maybe we actually don't want it, for the editeds?
+                    // hmmmm.
                     accessories: [],
-                    module: top.module,
-                    body: {
-                        nodes: top.nodes,
-                        nextLoc: top.nextLoc,
-                        root: top.root,
-                    },
                     recursives: [],
-                    updated: top.ts.updated,
-                    created: top.ts.created,
                 },
             ]);
         }),
@@ -166,8 +159,8 @@ export const getEditedDoc = async (
         title: edit.title,
         toplevels: edit.toplevels.reduce(
             (map: Record<string, Toplevel>, top) => (
-                (map[top.topid] = {
-                    id: top.topid,
+                (map[top.id] = {
+                    id: top.id,
                     module: edit.id,
                     auxiliaries: [],
                     nextLoc: top.body.nextLoc,

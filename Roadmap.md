@@ -1,4 +1,14 @@
 
+# Tests here!
+
+- (create the database) (load the database) (do things in the editor) (assert:editor state)
+- (create/load db) (editor changes) (persiste) (load) (assert:editor state)
+
+hrmms. so, we could do a "ws backandforth" dealio. Right?
+we could also, technically, do a "dump the whole DocStage at the end of interaction" thing.
+
+
+
 # [ All of this document / module talk boiled down ]
 
 - each doc is a module, each module a doc
