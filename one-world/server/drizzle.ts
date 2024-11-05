@@ -1,12 +1,10 @@
 import 'dotenv/config';
-import { ServerBackend } from './json-git';
-import { BunSQLiteDatabase, drizzle } from 'drizzle-orm/bun-sqlite';
-import * as tb from './schema';
-import { genId } from '../client/cli/edit/newDocument';
-import { Toplevel } from '../shared/toplevels';
-import { DocStage, HistoryItem } from '../shared/state2';
-import { nextAtom } from '../shared/nodes';
 import { and, eq } from 'drizzle-orm';
+import { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
+import { genId } from '../client/cli/edit/newDocument';
+import { DocStage, HistoryItem } from '../shared/state2';
+import { Toplevel } from '../shared/toplevels';
+import * as tb from './schema';
 
 export type DrizzleDb = BunSQLiteDatabase<typeof tb>;
 
@@ -149,7 +147,7 @@ export const getEditedDoc = async (
                 map
             ),
             {},
-        ), // nothing at the moment
+        ),
         evaluator: edit.evaluator,
         history: edit.history
             .map(

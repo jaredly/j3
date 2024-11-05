@@ -175,3 +175,42 @@ export const SimplestEvaluator: Evaluator<Top, TINFO, IR> = {
         };
     },
 };
+
+export const NopEvaluator: Evaluator<true, true, null> = {
+    kwds,
+    parse(node, cursor) {
+        const ctx: CTX = {
+            layouts: {},
+            styles: {},
+            exports: [],
+            errors: [],
+            tableHeaders: {},
+            autocomplete: undefined,
+            references: [],
+            cursor,
+        };
+        // const top = parseTop(ctx, node);
+        return { ...ctx, top: true };
+    },
+    macrosToExpand(node) {
+        return [];
+    },
+    combineMutuallyRecursive(tops) {
+        return true;
+    },
+    compile(top, info) {
+        return { byLoc: {} };
+    },
+    evaluate(ir, irs) {
+        return null;
+    },
+    infer(top, infos) {
+        return { errors: [], typeForLoc: [], info: true };
+    },
+    print(ir, irs) {
+        return {
+            code: 'lol',
+            sourceMap: [],
+        };
+    },
+};

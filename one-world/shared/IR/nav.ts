@@ -10,7 +10,7 @@ import {
     RecNode,
     serializePath,
 } from '../nodes';
-import { getDoc, getTop, PersistedState } from '../state2';
+import { Doc, DocStage, getDoc, getTop, PersistedState } from '../state2';
 import { IR, IRCursor, IRSelection, nodeToIR } from './intermediate';
 import { IRForLoc, LayoutCtx } from './layout';
 
@@ -420,6 +420,27 @@ export const cursorForNode = (
         irs,
         (loc) => cache[loc],
         side === 'end',
+    );
+};
+
+export const selectEODoc = (doc: DocStage, cache: IRCache2<any>) => {
+    const children = doc.nodes[0].children;
+    let last = children[children.length - 1];
+    const ids = [0, last];
+    while (last != null && doc.nodes[last].children.length) {
+        const children = doc.nodes[last].children;
+        last = children[children.length - 1];
+        ids.push(last);
+    }
+    if (last == null) return;
+    const top = doc.nodes[last].toplevel;
+    return selectNode(
+        {
+            root: { doc: doc.id, ids, toplevel: top, type: 'doc-node' },
+            children: [doc.toplevels[top].root],
+        },
+        'end',
+        cache[top].irs,
     );
 };
 

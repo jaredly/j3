@@ -153,13 +153,15 @@ export function recalcDropdown(
     }
 }
 
+export type WS = {
+    send(msg: ClientMessage): void;
+    onMessage(fn: (msg: ServerMessage) => void): void;
+    close(): void;
+};
+
 export const newStore = (
     state: PersistedState,
-    ws: {
-        send(msg: ClientMessage): void;
-        onMessage(fn: (msg: ServerMessage) => void): void;
-        close(): void;
-    },
+    ws: WS,
     session: DocSession | null,
 ): Store => {
     const evts = blankEvts();
