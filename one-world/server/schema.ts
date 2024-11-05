@@ -10,6 +10,7 @@ import {
 } from 'drizzle-orm/sqlite-core';
 import { EvaluatorPath, HistoryItem } from '../shared/state2';
 import { Module } from './hashings';
+import { Toplevel } from '../shared/toplevels';
 
 type JsonText<TName extends string, Data> = SQLiteTextJsonBuilder<{
     name: TName;
@@ -47,9 +48,11 @@ const topShared = {
     // a list of backlinks to siblings (in the same module) that accessorize some export of this toplevel
     // I guess I probably want it to be {topid: string, loc: number, myloc: number}[]
     // for the sake of completeness.
-    accessories: text('accessories', { mode: 'json' }).notNull(),
+    accessories: json<string[]>()('accessories').notNull(),
     // jsonified nodes, root, nextLoc, auxiliaries, testConfig(??)
-    body: text('body', { mode: 'json' }).notNull(),
+    body: json<{ nodes: Toplevel['nodes']; nextLoc: number; root: number }>()(
+        'body',
+    ).notNull(),
     ...ts,
 } as const;
 
@@ -255,7 +258,7 @@ export const editedDocumentsHistory = sqliteTable(
         session: text('session').notNull(),
         idx: int('idx').notNull(),
         reverts: int('reverts'),
-        changes: text('changes', { mode: 'json' }).notNull(), // json blob
+        changes: json<HistoryItem['changes']>()('changes').notNull(), // json blob
         created: ts.created,
     },
     (table) => ({

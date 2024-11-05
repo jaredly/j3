@@ -46,7 +46,6 @@ export const newDocument = async (
                 assets: {},
                 evaluators: [],
                 submodules: {},
-                toplevels: {},
                 terms: {},
                 ts,
             },
@@ -103,15 +102,18 @@ export const newDocument = async (
                 {
                     topid: top.id,
                     docid: doc.id,
+                    branch,
+                    hash: top.hash,
                     accessories: [],
                     module: top.module,
                     body: {
                         nodes: top.nodes,
-                        nextAtom: top.nextLoc,
+                        nextLoc: top.nextLoc,
                         root: top.root,
                     },
-                    branch,
                     recursives: [],
+                    updated: top.ts.updated,
+                    created: top.ts.created,
                 },
             ]);
         }),
@@ -137,15 +139,25 @@ export const getEditedDoc = async (
     const { nextLoc, nodes } = edit.body as any;
     const ds: DocStage = {
         // module: mp[mp.length - 1],
-        modules: {}, // nothing at the moment
-        evaluator: edit.evaluator as any,
+        modules: edit.modules.reduce(
+            (map: DocStage['modules'], mod) => (
+                (map[mod.id] = {
+                    ...mod,
+                    hash: mod.hash ?? undefined,
+                    ts: { created: mod.created, updated: mod.updated },
+                }),
+                map
+            ),
+            {},
+        ), // nothing at the moment
+        evaluator: edit.evaluator,
         history: edit.history
             .map(
                 (item): HistoryItem => ({
                     idx: item.idx,
                     session: item.session,
                     reverts: item.reverts ?? undefined,
-                    changes: item.changes as any,
+                    changes: item.changes,
                 }),
             )
             .sort((a, b) => a.idx - b.idx),
@@ -160,9 +172,9 @@ export const getEditedDoc = async (
                     id: top.topid,
                     module: edit.id,
                     auxiliaries: [],
-                    nextLoc: (top.body as any).nextLoc,
-                    nodes: (top.body as any).nodes,
-                    root: (top.body as any).root,
+                    nextLoc: top.body.nextLoc,
+                    nodes: top.body.nodes,
+                    root: top.body.root,
                     ts: {
                         created: top.created,
                         updated: top.updated,
