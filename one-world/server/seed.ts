@@ -15,6 +15,7 @@ export async function seed(db: BunSQLiteDatabase<typeof tb>) {
 
     const module: Module = {
         id: 'root',
+        aliases: {},
         submodules: {},
         terms: {},
         evaluators: [],
@@ -41,10 +42,10 @@ export async function seed(db: BunSQLiteDatabase<typeof tb>) {
     await db.insert(tb.modules).values({
         ...module,
         hash: moduleHash,
-        submodules: JSON.stringify(module.submodules),
-        terms: JSON.stringify(module.terms),
-        // documents: JSON.stringify(module.documents),
-        evaluators: JSON.stringify(module.evaluators),
+        submodules: module.submodules,
+        terms: module.terms,
+        // documents: (module.documents),
+        evaluators: module.evaluators,
     });
 
     await db.insert(tb.commits).values({

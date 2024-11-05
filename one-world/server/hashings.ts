@@ -4,6 +4,7 @@ import { EvaluatorPath } from '../shared/state2';
 export type Module = {
     hash?: string;
     id: string;
+    aliases: Record<string, string>;
     submodules: Record<string, { id: string; hash: string }>;
     terms: Record<string, { id: string; hash: string; idx?: number }>;
     evaluators: EvaluatorPath[];

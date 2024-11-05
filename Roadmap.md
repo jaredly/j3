@@ -1,4 +1,49 @@
 
+# [ All of this document / module talk boiled down ]
+
+- each doc is a module, each module a doc
+- toplevels have a specific module id they're associated with
+- when a toplevel is edited and parsed, and has exports, those terms get saved to the module that the toplevel indicates. (this is derived data)
+- if the module of a toplevel that's shown in a documentnode is different from that of its parent,
+  the module path will be displayed.
+
+yeah that sounds good.
+
+
+
+# ~~having a little crisis~~
+
+Is there a difference between:
+- documents that are for ~display, and
+- documents that are for ~development.
+
+jupyter notebooks would say /no/.
+you code around, and eventually organize things.
+
+
+## ~~Ok radical rethought~~
+
+what if, we collapsed things so that it's all one tree of document nodes.
+and you can, like, be zoomed in at a certain level.
+and certain nodes would be, like, 'title' nodes.
+- hrm, so I don't think I would want to ...
+
+AHA ok so, counterpoint:
+I will definitely want to be able to have multiple documents, PRESENTING THE SAME CODE.
+One doc that is like "for developers" as a reference.
+and one that is in like a "tutorial style" doing a walkthrough.
+I might even want to have one document "for beginners" and one "for experts".
+
+How does that impact things?
+
+I think, what this is all coming back to, is that toplevels do in fact
+have allegience to a given module.
+which /means/ that a documentNode should not, because that would cause sync issues.
+duplication of information.
+
+
+#
+
 Q: should documents have their own implicit module?
 like, terms show up as children of the document?
 and the ... name of a module ... is the ... name of the document?
