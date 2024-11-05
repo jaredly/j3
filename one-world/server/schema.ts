@@ -221,7 +221,7 @@ export const editedDocumentsToplevelsRelations = relations(
 );
 
 export const editedDocumentsModules = sqliteTable(
-    'modules',
+    'edited_documents_modules',
     {
         id: text('id').notNull(),
         docid: text('docid').notNull(),
