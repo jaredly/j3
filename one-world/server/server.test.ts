@@ -75,7 +75,7 @@ test('noww to like, make a new document?', async () => {
 
     const root = await getHeadRoot(db, 'main');
 
-    const id = await newDocument(db, ['root'], root, 'main');
+    const id = await newDocument(db, root, 'main');
 });
 
 /*

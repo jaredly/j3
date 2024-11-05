@@ -12,7 +12,6 @@ export type DrizzleDb = BunSQLiteDatabase<typeof tb>;
 
 export const newDocument = async (
     db: DrizzleDb,
-    modulePath: string[],
     root: string,
     branch: string,
 ) => {
@@ -26,8 +25,8 @@ export const newDocument = async (
 
     const top: Toplevel = {
         id: tid,
-        // module: modulePath[modulePath.length - 1],
         auxiliaries: [],
+        module: id,
         nextLoc: 1,
         nodes: { 0: { type: 'id', loc: 0, text: '' } },
         root: 0,
@@ -35,7 +34,6 @@ export const newDocument = async (
     };
 
     const doc: DocStage = {
-        // module: modulePath[modulePath.length - 1],
         history: [],
         toplevels: { [tid]: top },
         modules: {},
@@ -58,7 +56,6 @@ export const newDocument = async (
             },
             branch,
             evaluator: doc.evaluator,
-            modulePath,
             title: doc.title,
             root,
         },
@@ -71,7 +68,7 @@ export const newDocument = async (
                     topid: top.id,
                     docid: doc.id,
                     accessories: [],
-                    module: modulePath[modulePath.length - 1],
+                    module: top.module,
                     body: {
                         nodes: top.nodes,
                         nextAtom: top.nextLoc,
@@ -102,7 +99,6 @@ export const getEditedDoc = async (
     if (!edit) return null;
 
     const { nextLoc, nodes } = edit.body as any;
-    const mp = edit.modulePath as string[];
     const ds: DocStage = {
         // module: mp[mp.length - 1],
         modules: {}, // nothing at the moment
@@ -126,7 +122,7 @@ export const getEditedDoc = async (
             (map: Record<string, Toplevel>, top) => (
                 (map[top.topid] = {
                     id: top.topid,
-                    // module: mp[mp.length - 1],
+                    module: edit.id,
                     auxiliaries: [],
                     nextLoc: (top.body as any).nextLoc,
                     nodes: (top.body as any).nodes,

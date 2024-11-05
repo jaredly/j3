@@ -100,7 +100,7 @@ export const jsonGitBackend = (base: string): ServerBackend => {
                 updated: Date.now(),
             } as const;
             const tid = id + ':top';
-            const mid = id + ':mod';
+            // const mid = id + ':mod';
 
             const doc: Doc = {
                 evaluator: [],
@@ -115,7 +115,7 @@ export const jsonGitBackend = (base: string): ServerBackend => {
 
             const top: Toplevel = {
                 id: tid,
-                // module: mid,
+                module: id,
                 auxiliaries: [],
                 nextLoc: 1,
                 nodes: { 0: { type: 'id', loc: 0, text: '' } },
@@ -126,8 +126,8 @@ export const jsonGitBackend = (base: string): ServerBackend => {
             writeFileSync(docPath(id), JSON.stringify(doc));
             writeFileSync(topPath(tid), JSON.stringify(top));
             const modules = JSON.parse(readFileSync(modPath, 'utf8'));
-            modules[mid] = {};
-            modules.root = { ...modules.root, [mid]: title };
+            modules[id] = {};
+            modules.root = { ...modules.root, [id]: title };
             writeFileSync(modPath, JSON.stringify(modules));
             return id;
         },

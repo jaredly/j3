@@ -236,10 +236,6 @@ export const editedDocuments = sqliteTable(
         id: text('id').notNull(),
         branch: text('branch').notNull(),
         root: text('root').notNull(), // the 'root' hash of the whole module tree that we're based on.
-        // This is the module path that the document will be saved to.
-        // it also serves as the "base" module for any new toplevels added.
-        // it might contain IDs of modules that don't exist yet.
-        modulePath: text('modulePath', { mode: 'json' }).notNull(),
         ...docShared,
     },
     (table) => ({ pk: primaryKey({ columns: [table.id, table.branch] }) }),

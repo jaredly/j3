@@ -29,7 +29,7 @@ export type Toplevel = {
     id: string;
     // This is a hash of the object (obvs with the /hash/ zeroed out)
     hash?: string;
-    // module: string; // an ID
+    module: string; // an ID, where this toplevel "lives"
 
     nodes: Nodes;
     root: number;
