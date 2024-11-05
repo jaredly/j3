@@ -96,18 +96,20 @@ export type HistoryItem = {
 
 export type Mod = {
     id: string;
-    // hash: string,
+    hash?: string;
+    terms: Record<string, { id: string; hash: string; idx?: number }>;
     assets: Record<
         string,
         { id: string; hash: string; data?: any; mime: string; meta: any }
     >;
-    submodules: Record<string, string>; // id of the submodule
+    submodules: Record<string, { id: string; hash: string }>; // id of the submodule
     // documents: Record<string, string>; // the document id. if equal to self, that's how we know.
     aliases: Record<string, string>; // name to module id
     toplevels: Record<string, { id: string; idx?: number }>;
 
     // These are the evaluators that are /enabled/ for the current module.
-    evaluators: Record<string, EvaluatorPath>;
+    evaluators: EvaluatorPath[];
+    ts: TS;
 
     // These are ... aliases, if you will. Named things, including evaluators, but also pinns.
     artifacts: Record<
@@ -135,7 +137,7 @@ export type DocumentNode = {
 
     // the location where the exports of the associated toplevel should live.
     // and any children. If unspecified, inherits from parent.
-    module?: string;
+    // module?: string;
 
     // namespace?: string;
     // encapsulates plugins as welll

@@ -23,28 +23,43 @@ export const newDocument = async (
         updated: Date.now(),
     } as const;
 
-    const top: Toplevel = {
-        id: tid,
-        auxiliaries: [],
-        module: id,
-        nextLoc: 1,
-        nodes: { 0: { type: 'id', loc: 0, text: '' } },
-        root: 0,
-        ts,
-    };
-
     const doc: DocStage = {
-        history: [],
-        toplevels: { [tid]: top },
-        modules: {},
-        evaluator: [],
-        published: null,
         id,
         title: 'Untitled',
-        ts,
+        history: [],
+        toplevels: {
+            [tid]: {
+                id: tid,
+                auxiliaries: [],
+                module: id,
+                nextLoc: 1,
+                nodes: { 0: { type: 'id', loc: 0, text: '' } },
+                root: 0,
+                ts,
+            },
+        },
+        modules: {
+            [id]: {
+                id,
+                aliases: {},
+                artifacts: {},
+                assets: {},
+                evaluators: [],
+                submodules: {},
+                toplevels: {},
+                terms: {},
+                ts,
+            },
+        },
+        evaluator: [],
+        published: null,
 
         nextLoc: 2,
-        nodes: { 0: { id: 0, children: [], toplevel: '', ts } },
+        nodes: {
+            0: { id: 0, children: [1], toplevel: '', ts },
+            1: { id: 1, children: [], toplevel: tid, ts },
+        },
+        ts,
     };
 
     await db.insert(tb.editedDocuments).values([
@@ -60,6 +75,27 @@ export const newDocument = async (
             root,
         },
     ]);
+
+    await Promise.all(
+        Object.values(doc.modules).map((module) => {
+            return db.insert(tb.editedDocumentsModules).values([
+                {
+                    id: module.id,
+                    docid: id,
+                    branch,
+                    hash: module.hash,
+                    terms: module.terms,
+                    assets: module.assets,
+                    aliases: module.aliases,
+                    evaluators: module.evaluators,
+                    artifacts: module.artifacts,
+                    created: module.ts.created,
+                    updated: module.ts.updated,
+                    submodules: module.submodules,
+                },
+            ]);
+        }),
+    );
 
     await Promise.all(
         Object.values(doc.toplevels).map((top) => {
