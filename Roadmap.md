@@ -8,9 +8,9 @@
 
 
 Now I need to think about:
-- history undo/redo pls
+- [x] history undo/redo pls
+- [ ] anddd commit! gotta do it
 - exports and modules and such?
-- anddd commit! gotta do it
 
 
 

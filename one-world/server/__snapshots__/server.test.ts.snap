@@ -1,0 +1,27 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`lets do some history 1`] = `
+"- top: lol:top = 
++ top: lol:top = ()
+
+- top: lol:top = ()
++ top: lol:top = (hello)
+
+- top: lol:top = (hello)
++ top: lol:top = (hello )
+
+- top: lol:top = (hello )
++ top: lol:top = (hello)"
+`;
+
+exports[`lets do some movement and stuff 1`] = `
+"- top: lol:top = 
++ top: lol:top = hello
++ top: 164f5oyefbg = 
+
+- top: 164f5oyefbg = 
++ top: 164f5oyefbg = folks
+
+- top: lol:top = hello
++ top: lol:top = hello-yall"
+`;
