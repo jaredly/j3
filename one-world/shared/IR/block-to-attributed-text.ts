@@ -62,9 +62,14 @@ const mergeStyle = (one?: Style, two?: Style) => {
 };
 
 // export { blockToText } from './block-to-text';
-export const blockToText = (pos: BlockPos, block: Block, ctx: BlockCtx) => {
+export const blockToText = (
+    pos: BlockPos,
+    block: Block,
+    ctx: BlockCtx,
+    color = false,
+) => {
     const ablock = blockToABlock(pos, block, ctx);
-    return aBlockToString(ablock, ctx.color);
+    return aBlockToString(ablock, color);
 };
 
 export const blockFormat = (text: ABlock, style?: Style) => {
@@ -187,10 +192,11 @@ export const aBlockToString = (block: ABlock, color: boolean) => {
 };
 
 export type BlockCtx = {
-    color: boolean;
+    // color: boolean;
     styles: StyleOverrides;
     sourceMaps?: BlockEntry[];
     dropTargets?: DropTarget[];
+    plainBullets?: boolean;
 };
 
 export type BlockPos = {
@@ -237,6 +243,8 @@ export const blockToABlock = (
     }
 
     switch (block.type) {
+        case 'bullet':
+            return [[toChunk(ctx.plainBullets ? '- ' : '▶️ ')]];
         case 'block': {
             if (block.horizontal !== false) {
                 let x = pos.x;

@@ -59,7 +59,6 @@ export const previewDocument = (store: Store, docId: string) => {
         data.push(rendered);
     });
     return blockToABlock({ x: 0, x0: 0, y: 0 }, vblock(data), {
-        color: true,
         styles: {},
     });
 };

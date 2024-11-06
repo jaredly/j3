@@ -110,7 +110,6 @@ export function drawToTerminal(
                 const txt = blockToABlock({ x: 0, y: 0, x0: 0 }, block, {
                     sourceMaps: [],
                     dropTargets: [],
-                    color: true,
                     styles: {},
                 });
                 const pos = selectionPos(store, docId, rstate.sourceMaps, true);

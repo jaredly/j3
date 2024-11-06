@@ -87,6 +87,14 @@ export type Block =
           node?: Path;
           sides?: boolean;
       }
+    | {
+          type: 'bullet';
+          width: number;
+          height: number;
+          kind: 'toplevel-arrow';
+          style?: Style;
+          node?: Path;
+      }
     // | { type: 'line'; contents: string; width: number }
     | {
           type: 'inline';

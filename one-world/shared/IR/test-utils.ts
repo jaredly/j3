@@ -92,7 +92,6 @@ export const multi = (texts: string[], ev = BootExampleEvaluator) => {
         const sourceMap: BlockEntry[] = [];
         const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
             sourceMaps: sourceMap,
-            color: false,
             styles: {},
         });
 
@@ -147,7 +146,6 @@ const processNode = (
     const sourceMap: BlockEntry[] = [];
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
         sourceMaps: sourceMap,
-        color: false,
         styles: {},
     });
     return {

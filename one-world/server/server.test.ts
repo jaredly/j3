@@ -163,9 +163,9 @@ const editorToString = (ds: DocStage, W = 200) => {
         {},
         NopEvaluator,
     );
-    let rstate = render(W, store, ds.id, parseCache);
+    let rstate = render(W, store, ds.id, parseCache, true);
     reval(caches, ctx, rstate, NopEvaluator);
-    rstate = render(W, store, ds.id, parseCache);
+    rstate = render(W, store, ds.id, parseCache, true);
     return aBlockToString(rstate.txt, false);
 };
 
@@ -192,7 +192,7 @@ test('store and retrieve a newStage', async () => {
 });
 
 const getEx = (text: string | string[]) =>
-    Array.isArray(text) ? text[0] : '▶️ ' + text;
+    Array.isArray(text) ? text[0] : '- ' + text;
 
 const examples: (string | string[])[] = [
     'hello',
@@ -200,7 +200,7 @@ const examples: (string | string[])[] = [
     '{yes no 123}',
     '(hello [folks yes])',
     [
-        '▶️ (hello forks)',
+        '- (hello forks)',
         '(hello folk',
         'ArrowLeft',
         'Backspace',
@@ -208,11 +208,11 @@ const examples: (string | string[])[] = [
         'ArrowRight',
         's)',
     ],
-    // ['▶️ hello-yall\n▶️ folks', 'hello folks', 'ArrowUp', '-yall'],
+    // ['- hello-yall\n- folks', 'hello folks', 'ArrowUp', '-yall'],
 ];
 
 test('lets do some history', () => {
-    const text = ['▶️ (hello)', '(hello folks', 'Undo'];
+    const text = ['- (hello)', '(hello folks', 'Undo'];
     // const text = ['(hello)', '(hello last things', 'Undo'];
     const doc = newStage('lol', 10, 'na');
     const d2 = runText(doc, text);
@@ -223,7 +223,7 @@ test('lets do some history', () => {
 });
 
 test('lets do some movement and stuff', () => {
-    const text = ['▶️ hello-yall\n▶️ folks', 'hello folks', 'ArrowUp', '-yall'];
+    const text = ['- hello-yall\n- folks', 'hello folks', 'ArrowUp', '-yall'];
     const doc = newStage('lol', 10, 'na');
     const d2 = runText(doc, text);
     expect(
@@ -385,7 +385,7 @@ examples.forEach((text) => {
 
 //     const text = editorToString(runText(ds!, 'hello-folks'));
 
-//     expect(text).toEqual('▶️ hello-folks');
+//     expect(text).toEqual('- hello-folks');
 // });
 
 // const fullRun = async (text: string) => {

@@ -121,6 +121,7 @@ export const render = (
     store: Store,
     docId: string,
     parseAndEval: ParseAndEval<any>,
+    plainBullets = false,
 ): RState => {
     const ds = store.docSession;
     const state = store.getState();
@@ -146,6 +147,7 @@ export const render = (
         ds.selections,
         ds.dragState,
         state,
+        plainBullets,
     );
     return { cache, sourceMaps, dropTargets, block, txt, parseAndEval };
 };
@@ -155,6 +157,7 @@ export const redrawWithSelection = (
     selections: DocSelection[],
     dragState: DocSession['dragState'],
     state: PersistedState,
+    plainBullets = false,
 ) => {
     const sourceMaps: BlockEntry[] = [];
     const dropTargets: DropTarget[] = [];
@@ -166,8 +169,8 @@ export const redrawWithSelection = (
     const txt = blockToABlock({ x: 0, y: 0, x0: 0 }, block, {
         sourceMaps,
         dropTargets,
-        color: true,
         styles,
+        plainBullets,
     });
 
     return { txt, sourceMaps, dropTargets };

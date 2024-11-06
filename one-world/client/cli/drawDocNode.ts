@@ -157,10 +157,7 @@ export const recNodeToText = (
     return blockToABlock(
         { x: 0, y: 0, x0: 0 },
         recNodeToBlock(node, result, maxWidth, getName),
-        {
-            color: false,
-            styles: {},
-        },
+        { styles: {} },
     );
 };
 
@@ -178,9 +175,10 @@ export const drawToplevel = (
         top: id,
     });
     block.node = { root: root, children: [rootLoc] };
-    let prefix = '▶️ ';
+    let prefix = '';
     if (SHOW_IDS) prefix += next + ' ';
     return hblock([
+        { type: 'bullet', width: 2, height: 1, kind: 'toplevel-arrow' },
         line(prefix, undefined, {
             color: termColors.topHandle,
         }),

@@ -97,6 +97,8 @@ export const blockToText = (
     }
 
     switch (block.type) {
+        case 'bullet':
+            return '▶️ ';
         case 'block': {
             if (block.horizontal !== false) {
                 let x = pos.x;
