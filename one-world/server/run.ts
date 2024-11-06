@@ -9,7 +9,7 @@
 import { ServerWebSocket } from 'bun';
 import { Action } from '../shared/action2';
 import { rid } from '../shared/rid';
-import { DocSelection, DocSession } from '../shared/state2';
+import { DocSelection, DocSession, HistoryItem } from '../shared/state2';
 import { jsonGitBackend } from './json-git';
 import { Change } from './persistence';
 
@@ -28,7 +28,8 @@ export type ClientMessage =
           type: 'presence';
           selections: DocSelection[];
       }
-    | { type: 'action'; action: Action };
+    | { type: 'changes'; items: HistoryItem[] };
+// | { type: 'action'; action: Action };
 
 export type ServerMessage =
     | {
@@ -36,7 +37,7 @@ export type ServerMessage =
           id: string;
           selections: DocSelection[];
       }
-    | { type: 'changes'; changes: Change[] };
+    | { type: 'changes'; items: HistoryItem[] };
 
 const baseDirectory = './.ow-data';
 
@@ -143,20 +144,21 @@ Bun.serve({
                         );
                     }
                 });
-            } else if (msg.type === 'action') {
-                const changes = await backend.update(msg.action, doc);
+            } else if (msg.type === 'changes') {
+                throw new Error('not yet impl');
+                // const changes = await backend.update(msg.action, doc);
 
-                // notify others of the changes
-                Object.keys(sessions).forEach((k) => {
-                    if (k !== ssid) {
-                        sessions[k].ws.send(
-                            JSON.stringify({
-                                type: 'changes',
-                                changes,
-                            } satisfies ServerMessage),
-                        );
-                    }
-                });
+                // // notify others of the changes
+                // Object.keys(sessions).forEach((k) => {
+                //     if (k !== ssid) {
+                //         sessions[k].ws.send(
+                //             JSON.stringify({
+                //                 type: 'changes',
+                //                 changes,
+                //             } satisfies ServerMessage),
+                //         );
+                //     }
+                // });
             }
         },
     },

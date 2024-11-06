@@ -362,6 +362,10 @@ export function calculateIRs(
     iterDocNodes(0, [], doc, (docNode, ids) => {
         const top = getTop(state, doc.id, docNode.toplevel);
 
+        if (!parseCache[docNode.toplevel]) {
+            console.log(parseCache);
+            throw new Error(`cant sorry`);
+        }
         const { parseResult: parsed } = parseCache[docNode.toplevel];
 
         const irs: IRForLoc = {};

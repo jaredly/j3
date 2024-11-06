@@ -12,9 +12,15 @@ import {
     DocSelection,
     DocSession,
     getTop,
+    HistoryItem,
     PersistedState,
 } from '../shared/state2';
-import { update, Updated } from '../shared/update2';
+import {
+    applyChanges,
+    reverseChanges,
+    update,
+    Updated,
+} from '../shared/update2';
 import { getAutoComplete } from './cli/getAutoComplete';
 import { RState } from './cli/render';
 import { IncomingMessage, OutgoingMessage } from './cli/worker';
@@ -192,10 +198,16 @@ export const newStore = (
             return state;
         },
         update(...actions) {
-            // console.log('store updat', action);
+            // console.log('store.update', actions.length);
+            const prevState = state;
+
             const updated: Updated = { toplevels: {}, selections: {} };
 
             const extras: Action[] = [];
+            let changes: HistoryItem['changes'] = {
+                prevSelections: this.docSession.selections,
+                selections: [],
+            };
 
             let presenceChanged = false;
 
@@ -207,7 +219,6 @@ export const newStore = (
                 }
 
                 if (action.type === 'selection') {
-                    const key = `${action.doc} - ${session}`;
                     const prev = session.selections;
                     session.selections = action.selections;
                     session.verticalLodeStone = action.verticalLodeStone;
@@ -276,22 +287,58 @@ export const newStore = (
                     return;
                 }
 
-                state = update(state, action, updated);
-                ws.send({ type: 'action', action });
+                if (action.type === 'undo') {
+                    const last = state.history[state.history.length - 1];
+                    if (!last) return state;
+                    const rev = reverseChanges(last.changes);
+                    state = applyChanges(state, rev);
+                    state = {
+                        ...state,
+                        history: [
+                            ...state.history,
+                            {
+                                changes: rev,
+                                idx: state.history.length,
+                                reverts: last.idx,
+                                session: this.session,
+                            },
+                        ],
+                    };
+                    this.docSession.selections = rev.selections;
+                    return;
+                }
+
+                state = update(state, action, updated, changes);
             });
 
+            ({ changes, state } = maybeAddHistoryItem(
+                state,
+                changes,
+                this.docSession.selections,
+                this.session,
+            ));
+
             extras.forEach((action) => {
-                state = update(state, action, updated);
-                ws.send({ type: 'action', action });
+                state = update(state, action, updated, changes);
             });
+
+            ({ changes, state } = maybeAddHistoryItem(
+                state,
+                changes,
+                this.docSession.selections,
+                this.session,
+            ));
 
             evts.general.all.forEach((f) => f());
 
+            const added = state.history.slice(prevState.history.length);
+            if (added.length) {
+                ws.send({ type: 'changes', items: added });
+            }
+
             // @ts-ignore
             self.state = state;
-
             // TODO:if (presenceChanged) evts.general.presence.forEach(f => f());
-
             sendUpdates(updated, evts);
         },
         on(evt, f) {
@@ -344,6 +391,13 @@ export const newStore = (
                 store.update(data);
                 return;
             case 'changes':
+                if (data.items[0].idx !== state.history.length) {
+                    throw new Error(`history out of sync`);
+                }
+                state = { ...state, history: state.history.concat(data.items) };
+                for (let item of data.items) {
+                    state = applyChanges(state, item.changes);
+                }
                 // TOOD process
                 return;
         }
@@ -352,6 +406,30 @@ export const newStore = (
     const dragger = setupDragger(store);
 
     return store;
+};
+
+const maybeAddHistoryItem = (
+    state: PersistedState,
+    changes: HistoryItem['changes'],
+    selections: DocSelection[],
+    session: string,
+) => {
+    if (changes.nodes || changes.toplevels) {
+        // console.log('have some changes');
+        changes.selections = selections;
+        const historyItem: HistoryItem = {
+            idx: state.history.length,
+            changes,
+            session,
+        };
+        state = { ...state, history: [...state.history, historyItem] };
+
+        changes = {
+            prevSelections: selections,
+            selections: [],
+        };
+    }
+    return { state, changes };
 };
 
 function sendUpdates(updated: Updated, evts: Evts) {
@@ -381,6 +459,8 @@ function maybeCommitTextChange(
     if (!updated) {
         return;
     }
+
+    // console.log('committing text change');
 
     extras.push({
         type: 'toplevel',

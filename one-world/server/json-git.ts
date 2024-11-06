@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { Doc, DocStage } from '../shared/state2';
+import { Doc, DocStage, HistoryItem } from '../shared/state2';
 import {
     existsSync,
     mkdirSync,
@@ -17,7 +17,7 @@ export type ServerBackend = {
     docsList(): Promise<{ id: string; title: string }[]>;
     doc(id: string): Promise<DocStage | null>;
     newDoc(title: string): Promise<string>;
-    update(action: Action, doc: string): Promise<Change[]>;
+    update(items: HistoryItem[], doc: string): Promise<HistoryItem[]>;
 };
 
 const loadStage = (dir: string, topPath: (top: string) => string): DocStage => {
@@ -133,16 +133,17 @@ export const jsonGitBackend = (base: string): ServerBackend => {
         },
 
         async update(action, doc) {
-            if (!existsSync(stagePath(doc))) {
-                throw new Error(`no current stage for doc ${doc}`);
-            }
-            const stage = loadStage(stagePath(doc), topPath);
-            const next = update(stage, action, {
-                selections: {},
-                toplevels: {},
-            });
-            saveStage(next, stagePath(doc));
-            return [{ type: 'stage', id: doc, stage: next }];
+            throw new Error('no');
+            // if (!existsSync(stagePath(doc))) {
+            //     throw new Error(`no current stage for doc ${doc}`);
+            // }
+            // const stage = loadStage(stagePath(doc), topPath);
+            // const next = update(stage, action, {
+            //     selections: {},
+            //     toplevels: {},
+            // });
+            // saveStage(next, stagePath(doc));
+            // return [{ type: 'stage', id: doc, stage: next }];
         },
     };
 };

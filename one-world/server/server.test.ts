@@ -1,33 +1,9 @@
-import { BunSQLiteDatabase, drizzle } from 'drizzle-orm/bun-sqlite';
-import { and, eq } from 'drizzle-orm';
-import { createBLAKE3 } from 'hash-wasm';
 import sqlite from 'bun:sqlite';
-import {
-    Module,
-    hashit,
-    hashModule,
-    Commit,
-    hashCommit,
-    Branch,
-} from './hashings';
+import { eq } from 'drizzle-orm';
+import { drizzle } from 'drizzle-orm/bun-sqlite';
 
-import { test, expect } from 'bun:test';
-import { seed } from './seed';
+import { expect, test } from 'bun:test';
 import * as dk from 'drizzle-kit/payload';
-import * as tb from './schema';
-import { genId } from '../client/cli/edit/newDocument';
-import { DocStage, getDoc } from '../shared/state2';
-import { Toplevel } from '../shared/toplevels';
-import {
-    DrizzleDb,
-    getEditedDoc,
-    newDocument,
-    newStage,
-    saveDocument,
-} from './drizzle';
-import { newStore, WS } from '../client/newStore2';
-import { parseAndCache, render, RState } from '../client/cli/render';
-import { NopEvaluator, SimplestEvaluator } from '../evaluators/simplest';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import {
     handleDropdown,
@@ -35,15 +11,20 @@ import {
     handleUpDown,
 } from '../client/cli/edit/handleMovement';
 import { handleUpdate } from '../client/cli/edit/handleUpdate';
-import { Caches, Context, evaluate } from '../graphh/by-hand';
-import {
-    aBlockToString,
-    toABlock,
-} from '../shared/IR/block-to-attributed-text';
-import { Path, serializePath } from '../shared/nodes';
-import { selectEODoc } from '../shared/IR/nav';
+import { parseAndCache, render, RState } from '../client/cli/render';
+import { newStore, WS } from '../client/newStore2';
 import { AnyEvaluator } from '../evaluators/boot-ex/types';
-import { update, Updated } from '../shared/update2';
+import { NopEvaluator } from '../evaluators/simplest';
+import { Caches, Context, evaluate } from '../graphh/by-hand';
+import { aBlockToString } from '../shared/IR/block-to-attributed-text';
+import { selectEODoc } from '../shared/IR/nav';
+import { DocStage } from '../shared/state2';
+import { DrizzleDb, getEditedDoc, newStage, saveDocument } from './drizzle';
+import * as tb from './schema';
+import { seed } from './seed';
+import { showChanges } from './showChanges';
+import { ServerMessage } from './run';
+import { applyChanges } from '../shared/update2';
 
 const prepare = (async () => {
     const prev = await dk.generateSQLiteDrizzleJson({});
@@ -116,6 +97,8 @@ const specials: { [key: string]: string } = {
     Enter: 'ENTER',
     Backspace: 'BACKSPACE',
     Tab: 'TAB',
+    Undo: 'UNDO',
+    Redo: 'REDO',
 };
 
 const runText = (ds: DocStage, text: string | string[], ws: WS = nows) => {
@@ -148,6 +131,7 @@ const runText = (ds: DocStage, text: string | string[], ws: WS = nows) => {
     }
 
     singles.forEach((key) => {
+        const { parseCache, caches, ctx } = parseAndCache(store, ds.id, {}, ev);
         rstate = render(W, store, ds.id, parseCache);
 
         if (handleDropdown(key, ds.id, store, rstate, () => {}, ev)) {
@@ -208,13 +192,7 @@ test('store and retrieve a newStage', async () => {
 });
 
 const getEx = (text: string | string[]) =>
-    Array.isArray(text) ? text[0] : text;
-
-const dsKeysds = async (text: string | string[]) => {
-    const doc = newStage('lol', 10, 'na');
-    const d2 = runText(doc, text);
-    expect(editorToString(d2, 200)).toEqual('▶️ ' + getEx(text));
-};
+    Array.isArray(text) ? text[0] : '▶️ ' + text;
 
 const examples: (string | string[])[] = [
     'hello',
@@ -222,7 +200,7 @@ const examples: (string | string[])[] = [
     '{yes no 123}',
     '(hello [folks yes])',
     [
-        '(hello forks)',
+        '▶️ (hello forks)',
         '(hello folk',
         'ArrowLeft',
         'Backspace',
@@ -230,12 +208,70 @@ const examples: (string | string[])[] = [
         'ArrowRight',
         's)',
     ],
+    // ['▶️ hello-yall\n▶️ folks', 'hello folks', 'ArrowUp', '-yall'],
 ];
+
+test('lets do some history', () => {
+    const text = ['▶️ (hello)', '(hello folks', 'Undo'];
+    // const text = ['(hello)', '(hello last things', 'Undo'];
+    const doc = newStage('lol', 10, 'na');
+    const d2 = runText(doc, text);
+    expect(
+        d2.history.map((h) => showChanges(h.changes)).join('\n\n'),
+    ).toMatchSnapshot();
+    expect(editorToString(d2, 200)).toEqual(getEx(text));
+});
+
+test('lets do some movement and stuff', () => {
+    const text = ['▶️ hello-yall\n▶️ folks', 'hello folks', 'ArrowUp', '-yall'];
+    const doc = newStage('lol', 10, 'na');
+    const d2 = runText(doc, text);
+    expect(
+        d2.history.map((h) => showChanges(h.changes)).join('\n\n'),
+    ).toMatchSnapshot();
+    expect(editorToString(d2, 200)).toEqual(getEx(text));
+});
 
 // DS -> keys -> DS
 examples.forEach((text) => {
-    test('DS -> keys -> DS : ' + getEx(text), async () => {
-        dsKeysds(text);
+    test('DS -> keys -> DS : ' + getEx(text), () => {
+        const doc = newStage('lol', 10, 'na');
+        const d2 = runText(doc, text);
+        expect(editorToString(d2, 200)).toEqual(getEx(text));
+    });
+});
+
+// DS -> keys&cross
+// TODO: revisit once I have history items
+
+examples.forEach((text) => {
+    test('DS sync to other DS : ' + getEx(text), async () => {
+        const doc = newStage('lol', 10, 'na');
+        const listeners: ((msg: ServerMessage) => void)[] = [];
+
+        const other = newStore(
+            doc,
+            {
+                close() {},
+                onMessage(fn) {
+                    listeners.push(fn);
+                },
+                send(msg) {},
+            },
+            null,
+        );
+
+        const d2 = runText(doc, text, {
+            close() {},
+            onMessage(fn) {},
+            send(msg) {
+                if (msg.type === 'changes') {
+                    listeners.forEach((f) => f(msg));
+                }
+            },
+        });
+        expect(editorToString(d2, 200)).toEqual(getEx(text));
+        expect(editorToString(other.getState(), 200)).toEqual(getEx(text));
     });
 });
 
@@ -253,7 +289,7 @@ examples.forEach((text) => {
 
         expect(
             editorToString((await getEditedDoc(db, id, 'main'))!, 200),
-        ).toEqual('▶️ ' + getEx(text));
+        ).toEqual(getEx(text));
     });
 });
 
@@ -269,7 +305,6 @@ const queue = () => {
     };
 };
 
-// TODO: should have like a fixture thing that runs this path with a bunch of things
 examples.forEach((text) => {
     test('DS -> keys & sync : ' + getEx(text), async () => {
         const id = 'lol';
@@ -280,15 +315,18 @@ examples.forEach((text) => {
             close() {},
             onMessage(fn) {},
             send(msg) {
-                if (msg.type === 'action') {
-                    const ups: Updated = { toplevels: {}, selections: {} };
-                    tmp = update(tmp, msg.action, ups);
+                if (msg.type === 'changes') {
+                    // const ups: Updated = { toplevels: {}, selections: {} };
+                    msg.items.forEach((item) => {
+                        tmp = applyChanges(tmp, item.changes);
+                    });
+                    tmp = { ...tmp, history: tmp.history.concat(msg.items) };
                 }
             },
         });
 
         expect(edit).toEqual(tmp);
-        expect(editorToString(tmp, 200)).toEqual('▶️ ' + getEx(text));
+        expect(editorToString(tmp, 200)).toEqual(getEx(text));
     });
 });
 
@@ -300,7 +338,6 @@ examples.forEach((text) => {
 
         await saveDocument(db, newStage(id, 10, root), 'main');
         const doc = (await getEditedDoc(db, id, 'main'))!;
-        // let tmp = doc;
 
         const { enqueue, fin } = queue();
 
@@ -308,11 +345,20 @@ examples.forEach((text) => {
             close() {},
             onMessage(fn) {},
             send(msg) {
-                if (msg.type === 'action') {
+                if (msg.type === 'changes') {
                     enqueue(async () => {
                         const doc = await getEditedDoc(db, id, 'main');
-                        const ups: Updated = { toplevels: {}, selections: {} };
-                        const upd = update(doc!, msg.action, ups);
+                        let upd = doc!;
+                        if (msg.items[0].idx !== upd.history.length) {
+                            throw new Error(`history out of sync`);
+                        }
+                        msg.items.forEach((item) => {
+                            upd = applyChanges(upd, item.changes);
+                        });
+                        upd = {
+                            ...upd,
+                            history: upd.history.concat(msg.items),
+                        };
                         await saveDocument(db, upd, 'main');
                     });
                 }
@@ -323,53 +369,34 @@ examples.forEach((text) => {
 
         const dbdoc = await getEditedDoc(db, id, 'main');
         expect(dbdoc).toEqual(edit);
-        expect(editorToString(dbdoc!, 200)).toEqual('▶️ ' + getEx(text));
+        expect(editorToString(dbdoc!, 200)).toEqual(getEx(text));
     });
 });
 
 //
 // old, silly tests
 
-test('noww to like, make a new document?', async () => {
-    const db = await emptyDb();
-    const root = await getHeadRoot(db, 'main');
-    const id = await newDocument(db, root, 'main');
-    const ds = await getEditedDoc(db, id, 'main');
-    expect(ds).toBeTruthy();
+// test('noww to like, make a new document?', async () => {
+//     const db = await emptyDb();
+//     const root = await getHeadRoot(db, 'main');
+//     const id = await newDocument(db, root, 'main');
+//     const ds = await getEditedDoc(db, id, 'main');
+//     expect(ds).toBeTruthy();
 
-    const text = editorToString(runText(ds!, 'hello-folks'));
+//     const text = editorToString(runText(ds!, 'hello-folks'));
 
-    expect(text).toEqual('▶️ hello-folks');
-});
+//     expect(text).toEqual('▶️ hello-folks');
+// });
 
-const fullRun = async (text: string) => {
-    const db = await emptyDb();
-    const root = await getHeadRoot(db, 'main');
-    const id = await newDocument(db, root, 'main');
-    const ds = await getEditedDoc(db, id, 'main');
-    expect(ds).toBeTruthy();
+// const fullRun = async (text: string) => {
+//     const db = await emptyDb();
+//     const root = await getHeadRoot(db, 'main');
+//     const id = await newDocument(db, root, 'main');
+//     const ds = await getEditedDoc(db, id, 'main');
+//     expect(ds).toBeTruthy();
 
-    return editorToString(runText(ds!, text));
-};
-
-test('and now for a little more fun...', async () => {
-    expect(await fullRun('(hello')).toEqual('▶️ (hello)');
-    expect(await fullRun('(goodbye folks')).toEqual('▶️ (goodbye folks)');
-    expect(await fullRun('(goodbye folks)')).toEqual('▶️ (goodbye folks)');
-    expect(await fullRun('(hello folks [and such] things')).toEqual(
-        '▶️ (hello folks [and such] things)',
-    );
-});
-
-test('hrm. what next then?', async () => {
-    // const db = await emptyDb();
-    // const root = await getHeadRoot(db, 'main');
-    // const id = await newDocument(db, root, 'main');
-    // const ds = (await getEditedDoc(db, id, 'main'))!;
-    // expect(ds).toBeTruthy();
-    // const text = runText(ds, '(hello folks');
-    // expect(text).toEqual('▶️ (hello folks)');
-});
+//     return editorToString(runText(ds!, text));
+// };
 
 /*
 

@@ -1,6 +1,20 @@
 
 # Tests here!
 
+- DS->keys->DS
+- DS->DB->DS->keys->DS->DB->DS
+- DS -> keys&sync/ds
+- DDD -> keys&sync/db -> DB->DS
+
+
+Now I need to think about:
+- history undo/redo pls
+- exports and modules and such?
+- anddd commit! gotta do it
+
+
+
+
 - (create the database) (load the database) (do things in the editor) (assert:editor state)
 - (create/load db) (editor changes) (persiste) (load) (assert:editor state)
 

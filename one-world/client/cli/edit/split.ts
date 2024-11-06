@@ -71,11 +71,31 @@ export const split = (
                 top.id,
                 path.root.doc,
                 {
-                    [ploc]: { ...pnode, items },
+                    // [ploc]: { ...pnode, items },
                     [node.loc]: {
                         ...node,
                         text: text.slice(0, norm.start ?? norm.end).join(''),
                     },
+                    // [nidx]: {
+                    //     type: 'id',
+                    //     text: text.slice(norm.end).join(''),
+                    //     loc: nidx,
+                    // },
+                },
+                nidx + 1,
+            ),
+        );
+
+        store.update(
+            topUpdate(
+                top.id,
+                path.root.doc,
+                {
+                    [ploc]: { ...pnode, items },
+                    // [node.loc]: {
+                    //     ...node,
+                    //     text: text.slice(0, norm.start ?? norm.end).join(''),
+                    // },
                     [nidx]: {
                         type: 'id',
                         text: text.slice(norm.end).join(''),

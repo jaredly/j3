@@ -15,6 +15,8 @@ export type LocalOnlyAction = {
 };
 
 export type Action =
+    | { type: 'undo' }
+    | { type: 'redo' }
     | { type: 'reset'; state: PersistedState }
     | { type: 'module'; action: ModuleAction }
     | { type: 'multi'; actions: Action[] }

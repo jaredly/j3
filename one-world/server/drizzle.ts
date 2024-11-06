@@ -154,12 +154,42 @@ export const saveMod = (
         });
 };
 
+export const saveHistory = (
+    db: DrizzleDb,
+    docId: string,
+    item: HistoryItem,
+    branch: string,
+) => {
+    const value = {
+        branch,
+        ...item,
+        doc: docId,
+    };
+    return db
+        .insert(tb.editedDocumentsHistory)
+        .values([value])
+        .onConflictDoUpdate({
+            target: [
+                tb.editedDocumentsHistory.doc,
+                tb.editedDocumentsHistory.branch,
+                tb.editedDocumentsHistory.idx,
+            ],
+            set: value,
+        });
+};
+
 export const saveDocument = async (
     db: DrizzleDb,
     doc: DocStage,
     branch: string,
 ) => {
     await saveDoc(db, doc, branch);
+
+    await Promise.all(
+        Object.values(doc.history).map((history) =>
+            saveHistory(db, doc.id, history, branch),
+        ),
+    );
 
     await Promise.all(
         Object.values(doc.modules).map((module) =>

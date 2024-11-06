@@ -62,6 +62,11 @@ export const handleUpdate = (
         return true;
     }
 
+    if (key === 'UNDO') {
+        store.update({ type: 'undo' });
+        return true;
+    }
+
     const ds = store.docSession;
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
