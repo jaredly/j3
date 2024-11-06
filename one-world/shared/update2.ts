@@ -6,6 +6,7 @@ import { Toplevel } from './toplevels';
 export type Updated = {
     toplevels: Record<string, Record<number, true>>;
     selections: Record<string, true>;
+    doc?: boolean;
 };
 
 // const useStage = true;
@@ -28,33 +29,6 @@ export const update = (
             });
             return state;
         case 'doc': {
-            // if (action.action.type === 'reset') {
-            //     return {
-            //         ...state,
-            //         _documents: {
-            //             ...state._documents,
-            //             [action.id]: action.action.doc,
-            //         },
-            //     };
-            // }
-            // if (action.action.type === 'delete') {
-            //     const _documents = { ...state._documents };
-            //     delete _documents[action.id];
-            //     return { ...state, _documents };
-            // }
-
-            // let stage: DocStage = state.stages[action.id];
-            // if (!stage) {
-            //     let doc: Doc = state._documents[action.id];
-            //     if (!doc) {
-            //         throw new Error('no doc yet idk gotta initialize');
-            //     }
-            //     stage = {
-            //         ...doc,
-            //         history: [],
-            //         toplevels: {},
-            //     };
-            // }
             const nodes = { ...state.nodes };
             Object.entries(action.action.update.nodes ?? {}).forEach(
                 ([k, v]) => {
@@ -63,6 +37,7 @@ export const update = (
                     } else {
                         nodes[+k] = v;
                     }
+                    updated.doc = true;
                 },
             );
             return { ...state, ...action.action.update, nodes };
@@ -84,30 +59,6 @@ export const update = (
     }
     console.warn('skipping action', action.type);
     return state;
-};
-
-export const updateDoc = (
-    doc: undefined | Doc,
-    action: DocAction,
-): Doc | null => {
-    switch (action.type) {
-        // case 'reset':
-        //     return action.doc;
-        // case 'delete':
-        //     return null;
-        case 'update':
-            if (!doc) throw new Error('trying to update nonexistent toplevel');
-            const nodes = { ...doc.nodes };
-            Object.entries(action.update.nodes ?? {}).forEach(([k, v]) => {
-                if (v === undefined) {
-                    // ignore this, it'll probably get cleaned up?
-                    delete nodes[+k];
-                } else {
-                    nodes[+k] = v;
-                }
-            });
-            return { ...doc, ...action.update, nodes };
-    }
 };
 
 export const updateTL = (

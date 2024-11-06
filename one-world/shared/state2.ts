@@ -96,7 +96,7 @@ export type HistoryItem = {
 
 export type Mod = {
     id: string;
-    hash?: string | null;
+    hash: string | null;
     terms: Record<string, { id: string; hash: string; idx?: number }>;
     assets: Record<
         string,
@@ -127,6 +127,7 @@ export type DocStage = Doc & {
     toplevels: Toplevels;
     modules: Record<string, Mod>;
     history: HistoryItem[];
+    root: string; // the hash of the root module that we're based on
 };
 
 export type DocumentNode = {

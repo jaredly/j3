@@ -2,13 +2,19 @@ import 'dotenv/config';
 import { and, eq } from 'drizzle-orm';
 import { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { genId } from '../client/cli/edit/newDocument';
-import { DocStage, HistoryItem } from '../shared/state2';
+import { DocStage, HistoryItem, Mod } from '../shared/state2';
 import { Toplevel } from '../shared/toplevels';
 import * as tb from './schema';
+import { Updated } from '../shared/update2';
 
 export type DrizzleDb = BunSQLiteDatabase<typeof tb>;
 
-export const newStage = (id: string, now: number, title = 'Untitled') => {
+export const newStage = (
+    id: string,
+    now: number,
+    root: string,
+    title = 'Untitled',
+) => {
     const tid = id + ':top';
 
     const ts = { created: now, updated: now } as const;
@@ -28,9 +34,11 @@ export const newStage = (id: string, now: number, title = 'Untitled') => {
                 ts,
             },
         },
+        root,
         modules: {
             [id]: {
                 id,
+                hash: null,
                 aliases: {},
                 artifacts: {},
                 assets: {},
@@ -54,62 +62,125 @@ export const newStage = (id: string, now: number, title = 'Untitled') => {
     return doc;
 };
 
+const saveDoc = (db: DrizzleDb, doc: DocStage, branch: string) => {
+    const { ts, nodes, nextLoc, ...rest } = doc;
+    const docval = {
+        ...rest,
+        id: doc.id,
+        branch,
+        body: { nodes, nextLoc },
+        updated: ts.updated,
+        created: ts.created,
+    };
+    return db
+        .insert(tb.editedDocuments)
+        .values([docval])
+        .onConflictDoUpdate({
+            target: [tb.editedDocuments.id, tb.editedDocuments.branch],
+            set: docval,
+        });
+};
+
+const saveTop = (
+    db: DrizzleDb,
+    docId: string,
+    top: Toplevel,
+    branch: string,
+) => {
+    const { nodes, nextLoc, root, ts, ...rest } = top;
+    const values = {
+        ...rest,
+        docid: docId,
+        branch,
+        body: { nodes, nextLoc, root },
+        updated: ts.updated,
+        created: ts.created,
+        // Denormalization! Which, ... ok maybe we actually don't want it, for the editeds?
+        // hmmmm.
+        accessories: [],
+        recursives: [],
+    };
+    return db
+        .insert(tb.editedDocumentsToplevels)
+        .values([values])
+        .onConflictDoUpdate({
+            target: [
+                tb.editedDocumentsToplevels.docid,
+                tb.editedDocumentsToplevels.branch,
+                tb.editedDocumentsToplevels.id,
+            ],
+            set: values,
+        });
+};
+
+export const saveUpdates = async (
+    db: DrizzleDb,
+    doc: DocStage,
+    branch: string,
+    updates: Updated,
+) => {
+    if (updates.doc) {
+        await saveDoc(db, doc, branch);
+    }
+    for (let id of Object.keys(updates.toplevels)) {
+        await saveTop(db, doc.id, doc.toplevels[id], branch);
+    }
+};
+
+export const saveMod = (
+    db: DrizzleDb,
+    docId: string,
+    mod: Mod,
+    branch: string,
+) => {
+    const { ts, ...rest } = mod;
+    const value = {
+        docid: docId,
+        branch,
+        ...rest,
+        created: ts.created,
+        updated: ts.updated,
+    };
+    return db
+        .insert(tb.editedDocumentsModules)
+        .values([value])
+        .onConflictDoUpdate({
+            target: [
+                tb.editedDocumentsModules.docid,
+                tb.editedDocumentsModules.branch,
+                tb.editedDocumentsModules.id,
+            ],
+            set: value,
+        });
+};
+
+export const saveDocument = async (
+    db: DrizzleDb,
+    doc: DocStage,
+    branch: string,
+) => {
+    await saveDoc(db, doc, branch);
+
+    await Promise.all(
+        Object.values(doc.modules).map((module) =>
+            saveMod(db, doc.id, module, branch),
+        ),
+    );
+
+    await Promise.all(
+        Object.values(doc.toplevels).map((top) =>
+            saveTop(db, doc.id, top, branch),
+        ),
+    );
+};
+
 export const newDocument = async (
     db: DrizzleDb,
     root: string,
     branch: string,
 ) => {
-    const doc = newStage(genId(), Date.now());
-
-    await db.insert(tb.editedDocuments).values([
-        {
-            id: doc.id,
-            body: {
-                nodes: doc.nodes,
-                nextLoc: doc.nextLoc,
-            },
-            branch,
-            evaluator: doc.evaluator,
-            title: doc.title,
-            root,
-        },
-    ]);
-
-    await Promise.all(
-        Object.values(doc.modules).map((module) => {
-            const { ts, ...rest } = module;
-            return db.insert(tb.editedDocumentsModules).values([
-                {
-                    docid: doc.id,
-                    branch,
-                    ...rest,
-                    created: ts.created,
-                    updated: ts.updated,
-                },
-            ]);
-        }),
-    );
-
-    await Promise.all(
-        Object.values(doc.toplevels).map((top) => {
-            const { nodes, nextLoc, root, ts, ...rest } = top;
-            return db.insert(tb.editedDocumentsToplevels).values([
-                {
-                    ...rest,
-                    docid: doc.id,
-                    branch,
-                    body: { nodes, nextLoc, root },
-                    updated: ts.updated,
-                    created: ts.created,
-                    // Denormalization! Which, ... ok maybe we actually don't want it, for the editeds?
-                    // hmmmm.
-                    accessories: [],
-                    recursives: [],
-                },
-            ]);
-        }),
-    );
-
+    const doc = newStage(genId(), Date.now(), root);
+    await saveDocument(db, doc, branch);
     return doc.id;
 };
 
@@ -129,18 +200,15 @@ export const getEditedDoc = async (
 
     const { nextLoc, nodes } = edit.body as any;
     const ds: DocStage = {
-        // module: mp[mp.length - 1],
-        modules: edit.modules.reduce(
-            (map: DocStage['modules'], mod) => (
-                (map[mod.id] = {
-                    ...mod,
-                    hash: mod.hash ?? undefined,
-                    ts: { created: mod.created, updated: mod.updated },
-                }),
-                map
-            ),
-            {},
-        ),
+        modules: edit.modules.reduce((map: DocStage['modules'], mod) => {
+            const { created, updated, branch, docid, ...rest } = mod;
+            map[mod.id] = {
+                ...rest,
+                ts: { created, updated },
+            };
+            return map;
+        }, {}),
+        root: edit.root,
         evaluator: edit.evaluator,
         history: edit.history
             .map(
@@ -163,13 +231,8 @@ export const getEditedDoc = async (
                     id: top.id,
                     module: edit.id,
                     auxiliaries: [],
-                    nextLoc: top.body.nextLoc,
-                    nodes: top.body.nodes,
-                    root: top.body.root,
-                    ts: {
-                        created: top.created,
-                        updated: top.updated,
-                    },
+                    ...top.body,
+                    ts: { created: top.created, updated: top.updated },
                 }),
                 map
             ),

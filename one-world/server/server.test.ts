@@ -18,7 +18,13 @@ import * as tb from './schema';
 import { genId } from '../client/cli/edit/newDocument';
 import { DocStage, getDoc } from '../shared/state2';
 import { Toplevel } from '../shared/toplevels';
-import { DrizzleDb, getEditedDoc, newDocument } from './drizzle';
+import {
+    DrizzleDb,
+    getEditedDoc,
+    newDocument,
+    newStage,
+    saveDocument,
+} from './drizzle';
 import { newStore, WS } from '../client/newStore2';
 import { parseAndCache, render, RState } from '../client/cli/render';
 import { NopEvaluator, SimplestEvaluator } from '../evaluators/simplest';
@@ -37,6 +43,7 @@ import {
 import { Path, serializePath } from '../shared/nodes';
 import { selectEODoc } from '../shared/IR/nav';
 import { AnyEvaluator } from '../evaluators/boot-ex/types';
+import { update, Updated } from '../shared/update2';
 
 const prepare = (async () => {
     const prev = await dk.generateSQLiteDrizzleJson({});
@@ -76,13 +83,6 @@ const getHeadRoot = async (db: DrizzleDb, branch: string) => {
     return main!.commit.root;
 };
 
-test('smallest load & show', async () => {
-    const db = await emptyDb();
-    const root = await getHeadRoot(db, 'main');
-    const id = await newDocument(db, root, 'main');
-    const ds = await getEditedDoc(db, id, 'main');
-});
-
 /*
 
 Full end-to-end:
@@ -108,8 +108,18 @@ const reval = (
     });
 };
 
-const runText = (ds: DocStage, text: string) => {
-    const store = newStore(ds!, nows, null);
+const specials: { [key: string]: string } = {
+    ArrowUp: 'UP',
+    ArrowDown: 'DOWN',
+    ArrowLeft: 'LEFT',
+    ArrowRight: 'RIGHT',
+    Enter: 'ENTER',
+    Backspace: 'BACKSPACE',
+    Tab: 'TAB',
+};
+
+const runText = (ds: DocStage, text: string | string[], ws: WS = nows) => {
+    const store = newStore(ds!, ws, null);
 
     const W = 200;
 
@@ -124,7 +134,20 @@ const runText = (ds: DocStage, text: string) => {
 
     reval(caches, ctx, rstate, ev);
 
-    splitGraphemes(text).forEach((key) => {
+    const singles: string[] = [];
+    if (Array.isArray(text)) {
+        text.slice(1).forEach((line) => {
+            if (specials[line]) {
+                singles.push(specials[line]);
+            } else {
+                singles.push(...splitGraphemes(line));
+            }
+        });
+    } else {
+        singles.push(...splitGraphemes(text));
+    }
+
+    singles.forEach((key) => {
         rstate = render(W, store, ds.id, parseCache);
 
         if (handleDropdown(key, ds.id, store, rstate, () => {}, ev)) {
@@ -161,6 +184,151 @@ const editorToString = (ds: DocStage, W = 200) => {
     rstate = render(W, store, ds.id, parseCache);
     return aBlockToString(rstate.txt, false);
 };
+
+/*
+
+Let's talk, tests.
+
+
+DS -> keys -> DS
+
+
+*/
+
+// MARK: New tests
+
+// DS -> DB -> DS
+test('store and retrieve a newStage', async () => {
+    const db = await emptyDb();
+    const root = await getHeadRoot(db, 'main');
+    const doc = newStage('lol', 10, root);
+    await saveDocument(db, doc, 'main');
+    const got = await getEditedDoc(db, doc.id, 'main');
+    expect(got).toEqual(doc);
+});
+
+const getEx = (text: string | string[]) =>
+    Array.isArray(text) ? text[0] : text;
+
+const dsKeysds = async (text: string | string[]) => {
+    const doc = newStage('lol', 10, 'na');
+    const d2 = runText(doc, text);
+    expect(editorToString(d2, 200)).toEqual('▶️ ' + getEx(text));
+};
+
+const examples: (string | string[])[] = [
+    'hello',
+    '[one two]',
+    '{yes no 123}',
+    '(hello [folks yes])',
+    [
+        '(hello forks)',
+        '(hello folk',
+        'ArrowLeft',
+        'Backspace',
+        'r',
+        'ArrowRight',
+        's)',
+    ],
+];
+
+// DS -> keys -> DS
+examples.forEach((text) => {
+    test('DS -> keys -> DS : ' + getEx(text), async () => {
+        dsKeysds(text);
+    });
+});
+
+examples.forEach((text) => {
+    test('DS->DB->DS -> keys -> DS->DB->DS : ' + getEx(text), async () => {
+        const db = await emptyDb();
+        const root = await getHeadRoot(db, 'main');
+
+        const id = 'lol';
+        await saveDocument(db, newStage(id, 10, root), 'main');
+
+        const doc = runText((await getEditedDoc(db, id, 'main'))!, text);
+
+        await saveDocument(db, doc, 'main');
+
+        expect(
+            editorToString((await getEditedDoc(db, id, 'main'))!, 200),
+        ).toEqual('▶️ ' + getEx(text));
+    });
+});
+
+const queue = () => {
+    let cur = Promise.resolve<unknown>(0);
+    return {
+        enqueue(p: () => Promise<unknown>) {
+            cur = cur.then(p);
+        },
+        fin() {
+            return cur;
+        },
+    };
+};
+
+// TODO: should have like a fixture thing that runs this path with a bunch of things
+examples.forEach((text) => {
+    test('DS -> keys & sync : ' + getEx(text), async () => {
+        const id = 'lol';
+        const doc = newStage(id, 10, 'main');
+        let tmp = doc;
+
+        const edit = runText(doc, text, {
+            close() {},
+            onMessage(fn) {},
+            send(msg) {
+                if (msg.type === 'action') {
+                    const ups: Updated = { toplevels: {}, selections: {} };
+                    tmp = update(tmp, msg.action, ups);
+                }
+            },
+        });
+
+        expect(edit).toEqual(tmp);
+        expect(editorToString(tmp, 200)).toEqual('▶️ ' + getEx(text));
+    });
+});
+
+examples.forEach((text) => {
+    test('DS->DB->DS -> keys & sync -> DB->DS : ' + getEx(text), async () => {
+        const db = await emptyDb();
+        const root = await getHeadRoot(db, 'main');
+        const id = 'lol';
+
+        await saveDocument(db, newStage(id, 10, root), 'main');
+        const doc = (await getEditedDoc(db, id, 'main'))!;
+        // let tmp = doc;
+
+        const { enqueue, fin } = queue();
+
+        const edit = runText(doc, text, {
+            close() {},
+            onMessage(fn) {},
+            send(msg) {
+                if (msg.type === 'action') {
+                    enqueue(async () => {
+                        const doc = await getEditedDoc(db, id, 'main');
+                        const ups: Updated = { toplevels: {}, selections: {} };
+                        const upd = update(doc!, msg.action, ups);
+                        await saveDocument(db, upd, 'main');
+                    });
+                }
+            },
+        });
+
+        await fin();
+
+        const dbdoc = await getEditedDoc(db, id, 'main');
+        expect(dbdoc).toEqual(edit);
+        expect(editorToString(dbdoc!, 200)).toEqual('▶️ ' + getEx(text));
+    });
+});
+
+//
+// old, silly tests
 
 test('noww to like, make a new document?', async () => {
     const db = await emptyDb();
