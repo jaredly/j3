@@ -60,10 +60,7 @@ export async function seed(db: BunSQLiteDatabase<typeof tb>) {
     await db.insert(tb.documents).values({
         ...rootDoc,
         hash: docHash,
-        body: {
-            nodes: rootDoc.nodes,
-            nextLoc: rootDoc.nextLoc,
-        },
+        body: { nodes: {}, nextLoc: rootDoc.nextLoc },
     });
 
     await db.insert(tb.modules).values({

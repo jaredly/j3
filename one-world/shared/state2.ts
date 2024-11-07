@@ -72,6 +72,7 @@ export type Doc = {
     id: string;
     title: string;
     published: null | number;
+    archived?: number | null;
     hash?: string | null;
     evaluator: EvaluatorPath;
 
@@ -127,10 +128,13 @@ export type Mod = {
         }
     >;
 
-    // DENORMALIZED
     // this is the path from the root to get to this module.
     // must be synchronized with the `submodules` of the ancestors
+    // It doesn't get saved to disk, because it's not stable
+    // from the hash of the module.
     path: string[];
+
+    // DENORMALIZED
     terms: Record<string, { id: string; hash: string; idx?: number }>;
 };
 
@@ -144,6 +148,7 @@ export type DocStage = Doc & {
 export type DocumentNode = {
     id: number;
     toplevel: string;
+    topLock?: { hash: string; manual: boolean };
     children: number[];
     ts: TS;
 
@@ -160,4 +165,8 @@ export type DocumentNode = {
         // on the toplevel? or like ... somewhere else?
         nodes: Record<number, null | { fmt?: string }>;
     };
+};
+
+export type LockedNode = Omit<DocumentNode, 'topLock'> & {
+    topLock: NonNullable<DocumentNode['topLock']>;
 };

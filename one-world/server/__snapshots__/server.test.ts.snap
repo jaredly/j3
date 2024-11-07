@@ -17,10 +17,10 @@ exports[`lets do some history 1`] = `
 exports[`lets do some movement and stuff 1`] = `
 "- top: lol:top = 
 + top: lol:top = hello
-+ top: px5qx74n9q = 
++ top: 26kc388b0mb = 
 
-- top: px5qx74n9q = 
-+ top: px5qx74n9q = folks
+- top: 26kc388b0mb = 
++ top: 26kc388b0mb = folks
 
 - top: lol:top = hello
 + top: lol:top = hello-yall"

@@ -2,13 +2,20 @@ import 'dotenv/config';
 import { and, eq, sql } from 'drizzle-orm';
 import { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { genId } from '../client/cli/edit/newDocument';
-import { DocStage, HashedMod, HistoryItem, Mod } from '../shared/state2';
+import {
+    DocStage,
+    HashedMod,
+    HistoryItem,
+    LockedNode,
+    Mod,
+} from '../shared/state2';
 import { Toplevel } from '../shared/toplevels';
 import * as tb from './schema';
 import { Updated } from '../shared/update2';
 import { hashit, norm, normDoc } from './hashings';
 import { createBLAKE3 } from 'hash-wasm';
 import { DrizzleDb, getEditedDoc, getHeadRoot } from './drizzle';
+import { hashToplevels } from '../graphh/just-organize';
 
 export const updateRoot = async (
     db: DrizzleDb,
@@ -25,6 +32,7 @@ export const updateRoot = async (
     // Expanding all relevant parents
     for (let key of Object.keys(doc.modules)) {
         let pmod = null as null | Mod;
+        const path: string[] = [];
         for (let parent of doc.modules[key].path) {
             if (!modules[parent]) {
                 if (!pmod) throw new Error(`cant get tto ${parent}`);
@@ -47,11 +55,13 @@ export const updateRoot = async (
                     );
                 modules[parent] = {
                     ...got,
+                    path: path.slice(),
                     ts: { created: got.created, updated: got.updated },
                 };
             } else {
                 pmod = modules[parent];
             }
+            path.push(parent);
         }
     }
 
@@ -107,17 +117,89 @@ const normModule = (mod: typeof tb.modules.$inferSelect) => {
     });
 };
 
-export const commitDoc = async (db: DrizzleDb, id: string, branch: string) => {
-    const ds = await getEditedDoc(db, id, branch);
+export const commitDoc = async (
+    db: DrizzleDb,
+    id: string,
+    branch: string,
+    hash: (raw: string) => string,
+) => {
+    let ds = await getEditedDoc(db, id, branch);
     const root = await getHeadRoot(db, branch);
     if (!ds) throw new Error(`doc not edited ${id}`);
     if (root !== ds.root) throw new Error(`need to merge before committing!`);
 
+    // Hash toplevels
+    const tops = hashToplevels(ds.toplevels, (tops) =>
+        hash(
+            norm(
+                tops.map((t) => ({ ...t, hash: undefined, module: undefined })),
+            ),
+        ),
+    );
+
     // Commit toplevels
+    await db.insert(tb.toplevels).values(
+        Object.values(tops).map(({ nodes, nextLoc, root, ts, ...top }) => ({
+            ...top,
+            updated: ts.updated,
+            created: ts.created,
+            hash: top.hash!,
+            body: { nodes, nextLoc, root },
+            // TODO fill this out
+            accessories: [],
+        })),
+    );
 
-    // Hash and save doc
+    // Hash doc
+    const nodes: Record<string, LockedNode> = {};
+    Object.values(ds.nodes).forEach((node) => {
+        nodes[node.id] = {
+            ...node,
+            topLock: {
+                hash: tops[node.toplevel].hash,
+                manual: false,
+            },
+        };
+    });
+    const docHash = hash(
+        norm({
+            id: ds.id,
+            title: ds.title,
+            published: ds.published,
+            evaluator: ds.evaluator,
+            nodes,
+            nextLoc: ds.nextLoc,
+            ts: undefined,
+        }),
+    );
 
+    // Commit doc
+    await db
+        .insert(tb.documents)
+        .values([
+            {
+                id: ds.id,
+                hash: docHash,
+                title: ds.title,
+                published: ds.published,
+                evaluator: ds.evaluator,
+                body: {
+                    nodes,
+                    nextLoc: ds.nextLoc,
+                },
+                updated: ds.ts.updated,
+                created: ds.ts.created,
+                archived: ds.archived,
+            },
+        ])
+        .onConflictDoNothing();
+
+    // Commit modules
+    ds = { ...ds, toplevels: tops, hash: docHash };
+    ds.modules = { ...ds.modules };
+    ds.modules[ds.id] = { ...ds.modules[ds.id], docHash };
     const nroot = await updateRoot(db, root, ds);
+    return nroot;
 };
 
 // hrm

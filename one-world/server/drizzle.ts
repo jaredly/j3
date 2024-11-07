@@ -3,7 +3,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { genId } from '../client/cli/edit/newDocument';
 import { DocStage, HashedMod, HistoryItem, Mod } from '../shared/state2';
-import { Toplevel } from '../shared/toplevels';
+import { Toplevel, Toplevels } from '../shared/toplevels';
 import * as tb from './schema';
 import { Updated } from '../shared/update2';
 import { hashit, norm, normDoc } from './hashings';
@@ -236,6 +236,72 @@ export const getHeadRoot = async (db: DrizzleDb, branch: string) => {
         with: { commit: true },
     });
     return main!.commit.root;
+};
+
+export const getModule = async (
+    db: DrizzleDb,
+    root: string,
+    path: string[],
+) => {
+    let mod = await db.query.modules.findFirst({
+        where: and(eq(tb.modules.hash, root), eq(tb.modules.id, 'root')),
+    });
+    for (let name of path) {
+        if (!mod) return null;
+        const child = mod.submodules[name];
+        if (!child) return null;
+        mod = await db.query.modules.findFirst({
+            where: and(
+                eq(tb.modules.hash, child.hash),
+                eq(tb.modules.id, child.id),
+            ),
+        });
+    }
+    return mod;
+};
+
+export const getDoc = async (
+    db: DrizzleDb,
+    id: string,
+    hash: string,
+    root: string,
+): Promise<DocStage | null> => {
+    const doc = await db.query.documents.findFirst({
+        where: and(eq(tb.documents.id, id), eq(tb.documents.hash, hash)),
+    });
+    if (!doc) return null;
+    const toplevels: Toplevels = {};
+    for (let node of Object.values(doc.body.nodes)) {
+        const { hash } = node.topLock;
+        const top = await db.query.toplevels.findFirst({
+            where: and(
+                eq(tb.toplevels.id, node.toplevel),
+                eq(tb.toplevels.hash, hash),
+            ),
+        });
+        if (!top)
+            throw new Error(
+                `unknown top in docnode ${hash} : ${node.toplevel}`,
+            );
+        toplevels[node.toplevel] = {
+            ...top,
+            nodes: top.body.nodes,
+            nextLoc: top.body.nextLoc,
+            root: top.body.root,
+            ts: { created: top.created, updated: top.updated },
+            auxiliaries: [],
+        };
+    }
+    return {
+        ...doc,
+        ts: { updated: doc.updated, created: doc.created },
+        nodes: doc.body.nodes,
+        nextLoc: doc.body.nextLoc,
+        history: [],
+        modules: {},
+        toplevels,
+        root,
+    };
 };
 
 export const getEditedDoc = async (

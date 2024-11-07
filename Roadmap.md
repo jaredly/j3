@@ -1,4 +1,18 @@
 
+# How
+do I get "what's the doc [x] at root [y]"?
+because ... ok so because ...
+yeah so the structural sharing means, we can't actually
+cache the /path/, or the /rootHash/, because they're not stable
+by hash of the module.
+
+
+# TODO eventually
+
+change ref(toplevel).loc to just be [id, number],
+because I've decided that macros need to use an already existing
+node.
+
 #
 
 Next step:
@@ -23,6 +37,10 @@ Now I need to think about:
 
 - whereeeeee is the thing that organizes
   ah it's graphh/by-hand.ts n stuff
+
+So, we do a parse, and stuff.
+
+
 
 
 

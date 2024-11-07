@@ -7,7 +7,13 @@ import {
     SQLiteTextJsonBuilder,
     text,
 } from 'drizzle-orm/sqlite-core';
-import { Doc, EvaluatorPath, HistoryItem, Mod } from '../shared/state2';
+import {
+    Doc,
+    EvaluatorPath,
+    HistoryItem,
+    LockedNode,
+    Mod,
+} from '../shared/state2';
 import { Toplevel } from '../shared/toplevels';
 
 type JsonText<TName extends string, Data> = SQLiteTextJsonBuilder<{
@@ -56,7 +62,7 @@ const topShared = {
 
 // MARK: ByHash
 
-export const toplevelsTable = sqliteTable(
+export const toplevels = sqliteTable(
     'toplevels',
     {
         id: text('id').notNull(),
@@ -75,9 +81,6 @@ const docShared = {
     title: text('title').notNull(),
     published: int('published'), // datetime of publishment, if present
     evaluator: json<EvaluatorPath>()('evaluator').notNull(),
-    body: json<{ nodes: Doc['nodes']; nextLoc: Doc['nextLoc'] }>()(
-        'body',
-    ).notNull(), // jsonified nodes, nextLoc
     ...ts,
 } as const;
 
@@ -87,6 +90,10 @@ export const documents = sqliteTable(
         id: text('id').notNull(),
         hash: text('hash').notNull(),
         archived: int('archived'), // datetime of archival, if present
+        body: json<{
+            nodes: Record<string, LockedNode>;
+            nextLoc: Doc['nextLoc'];
+        }>()('body').notNull(), // jsonified nodes, nextLoc
         ...docShared,
     },
     (table) => ({
@@ -102,7 +109,6 @@ const jsonM = <TName extends keyof Mod>(name: TName) =>
 const modulesShared = {
     // exports from toplevels y'all -- this is derived data!
     terms: jsonM('terms').notNull().default({}),
-    path: jsonM('path').notNull(),
 
     // These all are manually added:
     assets: jsonM('assets').notNull().default({}),
@@ -201,6 +207,10 @@ export const editedDocuments = sqliteTable(
         id: text('id').notNull(),
         branch: text('branch').notNull(),
         root: text('root').notNull(), // the 'root' hash of the whole module tree that we're based on.
+        body: json<{
+            nodes: Doc['nodes'];
+            nextLoc: Doc['nextLoc'];
+        }>()('body').notNull(), // jsonified nodes, nextLoc
         ...docShared,
     },
     (table) => ({ pk: primaryKey({ columns: [table.id, table.branch] }) }),
@@ -241,6 +251,7 @@ export const editedDocumentsModules = sqliteTable(
         branch: text('branch').notNull(),
         hash: text('hash'), // might be null if this is a new module
         docHash: text('docHash'), // The hash of the document for this module
+        path: jsonM('path').notNull(),
 
         ...modulesShared,
     },

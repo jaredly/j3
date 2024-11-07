@@ -193,9 +193,14 @@ export type Id<Loc> =
 export type IDRef = NonNullable<Id<any>['ref']>;
 
 type RefDeps =
-    | { type: 'toplevel'; loc: FullLoc; kind: string }
+    | {
+          type: 'toplevel';
+          loc: FullLoc;
+          kind: string;
+          lock?: { hash: string; manual: boolean };
+      }
     // Soo this will have a look-uppable name too
-    | { type: 'resource'; id: string; kind: string }
+    | { type: 'resource'; id: string; kind: string; hash?: string }
     | { type: 'builtin'; kind: string };
 
 export type Node =

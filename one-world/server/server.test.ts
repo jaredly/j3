@@ -371,6 +371,23 @@ examples.forEach((text) => {
     });
 });
 
+test('now try to commit', async () => {
+    const db = await emptyDb();
+    const root = await getHeadRoot(db, 'main');
+
+    const id = 'lol';
+    await saveDocument(db, newStage(id, 10, root), 'main');
+
+    const text = 'hello multiple folks';
+    const doc = runText((await getEditedDoc(db, id, 'main'))!, text);
+
+    await saveDocument(db, doc, 'main');
+
+    expect(editorToString((await getEditedDoc(db, id, 'main'))!, 200)).toEqual(
+        '- hello\n- multiple\n- folks',
+    );
+});
+
 //
 // old, silly tests
 
