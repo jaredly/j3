@@ -21,8 +21,10 @@ import { selectEODoc } from '../shared/IR/nav';
 import { DocStage } from '../shared/state2';
 import {
     DrizzleDb,
+    getDoc,
     getEditedDoc,
     getHeadRoot,
+    getModule,
     newStage,
     saveDocument,
 } from './drizzle';
@@ -31,6 +33,9 @@ import { seed } from './seed';
 import { showChanges } from './showChanges';
 import { ServerMessage } from './run';
 import { applyChanges } from '../shared/update2';
+import { commitDoc } from './commit';
+import { createBLAKE3 } from 'hash-wasm';
+import { hashit } from './hashings';
 
 const prepare = (async () => {
     const prev = await dk.generateSQLiteDrizzleJson({});
@@ -383,7 +388,15 @@ test('now try to commit', async () => {
 
     await saveDocument(db, doc, 'main');
 
-    expect(editorToString((await getEditedDoc(db, id, 'main'))!, 200)).toEqual(
+    const hasher = await createBLAKE3();
+
+    const nroot = await commitDoc(db, id, 'main', (str) => hashit(str, hasher));
+
+    const docModule = await getModule(db, nroot, [doc.id]);
+    expect(docModule).toBeTruthy();
+    const docBack = await getDoc(db, doc.id, docModule!.docHash, nroot);
+
+    expect(editorToString(docBack!, 200)).toEqual(
         '- hello\n- multiple\n- folks',
     );
 });

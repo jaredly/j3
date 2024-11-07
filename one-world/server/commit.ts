@@ -34,34 +34,37 @@ export const updateRoot = async (
         let pmod = null as null | Mod;
         const path: string[] = [];
         for (let parent of doc.modules[key].path) {
+            if (pmod && !pmod.submodules[parent] && modules[parent]) {
+                pmod.submodules[parent] = '';
+            }
             if (!modules[parent]) {
-                if (!pmod) throw new Error(`cant get tto ${parent}`);
-                let self = Object.values(pmod.submodules).find(
-                    (m) => m.id === parent,
-                );
+                // if (!pmod) throw new Error(`cant get tto ${parent}`);
+                let self = pmod ? pmod.submodules[parent] : doc.root;
                 if (!self)
                     throw new Error(
-                        `self ${parent} not found in parent ${pmod.id}`,
+                        `self ${parent} not found in parent ${pmod?.id}`,
                     );
                 const got = await db.query.modules.findFirst({
                     where: and(
                         eq(tb.modules.id, parent),
-                        eq(tb.modules.hash, self.hash),
+                        eq(tb.modules.hash, self),
                     ),
                 });
                 if (!got)
                     throw new Error(
-                        `module not in db ${parent} with hash ${self.hash}`,
+                        `module not in db ${parent} with hash ${self}`,
                     );
                 modules[parent] = {
                     ...got,
                     path: path.slice(),
                     ts: { created: got.created, updated: got.updated },
                 };
-            } else {
-                pmod = modules[parent];
             }
+            pmod = modules[parent];
             path.push(parent);
+        }
+        if (pmod && !pmod.submodules[key]) {
+            pmod.submodules[key] = '';
         }
     }
 
@@ -71,10 +74,10 @@ export const updateRoot = async (
         let mod = modules[id];
         if (!mod) throw new Error('no mod');
         mod = { ...mod, submodules: { ...mod.submodules } };
-        Object.keys(mod.submodules).forEach((key) => {
-            const { id: child } = mod.submodules[key];
+        Object.keys(mod.submodules).forEach((child) => {
+            // const { id: child } = mod.submodules[key];
             if (modules[child]) {
-                mod.submodules[key] = { id: child, hash: process(child) };
+                mod.submodules[child] = process(child);
             }
         });
 
@@ -156,7 +159,7 @@ export const commitDoc = async (
         nodes[node.id] = {
             ...node,
             topLock: {
-                hash: tops[node.toplevel].hash,
+                hash: node.toplevel === '' ? '' : tops[node.toplevel].hash,
                 manual: false,
             },
         };

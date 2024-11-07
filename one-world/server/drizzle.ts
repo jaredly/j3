@@ -246,15 +246,12 @@ export const getModule = async (
     let mod = await db.query.modules.findFirst({
         where: and(eq(tb.modules.hash, root), eq(tb.modules.id, 'root')),
     });
-    for (let name of path) {
-        if (!mod) return null;
-        const child = mod.submodules[name];
-        if (!child) return null;
+    for (let id of path) {
+        if (!mod) return console.error('no mod');
+        const hash = mod.submodules[id];
+        if (!hash) return console.error(mod, 'no hash for id ' + id);
         mod = await db.query.modules.findFirst({
-            where: and(
-                eq(tb.modules.hash, child.hash),
-                eq(tb.modules.id, child.id),
-            ),
+            where: and(eq(tb.modules.hash, hash), eq(tb.modules.id, id)),
         });
     }
     return mod;
@@ -272,6 +269,7 @@ export const getDoc = async (
     if (!doc) return null;
     const toplevels: Toplevels = {};
     for (let node of Object.values(doc.body.nodes)) {
+        if (node.toplevel === '') continue;
         const { hash } = node.topLock;
         const top = await db.query.toplevels.findFirst({
             where: and(

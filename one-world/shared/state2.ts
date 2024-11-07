@@ -110,7 +110,7 @@ export type Mod = {
         // Goes to a lookup:
         // { id: string; hash: string; data?: any; mime: string; meta: any }
     >;
-    submodules: Record<string, { id: string; hash: string }>; // id of the submodule
+    submodules: Record<string, string>; // Record<id, hash>
     aliases: Record<string, string>; // name to module id
 
     // These are the evaluators that are /enabled/ for the current module.
