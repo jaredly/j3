@@ -14,10 +14,10 @@ import { handleUpdate } from '../client/cli/edit/handleUpdate';
 import { parseAndCache, render, RState } from '../client/cli/render';
 import { newStore, WS } from '../client/newStore2';
 import { AnyEvaluator } from '../evaluators/boot-ex/types';
-import { NopEvaluator } from '../evaluators/simplest';
+import { NopEvaluator, SimplestEvaluator } from '../evaluators/simplest';
 import { Caches, Context, evaluate } from '../graphh/by-hand';
 import { aBlockToString } from '../shared/IR/block-to-attributed-text';
-import { selectEODoc } from '../shared/IR/nav';
+import { ParseAndEval, selectEODoc } from '../shared/IR/nav';
 import { DocStage } from '../shared/state2';
 import {
     DrizzleDb,
@@ -104,13 +104,18 @@ const specials: { [key: string]: string } = {
     Redo: 'REDO',
 };
 
-const runText = (ds: DocStage, text: string | string[], ws: WS = nows) => {
+const runText = (
+    ds: DocStage,
+    text: string | string[],
+    ws: WS = nows,
+    ev: AnyEvaluator = NopEvaluator,
+) => {
     const store = newStore(ds!, ws, null);
 
     const W = 200;
 
-    const ev = NopEvaluator;
     const { parseCache, caches, ctx } = parseAndCache(store, ds.id, {}, ev);
+    updateModuleExports(parseCache);
     let rstate = render(W, store, ds.id, parseCache);
 
     // Select the end of the document!
@@ -133,8 +138,32 @@ const runText = (ds: DocStage, text: string | string[], ws: WS = nows) => {
         singles.push(...splitGraphemes(text));
     }
 
+    function updateModuleExports(parseCache: ParseAndEval<unknown>) {
+        const state = store.getState();
+        Object.entries(parseCache).forEach(([tid, value]) => {
+            const top = state.toplevels[tid];
+            value.parseResult.exports.forEach((exp) => {
+                const name = top.nodes[exp.loc[0][1]];
+                if (name.type !== 'id') {
+                    throw new Error(`export loc must be id`);
+                }
+                if (name.ref) {
+                    throw new Error(`export id must not have a ref`);
+                }
+                state.modules[top.module].terms[name.text] = {
+                    hash: '',
+                    id: tid,
+                    idx: exp.loc[0][1],
+                };
+            });
+        });
+        // TODO remove staleee
+    }
+
     singles.forEach((key) => {
         const { parseCache, caches, ctx } = parseAndCache(store, ds.id, {}, ev);
+        // state.modules ... are going to be mutable for now.
+        updateModuleExports(parseCache);
         rstate = render(W, store, ds.id, parseCache);
 
         if (handleDropdown(key, ds.id, store, rstate, () => {}, ev)) {
@@ -155,6 +184,12 @@ const runText = (ds: DocStage, text: string | string[], ws: WS = nows) => {
 
     store.update({ type: 'selection', doc: ds.id, selections: [] });
 
+    {
+        const { parseCache, caches, ctx } = parseAndCache(store, ds.id, {}, ev);
+        // state.modules ... are going to be mutable for now.
+        updateModuleExports(parseCache);
+    }
+
     return store.getState();
 };
 
@@ -166,9 +201,15 @@ const editorToString = (ds: DocStage, W = 200) => {
         {},
         NopEvaluator,
     );
-    let rstate = render(W, store, ds.id, parseCache, true);
+    let rstate = render(W, store, ds.id, parseCache, {
+        plainBullets: true,
+        showRefHashes: true,
+    });
     reval(caches, ctx, rstate, NopEvaluator);
-    rstate = render(W, store, ds.id, parseCache, true);
+    rstate = render(W, store, ds.id, parseCache, {
+        plainBullets: true,
+        showRefHashes: true,
+    });
     return aBlockToString(rstate.txt, false);
 };
 
@@ -183,6 +224,15 @@ DS -> keys -> DS
 */
 
 // MARK: New tests
+
+test.only("nowww let's do some exportsss", async () => {
+    const text = '1 ()';
+    const doc = newStage('lol', 10, 'na');
+    const d2 = runText(doc, text, undefined, SimplestEvaluator);
+    // ok forks. how do we populate the modules.
+    expect(editorToString(d2, 200)).toEqual(getEx(text));
+    expect(d2.modules[d2.id].terms.x).toBeTruthy();
+});
 
 // DS -> DB -> DS
 test('store and retrieve a newStage', async () => {
@@ -389,11 +439,9 @@ test('now try to commit', async () => {
     await saveDocument(db, doc, 'main');
 
     const hasher = await createBLAKE3();
-
     const nroot = await commitDoc(db, id, 'main', (str) => hashit(str, hasher));
 
     const docModule = await getModule(db, nroot, [doc.id]);
-    expect(docModule).toBeTruthy();
     const docBack = await getDoc(db, doc.id, docModule!.docHash, nroot);
 
     expect(editorToString(docBack!, 200)).toEqual(

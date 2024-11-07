@@ -1,4 +1,11 @@
 
+# Next up
+
+- gotta have: exports handling
+  - which brings in macros I believe?
+- and recursive toplevels
+
+
 # How
 do I get "what's the doc [x] at root [y]"?
 because ... ok so because ...

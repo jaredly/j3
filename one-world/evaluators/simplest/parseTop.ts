@@ -155,7 +155,7 @@ const parseExpr = (ctx: CTX, value: RecNode): Expr | void => {
                 //     console.log('an id', ctx.cursor, value.loc[0][1]);
             }
             if (value.text === '') {
-                ctx.errors.push({ loc: value.loc, text: 'blank' });
+                ctx.errors.push({ loc: value.loc, text: 'expr text is blank' });
                 return;
             }
             return { type: 'local', loc: value.loc, name: value.text };

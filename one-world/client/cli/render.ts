@@ -116,19 +116,30 @@ const cursorLoc = (
 
 export type EvalCache = Record<string, any>;
 
+export type RenderConfig = {
+    plainBullets?: boolean;
+    showRefHashes?: boolean;
+};
+
 export const render = (
     maxWidth: number,
     store: Store,
     docId: string,
     parseAndEval: ParseAndEval<any>,
-    plainBullets = false,
+    config?: RenderConfig,
 ): RState => {
     const ds = store.docSession;
     const state = store.getState();
     const doc = getDoc(state, docId);
 
     // The IRs
-    const cache = calculateIRs(doc, state, ds, parseAndEval);
+    const cache = calculateIRs(
+        doc,
+        state,
+        ds,
+        parseAndEval,
+        config?.showRefHashes,
+    );
 
     applySelectionText(ds.selections, cache);
     const layoutCache = calculateLayouts(doc, state, maxWidth, cache);
@@ -147,7 +158,7 @@ export const render = (
         ds.selections,
         ds.dragState,
         state,
-        plainBullets,
+        config,
     );
     return { cache, sourceMaps, dropTargets, block, txt, parseAndEval };
 };
@@ -157,7 +168,7 @@ export const redrawWithSelection = (
     selections: DocSelection[],
     dragState: DocSession['dragState'],
     state: PersistedState,
-    plainBullets = false,
+    config?: RenderConfig,
 ) => {
     const sourceMaps: BlockEntry[] = [];
     const dropTargets: DropTarget[] = [];
@@ -170,7 +181,7 @@ export const redrawWithSelection = (
         sourceMaps,
         dropTargets,
         styles,
-        plainBullets,
+        plainBullets: config?.plainBullets,
     });
 
     return { txt, sourceMaps, dropTargets };
@@ -359,6 +370,7 @@ export function calculateIRs(
     state: PersistedState,
     ds: DocSession,
     parseCache: ParseAndEval<unknown>,
+    showRefHashes?: boolean,
 ): IRCache2<any> {
     const cache: IRCache2<any> = {};
 
@@ -380,6 +392,7 @@ export function calculateIRs(
                 layouts: parsed.layouts,
                 tableHeaders: parsed.tableHeaders,
                 getName: getName(state, ds),
+                showRefHashes,
             });
         });
         cache[docNode.toplevel] = {

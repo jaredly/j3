@@ -21,6 +21,10 @@ import { createIRCache } from '../TextEdit/actions';
 import { termColors } from '../TextEdit/colors';
 import { controlLayout, textLayout } from './textLayout';
 
+export type BlockConfig = {
+    showRefHashes?: boolean;
+};
+
 export const docToBlock = <Top>(
     id: number,
     ids: number[],
@@ -29,6 +33,7 @@ export const docToBlock = <Top>(
     cache: IRCache2<Top>,
     layoutCache: Record<string, LayoutCtx['layouts']>,
     selections: DocSelection[],
+    config?: BlockConfig,
 ): Block => {
     const node = doc.nodes[id];
     let top: Block | null = null;
@@ -56,6 +61,7 @@ export const docToBlock = <Top>(
                 cache[node.toplevel].irs,
                 layoutCache[node.toplevel],
                 toplevel.nextLoc,
+                config,
             ),
         ];
         if (nsText || sel?.type === 'namespace') {
@@ -168,11 +174,13 @@ export const drawToplevel = (
     irs: IRForLoc,
     layoutCache: LayoutCtx['layouts'],
     next: number,
+    config?: BlockConfig,
 ) => {
     const block = irToBlock(irs[rootLoc], irs, layoutCache[rootLoc].choices, {
         layouts: layoutCache,
         space: ' ',
         top: id,
+        showRefHashes: config?.showRefHashes,
     });
     block.node = { root: root, children: [rootLoc] };
     let prefix = '';

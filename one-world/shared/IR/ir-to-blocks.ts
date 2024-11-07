@@ -18,6 +18,7 @@ import { lastChild } from './nav';
 export type TextCtx = {
     space: string;
     layouts: LayoutCtx['layouts'];
+    showRefHashes?: boolean;
     // color?: boolean;
     annotateNewlines?: boolean;
     top: string;

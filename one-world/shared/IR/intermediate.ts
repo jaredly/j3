@@ -152,6 +152,7 @@ type IRCtx = {
     layouts: Record<number, Layout>;
     getName(loc: Loc): string | null;
     tableHeaders: Record<number, string[]>;
+    showRefHashes?: boolean;
 };
 
 const emptyCtx: IRCtx = {
@@ -681,7 +682,7 @@ export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
                     ? ctx.getName(node.ref.loc) ?? '[unresolved]'
                     : node.text;
 
-            return {
+            const res: IR = {
                 type: 'text',
                 text,
                 placeholder:
@@ -697,6 +698,26 @@ export const nodeToIR = (node: Node, path: Path, ctx: IRCtx = emptyCtx): IR => {
                 path,
                 index: 0,
             };
+
+            if (ctx.showRefHashes && node.ref?.type === 'toplevel') {
+                return {
+                    type: 'horiz',
+                    items: [
+                        res,
+                        {
+                            type: 'punct',
+                            text:
+                                '#' +
+                                node.ref.loc[0][0] +
+                                (node.ref.lock
+                                    ? ':' + node.ref.lock.hash.slice(0, 8)
+                                    : ''),
+                        },
+                    ],
+                };
+            }
+
+            return res;
         }
 
         case 'string': {
