@@ -43,8 +43,8 @@ const prepare = (async () => {
     return dk.generateSQLiteMigration(prev, schema);
 })();
 
-const emptyDb = async (): Promise<DrizzleDb> => {
-    const db = sqlite.open(':memory:');
+const emptyDb = async (name = ':memory:'): Promise<DrizzleDb> => {
+    const db = sqlite.open(name);
 
     db.exec('begin');
     (await prepare).forEach((stmt) => db.exec(stmt));
