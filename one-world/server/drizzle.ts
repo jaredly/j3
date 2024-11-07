@@ -1,11 +1,13 @@
 import 'dotenv/config';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { BunSQLiteDatabase } from 'drizzle-orm/bun-sqlite';
 import { genId } from '../client/cli/edit/newDocument';
-import { DocStage, HistoryItem, Mod } from '../shared/state2';
+import { DocStage, HashedMod, HistoryItem, Mod } from '../shared/state2';
 import { Toplevel } from '../shared/toplevels';
 import * as tb from './schema';
 import { Updated } from '../shared/update2';
+import { hashit, norm, normDoc } from './hashings';
+import { createBLAKE3 } from 'hash-wasm';
 
 export type DrizzleDb = BunSQLiteDatabase<typeof tb>;
 
@@ -38,7 +40,9 @@ export const newStage = (
         modules: {
             [id]: {
                 id,
+                path: ['root'],
                 hash: null,
+                docHash: null,
                 aliases: {},
                 artifacts: {},
                 assets: {},
@@ -212,6 +216,26 @@ export const newDocument = async (
     const doc = newStage(genId(), Date.now(), root);
     await saveDocument(db, doc, branch);
     return doc.id;
+};
+
+// export const findModulePath = async (db: DrizzleDb, id: string) => {
+//     const path: string[] = [];
+//     while (id !== 'root') {
+//         if (path.length > 100) {
+//             throw new Error(`Module depth too large... (loop?)`);
+//         }
+//         const parent = await db.query.modules.findFirst({
+//             where: sql``,
+//         });
+//     }
+// };
+
+export const getHeadRoot = async (db: DrizzleDb, branch: string) => {
+    const main = await db.query.branches.findFirst({
+        where: eq(tb.branches.name, branch),
+        with: { commit: true },
+    });
+    return main!.commit.root;
 };
 
 export const getEditedDoc = async (

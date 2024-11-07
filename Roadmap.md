@@ -1,4 +1,13 @@
 
+#
+
+Next step:
+
+updateRoot looks reasonable, BUT
+- I need to make sure to update the hashes n stuff in the document first.
+- anddd the toplevels.
+
+
 # Tests here!
 
 - DS->keys->DS
@@ -12,6 +21,8 @@ Now I need to think about:
 - [ ] anddd commit! gotta do it
 - exports and modules and such?
 
+- whereeeeee is the thing that organizes
+  ah it's graphh/by-hand.ts n stuff
 
 
 

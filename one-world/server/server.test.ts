@@ -19,7 +19,13 @@ import { Caches, Context, evaluate } from '../graphh/by-hand';
 import { aBlockToString } from '../shared/IR/block-to-attributed-text';
 import { selectEODoc } from '../shared/IR/nav';
 import { DocStage } from '../shared/state2';
-import { DrizzleDb, getEditedDoc, newStage, saveDocument } from './drizzle';
+import {
+    DrizzleDb,
+    getEditedDoc,
+    getHeadRoot,
+    newStage,
+    saveDocument,
+} from './drizzle';
 import * as tb from './schema';
 import { seed } from './seed';
 import { showChanges } from './showChanges';
@@ -55,14 +61,6 @@ test('doing a little seed I guess', async () => {
     const { commit } = main!;
     expect(commit.module.id).toEqual('root');
 });
-
-const getHeadRoot = async (db: DrizzleDb, branch: string) => {
-    const main = await db.query.branches.findFirst({
-        where: eq(tb.branches.name, branch),
-        with: { commit: true },
-    });
-    return main!.commit.root;
-};
 
 /*
 

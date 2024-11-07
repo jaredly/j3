@@ -3,13 +3,11 @@ import {
     blob,
     int,
     primaryKey,
-    SQLiteColumn,
     sqliteTable,
     SQLiteTextJsonBuilder,
     text,
 } from 'drizzle-orm/sqlite-core';
-import { EvaluatorPath, HistoryItem } from '../shared/state2';
-import { Module } from './hashings';
+import { Doc, EvaluatorPath, HistoryItem, Mod } from '../shared/state2';
 import { Toplevel } from '../shared/toplevels';
 
 type JsonText<TName extends string, Data> = SQLiteTextJsonBuilder<{
@@ -77,7 +75,9 @@ const docShared = {
     title: text('title').notNull(),
     published: int('published'), // datetime of publishment, if present
     evaluator: json<EvaluatorPath>()('evaluator').notNull(),
-    body: text('body', { mode: 'json' }).notNull(), // jsonified nodes, nextLoc, nsAliases
+    body: json<{ nodes: Doc['nodes']; nextLoc: Doc['nextLoc'] }>()(
+        'body',
+    ).notNull(), // jsonified nodes, nextLoc
     ...ts,
 } as const;
 
@@ -94,14 +94,15 @@ export const documents = sqliteTable(
     }),
 );
 
-const jsonM = <TName extends keyof Module>(name: TName) =>
-    text(name, { mode: 'json' }) as JsonText<TName, Module[TName]>;
+const jsonM = <TName extends keyof Mod>(name: TName) =>
+    text(name, { mode: 'json' }) as JsonText<TName, Mod[TName]>;
 
 // type IdHashMap = Record<string, { id: string; hash: string }>;
 
 const modulesShared = {
     // exports from toplevels y'all -- this is derived data!
     terms: jsonM('terms').notNull().default({}),
+    path: jsonM('path').notNull(),
 
     // These all are manually added:
     assets: jsonM('assets').notNull().default({}),
@@ -123,6 +124,8 @@ export const modules = sqliteTable(
         // around module ids, not hashes. And then we compute the hashes.
         id: text('id').notNull(),
         hash: text('hash').notNull(),
+        // The hash of the document for this module
+        docHash: text('docHash').notNull(),
 
         ...modulesShared,
     },
@@ -130,6 +133,13 @@ export const modules = sqliteTable(
         pk: primaryKey({ columns: [table.id, table.hash] }),
     }),
 );
+
+export const modulesRelations = relations(modules, ({ one }) => ({
+    module: one(documents, {
+        fields: [modules.id, modules.docHash],
+        references: [documents.id, documents.hash],
+    }),
+}));
 
 export const assets = sqliteTable(
     'assets',
@@ -230,6 +240,8 @@ export const editedDocumentsModules = sqliteTable(
         docid: text('docid').notNull(),
         branch: text('branch').notNull(),
         hash: text('hash'), // might be null if this is a new module
+        docHash: text('docHash'), // The hash of the document for this module
+
         ...modulesShared,
     },
     (table) => ({

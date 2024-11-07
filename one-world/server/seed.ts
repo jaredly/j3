@@ -7,22 +7,29 @@ import {
     hashit,
     hashModule,
     Module,
+    norm,
+    normDoc,
 } from './hashings';
 import * as tb from './schema';
+import { Doc, Mod } from '../shared/state2';
 
 export async function seed(db: BunSQLiteDatabase<typeof tb>) {
     const hasher = await createBLAKE3();
 
-    const module: Module = {
+    const ts = { created: Date.now(), updated: Date.now() };
+
+    const module: Mod = {
         id: 'root',
+        path: [],
         aliases: {},
         submodules: {},
         terms: {},
         evaluators: [],
         assets: {},
         artifacts: {},
-        created: Date.now(),
-        updated: Date.now(),
+        ts,
+        hash: null,
+        docHash: null,
     };
     const moduleHash = hashit(hashModule(module), hasher);
 
@@ -39,9 +46,30 @@ export async function seed(db: BunSQLiteDatabase<typeof tb>) {
         head: commitHash,
     };
 
+    const rootDoc: Doc = {
+        id: 'root',
+        title: 'Root',
+        evaluator: [],
+        published: null,
+        nextLoc: 0,
+        nodes: {},
+        ts,
+    };
+    const docHash = hashit(normDoc(rootDoc), hasher);
+
+    await db.insert(tb.documents).values({
+        ...rootDoc,
+        hash: docHash,
+        body: {
+            nodes: rootDoc.nodes,
+            nextLoc: rootDoc.nextLoc,
+        },
+    });
+
     await db.insert(tb.modules).values({
         ...module,
         hash: moduleHash,
+        docHash,
         submodules: module.submodules,
         terms: module.terms,
         // documents: (module.documents),

@@ -72,7 +72,7 @@ export type Doc = {
     id: string;
     title: string;
     published: null | number;
-    // module: string;
+    hash?: string | null;
     evaluator: EvaluatorPath;
 
     nodes: Record<number, DocumentNode>;
@@ -94,10 +94,15 @@ export type HistoryItem = {
     };
 };
 
+export type HashedMod = Omit<Mod, 'hash'> & {
+    hash: string;
+    docHash: string;
+};
+
 export type Mod = {
     id: string;
     hash: string | null;
-    terms: Record<string, { id: string; hash: string; idx?: number }>;
+    docHash: string | null;
     assets: Record<
         string,
         { id: string; hash: string }
@@ -121,6 +126,12 @@ export type Mod = {
             kind: 'evaluator' | 'ffi' | 'backend' | 'visual';
         }
     >;
+
+    // DENORMALIZED
+    // this is the path from the root to get to this module.
+    // must be synchronized with the `submodules` of the ancestors
+    path: string[];
+    terms: Record<string, { id: string; hash: string; idx?: number }>;
 };
 
 export type DocStage = Doc & {

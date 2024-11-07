@@ -1,5 +1,5 @@
 import { IHasher } from 'hash-wasm/dist/lib/WASMInterface';
-import { EvaluatorPath } from '../shared/state2';
+import { Doc, EvaluatorPath, Mod } from '../shared/state2';
 
 export type Module = {
     hash?: string;
@@ -21,6 +21,7 @@ export type Module = {
     created: number;
     updated: number;
 };
+
 export type Commit = {
     hash?: string;
     sourceDoc?: string;
@@ -36,7 +37,19 @@ export const hashit = (value: string, hasher: IHasher) => {
 };
 const keyString = (k: string) =>
     k.match(/^[a-zA-Z0-9_-]+$/) ? k : JSON.stringify(k);
-const norm = (value: any): string => {
+
+export const normDoc = (doc: Doc): string =>
+    norm({
+        id: doc.id,
+        title: doc.title,
+        nodes: doc.nodes,
+        published: doc.published,
+        evaluator: doc.evaluator,
+        nextLoc: doc.nextLoc,
+        ts: doc.ts,
+    });
+
+export const norm = (value: any): string => {
     if (value == null) return '';
     if (Array.isArray(value)) return `[${value.map(norm)}]`;
     if (typeof value === 'object') {
@@ -48,12 +61,7 @@ const norm = (value: any): string => {
     }
     return JSON.stringify(value);
 };
-export const hashModule = (module: Module) =>
-    norm({
-        ...module,
-        hash: undefined,
-        created: undefined,
-        updated: undefined,
-    });
+export const hashModule = (module: Mod) =>
+    norm({ ...module, hash: undefined, ts: undefined });
 export const hashCommit = (commit: Commit) =>
     norm({ ...commit, hash: undefined });
