@@ -1,6 +1,6 @@
 
 
-- [ ] moreliness: cross linking and hashing - self hash thnaks
+- [x] moreliness: cross linking and hashing - self hash thnaks
 
 
 # Nowww what?

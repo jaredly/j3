@@ -39,6 +39,7 @@ import { hashit, norm } from './hashings';
 import { Toplevel } from '../shared/toplevels';
 import { Id, IDRef, Loc, Node } from '../shared/nodes';
 import { hashToplevels } from '../graphh/just-organize';
+import { IHasher } from 'hash-wasm/dist/lib/WASMInterface';
 
 const prepare = (async () => {
     const prev = await dk.generateSQLiteDrizzleJson({});
@@ -541,8 +542,14 @@ const idTop =
         node.text === text &&
         node.ref?.type === 'toplevel';
 
-test.only('cross-link exports', async () => {
-    const text = `(defn even [x] (if (= x 0) true (odd (- x 1)))) (defn odd [x] (not (even x)))`;
+const topHash = (hasher: IHasher) => (tops: Toplevel[]) =>
+    hashit(
+        norm(tops.map((t) => ({ ...t, hash: undefined, module: undefined }))),
+        hasher,
+    );
+
+test('cross-link exports', async () => {
+    const text = `(def zero 0) (defn even [x] (if (= x zero) true (odd (- x 1)))) (defn odd [x] (not (even x)))`;
     // const text = '(def x 10) (def y (+ 23 x)) (- y x)';
     const doc = newStage('lol', 10, 'na');
     const d2 = runText(doc, text, undefined, SimplestEvaluator);
@@ -550,14 +557,7 @@ test.only('cross-link exports', async () => {
     const terms = crossLink(d2);
 
     const hasher = await createBLAKE3();
-    const tops = hashToplevels(d2.toplevels, (tops) =>
-        hashit(
-            norm(
-                tops.map((t) => ({ ...t, hash: undefined, module: undefined })),
-            ),
-            hasher,
-        ),
-    );
+    const tops = hashToplevels(d2.toplevels, topHash(hasher));
 
     expect(terms.even.hash).toEqual(terms.odd.hash);
     const even = tops[terms.even.id];
@@ -571,10 +571,10 @@ test.only('cross-link exports', async () => {
     expect(refLock(oeven?.ref)).toEqual({ hash: 'self', manual: false });
 
     // WWWWWEIRD WHY IS THIS MAKING THE OTHER TESTS RUN SLOW
-    const ets = editorToString(d2, 200);
+    // const ets = editorToString(d2, 200);
 
     // ok forks. how do we populate the modules.
     expect(editorToString(d2, 200)).toEqual(
-        `- (defn even [x] (if (= x 0) true (odd#${terms.odd.id} (- x 1))))\n- (defn odd [x] (not (even#${terms.even.id} x)))`,
+        `- (def zero 0)\n- (defn even [x] (if (= x zero#${terms.zero.id}) true (odd#${terms.odd.id} (- x 1))))\n- (defn odd [x] (not (even#${terms.even.id} x)))`,
     );
 });
