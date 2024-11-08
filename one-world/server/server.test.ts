@@ -225,13 +225,43 @@ DS -> keys -> DS
 
 // MARK: New tests
 
-test.only("nowww let's do some exportsss", async () => {
+test("nowww let's do some exportsss", async () => {
     const text = 'x 1 (def x 10) x 23';
     const doc = newStage('lol', 10, 'na');
     const d2 = runText(doc, text, undefined, SimplestEvaluator);
     // ok forks. how do we populate the modules.
     // expect(editorToString(d2, 200)).toEqual(getEx(text));
     expect(d2.modules[d2.id].terms.x).toBeTruthy();
+});
+
+test('cross-link exports', async () => {
+    const text = `(defn even [x] (if (= x 0) true (odd (- x 1)))) (defn odd [x] (not (even x)))`;
+    // const text = '(def x 10) (def y (+ 23 x)) (- y x)';
+    const doc = newStage('lol', 10, 'na');
+    const d2 = runText(doc, text, undefined, SimplestEvaluator);
+
+    const terms = crossLink(d2);
+
+    // WWWWWEIRD WHY IS THIS MAKING THE OTHER TESTS RUN SLOW
+
+    // ok forks. how do we populate the modules.
+    // expect(editorToString(d2, 200)).toEqual(
+    //     `- (defn even [x] (if (= x 0) true (odd#${terms.odd.id} (- x 1))))\n- (defn odd [x] (not (even#${terms.even.id} x)))`,
+    // );
+});
+
+test.skip('cross-link exports and commit', async () => {
+    const text = `(defn even [x] (if (= x 0) true (odd (- x 1)))) (defn odd [x] (not (even x))) (even 2) (def lol (odd 3))`;
+    // const text = '(def x 10) (def y (+ 23 x)) (- y x)';
+    const doc = newStage('lol', 10, 'na');
+    const d2 = runText(doc, text, undefined, SimplestEvaluator);
+
+    const exports = crossLink(d2);
+
+    // ok forks. how do we populate the modules.
+    expect(editorToString(d2, 200)).toEqual(
+        `- (defn even [x] (if (= x 0) true (odd#${exports.odd.id} (- x 1))))\n- (defn odd [x] (not (even#${exports.even.id} x)))`,
+    );
 });
 
 // DS -> DB -> DS
@@ -449,6 +479,20 @@ test('now try to commit', async () => {
     );
 });
 
+function crossLink(d2: DocStage) {
+    const terms = d2.modules[d2.id].terms;
+    Object.values(d2.toplevels).forEach((top) => {
+        Object.values(top.nodes).forEach((node) => {
+            if (node.type === 'id' && terms[node.text]) {
+                const { id, idx } = terms[node.text];
+                if (top.id !== id || node.loc !== idx) {
+                    node.ref = { type: 'toplevel', kind: '', loc: [[id, idx]] };
+                }
+            }
+        });
+    });
+    return terms;
+}
 //
 // old, silly tests
 
