@@ -1,4 +1,8 @@
 
+
+- [ ] moreliness: cross linking and hashing - self hash thnaks
+
+
 # Nowww what?
 
 - [ ] ok with exports, I need to ... make sure inter-term hashing works, right?

@@ -35,7 +35,10 @@ import { ServerMessage } from './run';
 import { applyChanges } from '../shared/update2';
 import { commitDoc } from './commit';
 import { createBLAKE3 } from 'hash-wasm';
-import { hashit } from './hashings';
+import { hashit, norm } from './hashings';
+import { Toplevel } from '../shared/toplevels';
+import { Id, IDRef, Loc, Node } from '../shared/nodes';
+import { hashToplevels } from '../graphh/just-organize';
 
 const prepare = (async () => {
     const prev = await dk.generateSQLiteDrizzleJson({});
@@ -232,22 +235,6 @@ test("nowww let's do some exportsss", async () => {
     // ok forks. how do we populate the modules.
     // expect(editorToString(d2, 200)).toEqual(getEx(text));
     expect(d2.modules[d2.id].terms.x).toBeTruthy();
-});
-
-test('cross-link exports', async () => {
-    const text = `(defn even [x] (if (= x 0) true (odd (- x 1)))) (defn odd [x] (not (even x)))`;
-    // const text = '(def x 10) (def y (+ 23 x)) (- y x)';
-    const doc = newStage('lol', 10, 'na');
-    const d2 = runText(doc, text, undefined, SimplestEvaluator);
-
-    const terms = crossLink(d2);
-
-    // WWWWWEIRD WHY IS THIS MAKING THE OTHER TESTS RUN SLOW
-
-    // ok forks. how do we populate the modules.
-    // expect(editorToString(d2, 200)).toEqual(
-    //     `- (defn even [x] (if (= x 0) true (odd#${terms.odd.id} (- x 1))))\n- (defn odd [x] (not (even#${terms.even.id} x)))`,
-    // );
 });
 
 test.skip('cross-link exports and commit', async () => {
@@ -529,3 +516,65 @@ Fuller ender-to-end
 - /x should be defined
 
 */
+
+// SOMEEHOWW if I this is done before the /now try to commit/ it slows that test down by like a factor of 40?
+
+const findNode = <Res extends Node>(
+    top: Toplevel,
+    f: (n: Node) => n is Res,
+): Res | null => {
+    for (let node of Object.values(top.nodes)) {
+        if (f(node)) {
+            return node;
+        }
+    }
+    return null;
+};
+
+const refLock = (ref?: IDRef) =>
+    ref?.type === 'toplevel' ? ref.lock : undefined;
+
+const idTop =
+    (text: string) =>
+    (node: Node): node is Id<number> =>
+        node.type === 'id' &&
+        node.text === text &&
+        node.ref?.type === 'toplevel';
+
+test.only('cross-link exports', async () => {
+    const text = `(defn even [x] (if (= x 0) true (odd (- x 1)))) (defn odd [x] (not (even x)))`;
+    // const text = '(def x 10) (def y (+ 23 x)) (- y x)';
+    const doc = newStage('lol', 10, 'na');
+    const d2 = runText(doc, text, undefined, SimplestEvaluator);
+
+    const terms = crossLink(d2);
+
+    const hasher = await createBLAKE3();
+    const tops = hashToplevels(d2.toplevels, (tops) =>
+        hashit(
+            norm(
+                tops.map((t) => ({ ...t, hash: undefined, module: undefined })),
+            ),
+            hasher,
+        ),
+    );
+
+    expect(terms.even.hash).toEqual(terms.odd.hash);
+    const even = tops[terms.even.id];
+
+    const eodd = findNode(even, idTop('odd'));
+    expect(eodd).toBeTruthy();
+    expect(refLock(eodd?.ref)).toEqual({ hash: 'self', manual: false });
+
+    const oeven = findNode(tops[terms.odd.id], idTop('even'));
+    expect(oeven).toBeTruthy();
+    expect(refLock(oeven?.ref)).toEqual({ hash: 'self', manual: false });
+
+    // WWWWWEIRD WHY IS THIS MAKING THE OTHER TESTS RUN SLOW
+    const ets = editorToString(d2, 200);
+
+    // ok forks. how do we populate the modules.
+    expect(editorToString(d2, 200)).toEqual(
+        `- (defn even [x] (if (= x 0) true (odd#${terms.odd.id} (- x 1))))\n- (defn odd [x] (not (even#${terms.even.id} x)))`,
+    );
+});
