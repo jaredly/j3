@@ -1,4 +1,10 @@
 
+# Nowww what?
+
+- [ ] ok with exports, I need to ... make sure inter-term hashing works, right?
+  locking it in.
+
+
 # Next up
 
 - gotta have: exports handling

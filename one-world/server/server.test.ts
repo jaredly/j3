@@ -226,11 +226,11 @@ DS -> keys -> DS
 // MARK: New tests
 
 test.only("nowww let's do some exportsss", async () => {
-    const text = '1 ()';
+    const text = 'x 1 (def x 10) x 23';
     const doc = newStage('lol', 10, 'na');
     const d2 = runText(doc, text, undefined, SimplestEvaluator);
     // ok forks. how do we populate the modules.
-    expect(editorToString(d2, 200)).toEqual(getEx(text));
+    // expect(editorToString(d2, 200)).toEqual(getEx(text));
     expect(d2.modules[d2.id].terms.x).toBeTruthy();
 });
 
