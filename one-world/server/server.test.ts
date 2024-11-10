@@ -158,6 +158,7 @@ const runText = (
                     hash: '',
                     id: tid,
                     idx: exp.loc[0][1],
+                    kind: exp.kind,
                 };
             });
         });
@@ -165,6 +166,7 @@ const runText = (
     }
 
     singles.forEach((key) => {
+        if (key === '\n') key = ' ';
         const { parseCache, caches, ctx } = parseAndCache(store, ds.id, {}, ev);
         // state.modules ... are going to be mutable for now.
         updateModuleExports(parseCache);
@@ -472,9 +474,9 @@ function crossLink(d2: DocStage) {
     Object.values(d2.toplevels).forEach((top) => {
         Object.values(top.nodes).forEach((node) => {
             if (node.type === 'id' && terms[node.text]) {
-                const { id, idx } = terms[node.text];
+                const { id, idx, kind } = terms[node.text];
                 if (top.id !== id || node.loc !== idx) {
-                    node.ref = { type: 'toplevel', kind: '', loc: [[id, idx]] };
+                    node.ref = { type: 'toplevel', kind, loc: [[id, idx]] };
                 }
             }
         });
@@ -549,7 +551,9 @@ const topHash = (hasher: IHasher) => (tops: Toplevel[]) =>
     );
 
 test('cross-link exports', async () => {
-    const text = `(def zero 0) (defn even [x] (if (= x zero) true (odd (- x 1)))) (defn odd [x] (not (even x)))`;
+    const text = `(def zero 0)
+(defn even [x] (if (= x zero) true (odd (- x 1))))
+(defn odd [x] (not (even x)))`;
     // const text = '(def x 10) (def y (+ 23 x)) (- y x)';
     const doc = newStage('lol', 10, 'na');
     const d2 = runText(doc, text, undefined, SimplestEvaluator);
@@ -577,4 +581,22 @@ test('cross-link exports', async () => {
     expect(editorToString(d2, 200)).toEqual(
         `- (def zero 0)\n- (defn even [x] (if (= x zero#${terms.zero.id}) true (odd#${terms.odd.id} (- x 1))))\n- (defn odd [x] (not (even#${terms.even.id} x)))`,
     );
+});
+
+// but also, I want to ... validate
+
+test.only('with macros prolly', async () => {
+    const text = `
+(def no-val false)
+(defn pass-through [x] x)
+(defmacro and [one two] (pass-through (\` if @one @two @no-val)))
+(defmacro or [one two] (\` if @one true @two))
+(def within [x min max] (, (and (< min x) (< x max)) no-val))
+`;
+    const doc = newStage('lol', 10, 'na');
+    const d2 = runText(doc, text, undefined, SimplestEvaluator);
+    const terms = crossLink(d2);
+    const hasher = await createBLAKE3();
+    const tops = hashToplevels(d2.toplevels, topHash(hasher));
+    expect(terms).toEqual(0);
 });

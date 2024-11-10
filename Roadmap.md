@@ -1,6 +1,141 @@
 
+# Thinking about
+my 'loc as list' decision.
+it has been pretty much just a hassle so far.
+
+the idea was for macros n such
+anddd ok I do still think the idea has merit. So
+we can leave it like that.
+
+
+
+# Alsooo what about JS syntax for jerd?
+
+## Lispyness
+
+- id
+- collections:
+  - list, array, record, table
+- string (templates)
+- prefixed:
+  - comment, spread
+- record.access.things
+- rich:
+  - inline
+  - block
+
+
+Things that would be different under js-land...
+
+- need a boundary-less collection, for binops n such.
+  - x + 2 * 3
+  - abc ? def : ghi
+  - if (x) a else b
+
+- prefixes! for unary + - !
+- suffixes, maybe just fn application? but might as well allow just about anything
+
+ok so hear me out
+what if it was like "smooshed" and "spaced"
+
+...
+and then, collections?
+lol is this turning into rex right now
+hah ok yeah definitely not. but some similarities.
+
+
+```ts
+
+if x y else z
+
+{| x, b, c |}
+
+{| x|y, z|b, n|m |}
+
+x/y/z
+
+if x { let m = y, a(m, n, o, [p, q, r]), b } else z
+```
+
+spaced [
+  id(if)
+  id(x)
+  collection/curly [
+    spaced [
+      id(let)
+      id(m)
+      id(=)
+      id(y)
+    ]
+    smooshed [
+      id(a)
+      collection/round [
+        id(m)
+        id(n)
+        id(o)
+        collection/square [
+          id(p)
+          id(q)
+          id(r)
+        ]
+      ]
+    ]
+    id(b)
+  ]
+  id(else)
+]
+
+
+node: id/string, collection/spaced/smooshed
+
+
+
+```ts
+
+type Smooshed = {type: 'smooshed', items: Node[]}
+type Spaced = {type: 'spaced', items: Node[]}
+// yoooo what if
+// comma and semicolon
+// were the same? like, only semicolons?
+type Collection = {
+  type: 'collection',
+  kind: 'round' | 'square' | 'curly',
+  items: Node[]
+}
+// ohwait
+// newlines
+// yes that's right. we dont actually want semicolons at all, really.
+// SO
+// [inline] = , [newline] = \n
+
+
+
+```
+
+hrmmmmm ah but the problem:
+how to distinguish a record from a block?
+aha, easy. a record uses table syntax. all clear.
+
+
+
+
+
+
+
+
+
+
+- we need a collection that is a 'block'....
+
+
+#
+
 
 - [x] moreliness: cross linking and hashing - self hash thnaks
+
+- [ ] macros
+- [ ] accessories
+- [ ] incremental updates, make sure things update right
 
 
 # Nowww what?

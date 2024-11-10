@@ -136,7 +136,10 @@ export type Mod = {
 
     // DENORMALIZED
     // idx is the node idx of the export
-    terms: Record<string, { id: string; hash: string; idx: number }>;
+    terms: Record<
+        string,
+        { id: string; hash: string; idx: number; kind: string }
+    >;
 };
 
 export type DocStage = Doc & {

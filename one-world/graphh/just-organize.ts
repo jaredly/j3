@@ -30,6 +30,8 @@ export const hashToplevels = (
         references[top.id] = getReferences(top);
     });
 
+    // TODO TODO: we should be able to cache this computation
+    // on the set of references from each item.
     Object.keys(toplevels).forEach((id) => {
         collectModuleComponents(
             id,
