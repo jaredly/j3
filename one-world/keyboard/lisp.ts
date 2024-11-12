@@ -193,6 +193,16 @@ const idHandlers: Record<
     (node: Id<number>, cursor: IdCursor, path: Path, top: Top) => Update | void
 > = {
     ' ': (node, cursor, path, top) => splitInList(node, cursor, path, top),
+    ArrowLeft: (node, cursor, path, top) => {
+        if (cursor.end > 1) {
+            return {
+                nodes: {},
+                selection: {
+                    start: selStart(path, { ...cursor, end: cursor.end - 1 }),
+                },
+            };
+        }
+    },
 };
 
 const listHandlers: Record<
@@ -373,6 +383,9 @@ export const handleKey = (
         const fn = idHandlers[key];
         if (fn != null) {
             return fn(current.node, current.cursor, selection.start.path, top);
+        }
+        if (splitGraphemes(key).length > 1) {
+            throw new Error(`custok key not handled ${key}`);
         }
         return idType(
             current.node,

@@ -92,6 +92,22 @@ In lisp land, what are the fundamental operations?
 
 */
 
+const U = 'ArrowUp';
+const D = 'ArrowDown';
+const L = 'ArrowLeft';
+const R = 'ArrowRight';
+
+const keys = (text: TemplateStringsArray, ...args: string[]) => {
+    const result: string[] = [];
+    for (let i = 0; i < text.length; i++) {
+        result.push(...splitGraphemes(text[i]));
+        if (i < args.length) {
+            result.push(args[i]);
+        }
+    }
+    return result;
+};
+
 export type TestState = { top: Top; sel: NodeSelection };
 
 const initTop: Top = {
@@ -111,8 +127,8 @@ const init: TestState = {
 
 const run =
     (handle: (sel: NodeSelection, top: Top, char: string) => Update | void) =>
-    (state: TestState, text: string) => {
-        splitGraphemes(text).forEach((char) => {
+    (state: TestState, text: string | string[]) => {
+        (Array.isArray(text) ? text : splitGraphemes(text)).forEach((char) => {
             // console.log('char', char);
             const update = handle(state.sel, state.top, char);
             if (update) {
@@ -205,5 +221,12 @@ test('some js please', () => {
     const input = '+what(things,we + do,[here and,such])';
     expect(shape(asRec(js(init, input).top))).toEqual(
         'list[smooshed](id(+) id(what) (id(things) list[spaced](id(we) id(+) id(do)) [list[spaced](id(here) id(and)) id(such)]))',
+    );
+});
+
+test('split middle', () => {
+    const input = keys`heylo${L}${L}.`;
+    expect(shape(asRec(lisp(init, input).top))).toEqual(
+        'list[smooshed](id(hey) id(.) id(lo))',
     );
 });
