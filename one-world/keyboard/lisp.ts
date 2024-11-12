@@ -448,9 +448,28 @@ const replaceIn = (node: Node, old: number, loc: number): Node => {
 
 const idHandlers: Record<
     string,
-    (node: Id<number>, cursor: IdCursor, path: Path, top: Top) => Update
+    (node: Id<number>, cursor: IdCursor, path: Path, top: Top) => Update | void
 > = {
     ' ': (node, cursor, path, top) => splitInList(node, cursor, path, top),
+};
+
+const listHandlers: Record<
+    string,
+    (
+        node: Collection<number>,
+        cursor: ListCursor,
+        path: Path,
+        top: Top,
+    ) => Update | void
+> = {
+    ' ': (node, cursor, path, top) => {
+        if (cursor.type === 'control') return;
+        switch (cursor.where) {
+            case 'after':
+            case 'end':
+                return addBlankAfter(node.loc, path, top);
+        }
+    },
 };
 
 const opens = { '(': 'round', '[': 'square', '{': 'curly' } as const;
@@ -458,6 +477,35 @@ Object.entries(opens).forEach(([key, kind]) => {
     idHandlers[key] = (node, cursor, path, top) =>
         wrapId(node, kind, cursor, path, top);
 });
+
+const closes = { ')': 'round', ']': 'square', '}': 'curly' } as const;
+Object.entries(closes).forEach(([key, kind]) => {
+    idHandlers[key] = (node, cursor, path, top): Update | void =>
+        afterCloser(top, path, kind);
+    listHandlers[key] = (node, cursor, path, top): Update | void =>
+        afterCloser(top, path, kind);
+});
+
+const afterCloser = (
+    top: Top,
+    path: Path,
+    kind: List<number>['kind'],
+): Update | void => {
+    for (let i = path.children.length - 1; i >= 0; i--) {
+        const pnode = top.nodes[path.children[i]];
+        if (pnode.type === 'list' && pnode.kind === kind) {
+            return {
+                nodes: {},
+                selection: {
+                    start: selStart(
+                        { ...path, children: path.children.slice(0, i) },
+                        { type: 'list', where: 'after' },
+                    ),
+                },
+            };
+        }
+    }
+};
 
 // const ops = [...'.=#@;'];
 // ops.forEach((key) => {
@@ -499,6 +547,16 @@ export const handleKey = (
         }
         return idType(current.node, current.cursor, selection.start.path, key);
     }
+
+    if (current.type === 'list') {
+        const fn = listHandlers[key];
+        if (fn != null) {
+            return fn(current.node, current.cursor, selection.start.path, top);
+        }
+        // return idType(current.node, current.cursor, selection.start.path, key);
+    }
+
+    // throw new Error(`not handling ${current.type}: ${key}`);
     // TODO: after an update:
     // - verify the `nextLoc` invariant
     // - verify the smooshed invariant
@@ -520,9 +578,10 @@ export const pathWithChildren = (path: Path, ...children: number[]) => ({
     children: path.children.concat(children),
 });
 
-const addBlankAfter = (loc: number, path: Path, top: Top): Update => {
+const addBlankAfter = (loc: number, path: Path, top: Top): Update | void => {
     const ploc = parentLoc(path);
     const pnode = top.nodes[ploc];
+    if (!pnode) return;
     if (pnode.type === 'list' && pnode.kind === 'smooshed') {
         if (path.children.length < 3) throw new Error('neet to split top');
         const gloc = gparentLoc(path);
