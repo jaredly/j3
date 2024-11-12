@@ -17,12 +17,12 @@ import {
     Path,
     selStart,
     splitOnCursor,
-    splitSmooshed,
+    splitBraceless,
     Top,
     Update,
 } from './lisp';
 import { replaceIn } from './replaceIn';
-import { replaceWithSmooshed } from './replaceWithSmooshed';
+import { replaceWithSmooshed, replaceWithSpaced } from './replaceWithSmooshed';
 import { splitInList } from './splitInList';
 import { wrapId } from './wrapId';
 
@@ -31,6 +31,13 @@ const idHandlers: Record<
     (node: Id<number>, cursor: IdCursor, path: Path, top: Top) => Update | void
 > = {
     ',': (node, cursor, path, top) => splitInList(node, cursor, path, top),
+    ' ': (node, cursor, path, top) => {
+        // let nextLoc = top.nextLoc;
+        // const loc = nextLoc++;
+        // const update = replaceWithSpaced(path, top, node.loc, replace);
+        // update.nodes[loc] = { type: 'id', text: '', loc };
+        return splitBraceless(node, cursor, path, top, [], 'spaced');
+    },
 };
 
 const listHandlers: Record<
@@ -109,10 +116,17 @@ const idType = (
     if (!isBlank(node, cursor)) {
         if (ops.includes(key)) {
             if (!isPunct(node, cursor)) {
-                return splitSmooshed(node, cursor, path, top, key);
+                return splitBraceless(
+                    node,
+                    cursor,
+                    path,
+                    top,
+                    [key],
+                    'smooshed',
+                );
             }
         } else if (isPunct(node, cursor)) {
-            return splitSmooshed(node, cursor, path, top, key);
+            return splitBraceless(node, cursor, path, top, [key], 'smooshed');
         }
     }
 

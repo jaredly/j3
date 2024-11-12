@@ -10,7 +10,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Collection, Id, List, Node, Nodes, Text } from '../shared/cnodes';
 import { addBlankAfter } from './addBlankAfter';
 import { replaceIn } from './replaceIn';
-import { replaceWithSmooshed } from './replaceWithSmooshed';
+import { replaceWithList, replaceWithSmooshed } from './replaceWithSmooshed';
 import { splitInList } from './splitInList';
 import { wrapId } from './wrapId';
 
@@ -261,12 +261,13 @@ export const isPunct = (id: Id<number>, cursor: IdCursor) => {
 
 const ops = [...'.=#@;+'];
 
-export const splitSmooshed = (
+export const splitBraceless = (
     id: Id<number>,
     cursor: IdCursor,
     path: Path,
     top: Top,
-    key: string,
+    keys: string[],
+    kind: 'smooshed' | 'spaced',
 ) => {
     let [left, mid, right] = splitOnCursor(id, cursor);
 
@@ -282,11 +283,23 @@ export const splitSmooshed = (
         replace.push(id.loc);
     }
 
-    const n = nextLoc++;
-    nodes[n] = { type: 'id', text: key, loc: n };
-    replace.push(n);
+    let sel: PartialSel;
+    if (keys.length) {
+        const n = nextLoc++;
+        nodes[n] = { type: 'id', text: keys.join(''), loc: n };
+        replace.push(n);
+        sel = {
+            children: [n],
+            cursor: { type: 'id', end: 1 },
+        };
+    } else {
+        sel = {
+            children: [id.loc],
+            cursor: { type: 'id', end: 0 },
+        };
+    }
 
-    if (right.length) {
+    if (right.length || !keys.length) {
         if (!left.length) {
             nodes[id.loc] = { ...id, text: right.join('') };
             replace.push(id.loc);
@@ -294,18 +307,17 @@ export const splitSmooshed = (
             const r = nextLoc++;
             nodes[r] = { type: 'id', text: right.join(''), loc: r };
             replace.push(r);
+            sel.children = [r];
         }
     }
 
-    const update = replaceWithSmooshed(
+    const update = replaceWithList(
         path,
         { ...top, nextLoc },
         id.loc,
         replace,
-        {
-            children: [n],
-            cursor: { type: 'id', end: 1 },
-        },
+        kind,
+        sel,
     );
     Object.assign(update.nodes, nodes);
     return update;
@@ -321,10 +333,17 @@ const idType = (
     if (!isBlank(node, cursor)) {
         if (ops.includes(key)) {
             if (!isPunct(node, cursor)) {
-                return splitSmooshed(node, cursor, path, top, key);
+                return splitBraceless(
+                    node,
+                    cursor,
+                    path,
+                    top,
+                    [key],
+                    'smooshed',
+                );
             }
         } else if (isPunct(node, cursor)) {
-            return splitSmooshed(node, cursor, path, top, key);
+            return splitBraceless(node, cursor, path, top, [key], 'smooshed');
         }
     }
 

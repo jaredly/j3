@@ -8,7 +8,7 @@ import {
     selStart,
     pathWithChildren,
 } from './lisp';
-import { replaceWithListItems } from './replaceWithSpaced';
+import { replaceWithListItems } from './replaceWithListItems';
 
 export const addBlankAfter = (
     loc: number,

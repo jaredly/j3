@@ -9,7 +9,7 @@ import {
     parentLoc,
     gparentLoc,
 } from './lisp';
-import { replaceWithListItems } from './replaceWithSpaced';
+import { replaceWithListItems } from './replaceWithListItems';
 
 export function splitInList(
     id: Id<number>,
