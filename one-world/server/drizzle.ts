@@ -28,6 +28,7 @@ export const newStage = (
         toplevels: {
             [tid]: {
                 id: tid,
+                syntax: 'lisp',
                 auxiliaries: [],
                 module: id,
                 nextLoc: 1,
@@ -283,6 +284,7 @@ export const getDoc = async (
             );
         toplevels[node.toplevel] = {
             ...top,
+            syntax: 'lisp',
             nodes: top.body.nodes,
             nextLoc: top.body.nextLoc,
             root: top.body.root,
@@ -346,6 +348,7 @@ export const getEditedDoc = async (
         toplevels: edit.toplevels.reduce(
             (map: Record<string, Toplevel>, top) => (
                 (map[top.id] = {
+                    syntax: 'lisp',
                     id: top.id,
                     module: edit.id,
                     auxiliaries: [],

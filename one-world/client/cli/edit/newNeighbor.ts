@@ -205,6 +205,7 @@ export const newDocNodeNeighbor = (
             action: {
                 type: 'reset',
                 toplevel: {
+                    syntax: 'lisp',
                     id: newTop,
                     auxiliaries: [],
                     nextLoc: nidx.next,

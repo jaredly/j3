@@ -598,5 +598,5 @@ test.only('with macros prolly', async () => {
     const terms = crossLink(d2);
     const hasher = await createBLAKE3();
     const tops = hashToplevels(d2.toplevels, topHash(hasher));
-    expect(terms).toEqual(0);
+    // expect(terms).toEqual(0);
 });

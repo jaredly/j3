@@ -1,14 +1,25 @@
+import { List } from '../shared/cnodes';
 import {
     Path,
     Top,
     PartialSel,
     Update,
-    parentSmooshed,
     withPartial,
     parentPath,
     replaceAt,
     pathWithChildren,
 } from './lisp';
+
+export const parentList = (
+    top: Top,
+    path: number[],
+    kind: List<number>['kind'],
+): List<number> | null => {
+    if (path.length <= 1) return null;
+    const ploc = path[path.length - 2];
+    const parent = top.nodes[ploc];
+    return parent.type === 'list' && parent.kind === kind ? parent : null;
+};
 
 export const replaceWithSmooshed = (
     path: Path,
@@ -16,8 +27,25 @@ export const replaceWithSmooshed = (
     old: number,
     locs: number[],
     sel?: PartialSel,
+): Update => replaceWithList(path, top, old, locs, 'smooshed', sel);
+
+export const replaceWithSpaced = (
+    path: Path,
+    top: Top,
+    old: number,
+    locs: number[],
+    sel?: PartialSel,
+): Update => replaceWithList(path, top, old, locs, 'spaced', sel);
+
+export const replaceWithList = (
+    path: Path,
+    top: Top,
+    old: number,
+    locs: number[],
+    kind: List<number>['kind'],
+    sel?: PartialSel,
 ): Update => {
-    const parent = parentSmooshed(top, path.children);
+    const parent = parentList(top, path.children, kind);
     if (parent) {
         const children = parent.children.slice();
         const at = parent.children.indexOf(old);
@@ -37,7 +65,7 @@ export const replaceWithSmooshed = (
     const update = replaceAt(path.children.slice(0, -1), top, old, parentLoc);
     update.nodes[parentLoc] = {
         type: 'list',
-        kind: 'smooshed',
+        kind,
         children: locs,
         loc: parentLoc,
     };

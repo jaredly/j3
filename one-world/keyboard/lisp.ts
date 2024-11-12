@@ -52,12 +52,12 @@ export type IdCursor = {
     end: number;
     text?: string[];
 };
-type TextCursor = {
+export type TextCursor = {
     type: 'text';
     start?: { index: number; cursor: number };
     end: { index: number; cursor: number; text?: string[] };
 };
-type ListCursor =
+export type ListCursor =
     | { type: 'list'; where: 'before' | 'start' | 'inside' | 'end' | 'after' }
     | { type: 'control'; index: number };
 
@@ -88,10 +88,10 @@ export type NodeSelection = {
 
 export type Top = { nodes: Nodes; root: number; nextLoc: number };
 
-const getNode = (path: Path, top: Top) =>
+export const getNode = (path: Path, top: Top) =>
     top.nodes[path.children[path.children.length - 1]];
 
-type Current =
+export type Current =
     | { type: 'id'; node: Id<number>; cursor: Extract<Cursor, { type: 'id' }> }
     | {
           type: 'text';
@@ -104,7 +104,7 @@ type Current =
           cursor: Extract<Cursor, { type: 'list' | 'control' }>;
       };
 
-const getCurrent = (selection: NodeSelection, top: Top): Current => {
+export const getCurrent = (selection: NodeSelection, top: Top): Current => {
     const node = getNode(selection.start.path, top);
     if (node == null) throw new Error('bad path');
     const cursor = selection.start.cursor;
@@ -146,19 +146,6 @@ export const splitOnCursor = (
         text.slice(cursor.start ?? cursor.end, cursor.end),
         text.slice(cursor.end),
     ];
-};
-
-// const splitSmooshed =  (path: number[], top: Top): Update => {
-// }
-
-export const parentSmooshed = (
-    top: Top,
-    path: number[],
-): List<number> | null => {
-    if (path.length <= 1) return null;
-    const ploc = path[path.length - 2];
-    const parent = top.nodes[ploc];
-    return parent.type === 'list' && parent.kind === 'smooshed' ? parent : null;
 };
 
 export const withPartial = (path: Path, sel?: PartialSel) =>
@@ -241,7 +228,7 @@ Object.entries(closes).forEach(([key, kind]) => {
         afterCloser(top, path, kind);
 });
 
-const afterCloser = (
+export const afterCloser = (
     top: Top,
     path: Path,
     kind: List<number>['kind'],
@@ -274,7 +261,7 @@ export const isPunct = (id: Id<number>, cursor: IdCursor) => {
 
 const ops = [...'.=#@;+'];
 
-const splitSmooshed = (
+export const splitSmooshed = (
     id: Id<number>,
     cursor: IdCursor,
     path: Path,

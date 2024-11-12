@@ -1,6 +1,7 @@
+import { Text } from '../shared/cnodes';
 import { Top, Update, findTableLoc } from './lisp';
 
-export const replaceWithSpaced = (
+export const replaceWithListItems = (
     path: number[],
     top: Top,
     old: number,
@@ -37,7 +38,7 @@ export const replaceWithSpaced = (
     }
 
     if (parent.kind === 'smooshed') {
-        throw new Error(`parent is smooshed, cannot insert spaced items`);
+        throw new Error(`parent is smooshed, cannot insert list items`);
     }
 
     // const parent = parentSmooshed(top, path);

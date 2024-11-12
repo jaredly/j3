@@ -9,7 +9,7 @@ import {
     parentLoc,
     gparentLoc,
 } from './lisp';
-import { replaceWithSpaced } from './replaceWithSpaced';
+import { replaceWithListItems } from './replaceWithSpaced';
 
 export function splitInList(
     id: Id<number>,
@@ -83,7 +83,7 @@ export function splitInList(
         return {
             nodes: {
                 ...nodes,
-                ...replaceWithSpaced(
+                ...replaceWithListItems(
                     path.children.slice(0, -1),
                     { ...top, nextLoc: top.nextLoc },
                     ploc,
@@ -110,7 +110,7 @@ export function splitInList(
     const rLoc = nextLoc++;
     return {
         nodes: {
-            ...replaceWithSpaced(path.children, top, id.loc, [id.loc, rLoc]),
+            ...replaceWithListItems(path.children, top, id.loc, [id.loc, rLoc]),
             [rLoc]: { type: 'id', text: right.join(''), loc: rLoc },
             [id.loc]: { ...id, text: left.join('') },
         },

@@ -58,7 +58,15 @@ SO:
 
 import { test, expect } from 'bun:test';
 import { Toplevel } from '../shared/toplevels';
-import { handleKey, lastChild, NodeSelection, selStart, Top } from './lisp';
+import { handleKey as handleJs } from './js';
+import {
+    handleKey as handleLisp,
+    lastChild,
+    NodeSelection,
+    selStart,
+    Top,
+    Update,
+} from './lisp';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { fromMap, Id } from '../shared/cnodes';
 import { shape } from '../shared/shape';
@@ -101,83 +109,94 @@ const init: TestState = {
     },
 };
 
-const run = (state: TestState, text: string) => {
-    splitGraphemes(text).forEach((char) => {
-        // console.log('char', char);
-        const update = handleKey(state.sel, state.top, char);
-        if (update) {
-            const prev = state.sel;
-            state = {
-                sel: update.selection ?? state.sel,
-                top: {
-                    nextLoc: update.nextLoc ?? state.top.nextLoc,
-                    nodes: { ...state.top.nodes, ...update.nodes },
-                    root: update.root ?? state.top.root,
-                },
-            };
-            validate(state);
-
-            // This is "maybe commit text changes"
-            if (
-                prev.start.cursor.type === 'id' &&
-                prev.start.cursor.text != null &&
-                update.selection &&
-                update.selection.start.key !== prev.start.key
-            ) {
-                const loc = lastChild(prev.start.path);
-                state.top.nodes[loc] = {
-                    ...(state.top.nodes[loc] as Id<number>),
-                    text: prev.start.cursor.text.join(''),
+const run =
+    (handle: (sel: NodeSelection, top: Top, char: string) => Update | void) =>
+    (state: TestState, text: string) => {
+        splitGraphemes(text).forEach((char) => {
+            // console.log('char', char);
+            const update = handle(state.sel, state.top, char);
+            if (update) {
+                const prev = state.sel;
+                state = {
+                    sel: update.selection ?? state.sel,
+                    top: {
+                        nextLoc: update.nextLoc ?? state.top.nextLoc,
+                        nodes: { ...state.top.nodes, ...update.nodes },
+                        root: update.root ?? state.top.root,
+                    },
                 };
+                validate(state);
+
+                // This is "maybe commit text changes"
+                if (
+                    prev.start.cursor.type === 'id' &&
+                    prev.start.cursor.text != null &&
+                    update.selection &&
+                    update.selection.start.key !== prev.start.key
+                ) {
+                    const loc = lastChild(prev.start.path);
+                    state.top.nodes[loc] = {
+                        ...(state.top.nodes[loc] as Id<number>),
+                        text: prev.start.cursor.text.join(''),
+                    };
+                }
             }
+        });
+        if (
+            state.sel.start.cursor.type === 'id' &&
+            state.sel.start.cursor.text != null
+        ) {
+            const loc = lastChild(state.sel.start.path);
+            state.top.nodes[loc] = {
+                ...(state.top.nodes[loc] as Id<number>),
+                text: state.sel.start.cursor.text.join(''),
+            };
         }
-    });
-    if (
-        state.sel.start.cursor.type === 'id' &&
-        state.sel.start.cursor.text != null
-    ) {
-        const loc = lastChild(state.sel.start.path);
-        state.top.nodes[loc] = {
-            ...(state.top.nodes[loc] as Id<number>),
-            text: state.sel.start.cursor.text.join(''),
-        };
-    }
-    return state;
-};
+        return state;
+    };
 
 const asRec = (top: Top) =>
     fromMap(top.root, top.nodes, (i) => [{ id: '', idx: i }]);
 
+const lisp = run(handleLisp);
+const js = run(handleJs);
+
 test('one', () => {
-    expect(shape(asRec(run(init, '(1 2)').top))).toEqual('(id(1) id(2))');
+    expect(shape(asRec(lisp(init, '(1 2)').top))).toEqual('(id(1) id(2))');
 });
 
 test('nested', () => {
-    expect(shape(asRec(run(init, '(1 2 [3 4] 5)').top))).toEqual(
+    expect(shape(asRec(lisp(init, '(1 2 [3 4] 5)').top))).toEqual(
         '(id(1) id(2) [id(3) id(4)] id(5))',
     );
 });
 
 test('opkeys', () => {
-    expect(shape(asRec(run(init, '.=.').top))).toEqual('id(.=.)');
+    expect(shape(asRec(lisp(init, '.=.').top))).toEqual('id(.=.)');
 });
 
 test('lets smoosh', () => {
-    expect(shape(asRec(run(init, 'hello.world').top))).toEqual(
+    expect(shape(asRec(lisp(init, 'hello.world').top))).toEqual(
         'list[smooshed](id(hello) id(.) id(world))',
     );
 });
 
 test('some lisps I think', () => {
     const input = '(1 2 [3 4] ...5)';
-    expect(shape(asRec(run(init, input).top))).toEqual(
+    expect(shape(asRec(lisp(init, input).top))).toEqual(
         '(id(1) id(2) [id(3) id(4)] list[smooshed](id(...) id(5)))',
+    );
+});
+
+test('js commas', () => {
+    expect(shape(asRec(js(init, '(hello,spaces)').top))).toEqual(
+        '(id(hello) id(spaces))',
     );
 });
 
 test('some js please', () => {
     const input = '+what(things,we + do,[here and,such])';
-    expect(shape(asRec(run(init, input).top))).toEqual(
+    expect(shape(asRec(js(init, input).top))).toEqual(
         'list[smooshed](id(+) id(what) (id(things) list[spaced](id(we) id(+) id(do)) [list[spaced](id(here) id(and)) id(such)]))',
     );
 });

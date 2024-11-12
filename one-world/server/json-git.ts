@@ -114,6 +114,7 @@ export const jsonGitBackend = (base: string): ServerBackend => {
             };
 
             const top: Toplevel = {
+                syntax: 'lisp',
                 id: tid,
                 module: id,
                 auxiliaries: [],

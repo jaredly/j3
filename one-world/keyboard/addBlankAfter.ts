@@ -8,7 +8,7 @@ import {
     selStart,
     pathWithChildren,
 } from './lisp';
-import { replaceWithSpaced } from './replaceWithSpaced';
+import { replaceWithListItems } from './replaceWithSpaced';
 
 export const addBlankAfter = (
     loc: number,
@@ -62,7 +62,7 @@ export const addBlankAfter = (
         return {
             nodes: {
                 ...nodes,
-                ...replaceWithSpaced(
+                ...replaceWithListItems(
                     parentPath(path).children,
                     top,
                     ploc,
@@ -78,7 +78,7 @@ export const addBlankAfter = (
     return {
         nodes: {
             [nloc]: { type: 'id', text: '', loc: nloc },
-            ...replaceWithSpaced(path.children, top, loc, [loc, nloc]),
+            ...replaceWithListItems(path.children, top, loc, [loc, nloc]),
         },
         nextLoc,
         selection: {

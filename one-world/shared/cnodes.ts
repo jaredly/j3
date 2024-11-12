@@ -187,7 +187,7 @@ export const childLocs = (node: Node): number[] => {
         case 'text':
             return node.spans
                 .map((s) => (s.type === 'embed' ? s.item : undefined))
-                .filter((x) => x != null);
+                .filter((x) => x != null) as number[];
     }
 };
 
