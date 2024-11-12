@@ -159,9 +159,58 @@ export type RecCollection<Loc> =
           type: 'table';
           kind: 'round' | 'square' | 'curly';
           rows: RecNodeT<Loc>[][];
+          loc: Loc;
       };
 
 export type RecNodeT<Loc> = Id<Loc> | RecText<Loc> | RecCollection<Loc>;
-export type RecNode = RecNodeT<{ id: number; idx: number }[]>;
+export type RecNode = RecNodeT<{ id: string; idx: number }[]>;
 
 export type Nodes = Record<number, Node>;
+
+export const fromMap = <Loc>(
+    id: number,
+    nodes: Nodes,
+    toLoc: (l: number) => Loc,
+): RecNodeT<Loc> => {
+    const node = nodes[id];
+    const loc = toLoc(node.loc);
+    switch (node.type) {
+        case 'id':
+            return { ...node, loc };
+        case 'text':
+            return {
+                ...node,
+                loc,
+                spans: node.spans.map((span) =>
+                    span.type === 'embed'
+                        ? { ...span, item: fromMap(span.item, nodes, toLoc) }
+                        : span,
+                ),
+            };
+        case 'list':
+            return {
+                ...node,
+                loc,
+                attributes:
+                    node.attributes != null
+                        ? fromMap(node.attributes, nodes, toLoc)
+                        : undefined,
+                kind:
+                    typeof node.kind !== 'string' && node.kind.type === 'tag'
+                        ? {
+                              ...node.kind,
+                              node: fromMap(node.kind.node, nodes, toLoc),
+                          }
+                        : node.kind,
+                children: node.children.map((id) => fromMap(id, nodes, toLoc)),
+            };
+        case 'table':
+            return {
+                ...node,
+                loc,
+                rows: node.rows.map((row) =>
+                    row.map((id) => fromMap(id, nodes, toLoc)),
+                ),
+            };
+    }
+};

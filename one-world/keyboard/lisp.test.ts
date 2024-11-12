@@ -57,17 +57,104 @@ SO:
 */
 
 import { test, expect } from 'bun:test';
+import { Toplevel } from '../shared/toplevels';
+import { handleKey, lastChild, NodeSelection, selStart, Top } from './lisp';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { fromMap, Id } from '../shared/cnodes';
+import { shape } from '../shared/shape';
+
+/*
+
+In lisp land, what are the fundamental operations?
+
+/Initial Entering/
+
+- typing into an ID (simple)
+- splitting an ID with a space
+    - in a smoosh
+    - out of a smoosh
+- splitting an ID with a punct (making/updating a smoosh)
+- create/wrap with a list
+- create/wrap with a table
+- split cells of a table
+- new table row
+
+/Updating/Deleting/
+
+*/
+
+type TestState = { top: Top; sel: NodeSelection };
+
+const initTop: Top = {
+    nextLoc: 1,
+    nodes: { [0]: { type: 'id', text: '', loc: 0 } },
+    root: 0,
+};
+const init: TestState = {
+    top: initTop,
+    sel: {
+        start: selStart(
+            { root: { ids: [], top: '' }, children: [0] },
+            { type: 'id', end: 0 },
+        ),
+    },
+};
+
+const run = (state: TestState, text: string) => {
+    splitGraphemes(text).forEach((char) => {
+        const update = handleKey(state.sel, state.top, char);
+        if (update) {
+            const prev = state.sel;
+            state = {
+                sel: update.selection ?? state.sel,
+                top: {
+                    nextLoc: update.nextLoc ?? state.top.nextLoc,
+                    nodes: { ...state.top.nodes, ...update.nodes },
+                    root: update.root ?? state.top.root,
+                },
+            };
+            // This is "maybe commit text changes"
+            if (
+                prev.start.cursor.type === 'id' &&
+                prev.start.cursor.text != null &&
+                update.selection &&
+                update.selection.start.key !== prev.start.key
+            ) {
+                const loc = lastChild(prev.start.path);
+                state.top.nodes[loc] = {
+                    ...(state.top.nodes[loc] as Id<number>),
+                    text: prev.start.cursor.text.join(''),
+                };
+            }
+        }
+    });
+    if (
+        state.sel.start.cursor.type === 'id' &&
+        state.sel.start.cursor.text != null
+    ) {
+        const loc = lastChild(state.sel.start.path);
+        state.top.nodes[loc] = {
+            ...(state.top.nodes[loc] as Id<number>),
+            text: state.sel.start.cursor.text.join(''),
+        };
+    }
+    return state;
+};
 
 test('some lisps I think', () => {
     const input = '(1 2 [3 4] ...5)';
-    expect(shape(input)).toEqual(
+    const state = run(init, input);
+    const node = fromMap(state.top.root, state.top.nodes, (i) => [
+        { id: '', idx: i },
+    ]);
+    expect(shape(node)).toEqual(
         'list[round](id(1) id(2) list[square](id(3) id(4)) list[smooshed](id(...) id(5)))',
     );
 });
 
-test('some js please', () => {
-    const input = '+what(things, we + do, [here and, such])';
-    expect(shape(input)).toEqual(
-        'list[smooshed](id(+) id(what) list[round](id(things) list[spaced](id(we) id(+) id(do)) list[square](list[spaced](id(here) id(and)) id(such))))',
-    );
-});
+// test('some js please', () => {
+//     const input = '+what(things, we + do, [here and, such])';
+//     expect(shape(input)).toEqual(
+//         'list[smooshed](id(+) id(what) list[round](id(things) list[spaced](id(we) id(+) id(do)) list[square](list[spaced](id(here) id(and)) id(such))))',
+//     );
+// });

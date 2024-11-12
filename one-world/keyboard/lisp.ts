@@ -66,20 +66,25 @@ type Path = {
     children: number[];
 };
 
-const pathKey = (path: Path) =>
+export const pathKey = (path: Path) =>
     `${path.root.ids.join(',')};${path.root.top};${path.children.join(',')}`;
-const selStart = (path: Path, cursor: Cursor): NodeSelection['start'] => ({
+export const selStart = (
+    path: Path,
+    cursor: Cursor,
+): NodeSelection['start'] => ({
     path,
     cursor,
     key: pathKey(path),
 });
 
-type NodeSelection = {
+type PartialSel = { children: number[]; cursor: Cursor };
+
+export type NodeSelection = {
     start: { path: Path; key: string; cursor: Cursor };
     end?: { path: Path; key: string; cursor: Cursor };
 };
 
-type Top = { nodes: Nodes; root: number; nextLoc: number };
+export type Top = { nodes: Nodes; root: number; nextLoc: number };
 
 const getNode = (path: Path, top: Top) =>
     top.nodes[path.children[path.children.length - 1]];
@@ -156,7 +161,7 @@ const wrapId = (
     kind: ListKind<number>,
     cursor: IdCursor,
     // includes the ID of the current node btw
-    path: number[],
+    path: Path,
     top: Top,
 ): Update => {
     let [left, mid, right] = splitOnCursor(id, cursor);
@@ -194,6 +199,7 @@ const wrapId = (
                 { ...top, nextLoc },
                 id.loc,
                 [id.loc, listLoc, rightLoc],
+                { children: [listLoc, midLoc], cursor: { type: 'id', end: 0 } },
             );
             Object.assign(update.nodes, nodes);
             return update;
@@ -210,10 +216,13 @@ const wrapId = (
             [id.loc]: { ...id, text: mid.join('') },
             [rightLoc]: { type: 'id', loc: rightLoc, text: right.join('') },
         };
-        const update = replaceWithSmooshed(path, { ...top, nextLoc }, id.loc, [
-            listLoc,
-            rightLoc,
-        ]);
+        const update = replaceWithSmooshed(
+            path,
+            { ...top, nextLoc },
+            id.loc,
+            [listLoc, rightLoc],
+            { children: [listLoc, id.loc], cursor: { type: 'id', end: 0 } },
+        );
         Object.assign(update.nodes, nodes);
         return update;
     }
@@ -237,10 +246,13 @@ const wrapId = (
             },
         };
 
-        const update = replaceWithSmooshed(path, { ...top, nextLoc }, id.loc, [
+        const update = replaceWithSmooshed(
+            path,
+            { ...top, nextLoc },
             id.loc,
-            listLoc,
-        ]);
+            [id.loc, listLoc],
+            { children: [listLoc, rightLoc], cursor: { type: 'id', end: 0 } },
+        );
         Object.assign(update.nodes, nodes);
 
         return update;
@@ -248,7 +260,7 @@ const wrapId = (
 
     let nextLoc = top.nextLoc;
     const newLoc = nextLoc++;
-    const update = replaceAt(path.slice(0, -1), top, id.loc, newLoc);
+    const update = replaceAt(path.children.slice(0, -1), top, id.loc, newLoc);
     update.nodes[newLoc] = {
         type: 'list',
         kind,
@@ -256,16 +268,31 @@ const wrapId = (
         loc: newLoc,
     };
     update.nextLoc = nextLoc;
+    update.selection = withPartial(parentPath(path), {
+        children: [newLoc, id.loc],
+        cursor: { type: 'id', end: 0 },
+    });
     return update;
 };
 
+const withPartial = (path: Path, sel?: PartialSel) =>
+    sel
+        ? {
+              start: selStart(
+                  pathWithChildren(path, ...sel.children),
+                  sel.cursor,
+              ),
+          }
+        : undefined;
+
 const replaceWithSmooshed = (
-    path: number[],
+    path: Path,
     top: Top,
     old: number,
     locs: number[],
-) => {
-    const parent = parentSmooshed(top, path);
+    sel?: PartialSel,
+): Update => {
+    const parent = parentSmooshed(top, path.children);
     if (parent) {
         const children = parent.children.slice();
         const at = parent.children.indexOf(old);
@@ -273,12 +300,15 @@ const replaceWithSmooshed = (
             throw new Error(`id ${old} not a child of ${parent.loc}`);
         }
         children.splice(at, 1, ...locs);
-        return { nodes: { [parent.loc]: { ...parent, children } } };
+        return {
+            nodes: { [parent.loc]: { ...parent, children } },
+            selection: withPartial(parentPath(path), sel),
+        };
     }
 
     let nextLoc = top.nextLoc;
     const parentLoc = nextLoc++;
-    const update = replaceAt(path.slice(0, -1), top, old, parentLoc);
+    const update = replaceAt(path.children.slice(0, -1), top, old, parentLoc);
     update.nodes[parentLoc] = {
         type: 'list',
         kind: 'smooshed',
@@ -286,6 +316,12 @@ const replaceWithSmooshed = (
         loc: parentLoc,
     };
     update.nextLoc = nextLoc;
+    if (sel) {
+        update.selection = withPartial(
+            pathWithChildren(parentPath(path), parentLoc),
+            sel,
+        );
+    }
     return update;
 };
 
@@ -364,7 +400,7 @@ const replaceAt = (
         }
         return { nodes: {}, root: loc };
     }
-    const ploc = path[path.length - 2];
+    const ploc = path[path.length - 1];
     const pnode = top.nodes[ploc];
     return { nodes: { [ploc]: replaceIn(pnode, old, loc) } };
 };
@@ -420,28 +456,66 @@ const idHandlers: Record<
 const opens = { '(': 'round', '[': 'square', '{': 'curly' } as const;
 Object.entries(opens).forEach(([key, kind]) => {
     idHandlers[key] = (node, cursor, path, top) =>
-        wrapId(node, kind, cursor, path.children, top);
+        wrapId(node, kind, cursor, path, top);
 });
 
-const ops = [...'.=#@;'];
-ops.forEach((key) => {
-    // idHandlers[key] = (node, cursor, path, top) => 0; //
-});
+// const ops = [...'.=#@;'];
+// ops.forEach((key) => {
+//     idHandlers[key] = (node, cursor, path, top) => 0; //
+// });
 
-export const handleKey = (selection: NodeSelection, top: Top, key: string) => {
+const idType = (
+    node: Id<number>,
+    cursor: IdCursor,
+    path: Path,
+    key: string,
+): Update => {
+    const current = cursor.text ?? splitGraphemes(node.text);
+    return {
+        nodes: {},
+        selection: {
+            start: selStart(path, {
+                type: 'id',
+                text: [...current, key],
+                end: current.length + 1,
+            }),
+        },
+    };
+};
+
+export const handleKey = (
+    selection: NodeSelection,
+    top: Top,
+    key: string,
+): Update | void => {
     if (selection.end) return; // TODO :/
 
     const current = getCurrent(selection, top);
+
+    if (current.type === 'id') {
+        const fn = idHandlers[key];
+        if (fn != null) {
+            return fn(current.node, current.cursor, selection.start.path, top);
+        }
+        return idType(current.node, current.cursor, selection.start.path, key);
+    }
+    // TODO: after an update:
+    // - verify the `nextLoc` invariant
+    // - verify the smooshed invariant
+    // - verify that the selection is valid
 };
 
-const lastChild = (path: Path) => path.children[path.children.length - 1];
-const parentLoc = (path: Path) => path.children[path.children.length - 2];
-const gparentLoc = (path: Path) => path.children[path.children.length - 3];
-const parentPath = (path: Path): Path => ({
+export const lastChild = (path: Path) =>
+    path.children[path.children.length - 1];
+export const parentLoc = (path: Path) =>
+    path.children[path.children.length - 2];
+export const gparentLoc = (path: Path) =>
+    path.children[path.children.length - 3];
+export const parentPath = (path: Path): Path => ({
     ...path,
     children: path.children.slice(0, -1),
 });
-const pathWithChildren = (path: Path, ...children: number[]) => ({
+export const pathWithChildren = (path: Path, ...children: number[]) => ({
     ...path,
     children: path.children.concat(children),
 });
