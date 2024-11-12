@@ -194,6 +194,13 @@ test('js commas', () => {
     );
 });
 
+test('spaced in list', () => {
+    const input = '[one two,three]';
+    expect(shape(asRec(js(init, input).top))).toEqual(
+        '[list[spaced](id(one) id(two)) id(three)]',
+    );
+});
+
 test('some js please', () => {
     const input = '+what(things,we + do,[here and,such])';
     expect(shape(asRec(js(init, input).top))).toEqual(

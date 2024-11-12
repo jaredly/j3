@@ -31,6 +31,40 @@ export function splitInList(
 
     const ploc = parentLoc(path);
     const pnode = top.nodes[ploc];
+
+    if (pnode.type === 'list' && pnode.kind === 'spaced') {
+        // need to go up one more level
+        // NOTE it should be impossible to get into a double-smooshed situation
+        if (path.children.length < 3) throw new Error('neet to split top');
+        const gloc = gparentLoc(path);
+        const gnode = top.nodes[gloc];
+        if (gnode.type === 'list' && gnode.kind === 'spaced') {
+            throw new Error('double spaced');
+        }
+
+        const { nodes, replace, nextLoc } = smooshSplit(
+            pnode,
+            top,
+            id,
+            left,
+            right,
+            ploc,
+        );
+
+        return {
+            nodes: {
+                ...nodes,
+                ...replaceWithListItems(
+                    path.children.slice(0, -1),
+                    top,
+                    ploc,
+                    replace,
+                ),
+            },
+            nextLoc,
+        };
+    }
+
     if (pnode.type === 'list' && pnode.kind === 'smooshed') {
         // need to go up one more level
         // NOTE it should be impossible to get into a double-smooshed situation
@@ -39,6 +73,10 @@ export function splitInList(
         const gnode = top.nodes[gloc];
         if (gnode.type === 'list' && gnode.kind === 'smooshed') {
             throw new Error('double smoosked');
+        }
+
+        if (gnode.type === 'list' && gnode.kind === 'spaced') {
+            // we have to go deeper.
         }
 
         const { nodes, replace, nextLoc } = smooshSplit(
@@ -88,7 +126,7 @@ export function splitInList(
     };
 }
 
-function smooshSplit(
+export function smooshSplit(
     pnode: List<number>,
     top: Top,
     id: Id<number>,
