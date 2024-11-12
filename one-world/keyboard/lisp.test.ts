@@ -148,7 +148,7 @@ test('some lisps I think', () => {
         { id: '', idx: i },
     ]);
     expect(shape(node)).toEqual(
-        'list[round](id(1) id(2) list[square](id(3) id(4)) list[smooshed](id(...) id(5)))',
+        '(id(1) id(2) [id(3) id(4)] list[smooshed](id(...) id(5)))',
     );
 });
 

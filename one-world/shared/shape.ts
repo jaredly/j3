@@ -8,6 +8,12 @@ export const shape = (node: RecNode): string => {
             }
             return `id(${node.text})`;
         case 'list':
+            if (node.kind === 'round') {
+                return `(${node.children.map(shape).join(' ')})`;
+            }
+            if (node.kind === 'square') {
+                return `[${node.children.map(shape).join(' ')}]`;
+            }
             if (typeof node.kind === 'string') {
                 return `list[${node.kind}](${node.children
                     .map(shape)
