@@ -10,6 +10,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Collection, Id, List, Node, Nodes, Text } from '../shared/cnodes';
 import { addBlankAfter } from './addBlankAfter';
 import { replaceIn } from './replaceIn';
+import { replaceWithSmooshed } from './replaceWithSmooshed';
 import { splitInList } from './splitInList';
 import { wrapId } from './wrapId';
 
@@ -261,27 +262,102 @@ const afterCloser = (
     }
 };
 
-const ops = [...'.=#@;'];
-ops.forEach((key) => {
-    idHandlers[key] = (id, cursor, path, top) => {
-        let [left, mid, right] = splitOnCursor(id, cursor);
-    }; //
-});
+export const isBlank = (id: Id<number>, cursor: IdCursor) => {
+    return cursor.text ? cursor.text.length === 0 : id.text === '';
+};
+
+export const isPunct = (id: Id<number>, cursor: IdCursor) => {
+    return cursor.text
+        ? cursor.text.every((t) => ops.includes(t))
+        : splitGraphemes(id.text).every((t) => ops.includes(t));
+};
+
+const ops = [...'.=#@;+'];
+
+// ops.forEach((key) => {
+//     idHandlers[key] = (id, cursor, path, top) => {
+//         if (isPunct(id, cursor)) {
+//             return idType(id, cursor, path, key);
+//         }
+//         return splitSmooshed(id, cursor, path, top, key);
+//     };
+// });
+
+const splitSmooshed = (
+    id: Id<number>,
+    cursor: IdCursor,
+    path: Path,
+    top: Top,
+    key: string,
+) => {
+    let [left, mid, right] = splitOnCursor(id, cursor);
+
+    if (!left.length && !right.length) {
+        throw new Error('not for splitting');
+    }
+
+    const nodes: Nodes = {};
+    const replace: number[] = [];
+    let nextLoc = top.nextLoc;
+    if (left.length) {
+        nodes[id.loc] = { ...id, text: left.join('') };
+        replace.push(id.loc);
+    }
+
+    const n = nextLoc++;
+    nodes[n] = { type: 'id', text: key, loc: n };
+    replace.push(n);
+
+    if (right.length) {
+        if (!left.length) {
+            nodes[id.loc] = { ...id, text: right.join('') };
+            replace.push(id.loc);
+        } else {
+            const r = nextLoc++;
+            nodes[r] = { type: 'id', text: right.join(''), loc: r };
+            replace.push(r);
+        }
+    }
+
+    const update = replaceWithSmooshed(
+        path,
+        { ...top, nextLoc },
+        id.loc,
+        replace,
+        {
+            children: [n],
+            cursor: { type: 'id', end: 1 },
+        },
+    );
+    Object.assign(update.nodes, nodes);
+    return update;
+};
 
 const idType = (
     node: Id<number>,
     cursor: IdCursor,
     path: Path,
+    top: Top,
     key: string,
 ): Update => {
-    const current = cursor.text ?? splitGraphemes(node.text);
+    if (!isBlank(node, cursor)) {
+        if (ops.includes(key)) {
+            if (!isPunct(node, cursor)) {
+                return splitSmooshed(node, cursor, path, top, key);
+            }
+        } else if (isPunct(node, cursor)) {
+            return splitSmooshed(node, cursor, path, top, key);
+        }
+    }
+
+    let [left, mid, right] = splitOnCursor(node, cursor);
     return {
         nodes: {},
         selection: {
             start: selStart(path, {
                 type: 'id',
-                text: [...current, key],
-                end: current.length + 1,
+                text: [...left, key, ...right],
+                end: left.length + 1,
             }),
         },
     };
@@ -301,7 +377,13 @@ export const handleKey = (
         if (fn != null) {
             return fn(current.node, current.cursor, selection.start.path, top);
         }
-        return idType(current.node, current.cursor, selection.start.path, key);
+        return idType(
+            current.node,
+            current.cursor,
+            selection.start.path,
+            top,
+            key,
+        );
     }
 
     if (current.type === 'list') {

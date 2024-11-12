@@ -28,6 +28,7 @@ export const replaceWithSmooshed = (
         return {
             nodes: { [parent.loc]: { ...parent, children } },
             selection: withPartial(parentPath(path), sel),
+            nextLoc: top.nextLoc,
         };
     }
 
