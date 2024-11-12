@@ -274,15 +274,6 @@ export const isPunct = (id: Id<number>, cursor: IdCursor) => {
 
 const ops = [...'.=#@;+'];
 
-// ops.forEach((key) => {
-//     idHandlers[key] = (id, cursor, path, top) => {
-//         if (isPunct(id, cursor)) {
-//             return idType(id, cursor, path, key);
-//         }
-//         return splitSmooshed(id, cursor, path, top, key);
-//     };
-// });
-
 const splitSmooshed = (
     id: Id<number>,
     cursor: IdCursor,

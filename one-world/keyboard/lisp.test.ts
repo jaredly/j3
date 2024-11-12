@@ -176,7 +176,7 @@ test('some lisps I think', () => {
 });
 
 test('some js please', () => {
-    const input = '+what(things, we + do, [here and, such])';
+    const input = '+what(things,we + do,[here and,such])';
     expect(shape(asRec(run(init, input).top))).toEqual(
         'list[smooshed](id(+) id(what) (id(things) list[spaced](id(we) id(+) id(do)) [list[spaced](id(here) id(and)) id(such)]))',
     );
