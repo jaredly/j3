@@ -1,4 +1,99 @@
 
+# Syntax families thoughts
+
+are we content?
+Do I, for example, need a way to ... distinguish between ... 'different languages' or something like that.
+can't macros be enough?
+
+Ok I don't really want to get too off into the weeds here.
+
+- rich text is clearly a different sort of thing, with different keyboard rules
+- lisp-like is a certain way, doesn't have smooshed or spaced collections
+- then other languages are 'full dealio', so commas between ()[]{} items etc.
+
+Question being: rich text can live in a lisp or full world.
+DO lisp and full worlds need to be ... mutually embeddable?
+is there a possiblity you might be doing, like "this is our lispy world" and then
+all of the sudden you need to do some full-syntax for some reason?
+and the reverse?
+like
+How would you signpost it?
+
+Here's an interesting idea. What if rich-text "quote block" and "heading" and stuff ...
+somehow weren't custom node types, but rather ... an interpretation of normal IDs and Text and ... lists?
+naw I think I want it to be smoother than that.
+
+....
+
+Ok but we do potentially need a 'code switch' between lisp and non-lisp, for lack of a better word.
+- oh yeah because that also determines 'what is a valid identifier character'
+ANDD we need a way for (an evaluator? a document?) to indicate the ~default input form, that a thing is.
+This would live at the toplevel node as well.
+
+And like, the evaluator's parser ... if it knows how to handle multiple ... syntaxes ... hrm. Is that something I really want to mess with? I don't really think so.
+
+
+OK SO main outcome is we are NOT allowing mutliple modes /within the same toplevel/. Gotta pick one and stick to it.
+
+One thing, I still miiight want to be using the /smooshed/ type, as that would
+give me ... and ; for free99. ooh and tags on strings. would be nice to simplify that.
+only thing is, that ~eliminates the use of . and ; in ids, which was already the case.
+
+Q: do I want unary ops in lisp syntax? - + ! ~ ^ | & @. honestly @ for unquote is
+probably the right way to go. and that means we can prefix `() to do a nice quote as well.
+yeah let's do that.
+Ok so yes we do want unary ops. buut only prefix. thats fine. also, all prefixed puctuation
+is glommed into a single id. if you want to separate things, use parentheses.
+
+hrmok but : is allowed as a suffix and creates a smoosh. # probably does too tbh.
+
+lolol am I just going to rewrite the keyboard stuffs from scratch now? like mayyybe..
+
+
+## Mornign Thoughts
+
+- a doc should allow multiple evaluators actually, and nodes have an int index into that list
+- doc nodes have a 'presentation style' or sth that is list / whiteboard / columns
+
+
+
+
+
+Q:
+is there going to need to be distinction between different non-lisp syntaxes?
+- I don't think so (unless I do indent-based), because keyboard behavior should be the same.
+
+Relatedly, I'm not currently supporting python-style (indent-based) or ruby-style (keyword-blocks)
+
+
+#
+
+ok, so if I want to actually do the js style dealio
+I need to
+
+1. make tests that provide full coverage for my keyboard
+  handlers that I currently have.
+2. refactor so that organization isn't so dang ad-hoc
+3. make it so you can ... switch out ... the ...
+  ... syntax style you're using?
+  OK SO
+  an evaluator would want to:
+  - parse (cst -> ast)
+  - print (ast -> cst)
+  anddd indicate what style of syntax we're using.
+  -should i- make it so that an evaluator can support
+  multiple kinds of syntax????
+  shoullddd I make it so that the 'syntax-style' is like...
+  stored on the toplevel?
+  hoenstly that's kinda interesting.
+  would /rich text/ be its own separate syntax style? noo.
+  even though it kinda feels like it should be.
+  becaaause, I want to be able to plop rich texts in the middle
+  of other things.
+  OOOoooh but wait. now there's JSX and friends.
+  like. SQL? naw sql is c-like enough, right.
+
+
 # Thinking about
 my 'loc as list' decision.
 it has been pretty much just a hassle so far.
@@ -6,8 +101,6 @@ it has been pretty much just a hassle so far.
 the idea was for macros n such
 anddd ok I do still think the idea has merit. So
 we can leave it like that.
-
-
 
 # Alsooo what about JS syntax for jerd?
 

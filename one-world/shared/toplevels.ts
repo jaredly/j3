@@ -31,6 +31,7 @@ export type Toplevel = {
     hash?: string;
     module: string; // an ID, where this toplevel "lives"
 
+    syntax: 'lisp' | 'other'; // whether to use 'spaced' lists, and have ,; separators on lists
     nodes: Nodes;
     root: number;
     nextLoc: number;

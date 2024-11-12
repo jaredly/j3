@@ -1,4 +1,7 @@
 
+
+
+
 # Syntax ... Families?
 
 Thinking about adding support for c-like (e.g. JS) syntaxes,
@@ -78,6 +81,74 @@ CSV
 - one collection, cells separated by , and rows separated by \n
 - atoms are [^,\n]+
 
+## Even ... weirder?
+
+NoFlo?
+
+Question: is flow-based visual programming actually generally useful?
+So to speak: can it be used as general-purpose, or is only useful in some domains?
+
+a box with two inputs (subst) and (type)
+
+inside that box would be more boxes.
+
+[ a 'match' box that hrmmmm idk honestly ]
+
+
+
+
+
+
+
+
+and a single output (output)
+
+
+
+```clj
+(defn type/apply [subst type]
+    (match type
+        (tvar id _)           (match (map/get subst id)
+                                  (none)   type
+                                  (some t) t)
+        (tapp target arg loc) (tapp (type/apply subst target) (type/apply subst arg) loc)
+        _                     type))
+
+```
+
+
+
+
+
+XState - state charts?
+
+Spreadsheet programming?
+
+Esolangs like Mondrian?
+
+Prolog?
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 - forth: /((\w+)\s+)+/
@@ -95,6 +166,21 @@ Thinking about "Syntax Families". Ones I've come up with:
 - ruby-like: c-like but with keywords to bracket blocks
 - xml-like: <tag attr="abc">child</tag>
 - rich-text:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -148,5 +234,9 @@ literally just whitespace-separated tokens
 
 ## forth-like? or something?
 where it's just a madhouse
+
+
+
+
 
 

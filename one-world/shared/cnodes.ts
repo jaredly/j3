@@ -40,16 +40,27 @@ my rich-text nodes.
 
 */
 
-type Text = {
-    type: 'text';
-    first: string;
-    templates: { expr: Node; suffix: string }[];
+export type Style = {
+    fontWeight?: number | string;
+    fontFamily?: string;
+    fontStyle?: string;
+    textDecoration?: string;
+    background?: { r: number; g: number; b: number } | false;
+    border?: string;
+    outline?: string;
+    color?: { r: number; g: number; b: number } | false;
 };
 
-type IdRef =
+// type Text = {
+//     type: 'text';
+//     first: string;
+//     templates: { expr: Node; suffix: string }[];
+// };
+
+export type IdRef =
     | {
           type: 'toplevel';
-          loc: [string, number];
+          loc: { id: string; idx: number };
           kind: string;
           lock?: { hash: string; manual: boolean };
       }
@@ -59,42 +70,98 @@ type IdRef =
     | { type: 'keyword' }
     | { type: 'placeholder'; text: string };
 
-type Unit = { type: 'id'; text: string; ref: IdRef } | Text;
+export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc };
 
-type Style = null;
+export type Link =
+    | { type: 'www'; href: string }
+    | { type: 'term'; id: string; hash?: string }
+    | { type: 'doc'; id: string; hash?: string };
 
-type InlineSpan =
-    | { type: 'text'; text: string; link: string; style: Style }
+export type TextSpan<Embed> =
+    | { type: 'text'; text: string; link?: Link; style?: Style }
+    // Jump back to a normal node I guess
+    | { type: 'embed'; item: Embed }
+    // I kinda forget what this was about? Maybe like letting you supply rich-text plugins or something
     | { type: 'custom'; id: string; data: any }
-    | { type: 'embed'; item: Node };
-//  | { type: 'include'; id: string; hash: string }
-//  | {
-//        type: 'diff';
-//        before: { id: string; hash: string };
-//        after: { id: string; hash: string };
-//    };
+    // How are these different from `embed`? Well these actually yoink the source
+    // of the referenced term and plop it in there.
+    // Embed would either be a ref to it, or duplicate the code
+    | { type: 'include'; id: string; hash: string }
+    | {
+          type: 'diff';
+          before: { id: string; hash: string };
+          after: { id: string; hash: string };
+      };
 
-type Rich =
-    | { type: 'rich-block'; items: Node[] }
-    | { type: 'rich-inline'; spans: InlineSpan[] };
+export type RichKind =
+    | { type: 'plain' }
+    | { type: 'section' } // collapsible, and first item is treated as a header
+    | { type: 'list'; ordered: boolean }
+    | { type: 'checks'; checked: Record<number, boolean> }
+    | { type: 'opts'; which?: number }
+    | { type: 'indent'; quote: boolean }
+    | { type: 'callout'; vibe: 'info' | 'warning' | 'error' };
 
-type Collection =
-    // or vector/matrix? idk
+export type ListKind<Tag> =
+    | 'round'
+    | 'square'
+    | 'angle'
+    | 'curly'
+    // these are for items juxtaposed without spaces in between
+    | 'smooshed'
+    // these are for binops and such. not used for lisp-mode
+    | 'spaced'
+    | { type: 'tag'; node: Tag }
+    | RichKind;
+
+export type Text<Loc> = { type: 'text'; spans: TextSpan<number>[]; loc: Loc };
+export type List<Loc> = {
+    type: 'list';
+    kind: ListKind<number>;
+    // Whether the user has specified that it should be multiline.
+    // If absent, multiline is calculated based on pretty-printing logic
+    forceMultiline?: boolean;
+    // For JSX, this will be a /table/, and 'kind' will be {type: 'tag'}
+    attributes?: number;
+    children: number[];
+    loc: Loc;
+};
+export type Collection<Loc> =
+    | List<Loc>
+    | {
+          type: 'table';
+          kind: 'round' | 'square' | 'curly';
+          rows: number[][];
+          loc: Loc;
+      };
+
+export type NodeT<Loc> = Id<Loc> | Text<Loc> | Collection<Loc>;
+export type Node = NodeT<number>;
+
+export type RecText<Loc> = {
+    type: 'text';
+    spans: TextSpan<RecNodeT<Loc>>[];
+    loc: Loc;
+};
+export type RecCollection<Loc> =
     | {
           type: 'list';
-          // angle is maybe a bit dicey, because
-          // how do we know you're not doing a greater-than?
-          // I guess that's UI logic
-          kind: 'round' | 'square' | 'angle' | 'curly' | 'smooshed' | 'spaced';
+          kind: ListKind<RecNodeT<Loc>>;
+          // Whether the user has specified that it should be multiline.
+          // If absent, multiline is calculated based on pretty-printing logic
+          forceMultiline?: boolean;
+          // For JSX, this will be a /table/, and 'kind' will be {type: 'tag'}
+          attributes?: RecNodeT<Loc>;
+          children: RecNodeT<Loc>[];
+          loc: Loc;
       }
     | {
-          type: 'tagged';
-          tag: Node;
-          attributes: { name: string; value: Node }[];
-          children: Node[];
-      }
-    | { type: 'table'; kind: 'round' | 'square' | 'curly'; rows: Node[][] };
+          type: 'table';
+          kind: 'round' | 'square' | 'curly';
+          rows: RecNodeT<Loc>[][];
+      };
 
-type Node = Unit | Rich | Collection;
+export type RecNodeT<Loc> = Id<Loc> | RecText<Loc> | RecCollection<Loc>;
+export type RecNode = RecNodeT<{ id: number; idx: number }[]>;
 
-export {};
+export type Nodes = Record<number, Node>;
