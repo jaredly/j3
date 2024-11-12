@@ -167,6 +167,30 @@ export type RecNode = RecNodeT<{ id: string; idx: number }[]>;
 
 export type Nodes = Record<number, Node>;
 
+export const childLocs = (node: Node): number[] => {
+    switch (node.type) {
+        case 'id':
+            return [];
+        case 'list':
+            let children: number[] = [];
+            if (typeof node.kind !== 'string' && node.kind.type === 'tag') {
+                children.push(node.kind.node);
+            }
+            if (node.attributes) {
+                children.push(node.attributes);
+            }
+            return children.length
+                ? [...children, ...node.children]
+                : node.children;
+        case 'table':
+            return node.rows.flat();
+        case 'text':
+            return node.spans
+                .map((s) => (s.type === 'embed' ? s.item : undefined))
+                .filter((x) => x != null);
+    }
+};
+
 export const fromMap = <Loc>(
     id: number,
     nodes: Nodes,

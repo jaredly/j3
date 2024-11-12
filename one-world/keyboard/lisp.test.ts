@@ -58,9 +58,16 @@ SO:
 
 import { test, expect } from 'bun:test';
 import { Toplevel } from '../shared/toplevels';
-import { handleKey, lastChild, NodeSelection, selStart, Top } from './lisp';
+import {
+    handleKey,
+    lastChild,
+    NodeSelection,
+    Path,
+    selStart,
+    Top,
+} from './lisp';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { fromMap, Id } from '../shared/cnodes';
+import { childLocs, fromMap, Id } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 
 /*
@@ -100,8 +107,68 @@ const init: TestState = {
     },
 };
 
+const validatePath = (top: Top, path: Path) => {
+    if (path.children.length === 0) {
+        throw new Error(`empty path`);
+    }
+    let parent = top.root;
+    for (let i = 0; i < path.children.length; i++) {
+        const id = path.children[i];
+        if (i === 0) {
+            if (id !== parent)
+                throw new Error(`first id is not root (${parent}) ${id}`);
+            continue;
+        }
+        const children = childLocs(top.nodes[parent]);
+        if (!children.includes(id))
+            throw new Error(`child ${id} is not a child of ${parent}`);
+        parent = id;
+    }
+    return true;
+};
+
+const validateNextLoc = (top: Top) => {
+    Object.keys(top.nodes).forEach((loc) => {
+        if (top.nodes[+loc].loc !== +loc) {
+            throw new Error(`Node.loc doesn't match key ${+loc}`);
+        }
+        if (+loc >= top.nextLoc) {
+            throw new Error(
+                `nextLoc invalid, is ${top.nextLoc}, found ${+loc}`,
+            );
+        }
+    });
+};
+
+const validateNodes = (top: Top, id: number) => {
+    const node = top.nodes[id];
+    if (node.type === 'list' && node.kind === 'smooshed') {
+        if (node.children.length < 2) {
+            throw new Error(`smooshed list shouldn't have fewer than 2 items`);
+        }
+        node.children.forEach((cid) => {
+            const child = top.nodes[cid];
+            if (child.type === 'list') {
+                if (child.kind === 'smooshed' || child.kind === 'spaced') {
+                    throw new Error(
+                        `smooshed child cant be spaced or smooshed`,
+                    );
+                }
+            }
+        });
+    }
+    childLocs(node).forEach((cid) => validateNodes(top, cid));
+};
+
+const validate = (state: TestState) => {
+    validatePath(state.top, state.sel.start.path);
+    validateNextLoc(state.top);
+    validateNodes(state.top, state.top.root);
+};
+
 const run = (state: TestState, text: string) => {
     splitGraphemes(text).forEach((char) => {
+        console.log('char', char);
         const update = handleKey(state.sel, state.top, char);
         if (update) {
             const prev = state.sel;
@@ -113,6 +180,8 @@ const run = (state: TestState, text: string) => {
                     root: update.root ?? state.top.root,
                 },
             };
+            validate(state);
+
             // This is "maybe commit text changes"
             if (
                 prev.start.cursor.type === 'id' &&
@@ -141,16 +210,31 @@ const run = (state: TestState, text: string) => {
     return state;
 };
 
-test('some lisps I think', () => {
-    const input = '(1 2 [3 4] ...5)';
-    const state = run(init, input);
-    const node = fromMap(state.top.root, state.top.nodes, (i) => [
-        { id: '', idx: i },
-    ]);
-    expect(shape(node)).toEqual(
-        '(id(1) id(2) [id(3) id(4)] list[smooshed](id(...) id(5)))',
+const asRec = (top: Top) =>
+    fromMap(top.root, top.nodes, (i) => [{ id: '', idx: i }]);
+
+test('one', () => {
+    expect(shape(asRec(run(init, '(1 2)').top))).toEqual('(id(1) id(2))');
+});
+
+test('one', () => {
+    expect(shape(asRec(run(init, '(1 2 [3 4] 5)').top))).toEqual(
+        '(id(1) id(2) [id(3) id(4)] id(5))',
     );
 });
+
+test('lets smoosh', () => {
+    expect(shape(asRec(run(init, 'hello.world').top))).toEqual(
+        'list[smooshed](id(hello) id(.) id(world))',
+    );
+});
+
+// test('some lisps I think', () => {
+//     const input = '(1 2 [3 4] ...5)';
+//     expect(shape(asRec(run(init, input).top))).toEqual(
+//         '(id(1) id(2) [id(3) id(4)] list[smooshed](id(...) id(5)))',
+//     );
+// });
 
 // test('some js please', () => {
 //     const input = '+what(things, we + do, [here and, such])';
