@@ -151,10 +151,12 @@ const run =
                     update.selection.start.key !== prev.start.key
                 ) {
                     const loc = lastChild(prev.start.path);
-                    state.top.nodes[loc] = {
-                        ...(state.top.nodes[loc] as Id<number>),
-                        text: prev.start.cursor.text.join(''),
-                    };
+                    if (!update.nodes[loc]) {
+                        state.top.nodes[loc] = {
+                            ...(state.top.nodes[loc] as Id<number>),
+                            text: prev.start.cursor.text.join(''),
+                        };
+                    }
                 }
             }
         });
@@ -227,6 +229,13 @@ test('some js please', () => {
 test('split middle', () => {
     const input = keys`heylo${L}${L}.`;
     expect(shape(asRec(lisp(init, input).top))).toEqual(
+        'list[smooshed](id(hey) id(.) id(lo))',
+    );
+});
+
+test('split middle js', () => {
+    const input = keys`heylo${L}${L}.`;
+    expect(shape(asRec(js(init, input).top))).toEqual(
         'list[smooshed](id(hey) id(.) id(lo))',
     );
 });

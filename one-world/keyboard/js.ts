@@ -38,6 +38,16 @@ const idHandlers: Record<
         // update.nodes[loc] = { type: 'id', text: '', loc };
         return splitBraceless(node, cursor, path, top, [], 'spaced');
     },
+    ArrowLeft: (node, cursor, path, top) => {
+        if (cursor.end > 1) {
+            return {
+                nodes: {},
+                selection: {
+                    start: selStart(path, { ...cursor, end: cursor.end - 1 }),
+                },
+            };
+        }
+    },
 };
 
 const listHandlers: Record<
