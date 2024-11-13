@@ -4,7 +4,7 @@ import { fromMap, fromRec, Id, ListKind, Nodes, NodeT, RecNodeT } from '../share
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
 import { Config, insertId } from './insertId';
-import { Cursor, IdCursor, replaceAt, selStart } from './lisp';
+import { Cursor, getCurrent, IdCursor, lastChild, replaceAt, selStart, Update } from './lisp';
 import { splitSmooshId } from './splitSmoosh';
 import { TestState } from './test-utils';
 import { validate } from './validate';
@@ -42,7 +42,6 @@ const id = <T>(text: string, loc: T = null as T): Id<T> => ({
     type: 'id',
     text,
     loc,
-    // punct: false,
     punct: text.length === 0 ? undefined : [...text].some((k) => lisp.tight.includes(k)),
 });
 const list =
@@ -78,6 +77,16 @@ const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
     };
 };
 
+const handleKey = (state: TestState, key: string, config: Config): Update => {
+    const current = getCurrent(state.sel, state.top);
+    switch (current.type) {
+        case 'id':
+            return insertId(config, state.top, state.sel.start.path, current.cursor, key);
+        default:
+            throw new Error('not doing');
+    }
+};
+
 const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.') => {
     let state = asTop(init, cursor);
     const up = insertId(lisp, state.top, state.sel.start.path, state.sel.start.cursor as IdCursor, text);
@@ -87,10 +96,38 @@ const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown
     expect(shape(out)).toEqual(shape(fromMap(state.top.root, state.top.nodes, () => 0)));
 };
 
+const root = (state: TestState) => {
+    let nodes = state.top.nodes;
+    if (state.sel.start.cursor.type === 'id' && state.sel.start.cursor.text) {
+        const loc = lastChild(state.sel.start.path);
+        const node = nodes[loc];
+        if (node.type === 'id') {
+            nodes = { ...nodes, [loc]: { ...node, text: state.sel.start.cursor.text.join('') } };
+        }
+    }
+    return fromMap(state.top.root, nodes, () => 0);
+};
+
 // MARK: Insert ID
 
+const idc = (end: number): IdCursor => ({ type: 'id', end });
+
 test('same kind', () => {
-    const inp = id('hello');
+    let state = asTop(id('hello', true), idc(2));
+    state = applyUpdate(state, handleKey(state, 'A', lisp));
+    expect(shape(root(state))).toEqual(shape(id('heAllo')));
+});
+
+test('same kind punct', () => {
+    let state = asTop(id('...', true), idc(2));
+    state = applyUpdate(state, handleKey(state, '=', lisp));
+    expect(shape(root(state))).toEqual(shape(id('..=.')));
+});
+
+test('start empty', () => {
+    let state = asTop(id('', true), idc(0));
+    state = applyUpdate(state, handleKey(state, '=', lisp));
+    expect(shape(root(state))).toEqual(shape(id('=')));
 });
 
 // MARK: Split smoosh

@@ -14,12 +14,7 @@ export function applyUpdate(state: TestState, update: Update) {
     };
 
     // This is "maybe commit text changes"
-    if (
-        prev.start.cursor.type === 'id' &&
-        prev.start.cursor.text != null &&
-        update.selection &&
-        update.selection.start.key !== prev.start.key
-    ) {
+    if (prev.start.cursor.type === 'id' && prev.start.cursor.text != null && update.selection && update.selection.start.key !== prev.start.key) {
         const loc = lastChild(prev.start.path);
         if (!update.nodes[loc]) {
             state.top.nodes[loc] = {

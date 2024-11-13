@@ -103,7 +103,7 @@ export const splitSmooshId = (
             inserts.push(id.loc, mid, right);
             nodes[id.loc] = { ...id, text: split.left };
             nodes[mid] = { type: 'id', text: insert, loc: mid, punct };
-            nodes[right] = { type: 'id', text: split.right, loc: right };
+            nodes[right] = { type: 'id', text: split.right, loc: right, punct: id.punct };
             sel = {
                 children: [mid],
                 cursor: { type: 'id', end: 1 },

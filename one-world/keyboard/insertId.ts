@@ -23,7 +23,7 @@ export const insertId = (config: Config, top: Top, path: Path, cursor: IdCursor,
             throw new Error('not yurt');
         default:
             // Set the punctliness
-            if (current.punct === null) {
+            if (current.punct == null) {
                 return {
                     nodes: { [current.loc]: { ...current, punct: kind === 'tight', text: grem } },
                     selection: { start: selStart(path, { type: 'id', end: 1 }) },

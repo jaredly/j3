@@ -57,9 +57,7 @@ export type TextCursor = {
     start?: { index: number; cursor: number };
     end: { index: number; cursor: number; text?: string[] };
 };
-export type ListCursor =
-    | { type: 'list'; where: 'before' | 'start' | 'inside' | 'end' | 'after' }
-    | { type: 'control'; index: number };
+export type ListCursor = { type: 'list'; where: 'before' | 'start' | 'inside' | 'end' | 'after' } | { type: 'control'; index: number };
 
 export type Cursor = IdCursor | TextCursor | ListCursor;
 
@@ -68,12 +66,8 @@ export type Path = {
     children: number[];
 };
 
-export const pathKey = (path: Path) =>
-    `${path.root.ids.join(',')};${path.root.top};${path.children.join(',')}`;
-export const selStart = (
-    path: Path,
-    cursor: Cursor,
-): NodeSelection['start'] => ({
+export const pathKey = (path: Path) => `${path.root.ids.join(',')};${path.root.top};${path.children.join(',')}`;
+export const selStart = (path: Path, cursor: Cursor): NodeSelection['start'] => ({
     path,
     cursor,
     key: pathKey(path),
@@ -88,8 +82,7 @@ export type NodeSelection = {
 
 export type Top = { nodes: Nodes; root: number; nextLoc: number };
 
-export const getNode = (path: Path, top: Top) =>
-    top.nodes[path.children[path.children.length - 1]];
+export const getNode = (path: Path, top: Top) => top.nodes[path.children[path.children.length - 1]];
 
 export type Current =
     | { type: 'id'; node: Id<number>; cursor: Extract<Cursor, { type: 'id' }> }
@@ -136,25 +129,17 @@ export type Update = {
     selection?: NodeSelection;
 };
 
-export const splitOnCursor = (
-    id: Id<number>,
-    cursor: IdCursor,
-): [string[], string[], string[]] => {
+export const splitOnCursor = (id: Id<number>, cursor: IdCursor): [string[], string[], string[]] => {
     const text = cursor.text ?? splitGraphemes(id.text);
     const left = cursor.start ? Math.min(cursor.start, cursor.end) : cursor.end;
-    const right = cursor.start
-        ? Math.max(cursor.start, cursor.end)
-        : cursor.end;
+    const right = cursor.start ? Math.max(cursor.start, cursor.end) : cursor.end;
     return [text.slice(0, left), text.slice(left, right), text.slice(right)];
 };
 
 export const withPartial = (path: Path, sel?: PartialSel) =>
     sel
         ? {
-              start: selStart(
-                  pathWithChildren(path, ...sel.children),
-                  sel.cursor,
-              ),
+              start: selStart(pathWithChildren(path, ...sel.children), sel.cursor),
           }
         : undefined;
 
@@ -169,17 +154,10 @@ export const findTableLoc = (rows: number[][], loc: number) => {
     return { row: 0, col: 0 };
 };
 
-export const replaceAt = (
-    path: number[],
-    top: Top,
-    old: number,
-    loc: number,
-): Update => {
+export const replaceAt = (path: number[], top: Top, old: number, loc: number): Update => {
     if (path.length === 0) {
         if (old !== top.root) {
-            throw new Error(
-                `expected ${old} to be root of top, but found ${top.root}`,
-            );
+            throw new Error(`expected ${old} to be root of top, but found ${top.root}`);
         }
         return { nodes: {}, root: loc };
     }
@@ -188,10 +166,7 @@ export const replaceAt = (
     return { nodes: { [ploc]: replaceIn(pnode, old, loc) } };
 };
 
-const idHandlers: Record<
-    string,
-    (node: Id<number>, cursor: IdCursor, path: Path, top: Top) => Update | void
-> = {
+const idHandlers: Record<string, (node: Id<number>, cursor: IdCursor, path: Path, top: Top) => Update | void> = {
     ' ': (node, cursor, path, top) => splitInList(node, cursor, path, top),
     ArrowLeft: (node, cursor, path, top) => {
         if (cursor.end > 1) {
@@ -205,15 +180,7 @@ const idHandlers: Record<
     },
 };
 
-const listHandlers: Record<
-    string,
-    (
-        node: Collection<number>,
-        cursor: ListCursor,
-        path: Path,
-        top: Top,
-    ) => Update | void
-> = {
+const listHandlers: Record<string, (node: Collection<number>, cursor: ListCursor, path: Path, top: Top) => Update | void> = {
     ' ': (node, cursor, path, top) => {
         if (cursor.type === 'control') return;
         switch (cursor.where) {
@@ -226,33 +193,23 @@ const listHandlers: Record<
 
 const opens = { '(': 'round', '[': 'square', '{': 'curly' } as const;
 Object.entries(opens).forEach(([key, kind]) => {
-    idHandlers[key] = (node, cursor, path, top) =>
-        wrapId(node, kind, cursor, path, top);
+    idHandlers[key] = (node, cursor, path, top) => wrapId(node, kind, cursor, path, top);
 });
 
 const closes = { ')': 'round', ']': 'square', '}': 'curly' } as const;
 Object.entries(closes).forEach(([key, kind]) => {
-    idHandlers[key] = (node, cursor, path, top): Update | void =>
-        afterCloser(top, path, kind);
-    listHandlers[key] = (node, cursor, path, top): Update | void =>
-        afterCloser(top, path, kind);
+    idHandlers[key] = (node, cursor, path, top): Update | void => afterCloser(top, path, kind);
+    listHandlers[key] = (node, cursor, path, top): Update | void => afterCloser(top, path, kind);
 });
 
-export const afterCloser = (
-    top: Top,
-    path: Path,
-    kind: List<number>['kind'],
-): Update | void => {
+export const afterCloser = (top: Top, path: Path, kind: List<number>['kind']): Update | void => {
     for (let i = path.children.length - 1; i >= 0; i--) {
         const pnode = top.nodes[path.children[i]];
         if (pnode.type === 'list' && pnode.kind === kind) {
             return {
                 nodes: {},
                 selection: {
-                    start: selStart(
-                        { ...path, children: path.children.slice(0, i + 1) },
-                        { type: 'list', where: 'after' },
-                    ),
+                    start: selStart({ ...path, children: path.children.slice(0, i + 1) }, { type: 'list', where: 'after' }),
                 },
             };
         }
@@ -264,21 +221,12 @@ export const isBlank = (id: Id<number>, cursor: IdCursor) => {
 };
 
 export const isPunct = (id: Id<number>, cursor: IdCursor) => {
-    return cursor.text
-        ? cursor.text.every((t) => ops.includes(t))
-        : splitGraphemes(id.text).every((t) => ops.includes(t));
+    return cursor.text ? cursor.text.every((t) => ops.includes(t)) : splitGraphemes(id.text).every((t) => ops.includes(t));
 };
 
 const ops = [...'.=#@;+'];
 
-export const splitBraceless = (
-    id: Id<number>,
-    cursor: IdCursor,
-    path: Path,
-    top: Top,
-    keys: string[],
-    kind: 'smooshed' | 'spaced',
-) => {
+export const splitBraceless = (id: Id<number>, cursor: IdCursor, path: Path, top: Top, keys: string[], kind: 'smooshed' | 'spaced') => {
     let [left, mid, right] = splitOnCursor(id, cursor);
 
     if (!left.length && !right.length) {
@@ -321,36 +269,16 @@ export const splitBraceless = (
         }
     }
 
-    const update = replaceWithList(
-        path,
-        { ...top, nextLoc },
-        id.loc,
-        replace,
-        kind,
-        sel,
-    );
+    const update = replaceWithList(path, { ...top, nextLoc }, id.loc, replace, kind, sel);
     Object.assign(update.nodes, nodes);
     return update;
 };
 
-const idType = (
-    node: Id<number>,
-    cursor: IdCursor,
-    path: Path,
-    top: Top,
-    key: string,
-): Update => {
+const idType = (node: Id<number>, cursor: IdCursor, path: Path, top: Top, key: string): Update => {
     if (!isBlank(node, cursor)) {
         if (ops.includes(key)) {
             if (!isPunct(node, cursor)) {
-                return splitBraceless(
-                    node,
-                    cursor,
-                    path,
-                    top,
-                    [key],
-                    'smooshed',
-                );
+                return splitBraceless(node, cursor, path, top, [key], 'smooshed');
             }
         } else if (isPunct(node, cursor)) {
             return splitBraceless(node, cursor, path, top, [key], 'smooshed');
@@ -370,11 +298,7 @@ const idType = (
     };
 };
 
-export const handleKey = (
-    selection: NodeSelection,
-    top: Top,
-    key: string,
-): Update | void => {
+export const handleKey = (selection: NodeSelection, top: Top, key: string): Update | void => {
     if (selection.end) return; // TODO :/
 
     const current = getCurrent(selection, top);
@@ -387,13 +311,7 @@ export const handleKey = (
         if (splitGraphemes(key).length > 1) {
             throw new Error(`custok key not handled ${key}`);
         }
-        return idType(
-            current.node,
-            current.cursor,
-            selection.start.path,
-            top,
-            key,
-        );
+        return idType(current.node, current.cursor, selection.start.path, top, key);
     }
 
     if (current.type === 'list') {
@@ -411,12 +329,9 @@ export const handleKey = (
     // - verify that the selection is valid
 };
 
-export const lastChild = (path: Path) =>
-    path.children[path.children.length - 1];
-export const parentLoc = (path: Path) =>
-    path.children[path.children.length - 2];
-export const gparentLoc = (path: Path) =>
-    path.children[path.children.length - 3];
+export const lastChild = (path: Path) => path.children[path.children.length - 1];
+export const parentLoc = (path: Path) => path.children[path.children.length - 2];
+export const gparentLoc = (path: Path) => path.children[path.children.length - 3];
 export const parentPath = (path: Path): Path => ({
     ...path,
     children: path.children.slice(0, -1),

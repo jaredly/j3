@@ -6,7 +6,7 @@ export const shape = (node: RecNodeT<unknown>): string => {
             if (node.ref) {
                 return 'REF';
             }
-            return `id(${node.text})`;
+            return `id(${node.text}${node.punct ? '/P' : node.punct === false ? '/T' : ''})`;
         case 'list':
             if (node.kind === 'round') {
                 return `(${node.children.map(shape).join(' ')})`;
@@ -15,13 +15,9 @@ export const shape = (node: RecNodeT<unknown>): string => {
                 return `[${node.children.map(shape).join(' ')}]`;
             }
             if (typeof node.kind === 'string') {
-                return `list[${node.kind}](${node.children
-                    .map(shape)
-                    .join(' ')})`;
+                return `list[${node.kind}](${node.children.map(shape).join(' ')})`;
             }
-            return `list[${node.kind.type}](${node.children
-                .map(shape)
-                .join(' ')})`;
+            return `list[${node.kind.type}](${node.children.map(shape).join(' ')})`;
         case 'table':
             return `table...`;
         case 'text':
