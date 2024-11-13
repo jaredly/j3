@@ -4,7 +4,7 @@ import { fromMap, fromRec, Id, ListKind, Nodes, NodeT, RecNodeT } from '../share
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
 import { Cursor, IdCursor, replaceAt, selStart, Top } from './lisp';
-import { splitSmoosh } from './splitSmoosh';
+import { splitSmooshId } from './splitSmoosh';
 import { TestState } from './test-utils';
 import { validate } from './validate';
 
@@ -24,15 +24,17 @@ const js = {
     sep: ';,\n',
 };
 
+type Config = typeof lisp;
+const idkeys = (config: Config) => [...allkeys].filter((k) => !config.tight.includes(k) && !config.space.includes(k) && !config.sep.includes(k));
+
+const lispId = idkeys(lisp);
+const jsId = idkeys(js);
+
 // kinds of keys:
 // - tight
 // - space
 // - sep
 // - id (everything else)
-
-const config = lisp;
-
-const idkeys = [...allkeys].filter((k) => !config.tight.includes(k) && !config.space.includes(k) && !config.sep.includes(k));
 
 // MARK: makers
 
@@ -70,13 +72,17 @@ const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
     };
 };
 
-const testSplit = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>) => {
+const testSplit = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.') => {
     let state = asTop(init, cursor);
-    const up = splitSmoosh(state.top, state.sel.start.path, state.sel.start.cursor as IdCursor, '.');
+    const up = splitSmooshId(state.top, state.sel.start.path, state.sel.start.cursor as IdCursor, text);
     state = applyUpdate(state, up);
     // console.log(JSON.stringify(state, null, 2));
     validate(state);
     expect(shape(out)).toEqual(shape(fromMap(state.top.root, state.top.nodes, () => 0)));
+};
+
+const insertId = (top: Top, cursor: IdCursor, text: string) => {
+    // const current = top.
 };
 
 test('smoosh start (round)', () => {
@@ -127,9 +133,9 @@ test('smoosh start join (smoosh)', () => {
 test('smoosh start list (smoosh)', () => {
     testSplit(
         //
-        round([smoosh([round([]), id('hello', true), id('.')])]),
+        round([smoosh([round([]), id('hello', true)])]),
         { type: 'id', end: 0 },
-        round([smoosh([round([]), id('.'), id('hello'), id('.')])]),
+        round([smoosh([round([]), id('.'), id('hello')])]),
     );
 });
 
@@ -163,8 +169,18 @@ test('smoosh end join (smoosh)', () => {
 test('smoosh end list (smoosh)', () => {
     testSplit(
         //
-        round([smoosh([id('.'), id('hello', true), round([])])]),
+        round([smoosh([id('hello', true), round([])])]),
         { type: 'id', end: 5 },
-        round([smoosh([id('.'), id('hello'), id('.'), round([])])]),
+        round([smoosh([id('hello'), id('.'), round([])])]),
+    );
+});
+
+test('comment out', () => {
+    testSplit(
+        //
+        id('hello', true),
+        { type: 'id', end: 0 },
+        smoosh([id(';'), id('hello')]),
+        ';',
     );
 });

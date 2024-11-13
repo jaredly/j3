@@ -50,7 +50,7 @@ Assumptions
 
 - the insert is of a different 'kind' than the current ID
 */
-export const splitSmoosh = (
+export const splitSmooshId = (
     top: Top,
     path: Path,
     cursor: IdCursor,
@@ -58,8 +58,7 @@ export const splitSmoosh = (
     insert: string,
 ): Update => {
     const id = top.nodes[lastChild(path)];
-    if (id.type !== 'id')
-        throw new Error(`not an ID ${id.type} at loc ${id.loc}`);
+    if (id.type !== 'id') throw new Error(`not an ID ${id.type} at loc ${id.loc}`);
     const nodes: Nodes = {};
 
     const split = cursorSplit(id.text, cursor);
@@ -112,14 +111,7 @@ export const splitSmoosh = (
         }
     }
 
-    const up = replaceWithList(
-        path,
-        { ...top, nextLoc },
-        id.loc,
-        inserts,
-        'smooshed',
-        sel,
-    );
+    const up = replaceWithList(path, { ...top, nextLoc }, id.loc, inserts, 'smooshed', sel);
     Object.assign(up.nodes, nodes);
 
     return up;
