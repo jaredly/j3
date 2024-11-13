@@ -32,10 +32,6 @@ const idHandlers: Record<
 > = {
     ',': (node, cursor, path, top) => splitInList(node, cursor, path, top),
     ' ': (node, cursor, path, top) => {
-        // let nextLoc = top.nextLoc;
-        // const loc = nextLoc++;
-        // const update = replaceWithSpaced(path, top, node.loc, replace);
-        // update.nodes[loc] = { type: 'id', text: '', loc };
         return splitBraceless(node, cursor, path, top, [], 'spaced');
     },
     ArrowLeft: (node, cursor, path, top) => {

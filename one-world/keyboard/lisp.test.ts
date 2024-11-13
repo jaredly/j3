@@ -233,6 +233,20 @@ test('split middle', () => {
     );
 });
 
+test('split middle space', () => {
+    const input = keys`heylo${L}${L} `;
+    expect(shape(asRec(js(init, input).top))).toEqual(
+        'list[spaced](id(hey) id(lo))',
+    );
+});
+
+// test('split middle space in smoosh', () => {
+//     const input = keys`heylo${L}${L}.${L} `;
+//     expect(shape(asRec(js(init, input).top))).toEqual(
+//         'list[spaced](id(hey) id(lo))',
+//     );
+// });
+
 test('split middle js', () => {
     const input = keys`heylo${L}${L}.`;
     expect(shape(asRec(js(init, input).top))).toEqual(

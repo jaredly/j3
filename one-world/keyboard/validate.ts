@@ -58,7 +58,7 @@ const validateNodes = (top: Top, id: number) => {
             if (child.type === 'list') {
                 if (child.kind === 'smooshed' || child.kind === 'spaced') {
                     throw new Error(
-                        `smooshed child cant be spaced or smooshed`,
+                        `smooshed child cant be spaced or smooshed: ${child.kind}`,
                     );
                 }
             }
