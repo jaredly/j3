@@ -1,4 +1,73 @@
 
+# Partially Applied Macrosss???
+
+So I was having some thoughts, at one point.
+like, what if I want to be able to partially apply a macro?
+This was the context
+(meanwhile this also brought up the issue of: the parser will need to tell the
+ editor /how/ to apply the macros, because "what arguments are being passed to this macro"
+ is syntax-dependent, e.g. `(go 1 2 3)` vs `go(1, 2, 3)`, where go is the macro.
+ I guess the ~most flexible way would be to have the parser report just 2 things:
+ 1. the ref of the macro to call
+ 2. the outermost node of the invocation
+ and then the macro can be responsible for extracting the arguments n stuff)
+ that way ... like binops as macros could be possible? idk.
+
+
+ok but I was also thinking about how for the parser to work, I need to be reporting back
+all this information, like `layout` and what autocomplete stuff is available.
+and how the most simple way to do that is with mutation, which my REPL needs to not do.
+and I went in two different directions
+
+1) the repl could support mutation as long as functions were annotatable with 'pure' or 'impure'
+ok this feels really interesting.
+howw hard do we think it would be to like do normal javascript, with a type system that infers
+whether a function is "pure"?
+(ignoring Object proxies, probably)
+
+might be kinda tricky for ... functions that keep functions around...
+idk could be a fun thing to try.
+
+In the absence of that, we could require an annotation on impure functions, and just trust it.
+
+2) I could have macros that essentially do the work of the state monad, but without having it be... so complex?
+
+like I could have a macro that goes
+
+```clj
+
+(let$ [lol $(call one)
+       two (other three)])
+
+and invocations with the leading `$` would be 'stated'
+so the fn gets an extra 'state' argument, and returns a tuple
+as well.
+
+```
+
+btw we'll seriously want very good 'view macro expanded stuff' behavior.
+
+ok .... anyway, ... I was thinking that I would need to like pass in
+the names of my special state variables to the macro, but honestly
+maybe I don't? I'll hang on to this idea in the back of my mind though.
+
+ALSOO I think it would be cool to be able to have macros that operate on the whole toplevel.
+- > how would this work? the /ref/ would want to be like ... have a kind that is 'macro-full'
+    or something like that. And then `macrosToInvoke` would, if it found a macro-full,
+    /only return that/ because we'd need to run the thing again on the response of the macro.
+    hmmmm actually, would that be the right spot for the auxiliary bucket? like decorators in python.
+    yeah maybe that's the best way to do it, and it indicates 'up top' that we'll be messing with stuff.
+    ok nice. so then we could have a `state$` macro that adds the arg to the function defn, and
+    to all return values, etc. way good.
+
+Thoooughts about the usage of punctuation.
+like it would be cool to be able to have a macro called `let.`. /but/ that is in conflict
+with being able to use . as a separator.
+sooo we could call it let! or let- or let, or let$
+that's all fine.
+
+
+
 # Syntax families thoughts
 
 are we content?

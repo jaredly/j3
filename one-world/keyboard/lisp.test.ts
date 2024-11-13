@@ -240,16 +240,51 @@ test('split middle space', () => {
     );
 });
 
-// test('split middle space in smoosh', () => {
-//     const input = keys`heylo${L}${L}.${L} `;
-//     expect(shape(asRec(js(init, input).top))).toEqual(
-//         'list[spaced](id(hey) id(lo))',
-//     );
-// });
-
 test('split middle js', () => {
     const input = keys`heylo${L}${L}.`;
     expect(shape(asRec(js(init, input).top))).toEqual(
         'list[smooshed](id(hey) id(.) id(lo))',
     );
 });
+
+/*
+
+So, splitting.
+
+Classes of things:
+- ID
+- punct ID
+- list(round|square|angle|curly|tag|richhh)
+- list(smooshed)
+- list(spaced)
+- table
+
+Classes of ... keys
+
+- idkeys
+- punct idkeys
+- space
+- ([{ openers
+- }]) closers
+- enter
+- ,; separators
+
+
+Instead of `id` I should probably call it..
+- atom?
+- terminal?
+
+Q: should I rename 'smooshed' to 'tight'?
+lol smooshed is just so fun
+
+
+
+
+*/
+
+// test('split middle space in smoosh', () => {
+//     const input = keys`heylo${L}${L}.${L} `;
+//     expect(shape(asRec(js(init, input).top))).toEqual(
+//         'list[spaced](id(hey) id(lo))',
+//     );
+// });
