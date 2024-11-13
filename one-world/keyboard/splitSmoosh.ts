@@ -1,7 +1,8 @@
 import { Nodes } from '../shared/cnodes';
 import { cursorSplit } from './cursorSplit';
-import { joinAdjacent } from './joinAdjacent';
-import { Top, Path, IdCursor, Update, lastChild, PartialSel } from './lisp';
+import { joinAdjacent, joinAdjacentList } from './joinAdjacent';
+import { lastChild, pathWithChildren } from './utils';
+import { Top, Path, IdCursor, Update, PartialSel, ListCursor, selStart } from './utils';
 import { parentList, replaceWithList } from './replaceWithSmooshed';
 
 /* Places that a cursor can be:
@@ -50,14 +51,64 @@ Assumptions
 
 - the insert is of a different 'kind' than the current ID
 */
-export const splitSmooshId = (
-    top: Top,
-    path: Path,
-    cursor: IdCursor,
-    // Assumption: insert is 1 grapheme long
-    insert: string,
-    punct: boolean,
-): Update => {
+
+export const splitSmooshList = (top: Top, path: Path, cursor: Extract<ListCursor, { type: 'list' }>, grem: string, punct: boolean): Update | void => {
+    const list = top.nodes[lastChild(path)];
+    if (list.type !== 'list') throw new Error(`not a list ${list.type} at loc ${list.loc}`);
+    const nodes: Nodes = {};
+
+    const parent = parentList(top, path.children, 'smooshed');
+
+    if (parent && (cursor.where === 'after' || cursor.where === 'before')) {
+        const up = joinAdjacentList(parent, list, path, cursor.where, top, grem);
+        if (up) return up;
+    }
+
+    let nextLoc = top.nextLoc;
+    const inserts: number[] = [];
+    let sel: PartialSel;
+
+    switch (cursor.where) {
+        case 'before': {
+            const left = nextLoc++;
+            inserts.push(left, list.loc);
+            nodes[left] = { type: 'id', text: grem, loc: left, punct };
+            sel = {
+                children: [left],
+                cursor: { type: 'id', end: 1 },
+            };
+            break;
+        }
+        case 'after': {
+            const right = nextLoc++;
+            inserts.push(list.loc, right);
+            nodes[right] = { type: 'id', text: grem, loc: right, punct };
+            sel = {
+                children: [right],
+                cursor: { type: 'id', end: 1 },
+            };
+            break;
+        }
+        case 'inside':
+            const loc = nextLoc++;
+            return {
+                nodes: {
+                    [loc]: { type: 'id', text: grem, loc, punct },
+                    [list.loc]: { ...list, children: [loc] },
+                },
+                selection: { start: selStart(pathWithChildren(path, loc), { type: 'id', end: 1 }) },
+            };
+        default:
+            return;
+    }
+
+    const up = replaceWithList(path, { ...top, nextLoc }, list.loc, inserts, 'smooshed', sel);
+    Object.assign(up.nodes, nodes);
+
+    return up;
+};
+
+export const splitSmooshId = (top: Top, path: Path, cursor: IdCursor, grem: string, punct: boolean): Update => {
     const id = top.nodes[lastChild(path)];
     if (id.type !== 'id') throw new Error(`not an ID ${id.type} at loc ${id.loc}`);
     const nodes: Nodes = {};
@@ -66,7 +117,7 @@ export const splitSmooshId = (
     const parent = parentList(top, path.children, 'smooshed');
 
     if (parent) {
-        const up = joinAdjacent(parent, id, path, split, top, insert);
+        const up = joinAdjacent(parent, id, path, split, top, grem);
         if (up) return up;
     }
 
@@ -78,7 +129,7 @@ export const splitSmooshId = (
         case 'before': {
             const left = nextLoc++;
             inserts.push(left, id.loc);
-            nodes[left] = { type: 'id', text: insert, loc: left, punct };
+            nodes[left] = { type: 'id', text: grem, loc: left, punct };
             nodes[id.loc] = { ...id, text: split.text };
             sel = {
                 children: [left],
@@ -89,7 +140,7 @@ export const splitSmooshId = (
         case 'after': {
             const right = nextLoc++;
             inserts.push(id.loc, right);
-            nodes[right] = { type: 'id', text: insert, loc: right, punct };
+            nodes[right] = { type: 'id', text: grem, loc: right, punct };
             nodes[id.loc] = { ...id, text: split.text };
             sel = {
                 children: [right],
@@ -102,7 +153,7 @@ export const splitSmooshId = (
             const right = nextLoc++;
             inserts.push(id.loc, mid, right);
             nodes[id.loc] = { ...id, text: split.left };
-            nodes[mid] = { type: 'id', text: insert, loc: mid, punct };
+            nodes[mid] = { type: 'id', text: grem, loc: mid, punct };
             nodes[right] = { type: 'id', text: split.right, loc: right, punct: id.punct };
             sel = {
                 children: [mid],

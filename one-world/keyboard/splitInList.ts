@@ -1,22 +1,10 @@
 import { Id, List } from '../shared/cnodes';
 import { addBlankAfter } from './addBlankAfter';
-import {
-    IdCursor,
-    Path,
-    Top,
-    Update,
-    splitOnCursor,
-    parentLoc,
-    gparentLoc,
-} from './lisp';
+import { parentLoc, gparentLoc } from './utils';
+import { IdCursor, Path, Top, Update, splitOnCursor } from './utils';
 import { replaceWithListItems } from './replaceWithListItems';
 
-export function splitInList(
-    id: Id<number>,
-    cursor: IdCursor,
-    path: Path,
-    top: Top,
-): Update | void {
+export function splitInList(id: Id<number>, cursor: IdCursor, path: Path, top: Top): Update | void {
     const [left, mid, right] = splitOnCursor(id, cursor);
 
     if (path.children.length === 1) throw new Error('catn split top yet');
@@ -42,24 +30,12 @@ export function splitInList(
             throw new Error('double spaced');
         }
 
-        const { nodes, replace, nextLoc } = smooshSplit(
-            pnode,
-            top,
-            id,
-            left,
-            right,
-            ploc,
-        );
+        const { nodes, replace, nextLoc } = smooshSplit(pnode, top, id, left, right, ploc);
 
         return {
             nodes: {
                 ...nodes,
-                ...replaceWithListItems(
-                    path.children.slice(0, -1),
-                    top,
-                    ploc,
-                    replace,
-                ),
+                ...replaceWithListItems(path.children.slice(0, -1), top, ploc, replace),
             },
             nextLoc,
         };
@@ -79,24 +55,12 @@ export function splitInList(
             // we have to go deeper.
         }
 
-        const { nodes, replace, nextLoc } = smooshSplit(
-            pnode,
-            top,
-            id,
-            left,
-            right,
-            ploc,
-        );
+        const { nodes, replace, nextLoc } = smooshSplit(pnode, top, id, left, right, ploc);
 
         return {
             nodes: {
                 ...nodes,
-                ...replaceWithListItems(
-                    path.children.slice(0, -1),
-                    top,
-                    ploc,
-                    replace,
-                ),
+                ...replaceWithListItems(path.children.slice(0, -1), top, ploc, replace),
             },
             nextLoc,
         };
@@ -126,14 +90,7 @@ export function splitInList(
     };
 }
 
-export function smooshSplit(
-    pnode: List<number>,
-    top: Top,
-    id: Id<number>,
-    left: string[],
-    right: string[],
-    ploc: number,
-) {
+export function smooshSplit(pnode: List<number>, top: Top, id: Id<number>, left: string[], right: string[], ploc: number) {
     const pat = pnode.children.indexOf(id.loc);
     if (pat === -1) throw new Error('not in parent');
 

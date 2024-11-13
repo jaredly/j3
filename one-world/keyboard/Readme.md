@@ -34,18 +34,25 @@ Honestly I think the `list` control can apply just as well to a `text`, maybe I'
 - [x] .abc|
 - [x] abc|()
 - [x] ()|abc
+- [x] ..|.
+- [x] aa|a // with non-punct input
+- [x] | // empty string
 
 ### Things I need to test
 
 #### List
 
-- [ ] |()
-- [ ] ()|
-- [ ] abc()|
-- [ ] |()abc
-- [ ] ()|()
+- [x] |()
+- [x] ()|
+- [x] abc()|
+- [x] |()abc
+- [x] ()|()
 
 #### Text
 
 - [ ] |"hello"
 - [ ] "hello"|
+
+## Spaced split
+
+This is just binops n such. and like `if x then y fi` lol

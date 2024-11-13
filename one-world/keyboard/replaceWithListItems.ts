@@ -1,12 +1,7 @@
 import { Text } from '../shared/cnodes';
-import { Top, Update, findTableLoc } from './lisp';
+import { Top, Update, findTableLoc } from './utils';
 
-export const replaceWithListItems = (
-    path: number[],
-    top: Top,
-    old: number,
-    locs: number[],
-): Update['nodes'] => {
+export const replaceWithListItems = (path: number[], top: Top, old: number, locs: number[]): Update['nodes'] => {
     if (path.length <= 1) throw new Error(`no parent`);
     const ploc = path[path.length - 2];
     const parent = top.nodes[ploc];

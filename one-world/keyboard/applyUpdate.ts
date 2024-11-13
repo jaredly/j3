@@ -1,6 +1,6 @@
 import { Id } from '../shared/cnodes';
-import { Update, lastChild } from './lisp';
 import { TestState } from './test-utils';
+import { lastChild, Update } from './utils';
 
 export function applyUpdate(state: TestState, update: Update) {
     const prev = state.sel;

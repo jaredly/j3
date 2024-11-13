@@ -1,6 +1,6 @@
 import { childLocs } from '../shared/cnodes';
-import { Top, Path, isPunct } from './lisp';
 import { TestState } from './test-utils';
+import { Path, Top } from './utils';
 
 const validatePath = (top: Top, path: Path) => {
     if (path.children.length === 0) {

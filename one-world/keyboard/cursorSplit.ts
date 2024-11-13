@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { IdCursor } from './lisp';
+import { IdCursor } from './utils';
 
 export const cursorSplit = (orig: string, cursor: IdCursor): Split => {
     const text = cursor.text ?? splitGraphemes(orig);

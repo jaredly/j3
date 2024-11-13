@@ -1,4 +1,4 @@
-import { Node, RecNode, RecNodeT } from './cnodes';
+import { RecNodeT } from './cnodes';
 
 export const shape = (node: RecNodeT<unknown>): string => {
     switch (node.type) {

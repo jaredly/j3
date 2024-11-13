@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { cursorSides } from './cursorSplit';
-import { Top, Path, IdCursor, Update, lastChild, selStart } from './lisp';
-import { splitSmooshId } from './splitSmoosh';
+import { splitSmooshId, splitSmooshList } from './splitSmoosh';
+import { IdCursor, ListCursor, Path, Top, Update, lastChild, selStart } from './utils';
 export type Config = { tight: string; space: string; sep: string };
 
 type Kind = 'tight' | 'space' | 'sep' | 'id';
@@ -12,10 +12,25 @@ export const textKind = (text: string, config: Config): Kind => {
     return 'id';
 };
 
+export const handleListKey = (config: Config, top: Top, path: Path, cursor: ListCursor, grem: string): Update | void => {
+    const current = top.nodes[lastChild(path)];
+    if (current.type !== 'list') throw new Error('not list');
+    const kind = textKind(grem, config);
+    switch (kind) {
+        case 'space':
+        case 'sep':
+            throw new Error('yet not');
+        default:
+            if (cursor.type === 'list') {
+                return splitSmooshList(top, path, cursor, grem, kind === 'tight');
+            }
+    }
+};
+
 // grem is a single grapheme.
 export const insertId = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update => {
     const current = top.nodes[lastChild(path)];
-    if (current.type !== 'id') throw new Error('badidea folks');
+    if (current.type !== 'id') throw new Error('not id');
     const kind = textKind(grem, config);
     switch (kind) {
         case 'space':
@@ -33,6 +48,7 @@ export const insertId = (config: Config, top: Top, path: Path, cursor: IdCursor,
             if (current.punct !== (kind === 'tight')) {
                 return splitSmooshId(top, path, cursor, grem, kind === 'tight');
             }
+            // Just update the selection
             const chars = cursor.text?.slice() ?? splitGraphemes(current.text);
             const { left, right } = cursorSides(cursor);
             chars.splice(left, right - left, grem);

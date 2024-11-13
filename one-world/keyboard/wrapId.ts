@@ -1,5 +1,6 @@
 import { Id, ListKind, Nodes } from '../shared/cnodes';
-import { IdCursor, Path, Top, Update, splitOnCursor, replaceAt, withPartial, parentPath } from './lisp';
+import { replaceAt } from './replaceAt';
+import { IdCursor, Path, parentPath, Top, Update, splitOnCursor, withPartial } from './utils';
 import { replaceWithSmooshed } from './replaceWithSmooshed';
 
 export const wrapId = (

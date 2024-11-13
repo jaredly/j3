@@ -1,4 +1,4 @@
-import { NodeSelection, selStart, Top } from './lisp';
+import { NodeSelection, selStart, Top } from './utils';
 
 export type TestState = { top: Top; sel: NodeSelection };
 

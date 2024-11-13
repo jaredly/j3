@@ -1,11 +1,10 @@
 // let's test some operations
 
-import { fromMap, fromRec, Id, ListKind, Nodes, NodeT, RecNodeT } from '../shared/cnodes';
+import { fromMap, fromRec, Id, ListKind, Nodes, RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
-import { Config, insertId } from './insertId';
-import { Cursor, getCurrent, IdCursor, lastChild, replaceAt, selStart, Update } from './lisp';
-import { splitSmooshId } from './splitSmoosh';
+import { Config, handleListKey, insertId } from './insertId';
+import { Cursor, getCurrent, IdCursor, lastChild, ListCursor, ListWhere, selStart, Update } from './utils';
 import { TestState } from './test-utils';
 import { validate } from './validate';
 
@@ -77,11 +76,13 @@ const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
     };
 };
 
-const handleKey = (state: TestState, key: string, config: Config): Update => {
+const handleKey = (state: TestState, key: string, config: Config): Update | void => {
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
         case 'id':
             return insertId(config, state.top, state.sel.start.path, current.cursor, key);
+        case 'list':
+            return handleListKey(config, state.top, state.sel.start.path, current.cursor, key);
         default:
             throw new Error('not doing');
     }
@@ -108,26 +109,71 @@ const root = (state: TestState) => {
     return fromMap(state.top.root, nodes, () => 0);
 };
 
-// MARK: Insert ID
-
 const idc = (end: number): IdCursor => ({ type: 'id', end });
+const listc = (where: ListWhere): ListCursor => ({ type: 'list', where });
+
+// MARK: List smooshed, right?
+
+test('list before pls', () => {
+    let state = asTop(round([], true), listc('before'));
+    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
+    expect(shape(root(state))).toEqual(shape(smoosh([id('A'), round([])])));
+});
+
+test('list after', () => {
+    let state = asTop(round([], true), listc('after'));
+    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
+    expect(shape(root(state))).toEqual(shape(smoosh([round([]), id('A')])));
+});
+
+test('list smoosh end', () => {
+    let state = asTop(smoosh([id('a'), round([], true)]), listc('after'));
+    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
+    expect(shape(root(state))).toEqual(shape(smoosh([id('a'), round([]), id('A')])));
+});
+
+test('list smoosh start', () => {
+    let state = asTop(smoosh([round([], true), id('a')]), listc('before'));
+    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
+    expect(shape(root(state))).toEqual(shape(smoosh([id('A'), round([]), id('a')])));
+});
+
+test('list insidesss', () => {
+    let state = asTop(round([], true), listc('inside'));
+    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
+    expect(shape(root(state))).toEqual(shape(round([id('A')])));
+});
+
+test('between twoo', () => {
+    let state = asTop(smoosh([round([], true), round([])]), listc('after'));
+    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
+    expect(shape(root(state))).toEqual(shape(smoosh([round([]), id('A'), round([])])));
+});
+
+// MARK: Insert ID
 
 test('same kind', () => {
     let state = asTop(id('hello', true), idc(2));
-    state = applyUpdate(state, handleKey(state, 'A', lisp));
+    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
     expect(shape(root(state))).toEqual(shape(id('heAllo')));
 });
 
 test('same kind punct', () => {
     let state = asTop(id('...', true), idc(2));
-    state = applyUpdate(state, handleKey(state, '=', lisp));
+    state = applyUpdate(state, handleKey(state, '=', lisp)!);
     expect(shape(root(state))).toEqual(shape(id('..=.')));
 });
 
 test('start empty', () => {
     let state = asTop(id('', true), idc(0));
-    state = applyUpdate(state, handleKey(state, '=', lisp));
+    state = applyUpdate(state, handleKey(state, '=', lisp)!);
     expect(shape(root(state))).toEqual(shape(id('=')));
+});
+
+test('and smoosh', () => {
+    let state = asTop(id('ab', true), idc(0));
+    state = applyUpdate(state, handleKey(state, '=', lisp)!);
+    expect(shape(root(state))).toEqual(shape(smoosh([id('='), id('ab')])));
 });
 
 // MARK: Split smoosh

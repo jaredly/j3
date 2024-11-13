@@ -1,15 +1,6 @@
 import { List } from '../shared/cnodes';
-import {
-    Path,
-    Top,
-    Update,
-    parentLoc,
-    gparentLoc,
-    parentPath,
-    selStart,
-    pathWithChildren,
-} from './lisp';
 import { replaceWithListItems } from './replaceWithListItems';
+import { Path, Top, Update, gparentLoc, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 
 const splitMooth = (pnode: List<number>, loc: number, top: Top) => {
     const pat = pnode.children.indexOf(loc);
@@ -50,11 +41,7 @@ const splitMooth = (pnode: List<number>, loc: number, top: Top) => {
     return { replace, nextLoc, nodes };
 };
 
-export const addBlankAfter = (
-    loc: number,
-    path: Path,
-    top: Top,
-): Update | void => {
+export const addBlankAfter = (loc: number, path: Path, top: Top): Update | void => {
     const ploc = parentLoc(path);
     const pnode = top.nodes[ploc];
     if (!pnode) return;
@@ -63,10 +50,7 @@ export const addBlankAfter = (
         if (path.children.length < 3) throw new Error('neet to split top');
         const gloc = gparentLoc(path);
         const gnode = top.nodes[gloc];
-        if (
-            gnode.type === 'list' &&
-            (gnode.kind === 'smooshed' || gnode.kind === 'spaced')
-        ) {
+        if (gnode.type === 'list' && (gnode.kind === 'smooshed' || gnode.kind === 'spaced')) {
             throw new Error('double smoosked or spaced');
         }
 
@@ -81,12 +65,7 @@ export const addBlankAfter = (
         return {
             nodes: {
                 ...nodes,
-                ...replaceWithListItems(
-                    parentPath(path).children,
-                    top,
-                    ploc,
-                    replace,
-                ),
+                ...replaceWithListItems(parentPath(path).children, top, ploc, replace),
             },
             nextLoc,
         };
@@ -111,12 +90,7 @@ export const addBlankAfter = (
         return {
             nodes: {
                 ...nodes,
-                ...replaceWithListItems(
-                    parentPath(path).children,
-                    top,
-                    ploc,
-                    replace,
-                ),
+                ...replaceWithListItems(parentPath(path).children, top, ploc, replace),
             },
             nextLoc,
         };

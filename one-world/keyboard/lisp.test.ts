@@ -59,14 +59,8 @@ SO:
 import { test, expect } from 'bun:test';
 import { Toplevel } from '../shared/toplevels';
 import { handleKey as handleJs } from './js';
-import {
-    handleKey as handleLisp,
-    lastChild,
-    NodeSelection,
-    selStart,
-    Top,
-    Update,
-} from './lisp';
+import { handleKey as handleLisp } from './lisp';
+import { NodeSelection, selStart, Top, lastChild, Update } from './utils';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { fromMap, Id } from '../shared/cnodes';
 import { shape } from '../shared/shape';
@@ -110,32 +104,26 @@ const keys = (text: TemplateStringsArray, ...args: string[]) => {
     return result;
 };
 
-const run =
-    (handle: (sel: NodeSelection, top: Top, char: string) => Update | void) =>
-    (state: TestState, text: string | string[]) => {
-        (Array.isArray(text) ? text : splitGraphemes(text)).forEach((char) => {
-            // console.log('char', char);
-            const update = handle(state.sel, state.top, char);
-            if (update) {
-                state = applyUpdate(state, update);
-                validate(state);
-            }
-        });
-        if (
-            state.sel.start.cursor.type === 'id' &&
-            state.sel.start.cursor.text != null
-        ) {
-            const loc = lastChild(state.sel.start.path);
-            state.top.nodes[loc] = {
-                ...(state.top.nodes[loc] as Id<number>),
-                text: state.sel.start.cursor.text.join(''),
-            };
+const run = (handle: (sel: NodeSelection, top: Top, char: string) => Update | void) => (state: TestState, text: string | string[]) => {
+    (Array.isArray(text) ? text : splitGraphemes(text)).forEach((char) => {
+        // console.log('char', char);
+        const update = handle(state.sel, state.top, char);
+        if (update) {
+            state = applyUpdate(state, update);
+            validate(state);
         }
-        return state;
-    };
+    });
+    if (state.sel.start.cursor.type === 'id' && state.sel.start.cursor.text != null) {
+        const loc = lastChild(state.sel.start.path);
+        state.top.nodes[loc] = {
+            ...(state.top.nodes[loc] as Id<number>),
+            text: state.sel.start.cursor.text.join(''),
+        };
+    }
+    return state;
+};
 
-const asRec = (top: Top) =>
-    fromMap(top.root, top.nodes, (i) => [{ id: '', idx: i }]);
+const asRec = (top: Top) => fromMap(top.root, top.nodes, (i) => [{ id: '', idx: i }]);
 
 const lisp = run(handleLisp);
 const js = run(handleJs);
@@ -145,9 +133,7 @@ test('one', () => {
 });
 
 test('nested', () => {
-    expect(shape(asRec(lisp(init, '(1 2 [3 4] 5)').top))).toEqual(
-        '(id(1) id(2) [id(3) id(4)] id(5))',
-    );
+    expect(shape(asRec(lisp(init, '(1 2 [3 4] 5)').top))).toEqual('(id(1) id(2) [id(3) id(4)] id(5))');
 });
 
 test('opkeys', () => {
@@ -155,29 +141,21 @@ test('opkeys', () => {
 });
 
 test('lets smoosh', () => {
-    expect(shape(asRec(lisp(init, 'hello.world').top))).toEqual(
-        'list[smooshed](id(hello) id(.) id(world))',
-    );
+    expect(shape(asRec(lisp(init, 'hello.world').top))).toEqual('list[smooshed](id(hello) id(.) id(world))');
 });
 
 test('some lisps I think', () => {
     const input = '(1 2 [3 4] ...5)';
-    expect(shape(asRec(lisp(init, input).top))).toEqual(
-        '(id(1) id(2) [id(3) id(4)] list[smooshed](id(...) id(5)))',
-    );
+    expect(shape(asRec(lisp(init, input).top))).toEqual('(id(1) id(2) [id(3) id(4)] list[smooshed](id(...) id(5)))');
 });
 
 test('js commas', () => {
-    expect(shape(asRec(js(init, '(hello,spaces)').top))).toEqual(
-        '(id(hello) id(spaces))',
-    );
+    expect(shape(asRec(js(init, '(hello,spaces)').top))).toEqual('(id(hello) id(spaces))');
 });
 
 test('spaced in list', () => {
     const input = '[one two,three]';
-    expect(shape(asRec(js(init, input).top))).toEqual(
-        '[list[spaced](id(one) id(two)) id(three)]',
-    );
+    expect(shape(asRec(js(init, input).top))).toEqual('[list[spaced](id(one) id(two)) id(three)]');
 });
 
 test('some js please', () => {
@@ -189,21 +167,15 @@ test('some js please', () => {
 
 test('split middle', () => {
     const input = keys`heylo${L}${L}.`;
-    expect(shape(asRec(lisp(init, input).top))).toEqual(
-        'list[smooshed](id(hey) id(.) id(lo))',
-    );
+    expect(shape(asRec(lisp(init, input).top))).toEqual('list[smooshed](id(hey) id(.) id(lo))');
 });
 
 test('split middle space', () => {
     const input = keys`heylo${L}${L} `;
-    expect(shape(asRec(js(init, input).top))).toEqual(
-        'list[spaced](id(hey) id(lo))',
-    );
+    expect(shape(asRec(js(init, input).top))).toEqual('list[spaced](id(hey) id(lo))');
 });
 
 test('split middle js', () => {
     const input = keys`heylo${L}${L}.`;
-    expect(shape(asRec(js(init, input).top))).toEqual(
-        'list[smooshed](id(hey) id(.) id(lo))',
-    );
+    expect(shape(asRec(js(init, input).top))).toEqual('list[smooshed](id(hey) id(.) id(lo))');
 });

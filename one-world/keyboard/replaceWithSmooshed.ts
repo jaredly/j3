@@ -1,50 +1,22 @@
 import { List } from '../shared/cnodes';
-import {
-    Path,
-    Top,
-    PartialSel,
-    Update,
-    withPartial,
-    parentPath,
-    replaceAt,
-    pathWithChildren,
-} from './lisp';
+import { replaceAt } from './replaceAt';
+import { parentPath, pathWithChildren } from './utils';
+import { Path, Top, PartialSel, Update, withPartial } from './utils';
 
-export const parentList = (
-    top: Top,
-    path: number[],
-    kind: List<number>['kind'],
-): List<number> | null => {
+export const parentList = (top: Top, path: number[], kind: List<number>['kind']): List<number> | null => {
     if (path.length <= 1) return null;
     const ploc = path[path.length - 2];
     const parent = top.nodes[ploc];
     return parent.type === 'list' && parent.kind === kind ? parent : null;
 };
 
-export const replaceWithSmooshed = (
-    path: Path,
-    top: Top,
-    old: number,
-    locs: number[],
-    sel?: PartialSel,
-): Update => replaceWithList(path, top, old, locs, 'smooshed', sel);
+export const replaceWithSmooshed = (path: Path, top: Top, old: number, locs: number[], sel?: PartialSel): Update =>
+    replaceWithList(path, top, old, locs, 'smooshed', sel);
 
-export const replaceWithSpaced = (
-    path: Path,
-    top: Top,
-    old: number,
-    locs: number[],
-    sel?: PartialSel,
-): Update => replaceWithList(path, top, old, locs, 'spaced', sel);
+export const replaceWithSpaced = (path: Path, top: Top, old: number, locs: number[], sel?: PartialSel): Update =>
+    replaceWithList(path, top, old, locs, 'spaced', sel);
 
-export const replaceWithList = (
-    path: Path,
-    top: Top,
-    old: number,
-    locs: number[],
-    kind: List<number>['kind'],
-    sel?: PartialSel,
-): Update => {
+export const replaceWithList = (path: Path, top: Top, old: number, locs: number[], kind: List<number>['kind'], sel?: PartialSel): Update => {
     const parent = parentList(top, path.children, kind);
     if (parent) {
         const children = parent.children.slice();
@@ -73,10 +45,7 @@ export const replaceWithList = (
     };
     update.nextLoc = nextLoc;
     if (sel) {
-        update.selection = withPartial(
-            pathWithChildren(parentPath(path), parentLoc),
-            sel,
-        );
+        update.selection = withPartial(pathWithChildren(parentPath(path), parentLoc), sel);
     }
     return update;
 };
