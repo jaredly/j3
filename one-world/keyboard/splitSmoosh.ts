@@ -56,6 +56,7 @@ export const splitSmooshId = (
     cursor: IdCursor,
     // Assumption: insert is 1 grapheme long
     insert: string,
+    punct: boolean,
 ): Update => {
     const id = top.nodes[lastChild(path)];
     if (id.type !== 'id') throw new Error(`not an ID ${id.type} at loc ${id.loc}`);
@@ -77,7 +78,7 @@ export const splitSmooshId = (
         case 'before': {
             const left = nextLoc++;
             inserts.push(left, id.loc);
-            nodes[left] = { type: 'id', text: insert, loc: left };
+            nodes[left] = { type: 'id', text: insert, loc: left, punct };
             nodes[id.loc] = { ...id, text: split.text };
             sel = {
                 children: [left],
@@ -88,7 +89,7 @@ export const splitSmooshId = (
         case 'after': {
             const right = nextLoc++;
             inserts.push(id.loc, right);
-            nodes[right] = { type: 'id', text: insert, loc: right };
+            nodes[right] = { type: 'id', text: insert, loc: right, punct };
             nodes[id.loc] = { ...id, text: split.text };
             sel = {
                 children: [right],
@@ -101,7 +102,7 @@ export const splitSmooshId = (
             const right = nextLoc++;
             inserts.push(id.loc, mid, right);
             nodes[id.loc] = { ...id, text: split.left };
-            nodes[mid] = { type: 'id', text: insert, loc: mid };
+            nodes[mid] = { type: 'id', text: insert, loc: mid, punct };
             nodes[right] = { type: 'id', text: split.right, loc: right };
             sel = {
                 children: [mid],

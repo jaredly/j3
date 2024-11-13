@@ -70,12 +70,9 @@ export type IdRef =
     | { type: 'keyword' }
     | { type: 'placeholder'; text: string };
 
-export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc };
+export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc; punct?: boolean };
 
-export type Link =
-    | { type: 'www'; href: string }
-    | { type: 'term'; id: string; hash?: string }
-    | { type: 'doc'; id: string; hash?: string };
+export type Link = { type: 'www'; href: string } | { type: 'term'; id: string; hash?: string } | { type: 'doc'; id: string; hash?: string };
 
 export type TextSpan<Embed> =
     | { type: 'text'; text: string; link?: Link; style?: Style }
@@ -175,26 +172,13 @@ const refsEqual = (one: IdRef, two: IdRef): boolean => {
         case 'placeholder':
             return two.type === 'placeholder' && two.text === one.text;
         case 'resource':
-            return (
-                two.type === 'resource' &&
-                two.id === one.id &&
-                two.hash === one.hash
-            );
+            return two.type === 'resource' && two.id === one.id && two.hash === one.hash;
         case 'toplevel':
-            return (
-                two.type === 'toplevel' &&
-                two.kind === one.kind &&
-                two.lock?.hash === one.lock?.hash &&
-                two.lock?.manual === one.lock?.manual
-            );
+            return two.type === 'toplevel' && two.kind === one.kind && two.lock?.hash === one.lock?.hash && two.lock?.manual === one.lock?.manual;
     }
 };
 
-export const equal = <One, Two>(
-    one: RecNodeT<One>,
-    two: RecNodeT<Two>,
-    loc: (one: One, two: Two) => boolean,
-): boolean => {
+export const equal = <One, Two>(one: RecNodeT<One>, two: RecNodeT<Two>, loc: (one: One, two: Two) => boolean): boolean => {
     if (one.type === 'id') {
         if (two.type !== 'id') return false;
         if (one.ref) {
@@ -221,11 +205,7 @@ export const equal = <One, Two>(
         two.type === 'table' &&
         one.kind === two.kind &&
         one.rows.length === two.rows.length &&
-        one.rows.every(
-            (row, r) =>
-                row.length === two.rows[r].length &&
-                row.every((cell, c) => equal(cell, two.rows[r][c], loc)),
-        )
+        one.rows.every((row, r) => row.length === two.rows[r].length && row.every((cell, c) => equal(cell, two.rows[r][c], loc)))
     );
 };
 
@@ -241,23 +221,15 @@ export const childLocs = (node: Node): number[] => {
             if (node.attributes) {
                 children.push(node.attributes);
             }
-            return children.length
-                ? [...children, ...node.children]
-                : node.children;
+            return children.length ? [...children, ...node.children] : node.children;
         case 'table':
             return node.rows.flat();
         case 'text':
-            return node.spans
-                .map((s) => (s.type === 'embed' ? s.item : undefined))
-                .filter((x) => x != null) as number[];
+            return node.spans.map((s) => (s.type === 'embed' ? s.item : undefined)).filter((x) => x != null) as number[];
     }
 };
 
-export const fromMap = <Loc>(
-    id: number,
-    nodes: Nodes,
-    toLoc: (l: number) => Loc,
-): RecNodeT<Loc> => {
+export const fromMap = <Loc>(id: number, nodes: Nodes, toLoc: (l: number) => Loc): RecNodeT<Loc> => {
     const node = nodes[id];
     const loc = toLoc(node.loc);
     switch (node.type) {
@@ -267,20 +239,13 @@ export const fromMap = <Loc>(
             return {
                 ...node,
                 loc,
-                spans: node.spans.map((span) =>
-                    span.type === 'embed'
-                        ? { ...span, item: fromMap(span.item, nodes, toLoc) }
-                        : span,
-                ),
+                spans: node.spans.map((span) => (span.type === 'embed' ? { ...span, item: fromMap(span.item, nodes, toLoc) } : span)),
             };
         case 'list':
             return {
                 ...node,
                 loc,
-                attributes:
-                    node.attributes != null
-                        ? fromMap(node.attributes, nodes, toLoc)
-                        : undefined,
+                attributes: node.attributes != null ? fromMap(node.attributes, nodes, toLoc) : undefined,
                 kind:
                     typeof node.kind !== 'string' && node.kind.type === 'tag'
                         ? {
@@ -294,9 +259,7 @@ export const fromMap = <Loc>(
             return {
                 ...node,
                 loc,
-                rows: node.rows.map((row) =>
-                    row.map((id) => fromMap(id, nodes, toLoc)),
-                ),
+                rows: node.rows.map((row) => row.map((id) => fromMap(id, nodes, toLoc))),
             };
     }
 };
@@ -317,21 +280,14 @@ export const fromRec = <Loc>(
             map[loc] = {
                 ...node,
                 loc,
-                spans: node.spans.map((span) =>
-                    span.type === 'embed'
-                        ? { ...span, item: fromRec(span.item, map, get, inner) }
-                        : span,
-                ),
+                spans: node.spans.map((span) => (span.type === 'embed' ? { ...span, item: fromRec(span.item, map, get, inner) } : span)),
             };
             return loc;
         case 'list':
             map[loc] = {
                 ...node,
                 loc,
-                attributes:
-                    node.attributes != null
-                        ? fromRec(node.attributes, map, get, inner)
-                        : undefined,
+                attributes: node.attributes != null ? fromRec(node.attributes, map, get, inner) : undefined,
                 kind:
                     typeof node.kind !== 'string' && node.kind.type === 'tag'
                         ? {
@@ -339,18 +295,14 @@ export const fromRec = <Loc>(
                               node: fromRec(node.kind.node, map, get, inner),
                           }
                         : node.kind,
-                children: node.children.map((id) =>
-                    fromRec(id, map, get, inner),
-                ),
+                children: node.children.map((id) => fromRec(id, map, get, inner)),
             };
             return loc;
         case 'table':
             map[loc] = {
                 ...node,
                 loc,
-                rows: node.rows.map((row) =>
-                    row.map((id) => fromRec(id, map, get, inner)),
-                ),
+                rows: node.rows.map((row) => row.map((id) => fromRec(id, map, get, inner))),
             };
             return loc;
     }

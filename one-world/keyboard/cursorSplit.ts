@@ -4,10 +4,7 @@ import { IdCursor } from './lisp';
 export const cursorSplit = (orig: string, cursor: IdCursor): Split => {
     const text = cursor.text ?? splitGraphemes(orig);
 
-    const left = cursor.start ? Math.min(cursor.start, cursor.end) : cursor.end;
-    const right = cursor.start
-        ? Math.max(cursor.start, cursor.end)
-        : cursor.end;
+    const { left, right } = cursorSides(cursor);
 
     if (left === 0) {
         return {
@@ -28,7 +25,10 @@ export const cursorSplit = (orig: string, cursor: IdCursor): Split => {
     };
 };
 
-export type Split =
-    | { type: 'before'; text: string }
-    | { type: 'after'; text: string }
-    | { type: 'between'; left: string; right: string };
+export type Split = { type: 'before'; text: string } | { type: 'after'; text: string } | { type: 'between'; left: string; right: string };
+
+export function cursorSides(cursor: IdCursor) {
+    const left = cursor.start ? Math.min(cursor.start, cursor.end) : cursor.end;
+    const right = cursor.start ? Math.max(cursor.start, cursor.end) : cursor.end;
+    return { left, right };
+}

@@ -10,9 +10,6 @@ export const initTop: Top = {
 export const init: TestState = {
     top: initTop,
     sel: {
-        start: selStart(
-            { root: { ids: [], top: '' }, children: [0] },
-            { type: 'id', end: 0 },
-        ),
+        start: selStart({ root: { ids: [], top: '' }, children: [0] }, { type: 'id', end: 0 }),
     },
 };

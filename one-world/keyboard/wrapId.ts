@@ -1,14 +1,5 @@
 import { Id, ListKind, Nodes } from '../shared/cnodes';
-import {
-    IdCursor,
-    Path,
-    Top,
-    Update,
-    splitOnCursor,
-    replaceAt,
-    withPartial,
-    parentPath,
-} from './lisp';
+import { IdCursor, Path, Top, Update, splitOnCursor, replaceAt, withPartial, parentPath } from './lisp';
 import { replaceWithSmooshed } from './replaceWithSmooshed';
 
 export const wrapId = (
@@ -30,10 +21,7 @@ export const wrapId = (
         let nextLoc = top.nextLoc;
         const listLoc = nextLoc++;
 
-        if (!right.length)
-            throw new Error(
-                `this should be treated as a normal split by splitOnCursor`,
-            );
+        if (!right.length) throw new Error(`this should be treated as a normal split by splitOnCursor`);
 
         if (left.length) {
             const midLoc = nextLoc++;
@@ -46,16 +34,13 @@ export const wrapId = (
                     loc: listLoc,
                 },
                 [id.loc]: { ...id, text: left.join('') },
-                [midLoc]: { type: 'id', loc: midLoc, text: mid.join('') },
-                [rightLoc]: { type: 'id', loc: rightLoc, text: right.join('') },
+                [midLoc]: { type: 'id', loc: midLoc, text: mid.join(''), punct: id.punct },
+                [rightLoc]: { type: 'id', loc: rightLoc, text: right.join(''), punct: id.punct },
             };
-            const update = replaceWithSmooshed(
-                path,
-                { ...top, nextLoc },
-                id.loc,
-                [id.loc, listLoc, rightLoc],
-                { children: [listLoc, midLoc], cursor: { type: 'id', end: 0 } },
-            );
+            const update = replaceWithSmooshed(path, { ...top, nextLoc }, id.loc, [id.loc, listLoc, rightLoc], {
+                children: [listLoc, midLoc],
+                cursor: { type: 'id', end: 0 },
+            });
             Object.assign(update.nodes, nodes);
             return update;
         }
@@ -69,15 +54,12 @@ export const wrapId = (
                 loc: listLoc,
             },
             [id.loc]: { ...id, text: mid.join('') },
-            [rightLoc]: { type: 'id', loc: rightLoc, text: right.join('') },
+            [rightLoc]: { type: 'id', loc: rightLoc, text: right.join(''), punct: id.punct },
         };
-        const update = replaceWithSmooshed(
-            path,
-            { ...top, nextLoc },
-            id.loc,
-            [listLoc, rightLoc],
-            { children: [listLoc, id.loc], cursor: { type: 'id', end: 0 } },
-        );
+        const update = replaceWithSmooshed(path, { ...top, nextLoc }, id.loc, [listLoc, rightLoc], {
+            children: [listLoc, id.loc],
+            cursor: { type: 'id', end: 0 },
+        });
         Object.assign(update.nodes, nodes);
         return update;
     }
@@ -98,16 +80,14 @@ export const wrapId = (
                 type: 'id',
                 loc: rightLoc,
                 text: right.join(''),
+                punct: id.punct,
             },
         };
 
-        const update = replaceWithSmooshed(
-            path,
-            { ...top, nextLoc },
-            id.loc,
-            [id.loc, listLoc],
-            { children: [listLoc, rightLoc], cursor: { type: 'id', end: 0 } },
-        );
+        const update = replaceWithSmooshed(path, { ...top, nextLoc }, id.loc, [id.loc, listLoc], {
+            children: [listLoc, rightLoc],
+            cursor: { type: 'id', end: 0 },
+        });
         Object.assign(update.nodes, nodes);
 
         return update;

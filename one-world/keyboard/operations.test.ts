@@ -3,7 +3,8 @@
 import { fromMap, fromRec, Id, ListKind, Nodes, NodeT, RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
-import { Cursor, IdCursor, replaceAt, selStart, Top } from './lisp';
+import { Config, insertId } from './insertId';
+import { Cursor, IdCursor, replaceAt, selStart } from './lisp';
 import { splitSmooshId } from './splitSmoosh';
 import { TestState } from './test-utils';
 import { validate } from './validate';
@@ -24,7 +25,6 @@ const js = {
     sep: ';,\n',
 };
 
-type Config = typeof lisp;
 const idkeys = (config: Config) => [...allkeys].filter((k) => !config.tight.includes(k) && !config.space.includes(k) && !config.sep.includes(k));
 
 const lispId = idkeys(lisp);
@@ -38,7 +38,13 @@ const jsId = idkeys(js);
 
 // MARK: makers
 
-const id = <T>(text: string, loc: T = null as T): Id<T> => ({ type: 'id', text, loc });
+const id = <T>(text: string, loc: T = null as T): Id<T> => ({
+    type: 'id',
+    text,
+    loc,
+    // punct: false,
+    punct: text.length === 0 ? undefined : [...text].some((k) => lisp.tight.includes(k)),
+});
 const list =
     (kind: ListKind<RecNodeT<unknown>>) =>
     <T>(children: RecNodeT<T>[], loc: T = null as T): RecNodeT<T> => ({
@@ -72,21 +78,25 @@ const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
     };
 };
 
-const testSplit = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.') => {
+const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.') => {
     let state = asTop(init, cursor);
-    const up = splitSmooshId(state.top, state.sel.start.path, state.sel.start.cursor as IdCursor, text);
+    const up = insertId(lisp, state.top, state.sel.start.path, state.sel.start.cursor as IdCursor, text);
     state = applyUpdate(state, up);
     // console.log(JSON.stringify(state, null, 2));
     validate(state);
     expect(shape(out)).toEqual(shape(fromMap(state.top.root, state.top.nodes, () => 0)));
 };
 
-const insertId = (top: Top, cursor: IdCursor, text: string) => {
-    // const current = top.
-};
+// MARK: Insert ID
+
+test('same kind', () => {
+    const inp = id('hello');
+});
+
+// MARK: Split smoosh
 
 test('smoosh start (round)', () => {
-    testSplit(
+    testId(
         //
         round([id('hello', true)]),
         { type: 'id', end: 0 },
@@ -95,7 +105,7 @@ test('smoosh start (round)', () => {
 });
 
 test('smoosh mid (round)', () => {
-    testSplit(
+    testId(
         //
         round([id('hello', true)]),
         { type: 'id', end: 3 },
@@ -104,7 +114,7 @@ test('smoosh mid (round)', () => {
 });
 
 test('smoosh end (round)', () => {
-    testSplit(
+    testId(
         //
         round([id('hello', true)]),
         { type: 'id', end: 5 },
@@ -113,7 +123,7 @@ test('smoosh end (round)', () => {
 });
 
 test('smoosh start (smoosh)', () => {
-    testSplit(
+    testId(
         //
         round([smoosh([id('hello', true), id('.')])]),
         { type: 'id', end: 0 },
@@ -122,7 +132,7 @@ test('smoosh start (smoosh)', () => {
 });
 
 test('smoosh start join (smoosh)', () => {
-    testSplit(
+    testId(
         //
         round([smoosh([id('+'), id('hello', true), id('.')])]),
         { type: 'id', end: 0 },
@@ -131,7 +141,7 @@ test('smoosh start join (smoosh)', () => {
 });
 
 test('smoosh start list (smoosh)', () => {
-    testSplit(
+    testId(
         //
         round([smoosh([round([]), id('hello', true)])]),
         { type: 'id', end: 0 },
@@ -140,7 +150,7 @@ test('smoosh start list (smoosh)', () => {
 });
 
 test('smoosh mid (smoosh)', () => {
-    testSplit(
+    testId(
         //
         round([smoosh([id('hello', true), id('.')])]),
         { type: 'id', end: 3 },
@@ -149,7 +159,7 @@ test('smoosh mid (smoosh)', () => {
 });
 
 test('smoosh end (smoosh)', () => {
-    testSplit(
+    testId(
         //
         round([smoosh([id('.'), id('hello', true)])]),
         { type: 'id', end: 5 },
@@ -158,7 +168,7 @@ test('smoosh end (smoosh)', () => {
 });
 
 test('smoosh end join (smoosh)', () => {
-    testSplit(
+    testId(
         //
         round([smoosh([id('.'), id('hello', true), id('+')])]),
         { type: 'id', end: 5 },
@@ -167,7 +177,7 @@ test('smoosh end join (smoosh)', () => {
 });
 
 test('smoosh end list (smoosh)', () => {
-    testSplit(
+    testId(
         //
         round([smoosh([id('hello', true), round([])])]),
         { type: 'id', end: 5 },
@@ -176,7 +186,7 @@ test('smoosh end list (smoosh)', () => {
 });
 
 test('comment out', () => {
-    testSplit(
+    testId(
         //
         id('hello', true),
         { type: 'id', end: 0 },

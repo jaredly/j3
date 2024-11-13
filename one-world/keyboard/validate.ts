@@ -10,13 +10,11 @@ const validatePath = (top: Top, path: Path) => {
     for (let i = 0; i < path.children.length; i++) {
         const id = path.children[i];
         if (i === 0) {
-            if (id !== parent)
-                throw new Error(`first id is not root (${parent}) ${id}`);
+            if (id !== parent) throw new Error(`first id is not root (${parent}) ${id}`);
             continue;
         }
         const children = childLocs(top.nodes[parent]);
-        if (!children.includes(id))
-            throw new Error(`child ${id} is not a child of ${parent}`);
+        if (!children.includes(id)) throw new Error(`child ${id} is not a child of ${parent}`);
         parent = id;
     }
     return true;
@@ -28,15 +26,18 @@ const validateNextLoc = (top: Top) => {
             throw new Error(`Node.loc doesn't match key ${+loc}`);
         }
         if (+loc >= top.nextLoc) {
-            throw new Error(
-                `nextLoc invalid, is ${top.nextLoc}, found ${+loc}`,
-            );
+            throw new Error(`nextLoc invalid, is ${top.nextLoc}, found ${+loc}`);
         }
     });
 };
 
 const validateNodes = (top: Top, id: number) => {
     const node = top.nodes[id];
+
+    if (node.type === 'id' && ((node.text !== '') !== node.punct) == null) {
+        throw new Error(`punct must be set if text is not empty, and vice versa`);
+    }
+
     if (node.type === 'list' && node.kind === 'smooshed') {
         if (node.children.length < 2) {
             throw new Error(`smooshed list shouldn't have fewer than 2 items`);
@@ -49,7 +50,7 @@ const validateNodes = (top: Top, id: number) => {
                 if (child.text === '') {
                     throw new Error(`blank id in smooshed should not be`);
                 }
-                if (isPunct(child, { type: 'id', end: 0 })) {
+                if (child.punct) {
                     kinds.push('punct');
                 } else {
                     kinds.push('id');
@@ -60,23 +61,22 @@ const validateNodes = (top: Top, id: number) => {
 
             if (child.type === 'list') {
                 if (child.kind === 'smooshed' || child.kind === 'spaced') {
-                    throw new Error(
-                        `smooshed child cant be spaced or smooshed: ${child.kind}`,
-                    );
+                    throw new Error(`smooshed child cant be spaced or smooshed: ${child.kind}`);
                 }
             }
         });
 
         kinds.forEach((kind, i) => {
             if (i > 0 && kind !== 'other' && kind === kinds[i - 1]) {
-                throw new Error(
-                    `Cannot have ${kind} adjacent to itself in smooshed`,
-                );
+                console.log(kinds);
+                console.log(node.children.map((n) => top.nodes[n]));
+                throw new Error(`Cannot have ${kind} adjacent to itself in smooshed`);
             }
         });
     }
     childLocs(node).forEach((cid) => validateNodes(top, cid));
 };
+
 export const validate = (state: TestState) => {
     try {
         validatePath(state.top, state.sel.start.path);
