@@ -38,8 +38,6 @@ Honestly I think the `list` control can apply just as well to a `text`, maybe I'
 - [x] aa|a // with non-punct input
 - [x] | // empty string
 
-### Things I need to test
-
 #### List
 
 - [x] |()
@@ -47,6 +45,8 @@ Honestly I think the `list` control can apply just as well to a `text`, maybe I'
 - [x] abc()|
 - [x] |()abc
 - [x] ()|()
+
+### Things I need to test
 
 #### Text
 
@@ -56,3 +56,29 @@ Honestly I think the `list` control can apply just as well to a `text`, maybe I'
 ## Spaced split
 
 This is just binops n such. and like `if x then y fi` lol
+
+// plain id
+- [ ] ab|c
+- [ ] abc|
+- [ ] |abc
+// plain list
+- [ ] ()|
+- [ ] |()
+- [ ] (|) ???
+- [ ] |"abc"
+- [ ] "abc"|
+// spaced (id id)
+- [ ] one tw|o
+- [ ] one two|
+- [ ] one |two
+
+// NOW in a smooshed
+- [ ] +abc|
+- [ ] |+abc
+- [ ] +|abc
+- [ ] +a|bc
+// smooshed + spaced
+- [ ] one +two|
+- [ ] one |+two
+- [ ] one +|two
+- [ ] one +t|wo
