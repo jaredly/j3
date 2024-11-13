@@ -1,6 +1,6 @@
 import { childLocs } from '../shared/cnodes';
 import { Top, Path, isPunct } from './lisp';
-import { TestState } from './lisp.test';
+import { TestState } from './test-utils';
 
 const validatePath = (top: Top, path: Path) => {
     if (path.children.length === 0) {
@@ -21,6 +21,7 @@ const validatePath = (top: Top, path: Path) => {
     }
     return true;
 };
+
 const validateNextLoc = (top: Top) => {
     Object.keys(top.nodes).forEach((loc) => {
         if (top.nodes[+loc].loc !== +loc) {
@@ -33,6 +34,7 @@ const validateNextLoc = (top: Top) => {
         }
     });
 };
+
 const validateNodes = (top: Top, id: number) => {
     const node = top.nodes[id];
     if (node.type === 'list' && node.kind === 'smooshed') {
@@ -42,6 +44,7 @@ const validateNodes = (top: Top, id: number) => {
         let kinds: ('id' | 'punct' | 'other')[] = [];
         node.children.forEach((cid) => {
             const child = top.nodes[cid];
+            if (!child) throw new Error(`invalid child ${cid}`);
             if (child.type === 'id') {
                 if (child.text === '') {
                     throw new Error(`blank id in smooshed should not be`);

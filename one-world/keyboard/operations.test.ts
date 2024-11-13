@@ -1,10 +1,17 @@
 // let's test some operations
 
+import { fromMap, fromRec, Id, ListKind, Nodes, NodeT, RecNodeT } from '../shared/cnodes';
+import { shape } from '../shared/shape';
+import { applyUpdate } from './applyUpdate';
+import { Cursor, IdCursor, replaceAt, selStart, Top } from './lisp';
+import { splitSmoosh } from './splitSmoosh';
+import { TestState } from './test-utils';
+import { validate } from './validate';
+
 // Classes of keys
 
 /// IDkeys
-const allkeys =
-    '1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM~!@#$%^&*()_+{}|:"<>?`-=[]\\;\',./';
+const allkeys = '1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM~!@#$%^&*()_+{}|:"<>?`-=[]\\;\',./';
 
 const lisp = {
     tight: '.=#@;+',
@@ -25,54 +32,139 @@ const js = {
 
 const config = lisp;
 
-const idkeys = [...allkeys].filter(
-    (k) =>
-        !config.tight.includes(k) &&
-        !config.space.includes(k) &&
-        !config.sep.includes(k),
-);
+const idkeys = [...allkeys].filter((k) => !config.tight.includes(k) && !config.space.includes(k) && !config.sep.includes(k));
 
-/* Places that a cursor can be:
+// MARK: makers
 
-- ID
-    - start
-    - middle
-    - end
-- Text
-    - index 0 start
-    - index 1..n start
-    - index n end
-    - index 0..n-1 end
-    - middle
-- List (ignoring start/end and control, which are special)
-    - before
-    - inside
-    - after
+const id = <T>(text: string, loc: T = null as T): Id<T> => ({ type: 'id', text, loc });
+const list =
+    (kind: ListKind<RecNodeT<unknown>>) =>
+    <T>(children: RecNodeT<T>[], loc: T = null as T): RecNodeT<T> => ({
+        type: 'list',
+        kind: kind as ListKind<RecNodeT<T>>,
+        children,
+        loc,
+    });
+const smoosh = list('smooshed');
+const spaced = list('spaced');
+const round = list('round');
 
-*/
+// MARK: tests
 
-/*
+const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
+    const nodes: Nodes = {};
+    let nextLoc = 0;
+    let sel: number[] = [];
+    const root = fromRec(node, nodes, (l, node, path) => {
+        const loc = nextLoc++;
+        if (l) {
+            sel = path.concat([loc]);
+        }
+        return loc;
+    });
+    return {
+        top: { nextLoc, nodes, root },
+        sel: {
+            start: selStart({ children: sel, root: { ids: [], top: '' } }, cursor),
+        },
+    };
+};
 
-Kinds of transformations that we can be doing:
+const testSplit = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>) => {
+    let state = asTop(init, cursor);
+    const up = splitSmoosh(state.top, state.sel.start.path, state.sel.start.cursor as IdCursor, '.');
+    state = applyUpdate(state, up);
+    // console.log(JSON.stringify(state, null, 2));
+    validate(state);
+    expect(shape(out)).toEqual(shape(fromMap(state.top.root, state.top.nodes, () => 0)));
+};
 
-ID cursor
-- edit the text of an ID (very simple)
-- split(smooshed,spaced,outer) the current ID (encompasses adding to the front/back)
+test('smoosh start (round)', () => {
+    testSplit(
+        //
+        round([id('hello', true)]),
+        { type: 'id', end: 0 },
+        round([smoosh([id('.'), id('hello')])]),
+    );
+});
 
-List cursor (outer)
-- add an item before/after
-- a bunch more stuff probably, but not just yet
+test('smoosh mid (round)', () => {
+    testSplit(
+        //
+        round([id('hello', true)]),
+        { type: 'id', end: 3 },
+        round([smoosh([id('hel'), id('.'), id('lo')])]),
+    );
+});
 
-- add an item to the left/right of the current id
-    - smooshed
-    - spaced
-    - other
+test('smoosh end (round)', () => {
+    testSplit(
+        //
+        round([id('hello', true)]),
+        { type: 'id', end: 5 },
+        round([smoosh([id('hello'), id('.')])]),
+    );
+});
 
+test('smoosh start (smoosh)', () => {
+    testSplit(
+        //
+        round([smoosh([id('hello', true), id('.')])]),
+        { type: 'id', end: 0 },
+        round([smoosh([id('.'), id('hello'), id('.')])]),
+    );
+});
 
-OK, I'm thinking I do need the ID to know whether it's punctuation or not.
-ANDdd, are we thinking that punctuation should /never/ be a ref?
-I mean I'm actually not 100% sure.
-We can keep them the same for now, right?
+test('smoosh start join (smoosh)', () => {
+    testSplit(
+        //
+        round([smoosh([id('+'), id('hello', true), id('.')])]),
+        { type: 'id', end: 0 },
+        round([smoosh([id('+.'), id('hello'), id('.')])]),
+    );
+});
 
+test('smoosh start list (smoosh)', () => {
+    testSplit(
+        //
+        round([smoosh([round([]), id('hello', true), id('.')])]),
+        { type: 'id', end: 0 },
+        round([smoosh([round([]), id('.'), id('hello'), id('.')])]),
+    );
+});
 
-*/
+test('smoosh mid (smoosh)', () => {
+    testSplit(
+        //
+        round([smoosh([id('hello', true), id('.')])]),
+        { type: 'id', end: 3 },
+        round([smoosh([id('hel'), id('.'), id('lo'), id('.')])]),
+    );
+});
+
+test('smoosh end (smoosh)', () => {
+    testSplit(
+        //
+        round([smoosh([id('.'), id('hello', true)])]),
+        { type: 'id', end: 5 },
+        round([smoosh([id('.'), id('hello'), id('.')])]),
+    );
+});
+
+test('smoosh end join (smoosh)', () => {
+    testSplit(
+        //
+        round([smoosh([id('.'), id('hello', true), id('+')])]),
+        { type: 'id', end: 5 },
+        round([smoosh([id('.'), id('hello'), id('.+')])]),
+    );
+});
+
+test('smoosh end list (smoosh)', () => {
+    testSplit(
+        //
+        round([smoosh([id('.'), id('hello', true), round([])])]),
+        { type: 'id', end: 5 },
+        round([smoosh([id('.'), id('hello'), id('.'), round([])])]),
+    );
+});

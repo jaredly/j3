@@ -141,11 +141,11 @@ export const splitOnCursor = (
     cursor: IdCursor,
 ): [string[], string[], string[]] => {
     const text = cursor.text ?? splitGraphemes(id.text);
-    return [
-        text.slice(0, cursor.start ?? cursor.end),
-        text.slice(cursor.start ?? cursor.end, cursor.end),
-        text.slice(cursor.end),
-    ];
+    const left = cursor.start ? Math.min(cursor.start, cursor.end) : cursor.end;
+    const right = cursor.start
+        ? Math.max(cursor.start, cursor.end)
+        : cursor.end;
+    return [text.slice(0, left), text.slice(left, right), text.slice(right)];
 };
 
 export const withPartial = (path: Path, sel?: PartialSel) =>

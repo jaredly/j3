@@ -164,8 +164,70 @@ export type RecCollection<Loc> =
 
 export type RecNodeT<Loc> = Id<Loc> | RecText<Loc> | RecCollection<Loc>;
 export type RecNode = RecNodeT<{ id: string; idx: number }[]>;
-
 export type Nodes = Record<number, Node>;
+
+const refsEqual = (one: IdRef, two: IdRef): boolean => {
+    switch (one.type) {
+        case 'builtin':
+            return two.type === 'builtin' && two.kind === one.kind;
+        case 'keyword':
+            return two.type === 'keyword';
+        case 'placeholder':
+            return two.type === 'placeholder' && two.text === one.text;
+        case 'resource':
+            return (
+                two.type === 'resource' &&
+                two.id === one.id &&
+                two.hash === one.hash
+            );
+        case 'toplevel':
+            return (
+                two.type === 'toplevel' &&
+                two.kind === one.kind &&
+                two.lock?.hash === one.lock?.hash &&
+                two.lock?.manual === one.lock?.manual
+            );
+    }
+};
+
+export const equal = <One, Two>(
+    one: RecNodeT<One>,
+    two: RecNodeT<Two>,
+    loc: (one: One, two: Two) => boolean,
+): boolean => {
+    if (one.type === 'id') {
+        if (two.type !== 'id') return false;
+        if (one.ref) {
+            if (!two.ref) return false;
+            if (!refsEqual(one.ref, two.ref)) return false;
+        }
+        return one.text === two.text && loc(one.loc, two.loc);
+    }
+    if (one.type === 'list') {
+        if (two.type !== 'list') return false;
+        return (
+            one.kind === two.kind &&
+            one.attributes === two.attributes &&
+            one.forceMultiline === two.forceMultiline &&
+            one.children.length === two.children.length &&
+            one.children.every((one, i) => equal(one, two.children[i], loc))
+        );
+    }
+    if (one.type === 'text') {
+        // STOPSHIP
+        return false;
+    }
+    return (
+        two.type === 'table' &&
+        one.kind === two.kind &&
+        one.rows.length === two.rows.length &&
+        one.rows.every(
+            (row, r) =>
+                row.length === two.rows[r].length &&
+                row.every((cell, c) => equal(cell, two.rows[r][c], loc)),
+        )
+    );
+};
 
 export const childLocs = (node: Node): number[] => {
     switch (node.type) {
@@ -236,5 +298,60 @@ export const fromMap = <Loc>(
                     row.map((id) => fromMap(id, nodes, toLoc)),
                 ),
             };
+    }
+};
+
+export const fromRec = <Loc>(
+    node: RecNodeT<Loc>,
+    map: Nodes,
+    get: (l: Loc, node: RecNodeT<Loc>, path: number[]) => number,
+    path: number[] = [],
+): number => {
+    const loc = get(node.loc, node, path);
+    const inner = path.concat([loc]);
+    switch (node.type) {
+        case 'id':
+            map[loc] = { ...node, loc };
+            return loc;
+        case 'text':
+            map[loc] = {
+                ...node,
+                loc,
+                spans: node.spans.map((span) =>
+                    span.type === 'embed'
+                        ? { ...span, item: fromRec(span.item, map, get, inner) }
+                        : span,
+                ),
+            };
+            return loc;
+        case 'list':
+            map[loc] = {
+                ...node,
+                loc,
+                attributes:
+                    node.attributes != null
+                        ? fromRec(node.attributes, map, get, inner)
+                        : undefined,
+                kind:
+                    typeof node.kind !== 'string' && node.kind.type === 'tag'
+                        ? {
+                              ...node.kind,
+                              node: fromRec(node.kind.node, map, get, inner),
+                          }
+                        : node.kind,
+                children: node.children.map((id) =>
+                    fromRec(id, map, get, inner),
+                ),
+            };
+            return loc;
+        case 'table':
+            map[loc] = {
+                ...node,
+                loc,
+                rows: node.rows.map((row) =>
+                    row.map((id) => fromRec(id, map, get, inner)),
+                ),
+            };
+            return loc;
     }
 };

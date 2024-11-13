@@ -59,6 +59,8 @@ ALSOO I think it would be cool to be able to have macros that operate on the who
     yeah maybe that's the best way to do it, and it indicates 'up top' that we'll be messing with stuff.
     ok nice. so then we could have a `state$` macro that adds the arg to the function defn, and
     to all return values, etc. way good.
+- oooh BTW the "partially applied macro" thing would be solved by just having the amcro be
+  an auxiliary, with some arguments passed in.
 
 Thoooughts about the usage of punctuation.
 like it would be cool to be able to have a macro called `let.`. /but/ that is in conflict

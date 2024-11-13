@@ -1,6 +1,6 @@
-import { Node, RecNode } from './cnodes';
+import { Node, RecNode, RecNodeT } from './cnodes';
 
-export const shape = (node: RecNode): string => {
+export const shape = (node: RecNodeT<unknown>): string => {
     switch (node.type) {
         case 'id':
             if (node.ref) {

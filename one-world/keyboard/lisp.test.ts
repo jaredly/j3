@@ -70,6 +70,8 @@ import {
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { fromMap, Id } from '../shared/cnodes';
 import { shape } from '../shared/shape';
+import { init, TestState } from './test-utils';
+import { applyUpdate } from './applyUpdate';
 import { validate } from './validate';
 
 /*
@@ -108,23 +110,6 @@ const keys = (text: TemplateStringsArray, ...args: string[]) => {
     return result;
 };
 
-export type TestState = { top: Top; sel: NodeSelection };
-
-const initTop: Top = {
-    nextLoc: 1,
-    nodes: { [0]: { type: 'id', text: '', loc: 0 } },
-    root: 0,
-};
-const init: TestState = {
-    top: initTop,
-    sel: {
-        start: selStart(
-            { root: { ids: [], top: '' }, children: [0] },
-            { type: 'id', end: 0 },
-        ),
-    },
-};
-
 const run =
     (handle: (sel: NodeSelection, top: Top, char: string) => Update | void) =>
     (state: TestState, text: string | string[]) => {
@@ -132,32 +117,8 @@ const run =
             // console.log('char', char);
             const update = handle(state.sel, state.top, char);
             if (update) {
-                const prev = state.sel;
-                state = {
-                    sel: update.selection ?? state.sel,
-                    top: {
-                        nextLoc: update.nextLoc ?? state.top.nextLoc,
-                        nodes: { ...state.top.nodes, ...update.nodes },
-                        root: update.root ?? state.top.root,
-                    },
-                };
+                state = applyUpdate(state, update);
                 validate(state);
-
-                // This is "maybe commit text changes"
-                if (
-                    prev.start.cursor.type === 'id' &&
-                    prev.start.cursor.text != null &&
-                    update.selection &&
-                    update.selection.start.key !== prev.start.key
-                ) {
-                    const loc = lastChild(prev.start.path);
-                    if (!update.nodes[loc]) {
-                        state.top.nodes[loc] = {
-                            ...(state.top.nodes[loc] as Id<number>),
-                            text: prev.start.cursor.text.join(''),
-                        };
-                    }
-                }
             }
         });
         if (
@@ -246,45 +207,3 @@ test('split middle js', () => {
         'list[smooshed](id(hey) id(.) id(lo))',
     );
 });
-
-/*
-
-So, splitting.
-
-Classes of things:
-- ID
-- punct ID
-- list(round|square|angle|curly|tag|richhh)
-- list(smooshed)
-- list(spaced)
-- table
-
-Classes of ... keys
-
-- idkeys
-- punct idkeys
-- space
-- ([{ openers
-- }]) closers
-- enter
-- ,; separators
-
-
-Instead of `id` I should probably call it..
-- atom?
-- terminal?
-
-Q: should I rename 'smooshed' to 'tight'?
-lol smooshed is just so fun
-
-
-
-
-*/
-
-// test('split middle space in smoosh', () => {
-//     const input = keys`heylo${L}${L}.${L} `;
-//     expect(shape(asRec(js(init, input).top))).toEqual(
-//         'list[spaced](id(hey) id(lo))',
-//     );
-// });
