@@ -56,7 +56,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
         }
     }
 
-    const parent = findParent(kind === 'sep' ? OTHER : kind === 'space' ? SPACED : SMOOSH, parentPath(path), top);
+    const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
     const flat = parent ? flatten(parent.node, top) : [current];
     const at = flat.indexOf(current);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
@@ -79,25 +79,11 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
 
     switch (split.type) {
         case 'before': {
-            if ((at !== 0 && flat[at - 1].type === 'id') || (at === 0 && neighbor.type === 'id')) {
-                flat.splice(at, 0, neighbor);
-            } else {
-                flat.splice(at, 0, { type: 'id', text: '', loc: -1 }, neighbor);
-            }
+            addNeighborBefore(at, flat, neighbor);
             break;
         }
         case 'after': {
-            if (at < flat.length - 1 && flat[at + 1].type === 'space' && neighbor.type === 'space') {
-                sel = flat[at + 2] as Node;
-                ncursor = sel.type === 'id' ? { type: 'id', end: 0 } : { type: 'list', where: 'before' };
-            } else if (at < flat.length - 1 && flat[at + 1].type === 'id') {
-                sel = flat[at + 1] as Id<number>;
-                ncursor = { type: 'id', end: 0 };
-                flat.splice(at + 1, 0, neighbor);
-            } else {
-                flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: '', loc: -1 }));
-                ncursor = { type: 'id', end: 0 };
-            }
+            ({ sel, ncursor } = addNeighborAfter(at, flat, neighbor, sel, ncursor));
             break;
         }
         case 'between': {
@@ -110,39 +96,12 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
 
     // console.log('after', flat);
 
-    const { root, nextLoc, selection } = roughen(
-        flat,
-        top,
-        nodes,
-        parent ? parent.node.kind : kind === 'sep' ? 'round' : kind === 'space' ? 'spaced' : 'smooshed',
-        { node: sel, cursor: ncursor },
-    );
-
-    let nroot = undefined;
-
-    if (parent && root !== parent.node.loc) {
-        const up = replaceAt(parent.path.children.slice(0, -1), top, parent.node.loc, root);
-        nroot = up.root;
-        Object.assign(nodes, up.nodes);
-    }
-    if (!parent && root !== current.loc) {
-        // throw new Error('need rebasee');
-        const up = replaceAt(path.children.slice(0, -1), top, current.loc, root);
-        nroot = up.root;
-        Object.assign(nodes, up.nodes);
-    }
-
-    return {
-        root: nroot,
-        nodes,
-        nextLoc,
-        selection: {
-            start: selStart({ ...path, children: parentPath(parent?.path ?? path).children.concat(selection.children) }, selection.cursor),
-        },
-    };
+    return flatToUpdate(flat, top, nodes, parent, kind, sel, ncursor, current, path);
 };
 
-type Flat = Node | { type: 'space'; loc: number } | { type: 'sep'; loc: number };
+export const listKindForKeyKind = (kind: Kind): 0 | 1 | 2 => (kind === 'sep' ? OTHER : kind === 'space' ? SPACED : SMOOSH);
+
+export type Flat = Node | { type: 'space'; loc: number } | { type: 'sep'; loc: number };
 
 const interleave = <T>(items: T[], sep: T) => {
     const res: T[] = [];
@@ -217,19 +176,20 @@ const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], base: List<numb
     return { root: handle(other, []), nextLoc, selection: { children: selPath, cursor: sel.cursor } };
 };
 
-const flatten = (node: Node, top: Top): Flat[] => {
+export const flatten = (node: Node, top: Top, depth: number = 0): Flat[] => {
     if (node.type !== 'list') return [node];
     if (node.kind === 'smooshed') {
         return node.children.map((id) => top.nodes[id]);
     }
     if (node.kind === 'spaced') {
         return interleave(
-            node.children.map((id) => flatten(top.nodes[id], top)),
+            node.children.map((id) => flatten(top.nodes[id], top, depth + 1)),
             [{ type: 'space', loc: node.loc }],
         ).flat();
     }
+    if (depth > 0) return [node]; // dont flatten nested lists
     return interleave(
-        node.children.map((id) => flatten(top.nodes[id], top)),
+        node.children.map((id) => flatten(top.nodes[id], top, depth + 1)),
         [{ type: 'sep', loc: node.loc }],
     ).flat();
 };
@@ -248,7 +208,7 @@ const SMOOSH = 0;
 const SPACED = 1;
 const OTHER = 2;
 
-const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node: List<number>; path: Path } => {
+export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node: List<number>; path: Path } => {
     const loc = lastChild(path);
     if (loc == null) return;
     const node = top.nodes[loc];
@@ -266,3 +226,75 @@ const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node: List<
 
     return { node, path };
 };
+
+export function flatToUpdate(
+    flat: Flat[],
+    top: Top,
+    nodes: Record<string, Node | null>,
+    parent: void | { node: List<number>; path: Path },
+    kind: string,
+    sel: Node,
+    ncursor: ListCursor | IdCursor,
+    current: Node,
+    path: Path,
+) {
+    const { root, nextLoc, selection } = roughen(
+        flat,
+        top,
+        nodes,
+        parent ? parent.node.kind : kind === 'sep' ? 'round' : kind === 'space' ? 'spaced' : 'smooshed',
+        { node: sel, cursor: ncursor },
+    );
+
+    let nroot = undefined;
+
+    if (parent && root !== parent.node.loc) {
+        const up = replaceAt(parent.path.children.slice(0, -1), top, parent.node.loc, root);
+        nroot = up.root;
+        Object.assign(nodes, up.nodes);
+    }
+    if (!parent && root !== current.loc) {
+        // throw new Error('need rebasee');
+        const up = replaceAt(path.children.slice(0, -1), top, current.loc, root);
+        nroot = up.root;
+        Object.assign(nodes, up.nodes);
+    }
+
+    return {
+        root: nroot,
+        nodes,
+        nextLoc,
+        selection: {
+            start: selStart({ ...path, children: parentPath(parent?.path ?? path).children.concat(selection.children) }, selection.cursor),
+        },
+    };
+}
+
+export function addNeighborAfter(
+    at: number,
+    flat: Flat[],
+    neighbor: Id<number> | { type: 'space'; loc: number } | { type: 'sep'; loc: number },
+    sel: Node,
+    ncursor: Cursor,
+) {
+    if (at < flat.length - 1 && flat[at + 1].type === 'space' && neighbor.type === 'space') {
+        sel = flat[at + 2] as Node;
+        ncursor = sel.type === 'id' ? { type: 'id', end: 0 } : { type: 'list', where: 'before' };
+    } else if (at < flat.length - 1 && flat[at + 1].type === 'id') {
+        sel = flat[at + 1] as Id<number>;
+        ncursor = { type: 'id', end: 0 };
+        flat.splice(at + 1, 0, neighbor);
+    } else {
+        flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: '', loc: -1 }));
+        ncursor = { type: 'id', end: 0 };
+    }
+    return { sel, ncursor };
+}
+
+export function addNeighborBefore(at: number, flat: Flat[], neighbor: Id<number> | { type: 'space'; loc: number } | { type: 'sep'; loc: number }) {
+    if ((at !== 0 && flat[at - 1].type === 'id') || (at === 0 && neighbor.type === 'id')) {
+        flat.splice(at, 0, neighbor);
+    } else {
+        flat.splice(at, 0, { type: 'id', text: '', loc: -1 }, neighbor);
+    }
+}

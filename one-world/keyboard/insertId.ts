@@ -1,7 +1,22 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSplit';
+import { addNeighborAfter, addNeighborBefore, findParent, Flat, flatten, flatToUpdate, listKindForKeyKind } from './flatenate';
 import { splitSmooshId, splitSmooshList, splitSpacedId, splitSpacedList } from './splitSmoosh';
-import { IdCursor, CollectionCursor, Path, Top, Update, lastChild, selStart, ListCursor, TextCursor } from './utils';
+import {
+    IdCursor,
+    CollectionCursor,
+    Path,
+    Top,
+    Update,
+    lastChild,
+    selStart,
+    ListCursor,
+    TextCursor,
+    parentPath,
+    Cursor,
+    pathWithChildren,
+} from './utils';
 export type Config = { tight: string; space: string; sep: string };
 
 export type Kind = 'tight' | 'space' | 'sep' | 'id' | 'string';
@@ -35,18 +50,91 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     const current = top.nodes[lastChild(path)];
     if (current.type !== 'list') throw new Error('not list');
     const kind = textKind(grem, config);
-    switch (kind) {
-        case 'space':
-            if (cursor.type === 'list') {
-                return splitSpacedList(top, path, cursor);
+    if (cursor.type !== 'list') throw new Error('controls not handled yet');
+
+    if (cursor.where === 'inside') {
+        switch (kind) {
+            case 'string':
+                throw new Error('not yet');
+            case 'space':
+            case 'sep': {
+                let nextLoc = top.nextLoc;
+                const left = nextLoc++;
+                const right = nextLoc++;
+                const nodes: Nodes = {};
+                let children = [left, right];
+                if (kind === 'space') {
+                    const wrap = nextLoc++;
+                    nodes[wrap] = { type: 'list', kind: 'spaced', children, loc: wrap };
+                    children = [wrap];
+                }
+                return {
+                    nodes: {
+                        ...nodes,
+                        [left]: { type: 'id', loc: left, text: '' },
+                        [right]: { type: 'id', loc: right, text: '' },
+                        [current.loc]: { ...current, children },
+                    },
+                    nextLoc,
+                    selection: { start: selStart(pathWithChildren(path, right), { type: 'id', end: 0 }) },
+                };
             }
-        case 'sep':
-            throw new Error('yet not');
-        default:
-            if (cursor.type === 'list') {
-                return splitSmooshList(top, path, cursor, grem, kind === 'tight');
+            default: {
+                let nextLoc = top.nextLoc;
+                const loc = nextLoc++;
+                return {
+                    nodes: {
+                        [loc]: { type: 'id', loc, text: grem },
+                        [current.loc]: { ...current, children: [loc] },
+                    },
+                    nextLoc,
+                    selection: { start: selStart(pathWithChildren(path, loc), { type: 'id', end: 1 }) },
+                };
             }
+        }
     }
+
+    const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
+    const flat = parent ? flatten(parent.node, top) : [current];
+    const at = flat.indexOf(current);
+    if (at === -1) throw new Error(`flatten didnt work I guess`);
+
+    const nodes: Update['nodes'] = {};
+    const neighbor: Flat =
+        kind === 'sep'
+            ? { type: 'sep', loc: -1 }
+            : kind === 'space'
+            ? { type: 'space', loc: -1 }
+            : { type: 'id', text: grem, loc: -1, punct: kind === 'tight' };
+
+    let sel: Node = current;
+    let ncursor: Cursor = cursor;
+
+    switch (cursor.where) {
+        case 'before':
+        case 'start':
+            addNeighborBefore(at, flat, neighbor);
+            break;
+        case 'after':
+        case 'end':
+            ({ sel, ncursor } = addNeighborAfter(at, flat, neighbor, sel, ncursor));
+            break;
+    }
+
+    return flatToUpdate(flat, top, nodes, parent, kind, sel, ncursor, current, path);
+
+    // switch (kind) {
+    //     case 'space':
+    //         if (cursor.type === 'list') {
+    //             return splitSpacedList(top, path, cursor);
+    //         }
+    //     case 'sep':
+    //         throw new Error('yet not');
+    //     default:
+    //         if (cursor.type === 'list') {
+    //             return splitSmooshList(top, path, cursor, grem, kind === 'tight');
+    //         }
+    // }
     // throw new Error('noa');
 };
 
