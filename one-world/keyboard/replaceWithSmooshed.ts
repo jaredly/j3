@@ -54,12 +54,21 @@ export const replaceWithList = (
             const litems = smooshed.children.slice(0, at);
             const ritems = smooshed.children.slice(at + 1);
 
-            if (litems.length && nodes[left]?.type === 'id' && nodes[left]?.text === '') {
+            const lnode = nodes[left];
+            if (litems.length && lnode?.type === 'id' && lnode?.text === '') {
+                if (sel && sel.children.includes(left)) {
+                    console.warn('the cursor probably needs to be modified here, to select the /end/ of litems[-1]');
+                    sel = { ...sel, children: sel.children.map((c) => (c === left ? litems[litems.length - 1] : c)) };
+                }
                 // do nothing
             } else {
                 litems.push(left);
             }
-            if (ritems.length && nodes[right]?.type === 'id' && nodes[right]?.text === '') {
+            const rnode = nodes[right];
+            if (ritems.length && rnode?.type === 'id' && rnode.text === '') {
+                if (sel && sel.children.includes(right)) {
+                    sel = { ...sel, children: sel.children.map((c) => (c === right ? ritems[0] : c)) };
+                }
                 // do nothing
             } else {
                 ritems.unshift(right);

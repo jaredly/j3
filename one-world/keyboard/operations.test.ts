@@ -129,11 +129,17 @@ test('smoosh id before', () => {
     expect(shape(root(state))).toEqual(shape(spaced([id('one'), id(''), smoosh([id('+'), id('abc')])])));
 });
 
-// test('smoosh id smoosh split', () => {
-//     let state = asTop(spaced([id('one'), smoosh([id('+', true), id('abc')])]), idc(1));
-//     state = applyUpdate(state, handleKey(state, ' ', js)!);
-//     expect(shape(root(state))).toEqual(shape(spaced([id('one'), id('+'), id('abc')])));
-// });
+test('smoosh id smoosh split (start)', () => {
+    let state = asTop(spaced([id('one'), smoosh([id('+'), id('abc', true)])]), idc(0));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('one'), id('+'), id('abc')])));
+});
+
+test('smoosh id smoosh split (end)', () => {
+    let state = asTop(spaced([id('one'), smoosh([id('+', true), id('abc')])]), idc(1));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('one'), id('+'), id('abc')])));
+});
 
 test('smoosh id id split', () => {
     let state = asTop(spaced([id('one'), smoosh([id('+'), id('abc', true)])]), idc(1));
@@ -161,8 +167,14 @@ test('smoosh id split id', () => {
     expect(shape(root(state))).toEqual(shape(spaced([smoosh([id('+'), id('a')]), id('bc')])));
 });
 
-test('smoosh id split smoosh', () => {
+test('smoosh id split smoosh (start)', () => {
     let state = asTop(smoosh([id('+'), id('abc', true)]), idc(0));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('+'), id('abc')])));
+});
+
+test('smoosh id split smoosh (end)', () => {
+    let state = asTop(smoosh([id('+', true), id('abc')]), idc(1));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
     expect(shape(root(state))).toEqual(shape(spaced([id('+'), id('abc')])));
 });

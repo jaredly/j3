@@ -88,6 +88,8 @@ This is just binops n such. and like `if x then y fi` lol
 - [x] +a|bc
 // smooshed + spaced
 - [x] one +two|
-- [ ] one |+two
-- [ ] one +|two
-- [ ] one +t|wo
+- [x] one |+two
+- [x] one +|two (left and right biased)
+- [x] one +t|wo
+
+## SEP now to the sort

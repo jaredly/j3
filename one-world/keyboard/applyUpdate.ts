@@ -31,7 +31,11 @@ export function applyUpdate(state: TestState, update: Update) {
             };
         }
     }
-    // console.log(JSON.stringify(state, null, 2));
-    validate(state);
+    try {
+        validate(state);
+    } catch (err) {
+        console.log(JSON.stringify(state, null, 2));
+        throw err;
+    }
     return state;
 }
