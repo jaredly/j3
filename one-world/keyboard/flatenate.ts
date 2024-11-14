@@ -39,7 +39,6 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     const kind = textKind(grem, config);
 
     if (kind === 'id' || kind === 'tight') {
-        console.log('hand', kind, grem, current.punct, current);
         if (current.punct == null) {
             return {
                 nodes: { [current.loc]: { ...current, punct: kind === 'tight', text: grem } },

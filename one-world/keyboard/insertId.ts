@@ -1,22 +1,7 @@
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Node, Nodes } from '../shared/cnodes';
-import { cursorSides } from './cursorSplit';
 import { addNeighborAfter, addNeighborBefore, findParent, Flat, flatten, flatToUpdate, listKindForKeyKind } from './flatenate';
 // import { splitSmooshId, splitSpacedId } from './splitSmoosh';
-import {
-    CollectionCursor,
-    Cursor,
-    IdCursor,
-    lastChild,
-    ListCursor,
-    parentPath,
-    Path,
-    pathWithChildren,
-    selStart,
-    TextCursor,
-    Top,
-    Update,
-} from './utils';
+import { CollectionCursor, Cursor, lastChild, ListCursor, parentPath, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
 export type Config = { tight: string; space: string; sep: string };
 
 export type Kind = 'tight' | 'space' | 'sep' | 'id' | 'string';
