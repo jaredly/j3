@@ -106,6 +106,40 @@ const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown
 const idc = (end: number): IdCursor => ({ type: 'id', end });
 const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
 
+// MARK: Now we see if this all paid off y'all
+
+test('smoosh in space in sep', () => {
+    let state = asTop(
+        round([
+            spaced([
+                //
+                id('1'),
+                //
+                smoosh([
+                    //
+                    id('+'),
+                    id('a', true),
+                    id('.'),
+                    id('b'),
+                ]),
+                id('2'),
+            ]),
+        ]),
+        idc(1),
+    );
+    validate(state);
+    state = applyUpdate(state, handleKey(state, ';', js)!);
+    expect(shape(root(state))).toEqual(
+        shape(
+            round([
+                //
+                spaced([id('1'), smoosh([id('+'), id('a')])]),
+                spaced([smoosh([id('.'), id('b')]), id('2')]),
+            ]),
+        ),
+    );
+});
+
 // MARK: space in smooshed in space
 
 test('smoosh id after', () => {
@@ -140,7 +174,7 @@ test('smoosh id id split', () => {
 
 // MARK: space in smooshed
 
-test('smoosh id after', () => {
+test('smoosh id after in', () => {
     let state = asTop(smoosh([id('+'), id('abc', true)]), idc(3));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
     expect(shape(root(state))).toEqual(shape(spaced([smoosh([id('+'), id('abc')]), id('')])));

@@ -26,11 +26,12 @@ Game plan:
 
  */
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { List, Node, RecList } from '../shared/cnodes';
+import { Id, List, Node, RecList } from '../shared/cnodes';
 import { cursorSides, cursorSplit } from './cursorSplit';
 import { Kind, textKind } from './insertId';
+import { replaceAt } from './replaceAt';
 import { splitSmooshId, splitSmooshList, splitSpacedId, splitSpacedList } from './splitSmoosh';
-import { IdCursor, CollectionCursor, Path, Top, Update, lastChild, selStart, ListCursor, TextCursor, parentPath } from './utils';
+import { IdCursor, CollectionCursor, Path, Top, Update, lastChild, selStart, ListCursor, TextCursor, parentPath, Cursor } from './utils';
 export type Config = { tight: string; space: string; sep: string };
 
 export const insertId2 = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update => {
@@ -56,8 +57,7 @@ export const insertId2 = (config: Config, top: Top, path: Path, cursor: IdCursor
     }
 
     const parent = findParent(kind === 'sep' ? OTHER : kind === 'space' ? SPACED : SMOOSH, parentPath(path), top);
-    if (!parent) throw new Error(`not hndling yet`);
-    const flat = flatten(parent.node, top);
+    const flat = parent ? flatten(parent.node, top) : [current];
     const at = flat.indexOf(current);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
 
@@ -65,7 +65,7 @@ export const insertId2 = (config: Config, top: Top, path: Path, cursor: IdCursor
 
     const split = cursorSplit(current.text, cursor);
 
-    // console.log(flat);
+    console.log('before', flat);
 
     const neighbor: Flat =
         kind === 'sep'
@@ -74,30 +74,72 @@ export const insertId2 = (config: Config, top: Top, path: Path, cursor: IdCursor
             ? { type: 'space', loc: -1 }
             : { type: 'id', text: grem, loc: -1, punct: kind === 'tight' };
 
+    let sel: Node = current;
+    let ncursor: Cursor = cursor;
+
     switch (split.type) {
         case 'before': {
-            flat.splice(at, 0, { type: 'id', text: '', loc: -1 }, neighbor);
+            if ((at !== 0 && flat[at - 1].type === 'id') || (at === 0 && neighbor.type === 'id')) {
+                flat.splice(at, 0, neighbor);
+            } else {
+                flat.splice(at, 0, { type: 'id', text: '', loc: -1 }, neighbor);
+            }
             break;
         }
         case 'after': {
-            flat.splice(at + 1, 0, neighbor, { type: 'id', text: '', loc: -1 });
+            if (at < flat.length - 1 && flat[at + 1].type === 'space' && neighbor.type === 'space') {
+                sel = flat[at + 2] as Node;
+                ncursor = sel.type === 'id' ? { type: 'id', end: 0 } : { type: 'list', where: 'before' };
+            } else if (at < flat.length - 1 && flat[at + 1].type === 'id') {
+                sel = flat[at + 1] as Id<number>;
+                ncursor = { type: 'id', end: 0 };
+                flat.splice(at + 1, 0, neighbor);
+            } else {
+                flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: '', loc: -1 }));
+                ncursor = { type: 'id', end: 0 };
+            }
             break;
         }
         case 'between': {
             nodes[current.loc] = { ...current, text: split.left };
-            flat.splice(at + 1, 0, neighbor, { type: 'id', text: split.right, loc: -1 });
+            flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: split.right, loc: -1, punct: current.punct }));
+            ncursor = { type: 'id', end: 0 };
             break;
         }
     }
 
-    console.log(flat);
+    console.log('after', flat);
 
-    const { root, nextLoc } = roughen(flat, top, nodes, parent.node.kind);
-    if (root !== parent.node.loc) {
-        throw new Error('need rebasee');
+    const { root, nextLoc, selection } = roughen(
+        flat,
+        top,
+        nodes,
+        parent ? parent.node.kind : kind === 'sep' ? 'round' : kind === 'space' ? 'spaced' : 'smooshed',
+        { node: sel, cursor: ncursor },
+    );
+
+    let nroot = undefined;
+
+    if (parent && root !== parent.node.loc) {
+        const up = replaceAt(parent.path.children.slice(0, -1), top, parent.node.loc, root);
+        nroot = up.root;
+        Object.assign(nodes, up.nodes);
+    }
+    if (!parent && root !== current.loc) {
+        // throw new Error('need rebasee');
+        const up = replaceAt(path.children.slice(0, -1), top, current.loc, root);
+        nroot = up.root;
+        Object.assign(nodes, up.nodes);
     }
 
-    return { nodes, nextLoc };
+    return {
+        root: nroot,
+        nodes,
+        nextLoc,
+        selection: {
+            start: selStart({ ...path, children: parentPath(parent?.path ?? path).children.concat(selection.children) }, selection.cursor),
+        },
+    };
 };
 
 type Flat = Node | { type: 'space'; loc: number } | { type: 'sep'; loc: number };
@@ -116,7 +158,7 @@ const interleave = <T>(items: T[], sep: T) => {
 type Rough = { type: 'rough'; children: (Rough | Node)[]; loc: number; kind: 'other' | 'spaced' | 'smooshed' };
 const nough = (kind: 'other' | 'spaced' | 'smooshed', children: Rough['children'] = []): Rough => ({ kind, children, loc: -1, type: 'rough' });
 
-const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], base: List<number>['kind']) => {
+const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], base: List<number>['kind'], sel: { node: Node; cursor: Cursor }) => {
     let smooshed = nough('smooshed');
     let spaced = nough('spaced', [smooshed]);
     const other = nough('other', [spaced]);
@@ -138,22 +180,30 @@ const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], base: List<numb
 
     let nextLoc = top.nextLoc;
 
-    // console.log(JSON.stringify(other, 0, 2));
+    let selPath: number[] = [];
 
-    const handle = (rough: Rough): number => {
+    const handle = (rough: Rough, path: number[]): number => {
+        // lol this is way too complex
+        const cpath = rough.children.length === 1 ? path : path.concat(rough.loc === -1 || nodes[rough.loc] ? (rough.loc = nextLoc++) : rough.loc);
         const locs = rough.children.map((child) => {
             if (child.type === 'rough') {
-                return handle(child);
+                return handle(child, cpath);
             }
             if (child !== top.nodes[child.loc]) {
                 const loc = child.loc === -1 ? nextLoc++ : child.loc;
                 nodes[loc] = { ...child, loc };
+                if (child === sel.node) {
+                    selPath = cpath.concat([loc]);
+                }
                 return loc;
+            }
+            if (child === sel.node) {
+                selPath = cpath.concat([child.loc]);
             }
             return child.loc;
         });
         if (locs.length === 1) return locs[0];
-        const loc = rough.loc === -1 ? nextLoc++ : rough.loc;
+        const loc = rough.loc;
         const node: Node = {
             type: 'list',
             loc,
@@ -164,7 +214,7 @@ const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], base: List<numb
         return loc;
     };
 
-    return { root: handle(other), nextLoc };
+    return { root: handle(other, []), nextLoc, selection: { children: selPath, cursor: sel.cursor } };
 };
 
 const flatten = (node: Node, top: Top): Flat[] => {
@@ -174,14 +224,14 @@ const flatten = (node: Node, top: Top): Flat[] => {
     }
     if (node.kind === 'spaced') {
         return interleave(
-            node.children.flatMap((id) => flatten(top.nodes[id], top)),
-            { type: 'space', loc: node.loc },
-        );
+            node.children.map((id) => flatten(top.nodes[id], top)),
+            [{ type: 'space', loc: node.loc }],
+        ).flat();
     }
     return interleave(
-        node.children.flatMap((id) => flatten(top.nodes[id], top)),
-        { type: 'sep', loc: node.loc },
-    );
+        node.children.map((id) => flatten(top.nodes[id], top)),
+        [{ type: 'sep', loc: node.loc }],
+    ).flat();
 };
 
 /*
