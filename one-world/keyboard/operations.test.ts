@@ -115,6 +115,14 @@ const root = (state: TestState) => {
 const idc = (end: number): IdCursor => ({ type: 'id', end });
 const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
 
+// MARK: smooshed spaced
+
+test('smoosh id after', () => {
+    let state = asTop(smoosh([id('+'), id('abc', true)]), idc(3));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([smoosh([id('+'), id('abc')]), id('')])));
+});
+
 // MARK: ID spaced
 
 test('id mid', () => {
@@ -175,6 +183,30 @@ test('id two end', () => {
 
 test('id two start', () => {
     let state = asTop(spaced([id('one'), id('two', true)]), idc(0));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('one'), id(''), id('two')])));
+});
+
+test('id two mid', () => {
+    let state = asTop(spaced([id('one'), id('two', true)]), idc(1));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('one'), id('t'), id('wo')])));
+});
+
+test('list two start', () => {
+    let state = asTop(spaced([id('one'), round([], true)]), listc('before'));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('one'), id(''), round([])])));
+});
+
+test('list two end', () => {
+    let state = asTop(spaced([id('one'), round([], true)]), listc('after'));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('one'), round([]), id('')])));
+});
+
+test('id one spaced end', () => {
+    let state = asTop(spaced([id('one', true), id(''), id('two')]), idc(3));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
     expect(shape(root(state))).toEqual(shape(spaced([id('one'), id(''), id('two')])));
 });

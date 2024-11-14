@@ -54,6 +54,10 @@ Honestly I think the `list` control can apply just as well to a `text`, maybe I'
 - [x] |"hello"
 - [x] "hello"|
 
+
+TODO TODO Lets be testing selection location pleeeease
+
+
 ## Spaced split
 
 This is just binops n such. and like `if x then y fi` lol
@@ -69,13 +73,13 @@ This is just binops n such. and like `if x then y fi` lol
 - [x] |"abc"
 - [x] "abc"|
 // spaced (id id)
-- [ ] one tw|o
-- [ ] one two|
-- [ ] one |two
-- [ ] one |()
-- [ ] one ()|
+- [x] one two|
+- [x] one |two
+- [x] one tw|o
+- [x] one |()
+- [x] one ()|
 // with blank after
-- [ ] one|  two
+- [x] one|  two
 
 // NOW in a smooshed
 - [ ] +abc|

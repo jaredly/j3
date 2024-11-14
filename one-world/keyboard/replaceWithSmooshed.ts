@@ -1,7 +1,6 @@
-import { List } from '../shared/cnodes';
+import { List, Nodes } from '../shared/cnodes';
 import { replaceAt } from './replaceAt';
-import { parentPath, pathWithChildren } from './utils';
-import { Path, Top, PartialSel, Update, withPartial } from './utils';
+import { parentPath, PartialSel, Path, pathWithChildren, Top, Update, withPartial } from './utils';
 
 export const parentList = (top: Top, path: number[], kind: List<number>['kind']): List<number> | null => {
     if (path.length <= 1) return null;
@@ -31,7 +30,80 @@ export const replaceWithList = (path: Path, top: Top, old: number, locs: number[
             nextLoc: top.nextLoc,
         };
     }
-    // const smooshed = parentList(top, path.children, 'smooshed');
+
+    // Can't have spaced inside smooshed
+    if (kind === 'spaced') {
+        const smooshed = parentList(top, path.children, 'smooshed');
+        if (smooshed) {
+            if (locs.length !== 2) {
+                throw new Error(`spaced in smooshed, must have 2 locs, not ${locs.length}. Expected a left and right side`);
+            }
+            const [left, right] = locs;
+            let nextLoc = top.nextLoc;
+
+            const at = smooshed.children.indexOf(old);
+            if (at === -1) throw new Error(`${old} not in children ${smooshed.children}`);
+            const litems = smooshed.children.slice(0, at);
+            litems.push(left);
+            const ritems = smooshed.children.slice(at + 1);
+            ritems.unshift(right);
+
+            let res: number[] = [];
+
+            const nodes: Update['nodes'] = {};
+            nodes[smooshed.loc] = null;
+
+            if (litems.length > 1) {
+                nodes[smooshed.loc] = { ...smooshed, children: litems };
+                res.push(smooshed.loc);
+
+                if (sel && sel.children.includes(left)) {
+                    sel = {
+                        cursor: sel.cursor,
+                        children: [smooshed.loc, ...sel.children],
+                    };
+                }
+            } else {
+                res.push(left);
+            }
+
+            if (ritems.length > 1) {
+                let rsmooshed = smooshed.loc;
+
+                if (litems.length > 1) {
+                    rsmooshed = nextLoc++;
+                    nodes[rsmooshed] = { type: 'list', kind: 'smooshed', loc: rsmooshed, children: ritems };
+                } else {
+                    nodes[smooshed.loc] = { ...smooshed, children: ritems };
+                }
+
+                res.push(rsmooshed);
+
+                if (sel && sel.children.includes(right)) {
+                    sel = {
+                        cursor: sel.cursor,
+                        children: [rsmooshed, ...sel.children],
+                    };
+                }
+            } else {
+                res.push(right);
+            }
+
+            // NOW we make 2 smoosheds.
+            const outer = replaceWithList(
+                parentPath(path),
+                { ...top, nextLoc },
+                smooshed.loc,
+                res,
+                'spaced',
+                // TODO: sel needs to be modified Im sure
+                sel,
+            );
+            Object.assign(outer.nodes, nodes);
+            return outer;
+        }
+    }
+
     // TODO... hrm
 
     let nextLoc = top.nextLoc;

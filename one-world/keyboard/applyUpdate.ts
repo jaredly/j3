@@ -1,6 +1,7 @@
 import { Id } from '../shared/cnodes';
 import { TestState } from './test-utils';
 import { lastChild, Update } from './utils';
+import { validate } from './validate';
 
 export function applyUpdate(state: TestState, update: Update) {
     const prev = state.sel;
@@ -23,5 +24,7 @@ export function applyUpdate(state: TestState, update: Update) {
             };
         }
     }
+    // console.log(JSON.stringify(state, null, 2));
+    validate(state);
     return state;
 }

@@ -114,6 +114,7 @@ export const splitSpacedList = (top: Top, path: Path, cursor: ListCursor): Updat
                     [list.loc]: { ...list, children: [wrap] },
                 },
                 selection: { start: selStart(pathWithChildren(path, wrap, loc), { type: 'id', end: 0 }) },
+                nextLoc,
             };
         }
     }
@@ -170,6 +171,7 @@ export const splitSmooshList = (top: Top, path: Path, cursor: ListCursor, grem: 
                     [list.loc]: { ...list, children: [loc] },
                 },
                 selection: { start: selStart(pathWithChildren(path, loc), { type: 'id', end: 1 }) },
+                nextLoc,
             };
         default:
             return;
