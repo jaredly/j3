@@ -119,8 +119,7 @@ export const splitSpacedList = (top: Top, path: Path, cursor: ListCursor): Updat
         }
     }
 
-    const up = replaceWithList(path, { ...top, nextLoc }, list.loc, inserts, 'spaced', sel);
-    Object.assign(up.nodes, nodes);
+    const up = replaceWithList(path, { ...top, nextLoc }, list.loc, inserts, 'spaced', sel, nodes);
 
     return up;
 };
@@ -177,8 +176,7 @@ export const splitSmooshList = (top: Top, path: Path, cursor: ListCursor, grem: 
             return;
     }
 
-    const up = replaceWithList(path, { ...top, nextLoc }, list.loc, inserts, 'smooshed', sel);
-    Object.assign(up.nodes, nodes);
+    const up = replaceWithList(path, { ...top, nextLoc }, list.loc, inserts, 'smooshed', sel, nodes);
 
     return up;
 };
@@ -307,8 +305,7 @@ export const splitSmooshId = (top: Top, path: Path, cursor: IdCursor, grem: stri
         }
     }
 
-    const up = replaceWithList(path, { ...top, nextLoc }, id.loc, inserts, 'smooshed', sel);
-    Object.assign(up.nodes, nodes);
+    const up = replaceWithList(path, { ...top, nextLoc }, id.loc, inserts, 'smooshed', sel, nodes);
 
     return up;
 };

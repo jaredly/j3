@@ -86,6 +86,8 @@ This is just binops n such. and like `if x then y fi` lol
 - [x] |+abc
 - [x] +|abc
 - [x] +a|bc
+- [x] ()|abc
+- [x] |()abc
 // smooshed + spaced
 - [x] one +two|
 - [x] one |+two
@@ -93,3 +95,16 @@ This is just binops n such. and like `if x then y fi` lol
 - [x] one +t|wo
 
 ## SEP now to the sort
+
+### ID in Round
+
+- [ ] (abc|)
+- [ ] (|abc)
+- [ ] (ab|c)
+
+### List(other) in Round
+
+- [ ] (()|)
+- [ ] (|())
+- [ ] (|)
+

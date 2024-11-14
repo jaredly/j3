@@ -4,9 +4,10 @@ import { fromMap, fromRec, Id, ListKind, Nodes, RecNodeT, RecText, Text, TextSpa
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
 import { Config, handleListKey, handleTextKey, insertId } from './insertId';
-import { Cursor, getCurrent, IdCursor, lastChild, CollectionCursor, ListWhere, selStart, Update } from './utils';
+import { Cursor, getCurrent, IdCursor, CollectionCursor, ListWhere, selStart, Update } from './utils';
 import { TestState } from './test-utils';
 import { validate } from './validate';
+import { root } from './root';
 
 // Classes of keys
 
@@ -100,18 +101,6 @@ const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown
     expect(shape(out)).toEqual(shape(fromMap(state.top.root, state.top.nodes, () => 0)));
 };
 
-const root = (state: TestState) => {
-    let nodes = state.top.nodes;
-    if (state.sel.start.cursor.type === 'id' && state.sel.start.cursor.text) {
-        const loc = lastChild(state.sel.start.path);
-        const node = nodes[loc];
-        if (node.type === 'id') {
-            nodes = { ...nodes, [loc]: { ...node, text: state.sel.start.cursor.text.join('') } };
-        }
-    }
-    return fromMap(state.top.root, nodes, () => 0);
-};
-
 const idc = (end: number): IdCursor => ({ type: 'id', end });
 const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
 
@@ -177,6 +166,18 @@ test('smoosh id split smoosh (end)', () => {
     let state = asTop(smoosh([id('+', true), id('abc')]), idc(1));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
     expect(shape(root(state))).toEqual(shape(spaced([id('+'), id('abc')])));
+});
+
+test('smoosh round split smoosh ', () => {
+    let state = asTop(smoosh([round([], true), id('abc')]), listc('after'));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([round([]), id('abc')])));
+});
+
+test('smoosh round split smoosh (before)', () => {
+    let state = asTop(smoosh([round([], true), id('abc')]), listc('before'));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id(''), smoosh([round([], true), id('abc')])])));
 });
 
 // MARK: ID spaced
