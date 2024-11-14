@@ -63,10 +63,12 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                 const right = nextLoc++;
                 const nodes: Nodes = {};
                 let children = [left, right];
+                let selPath = pathWithChildren(path, right);
                 if (kind === 'space') {
                     const wrap = nextLoc++;
                     nodes[wrap] = { type: 'list', kind: 'spaced', children, loc: wrap };
                     children = [wrap];
+                    selPath = pathWithChildren(path, wrap, right);
                 }
                 return {
                     nodes: {
@@ -76,7 +78,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                         [current.loc]: { ...current, children },
                     },
                     nextLoc,
-                    selection: { start: selStart(pathWithChildren(path, right), { type: 'id', end: 0 }) },
+                    selection: { start: selStart(selPath, { type: 'id', end: 0 }) },
                 };
             }
             default: {
