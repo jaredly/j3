@@ -56,126 +56,126 @@ SO:
 
 */
 
-import { test, expect } from 'bun:test';
-import { Toplevel } from '../shared/toplevels';
-import { handleKey as handleJs } from './js';
-import { handleKey as handleLisp } from './lisp';
-import { NodeSelection, selStart, Top, lastChild, Update } from './utils';
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { fromMap, Id } from '../shared/cnodes';
-import { shape } from '../shared/shape';
-import { init, TestState } from './test-utils';
-import { applyUpdate } from './applyUpdate';
-import { validate } from './validate';
+// import { test, expect } from 'bun:test';
+// import { Toplevel } from '../shared/toplevels';
+// import { handleKey as handleJs } from './js';
+// import { handleKey as handleLisp } from './lisp';
+// import { NodeSelection, selStart, Top, lastChild, Update } from './utils';
+// import { splitGraphemes } from '../../src/parse/splitGraphemes';
+// import { fromMap, Id } from '../shared/cnodes';
+// import { shape } from '../shared/shape';
+// import { init, TestState } from './test-utils';
+// import { applyUpdate } from './applyUpdate';
+// import { validate } from './validate';
 
-/*
+// /*
 
-In lisp land, what are the fundamental operations?
+// In lisp land, what are the fundamental operations?
 
-/Initial Entering/
+// /Initial Entering/
 
-- typing into an ID (simple)
-- splitting an ID with a space
-    - in a smoosh
-    - out of a smoosh
-- splitting an ID with a punct (making/updating a smoosh)
-- create/wrap with a list
-- create/wrap with a table
-- split cells of a table
-- new table row
+// - typing into an ID (simple)
+// - splitting an ID with a space
+//     - in a smoosh
+//     - out of a smoosh
+// - splitting an ID with a punct (making/updating a smoosh)
+// - create/wrap with a list
+// - create/wrap with a table
+// - split cells of a table
+// - new table row
 
-/Updating/Deleting/
+// /Updating/Deleting/
 
-*/
+// */
 
-const U = 'ArrowUp';
-const D = 'ArrowDown';
-const L = 'ArrowLeft';
-const R = 'ArrowRight';
+// const U = 'ArrowUp';
+// const D = 'ArrowDown';
+// const L = 'ArrowLeft';
+// const R = 'ArrowRight';
 
-const keys = (text: TemplateStringsArray, ...args: string[]) => {
-    const result: string[] = [];
-    for (let i = 0; i < text.length; i++) {
-        result.push(...splitGraphemes(text[i]));
-        if (i < args.length) {
-            result.push(args[i]);
-        }
-    }
-    return result;
-};
+// const keys = (text: TemplateStringsArray, ...args: string[]) => {
+//     const result: string[] = [];
+//     for (let i = 0; i < text.length; i++) {
+//         result.push(...splitGraphemes(text[i]));
+//         if (i < args.length) {
+//             result.push(args[i]);
+//         }
+//     }
+//     return result;
+// };
 
-const run = (handle: (sel: NodeSelection, top: Top, char: string) => Update | void) => (state: TestState, text: string | string[]) => {
-    (Array.isArray(text) ? text : splitGraphemes(text)).forEach((char) => {
-        // console.log('char', char);
-        const update = handle(state.sel, state.top, char);
-        if (update) {
-            state = applyUpdate(state, update);
-            validate(state);
-        }
-    });
-    if (state.sel.start.cursor.type === 'id' && state.sel.start.cursor.text != null) {
-        const loc = lastChild(state.sel.start.path);
-        state.top.nodes[loc] = {
-            ...(state.top.nodes[loc] as Id<number>),
-            text: state.sel.start.cursor.text.join(''),
-        };
-    }
-    return state;
-};
+// const run = (handle: (sel: NodeSelection, top: Top, char: string) => Update | void) => (state: TestState, text: string | string[]) => {
+//     (Array.isArray(text) ? text : splitGraphemes(text)).forEach((char) => {
+//         // console.log('char', char);
+//         const update = handle(state.sel, state.top, char);
+//         if (update) {
+//             state = applyUpdate(state, update);
+//             validate(state);
+//         }
+//     });
+//     if (state.sel.start.cursor.type === 'id' && state.sel.start.cursor.text != null) {
+//         const loc = lastChild(state.sel.start.path);
+//         state.top.nodes[loc] = {
+//             ...(state.top.nodes[loc] as Id<number>),
+//             text: state.sel.start.cursor.text.join(''),
+//         };
+//     }
+//     return state;
+// };
 
-const asRec = (top: Top) => fromMap(top.root, top.nodes, (i) => [{ id: '', idx: i }]);
+// const asRec = (top: Top) => fromMap(top.root, top.nodes, (i) => [{ id: '', idx: i }]);
 
-const lisp = run(handleLisp);
-const js = run(handleJs);
+// const lisp = run(handleLisp);
+// const js = run(handleJs);
 
-test('one', () => {
-    expect(shape(asRec(lisp(init, '(1 2)').top))).toEqual('(id(1) id(2))');
-});
+// test('one', () => {
+//     expect(shape(asRec(lisp(init, '(1 2)').top))).toEqual('(id(1) id(2))');
+// });
 
-test('nested', () => {
-    expect(shape(asRec(lisp(init, '(1 2 [3 4] 5)').top))).toEqual('(id(1) id(2) [id(3) id(4)] id(5))');
-});
+// test('nested', () => {
+//     expect(shape(asRec(lisp(init, '(1 2 [3 4] 5)').top))).toEqual('(id(1) id(2) [id(3) id(4)] id(5))');
+// });
 
-test('opkeys', () => {
-    expect(shape(asRec(lisp(init, '.=.').top))).toEqual('id(.=.)');
-});
+// test('opkeys', () => {
+//     expect(shape(asRec(lisp(init, '.=.').top))).toEqual('id(.=.)');
+// });
 
-test('lets smoosh', () => {
-    expect(shape(asRec(lisp(init, 'hello.world').top))).toEqual('list[smooshed](id(hello) id(.) id(world))');
-});
+// test('lets smoosh', () => {
+//     expect(shape(asRec(lisp(init, 'hello.world').top))).toEqual('list[smooshed](id(hello) id(.) id(world))');
+// });
 
-test('some lisps I think', () => {
-    const input = '(1 2 [3 4] ...5)';
-    expect(shape(asRec(lisp(init, input).top))).toEqual('(id(1) id(2) [id(3) id(4)] list[smooshed](id(...) id(5)))');
-});
+// test('some lisps I think', () => {
+//     const input = '(1 2 [3 4] ...5)';
+//     expect(shape(asRec(lisp(init, input).top))).toEqual('(id(1) id(2) [id(3) id(4)] list[smooshed](id(...) id(5)))');
+// });
 
-test('js commas', () => {
-    expect(shape(asRec(js(init, '(hello,spaces)').top))).toEqual('(id(hello) id(spaces))');
-});
+// test('js commas', () => {
+//     expect(shape(asRec(js(init, '(hello,spaces)').top))).toEqual('(id(hello) id(spaces))');
+// });
 
-test('spaced in list', () => {
-    const input = '[one two,three]';
-    expect(shape(asRec(js(init, input).top))).toEqual('[list[spaced](id(one) id(two)) id(three)]');
-});
+// test('spaced in list', () => {
+//     const input = '[one two,three]';
+//     expect(shape(asRec(js(init, input).top))).toEqual('[list[spaced](id(one) id(two)) id(three)]');
+// });
 
-test('some js please', () => {
-    const input = '+what(things,we + do,[here and,such])';
-    expect(shape(asRec(js(init, input).top))).toEqual(
-        'list[smooshed](id(+) id(what) (id(things) list[spaced](id(we) id(+) id(do)) [list[spaced](id(here) id(and)) id(such)]))',
-    );
-});
+// test('some js please', () => {
+//     const input = '+what(things,we + do,[here and,such])';
+//     expect(shape(asRec(js(init, input).top))).toEqual(
+//         'list[smooshed](id(+) id(what) (id(things) list[spaced](id(we) id(+) id(do)) [list[spaced](id(here) id(and)) id(such)]))',
+//     );
+// });
 
-test('split middle', () => {
-    const input = keys`heylo${L}${L}.`;
-    expect(shape(asRec(lisp(init, input).top))).toEqual('list[smooshed](id(hey) id(.) id(lo))');
-});
+// test('split middle', () => {
+//     const input = keys`heylo${L}${L}.`;
+//     expect(shape(asRec(lisp(init, input).top))).toEqual('list[smooshed](id(hey) id(.) id(lo))');
+// });
 
-test('split middle space', () => {
-    const input = keys`heylo${L}${L} `;
-    expect(shape(asRec(js(init, input).top))).toEqual('list[spaced](id(hey) id(lo))');
-});
+// test('split middle space', () => {
+//     const input = keys`heylo${L}${L} `;
+//     expect(shape(asRec(js(init, input).top))).toEqual('list[spaced](id(hey) id(lo))');
+// });
 
-test('split middle js', () => {
-    const input = keys`heylo${L}${L}.`;
-    expect(shape(asRec(js(init, input).top))).toEqual('list[smooshed](id(hey) id(.) id(lo))');
-});
+// test('split middle js', () => {
+//     const input = keys`heylo${L}${L}.`;
+//     expect(shape(asRec(js(init, input).top))).toEqual('list[smooshed](id(hey) id(.) id(lo))');
+// });

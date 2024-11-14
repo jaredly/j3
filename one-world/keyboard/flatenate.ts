@@ -26,12 +26,11 @@ Game plan:
 
  */
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, List, Node, RecList } from '../shared/cnodes';
+import { Id, List, Node } from '../shared/cnodes';
 import { cursorSides, cursorSplit } from './cursorSplit';
 import { Kind, textKind } from './insertId';
 import { replaceAt } from './replaceAt';
-import { splitSmooshId, splitSmooshList, splitSpacedId, splitSpacedList } from './splitSmoosh';
-import { IdCursor, CollectionCursor, Path, Top, Update, lastChild, selStart, ListCursor, TextCursor, parentPath, Cursor } from './utils';
+import { Cursor, IdCursor, ListCursor, Path, Top, Update, lastChild, parentPath, selStart } from './utils';
 export type Config = { tight: string; space: string; sep: string };
 
 export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update => {
@@ -40,6 +39,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     const kind = textKind(grem, config);
 
     if (kind === 'id' || kind === 'tight') {
+        console.log('hand', kind, grem, current.punct, current);
         if (current.punct == null) {
             return {
                 nodes: { [current.loc]: { ...current, punct: kind === 'tight', text: grem } },
@@ -227,6 +227,30 @@ export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node
     return { node, path };
 };
 
+const collapseAdjacentIds = (flat: Flat[]) => {
+    const rm: number[] = [];
+    flat.forEach((item, i) => {
+        if (rm.includes(i)) return;
+        const next = flat[i + 1];
+        if (item.type === 'id' && i < flat.length - 1 && next.type === 'id') {
+            if (item.text === '') {
+                rm.push(i);
+            } else if (next.text === '') {
+                rm.push(i + 1);
+            } else if (next.punct === item.punct) {
+                if (item.loc === -1) {
+                    flat[i + 1] = { ...next, text: item.text + next.text };
+                    rm.push(i);
+                } else {
+                    flat[i] = { ...item, text: item.text + next.text };
+                    rm.push(i + 1);
+                }
+            }
+        }
+    });
+    return flat.filter((_, i) => !rm.includes(i));
+};
+
 export function flatToUpdate(
     flat: Flat[],
     top: Top,
@@ -238,6 +262,8 @@ export function flatToUpdate(
     current: Node,
     path: Path,
 ) {
+    flat = collapseAdjacentIds(flat);
+
     const { root, nextLoc, selection } = roughen(
         flat,
         top,

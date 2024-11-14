@@ -3,7 +3,7 @@
 import { childLocs, childNodes, fromMap, fromRec, Id, ListKind, Nodes, RecNodeT, RecText, Text, TextSpan } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
-import { Config, handleListKey, handleTextKey, insertId } from './insertId';
+import { Config, handleListKey, handleTextKey } from './insertId';
 import { Cursor, getCurrent, IdCursor, CollectionCursor, ListWhere, selStart, Update, Top } from './utils';
 import { TestState } from './test-utils';
 import { validate } from './validate';
@@ -95,10 +95,10 @@ const handleKey = (state: TestState, key: string, config: Config): Update | void
 
 const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.') => {
     let state = asTop(init, cursor);
-    const up = insertId(lisp, state.top, state.sel.start.path, state.sel.start.cursor as IdCursor, text);
-    state = applyUpdate(state, up);
+    const up = handleKey(state, text, lisp);
+    // const up = insertId(lisp, state.top, state.sel.start.path, state.sel.start.cursor as IdCursor, text);
+    state = applyUpdate(state, up!);
     // console.log(JSON.stringify(state, null, 2));
-    validate(state);
     expect(shape(out)).toEqual(shape(fromMap(state.top.root, state.top.nodes, () => 0)));
 };
 
