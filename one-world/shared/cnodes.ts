@@ -111,7 +111,7 @@ export type ListKind<Tag> =
     | { type: 'tag'; node: Tag }
     | RichKind;
 
-export type Text<Loc> = { type: 'text'; spans: TextSpan<number>[]; loc: Loc };
+export type Text<Loc> = { type: 'text'; spans: TextSpan<Loc>[]; loc: Loc };
 export type List<Loc> = {
     type: 'list';
     kind: ListKind<number>;

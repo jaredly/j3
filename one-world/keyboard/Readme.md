@@ -50,27 +50,31 @@ Honestly I think the `list` control can apply just as well to a `text`, maybe I'
 
 #### Text
 
-- [ ] |"hello"
-- [ ] "hello"|
+- [x] |"hello"
+- [x] "hello"|
 
 ## Spaced split
 
 This is just binops n such. and like `if x then y fi` lol
 
 // plain id
-- [ ] ab|c
-- [ ] abc|
-- [ ] |abc
+- [x] ab|c
+- [x] abc|
+- [x] |abc
 // plain list
-- [ ] ()|
-- [ ] |()
+- [x] ()|
+- [x] |()
 - [ ] (|) ???
-- [ ] |"abc"
-- [ ] "abc"|
+- [x] |"abc"
+- [x] "abc"|
 // spaced (id id)
 - [ ] one tw|o
 - [ ] one two|
 - [ ] one |two
+- [ ] one |()
+- [ ] one ()|
+// with blank after
+- [ ] one|  two
 
 // NOW in a smooshed
 - [ ] +abc|

@@ -1,10 +1,10 @@
 // let's test some operations
 
-import { fromMap, fromRec, Id, ListKind, Nodes, RecNodeT } from '../shared/cnodes';
+import { fromMap, fromRec, Id, ListKind, Nodes, RecNodeT, RecText, Text, TextSpan } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
-import { Config, handleListKey, insertId } from './insertId';
-import { Cursor, getCurrent, IdCursor, lastChild, ListCursor, ListWhere, selStart, Update } from './utils';
+import { Config, handleListKey, handleTextKey, insertId } from './insertId';
+import { Cursor, getCurrent, IdCursor, lastChild, CollectionCursor, ListWhere, selStart, Update } from './utils';
 import { TestState } from './test-utils';
 import { validate } from './validate';
 
@@ -54,6 +54,7 @@ const list =
 const smoosh = list('smooshed');
 const spaced = list('spaced');
 const round = list('round');
+const text = <T>(spans: TextSpan<RecNodeT<T>>[], loc: T = null as T): RecText<T> => ({ type: 'text', loc, spans });
 
 // MARK: tests
 
@@ -83,6 +84,8 @@ const handleKey = (state: TestState, key: string, config: Config): Update | void
             return insertId(config, state.top, state.sel.start.path, current.cursor, key);
         case 'list':
             return handleListKey(config, state.top, state.sel.start.path, current.cursor, key);
+        case 'text':
+            return handleTextKey(config, state.top, state.sel.start.path, current.cursor, key);
         default:
             throw new Error('not doing');
     }
@@ -110,7 +113,65 @@ const root = (state: TestState) => {
 };
 
 const idc = (end: number): IdCursor => ({ type: 'id', end });
-const listc = (where: ListWhere): ListCursor => ({ type: 'list', where });
+const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
+
+// MARK: ID spaced
+
+test('id mid', () => {
+    let state = asTop(id('abc', true), idc(1));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('a'), id('bc')])));
+});
+
+test('id start', () => {
+    let state = asTop(id('abc', true), idc(0));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id(''), id('abc')])));
+});
+
+test('id end', () => {
+    let state = asTop(id('abc', true), idc(3));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('abc'), id('')])));
+});
+
+test('round start', () => {
+    let state = asTop(round([], true), listc('before'));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id(''), round([])])));
+});
+
+test('round end', () => {
+    let state = asTop(round([], true), listc('after'));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([round([]), id('')])));
+});
+
+test('text start', () => {
+    let state = asTop(text([], true), listc('before'));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id(''), text([])])));
+});
+
+test('text end', () => {
+    let state = asTop(text([], true), listc('after'));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([text([]), id('')])));
+});
+
+// MARK: Text smooshed
+
+test('text before', () => {
+    let state = asTop(text([], true), listc('before'));
+    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
+    expect(shape(root(state))).toEqual(shape(smoosh([id('A'), text([])])));
+});
+
+test('text after', () => {
+    let state = asTop(text([], true), listc('after'));
+    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
+    expect(shape(root(state))).toEqual(shape(smoosh([text([]), id('A')])));
+});
 
 // MARK: List smooshed, right?
 

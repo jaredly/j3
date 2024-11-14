@@ -11,7 +11,7 @@ import { Collection, Id, List, Node, Nodes, Text } from '../shared/cnodes';
 import { addBlankAfter } from './addBlankAfter';
 import { replaceWithList, replaceWithSmooshed } from './replaceWithSmooshed';
 import { splitInList } from './splitInList';
-import { Top, Update, IdCursor, Path, selStart, ListCursor, splitOnCursor, PartialSel, NodeSelection, getCurrent } from './utils';
+import { Top, Update, IdCursor, Path, selStart, CollectionCursor, splitOnCursor, PartialSel, NodeSelection, getCurrent } from './utils';
 import { wrapId } from './wrapId';
 
 const idHandlers: Record<string, (node: Id<number>, cursor: IdCursor, path: Path, top: Top) => Update | void> = {
@@ -28,7 +28,7 @@ const idHandlers: Record<string, (node: Id<number>, cursor: IdCursor, path: Path
     },
 };
 
-const listHandlers: Record<string, (node: Collection<number>, cursor: ListCursor, path: Path, top: Top) => Update | void> = {
+const listHandlers: Record<string, (node: Collection<number>, cursor: CollectionCursor, path: Path, top: Top) => Update | void> = {
     ' ': (node, cursor, path, top) => {
         if (cursor.type === 'control') return;
         switch (cursor.where) {

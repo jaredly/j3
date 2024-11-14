@@ -57,9 +57,10 @@ export type TextCursor = {
     end: { index: number; cursor: number; text?: string[] };
 };
 export type ListWhere = 'before' | 'start' | 'inside' | 'end' | 'after';
-export type ListCursor = { type: 'list'; where: ListWhere } | { type: 'control'; index: number };
+export type CollectionCursor = ListCursor | { type: 'control'; index: number };
+export type ListCursor = { type: 'list'; where: ListWhere };
 
-export type Cursor = IdCursor | TextCursor | ListCursor;
+export type Cursor = IdCursor | TextCursor | CollectionCursor;
 
 export type Path = {
     root: { ids: number[]; top: string };
@@ -108,8 +109,8 @@ export const getCurrent = (selection: NodeSelection, top: Top): Current => {
         return { type: 'id', node, cursor };
     }
     if (node.type === 'text') {
-        if (cursor.type !== 'text') {
-            throw new Error(`text select must have cursor text`);
+        if (cursor.type !== 'text' && cursor.type !== 'list') {
+            throw new Error(`text select must have cursor text or list`);
         }
         return { type: 'text', node, cursor };
     }

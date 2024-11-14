@@ -10,7 +10,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Collection, Id, List, Node, Nodes, Text } from '../shared/cnodes';
 import { addBlankAfter } from './addBlankAfter';
 import { splitBraceless } from './lisp';
-import { getCurrent, IdCursor, ListCursor, NodeSelection, Path, selStart, splitOnCursor, Top, Update } from './utils';
+import { getCurrent, IdCursor, CollectionCursor, NodeSelection, Path, selStart, splitOnCursor, Top, Update } from './utils';
 import { replaceIn } from './replaceIn';
 import { replaceWithSmooshed, replaceWithSpaced } from './replaceWithSmooshed';
 import { splitInList } from './splitInList';
@@ -33,7 +33,7 @@ const idHandlers: Record<string, (node: Id<number>, cursor: IdCursor, path: Path
     },
 };
 
-const listHandlers: Record<string, (node: Collection<number>, cursor: ListCursor, path: Path, top: Top) => Update | void> = {
+const listHandlers: Record<string, (node: Collection<number>, cursor: CollectionCursor, path: Path, top: Top) => Update | void> = {
     ',': (node, cursor, path, top) => {
         if (cursor.type === 'control') return;
         switch (cursor.where) {

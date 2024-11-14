@@ -1,8 +1,8 @@
-import { Nodes } from '../shared/cnodes';
-import { cursorSplit } from './cursorSplit';
+import { List, Nodes } from '../shared/cnodes';
+import { cursorSides, cursorSplit } from './cursorSplit';
 import { joinAdjacent, joinAdjacentList } from './joinAdjacent';
-import { lastChild, pathWithChildren } from './utils';
-import { Top, Path, IdCursor, Update, PartialSel, ListCursor, selStart } from './utils';
+import { lastChild, ListCursor, parentPath, pathWithChildren } from './utils';
+import { Top, Path, IdCursor, Update, PartialSel, CollectionCursor, selStart } from './utils';
 import { parentList, replaceWithList } from './replaceWithSmooshed';
 
 /* Places that a cursor can be:
@@ -52,9 +52,69 @@ Assumptions
 - the insert is of a different 'kind' than the current ID
 */
 
-export const splitSmooshList = (top: Top, path: Path, cursor: Extract<ListCursor, { type: 'list' }>, grem: string, punct: boolean): Update | void => {
+export const splitSpacedList = (top: Top, path: Path, cursor: ListCursor): Update => {
+    const id = top.nodes[lastChild(path)];
+    const nodes: Nodes = {};
+
+    const parent = top.nodes[path.children[path.children.length - 2]];
+
+    if (parent?.type === 'list' && cursor.where === 'after') {
+        if (parent.kind === 'spaced') {
+            // if there's a space after this one, just nav to it
+            const next = selectBlankAfter(parent, path, top);
+            if (next) return next;
+        }
+        if (parent.kind === 'smooshed') {
+            const gparent = top.nodes[path.children[path.children.length - 3]];
+            if (gparent?.type === 'list' && gparent.kind === 'spaced') {
+                // if there's a space after this one, just nav to it
+                const next = selectBlankAfter(gparent, parentPath(path), top);
+                if (next) return next;
+            }
+        }
+    }
+
+    let nextLoc = top.nextLoc;
+    const inserts: number[] = [];
+    let sel: PartialSel;
+
+    switch (cursor.where) {
+        case 'start':
+        case 'before': {
+            const left = nextLoc++;
+            inserts.push(left, id.loc);
+            nodes[left] = { type: 'id', text: '', loc: left };
+            sel = {
+                children: [id.loc],
+                cursor: { type: 'id', end: 0 },
+            };
+            break;
+        }
+        case 'end':
+        case 'after': {
+            const right = nextLoc++;
+            inserts.push(id.loc, right);
+            nodes[right] = { type: 'id', text: '', loc: right };
+            sel = {
+                children: [right],
+                cursor: { type: 'id', end: 0 },
+            };
+            break;
+        }
+        case 'inside': {
+            throw new Error('not doing');
+        }
+    }
+
+    const up = replaceWithList(path, { ...top, nextLoc }, id.loc, inserts, 'spaced', sel);
+    Object.assign(up.nodes, nodes);
+
+    return up;
+};
+
+export const splitSmooshList = (top: Top, path: Path, cursor: ListCursor, grem: string, punct: boolean): Update | void => {
     const list = top.nodes[lastChild(path)];
-    if (list.type !== 'list') throw new Error(`not a list ${list.type} at loc ${list.loc}`);
+    // if (list.type !== 'list') throw new Error(`not a list ${list.type} at loc ${list.loc}`);
     const nodes: Nodes = {};
 
     const parent = parentList(top, path.children, 'smooshed');
@@ -90,6 +150,7 @@ export const splitSmooshList = (top: Top, path: Path, cursor: Extract<ListCursor
             break;
         }
         case 'inside':
+            if (list.type !== 'list') throw new Error(`inside, but not a list`);
             const loc = nextLoc++;
             return {
                 nodes: {
@@ -103,6 +164,76 @@ export const splitSmooshList = (top: Top, path: Path, cursor: Extract<ListCursor
     }
 
     const up = replaceWithList(path, { ...top, nextLoc }, list.loc, inserts, 'smooshed', sel);
+    Object.assign(up.nodes, nodes);
+
+    return up;
+};
+
+export const splitSpacedId = (top: Top, path: Path, cursor: IdCursor): Update => {
+    const id = top.nodes[lastChild(path)];
+    if (id.type !== 'id') throw new Error(`not an ID ${id.type} at loc ${id.loc}`);
+    const nodes: Nodes = {};
+
+    const split = cursorSplit(id.text, cursor);
+    const parent = top.nodes[path.children[path.children.length - 2]];
+
+    if (parent?.type === 'list' && split.type === 'after') {
+        if (parent.kind === 'spaced') {
+            // if there's a space after this one, just nav to it
+            const next = selectBlankAfter(parent, path, top);
+            if (next) return next;
+        }
+        if (parent.kind === 'smooshed') {
+            const gparent = top.nodes[path.children[path.children.length - 3]];
+            if (gparent?.type === 'list' && gparent.kind === 'spaced') {
+                // if there's a space after this one, just nav to it
+                const next = selectBlankAfter(gparent, parentPath(path), top);
+                if (next) return next;
+            }
+        }
+    }
+
+    let nextLoc = top.nextLoc;
+    const inserts: number[] = [];
+    let sel: PartialSel;
+
+    switch (split.type) {
+        case 'before': {
+            const left = nextLoc++;
+            inserts.push(left, id.loc);
+            nodes[left] = { type: 'id', text: '', loc: left };
+            nodes[id.loc] = { ...id, text: split.text };
+            sel = {
+                children: [id.loc],
+                cursor: { type: 'id', end: 0 },
+            };
+            break;
+        }
+        case 'after': {
+            const right = nextLoc++;
+            inserts.push(id.loc, right);
+            nodes[right] = { type: 'id', text: '', loc: right };
+            nodes[id.loc] = { ...id, text: split.text };
+            sel = {
+                children: [right],
+                cursor: { type: 'id', end: 0 },
+            };
+            break;
+        }
+        case 'between': {
+            const right = nextLoc++;
+            inserts.push(id.loc, right);
+            nodes[id.loc] = { ...id, text: split.left };
+            nodes[right] = { type: 'id', text: split.right, loc: right, punct: id.punct };
+            sel = {
+                children: [right],
+                cursor: { type: 'id', end: 0 },
+            };
+            break;
+        }
+    }
+
+    const up = replaceWithList(path, { ...top, nextLoc }, id.loc, inserts, 'spaced', sel);
     Object.assign(up.nodes, nodes);
 
     return up;
@@ -167,4 +298,17 @@ export const splitSmooshId = (top: Top, path: Path, cursor: IdCursor, grem: stri
     Object.assign(up.nodes, nodes);
 
     return up;
+};
+
+export const blankAfter = (node: List<unknown>, loc: number, top: Top) => {
+    const at = node.children.indexOf(loc);
+    if (at === -1 || at === node.children.length - 1) return null;
+    const next = top.nodes[node.children[at + 1]];
+    return next.type === 'id' && next.text === '' ? node.children[at + 1] : null;
+};
+
+export const selectBlankAfter = (node: List<unknown>, path: Path, top: Top): Update | null => {
+    const got = blankAfter(node, lastChild(path), top);
+    if (got == null) return null;
+    return { nodes: {}, selection: { start: selStart(pathWithChildren(parentPath(path), got), { type: 'id', end: 0 }) } };
 };
