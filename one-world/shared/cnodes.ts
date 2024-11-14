@@ -135,23 +135,25 @@ export type Collection<Loc> =
 export type NodeT<Loc> = Id<Loc> | Text<Loc> | Collection<Loc>;
 export type Node = NodeT<number>;
 
+export type RecList<Loc> = {
+    type: 'list';
+    kind: ListKind<RecNodeT<Loc>>;
+    // Whether the user has specified that it should be multiline.
+    // If absent, multiline is calculated based on pretty-printing logic
+    forceMultiline?: boolean;
+    // For JSX, this will be a /table/, and 'kind' will be {type: 'tag'}
+    attributes?: RecNodeT<Loc>;
+    children: RecNodeT<Loc>[];
+    loc: Loc;
+};
+
 export type RecText<Loc> = {
     type: 'text';
     spans: TextSpan<RecNodeT<Loc>>[];
     loc: Loc;
 };
 export type RecCollection<Loc> =
-    | {
-          type: 'list';
-          kind: ListKind<RecNodeT<Loc>>;
-          // Whether the user has specified that it should be multiline.
-          // If absent, multiline is calculated based on pretty-printing logic
-          forceMultiline?: boolean;
-          // For JSX, this will be a /table/, and 'kind' will be {type: 'tag'}
-          attributes?: RecNodeT<Loc>;
-          children: RecNodeT<Loc>[];
-          loc: Loc;
-      }
+    | RecList<Loc>
     | {
           type: 'table';
           kind: 'round' | 'square' | 'curly';

@@ -8,6 +8,7 @@ import { Cursor, getCurrent, IdCursor, CollectionCursor, ListWhere, selStart, Up
 import { TestState } from './test-utils';
 import { validate } from './validate';
 import { root } from './root';
+import { insertId2 } from './flatenate';
 
 // Classes of keys
 
@@ -82,7 +83,8 @@ const handleKey = (state: TestState, key: string, config: Config): Update | void
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
         case 'id':
-            return insertId(config, state.top, state.sel.start.path, current.cursor, key);
+            return insertId2(config, state.top, state.sel.start.path, current.cursor, key);
+        // return insertId2(config, state.top, state.sel.start.path, current.cursor, key);
         case 'list':
             return handleListKey(config, state.top, state.sel.start.path, current.cursor, key);
         case 'text':

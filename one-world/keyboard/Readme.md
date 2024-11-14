@@ -1,6 +1,37 @@
 
 # Operations with a keyboard
 
+High level things, we have:
+- split
+- join
+
+this ... sure is requiring a lot of code.
+
+I, wonder if there's a different representation
+that would make this easier?
+like /transform to some flattened thing/ /do the modificaiton/ /transform back/
+
+hmmmmm yeah that might be what a body wants?
+
+like.
+`one |+two` which is
+`spaced(id(one) smoosh(id(+) id(two)))`
+would be
+`id(one) space id(+) id(two)`
+
+and `(|+abc def, 123)`
+which is
+`round(spaced(smoosh(id(+) id(abc)) id(def)) id(123))`
+would be
+`id(+) id(abc) space id(def) comma id(123)`
+and then you could like, add a space or a comma or whatever anywhere
+and then we parse it back up.
+
+definitely feels simpler.
+
+aahhh and the cool thin is the `space` and `comma` can hold the `loc`s of the spaced and smoosheds.
+
+
 ## Smoosh split
 
 So this is a new thing I'm doing this round, want to make sure I get it right:
@@ -108,3 +139,27 @@ This is just binops n such. and like `if x then y fi` lol
 - [ ] (|())
 - [ ] (|)
 
+### ID in Space in Round
+
+- [ ] (abc def|)
+- [ ] (abc| def)
+- [ ] (|abc def)
+- [ ] (ab|c def)
+
+### List(other) in Space in Round
+
+- [ ] (abc |())
+- [ ] (abc ()|)
+
+### ID in Smoosh in Round
+
+- [ ] (+abc|)
+- [ ] (+|abc)
+- [ ] (+ab|c)
+
+### ID in Smoosh in Space in Round
+
+- [ ] (|+abc def, 123)
+- [ ] (+abc| def)
+- [ ] (+|abc def)
+- [ ] (+ab|c def)

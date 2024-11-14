@@ -4,7 +4,7 @@ import { splitSmooshId, splitSmooshList, splitSpacedId, splitSpacedList } from '
 import { IdCursor, CollectionCursor, Path, Top, Update, lastChild, selStart, ListCursor, TextCursor } from './utils';
 export type Config = { tight: string; space: string; sep: string };
 
-type Kind = 'tight' | 'space' | 'sep' | 'id' | 'string';
+export type Kind = 'tight' | 'space' | 'sep' | 'id' | 'string';
 export const textKind = (grem: string, config: Config): Kind => {
     if (grem === '"') return 'string';
     if (config.sep.includes(grem)) return 'sep';
@@ -67,14 +67,14 @@ export const insertId = (config: Config, top: Top, path: Path, cursor: IdCursor,
                     selection: { start: selStart(path, { type: 'id', end: 1 }) },
                 };
             }
-            // Split (punct is diff)
-            if (current.punct !== (kind === 'tight')) {
-                return splitSmooshId(top, path, cursor, grem, kind === 'tight');
+            if (current.punct === (kind === 'tight')) {
+                // Just update the selection
+                const chars = cursor.text?.slice() ?? splitGraphemes(current.text);
+                const { left, right } = cursorSides(cursor);
+                chars.splice(left, right - left, grem);
+                return { nodes: {}, selection: { start: selStart(path, { ...cursor, text: chars, end: left + 1 }) } };
             }
-            // Just update the selection
-            const chars = cursor.text?.slice() ?? splitGraphemes(current.text);
-            const { left, right } = cursorSides(cursor);
-            chars.splice(left, right - left, grem);
-            return { nodes: {}, selection: { start: selStart(path, { ...cursor, text: chars, end: left + 1 }) } };
+            // Split (punct is diff)
+            return splitSmooshId(top, path, cursor, grem, kind === 'tight');
     }
 };
