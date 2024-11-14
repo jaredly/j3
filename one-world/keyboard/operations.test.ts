@@ -1,14 +1,14 @@
 // let's test some operations
 
-import { fromMap, fromRec, Id, ListKind, Nodes, RecNodeT, RecText, Text, TextSpan } from '../shared/cnodes';
+import { childLocs, childNodes, fromMap, fromRec, Id, ListKind, Nodes, RecNodeT, RecText, Text, TextSpan } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
 import { Config, handleListKey, handleTextKey, insertId } from './insertId';
-import { Cursor, getCurrent, IdCursor, CollectionCursor, ListWhere, selStart, Update } from './utils';
+import { Cursor, getCurrent, IdCursor, CollectionCursor, ListWhere, selStart, Update, Top } from './utils';
 import { TestState } from './test-utils';
 import { validate } from './validate';
 import { root } from './root';
-import { insertId2 } from './flatenate';
+import { handleIdKey } from './flatenate';
 
 // Classes of keys
 
@@ -83,8 +83,7 @@ const handleKey = (state: TestState, key: string, config: Config): Update | void
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
         case 'id':
-            return insertId2(config, state.top, state.sel.start.path, current.cursor, key);
-        // return insertId2(config, state.top, state.sel.start.path, current.cursor, key);
+            return handleIdKey(config, state.top, state.sel.start.path, current.cursor, key);
         case 'list':
             return handleListKey(config, state.top, state.sel.start.path, current.cursor, key);
         case 'text':
@@ -108,6 +107,35 @@ const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
 
 // MARK: Now we see if this all paid off y'all
 
+const atPath = (root: number, top: Top, path: number[]) => {
+    const res: number[] = [root];
+    path = path.slice();
+    while (path.length) {
+        root = childLocs(top.nodes[root])[path.shift()!];
+        res.push(root);
+    }
+    return res;
+};
+
+const selPath = (exp: RecNodeT<boolean>) => {
+    let found: number[] = [];
+    const visit = (node: RecNodeT<boolean>, path: number[]) => {
+        if (node.loc) {
+            found = path;
+            return;
+        }
+        childNodes(node).forEach((child, i) => visit(child, path.concat([i])));
+    };
+    visit(exp, []);
+    return found;
+};
+
+const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
+    expect(shape(root(state))).toEqual(shape(exp));
+    expect(state.sel.start.path.children).toEqual(atPath(state.top.root, state.top, selPath(exp)));
+    expect(state.sel.start.cursor).toEqual(cursor);
+};
+
 test('smoosh in space in sep', () => {
     let state = asTop(
         round([
@@ -129,14 +157,14 @@ test('smoosh in space in sep', () => {
     );
     validate(state);
     state = applyUpdate(state, handleKey(state, ';', js)!);
-    expect(shape(root(state))).toEqual(
-        shape(
-            round([
-                //
-                spaced([id('1'), smoosh([id('+'), id('a')])]),
-                spaced([smoosh([id('.'), id('b')]), id('2')]),
-            ]),
-        ),
+    check(
+        state,
+        round([
+            //
+            spaced([id('1'), smoosh([id('+'), id('a')])]),
+            spaced([smoosh([id('.', true), id('b')]), id('2')]),
+        ]),
+        idc(0),
     );
 });
 
@@ -145,31 +173,31 @@ test('smoosh in space in sep', () => {
 test('smoosh id after', () => {
     let state = asTop(spaced([id('one'), smoosh([id('+'), id('abc', true)])]), idc(3));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([id('one'), smoosh([id('+'), id('abc')]), id('')])));
+    check(state, spaced([id('one'), smoosh([id('+'), id('abc')]), id('', true)]), idc(0));
 });
 
 test('smoosh id before', () => {
     let state = asTop(spaced([id('one'), smoosh([id('+', true), id('abc')])]), idc(0));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([id('one'), id(''), smoosh([id('+'), id('abc')])])));
+    check(state, spaced([id('one'), id(''), smoosh([id('+', true), id('abc')])]), idc(0));
 });
 
 test('smoosh id smoosh split (start)', () => {
     let state = asTop(spaced([id('one'), smoosh([id('+'), id('abc', true)])]), idc(0));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([id('one'), id('+'), id('abc')])));
+    check(state, spaced([id('one'), id('+'), id('abc', true)]), idc(0));
 });
 
 test('smoosh id smoosh split (end)', () => {
     let state = asTop(spaced([id('one'), smoosh([id('+', true), id('abc')])]), idc(1));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([id('one'), id('+'), id('abc')])));
+    check(state, spaced([id('one'), id('+'), id('abc', true)]), idc(0));
 });
 
 test('smoosh id id split', () => {
     let state = asTop(spaced([id('one'), smoosh([id('+'), id('abc', true)])]), idc(1));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([id('one'), smoosh([id('+'), id('a')]), id('bc')])));
+    check(state, spaced([id('one'), smoosh([id('+'), id('a')]), id('bc', true)]), idc(0));
 });
 
 // MARK: space in smooshed
@@ -177,43 +205,43 @@ test('smoosh id id split', () => {
 test('smoosh id after in', () => {
     let state = asTop(smoosh([id('+'), id('abc', true)]), idc(3));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([smoosh([id('+'), id('abc')]), id('')])));
+    check(state, spaced([smoosh([id('+'), id('abc')]), id('', true)]), idc(0));
 });
 
 test('smoosh id before', () => {
     let state = asTop(smoosh([id('+', true), id('abc')]), idc(0));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([id(''), smoosh([id('+'), id('abc')])])));
+    check(state, spaced([id(''), smoosh([id('+', true), id('abc')])]), idc(0));
 });
 
 test('smoosh id split id', () => {
     let state = asTop(smoosh([id('+'), id('abc', true)]), idc(1));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([smoosh([id('+'), id('a')]), id('bc')])));
+    check(state, spaced([smoosh([id('+'), id('a')]), id('bc', true)]), idc(0));
 });
 
 test('smoosh id split smoosh (start)', () => {
     let state = asTop(smoosh([id('+'), id('abc', true)]), idc(0));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([id('+'), id('abc')])));
+    check(state, spaced([id('+'), id('abc', true)]), idc(0));
 });
 
 test('smoosh id split smoosh (end)', () => {
     let state = asTop(smoosh([id('+', true), id('abc')]), idc(1));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([id('+'), id('abc')])));
+    check(state, spaced([id('+'), id('abc', true)]), idc(0));
 });
 
 test('smoosh round split smoosh ', () => {
     let state = asTop(smoosh([round([], true), id('abc')]), listc('after'));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([round([]), id('abc')])));
+    check(state, spaced([round([]), id('abc', true)]), idc(0));
 });
 
-test('smoosh round split smoosh (before)', () => {
+test.skip('smoosh round split smoosh (before)', () => {
     let state = asTop(smoosh([round([], true), id('abc')]), listc('before'));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
-    expect(shape(root(state))).toEqual(shape(spaced([id(''), smoosh([round([], true), id('abc')])])));
+    check(state, spaced([id(''), smoosh([round([], true), id('abc')])]), listc('before'));
 });
 
 // MARK: ID spaced

@@ -1,4 +1,20 @@
 
+# One Flat to Flatten them All
+
+ok, I rewrite the whole splits thing
+and iimmmm not sure whether it worked lol
+I mean it did
+but also
+its kindof a lot.
+
+- [x] do some basic tests
+- [ ] ASSERT that some node IDs stay the same folks
+- [ ] ALSO let's be testing selections this whole time
+
+soo
+
+
+
 # Operations with a keyboard
 
 High level things, we have:

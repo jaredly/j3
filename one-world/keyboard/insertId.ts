@@ -47,6 +47,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                 return splitSmooshList(top, path, cursor, grem, kind === 'tight');
             }
     }
+    // throw new Error('noa');
 };
 
 // grem is a single grapheme.

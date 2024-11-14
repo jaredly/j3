@@ -34,7 +34,7 @@ import { splitSmooshId, splitSmooshList, splitSpacedId, splitSpacedList } from '
 import { IdCursor, CollectionCursor, Path, Top, Update, lastChild, selStart, ListCursor, TextCursor, parentPath, Cursor } from './utils';
 export type Config = { tight: string; space: string; sep: string };
 
-export const insertId2 = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update => {
+export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update => {
     const current = top.nodes[lastChild(path)];
     if (current.type !== 'id') throw new Error('not id');
     const kind = textKind(grem, config);
@@ -65,7 +65,7 @@ export const insertId2 = (config: Config, top: Top, path: Path, cursor: IdCursor
 
     const split = cursorSplit(current.text, cursor);
 
-    console.log('before', flat);
+    // console.log('before', flat);
 
     const neighbor: Flat =
         kind === 'sep'
@@ -108,7 +108,7 @@ export const insertId2 = (config: Config, top: Top, path: Path, cursor: IdCursor
         }
     }
 
-    console.log('after', flat);
+    // console.log('after', flat);
 
     const { root, nextLoc, selection } = roughen(
         flat,
