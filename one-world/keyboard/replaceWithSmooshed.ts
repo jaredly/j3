@@ -15,7 +15,15 @@ export const replaceWithSmooshed = (path: Path, top: Top, old: number, locs: num
 export const replaceWithSpaced = (path: Path, top: Top, old: number, locs: number[], sel?: PartialSel): Update =>
     replaceWithList(path, top, old, locs, 'spaced', sel);
 
-export const replaceWithList = (path: Path, top: Top, old: number, locs: number[], kind: List<number>['kind'], sel?: PartialSel): Update => {
+export const replaceWithList = (
+    path: Path,
+    top: Top,
+    old: number,
+    locs: number[],
+    kind: List<number>['kind'],
+    sel?: PartialSel,
+    nodes: Update['nodes'] = {},
+): Update => {
     const parent = parentList(top, path.children, kind);
     if (parent) {
         const children = parent.children.slice();
@@ -25,7 +33,7 @@ export const replaceWithList = (path: Path, top: Top, old: number, locs: number[
         }
         children.splice(at, 1, ...locs);
         return {
-            nodes: { [parent.loc]: { ...parent, children } },
+            nodes: { ...nodes, [parent.loc]: { ...parent, children } },
             selection: withPartial(parentPath(path), sel),
             nextLoc: top.nextLoc,
         };
@@ -44,13 +52,21 @@ export const replaceWithList = (path: Path, top: Top, old: number, locs: number[
             const at = smooshed.children.indexOf(old);
             if (at === -1) throw new Error(`${old} not in children ${smooshed.children}`);
             const litems = smooshed.children.slice(0, at);
-            litems.push(left);
             const ritems = smooshed.children.slice(at + 1);
-            ritems.unshift(right);
+
+            if (litems.length && nodes[left]?.type === 'id' && nodes[left]?.text === '') {
+                // do nothing
+            } else {
+                litems.push(left);
+            }
+            if (ritems.length && nodes[right]?.type === 'id' && nodes[right]?.text === '') {
+                // do nothing
+            } else {
+                ritems.unshift(right);
+            }
 
             let res: number[] = [];
 
-            const nodes: Update['nodes'] = {};
             nodes[smooshed.loc] = null;
 
             if (litems.length > 1) {
@@ -64,7 +80,7 @@ export const replaceWithList = (path: Path, top: Top, old: number, locs: number[
                     };
                 }
             } else {
-                res.push(left);
+                res.push(litems[0]);
             }
 
             if (ritems.length > 1) {
@@ -86,7 +102,7 @@ export const replaceWithList = (path: Path, top: Top, old: number, locs: number[
                     };
                 }
             } else {
-                res.push(right);
+                res.push(ritems[0]);
             }
 
             // NOW we make 2 smoosheds.
@@ -109,6 +125,7 @@ export const replaceWithList = (path: Path, top: Top, old: number, locs: number[
     let nextLoc = top.nextLoc;
     const parentLoc = nextLoc++;
     const update = replaceAt(path.children.slice(0, -1), top, old, parentLoc);
+    Object.assign(update.nodes, nodes);
     update.nodes[parentLoc] = {
         type: 'list',
         kind,

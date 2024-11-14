@@ -115,12 +115,56 @@ const root = (state: TestState) => {
 const idc = (end: number): IdCursor => ({ type: 'id', end });
 const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
 
-// MARK: smooshed spaced
+// MARK: space in smooshed in space
+
+test('smoosh id after', () => {
+    let state = asTop(spaced([id('one'), smoosh([id('+'), id('abc', true)])]), idc(3));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('one'), smoosh([id('+'), id('abc')]), id('')])));
+});
+
+test('smoosh id before', () => {
+    let state = asTop(spaced([id('one'), smoosh([id('+', true), id('abc')])]), idc(0));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('one'), id(''), smoosh([id('+'), id('abc')])])));
+});
+
+// test('smoosh id smoosh split', () => {
+//     let state = asTop(spaced([id('one'), smoosh([id('+', true), id('abc')])]), idc(1));
+//     state = applyUpdate(state, handleKey(state, ' ', js)!);
+//     expect(shape(root(state))).toEqual(shape(spaced([id('one'), id('+'), id('abc')])));
+// });
+
+test('smoosh id id split', () => {
+    let state = asTop(spaced([id('one'), smoosh([id('+'), id('abc', true)])]), idc(1));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('one'), smoosh([id('+'), id('a')]), id('bc')])));
+});
+
+// MARK: space in smooshed
 
 test('smoosh id after', () => {
     let state = asTop(smoosh([id('+'), id('abc', true)]), idc(3));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
     expect(shape(root(state))).toEqual(shape(spaced([smoosh([id('+'), id('abc')]), id('')])));
+});
+
+test('smoosh id before', () => {
+    let state = asTop(smoosh([id('+', true), id('abc')]), idc(0));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id(''), smoosh([id('+'), id('abc')])])));
+});
+
+test('smoosh id split id', () => {
+    let state = asTop(smoosh([id('+'), id('abc', true)]), idc(1));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([smoosh([id('+'), id('a')]), id('bc')])));
+});
+
+test('smoosh id split smoosh', () => {
+    let state = asTop(smoosh([id('+'), id('abc', true)]), idc(0));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('+'), id('abc')])));
 });
 
 // MARK: ID spaced

@@ -82,12 +82,12 @@ This is just binops n such. and like `if x then y fi` lol
 - [x] one|  two
 
 // NOW in a smooshed
-- [ ] +abc|
-- [ ] |+abc
-- [ ] +|abc
-- [ ] +a|bc
+- [x] +abc|
+- [x] |+abc
+- [x] +|abc
+- [x] +a|bc
 // smooshed + spaced
-- [ ] one +two|
+- [x] one +two|
 - [ ] one |+two
 - [ ] one +|two
 - [ ] one +t|wo

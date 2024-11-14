@@ -191,9 +191,9 @@ export const splitSpacedId = (top: Top, path: Path, cursor: IdCursor): Update =>
     const split = cursorSplit(id.text, cursor);
     const parent = top.nodes[path.children[path.children.length - 2]];
 
+    // if there's a space after this one, just nav to it
     if (parent?.type === 'list' && split.type === 'after') {
         if (parent.kind === 'spaced') {
-            // if there's a space after this one, just nav to it
             const next = selectBlankAfter(parent, path, top);
             if (next) return next;
         }
@@ -208,13 +208,13 @@ export const splitSpacedId = (top: Top, path: Path, cursor: IdCursor): Update =>
     }
 
     let nextLoc = top.nextLoc;
-    const inserts: number[] = [];
+    let inserts: [number, number];
     let sel: PartialSel;
 
     switch (split.type) {
         case 'before': {
             const left = nextLoc++;
-            inserts.push(left, id.loc);
+            inserts = [left, id.loc];
             nodes[left] = { type: 'id', text: '', loc: left };
             nodes[id.loc] = { ...id, text: split.text };
             sel = {
@@ -225,7 +225,7 @@ export const splitSpacedId = (top: Top, path: Path, cursor: IdCursor): Update =>
         }
         case 'after': {
             const right = nextLoc++;
-            inserts.push(id.loc, right);
+            inserts = [id.loc, right];
             nodes[right] = { type: 'id', text: '', loc: right };
             nodes[id.loc] = { ...id, text: split.text };
             sel = {
@@ -236,7 +236,7 @@ export const splitSpacedId = (top: Top, path: Path, cursor: IdCursor): Update =>
         }
         case 'between': {
             const right = nextLoc++;
-            inserts.push(id.loc, right);
+            inserts = [id.loc, right];
             nodes[id.loc] = { ...id, text: split.left };
             nodes[right] = { type: 'id', text: split.right, loc: right, punct: id.punct };
             sel = {
@@ -247,8 +247,7 @@ export const splitSpacedId = (top: Top, path: Path, cursor: IdCursor): Update =>
         }
     }
 
-    const up = replaceWithList(path, { ...top, nextLoc }, id.loc, inserts, 'spaced', sel);
-    Object.assign(up.nodes, nodes);
+    const up = replaceWithList(path, { ...top, nextLoc }, id.loc, inserts, 'spaced', sel, nodes);
 
     return up;
 };

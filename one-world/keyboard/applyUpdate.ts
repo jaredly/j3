@@ -13,6 +13,13 @@ export function applyUpdate(state: TestState, update: Update) {
             root: update.root ?? state.top.root,
         },
     };
+    Object.keys(update.nodes).forEach((key) => {
+        if (update.nodes[+key] === null) {
+            delete state.top.nodes[+key];
+        } else {
+            state.top.nodes[+key] = update.nodes[+key]!;
+        }
+    });
 
     // This is "maybe commit text changes"
     if (prev.start.cursor.type === 'id' && prev.start.cursor.text != null && update.selection && update.selection.start.key !== prev.start.key) {
