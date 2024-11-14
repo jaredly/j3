@@ -53,7 +53,7 @@ Assumptions
 */
 
 export const splitSpacedList = (top: Top, path: Path, cursor: ListCursor): Update => {
-    const id = top.nodes[lastChild(path)];
+    const list = top.nodes[lastChild(path)];
     const nodes: Nodes = {};
 
     const parent = top.nodes[path.children[path.children.length - 2]];
@@ -82,10 +82,10 @@ export const splitSpacedList = (top: Top, path: Path, cursor: ListCursor): Updat
         case 'start':
         case 'before': {
             const left = nextLoc++;
-            inserts.push(left, id.loc);
+            inserts.push(left, list.loc);
             nodes[left] = { type: 'id', text: '', loc: left };
             sel = {
-                children: [id.loc],
+                children: [list.loc],
                 cursor: { type: 'id', end: 0 },
             };
             break;
@@ -93,7 +93,7 @@ export const splitSpacedList = (top: Top, path: Path, cursor: ListCursor): Updat
         case 'end':
         case 'after': {
             const right = nextLoc++;
-            inserts.push(id.loc, right);
+            inserts.push(list.loc, right);
             nodes[right] = { type: 'id', text: '', loc: right };
             sel = {
                 children: [right],
@@ -102,11 +102,23 @@ export const splitSpacedList = (top: Top, path: Path, cursor: ListCursor): Updat
             break;
         }
         case 'inside': {
-            throw new Error('not doing');
+            if (list.type !== 'list') throw new Error(`inside, but not a list`);
+            const left = nextLoc++;
+            const wrap = nextLoc++;
+            const loc = nextLoc++;
+            return {
+                nodes: {
+                    [left]: { type: 'id', text: '', loc: left },
+                    [loc]: { type: 'id', text: '', loc },
+                    [wrap]: { type: 'list', kind: 'spaced', children: [left, loc], loc: wrap },
+                    [list.loc]: { ...list, children: [wrap] },
+                },
+                selection: { start: selStart(pathWithChildren(path, wrap, loc), { type: 'id', end: 0 }) },
+            };
         }
     }
 
-    const up = replaceWithList(path, { ...top, nextLoc }, id.loc, inserts, 'spaced', sel);
+    const up = replaceWithList(path, { ...top, nextLoc }, list.loc, inserts, 'spaced', sel);
     Object.assign(up.nodes, nodes);
 
     return up;

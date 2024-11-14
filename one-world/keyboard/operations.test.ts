@@ -147,6 +147,12 @@ test('round end', () => {
     expect(shape(root(state))).toEqual(shape(spaced([round([]), id('')])));
 });
 
+test('round inside', () => {
+    let state = asTop(round([], true), listc('inside'));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(round([spaced([id(''), id('')])])));
+});
+
 test('text start', () => {
     let state = asTop(text([], true), listc('before'));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
@@ -157,6 +163,20 @@ test('text end', () => {
     let state = asTop(text([], true), listc('after'));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
     expect(shape(root(state))).toEqual(shape(spaced([text([]), id('')])));
+});
+
+// MARK: Two spaced
+
+test('id two end', () => {
+    let state = asTop(spaced([id('one'), id('two', true)]), idc(3));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('one'), id('two'), id('')])));
+});
+
+test('id two start', () => {
+    let state = asTop(spaced([id('one'), id('two', true)]), idc(0));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    expect(shape(root(state))).toEqual(shape(spaced([id('one'), id(''), id('two')])));
 });
 
 // MARK: Text smooshed

@@ -42,6 +42,7 @@ Honestly I think the `list` control can apply just as well to a `text`, maybe I'
 
 - [x] |()
 - [x] ()|
+- [x] (|)
 - [x] abc()|
 - [x] |()abc
 - [x] ()|()
@@ -64,7 +65,7 @@ This is just binops n such. and like `if x then y fi` lol
 // plain list
 - [x] ()|
 - [x] |()
-- [ ] (|) ???
+- [x] (|)
 - [x] |"abc"
 - [x] "abc"|
 // spaced (id id)
