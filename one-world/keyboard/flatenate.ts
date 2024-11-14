@@ -284,6 +284,9 @@ export function addNeighborAfter(
         sel = flat[at + 1] as Id<number>;
         ncursor = { type: 'id', end: 0 };
         flat.splice(at + 1, 0, neighbor);
+    } else if (neighbor.type === 'id') {
+        flat.splice(at + 1, 0, (sel = neighbor));
+        ncursor = { type: 'id', end: splitGraphemes(neighbor.text).length };
     } else {
         flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: '', loc: -1 }));
         ncursor = { type: 'id', end: 0 };

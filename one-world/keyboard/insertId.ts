@@ -86,7 +86,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                 const loc = nextLoc++;
                 return {
                     nodes: {
-                        [loc]: { type: 'id', loc, text: grem },
+                        [loc]: { type: 'id', loc, text: grem, punct: kind === 'tight' },
                         [current.loc]: { ...current, children: [loc] },
                     },
                     nextLoc,
