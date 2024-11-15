@@ -9,8 +9,7 @@ import { TestState } from './test-utils';
 import { validate } from './validate';
 import { root } from './root';
 import { handleIdKey } from './flatenate';
-import { cursorSides } from './cursorSplit';
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { handleDelete } from './handleDelete';
 
 // Classes of keys
 
@@ -81,35 +80,6 @@ const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
     };
 };
 
-const handleDelete = (state: TestState): Update | void => {
-    const current = getCurrent(state.sel, state.top);
-    switch (current.type) {
-        case 'id': {
-            let { left, right } = cursorSides(current.cursor);
-            if (left === 0 && right === 0) {
-                // doin a left join
-            } else {
-                if (left === right) {
-                    left--;
-                }
-                const text = current.cursor.text?.slice() ?? splitGraphemes(current.node.text);
-                text.splice(left, right - left);
-                if (text.length === 0) {
-                    // STOPSHIP:
-                    // If we're in a smoosh, we may have to join things
-                    // in a certain direction
-                }
-                return { nodes: {}, selection: { start: selStart(state.sel.start.path, { type: 'id', end: left, text }) } };
-            }
-        }
-
-        default:
-            throw new Error('nop');
-    }
-
-    // if (current.type === 'list' && current.cursor.type === 'list' && current.cursor.where === '')
-};
-
 const handleKey = (state: TestState, key: string, config: Config): Update | void => {
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
@@ -174,6 +144,20 @@ test('deltes', () => {
     validate(state);
     state = applyUpdate(state, handleDelete(state));
     check(state, id('heso'), idc(2));
+});
+
+test.only('join spaced', () => {
+    let state = asTop(spaced([id('one'), id('two', true)]), idc(0));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('onetwo'), idc(3));
+});
+
+test('del smoosh prev', () => {
+    let state = asTop(smoosh([id('...'), id('two', true)]), idc(0));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, smoosh([id('..', true), id('two')]), idc(2));
 });
 
 // MARK: space sep
