@@ -17,17 +17,20 @@ import { handleDelete } from './handleDelete';
 const allkeys = '1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM~!@#$%^&*()_+{}|:"<>?`-=[]\\;\',./';
 
 const lisp = {
-    tight: '.=#@;+',
+    punct: '.=#@;+',
     space: '',
     sep: ' ',
 };
 const js = {
-    tight: '~`!@#$%^&*_+-=\\./?:',
+    // punct: [],
+    // so js's default is just 'everything for itself'
+    // tight: [...'~`!@#$%^&*_+-=\\./?:'],
+    punct: '~`!@#$%^&*_+-=\\./?:',
     space: ' ',
     sep: ';,\n',
 };
 
-const idkeys = (config: Config) => [...allkeys].filter((k) => !config.tight.includes(k) && !config.space.includes(k) && !config.sep.includes(k));
+const idkeys = (config: Config) => [...allkeys].filter((k) => !config.punct.includes(k) && !config.space.includes(k) && !config.sep.includes(k));
 
 const lispId = idkeys(lisp);
 const jsId = idkeys(js);
@@ -44,7 +47,7 @@ const id = <T>(text: string, loc: T = null as T): Id<T> => ({
     type: 'id',
     text,
     loc,
-    punct: text.length === 0 ? undefined : [...text].some((k) => lisp.tight.includes(k)),
+    punct: text.length === 0 ? undefined : [...text].some((k) => lisp.punct.includes(k)),
 });
 const list =
     (kind: ListKind<RecNodeT<unknown>>) =>
@@ -117,7 +120,7 @@ const atPath = (root: number, top: Top, path: number[]) => {
 };
 
 const selPath = (exp: RecNodeT<boolean>) => {
-    let found: number[] = [];
+    let found: number[] | null = null;
     const visit = (node: RecNodeT<boolean>, path: number[]) => {
         if (node.loc) {
             found = path;
@@ -126,6 +129,7 @@ const selPath = (exp: RecNodeT<boolean>) => {
         childNodes(node).forEach((child, i) => visit(child, path.concat([i])));
     };
     visit(exp, []);
+    if (found == null) throw new Error(`no node marked for selection`);
     return found;
 };
 
@@ -143,14 +147,35 @@ test('deltes', () => {
     let state = asTop(id('helso', true), idc(3));
     validate(state);
     state = applyUpdate(state, handleDelete(state));
-    check(state, id('heso'), idc(2));
+    check(state, id('heso', true), idc(2));
 });
 
-test.only('join spaced', () => {
+test('join spaced', () => {
     let state = asTop(spaced([id('one'), id('two', true)]), idc(0));
     validate(state);
     state = applyUpdate(state, handleDelete(state));
-    check(state, id('onetwo'), idc(3));
+    check(state, id('onetwo', true), idc(3));
+});
+
+test('collapse smoosh', () => {
+    let state = asTop(smoosh([id('one'), id('+', true), id('two')]), idc(1));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('onetwo', true), idc(3));
+});
+
+test('smoosh sel closer', () => {
+    let state = asTop(smoosh([round([]), id('two', true)]), idc(0));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, smoosh([round([], true), id('two')]), listc('end'));
+});
+
+test('join deep smooshed', () => {
+    let state = asTop(spaced([id('one'), smoosh([id('two', true), id('+')])]), idc(0));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, smoosh([id('onetwo', true), id('+')]), idc(3));
 });
 
 test('del smoosh prev', () => {

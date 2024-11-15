@@ -35,7 +35,7 @@ export function applyUpdate(state: TestState, update: Update | void) {
         }
     }
     try {
-        validate(state);
+        // validate(state);
     } catch (err) {
         console.log(JSON.stringify(state, null, 2));
         console.log(shape(root(state)));

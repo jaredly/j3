@@ -64,11 +64,9 @@ export const handleDelete = (state: TestState): Update | void => {
                     flat,
                     state.top,
                     {},
-                    { node: pnode, path: parent },
-                    'round', // LOL unused
+                    { type: 'existing', node: pnode, path: parent },
                     node,
                     { type: 'id', end: 0 },
-                    node, // LOL unused
                     state.sel.start.path,
                 );
             } else {
@@ -81,7 +79,17 @@ export const handleDelete = (state: TestState): Update | void => {
                     const ppath = parentPath(state.sel.start.path);
                     const parent = state.top.nodes[lastChild(ppath)];
                     if (parent?.type === 'list' && parent.kind === 'smooshed') {
-                        throw new Error(`gotta check smoosh collapses`);
+                        const node = state.top.nodes[lastChild(state.sel.start.path)] as Id<number>;
+                        // throw new Error(`gotta check smoosh collapses`);
+                        return flatToUpdate(
+                            parent.children.map((loc) => (loc === node.loc ? { ...node, text: '' } : state.top.nodes[loc])),
+                            state.top,
+                            {},
+                            { type: 'existing', node: parent, path: ppath },
+                            node,
+                            { type: 'id', end: 0 },
+                            state.sel.start.path,
+                        );
                     }
                 }
                 return { nodes: {}, selection: { start: selStart(state.sel.start.path, { type: 'id', end: left, text }) } };

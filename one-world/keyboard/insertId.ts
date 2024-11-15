@@ -2,14 +2,14 @@ import { Node, Nodes } from '../shared/cnodes';
 import { addNeighborAfter, addNeighborBefore, findParent, Flat, flatten, flatToUpdate, listKindForKeyKind } from './flatenate';
 // import { splitSmooshId, splitSpacedId } from './splitSmoosh';
 import { CollectionCursor, Cursor, lastChild, ListCursor, parentPath, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
-export type Config = { tight: string; space: string; sep: string };
+export type Config = { punct: string; space: string; sep: string };
 
 export type Kind = 'tight' | 'space' | 'sep' | 'id' | 'string';
 export const textKind = (grem: string, config: Config): Kind => {
     if (grem === '"') return 'string';
     if (config.sep.includes(grem)) return 'sep';
     if (config.space.includes(grem)) return 'space';
-    if (config.tight.includes(grem)) return 'tight';
+    if (config.punct.includes(grem)) return 'tight';
     return 'id';
 };
 
@@ -98,7 +98,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
             break;
     }
 
-    return flatToUpdate(flat, top, nodes, parent, kind, sel, ncursor, current, path);
+    return flatToUpdate(flat, top, nodes, parent ? { type: 'existing', ...parent } : { type: 'new', kind, current }, sel, ncursor, path);
 
     // switch (kind) {
     //     case 'space':

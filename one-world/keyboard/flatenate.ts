@@ -31,7 +31,7 @@ import { cursorSides, cursorSplit } from './cursorSplit';
 import { Kind, textKind } from './insertId';
 import { replaceAt } from './replaceAt';
 import { Cursor, IdCursor, ListCursor, Path, Top, Update, lastChild, parentPath, selStart } from './utils';
-export type Config = { tight: string; space: string; sep: string };
+export type Config = { punct: string; space: string; sep: string };
 
 export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update => {
     const current = top.nodes[lastChild(path)];
@@ -95,7 +95,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
 
     // console.log('after', flat);
 
-    return flatToUpdate(flat, top, nodes, parent, kind, sel, ncursor, current, path);
+    return flatToUpdate(flat, top, nodes, parent ? { type: 'existing', ...parent } : { type: 'new', kind, current }, sel, ncursor, path);
 };
 
 export const listKindForKeyKind = (kind: Kind): 0 | 1 | 2 => (kind === 'sep' ? OTHER : kind === 'space' ? SPACED : SMOOSH);
@@ -228,52 +228,93 @@ export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node
 
 // TODO:
 const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [Flat[], Node, Cursor] => {
-    const rm: number[] = [];
-    flat.forEach((item, i) => {
-        if (rm.includes(i)) return;
-        const next = flat[i + 1];
-        if (item.type === 'id' && i < flat.length - 1 && next.type === 'id') {
-            if (item.text === '') {
-                rm.push(i);
-                if (item === sel) {
-                    sel = next;
-                }
-            } else if (next.text === '') {
-                rm.push(i + 1);
-                if (item === next) {
-                    sel = item;
-                    ncursor = { type: 'id', end: splitGraphemes(item.text).length };
-                }
-            } else if (next.punct === item.punct) {
-                if (item.loc === -1) {
-                    flat[i + 1] = { ...next, text: item.text + next.text };
-                    rm.push(i);
-                    if (item === sel) {
-                        sel = flat[i + 1] as Node;
-                    }
-                } else {
-                    flat[i] = { ...item, text: item.text + next.text };
-                    rm.push(i + 1);
-                    if (next === sel) {
-                        sel = flat[i] as Node;
-                        ncursor = { type: 'id', end: splitGraphemes(item.text).length + (ncursor.type === 'id' ? ncursor.end : 0) };
-                    }
-                }
+    const res: Flat[] = [];
+    for (let i = 0; i < flat.length; i++) {
+        const node = flat[i];
+        if (node.type !== 'id') {
+            res.push(node);
+            continue;
+        }
+        const tojoin = [node];
+        let text = node.text;
+        let loc = node.loc;
+        let punct = node.text === '' ? undefined : node.punct;
+        for (; i < flat.length - 1 && flat[i + 1].type === 'id'; i++) {
+            const next = flat[i + 1] as Id<number>;
+            if (next.text === '' || punct == null || next.punct === punct) {
+                text += next.text;
+                tojoin.push(next);
+                if (next.punct != null && next.text !== '') punct = next.punct;
+                if (loc === -1) loc = next.loc;
+            } else {
+                break;
             }
         }
-    });
-    return [flat.filter((_, i) => !rm.includes(i)), sel, ncursor];
+        if (tojoin.length === 1) {
+            res.push(tojoin[0]);
+            continue;
+        }
+        if (sel.type === 'id' && ncursor.type === 'id' && tojoin.includes(sel)) {
+            let pos = ncursor.end;
+            for (let i = 0; i < tojoin.length; i++) {
+                if (tojoin[i] === sel) {
+                    break;
+                }
+                pos += splitGraphemes(tojoin[i].text).length;
+            }
+            ncursor = { type: 'id', end: pos };
+            sel = { type: 'id', punct, text, loc };
+            res.push(sel);
+        } else {
+            res.push({ type: 'id', punct, text, loc });
+        }
+    }
+    return [res, sel, ncursor];
+
+    // const rm: number[] = [];
+    // flat.forEach((item, i) => {
+    //     if (rm.includes(i)) return;
+    //     const next = flat[i + 1];
+    //     if (item.type === 'id' && i < flat.length - 1 && next.type === 'id') {
+    //         if (item.text === '') {
+    //             rm.push(i);
+    //             if (item === sel) {
+    //                 sel = next;
+    //             }
+    //         } else if (next.text === '') {
+    //             rm.push(i + 1);
+    //             if (item === next) {
+    //                 sel = item;
+    //                 ncursor = { type: 'id', end: splitGraphemes(item.text).length };
+    //             }
+    //         } else if (next.punct === item.punct) {
+    //             if (item.loc === -1) {
+    //                 flat[i + 1] = { ...next, text: item.text + next.text };
+    //                 rm.push(i);
+    //                 if (item === sel) {
+    //                     sel = flat[i + 1] as Node;
+    //                 }
+    //             } else {
+    //                 flat[i] = { ...item, text: item.text + next.text };
+    //                 rm.push(i + 1);
+    //                 if (next === sel) {
+    //                     sel = flat[i] as Node;
+    //                     ncursor = { type: 'id', end: splitGraphemes(item.text).length + (ncursor.type === 'id' ? ncursor.end : 0) };
+    //                 }
+    //             }
+    //         }
+    //     }
+    // });
+    // return [flat.filter((_, i) => !rm.includes(i)), sel, ncursor];
 };
 
 export function flatToUpdate(
     flat: Flat[],
     top: Top,
     nodes: Record<string, Node | null>,
-    parent: void | { node: List<number>; path: Path },
-    kind: string,
+    parent: { type: 'new'; kind: string; current: Node } | { type: 'existing'; node: List<number>; path: Path },
     sel: Node,
     ncursor: Cursor,
-    current: Node,
     path: Path,
 ) {
     [flat, sel, ncursor] = collapseAdjacentIds(flat, sel, ncursor);
@@ -282,20 +323,20 @@ export function flatToUpdate(
         flat,
         top,
         nodes,
-        parent ? parent.node.kind : kind === 'sep' ? 'round' : kind === 'space' ? 'spaced' : 'smooshed',
+        parent.type === 'existing' ? parent.node.kind : parent.kind === 'sep' ? 'round' : parent.kind === 'space' ? 'spaced' : 'smooshed',
         { node: sel, cursor: ncursor },
     );
 
     let nroot = undefined;
 
-    if (parent && root !== parent.node.loc) {
+    if (parent.type === 'existing' && root !== parent.node.loc) {
         const up = replaceAt(parent.path.children.slice(0, -1), top, parent.node.loc, root);
         nroot = up.root;
         Object.assign(nodes, up.nodes);
     }
-    if (!parent && root !== current.loc) {
+    if (parent.type === 'new' && root !== parent.current.loc) {
         // throw new Error('need rebasee');
-        const up = replaceAt(path.children.slice(0, -1), top, current.loc, root);
+        const up = replaceAt(path.children.slice(0, -1), top, parent.current.loc, root);
         nroot = up.root;
         Object.assign(nodes, up.nodes);
     }
@@ -305,7 +346,10 @@ export function flatToUpdate(
         nodes,
         nextLoc,
         selection: {
-            start: selStart({ ...path, children: parentPath(parent?.path ?? path).children.concat(selection.children) }, selection.cursor),
+            start: selStart(
+                { ...path, children: parentPath(parent.type === 'existing' ? parent.path : path).children.concat(selection.children) },
+                selection.cursor,
+            ),
         },
     };
 }

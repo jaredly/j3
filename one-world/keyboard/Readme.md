@@ -1,4 +1,27 @@
 
+# Character Classes
+
+it occurs to me
+that there might be multiple character classes
+to recon with
+
+like, if you wanted to comment out a spread of an unquote.
+
+;...@lol
+
+so I'm pretty sure ; should be its own class
+and maybe . as well
+
+So, do I want these character classes to be customizeable?
+or do I lock it in? ... hmm.
+
+The only danger of making them customizeable ... is switching
+between syntaxes, right?
+OK but honestly, I need the infra to be customizeable in the first place.
+
+So let's do that.
+
+
 # One Flat to Flatten them All
 
 ok, I rewrite the whole splits thing
