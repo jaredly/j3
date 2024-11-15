@@ -90,7 +90,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     switch (cursor.where) {
         case 'before':
         case 'start':
-            addNeighborBefore(at, flat, neighbor);
+            ({ sel, ncursor } = addNeighborBefore(at, flat, neighbor, sel, ncursor));
             break;
         case 'after':
         case 'end':

@@ -339,7 +339,7 @@ test('id one spaced end', () => {
 test('text before', () => {
     let state = asTop(text([], true), listc('before'));
     state = applyUpdate(state, handleKey(state, 'A', lisp)!);
-    check(state, smoosh([id('A'), text([], true)]), listc('before'));
+    check(state, smoosh([id('A', true), text([])]), idc(1));
 });
 
 test('text after', () => {
@@ -353,7 +353,7 @@ test('text after', () => {
 test('list before pls', () => {
     let state = asTop(round([], true), listc('before'));
     state = applyUpdate(state, handleKey(state, 'A', lisp)!);
-    check(state, smoosh([id('A'), round([], true)]), listc('before'));
+    check(state, smoosh([id('A', true), round([])]), idc(1));
 });
 
 test('list after', () => {
@@ -371,7 +371,7 @@ test('list smoosh end', () => {
 test('list smoosh start', () => {
     let state = asTop(smoosh([round([], true), id('a')]), listc('before'));
     state = applyUpdate(state, handleKey(state, 'A', lisp)!);
-    check(state, smoosh([id('A'), round([], true), id('a')]), listc('before'));
+    check(state, smoosh([id('A', true), round([]), id('a')]), idc(1));
 });
 
 test('list insidesss', () => {
@@ -409,7 +409,13 @@ test('start empty', () => {
 test('and smoosh', () => {
     let state = asTop(id('ab', true), idc(0));
     state = applyUpdate(state, handleKey(state, '=', lisp)!);
-    check(state, smoosh([id('='), id('ab', true)]), idc(0));
+    check(state, smoosh([id('=', true), id('ab')]), idc(1));
+});
+
+test('smoosh to left', () => {
+    let state = asTop(smoosh([id('.'), id('ab', true)]), idc(0));
+    state = applyUpdate(state, handleKey(state, '=', lisp)!);
+    check(state, smoosh([id('.=', true), id('ab')]), idc(2));
 });
 
 // MARK: Split smoosh

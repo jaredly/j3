@@ -78,7 +78,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
 
     switch (split.type) {
         case 'before': {
-            addNeighborBefore(at, flat, neighbor);
+            ({ sel, ncursor } = addNeighborBefore(at, flat, neighbor, sel, ncursor));
             break;
         }
         case 'after': {
@@ -226,7 +226,8 @@ export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node
     return { node, path };
 };
 
-const collapseAdjacentIds = (flat: Flat[]) => {
+// TODO:
+const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [Flat[], Node, Cursor] => {
     const rm: number[] = [];
     flat.forEach((item, i) => {
         if (rm.includes(i)) return;
@@ -234,20 +235,34 @@ const collapseAdjacentIds = (flat: Flat[]) => {
         if (item.type === 'id' && i < flat.length - 1 && next.type === 'id') {
             if (item.text === '') {
                 rm.push(i);
+                if (item === sel) {
+                    sel = next;
+                }
             } else if (next.text === '') {
                 rm.push(i + 1);
+                if (item === next) {
+                    sel = item;
+                    ncursor = { type: 'id', end: splitGraphemes(item.text).length };
+                }
             } else if (next.punct === item.punct) {
                 if (item.loc === -1) {
                     flat[i + 1] = { ...next, text: item.text + next.text };
                     rm.push(i);
+                    if (item === sel) {
+                        sel = flat[i + 1] as Node;
+                    }
                 } else {
                     flat[i] = { ...item, text: item.text + next.text };
                     rm.push(i + 1);
+                    if (next === sel) {
+                        sel = flat[i] as Node;
+                        ncursor = { type: 'id', end: splitGraphemes(item.text).length + (ncursor.type === 'id' ? ncursor.end : 0) };
+                    }
                 }
             }
         }
     });
-    return flat.filter((_, i) => !rm.includes(i));
+    return [flat.filter((_, i) => !rm.includes(i)), sel, ncursor];
 };
 
 export function flatToUpdate(
@@ -257,11 +272,11 @@ export function flatToUpdate(
     parent: void | { node: List<number>; path: Path },
     kind: string,
     sel: Node,
-    ncursor: ListCursor | IdCursor,
+    ncursor: Cursor,
     current: Node,
     path: Path,
 ) {
-    flat = collapseAdjacentIds(flat);
+    [flat, sel, ncursor] = collapseAdjacentIds(flat, sel, ncursor);
 
     const { root, nextLoc, selection } = roughen(
         flat,
@@ -319,10 +334,21 @@ export function addNeighborAfter(
     return { sel, ncursor };
 }
 
-export function addNeighborBefore(at: number, flat: Flat[], neighbor: Id<number> | { type: 'space'; loc: number } | { type: 'sep'; loc: number }) {
+export function addNeighborBefore(
+    at: number,
+    flat: Flat[],
+    neighbor: Id<number> | { type: 'space'; loc: number } | { type: 'sep'; loc: number },
+    sel: Node,
+    ncursor: Cursor,
+) {
     if ((at !== 0 && flat[at - 1].type === 'id') || (at === 0 && neighbor.type === 'id')) {
         flat.splice(at, 0, neighbor);
     } else {
         flat.splice(at, 0, { type: 'id', text: '', loc: -1 }, neighbor);
     }
+    if (neighbor.type === 'id') {
+        sel = neighbor;
+        ncursor = { type: 'id', end: splitGraphemes(neighbor.text).length };
+    }
+    return { sel, ncursor };
 }
