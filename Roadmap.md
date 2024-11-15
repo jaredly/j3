@@ -1,4 +1,16 @@
 
+# All the New Things
+
+- [x] I keep creating new nodes at the root, I dont want that
+- [ ] the 'check smoosh' is erroring
+- [ ] need to be able to wrap stuff
+- [ ] let's handle shift-left/right for selection
+- [ ] I've been ignoring multiselect, maybe dont do that
+- [ ] I should have tests for this left/right navigation stuff, not just playing around
+- [ ] can we get to near~100% coverage for all the new stuff?
+
+
+
 # Partially Applied Macrosss???
 
 So I was having some thoughts, at one point.

@@ -143,6 +143,9 @@ const App = () => {
         <>
             <RenderNode loc={state.top.root} state={state} />
             <div>{shape(root(state))}</div>
+            <div>
+                {Object.keys(state.top.nodes)} : {state.top.root} : {state.top.nextLoc}
+            </div>
             <div>{JSON.stringify(state.sel)}</div>
         </>
     );

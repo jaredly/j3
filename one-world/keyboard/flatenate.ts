@@ -127,10 +127,19 @@ export const interleave = <T>(items: T[], sep: T) => {
 type Rough = { type: 'rough'; children: (Rough | Node)[]; loc: number; kind: 'other' | 'spaced' | 'smooshed' };
 const nough = (kind: 'other' | 'spaced' | 'smooshed', children: Rough['children'] = []): Rough => ({ kind, children, loc: -1, type: 'rough' });
 
-const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], base: List<number>['kind'], sel: { node: Node; cursor: Cursor }) => {
+const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], parent: FlatParent, sel: { node: Node; cursor: Cursor }) => {
     let smooshed = nough('smooshed');
     let spaced = nough('spaced', [smooshed]);
     const other = nough('other', [spaced]);
+    if (parent.type === 'existing') {
+        if (parent.node.kind === 'smooshed') {
+            smooshed.loc = parent.node.loc;
+        } else if (parent.node.kind === 'spaced') {
+            spaced.loc = parent.node.loc;
+        } else {
+            other.loc = parent.node.loc;
+        }
+    }
 
     flat.forEach((item) => {
         if (item.type === 'sep') {
@@ -173,12 +182,24 @@ const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], base: List<numb
         });
         if (locs.length === 1) return locs[0];
         const loc = rough.loc;
-        const node: Node = {
+        let node: Node = {
             type: 'list',
             loc,
             children: locs,
-            kind: rough.kind === 'other' ? base : rough.kind,
+            kind:
+                rough.kind === 'other'
+                    ? parent.type === 'existing'
+                        ? parent.node.kind
+                        : parent.kind === 'sep'
+                        ? 'round'
+                        : parent.kind === 'space'
+                        ? 'spaced'
+                        : 'smooshed'
+                    : rough.kind,
         };
+        if (parent.type === 'existing' && parent.node.loc === loc) {
+            node = { ...parent.node, children: locs };
+        }
         nodes[loc] = node;
         return loc;
     };
@@ -319,28 +340,25 @@ const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [Flat[],
     // return [flat.filter((_, i) => !rm.includes(i)), sel, ncursor];
 };
 
-export function flatToUpdate(
-    flat: Flat[],
-    top: Top,
-    nodes: Record<string, Node | null>,
-    parent: { type: 'new'; kind: string; current: Node } | { type: 'existing'; node: List<number>; path: Path },
-    sel: Node,
-    ncursor: Cursor,
-    path: Path,
-) {
+type FlatParent = { type: 'new'; kind: string; current: Node } | { type: 'existing'; node: List<number>; path: Path };
+
+export function flatToUpdate(flat: Flat[], top: Top, nodes: Record<string, Node | null>, parent: FlatParent, sel: Node, ncursor: Cursor, path: Path) {
     [flat, sel, ncursor] = collapseAdjacentIds(flat, sel, ncursor);
+    console.log('flat to update', parent);
 
     const { root, nextLoc, selection } = roughen(
         flat,
         top,
         nodes,
-        parent.type === 'existing' ? parent.node.kind : parent.kind === 'sep' ? 'round' : parent.kind === 'space' ? 'spaced' : 'smooshed',
+        parent,
+        // parent.type === 'existing' ? parent.node.kind : parent.kind === 'sep' ? 'round' : parent.kind === 'space' ? 'spaced' : 'smooshed',
         { node: sel, cursor: ncursor },
     );
 
     let nroot = undefined;
 
     if (parent.type === 'existing' && root !== parent.node.loc) {
+        console.log('rebasing');
         const up = replaceAt(parent.path.children.slice(0, -1), top, parent.node.loc, root);
         nroot = up.root;
         Object.assign(nodes, up.nodes);
