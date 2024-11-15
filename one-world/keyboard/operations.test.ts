@@ -130,10 +130,12 @@ const selPath = (exp: RecNodeT<boolean>) => {
     return found;
 };
 
+const noText = (cursor: Cursor) => (cursor.type === 'id' ? { ...cursor, text: undefined } : cursor);
+
 const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
     expect(shape(root(state))).toEqual(shape(exp));
     expect(state.sel.start.path.children).toEqual(atPath(state.top.root, state.top, selPath(exp)));
-    expect(state.sel.start.cursor).toEqual(cursor);
+    expect(noText(state.sel.start.cursor)).toEqual(cursor);
 };
 
 test('smoosh in space in sep', () => {
@@ -389,25 +391,25 @@ test('between twoo', () => {
 test('same kind', () => {
     let state = asTop(id('hello', true), idc(2));
     state = applyUpdate(state, handleKey(state, 'A', lisp)!);
-    expect(shape(root(state))).toEqual(shape(id('heAllo')));
+    check(state, id('heAllo', true), idc(3));
 });
 
 test('same kind punct', () => {
     let state = asTop(id('...', true), idc(2));
     state = applyUpdate(state, handleKey(state, '=', lisp)!);
-    expect(shape(root(state))).toEqual(shape(id('..=.')));
+    check(state, id('..=.', true), idc(3));
 });
 
 test('start empty', () => {
     let state = asTop(id('', true), idc(0));
     state = applyUpdate(state, handleKey(state, '=', lisp)!);
-    expect(shape(root(state))).toEqual(shape(id('=')));
+    check(state, id('=', true), idc(1));
 });
 
 test('and smoosh', () => {
     let state = asTop(id('ab', true), idc(0));
     state = applyUpdate(state, handleKey(state, '=', lisp)!);
-    expect(shape(root(state))).toEqual(shape(smoosh([id('='), id('ab')])));
+    check(state, smoosh([id('='), id('ab', true)]), idc(0));
 });
 
 // MARK: Split smoosh

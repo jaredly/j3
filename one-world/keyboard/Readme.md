@@ -11,6 +11,7 @@ its kindof a lot.
 - [ ] ASSERT that some node IDs stay the same folks
 - [ ] ALSO let's be testing selections this whole time
   - [x] partway
+  - [ ] moreway
 
 soo
 
