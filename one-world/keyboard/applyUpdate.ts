@@ -5,7 +5,8 @@ import { lastChild, Update } from './utils';
 import { validate } from './validate';
 import { root } from './root';
 
-export function applyUpdate(state: TestState, update: Update) {
+export function applyUpdate(state: TestState, update: Update | void) {
+    if (!update) return state;
     const prev = state.sel;
     state = {
         sel: update.selection ?? state.sel,

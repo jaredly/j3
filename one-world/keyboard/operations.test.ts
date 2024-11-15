@@ -9,6 +9,8 @@ import { TestState } from './test-utils';
 import { validate } from './validate';
 import { root } from './root';
 import { handleIdKey } from './flatenate';
+import { cursorSides } from './cursorSplit';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 
 // Classes of keys
 
@@ -79,6 +81,35 @@ const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
     };
 };
 
+const handleDelete = (state: TestState): Update | void => {
+    const current = getCurrent(state.sel, state.top);
+    switch (current.type) {
+        case 'id': {
+            let { left, right } = cursorSides(current.cursor);
+            if (left === 0 && right === 0) {
+                // doin a left join
+            } else {
+                if (left === right) {
+                    left--;
+                }
+                const text = current.cursor.text?.slice() ?? splitGraphemes(current.node.text);
+                text.splice(left, right - left);
+                if (text.length === 0) {
+                    // STOPSHIP:
+                    // If we're in a smoosh, we may have to join things
+                    // in a certain direction
+                }
+                return { nodes: {}, selection: { start: selStart(state.sel.start.path, { type: 'id', end: left, text }) } };
+            }
+        }
+
+        default:
+            throw new Error('nop');
+    }
+
+    // if (current.type === 'list' && current.cursor.type === 'list' && current.cursor.where === '')
+};
+
 const handleKey = (state: TestState, key: string, config: Config): Update | void => {
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
@@ -96,9 +127,7 @@ const handleKey = (state: TestState, key: string, config: Config): Update | void
 const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.') => {
     let state = asTop(init, cursor);
     const up = handleKey(state, text, lisp);
-    // const up = insertId(lisp, state.top, state.sel.start.path, state.sel.start.cursor as IdCursor, text);
     state = applyUpdate(state, up!);
-    // console.log(JSON.stringify(state, null, 2));
     expect(shape(out)).toEqual(shape(fromMap(state.top.root, state.top.nodes, () => 0)));
 };
 
@@ -137,6 +166,17 @@ const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
     expect(state.sel.start.path.children).toEqual(atPath(state.top.root, state.top, selPath(exp)));
     expect(noText(state.sel.start.cursor)).toEqual(cursor);
 };
+
+// MARK: Deletes
+
+test('deltes', () => {
+    let state = asTop(id('helso', true), idc(3));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('heso'), idc(2));
+});
+
+// MARK: space sep
 
 test('smoosh in space in sep', () => {
     let state = asTop(
