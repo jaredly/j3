@@ -86,39 +86,42 @@ export type Top = { nodes: Nodes; root: number; nextLoc: number };
 export const getNode = (path: Path, top: Top) => top.nodes[path.children[path.children.length - 1]];
 
 export type Current =
-    | { type: 'id'; node: Id<number>; cursor: Extract<Cursor, { type: 'id' }> }
+    | { type: 'id'; node: Id<number>; cursor: Extract<Cursor, { type: 'id' }>; path: Path }
     | {
           type: 'text';
           node: Text<number>;
           cursor: Extract<Cursor, { type: 'text' | 'list' }>;
+          path: Path;
       }
     | {
           type: 'list';
           node: Collection<number>;
           cursor: Extract<Cursor, { type: 'list' | 'control' }>;
+          path: Path;
       };
 
 export const getCurrent = (selection: NodeSelection, top: Top): Current => {
-    const node = getNode(selection.start.path, top);
+    const path = selection.start.path;
+    const node = getNode(path, top);
     if (node == null) throw new Error('bad path');
     const cursor = selection.start.cursor;
     if (node.type === 'id') {
         if (cursor.type !== 'id') {
             throw new Error(`id select must have cursor id`);
         }
-        return { type: 'id', node, cursor };
+        return { type: 'id', node, cursor, path };
     }
     if (node.type === 'text') {
         if (cursor.type !== 'text' && cursor.type !== 'list') {
             throw new Error(`text select must have cursor text or list`);
         }
-        return { type: 'text', node, cursor };
+        return { type: 'text', node, cursor, path };
     }
     if (node.type === 'list' || node.type === 'table') {
         if (cursor.type !== 'list' && cursor.type !== 'control') {
             throw new Error(`list/table select must have cursor list`);
         }
-        return { type: 'list', node, cursor };
+        return { type: 'list', node, cursor, path };
     }
     throw new Error('unknown node and cursor combo');
 };

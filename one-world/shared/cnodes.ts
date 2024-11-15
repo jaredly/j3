@@ -99,6 +99,8 @@ export type RichKind =
     | { type: 'indent'; quote: boolean }
     | { type: 'callout'; vibe: 'info' | 'warning' | 'error' };
 
+export const isRich = (kind: ListKind<any>) => typeof kind !== 'string' && kind.type !== 'tag';
+
 export type ListKind<Tag> =
     | 'round'
     | 'square'

@@ -48,9 +48,9 @@ const service = Bun.serve({
     },
 });
 
-const ignore = ['.git/', 'node_modules/', '.ow-data/', '.cli.sess', 'worker.js', 'run.js'];
+const ignore = ['.git/', 'node_modules/', '.ow-data/', '.cli.sess', 'worker.js', 'run.js', 'keyboard/ui/run.js'];
 
-watch('.', { recursive: true }, (event, filename) => {
+watch('../..', { recursive: true }, (event, filename) => {
     if (ignore.some((n) => filename.startsWith(n))) {
         // ignore
         return;

@@ -13,6 +13,7 @@ import { handleKey } from '../handleKey';
 
 import { root } from '../root';
 import { shape } from '../../shared/shape';
+import { handleNav } from '../handleNav';
 export {};
 
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
@@ -111,6 +112,9 @@ const App = () => {
             if (evt.key === 'Backspace') {
                 const up = handleDelete(cstate.current);
                 setState(applyUpdate(cstate.current, up));
+            } else if (evt.key === 'ArrowLeft' || evt.key === 'ArrowRight') {
+                const up = handleNav(evt.key, cstate.current);
+                setState(applyUpdate(cstate.current, up));
             } else if (splitGraphemes(evt.key).length > 1) {
                 console.log('ignoring', evt.key);
             } else {
@@ -125,8 +129,8 @@ const App = () => {
     return (
         <>
             <RenderNode loc={state.top.root} state={state} />
-            {/* <div>{JSON.stringify(state.top)}</div> */}
             <div>{shape(root(state))}</div>
+            <div>{JSON.stringify(state.sel)}</div>
         </>
     );
 };
