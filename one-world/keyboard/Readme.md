@@ -12,10 +12,13 @@ its kindof a lot.
 - [x] ALSO let's be testing selections this whole time
   - [x] partway
   - [x] moreway
-- [ ] found a selection bug to fix
+- [x] found a selection bug to fix
 
 soo
 
+
+NOWW for joinings!!! Yes please.
+And probably some navs
 
 
 # Operations with a keyboard
@@ -148,9 +151,9 @@ This is just binops n such. and like `if x then y fi` lol
 
 ### ID in Round
 
-- [ ] (abc|)
-- [ ] (|abc)
-- [ ] (ab|c)
+- [x] (abc|)
+- [x] (|abc)
+- [x] (ab|c)
 
 ### List(other) in Round
 

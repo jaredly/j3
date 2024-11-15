@@ -170,6 +170,27 @@ test('smoosh in space in sep', () => {
     );
 });
 
+test('id in round', () => {
+    let state = asTop(round([id('abc', true)]), idc(3));
+    validate(state);
+    state = applyUpdate(state, handleKey(state, ';', js)!);
+    check(state, round([id('abc'), id('', true)]), idc(0));
+});
+
+test('id in round - start', () => {
+    let state = asTop(round([id('abc', true)]), idc(0));
+    validate(state);
+    state = applyUpdate(state, handleKey(state, ';', js)!);
+    check(state, round([id(''), id('abc', true)]), idc(0));
+});
+
+test('id in round - mid', () => {
+    let state = asTop(round([id('abc', true)]), idc(2));
+    validate(state);
+    state = applyUpdate(state, handleKey(state, ';', js)!);
+    check(state, round([id('ab'), id('c', true)]), idc(0));
+});
+
 // MARK: space in smooshed in space
 
 test('smoosh id after', () => {
