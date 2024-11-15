@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { AnyEvaluator } from '../../boot-ex/types';
+import { AnyEvaluator } from '../../evaluators/boot-ex/types';
 import { Action } from '../../shared/action2';
 import { IRCursor, IRSelection } from '../../shared/IR/intermediate';
 import {
@@ -25,7 +25,7 @@ import {
     Style,
 } from '../../shared/nodes';
 import { DocSession } from '../../shared/state2';
-import { getNodeForPath } from '../selectNode';
+import { getNodeForPath, getTopForPath } from '../selectNode';
 import { Store } from '../StoreContext2';
 import { inflateRecNode } from '../TextEdit/actions';
 import { normalizeSelection, topUpdate } from './edit/handleUpdate';
@@ -147,7 +147,9 @@ export const getAutoComplete = (
 ): MenuItem[] | void => {
     if (!ds.selections.length) return;
     const sel = ds.selections[0];
-    if (sel.end || sel.start.cursor.type !== 'text') return;
+    if (sel.type !== 'ir' || sel.end || sel.start.cursor.type !== 'text') {
+        return;
+    }
     const selText = sel.start.cursor.end.text;
     const path = sel.start.path;
     // const loc = lastChild(path);
@@ -162,15 +164,15 @@ export const getAutoComplete = (
         return;
     }
     const text = selText ? selText.join('') : idNode.text;
-    if (!text.length) return; // don't give autocomplete with no text
+    if (!text.length) {
+        return; // don't give autocomplete with no text
+    }
 
-    const top = isToplevel(
-        path,
-        store.getState().toplevels[path.root.toplevel].nodes,
-    );
+    const top = getTopForPath(path, store.getState());
+    const isAtTheTop = isToplevel(path, top.nodes);
 
     const filter = (auto: (typeof ev.kwds)[0]) => {
-        if (auto.toplevel && !top) return false;
+        if (auto.toplevel && !isAtTheTop) return false;
         if (auto.text.includes(text)) {
             return true;
         }
@@ -201,6 +203,7 @@ export const getAutoComplete = (
                         auto.text,
                         idNode,
                         canApplyTemplate ? tpl.template : [],
+                        auto.reference,
                     );
                     store.update(...actions);
                     return !template;
@@ -219,6 +222,7 @@ export const getAutoComplete = (
                     auto.text,
                     idNode,
                     [],
+                    auto.reference,
                 );
                 store.update(...actions);
                 return !template;
@@ -226,10 +230,11 @@ export const getAutoComplete = (
         };
     });
 
-    Object.entries(rstate.cache).forEach(([tid, { result, node }]) => {
+    Object.entries(rstate.cache).forEach(([tid, { result }]) => {
         if (!result.exports?.length) {
             return;
         }
+        const { node } = rstate.parseAndEval[tid];
         const byLoc: Record<string, RecNode> = {};
         iterNodes(node, (node) => (byLoc[keyForLoc(node.loc)] = node));
 
@@ -258,6 +263,14 @@ export const getAutoComplete = (
         });
     });
 
+    // if there are no single-length autocomplets, don't do a completion
+    if (
+        text.length === 1 &&
+        !items.some((item) => item.type === 'action' && item.title.length === 1)
+    ) {
+        return;
+    }
+
     return items;
 };
 
@@ -271,7 +284,7 @@ const applyTemplate = (
 ): { template: boolean; actions: Action[] } => {
     const path = sel.start.path;
     const state = store.getState();
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
 
     const cursor: IRCursor = {
         type: 'text',
@@ -312,7 +325,7 @@ const applyTemplate = (
         return {
             template: false,
             actions: [
-                topUpdate(path.root.toplevel, {
+                topUpdate(path.root.toplevel, path.root.doc, {
                     [node.loc]: { ...node, text: text, ref: link },
                 }),
                 {
@@ -376,6 +389,7 @@ const applyTemplate = (
             {
                 type: 'toplevel',
                 id: top.id,
+                doc: path.root.doc,
                 action: {
                     type: 'update',
                     update: { nextLoc, root, nodes: allNodes },

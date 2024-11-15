@@ -16,7 +16,9 @@ import {
     parentPath,
     pathWithChildren,
 } from '../../../shared/nodes';
+import { getDoc } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { findTableLoc, topUpdate } from './handleUpdate';
@@ -80,7 +82,7 @@ export const joinLeft = (
     store: Store,
 ): boolean => {
     const state = store.getState();
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     const loc = lastChild(path);
     const node = top.nodes[loc];
 
@@ -96,6 +98,7 @@ export const joinLeft = (
             {
                 type: 'toplevel',
                 id: top.id,
+                doc: path.root.doc,
                 action: { type: 'update', update },
             },
             selAction(
@@ -123,7 +126,7 @@ export const joinLeft = (
             if (path.root.ids.length > 1) {
                 const loc = path.root.ids[path.root.ids.length - 1];
                 const ploc = path.root.ids[path.root.ids.length - 2];
-                const doc = state.documents[path.root.doc];
+                const doc = getDoc(state, path.root.doc);
                 const pnode = doc.nodes[ploc];
                 const idx = pnode.children.indexOf(loc);
                 if (idx === -1) return false;
@@ -195,6 +198,7 @@ export const joinLeft = (
             {
                 type: 'toplevel',
                 id: top.id,
+                doc: path.root.doc,
                 action: {
                     type: 'update',
                     update: { nodes: { [ploc]: newParent } },
@@ -226,6 +230,7 @@ export const joinLeft = (
                         {
                             type: 'toplevel',
                             id: top.id,
+                            doc: path.root.doc,
                             action: {
                                 type: 'update',
                                 update: {
@@ -259,7 +264,7 @@ export const joinLeft = (
                 if (pidx === -1) return false;
                 items.splice(pidx, 1, ...pnode.items);
                 store.update(
-                    topUpdate(top.id, {
+                    topUpdate(top.id, path.root.doc, {
                         [gploc]: { ...gpnode, items },
                         [ploc]: undefined,
                     }),
@@ -284,6 +289,7 @@ export const joinLeft = (
                     {
                         type: 'toplevel',
                         action: { type: 'update', update },
+                        doc: path.root.doc,
                         id: top.id,
                     },
                     {
@@ -319,7 +325,7 @@ export const joinLeft = (
             const items = pnode.items.slice();
             items.splice(idx, 1);
             store.update(
-                topUpdate(top.id, {
+                topUpdate(top.id, path.root.doc, {
                     [ploc]: { ...pnode, items },
                     [node.loc]: undefined,
                 }),
@@ -342,7 +348,7 @@ export const joinLeft = (
             const items = pnode.items.slice();
             items.splice(idx - 1, 1);
             store.update(
-                topUpdate(top.id, {
+                topUpdate(top.id, path.root.doc, {
                     [ploc]: { ...pnode, items },
                     // [prev]: undefined,
                 }),
@@ -359,7 +365,7 @@ export const joinLeft = (
         items.splice(idx, 1);
         // ok we can do this now.
         store.update(
-            topUpdate(top.id, {
+            topUpdate(top.id, path.root.doc, {
                 [ploc]: { ...pnode, items },
                 [node.loc]: undefined,
                 [prev]: {
@@ -398,7 +404,7 @@ export const joinLeft = (
                     rows.splice(row - 1, 1);
 
                     store.update(
-                        topUpdate(top.id, {
+                        topUpdate(top.id, path.root.doc, {
                             [prevNode.loc]: undefined,
                             [pnode.loc]: { ...pnode, rows },
                         }),
@@ -427,7 +433,7 @@ export const joinLeft = (
                 rows.splice(row, 1);
 
                 store.update(
-                    topUpdate(top.id, {
+                    topUpdate(top.id, path.root.doc, {
                         ...update,
                         [pnode.loc]: { ...pnode, rows },
                     }),
@@ -451,6 +457,7 @@ export const joinLeft = (
                         {
                             type: 'toplevel',
                             action: { type: 'update', update: up },
+                            doc: path.root.doc,
                             id: top.id,
                         },
                         selAction(
@@ -503,7 +510,7 @@ export const joinLeft = (
             }
 
             store.update(
-                topUpdate(top.id, {
+                topUpdate(top.id, path.root.doc, {
                     ...update,
                     [node.loc]: undefined,
                     [pnode.loc]: { ...pnode, rows },
@@ -561,7 +568,7 @@ export const joinLeft = (
                 });
             }
             store.update(
-                topUpdate(top.id, {
+                topUpdate(top.id, path.root.doc, {
                     ...update,
                     [node.loc]: undefined,
                     [pnode.loc]: { ...pnode, rows },

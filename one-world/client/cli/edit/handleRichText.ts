@@ -7,6 +7,7 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { topUpdate } from './handleUpdate';
 
@@ -15,8 +16,13 @@ const splitSpan = (
     cursor: number,
     text?: string[],
 ): [InlineSpan, InlineSpan] => {
-    if (span.type === 'embed')
+    if (
+        span.type === 'embed' ||
+        span.type === 'diff' ||
+        span.type === 'include'
+    ) {
         return [{ type: 'text', text: '', style: {} }, span];
+    }
     const chars = text ?? splitGraphemes(span.text);
     return [
         { ...span, text: chars.slice(0, cursor).join('') },
@@ -68,13 +74,14 @@ export const handleRichText = (
     docId: string,
     store: Store,
 ): boolean => {
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
+    if (sel.type !== 'ir') return false;
     if (sel.end) return false; //
 
     const state = store.getState();
-    const top = state.toplevels[sel.start.path.root.toplevel];
+    const top = getTopForPath(sel.start.path, state);
     const node = top.nodes[lastChild(sel.start.path)];
     if (node.type !== 'rich-inline') return false;
     const parent = top.nodes[parentLoc(sel.start.path)];
@@ -92,6 +99,7 @@ export const handleRichText = (
         store.update(
             topUpdate(
                 top.id,
+                sel.start.path.root.doc,
                 {
                     [top.nextLoc]: {
                         type: 'rich-inline',
@@ -109,6 +117,7 @@ export const handleRichText = (
                 doc: docId,
                 selections: [
                     {
+                        type: 'ir',
                         start: {
                             path: spath,
                             key: serializePath(spath),
@@ -145,6 +154,7 @@ export const handleRichText = (
         store.update(
             topUpdate(
                 top.id,
+                sel.start.path.root.doc,
                 {
                     [node.loc]: undefined,
                     [prev]: { ...pnode, spans: pnode.spans.concat(node.spans) },
@@ -157,6 +167,7 @@ export const handleRichText = (
                 doc: docId,
                 selections: [
                     {
+                        type: 'ir',
                         start: {
                             path: spath,
                             key: serializePath(spath),
@@ -173,6 +184,10 @@ export const handleRichText = (
             },
         );
         return true;
+    }
+
+    if (key === 'CTRL_B') {
+        // let's make it a bold, or unbold, as the case may be.
     }
 
     if (key === ' ' && !sel.start.cursor.start && node.spans.length === 1) {

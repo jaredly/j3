@@ -9,7 +9,8 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
-import { Doc, PersistedState } from '../../../shared/state2';
+import { Doc, getDoc, PersistedState } from '../../../shared/state2';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { inflateRecNode, isCollection } from '../../TextEdit/actions';
 import { findTableLoc, topUpdate } from './handleUpdate';
@@ -35,10 +36,10 @@ export const newNeighborActions = (
 ): Action[] | void => {
     if (!siblings.length) return;
 
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     const loc = lastChild(path);
     if (path.children.length < 2) {
-        const doc = state.documents[path.root.doc];
+        const doc = getDoc(state, path.root.doc);
         return newDocNodeNeighbor(path, doc, siblings, after);
     }
     const parent = parentPath(path);
@@ -89,7 +90,7 @@ export const newNeighborActions = (
         }
         allNodes[pnode.loc] = { ...pnode, rows };
         return [
-            topUpdate(top.id, allNodes, nextLoc),
+            topUpdate(top.id, path.root.doc, allNodes, nextLoc),
             {
                 type: 'selection',
                 doc: path.root.doc,
@@ -121,7 +122,7 @@ export const newNeighborActions = (
 
     // ok we can do this now.
     return [
-        topUpdate(top.id, allNodes, nextLoc),
+        topUpdate(top.id, path.root.doc, allNodes, nextLoc),
         {
             type: 'selection',
             doc: path.root.doc,
@@ -200,12 +201,15 @@ export const newDocNodeNeighbor = (
         topActions.push({
             type: 'toplevel',
             id: newTop,
+            doc: path.root.doc,
             action: {
                 type: 'reset',
                 toplevel: {
+                    syntax: 'lisp',
                     id: newTop,
                     auxiliaries: [],
                     nextLoc: nidx.next,
+                    module: doc.id,
                     nodes,
                     root: nloc,
                     ts,
@@ -234,6 +238,7 @@ export const newDocNodeNeighbor = (
             doc: path.root.doc,
             selections: [
                 {
+                    type: 'ir',
                     start: selections[0].start,
                     end: {
                         path: selections[selections.length - 1].start.path,

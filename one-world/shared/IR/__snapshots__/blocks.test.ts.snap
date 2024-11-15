@@ -1288,29 +1288,29 @@ exports[`string with newlines in interp 1`] = `
 exports[`pairs placement? 1`] = `
 "
 ---------| 10
-(let [a|b]
+(let [a⋮b]
           )
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|(let [a|b]
+|(let [a⋮b]
           )
 [ # ] {"type":"block","start":[1,0],"width":3,"height":1}
-(l̲e̲t̲ [a|b]
+(l̲e̲t̲ [a⋮b]
           )
 [ # ] {"type":"block","start":[5,0],"width":0,"height":1}
-(let |[a|b]
+(let |[a⋮b]
           )
 [ # ] {"type":"block","start":[6,0],"width":1,"height":1}
-(let [a̲|b]
+(let [a̲⋮b]
           )
 [ # ] {"type":"block","start":[8,0],"width":1,"height":1}
-(let [a|b̲]
+(let [a⋮b̲]
           )
 [ # ] {"type":"block","start":[10,0],"width":0,"height":1}
-(let [a|b]|
+(let [a⋮b]|
           )
 [ # ] {"type":"block","start":[11,1],"width":0,"height":1}
-(let [a|b]
+(let [a⋮b]
           )|
 "
 `;
@@ -1318,59 +1318,59 @@ exports[`pairs placement? 1`] = `
 exports[`try a table maybe 1`] = `
 "
 ---------| 10
-⦇lol      |folks
- hi       |ho
+⦇lol      ⋮folks
+ hi       ⋮ho
  (lol
      what)      ⦈
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|⦇lol      |folks
- hi       |ho
+|⦇lol      ⋮folks
+ hi       ⋮ho
  (lol
      what)      ⦈
 [ # ] {"type":"block","start":[1,0],"width":3,"height":1}
-⦇l̲o̲l̲      |folks
- hi       |ho
+⦇l̲o̲l̲      ⋮folks
+ hi       ⋮ho
  (lol
      what)      ⦈
 [ # ] {"type":"block","start":[11,0],"width":5,"height":1}
-⦇lol      |f̲o̲l̲k̲s̲
- hi       |ho
+⦇lol      ⋮f̲o̲l̲k̲s̲
+ hi       ⋮ho
  (lol
      what)      ⦈
 [ # ] {"type":"block","start":[1,1],"width":2,"height":1}
-⦇lol      |folks
- h̲i̲       |ho
+⦇lol      ⋮folks
+ h̲i̲       ⋮ho
  (lol
      what)      ⦈
 [ # ] {"type":"block","start":[11,1],"width":2,"height":1}
-⦇lol      |folks
- hi       |h̲o̲
+⦇lol      ⋮folks
+ hi       ⋮h̲o̲
  (lol
      what)      ⦈
 [ # ] {"type":"block","start":[1,2],"width":0,"height":1}
-⦇lol      |folks
- hi       |ho
+⦇lol      ⋮folks
+ hi       ⋮ho
  |(lol
      what)      ⦈
 [ # ] {"type":"block","start":[2,2],"width":3,"height":1}
-⦇lol      |folks
- hi       |ho
+⦇lol      ⋮folks
+ hi       ⋮ho
  (l̲o̲l̲
      what)      ⦈
 [ # ] {"type":"block","start":[5,3],"width":4,"height":1}
-⦇lol      |folks
- hi       |ho
+⦇lol      ⋮folks
+ hi       ⋮ho
  (lol
      w̲h̲a̲t̲)      ⦈
 [ # ] {"type":"block","start":[10,3],"width":0,"height":1}
-⦇lol      |folks
- hi       |ho
+⦇lol      ⋮folks
+ hi       ⋮ho
  (lol
      what)|      ⦈
 [ # ] {"type":"block","start":[17,3],"width":0,"height":1}
-⦇lol      |folks
- hi       |ho
+⦇lol      ⋮folks
+ hi       ⋮ho
  (lol
      what)      ⦈|
 "
@@ -1378,43 +1378,43 @@ exports[`try a table maybe 1`] = `
 
 exports[`parsing refs 1`] = `
 "(defn hello [x]
-       10      )
+   10          )
 
-(+ x 𝐡𝐞𝐥𝐥𝐨)"
+(+ x [̲u̲n̲r̲e̲s̲o̲l̲v̲e̲d̲]̲)"
 `;
 
 exports[`parsing refs with diff name 1`] = `
 "(defn hello [x]
-       10      )
+   10          )
 
-(+ x 𝐡𝐞𝐥𝐥𝐨)"
+(+ x [̲u̲n̲r̲e̲s̲o̲l̲v̲e̲d̲]̲)"
 `;
 
-exports[`placeholders thanks 1`] = `"(this is a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫)"`;
+exports[`placeholders thanks 1`] = `"(this is a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟)"`;
 
 exports[`try a table maybe 2`] = `
 "
 ---------| 10
-(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+(a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 is
     here)
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+|(a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 is
     here)
 [ # ] {"type":"block","start":[1,0],"width":1,"height":1}
-(a̲ 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+(a̲ 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 is
     here)
 [ # ] {"type":"block","start":[3,0],"width":11,"height":1}
-(a 𝐩̲𝐥̲𝐚̲𝐜̲𝐞̲𝐡̲𝐨̲𝐥̲𝐝̲𝐞̲𝐫̲ is
+(a 𝑝̲𝑙̲𝑎̲𝑐̲𝑒̲ℎ̲𝑜̲𝑙̲𝑑̲𝑒̲𝑟̲ is
     here)
 [ # ] {"type":"block","start":[15,0],"width":2,"height":1}
-(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 i̲s̲
+(a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 i̲s̲
     here)
 [ # ] {"type":"block","start":[4,1],"width":4,"height":1}
-(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+(a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 is
     h̲e̲r̲e̲)
 [ # ] {"type":"block","start":[9,1],"width":0,"height":1}
-(a 𝐩𝐥𝐚𝐜𝐞𝐡𝐨𝐥𝐝𝐞𝐫 is
+(a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 is
     here)|
 "
 `;

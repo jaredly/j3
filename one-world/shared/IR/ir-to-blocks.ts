@@ -18,6 +18,7 @@ import { lastChild } from './nav';
 export type TextCtx = {
     space: string;
     layouts: LayoutCtx['layouts'];
+    showRefHashes?: boolean;
     // color?: boolean;
     annotateNewlines?: boolean;
     top: string;
@@ -27,6 +28,8 @@ export type TextCtx = {
 export const blockSourceKey = (source: BlockSource): string => {
     const pathKey = serializePath(source.path);
     switch (source.type) {
+        case 'namespace':
+            return `${pathKey}:N`;
         case 'text':
             return `${pathKey}:T:${source.index}`;
         case 'control':
@@ -39,6 +42,7 @@ export const blockSourceKey = (source: BlockSource): string => {
 };
 
 export type BlockSource =
+    | { type: 'namespace'; path: Path }
     // | { type: 'loc'; loc: number; top: string }
     | {
           type: 'text';
@@ -83,6 +87,14 @@ export type Block =
           style?: Style;
           node?: Path;
           sides?: boolean;
+      }
+    | {
+          type: 'bullet';
+          width: number;
+          height: number;
+          kind: 'toplevel-arrow';
+          style?: Style;
+          node?: Path;
       }
     // | { type: 'line'; contents: string; width: number }
     | {
@@ -275,8 +287,10 @@ export const irToBlock = (
     switch (ir.type) {
         case 'loc': {
             const { choices } = ctx.layouts[lastChild(ir.path)];
+            const nir = irs[lastChild(ir.path)];
+            if (!nir) return line('<missing loc>');
             const inner = {
-                ...irToBlock(irs[lastChild(ir.path)], irs, choices, ctx),
+                ...irToBlock(nir, irs, choices, ctx),
                 node: ir.path,
             };
             if (SHOW_IDS) {
@@ -446,6 +460,7 @@ export const irToBlock = (
                     ir.placeholder && ir.text === ''
                         ? {
                               fontStyle: 'italic',
+                              color: { r: 100, g: 100, b: 100 },
                           }
                         : ir.style,
                 );

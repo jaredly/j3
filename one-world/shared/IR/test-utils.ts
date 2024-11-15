@@ -1,8 +1,8 @@
 // testingi t up
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { BootExampleEvaluator } from '../../boot-ex';
-import { parse } from '../../boot-ex/format';
-import { reader } from '../../boot-ex/reader';
+import { BootExampleEvaluator } from '../../evaluators/boot-ex';
+import { parse } from '../../evaluators/boot-ex/format';
+import { reader } from '../../evaluators/boot-ex/reader';
 import { iterTopNodes } from '../../client/cli/docNodeToIR';
 import { controlLayout, textLayout } from '../../client/cli/textLayout';
 import { layoutCtx } from '../../client/cli/drawDocNode';
@@ -24,9 +24,16 @@ import {
     RecNode,
     toMap,
 } from '../../shared/nodes';
-import { BlockEntry, blockToText } from './block-to-text';
+import { BlockEntry } from './block-to-text';
 import { highlightSpan } from './highlightSpan';
 import { Block, irToBlock } from './ir-to-blocks';
+import {
+    aBlockToString,
+    BlockCtx,
+    BlockPos,
+    blockToABlock,
+    blockToText,
+} from './block-to-attributed-text';
 
 export const multi = (texts: string[], ev = BootExampleEvaluator) => {
     const globals: Record<string, IDRef> = {};
@@ -85,7 +92,6 @@ export const multi = (texts: string[], ev = BootExampleEvaluator) => {
         const sourceMap: BlockEntry[] = [];
         const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
             sourceMaps: sourceMap,
-            color: false,
             styles: {},
         });
 
@@ -140,7 +146,6 @@ const processNode = (
     const sourceMap: BlockEntry[] = [];
     const txt = blockToText({ x: 0, y: 0, x0: 0 }, block, {
         sourceMaps: sourceMap,
-        color: false,
         styles: {},
     });
     return {

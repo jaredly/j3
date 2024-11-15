@@ -4,7 +4,7 @@ import { DocSession } from '../../shared/state2';
 import { Store } from '../StoreContext2';
 import { validDropTargets } from './edit/drop';
 import { resolveMultiSelect, multiSelectContains } from './resolveMultiSelect';
-import { MouseEvt } from './run';
+import { MouseEvt } from './drawToTerminal';
 import { RState } from './render';
 
 export const maybeStartDragging = (
@@ -21,7 +21,7 @@ export const maybeStartDragging = (
         store.getState(),
     );
     const x = evt.x - 1;
-    const y = evt.y - 2;
+    const y = evt.y - 1;
     if (!multi) return false;
 
     const found = rstate.sourceMaps.find((m) => matchesSpan(x, y, m.shape));
@@ -67,7 +67,7 @@ export const handleDrag = (
     dragState: NonNullable<DocSession['dragState']>,
     store: Store,
 ) => {
-    const pos = { x: evt.x - 1, y: evt.y - 2 };
+    const pos = { x: evt.x - 1, y: evt.y - 1 };
     const found = validDropTargets(
         rstate.dropTargets,
         dragState.source,

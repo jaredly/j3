@@ -1,11 +1,8 @@
 //
 
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { filterNulls } from '../../web/custom/old-stuff/filterNulls';
-import { selectNode } from '../client/selectNode';
-import { isCollection } from '../client/TextEdit/actions';
-import { RenderInfo } from './renderables';
-import { NodeSelection } from './state';
+// import { selectNode } from '../client/selectNode';
+// import { NodeSelection } from './state2';
 
 export type Loc = Array<[string, number]>;
 export const keyForLoc = (loc: Loc) =>
@@ -108,7 +105,13 @@ export type InlineSpan =
           style: Style;
       }
     | { type: 'link'; text: string; link: string; style: Style }
-    | { type: 'embed'; item: number };
+    | { type: 'embed'; item: number }
+    | { type: 'include'; id: string; hash: string }
+    | {
+          type: 'diff';
+          before: { id: string; hash: string };
+          after: { id: string; hash: string };
+      };
 
 // Rich Paragraph(?)
 export type RichInline = {
@@ -134,7 +137,13 @@ export type InlineSpanT<Loc> =
           style: Style;
       }
     | { type: 'link'; text: string; link: string; style: Style }
-    | { type: 'embed'; item: RecNodeT<Loc> };
+    | { type: 'embed'; item: RecNodeT<Loc> }
+    | { type: 'include'; id: string; hash: string }
+    | {
+          type: 'diff';
+          before: { id: string; hash: string };
+          after: { id: string; hash: string };
+      };
 
 // So, when editing, default is to start with a rich-inline,
 // but if you start needing extra formatting, we wrap in a
@@ -181,12 +190,17 @@ export type Id<Loc> =
             | { type: 'placeholder'; text: string };
     };
 
-export type IDRef = Id<any>['ref'];
+export type IDRef = NonNullable<Id<any>['ref']>;
 
 type RefDeps =
-    | { type: 'toplevel'; loc: FullLoc; kind: string }
+    | {
+          type: 'toplevel';
+          loc: FullLoc;
+          kind: string;
+          lock?: { hash: string; manual: boolean };
+      }
     // Soo this will have a look-uppable name too
-    | { type: 'resource'; id: string; kind: string }
+    | { type: 'resource'; id: string; kind: string; hash?: string }
     | { type: 'builtin'; kind: string };
 
 export type Node =
@@ -254,54 +268,54 @@ export type RecNodeT<Loc> =
 
 export type Nodes = Record<number, Node>;
 
-export const inFromEnd = (
-    node: Node,
-    path: Path,
-    nodes: Nodes,
-): void | NodeSelection => {
-    if (node.type === 'string') {
-        return {
-            type: 'string',
-            path,
-            pathKey: serializePath(path),
-            cursor: {
-                part: node.templates.length,
-                char: splitGraphemes(
-                    node.templates.length === 0
-                        ? node.first
-                        : node.templates[node.templates.length - 1].suffix,
-                ).length,
-            },
-        };
-    }
-    const children = childLocs(node);
-    if (!children.length) {
-        return;
-    }
-    const loc = children[children.length - 1];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
-};
+// export const inFromEnd = (
+//     node: Node,
+//     path: Path,
+//     nodes: Nodes,
+// ): void | NodeSelection => {
+//     if (node.type === 'string') {
+//         return {
+//             type: 'string',
+//             path,
+//             pathKey: serializePath(path),
+//             cursor: {
+//                 part: node.templates.length,
+//                 char: splitGraphemes(
+//                     node.templates.length === 0
+//                         ? node.first
+//                         : node.templates[node.templates.length - 1].suffix,
+//                 ).length,
+//             },
+//         };
+//     }
+//     const children = childLocs(node);
+//     if (!children.length) {
+//         return;
+//     }
+//     const loc = children[children.length - 1];
+//     return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
+// };
 
-export const inFromStart = (
-    node: Node,
-    path: Path,
-    nodes: Nodes,
-): void | NodeSelection => {
-    if (node.type === 'string') {
-        return {
-            type: 'string',
-            cursor: { part: 0, char: 0 },
-            path,
-            pathKey: serializePath(path),
-        };
-    }
-    const children = childLocs(node);
-    if (children.length === 0) {
-        return;
-    }
-    const loc = children[0];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'start', nodes);
-};
+// export const inFromStart = (
+//     node: Node,
+//     path: Path,
+//     nodes: Nodes,
+// ): void | NodeSelection => {
+//     if (node.type === 'string') {
+//         return {
+//             type: 'string',
+//             cursor: { part: 0, char: 0 },
+//             path,
+//             pathKey: serializePath(path),
+//         };
+//     }
+//     const children = childLocs(node);
+//     if (children.length === 0) {
+//         return;
+//     }
+//     const loc = children[0];
+//     return selectNode(nodes[loc], pathWithChildren(path, loc), 'start', nodes);
+// };
 
 export const firstAtom = (path: Path, nodes: Nodes): Path => {
     const loc = path.children[path.children.length - 1];
@@ -376,81 +390,81 @@ export const prevAtom = (path: Path, nodes: Nodes): Path | void => {
     );
 };
 
-export const toTheRight = (
-    parent: Node,
-    cloc: number,
-    path: Path,
-    nodes: Nodes,
-): void | NodeSelection => {
-    if (parent.type === 'string') {
-        const ppath = path; //parentPath(path);
-        const pathKey = serializePath(ppath);
-        if (cloc === parent.tag) {
-            return {
-                type: 'string',
-                path: ppath,
-                pathKey,
-                cursor: { part: 0, char: 0 },
-            };
-        }
-        const at = parent.templates.findIndex((t) => t.expr === cloc);
-        if (at === -1) return;
-        return {
-            type: 'string',
-            path: ppath,
-            pathKey,
-            cursor: { part: at + 1, char: 0 },
-        };
-    }
-    const children = childLocs(parent);
-    const idx = children.indexOf(cloc);
-    if (idx === children.length - 1) {
-        return selectNode(parent, path, 'end', nodes);
-    }
-    const loc = children[idx + 1];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'start', nodes);
-};
+// export const toTheRight = (
+//     parent: Node,
+//     cloc: number,
+//     path: Path,
+//     nodes: Nodes,
+// ): void | NodeSelection => {
+//     if (parent.type === 'string') {
+//         const ppath = path; //parentPath(path);
+//         const pathKey = serializePath(ppath);
+//         if (cloc === parent.tag) {
+//             return {
+//                 type: 'string',
+//                 path: ppath,
+//                 pathKey,
+//                 cursor: { part: 0, char: 0 },
+//             };
+//         }
+//         const at = parent.templates.findIndex((t) => t.expr === cloc);
+//         if (at === -1) return;
+//         return {
+//             type: 'string',
+//             path: ppath,
+//             pathKey,
+//             cursor: { part: at + 1, char: 0 },
+//         };
+//     }
+//     const children = childLocs(parent);
+//     const idx = children.indexOf(cloc);
+//     if (idx === children.length - 1) {
+//         return selectNode(parent, path, 'end', nodes);
+//     }
+//     const loc = children[idx + 1];
+//     return selectNode(nodes[loc], pathWithChildren(path, loc), 'start', nodes);
+// };
 
-export const toTheLeft = (
-    parent: Node,
-    cloc: number,
-    path: Path,
-    nodes: Nodes,
-): void | NodeSelection => {
-    if (parent.type === 'string') {
-        if (cloc === parent.tag) {
-            const gparent = path.children[path.children.length - 2];
-            return toTheLeft(
-                nodes[gparent],
-                parent.loc,
-                parentPath(path),
-                nodes,
-            );
-        }
-        const ppath = path; // parentPath(path);
-        const pathKey = serializePath(ppath);
-        const at = parent.templates.findIndex((t) => t.expr === cloc);
-        if (at === -1) return;
-        return {
-            type: 'string',
-            path: ppath,
-            pathKey,
-            cursor: {
-                part: at,
-                char: splitGraphemes(
-                    at === 0 ? parent.first : parent.templates[at - 1].suffix,
-                ).length,
-            },
-        };
-    }
-    const children = childLocs(parent);
-    const idx = children.indexOf(cloc);
-    if (idx === 0) {
-        return selectNode(parent, path, 'start', nodes);
-    }
-    const loc = children[idx - 1];
-    return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
-};
+// export const toTheLeft = (
+//     parent: Node,
+//     cloc: number,
+//     path: Path,
+//     nodes: Nodes,
+// ): void | NodeSelection => {
+//     if (parent.type === 'string') {
+//         if (cloc === parent.tag) {
+//             const gparent = path.children[path.children.length - 2];
+//             return toTheLeft(
+//                 nodes[gparent],
+//                 parent.loc,
+//                 parentPath(path),
+//                 nodes,
+//             );
+//         }
+//         const ppath = path; // parentPath(path);
+//         const pathKey = serializePath(ppath);
+//         const at = parent.templates.findIndex((t) => t.expr === cloc);
+//         if (at === -1) return;
+//         return {
+//             type: 'string',
+//             path: ppath,
+//             pathKey,
+//             cursor: {
+//                 part: at,
+//                 char: splitGraphemes(
+//                     at === 0 ? parent.first : parent.templates[at - 1].suffix,
+//                 ).length,
+//             },
+//         };
+//     }
+//     const children = childLocs(parent);
+//     const idx = children.indexOf(cloc);
+//     if (idx === 0) {
+//         return selectNode(parent, path, 'start', nodes);
+//     }
+//     const loc = children[idx - 1];
+//     return selectNode(nodes[loc], pathWithChildren(path, loc), 'end', nodes);
+// };
 
 export const childNodes = (node: RecNode): RecNode[] => {
     switch (node.type) {
@@ -604,11 +618,66 @@ const checkMap = <T>(lst: T[], f: (t: T) => T) => {
     return changed ? next : null;
 };
 
+export const transformLocs = <L1, L2>(
+    node: RecNodeT<L1>,
+    f: (loc: L1) => L2,
+): RecNodeT<L2> => {
+    const loc = f(node.loc);
+    const rec = (n: RecNodeT<L1>) => transformLocs(n, f);
+    switch (node.type) {
+        case 'id':
+            return { ...node, loc };
+        case 'rich-inline':
+            throw new Error('sorry not yet');
+        case 'list':
+        case 'array':
+        case 'record':
+        case 'rich-block': {
+            return { ...node, items: node.items.map(rec), loc };
+        }
+        case 'table':
+            return { ...node, loc, rows: node.rows.map((r) => r.map(rec)) };
+        case 'comment':
+        case 'spread':
+            return { ...node, loc, contents: rec(node.contents) };
+        case 'annot': {
+            return {
+                ...node,
+                loc,
+                annot: rec(node.annot),
+                contents: rec(node.contents),
+            };
+        }
+        case 'record-access':
+            return {
+                ...node,
+                loc,
+                target: rec(node.target),
+                items: node.items.map(rec),
+            };
+        case 'string':
+            return {
+                ...node,
+                loc,
+                templates: node.templates.map(({ expr, suffix }) => ({
+                    expr: rec(expr),
+                    suffix,
+                })),
+                tag: rec(node.tag),
+            };
+    }
+};
+
 export const mapNode = (
     node: RecNode,
-    f: (node: RecNode) => RecNode,
+    f: (node: RecNode) => RecNode | false,
 ): RecNode => {
-    node = f(node);
+    const res = f(node);
+    // Don't recurse
+    if (res === false) {
+        return node;
+    }
+    node = res;
     switch (node.type) {
         case 'id':
         case 'rich-inline':
@@ -656,7 +725,14 @@ export const mapNode = (
                 const expr = mapNode(tpl.expr, f);
                 return expr ? { ...tpl, expr } : tpl;
             });
-            return templates ? { ...node, templates } : node;
+            const tag = mapNode(node.tag, f);
+            return templates || tag
+                ? {
+                      ...node,
+                      templates: templates ?? node.templates,
+                      tag: tag ?? node.tag,
+                  }
+                : node;
     }
 };
 

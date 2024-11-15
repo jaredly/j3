@@ -11,7 +11,7 @@ import {
     PathRoot,
     pathWithChildren,
 } from '../../shared/nodes';
-import { Doc } from '../../shared/state';
+import { Doc, DocSelection } from '../../shared/state2';
 import { DocumentNode } from '../../shared/state2';
 import { Toplevel } from '../../shared/toplevels';
 
@@ -22,6 +22,11 @@ export const iterDocNodes = (
     f: (n: DocumentNode, ids: number[]) => void,
 ) => {
     const node = doc.nodes[id];
+    if (!node) {
+        // debugger;
+        console.warn('iter didnt find', id);
+        return;
+    }
     const cids = ids.concat([id]);
     // Skip the top docNode's non-toplevel
     if (node.toplevel !== '') {
@@ -31,14 +36,19 @@ export const iterDocNodes = (
 };
 
 export const applySelectionText = <Top>(
-    selections: IRSelection[],
+    selections: DocSelection[],
     cache: IRCache2<Top>,
 ) => {
     selections.forEach((sel) => {
+        if (sel.type !== 'ir') return;
         if (
             sel.start.cursor.type === 'text' &&
             sel.start.cursor.end.text != null
         ) {
+            if (!cache[sel.start.path.root.toplevel]) {
+                console.log('no cache for toplevel');
+                return;
+            }
             const irs = { ...cache[sel.start.path.root.toplevel].irs };
             const loc = lastChild(sel.start.path);
             if (loc == null || !irs[loc]) {

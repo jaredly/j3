@@ -12,6 +12,7 @@ import {
     serializePath,
 } from '../../../shared/nodes';
 import { PersistedState } from '../../../shared/state2';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { MultiSelect } from '../resolveMultiSelect';
@@ -28,7 +29,7 @@ export const validDropTargets = (
     }
     return targets.filter((t) => {
         if (t.path.children.length === 1) return true;
-        const top = state.toplevels[t.path.root.toplevel];
+        const top = getTopForPath(t.path, state);
         const node = top.nodes[lastChild(t.path)];
         return (
             (node.type === 'id' &&
@@ -54,7 +55,7 @@ export const drop = (source: MultiSelect, dest: DropTarget, store: Store) => {
     ) {
         // move between, this is more different
         // basically, we need a "copy from one" "paste to the other" kind of thing.
-        const top = state.toplevels[source.parent.root.toplevel];
+        const top = getTopForPath(source.parent, state);
         const items = source.children.map((loc) =>
             fromMap(() => false, loc, top.nodes),
         );
@@ -74,7 +75,7 @@ export const drop = (source: MultiSelect, dest: DropTarget, store: Store) => {
     const loc = lastChild(dest.path);
     const ppath = parentPath(dest.path);
     const ploc = lastChild(ppath);
-    const top = state.toplevels[ppath.root.toplevel];
+    const top = getTopForPath(ppath, state);
     const parent = top.nodes[ploc];
     const node = top.nodes[loc];
     if (
@@ -132,6 +133,7 @@ export const drop = (source: MultiSelect, dest: DropTarget, store: Store) => {
         {
             type: 'toplevel',
             id: top.id,
+            doc: ppath.root.doc,
             action: { type: 'update', update: up },
         },
         {
@@ -139,6 +141,7 @@ export const drop = (source: MultiSelect, dest: DropTarget, store: Store) => {
             doc: ppath.root.doc,
             selections: [
                 {
+                    type: 'ir',
                     start: {
                         path: selStart,
                         key: serializePath(selStart),

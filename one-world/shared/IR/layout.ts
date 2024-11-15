@@ -94,13 +94,20 @@ export const layoutIR = (
 
         case 'loc': {
             const choices: LayoutChoices = {};
-            const result = layoutIR(
-                x,
-                firstLine,
-                ctx.irs[lastChild(ir.path)],
-                choices,
-                ctx,
-            );
+            const nir = ctx.irs[lastChild(ir.path)];
+            if (!nir) {
+                console.warn(`no ir for ${serializePath(ir.path)}`);
+                const result = {
+                    maxWidth: 0,
+                    height: 0,
+                    firstLineWidth: firstLine,
+                    inlineHeight: 0,
+                    inlineWidth: 0,
+                };
+                ctx.layouts[lastChild(ir.path)] = { result, choices };
+                return result;
+            }
+            const result = layoutIR(x, firstLine, nir, choices, ctx);
             ctx.layouts[lastChild(ir.path)] = { result, choices };
             return result;
         }

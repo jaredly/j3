@@ -7,7 +7,8 @@ export type StoreEvt = 'selection' | 'all';
 
 export type Store = {
     session: string;
-    getDocSession(doc: string, session?: string): DocSession;
+    docSession: DocSession;
+    // getDocSession(doc: string, session?: string): DocSession;
     getState(): PersistedState;
     update(...actions: Action[]): void;
     onSelection(session: string, path: Path, f: () => void): () => void;
@@ -20,6 +21,7 @@ export type Store = {
     // focus and drag management
     textRef(path: Path, pathKey: string): RefObject<HTMLElement>;
     startDrag(pathKey: string, path: Path): void;
+    dispose(): void;
 };
 
 export const StoreContext = createContext<Store>(null as any);

@@ -1,4 +1,5 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
+import { ParseResult } from '../../evaluators/boot-ex/types';
 import { Action, ToplevelUpdate } from '../../shared/action2';
 import { IRCursor, IRSelection, nodeToIR } from '../../shared/IR/intermediate';
 import { IRForLoc } from '../../shared/IR/layout';
@@ -12,6 +13,7 @@ import {
 } from '../../shared/IR/nav';
 import {
     childLocs,
+    Loc,
     Node,
     Nodes,
     Path,
@@ -108,19 +110,6 @@ const replaceWith = (
     }
     return { type: 'update', update: { root: loc } };
 };
-
-const topUpdate = (
-    id: string,
-    nodes: ToplevelUpdate['update']['nodes'],
-    nidx?: number,
-): Action => ({
-    type: 'toplevel',
-    id,
-    action: {
-        type: 'update',
-        update: nidx != null ? { nodes, nextLoc: nidx } : { nodes },
-    },
-});
 
 const unwrap = (
     path: Path,
@@ -266,6 +255,7 @@ export const joinLeft = (
             },
         },
         {
+            type: 'ir',
             start: {
                 path: ppath,
                 key: serializePath(ppath),
@@ -282,7 +272,10 @@ export const joinLeft = (
 };
 
 const withPath = (sel: IRSelection, path: Path): IRSelection | void => {
-    return { start: { ...sel.start, path, key: serializePath(path) } };
+    return {
+        type: 'ir',
+        start: { ...sel.start, path, key: serializePath(path) },
+    };
 };
 
 export const remove = (path: Path, top: Toplevel): void | ToplevelUpdate => {
@@ -369,6 +362,7 @@ export const addSibling = (
         selection: left
             ? undefined
             : {
+                  type: 'ir',
                   start: {
                       cursor: selected.cursor,
                       path: npath,
@@ -379,6 +373,7 @@ export const addSibling = (
 };
 
 export const idSel = (cursor: number, path: Path): IRSelection => ({
+    type: 'ir',
     start: {
         cursor: { type: 'text', end: { cursor, index: 0 } },
         path,
@@ -1113,11 +1108,21 @@ export const createIRCache = (
     root: number,
     nodes: Record<number, Node>,
     pathRoot: PathRoot,
+    parsed?: ParseResult<any>,
+    getName: (loc: Loc) => string | null = () => null,
 ): IRForLoc => {
     const map: IRForLoc = {};
+    const ctx = parsed
+        ? {
+              styles: parsed.styles,
+              layouts: parsed.layouts,
+              getName,
+              tableHeaders: parsed.tableHeaders,
+          }
+        : undefined;
     const process = (loc: number, path: Path) => {
         const self = pathWithChildren(path, loc);
-        const ir = nodeToIR(nodes[loc], self); // this will mess up some style things
+        const ir = nodeToIR(nodes[loc], self, ctx); // this will mess up some style things
         map[loc] = ir;
         childLocs(nodes[loc]).forEach((l) => process(l, self));
     };

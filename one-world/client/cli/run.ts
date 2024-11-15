@@ -1,42 +1,11 @@
-import termkit from 'terminal-kit';
-import { BootExampleEvaluator } from '../../boot-ex';
-import { Block } from '../../shared/IR/ir-to-blocks';
-import { drop } from './edit/drop';
-import { handleMouseClick, handleMouseDrag } from './edit/handleMouse';
-import {
-    handleDropdown,
-    handleMovement,
-    handleUpDown,
-} from './edit/handleMovement';
-import { handleUpdate } from './edit/handleUpdate';
-import { genId, newDocument } from './edit/newDocument';
-import { init } from './init';
-import { pickDocument } from './pickDocument';
-import { render, renderSelection, RState, selectionPos } from './render';
-import { readSess, trackSelection, writeSess } from './Sess';
-import { Store } from '../StoreContext2';
-import { handleDrag, maybeStartDragging } from './handleDrag';
-
-// cursor line instead of square
-process.stdout.write('\x1b[6 q');
-
-// @ts-ignore
-global.window = {};
-// @ts-ignore
-global.localStorage = {};
-
 import { openSync, writeSync } from 'fs';
-import { AnyEvaluator } from '../../boot-ex/types';
-import { getAutoComplete, menuToBlocks } from './getAutoComplete';
-import {
-    BlockEntry,
-    blockToText,
-    DropTarget,
-} from '../../shared/IR/block-to-text';
-import { DocSession } from '../../shared/state2';
-import { recalcDropdown } from '../newStore2';
-import { drawToTerminal } from './drawToTerminal';
-// NOTE: Uncomment to route logs to a file
+import termkit from 'terminal-kit';
+import { run } from './main';
+import { Renderer } from './drawToTerminal';
+import { readSess, writeSess } from './Sess';
+import { aBlockToString } from '../../shared/IR/block-to-attributed-text';
+import { init } from './init';
+
 const REDIRECT_OUT = false;
 if (REDIRECT_OUT) {
     console.log('redirecting output to cli.log');
@@ -46,157 +15,13 @@ if (REDIRECT_OUT) {
     };
 }
 
-export type MouseEvt = {
-    x: number;
-    y: number;
-    shift: boolean;
-    ctrl: boolean;
-    alt: boolean;
-};
+// cursor line instead of square
+process.stdout.write('\x1b[6 q');
 
-const run = async (term: termkit.Terminal) => {
-    console.log('initializing store...');
-    const sess = readSess();
-    const store = await init(sess);
-    term.clear();
-    term.grabInput({ mouse: 'drag' });
-
-    if (!sess.doc) {
-        const picked = await pickDocument(store, term);
-        if (picked === null) {
-            const id = genId();
-            store.update(...newDocument(id));
-            sess.doc = id;
-        } else {
-            sess.doc = picked;
-        }
-        writeSess(sess);
-    }
-
-    const docId = sess.doc;
-
-    let lastKey = null as null | string;
-
-    let rstate = render(term.width - 10, store, sess.doc, BootExampleEvaluator);
-    drawToTerminal(rstate, term, store, docId, lastKey, BootExampleEvaluator);
-
-    const unsel = trackSelection(store, sess, docId);
-
-    let prevState = store.getState();
-    let tid: null | Timer = null;
-
-    const rerender = () => {
-        tid = null;
-        rstate = render(term.width - 10, store, docId, BootExampleEvaluator);
-        drawToTerminal(
-            rstate,
-            term,
-            store,
-            docId,
-            lastKey,
-            BootExampleEvaluator,
-        );
-        prevState = store.getState();
-    };
-
-    const kick = () => {
-        if (tid != null) return;
-        tid = setTimeout(rerender, 0);
-    };
-
-    store.on('selection', (autocomplete) => {
-        if (autocomplete) {
-            recalcDropdown(store, docId, rstate);
-            kick();
-        }
-    });
-
-    store.on('all', () => {
-        kick();
-    });
-    term.on('resize', () => kick());
-
-    term.on('key', (key: string) => {
-        lastKey = key;
-        if (key === 'CTRL_W') {
-            writeSess({ ssid: sess.ssid });
-            return;
-        }
-
-        if (handleDropdown(key, docId, store, rstate, kick)) {
-            return;
-        }
-
-        if (
-            handleUpDown(key, docId, store, rstate) ||
-            handleMovement(key, docId, rstate.cache, store)
-        ) {
-            return;
-        }
-        if (handleUpdate(key, docId, rstate.cache, store)) {
-            return;
-        }
-
-        if (key === 'ESCAPE') {
-            unsel();
-            store.update({ type: 'selection', doc: docId, selections: [] });
-
-            setTimeout(() => {
-                return process.exit(0);
-            }, 50);
-        }
-
-        term.moveTo(0, term.height, key);
-        renderSelection(term, store, docId, rstate.sourceMaps);
-    });
-
-    term.on('mouse', (one: string, evt: MouseEvt) => {
-        const ds = store.getDocSession(docId);
-        if (one === 'MOUSE_DRAG') {
-            if (ds.dragState) {
-                handleDrag(evt, docId, rstate, ds.dragState, store);
-                return;
-            }
-            handleMouseDrag(docId, rstate.sourceMaps, evt, store);
-        } else if (one === 'MOUSE_LEFT_BUTTON_PRESSED') {
-            if (
-                ds.selections.length &&
-                maybeStartDragging(evt, docId, rstate, ds.selections[0], store)
-            ) {
-                return;
-            }
-
-            handleMouseClick(
-                docId,
-                rstate.sourceMaps,
-                rstate.dropTargets,
-                evt,
-                rstate.cache,
-                store,
-            );
-        } else if (one === 'MOUSE_LEFT_BUTTON_RELEASED') {
-            const ds = store.getDocSession(docId);
-            const dragState = ds.dragState;
-            if (dragState) {
-                store.update({ type: 'drag', doc: docId, drag: undefined });
-                if (!dragState.dest) {
-                    handleMouseClick(
-                        docId,
-                        rstate.sourceMaps,
-                        rstate.dropTargets,
-                        evt,
-                        rstate.cache,
-                        store,
-                    );
-                } else {
-                    drop(dragState.source, dragState.dest, store);
-                }
-            }
-
-            return;
-        }
-    });
-};
+// @ts-ignore
+global.window = {};
+// @ts-ignore
+global.localStorage = {};
 
 const getTerm = () =>
     new Promise<termkit.Terminal>((res, rej) =>
@@ -205,11 +30,86 @@ const getTerm = () =>
         ),
     );
 
+const tkTerm = (term: termkit.Terminal): Renderer =>
+    Object.defineProperties(
+        {
+            docList() {
+                throw new Error('nnot impl');
+            },
+            newDoc(title) {
+                throw new Error('nnot impl');
+            },
+            loadDoc(id) {
+                throw new Error('nnot impl');
+            },
+            moveTo(x, y, text) {
+                term.moveTo(x, y);
+                if (text) {
+                    aBlockToString(text, true)
+                        .split('\n')
+                        .forEach((line, i) => {
+                            if (i > 0) {
+                                term.moveTo(x, y + i);
+                            }
+                            term(line);
+                        });
+                }
+            },
+            drawCursor() {
+                // nvm
+            },
+            write(text) {
+                term(aBlockToString(text, true));
+            },
+            clear: term.clear,
+            onKey(fn) {
+                term.on('key', fn);
+                return () => term.off('key', fn);
+            },
+            onResize(fn) {
+                term.on('resize', fn);
+                return () => term.off('key', fn);
+            },
+            onMouse(fn) {
+                term.on('mouse', fn);
+                return () => term.off('key', fn);
+            },
+            height: 0,
+            width: 0,
+            readSess,
+            writeSess,
+            spawnWorker(onMessage) {
+                // const msg: OutgoingMessage = JSON.parse(evt.data);
+                const worker = self.location
+                    ? new Worker('./worker.js')
+                    : new Worker('./one-world/client/cli/worker.ts');
+                worker.onmessage = (evt) => {
+                    onMessage(JSON.parse(evt.data));
+                };
+                return {
+                    sendMessage(msg) {
+                        worker.postMessage(JSON.stringify(msg));
+                    },
+                    terminate() {
+                        worker.terminate();
+                    },
+                };
+            },
+            // init: (sess) => init(sess, writeSess),
+        },
+        {
+            height: { get: () => term.height },
+            width: { get: () => term.width },
+        },
+    );
+
 getTerm().then((term) => {
     process.on('beforeExit', () => {
         term.grabInput(false);
     });
-    run(term).then(
+    term.clear();
+    term.grabInput({ mouse: 'drag' });
+    run(tkTerm(term)).then(
         () => {
             // console.log('finished turns out');
             // term.grabInput(false);

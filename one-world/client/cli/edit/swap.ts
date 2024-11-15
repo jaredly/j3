@@ -2,8 +2,8 @@ import { Action, ToplevelUpdate } from '../../../shared/action2';
 import { IRSelection } from '../../../shared/IR/intermediate';
 import { lastChild } from '../../../shared/IR/nav';
 import { Path, parentPath, serializePath } from '../../../shared/nodes';
-import { DocumentNode, PersistedState } from '../../../shared/state2';
-import { getNodeForPath } from '../../selectNode';
+import { DocumentNode, getDoc, PersistedState } from '../../../shared/state2';
+import { getNodeForPath, getTopForPath } from '../../selectNode';
 import { isCollection } from '../../TextEdit/actions';
 import { MultiSelect, resolveMultiSelect } from '../resolveMultiSelect';
 import { topUpdate } from './handleUpdate';
@@ -16,7 +16,7 @@ export const swapTop = (
     dir: 'left' | 'right' | 'up' | 'down',
 ): Action[] | void => {
     if (!multi.parentIds.length) return;
-    const doc = state.documents[multi.doc];
+    const doc = getDoc(state, multi.doc);
     const pnode = doc.nodes[multi.parentIds[multi.parentIds.length - 1]];
 
     const sidx = pnode.children.indexOf(multi.children[0]);
@@ -88,6 +88,7 @@ export const swapTop = (
         doc: end.root.doc,
         selections: [
             {
+                type: 'ir',
                 start: {
                     ...start,
                     path: spath,
@@ -120,7 +121,7 @@ export const swap = (
     if (multi.type !== 'top') {
         return swapTop(start, end, multi, state, dir);
     }
-    const top = state.toplevels[start.path.root.toplevel];
+    const top = getTopForPath(start.path, state);
     const node = getNodeForPath(multi.parent, state);
     if (!node) return;
     const ploc = lastChild(multi.parent);
@@ -165,6 +166,7 @@ export const swap = (
             doc: end.root.doc,
             selections: [
                 {
+                    type: 'ir',
                     start: {
                         ...start,
                         path: spath,
@@ -204,6 +206,7 @@ export const swap = (
                 doc: end.root.doc,
                 selections: [
                     {
+                        type: 'ir',
                         start: {
                             ...start,
                             path: spath,
@@ -218,5 +221,8 @@ export const swap = (
         }
     }
 
-    return [topUpdate(end.root.toplevel, up), ...(sel ? [sel] : [])];
+    return [
+        topUpdate(end.root.toplevel, end.root.doc, up),
+        ...(sel ? [sel] : []),
+    ];
 };

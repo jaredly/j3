@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../../src/parse/splitGraphemes';
-import { BootExampleEvaluator } from '../../../boot-ex';
+import { AnyEvaluator } from '../../../evaluators/boot-ex/types';
 import { BlockEntry, DropTarget } from '../../../shared/IR/block-to-text';
 import { matchesSpan } from '../../../shared/IR/highlightSpan';
 import { IRSelection } from '../../../shared/IR/intermediate';
@@ -18,8 +18,9 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
-import { PersistedState } from '../../../shared/state2';
+import { getDoc, getTop, PersistedState } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { findMenuItem, getAutoComplete } from '../getAutoComplete';
 import { RState } from '../render';
@@ -33,19 +34,19 @@ export const handleDropdown = (
     store: Store,
     rstate: RState,
     rerender: () => void,
+    ev: AnyEvaluator,
 ): boolean => {
-    const ds = store.getDocSession(docId);
+    const ds = store.docSession;
     if (!ds.dropdown || ds.dropdown.dismissed) return false;
-    const autocomplete = getAutoComplete(
-        store,
-        rstate,
-        ds,
-        BootExampleEvaluator,
-    );
+    const autocomplete = getAutoComplete(store, rstate, ds, ev);
     if (!autocomplete) return false;
     if (!autocomplete.length) return false;
+
+    const sel = ds.selections[0];
+    if (sel.type !== 'ir') return false;
+
     if (key === 'ESCAPE') {
-        ds.dropdown.dismissed = serializePath(ds.selections[0].start.path);
+        ds.dropdown.dismissed = serializePath(sel.start.path);
         rerender();
         return true;
     }
@@ -69,12 +70,11 @@ export const handleDropdown = (
         if (selected.type === 'action' || selected.type === 'toggle') {
             const shouldContinue = selected.action(true);
             if (ds.dropdown) {
-                ds.dropdown.dismissed = serializePath(
-                    ds.selections[0].start.path,
-                );
+                ds.dropdown.dismissed = serializePath(sel.start.path);
             }
             rerender();
-            return !shouldContinue;
+            // never continue after an enter
+            return true; // !shouldContinue;
         }
     }
     if (key === ' ' || key === ')' || key === '}' || key === ']') {
@@ -84,9 +84,7 @@ export const handleDropdown = (
         if (selected.type === 'action' || selected.type === 'toggle') {
             const shouldContinue = selected.action(key === ' ');
             if (ds.dropdown) {
-                ds.dropdown.dismissed = serializePath(
-                    ds.selections[0].start.path,
-                );
+                ds.dropdown.dismissed = serializePath(sel.start.path);
             }
             rerender();
             return !shouldContinue;
@@ -100,12 +98,7 @@ export const handleDropdown = (
         }
     }
     if (key === 'RIGHT') {
-        const autocomplete = getAutoComplete(
-            store,
-            rstate,
-            ds,
-            BootExampleEvaluator,
-        );
+        const autocomplete = getAutoComplete(store, rstate, ds, ev);
         if (!autocomplete) return false;
         if (!autocomplete.length) return false;
         const selected = findMenuItem(autocomplete, ds.dropdown.selection);
@@ -124,46 +117,29 @@ export const handleUpDown = (
     store: Store,
     rstate: RState,
 ) => {
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
 
     if (key === 'UP' || key === 'DOWN') {
-        const result = selectionLocation(
-            rstate.sourceMaps,
-            sel.start.path,
-            sel.start.cursor,
-        );
+        const result = selectionLocation(rstate.sourceMaps, sel);
         if (!result) return false;
         let [x, y] = result.pos;
         if (ds.verticalLodeStone) x = ds.verticalLodeStone;
-        let up;
-        for (let i = 0; i < 20; i++) {
-            y += key === 'UP' ? -1 : 1;
-            const sel = selectionForPos(
-                x,
-                y,
-                rstate.sourceMaps,
-                rstate.dropTargets,
-                rstate.cache,
-            );
-            if (sel) {
-                up = sel;
-                break;
-            }
-            // up = sourceMaps.find((m) => matchesSpan(x, y, m.shape));
-            // if (up) break;
-        }
+        y += key === 'UP' ? -1 : 1;
+        const up = selectionForPos(
+            x,
+            y,
+            rstate.sourceMaps,
+            rstate.dropTargets,
+            rstate.cache,
+            key === 'DOWN' ? 'down' : 'up',
+        );
         if (!up) return false;
-        // const path: Path = up.source.path;
-        // const cursor = selectionFromLocation(up, { x, y });
         store.update({
             type: 'selection',
             doc: docId,
-            selections: [
-                up.selection,
-                // toSelection({ cursor, path })
-            ],
+            selections: [up.selection],
             verticalLodeStone: up.exact ? undefined : x,
         });
         return true;
@@ -196,7 +172,7 @@ const adjacent = (
     state: PersistedState,
     side: 'left' | 'right',
 ): Path | void => {
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     for (let i = path.children.length - 2; i >= 0; i--) {
         const parent = top.nodes[path.children[i]];
         const items = childLocs(parent);
@@ -214,12 +190,13 @@ const adjacent = (
     }
 
     if (path.root.ids.length > 1) {
-        const doc = state.documents[path.root.doc];
+        const doc = getDoc(state, path.root.doc);
         if (side === 'right') {
             const last = path.root.ids[path.root.ids.length - 1];
             const node = doc.nodes[last];
             if (node.children.length) {
                 const child = doc.nodes[node.children[0]];
+                const top = getTop(state, doc.id, child.toplevel);
                 return {
                     root: {
                         type: 'doc-node',
@@ -227,7 +204,7 @@ const adjacent = (
                         ids: path.root.ids.concat([child.id]),
                         toplevel: child.toplevel,
                     },
-                    children: [state.toplevels[child.toplevel].root],
+                    children: [top.root],
                 };
             }
         }
@@ -238,7 +215,7 @@ const adjacent = (
             if (side === 'left') {
                 if (idx === 0) {
                     // const self = doc.nodes[path.root.ids[i + 1]];
-                    const top = state.toplevels[parent.toplevel];
+                    const top = getTop(state, doc.id, parent.toplevel);
                     if (!top) return;
                     // select the toplevel
                     return firstLastChild(
@@ -265,7 +242,7 @@ const adjacent = (
                     `badloc maybe idx (${idx}) loc (${loc}) children: ${parent.children}`,
                 );
             if (side === 'right') {
-                const top = state.toplevels[sib.toplevel];
+                const top = getTop(state, doc.id, sib.toplevel);
                 return firstLastChild(
                     {
                         root: {
@@ -285,7 +262,7 @@ const adjacent = (
                     sib = doc.nodes[sib.children[sib.children.length - 1]];
                     ids.push(sib.id);
                 }
-                const top = state.toplevels[sib.toplevel];
+                const top = getTop(state, doc.id, sib.toplevel);
                 return firstLastChild(
                     {
                         root: {
@@ -310,15 +287,16 @@ export const handleClose = (
     cache: IRCache2<unknown>,
     store: Store,
 ): boolean => {
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
+    if (sel.type !== 'ir') return false;
 
     if (sel.end) return false;
     if (sel.start.cursor.type === 'text' && sel.start.cursor.start)
         return false;
 
-    const top = store.getState().toplevels[sel.start.path.root.toplevel];
+    const top = getTopForPath(sel.start.path, store.getState());
 
     switch (key) {
         case '}': {
@@ -405,9 +383,10 @@ export const handleMovement = (
     cache: IRCache2<unknown>,
     store: Store,
 ): boolean => {
-    const ds = store.getDocSession(docId, store.session);
+    const ds = store.docSession;
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
+    if (sel.type !== 'ir') return false;
 
     if (handleClose(key, docId, cache, store)) {
         return true;
@@ -445,6 +424,7 @@ export const handleMovement = (
             doc: docId,
             selections: [
                 {
+                    type: 'ir',
                     start: sel.start,
                     end: { path, key: serializePath(path) },
                 },
@@ -454,7 +434,8 @@ export const handleMovement = (
     }
 
     if (key === 'SHIFT_DOWN') {
-        const sel = ds.selections[0];
+        // const sel = ds.selections[0];
+        // if (sel.type !== 'ir') return false;
         if (!sel.end) return false;
 
         const slen = sel.start.path.children.length;
@@ -476,6 +457,7 @@ export const handleMovement = (
             doc: docId,
             selections: [
                 {
+                    type: 'ir',
                     start: sel.start,
                     end: path ? { path, key: serializePath(path) } : undefined,
                 },
@@ -485,7 +467,7 @@ export const handleMovement = (
     }
 
     if (key === 'RIGHT' || key === 'SHIFT_RIGHT') {
-        const sel = ds.selections[0];
+        // const sel = ds.selections[0];
 
         // here we go for real for real
         if (key === 'SHIFT_RIGHT' && sel.end) {
@@ -526,7 +508,7 @@ export const handleMovement = (
     }
 
     if (key === 'LEFT' || key === 'SHIFT_LEFT') {
-        const sel = ds.selections[0];
+        // const sel = ds.selections[0];
 
         // here we go for real for real
         if (key === 'SHIFT_LEFT' && sel.end) {
@@ -575,7 +557,7 @@ const getAdjacent = (
     dir: 'right' | 'left',
 ): IRSelection | null => {
     const ploc = path.children[path.children.length - 2];
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     const items = childLocs(top.nodes[ploc]);
     const at = items.indexOf(lastChild(path));
     if (at === -1) return null;
@@ -586,5 +568,9 @@ const getAdjacent = (
                   parentPath(path),
                   items[at + (dir === 'right' ? 1 : -1)],
               );
-    return { start, end: { path: next, key: serializePath(next) } };
+    return {
+        type: 'ir',
+        start,
+        end: { path: next, key: serializePath(next) },
+    };
 };

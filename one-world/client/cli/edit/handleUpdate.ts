@@ -12,27 +12,26 @@ import {
     toSelection,
 } from '../../../shared/IR/nav';
 import {
-    fromMap,
     Node,
     parentPath,
     Path,
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
-import { DocSession, PersistedState } from '../../../shared/state2';
+import { DocSelection, getDoc, PersistedState } from '../../../shared/state2';
 import { Toplevel } from '../../../shared/toplevels';
-import { getNodeForPath } from '../../selectNode';
+import { getNodeForPath, getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
-import { MultiSelect, resolveMultiSelect } from '../resolveMultiSelect';
+import { MultiSelect } from '../resolveMultiSelect';
 import { addTableColumn } from './addTableColumn';
 import { handleMovement } from './handleMovement';
+import { handleMutliSelect } from './handleMutliSelect';
 import { handleRichText } from './handleRichText';
 import { joinLeft, replaceNode, selAction } from './joinLeft';
 import { newNeighbor } from './newNeighbor';
 import { split } from './split';
-import { swap, swapTop } from './swap';
-import { wrapNodesWith, wrapWith } from './wrapWith';
+import { wrapWith } from './wrapWith';
 
 const getIRText = (cache: IRCache2<unknown>, path: Path, index: number) => {
     const irRoot = cache[path.root.toplevel].irs[lastChild(path)];
@@ -56,11 +55,23 @@ export const handleUpdate = (
         return true;
     }
 
-    const ds = store.getDocSession(docId, store.session);
+    if (key === 'UNDO') {
+        store.update({ type: 'undo' });
+        return true;
+    }
+
+    const ds = store.docSession;
     if (!ds.selections.length) return false;
     const sel = ds.selections[0];
-    if (sel.end && sel.end.key !== sel.start.key) {
-        return handleMutliSelect(store, sel, sel.end, key, ds);
+    if (sel.type !== 'ir') {
+        return handleNamespaceUpdate(key, docId, sel, cache, store);
+    }
+
+    if (sel.end) {
+        const handled = handleMutliSelect(store, sel, sel.end, key, ds);
+        if (handled || sel.end.key !== sel.start.key) {
+            return handled;
+        }
     }
 
     // ctrl-space apparently
@@ -101,7 +112,7 @@ export const handleUpdate = (
 
     const state = store.getState();
     const path = sel.start.path;
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     const node = top.nodes[lastChild(path)];
 
     // ifff | is at the /end/ of a thing
@@ -150,7 +161,7 @@ export const handleUpdate = (
         key === '{' &&
         norm.text[norm.end - 1] === '$'
     ) {
-        const top = store.getState().toplevels[path.root.toplevel];
+        const top = getTopForPath(path, store.getState());
         const nidx = top.nextLoc;
         const loc = lastChild(path);
         const up = { ...node };
@@ -180,7 +191,7 @@ export const handleUpdate = (
             [loc]: up,
         };
 
-        store.update(topUpdate(top.id, map, nidx + 1), {
+        store.update(topUpdate(top.id, path.root.doc, map, nidx + 1), {
             type: 'selection',
             doc: path.root.doc,
             selections: [
@@ -210,6 +221,7 @@ export const handleUpdate = (
         doc: docId,
         selections: [
             {
+                type: 'ir',
                 start: {
                     path: sel.start.path,
                     key: serializePath(sel.start.path),
@@ -231,11 +243,13 @@ export const handleUpdate = (
 
 export const topUpdate = (
     id: string,
+    doc: string,
     nodes: ToplevelUpdate['update']['nodes'],
     nidx?: number,
 ): Action => ({
     type: 'toplevel',
     id,
+    doc,
     action: {
         type: 'update',
         update: nidx != null ? { nodes, nextLoc: nidx } : { nodes },
@@ -332,7 +346,7 @@ export const handleIDUpdate = ({
                 // and typing a '|'
                 if (pnode.items[0] === node.loc) {
                     store.update(
-                        topUpdate(top.id, {
+                        topUpdate(top.id, path.root.doc, {
                             [pnode.loc]: {
                                 type: 'table',
                                 loc: pnode.loc,
@@ -362,11 +376,12 @@ export const handleIDUpdate = ({
     }
 
     if (norm.text.length === 0 && key === '\\') {
-        const top = store.getState().toplevels[path.root.toplevel];
+        const top = getTopForPath(path, store.getState());
         const npath = pathWithChildren(path, top.nextLoc);
         store.update(
             topUpdate(
                 top.id,
+                path.root.doc,
                 {
                     [node.loc]: {
                         type: 'rich-block',
@@ -387,6 +402,7 @@ export const handleIDUpdate = ({
                 doc: path.root.doc,
                 selections: [
                     {
+                        type: 'ir',
                         start: {
                             path: npath,
                             key: serializePath(npath),
@@ -408,7 +424,7 @@ export const handleIDUpdate = ({
             norm.end === norm.text.length
         ) {
             const path = sel.start.path;
-            const top = store.getState().toplevels[path.root.toplevel];
+            const top = getTopForPath(path, store.getState());
             const nidx = top.nextLoc;
 
             const update = replaceNode(path, nidx, top);
@@ -429,6 +445,7 @@ export const handleIDUpdate = ({
                 {
                     type: 'toplevel',
                     id: top.id,
+                    doc: path.root.doc,
                     action: { type: 'update', update },
                 },
                 selAction(
@@ -472,7 +489,7 @@ export const handleNonTextUpdate = (
         (sel.start.cursor.type !== 'side' || sel.start.cursor.side === 'end')
     ) {
         const path = sel.start.path;
-        const top = store.getState().toplevels[path.root.toplevel];
+        const top = getTopForPath(path, store.getState());
         const pnode = top.nodes[parentLoc(path)];
         if (pnode.type === 'table') {
             const actions = addTableColumn(pnode, path, top.id, top.nextLoc);
@@ -487,7 +504,7 @@ export const handleNonTextUpdate = (
         // hrmmm does adding ...
         // TODO: if parent is a table, bail
         const path = sel.start.path;
-        const top = store.getState().toplevels[path.root.toplevel];
+        const top = getTopForPath(path, store.getState());
         const pnode = top.nodes[parentLoc(path)];
         if (pnode && pnode.type === 'table') {
             const { row, col } = findTableLoc(pnode, lastChild(path));
@@ -535,7 +552,7 @@ export const deleteMulti = (
     if (which.type === 'doc') return;
     if (which.children.length === 1) {
         return [
-            topUpdate(which.parent.root.toplevel, {
+            topUpdate(which.parent.root.toplevel, which.parent.root.doc, {
                 [which.children[0]]: {
                     type: 'id',
                     text: '',
@@ -558,7 +575,7 @@ export const deleteMulti = (
         ];
     } else {
         const ploc = lastChild(which.parent);
-        const top = state.toplevels[which.parent.root.toplevel];
+        const top = getTopForPath(which.parent, state);
         const pnode = top.nodes[ploc];
         if (!pnode || !isCollection(pnode)) return;
         const idx = pnode.items.indexOf(which.children[0]);
@@ -567,7 +584,7 @@ export const deleteMulti = (
         );
         if (!leaveABlank) {
             return [
-                topUpdate(which.parent.root.toplevel, {
+                topUpdate(which.parent.root.toplevel, which.parent.root.doc, {
                     [ploc]: { ...pnode, items },
                 }),
             ];
@@ -576,6 +593,7 @@ export const deleteMulti = (
         return [
             topUpdate(
                 which.parent.root.toplevel,
+                which.parent.root.doc,
                 {
                     [ploc]: {
                         ...pnode,
@@ -606,83 +624,62 @@ export const deleteMulti = (
     }
 };
 
-export const handleMutliSelect = (
-    store: Store,
-    sel: IRSelection,
-    end: NonNullable<IRSelection['end']>,
+function handleNamespaceUpdate(
     key: string,
-    ds: DocSession,
-): boolean => {
-    const state = store.getState();
-    const multi = resolveMultiSelect(sel.start.path, end.path, state);
-    if (!multi) return false;
-
-    if (key === 'CTRL_C') {
-        if (multi.type === 'doc') {
-            const doc = state.documents[multi.doc];
-            ds.clipboard = multi.children.map((nid) => {
-                const top = state.toplevels[doc.nodes[nid].toplevel];
-                return fromMap(() => false, top.root, top.nodes);
-            });
-        } else {
-            const top = state.toplevels[multi.parent.root.toplevel];
-            ds.clipboard = multi.children.map((nid) => {
-                return fromMap(() => false, nid, top.nodes);
-            });
-        }
+    docId: string,
+    sel: Extract<DocSelection, { type: 'namespace' }>,
+    cache: IRCache2<unknown>,
+    store: Store,
+): boolean {
+    if (key === 'LEFT') {
+        const start = Math.max(0, sel.end - 1);
+        store.update({
+            type: 'selection',
+            doc: docId,
+            selections: [{ ...sel, start, end: start }],
+        });
         return true;
     }
+    const nid = sel.root.ids[sel.root.ids.length - 1];
+    const node = getDoc(store.getState(), docId).nodes[nid];
+    const ns = ''; // TODO: translate node.module into a /name/space/name
+    const text = sel.text ?? splitGraphemes(ns ?? '');
 
-    if (key === '[' || key === '(' || key === '{') {
-        if (multi.type === 'top') {
-            // only work with empty?
-            wrapNodesWith(key, multi.parent, multi.children, store);
-        }
+    if (key === 'RIGHT') {
+        const start = Math.min(text.length, sel.end + 1);
+        store.update({
+            type: 'selection',
+            doc: docId,
+            selections: [{ ...sel, start, end: start }],
+        });
         return true;
     }
+    const updated = text.slice();
+    let at = Math.min(Math.max(0, sel.end), text.length);
 
-    if (key === 'CTRL_UP' || key === 'CTRL_DOWN') {
-        if (multi.type !== 'top') {
-            const actions = swapTop(
-                sel.start,
-                end.path,
-                multi,
-                state,
-                key === 'CTRL_DOWN' ? 'down' : 'up',
-            );
-            if (!actions) return false;
-            store.update(...actions);
-            return true;
-        }
+    if (key === 'BACKSPACE') {
+        if (at === 0) return false;
+        updated.splice(at - 1, 1);
+        at--;
+        key = '';
+    }
+
+    if (key === '/') {
+        key = '⫽';
+    }
+
+    const parts = splitGraphemes(key);
+    if (parts.length > 1) {
         return false;
     }
 
-    if (
-        key === 'CTRL_LEFT' ||
-        key === 'CTRL_RIGHT' ||
-        key === 'CTRL_SHIFT_LEFT' ||
-        key === 'CTRL_SHIFT_RIGHT'
-    ) {
-        const ups = swap(
-            store.getState(),
-            sel.start,
-            end.path,
-            key.endsWith('LEFT') ? 'left' : 'right',
-            key.includes('SHIFT'),
-        );
-        if (!ups) return false;
-        store.update(...ups);
-        return true;
-    }
+    updated.splice(at, 0, ...parts);
+    at += parts.length;
 
-    if (key === 'BACKSPACE') {
-        const state = store.getState();
-        if (multi.type === 'doc') return false;
-        const ups = deleteMulti(multi, state);
-        if (!ups) return false;
-        store.update(...ups);
-        return true;
-    }
-
-    return false;
-};
+    store.update({
+        type: 'selection',
+        doc: docId,
+        selections: [{ ...sel, start: at, end: at, text: updated }],
+    });
+    return true;
+}

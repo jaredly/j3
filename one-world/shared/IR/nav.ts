@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { ParseResult } from '../../boot-ex/types';
+import { ParseResult } from '../../evaluators/boot-ex/types';
 import {
     Node,
     Nodes,
@@ -10,7 +10,7 @@ import {
     RecNode,
     serializePath,
 } from '../nodes';
-import { PersistedState } from '../state';
+import { Doc, DocStage, getDoc, getTop, PersistedState } from '../state2';
 import { IR, IRCursor, IRSelection, nodeToIR } from './intermediate';
 import { IRForLoc, LayoutCtx } from './layout';
 
@@ -24,14 +24,26 @@ export type IRCache = Record<
     }
 >;
 
+export type ParseAndEval<Top> = Record<
+    string,
+    {
+        paths: Record<number, number[]>;
+        node: RecNode;
+        parseResult: ParseResult<Top>;
+        output?: any;
+    }
+>;
+
 export type IRCache2<Top> = Record<
     string,
     {
         irs: IRForLoc;
-        paths: Record<number, number[]>;
         root: PathRoot;
         result: ParseResult<Top>;
-        node: RecNode;
+        output?:
+            | { type: 'nothing' }
+            | { type: 'error'; text: string }
+            | { type: 'success'; value: any };
     }
 >;
 
@@ -196,7 +208,7 @@ export const goFromDocNode = (
     left: boolean,
     cache: IRCache2<unknown>,
 ) => {
-    const doc = state.documents[path.root.doc];
+    const doc = getDoc(state, path.root.doc);
     if (!left) {
         const last = path.root.ids[path.root.ids.length - 1];
         const node = doc.nodes[last];
@@ -210,7 +222,9 @@ export const goFromDocNode = (
                         ids: path.root.ids.concat([child.id]),
                         toplevel: child.toplevel,
                     },
-                    children: [state.toplevels[child.toplevel].root],
+                    children: [
+                        getTop(state, path.root.doc, child.toplevel).root,
+                    ],
                 },
                 'start',
                 cache[child.toplevel].irs,
@@ -233,7 +247,9 @@ export const goFromDocNode = (
                         ids: path.root.ids.slice(0, i + 1),
                         toplevel: parent.toplevel,
                     },
-                    children: [state.toplevels[parent.toplevel].root],
+                    children: [
+                        getTop(state, path.root.doc, parent.toplevel).root,
+                    ],
                 },
                 'end',
                 cache[parent.toplevel].irs,
@@ -257,7 +273,7 @@ export const goFromDocNode = (
                     ids,
                     toplevel: sib.toplevel,
                 },
-                children: [state.toplevels[sib.toplevel].root],
+                children: [getTop(state, path.root.doc, sib.toplevel).root],
             },
             left ? 'end' : 'start',
             cache[sib.toplevel].irs,
@@ -297,6 +313,7 @@ export const goLeftRightInner = (
                     cursor.start.cursor !== cursor.end.cursor)
             ) {
                 return {
+                    type: 'ir',
                     start: {
                         ...sel.start,
                         cursor: { ...cursor, start: undefined },
@@ -306,6 +323,7 @@ export const goLeftRightInner = (
             const next = cursor.end.cursor + (left ? -1 : 1);
             if (next >= 0 && next <= splitGraphemes(text.text).length) {
                 return {
+                    type: 'ir',
                     start: {
                         ...sel.start,
                         cursor: {
@@ -356,6 +374,7 @@ const goLRFrom = (
         left,
     );
     return {
+        type: 'ir',
         start: {
             path: cpath,
             key: serializePath(cpath),
@@ -404,13 +423,39 @@ export const cursorForNode = (
     );
 };
 
+export const selectEODoc = (doc: DocStage, cache: IRCache2<any>) => {
+    const children = doc.nodes[0].children;
+    let last = children[children.length - 1];
+    const ids = [0, last];
+    while (last != null && doc.nodes[last].children.length) {
+        const children = doc.nodes[last].children;
+        last = children[children.length - 1];
+        ids.push(last);
+    }
+    if (last == null) return;
+    const top = doc.nodes[last].toplevel;
+    return selectNode(
+        {
+            root: { doc: doc.id, ids, toplevel: top, type: 'doc-node' },
+            children: [doc.toplevels[top].root],
+        },
+        'end',
+        cache[top].irs,
+    );
+};
+
 export const selectNode = (
     // loc: number,
     path: Path,
     side: 'start' | 'end',
     cache: IRForLoc,
 ) => {
-    const irs = irNavigable(cache[lastChild(path)]);
+    const loc = lastChild(path);
+    if (!cache[loc])
+        throw new Error(
+            `Stale IR Cache: missing for ${loc} (${Object.keys(cache)})`,
+        );
+    const irs = irNavigable(cache[loc]);
     return toSelection(
         cursorSelect(
             irs[side === 'start' ? 0 : irs.length - 1],
@@ -423,6 +468,7 @@ export const selectNode = (
 };
 
 export const idSelection = (path: Path): IRSelection => ({
+    type: 'ir',
     start: {
         path,
         key: serializePath(path),
@@ -440,6 +486,7 @@ export const toSelection = ({
     cursor: IRCursor;
     path: Path;
 }): IRSelection => ({
+    type: 'ir',
     start: {
         path,
         key: serializePath(path),

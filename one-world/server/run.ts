@@ -6,68 +6,107 @@
 // - get me this document, hydrated with the toplevels I'll need
 // -
 
-import { loadState, saveChanges } from './persistence';
-import { Action } from '../shared/action2';
-import { update } from '../shared/update2';
-import { DocSession } from '../shared/state';
 import { ServerWebSocket } from 'bun';
+import { Action } from '../shared/action2';
 import { rid } from '../shared/rid';
+import { DocSelection, DocSession, HistoryItem } from '../shared/state2';
+import { jsonGitBackend } from './json-git';
+import { Change } from './persistence';
 
-type Session = {
+export type Session = {
     ws: ServerWebSocket<unknown>;
     selections: DocSession['selections'];
 };
 
+const CORS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+} as const;
+
+export type ClientMessage =
+    | {
+          type: 'presence';
+          selections: DocSelection[];
+      }
+    | { type: 'changes'; items: HistoryItem[] };
+// | { type: 'action'; action: Action };
+
+export type ServerMessage =
+    | {
+          type: 'presence';
+          id: string;
+          selections: DocSelection[];
+      }
+    | { type: 'changes'; items: HistoryItem[] };
+
 const baseDirectory = './.ow-data';
 
-let state = loadState(baseDirectory);
-// let ssid = 0;
 const sessions: Record<string, Session> = {};
+
+const backend = jsonGitBackend(baseDirectory);
 
 Bun.serve({
     port: process.env.PORT,
-    fetch(req, server) {
+    async fetch(req, server) {
         console.log(req.url);
         const url = new URL(req.url);
         if (url.pathname === '/ws') {
-            if (!url.search.startsWith('?ssid=')) {
-                throw new Error(`no ssid provided`);
+            const ssid = url.searchParams.get('ssid');
+            if (!ssid) {
+                return new Response('no ssid provided', { status: 400 });
             }
-            const ssid = url.search.slice('?ssid='.length);
+            const doc = url.searchParams.get('doc');
+            if (!doc) {
+                return new Response('no doc provided', { status: 400 });
+            }
             // upgrade the request to a WebSocket
-            // const id = ssid++;
             if (
                 server.upgrade(req, {
-                    data: { ssid },
-                    headers: {
-                        'Access-Control-Allow-Origin': '*',
-                        'Access-Control-Allow-Methods':
-                            'GET, POST, PUT, DELETE, OPTIONS',
-                    },
+                    data: { ssid, doc },
+                    headers: CORS,
                 })
             ) {
-                // sessions[id] = { selections: [] };
                 return; // do not return a Response
             }
             return new Response('Upgrade failed', { status: 500 });
         }
         if (req.method === 'GET') {
-            return new Response(JSON.stringify(state), {
-                status: 200,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods':
-                        'GET, POST, PUT, DELETE, OPTIONS',
-                },
-            });
+            if (url.pathname === '/docs') {
+                return new Response(JSON.stringify(await backend.docsList()), {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...CORS,
+                    },
+                });
+            }
+            if (url.pathname === '/doc') {
+                const id = url.searchParams.get('id');
+                if (!id) {
+                    return new Response('no id provided', { status: 400 });
+                }
+                const doc = await backend.doc(id);
+                if (!doc) {
+                    return new Response('Doc not found', { status: 404 });
+                }
+                return new Response(JSON.stringify(await backend.doc(id)), {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...CORS,
+                    },
+                });
+            }
+            return new Response('Sorry what', { status: 404, headers: CORS });
         }
+        if (req.method === 'POST' && url.pathname === '/doc') {
+            const title = await req.text();
+            const id = await backend.newDoc(title);
+            return new Response(id, { headers: CORS });
+        }
+
         return new Response('ok', {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods':
-                    'GET, POST, PUT, DELETE, OPTIONS',
-            },
+            headers: CORS,
         });
     },
     websocket: {
@@ -89,8 +128,8 @@ Bun.serve({
         },
         // handler called when a message is received
         async message(ws, message) {
-            const msg = JSON.parse(String(message));
-            const ssid: string = (ws.data as any).ssid;
+            const msg: ClientMessage = JSON.parse(String(message));
+            const { ssid, doc } = ws.data as { ssid: string; doc: string };
             if (msg.type === 'presence') {
                 sessions[ssid].selections = msg.selections;
 
@@ -101,31 +140,25 @@ Bun.serve({
                                 type: 'presence',
                                 selections: msg.selections,
                                 id: ssid,
-                            }),
+                            } satisfies ServerMessage),
                         );
                     }
                 });
-            } else if (msg.type === 'action') {
-                const action: Action = msg.action;
+            } else if (msg.type === 'changes') {
+                throw new Error('not yet impl');
+                // const changes = await backend.update(msg.action, doc);
 
-                // NOTE: this can be sooo much more efficient, by having update
-                // also report on what changed.
-                const next = update(state, action, {
-                    selections: {},
-                    toplevels: {},
-                });
-                // console.log('action', action);
-                const changes = saveChanges(baseDirectory, state, next);
-
-                state = next;
-                // notify others of the changes
-                Object.keys(sessions).forEach((k) => {
-                    if (k !== ssid) {
-                        sessions[k].ws.send(
-                            JSON.stringify({ type: 'changes', changes }),
-                        );
-                    }
-                });
+                // // notify others of the changes
+                // Object.keys(sessions).forEach((k) => {
+                //     if (k !== ssid) {
+                //         sessions[k].ws.send(
+                //             JSON.stringify({
+                //                 type: 'changes',
+                //                 changes,
+                //             } satisfies ServerMessage),
+                //         );
+                //     }
+                // });
             }
         },
     },

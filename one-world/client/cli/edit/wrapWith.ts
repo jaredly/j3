@@ -6,6 +6,7 @@ import {
     pathWithChildren,
     serializePath,
 } from '../../../shared/nodes';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { replaceNode } from './joinLeft';
@@ -17,7 +18,7 @@ export const wrapNodesWith = (
     store: Store,
 ) => {
     const state = store.getState();
-    const top = state.toplevels[parent.root.toplevel];
+    const top = getTopForPath(parent, state);
     const ploc = lastChild(parent);
     const pnode = top.nodes[ploc];
     if (!isCollection(pnode)) return;
@@ -46,6 +47,7 @@ export const wrapNodesWith = (
         {
             type: 'toplevel',
             id: top.id,
+            doc: parent.root.doc,
             action: { type: 'update', update },
         },
         {
@@ -53,6 +55,7 @@ export const wrapNodesWith = (
             doc: parent.root.doc,
             selections: [
                 {
+                    type: 'ir',
                     start: {
                         path: npath,
                         key: pkey,
@@ -69,7 +72,7 @@ export const wrapNodesWith = (
 
 export const wrapWith = (key: '[' | '(' | '{', path: Path, store: Store) => {
     const state = store.getState();
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
 
     let loc = lastChild(path);
     let node = top.nodes[loc];
@@ -105,6 +108,7 @@ export const wrapWith = (key: '[' | '(' | '{', path: Path, store: Store) => {
         {
             type: 'toplevel',
             id: top.id,
+            doc: parent.root.doc,
             action: { type: 'update', update },
         },
         {

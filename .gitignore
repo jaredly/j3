@@ -6,3 +6,6 @@ ok.js
 .ow-data
 .cli.sess
 cli.log
+run.js
+worker.js
+.ow-db

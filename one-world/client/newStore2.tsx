@@ -1,4 +1,5 @@
-import { BootExampleEvaluator } from '../boot-ex';
+import { AnyEvaluator } from '../evaluators/boot-ex/types';
+import { ClientMessage, ServerMessage } from '../server/run';
 import { Action } from '../shared/action2';
 import {
     IRCursor,
@@ -7,13 +8,25 @@ import {
 } from '../shared/IR/intermediate';
 import { lastChild } from '../shared/IR/nav';
 import { Path, serializePath } from '../shared/nodes';
-import { DocSession, PersistedState } from '../shared/state2';
-import { update, Updated } from '../shared/update2';
+import {
+    DocSelection,
+    DocSession,
+    getTop,
+    HistoryItem,
+    PersistedState,
+} from '../shared/state2';
+import {
+    applyChanges,
+    reverseChanges,
+    update,
+    Updated,
+} from '../shared/update2';
 import { getAutoComplete } from './cli/getAutoComplete';
 import { RState } from './cli/render';
+import { IncomingMessage, OutgoingMessage } from './cli/worker';
 import { listen } from './listen';
+import { getTopForPath } from './selectNode';
 import { Store } from './StoreContext2';
-import { getNewSelection } from './TextEdit/getNewSelection';
 
 type Evts = {
     general: {
@@ -79,12 +92,10 @@ const setupDragger = (store: Store) => {
     const mouseMove = (evt: MouseEvent) => {
         if (!dragState) return;
 
-        const sels = store.getDocSession(
-            dragState.path.root.doc,
-            store.session,
-        ).selections;
+        const sels = store.docSession.selections;
         const matching = sels.find(
-            (s) => !s.end && s.start.key === dragState!.pathKey,
+            (s) =>
+                s.type === 'ir' && !s.end && s.start.key === dragState!.pathKey,
         );
 
         const range = new Range();
@@ -131,10 +142,15 @@ const setupDragger = (store: Store) => {
     return { textRefs, startDrag };
 };
 
-export function recalcDropdown(store: Store, docId: string, rstate: RState) {
-    const ds = store.getDocSession(docId);
+export function recalcDropdown(
+    store: Store,
+    docId: string,
+    rstate: RState,
+    ev: AnyEvaluator,
+) {
+    const ds = store.docSession;
     if (!ds.dropdown || ds.dropdown.dismissed) {
-        const auto = getAutoComplete(store, rstate, ds, BootExampleEvaluator);
+        const auto = getAutoComplete(store, rstate, ds, ev);
         if (auto?.length) {
             ds.dropdown = { selection: [0] };
         } else {
@@ -143,66 +159,72 @@ export function recalcDropdown(store: Store, docId: string, rstate: RState) {
     }
 }
 
+export type WS = {
+    send(msg: ClientMessage): void;
+    onMessage(fn: (msg: ServerMessage) => void): void;
+    close(): void;
+};
+
 export const newStore = (
     state: PersistedState,
-    ws: WebSocket,
-    session: string,
+    ws: WS,
+    session: DocSession | null,
 ): Store => {
     const evts = blankEvts();
-    // @ts-ignore
-    // window.state = state;
-    const docSessionCache: { [id: string]: DocSession } = {};
-    // @ts-ignore
-    // window.docSessions = docSessionCache;
+    // const docSessionCache: { [id: string]: DocSession } = {};
+    // TODO have a way to identify other users, name, pic, etc.
+    const presence: Record<string, DocSelection[]> = {};
+
+    if (!session) {
+        session = {
+            doc: state.id,
+            jumpHistory: [],
+            selections: [],
+            clipboard: [],
+        };
+    }
 
     const store: Store = {
-        session,
-        getDocSession(doc: string, session: string = store.session) {
-            const id = `${doc} - ${session}`;
-            if (!docSessionCache[id]) {
-                if (localStorage['doc:ss:' + id]) {
-                    docSessionCache[id] = JSON.parse(
-                        localStorage['doc:ss:' + id],
-                    );
-                    if (!docSessionCache[id].clipboard) {
-                        docSessionCache[id].clipboard = [];
-                    }
-                } else {
-                    docSessionCache[id] = {
-                        doc,
-                        history: [],
-                        activeStage: null,
-                        selections: [],
-                        clipboard: [],
-                    };
-                }
-            }
-            return docSessionCache[id];
+        session: 'nop',
+        dispose() {
+            ws.close();
+            evts.docs = {};
+            evts.general = { all: [], selection: [] };
+            evts.selections = {};
+            evts.tops = {};
         },
+        docSession: session,
         getState() {
             return state;
         },
         update(...actions) {
-            // console.log('store updat', action);
+            // console.log('store.update', actions.length);
+            const prevState = state;
+
             const updated: Updated = { toplevels: {}, selections: {} };
 
             const extras: Action[] = [];
+            let changes: HistoryItem['changes'] = {
+                prevSelections: this.docSession.selections,
+                selections: [],
+            };
+
+            let presenceChanged = false;
 
             actions.forEach((action) => {
                 if (action.type === 'drag') {
-                    const ds = store.getDocSession(action.doc);
+                    const ds = this.docSession;
                     ds.dragState = action.drag;
                     evts.general.selection.forEach((f) => f());
                 }
 
                 if (action.type === 'selection') {
-                    const key = `${action.doc} - ${session}`;
-                    const prev = docSessionCache[key].selections;
-                    docSessionCache[key].selections = action.selections;
-                    docSessionCache[key].verticalLodeStone =
-                        action.verticalLodeStone;
+                    const prev = session.selections;
+                    session.selections = action.selections;
+                    session.verticalLodeStone = action.verticalLodeStone;
                     const seen: Record<string, IRSelection> = {};
                     action.selections.forEach((sel) => {
+                        if (sel.type !== 'ir') return;
                         selPathKeys(sel).forEach((k) => {
                             const id = `${session}#${k}`;
                             seen[id] = sel;
@@ -211,6 +233,11 @@ export const newStore = (
                     });
 
                     prev.forEach((psel) => {
+                        if (psel.type !== 'ir') {
+                            // If you don't manually "commit" a namespace change,
+                            // we just reset it.
+                            return;
+                        }
                         selPathKeys(psel).forEach((k) => {
                             const id = `${session}#${k}`;
                             updated.selections[id] = true;
@@ -249,25 +276,69 @@ export const newStore = (
                     );
 
                     if (!action.autocomplete) {
-                        docSessionCache[key].dropdown = undefined;
+                        session.dropdown = undefined;
                     }
                 }
 
-                state = update(state, action, updated);
-                // @ts-ignore
-                window.state = state;
-                ws.send(JSON.stringify({ type: 'action', action }));
+                if (action.type === 'presence') {
+                    presence[action.id] = action.selections;
+                    presenceChanged = true;
+                    // Don't send to websocket!
+                    return;
+                }
+
+                if (action.type === 'undo') {
+                    const last = state.history[state.history.length - 1];
+                    if (!last) return state;
+                    const rev = reverseChanges(last.changes);
+                    state = applyChanges(state, rev);
+                    state = {
+                        ...state,
+                        history: [
+                            ...state.history,
+                            {
+                                changes: rev,
+                                idx: state.history.length,
+                                reverts: last.idx,
+                                session: this.session,
+                            },
+                        ],
+                    };
+                    this.docSession.selections = rev.selections;
+                    return;
+                }
+
+                state = update(state, action, updated, changes);
             });
 
+            ({ changes, state } = maybeAddHistoryItem(
+                state,
+                changes,
+                this.docSession.selections,
+                this.session,
+            ));
+
             extras.forEach((action) => {
-                state = update(state, action, updated);
-                // @ts-ignore
-                window.state = state;
-                ws.send(JSON.stringify({ type: 'action', action }));
+                state = update(state, action, updated, changes);
             });
+
+            ({ changes, state } = maybeAddHistoryItem(
+                state,
+                changes,
+                this.docSession.selections,
+                this.session,
+            ));
 
             evts.general.all.forEach((f) => f());
 
+            const added = state.history.slice(prevState.history.length);
+            if (added.length) {
+                ws.send({ type: 'changes', items: added });
+            }
+
+            // @ts-ignore
+            self.state = state;
+            // TODO:if (presenceChanged) evts.general.presence.forEach(f => f());
             sendUpdates(updated, evts);
         },
         on(evt, f) {
@@ -314,9 +385,51 @@ export const newStore = (
         },
     };
 
+    ws.onMessage((data) => {
+        switch (data.type) {
+            case 'presence':
+                store.update(data);
+                return;
+            case 'changes':
+                if (data.items[0].idx !== state.history.length) {
+                    throw new Error(`history out of sync`);
+                }
+                state = { ...state, history: state.history.concat(data.items) };
+                for (let item of data.items) {
+                    state = applyChanges(state, item.changes);
+                }
+                // TOOD process
+                return;
+        }
+    });
+
     const dragger = setupDragger(store);
 
     return store;
+};
+
+const maybeAddHistoryItem = (
+    state: PersistedState,
+    changes: HistoryItem['changes'],
+    selections: DocSelection[],
+    session: string,
+) => {
+    if (changes.nodes || changes.toplevels) {
+        // console.log('have some changes');
+        changes.selections = selections;
+        const historyItem: HistoryItem = {
+            idx: state.history.length,
+            changes,
+            session,
+        };
+        state = { ...state, history: [...state.history, historyItem] };
+
+        changes = {
+            prevSelections: selections,
+            selections: [],
+        };
+    }
+    return { state, changes };
 };
 
 function sendUpdates(updated: Updated, evts: Evts) {
@@ -339,7 +452,7 @@ function maybeCommitTextChange(
     extras: Action[],
 ) {
     const last = path.children[path.children.length - 1];
-    const node = state.toplevels[path.root.toplevel].nodes[last];
+    const node = getTopForPath(path, state)?.nodes[last];
 
     if (!sel.end.text || !node) return;
     const updated = updateNodeText(node, sel.end.index, sel.end.text.join(''));
@@ -347,9 +460,12 @@ function maybeCommitTextChange(
         return;
     }
 
+    // console.log('committing text change');
+
     extras.push({
         type: 'toplevel',
         id: path.root.toplevel,
+        doc: path.root.doc,
         action: {
             type: 'update',
             update: { nodes: { [node.loc]: updated } },

@@ -46,12 +46,13 @@ export const addTableColumn = (
     }
 
     return [
-        topUpdate(topId, update, nextLoc),
+        topUpdate(topId, path.root.doc, update, nextLoc),
         {
             type: 'selection',
             doc: path.root.doc,
             selections: [
                 {
+                    type: 'ir',
                     start: {
                         path: npath,
                         key: serializePath(npath),

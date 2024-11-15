@@ -1,4 +1,1210 @@
 
+# Partially Applied Macrosss???
+
+So I was having some thoughts, at one point.
+like, what if I want to be able to partially apply a macro?
+This was the context
+(meanwhile this also brought up the issue of: the parser will need to tell the
+ editor /how/ to apply the macros, because "what arguments are being passed to this macro"
+ is syntax-dependent, e.g. `(go 1 2 3)` vs `go(1, 2, 3)`, where go is the macro.
+ I guess the ~most flexible way would be to have the parser report just 2 things:
+ 1. the ref of the macro to call
+ 2. the outermost node of the invocation
+ and then the macro can be responsible for extracting the arguments n stuff)
+ that way ... like binops as macros could be possible? idk.
+
+
+ok but I was also thinking about how for the parser to work, I need to be reporting back
+all this information, like `layout` and what autocomplete stuff is available.
+and how the most simple way to do that is with mutation, which my REPL needs to not do.
+and I went in two different directions
+
+1) the repl could support mutation as long as functions were annotatable with 'pure' or 'impure'
+ok this feels really interesting.
+howw hard do we think it would be to like do normal javascript, with a type system that infers
+whether a function is "pure"?
+(ignoring Object proxies, probably)
+
+might be kinda tricky for ... functions that keep functions around...
+idk could be a fun thing to try.
+
+In the absence of that, we could require an annotation on impure functions, and just trust it.
+
+2) I could have macros that essentially do the work of the state monad, but without having it be... so complex?
+
+like I could have a macro that goes
+
+```clj
+
+(let$ [lol $(call one)
+       two (other three)])
+
+and invocations with the leading `$` would be 'stated'
+so the fn gets an extra 'state' argument, and returns a tuple
+as well.
+
+```
+
+btw we'll seriously want very good 'view macro expanded stuff' behavior.
+
+ok .... anyway, ... I was thinking that I would need to like pass in
+the names of my special state variables to the macro, but honestly
+maybe I don't? I'll hang on to this idea in the back of my mind though.
+
+ALSOO I think it would be cool to be able to have macros that operate on the whole toplevel.
+- > how would this work? the /ref/ would want to be like ... have a kind that is 'macro-full'
+    or something like that. And then `macrosToInvoke` would, if it found a macro-full,
+    /only return that/ because we'd need to run the thing again on the response of the macro.
+    hmmmm actually, would that be the right spot for the auxiliary bucket? like decorators in python.
+    yeah maybe that's the best way to do it, and it indicates 'up top' that we'll be messing with stuff.
+    ok nice. so then we could have a `state$` macro that adds the arg to the function defn, and
+    to all return values, etc. way good.
+- oooh BTW the "partially applied macro" thing would be solved by just having the amcro be
+  an auxiliary, with some arguments passed in.
+
+Thoooughts about the usage of punctuation.
+like it would be cool to be able to have a macro called `let.`. /but/ that is in conflict
+with being able to use . as a separator.
+sooo we could call it let! or let- or let, or let$
+that's all fine.
+
+
+
+# Syntax families thoughts
+
+are we content?
+Do I, for example, need a way to ... distinguish between ... 'different languages' or something like that.
+can't macros be enough?
+
+Ok I don't really want to get too off into the weeds here.
+
+- rich text is clearly a different sort of thing, with different keyboard rules
+- lisp-like is a certain way, doesn't have smooshed or spaced collections
+- then other languages are 'full dealio', so commas between ()[]{} items etc.
+
+Question being: rich text can live in a lisp or full world.
+DO lisp and full worlds need to be ... mutually embeddable?
+is there a possiblity you might be doing, like "this is our lispy world" and then
+all of the sudden you need to do some full-syntax for some reason?
+and the reverse?
+like
+How would you signpost it?
+
+Here's an interesting idea. What if rich-text "quote block" and "heading" and stuff ...
+somehow weren't custom node types, but rather ... an interpretation of normal IDs and Text and ... lists?
+naw I think I want it to be smoother than that.
+
+....
+
+Ok but we do potentially need a 'code switch' between lisp and non-lisp, for lack of a better word.
+- oh yeah because that also determines 'what is a valid identifier character'
+ANDD we need a way for (an evaluator? a document?) to indicate the ~default input form, that a thing is.
+This would live at the toplevel node as well.
+
+And like, the evaluator's parser ... if it knows how to handle multiple ... syntaxes ... hrm. Is that something I really want to mess with? I don't really think so.
+
+
+OK SO main outcome is we are NOT allowing mutliple modes /within the same toplevel/. Gotta pick one and stick to it.
+
+One thing, I still miiight want to be using the /smooshed/ type, as that would
+give me ... and ; for free99. ooh and tags on strings. would be nice to simplify that.
+only thing is, that ~eliminates the use of . and ; in ids, which was already the case.
+
+Q: do I want unary ops in lisp syntax? - + ! ~ ^ | & @. honestly @ for unquote is
+probably the right way to go. and that means we can prefix `() to do a nice quote as well.
+yeah let's do that.
+Ok so yes we do want unary ops. buut only prefix. thats fine. also, all prefixed puctuation
+is glommed into a single id. if you want to separate things, use parentheses.
+
+hrmok but : is allowed as a suffix and creates a smoosh. # probably does too tbh.
+
+lolol am I just going to rewrite the keyboard stuffs from scratch now? like mayyybe..
+
+
+## Mornign Thoughts
+
+- a doc should allow multiple evaluators actually, and nodes have an int index into that list
+- doc nodes have a 'presentation style' or sth that is list / whiteboard / columns
+
+
+
+
+
+Q:
+is there going to need to be distinction between different non-lisp syntaxes?
+- I don't think so (unless I do indent-based), because keyboard behavior should be the same.
+
+Relatedly, I'm not currently supporting python-style (indent-based) or ruby-style (keyword-blocks)
+
+
+#
+
+ok, so if I want to actually do the js style dealio
+I need to
+
+1. make tests that provide full coverage for my keyboard
+  handlers that I currently have.
+2. refactor so that organization isn't so dang ad-hoc
+3. make it so you can ... switch out ... the ...
+  ... syntax style you're using?
+  OK SO
+  an evaluator would want to:
+  - parse (cst -> ast)
+  - print (ast -> cst)
+  anddd indicate what style of syntax we're using.
+  -should i- make it so that an evaluator can support
+  multiple kinds of syntax????
+  shoullddd I make it so that the 'syntax-style' is like...
+  stored on the toplevel?
+  hoenstly that's kinda interesting.
+  would /rich text/ be its own separate syntax style? noo.
+  even though it kinda feels like it should be.
+  becaaause, I want to be able to plop rich texts in the middle
+  of other things.
+  OOOoooh but wait. now there's JSX and friends.
+  like. SQL? naw sql is c-like enough, right.
+
+
+# Thinking about
+my 'loc as list' decision.
+it has been pretty much just a hassle so far.
+
+the idea was for macros n such
+anddd ok I do still think the idea has merit. So
+we can leave it like that.
+
+# Alsooo what about JS syntax for jerd?
+
+## Lispyness
+
+- id
+- collections:
+  - list, array, record, table
+- string (templates)
+- prefixed:
+  - comment, spread
+- record.access.things
+- rich:
+  - inline
+  - block
+
+
+Things that would be different under js-land...
+
+- need a boundary-less collection, for binops n such.
+  - x + 2 * 3
+  - abc ? def : ghi
+  - if (x) a else b
+
+- prefixes! for unary + - !
+- suffixes, maybe just fn application? but might as well allow just about anything
+
+ok so hear me out
+what if it was like "smooshed" and "spaced"
+
+...
+and then, collections?
+lol is this turning into rex right now
+hah ok yeah definitely not. but some similarities.
+
+
+```ts
+
+if x y else z
+
+{| x, b, c |}
+
+{| x|y, z|b, n|m |}
+
+x/y/z
+
+if x { let m = y, a(m, n, o, [p, q, r]), b } else z
+```
+
+spaced [
+  id(if)
+  id(x)
+  collection/curly [
+    spaced [
+      id(let)
+      id(m)
+      id(=)
+      id(y)
+    ]
+    smooshed [
+      id(a)
+      collection/round [
+        id(m)
+        id(n)
+        id(o)
+        collection/square [
+          id(p)
+          id(q)
+          id(r)
+        ]
+      ]
+    ]
+    id(b)
+  ]
+  id(else)
+]
+
+
+node: id/string, collection/spaced/smooshed
+
+
+
+```ts
+
+type Smooshed = {type: 'smooshed', items: Node[]}
+type Spaced = {type: 'spaced', items: Node[]}
+// yoooo what if
+// comma and semicolon
+// were the same? like, only semicolons?
+type Collection = {
+  type: 'collection',
+  kind: 'round' | 'square' | 'curly',
+  items: Node[]
+}
+// ohwait
+// newlines
+// yes that's right. we dont actually want semicolons at all, really.
+// SO
+// [inline] = , [newline] = \n
+
+
+
+```
+
+hrmmmmm ah but the problem:
+how to distinguish a record from a block?
+aha, easy. a record uses table syntax. all clear.
+
+
+
+
+
+
+
+
+
+
+- we need a collection that is a 'block'....
+
+
+#
+
+
+- [x] moreliness: cross linking and hashing - self hash thnaks
+
+- [ ] macros
+- [ ] accessories
+- [ ] incremental updates, make sure things update right
+
+
+# Nowww what?
+
+- [ ] ok with exports, I need to ... make sure inter-term hashing works, right?
+  locking it in.
+
+
+# Next up
+
+- gotta have: exports handling
+  - which brings in macros I believe?
+- and recursive toplevels
+
+
+# How
+do I get "what's the doc [x] at root [y]"?
+because ... ok so because ...
+yeah so the structural sharing means, we can't actually
+cache the /path/, or the /rootHash/, because they're not stable
+by hash of the module.
+
+
+# TODO eventually
+
+change ref(toplevel).loc to just be [id, number],
+because I've decided that macros need to use an already existing
+node.
+
+#
+
+Next step:
+
+updateRoot looks reasonable, BUT
+- I need to make sure to update the hashes n stuff in the document first.
+- anddd the toplevels.
+
+
+# Tests here!
+
+- DS->keys->DS
+- DS->DB->DS->keys->DS->DB->DS
+- DS -> keys&sync/ds
+- DDD -> keys&sync/db -> DB->DS
+
+
+Now I need to think about:
+- [x] history undo/redo pls
+- [ ] anddd commit! gotta do it
+- exports and modules and such?
+
+- whereeeeee is the thing that organizes
+  ah it's graphh/by-hand.ts n stuff
+
+So, we do a parse, and stuff.
+
+
+
+
+
+- (create the database) (load the database) (do things in the editor) (assert:editor state)
+- (create/load db) (editor changes) (persiste) (load) (assert:editor state)
+
+hrmms. so, we could do a "ws backandforth" dealio. Right?
+we could also, technically, do a "dump the whole DocStage at the end of interaction" thing.
+
+
+
+# [ All of this document / module talk boiled down ]
+
+- each doc is a module, each module a doc
+- toplevels have a specific module id they're associated with
+- when a toplevel is edited and parsed, and has exports, those terms get saved to the module that the toplevel indicates. (this is derived data)
+- if the module of a toplevel that's shown in a documentnode is different from that of its parent,
+  the module path will be displayed.
+
+yeah that sounds good.
+
+
+
+# ~~having a little crisis~~
+
+Is there a difference between:
+- documents that are for ~display, and
+- documents that are for ~development.
+
+jupyter notebooks would say /no/.
+you code around, and eventually organize things.
+
+
+## ~~Ok radical rethought~~
+
+what if, we collapsed things so that it's all one tree of document nodes.
+and you can, like, be zoomed in at a certain level.
+and certain nodes would be, like, 'title' nodes.
+- hrm, so I don't think I would want to ...
+
+AHA ok so, counterpoint:
+I will definitely want to be able to have multiple documents, PRESENTING THE SAME CODE.
+One doc that is like "for developers" as a reference.
+and one that is in like a "tutorial style" doing a walkthrough.
+I might even want to have one document "for beginners" and one "for experts".
+
+How does that impact things?
+
+I think, what this is all coming back to, is that toplevels do in fact
+have allegience to a given module.
+which /means/ that a documentNode should not, because that would cause sync issues.
+duplication of information.
+
+
+#
+
+Q: should documents have their own implicit module?
+like, terms show up as children of the document?
+and the ... name of a module ... is the ... name of the document?
+that seems like it would be a little interesting.
+
+like a nice way to have all modules, be a little bit documented.
+
+OK SO, this means ... hm. like. but if I want a document to be ....
+able to grab stuff from (and edit) its parent, what gives?
+hmm.
+well, there's a root ... documentNode? no, it doesn't have a toplevel.
+
+whattt if it was documentNodes that had `module`s?
+honestly that does kinda seem like the right place to put it.
+yeah ok, so then the root documentNode could set the tone for where
+to put toplevels that we define here.
+
+So, in summary:
+- every document is a module
+- every module is a document
+
+and, the root, well it would be a document too.
+
+how does that impact the git-liness of it all?
+
+hashing the root document, yeah that sounds legit.
+
+Do a document has nodes, and also
+- sub-documents
+-
+
+Ifff I'm editing a document, like the root document,
+I dont want to have to like ... hydrate all the documents out there.
+
+oooooh alsossoooo
+what does this mean for staging areas?
+what does it mean, could you ... be like staging changes to sub-documents
+as part of the same stage?
+hmmmmm.
+does that make the case for a global stage?
+
+might I, concievably, want to make changes to multiple documents, as part
+of a single commit?
+
+on the other hand, the thing I can imagine most likely doing is:
+- re-arranging the hierarchy of things. without really touching anything else.
+
+THIS makes the case for separating out the "module hierarchy" stuff from the "document" stuff.
+
+which, hm, yeah is maybe a good idea.
+
+SO: document : module is still 1:1, we'll have the same ID n stuff.
+moving one around is the same as moving the other.
+
+BUT document : stage is also 1:0/1, when editing a document, you can modify other modules,
+but not other documents.
+Yeah I like that conceptual separation.
+
+
+# Ok next steps:
+
+- [ ] let's like, make a test, where we fire up a fresh database (?)
+
+
+having to recon with CRDTs, again.
+Howw do I think about HistoryItems.
+
+Iff I'm really hoping to have real-time collaboration,
+I need a way to decide who gets what.
+I'm fine with having a central server.
+
+So, a client sends back "here's my history item and this is the index"
+and the server sees "wait the number has already been used,
+I'll add your item, but it gets this new index"
+and then the client sees the response, and does the necessary internal reordering.
+yeah. let's just go with indices.
+
+
+
+Getting real about modules.
+So, toplevels, they gotta keep track of where they're going to sit in the world.
+
+
+
+
+# Commits, and git, and whatnot.
+
+- IS there a way to make merging of non-conflicting commits seamless?
+
+like...
+hrmmm ok I guess the logical conclusion would be some kind of CRDT
+whichhhh isn't really what I'm going for?
+yeahhh because some concurrent changes would actually produce
+conflicts, like if two different folks introduce the same name
+into a given module.
+ok, I'll leave that as a potential future exercise.
+for now, we'll do /merge commits/ with potential conflicts
+that will need to be manually resolved.
+
+# Thikning about projects, and dependencies
+
+One thing about projects, is depenedencies.
+If you're in a world where you have multiple versions of a library, how are you
+supposed to know what version to autocomplete?
+
+Basic idea:
+- autocomplete will grab anything in the same module or a descendent
+- OR an /alias/ that exists in an ancestor (?) hmm.
+
+So like
+
+/
+/vendored
+/sessions
+/projects
+  /one-thing
+  /two-thing
+    /~lol = /vendored/lol/2.34
+    /some/deep/module
+                /child/and/such
+                /second
+                /~nother = /vendored/nother/1.11
+                ...
+                so here, we autocomplete
+                - child, child/and, child/and/such
+                - second
+                - ~nother
+                - ~lol
+
+You can technically depend on anything from anywhere, but we won't
+autocomplete it for you. And we'll probably call out non-aliased
+foreign dependencies.
+
+
+
+
+# Let's talk through the basics of an editing session, end to end
+
+- we are on a branch
+- we create a new document in a module
+  - the ... hrm ok I think it does have to get auto-committed
+  - nope! It doesn't. The editedDocument just records the module where it will be saved to.
+- ok new place, we're editing an existing document
+- this creates an editedDocument, w/ toplevels copied in
+  for all of the toplevels of that document.
+  and ... modules copied in for all of the modules represented.
+  ... like, the modules that the toplevels are in.
+  this will require doing a reverse-search to get the modules
+  for the toplevels.
+- the editedDocument will have a record of the root hash at time
+  of creation, so we know what to compare to.
+- modules and toplevels will also have the hashes of their base,
+  although that techincally could be derived from the root hash. (? maynbe)
+
+- now, we do some edits. editedDocumentsToplevels receives updates,
+  as does editedDocuments (for nodes changes), and ... potentially
+  editedDocumentsModules. I guess when saving a toplevel, we do parse
+  it, and if it produces exports we toss them into the modules.
+- we can also ... add assets, or artifacts, or other things that impact
+  a module.
+
+- once we're done, and potentailly only if all tests are green, we
+  do a commit.
+  This (a) writes to /modules/ and /toplevels/ and /documents/,
+  (b) make a commit row, linking the new root hash, and the old
+  parent commit, and the document we were editing. (c) updates
+  the branch to point to our new commit.
+
+
+
+
+
+
+# Ohhhk, so I think I've hashed out a lot of what things would look like.
+To summarize:
+- a pull-request would include, like a Doc that has (show-diff) on
+  the relevant things we're bringing in, with commentary.
+And it would have a 'base hash'
+
+And you could bring it in as a branch, play around with it, read the commentary,
+and then choose what to bring over, via 'create a new EditedDoc with the changes'.
+
+
+hmmmmm `show-diff` relying on the runtime miiiight be a stretch? idk like I might
+not want to rely on the runtime for this.
+because I think I want to be able to have like a `Create a "PR" doc with the changes since [commit]`
+hmmmm but actually I could have a dialog that says "select the show-diff macro, if you have one".
+hmmmmmmm orrr there could like be a ... rich-text embed type that is just like 'show the source code'?
+yeah actualy maybe that's best.
+So: RichInline embed, should include the hash pls.
+nice. yeah I like that.
+Q: how about comments? do I want to be able to inline-comment on a diff? hrm.
+I could see adding something to the InlineSpan type, that would be fine.
+
+
+
+# Ok, so:
+
+- on branch main
+- fork to a new branch, why not
+- make some changes probably
+- then make a "PR document" that highlights the changes
+
+At this point, what role does edited-document play?
+It is the 'staging area'. it is the 'working tree'
+
+Alright. My Backend interface should probably be modified
+to account for branches?
+
+orrr we just say "the server backend represents a branch that is static"
+
+Operations include:
+- retrieve a full modules story
+- retrieve a single document (view-only)
+- retrieve a document for editing (may create)
+- update an edited document
+- create a new document (at a module ...)
+- commit a document's changes.
+
+hmmm when creating a new document, does it start staged?
+Do you have to /commit/ to actually produce it? That seems like a reasonable idea.
+
+Alsoo, editedDocuments now need to ... encompass module changes as well.
+
+
+
+
+
+
+
+
+
+# THinking about pull requests and syncing
+
+- an edited-doc should have the `root` that it's based on
+- a pull-request is just an edited-doc, with the edited topelvels being the changes.
+  and the cool part is you can like do a full literate-programming dealio, explaining
+  each change, using non-exported toplevels.
+
+BUT what about doing like a "diff" of my tree and your tree?
+how do I tell which things have changed?
+hrm I guess I could do a full "pull" of your tree, using the merkle tree
+for efficiency, and then make a new /branch/ for it, and then locally...
+figure out the differences?
+- yeah ok so that's where it gets a little fuzzy, because I also
+  probably need the /git history/ of your stuff, in order to determine
+  ...common ancestors of edited things? idk.
+  but anyway, I think I fundamentally do have the information, it's
+  just a matter of moving it around.
+
+so ... hm. There's this thing where, in order to diff two branches,
+first I'll find the TOPs that have different hashes, and then I'll
+need to "find the common ancestor" ... probably? In order to do
+the merge in the ~best way possible.
+
+Now, to start I can just bail with saying "the user will figure out how to reconcile".
+And in the ~worst case, they can split the world.
+
+ok anyway, like I said, I don't think I fundamentally need to make any changes?
+wellll ok maybe I want toplevels to hang on to the /previous hash/ as well.
+
+
+
+# What does seeding the db look like?
+
+- obvs need a root module and an initial commit containing that root, and the branch /main/ pointing to it.
+- thennn we probably want ... a basic scaffolding of modules.
+- might as well make a commit of it, right?
+
+Basic modules structure:
+
+root/
+  sessions/
+    wait ok so if you start a new document, it plops you in here
+    with a brand new module all of your very own.
+    you can choose to move it somewhere else though if you want.
+  projects/
+    here's for like, whatever random thing
+  evaluators/
+    here's where we define the languages, right?
+  vendor/
+    it's for community libraries you pull in
+
+OHHH WAIT I need a table for ... like ... "exports", right?
+HRMMM also a table for "assets". Where do I talk about that?
+
+what ifffff like ... exports were ... just defined on the `module`,
+and didn't ... like exist for themselves anywhere?
+
+
+I should think about unison https://www.unison-lang.org/docs/projects/
+and what they've done.
+For example, what would a "pull request" look like in this line of work?
+
+anddddd is there possibly a way to just use git? lol
+
+OK SO I ... probably want a way to archive a document as well.
+Because, for PRs, we'll just 'pull in a new pr doc' into the module
+where it's based, and you can then commit it from there. /the end result ought to be idential hashes, at least for the relevant tops/.
+
+
+
+ok but nother quich questions.
+What does a "PR" look like, for a document?
+like 'hey I made a change to this document'.
+things that would be changed:
+- probably some toplevels
+- but also maybe some nodes.
+  - hmm what if it was, like...
+    some doc nodes have an attribute indicating added/removed? that could be interesting.
+
+waitwait.
+you just /save the document/ to a hash on another branch, and then have normal tools for
+comparing/merging different versions of a document.
+ok yeah that's normal.
+
+hm. so the general idea is: 'pull a branch with the changes, both to documents and toplevels'
+and then merge those in? hmmm.
+and it'll use some known common base as the base for the changes.
+
+wait but how does that mesh with 'using a document to literately document your PR'
+
+alllllsoooooo hm. Iff I am allowing different branches, I certainly need to allow
+different edited_documents, per branch. right?
+
+Yeah.
+Ok, so for like the PR dealio
+what's to stop you from having a document called 'PR.md', right?
+and that outlines the changes.
+
+Would want to be able to have like a node that shows the diff between two hashes of a given
+toplevel. but I'll want that all over the place.
+- would that be ... like a plugin? or something? or would I just implement that in code,
+  and have the output be a 'report of the changes'? that might be cool.
+  like, a, ... macro? could it be a macro? hmm. I don't currently allow macros to get
+  the source code of the thing we're operating on, but it might be something to think about.
+  like that would allow all kinds of great things.
+
+- [ ] MACROs should have access to the source code of all things passed into it. maybe?
+
+yeah being able to do `(generate-serialization #some-type)` would be rad.
+andd being able to do `(show-diff one-thing#hash1 one-thing#hash2)` feels like a super-power.
+
+
+# NExt ups
+
+- [x] refactor the server to get ready for sqlite
+
+- [ ] make adding a new document work
+- [ ] make /committing/ possible
+- [ ] showww the module tree
+- [ ] allow editing an existing thing
+
+
+# Ah 10/29
+I can't remember what my latest decision on "modules" was.
+like
+- is a module a string?
+- does a module ... have a reference to its children?
+Ok what I think I remember is this:
+
+- toplevels point to a module id
+- state.modules is a mapping of [moduleId] to [childName: moduleId]
+
+So a module does not define its own name. it is defined in the context
+of the parent.
+naturally, the root module has no name. and is probably called `root` or
+something like that.
+IMPORTANTLY, for the moment, the "module name mapping" has no bearing on compilation.
+the only thing that matters for compilation is "what is in the same module as myself",
+not parent/child relationships.
+
+IF I were to change things such that descendent module relationships had a bearing on
+compilation, I would have to change the `DocStage` dealio to encompass that stuff.
+
+Ok, yeah that all sounds right.
+
+ALSO, creating a new document creates a new module for that document, by default...
+unless you're like looking at a module, and want to add a document to it, obvs.
+
+
+# So, things that I'm interseted in
+
+- like, showing the UX of my canvas-based thing maybeeee
+- but also, maybe I should dive into react?
+- getting the whole round trip of:
+  - like,
+
+Ok, I want to be able to:
+- define a self-hosting whatsit
+- whichh means, we want a `js` builting template right?
+
+
+
+## [ Multiple runtime backends ] ##
+
+a runtime, ought to be able to load up compilation artifacts...
+
+for PLAN it would be the laws, compiled and ready as bytearrays
+
+sooooooooo
+ok so the backend
+actually it can just be like an attribute of the object we're calling an 'evaluator'
+BUT
+the tricky thing is making it so you can access a backend written in another language.
+So we're doing like an FFI thing here.
+and we'd specify it using the same `hash array` structure, daisy-chaining evaluators,
+as we do for specifying the `evaluator` of a doc.
+
+btw when creating a new doc you'll be asked to specify an evaluator, with "recently used"
+evaluators listed out for you.
+
+anyway for FFI goodness, that does mean that /somewhere/ we'll want to hang on to like a list
+of "exported things" or something. Of the following categories:
+- evaluators
+- "backends"
+- hmmmm is this where we put "pins"? Yeah maybe.
+- so like a "visualization" or something.
+
+I do want a way to make this somewhat TYPED, so we have some level of confidence in the
+interface exported under the various categories.
+BUT given that we'll be interacting across what may be quite varied runtime & memory
+& type stories, that seems like it might be hard?
+hmm.
+
+well I mean at the end of the day, the glue code we'll be using is javascript, which does
+have a defined type story.
+
+
+
+
+# What I need for the new version control world:
+
+- the `PersistedState` that I'm passing around, should be much pared down
+  - just an EditedDocument
+  - and a DocSession
+  ... right?
+
+do paths ... need to have a doc attached?
+what about, the abilitiy to have multiple
+docs open at once? Is that something I want to
+be thinking about?
+hm but then DocSession ... would be duplicated,right
+yaeh its fine
+
+
+hrm so what does /store/ actually look like n stuff
+
+do I need a different store
+for the toplevel?
+
+ok maybe first step is:
+- [x] make the toplevel and pickDocument not use the store
+- [ ] construct the store anew for each document, async w/ data fetched
+- [ ] then change PersistedState to be what I want.
+
+
+- [x] fat cursor on multiselect thanks
+
+
+
+
+##
+
+- [x] pickDocumenet isn't cleaned up somehow
+
+- [ ] it looks like ... DocSessions arent being persisted? but they're ... trying to be loaded?
+  not sure what is going on there.
+
+Ok, so:
+- adding a new toplevel looks like it's not incrementing the ... nextId of the document.
+
+# Sooooo
+
+oh right, should we ... make this available on the web?
+- I do want history. can I has history?
+
+
+gonna have to think about async loading of things at some point.
+hopefully soon.
+So like
+`PersistedState` is gonna want to look different than it does.
+and like
+just expose an interface really.
+
+I mean, EditedDocument ... contains all you need, right?
+well, not necessarily all you need to /evaluate/, orrrr
+actually parse, because macros could be needed. SO there
+definitely needs to be a mode where we're like
+"sorry, loading macros, back in a second".
+
+Anyway, but bascially EditedDocument does contain everything
+that goes on the screen.
+
+
+# Ok thinking through version control stuff:
+
+Ohhhhg so. the rename is at tehe stake level isnt it.
+
+- backend db looks like
+  // When you "commit", this is where it goes
+  - table: toplevels
+    key: hash & id
+    module, nodes, ...
+
+  - table: documents
+    key: hash & id
+    module, nodes, ...
+
+  // When you're editing, this is what you're messing with
+  - table: edited-documents
+    key: id
+    (everything from documents)
+    (nodes are just a blob rite)
+  - table: edited-documents-toplevels
+    key: docid & toplevelid
+    hash (of the base toplevel)
+    (everything from toplevels)
+  - table: edited-documents-history
+    key: id & idx
+    reverts (nullable idx)
+    ... somehow record changes
+    ... to the edited-document as well as ... toplevels
+
+  // here's how we know "what is the tip of the iceberg"
+  - table: latest-toplevels
+    key: id
+    hash, module, ts
+  - table: latest-documents
+    key: id
+    hash, module, ts
+
+  // this is used for dependency trawling
+  - table: parse-cache
+    key: tl-hash & tl-id & evaluator
+    exports, imports, mcst, ast, ...
+
+yeahh.. I think that'll do it?
+
+
+
+#
+
+maybe https://typeof.net/Iosevka
+
+# hmmm
+dunno if we have undo/redo totally locked doown just yet
+but my fgolks its time for testssss
+yes indeedydoo
+
+ok but it's been long enoguh I don't remember what I had to replace
+o rite, websocket andddd worker. yes pls.
+
+ok I thikn I am ready to do a little testttt
+
+# UNDO/reudo
+
+this means... I'm going to start using stages? irhgt?
+- hrm I should have a function for
+  /getDoc/ and /getTop/
+  because it'll depend on the stage.
+- [x] getDoc
+- [x] getTop
+- [x] top updates include doc id
+- [x] load & save the stage
+  - [x] appears to be working
+- [x] top and doc updates update the stage isntead
+- [ ] when making a change to a stage, make a historyitem
+- [ ] undo/redo yasss
+- [ ] make a 'commit' action
+- [ ] have ... a way to pull in toplevels to a document, so I can test ... editing a toplevel from two diff documents.
+
+# Webliness
+
+NExt for web:
+- [ ] let's get undo/redo folks
+  - that's ... going to live in the stage, right?
+- [ ] an in-process storage (to localstorage prolly for noww)
+- [ ] then add support for a couple more things to the parser/evaluator
+  - let
+  - match
+  - lists
+  - ... records?
+  - ... quotes/unquotes?
+  - like can we get macros with that little effort?
+- [ ] copy & paste, gotta have it
+- [ ] not being able to select across subitems of a rich text is annoying,
+  and does need fixing.
+
+- CHANGE CURSOR COLOR/STYLE for multiselect. aw yeah.
+
+
+should quotes be:
+@@ @t @p @...
+and then unquotes be
+`var or #var or sth
+`name seems fine.
+
+
+/Renderer/
+
+- instead of ABlock, what if we go directly to IR?
+  and then the renderer turns that into (whatever),
+  and keeps track of screen position and such.
+  so the renderer then reports click locations,
+  keyboard movement (selectionForPos) stuff?
+  That would be cool.
+
+- [ ] the canvas renderer doesn't handle cursor, which would be nice if it did
+- [ ] blinking sounds useful
+- [x] up/down jumping over a blank space, we're not aligning totally column-wise
+- [x] better drag (selforpos)
+
+
+#
+
+- [ ] I want ... to ... asynchronously eval. can I?
+  - yeah what would that involve.
+    - passing .. the parse cache over the bridge?
+      might be kindof a lot of data...
+
+
+- [x] editing the text of a ref should ~remove the refliness
+- [x] clicking over an output should seelct somethign at least
+
+
+# Namespaces / modules
+Ok so we're really doing modules, and toplevels will have module ID that they are attached to,
+and documents will have a module id that they represent.
+
+
+lolol I DOSed it with too high a fibonacci number.
+soooo this means:
+- I should definitely get evaluation running in a separate ... thread(?)
+- would be interesting to compile to go, and .. run it async for like macro resolution n stuff
+
+
+# lol how fast can I get glsl pipeline up and running
+like ... do I wait to self host it?
+naw might as well get it implemented in ts first
+work out the kinks
+
+
+# Completion thoughts
+Can I get compilation and stuff replacing selections?
+
+- [ ] Enter or Space, if there is something after the current thing,
+  shouldn't produce a new blank after it.
+  or if we're at the top level.
+
+- [ ] QUESTION should the /eval/ also auto-fill the currently selected autocomplete item (ref)? that would be interesting.
+  (in the same way that it applies pending text selection texts)
+
+- [ ] disallow duplicate names
+- [ ] actually parse locals pls
+- [ ] autoselect on space ... isn't as nice as I thought it would be.
+  but ... maybe it would be nice if there was an autofill for locals? hmmm.
+
+- [x] why isn't autocomplete triggering
+  - OK so we recalcDropdown, but the /rstate/ is stale. How do we indicate .. that we need
+    it to be better.
+   - yay it is fixed.
+
+- [x] if the text is 1 char long, ignore any autcompletes that are more than 1 char long.
+
+# How are we lookin
+
+- [x] basic parse cache
+- [x] basic evaluate
+- [x] mutual recursion, love it
+- [ ] cache parse with macros, how to do it
+  - if we can cache evaluation (make a hash for the evaled result)
+    then we can check if macros are the same, and skip running them.
+- [ ] cache infer and compile
+- [ ] cache evaluation pls
+- [ ] bust a cache, how to do it
+  - need to ... crawl down the dependency tree
+- [ ] figure out how to propagate changes down the depndendency tree
+  so that we can re-render and such
+
+although for quick and dirty I can just hook it up, right?
+
+
+# Getting a basic by hand going:
+
+- [x] basic dependencies and eval
+- [x] noww let's try 'detecting and handling cycles'
+  - ideally, without "having to process the whole module at once"
+ok this is actually looking quite good!
+what will it take to start evaluating in my editor?
+
+
+
+# so
+
+I kinda feel like the result from /compile/ should ... be
+different based on ... the [kind].
+but I guess that's a thing I can do on the inside.
+
+
+
+
+# OK Let's talk about mutual recursion for a second
+because I'm gonna have to deal with it
+
+```clj
+(def even (fn [x] (if (= x 1) false (not (odd (- x 1))))))
+(def odd (fn [x] (if (= x 0) false (not (even (- x 1))))))
+```
+
+Here's what I think:
+the evaluator needs to provide a function to turn a list of toplevels into
+a single toplevel.
+And then that single toplevel gets passed in to the normal process.
+
+
+# What's my full story?
+
+side note:
+- how do ... I decide ... what /values/ to output n stuff?
+  - ok so how bout, the compiler can return
+    named: Record<string, IR>,
+    evaluate?: IR,
+    and if there's an evaluate, it gets evaluated and the result is displayed.
+
+Doing the SimplestEvaluator
+- make .. it .. work?
+
+hrmmmmmmm ok so now ... like ... I want ... a like observables thing or something.
+eh I should probably just make it myself.
+
+
+## Simpler (just macros)
+```clj
+(defmacro and [cst]
+  (match cst
+    (|(` #one #two)|(` if #one #two false)
+      _            |(fatal "bad karma")|)))
+
+(defmacro or [cst]
+  (match cst
+    (|(` #one #two)|(` if #one true #two)
+      _            |(fatal "bad macra")|)))
+
+(def x 3)
+(def y 15)
+
+(if (and (< x 5) (> y 10))
+  "Hello"
+  "World")
+```
+
+## Simplest (no macros)
+```clj
+(def x 3)
+
+(if (< x 5)
+  "Hello"
+  "World")
+```
+
+
+
+# Scrolllllioliol
+
+Gotta have scrollllll
+
+
+# Namespace, gotta haver it
+
+- [x] selection type namespace, make the types work
+- [x] render it
+- [x] handle click
+- [ ] handle dragggg
+- [x] handle movement; up/down/left/right typing n stuff
+- [x] spoof / to // folks
+- [ ]
+
+
+Graphing the deps
+
+- [term-ref].[term-ref] is always going to be an association.
+  - can they be nested??? I think probably nottt. let's not do it.
+  - might want to render the . as like a hollow circle or something to make things clear.
+
+therefore, once we have a macro-expanded CST, we can statically determine
+HRM ok so with type-classes, we don't necessarily know what things we'll be
+depending on. ...
+
+
+
+
 # Now I think we graph.
 
 AHA

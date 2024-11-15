@@ -14,6 +14,8 @@ import {
     parentPath,
     pathWithChildren,
 } from '../../../shared/nodes';
+import { getDoc } from '../../../shared/state2';
+import { getTopForPath } from '../../selectNode';
 import { Store } from '../../StoreContext2';
 import { isCollection } from '../../TextEdit/actions';
 import { CLoc, findTableLoc, topUpdate } from './handleUpdate';
@@ -27,27 +29,23 @@ export const split = (
     cache: IRCache2<unknown>,
 ) => {
     const state = store.getState();
-    const top = state.toplevels[path.root.toplevel];
+    const top = getTopForPath(path, state);
     const loc = lastChild(path);
     // Here are the things that can have a `text` IR in them:
     // that's a thing
     const parent = parentPath(path);
     if (!parent.children.length) {
         // toplevel folks
-        const actions = newDocNodeNeighbor(
-            path,
-            state.documents[path.root.doc],
-            [
-                {
-                    type: 'id',
-                    text: norm.text.slice(norm.end).join(''),
-                    loc: true,
-                },
-            ],
-        );
+        const actions = newDocNodeNeighbor(path, getDoc(state, path.root.doc), [
+            {
+                type: 'id',
+                text: norm.text.slice(norm.end).join(''),
+                loc: true,
+            },
+        ]);
         if (!actions) return false;
         store.update(
-            topUpdate(top.id, {
+            topUpdate(top.id, path.root.doc, {
                 [node.loc]: {
                     ...node,
                     text: norm.text.slice(0, norm.start ?? norm.end).join(''),
@@ -71,12 +69,33 @@ export const split = (
         store.update(
             topUpdate(
                 top.id,
+                path.root.doc,
                 {
-                    [ploc]: { ...pnode, items },
+                    // [ploc]: { ...pnode, items },
                     [node.loc]: {
                         ...node,
                         text: text.slice(0, norm.start ?? norm.end).join(''),
                     },
+                    // [nidx]: {
+                    //     type: 'id',
+                    //     text: text.slice(norm.end).join(''),
+                    //     loc: nidx,
+                    // },
+                },
+                nidx + 1,
+            ),
+        );
+
+        store.update(
+            topUpdate(
+                top.id,
+                path.root.doc,
+                {
+                    [ploc]: { ...pnode, items },
+                    // [node.loc]: {
+                    //     ...node,
+                    //     text: text.slice(0, norm.start ?? norm.end).join(''),
+                    // },
                     [nidx]: {
                         type: 'id',
                         text: text.slice(norm.end).join(''),
@@ -120,6 +139,7 @@ export const split = (
             store.update(
                 topUpdate(
                     top.id,
+                    path.root.doc,
                     {
                         ...map,
                         [pnode.loc]: { ...pnode, rows },
