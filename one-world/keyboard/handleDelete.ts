@@ -79,10 +79,10 @@ export const handleDelete = (state: TestState): Update | void => {
                     const ppath = parentPath(state.sel.start.path);
                     const parent = state.top.nodes[lastChild(ppath)];
                     if (parent?.type === 'list' && parent.kind === 'smooshed') {
-                        const node = state.top.nodes[lastChild(state.sel.start.path)] as Id<number>;
-                        // throw new Error(`gotta check smoosh collapses`);
+                        let node = state.top.nodes[lastChild(state.sel.start.path)] as Id<number>;
+                        node = { ...node, text: '' };
                         return flatToUpdate(
-                            parent.children.map((loc) => (loc === node.loc ? { ...node, text: '' } : state.top.nodes[loc])),
+                            parent.children.map((loc) => (loc === node.loc ? node : state.top.nodes[loc])),
                             state.top,
                             {},
                             { type: 'existing', node: parent, path: ppath },
