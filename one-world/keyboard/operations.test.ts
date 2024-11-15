@@ -3,13 +3,13 @@
 import { childLocs, childNodes, fromMap, fromRec, Id, ListKind, Nodes, RecNodeT, RecText, Text, TextSpan } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
-import { Config, handleListKey, handleTextKey } from './insertId';
-import { Cursor, getCurrent, IdCursor, CollectionCursor, ListWhere, selStart, Update, Top } from './utils';
+import { Config } from './insertId';
+import { Cursor, IdCursor, CollectionCursor, ListWhere, selStart, Top } from './utils';
 import { TestState } from './test-utils';
 import { validate } from './validate';
 import { root } from './root';
-import { handleIdKey } from './flatenate';
 import { handleDelete } from './handleDelete';
+import { handleKey } from './handleKey';
 
 // Classes of keys
 
@@ -81,20 +81,6 @@ const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
             start: selStart({ children: sel, root: { ids: [], top: '' } }, cursor),
         },
     };
-};
-
-const handleKey = (state: TestState, key: string, config: Config): Update | void => {
-    const current = getCurrent(state.sel, state.top);
-    switch (current.type) {
-        case 'id':
-            return handleIdKey(config, state.top, state.sel.start.path, current.cursor, key);
-        case 'list':
-            return handleListKey(config, state.top, state.sel.start.path, current.cursor, key);
-        case 'text':
-            return handleTextKey(config, state.top, state.sel.start.path, current.cursor, key);
-        default:
-            throw new Error('not doing');
-    }
 };
 
 const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.') => {

@@ -102,7 +102,18 @@ export const listKindForKeyKind = (kind: Kind): 0 | 1 | 2 => (kind === 'sep' ? O
 
 export type Flat = Node | { type: 'space'; loc: number } | { type: 'sep'; loc: number };
 
-const interleave = <T>(items: T[], sep: T) => {
+export const interleaveF = <T>(items: T[], sep: (i: number) => T) => {
+    const res: T[] = [];
+    items.forEach((item, i) => {
+        if (i > 0) {
+            res.push(sep(i - 1));
+        }
+        res.push(item);
+    });
+    return res;
+};
+
+export const interleave = <T>(items: T[], sep: T) => {
     const res: T[] = [];
     items.forEach((item, i) => {
         if (i > 0) {

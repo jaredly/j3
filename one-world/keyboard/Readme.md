@@ -21,6 +21,9 @@ OK but honestly, I need the infra to be customizeable in the first place.
 
 So let's do that.
 
+Ok, actually first thing is let's build a little UI
+to play with it
+
 
 # One Flat to Flatten them All
 
