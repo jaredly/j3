@@ -21,6 +21,19 @@ const closer = { round: ')', square: ']', curly: '}', angle: '>' };
 
 const hl = 'rgba(100,100,100,0.2)';
 
+const Cursor = () => (
+    <span
+        style={{
+            display: 'inline-block',
+            width: 2,
+            marginRight: -1,
+            marginLeft: -1,
+            height: '1em',
+            backgroundColor: 'red',
+        }}
+    />
+);
+
 const RenderNode = ({ loc, state }: { loc: number; state: TestState }) => {
     const node = state.top.nodes[loc];
     const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
@@ -32,7 +45,7 @@ const RenderNode = ({ loc, state }: { loc: number; state: TestState }) => {
                 return (
                     <span>
                         {text.slice(0, left).join('')}
-                        {left === right ? '|' : <span style={{ background: hl }}>{text.slice(left, right).join('')}</span>}
+                        {left === right ? <Cursor /> : <span style={{ background: hl }}>{text.slice(left, right).join('')}</span>}
                         {text.slice(right).join('')}
                     </span>
                 );
@@ -57,7 +70,7 @@ const RenderNode = ({ loc, state }: { loc: number; state: TestState }) => {
                 default:
                     return (
                         <span>
-                            {cursor?.type === 'list' && cursor.where === 'before' ? '|' : null}
+                            {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                             {cursor?.type === 'list' && cursor.where === 'start' ? (
                                 <span style={{ background: hl }}>{opener[node.kind]}</span>
                             ) : (
@@ -71,7 +84,7 @@ const RenderNode = ({ loc, state }: { loc: number; state: TestState }) => {
                             ) : (
                                 closer[node.kind]
                             )}
-                            {cursor?.type === 'list' && cursor.where === 'after' ? '|' : null}
+                            {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                         </span>
                     );
             }

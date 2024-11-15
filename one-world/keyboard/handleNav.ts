@@ -6,11 +6,15 @@ import { Current, Cursor, getCurrent, lastChild, NodeSelection, parentLoc, paren
 
 const justSel = (path: Path, cursor: Cursor) => ({ nodes: {}, selection: { start: selStart(path, cursor) } });
 
-const selectStart = (path: Path, top: Top): NodeSelection['start'] => {
+const selectStart = (path: Path, top: Top, plus1 = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const node = top.nodes[loc];
     if (node.type === 'id') {
-        return selStart(path, { type: 'id', end: 0 });
+        if (plus1 && node.text === '') {
+            return goRight(path, top);
+        }
+
+        return selStart(path, { type: 'id', end: plus1 ? 1 : 0 });
     }
     if (node.type === 'list') {
         if (node.kind === 'spaced' || node.kind === 'smooshed') {
@@ -45,16 +49,20 @@ const selectStart = (path: Path, top: Top): NodeSelection['start'] => {
     return selStart(path, { type: 'list', where: 'before' });
 };
 
-const selectEnd = (path: Path, top: Top): NodeSelection['start'] => {
+const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const node = top.nodes[loc];
     if (node.type === 'id') {
-        return selStart(path, { type: 'id', end: splitGraphemes(node.text).length });
+        const end = splitGraphemes(node.text).length;
+        if (end === 0 && plus1) {
+            return goLeft(path, top);
+        }
+        return selStart(path, { type: 'id', end: end - (plus1 ? 1 : 0) });
     }
     if (node.type === 'list') {
         if (node.kind === 'spaced' || node.kind === 'smooshed') {
             if (!node.children.length) throw new Error('empty spaced/smooshed');
-            return selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), top);
+            return selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), top, plus1);
         }
         return selStart(path, { type: 'list', where: 'after' });
     }
@@ -76,7 +84,7 @@ const selectEnd = (path: Path, top: Top): NodeSelection['start'] => {
                 return selStart(path, { type: 'text', end: { index: node.spans.length - 1, cursor: splitGraphemes(last.text).length } });
             }
             if (last.type === 'embed') {
-                return selectEnd(pathWithChildren(path, last.item), top);
+                return selectEnd(pathWithChildren(path, last.item), top, plus1);
             }
             return selStart(path, { type: 'control', index: node.spans.length - 1 });
         }
@@ -98,7 +106,7 @@ export const goLeft = (path: Path, top: Top): NodeSelection['start'] | void => {
             }
             return selStart(parentPath(path), { type: 'list', where: 'before' });
         }
-        return selectEnd(pathWithChildren(parentPath(path), pnode.children[at - 1]), top);
+        return selectEnd(pathWithChildren(parentPath(path), pnode.children[at - 1]), top, pnode.kind === 'smooshed');
     }
 };
 
@@ -116,7 +124,7 @@ export const goRight = (path: Path, top: Top): NodeSelection['start'] | void => 
             }
             return selStart(parentPath(path), { type: 'list', where: 'after' });
         }
-        return selectStart(pathWithChildren(parentPath(path), pnode.children[at + 1]), top);
+        return selectStart(pathWithChildren(parentPath(path), pnode.children[at + 1]), top, pnode.kind === 'smooshed');
     }
 };
 
@@ -131,7 +139,7 @@ export const handleNav = (key: string, state: TestState): Update | void => {
     }
 };
 
-export const navRight = (current: Current, state: TestState) => {
+export const navRight = (current: Current, state: TestState): Update | void => {
     switch (current.type) {
         case 'id': {
             if (current.cursor.start) {
@@ -158,15 +166,11 @@ export const navRight = (current: Current, state: TestState) => {
                     case 'start':
                         if (current.node.type === 'list') {
                             if (current.node.children.length > 0) {
-                                return {
-                                    nodes: {},
-                                    selection: {
-                                        start: selectEnd(
-                                            pathWithChildren(current.path, current.node.children[current.node.children.length - 1]),
-                                            state.top,
-                                        ),
-                                    },
-                                };
+                                const start = selectEnd(
+                                    pathWithChildren(current.path, current.node.children[current.node.children.length - 1]),
+                                    state.top,
+                                );
+                                return start ? { nodes: {}, selection: { start } } : undefined;
                             } else {
                                 return justSel(current.path, { type: 'list', where: 'inside' });
                             }
@@ -179,7 +183,7 @@ export const navRight = (current: Current, state: TestState) => {
     }
 };
 
-export const navLeft = (current: Current, state: TestState) => {
+export const navLeft = (current: Current, state: TestState): Update | void => {
     switch (current.type) {
         case 'id': {
             if (current.cursor.start) {
@@ -204,15 +208,11 @@ export const navLeft = (current: Current, state: TestState) => {
                     case 'end':
                         if (current.node.type === 'list') {
                             if (current.node.children.length > 0) {
-                                return {
-                                    nodes: {},
-                                    selection: {
-                                        start: selectEnd(
-                                            pathWithChildren(current.path, current.node.children[current.node.children.length - 1]),
-                                            state.top,
-                                        ),
-                                    },
-                                };
+                                const start = selectEnd(
+                                    pathWithChildren(current.path, current.node.children[current.node.children.length - 1]),
+                                    state.top,
+                                );
+                                return start ? { nodes: {}, selection: { start } } : undefined;
                             } else {
                                 return justSel(current.path, { type: 'list', where: 'inside' });
                             }
