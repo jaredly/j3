@@ -233,7 +233,6 @@ export function flatToUpdate(flat: Flat[], top: Top, nodes: Record<string, Node 
     let nroot = undefined;
 
     if (parent.type === 'existing' && root !== parent.node.loc) {
-        console.log('rebasing');
         const up = replaceAt(parent.path.children.slice(0, -1), top, parent.node.loc, root);
         nroot = up.root;
         Object.assign(nodes, up.nodes);

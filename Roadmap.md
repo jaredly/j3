@@ -1,8 +1,57 @@
 
 # All the New Things
 
-- [ ] split up tests. each test file should be ~minimal, should get close to 100% coverage
-      of the files it uses
+Kinds of interactions:
+
+- type a text
+  - [x] id
+  - [ ] text :/
+- type a different idclass
+  - [ ] make it so we can have multiple character classes
+  - [x] handle smooshes nicely
+- type a space
+  - [x] id
+  - [x] lists I think
+  - [x] text before/after
+  - [ ] tables? not likely
+- type a sep
+  - [x] id
+  - [x] lists too prolly
+  - [x] text beofre/after
+  - [ ] tables
+- type an open `([{`
+- type a close `)}]`
+- type a string open `"` and close
+- [x] move left
+- [x] move right
+- backspace
+  - [x] in an ID
+  - [x] join spaced
+  - [x] collapse smoosh
+  - [x] select end of list
+  - [x] join deep smoosh
+  - [x] del the prev id in a smoosh
+  - [ ] delete a list from `inside` (or empty id)
+  - [ ] delete a text from inside (or empty id)
+  - [ ] in a text
+  - [ ] in a table
+- type a table sep (is | going to be a special... no, just in tables. I think. like if you want to type a | just put it in a (list) or sth.)
+  - add columns
+  - add rows
+  - nav between stuff in a table left/right pleaseee
+
+- multiselecttt
+  - [x] when typing a char
+    - [ ] not actually tested though
+  - [ ] shift+left/right to grow a selection
+  - [ ] space
+  - [ ] opener wraps
+  - [ ] backspace deletes
+
+
+
+
+- [x] split up tests. each test file should be ~minimal, should get close to 100% coverage of the files it uses
 
 - [x] I keep creating new nodes at the root, I dont want that
 - [x] the 'check smoosh' is erroring
