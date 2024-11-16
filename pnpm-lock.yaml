@@ -11,6 +11,7 @@ specifiers:
   '@blocknote/mantine': 0.13.2
   '@blocknote/react': 0.13.2
   '@fontsource/merriweather': ^5.0.13
+  '@lcov-viewer/cli': ^1.3.0
   '@lexical/clipboard': ^0.8.1
   '@lexical/code': ^0.8.1
   '@lexical/html': ^0.8.1
@@ -90,6 +91,7 @@ dependencies:
   '@blocknote/mantine': 0.13.2_tpsz7u7bmbnzt2ngwu7gsy4bqu
   '@blocknote/react': 0.13.2_2vbzhxr7rvynsgvnsdksh5ndne
   '@fontsource/merriweather': 5.0.13
+  '@lcov-viewer/cli': 1.3.0
   '@lexical/clipboard': 0.8.1_lexical@0.8.1
   '@lexical/code': 0.8.1_lexical@0.8.1
   '@lexical/html': 0.8.1_lexical@0.8.1
@@ -2795,6 +2797,13 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.15
     dev: false
 
+  /@lcov-viewer/cli/1.3.0:
+    resolution: {integrity: sha512-A9altXh2ZyeuagYZsJqVja6WMlgGJGcV+SHOOgIZB+CA2bfk78vgOqrPJrWg+IflFpoEzo1QeqwH4WbKSM4d9A==}
+    hasBin: true
+    dependencies:
+      commander: 9.4.1
+    dev: false
+
   /@lexical/clipboard/0.8.1_lexical@0.8.1:
     resolution: {integrity: sha512-+gXrs00PjLY0udFZF3g0GXBVeCRUmxWFWnpNbTDz+RKjSs72+oQbzJLMZfRTuUbL2mI6nNi9x+ZiAKH233KkWQ==}
     peerDependencies:
@@ -4489,7 +4498,6 @@ packages:
   /commander/9.4.1:
     resolution: {integrity: sha512-5EEkTNyHNGFPD2H+c/dXXfQZYa/scCKasxWcXJaWnNJ99pnQN9Vnmqow+p+PlFPE63Q6mThaZws1T+HxfpgtPw==}
     engines: {node: ^12.20.0 || >=14}
-    dev: true
 
   /concat-map/0.0.1:
     resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}

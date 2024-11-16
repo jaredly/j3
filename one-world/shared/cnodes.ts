@@ -125,11 +125,12 @@ export type List<Loc> = {
     children: number[];
     loc: Loc;
 };
+export type TableKind = 'round' | 'square' | 'curly';
 export type Collection<Loc> =
     | List<Loc>
     | {
           type: 'table';
-          kind: 'round' | 'square' | 'curly';
+          kind: TableKind;
           rows: number[][];
           loc: Loc;
       };
@@ -158,7 +159,7 @@ export type RecCollection<Loc> =
     | RecList<Loc>
     | {
           type: 'table';
-          kind: 'round' | 'square' | 'curly';
+          kind: TableKind;
           rows: RecNodeT<Loc>[][];
           loc: Loc;
       };

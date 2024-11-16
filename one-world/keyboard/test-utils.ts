@@ -1,4 +1,4 @@
-import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan } from '../shared/cnodes';
+import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind } from '../shared/cnodes';
 import { Config } from './insertId';
 import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, selStart, Top } from './utils';
 
@@ -14,8 +14,9 @@ export const init: TestState = {
     sel: {
         start: selStart({ root: { ids: [], top: '' }, children: [0] }, { type: 'id', end: 0 }),
     },
-}; // MARK: tests
-export const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
+};
+
+export const asTopAndPath = (node: RecNodeT<boolean>): { top: Top; sel: number[] } => {
     const nodes: Nodes = {};
     let nextLoc = 0;
     let sel: number[] = [];
@@ -26,13 +27,14 @@ export const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
         }
         return loc;
     });
-    return {
-        top: { nextLoc, nodes, root },
-        sel: {
-            start: selStart({ children: sel, root: { ids: [], top: '' } }, cursor),
-        },
-    };
-}; // MARK: Now we see if this all paid off y'all
+    return { top: { nextLoc, nodes, root }, sel };
+};
+
+export const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
+    const { top, sel } = asTopAndPath(node);
+    return { top, sel: { start: selStart({ children: sel, root: { ids: [], top: '' } }, cursor) } };
+};
+
 export const atPath = (root: number, top: Top, path: number[]) => {
     const res: number[] = [root];
     path = path.slice();
@@ -66,7 +68,7 @@ export const id = <T>(text: string, loc: T = null as T): Id<T> => ({
     loc,
     punct: text.length === 0 ? undefined : [...text].some((k) => lisp.punct.includes(k)),
 });
-const list =
+export const list =
     (kind: ListKind<RecNodeT<unknown>>) =>
     <T>(children: RecNodeT<T>[], loc: T = null as T): RecNodeT<T> => ({
         type: 'list',
@@ -77,6 +79,7 @@ const list =
 export const smoosh = list('smooshed');
 export const spaced = list('spaced');
 export const round = list('round');
+export const table = <T>(kind: TableKind, rows: RecNodeT<T>[][], loc: T = null as T): RecNodeT<T> => ({ type: 'table', kind, rows, loc });
 export const text = <T>(spans: TextSpan<RecNodeT<T>>[], loc: T = null as T): RecText<T> => ({ type: 'text', loc, spans });
 export const lisp = {
     punct: '.=#@;+',

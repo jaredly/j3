@@ -19,7 +19,7 @@ export const selectStart = (path: Path, top: Top, plus1 = false): NodeSelection[
     if (node.type === 'list') {
         if (node.kind === 'spaced' || node.kind === 'smooshed') {
             if (!node.children.length) throw new Error('empty spaced/smooshed');
-            return selectStart(pathWithChildren(path, node.children[0]), top);
+            return selectStart(pathWithChildren(path, node.children[0]), top, plus1);
         }
         return selStart(path, { type: 'list', where: 'before' });
     }
@@ -161,15 +161,12 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                 switch (current.cursor.where) {
                     case 'after':
                     case 'end':
-                        return justSel(current.path, { type: 'list', where: 'before' });
+                        return justSel(current.path, { type: 'list', where: 'after' });
                     case 'before':
                     case 'start':
                         if (current.node.type === 'list') {
                             if (current.node.children.length > 0) {
-                                const start = selectEnd(
-                                    pathWithChildren(current.path, current.node.children[current.node.children.length - 1]),
-                                    state.top,
-                                );
+                                const start = selectStart(pathWithChildren(current.path, current.node.children[0]), state.top);
                                 return start ? { nodes: {}, selection: { start } } : undefined;
                             } else {
                                 return justSel(current.path, { type: 'list', where: 'inside' });

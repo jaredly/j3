@@ -24,7 +24,8 @@
         "build-web": "vite build web --config vite.config.js",
         "make-walk": "cd ../j2; yarn tx ../j3/src/types/ast.ts ../j3/src/types/walk-ast.ts",
         "gram": "node ./make-grammar.js",
-        "test": "jest"
+        "test": "jest",
+        "test-cov": "bun test --watch --coverage --coverage-reporter=lcov"
     },
     "type": "module",
     "dependencies": {
@@ -38,6 +39,7 @@
         "@blocknote/mantine": "0.13.2",
         "@blocknote/react": "0.13.2",
         "@fontsource/merriweather": "^5.0.13",
+        "@lcov-viewer/cli": "^1.3.0",
         "@lexical/clipboard": "^0.8.1",
         "@lexical/code": "^0.8.1",
         "@lexical/html": "^0.8.1",
