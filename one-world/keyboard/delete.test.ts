@@ -25,7 +25,8 @@ test('at start', () => {
 test('zero', () => {
     let state = asTop(id('h', true), idc(1));
     validate(state);
-    state = applyUpdate(state, handleDelete(state));
+    const m = handleDelete(state);
+    state = applyUpdate(state, m);
     check(state, id('', true), idc(0));
 });
 

@@ -80,7 +80,7 @@ export const handleDelete = (state: TestState): Update | void => {
                     const parent = state.top.nodes[lastChild(ppath)];
                     if (parent?.type === 'list' && parent.kind === 'smooshed') {
                         let node = state.top.nodes[lastChild(state.sel.start.path)] as Id<number>;
-                        node = { ...node, text: '' };
+                        node = { ...node, text: '', punct: undefined };
                         return flatToUpdate(
                             parent.children.map((loc) => (loc === node.loc ? node : state.top.nodes[loc])),
                             state.top,

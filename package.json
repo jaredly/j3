@@ -25,7 +25,8 @@
         "make-walk": "cd ../j2; yarn tx ../j3/src/types/ast.ts ../j3/src/types/walk-ast.ts",
         "gram": "node ./make-grammar.js",
         "test": "jest",
-        "test-cov": "bun test --watch --coverage --coverage-reporter=lcov"
+        "test-lcov": "bun test --watch --coverage --coverage-reporter=lcov",
+        "test-cov": "bun test --watch --coverage"
     },
     "type": "module",
     "dependencies": {
