@@ -171,8 +171,7 @@ export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node
     return { node, path };
 };
 
-// TODO:
-const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [Flat[], Node, Cursor] => {
+export const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [Flat[], Node, Cursor] => {
     const res: Flat[] = [];
     for (let i = 0; i < flat.length; i++) {
         const node = flat[i];
