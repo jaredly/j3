@@ -1,6 +1,6 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { isRich } from '../shared/cnodes';
-import { cursorSides } from './cursorSplit';
+import { cursorSides } from './cursorSides';
 import { TestState } from './test-utils';
 import { Current, Cursor, getCurrent, lastChild, NodeSelection, parentLoc, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 

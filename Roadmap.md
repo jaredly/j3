@@ -1,9 +1,12 @@
 
 # All the New Things
 
+- [ ] split up tests. each test file should be ~minimal, should get close to 100% coverage
+      of the files it uses
+
 - [x] I keep creating new nodes at the root, I dont want that
-- [ ] the 'check smoosh' is erroring
-- [ ] need to be able to wrap stuff
+- [x] the 'check smoosh' is erroring
+- [ ] need to be able to wrap stuff () [] {}
 - [ ] let's handle shift-left/right for selection
 - [ ] I've been ignoring multiselect, maybe dont do that
 - [ ] I should have tests for this left/right navigation stuff, not just playing around

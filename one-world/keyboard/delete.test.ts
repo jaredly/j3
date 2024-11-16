@@ -7,6 +7,8 @@ import { asTop, atPath, id, idc, listc, noText, round, selPath, smoosh, spaced, 
 import { Cursor } from './utils';
 import { validate } from './validate';
 
+// Should get 100% of 'handleDelete'
+
 const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
     expect(shape(root(state))).toEqual(shape(exp));
     expect(state.sel.start.path.children).toEqual(atPath(state.top.root, state.top, selPath(exp)));

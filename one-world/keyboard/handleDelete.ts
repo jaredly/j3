@@ -1,6 +1,6 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List } from '../shared/cnodes';
-import { cursorSides } from './cursorSplit';
+import { cursorSides } from './cursorSides';
 import { flatten, flatToUpdate } from './flatenate';
 import { goLeft, navLeft, selectEnd } from './handleNav';
 import { TestState } from './test-utils';

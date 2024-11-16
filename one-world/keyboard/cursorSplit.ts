@@ -1,4 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { cursorSides } from './cursorSides';
 import { IdCursor } from './utils';
 
 export const cursorSplit = (orig: string, cursor: IdCursor): Split => {
@@ -26,9 +27,3 @@ export const cursorSplit = (orig: string, cursor: IdCursor): Split => {
 };
 
 export type Split = { type: 'before'; text: string } | { type: 'after'; text: string } | { type: 'between'; left: string; right: string };
-
-export function cursorSides(cursor: IdCursor) {
-    const left = cursor.start ? Math.min(cursor.start, cursor.end) : cursor.end;
-    const right = cursor.start ? Math.max(cursor.start, cursor.end) : cursor.end;
-    return { left, right };
-}
