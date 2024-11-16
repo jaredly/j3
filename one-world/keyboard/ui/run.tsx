@@ -28,8 +28,11 @@ const Cursor = () => (
             width: 2,
             marginRight: -1,
             marginLeft: -1,
+            marginBottom: -4,
             height: '1em',
             backgroundColor: 'red',
+            zIndex: -1,
+            position: 'relative',
         }}
     />
 );

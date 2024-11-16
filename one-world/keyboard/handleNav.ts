@@ -4,9 +4,9 @@ import { cursorSides } from './cursorSplit';
 import { TestState } from './test-utils';
 import { Current, Cursor, getCurrent, lastChild, NodeSelection, parentLoc, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
-const justSel = (path: Path, cursor: Cursor) => ({ nodes: {}, selection: { start: selStart(path, cursor) } });
+export const justSel = (path: Path, cursor: Cursor) => ({ nodes: {}, selection: { start: selStart(path, cursor) } });
 
-const selectStart = (path: Path, top: Top, plus1 = false): NodeSelection['start'] | void => {
+export const selectStart = (path: Path, top: Top, plus1 = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const node = top.nodes[loc];
     if (node.type === 'id') {
@@ -49,7 +49,7 @@ const selectStart = (path: Path, top: Top, plus1 = false): NodeSelection['start'
     return selStart(path, { type: 'list', where: 'before' });
 };
 
-const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSelection['start'] | void => {
+export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const node = top.nodes[loc];
     if (node.type === 'id') {

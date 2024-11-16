@@ -2,6 +2,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List } from '../shared/cnodes';
 import { cursorSides } from './cursorSplit';
 import { flatten, flatToUpdate } from './flatenate';
+import { goLeft, navLeft, selectEnd } from './handleNav';
 import { TestState } from './test-utils';
 import { Path, Top, Update, getCurrent, lastChild, parentPath, pathWithChildren, selStart } from './utils';
 
@@ -19,6 +20,16 @@ export const joinParent = (path: Path, top: Top): void | { at: number; pnode: Li
 export const handleDelete = (state: TestState): Update | void => {
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
+        case 'list': {
+            if (current.node.type === 'list') {
+                if (current.cursor.type === 'list') {
+                    if (current.cursor.where === 'after') {
+                        return { nodes: {}, selection: { start: selStart(current.path, { type: 'list', where: 'end' }) } };
+                    }
+                }
+            }
+            return;
+        }
         case 'id': {
             let { left, right } = cursorSides(current.cursor);
             if (left === 0 && right === 0) {
@@ -27,6 +38,10 @@ export const handleDelete = (state: TestState): Update | void => {
                 if (!got) return; // prolly at the toplevel? or in a text or table, gotta handle tat
                 const { at, parent, pnode } = got;
                 if (at === 0) {
+                    if (pnode.kind === 'smooshed' || pnode.kind === 'spaced') {
+                        const sel = goLeft(parent, state.top);
+                        return sel ? { nodes: {}, selection: { start: sel } } : undefined;
+                    }
                     // Select the '(' opener
                     return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
                 }
@@ -38,26 +53,11 @@ export const handleDelete = (state: TestState): Update | void => {
                 const prev = flat[fat - 1];
                 if (prev.type === 'space' || prev.type === 'sep') {
                     flat.splice(fat - 1, 1);
-                } else if (prev.type === 'id') {
-                    // Delete from the prev ID actually
-                    const text = splitGraphemes(prev.text).slice(0, -1);
-                    if (text.length === 0) {
-                        throw new Error(`todo check smoosh collapse`);
-                    }
-                    return {
-                        nodes: {},
-                        selection: {
-                            start: selStart(pathWithChildren(parentPath(state.sel.start.path), prev.loc), { type: 'id', end: text.length, text }),
-                        },
-                    };
                 } else {
-                    // Select the closer??
-                    return {
-                        nodes: {},
-                        selection: {
-                            start: selStart(pathWithChildren(parentPath(state.sel.start.path), prev.loc), { type: 'list', where: 'end' }),
-                        },
-                    };
+                    // Delete from the prev node actually
+                    const start = selectEnd(pathWithChildren(parentPath(state.sel.start.path), prev.loc), state.top);
+                    if (!start) return;
+                    return handleDelete({ top: state.top, sel: { start } });
                 }
 
                 return flatToUpdate(

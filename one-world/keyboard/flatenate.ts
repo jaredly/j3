@@ -344,7 +344,6 @@ type FlatParent = { type: 'new'; kind: string; current: Node } | { type: 'existi
 
 export function flatToUpdate(flat: Flat[], top: Top, nodes: Record<string, Node | null>, parent: FlatParent, sel: Node, ncursor: Cursor, path: Path) {
     [flat, sel, ncursor] = collapseAdjacentIds(flat, sel, ncursor);
-    console.log('flat to update', parent);
 
     const { root, nextLoc, selection } = roughen(
         flat,
