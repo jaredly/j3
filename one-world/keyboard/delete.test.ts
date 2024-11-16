@@ -15,6 +15,20 @@ const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
     expect(noText(state.sel.start.cursor)).toEqual(cursor);
 };
 
+test('at start', () => {
+    let state = asTop(smoosh([id('helso', true), id('+')]), idc(0));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, smoosh([id('helso', true), id('+')]), idc(0));
+});
+
+test('zero', () => {
+    let state = asTop(id('h', true), idc(1));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('', true), idc(0));
+});
+
 test('deltes', () => {
     let state = asTop(id('helso', true), idc(3));
     validate(state);

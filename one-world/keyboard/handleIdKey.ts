@@ -1,4 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { Node } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { cursorSplit } from './cursorSplit';
 import { Config, findParent, listKindForKeyKind, flatten, Flat, addNeighborBefore, addNeighborAfter, flatToUpdate } from './flatenate';
