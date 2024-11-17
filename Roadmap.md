@@ -31,7 +31,8 @@ Kinds of interactions:
   - [x] select end of list
   - [x] join deep smoosh
   - [x] del the prev id in a smoosh
-  - [ ] delete a list from `inside` (or empty id)
+  - [x] delete a list from `inside`
+    - [ ] (or empty id)
   - [ ] delete a text from inside (or empty id)
   - [ ] in a text
   - [ ] in a table

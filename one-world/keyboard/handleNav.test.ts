@@ -102,96 +102,96 @@ test('left/right in a round or spaced', () => {
 
 test('left/right in a smoosh, jumps over', () => {
     run(
-        smoosh([id('one'), id('two', true)]),
+        smoosh([id('one'), id('+', true)]),
         idc(0),
         //
         'ArrowLeft',
-        smoosh([id('one', true), id('two')]),
+        smoosh([id('one', true), id('+')]),
         idc(2),
     );
 
     run(
-        smoosh([id('one', true), id('two')]),
+        smoosh([id('one', true), id('+')]),
         idc(3),
         //
         'ArrowRight',
-        smoosh([id('one'), id('two', true)]),
+        smoosh([id('one'), id('+', true)]),
         idc(1),
     );
 });
 
 test('left/right at a list', () => {
     run(
-        smoosh([id('one'), id('two')], true),
+        smoosh([id('one'), id('+')], true),
         listc('start'),
         //
         'ArrowLeft',
-        smoosh([id('one'), id('two')], true),
+        smoosh([id('one'), id('+')], true),
         listc('before'),
     );
     run(
-        smoosh([id('one'), id('two')], true),
+        smoosh([id('one'), id('+')], true),
         listc('end'),
         //
         'ArrowRight',
-        smoosh([id('one'), id('two')], true),
+        smoosh([id('one'), id('+')], true),
         listc('after'),
     );
 });
 
 test('left/right into a list', () => {
     run(
-        smoosh([id('one'), id('two')], true),
+        round([id('one'), id('+')], true),
         listc('before'),
         //
         'ArrowRight',
-        smoosh([id('one', true), id('two')]),
+        round([id('one', true), id('+')]),
         idc(0),
     );
     run(
-        smoosh([id('one'), id('two')], true),
+        round([id('one'), id('+')], true),
         listc('after'),
         //
         'ArrowLeft',
-        smoosh([id('one'), id('two', true)]),
-        idc(3),
+        round([id('one'), id('+', true)]),
+        idc(1),
     );
 });
 
 test('left/right into empty', () => {
     run(
-        smoosh([], true),
+        round([], true),
         listc('before'),
         //
         'ArrowRight',
-        smoosh([], true),
+        round([], true),
         listc('inside'),
     );
     run(
-        smoosh([], true),
+        round([], true),
         listc('after'),
         //
         'ArrowLeft',
-        smoosh([], true),
+        round([], true),
         listc('inside'),
     );
 });
 
 test('left/right out of empty', () => {
     run(
-        smoosh([], true),
+        round([], true),
         listc('inside'),
         //
         'ArrowRight',
-        smoosh([], true),
+        round([], true),
         listc('after'),
     );
     run(
-        smoosh([], true),
+        round([], true),
         listc('inside'),
         //
         'ArrowLeft',
-        smoosh([], true),
+        round([], true),
         listc('before'),
     );
 });
