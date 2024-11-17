@@ -70,7 +70,8 @@ export type IdRef =
     | { type: 'keyword' }
     | { type: 'placeholder'; text: string };
 
-export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc; punct?: boolean };
+// ccls = "char class" i.e. what kind of punctuation. 0 = normal text
+export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc; ccls?: number };
 
 export type Link = { type: 'www'; href: string } | { type: 'term'; id: string; hash?: string } | { type: 'doc'; id: string; hash?: string };
 

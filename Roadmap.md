@@ -1,4 +1,18 @@
 
+# multiple char class
+
+options:
+- id hangs on to the char class (like current 'punct')
+  - as an (index)number
+  - as a (string)the actual set of chars
+- id is just ID, we do a check for 'what char class is this' whenever we do a thing.
+
+So, like, I'm thinking the parser itself would specify the
+charclasses?
+ok nope, we'll probably have just a few predefined ones.
+anyway.
+DECISION: save (index) number
+
 # All the New Things
 
 Kinds of interactions:

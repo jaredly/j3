@@ -31,7 +31,6 @@ import { Kind } from './insertId';
 import { interleave } from './interleave';
 import { replaceAt } from './replaceAt';
 import { Cursor, ListCursor, Path, Top, Update, lastChild, parentPath, selStart } from './utils';
-export type Config = { punct: string; space: string; sep: string };
 
 export const listKindForKeyKind = (kind: Kind): 0 | 1 | 2 => (kind === 'sep' ? OTHER : kind === 'space' ? SPACED : SMOOSH);
 
@@ -182,13 +181,13 @@ export const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [
         const tojoin = [node];
         let text = node.text;
         let loc = node.loc;
-        let punct = node.text === '' ? undefined : node.punct;
+        let ccls = node.text === '' ? undefined : node.ccls;
         for (; i < flat.length - 1 && flat[i + 1].type === 'id'; i++) {
             const next = flat[i + 1] as Id<number>;
-            if (next.text === '' || punct == null || next.punct === punct) {
+            if (next.text === '' || ccls == null || next.ccls === ccls) {
                 text += next.text;
                 tojoin.push(next);
-                if (next.punct != null && next.text !== '') punct = next.punct;
+                if (next.ccls != null && next.text !== '') ccls = next.ccls;
                 if (loc === -1) loc = next.loc;
             } else {
                 break;
@@ -207,16 +206,16 @@ export const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [
                 pos += splitGraphemes(tojoin[i].text).length;
             }
             ncursor = { type: 'id', end: pos };
-            sel = { type: 'id', punct, text, loc };
+            sel = { type: 'id', ccls: ccls, text, loc };
             res.push(sel);
         } else {
-            res.push({ type: 'id', punct, text, loc });
+            res.push({ type: 'id', ccls: ccls, text, loc });
         }
     }
     return [res, sel, ncursor];
 };
 
-type FlatParent = { type: 'new'; kind: string; current: Node } | { type: 'existing'; node: List<number>; path: Path };
+type FlatParent = { type: 'new'; kind: Kind; current: Node } | { type: 'existing'; node: List<number>; path: Path };
 
 export function flatToUpdate(flat: Flat[], top: Top, nodes: Record<string, Node | null>, parent: FlatParent, sel: Node, ncursor: Cursor, path: Path) {
     [flat, sel, ncursor] = collapseAdjacentIds(flat, sel, ncursor);
@@ -267,13 +266,7 @@ export function flatToUpdate(flat: Flat[], top: Top, nodes: Record<string, Node 
     };
 }
 
-export function addNeighborAfter(
-    at: number,
-    flat: Flat[],
-    neighbor: Id<number> | { type: 'space'; loc: number } | { type: 'sep'; loc: number },
-    sel: Node,
-    ncursor: Cursor,
-) {
+export function addNeighborAfter(at: number, flat: Flat[], neighbor: Flat, sel: Node, ncursor: Cursor) {
     if (at < flat.length - 1 && flat[at + 1].type === 'space' && neighbor.type === 'space') {
         sel = flat[at + 2] as Node;
         ncursor = sel.type === 'id' ? { type: 'id', end: 0 } : { type: 'list', where: 'before' };
@@ -291,13 +284,7 @@ export function addNeighborAfter(
     return { sel, ncursor };
 }
 
-export function addNeighborBefore(
-    at: number,
-    flat: Flat[],
-    neighbor: Id<number> | { type: 'space'; loc: number } | { type: 'sep'; loc: number },
-    sel: Node,
-    ncursor: Cursor,
-) {
+export function addNeighborBefore(at: number, flat: Flat[], neighbor: Flat, sel: Node, ncursor: Cursor) {
     if ((at !== 0 && flat[at - 1].type === 'id') || (at === 0 && neighbor.type === 'id')) {
         flat.splice(at, 0, neighbor);
     } else {

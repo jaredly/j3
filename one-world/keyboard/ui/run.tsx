@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Node } from '../../shared/cnodes';
 import { lastChild, NodeSelection, Top } from '../utils';
-import { init, TestState } from '../test-utils';
+import { init, js, TestState } from '../test-utils';
 import { interleave, interleaveF } from '../interleave';
 import { cursorSplit } from '../cursorSplit';
 import { cursorSides } from '../cursorSides';
@@ -102,21 +102,6 @@ const RenderNode = ({ loc, state }: { loc: number; state: TestState }) => {
 const getRoot = (): Root => {
     // @ts-ignore
     return window._root ?? (window._root = createRoot(document.getElementById('root')!));
-};
-
-const lisp = {
-    punct: '.=#@;+',
-    space: '',
-    sep: ' ',
-};
-
-const js = {
-    // punct: [],
-    // so js's default is just 'everything for itself'
-    // tight: [...'~`!@#$%^&*_+-=\\./?:'],
-    punct: '~`!@#$%^&*_+-=\\./?:',
-    space: ' ',
-    sep: ';,\n',
 };
 
 const App = () => {

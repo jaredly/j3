@@ -82,9 +82,9 @@ test('same kind', () => {
 });
 
 test('same kind punct', () => {
-    let state = asTop(id('...', true), idc(2));
+    let state = asTop(id('+++', true), idc(2));
     state = applyUpdate(state, handleKey(state, '=', lisp)!);
-    check(state, id('..=.', true), idc(3));
+    check(state, id('++=+', true), idc(3));
 });
 
 test('start empty', () => {
@@ -100,9 +100,9 @@ test('and smoosh', () => {
 });
 
 test('smoosh to left', () => {
-    let state = asTop(smoosh([id('.'), id('ab', true)]), idc(0));
+    let state = asTop(smoosh([id('#'), id('ab', true)]), idc(0));
     state = applyUpdate(state, handleKey(state, '=', lisp)!);
-    check(state, smoosh([id('.=', true), id('ab')]), idc(2));
+    check(state, smoosh([id('#=', true), id('ab')]), idc(2));
 });
 
 // MARK: Split smoosh
@@ -148,7 +148,8 @@ test('smoosh start join (smoosh)', () => {
         //
         round([smoosh([id('+'), id('hello', true), id('.')])]),
         { type: 'id', end: 0 },
-        round([smoosh([id('+.'), id('hello'), id('.')])]),
+        round([smoosh([id('+='), id('hello'), id('.')])]),
+        '=',
     );
 });
 
@@ -184,7 +185,8 @@ test('smoosh end join (smoosh)', () => {
         //
         round([smoosh([id('.'), id('hello', true), id('+')])]),
         { type: 'id', end: 5 },
-        round([smoosh([id('.'), id('hello'), id('.+')])]),
+        round([smoosh([id('.'), id('hello'), id('=+')])]),
+        '=',
     );
 });
 

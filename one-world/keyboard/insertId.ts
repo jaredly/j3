@@ -2,15 +2,22 @@ import { Node, Nodes } from '../shared/cnodes';
 import { addNeighborAfter, addNeighborBefore, findParent, Flat, flatten, flatToUpdate, listKindForKeyKind } from './flatenate';
 // import { splitSmooshId, splitSpacedId } from './splitSmoosh';
 import { CollectionCursor, Cursor, lastChild, ListCursor, parentPath, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
-export type Config = { punct: string; space: string; sep: string };
+export type Config = { punct: string[]; space: string; sep: string };
 
-export type Kind = 'tight' | 'space' | 'sep' | 'id' | 'string';
+export type Kind = number | 'space' | 'sep' | 'string';
 export const textKind = (grem: string, config: Config): Kind => {
     if (grem === '"') return 'string';
     if (config.sep.includes(grem)) return 'sep';
     if (config.space.includes(grem)) return 'space';
-    if (config.punct.includes(grem)) return 'tight';
-    return 'id';
+    return charClass(grem, config);
+};
+export const charClass = (grem: string, config: Config): number => {
+    for (let i = 0; i < config.punct.length; i++) {
+        if (config.punct[i].includes(grem)) {
+            return i + 1;
+        }
+    }
+    return 0;
 };
 
 export const handleTextKey = (config: Config, top: Top, path: Path, cursor: ListCursor | TextCursor, grem: string): Update | void => {
@@ -61,7 +68,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                 const loc = nextLoc++;
                 return {
                     nodes: {
-                        [loc]: { type: 'id', loc, text: grem, punct: kind === 'tight' },
+                        [loc]: { type: 'id', loc, text: grem, ccls: kind },
                         [current.loc]: { ...current, children: [loc] },
                     },
                     nextLoc,
@@ -82,7 +89,9 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
             ? { type: 'sep', loc: -1 }
             : kind === 'space'
             ? { type: 'space', loc: -1 }
-            : { type: 'id', text: grem, loc: -1, punct: kind === 'tight' };
+            : kind === 'string'
+            ? { type: 'text', spans: [], loc: -1 }
+            : { type: 'id', text: grem, loc: -1, ccls: kind };
 
     let sel: Node = current;
     let ncursor: Cursor = cursor;

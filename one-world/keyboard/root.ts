@@ -13,7 +13,7 @@ export const root = (state: TestState) => {
                 [loc]: {
                     ...node,
                     text: state.sel.start.cursor.text.join(''),
-                    punct: state.sel.start.cursor.text.length === 0 ? undefined : node.punct,
+                    ccls: state.sel.start.cursor.text.length === 0 ? undefined : node.ccls,
                 },
             };
         }
