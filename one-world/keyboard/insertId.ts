@@ -1,5 +1,6 @@
 import { Node, Nodes } from '../shared/cnodes';
 import { addNeighborAfter, addNeighborBefore, findParent, Flat, flatten, flatToUpdate, listKindForKeyKind } from './flatenate';
+import { justSel } from './handleNav';
 // import { splitSmooshId, splitSpacedId } from './splitSmoosh';
 import { CollectionCursor, Cursor, lastChild, ListCursor, parentPath, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
 export type Config = { punct: string[]; space: string; sep: string };
@@ -34,10 +35,47 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     if (cursor.type !== 'list') throw new Error('controls not handled yet');
 
     if (cursor.where === 'inside') {
+        if (current.type === 'text') {
+            if (kind === 'string') {
+                return justSel(path, { type: 'list', where: 'after' });
+            }
+            return {
+                nodes: {
+                    [current.loc]: {
+                        ...current,
+                        spans: [
+                            {
+                                type: 'text',
+                                text: grem,
+                            },
+                        ],
+                    },
+                },
+                selection: {
+                    start: selStart(path, {
+                        type: 'text',
+                        end: {
+                            index: 0,
+                            cursor: 1,
+                        },
+                    }),
+                },
+            };
+        }
         if (current.type !== 'list') throw new Error('not list');
         switch (kind) {
-            case 'string':
-                throw new Error('not yet');
+            case 'string': {
+                let nextLoc = top.nextLoc;
+                const loc = nextLoc++;
+                return {
+                    nodes: {
+                        [loc]: { type: 'text', spans: [], loc },
+                        [current.loc]: { ...current, children: [loc] },
+                    },
+                    nextLoc,
+                    selection: { start: selStart(pathWithChildren(path, loc), { type: 'list', where: 'inside' }) },
+                };
+            }
             case 'space':
             case 'sep': {
                 let nextLoc = top.nextLoc;

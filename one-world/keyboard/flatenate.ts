@@ -277,6 +277,9 @@ export function addNeighborAfter(at: number, flat: Flat[], neighbor: Flat, sel: 
     } else if (neighbor.type === 'id') {
         flat.splice(at + 1, 0, (sel = neighbor));
         ncursor = { type: 'id', end: splitGraphemes(neighbor.text).length };
+    } else if (neighbor.type !== 'sep' && neighbor.type !== 'space') {
+        flat.splice(at + 1, 0, (sel = neighbor));
+        ncursor = { type: 'list', where: 'inside' };
     } else {
         flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: '', loc: -1 }));
         ncursor = { type: 'id', end: 0 };

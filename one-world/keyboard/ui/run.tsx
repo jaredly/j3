@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Node } from '../../shared/cnodes';
+import { isRich, Node } from '../../shared/cnodes';
 import { lastChild, NodeSelection, Top } from '../utils';
 import { init, js, TestState } from '../test-utils';
 import { interleave, interleaveF } from '../interleave';
@@ -38,7 +38,7 @@ const Cursor = () => (
     />
 );
 
-const RenderNode = ({ loc, state }: { loc: number; state: TestState }) => {
+const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inRich: boolean }) => {
     const node = state.top.nodes[loc];
     const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
     switch (node.type) {
@@ -56,7 +56,7 @@ const RenderNode = ({ loc, state }: { loc: number; state: TestState }) => {
             }
             return <span>{node.text}</span>;
         case 'list':
-            const children = node.children.map((loc) => <RenderNode key={loc} loc={loc} state={state} />);
+            const children = node.children.map((loc) => <RenderNode key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />);
             if (typeof node.kind !== 'string') {
                 return <span>lol</span>;
             }
@@ -80,6 +80,7 @@ const RenderNode = ({ loc, state }: { loc: number; state: TestState }) => {
                             ) : (
                                 opener[node.kind]
                             )}
+                            {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                             {interleaveF(children, (i) => (
                                 <span key={'sep' + i}>,&nbsp;</span>
                             ))}
@@ -92,8 +93,32 @@ const RenderNode = ({ loc, state }: { loc: number; state: TestState }) => {
                         </span>
                     );
             }
-        case 'text':
-            return <span>"yes"</span>;
+        case 'text': {
+            if (inRich) {
+                // no quotes, and like ... some other things
+                // are maybe different?
+            }
+            const children = node.spans.map((span, i) => {
+                if (span.type === 'text') {
+                    // TODO show cursor here
+                    return <span key={i}>{span.text}</span>;
+                } else if (span.type === 'embed') {
+                    return <RenderNode key={i} inRich={false} loc={span.item} state={state} />;
+                } else {
+                    return <span key={i}>custom?</span>;
+                }
+            });
+            return (
+                <span>
+                    {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+                    {cursor?.type === 'list' && cursor.where === 'start' ? <span style={{ background: hl }}>"</span> : '"'}
+                    {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+                    {children}
+                    {cursor?.type === 'list' && cursor.where === 'end' ? <span style={{ background: hl }}>"</span> : '"'}
+                    {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+                </span>
+            );
+        }
         case 'table':
             return <span>Table</span>;
     }
@@ -130,7 +155,7 @@ const App = () => {
 
     return (
         <>
-            <RenderNode loc={state.top.root} state={state} />
+            <RenderNode loc={state.top.root} state={state} inRich={false} />
             <div>{shape(root(state))}</div>
             <div>
                 {Object.keys(state.top.nodes)} : {state.top.root} : {state.top.nextLoc}

@@ -73,6 +73,12 @@ test('between twoo', () => {
     check(state, smoosh([round([]), id('A', true), round([])]), idc(1));
 });
 
+test('text after', () => {
+    let state = asTop(id('hi', true), idc(2));
+    state = applyUpdate(state, handleKey(state, '"', lisp)!);
+    check(state, smoosh([id('hi'), text([], true)]), listc('inside'));
+});
+
 // MARK: Insert ID
 
 test('same kind', () => {
