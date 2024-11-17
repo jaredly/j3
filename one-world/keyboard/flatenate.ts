@@ -198,7 +198,7 @@ export const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [
             res.push(tojoin[0]);
             continue;
         }
-        if (sel.type === 'id' && ncursor.type === 'id' && tojoin.includes(sel)) {
+        if (sel.type === 'id' && typeof ncursor !== 'string' && ncursor.type === 'id' && tojoin.includes(sel)) {
             let pos = ncursor.end;
             for (let i = 0; i < tojoin.length; i++) {
                 if (tojoin[i] === sel) {
@@ -243,6 +243,16 @@ export function flatToUpdate(flat: Flat[], top: Top, nodes: Record<string, Node 
         nroot = up.root;
         Object.assign(nodes, up.nodes);
     }
+
+    // let scursor = selection.cursor
+    // if (scursor === 'start' || scursor === 'end') {
+    //     selection.children
+    //     if (sel.type === 'id') {
+    //         scursor = {type: 'id', end: scursor === 'start' ? 0 : splitGraphemes(sel.text).length}
+    //     } else {
+    //         scursor = {type: 'list', where: scursor === 'start' ? 'before' : 'after'}
+    //     }
+    // }
 
     return {
         root: nroot,

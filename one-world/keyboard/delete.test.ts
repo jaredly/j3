@@ -71,3 +71,45 @@ test('del smoosh prev', () => {
     state = applyUpdate(state, handleDelete(state));
     check(state, smoosh([id('..', true), id('two')]), idc(2));
 });
+
+test('inside list in smoosh', () => {
+    let state = asTop(smoosh([id('a'), round([], true), id('b')]), listc('inside'));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('ab', true), idc(1));
+});
+
+test('inside list in smoosh with one sib', () => {
+    let state = asTop(smoosh([id('a'), round([], true)]), listc('inside'));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('a', true), idc(1));
+});
+
+test('inside list in smoosh with one sib', () => {
+    let state = asTop(round([smoosh([id('a'), round([], true)])]), listc('inside'));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([id('a', true)]), idc(1));
+});
+
+test('inside list', () => {
+    let state = asTop(round([], true), listc('inside'));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('', true), idc(0));
+});
+
+test('before smoosh', () => {
+    let state = asTop(smoosh([id('hi'), round([], true)]), listc('before'));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, smoosh([id('h', true), round([])]), idc(1));
+});
+
+test('before space', () => {
+    let state = asTop(spaced([id('hi'), round([], true)]), listc('before'));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, smoosh([id('hi'), round([], true)]), listc('before'));
+});
