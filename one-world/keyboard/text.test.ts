@@ -6,7 +6,7 @@ import { applyUpdate } from './applyUpdate';
 import { handleKey } from './handleKey';
 import { root } from './root';
 import { asTop, atPath, id, idc, lisp, listc, noText, round, selPath, smoosh, TestState, text } from './test-utils';
-import { Cursor, IdCursor } from './utils';
+import { Cursor, IdCursor, TextCursor } from './utils';
 
 const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
     expect(shape(root(state))).toEqual(shape(exp));
@@ -51,4 +51,15 @@ test('text after id', () => {
     let state = asTop(id('hi', true), idc(2));
     state = applyUpdate(state, handleKey(state, '"', lisp)!);
     check(state, smoosh([id('hi'), text([], true)]), listc('inside'));
+});
+
+const textc = (index: number, cursor: number): TextCursor => ({
+    type: 'text',
+    end: { index, cursor },
+});
+
+test('text insert', () => {
+    let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 2));
+    state = applyUpdate(state, handleKey(state, 'l', lisp)!);
+    check(state, text([{ type: 'text', text: 'hil' }], true), textc(0, 3));
 });

@@ -1,3 +1,4 @@
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Node, Nodes } from '../shared/cnodes';
 import { addNeighborAfter, addNeighborBefore, findParent, Flat, flatten, flatToUpdate, listKindForKeyKind } from './flatenate';
 import { justSel } from './handleNav';
@@ -21,12 +22,68 @@ export const charClass = (grem: string, config: Config): number => {
     return 0;
 };
 
+const cursorSides = (cursor: TextCursor) => {
+    const left = cursor.start ? Math.min(cursor.start.cursor, cursor.end.cursor) : cursor.end.cursor;
+    const right = cursor.start ? Math.max(cursor.start.cursor, cursor.end.cursor) : cursor.end.cursor;
+    return { left, right };
+};
+
 export const handleTextKey = (config: Config, top: Top, path: Path, cursor: ListCursor | TextCursor, grem: string): Update | void => {
     const current = top.nodes[lastChild(path)];
     if (current.type !== 'text') throw new Error('not text');
     if (cursor.type === 'list') {
         return handleListKey(config, top, path, cursor, grem);
     }
+    if (cursor.start && cursor.start.index !== cursor.end.index) {
+        throw new Error('not multi yet sry');
+    }
+    const span = current.spans[cursor.end.index];
+    if (span.type !== 'text') {
+        // TODO controls, and such. like other than nav,
+        // what would we even do
+        console.warn('not handling non-text spans at');
+        return;
+    }
+
+    const text = cursor.end.text ?? splitGraphemes(span.text);
+    const { left, right } = cursorSides(cursor);
+    const ntext = text.slice(0, left).concat([grem]).concat(text.slice(right));
+
+    return justSel(path, {
+        type: 'text',
+        end: {
+            index: cursor.end.index,
+            cursor: left + 1,
+            text: ntext,
+        },
+    });
+
+    // Sooo now we come to a choice.
+    // How to do embeds?
+    /*
+    - ${} is tried and true
+    - \ + dropdown would be ... more flexible? idk
+    - some ... ctrl+ key combo? I don't like that quite as much
+    - \() is swift, right? it has the benefit of 'not having a normal meaning',
+      so you don't have to do extra to ~escape it.
+      lol roc uses $() hwyy
+      python uses f"hi {a}"
+      hrm now a downside is that \((a b)) looks silly.
+      does it look /more/ silly than ${(a b)}?
+      eh maybe not.
+
+    So, but here's a question: do I even ~need () brackets?
+    like, it will be visually distinct.
+    The only think brackets would do is make it clear how
+    to type it. which to be fair is a pretty important thing.
+
+    Honestly I think it should be an editor config thing to
+    show/hide.
+
+    And in "display" mode probably hide.
+
+    OK so with that sorted, maybe we just go with ${}. it's fine.
+    */
 };
 
 export const handleListKey = (config: Config, top: Top, path: Path, cursor: CollectionCursor, grem: string): Update | void => {

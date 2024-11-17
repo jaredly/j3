@@ -21,6 +21,15 @@ export const shape = (node: RecNodeT<unknown>): string => {
         case 'table':
             return `table...`;
         case 'text':
-            return `text...`;
+            return `text(${node.spans.map((span) => {
+                switch (span.type) {
+                    case 'text':
+                        return span.text;
+                    case 'embed':
+                        return `\${${shape(span.item)}}`;
+                    default:
+                        throw new Error('not shaping a ' + span.type);
+                }
+            })})`;
     }
 };
