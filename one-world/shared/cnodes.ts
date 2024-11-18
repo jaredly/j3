@@ -57,6 +57,10 @@ export type Style = {
 //     templates: { expr: Node; suffix: string }[];
 // };
 
+// Used to track "the place some code was copied from", to aid in
+// more intelligent merges
+type Src = { top: string; loc: number; moved: boolean };
+
 export type IdRef =
     | {
           type: 'toplevel';
@@ -71,7 +75,7 @@ export type IdRef =
     | { type: 'placeholder'; text: string };
 
 // ccls = "char class" i.e. what kind of punctuation. 0 = normal text
-export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc; ccls?: number };
+export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc; ccls?: number; src?: Src };
 
 export type Link = { type: 'www'; href: string } | { type: 'term'; id: string; hash?: string } | { type: 'doc'; id: string; hash?: string };
 
@@ -114,7 +118,7 @@ export type ListKind<Tag> =
     | { type: 'tag'; node: Tag }
     | RichKind;
 
-export type Text<Loc> = { type: 'text'; spans: TextSpan<Loc>[]; loc: Loc };
+export type Text<Loc> = { type: 'text'; spans: TextSpan<Loc>[]; loc: Loc; src?: Src };
 export type List<Loc> = {
     type: 'list';
     kind: ListKind<number>;
@@ -125,6 +129,7 @@ export type List<Loc> = {
     attributes?: number;
     children: number[];
     loc: Loc;
+    src?: Src;
 };
 export type TableKind = 'round' | 'square' | 'curly';
 export type Collection<Loc> =
@@ -134,6 +139,7 @@ export type Collection<Loc> =
           kind: TableKind;
           rows: number[][];
           loc: Loc;
+          src?: Src;
       };
 
 export type NodeT<Loc> = Id<Loc> | Text<Loc> | Collection<Loc>;
@@ -149,12 +155,14 @@ export type RecList<Loc> = {
     attributes?: RecNodeT<Loc>;
     children: RecNodeT<Loc>[];
     loc: Loc;
+    src?: Src;
 };
 
 export type RecText<Loc> = {
     type: 'text';
     spans: TextSpan<RecNodeT<Loc>>[];
     loc: Loc;
+    src?: Src;
 };
 export type RecCollection<Loc> =
     | RecList<Loc>
@@ -163,6 +171,7 @@ export type RecCollection<Loc> =
           kind: TableKind;
           rows: RecNodeT<Loc>[][];
           loc: Loc;
+          src?: Src;
       };
 
 export type RecNodeT<Loc> = Id<Loc> | RecText<Loc> | RecCollection<Loc>;

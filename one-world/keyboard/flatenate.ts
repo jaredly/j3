@@ -26,7 +26,7 @@ Game plan:
 
  */
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, List, Node } from '../shared/cnodes';
+import { Id, List, Node, Nodes } from '../shared/cnodes';
 import { Kind } from './insertId';
 import { interleave } from './interleave';
 import { replaceAt } from './replaceAt';
@@ -119,20 +119,20 @@ const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], parent: FlatPar
     return { root: handle(other, []), nextLoc, selection: { children: selPath, cursor: sel.cursor } };
 };
 
-export const flatten = (node: Node, top: Top, depth: number = 0): Flat[] => {
+export const flatten = (node: Node, top: Top, remap: Nodes = {}, depth: number = 0): Flat[] => {
     if (node.type !== 'list') return [node];
     if (node.kind === 'smooshed') {
-        return node.children.map((id) => top.nodes[id]);
+        return node.children.map((id) => remap[id] ?? top.nodes[id]);
     }
     if (node.kind === 'spaced') {
         return interleave(
-            node.children.map((id) => flatten(top.nodes[id], top, depth + 1)),
+            node.children.map((id) => flatten(remap[id] ?? top.nodes[id], top, remap, depth + 1)),
             [{ type: 'space', loc: node.loc }],
         ).flat();
     }
     if (depth > 0) return [node]; // dont flatten nested lists
     return interleave(
-        node.children.map((id) => flatten(top.nodes[id], top, depth + 1)),
+        node.children.map((id) => flatten(remap[id] ?? top.nodes[id], top, remap, depth + 1)),
         [{ type: 'sep', loc: node.loc }],
     ).flat();
 };
@@ -172,6 +172,7 @@ export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node
 
 export const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [Flat[], Node, Cursor] => {
     const res: Flat[] = [];
+
     for (let i = 0; i < flat.length; i++) {
         const node = flat[i];
         if (node.type !== 'id') {
@@ -194,6 +195,14 @@ export const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [
             }
         }
         if (tojoin.length === 1) {
+            const prev = res.length ? res[res.length - 1] : undefined;
+            if (node.text === '' && prev && prev.type !== 'sep' && prev.type !== 'space') {
+                if (sel === node) {
+                    sel = prev;
+                    ncursor = { type: 'list', where: 'after' };
+                }
+                continue;
+            }
             res.push(tojoin[0]);
             continue;
         }
@@ -212,6 +221,15 @@ export const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [
             res.push({ type: 'id', ccls: ccls, text, loc });
         }
     }
+
+    if (res[0].type === 'id' && res[0].text === '' && res[1] && res[1].type !== 'sep' && res[1].type !== 'space') {
+        const node = res.shift()!;
+        if (sel === node) {
+            sel = res[0];
+            ncursor = { type: 'list', where: 'before' };
+        }
+    }
+
     return [res, sel, ncursor];
 };
 

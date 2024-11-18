@@ -1,4 +1,19 @@
 
+I, had a thought.
+and it was, "what if I refactor some logic out of one term and break it into its own
+function.... and then in a separate ~branch I make a tweak to that logic that
+shouldn't really be incompatible. What do I do about that?
+
+This is a case that's actually solved by the 'have a global mapping of nodes' that
+I had going before.
+but that has major scale issues.
+
+ok so the ~least I can do, which would definitely help somewhat, would be to have an optional
+attr on `node` that is like 'here's where it came from'.
+
+Yeah actually `copiedFrom` would be cool in a number of ways, including if you /duplicate/ some
+code, and then want to merge a tweak in; might want to merge it in all the places it was copied to.
+
 # Ok folks, time for multiselect
 at least a little
 

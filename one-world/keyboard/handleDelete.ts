@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, List, Node } from '../shared/cnodes';
+import { Id, List, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { flatten, flatToUpdate } from './flatenate';
 import { goLeft, navLeft, selectEnd } from './handleNav';
@@ -73,8 +73,14 @@ const leftJoin = (state: TestState, cursor: Cursor) => {
         // Select the '(' opener
         return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
     }
-    const flat = flatten(pnode, state.top);
-    const node = state.top.nodes[lastChild(state.sel.start.path)] as Id<number>;
+    const remap: Nodes = {};
+    let node = state.top.nodes[lastChild(state.sel.start.path)];
+    const orig = node;
+    // "maybe commit text changes"
+    if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
+        node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
+    }
+    const flat = flatten(pnode, state.top, remap);
     const fat = flat.indexOf(node);
     if (fat === -1) throw new Error(`node not in flattened`);
     if (fat === 0) throw new Error(`node first in flat, should have been handled`);
@@ -85,7 +91,9 @@ const leftJoin = (state: TestState, cursor: Cursor) => {
         // Delete from the prev node actually
         const start = selectEnd(pathWithChildren(parentPath(state.sel.start.path), prev.loc), state.top);
         if (!start) return;
-        return handleDelete({ top: state.top, sel: { start } });
+        const res = handleDelete({ top: { ...state.top, nodes: { ...state.top.nodes, ...remap } }, sel: { start } });
+        res!.nodes[node.loc] = node;
+        return res;
     }
 
     return flatToUpdate(flat, state.top, {}, { type: 'existing', node: pnode, path: parent }, node, cursor, state.sel.start.path);
