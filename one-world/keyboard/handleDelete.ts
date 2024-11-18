@@ -65,20 +65,26 @@ const leftJoin = (state: TestState, cursor: Cursor) => {
     const got = joinParent(state.sel.start.path, state.top);
     if (!got) return; // prolly at the toplevel? or in a text or table, gotta handle tat
     const { at, parent, pnode } = got;
+    let node = state.top.nodes[lastChild(state.sel.start.path)];
+    const remap: Nodes = {};
+    // "maybe commit text changes"
+    if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
+        node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
+    }
     if (at === 0) {
         if (pnode.kind === 'smooshed' || pnode.kind === 'spaced') {
             const sel = goLeft(parent, state.top);
             return sel ? { nodes: {}, selection: { start: sel } } : undefined;
         }
+        if (node.type === 'id' && node.text === '' && pnode.children.length === 1) {
+            return removeSelf(state, { path: parent, node: pnode });
+            // // HERG got to check grandparent smoosh here folks
+            // const up = replaceAt(parentPath(parent).children, state.top, pnode.loc, node.loc);
+            // up.selection = { start: selStart(pathWithChildren(parentPath(parent), node.loc), cursor) };
+            // return up;
+        }
         // Select the '(' opener
         return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
-    }
-    const remap: Nodes = {};
-    let node = state.top.nodes[lastChild(state.sel.start.path)];
-    const orig = node;
-    // "maybe commit text changes"
-    if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
-        node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
     }
     const flat = flatten(pnode, state.top, remap);
     const fat = flat.indexOf(node);

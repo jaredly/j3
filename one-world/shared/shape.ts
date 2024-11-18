@@ -6,7 +6,7 @@ export const shape = (node: RecNodeT<unknown>): string => {
             if (node.ref) {
                 return 'REF';
             }
-            return `id(${node.text}${node.ccls !== null ? '/' + node.ccls : ''})`;
+            return `id(${node.text}${node.ccls != null ? '/' + node.ccls : ''})`;
         case 'list':
             if (node.kind === 'round') {
                 return `(${node.children.map(shape).join(' ')})`;

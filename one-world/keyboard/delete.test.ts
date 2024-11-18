@@ -147,7 +147,7 @@ test('join why', () => {
     check(state, id('one', true), idc(3));
 });
 
-test.only('join why broked', () => {
+test('join why broked', () => {
     let state = asTop(smoosh([id('a'), id('+', true)]), idc(1));
     state = applyUpdate(state, handleKey(state, 'b', lisp));
     state = applyUpdate(state, handleKey(state, 'c', lisp));
@@ -156,4 +156,25 @@ test.only('join why broked', () => {
     check(state, smoosh([id('a'), id('+'), id('c', true)]), idc(0));
     state = applyUpdate(state, handleDelete(state));
     check(state, id('ac', true), idc(1));
+});
+
+test('empty id in list', () => {
+    let state = asTop(round([id('', true)]), idc(0));
+    state = applyUpdate(state, handleDelete(state));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('', true), idc(0));
+});
+
+test('empty list - smoosh  fix', () => {
+    let state = asTop(smoosh([round([], true), id('hi')]), listc('inside'));
+    state = applyUpdate(state, handleDelete(state));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('hi', true), idc(0));
+});
+
+test('empty id in list - smoosh  fix', () => {
+    let state = asTop(smoosh([round([id('', true)]), id('hi')]), idc(0));
+    state = applyUpdate(state, handleDelete(state));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('hi', true), idc(0));
 });
