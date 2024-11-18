@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Node, Nodes } from '../shared/cnodes';
+import { Node, Nodes, Text } from '../shared/cnodes';
 import { addNeighborAfter, addNeighborBefore, findParent, Flat, flatten, flatToUpdate, listKindForKeyKind } from './flatenate';
 import { justSel } from './handleNav';
 // import { splitSmooshId, splitSpacedId } from './splitSmoosh';
@@ -28,12 +28,7 @@ export const textCursorSides = (cursor: TextCursor) => {
     return { left, right };
 };
 
-export const handleTextKey = (config: Config, top: Top, path: Path, cursor: ListCursor | TextCursor, grem: string): Update | void => {
-    const current = top.nodes[lastChild(path)];
-    if (current.type !== 'text') throw new Error('not text');
-    if (cursor.type === 'list') {
-        return handleListKey(config, top, path, cursor, grem);
-    }
+export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: string, path: Path) => {
     if (cursor.start && cursor.start.index !== cursor.end.index) {
         throw new Error('not multi yet sry');
     }
@@ -44,19 +39,6 @@ export const handleTextKey = (config: Config, top: Top, path: Path, cursor: List
         console.warn('not handling non-text spans at');
         return;
     }
-
-    const text = cursor.end.text ?? splitGraphemes(span.text);
-    const { left, right } = textCursorSides(cursor);
-    const ntext = text.slice(0, left).concat([grem]).concat(text.slice(right));
-
-    return justSel(path, {
-        type: 'text',
-        end: {
-            index: cursor.end.index,
-            cursor: left + 1,
-            text: ntext,
-        },
-    });
 
     // Sooo now we come to a choice.
     // How to do embeds?
@@ -84,6 +66,29 @@ export const handleTextKey = (config: Config, top: Top, path: Path, cursor: List
 
     OK so with that sorted, maybe we just go with ${}. it's fine.
     */
+
+    const text = cursor.end.text ?? splitGraphemes(span.text);
+    const { left, right } = textCursorSides(cursor);
+    const ntext = text.slice(0, left).concat([grem]).concat(text.slice(right));
+
+    return justSel(path, {
+        type: 'text',
+        end: {
+            index: cursor.end.index,
+            cursor: left + 1,
+            text: ntext,
+        },
+    });
+};
+
+export const handleTextKey = (config: Config, top: Top, path: Path, cursor: ListCursor | TextCursor, grem: string): Update | void => {
+    const current = top.nodes[lastChild(path)];
+    if (current.type !== 'text') throw new Error('not text');
+    if (cursor.type === 'list') {
+        return handleListKey(config, top, path, cursor, grem);
+    }
+
+    return handleTextText(cursor, current, grem, path);
 };
 
 export const handleListKey = (config: Config, top: Top, path: Path, cursor: CollectionCursor, grem: string): Update | void => {

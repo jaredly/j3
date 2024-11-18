@@ -16,6 +16,7 @@ import { root } from '../root';
 import { shape } from '../../shared/shape';
 import { handleNav } from '../handleNav';
 import { textCursorSides } from '../insertId';
+import { handleWrap, wrapKind } from '../handleWrap';
 export {};
 
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
@@ -162,9 +163,10 @@ const App = () => {
                 setState(applyUpdate(cstate.current, up));
             } else if (splitGraphemes(evt.key).length > 1) {
                 console.log('ignoring', evt.key);
+            } else if (wrapKind(evt.key)) {
+                setState(applyUpdate(cstate.current, handleWrap(cstate.current, evt.key)));
             } else {
-                const up = handleKey(cstate.current, evt.key, js);
-                setState(applyUpdate(cstate.current, up));
+                setState(applyUpdate(cstate.current, handleKey(cstate.current, evt.key, js)));
             }
         };
         document.addEventListener('keydown', f);
