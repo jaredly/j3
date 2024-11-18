@@ -83,6 +83,10 @@ export const list =
 export const smoosh = list('smooshed');
 export const spaced = list('spaced');
 export const round = list('round');
+export const square = list('square');
+export const curly = list('curly');
+// What do I do about you now
+// export const angle = list('angle');
 export const table = <T>(kind: TableKind, rows: RecNodeT<T>[][], loc: T = null as T): RecNodeT<T> => ({ type: 'table', kind, rows, loc });
 export const text = <T>(spans: TextSpan<RecNodeT<T>>[], loc: T = null as T): RecText<T> => ({ type: 'text', loc, spans });
 export const lisp = {

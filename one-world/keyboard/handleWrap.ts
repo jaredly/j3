@@ -1,6 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, ListKind } from '../shared/cnodes';
+import { Id, List, ListKind, Node } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
+import { findParent, flatten, flatToUpdate } from './flatenate';
 import { handleIdKey } from './handleIdKey';
 import { Config, handleListKey, handleTextKey, handleTextText } from './insertId';
 import { replaceAt } from './replaceAt';
@@ -25,13 +26,33 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
     const text = cursor.text ?? splitGraphemes(node.text);
     // Wrap the whole thing
     if (left === 0 && (right === 0 || right === text.length)) {
+        return wrapNode(top, path, node, kind);
+    }
+    // at end
+    if (left === text.length) {
         let nextLoc = top.nextLoc;
         const loc = nextLoc++;
-        const up = replaceAt(path.children.slice(0, -1), top, node.loc, loc);
-        up.nextLoc = nextLoc;
-        up.nodes[loc] = { type: 'list', kind, children: [node.loc], loc };
-        up.selection = { start: selStart(pathWithChildren(parentPath(path), loc, node.loc), { type: 'id', end: 0 }) };
-        return up;
+        const parent = findParent(0, parentPath(path), top);
+        const flat = parent ? flatten(parent.node, top) : [node];
+        const nlist: List<number> = { type: 'list', children: [], kind, loc };
+        const at = flat.indexOf(node);
+        if (at < flat.length - 1) {
+            const next = flat[at + 1];
+            if (next.type !== 'sep' && next.type !== 'space') {
+                return wrapNode(top, pathWithChildren(parentPath(path), next.loc), next, kind);
+            }
+        }
+        flat.splice(at + 1, 0, nlist);
+
+        return flatToUpdate(
+            flat,
+            { ...top, nextLoc },
+            { [loc]: nlist },
+            parent ? { type: 'existing', ...parent } : { type: 'new', kind: 'string', current: node },
+            nlist,
+            { type: 'list', where: 'inside' },
+            path,
+        );
     }
 };
 
@@ -53,3 +74,13 @@ export const handleWrap = (state: TestState, key: string): Update | void => {
             throw new Error('not doing');
     }
 };
+
+export function wrapNode(top: Top, path: Path, node: Node, kind: ListKind<number>) {
+    let nextLoc = top.nextLoc;
+    const loc = nextLoc++;
+    const up = replaceAt(path.children.slice(0, -1), top, node.loc, loc);
+    up.nextLoc = nextLoc;
+    up.nodes[loc] = { type: 'list', kind, children: [node.loc], loc };
+    up.selection = { start: selStart(pathWithChildren(parentPath(path), loc, node.loc), { type: 'id', end: 0 }) };
+    return up;
+}
