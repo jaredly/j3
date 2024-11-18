@@ -324,3 +324,9 @@ test('over into text', () => {
     state = applyUpdate(state, handleNav('ArrowRight', state)!);
     check(state, smoosh([id('b'), text([{ type: 'text', text: 'hi' }], true)]), textc(0, 0));
 });
+
+test('between two lists', () => {
+    let state = asTop(smoosh([round([], true), round([])]), listc('after'));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, smoosh([round([]), round([], true)]), listc('inside'));
+});

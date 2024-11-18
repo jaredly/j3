@@ -21,6 +21,12 @@ export const selectStart = (path: Path, top: Top, plus1 = false): NodeSelection[
             if (!node.children.length) throw new Error('empty spaced/smooshed');
             return selectStart(pathWithChildren(path, node.children[0]), top, plus1);
         }
+        if (plus1) {
+            if (node.children.length) {
+                return selectStart(pathWithChildren(path, node.children[0]), top);
+            }
+            return selStart(path, { type: 'list', where: 'inside' });
+        }
         return selStart(path, { type: 'list', where: 'before' });
     }
     if (node.type === 'table') {
