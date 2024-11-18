@@ -5,7 +5,24 @@ import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
 import { handleNav, selectEnd, selectStart } from './handleNav';
 import { root } from './root';
-import { asTop, asTopAndPath, atPath, id, idc, list, listc, noText, round, selPath, smoosh, spaced, table, TestState, text } from './test-utils';
+import {
+    asTop,
+    asTopAndPath,
+    atPath,
+    id,
+    idc,
+    list,
+    listc,
+    noText,
+    round,
+    selPath,
+    smoosh,
+    spaced,
+    table,
+    TestState,
+    text,
+    textc,
+} from './test-utils';
 import { Cursor, Path, pathWithChildren, selStart } from './utils';
 
 const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
@@ -318,4 +335,16 @@ test('back into list w/ id', () => {
     let state = asTop(smoosh([round([id('b')]), id('a', true)]), idc(0));
     state = applyUpdate(state, handleNav('ArrowLeft', state)!);
     check(state, smoosh([round([id('b', true)]), id('a')]), idc(1));
+});
+
+test('over into text - empty', () => {
+    let state = asTop(smoosh([id('b', true), text([])]), idc(1));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, smoosh([id('b'), text([], true)]), listc('inside'));
+});
+
+test('over into text', () => {
+    let state = asTop(smoosh([id('b', true), text([{ type: 'text', text: 'hi' }])]), idc(1));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, smoosh([id('b'), text([{ type: 'text', text: 'hi' }], true)]), textc(0, 0));
 });

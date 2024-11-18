@@ -6,8 +6,8 @@ import { applyUpdate } from './applyUpdate';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
 import { root } from './root';
-import { asTop, atPath, id, idc, lisp, list, listc, noText, round, selPath, smoosh, TestState, text } from './test-utils';
-import { Cursor, IdCursor, TextCursor } from './utils';
+import { asTop, atPath, id, idc, lisp, list, listc, noText, round, selPath, smoosh, TestState, text, textc } from './test-utils';
+import { Cursor, IdCursor } from './utils';
 
 const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
     expect(shape(root(state))).toEqual(shape(exp));
@@ -59,15 +59,17 @@ test('text after id', () => {
     check(state, smoosh([id('hi'), text([], true)]), listc('inside'));
 });
 
-const textc = (index: number, cursor: number): TextCursor => ({
-    type: 'text',
-    end: { index, cursor },
-});
-
 test('text insert', () => {
     let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 2));
     state = applyUpdate(state, handleKey(state, 'l', lisp)!);
     check(state, text([{ type: 'text', text: 'hil' }], true), textc(0, 3));
+});
+
+test('text insert - commit text changes', () => {
+    let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 2));
+    state = applyUpdate(state, handleKey(state, 'l', lisp)!);
+    state = applyUpdate(state, handleNav('ArrowRight', state));
+    check(state, text([{ type: 'text', text: 'hil' }], true), listc('after'));
 });
 
 // MARK: nav text
@@ -174,4 +176,109 @@ test('back into text embed', () => {
     let state = asTop(smoosh([text([{ type: 'embed', item: id('hi') }]), id('ho', true)]), idc(0));
     state = applyUpdate(state, handleNav('ArrowLeft', state)!);
     check(state, smoosh([text([{ type: 'embed', item: id('hi', true) }]), id('ho')]), idc(2));
+});
+
+// MARK: right list
+
+test('nav right text (list) / after', () => {
+    let state = asTop(smoosh([text([{ type: 'embed', item: id('hi') }], true), id('ho')]), listc('after'));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, smoosh([text([{ type: 'embed', item: id('hi') }]), id('ho', true)]), idc(1));
+});
+
+test('nav right text (list) / before', () => {
+    let state = asTop(text([{ type: 'text', text: 'hi' }], true), listc('before'));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, text([{ type: 'text', text: 'hi' }], true), textc(0, 0));
+});
+
+test('nav right text (list) / before - embed', () => {
+    let state = asTop(text([{ type: 'text', text: 'hi' }], true), listc('before'));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, text([{ type: 'text', text: 'hi' }], true), textc(0, 0));
+});
+
+test('nav right text (list) / inside', () => {
+    let state = asTop(text([], true), listc('inside'));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, text([], true), listc('after'));
+});
+
+test('nav right text (list) / before / empty', () => {
+    let state = asTop(text([], true), listc('before'));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, text([], true), listc('inside'));
+});
+
+// MARK: left list
+
+test('nav left text (list) / before', () => {
+    let state = asTop(smoosh([id('hi'), text([], true)]), listc('before'));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, smoosh([id('hi', true), text([])]), idc(1));
+});
+
+test('nav left text (list) / after - empty', () => {
+    let state = asTop(smoosh([id('hi'), text([], true)]), listc('after'));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, smoosh([id('hi'), text([], true)]), listc('inside'));
+});
+
+test('nav left text (list) / after', () => {
+    let state = asTop(text([{ type: 'text', text: 'ho' }], true), listc('after'));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, text([{ type: 'text', text: 'ho' }], true), textc(0, 2));
+});
+
+test('nav left text (text) ', () => {
+    let state = asTop(
+        text(
+            [
+                { type: 'text', text: 'hi' },
+                { type: 'text', text: 'ho' },
+            ],
+            true,
+        ),
+        textc(1, 0),
+    );
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(
+        state,
+        text(
+            [
+                { type: 'text', text: 'hi' },
+                { type: 'text', text: 'ho' },
+            ],
+            true,
+        ),
+        textc(0, 1),
+    );
+});
+
+test('nav left text (text) ', () => {
+    let state = asTop(
+        text(
+            [
+                { type: 'embed', item: id('hi') },
+                { type: 'text', text: 'ho' },
+            ],
+            true,
+        ),
+        textc(1, 0),
+    );
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(
+        state,
+        text([
+            { type: 'embed', item: id('hi', true) },
+            { type: 'text', text: 'ho' },
+        ]),
+        idc(1),
+    );
+});
+
+test('nav left text (text) first ', () => {
+    let state = asTop(text([{ type: 'text', text: 'ho' }], true), textc(0, 0));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, text([{ type: 'text', text: 'ho' }], true), listc('before'));
 });

@@ -31,31 +31,21 @@ export const selectStart = (path: Path, top: Top, plus1 = false): NodeSelection[
     const ploc = parentLoc(path);
     if (ploc != null) {
         const parent = top.nodes[ploc];
-        // Rich Text, we select the end of the last item in the text
+        // Rich Text, we select the start of the first item in the text
         if (parent.type === 'list' && isRich(parent.kind)) {
             if (node.spans.length === 0) {
                 return selStart(path, { type: 'list', where: 'inside' });
             }
-            return spanStart(node.spans[0], 0, path, top);
+            return spanStart(node.spans[0], 0, path, top, plus1);
         }
     }
     if (plus1) {
         if (node.spans.length === 0) {
             return selStart(path, { type: 'list', where: 'inside' });
         }
-        return spanStart(node.spans[0], 0, path, top);
+        return spanStart(node.spans[0], 0, path, top, false);
     }
     return selStart(path, { type: 'list', where: 'before' });
-};
-
-const spanStart = (span: TextSpan<number>, index: number, path: Path, top: Top) => {
-    if (span.type === 'text') {
-        return selStart(path, { type: 'text', end: { index, cursor: 0 } });
-    }
-    if (span.type === 'embed') {
-        return selectStart(pathWithChildren(path, span.item), top);
-    }
-    return selStart(path, { type: 'control', index });
 };
 
 export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSelection['start'] | void => {
@@ -91,22 +81,15 @@ export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSel
         if (node.spans.length === 0) {
             return selStart(path, { type: 'list', where: 'inside' });
         }
-        const last = node.spans[node.spans.length - 1];
-        if (last.type === 'text') {
-            return selStart(path, { type: 'text', end: { index: node.spans.length - 1, cursor: splitGraphemes(last.text).length } });
-        }
-        if (last.type === 'embed') {
-            return selectEnd(pathWithChildren(path, last.item), top, plus1);
-        }
-        return selStart(path, { type: 'control', index: node.spans.length - 1 });
+        const idx = node.spans.length - 1;
+        return spanEnd(node.spans[idx], path, idx, top, plus1);
     }
     if (plus1) {
         if (node.spans.length === 0) {
             return selStart(path, { type: 'list', where: 'inside' });
         }
         const index = node.spans.length - 1;
-        const last = node.spans[index];
-        return spanEnd(last, path, index, top);
+        return spanEnd(node.spans[index], path, index, top, false);
     }
     return selStart(path, { type: 'list', where: 'after' });
 };
@@ -206,19 +189,8 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                     }
                     return justSel(current.path, { type: 'list', where: 'after' });
                 }
-                const next = current.node.spans[current.cursor.end.index + 1];
-                switch (next.type) {
-                    case 'text':
-                        return justSel(current.path, {
-                            type: 'text',
-                            end: {
-                                index: current.cursor.end.index + 1,
-                                cursor: 1,
-                            },
-                        });
-                    case 'embed':
-                        return selUpdate(selectStart(pathWithChildren(current.path, next.item), state.top, true));
-                }
+                const idx = current.cursor.end.index + 1;
+                return selUpdate(spanStart(current.node.spans[idx], idx, current.path, state.top, true));
             }
             if (current.cursor.type === 'list') {
                 switch (current.cursor.where) {
@@ -228,19 +200,12 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                     case 'before':
                     case 'start':
                         if (current.node.spans.length > 0) {
-                            const span = current.node.spans[0];
-                            switch (span.type) {
-                                case 'text':
-                                    return justSel(current.path, { type: 'text', end: { index: 0, cursor: 0 } });
-                                case 'embed':
-                                    return selUpdate(selectStart(pathWithChildren(current.path, span.item), state.top));
-                                default:
-                                    return justSel(current.path, { type: 'control', index: 0 });
-                            }
+                            return selUpdate(spanStart(current.node.spans[0], 0, current.path, state.top, false));
                         } else {
                             return justSel(current.path, { type: 'list', where: 'inside' });
                         }
                     case 'inside':
+                        // TODO isRich
                         return justSel(current.path, { type: 'list', where: 'after' });
                 }
             }
@@ -306,21 +271,8 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
                     });
                 }
                 if (end.index > 0) {
-                    const prev = current.node.spans[end.index - 1];
-                    switch (prev.type) {
-                        case 'text':
-                            return justSel(current.path, {
-                                type: 'text',
-                                end: {
-                                    index: end.index - 1,
-                                    cursor: splitGraphemes(prev.text).length,
-                                },
-                            });
-                        case 'embed':
-                            return selUpdate(selectEnd(pathWithChildren(current.path, prev.item), state.top));
-                        default:
-                            return justSel(current.path, { type: 'control', index: end.index - 1 });
-                    }
+                    const idx = end.index - 1;
+                    return selUpdate(spanEnd(current.node.spans[idx], current.path, idx, state.top, true));
                 }
                 if (richNode(state.top.nodes[parentLoc(current.path)])) {
                     return selUpdate(goLeft(current.path, state.top));
@@ -357,6 +309,7 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
                                         current.path,
                                         current.node.spans.length - 1,
                                         state.top,
+                                        false,
                                     ),
                                 );
                             }
@@ -368,13 +321,24 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
         }
     }
 };
-function spanEnd(last: TextSpan<number>, path: Path, index: number, top: Top) {
+
+function spanEnd(last: TextSpan<number>, path: Path, index: number, top: Top, plus1: boolean) {
     switch (last.type) {
         case 'text':
-            return selStart(path, { type: 'text', end: { index, cursor: splitGraphemes(last.text).length } });
+            return selStart(path, { type: 'text', end: { index, cursor: splitGraphemes(last.text).length - (plus1 ? 1 : 0) } });
         case 'embed':
-            return selectEnd(pathWithChildren(path, last.item), top);
+            return selectEnd(pathWithChildren(path, last.item), top, plus1);
         default:
             return selStart(path, { type: 'control', index });
     }
 }
+
+const spanStart = (span: TextSpan<number>, index: number, path: Path, top: Top, plus1: boolean) => {
+    if (span.type === 'text') {
+        return selStart(path, { type: 'text', end: { index, cursor: plus1 ? 1 : 0 } });
+    }
+    if (span.type === 'embed') {
+        return selectStart(pathWithChildren(path, span.item), top, plus1);
+    }
+    return selStart(path, { type: 'control', index });
+};
