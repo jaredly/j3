@@ -1,6 +1,7 @@
 import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
+import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { root } from './root';
 import { asTop, atPath, id, idc, listc, noText, round, selPath, smoosh, spaced, TestState } from './test-utils';
@@ -8,12 +9,6 @@ import { Cursor } from './utils';
 import { validate } from './validate';
 
 // Should get 100% of 'handleDelete'
-
-const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
-    expect(shape(root(state))).toEqual(shape(exp));
-    expect(state.sel.start.path.children).toEqual(atPath(state.top.root, state.top, selPath(exp)));
-    expect(noText(state.sel.start.cursor)).toEqual(cursor);
-};
 
 test('at start', () => {
     let state = asTop(smoosh([id('helso', true), id('+')]), idc(0));

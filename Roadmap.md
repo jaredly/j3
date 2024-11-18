@@ -1,4 +1,11 @@
 
+# Ok folks, time for multiselect
+at least a little
+
+buutt before we do that, list creation right?
+- [ ] create pls
+- [ ] and then we can multi it up yeas
+
 # Thinking about Rich Text checkboxes
 
 [ ] one level

@@ -3,23 +3,17 @@
 import { fromMap, RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
+import { check } from './check.test';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { root } from './root';
-import { asTop, atPath, id, idc, lisp, listc, noText, round, selPath, smoosh, TestState, text } from './test-utils';
-import { Cursor, IdCursor } from './utils';
+import { asTop, id, idc, lisp, listc, round, smoosh, text } from './test-utils';
+import { IdCursor } from './utils';
 
 const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.') => {
     let state = asTop(init, cursor);
     const up = handleKey(state, text, lisp);
     state = applyUpdate(state, up);
     expect(shape(out)).toEqual(shape(fromMap(state.top.root, state.top.nodes, () => 0)));
-};
-
-const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
-    expect(shape(root(state))).toEqual(shape(exp));
-    expect(state.sel.start.path.children).toEqual(atPath(state.top.root, state.top, selPath(exp)));
-    expect(noText(state.sel.start.cursor)).toEqual(cursor);
 };
 
 // MARK: Text smooshed

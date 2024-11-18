@@ -1,24 +1,10 @@
 // let's test some operations
 
-import { fromMap, RecNodeT } from '../shared/cnodes';
-import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
+import { check } from './check.test';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { root } from './root';
-import { asTop, atPath, id, idc, lisp, list, listc, noText, round, selPath, smoosh, TestState, text, textc } from './test-utils';
-import { Cursor, IdCursor } from './utils';
-
-const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
-    expect(shape(root(state))).toEqual(shape(exp));
-    expect({
-        sel: state.sel.start.path.children,
-        cursor: noText(state.sel.start.cursor),
-    }).toEqual({
-        sel: atPath(state.top.root, state.top, selPath(exp)),
-        cursor,
-    });
-};
+import { asTop, id, idc, lisp, list, listc, round, smoosh, text, textc } from './test-utils';
 
 test('text before', () => {
     let state = asTop(text([], true), listc('before'));

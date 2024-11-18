@@ -1,35 +1,11 @@
 // let's test some operations
 
 import { RecNodeT } from '../shared/cnodes';
-import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
+import { check } from './check.test';
 import { handleNav, selectEnd, selectStart } from './handleNav';
-import { root } from './root';
-import {
-    asTop,
-    asTopAndPath,
-    atPath,
-    id,
-    idc,
-    list,
-    listc,
-    noText,
-    round,
-    selPath,
-    smoosh,
-    spaced,
-    table,
-    TestState,
-    text,
-    textc,
-} from './test-utils';
+import { asTop, asTopAndPath, id, idc, list, listc, round, smoosh, spaced, table, text, textc } from './test-utils';
 import { Cursor, Path, pathWithChildren, selStart } from './utils';
-
-const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
-    expect(shape(root(state))).toEqual(shape(exp));
-    expect(state.sel.start.path.children).toEqual(atPath(state.top.root, state.top, selPath(exp)));
-    expect(noText(state.sel.start.cursor)).toEqual(cursor);
-};
 
 const run = (node: RecNodeT<boolean>, cursor: Cursor, key: string, exp: RecNodeT<boolean>, ecursor: Cursor) => {
     let state = asTop(node, cursor);
