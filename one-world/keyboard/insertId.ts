@@ -22,7 +22,7 @@ export const charClass = (grem: string, config: Config): number => {
     return 0;
 };
 
-const cursorSides = (cursor: TextCursor) => {
+export const textCursorSides = (cursor: TextCursor) => {
     const left = cursor.start ? Math.min(cursor.start.cursor, cursor.end.cursor) : cursor.end.cursor;
     const right = cursor.start ? Math.max(cursor.start.cursor, cursor.end.cursor) : cursor.end.cursor;
     return { left, right };
@@ -46,7 +46,7 @@ export const handleTextKey = (config: Config, top: Top, path: Path, cursor: List
     }
 
     const text = cursor.end.text ?? splitGraphemes(span.text);
-    const { left, right } = cursorSides(cursor);
+    const { left, right } = textCursorSides(cursor);
     const ntext = text.slice(0, left).concat([grem]).concat(text.slice(right));
 
     return justSel(path, {

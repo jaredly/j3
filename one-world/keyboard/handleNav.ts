@@ -156,6 +156,49 @@ export const navRight = (current: Current, state: TestState): Update | void => {
             }
             break;
         }
+        case 'text': {
+            if (current.cursor.type === 'text') {
+                if (current.cursor.start) {
+                    // TODO
+                    return;
+                }
+                const span = current.node.spans[current.cursor.end.index];
+                if (span.type !== 'text') throw new Error(`curent span is not text`);
+                const text = current.cursor.end.text ?? splitGraphemes(span.text);
+                if (current.cursor.end.cursor < text.length) {
+                    return justSel(current.path, {
+                        type: 'text',
+                        end: {
+                            index: current.cursor.end.index,
+                            cursor: current.cursor.end.cursor + 1,
+                            text: current.cursor.end.text,
+                        },
+                    });
+                }
+                if (current.cursor.end.index >= current.node.spans.length - 1) {
+                    const parent = state.top.nodes[parentLoc(current.path)];
+                    // Rich Text, we jump to the next item thankx
+                    if (parent?.type === 'list' && isRich(parent.kind)) {
+                        return selUpdate(goRight(current.path, state.top));
+                    }
+                    return justSel(current.path, { type: 'list', where: 'after' });
+                }
+                const next = current.node.spans[current.cursor.end.index + 1];
+                switch (next.type) {
+                    case 'text':
+                        return justSel(current.path, {
+                            type: 'text',
+                            end: {
+                                index: current.cursor.end.index + 1,
+                                cursor: 1,
+                            },
+                        });
+                    case 'embed':
+                        return selUpdate(selectStart(pathWithChildren(current.path, next.item), state.top, true));
+                }
+            }
+            break;
+        }
         case 'list': {
             if (current.cursor.type === 'list') {
                 switch (current.cursor.where) {
@@ -180,6 +223,8 @@ export const navRight = (current: Current, state: TestState): Update | void => {
     }
 };
 
+const selUpdate = (sel?: void | NodeSelection['start']): Update | void => (sel ? { nodes: {}, selection: { start: sel } } : undefined);
+
 export const navLeft = (current: Current, state: TestState): Update | void => {
     switch (current.type) {
         case 'id': {
@@ -193,6 +238,25 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
             const sel = goLeft(current.path, state.top);
             if (sel) {
                 return { nodes: {}, selection: { start: sel } };
+            }
+            break;
+        }
+        case 'text': {
+            if (current.cursor.type === 'text') {
+                if (current.cursor.start) {
+                    // TODO
+                    return;
+                }
+                if (current.cursor.end.cursor > 0) {
+                    return justSel(current.path, {
+                        type: 'text',
+                        end: {
+                            index: current.cursor.end.index,
+                            cursor: current.cursor.end.cursor - 1,
+                            text: current.cursor.end.text,
+                        },
+                    });
+                }
             }
             break;
         }

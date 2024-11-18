@@ -44,10 +44,12 @@ export const atPath = (root: number, top: Top, path: number[]) => {
     }
     return res;
 };
+
 export const selPath = (exp: RecNodeT<boolean>) => {
     let found: number[] | null = null;
     const visit = (node: RecNodeT<boolean>, path: number[]) => {
         if (node.loc) {
+            if (found != null) throw new Error(`multiple nodes marked as selected`);
             found = path;
             return;
         }
@@ -56,7 +58,9 @@ export const selPath = (exp: RecNodeT<boolean>) => {
     visit(exp, []);
     if (found == null) throw new Error(`no node marked for selection`);
     return found;
-}; // kinds of keys:
+};
+
+// kinds of keys:
 // - tight
 // - space
 // - sep

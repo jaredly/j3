@@ -15,6 +15,7 @@ import { handleKey } from '../handleKey';
 import { root } from '../root';
 import { shape } from '../../shared/shape';
 import { handleNav } from '../handleNav';
+import { textCursorSides } from '../insertId';
 export {};
 
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
@@ -94,12 +95,19 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                     );
             }
         case 'text': {
-            if (inRich) {
-                // no quotes, and like ... some other things
-                // are maybe different?
-            }
             const children = node.spans.map((span, i) => {
                 if (span.type === 'text') {
+                    if (cursor?.type === 'text' && cursor.end.index === i) {
+                        const { left, right } = textCursorSides(cursor);
+                        const text = cursor.end.text ?? splitGraphemes(span.text);
+                        return (
+                            <span>
+                                {text.slice(0, left).join('')}
+                                {left === right ? <Cursor /> : <span style={{ background: hl }}>{text.slice(left, right).join('')}</span>}
+                                {text.slice(right).join('')}
+                            </span>
+                        );
+                    }
                     // TODO show cursor here
                     return <span key={i}>{span.text}</span>;
                 } else if (span.type === 'embed') {
@@ -108,6 +116,16 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                     return <span key={i}>custom?</span>;
                 }
             });
+            if (inRich) {
+                // no quotes, and like ... some other things
+                // are maybe different?
+                return (
+                    <span>
+                        {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+                        {children}
+                    </span>
+                );
+            }
             return (
                 <span>
                     {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}

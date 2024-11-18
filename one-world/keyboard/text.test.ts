@@ -4,14 +4,20 @@ import { fromMap, RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
 import { handleKey } from './handleKey';
+import { handleNav } from './handleNav';
 import { root } from './root';
-import { asTop, atPath, id, idc, lisp, listc, noText, round, selPath, smoosh, TestState, text } from './test-utils';
+import { asTop, atPath, id, idc, lisp, list, listc, noText, round, selPath, smoosh, TestState, text } from './test-utils';
 import { Cursor, IdCursor, TextCursor } from './utils';
 
 const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
     expect(shape(root(state))).toEqual(shape(exp));
-    expect(state.sel.start.path.children).toEqual(atPath(state.top.root, state.top, selPath(exp)));
-    expect(noText(state.sel.start.cursor)).toEqual(cursor);
+    expect({
+        sel: state.sel.start.path.children,
+        cursor: noText(state.sel.start.cursor),
+    }).toEqual({
+        sel: atPath(state.top.root, state.top, selPath(exp)),
+        cursor,
+    });
 };
 
 test('text before', () => {
@@ -62,4 +68,92 @@ test('text insert', () => {
     let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 2));
     state = applyUpdate(state, handleKey(state, 'l', lisp)!);
     check(state, text([{ type: 'text', text: 'hil' }], true), textc(0, 3));
+});
+
+// MARK: nav text
+
+test('text nav', () => {
+    let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 2));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, text([{ type: 'text', text: 'hi' }], true), textc(0, 1));
+});
+
+test('text nav right', () => {
+    let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 0));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, text([{ type: 'text', text: 'hi' }], true), textc(0, 1));
+});
+
+test('text nav past end', () => {
+    let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 2));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, text([{ type: 'text', text: 'hi' }], true), listc('after'));
+});
+
+test('text nav past end - rich', () => {
+    let state = asTop(
+        list({ type: 'plain' })([
+            //
+            text([{ type: 'text', text: 'hi' }], true),
+            text([{ type: 'text', text: 'yo' }]),
+        ]),
+        textc(0, 2),
+    );
+    state = applyUpdate(state, handleNav('ArrowRight', state));
+    check(
+        state,
+        list({ type: 'plain' })([
+            //
+            text([{ type: 'text', text: 'hi' }]),
+            text([{ type: 'text', text: 'yo' }], true),
+        ]),
+        textc(0, 0),
+    );
+});
+
+test('text nav between spans', () => {
+    let state = asTop(
+        text(
+            [
+                { type: 'text', text: 'hi' },
+                { type: 'text', text: 'lo' },
+            ],
+            true,
+        ),
+        textc(0, 2),
+    );
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(
+        state,
+        text(
+            [
+                { type: 'text', text: 'hi' },
+                { type: 'text', text: 'lo' },
+            ],
+            true,
+        ),
+        textc(1, 1),
+    );
+});
+
+test('text nav between span and embed', () => {
+    let state = asTop(
+        text(
+            [
+                { type: 'text', text: 'hi' },
+                { type: 'embed', item: id('lo') },
+            ],
+            true,
+        ),
+        textc(0, 2),
+    );
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(
+        state,
+        text([
+            { type: 'text', text: 'hi' },
+            { type: 'embed', item: id('lo', true) },
+        ]),
+        idc(1),
+    );
 });

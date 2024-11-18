@@ -1,4 +1,19 @@
 
+# Thinking about Rich Text checkboxes
+
+[ ] one level
+[ ] same level
+    [ ] next level
+
+We have some options.
+
+1) all checkboxes are children of the same root,
+   but 'indent levels' are varied.
+
+Things that would be nice to support:
+- collapsing nested levels down
+- reporting completion amounts
+
 # multiple char class
 
 options:
@@ -19,7 +34,9 @@ Kinds of interactions:
 
 - type a text
   - [x] id
-  - [ ] text :/
+  - [x] text :/
+    - [ ] get it working in the web UI
+    - [ ] get keyboard nav in a text working
 - type a different idclass
   - [ ] make it so we can have multiple character classes
   - [x] handle smooshes nicely
