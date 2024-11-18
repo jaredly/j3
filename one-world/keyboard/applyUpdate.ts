@@ -27,10 +27,13 @@ export function applyUpdate(state: TestState, update: Update | void) {
     // This is "maybe commit text changes"
     if (prev.start.cursor.type === 'id' && prev.start.cursor.text != null && update.selection && update.selection.start.key !== prev.start.key) {
         const loc = lastChild(prev.start.path);
+
         if (!update.nodes[loc]) {
+            const node = state.top.nodes[loc] as Id<number>;
             state.top.nodes[loc] = {
-                ...(state.top.nodes[loc] as Id<number>),
+                ...node,
                 text: prev.start.cursor.text.join(''),
+                ccls: prev.start.cursor.text.length === 0 ? undefined : node.ccls,
             };
         }
     }
