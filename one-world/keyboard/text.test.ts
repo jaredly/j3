@@ -157,3 +157,21 @@ test('text nav between span and embed', () => {
         idc(1),
     );
 });
+
+test('back into text', () => {
+    let state = asTop(smoosh([text([{ type: 'text', text: 'hi' }]), id('ho', true)]), idc(0));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, smoosh([text([{ type: 'text', text: 'hi' }], true), id('ho')]), textc(0, 2));
+});
+
+test('back into text inside', () => {
+    let state = asTop(smoosh([text([]), id('ho', true)]), idc(0));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, smoosh([text([], true), id('ho')]), listc('inside'));
+});
+
+test('back into text embed', () => {
+    let state = asTop(smoosh([text([{ type: 'embed', item: id('hi') }]), id('ho', true)]), idc(0));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, smoosh([text([{ type: 'embed', item: id('hi', true) }]), id('ho')]), idc(2));
+});

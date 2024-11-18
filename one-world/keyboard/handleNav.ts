@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { isRich } from '../shared/cnodes';
+import { isRich, Node } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { TestState } from './test-utils';
 import { Current, Cursor, getCurrent, lastChild, NodeSelection, parentLoc, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
@@ -64,6 +64,12 @@ export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSel
             if (!node.children.length) throw new Error('empty spaced/smooshed');
             return selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), top, plus1);
         }
+        if (plus1) {
+            if (node.children.length === 0) {
+                return selStart(path, { type: 'list', where: 'inside' });
+            }
+            return selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), top);
+        }
         return selStart(path, { type: 'list', where: 'after' });
     }
     if (node.type === 'table') {
@@ -72,24 +78,39 @@ export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSel
     // TODO... if we are inside of a rich text ... then this text is different.
     // SHOULD that just be a flag on the /text/? hm. idk it might be worth denormalizing?
     const ploc = parentLoc(path);
-    if (ploc != null) {
-        const parent = top.nodes[ploc];
-        // Rich Text, we select the end of the last item in the text
-        if (parent.type === 'list' && isRich(parent.kind)) {
-            if (node.spans.length === 0) {
-                return selStart(path, { type: 'list', where: 'inside' });
-            }
-            const last = node.spans[node.spans.length - 1];
-            if (last.type === 'text') {
-                return selStart(path, { type: 'text', end: { index: node.spans.length - 1, cursor: splitGraphemes(last.text).length } });
-            }
-            if (last.type === 'embed') {
-                return selectEnd(pathWithChildren(path, last.item), top, plus1);
-            }
-            return selStart(path, { type: 'control', index: node.spans.length - 1 });
+    if (ploc != null && richNode(top.nodes[ploc])) {
+        if (node.spans.length === 0) {
+            return selStart(path, { type: 'list', where: 'inside' });
+        }
+        const last = node.spans[node.spans.length - 1];
+        if (last.type === 'text') {
+            return selStart(path, { type: 'text', end: { index: node.spans.length - 1, cursor: splitGraphemes(last.text).length } });
+        }
+        if (last.type === 'embed') {
+            return selectEnd(pathWithChildren(path, last.item), top, plus1);
+        }
+        return selStart(path, { type: 'control', index: node.spans.length - 1 });
+    }
+    if (plus1) {
+        if (node.spans.length === 0) {
+            return selStart(path, { type: 'list', where: 'inside' });
+        }
+        const index = node.spans.length - 1;
+        const last = node.spans[index];
+        switch (last.type) {
+            case 'text':
+                return selStart(path, { type: 'text', end: { index, cursor: splitGraphemes(last.text).length } });
+            case 'embed':
+                return selectEnd(pathWithChildren(path, last.item), top);
+            default:
+                return selStart(path, { type: 'control', index });
         }
     }
     return selStart(path, { type: 'list', where: 'after' });
+};
+
+const richNode = (node: Node | undefined) => {
+    return node?.type === 'list' && isRich(node.kind);
 };
 
 export const goLeft = (path: Path, top: Top): NodeSelection['start'] | void => {
@@ -197,14 +218,37 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                         return selUpdate(selectStart(pathWithChildren(current.path, next.item), state.top, true));
                 }
             }
-            break;
+            if (current.cursor.type === 'list') {
+                switch (current.cursor.where) {
+                    case 'after':
+                    case 'end':
+                        return selUpdate(goRight(current.path, state.top));
+                    case 'before':
+                    case 'start':
+                        if (current.node.spans.length > 0) {
+                            const span = current.node.spans[0];
+                            switch (span.type) {
+                                case 'text':
+                                    return justSel(current.path, { type: 'text', end: { index: 0, cursor: 0 } });
+                                case 'embed':
+                                    return selUpdate(selectStart(pathWithChildren(current.path, span.item), state.top));
+                                default:
+                                    return justSel(current.path, { type: 'control', index: 0 });
+                            }
+                        } else {
+                            return justSel(current.path, { type: 'list', where: 'inside' });
+                        }
+                    case 'inside':
+                        return justSel(current.path, { type: 'list', where: 'after' });
+                }
+            }
+            return;
         }
         case 'list': {
             if (current.cursor.type === 'list') {
                 switch (current.cursor.where) {
                     case 'after':
-                    case 'end':
-                        return justSel(current.path, { type: 'list', where: 'after' });
+                        return selUpdate(goRight(current.path, state.top));
                     case 'before':
                     case 'start':
                         if (current.node.type === 'list') {
@@ -216,6 +260,7 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                             }
                         }
                     case 'inside':
+                    case 'end':
                         return justSel(current.path, { type: 'list', where: 'after' });
                 }
             }
@@ -247,22 +292,45 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
                     // TODO
                     return;
                 }
-                if (current.cursor.end.cursor > 0) {
+                const { end } = current.cursor;
+                if (end.cursor > 0) {
                     return justSel(current.path, {
                         type: 'text',
                         end: {
-                            index: current.cursor.end.index,
-                            cursor: current.cursor.end.cursor - 1,
-                            text: current.cursor.end.text,
+                            index: end.index,
+                            cursor: end.cursor - 1,
+                            text: end.text,
                         },
                     });
                 }
+                if (end.index > 0) {
+                    const prev = current.node.spans[end.index - 1];
+                    switch (prev.type) {
+                        case 'text':
+                            return justSel(current.path, {
+                                type: 'text',
+                                end: {
+                                    index: end.index - 1,
+                                    cursor: splitGraphemes(prev.text).length,
+                                },
+                            });
+                        case 'embed':
+                            return selUpdate(selectEnd(pathWithChildren(current.path, prev.item), state.top));
+                        default:
+                            return justSel(current.path, { type: 'control', index: end.index - 1 });
+                    }
+                }
+                if (richNode(state.top.nodes[parentLoc(current.path)])) {
+                    return selUpdate(goLeft(current.path, state.top));
+                }
+                return justSel(current.path, { type: 'list', where: 'before' });
             }
-            break;
         }
         case 'list': {
             if (current.cursor.type === 'list') {
                 switch (current.cursor.where) {
+                    case 'before':
+                        return selUpdate(goLeft(current.path, state.top));
                     case 'start':
                         return justSel(current.path, { type: 'list', where: 'before' });
                     case 'after':

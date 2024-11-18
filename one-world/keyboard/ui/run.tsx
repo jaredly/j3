@@ -101,7 +101,7 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                         const { left, right } = textCursorSides(cursor);
                         const text = cursor.end.text ?? splitGraphemes(span.text);
                         return (
-                            <span>
+                            <span key={i}>
                                 {text.slice(0, left).join('')}
                                 {left === right ? <Cursor /> : <span style={{ background: hl }}>{text.slice(left, right).join('')}</span>}
                                 {text.slice(right).join('')}

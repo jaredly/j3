@@ -307,3 +307,15 @@ test('text control in rich', () => {
     expect(selectEnd(pc(sel), top)).toEqual(selStart(pc(sel), { type: 'control', index: 0 }));
     expect(selectStart(pc(sel), top)).toEqual(selStart(pc(sel), { type: 'control', index: 0 }));
 });
+
+test('back into list', () => {
+    let state = asTop(smoosh([round([]), id('a', true)]), idc(0));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, smoosh([round([], true), id('a')]), listc('inside'));
+});
+
+test('back into list w/ id', () => {
+    let state = asTop(smoosh([round([id('b')]), id('a', true)]), idc(0));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, smoosh([round([id('b', true)]), id('a')]), idc(1));
+});

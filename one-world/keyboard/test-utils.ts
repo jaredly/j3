@@ -51,7 +51,7 @@ export const selPath = (exp: RecNodeT<boolean>) => {
         if (node.loc) {
             if (found != null) throw new Error(`multiple nodes marked as selected`);
             found = path;
-            return;
+            // return;
         }
         childNodes(node).forEach((child, i) => visit(child, path.concat([i])));
     };

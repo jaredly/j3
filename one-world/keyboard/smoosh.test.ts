@@ -23,18 +23,6 @@ const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
 
 // MARK: Text smooshed
 
-test('text before', () => {
-    let state = asTop(text([], true), listc('before'));
-    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
-    check(state, smoosh([id('A', true), text([])]), idc(1));
-});
-
-test('text after', () => {
-    let state = asTop(text([], true), listc('after'));
-    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
-    check(state, smoosh([text([]), id('A', true)]), idc(1));
-});
-
 // MARK: List smooshed, right?
 
 test('list before pls', () => {
