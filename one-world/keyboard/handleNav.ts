@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { isRich, Node } from '../shared/cnodes';
+import { isRich, Node, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { TestState } from './test-utils';
 import { Current, Cursor, getCurrent, lastChild, NodeSelection, parentLoc, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
@@ -36,17 +36,26 @@ export const selectStart = (path: Path, top: Top, plus1 = false): NodeSelection[
             if (node.spans.length === 0) {
                 return selStart(path, { type: 'list', where: 'inside' });
             }
-            const last = node.spans[0];
-            if (last.type === 'text') {
-                return selStart(path, { type: 'text', end: { index: 0, cursor: 0 } });
-            }
-            if (last.type === 'embed') {
-                return selectStart(pathWithChildren(path, last.item), top);
-            }
-            return selStart(path, { type: 'control', index: 0 });
+            return spanStart(node.spans[0], 0, path, top);
         }
     }
+    if (plus1) {
+        if (node.spans.length === 0) {
+            return selStart(path, { type: 'list', where: 'inside' });
+        }
+        return spanStart(node.spans[0], 0, path, top);
+    }
     return selStart(path, { type: 'list', where: 'before' });
+};
+
+const spanStart = (span: TextSpan<number>, index: number, path: Path, top: Top) => {
+    if (span.type === 'text') {
+        return selStart(path, { type: 'text', end: { index, cursor: 0 } });
+    }
+    if (span.type === 'embed') {
+        return selectStart(pathWithChildren(path, span.item), top);
+    }
+    return selStart(path, { type: 'control', index });
 };
 
 export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSelection['start'] | void => {
@@ -97,14 +106,7 @@ export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSel
         }
         const index = node.spans.length - 1;
         const last = node.spans[index];
-        switch (last.type) {
-            case 'text':
-                return selStart(path, { type: 'text', end: { index, cursor: splitGraphemes(last.text).length } });
-            case 'embed':
-                return selectEnd(pathWithChildren(path, last.item), top);
-            default:
-                return selStart(path, { type: 'control', index });
-        }
+        return spanEnd(last, path, index, top);
     }
     return selStart(path, { type: 'list', where: 'after' });
 };
@@ -345,6 +347,19 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
                             } else {
                                 return justSel(current.path, { type: 'list', where: 'inside' });
                             }
+                        } else if (current.node.type === 'text') {
+                            if (current.node.spans.length === 0) {
+                                return justSel(current.path, { type: 'list', where: 'inside' });
+                            } else {
+                                return selUpdate(
+                                    spanEnd(
+                                        current.node.spans[current.node.spans.length - 1],
+                                        current.path,
+                                        current.node.spans.length - 1,
+                                        state.top,
+                                    ),
+                                );
+                            }
                         }
                     case 'inside':
                         return justSel(current.path, { type: 'list', where: 'before' });
@@ -353,3 +368,13 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
         }
     }
 };
+function spanEnd(last: TextSpan<number>, path: Path, index: number, top: Top) {
+    switch (last.type) {
+        case 'text':
+            return selStart(path, { type: 'text', end: { index, cursor: splitGraphemes(last.text).length } });
+        case 'embed':
+            return selectEnd(pathWithChildren(path, last.item), top);
+        default:
+            return selStart(path, { type: 'control', index });
+    }
+}

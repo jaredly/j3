@@ -3,6 +3,7 @@ import { Id, List, Node } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { flatten, flatToUpdate } from './flatenate';
 import { goLeft, navLeft, selectEnd } from './handleNav';
+import { textCursorSides } from './insertId';
 import { replaceAt } from './replaceAt';
 import { TestState } from './test-utils';
 import { Cursor, Path, Top, Update, getCurrent, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
@@ -16,6 +17,48 @@ export const joinParent = (path: Path, top: Top): void | { at: number; pnode: Li
     if (at > 0 || (pnode.kind !== 'spaced' && pnode.kind !== 'smooshed')) return { pnode, parent, at };
     const up = joinParent(parent, top);
     return up ?? { pnode, parent, at };
+};
+
+const removeSelf = (state: TestState, current: { path: Path; node: Node }) => {
+    const pnode = state.top.nodes[parentLoc(current.path)];
+    if (pnode && pnode.type === 'list' && pnode.kind === 'smooshed') {
+        // removing an item from a smooshed, got to reevaulate it
+        const items = pnode.children.map((loc) => state.top.nodes[loc]).filter((n) => n.loc !== current.node.loc);
+        const at = pnode.children.indexOf(current.node.loc);
+        if (items.length === 1) {
+            const up = replaceAt(parentPath(parentPath(current.path)).children, state.top, pnode.loc, items[0].loc);
+            up.selection = {
+                start: selStart(
+                    pathWithChildren(parentPath(parentPath(current.path)), items[0].loc),
+                    simpleSide(items[0], at === 0 ? 'start' : 'end'),
+                ),
+            };
+        }
+        if (items.length === 0) {
+            throw new Error(`shouldnt have a 1-length smoosh`);
+        }
+        if (at === -1) throw new Error('current not in parent');
+        const sel = at === 0 ? items[0] : items[at - 1];
+        const ncursor = simpleSide(sel, at === 0 ? 'start' : 'end');
+        return flatToUpdate(
+            items,
+            state.top,
+            { [current.node.loc]: null },
+            { type: 'existing', node: pnode, path: parentPath(current.path) },
+            sel,
+            ncursor,
+            current.path,
+        );
+    }
+    let nextLoc = state.top.nextLoc;
+    const loc = nextLoc++;
+    const up = replaceAt(parentPath(current.path).children, state.top, current.node.loc, loc);
+    up.nextLoc = nextLoc;
+    up.nodes[loc] = { type: 'id', loc, text: '' };
+    up.selection = {
+        start: selStart(pathWithChildren(parentPath(current.path), loc), { type: 'id', end: 0 }),
+    };
+    return up;
 };
 
 const leftJoin = (state: TestState, cursor: Cursor) => {
@@ -60,45 +103,7 @@ export const handleDelete = (state: TestState): Update | void => {
                         // left join agains
                         return leftJoin(state, current.cursor);
                     } else if (current.cursor.where === 'inside') {
-                        const pnode = state.top.nodes[parentLoc(current.path)];
-                        if (pnode && pnode.type === 'list' && pnode.kind === 'smooshed') {
-                            // removing an item from a smooshed, got to reevaulate it
-                            const items = pnode.children.map((loc) => state.top.nodes[loc]).filter((n) => n.loc !== current.node.loc);
-                            const at = pnode.children.indexOf(current.node.loc);
-                            if (items.length === 1) {
-                                const up = replaceAt(parentPath(parentPath(current.path)).children, state.top, pnode.loc, items[0].loc);
-                                up.selection = {
-                                    start: selStart(
-                                        pathWithChildren(parentPath(parentPath(current.path)), items[0].loc),
-                                        simpleSide(items[0], at === 0 ? 'start' : 'end'),
-                                    ),
-                                };
-                            }
-                            if (items.length === 0) {
-                                throw new Error(`shouldnt have a 1-length smoosh`);
-                            }
-                            if (at === -1) throw new Error('current not in parent');
-                            const sel = at === 0 ? items[0] : items[at - 1];
-                            const ncursor = simpleSide(sel, at === 0 ? 'start' : 'end');
-                            return flatToUpdate(
-                                items,
-                                state.top,
-                                { [current.node.loc]: null },
-                                { type: 'existing', node: pnode, path: parentPath(current.path) },
-                                sel,
-                                ncursor,
-                                current.path,
-                            );
-                        }
-                        let nextLoc = state.top.nextLoc;
-                        const loc = nextLoc++;
-                        const up = replaceAt(parentPath(current.path).children, state.top, current.node.loc, loc);
-                        up.nextLoc = nextLoc;
-                        up.nodes[loc] = { type: 'id', loc, text: '' };
-                        up.selection = {
-                            start: selStart(pathWithChildren(parentPath(current.path), loc), { type: 'id', end: 0 }),
-                        };
-                        return up;
+                        return removeSelf(state, current);
                     }
                 }
             }
@@ -134,6 +139,28 @@ export const handleDelete = (state: TestState): Update | void => {
                 }
                 return { nodes: {}, selection: { start: selStart(state.sel.start.path, { type: 'id', end: left, text }) } };
             }
+        }
+        case 'text': {
+            if (current.cursor.type === 'list') {
+                if (current.cursor.where === 'after') {
+                    return { nodes: {}, selection: { start: selStart(current.path, { type: 'list', where: 'end' }) } };
+                } else if (current.cursor.where === 'before') {
+                    // left join agains
+                    return leftJoin(state, current.cursor);
+                } else if (current.cursor.where === 'inside') {
+                    return removeSelf(state, current);
+                }
+                return;
+            }
+            let { left, right } = textCursorSides(current.cursor);
+            if (left === right) left--;
+            const { index } = current.cursor.end;
+            const span = current.node.spans[index];
+            const spans = current.node.spans.slice();
+            if (span.type !== 'text') throw new Error(`span not text ${span.type}`);
+            const text = current.cursor.end.text ?? splitGraphemes(span.text);
+            text.splice(left, right - left);
+            return { nodes: {}, selection: { start: selStart(state.sel.start.path, { type: 'text', end: { index, text, cursor: left } }) } };
         }
 
         default:

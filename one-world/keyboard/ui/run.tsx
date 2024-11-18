@@ -127,7 +127,7 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                 );
             }
             return (
-                <span>
+                <span style={{ backgroundColor: 'rgba(255,255,0,0.2)' }}>
                     {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                     {cursor?.type === 'list' && cursor.where === 'start' ? <span style={{ background: hl }}>"</span> : '"'}
                     {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
