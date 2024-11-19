@@ -1,7 +1,8 @@
-import { Nodes, List, childLocs, Node } from '../shared/cnodes';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { Nodes, List, childLocs, Node, Id } from '../shared/cnodes';
 import { Flat } from './flatenate';
 import { interleave } from './interleave';
-import { Top } from './utils';
+import { Cursor, IdCursor, ListCursor, Top } from './utils';
 
 export const flatten = (node: Node, top: Top, remap: Nodes = {}, depth: number = 0): Flat[] => {
     if (node.type !== 'list') return [node];
@@ -143,4 +144,83 @@ export const findPath = (root: number, nodes: Nodes, needle: number): number[] |
     };
     traverse(root, []);
     return found;
+};
+
+export type NodeAndCursor = { type: 'id'; node: Id<number>; cursor: IdCursor } | { type: 'other'; node: Node; cursor: ListCursor };
+
+// Removes empty strings from smooshes
+export const pruneEmptyIds = (flat: Flat[], selection: { node: Node; cursor: Cursor }) => {
+    const res: Flat[] = [];
+    flat.forEach((item) => {
+        if (!res.length || item.type === 'space' || item.type === 'sep' || item.type === 'smoosh') {
+            res.push(item);
+            return;
+        }
+        let at = res.length - 1;
+        for (; at >= 0 && res[at].type === 'smoosh'; at--); // ignore intervening smooshes
+        if (at < 0) return res.push(item);
+        const prev = res[at];
+
+        // if prev separates, this can be blank
+        if (prev.type === 'space' || prev.type === 'sep' || prev.type === 'smoosh') return res.push(item);
+
+        if (prev.type === 'id' && prev.text === '') {
+            if (prev === selection.node) {
+                // move to item
+                selection = { node: item as Node, cursor: item.type === 'id' ? { type: 'id', end: 0 } : { type: 'list', where: 'before' } };
+            }
+
+            res.splice(at, 1);
+            res.push(item);
+            return;
+        }
+
+        if (item.type === 'id' && item.text === '') {
+            if (item === selection.node) {
+                // move the selection to prev
+                selection = {
+                    node: prev,
+                    cursor: prev.type === 'id' ? { type: 'id', end: splitGraphemes(prev.text).length } : { type: 'list', where: 'after' },
+                };
+            }
+
+            return;
+        }
+
+        res.push(item);
+    });
+    return { items: res, selection };
+};
+
+export const collapseAdjacentIDs = (flat: Flat[], selection: NodeAndCursor) => {
+    const res: Flat[] = [];
+    flat.forEach((item) => {
+        if (!res.length || item.type !== 'id') {
+            res.push(item);
+            return;
+        }
+        let at = res.length - 1;
+        for (; at >= 0 && res[at].type === 'smoosh'; at--); // ignore intervening smooshes
+        const prev = res[at];
+        if (prev.type === 'id' && (prev.ccls == null || item.ccls == null || prev.ccls === item.ccls)) {
+            // mergerate
+            const base = prev.loc === -1 ? item : prev;
+            res[at] = { ...base, text: prev.text + item.text };
+
+            // Update selections
+            if (prev === selection.node) {
+                selection = { ...selection, node: res[at] as Id<number> };
+            } else if (item === selection.node && selection.type === 'id') {
+                selection = {
+                    type: 'id',
+                    node: res[at] as Id<number>,
+                    cursor: { ...selection.cursor, end: selection.cursor.end + splitGraphemes(prev.text).length },
+                };
+            }
+            return;
+        }
+
+        res.push(item);
+    });
+    return { items: res, selection };
 };
