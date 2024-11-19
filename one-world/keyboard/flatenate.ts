@@ -214,7 +214,7 @@ export const collapseAdjacentIds = (flat: Flat[], sel: Node, ncursor: Cursor): [
         }
         if (tojoin.length === 1) {
             const prev = res.length ? res[res.length - 1] : undefined;
-            if (node.text === '' && prev && prev.type !== 'sep' && prev.type !== 'space') {
+            if (node.text === '' && prev && prev.type !== 'sep' && prev.type !== 'space' && prev.type !== 'smoosh') {
                 if (sel === node) {
                     sel = prev;
                     ncursor = { type: 'list', where: 'after' };
@@ -313,7 +313,7 @@ export function addNeighborAfter(at: number, flat: Flat[], neighbor: Flat, sel: 
     } else if (neighbor.type === 'id') {
         flat.splice(at + 1, 0, (sel = neighbor));
         ncursor = { type: 'id', end: splitGraphemes(neighbor.text).length };
-    } else if (neighbor.type !== 'sep' && neighbor.type !== 'space') {
+    } else if (neighbor.type !== 'sep' && neighbor.type !== 'space' && neighbor.type !== 'smoosh') {
         flat.splice(at + 1, 0, (sel = neighbor));
         ncursor = { type: 'list', where: 'inside' };
     } else {
