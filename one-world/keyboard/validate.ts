@@ -81,7 +81,7 @@ export const validate = (state: TestState) => {
     try {
         validatePath(state.top, state.sel.start.path);
     } catch (err) {
-        console.log(state.sel.start.path);
+        console.log('path', state.sel.start.path);
         throw err;
     }
     validateNextLoc(state.top);

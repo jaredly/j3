@@ -2,9 +2,14 @@
 # Next ups
 
 - [x] wrap middle of ID
+- [x] select within an id
 - [ ] multiselect pleeease
 - [ ] wrap start of list or text or stuff
 - [ ] wrap multiselected stuff
+- [ ] jump to closer
+  - [x] from id
+  - [ ] from inside a list n stuff
+- [ ] lets get Text Embeds up and running pls
 
 
 #

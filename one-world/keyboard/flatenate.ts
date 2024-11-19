@@ -34,12 +34,23 @@ import { Cursor, ListCursor, Path, Top, Update, lastChild, parentPath, selStart 
 
 export const listKindForKeyKind = (kind: Kind): 0 | 1 | 2 => (kind === 'sep' ? OTHER : kind === 'space' ? SPACED : SMOOSH);
 
-export type Flat = Node | { type: 'space'; loc: number } | { type: 'sep'; loc: number };
+// TODO add like rsmoosh and lsmoosh, to track the locs of the smooshes
+export type Flat = Node | { type: 'space'; loc: number } | { type: 'smoosh'; loc: number } | { type: 'sep'; loc: number };
 
 type Rough = { type: 'rough'; children: (Rough | Node)[]; loc: number; kind: 'other' | 'spaced' | 'smooshed' };
 const nough = (kind: 'other' | 'spaced' | 'smooshed', children: Rough['children'] = []): Rough => ({ kind, children, loc: -1, type: 'rough' });
 
-const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], parent: FlatParent, sel: { node: Node; cursor: Cursor }) => {
+export const roughen = (
+    flat: Flat[],
+    top: Top,
+    nodes: Update['nodes'],
+    parent: FlatParent,
+    sel: { node: Node; cursor: Cursor },
+): {
+    root: number;
+    nextLoc: number;
+    selection: { children: number[]; cursor: Cursor };
+} => {
     let smooshed = nough('smooshed');
     let spaced = nough('spaced', [smooshed]);
     const other = nough('other', [spaced]);
@@ -64,7 +75,11 @@ const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], parent: FlatPar
             spaced.children.push(smooshed);
             if (item.loc !== -1) spaced.loc = item.loc;
         } else {
-            smooshed.children.push(item);
+            if (item.type === 'smoosh') {
+                smooshed.loc = item.loc;
+            } else {
+                smooshed.children.push(item);
+            }
         }
     });
 
@@ -122,7 +137,10 @@ const roughen = (flat: Flat[], top: Top, nodes: Update['nodes'], parent: FlatPar
 export const flatten = (node: Node, top: Top, remap: Nodes = {}, depth: number = 0): Flat[] => {
     if (node.type !== 'list') return [node];
     if (node.kind === 'smooshed') {
-        return node.children.map((id) => remap[id] ?? top.nodes[id]);
+        return interleave<Flat>(
+            node.children.map((id) => remap[id] ?? top.nodes[id]),
+            { type: 'smoosh', loc: node.loc },
+        );
     }
     if (node.kind === 'spaced') {
         return interleave(
