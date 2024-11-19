@@ -109,12 +109,11 @@ export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
 
 export const findPath = (root: number, nodes: Nodes, needle: number): number[] | null => {
     let found: number[] | null = null;
-    console.log('fp', nodes, root);
     const traverse = (loc: number, path: number[]) => {
         if (path.includes(loc)) throw new Error(`recursion??`);
         if (found != null) return;
         if (loc === needle) {
-            found = path;
+            found = path.concat([needle]);
             return;
         }
         const cpath = path.concat([loc]);

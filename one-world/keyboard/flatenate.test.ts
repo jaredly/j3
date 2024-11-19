@@ -3,7 +3,7 @@
 import { ListKind, Node, RecNodeT } from '../shared/cnodes';
 import { flatten } from './flatenate';
 import { rough } from './rough';
-import { asTop, id, idc, round, smoosh, spaced } from './test-utils';
+import { asTop, atPath, id, idc, round, selPath, smoosh, spaced } from './test-utils';
 import { root } from './root';
 import { lastChild } from './utils';
 import { shape } from '../shared/shape';
@@ -50,12 +50,12 @@ const check = (node: RecNodeT<boolean>, exp: RecNodeT<boolean>) => {
     const { top, sel } = asTop(node, idc(0));
     const n = top.nodes;
     const fl = flatten(n[top.root], top);
-    console.log(top.nodes, sel.start.path);
     const r = rough(fl, top, top.nodes[lastChild(sel.start.path)], top.root);
 
     const two = asTop(exp, idc(0));
-    console.log('ok', r.nodes, r.root);
+    // console.log('ok', r.nodes, r.root);
     expect(shape(root({ top: { ...top, nodes: { ...top.nodes, ...r.nodes }, root: r.root, nextLoc: r.nextLoc }, sel }))).toEqual(shape(root(two)));
+    expect(r.selPath).toEqual(atPath(r.root, { ...top, nodes: { ...top.nodes, ...r.nodes } }, selPath(exp)));
 };
 
 test('there and back again', () => {
@@ -69,6 +69,10 @@ test('there and back again', () => {
 test('there and back again space/smoosh', () => {
     hobbit(spaced([id('a', true), id('b')]));
     hobbit(smoosh([id('a', true), id('b')]));
+});
+
+test('all three levels', () => {
+    hobbit(round([id('z'), spaced([id('a', true), smoosh([id('b'), id('c')])])]));
 });
 
 test('there and back again space and smoosh', () => {
@@ -87,6 +91,10 @@ test('collapse single space/smoosh', () => {
     );
 });
 
-// test('there and back again', () => {
-//     hobbit(round([id('', true), id(''), spaced([id(''), smoosh([id('a'), id('+')])])]));
-// });
+test('collapse single space/smoosh', () => {
+    check(
+        round([spaced([smoosh([id('c', true)])]), id('a')]),
+        //
+        round([id('c', true), id('a')]),
+    );
+});
