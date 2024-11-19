@@ -6,7 +6,7 @@ import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { asTop, id, idc, lisp, listc, round, smoosh, text } from './test-utils';
+import { asTop, id, idc, js, lisp, listc, round, smoosh, spaced, text } from './test-utils';
 import { IdCursor } from './utils';
 
 const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.') => {
@@ -203,4 +203,17 @@ test('comment out', () => {
         smoosh([id(';'), id('hello')]),
         ';',
     );
+});
+
+test('close it up spaced', () => {
+    let state = asTop(id('i', true), idc(1));
+    state = applyUpdate(state, handleKey(state, 'f', js));
+    state = applyUpdate(state, handleKey(state, ' ', js));
+    check(state, spaced([id('if'), id('', true)]), idc(0));
+});
+
+test('after list', () => {
+    let state = asTop(round([id('')], true), listc('after'));
+    state = applyUpdate(state, handleKey(state, 'a', js));
+    check(state, smoosh([round([id('')]), id('a', true)]), idc(1));
 });

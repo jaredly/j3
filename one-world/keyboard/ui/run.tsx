@@ -153,6 +153,8 @@ const App = () => {
     const [state, setState] = useState(init);
 
     const cstate = useLatest(state);
+    // @ts-ignore
+    window.state = state;
 
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {

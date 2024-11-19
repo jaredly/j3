@@ -8,7 +8,7 @@ import { flatToUpdateNew, flatten } from './rough';
 import { Cursor, IdCursor, Path, Top, Update, lastChild, parentPath, selStart } from './utils';
 
 export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update => {
-    const current = top.nodes[lastChild(path)];
+    let current = top.nodes[lastChild(path)];
     if (current.type !== 'id') throw new Error('not id');
     const kind = textKind(grem, config);
 
@@ -35,6 +35,10 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     if (at === -1) throw new Error(`flatten didnt work I guess`);
 
     const nodes: Update['nodes'] = {};
+
+    if (current.type === 'id' && cursor.type === 'id' && cursor.text) {
+        current = nodes[current.loc] = { ...current, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : current.ccls };
+    }
 
     const split = cursorSplit(current.text, cursor);
 

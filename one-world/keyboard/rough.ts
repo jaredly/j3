@@ -142,6 +142,7 @@ export const findPath = (root: number, nodes: Nodes, needle: number): number[] |
             return;
         }
         const cpath = path.concat([loc]);
+        if (!nodes[loc]) return; // not in nodes
         childLocs(nodes[loc]).forEach((child) => traverse(child, cpath));
     };
     traverse(root, []);
@@ -238,18 +239,18 @@ export function flatToUpdateNew(
 
     const r = rough(two.items, top, two.selection.node, parent.isParent ? parent.node.loc : undefined);
     Object.assign(r.nodes, nodes);
-    Object.assign(nodes, r.nodes);
+    // Object.assign(nodes, r.nodes);
 
     let root = undefined;
     if (r.root !== parent.node.loc) {
         const up = replaceAt(parent.path.children.slice(0, -1), top, parent.node.loc, r.root);
         root = up.root;
-        Object.assign(nodes, up.nodes);
+        Object.assign(r.nodes, up.nodes);
     }
 
     return {
         root,
-        nodes,
+        nodes: r.nodes,
         nextLoc: r.nextLoc,
         selection: {
             start: selStart(pathWithChildren(parentPath(parent.path), ...r.selPath), two.selection.cursor),
