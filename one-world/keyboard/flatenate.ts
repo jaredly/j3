@@ -102,5 +102,9 @@ export function addNeighborBefore(at: number, flat: Flat[], neighbor: Flat, sel:
         sel = neighbor;
         ncursor = { type: 'id', end: splitGraphemes(neighbor.text).length };
     }
+    if (neighbor.type === 'text') {
+        sel = neighbor;
+        ncursor = { type: 'list', where: 'inside' };
+    }
     return { sel, ncursor };
 }

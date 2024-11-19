@@ -38,6 +38,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
 
     if (current.type === 'id' && cursor.type === 'id' && cursor.text) {
         current = nodes[current.loc] = { ...current, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : current.ccls };
+        flat[at] = current;
     }
 
     const split = cursorSplit(current.text, cursor);
