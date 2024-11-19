@@ -68,8 +68,6 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
         }
     }
 
-    // console.log('after', flat);
-    // return flatToUpdate(flat, top, nodes, parent ? { type: 'existing', ...parent } : { type: 'new', kind, current }, sel, ncursor, path);
     return flatToUpdateNew(
         flat,
         { node: sel, cursor: ncursor },

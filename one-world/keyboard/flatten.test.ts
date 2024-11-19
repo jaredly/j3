@@ -2,7 +2,6 @@ import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
-import { collapseAdjacentIds } from './flatenate';
 import { handleKey } from './handleKey';
 import { root } from './root';
 import { asTop, atPath, id, idc, js, listc, noText, round, selPath, smoosh, spaced, TestState, text } from './test-utils';
@@ -225,14 +224,4 @@ test('id one spaced end', () => {
     let state = asTop(spaced([id('one', true), id(''), id('two')]), idc(3));
     state = applyUpdate(state, handleKey(state, ' ', js)!);
     check(state, spaced([id('one'), id('', true), id('two')]), idc(0));
-});
-
-// MARK: Collapse adjacent
-
-test('collapse adjacent', () => {
-    const node = id('one', 10);
-    const [flat, sel, cursor] = collapseAdjacentIds([id('pre', 0), node, id('post', 1)], node, { type: 'id', end: 0 });
-    expect(flat).toHaveLength(1);
-    expect(flat[0]).toBe(sel);
-    expect(cursor).toEqual({ type: 'id', end: 3 });
 });

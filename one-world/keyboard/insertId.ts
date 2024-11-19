@@ -209,9 +209,6 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
             break;
     }
 
-    console.log('parent', parent);
-
-    // return flatToUpdate(flat, top, nodes, parent ? { type: 'existing', ...parent } : { type: 'new', kind, current }, sel, ncursor, path);
     return flatToUpdateNew(
         flat,
         { node: sel, cursor: ncursor },
@@ -219,48 +216,4 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
         nodes,
         top,
     );
-
-    // switch (kind) {
-    //     case 'space':
-    //         if (cursor.type === 'list') {
-    //             return splitSpacedList(top, path, cursor);
-    //         }
-    //     case 'sep':
-    //         throw new Error('yet not');
-    //     default:
-    //         if (cursor.type === 'list') {
-    //             return splitSmooshList(top, path, cursor, grem, kind === 'tight');
-    //         }
-    // }
-    // throw new Error('noa');
 };
-
-// grem is a single grapheme.
-// export const insertId = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update => {
-//     const current = top.nodes[lastChild(path)];
-//     if (current.type !== 'id') throw new Error('not id');
-//     const kind = textKind(grem, config);
-//     switch (kind) {
-//         case 'space':
-//             return splitSpacedId(top, path, cursor);
-//         case 'sep':
-//             throw new Error('not yurt');
-//         default:
-//             // Set the punctliness
-//             if (current.punct == null) {
-//                 return {
-//                     nodes: { [current.loc]: { ...current, punct: kind === 'tight', text: grem } },
-//                     selection: { start: selStart(path, { type: 'id', end: 1 }) },
-//                 };
-//             }
-//             if (current.punct === (kind === 'tight')) {
-//                 // Just update the selection
-//                 const chars = cursor.text?.slice() ?? splitGraphemes(current.text);
-//                 const { left, right } = cursorSides(cursor);
-//                 chars.splice(left, right - left, grem);
-//                 return { nodes: {}, selection: { start: selStart(path, { ...cursor, text: chars, end: left + 1 }) } };
-//             }
-//             // Split (punct is diff)
-//             return splitSmooshId(top, path, cursor, grem, kind === 'tight');
-//     }
-// };

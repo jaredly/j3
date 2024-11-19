@@ -1,7 +1,6 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { flatToUpdate } from './flatenate';
 import { goLeft, selectEnd } from './handleNav';
 import { textCursorSides } from './insertId';
 import { replaceAt } from './replaceAt';
@@ -41,14 +40,12 @@ const removeSelf = (state: TestState, current: { path: Path; node: Node }) => {
         if (at === -1) throw new Error('current not in parent');
         const sel = at === 0 ? items[0] : items[at - 1];
         const ncursor = simpleSide(sel, at === 0 ? 'start' : 'end');
-        return flatToUpdate(
+        return flatToUpdateNew(
             items,
-            state.top,
+            { node: sel, cursor: ncursor },
+            { isParent: true, node: pnode, path: parentPath(current.path) },
             { [current.node.loc]: null },
-            { type: 'existing', node: pnode, path: parentPath(current.path) },
-            sel,
-            ncursor,
-            current.path,
+            state.top,
         );
     }
     let nextLoc = state.top.nextLoc;
@@ -142,14 +139,12 @@ export const handleDelete = (state: TestState): Update | void => {
                     if (parent?.type === 'list' && parent.kind === 'smooshed') {
                         let node = state.top.nodes[lastChild(state.sel.start.path)] as Id<number>;
                         node = { ...node, text: '', ccls: undefined };
-                        return flatToUpdate(
+                        return flatToUpdateNew(
                             parent.children.map((loc) => (loc === node.loc ? node : state.top.nodes[loc])),
-                            state.top,
+                            { node, cursor: { type: 'id', end: 0 } },
+                            { isParent: true, node: parent, path: ppath },
                             {},
-                            { type: 'existing', node: parent, path: ppath },
-                            node,
-                            { type: 'id', end: 0 },
-                            state.sel.start.path,
+                            state.top,
                         );
                     }
                 }
