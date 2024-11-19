@@ -1,4 +1,14 @@
 
+# Next ups
+
+- [ ] wrap middle of ID
+- [ ] multiselect pleeease
+- [ ] wrap start of list or text or stuff
+- [ ] wrap multiselected stuff
+
+
+#
+
 I, had a thought.
 and it was, "what if I refactor some logic out of one term and break it into its own
 function.... and then in a separate ~branch I make a tweak to that logic that

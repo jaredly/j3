@@ -55,5 +55,5 @@ test('end of smoosh', () => {
 test('middle of an ID', () => {
     let state = asTop(id('hello', true), idc(2));
     state = applyUpdate(state, handleWrap(state, '('));
-    check(state, smoosh([id('he'), round([id('llo', true)])]), idc(0));
+    check(state, smoosh([id('he'), round([id('llo')], true)]), listc('before'));
 });

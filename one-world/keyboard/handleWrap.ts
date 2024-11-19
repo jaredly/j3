@@ -1,12 +1,12 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, List, ListKind, Node } from '../shared/cnodes';
+import { Id, List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { findParent, flatten, flatToUpdate } from './flatenate';
 import { handleIdKey } from './handleIdKey';
 import { Config, handleListKey, handleTextKey, handleTextText } from './insertId';
 import { replaceAt } from './replaceAt';
 import { TestState } from './test-utils';
-import { IdCursor, Path, Top, Update, getCurrent, parentPath, pathWithChildren, selStart } from './utils';
+import { Cursor, IdCursor, Path, Top, Update, getCurrent, parentPath, pathWithChildren, selStart } from './utils';
 
 export const wrapKind = (key: string): ListKind<number> | void => {
     switch (key) {
@@ -28,32 +28,58 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
     if (left === 0 && (right === 0 || right === text.length)) {
         return wrapNode(top, path, node, kind);
     }
-    // at end
-    if (left === text.length) {
-        let nextLoc = top.nextLoc;
-        const loc = nextLoc++;
-        const parent = findParent(0, parentPath(path), top);
-        const flat = parent ? flatten(parent.node, top) : [node];
-        const nlist: List<number> = { type: 'list', children: [], kind, loc };
-        const at = flat.indexOf(node);
-        if (at < flat.length - 1) {
-            const next = flat[at + 1];
-            if (next.type !== 'sep' && next.type !== 'space') {
-                return wrapNode(top, pathWithChildren(parentPath(path), next.loc), next, kind);
-            }
-        }
-        flat.splice(at + 1, 0, nlist);
+    const first = text.slice(0, left);
+    const right_ = right === left ? text.length : right;
+    const mid = text.slice(left, right_);
+    const end = text.slice(right_);
 
-        return flatToUpdate(
-            flat,
-            { ...top, nextLoc },
-            { [loc]: nlist },
-            parent ? { type: 'existing', ...parent } : { type: 'new', kind: 'string', current: node },
-            nlist,
-            { type: 'list', where: 'inside' },
-            path,
-        );
+    // at end
+    let nextLoc = top.nextLoc;
+    const loc = nextLoc++;
+    const parent = findParent(0, parentPath(path), top);
+    const flat = parent ? flatten(parent.node, top) : [node];
+    const nlist: List<number> = { type: 'list', children: [], kind, loc };
+    const nodes: Nodes = { [loc]: nlist };
+    let sel: Node = nlist;
+    let ncursor: Cursor = { type: 'list', where: 'inside' };
+    if (mid.length) {
+        const rid = nextLoc++;
+        nodes[rid] = { type: 'id', text: mid.join(''), loc: rid, ccls: node.ccls };
+        nlist.children.push(rid);
+        // sel = nodes[rid];
+        // ncursor = { type: 'id', end: 0 };
+        ncursor = { type: 'list', where: 'before' };
     }
+
+    if (left !== text.length) {
+        nodes[node.loc] = { ...node, text: first.join('') };
+    }
+
+    const at = flat.indexOf(node);
+    // If we're at the end of the ID but not the end of the smoosh, we wrap the next thing
+    if (at < flat.length - 1 && left === text.length) {
+        const next = flat[at + 1];
+        if (next.type !== 'sep' && next.type !== 'space') {
+            return wrapNode(top, pathWithChildren(parentPath(path), next.loc), next, kind);
+        }
+    }
+    flat.splice(at + 1, 0, nlist);
+
+    if (end.length) {
+        const eid = nextLoc++;
+        nodes[eid] = { type: 'id', text: end.join(''), loc: eid, ccls: node.ccls };
+        flat.splice(at + 2, 0, nodes[eid]);
+    }
+
+    return flatToUpdate(
+        flat,
+        { ...top, nextLoc },
+        nodes,
+        parent ? { type: 'existing', ...parent } : { type: 'new', kind: 'string', current: node },
+        sel,
+        ncursor,
+        path,
+    );
 };
 
 export const handleWrap = (state: TestState, key: string): Update | void => {
