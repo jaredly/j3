@@ -1,13 +1,13 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { flattenOld, flatToUpdate } from './flatenate';
-import { goLeft, navLeft, selectEnd } from './handleNav';
+import { flatToUpdate } from './flatenate';
+import { goLeft, selectEnd } from './handleNav';
 import { textCursorSides } from './insertId';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
 import { TestState } from './test-utils';
-import { Cursor, Path, Top, Update, getCurrent, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
+import { Cursor, getCurrent, lastChild, parentLoc, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
 export const joinParent = (path: Path, top: Top): void | { at: number; pnode: List<number>; parent: Path } => {
     const loc = lastChild(path);
@@ -104,7 +104,7 @@ const leftJoin = (state: TestState, cursor: Cursor) => {
         return res;
     }
 
-    return flatToUpdateNew(flat, { node, cursor }, { node: pnode, path: parent }, {}, state.top);
+    return flatToUpdateNew(flat, { node, cursor }, { isParent: true, node: pnode, path: parent }, {}, state.top);
 };
 
 export const handleDelete = (state: TestState): Update | void => {

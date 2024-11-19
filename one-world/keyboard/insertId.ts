@@ -1,7 +1,8 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Node, Nodes, Text } from '../shared/cnodes';
-import { addNeighborAfter, addNeighborBefore, findParent, Flat, flattenOld, flatToUpdate, listKindForKeyKind } from './flatenate';
+import { addNeighborAfter, addNeighborBefore, findParent, Flat, listKindForKeyKind } from './flatenate';
 import { justSel } from './handleNav';
+import { flatten, flatToUpdateNew } from './rough';
 // import { splitSmooshId, splitSpacedId } from './splitSmoosh';
 import { CollectionCursor, Cursor, lastChild, ListCursor, parentPath, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
 export type Config = { punct: string[]; space: string; sep: string };
@@ -179,9 +180,10 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     }
 
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
-    const flat = parent ? flattenOld(parent.node, top) : [current];
-    const at = flat.indexOf(current);
+    const flat = parent ? flatten(parent.node, top) : [current];
+    let at = flat.indexOf(current);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
+    // for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
 
     const nodes: Update['nodes'] = {};
     const neighbor: Flat =
@@ -207,7 +209,16 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
             break;
     }
 
-    return flatToUpdate(flat, top, nodes, parent ? { type: 'existing', ...parent } : { type: 'new', kind, current }, sel, ncursor, path);
+    console.log('parent', parent);
+
+    // return flatToUpdate(flat, top, nodes, parent ? { type: 'existing', ...parent } : { type: 'new', kind, current }, sel, ncursor, path);
+    return flatToUpdateNew(
+        flat,
+        { node: sel, cursor: ncursor },
+        { isParent: parent != null, node: parent?.node ?? current, path: parent?.path ?? path },
+        nodes,
+        top,
+    );
 
     // switch (kind) {
     //     case 'space':

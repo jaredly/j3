@@ -134,24 +134,6 @@ export const roughen = (
     return { root: handle(other, []), nextLoc, selection: { children: selPath, cursor: sel.cursor } };
 };
 
-export const flattenOld = (node: Node, top: Top, remap: Nodes = {}, depth: number = 0): Flat[] => {
-    if (node.type !== 'list') return [node];
-    if (node.kind === 'smooshed') {
-        return node.children.map((id) => remap[id] ?? top.nodes[id]);
-    }
-    if (node.kind === 'spaced') {
-        return interleave(
-            node.children.map((id) => flattenOld(remap[id] ?? top.nodes[id], top, remap, depth + 1)),
-            [{ type: 'space', loc: node.loc }],
-        ).flat();
-    }
-    if (depth > 0) return [node]; // dont flatten nested lists
-    return interleave(
-        node.children.map((id) => flattenOld(remap[id] ?? top.nodes[id], top, remap, depth + 1)),
-        [{ type: 'sep', loc: node.loc }],
-    ).flat();
-};
-
 /*
 kind:
 - tight / id / string

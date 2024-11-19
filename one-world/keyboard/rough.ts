@@ -229,19 +229,14 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
 export function flatToUpdateNew(
     flat: Flat[],
     selection: { node: Node; cursor: Cursor },
-    parent: { node: Node; path: Path },
+    parent: { isParent: boolean; node: Node; path: Path },
     nodes: Update['nodes'],
     top: Top,
 ) {
     const one = pruneEmptyIds(flat, selection);
     const two = collapseAdjacentIDs(one.items, one.selection);
 
-    const r = rough(
-        two.items,
-        top,
-        two.selection.node,
-        parent.node.type === 'list' && parent.node.kind !== 'smooshed' && parent.node.kind !== 'spaced' ? parent.node.loc : undefined,
-    );
+    const r = rough(two.items, top, two.selection.node, parent.isParent ? parent.node.loc : undefined);
     Object.assign(r.nodes, nodes);
     Object.assign(nodes, r.nodes);
 

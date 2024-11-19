@@ -1,13 +1,13 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { findParent, flattenOld, flatToUpdate } from './flatenate';
-import { handleIdKey } from './handleIdKey';
+import { findParent } from './flatenate';
 import { justSel } from './handleNav';
-import { Config, handleListKey, handleTextKey, handleTextText } from './insertId';
+import { handleTextText } from './insertId';
 import { replaceAt } from './replaceAt';
+import { flatten, flatToUpdateNew } from './rough';
 import { TestState } from './test-utils';
-import { Cursor, IdCursor, Path, Top, Update, getCurrent, parentPath, pathWithChildren, selStart } from './utils';
+import { Cursor, getCurrent, IdCursor, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
 export const wrapKind = (key: string): ListKind<number> | void => {
     switch (key) {
@@ -51,7 +51,7 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
     let nextLoc = top.nextLoc;
     const loc = nextLoc++;
     const parent = findParent(0, parentPath(path), top);
-    const flat = parent ? flattenOld(parent.node, top) : [node];
+    const flat = parent ? flatten(parent.node, top) : [node];
     const nlist: List<number> = { type: 'list', children: [], kind, loc };
     const nodes: Nodes = { [loc]: nlist };
     let sel: Node = nlist;
@@ -74,7 +74,9 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
         nodes[node.loc] = { ...node, text: first.join('') };
     }
 
-    const at = flat.indexOf(node);
+    let at = flat.indexOf(node);
+    for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
+
     // If we're at the end of the ID but not the end of the smoosh, we wrap the next thing
     if (at < flat.length - 1 && left === text.length) {
         const next = flat[at + 1];
@@ -94,14 +96,15 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
         flat.splice(at, 1);
     }
 
-    return flatToUpdate(
+    return flatToUpdateNew(
         flat,
-        { ...top, nextLoc },
+        { node: sel, cursor: ncursor },
+        { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
         nodes,
-        parent ? { type: 'existing', ...parent } : { type: 'new', kind: 'string', current: node },
-        sel,
-        ncursor,
-        path,
+        {
+            ...top,
+            nextLoc,
+        },
     );
 };
 

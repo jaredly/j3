@@ -2,11 +2,10 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Node } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { cursorSplit } from './cursorSplit';
-import { findParent, listKindForKeyKind, flattenOld, Flat, addNeighborBefore, addNeighborAfter, flatToUpdate } from './flatenate';
-import { flatToUpdateNew } from './rough';
+import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
 import { Config, textKind } from './insertId';
-import { flatten } from './rough';
-import { Top, Path, IdCursor, Update, lastChild, selStart, parentPath, Cursor } from './utils';
+import { flatToUpdateNew, flatten } from './rough';
+import { Cursor, IdCursor, Path, Top, Update, lastChild, parentPath, selStart } from './utils';
 
 export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update => {
     const current = top.nodes[lastChild(path)];
@@ -71,5 +70,11 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
 
     // console.log('after', flat);
     // return flatToUpdate(flat, top, nodes, parent ? { type: 'existing', ...parent } : { type: 'new', kind, current }, sel, ncursor, path);
-    return flatToUpdateNew(flat, { node: sel, cursor: ncursor }, { node: parent?.node ?? current, path: parent?.path ?? path }, nodes, top);
+    return flatToUpdateNew(
+        flat,
+        { node: sel, cursor: ncursor },
+        { isParent: parent != null, node: parent?.node ?? current, path: parent?.path ?? path },
+        nodes,
+        top,
+    );
 };
