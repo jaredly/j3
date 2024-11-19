@@ -184,3 +184,9 @@ test('space is weird', () => {
     state = applyUpdate(state, handleDelete(state));
     check(state, round([id('a', true)]), idc(1));
 });
+
+test('del two', () => {
+    let state = asTop(round([id(''), id('', true)]), idc(0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([id('', true)]), idc(0));
+});
