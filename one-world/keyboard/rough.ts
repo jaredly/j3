@@ -1,6 +1,28 @@
 import { Nodes, List, childLocs, Node } from '../shared/cnodes';
 import { Flat } from './flatenate';
+import { interleave } from './interleave';
 import { Top } from './utils';
+
+export const flatten = (node: Node, top: Top, remap: Nodes = {}, depth: number = 0): Flat[] => {
+    if (node.type !== 'list') return [node];
+    if (node.kind === 'smooshed') {
+        return interleave<Flat>(
+            node.children.map((id) => remap[id] ?? top.nodes[id]),
+            { type: 'smoosh', loc: node.loc },
+        );
+    }
+    if (node.kind === 'spaced') {
+        return interleave(
+            node.children.map((id) => flatten(remap[id] ?? top.nodes[id], top, remap, depth + 1)),
+            [{ type: 'space', loc: node.loc }],
+        ).flat();
+    }
+    if (depth > 0) return [node]; // dont flatten nested lists
+    return interleave(
+        node.children.map((id) => flatten(remap[id] ?? top.nodes[id], top, remap, depth + 1)),
+        [{ type: 'sep', loc: node.loc }],
+    ).flat();
+};
 
 export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
     const nodes: Nodes = {};

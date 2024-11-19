@@ -137,10 +137,7 @@ export const roughen = (
 export const flatten = (node: Node, top: Top, remap: Nodes = {}, depth: number = 0): Flat[] => {
     if (node.type !== 'list') return [node];
     if (node.kind === 'smooshed') {
-        return interleave<Flat>(
-            node.children.map((id) => remap[id] ?? top.nodes[id]),
-            { type: 'smoosh', loc: node.loc },
-        );
+        return node.children.map((id) => remap[id] ?? top.nodes[id]);
     }
     if (node.kind === 'spaced') {
         return interleave(

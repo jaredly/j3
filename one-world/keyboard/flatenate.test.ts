@@ -1,8 +1,7 @@
 // Roughen
 
 import { ListKind, Node, RecNodeT } from '../shared/cnodes';
-import { flatten } from './flatenate';
-import { rough } from './rough';
+import { rough, flatten } from './rough';
 import { asTop, atPath, id, idc, round, selPath, smoosh, spaced } from './test-utils';
 import { root } from './root';
 import { lastChild } from './utils';
