@@ -2,7 +2,8 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { childLocs, Id, Node, Nodes } from '../shared/cnodes';
 import { Flat } from './flatenate';
 import { interleave } from './interleave';
-import { Cursor, IdCursor, ListCursor, Top } from './utils';
+import { replaceAt } from './replaceAt';
+import { Cursor, IdCursor, ListCursor, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
 export const flatten = (node: Node, top: Top, remap: Nodes = {}, depth: number = 0): Flat[] => {
     if (node.type !== 'list') return [node];
@@ -45,6 +46,7 @@ export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
                     loc = flat[i].loc;
                     continue;
                 }
+                if (flat[i].type === 'smoosh') continue;
                 const node = flat[i] as Node;
                 if (node.loc === -1) {
                     let nloc = nextLoc++;
@@ -133,7 +135,7 @@ export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
 export const findPath = (root: number, nodes: Nodes, needle: number): number[] | null => {
     let found: number[] | null = null;
     const traverse = (loc: number, path: number[]) => {
-        if (path.includes(loc)) throw new Error(`recursion??`);
+        if (path.includes(loc)) throw new Error(`recursion?? ${loc} ${path}`);
         if (found != null) return;
         if (loc === needle) {
             found = path.concat([needle]);
@@ -223,3 +225,39 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
     });
     return { items: res, selection };
 };
+
+export function flatToUpdateNew(
+    flat: Flat[],
+    selection: { node: Node; cursor: Cursor },
+    parent: { node: Node; path: Path },
+    nodes: Update['nodes'],
+    top: Top,
+) {
+    const one = pruneEmptyIds(flat, selection);
+    const two = collapseAdjacentIDs(one.items, one.selection);
+
+    const r = rough(
+        two.items,
+        top,
+        two.selection.node,
+        parent.node.type === 'list' && parent.node.kind !== 'smooshed' && parent.node.kind !== 'spaced' ? parent.node.loc : undefined,
+    );
+    Object.assign(r.nodes, nodes);
+    Object.assign(nodes, r.nodes);
+
+    let root = undefined;
+    if (r.root !== parent.node.loc) {
+        const up = replaceAt(parent.path.children.slice(0, -1), top, parent.node.loc, r.root);
+        root = up.root;
+        Object.assign(nodes, up.nodes);
+    }
+
+    return {
+        root,
+        nodes,
+        nextLoc: r.nextLoc,
+        selection: {
+            start: selStart(pathWithChildren(parentPath(parent.path), ...r.selPath), two.selection.cursor),
+        },
+    };
+}

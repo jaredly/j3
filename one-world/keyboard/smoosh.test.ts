@@ -13,7 +13,7 @@ const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown
     let state = asTop(init, cursor);
     const up = handleKey(state, text, lisp);
     state = applyUpdate(state, up);
-    expect(shape(out)).toEqual(shape(fromMap(state.top.root, state.top.nodes, () => 0)));
+    expect(shape(fromMap(state.top.root, state.top.nodes, () => 0))).toEqual(shape(out));
 };
 
 // MARK: Text smooshed

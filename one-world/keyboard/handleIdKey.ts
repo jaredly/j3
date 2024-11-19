@@ -3,7 +3,9 @@ import { Node } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { cursorSplit } from './cursorSplit';
 import { findParent, listKindForKeyKind, flattenOld, Flat, addNeighborBefore, addNeighborAfter, flatToUpdate } from './flatenate';
+import { flatToUpdateNew } from './rough';
 import { Config, textKind } from './insertId';
+import { flatten } from './rough';
 import { Top, Path, IdCursor, Update, lastChild, selStart, parentPath, Cursor } from './utils';
 
 export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update => {
@@ -29,7 +31,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     }
 
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
-    const flat = parent ? flattenOld(parent.node, top) : [current];
+    const flat = parent ? flatten(parent.node, top) : [current];
     const at = flat.indexOf(current);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
 
@@ -68,5 +70,6 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     }
 
     // console.log('after', flat);
-    return flatToUpdate(flat, top, nodes, parent ? { type: 'existing', ...parent } : { type: 'new', kind, current }, sel, ncursor, path);
+    // return flatToUpdate(flat, top, nodes, parent ? { type: 'existing', ...parent } : { type: 'new', kind, current }, sel, ncursor, path);
+    return flatToUpdateNew(flat, { node: sel, cursor: ncursor }, { node: parent?.node ?? current, path: parent?.path ?? path }, nodes, top);
 };

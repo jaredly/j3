@@ -5,7 +5,7 @@ import { flattenOld, flatToUpdate } from './flatenate';
 import { goLeft, navLeft, selectEnd } from './handleNav';
 import { textCursorSides } from './insertId';
 import { replaceAt } from './replaceAt';
-import { collapseAdjacentIDs, flatten, pruneEmptyIds, rough } from './rough';
+import { flatten, flatToUpdateNew } from './rough';
 import { TestState } from './test-utils';
 import { Cursor, Path, Top, Update, getCurrent, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 
@@ -104,27 +104,7 @@ const leftJoin = (state: TestState, cursor: Cursor) => {
         return res;
     }
 
-    const one = pruneEmptyIds(flat, { node, cursor });
-    const two = collapseAdjacentIDs(one.items, one.selection);
-
-    const r = rough(two.items, state.top, two.selection.node, pnode.loc);
-
-    let root = undefined;
-    if (r.root !== pnode.loc) {
-        const up = replaceAt(parent.children.slice(0, -1), state.top, pnode.loc, r.root);
-        root = up.root;
-        Object.assign(r.nodes, up.nodes);
-    }
-
-    return {
-        root,
-        nodes: r.nodes,
-        nextLoc: r.nextLoc,
-        selection: {
-            start: selStart(pathWithChildren(parentPath(parent), ...r.selPath), two.selection.cursor),
-        },
-    };
-    // return flatToUpdate(flat, state.top, {}, { type: 'existing', node: pnode, path: parent }, node, cursor, state.sel.start.path);
+    return flatToUpdateNew(flat, { node, cursor }, { node: pnode, path: parent }, {}, state.top);
 };
 
 export const handleDelete = (state: TestState): Update | void => {
