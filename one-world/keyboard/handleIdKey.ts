@@ -2,7 +2,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Node } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { cursorSplit } from './cursorSplit';
-import { findParent, listKindForKeyKind, flatten, Flat, addNeighborBefore, addNeighborAfter, flatToUpdate } from './flatenate';
+import { findParent, listKindForKeyKind, flattenOld, Flat, addNeighborBefore, addNeighborAfter, flatToUpdate } from './flatenate';
 import { Config, textKind } from './insertId';
 import { Top, Path, IdCursor, Update, lastChild, selStart, parentPath, Cursor } from './utils';
 
@@ -29,7 +29,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     }
 
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
-    const flat = parent ? flatten(parent.node, top) : [current];
+    const flat = parent ? flattenOld(parent.node, top) : [current];
     const at = flat.indexOf(current);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
 

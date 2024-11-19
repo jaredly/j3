@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Nodes, List, childLocs, Node, Id } from '../shared/cnodes';
+import { childLocs, Id, Node, Nodes } from '../shared/cnodes';
 import { Flat } from './flatenate';
 import { interleave } from './interleave';
 import { Cursor, IdCursor, ListCursor, Top } from './utils';
@@ -146,7 +146,7 @@ export const findPath = (root: number, nodes: Nodes, needle: number): number[] |
     return found;
 };
 
-export type NodeAndCursor = { type: 'id'; node: Id<number>; cursor: IdCursor } | { type: 'other'; node: Node; cursor: ListCursor };
+export type NodeAndCursor = { node: Node; cursor: Cursor };
 
 // Removes empty strings from smooshes
 export const pruneEmptyIds = (flat: Flat[], selection: { node: Node; cursor: Cursor }) => {
@@ -192,7 +192,7 @@ export const pruneEmptyIds = (flat: Flat[], selection: { node: Node; cursor: Cur
     return { items: res, selection };
 };
 
-export const collapseAdjacentIDs = (flat: Flat[], selection: NodeAndCursor) => {
+export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; cursor: Cursor }) => {
     const res: Flat[] = [];
     flat.forEach((item) => {
         if (!res.length || item.type !== 'id') {
@@ -210,9 +210,8 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: NodeAndCursor) => {
             // Update selections
             if (prev === selection.node) {
                 selection = { ...selection, node: res[at] as Id<number> };
-            } else if (item === selection.node && selection.type === 'id') {
+            } else if (item === selection.node && selection.cursor.type === 'id') {
                 selection = {
-                    type: 'id',
                     node: res[at] as Id<number>,
                     cursor: { ...selection.cursor, end: selection.cursor.end + splitGraphemes(prev.text).length },
                 };

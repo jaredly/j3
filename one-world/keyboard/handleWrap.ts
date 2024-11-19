@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { findParent, flatten, flatToUpdate } from './flatenate';
+import { findParent, flattenOld, flatToUpdate } from './flatenate';
 import { handleIdKey } from './handleIdKey';
 import { justSel } from './handleNav';
 import { Config, handleListKey, handleTextKey, handleTextText } from './insertId';
@@ -51,7 +51,7 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
     let nextLoc = top.nextLoc;
     const loc = nextLoc++;
     const parent = findParent(0, parentPath(path), top);
-    const flat = parent ? flatten(parent.node, top) : [node];
+    const flat = parent ? flattenOld(parent.node, top) : [node];
     const nlist: List<number> = { type: 'list', children: [], kind, loc };
     const nodes: Nodes = { [loc]: nlist };
     let sel: Node = nlist;
@@ -78,7 +78,7 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
     // If we're at the end of the ID but not the end of the smoosh, we wrap the next thing
     if (at < flat.length - 1 && left === text.length) {
         const next = flat[at + 1];
-        if (next.type !== 'sep' && next.type !== 'space') {
+        if (next.type !== 'sep' && next.type !== 'space' && next.type !== 'smoosh') {
             return wrapNode(top, pathWithChildren(parentPath(path), next.loc), next, kind);
         }
     }

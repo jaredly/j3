@@ -1,10 +1,11 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { flatten, flatToUpdate } from './flatenate';
+import { flattenOld, flatToUpdate } from './flatenate';
 import { goLeft, navLeft, selectEnd } from './handleNav';
 import { textCursorSides } from './insertId';
 import { replaceAt } from './replaceAt';
+import { collapseAdjacentIDs, flatten, pruneEmptyIds, rough } from './rough';
 import { TestState } from './test-utils';
 import { Cursor, Path, Top, Update, getCurrent, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 
@@ -86,10 +87,11 @@ const leftJoin = (state: TestState, cursor: Cursor) => {
         // Select the '(' opener
         return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
     }
-    const flat = flatten(pnode, state.top, remap);
-    const fat = flat.indexOf(node);
+    let flat = flatten(pnode, state.top, remap);
+    let fat = flat.indexOf(node);
     if (fat === -1) throw new Error(`node not in flattened`);
     if (fat === 0) throw new Error(`node first in flat, should have been handled`);
+    for (; fat > 0 && flat[fat - 1].type === 'smoosh'; fat--);
     const prev = flat[fat - 1];
     if (prev.type === 'space' || prev.type === 'sep') {
         flat.splice(fat - 1, 1);
@@ -102,7 +104,27 @@ const leftJoin = (state: TestState, cursor: Cursor) => {
         return res;
     }
 
-    return flatToUpdate(flat, state.top, {}, { type: 'existing', node: pnode, path: parent }, node, cursor, state.sel.start.path);
+    const one = pruneEmptyIds(flat, { node, cursor });
+    const two = collapseAdjacentIDs(one.items, one.selection);
+
+    const r = rough(two.items, state.top, two.selection.node, pnode.loc);
+
+    let root = undefined;
+    if (r.root !== pnode.loc) {
+        const up = replaceAt(parent.children.slice(0, -1), state.top, pnode.loc, r.root);
+        root = up.root;
+        Object.assign(r.nodes, up.nodes);
+    }
+
+    return {
+        root,
+        nodes: r.nodes,
+        nextLoc: r.nextLoc,
+        selection: {
+            start: selStart(pathWithChildren(parentPath(parent), ...r.selPath), two.selection.cursor),
+        },
+    };
+    // return flatToUpdate(flat, state.top, {}, { type: 'existing', node: pnode, path: parent }, node, cursor, state.sel.start.path);
 };
 
 export const handleDelete = (state: TestState): Update | void => {

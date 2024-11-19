@@ -1,6 +1,6 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Node, Nodes, Text } from '../shared/cnodes';
-import { addNeighborAfter, addNeighborBefore, findParent, Flat, flatten, flatToUpdate, listKindForKeyKind } from './flatenate';
+import { addNeighborAfter, addNeighborBefore, findParent, Flat, flattenOld, flatToUpdate, listKindForKeyKind } from './flatenate';
 import { justSel } from './handleNav';
 // import { splitSmooshId, splitSpacedId } from './splitSmoosh';
 import { CollectionCursor, Cursor, lastChild, ListCursor, parentPath, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
@@ -179,7 +179,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     }
 
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
-    const flat = parent ? flatten(parent.node, top) : [current];
+    const flat = parent ? flattenOld(parent.node, top) : [current];
     const at = flat.indexOf(current);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
 

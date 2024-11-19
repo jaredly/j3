@@ -100,20 +100,20 @@ test('collapse single space/smoosh', () => {
 
 test('collapse adjacent noop', () => {
     const hi = id('hi', 1);
-    const sel: NodeAndCursor = { type: 'id', node: hi, cursor: idc(0) };
+    const sel: NodeAndCursor = { node: hi, cursor: idc(0) };
     expect(collapseAdjacentIDs([hi], sel)).toEqual({ items: [hi], selection: sel });
 });
 
 test('collapse adjacent two', () => {
     const hi = id('hi', 1);
-    const sel: NodeAndCursor = { type: 'id', node: hi, cursor: idc(0) };
+    const sel: NodeAndCursor = { node: hi, cursor: idc(0) };
     const hiho = id('hiho', 1);
     expect(collapseAdjacentIDs([hi, id('ho', -1)], sel)).toEqual({ items: [hiho], selection: { ...sel, node: hiho } });
 });
 
 test('collapse adjacent across smush', () => {
     const hi = id('hi', 1);
-    const sel: NodeAndCursor = { type: 'id', node: hi, cursor: idc(0) };
+    const sel: NodeAndCursor = { node: hi, cursor: idc(0) };
     const hiho = id('hiho', 1);
     expect(collapseAdjacentIDs([hi, { type: 'smoosh', loc: -1 }, id('ho', -1)], sel)).toEqual({
         items: [hiho, { type: 'smoosh', loc: -1 }],
@@ -123,11 +123,11 @@ test('collapse adjacent across smush', () => {
 
 test('collapse adjacent after ', () => {
     const hi = id('hi', 1);
-    const sel: NodeAndCursor = { type: 'id', node: hi, cursor: idc(0) };
+    const sel: NodeAndCursor = { node: hi, cursor: idc(0) };
     const hiho = id('hohi', 1);
     expect(collapseAdjacentIDs([id('ho', -1), hi], sel)).toEqual({
         items: [hiho],
-        selection: { type: 'id', cursor: idc(2), node: hiho },
+        selection: { cursor: idc(2), node: hiho },
     });
 });
 
@@ -135,11 +135,11 @@ const fround = (children: number[], loc = -1): Node => ({ type: 'list', kind: 'r
 
 test('collapse adjacent after ', () => {
     const hi = id('hi', 1);
-    const sel: NodeAndCursor = { type: 'id', node: hi, cursor: idc(0) };
+    const sel: NodeAndCursor = { node: hi, cursor: idc(0) };
     const hiho = id('hohi', 1);
     expect(collapseAdjacentIDs([id('ho', -1), hi, fround([]), id('a')], sel)).toEqual({
         items: [hiho, fround([]), id('a')],
-        selection: { type: 'id', cursor: idc(2), node: hiho },
+        selection: { cursor: idc(2), node: hiho },
     });
 });
 
@@ -191,3 +191,7 @@ test('dont prune sel with space', () => {
         selection: { node: hi, cursor: idc(0) },
     });
 });
+
+// MARK: thingssss
+
+test('ok folks', () => {});

@@ -179,8 +179,8 @@ test('empty id in list - smoosh  fix', () => {
     check(state, id('hi', true), idc(0));
 });
 
-// test('space is weird', () => {
-//     let state = asTop(round([id('a'), id('', true)]), idc(0));
-//     state = applyUpdate(state, handleDelete(state));
-//     check(state, round([id('a', true)]), idc(1));
-// });
+test('space is weird', () => {
+    let state = asTop(round([id('a'), id('', true)]), idc(0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([id('a', true)]), idc(1));
+});
