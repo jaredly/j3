@@ -16,7 +16,8 @@ import { root } from '../root';
 import { shape } from '../../shared/shape';
 import { handleNav } from '../handleNav';
 import { textCursorSides } from '../insertId';
-import { handleWrap, wrapKind } from '../handleWrap';
+import { closerKind, handleClose, handleWrap, wrapKind } from '../handleWrap';
+import { handleShiftNav } from '../handleShiftNav';
 export {};
 
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
@@ -159,12 +160,15 @@ const App = () => {
                 const up = handleDelete(cstate.current);
                 setState(applyUpdate(cstate.current, up));
             } else if (evt.key === 'ArrowLeft' || evt.key === 'ArrowRight') {
-                const up = handleNav(evt.key, cstate.current);
+                const up = evt.shiftKey ? handleShiftNav(cstate.current, evt.key) : handleNav(evt.key, cstate.current);
                 setState(applyUpdate(cstate.current, up));
             } else if (splitGraphemes(evt.key).length > 1) {
                 console.log('ignoring', evt.key);
             } else if (wrapKind(evt.key)) {
                 setState(applyUpdate(cstate.current, handleWrap(cstate.current, evt.key)));
+            } else if (closerKind(evt.key)) {
+                console.log('close pls');
+                setState(applyUpdate(cstate.current, handleClose(cstate.current, evt.key)));
             } else {
                 setState(applyUpdate(cstate.current, handleKey(cstate.current, evt.key, js)));
             }

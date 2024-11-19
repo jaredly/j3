@@ -1,8 +1,8 @@
 import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleKey } from './handleKey';
-import { handleWrap } from './handleWrap';
-import { asTop, curly, id, idc, listc, round, smoosh, square, text, textc } from './test-utils';
+import { handleClose, handleWrap } from './handleWrap';
+import { asTop, curly, id, idc, listc, round, smoosh, spaced, square, text, textc } from './test-utils';
 
 test('round', () => {
     let state = asTop(id('', true), idc(0));
@@ -34,6 +34,12 @@ test('start of id', () => {
     check(state, round([id('hi', true)]), idc(0));
 });
 
+test('start of id shift', () => {
+    let state = asTop(id('hillo', true), idc(0, 2));
+    state = applyUpdate(state, handleWrap(state, '('));
+    check(state, smoosh([round([id('hi')], true), id('llo')]), listc('before'));
+});
+
 test('after id', () => {
     let state = asTop(id('hi', true), idc(2));
     state = applyUpdate(state, handleWrap(state, '('));
@@ -57,3 +63,20 @@ test('middle of an ID', () => {
     state = applyUpdate(state, handleWrap(state, '('));
     check(state, smoosh([id('he'), round([id('llo')], true)]), listc('before'));
 });
+
+test('close it up', () => {
+    let state = asTop(round([id('hello', true)]), idc(2));
+    state = applyUpdate(state, handleClose(state, ')'));
+    check(state, round([id('hello')], true), listc('after'));
+});
+test('close it up spaced', () => {
+    let state = asTop(round([spaced([id('hello', true), id('lol')])]), idc(2));
+    state = applyUpdate(state, handleClose(state, ')'));
+    check(state, round([spaced([id('hello'), id('lol')])], true), listc('after'));
+});
+
+// test('middle of an ID', () => {
+//     let state = asTop(id('hello', true), idc(2));
+//     state = applyUpdate(state, handleWrap(state, '('));
+//     check(state, smoosh([id('he'), round([id('llo')], true)]), listc('before'));
+// });

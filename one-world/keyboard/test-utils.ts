@@ -108,7 +108,7 @@ const allkeys = '1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM~
 const idkeys = (config: Config) => [...allkeys].filter((k) => !config.punct.includes(k) && !config.space.includes(k) && !config.sep.includes(k));
 const lispId = idkeys(lisp);
 const jsId = idkeys(js);
-export const idc = (end: number): IdCursor => ({ type: 'id', end });
+export const idc = (end: number, start?: number): IdCursor => ({ type: 'id', end, start });
 export const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
 export const noText = (cursor: Cursor): Cursor =>
     cursor.type === 'id' ? { ...cursor, text: undefined } : cursor.type === 'text' ? { ...cursor, end: { ...cursor.end, text: undefined } } : cursor;

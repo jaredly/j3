@@ -1,7 +1,7 @@
 
 # Next ups
 
-- [ ] wrap middle of ID
+- [x] wrap middle of ID
 - [ ] multiselect pleeease
 - [ ] wrap start of list or text or stuff
 - [ ] wrap multiselected stuff

@@ -24,7 +24,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
             const chars = cursor.text?.slice() ?? splitGraphemes(current.text);
             const { left, right } = cursorSides(cursor);
             chars.splice(left, right - left, grem);
-            return { nodes: {}, selection: { start: selStart(path, { ...cursor, text: chars, end: left + 1 }) } };
+            return { nodes: {}, selection: { start: selStart(path, { ...cursor, start: undefined, text: chars, end: left + 1 }) } };
         }
     }
 
@@ -48,7 +48,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
             : { type: 'id', text: grem, loc: -1, ccls: kind };
 
     let sel: Node = current;
-    let ncursor: Cursor = cursor;
+    let ncursor: Cursor = { ...cursor, start: undefined };
 
     switch (split.type) {
         case 'before': {
