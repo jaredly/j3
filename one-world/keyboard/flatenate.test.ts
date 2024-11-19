@@ -1,9 +1,12 @@
 // Roughen
 
-import { List, ListKind, Node, Nodes } from '../shared/cnodes';
-import { Flat, flatten } from './flatenate';
+import { ListKind, Node, RecNodeT } from '../shared/cnodes';
+import { flatten } from './flatenate';
+import { rough } from './rough';
 import { asTop, id, idc, round, smoosh, spaced } from './test-utils';
-import { Top } from './utils';
+import { root } from './root';
+import { lastChild } from './utils';
+import { shape } from '../shared/shape';
 
 // First, we flat
 
@@ -35,87 +38,55 @@ test('all three levels', () => {
     ]);
 });
 
-type FNode = Omit<List<number>, 'type' | 'children'> & { type: 'flist'; children: (Node | FNode)[] };
-
-const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
-    const nodes: Nodes = {};
-    let nextLoc = top.nextLoc;
-
-    let sloc: number | null = null;
-
-    const other: number[] = [];
-    for (let i = 0; i < flat.length; i++) {
-        const children: number[] = [];
-        let ploc = -1;
-
-        for (; i < flat.length && flat[i].type !== 'sep'; i++) {
-            const schildren: number[] = [];
-            let loc = -1;
-
-            for (; i < flat.length && flat[i].type !== 'space' && flat[i].type !== 'sep'; i++) {
-                if (loc === -1 && flat[i].type === 'smoosh' && !nodes[flat[i].loc]) {
-                    loc = flat[i].loc;
-                    continue;
-                }
-                const node = flat[i] as Node;
-                if (node.loc === -1) {
-                    let nloc = nextLoc++;
-                    nodes[nloc] = { ...node, loc: nloc };
-                    schildren.push(nloc);
-                    if (node === sel) {
-                        sloc = nloc;
-                    }
-                } else {
-                    nodes[node.loc] = node;
-                    schildren.push(node.loc);
-                    if (node === sel) {
-                        sloc = node.loc;
-                    }
-                }
-            }
-
-            if (loc === -1) {
-                loc = nextLoc++;
-                nodes[loc] = { type: 'list', kind: 'smooshed', loc, children: schildren };
-            } else {
-                const parent = top.nodes[loc];
-                if (parent.type !== 'list' || parent.kind !== 'smooshed') throw new Error(`not smoshed ${loc}`);
-                nodes[loc] = { ...parent, children: schildren };
-            }
-            children.push(loc);
-
-            // it's a space, and the loc hasnt been used yet
-            if (ploc === -1 && i < flat.length && flat[i].type === 'space' && !nodes[flat[i].loc]) {
-                ploc = flat[i].loc;
-            }
-
-            if (i < flat.length && flat[i].type === 'sep') break;
-        }
-
-        if (ploc === -1) {
-            const loc = nextLoc++;
-            nodes[loc] = { type: 'list', kind: 'spaced', loc, children };
-            other.push(loc);
-        } else {
-            const node = top.nodes[ploc];
-            if (node.type !== 'list' || node.kind !== 'spaced') throw new Error(`not spaced list ${ploc}`);
-            // TODO: This will produce unnecessary "writes" unless we check
-            // if children has changed
-            nodes[ploc] = { ...node, children };
-            other.push(ploc);
-        }
-    }
-
-    if (sloc == null) throw new Error(`sel node not encountered`);
-
-    if (outer == null && other.length > 1) {
-        throw new Error(`cant have seps without an outer loc provided`);
-    }
-    if (outer != null) {
-        const parent = top.nodes[outer];
-        if (parent.type !== 'list') throw new Error(`outer not a list`);
-        nodes[outer] = { ...parent, children: other };
-    }
+const hobbit = (node: RecNodeT<boolean>) => {
+    const { top, sel } = asTop(node, idc(0));
+    const n = top.nodes;
+    const fl = flatten(n[top.root], top);
+    const r = rough(fl, top, top.nodes[lastChild(sel.start.path)], top.root);
+    expect(root({ top: { ...top, nodes: { ...top.nodes, ...r.nodes } }, sel })).toEqual(root({ top, sel }));
 };
 
-// Then, we rough
+const check = (node: RecNodeT<boolean>, exp: RecNodeT<boolean>) => {
+    const { top, sel } = asTop(node, idc(0));
+    const n = top.nodes;
+    const fl = flatten(n[top.root], top);
+    console.log(top.nodes, sel.start.path);
+    const r = rough(fl, top, top.nodes[lastChild(sel.start.path)], top.root);
+
+    const two = asTop(exp, idc(0));
+    console.log('ok', r.nodes, r.root);
+    expect(shape(root({ top: { ...top, nodes: { ...top.nodes, ...r.nodes }, root: r.root, nextLoc: r.nextLoc }, sel }))).toEqual(shape(root(two)));
+};
+
+test('there and back again', () => {
+    hobbit(round([id('', true)]));
+});
+
+test('there and back again', () => {
+    hobbit(round([id('a', true), id('b')]));
+});
+
+test('there and back again space/smoosh', () => {
+    hobbit(spaced([id('a', true), id('b')]));
+    hobbit(smoosh([id('a', true), id('b')]));
+});
+
+test('there and back again space and smoosh', () => {
+    check(
+        spaced([id('a', true), smoosh([id('c')])]),
+        //
+        spaced([id('a', true), id('c')]),
+    );
+});
+
+test('collapse single space/smoosh', () => {
+    check(
+        spaced([smoosh([id('c', true)])]),
+        //
+        id('c', true),
+    );
+});
+
+// test('there and back again', () => {
+//     hobbit(round([id('', true), id(''), spaced([id(''), smoosh([id('a'), id('+')])])]));
+// });
