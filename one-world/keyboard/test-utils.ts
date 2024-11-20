@@ -116,4 +116,9 @@ export const textc = (index: number, cursor: number, text?: string[]): TextCurso
     type: 'text',
     end: { index, cursor, text },
 });
+export const textcs = (index: number, cursor: number, sindex: number, scursor: number, text?: string[]): TextCursor => ({
+    type: 'text',
+    end: { index, cursor, text },
+    start: { index: sindex, cursor: scursor },
+});
 export const tspan = (text: string, style?: Style): TextSpan<RecNodeT<boolean>> => ({ type: 'text', text, style });

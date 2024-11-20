@@ -3,7 +3,7 @@ import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleKey } from './handleKey';
 import { handleShiftNav, handleSpecial } from './handleShiftNav';
-import { asTop, id, idc, lisp, text, textc, tspan } from './test-utils';
+import { asTop, id, idc, lisp, text, textc, textcs, tspan } from './test-utils';
 import { Cursor } from './utils';
 
 const run = (name: string, [init, cursor]: [RecNodeT<boolean>, Cursor], key: string, [exp, ecursor]: [RecNodeT<boolean>, Cursor]) => {
@@ -60,7 +60,25 @@ test('undooo the boldliness', () => {
 });
 
 test('join stuffs', () => {
-    let state = asTop(text([tspan('hello folks')], true), { ...textc(0, 6), start: { index: 0, cursor: 11 } });
+    let state = asTop(text([tspan('hello folks')], true), textcs(0, 6, 0, 11));
     state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
-    check(state, text([tspan('hello '), tspan('folks', { fontWeight: 'bold' })], true), { ...textc(1, 5), start: { index: 1, cursor: 0 } });
+    check(state, text([tspan('hello '), tspan('folks', { fontWeight: 'bold' })], true), textcs(1, 5, 1, 0));
+});
+
+test('join stuffs', () => {
+    let state = asTop(text([tspan('ab'), tspan('cd', { fontWeight: 'bold' })], true), textcs(0, 1, 1, 1));
+    state = applyUpdate(state, handleSpecial(state, 'i', { meta: true }));
+    check(
+        state,
+        text(
+            [
+                tspan('a'),
+                tspan('b', { fontStyle: 'italic' }),
+                tspan('c', { fontWeight: 'bold', fontStyle: 'italic' }),
+                tspan('d', { fontWeight: 'bold' }),
+            ],
+            true,
+        ),
+        textc(1, 0, 2, 1),
+    );
 });

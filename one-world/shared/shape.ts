@@ -1,4 +1,4 @@
-import { RecNodeT, Style } from './cnodes';
+import { RecNodeT, RGB, Style } from './cnodes';
 
 export const shape = (node: RecNodeT<unknown>): string => {
     switch (node.type) {
@@ -25,11 +25,7 @@ export const shape = (node: RecNodeT<unknown>): string => {
                 .map((span) => {
                     switch (span.type) {
                         case 'text':
-                            const ss = asStyle(span.style);
-                            if (ss && Object.keys(ss).length) {
-                                return `${span.text}${JSON.stringify(ss)}`;
-                            }
-                            return span.text;
+                            return `${span.text}${styleText(span.style)}`;
                         case 'embed':
                             return `\${${shape(span.item)}}`;
                         default:
@@ -40,7 +36,19 @@ export const shape = (node: RecNodeT<unknown>): string => {
     }
 };
 
-const rgb = ({ r, g, b }: { r: number; g: number; b: number }) => `rgb(${r},${g},${b})`;
+const rgb = ({ r, g, b }: RGB) => `rgb(${r},${g},${b})`;
+
+const styleText = (style?: Style) => {
+    if (!style || Object.keys(style).length === 0) return '';
+    return `{${Object.keys(style)
+        .sort()
+        .map(
+            (key) =>
+                `${key}:${
+                    (key === 'color' || key === 'background') && style[key as 'color'] ? rgb(style[key as 'color'] as RGB) : style[key as 'color']
+                }`,
+        )}}`;
+};
 
 export const asStyle = (style?: Style): React.CSSProperties | undefined => {
     if (!style) return undefined;

@@ -78,7 +78,7 @@ export const handleSpecialText = (
     };
 };
 
-const mergeAdjacentSpans = <T>(spans: TextSpan<T>[], cursor: TextCursor): TextSpan<T>[] => {
+export const mergeAdjacentSpans = <T>(spans: TextSpan<T>[], cursor: TextCursor): TextSpan<T>[] => {
     let results: TextSpan<T>[] = [];
     spans.forEach((span, i) => {
         if (span.type === 'text' && results.length) {

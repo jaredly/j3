@@ -13,12 +13,16 @@
   - [ ] from inside a list n stuff
 - [ ] lets get Text Embeds up and running pls
 - [x] multiselect between spansss
+
+vvvvvvvvvvvv
 - [ ] style across spans
+
 - [x] needs to be possible to delete a span
   - how ... agressive should I be about this?
 - [ ] thennn let's get tables working baybeee
 - [ ] " at the end of string should be a closerr
 - [ ] \n as a spacer should set 'explicitMultiline' thx
+
 
 #
 
