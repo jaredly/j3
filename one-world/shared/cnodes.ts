@@ -45,10 +45,22 @@ export type Style = {
     fontFamily?: string;
     fontStyle?: string;
     textDecoration?: string;
-    background?: { r: number; g: number; b: number } | false;
+    background?: RGB;
     border?: string;
     outline?: string;
-    color?: { r: number; g: number; b: number } | false;
+    color?: RGB;
+};
+export type RGB = { r: number; g: number; b: number };
+
+export const rgbEqual = (one?: RGB, two?: RGB) => (!one || !two ? one === two : one.r === two.r && one.g === two.g && one.b === two.b);
+
+export const stylesEqual = (one?: Style, two?: Style) => {
+    if (!one || !two) return (!one || Object.keys(one).length === 0) && (!two || Object.keys(two).length === 0);
+    for (let key of ['fontWeight', 'fontFamily', 'fontStyle', 'textDecoration', 'border', 'outline'] as const) {
+        if (one[key] !== two[key]) return false;
+    }
+    if (!rgbEqual(one.background, two.background)) return false;
+    return rgbEqual(one.color, two.color);
 };
 
 // type Text = {
@@ -78,6 +90,14 @@ export type IdRef =
 export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc; ccls?: number; src?: Src };
 
 export type Link = { type: 'www'; href: string } | { type: 'term'; id: string; hash?: string } | { type: 'doc'; id: string; hash?: string };
+
+export const linksEqual = (one?: Link, two?: Link) => {
+    if (!one || !two) return one === two;
+    if (one.type === 'www' && two.type === 'www') return one.href === two.href;
+    if (one.type === 'term' && two.type === 'term') return one.id === two.id && one.hash === two.hash;
+    if (one.type === 'doc' && two.type === 'doc') return one.id === two.id && one.hash === two.hash;
+    return false;
+};
 
 export type TextSpan<Embed> =
     | { type: 'text'; text: string; link?: Link; style?: Style }
