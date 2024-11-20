@@ -53,8 +53,14 @@ test('undooo the boldliness', () => {
     state = applyUpdate(state, handleSpecial(state, 'u', { meta: true }));
     state = applyUpdate(state, handleSpecial(state, 'i', { meta: true }));
     state = applyUpdate(state, handleSpecial(state, 'i', { meta: true }));
-    check(state, text([tspan('he'), tspan('ll'), tspan('o')], true), {
-        ...textc(1, 2),
-        start: { index: 1, cursor: 0 },
+    check(state, text([tspan('hello')], true), {
+        ...textc(0, 4),
+        start: { index: 0, cursor: 2 },
     });
+});
+
+test('join stuffs', () => {
+    let state = asTop(text([tspan('hello folks')], true), { ...textc(0, 6), start: { index: 0, cursor: 11 } });
+    state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
+    check(state, text([tspan('hello '), tspan('folks', { fontWeight: 'bold' })], true), { ...textc(1, 5), start: { index: 1, cursor: 0 } });
 });
