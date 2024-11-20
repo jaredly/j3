@@ -268,3 +268,11 @@ test('nav left text (text) first ', () => {
     state = applyUpdate(state, handleNav('ArrowLeft', state)!);
     check(state, text([{ type: 'text', text: 'ho' }], true), listc('before'));
 });
+
+test('text closeeee', () => {
+    let state = asTop(text([{ type: 'text', text: 'ho' }], true), textc(0, 2));
+    state = applyUpdate(state, handleKey(state, '"', lisp)!);
+    check(state, text([{ type: 'text', text: 'ho' }], true), listc('after'));
+});
+
+// TODO: join adjacent spanssss that have the same style pls

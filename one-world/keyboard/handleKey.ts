@@ -1,5 +1,6 @@
 import { handleIdKey } from './handleIdKey';
-import { Config, handleListKey, handleTextKey } from './insertId';
+import { Config, handleTextKey } from './insertId';
+import { handleListKey } from './handleListKey';
 import { TestState } from './test-utils';
 import { Update, getCurrent } from './utils';
 
