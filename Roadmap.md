@@ -3,6 +3,8 @@
 
 - [x] wrap middle of ID
 - [x] select within an id
+- [x] rewrite the whole flatten algorthm thanks
+- [ ] stringgggggg interpolations
 - [ ] multiselect pleeease
 - [ ] wrap start of list or text or stuff
 - [ ] wrap multiselected stuff

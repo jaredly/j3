@@ -1,6 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { isRich, Node, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
+import { textCursorSides, textCursorSides2 } from './insertId';
 import { TestState } from './test-utils';
 import { Current, Cursor, getCurrent, lastChild, NodeSelection, parentLoc, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
@@ -171,8 +172,8 @@ export const navRight = (current: Current, state: TestState): Update | void => {
         case 'text': {
             if (current.cursor.type === 'text') {
                 if (current.cursor.start) {
-                    // TODO
-                    return;
+                    const { right } = textCursorSides2(current.cursor);
+                    return justSel(current.path, { type: 'text', end: right });
                 }
                 const span = current.node.spans[current.cursor.end.index];
                 if (span.type !== 'text') throw new Error(`curent span is not text`);
@@ -262,8 +263,8 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
         case 'text': {
             if (current.cursor.type === 'text') {
                 if (current.cursor.start) {
-                    // TODO
-                    return;
+                    const { left } = textCursorSides2(current.cursor);
+                    return justSel(current.path, { type: 'text', end: left });
                 }
                 const { end } = current.cursor;
                 if (end.cursor > 0) {

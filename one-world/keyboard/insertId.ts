@@ -29,6 +29,14 @@ export const textCursorSides = (cursor: TextCursor) => {
     return { left, right };
 };
 
+export const textCursorSides2 = (cursor: TextCursor) => {
+    if (!cursor.start) return { left: cursor.end, right: cursor.end };
+    if (cursor.start.index > cursor.end.index || (cursor.start.index === cursor.end.index && cursor.start.cursor > cursor.end.cursor)) {
+        return { left: cursor.end, right: cursor.start };
+    }
+    return { left: cursor.start, right: cursor.end };
+};
+
 export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: string, path: Path) => {
     if (cursor.start && cursor.start.index !== cursor.end.index) {
         throw new Error('not multi yet sry');

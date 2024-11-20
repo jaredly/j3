@@ -28,7 +28,7 @@ export function applyUpdate(state: TestState, update: Update | void) {
     if (prev.start.cursor.type === 'id' && prev.start.cursor.text != null && update.selection && update.selection.start.key !== prev.start.key) {
         const loc = lastChild(prev.start.path);
 
-        if (!update.nodes[loc]) {
+        if (!update.nodes[loc] && state.top.nodes[loc]) {
             const node = state.top.nodes[loc] as Id<number>;
             state.top.nodes[loc] = {
                 ...node,
@@ -49,7 +49,7 @@ export function applyUpdate(state: TestState, update: Update | void) {
     ) {
         const { end } = prev.start.cursor;
         const loc = lastChild(prev.start.path);
-        if (!update.nodes[loc]) {
+        if (!update.nodes[loc] && state.top.nodes[loc]) {
             const node = state.top.nodes[loc] as Text<number>;
             const spans = node.spans.slice();
             const span = spans[end.index];

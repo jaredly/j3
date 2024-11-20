@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { goLeft, selectEnd } from './handleNav';
+import { goLeft, justSel, selectEnd } from './handleNav';
 import { textCursorSides } from './insertId';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
@@ -164,12 +164,24 @@ export const handleDelete = (state: TestState): Update | void => {
                 return;
             }
             let { left, right } = textCursorSides(current.cursor);
-            if (left === right) left--;
+
+            if (left === right && left > 0) left--;
             const { index } = current.cursor.end;
             const span = current.node.spans[index];
             const spans = current.node.spans.slice();
             if (span.type !== 'text') throw new Error(`span not text ${span.type}`);
             const text = current.cursor.end.text ?? splitGraphemes(span.text);
+
+            if (text.length === 0) {
+                if (index === 0) {
+                    if (current.node.spans.length === 1) {
+                        return removeSelf(state, current);
+                    } else {
+                        return justSel(state.sel.start.path, { type: 'list', where: 'start' });
+                    }
+                }
+            }
+
             text.splice(left, right - left);
             return { nodes: {}, selection: { start: selStart(state.sel.start.path, { type: 'text', end: { index, text, cursor: left } }) } };
         }
