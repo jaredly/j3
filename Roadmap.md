@@ -15,13 +15,13 @@
 - [x] multiselect between spansss
 
 vvvvvvvvvvvv
-- [ ] style across spans
+- [x] style across spans
 
 - [x] needs to be possible to delete a span
-  - how ... agressive should I be about this?
 - [ ] thennn let's get tables working baybeee
-- [ ] " at the end of string should be a closerr
+- [x] " at the end of string should be a closerr
 - [ ] \n as a spacer should set 'explicitMultiline' thx
+  - gonna need to do some layout there champ
 
 
 #

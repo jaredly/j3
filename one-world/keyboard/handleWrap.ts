@@ -145,7 +145,7 @@ export const handleClose = (state: TestState, key: string): Update | void => {
 export const handleWrap = (state: TestState, key: string): Update | void => {
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
-        return handleTextText(current.cursor, current.node, key, current.path);
+        return handleTextText(current.cursor, current.node, key, current.path, state.top);
     }
     const kind = wrapKind(key);
     if (!kind) return;

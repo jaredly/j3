@@ -36,7 +36,7 @@ const Cursor = () => (
             marginBottom: -4,
             height: '1em',
             backgroundColor: 'red',
-            zIndex: -1,
+            // zIndex: -1,
             position: 'relative',
         }}
     />
@@ -124,7 +124,13 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                         </span>
                     );
                 } else if (span.type === 'embed') {
-                    return <RenderNode key={i} inRich={false} loc={span.item} state={state} />;
+                    return (
+                        <span style={{ background: 'rgba(255,255,255,0.5)' }} key={i}>
+                            {'${'}
+                            <RenderNode inRich={false} loc={span.item} state={state} />
+                            {'}'}
+                        </span>
+                    );
                 } else {
                     return <span key={i}>custom?</span>;
                 }

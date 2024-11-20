@@ -2,7 +2,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Text } from '../shared/cnodes';
 import { handleListKey } from './handleListKey';
 import { justSel } from './handleNav';
-import { lastChild, ListCursor, Path, TextCursor, Top, Update } from './utils';
+import { lastChild, ListCursor, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
 
 export type Config = { punct: string[]; space: string; sep: string };
 export type Kind = number | 'space' | 'sep' | 'string';
@@ -39,7 +39,7 @@ export const textCursorSides2 = (
     return { left: cursor.start, right: cursor.end, text };
 };
 
-export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: string, path: Path) => {
+export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: string, path: Path, top: Top): Update | void => {
     if (cursor.start && cursor.start.index !== cursor.end.index) {
         throw new Error('not multi yet sry');
     }
@@ -56,6 +56,30 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
 
     if (grem === '"' && cursor.end.index === current.spans.length - 1 && left === text.length) {
         return justSel(path, { type: 'list', where: 'after' });
+    }
+
+    if (grem === '{' && left === right && left > 0 && text[left - 1] === '$') {
+        // split the span
+        // and add a new thing
+        let nextLoc = top.nextLoc;
+        const loc = nextLoc++;
+        const spans = current.spans.slice();
+        let index = cursor.end.index;
+        if (left > 1) {
+            spans[cursor.end.index] = { ...span, text: text.slice(0, left - 1).join('') };
+            spans.splice(cursor.end.index + 1, 0, { type: 'embed', item: loc });
+            index = cursor.end.index + 1;
+        } else {
+            spans.splice(cursor.end.index, 0, { type: 'embed', item: loc });
+        }
+        if (left < text.length) {
+            spans.splice(index + 1, 0, { ...span, text: text.slice(left).join('') });
+        }
+        return {
+            nodes: { [current.loc]: { ...current, spans }, [loc]: { type: 'id', text: '', loc } },
+            selection: { start: selStart(pathWithChildren(path, loc), { type: 'id', end: 0 }) },
+            nextLoc,
+        };
     }
 
     // Sooo now we come to a choice.
@@ -104,5 +128,5 @@ export const handleTextKey = (config: Config, top: Top, path: Path, cursor: List
         return handleListKey(config, top, path, cursor, grem);
     }
 
-    return handleTextText(cursor, current, grem, path);
+    return handleTextText(cursor, current, grem, path, top);
 };
