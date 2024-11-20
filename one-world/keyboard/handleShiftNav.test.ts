@@ -1,11 +1,11 @@
-import { RecNodeT, Style, TextSpan } from '../shared/cnodes';
+import { RecNodeT } from '../shared/cnodes';
 import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleIdKey } from './handleIdKey';
 import { handleKey } from './handleKey';
 import { handleShiftId, handleShiftNav, handleSpecial } from './handleShiftNav';
 import { handleWrap } from './handleWrap';
-import { asTop, curly, id, idc, lisp, listc, round, smoosh, square, text, textc } from './test-utils';
+import { asTop, curly, id, idc, lisp, listc, round, smoosh, square, text, textc, tspan } from './test-utils';
 import { Cursor } from './utils';
 
 const run = (name: string, [init, cursor]: [RecNodeT<boolean>, Cursor], key: string, [exp, ecursor]: [RecNodeT<boolean>, Cursor]) => {
@@ -31,8 +31,6 @@ test('id shift-left and write', () => {
     state = applyUpdate(state, handleKey(state, 'M', lisp));
     check(state, id('hiMo', true), idc(3));
 });
-
-const tspan = (text: string, style?: Style): TextSpan<RecNodeT<boolean>> => ({ type: 'text', text, style });
 
 test('a little bold/underline', () => {
     let state = asTop(text([tspan('hello')], true), textc(0, 2));

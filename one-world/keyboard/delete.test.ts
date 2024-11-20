@@ -6,7 +6,7 @@ import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
 import { root } from './root';
-import { asTop, atPath, id, idc, lisp, listc, noText, round, selPath, smoosh, spaced, TestState, text, textc } from './test-utils';
+import { asTop, atPath, id, idc, lisp, listc, noText, round, selPath, smoosh, spaced, TestState, text, textc, tspan } from './test-utils';
 import { Cursor } from './utils';
 import { validate } from './validate';
 
@@ -189,4 +189,70 @@ test('del two', () => {
     let state = asTop(round([id(''), id('', true)]), idc(0));
     state = applyUpdate(state, handleDelete(state));
     check(state, round([id('', true)]), idc(0));
+});
+
+test('text adfter', () => {
+    let state = asTop(text([], true), listc('after'));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([], true), listc('end'));
+});
+
+test('text before', () => {
+    let state = asTop(spaced([id('a'), text([], true)]), listc('before'));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, smoosh([id('a'), text([], true)]), listc('before'));
+});
+
+test('text delete', () => {
+    let state = asTop(text([tspan('')], true), textc(0, 0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('', true), idc(0));
+});
+
+test('text delete', () => {
+    let state = asTop(text([tspan('aa')], true), textc(0, 0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([tspan('aa')], true), listc('start'));
+});
+
+test('text delete prev span', () => {
+    let state = asTop(text([tspan('aa'), tspan('bb')], true), textc(1, 0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([tspan('a'), tspan('bb')], true), textc(0, 1));
+});
+
+test('text delete prev span tmp text', () => {
+    let state = asTop(text([tspan('aa'), tspan('bb')], true), textc(1, 0, ['c']));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([tspan('a'), tspan('c')], true), textc(0, 1));
+});
+
+test('text delete prev span empty', () => {
+    let state = asTop(text([tspan('aa'), tspan('')], true), textc(1, 0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([tspan('a')], true), textc(0, 1));
+});
+
+test('text delete prev empty span', () => {
+    let state = asTop(text([tspan('a'), tspan(''), tspan('b')], true), textc(2, 0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([tspan(''), tspan('b')], true), textc(0, 0));
+});
+
+test('text delete prev empty span', () => {
+    let state = asTop(text([tspan('na'), tspan(''), tspan('b')], true), textc(2, 0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([tspan('n'), tspan('b')], true), textc(0, 1));
+});
+
+test('text delete prev empty span', () => {
+    let state = asTop(text([tspan('na'), tspan(''), tspan('')], true), textc(2, 0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([tspan('n')], true), textc(0, 1));
+});
+
+test('text delete prev empty span to start', () => {
+    let state = asTop(text([tspan(''), tspan('a')], true), textc(1, 0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([tspan('a')], true), listc('start'));
 });

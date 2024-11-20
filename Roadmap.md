@@ -14,7 +14,11 @@
 - [ ] lets get Text Embeds up and running pls
 - [x] multiselect between spansss
 - [ ] style across spans
-
+- [ ] needs to be possible to delete a span
+  - how ... agressive should I be about this?
+- [ ] thennn let's get tables working baybeee
+- [ ] " at the end of string should be a closerr
+- [ ] \n as a spacer should set 'explicitMultiline' thx
 
 #
 

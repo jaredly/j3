@@ -1,4 +1,4 @@
-import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind } from '../shared/cnodes';
+import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind, Style } from '../shared/cnodes';
 import { charClass, Config } from './insertId';
 import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, selStart, TextCursor, Top } from './utils';
 
@@ -112,7 +112,8 @@ export const idc = (end: number, start?: number): IdCursor => ({ type: 'id', end
 export const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
 export const noText = (cursor: Cursor): Cursor =>
     cursor.type === 'id' ? { ...cursor, text: undefined } : cursor.type === 'text' ? { ...cursor, end: { ...cursor.end, text: undefined } } : cursor;
-export const textc = (index: number, cursor: number): TextCursor => ({
+export const textc = (index: number, cursor: number, text?: string[]): TextCursor => ({
     type: 'text',
-    end: { index, cursor },
+    end: { index, cursor, text },
 });
+export const tspan = (text: string, style?: Style): TextSpan<RecNodeT<boolean>> => ({ type: 'text', text, style });

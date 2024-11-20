@@ -200,7 +200,7 @@ const App = () => {
 
     return (
         <>
-            <div style={{ whiteSpace: 'pre-wrap' }}>
+            <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', wordBreak: 'break-all', marginBottom: 100 }}>
                 <RenderNode loc={state.top.root} state={state} inRich={false} />
             </div>
             <div>{shape(root(state))}</div>
@@ -209,8 +209,9 @@ const App = () => {
             </div>
             <div>{JSON.stringify(state.sel)}</div>
             <button
-                onClick={() => {
+                onClick={(evt) => {
                     setState(init);
+                    evt.currentTarget.blur();
                 }}
             >
                 Clear

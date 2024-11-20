@@ -113,6 +113,12 @@ export const handleSpecialText = (
         } else {
             style.textDecoration = 'underline';
         }
+    } else if (key === 'i' && (mods.ctrl || mods.meta)) {
+        if (style.fontStyle === 'italic') {
+            delete style.fontStyle;
+        } else {
+            style.fontStyle = 'italic';
+        }
     } else {
         return;
     }
