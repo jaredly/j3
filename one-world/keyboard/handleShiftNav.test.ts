@@ -45,3 +45,17 @@ test('a little bold/underline', () => {
         start: { index: 1, cursor: 0 },
     });
 });
+
+test('undooo the boldliness', () => {
+    let state = asTop(text([tspan('hello')], true), textc(0, 2));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
+    state = applyUpdate(state, handleSpecial(state, 'u', { meta: true }));
+    state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
+    state = applyUpdate(state, handleSpecial(state, 'u', { meta: true }));
+    check(state, text([tspan('he'), tspan('ll'), tspan('o')], true), {
+        ...textc(1, 2),
+        start: { index: 1, cursor: 0 },
+    });
+});

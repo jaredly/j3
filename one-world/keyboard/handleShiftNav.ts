@@ -38,11 +38,35 @@ export const handleShiftText = (
     const text = cursor.end.text ?? splitGraphemes(span.text);
     if (left) {
         if (end.cursor === 0) {
+            if (end.index > 0) {
+                let index = end.index - 1;
+                for (; index >= 0 && node.spans[index].type !== 'text'; index--);
+                if (index < 0) return;
+                const pspan = node.spans[index];
+                if (pspan.type !== 'text') return;
+                end = { index, cursor: splitGraphemes(pspan.text).length };
+                if (index === cursor.end.index - 1 && pspan.text !== '') {
+                    end.cursor--;
+                }
+            } else {
+                return;
+            }
         } else {
             end = { ...end, cursor: end.cursor - 1 };
         }
     } else {
         if (end.cursor === text.length) {
+            if (end.index < node.spans.length) {
+                let index = end.index + 1;
+                for (; index < node.spans.length && node.spans[index].type !== 'text'; index++);
+                if (index >= node.spans.length) return;
+                const pspan = node.spans[index];
+                if (pspan.type !== 'text') return;
+                end = { index, cursor: 0 };
+                if (index === cursor.end.index + 1 && pspan.text !== '') {
+                    end.cursor++;
+                }
+            }
         } else {
             end = { ...end, cursor: end.cursor + 1 };
         }
@@ -78,9 +102,17 @@ export const handleSpecialText = (
     const style = { ...span.style };
 
     if (key === 'b' && (mods.ctrl || mods.meta)) {
-        style.fontWeight = 'bold';
+        if (style.fontWeight === 'bold') {
+            delete style.fontWeight;
+        } else {
+            style.fontWeight = 'bold';
+        }
     } else if (key === 'u' && (mods.ctrl || mods.meta)) {
-        style.textDecoration = 'underline';
+        if (style.textDecoration === 'underline') {
+            delete style.textDecoration;
+        } else {
+            style.textDecoration = 'underline';
+        }
     } else {
         return;
     }
@@ -90,11 +122,7 @@ export const handleSpecialText = (
     const mid = grems.slice(left.cursor, right.cursor);
     const post = grems.slice(right.cursor);
 
-    const ok: TextSpan<number> = {
-        ...span,
-        text: mid.join(''),
-        style,
-    };
+    const ok: TextSpan<number> = { ...span, text: mid.join(''), style };
 
     let at = left.index;
 
@@ -105,7 +133,7 @@ export const handleSpecialText = (
         spans.splice(left.index + 1, 0, ok);
         at += 2;
     } else {
-        spans[left.index] = { ...span, text: mid.join('') };
+        spans[left.index] = ok;
         at += 1;
     }
 

@@ -13,9 +13,9 @@ import { applyUpdate } from '../applyUpdate';
 import { handleKey } from '../handleKey';
 
 import { root } from '../root';
-import { shape } from '../../shared/shape';
+import { asStyle, shape } from '../../shared/shape';
 import { handleNav } from '../handleNav';
-import { textCursorSides } from '../insertId';
+import { textCursorSides, textCursorSides2 } from '../insertId';
 import { closerKind, handleClose, handleWrap, wrapKind } from '../handleWrap';
 import { handleShiftNav, handleSpecial } from '../handleShiftNav';
 import { useLocalStorage } from '../../../web/Debug';
@@ -98,15 +98,21 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                     );
             }
         case 'text': {
+            const sides = cursor?.type === 'text' ? textCursorSides2(cursor) : null;
             const children = node.spans.map((span, i) => {
                 if (span.type === 'text') {
-                    if (cursor?.type === 'text' && cursor.end.index === i) {
-                        const { left, right } = textCursorSides(cursor);
-                        const text = cursor.end.text ?? splitGraphemes(span.text);
+                    if (sides && sides.left.index <= i && sides.right.index >= i) {
+                        const text = sides.text?.index === i ? sides.text.grems : splitGraphemes(span.text);
+                        const left = i === sides.left.index ? sides.left.cursor : 0;
+                        const right = i === sides.right.index ? sides.right.cursor : text.length;
                         return (
                             <span key={i} style={asStyle(span.style)}>
                                 {text.slice(0, left).join('')}
-                                {left === right ? <Cursor /> : <span style={{ background: hl }}>{text.slice(left, right).join('')}</span>}
+                                {left === right && sides.left.index === sides.right.index ? (
+                                    <Cursor />
+                                ) : (
+                                    <span style={{ background: hl }}>{text.slice(left, right).join('')}</span>
+                                )}
                                 {text.slice(right).join('')}
                             </span>
                         );
@@ -147,35 +153,6 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
         case 'table':
             return <span>Table</span>;
     }
-};
-
-const rgb = ({ r, g, b }: { r: number; g: number; b: number }) => `rgb(${r},${g},${b})`;
-
-const asStyle = (style?: Style): React.CSSProperties | undefined => {
-    if (!style) return undefined;
-    const res: React.CSSProperties = {};
-    if (style.background) {
-        res.background = rgb(style.background);
-    }
-    if (style.fontStyle) {
-        res.fontStyle = style.fontStyle;
-    }
-    if (style.fontFamily) {
-        res.fontFamily = style.fontFamily;
-    }
-    if (style.fontWeight) {
-        res.fontWeight = style.fontWeight;
-    }
-    if (style.border) {
-        res.border = style.border;
-    }
-    if (style.outline) {
-        res.outline = style.outline;
-    }
-    if (style.textDecoration) {
-        res.textDecoration = style.textDecoration;
-    }
-    return res;
 };
 
 const getRoot = (): Root => {
