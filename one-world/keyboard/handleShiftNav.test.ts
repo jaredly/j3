@@ -65,7 +65,7 @@ test('join stuffs', () => {
     check(state, text([tspan('hello '), tspan('folks', { fontWeight: 'bold' })], true), textcs(1, 5, 1, 0));
 });
 
-test('join stuffs', () => {
+test('style across spans', () => {
     let state = asTop(text([tspan('ab'), tspan('cd', { fontWeight: 'bold' })], true), textcs(0, 1, 1, 1));
     state = applyUpdate(state, handleSpecial(state, 'i', { meta: true }));
     check(
@@ -79,6 +79,6 @@ test('join stuffs', () => {
             ],
             true,
         ),
-        textc(1, 0, 2, 1),
+        textcs(2, 1, 1, 0),
     );
 });

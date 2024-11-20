@@ -1,8 +1,37 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { linksEqual, stylesEqual, Text, TextSpan } from '../shared/cnodes';
+import { linksEqual, Style, stylesEqual, Text, TextSpan } from '../shared/cnodes';
 import { Mods } from './handleShiftNav';
 import { textCursorSides2 } from './insertId';
 import { Path, TextCursor, ListCursor, Top, Update, selStart } from './utils';
+
+const isStyleKey = (key: string) => key === 'b' || key === 'i' || key === 'u';
+
+const styleKey = (style: Style, key: string, mods: Mods): boolean => {
+    if (!mods.ctrl && !mods.meta) return false;
+    if (key === 'b') {
+        if (style.fontWeight === 'bold') {
+            delete style.fontWeight;
+        } else {
+            style.fontWeight = 'bold';
+        }
+    } else if (key === 'u') {
+        if (style.textDecoration === 'underline') {
+            delete style.textDecoration;
+        } else {
+            style.textDecoration = 'underline';
+        }
+    } else if (key === 'i') {
+        if (style.fontStyle === 'italic') {
+            delete style.fontStyle;
+        } else {
+            style.fontStyle = 'italic';
+        }
+    } else {
+        return false;
+    }
+
+    return true;
+};
 
 export const handleSpecialText = (
     { node, path, cursor }: { node: Text<number>; path: Path; cursor: TextCursor | ListCursor },
@@ -12,62 +41,47 @@ export const handleSpecialText = (
 ): Update | void => {
     if (cursor.type === 'list') return;
     const { left, right, text } = textCursorSides2(cursor);
-    if (left.index !== right.index) return; // nopt yept
     const spans = node.spans.slice();
-    const span = node.spans[left.index];
-    if (span.type !== 'text') return; // sryyy
 
-    const style = { ...span.style };
+    if (!isStyleKey(key) || (!mods.ctrl && !mods.meta)) return;
 
-    if (key === 'b' && (mods.ctrl || mods.meta)) {
-        if (style.fontWeight === 'bold') {
-            delete style.fontWeight;
-        } else {
-            style.fontWeight = 'bold';
+    let off = 0;
+    let scur: number | null = null;
+    let ecur: { cursor: number; index: number } | null = null;
+
+    for (let i = left.index; i <= right.index; i++) {
+        const span = node.spans[i];
+        if (span.type !== 'text') continue;
+        const style = { ...span.style };
+        styleKey(style, key, mods);
+        const grems = text?.grems ?? splitGraphemes(span.text);
+
+        const start = i === left.index ? left.cursor : 0;
+        const end = i === right.index ? right.cursor : grems.length;
+
+        if (start > 0) {
+            spans.splice(i + off, 0, { ...span, text: grems.slice(0, start).join('') });
+            off++;
         }
-    } else if (key === 'u' && (mods.ctrl || mods.meta)) {
-        if (style.textDecoration === 'underline') {
-            delete style.textDecoration;
+        if (start < grems.length) {
+            if (scur === null && i >= left.index) scur = i + off;
+            spans[i + off] = { ...span, style, text: grems.slice(start, end).join('') };
+            ecur = { index: i + off, cursor: end - start };
         } else {
-            style.textDecoration = 'underline';
+            spans.splice(i + off, 1);
+            off--;
         }
-    } else if (key === 'i' && (mods.ctrl || mods.meta)) {
-        if (style.fontStyle === 'italic') {
-            delete style.fontStyle;
-        } else {
-            style.fontStyle = 'italic';
+        if (end < grems.length) {
+            spans.splice(i + off + 1, 0, { ...span, text: grems.slice(end).join('') });
+            off++;
         }
-    } else {
-        return;
     }
+    if (scur == null || ecur == null) return;
 
-    const grems = text?.grems ?? splitGraphemes(span.text);
-    const pre = grems.slice(0, left.cursor);
-    const mid = grems.slice(left.cursor, right.cursor);
-    const post = grems.slice(right.cursor);
-
-    const ok: TextSpan<number> = { ...span, text: mid.join(''), style };
-
-    let at = left.index;
-
-    const sindex = pre.length ? left.index + 1 : left.index;
-
-    if (pre.length) {
-        spans[left.index] = { ...span, text: pre.join('') };
-        spans.splice(left.index + 1, 0, ok);
-        at += 2;
-    } else {
-        spans[left.index] = ok;
-        at += 1;
-    }
-
-    if (post.length) {
-        spans.splice(at, 0, { ...span, text: post.join('') });
-    }
     const ncursor: TextCursor = {
         type: 'text',
-        end: { index: sindex, cursor: mid.length },
-        start: mid.length ? { index: sindex, cursor: 0 } : undefined,
+        start: { index: scur, cursor: 0 },
+        end: ecur,
     };
 
     return {
