@@ -12,6 +12,7 @@
   - [x] from id
   - [ ] from inside a list n stuff
 - [ ] lets get Text Embeds up and running pls
+- [ ] multiselect between spansss
 
 
 #

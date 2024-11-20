@@ -1,9 +1,9 @@
-import { RecNodeT } from '../shared/cnodes';
+import { RecNodeT, Style, TextSpan } from '../shared/cnodes';
 import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleIdKey } from './handleIdKey';
 import { handleKey } from './handleKey';
-import { handleShiftId, handleShiftNav } from './handleShiftNav';
+import { handleShiftId, handleShiftNav, handleSpecial } from './handleShiftNav';
 import { handleWrap } from './handleWrap';
 import { asTop, curly, id, idc, lisp, listc, round, smoosh, square, text, textc } from './test-utils';
 import { Cursor } from './utils';
@@ -30,4 +30,18 @@ test('id shift-left and write', () => {
     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
     state = applyUpdate(state, handleKey(state, 'M', lisp));
     check(state, id('hiMo', true), idc(3));
+});
+
+const tspan = (text: string, style?: Style): TextSpan<RecNodeT<boolean>> => ({ type: 'text', text, style });
+
+test('a little bold/underline', () => {
+    let state = asTop(text([tspan('hello')], true), textc(0, 2));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
+    state = applyUpdate(state, handleSpecial(state, 'u', { meta: true }));
+    check(state, text([tspan('he'), tspan('ll', { fontWeight: 'bold', textDecoration: 'underline' }), tspan('o')], true), {
+        ...textc(1, 2),
+        start: { index: 1, cursor: 0 },
+    });
 });

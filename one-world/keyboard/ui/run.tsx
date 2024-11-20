@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { isRich, Node } from '../../shared/cnodes';
+import { isRich, Node, Style } from '../../shared/cnodes';
 import { lastChild, NodeSelection, Top } from '../utils';
 import { init, js, TestState } from '../test-utils';
 import { interleave, interleaveF } from '../interleave';
@@ -17,7 +17,8 @@ import { shape } from '../../shared/shape';
 import { handleNav } from '../handleNav';
 import { textCursorSides } from '../insertId';
 import { closerKind, handleClose, handleWrap, wrapKind } from '../handleWrap';
-import { handleShiftNav } from '../handleShiftNav';
+import { handleShiftNav, handleSpecial } from '../handleShiftNav';
+import { useLocalStorage } from '../../../web/Debug';
 export {};
 
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
@@ -103,7 +104,7 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                         const { left, right } = textCursorSides(cursor);
                         const text = cursor.end.text ?? splitGraphemes(span.text);
                         return (
-                            <span key={i}>
+                            <span key={i} style={asStyle(span.style)}>
                                 {text.slice(0, left).join('')}
                                 {left === right ? <Cursor /> : <span style={{ background: hl }}>{text.slice(left, right).join('')}</span>}
                                 {text.slice(right).join('')}
@@ -111,7 +112,11 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                         );
                     }
                     // TODO show cursor here
-                    return <span key={i}>{span.text}</span>;
+                    return (
+                        <span key={i} style={asStyle(span.style)}>
+                            {span.text}
+                        </span>
+                    );
                 } else if (span.type === 'embed') {
                     return <RenderNode key={i} inRich={false} loc={span.item} state={state} />;
                 } else {
@@ -144,13 +149,42 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
     }
 };
 
+const rgb = ({ r, g, b }: { r: number; g: number; b: number }) => `rgb(${r},${g},${b})`;
+
+const asStyle = (style?: Style): React.CSSProperties | undefined => {
+    if (!style) return undefined;
+    const res: React.CSSProperties = {};
+    if (style.background) {
+        res.background = rgb(style.background);
+    }
+    if (style.fontStyle) {
+        res.fontStyle = style.fontStyle;
+    }
+    if (style.fontFamily) {
+        res.fontFamily = style.fontFamily;
+    }
+    if (style.fontWeight) {
+        res.fontWeight = style.fontWeight;
+    }
+    if (style.border) {
+        res.border = style.border;
+    }
+    if (style.outline) {
+        res.outline = style.outline;
+    }
+    if (style.textDecoration) {
+        res.textDecoration = style.textDecoration;
+    }
+    return res;
+};
+
 const getRoot = (): Root => {
     // @ts-ignore
     return window._root ?? (window._root = createRoot(document.getElementById('root')!));
 };
 
 const App = () => {
-    const [state, setState] = useState(init);
+    const [state, setState] = useLocalStorage('nuniiverse', () => init);
 
     const cstate = useLatest(state);
     // @ts-ignore
@@ -158,21 +192,29 @@ const App = () => {
 
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
-            if (evt.key === 'Backspace') {
+            let key = evt.key;
+            if (key === 'Enter') key = '\n';
+            if (key === 'Backspace') {
                 const up = handleDelete(cstate.current);
                 setState(applyUpdate(cstate.current, up));
-            } else if (evt.key === 'ArrowLeft' || evt.key === 'ArrowRight') {
-                const up = evt.shiftKey ? handleShiftNav(cstate.current, evt.key) : handleNav(evt.key, cstate.current);
+            } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
+                const up = evt.shiftKey ? handleShiftNav(cstate.current, key) : handleNav(key, cstate.current);
                 setState(applyUpdate(cstate.current, up));
-            } else if (splitGraphemes(evt.key).length > 1) {
-                console.log('ignoring', evt.key);
-            } else if (wrapKind(evt.key)) {
-                setState(applyUpdate(cstate.current, handleWrap(cstate.current, evt.key)));
-            } else if (closerKind(evt.key)) {
-                console.log('close pls');
-                setState(applyUpdate(cstate.current, handleClose(cstate.current, evt.key)));
+            } else if (splitGraphemes(key).length > 1) {
+                console.log('ignoring', key);
+            } else if (wrapKind(key)) {
+                setState(applyUpdate(cstate.current, handleWrap(cstate.current, key)));
+            } else if (closerKind(key)) {
+                setState(applyUpdate(cstate.current, handleClose(cstate.current, key)));
+            } else if (evt.metaKey || evt.ctrlKey || evt.altKey) {
+                setState(
+                    applyUpdate(
+                        cstate.current,
+                        handleSpecial(cstate.current, key, { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey }),
+                    ),
+                );
             } else {
-                setState(applyUpdate(cstate.current, handleKey(cstate.current, evt.key, js)));
+                setState(applyUpdate(cstate.current, handleKey(cstate.current, key, js)));
             }
         };
         document.addEventListener('keydown', f);
@@ -181,12 +223,21 @@ const App = () => {
 
     return (
         <>
-            <RenderNode loc={state.top.root} state={state} inRich={false} />
+            <div style={{ whiteSpace: 'pre-wrap' }}>
+                <RenderNode loc={state.top.root} state={state} inRich={false} />
+            </div>
             <div>{shape(root(state))}</div>
             <div>
-                {Object.keys(state.top.nodes)} : {state.top.root} : {state.top.nextLoc}
+                {state.top.root} : {state.top.nextLoc}
             </div>
             <div>{JSON.stringify(state.sel)}</div>
+            <button
+                onClick={() => {
+                    setState(init);
+                }}
+            >
+                Clear
+            </button>
         </>
     );
 };

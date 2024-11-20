@@ -1,10 +1,10 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, Text } from '../shared/cnodes';
+import { Id, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { justSel } from './handleNav';
-import { textCursorSides } from './insertId';
+import { textCursorSides, textCursorSides2 } from './insertId';
 import { TestState } from './test-utils';
-import { getCurrent, IdCursor, ListCursor, Path, TextCursor, Top, Update } from './utils';
+import { getCurrent, IdCursor, ListCursor, Path, selStart, TextCursor, Top, Update } from './utils';
 
 export const handleShiftNav = (state: TestState, key: string): Update | void => {
     const current = getCurrent(state.sel, state.top);
@@ -48,4 +48,79 @@ export const handleShiftText = (
         }
     }
     return justSel(path, { ...cursor, start: cursor.start ?? cursor.end, end });
+};
+
+type Mods = { meta?: boolean; ctrl?: boolean; alt?: boolean; shift?: boolean };
+
+export const handleSpecial = (state: TestState, key: string, mods: Mods) => {
+    const current = getCurrent(state.sel, state.top);
+    switch (current.type) {
+        // case 'id':
+        //     return handle(current, state.top, key === 'ArrowLeft');
+        case 'text':
+            return handleSpecialText(current, state.top, key, mods);
+    }
+};
+
+export const handleSpecialText = (
+    { node, path, cursor }: { node: Text<number>; path: Path; cursor: TextCursor | ListCursor },
+    top: Top,
+    key: string,
+    mods: Mods,
+): Update | void => {
+    if (cursor.type === 'list') return;
+    const { left, right, text } = textCursorSides2(cursor);
+    if (left.index !== right.index) return; // nopt yept
+    const spans = node.spans.slice();
+    const span = node.spans[left.index];
+    if (span.type !== 'text') return; // sryyy
+
+    const style = { ...span.style };
+
+    if (key === 'b' && (mods.ctrl || mods.meta)) {
+        style.fontWeight = 'bold';
+    } else if (key === 'u' && (mods.ctrl || mods.meta)) {
+        style.textDecoration = 'underline';
+    } else {
+        return;
+    }
+
+    const grems = text?.grems ?? splitGraphemes(span.text);
+    const pre = grems.slice(0, left.cursor);
+    const mid = grems.slice(left.cursor, right.cursor);
+    const post = grems.slice(right.cursor);
+
+    const ok: TextSpan<number> = {
+        ...span,
+        text: mid.join(''),
+        style,
+    };
+
+    let at = left.index;
+
+    const sindex = pre.length ? left.index + 1 : left.index;
+
+    if (pre.length) {
+        spans[left.index] = { ...span, text: pre.join('') };
+        spans.splice(left.index + 1, 0, ok);
+        at += 2;
+    } else {
+        spans[left.index] = { ...span, text: mid.join('') };
+        at += 1;
+    }
+
+    if (post.length) {
+        spans.splice(at, 0, { ...span, text: post.join('') });
+    }
+
+    return {
+        nodes: { [node.loc]: { ...node, spans } },
+        selection: {
+            start: selStart(path, {
+                type: 'text',
+                end: { index: sindex, cursor: mid.length },
+                start: mid.length ? { index: sindex, cursor: 0 } : undefined,
+            }),
+        },
+    };
 };

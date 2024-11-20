@@ -29,12 +29,15 @@ export const textCursorSides = (cursor: TextCursor) => {
     return { left, right };
 };
 
-export const textCursorSides2 = (cursor: TextCursor) => {
-    if (!cursor.start) return { left: cursor.end, right: cursor.end };
+export const textCursorSides2 = (
+    cursor: TextCursor,
+): { left: { cursor: number; index: number }; right: { cursor: number; index: number }; text?: { grems: string[]; index: number } } => {
+    const text = cursor.end.text ? { grems: cursor.end.text, index: cursor.end.index } : undefined;
+    if (!cursor.start) return { left: cursor.end, right: cursor.end, text };
     if (cursor.start.index > cursor.end.index || (cursor.start.index === cursor.end.index && cursor.start.cursor > cursor.end.cursor)) {
-        return { left: cursor.end, right: cursor.start };
+        return { left: cursor.end, right: cursor.start, text };
     }
-    return { left: cursor.start, right: cursor.end };
+    return { left: cursor.start, right: cursor.end, text };
 };
 
 export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: string, path: Path) => {
