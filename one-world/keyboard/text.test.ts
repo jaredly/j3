@@ -4,7 +4,7 @@ import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { asTop, id, idc, lisp, list, listc, round, smoosh, text, textc } from './test-utils';
+import { asTop, id, idc, lisp, list, listc, round, smoosh, text, textc, tspan } from './test-utils';
 
 test('text before', () => {
     let state = asTop(text([], true), listc('before'));
@@ -276,3 +276,15 @@ test('text closeeee', () => {
 });
 
 // TODO: join adjacent spanssss that have the same style pls
+
+test('embed', () => {
+    let state = asTop(text([tspan('hi$')], true), textc(0, 3));
+    state = applyUpdate(state, handleKey(state, '{', lisp)!);
+    check(state, text([tspan('hi'), { type: 'embed', item: id('', true) }]), idc(0));
+});
+
+test('embed at span star', () => {
+    let state = asTop(text([tspan('a'), tspan('$ho')], true), textc(1, 1));
+    state = applyUpdate(state, handleKey(state, '{', lisp)!);
+    check(state, text([tspan('a'), { type: 'embed', item: id('', true) }, tspan('ho')]), idc(0));
+});

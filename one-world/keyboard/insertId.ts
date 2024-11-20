@@ -70,7 +70,7 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
             spans.splice(cursor.end.index + 1, 0, { type: 'embed', item: loc });
             index = cursor.end.index + 1;
         } else {
-            spans.splice(cursor.end.index, 0, { type: 'embed', item: loc });
+            spans[cursor.end.index] = { type: 'embed', item: loc };
         }
         if (left < text.length) {
             spans.splice(index + 1, 0, { ...span, text: text.slice(left).join('') });

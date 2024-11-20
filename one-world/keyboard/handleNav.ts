@@ -139,6 +139,14 @@ export const goRight = (path: Path, top: Top): NodeSelection['start'] | void => 
         }
         return selectStart(pathWithChildren(parentPath(path), pnode.children[at + 1]), top, pnode.kind === 'smooshed');
     }
+    if (pnode.type === 'text') {
+        const index = pnode.spans.findIndex((n) => n.type === 'embed' && n.item === loc);
+        if (index === -1) throw new Error('not actually in the text idk ' + loc);
+        return selStart(parentPath(path), { type: 'text', end: { index, cursor: 1 } });
+        // if (index === pnode.spans.length - 1) {
+        //     // immmm gonna need like a 'control start/cover/end arent i'
+        // }
+    }
 };
 
 export const handleNav = (key: string, state: TestState): Update | void => {

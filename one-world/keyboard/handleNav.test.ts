@@ -4,7 +4,7 @@ import { RecNodeT } from '../shared/cnodes';
 import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleNav, selectEnd, selectStart } from './handleNav';
-import { asTop, asTopAndPath, id, idc, list, listc, round, smoosh, spaced, table, text, textc } from './test-utils';
+import { asTop, asTopAndPath, id, idc, list, listc, round, smoosh, spaced, table, text, textc, tspan } from './test-utils';
 import { Cursor, Path, pathWithChildren, selStart } from './utils';
 
 const run = (node: RecNodeT<boolean>, cursor: Cursor, key: string, exp: RecNodeT<boolean>, ecursor: Cursor) => {
@@ -329,4 +329,10 @@ test('between two lists', () => {
     let state = asTop(smoosh([round([], true), round([])]), listc('after'));
     state = applyUpdate(state, handleNav('ArrowRight', state)!);
     check(state, smoosh([round([]), round([], true)]), listc('inside'));
+});
+
+test.only('out of an embed', () => {
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('b', true) }, tspan('c')]), idc(1));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, text([tspan('a'), { type: 'embed', item: id('b') }, tspan('c')], true), textc(1, 1));
 });

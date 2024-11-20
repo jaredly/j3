@@ -24,6 +24,18 @@ vvvvvvvvvvvv
   - gonna need to do some layout there champ
 
 
+
+I think cursor type=control needs where=start/cover/end...
+like, there needs to be a way to select 'between two embed spans',
+and enforcing that there's always a text span between non-texts feels
+like a cludge...
+
+hrmmmm but is /control/ the right move? maybe ... type=span could be it.
+for generic before/after/cover? Yeah I kinda like that.
+
+ORRR I could pretend ... that non-text spans just have a length of 1? and 0 is before, 1 is after...
+herm that might be the right call actually.
+
 #
 
 I, had a thought.
