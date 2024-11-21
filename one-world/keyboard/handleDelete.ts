@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List, Node, Nodes, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { goLeft, justSel, selectEnd } from './handleNav';
+import { goLeft, justSel, selectEnd, spanEnd, spanStart } from './handleNav';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
@@ -59,9 +59,40 @@ const removeSelf = (state: TestState, current: { path: Path; node: Node }) => {
     return up;
 };
 
-const leftJoin = (state: TestState, cursor: Cursor) => {
+const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
     const got = joinParent(state.sel.start.path, state.top);
-    if (!got) return; // prolly at the toplevel? or in a text or table, gotta handle tat
+    if (!got) {
+        const pnode = state.top.nodes[parentLoc(state.sel.start.path)];
+        const loc = lastChild(state.sel.start.path);
+        if (pnode?.type === 'text') {
+            const at = pnode.spans.findIndex((span) => span.type === 'embed' && span.item === loc);
+            if (at === -1) return;
+            const node = state.top.nodes[loc];
+            if (node.type === 'id') {
+                // check empty cursor
+                const text = (cursor.type === 'id' && cursor.text) || splitGraphemes(node.text);
+                if (text.length === 0) {
+                    // remove the span
+                    const spans = pnode.spans.slice();
+                    const ppath = parentPath(state.sel.start.path);
+                    spans.splice(at, 1);
+                    const start =
+                        spans.length === 0
+                            ? selStart(ppath, { type: 'list', where: 'inside' })
+                            : at === 0
+                            ? spanStart(spans[0], 0, ppath, state.top, false)
+                            : spanEnd(spans[at - 1], ppath, at - 1, state.top, false);
+                    return start
+                        ? {
+                              nodes: { [pnode.loc]: { ...pnode, spans } },
+                              selection: { start },
+                          }
+                        : undefined;
+                }
+            }
+        }
+        return; // prolly at the toplevel? or in a text or table, gotta handle tat
+    }
     const { at, parent, pnode } = got;
     let node = state.top.nodes[lastChild(state.sel.start.path)];
     const remap: Nodes = {};

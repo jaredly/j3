@@ -348,7 +348,7 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
     }
 };
 
-function spanEnd(last: TextSpan<number>, path: Path, index: number, top: Top, plus1: boolean) {
+export function spanEnd(last: TextSpan<number>, path: Path, index: number, top: Top, plus1: boolean) {
     switch (last.type) {
         case 'text':
             return selStart(path, { type: 'text', end: { index, cursor: splitGraphemes(last.text).length - (plus1 ? 1 : 0) } });
@@ -362,7 +362,7 @@ function spanEnd(last: TextSpan<number>, path: Path, index: number, top: Top, pl
     }
 }
 
-const spanStart = (span: TextSpan<number>, index: number, path: Path, top: Top, plus1: boolean) => {
+export const spanStart = (span: TextSpan<number>, index: number, path: Path, top: Top, plus1: boolean) => {
     if (span.type === 'text') {
         return selStart(path, { type: 'text', end: { index, cursor: plus1 ? 1 : 0 } });
     }
