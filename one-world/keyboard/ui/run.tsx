@@ -124,8 +124,14 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                         </span>
                     );
                 } else if (span.type === 'embed') {
+                    let selected = false;
+                    if (sides && sides.left.index <= i && sides.right.index >= i) {
+                        const left = i === sides?.left.index ? sides.left.cursor : 0;
+                        const right = i === sides?.right.index ? sides.right.cursor : 1;
+                        if (left === 0 && right === 1) selected = true;
+                    }
                     return (
-                        <span style={{ background: 'rgba(255,255,255,0.5)' }} key={i}>
+                        <span style={{ background: selected ? hl : 'rgba(255,255,255,0.5)' }} key={i}>
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 0 && sides.right.cursor === 0 ? (
                                 <Cursor />
                             ) : null}

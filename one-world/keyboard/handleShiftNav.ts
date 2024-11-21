@@ -35,8 +35,6 @@ export const handleShiftText = (
     }
     let end = cursor.end;
     const span = node.spans[end.index];
-    if (span.type !== 'text') return console.error('span not text');
-    const text = cursor.end.text ?? splitGraphemes(span.text);
     if (left) {
         if (end.cursor === 0) {
             if (end.index > 0) {
@@ -56,7 +54,8 @@ export const handleShiftText = (
             end = { ...end, cursor: end.cursor - 1 };
         }
     } else {
-        if (end.cursor === text.length) {
+        const len = span.type === 'text' ? cursor.end.text?.length ?? splitGraphemes(span.text).length : 1;
+        if (end.cursor === len) {
             if (end.index < node.spans.length) {
                 let index = end.index + 1;
                 for (; index < node.spans.length && node.spans[index].type !== 'text'; index++);

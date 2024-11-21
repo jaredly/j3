@@ -287,6 +287,11 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
                 }
                 const { end } = current.cursor;
                 if (end.cursor > 0) {
+                    const span = current.node.spans[end.index];
+                    if (span.type !== 'text') {
+                        return selUpdate(spanEnd(current.node.spans[end.index], current.path, end.index, state.top, true));
+                    }
+
                     return justSel(current.path, {
                         type: 'text',
                         end: {

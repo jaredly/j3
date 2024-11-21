@@ -302,6 +302,12 @@ test('right out of embed', () => {
     check(state, text([tspan('a'), { type: 'embed', item: id('ho') }], true), listc('after'));
 });
 
+test('left into embed', () => {
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('ho') }, tspan('b')], true), textc(1, 1));
+    state = applyUpdate(state, handleNav('ArrowLeft', state));
+    check(state, text([tspan('a'), { type: 'embed', item: id('ho', true) }, tspan('b')]), idc(2));
+});
+
 test('del an embed', () => {
     let state = asTop(text([tspan('a'), { type: 'embed', item: id('ho') }], true), textc(1, 1));
     state = applyUpdate(state, handleDelete(state));
