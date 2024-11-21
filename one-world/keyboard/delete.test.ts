@@ -2,7 +2,7 @@ import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
-import { handleDelete } from './handleDelete';
+import { handleDelete, normalizeTextCursorSide } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
 import { root } from './root';
@@ -236,7 +236,7 @@ test('text delete prev span empty', () => {
 test('text delete prev empty span', () => {
     let state = asTop(text([tspan('a'), tspan(''), tspan('b')], true), textc(2, 0));
     state = applyUpdate(state, handleDelete(state));
-    check(state, text([tspan(''), tspan('b')], true), textc(0, 0));
+    check(state, text([tspan('b')], true), textc(0, 0));
 });
 
 test('text delete prev empty span', () => {
@@ -255,4 +255,11 @@ test('text delete prev empty span to start', () => {
     let state = asTop(text([tspan(''), tspan('a')], true), textc(1, 0));
     state = applyUpdate(state, handleDelete(state));
     check(state, text([tspan('a')], true), listc('start'));
+});
+
+//
+
+test('norm', () => {
+    const side = { index: 2, cursor: -1 };
+    expect(normalizeTextCursorSide([tspan('na'), tspan(''), tspan('')], side)).toEqual({ index: 0, cursor: 1 });
 });

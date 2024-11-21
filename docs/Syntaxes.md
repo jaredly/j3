@@ -1,4 +1,12 @@
 
+OK Folks, let's support Gleam-like syntax too! because it seems very cool.
+
+Syntaxes to try and demo:
+- [ ] JS/TS
+- [ ] Gleam
+- [ ] Clojure+ (jerd3)
+- [ ] Elm? Roc?
+
 
 
 

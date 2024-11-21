@@ -2,6 +2,7 @@
 
 import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
+import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
 import { asTop, id, idc, lisp, list, listc, round, smoosh, text, textc, tspan } from './test-utils';
@@ -299,4 +300,10 @@ test('right out of embed', () => {
     let state = asTop(text([tspan('a'), { type: 'embed', item: id('ho') }], true), textc(1, 1));
     state = applyUpdate(state, handleNav('ArrowRight', state));
     check(state, text([tspan('a'), { type: 'embed', item: id('ho') }], true), listc('after'));
+});
+
+test('del an embed', () => {
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('ho') }], true), textc(1, 1));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([tspan('a')], true), textc(0, 1));
 });

@@ -1,12 +1,12 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, List, Node, Nodes, TextSpan } from '../shared/cnodes';
+import { Id, List, Node, Nodes, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { goLeft, justSel, selectEnd } from './handleNav';
-import { textCursorSides } from './insertId';
+import { textCursorSides, textCursorSides2 } from './insertId';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
 import { TestState } from './test-utils';
-import { Cursor, getCurrent, lastChild, parentLoc, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
+import { Current, Cursor, getCurrent, lastChild, parentLoc, parentPath, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
 
 export const joinParent = (path: Path, top: Top): void | { at: number; pnode: List<number>; parent: Path } => {
     const loc = lastChild(path);
@@ -163,81 +163,8 @@ export const handleDelete = (state: TestState): Update | void => {
                 }
                 return;
             }
-            let { left, right } = textCursorSides(current.cursor);
 
-            if (left === right && left > 0) left--;
-            const { index } = current.cursor.end;
-            const span = current.node.spans[index];
-            const spans = current.node.spans.slice();
-            if (span.type !== 'text') throw new Error(`span not text ${span.type}`);
-            const text = current.cursor.end.text ?? splitGraphemes(span.text);
-
-            if (text.length === 0) {
-                if (index === 0) {
-                    if (current.node.spans.length === 1) {
-                        return removeSelf(state, current);
-                    }
-                }
-            }
-
-            if (left === 0 && left === right) {
-                if (index === 0) {
-                    // TODO richhh
-                    // return leftJoin(state, current.cursor)
-                    return justSel(current.path, { type: 'list', where: 'start' });
-                }
-                if (text.length === 0) {
-                    spans.splice(index, 1);
-                } else {
-                    spans[index] = { ...span, text: text.join('') };
-                }
-
-                let at = index - 1;
-                const empty = (span: TextSpan<unknown>) => span.type === 'text' && span.text === '';
-
-                for (; at >= 0 && empty(spans[at]); at--) {
-                    spans.splice(at, 1);
-                }
-
-                if (at < 0) {
-                    return {
-                        nodes: { [current.node.loc]: { ...current.node, spans } },
-                        selection: { start: selStart(current.path, { type: 'list', where: 'start' }) },
-                    };
-                }
-
-                let prev = spans[at];
-                if (prev.type !== 'text') {
-                    // should we ... just remove it?
-                    spans.splice(at, 1);
-                    // return justSel(state.sel.start.path, { type: 'text', end: {index: at, cursor: 1} });
-                    return {
-                        nodes: { [current.node.loc]: { ...current.node, spans } },
-                        selection: {
-                            start: selStart(
-                                current.path,
-                                spans.length > at
-                                    ? { type: 'text', end: { index: at, cursor: 0 } }
-                                    : at === 0
-                                    ? { type: 'list', where: 'before' }
-                                    : {
-                                          type: 'text',
-                                          end: { index: at - 1, cursor: rightSide(spans[at - 1]) },
-                                      },
-                            ),
-                        },
-                    };
-                }
-                const ptext = splitGraphemes(prev.text);
-                spans[at] = { ...prev, text: ptext.slice(0, -1).join('') };
-                return {
-                    nodes: { [current.node.loc]: { ...current.node, spans } },
-                    selection: { start: selStart(current.path, { type: 'text', end: { index: at, cursor: ptext.length - 1 } }) },
-                };
-            }
-
-            text.splice(left, right - left);
-            return { nodes: {}, selection: { start: selStart(state.sel.start.path, { type: 'text', end: { index, text, cursor: left } }) } };
+            return handleTextDelete(state, current);
         }
 
         default:
@@ -245,11 +172,116 @@ export const handleDelete = (state: TestState): Update | void => {
     }
 };
 
-const rightSide = (span: TextSpan<unknown>) => (span.type === 'text' ? splitGraphemes(span.text).length : 1);
+const spanLength = (span: TextSpan<unknown>, text: undefined | { index: number; grems: string[] }, index: number) =>
+    index === text?.index ? text.grems.length : span.type === 'text' ? splitGraphemes(span.text).length : 1;
 
 const simpleSide = (node: Node, side: 'start' | 'end'): Cursor => {
     if (node.type === 'id') {
         return { type: 'id', end: side === 'start' ? 0 : splitGraphemes(node.text).length };
     }
     return { type: 'list', where: side === 'start' ? 'before' : 'after' };
+};
+
+export const normalizeTextCursorSide = (
+    spans: TextSpan<number>[],
+    side: { index: number; cursor: number },
+    text?: { index: number; grems: string[] },
+): 'before' | 'after' | { index: number; cursor: number } => {
+    side = { ...side };
+    while (true) {
+        if (side.index >= spans.length) return 'after';
+        if (side.index < 0) return 'before';
+
+        const len = spanLength(spans[side.index], text, side.index);
+        if (side.cursor > len) {
+            side.cursor -= len;
+            side.index += 1;
+            continue;
+        }
+        if (side.cursor < 0) {
+            if (side.index === 0) return 'before';
+            const pix = side.index - 1;
+            const len = spanLength(spans[pix], text, pix);
+            side.cursor += len;
+            side.index -= 1;
+            continue;
+        }
+
+        break;
+    }
+    return side;
+};
+
+export const handleTextDelete = (state: TestState, current: Extract<Current, { type: 'text' }>): Update | void => {
+    if (current.cursor.type !== 'text') return;
+    const spans = current.node.spans.slice();
+    let { left, right, text } = textCursorSides2(current.cursor);
+
+    if (text) {
+        const span = spans[text.index];
+        if (span.type === 'text') {
+            spans[text.index] = { ...span, text: text.grems.join('') };
+        }
+    }
+
+    if (left.index === right.index && left.cursor === right.cursor) {
+        left = { ...left, cursor: left.cursor - 1 };
+
+        if (spans.length === 1 && spanLength(spans[0], text, 0) === 0) {
+            return removeSelf(state, current);
+        }
+
+        const loff = normalizeTextCursorSide(spans, left, text);
+        if (loff === 'before') {
+            if (spans[0].type === 'text' && spans[0].text.length === 0) {
+                // Remove empty spans
+                return {
+                    nodes: { [current.node.loc]: { ...current.node, spans: spans.filter((s) => s.type !== 'text' || s.text !== '') } },
+                    selection: { start: selStart(current.path, { type: 'list', where: 'start' }) },
+                };
+            }
+            // TODO remove empty at the starts
+            return justSel(current.path, { type: 'list', where: 'start' });
+        }
+        if (loff === 'after') throw new Error(`cant be after`);
+        left = loff;
+    }
+
+    if (left.index === right.index) {
+        const span = spans[left.index];
+        if (span.type === 'text') {
+            const grems = text?.index === left.index ? text.grems : splitGraphemes(span.text);
+            grems.splice(left.cursor, right.cursor - left.cursor);
+            return {
+                nodes: {},
+                selection: {
+                    start: selStart(state.sel.start.path, { type: 'text', end: { index: left.index, text: grems, cursor: left.cursor } }),
+                },
+            };
+        }
+    }
+
+    let off = 0;
+    for (let index = left.index; index <= right.index; index++) {
+        const span = spans[index - off];
+        const sl = spanLength(span, text, index);
+        const start = left.index === index ? left.cursor : 0;
+        const end = right.index === index ? right.cursor : sl;
+        if (start === 0 && end === sl) {
+            spans.splice(index - off, 1);
+            off++;
+            continue;
+        }
+        if (start === sl || end === 0) continue; // nothing to do here
+        if (span.type !== 'text') {
+            throw new Error(`a non-text span should either be not touched or entirely covered by a text selection`);
+        }
+        const grems = index === text?.index ? text.grems : splitGraphemes(span.text);
+        spans[index - off] = { ...span, text: grems.slice(0, start).concat(grems.slice(end)).join('') };
+    }
+
+    return {
+        nodes: { [current.node.loc]: { ...current.node, spans } },
+        selection: { start: selStart(current.path, { type: 'text', end: { index: left.index, cursor: left.cursor } }) },
+    };
 };

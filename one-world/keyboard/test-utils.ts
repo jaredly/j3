@@ -121,4 +121,4 @@ export const textcs = (index: number, cursor: number, sindex: number, scursor: n
     end: { index, cursor, text },
     start: { index: sindex, cursor: scursor },
 });
-export const tspan = (text: string, style?: Style): TextSpan<RecNodeT<boolean>> => ({ type: 'text', text, style });
+export const tspan = (text: string, style?: Style): TextSpan<any> => ({ type: 'text', text, style });
