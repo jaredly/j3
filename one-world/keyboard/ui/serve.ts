@@ -43,6 +43,10 @@ const service = Bun.serve({
         if (pathname === '/favicon.png') {
             return new Response(Bun.file('../../../web/favicon.png'));
         }
+        if (pathname.startsWith('/fonts/')) {
+            const path = join('../../../web', pathname.slice(1));
+            return new Response(Bun.file(path));
+        }
         const file = Bun.file(join('.', pathname));
         return new Response(file);
     },

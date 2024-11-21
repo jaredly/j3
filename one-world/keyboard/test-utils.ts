@@ -99,7 +99,7 @@ export const js = {
     // so js's default is just 'everything for itself'
     // tight: [...'~`!@#$%^&*_+-=\\./?:'],
     // punct: '~`!@#$%^&*_+-=\\./?:',
-    punct: ['.', '/', '~`!@#$%^&*+-=\\/?:'],
+    punct: ['.', '/', '~`!@#$%^&*+-=\\/?:><'],
     space: ' ',
     sep: ';,\n',
 }; // Classes of keys

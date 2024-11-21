@@ -108,7 +108,7 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
 };
 
 const findListParent = (kind: ListKind<number>, path: Path, top: Top) => {
-    for (let i = path.children.length - 2; i >= 0; i--) {
+    for (let i = path.children.length - 1; i >= 0; i--) {
         const node = top.nodes[path.children[i]];
         if (node.type === 'list' && node.kind === kind) {
             return { path: { ...path, children: path.children.slice(0, i + 1) }, node };
@@ -116,8 +116,8 @@ const findListParent = (kind: ListKind<number>, path: Path, top: Top) => {
     }
 };
 
-export const handleIdClose = (top: Top, { path, cursor }: { path: Path; cursor: IdCursor }, kind: ListKind<number>) => {
-    const parent = findListParent(kind, path, top);
+export const handleIdClose = (top: Top, { path, cursor }: { path: Path; cursor: Cursor }, kind: ListKind<number>) => {
+    const parent = findListParent(kind, cursor.type === 'list' && cursor.where !== 'inside' ? parentPath(path) : path, top);
     if (!parent) return;
     return justSel(parent.path, { type: 'list', where: 'after' });
 };
@@ -129,16 +129,17 @@ export const handleClose = (state: TestState, key: string): Update | void => {
     }
     const kind = closerKind(key);
     if (!kind) return;
-    switch (current.type) {
-        case 'id':
-            return handleIdClose(state.top, current, kind);
-        // case 'list':
-        //     return handleListWrap(state.top, state.sel.start.path, current.cursor, kind);
-        // case 'text':
-        //     return handleTextWrap(state.top, state.sel.start.path, current.cursor, kind);
-        default:
-            throw new Error('not doing');
-    }
+    return handleIdClose(state.top, current, kind);
+    // switch (current.type) {
+    //     case 'id':
+    //     case 'list':
+    //         return handleIdClose(state.top, current.path, kind);
+    //     // return handleListWrap(state.top, state.sel.start.path, current.cursor, kind);
+    //     // case 'text':
+    //     //     return handleTextWrap(state.top, state.sel.start.path, current.cursor, kind);
+    //     default:
+    //         throw new Error('not doing');
+    // }
 };
 
 export const handleWrap = (state: TestState, key: string): Update | void => {

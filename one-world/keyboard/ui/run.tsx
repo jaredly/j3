@@ -58,12 +58,10 @@ const TextWithCursor = ({ text, left, right }: { text: string[]; left: number; r
 
     useEffect(() => {
         if (!ref.current) return;
-        // const rbox = ref.current.getBoundingClientRect();
         const range = new Range();
         range.setStart(ref.current.firstChild!, text.slice(0, left).join('').length);
         range.setEnd(ref.current.firstChild!, text.slice(0, right).join('').length);
         const rects = [...range.getClientRects()];
-        // console.log(rbox, rects);
 
         range.setStart(ref.current.firstChild!, 0);
         range.setEnd(ref.current.firstChild!, 0);
@@ -80,13 +78,8 @@ const TextWithCursor = ({ text, left, right }: { text: string[]; left: number; r
     }, [text, left, right, tick]);
 
     return (
-        <span
-            style={{
-                position: 'relative',
-            }}
-            ref={ref}
-        >
-            {text.length ? text.join('') : '\u200B'}
+        <span style={{ position: 'relative' }}>
+            <span ref={ref}>{text.length ? text.join('') : '\u200B'}</span>
             {rects?.map((rect) => (
                 <div
                     style={{
@@ -97,16 +90,6 @@ const TextWithCursor = ({ text, left, right }: { text: string[]; left: number; r
                     }}
                 />
             ))}
-            {/* <div
-                style={{
-                    position: 'absolute',
-                    left: off?.left ?? 0,
-                    top: off?.top ?? 0,
-                    display: off ? 'block' : 'none',
-                }}
-            >
-                {children}
-            </div> */}
         </span>
     );
 };
@@ -175,13 +158,6 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                         return (
                             <span key={i} style={asStyle(span.style)}>
                                 <TextWithCursor text={text} left={left} right={right} />
-                                {/* {text.slice(0, left).join('')}
-                                {left === right && sides.left.index === sides.right.index ? (
-                                    <Cursor />
-                                ) : (
-                                    <span style={{ background: hl }}>{text.slice(left, right).join('')}</span>
-                                )}
-                                {text.slice(right).join('')} */}
                             </span>
                         );
                     }
