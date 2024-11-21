@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Text } from '../shared/cnodes';
+import { stylesEqual, Text } from '../shared/cnodes';
 import { handleListKey } from './handleListKey';
-import { justSel } from './handleNav';
+import { justSel, selUpdate } from './handleNav';
 import { lastChild, ListCursor, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
 
 export type Config = { punct: string[]; space: string; sep: string };
@@ -45,9 +45,23 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
     }
     const span = current.spans[cursor.end.index];
     if (span.type !== 'text') {
-        // TODO controls, and such. like other than nav,
-        // what would we even do
-        console.warn('not handling non-text spans at');
+        if (span.type === 'embed') {
+            // Either 0 or 1
+            // do we ... go with ... hm. OK I do think that /embeds/ ought to be styleable.
+            // Otherwise that diminishes their usefulness.
+            if (cursor.end.cursor === 1) {
+                let next = current.spans[cursor.end.index + 1];
+                if (cursor.end.index === current.spans.length - 1 || next.type !== 'text' || !stylesEqual(span.style, next.style)) {
+                    const spans = current.spans.slice();
+                    spans.splice(cursor.end.index + 1, 0, { type: 'text', style: span.style, text: grem });
+                    return {
+                        nodes: { [current.loc]: { ...current, spans } },
+                        selection: { start: selStart(path, { type: 'text', end: { index: cursor.end.index + 1, cursor: 1 } }) },
+                    };
+                }
+                return justSel(path, { type: 'text', end: { index: cursor.end.index + 1, cursor: 1, text: [grem, ...splitGraphemes(next.text)] } });
+            }
+        }
         return;
     }
 

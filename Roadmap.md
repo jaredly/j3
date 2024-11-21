@@ -24,6 +24,11 @@ vvvvvvvvvvvv
   - gonna need to do some layout there champ
 
 
+## Text Embeds
+
+- [ ] getem workin
+- [ ] text insert in the before & after
+
 
 I think cursor type=control needs where=start/cover/end...
 like, there needs to be a way to select 'between two embed spans',

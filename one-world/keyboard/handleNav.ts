@@ -261,7 +261,7 @@ export const navRight = (current: Current, state: TestState): Update | void => {
     }
 };
 
-const selUpdate = (sel?: void | NodeSelection['start']): Update | void => (sel ? { nodes: {}, selection: { start: sel } } : undefined);
+export const selUpdate = (sel?: void | NodeSelection['start']): Update | void => (sel ? { nodes: {}, selection: { start: sel } } : undefined);
 
 export const navLeft = (current: Current, state: TestState): Update | void => {
     switch (current.type) {
