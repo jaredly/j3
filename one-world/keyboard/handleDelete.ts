@@ -282,6 +282,19 @@ export const handleTextDelete = (state: TestState, current: Extract<Current, { t
 
     return {
         nodes: { [current.node.loc]: { ...current.node, spans } },
-        selection: { start: selStart(current.path, { type: 'text', end: { index: left.index, cursor: left.cursor } }) },
+        selection: {
+            start: selStart(
+                current.path,
+                !spans.length
+                    ? { type: 'list', where: 'inside' }
+                    : {
+                          type: 'text',
+                          end:
+                              left.index >= spans.length
+                                  ? { index: spans.length - 1, cursor: spanLength(spans[spans.length - 1], undefined, 0) }
+                                  : { index: left.index, cursor: left.cursor },
+                      },
+            ),
+        },
     };
 };
