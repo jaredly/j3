@@ -1,5 +1,6 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { linksEqual, Style, stylesEqual, Text, TextSpan } from '../shared/cnodes';
+import { sideEqual } from './handleNav';
 import { Mods } from './handleShiftNav';
 import { textCursorSides2 } from './insertId';
 import { Path, TextCursor, ListCursor, Top, Update, selStart } from './utils';
@@ -63,7 +64,7 @@ export const handleSpecialText = (
             spans.splice(i + off, 0, { ...span, text: grems.slice(0, start).join('') });
             off++;
         }
-        if (start < grems.length) {
+        if (start < grems.length || (i === right.index && start === end)) {
             if (scur === null && i >= left.index) scur = i + off;
             spans[i + off] = { ...span, style, text: grems.slice(start, end).join('') };
             ecur = { index: i + off, cursor: end - start };

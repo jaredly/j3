@@ -162,7 +162,7 @@ export const handleNav = (key: string, state: TestState): Update | void => {
     }
 };
 
-const sideEqual = (one: { cursor: number; index: number }, two: { cursor: number; index: number }) =>
+export const sideEqual = (one: { cursor: number; index: number }, two: { cursor: number; index: number }) =>
     one.cursor === two.cursor && one.index === two.index;
 
 export const navRight = (current: Current, state: TestState): Update | void => {

@@ -30,7 +30,8 @@ const Cursor = () => (
     <span
         style={{
             display: 'inline-block',
-            width: 2,
+            width: 0,
+            outline: '2px solid red',
             marginRight: -1,
             marginLeft: -1,
             marginBottom: -4,
