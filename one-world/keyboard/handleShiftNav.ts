@@ -1,6 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, Text } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
+import { spanLength } from './handleDelete';
 import { justSel } from './handleNav';
 import { handleSpecialText } from './handleSpecialText';
 import { textCursorSides } from './insertId';
@@ -58,12 +59,13 @@ export const handleShiftText = (
         if (end.cursor === len) {
             if (end.index < node.spans.length) {
                 let index = end.index + 1;
-                for (; index < node.spans.length && node.spans[index].type !== 'text'; index++);
-                if (index >= node.spans.length) return;
+                const txt = end.text ? { grems: end.text, index: end.index } : undefined;
+                for (; index < node.spans.length && spanLength(node.spans[index], txt, index); index++);
+                // if (index >= node.spans.length) return;
                 const pspan = node.spans[index];
-                if (pspan.type !== 'text') return;
+                // if (pspan.type !== 'text') return;
                 end = { index, cursor: 0 };
-                if (index === cursor.end.index + 1 && pspan.text !== '') {
+                if (index === cursor.end.index + 1 && spanLength(node.spans[index], txt, index) > 0) {
                     end.cursor++;
                 }
             }

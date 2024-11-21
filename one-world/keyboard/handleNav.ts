@@ -162,10 +162,13 @@ export const handleNav = (key: string, state: TestState): Update | void => {
     }
 };
 
+const sideEqual = (one: { cursor: number; index: number }, two: { cursor: number; index: number }) =>
+    one.cursor === two.cursor && one.index === two.index;
+
 export const navRight = (current: Current, state: TestState): Update | void => {
     switch (current.type) {
         case 'id': {
-            if (current.cursor.start) {
+            if (current.cursor.start != null && current.cursor.start !== current.cursor.end) {
                 const { right } = cursorSides(current.cursor);
                 return justSel(current.path, { type: 'id', end: right, text: current.cursor.text });
             }
@@ -181,7 +184,7 @@ export const navRight = (current: Current, state: TestState): Update | void => {
         }
         case 'text': {
             if (current.cursor.type === 'text') {
-                if (current.cursor.start) {
+                if (current.cursor.start && !sideEqual(current.cursor.start, current.cursor.end)) {
                     const { right } = textCursorSides2(current.cursor);
                     return justSel(current.path, { type: 'text', end: right });
                 }
@@ -266,7 +269,7 @@ export const selUpdate = (sel?: void | NodeSelection['start']): Update | void =>
 export const navLeft = (current: Current, state: TestState): Update | void => {
     switch (current.type) {
         case 'id': {
-            if (current.cursor.start) {
+            if (current.cursor.start != null && current.cursor.start !== current.cursor.end) {
                 const { left } = cursorSides(current.cursor);
                 return justSel(current.path, { type: 'id', end: left, text: current.cursor.text });
             }
@@ -281,7 +284,7 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
         }
         case 'text': {
             if (current.cursor.type === 'text') {
-                if (current.cursor.start) {
+                if (current.cursor.start && !sideEqual(current.cursor.start, current.cursor.end)) {
                     const { left } = textCursorSides2(current.cursor);
                     return justSel(current.path, { type: 'text', end: left });
                 }

@@ -203,7 +203,7 @@ export const handleDelete = (state: TestState): Update | void => {
     }
 };
 
-const spanLength = (span: TextSpan<unknown>, text: undefined | { index: number; grems: string[] }, index: number) =>
+export const spanLength = (span: TextSpan<unknown>, text: undefined | { index: number; grems: string[] }, index: number) =>
     index === text?.index ? text.grems.length : span.type === 'text' ? splitGraphemes(span.text).length : 1;
 
 const simpleSide = (node: Node, side: 'start' | 'end'): Cursor => {
