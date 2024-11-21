@@ -307,3 +307,15 @@ test('del an embed', () => {
     state = applyUpdate(state, handleDelete(state));
     check(state, text([tspan('a')], true), textc(0, 1));
 });
+
+test('del in an embed', () => {
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('', true) }]), idc(0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([tspan('a')], true), textc(0, 1));
+});
+
+test('del in an embed', () => {
+    let state = asTop(text([{ type: 'embed', item: id('', true) }, tspan('a')]), idc(0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, text([tspan('a')], true), textc(0, 0));
+});
