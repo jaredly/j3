@@ -39,13 +39,12 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
     const { left, right } = cursorSides(cursor);
     const text = cursor.text ?? splitGraphemes(node.text);
     // Wrap the whole thing
-    if (left === 0 && (right === 0 || right === text.length)) {
+    if (left === 0 && right === text.length) {
         return wrapNode(top, path, node, kind);
     }
     const first = text.slice(0, left);
-    const right_ = right === left ? text.length : right;
-    const mid = text.slice(left, right_);
-    const end = text.slice(right_);
+    const mid = text.slice(left, right);
+    const end = text.slice(right);
 
     // at end
     let nextLoc = top.nextLoc;

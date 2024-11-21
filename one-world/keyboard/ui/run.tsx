@@ -86,7 +86,7 @@ const TextWithCursor = ({ text, left, right }: { text: string[]; left: number; r
             }}
             ref={ref}
         >
-            {text.join('')}
+            {text.length ? text.join('') : '\u200B'}
             {rects?.map((rect) => (
                 <div
                     style={{

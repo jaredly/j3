@@ -23,6 +23,11 @@ vvvvvvvvvvvv
 - [ ] \n as a spacer should set 'explicitMultiline' thx
   - gonna need to do some layout there champ
 
+I do need an unsmoosh.
+
+It occurs to me that `wrap` is not necessarily what I want.
+- [ ] really, I want only to wrap when there's a selection. This does make some sense.
+
 
 ## Text Embeds
 
