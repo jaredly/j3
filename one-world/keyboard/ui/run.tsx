@@ -1,24 +1,23 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { isRich, Node, Style } from '../../shared/cnodes';
-import { lastChild, NodeSelection, Top } from '../utils';
-import { init, js, TestState } from '../test-utils';
-import { interleave, interleaveF } from '../interleave';
-import { cursorSplit } from '../cursorSplit';
-import { cursorSides } from '../cursorSides';
-import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { createRoot, Root } from 'react-dom/client';
-import { handleDelete } from '../handleDelete';
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { useLatest } from '../../../web/custom/useLatest';
+import { isRich } from '../../shared/cnodes';
 import { applyUpdate } from '../applyUpdate';
+import { cursorSides } from '../cursorSides';
+import { handleDelete } from '../handleDelete';
 import { handleKey } from '../handleKey';
+import { interleaveF } from '../interleave';
+import { init, js, TestState } from '../test-utils';
+import { lastChild } from '../utils';
 
-import { root } from '../root';
+import { useLocalStorage } from '../../../web/Debug';
 import { asStyle, shape } from '../../shared/shape';
 import { handleNav } from '../handleNav';
-import { textCursorSides, textCursorSides2 } from '../insertId';
-import { closerKind, handleClose, handleWrap, wrapKind } from '../handleWrap';
 import { handleShiftNav, handleSpecial } from '../handleShiftNav';
-import { useLocalStorage } from '../../../web/Debug';
+import { closerKind, handleClose, handleWrap, wrapKind } from '../handleWrap';
+import { textCursorSides2 } from '../insertId';
+import { root } from '../root';
 export {};
 
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
@@ -31,7 +30,7 @@ const Cursor = () => (
         style={{
             display: 'inline-block',
             width: 1,
-            marginRight: -1,
+            marginRight: 0,
             marginLeft: -1,
             marginBottom: -4,
             height: '1em',
@@ -122,9 +121,7 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                 const text = cursor.text ?? splitGraphemes(node.text);
                 return (
                     <span>
-                        {text.slice(0, left).join('')}
-                        {left === right ? <Cursor /> : <span style={{ background: hl }}>{text.slice(left, right).join('')}</span>}
-                        {text.slice(right).join('')}
+                        <TextWithCursor text={text} left={left} right={right} />
                     </span>
                 );
             }
