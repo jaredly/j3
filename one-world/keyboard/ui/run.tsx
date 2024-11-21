@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { isRich, Node, Style } from '../../shared/cnodes';
 import { lastChild, NodeSelection, Top } from '../utils';
 import { init, js, TestState } from '../test-utils';
@@ -30,8 +30,7 @@ const Cursor = () => (
     <span
         style={{
             display: 'inline-block',
-            width: 0,
-            outline: '2px solid red',
+            width: 1,
             marginRight: -1,
             marginLeft: -1,
             marginBottom: -4,
@@ -42,6 +41,76 @@ const Cursor = () => (
         }}
     />
 );
+
+const useResizeTick = () => {
+    const [tick, setTick] = useState(0);
+    useEffect(() => {
+        const fn = () => setTick((t) => t + 1);
+        window.addEventListener('resize', fn);
+        return () => window.removeEventListener('resize', fn);
+    }, []);
+    return tick;
+};
+
+const TextWithCursor = ({ text, left, right }: { text: string[]; left: number; right: number }) => {
+    const ref = useRef<HTMLSpanElement>(null);
+    const [rects, setRects] = useState(null as null | { width: number; height: number; left: number; top: number }[]);
+    const tick = useResizeTick();
+
+    useEffect(() => {
+        if (!ref.current) return;
+        // const rbox = ref.current.getBoundingClientRect();
+        const range = new Range();
+        range.setStart(ref.current.firstChild!, text.slice(0, left).join('').length);
+        range.setEnd(ref.current.firstChild!, text.slice(0, right).join('').length);
+        const rects = [...range.getClientRects()];
+        // console.log(rbox, rects);
+
+        range.setStart(ref.current.firstChild!, 0);
+        range.setEnd(ref.current.firstChild!, 0);
+        const rbox = range.getBoundingClientRect();
+
+        setRects(
+            rects.map((rect) => ({
+                width: Math.max(1, rect.width),
+                height: rect.height,
+                left: rect.left - rbox.left,
+                top: rect.top - rbox.top,
+            })),
+        );
+    }, [text, left, right, tick]);
+
+    return (
+        <span
+            style={{
+                position: 'relative',
+            }}
+            ref={ref}
+        >
+            {text.join('')}
+            {rects?.map((rect) => (
+                <div
+                    style={{
+                        ...rect,
+                        position: 'absolute',
+                        backgroundColor: 'red',
+                        opacity: rect.width === 1 ? 1 : 0.2,
+                    }}
+                />
+            ))}
+            {/* <div
+                style={{
+                    position: 'absolute',
+                    left: off?.left ?? 0,
+                    top: off?.top ?? 0,
+                    display: off ? 'block' : 'none',
+                }}
+            >
+                {children}
+            </div> */}
+        </span>
+    );
+};
 
 const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inRich: boolean }) => {
     const node = state.top.nodes[loc];
@@ -108,13 +177,14 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                         const right = i === sides.right.index ? sides.right.cursor : text.length;
                         return (
                             <span key={i} style={asStyle(span.style)}>
-                                {text.slice(0, left).join('')}
+                                <TextWithCursor text={text} left={left} right={right} />
+                                {/* {text.slice(0, left).join('')}
                                 {left === right && sides.left.index === sides.right.index ? (
                                     <Cursor />
                                 ) : (
                                     <span style={{ background: hl }}>{text.slice(left, right).join('')}</span>
                                 )}
-                                {text.slice(right).join('')}
+                                {text.slice(right).join('')} */}
                             </span>
                         );
                     }
@@ -219,7 +289,7 @@ const App = () => {
 
     return (
         <>
-            <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', wordBreak: 'break-all', marginBottom: 100 }}>
+            <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', marginBottom: 100 }}>
                 <RenderNode loc={state.top.root} state={state} inRich={false} />
             </div>
             <div>{shape(root(state))}</div>
