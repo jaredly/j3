@@ -208,7 +208,25 @@ export const handleDelete = (state: TestState): Update | void => {
 
                 let prev = spans[at];
                 if (prev.type !== 'text') {
-                    return justSel(state.sel.start.path, { type: 'control', index: at });
+                    // should we ... just remove it?
+                    spans.splice(at, 1);
+                    // return justSel(state.sel.start.path, { type: 'text', end: {index: at, cursor: 1} });
+                    return {
+                        nodes: { [current.node.loc]: { ...current.node, spans } },
+                        selection: {
+                            start: selStart(
+                                current.path,
+                                spans.length > at
+                                    ? { type: 'text', end: { index: at, cursor: 0 } }
+                                    : at === 0
+                                    ? { type: 'list', where: 'before' }
+                                    : {
+                                          type: 'text',
+                                          end: { index: at - 1, cursor: rightSide(spans[at - 1]) },
+                                      },
+                            ),
+                        },
+                    };
                 }
                 const ptext = splitGraphemes(prev.text);
                 spans[at] = { ...prev, text: ptext.slice(0, -1).join('') };
@@ -226,6 +244,8 @@ export const handleDelete = (state: TestState): Update | void => {
             throw new Error('nop');
     }
 };
+
+const rightSide = (span: TextSpan<unknown>) => (span.type === 'text' ? splitGraphemes(span.text).length : 1);
 
 const simpleSide = (node: Node, side: 'start' | 'end'): Cursor => {
     if (node.type === 'id') {
