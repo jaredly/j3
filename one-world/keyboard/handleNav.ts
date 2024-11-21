@@ -121,6 +121,11 @@ export const goLeft = (path: Path, top: Top): NodeSelection['start'] | void => {
         }
         return selectEnd(pathWithChildren(parentPath(path), pnode.children[at - 1]), top, pnode.kind === 'smooshed');
     }
+    if (pnode.type === 'text') {
+        const index = pnode.spans.findIndex((n) => n.type === 'embed' && n.item === loc);
+        if (index === -1) throw new Error('not actually in the text idk ' + loc);
+        return selStart(parentPath(path), { type: 'text', end: { index, cursor: 0 } });
+    }
 };
 
 export const goRight = (path: Path, top: Top): NodeSelection['start'] | void => {
@@ -143,9 +148,6 @@ export const goRight = (path: Path, top: Top): NodeSelection['start'] | void => 
         const index = pnode.spans.findIndex((n) => n.type === 'embed' && n.item === loc);
         if (index === -1) throw new Error('not actually in the text idk ' + loc);
         return selStart(parentPath(path), { type: 'text', end: { index, cursor: 1 } });
-        // if (index === pnode.spans.length - 1) {
-        //     // immmm gonna need like a 'control start/cover/end arent i'
-        // }
     }
 };
 
@@ -183,20 +185,29 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                     const { right } = textCursorSides2(current.cursor);
                     return justSel(current.path, { type: 'text', end: right });
                 }
-                const span = current.node.spans[current.cursor.end.index];
-                if (span.type !== 'text') throw new Error(`curent span is not text`);
-                const text = current.cursor.end.text ?? splitGraphemes(span.text);
-                if (current.cursor.end.cursor < text.length) {
+                const { end } = current.cursor;
+                const span = current.node.spans[end.index];
+                if (span.type !== 'text') {
+                    if (end.cursor === 0) {
+                        return selUpdate(spanStart(span, end.index, current.path, state.top, true));
+                    }
+                    if (end.index < current.node.spans.length - 1) {
+                        return selUpdate(spanStart(current.node.spans[end.index + 1], end.index + 1, current.path, state.top, true));
+                    }
+                    return justSel(current.path, { type: 'list', where: 'after' });
+                }
+                const text = end.text ?? splitGraphemes(span.text);
+                if (end.cursor < text.length) {
                     return justSel(current.path, {
                         type: 'text',
                         end: {
-                            index: current.cursor.end.index,
-                            cursor: current.cursor.end.cursor + 1,
-                            text: current.cursor.end.text,
+                            index: end.index,
+                            cursor: end.cursor + 1,
+                            text: end.text,
                         },
                     });
                 }
-                if (current.cursor.end.index >= current.node.spans.length - 1) {
+                if (end.index >= current.node.spans.length - 1) {
                     const parent = state.top.nodes[parentLoc(current.path)];
                     // Rich Text, we jump to the next item thankx
                     if (parent?.type === 'list' && isRich(parent.kind)) {
@@ -204,7 +215,7 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                     }
                     return justSel(current.path, { type: 'list', where: 'after' });
                 }
-                const idx = current.cursor.end.index + 1;
+                const idx = end.index + 1;
                 return selUpdate(spanStart(current.node.spans[idx], idx, current.path, state.top, true));
             }
             if (current.cursor.type === 'list') {
@@ -342,7 +353,10 @@ function spanEnd(last: TextSpan<number>, path: Path, index: number, top: Top, pl
         case 'text':
             return selStart(path, { type: 'text', end: { index, cursor: splitGraphemes(last.text).length - (plus1 ? 1 : 0) } });
         case 'embed':
-            return selectEnd(pathWithChildren(path, last.item), top, plus1);
+            if (plus1) {
+                return selectEnd(pathWithChildren(path, last.item), top);
+            }
+            return selStart(path, { type: 'text', end: { index, cursor: 1 } });
         default:
             return selStart(path, { type: 'control', index });
     }
@@ -353,7 +367,10 @@ const spanStart = (span: TextSpan<number>, index: number, path: Path, top: Top, 
         return selStart(path, { type: 'text', end: { index, cursor: plus1 ? 1 : 0 } });
     }
     if (span.type === 'embed') {
-        return selectStart(pathWithChildren(path, span.item), top, plus1);
+        if (plus1) {
+            return selectStart(pathWithChildren(path, span.item), top);
+        }
+        return selStart(path, { type: 'text', end: { index, cursor: 0 } });
     }
     return selStart(path, { type: 'control', index });
 };

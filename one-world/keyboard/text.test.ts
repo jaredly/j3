@@ -142,7 +142,7 @@ test('text nav between span and embed', () => {
             { type: 'text', text: 'hi' },
             { type: 'embed', item: id('lo', true) },
         ]),
-        idc(1),
+        idc(0),
     );
 });
 
@@ -161,7 +161,7 @@ test('back into text inside', () => {
 test('back into text embed', () => {
     let state = asTop(smoosh([text([{ type: 'embed', item: id('hi') }]), id('ho', true)]), idc(0));
     state = applyUpdate(state, handleNav('ArrowLeft', state)!);
-    check(state, smoosh([text([{ type: 'embed', item: id('hi', true) }]), id('ho')]), idc(2));
+    check(state, smoosh([text([{ type: 'embed', item: id('hi') }], true), id('ho')]), textc(0, 1));
 });
 
 // MARK: right list
@@ -259,7 +259,7 @@ test('nav left text (text) ', () => {
             { type: 'embed', item: id('hi', true) },
             { type: 'text', text: 'ho' },
         ]),
-        idc(1),
+        idc(2),
     );
 });
 
@@ -287,4 +287,16 @@ test('embed at span star', () => {
     let state = asTop(text([tspan('a'), tspan('$ho')], true), textc(1, 1));
     state = applyUpdate(state, handleKey(state, '{', lisp)!);
     check(state, text([tspan('a'), { type: 'embed', item: id('', true) }, tspan('ho')]), idc(0));
+});
+
+test('right out of embed', () => {
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('ho') }, tspan('b')], true), textc(1, 1));
+    state = applyUpdate(state, handleNav('ArrowRight', state));
+    check(state, text([tspan('a'), { type: 'embed', item: id('ho') }, tspan('b')], true), textc(2, 1));
+});
+
+test('right out of embed', () => {
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('ho') }], true), textc(1, 1));
+    state = applyUpdate(state, handleNav('ArrowRight', state));
+    check(state, text([tspan('a'), { type: 'embed', item: id('ho') }], true), listc('after'));
 });

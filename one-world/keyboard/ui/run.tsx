@@ -126,9 +126,15 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                 } else if (span.type === 'embed') {
                     return (
                         <span style={{ background: 'rgba(255,255,255,0.5)' }} key={i}>
+                            {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 0 && sides.right.cursor === 0 ? (
+                                <Cursor />
+                            ) : null}
                             {'${'}
                             <RenderNode inRich={false} loc={span.item} state={state} />
                             {'}'}
+                            {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 1 && sides.right.cursor === 1 ? (
+                                <Cursor />
+                            ) : null}
                         </span>
                     );
                 } else {
