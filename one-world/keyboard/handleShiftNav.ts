@@ -60,7 +60,7 @@ export const handleShiftText = (
             if (end.index < node.spans.length) {
                 let index = end.index + 1;
                 const txt = end.text ? { grems: end.text, index: end.index } : undefined;
-                for (; index < node.spans.length && spanLength(node.spans[index], txt, index); index++);
+                for (; index < node.spans.length && spanLength(node.spans[index], txt, index) === 0; index++);
                 // if (index >= node.spans.length) return;
                 const pspan = node.spans[index];
                 // if (pspan.type !== 'text') return;

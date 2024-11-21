@@ -26,11 +26,11 @@ vvvvvvvvvvvv
 
 ## Text Embeds
 
-- [ ] getem workin
-- [ ] text insert in the before & after
+- [x] getem workin
+- [x] text insert in the before & after
   - [x] after
-  - [ ] before
-  - [ ] delete back to an embed
+  - [x] before
+  - [x] delete back to an embed
 
 
 I think cursor type=control needs where=start/cover/end...
