@@ -80,8 +80,9 @@ const TextWithCursor = ({ text, left, right }: { text: string[]; left: number; r
     return (
         <span style={{ position: 'relative' }}>
             <span ref={ref}>{text.length ? text.join('') : '\u200B'}</span>
-            {rects?.map((rect) => (
+            {rects?.map((rect, i) => (
                 <div
+                    key={i}
                     style={{
                         ...rect,
                         position: 'absolute',

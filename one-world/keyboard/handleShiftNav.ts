@@ -61,7 +61,7 @@ export const handleShiftText = (
                 let index = end.index + 1;
                 const txt = end.text ? { grems: end.text, index: end.index } : undefined;
                 for (; index < node.spans.length && spanLength(node.spans[index], txt, index) === 0; index++);
-                // if (index >= node.spans.length) return;
+                if (index >= node.spans.length) return;
                 const pspan = node.spans[index];
                 // if (pspan.type !== 'text') return;
                 end = { index, cursor: 0 };

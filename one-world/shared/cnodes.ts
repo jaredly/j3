@@ -73,6 +73,8 @@ export const stylesEqual = (one?: Style, two?: Style) => {
 // more intelligent merges
 type Src = { top: string; loc: number; moved: boolean };
 
+export type Loc = { id: string; idx: number }[];
+
 export type IdRef =
     | {
           type: 'toplevel';
@@ -195,7 +197,7 @@ export type RecCollection<Loc> =
       };
 
 export type RecNodeT<Loc> = Id<Loc> | RecText<Loc> | RecCollection<Loc>;
-export type RecNode = RecNodeT<{ id: string; idx: number }[]>;
+export type RecNode = RecNodeT<Loc>;
 export type Nodes = Record<number, Node>;
 
 const refsEqual = (one: IdRef, two: IdRef): boolean => {

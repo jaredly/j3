@@ -22,6 +22,7 @@ vvvvvvvvvvvv
 - [x] " at the end of string should be a closerr
 - [ ] \n as a spacer should set 'explicitMultiline' thx
   - gonna need to do some layout there champ
+- [x] better closer handling
 
 I do need an unsmoosh.
 
