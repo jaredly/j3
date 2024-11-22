@@ -12,7 +12,7 @@ anyway for this round I think I'll be ok ... leaning on web tech more? idk.
 There's also "closed" mode
 
 { contents
-  contesnts }
+  contents }
 
 that's more ... lispy.
 

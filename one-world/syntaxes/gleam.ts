@@ -1,4 +1,4 @@
-import { ListKind, Loc, RecNode, TableKind } from '../shared/cnodes';
+import { ListKind, Loc, RecNode, RecNodeT, TableKind } from '../shared/cnodes';
 
 export const parseTop = (node: RecNode) => {
     // switch (node.type)
@@ -20,38 +20,38 @@ const one =
         return inner(nodes[at]);
     };
 
-const kwd = (name: string) =>
+export const kwd = (name: string) =>
     one((node) => (node.type === 'id' && node.text === name && node.ref?.type !== 'toplevel' ? { consume: 1, error: [], data: name } : null));
-const id = one((node) => (node.type === 'id' && node.ref?.type !== 'toplevel' ? { data: node.text, consume: 1, error: [] } : null));
-const string = one((node) => (node.type === 'text' ? { data: node.spans, consume: 1, error: [] } : null));
+export const id = one((node) => (node.type === 'id' && node.ref?.type !== 'toplevel' ? { data: node.text, consume: 1, error: [] } : null));
+export const string = (embeds: Matcher) => one((node) => (node.type === 'text' ? { data: node.spans, consume: 1, error: [] } : null));
 
 // Secondary
-const named =
+export const named =
     (name: string, inner: Matcher): Matcher =>
     (node, at) => {
         const res = inner(node, at);
-        return res ? { match: true, data: { [name]: res.data }, consume: res.consume, error: res.error } : null;
+        return res ? { data: { [name]: res.data }, consume: res.consume, error: res.error } : null;
     };
-const opt =
-    (inner: Matcher): Matcher =>
-    (nodes, at) => {
-        const res = inner(nodes, at);
-        return { match: true, data: res ? res.data ?? true : false, consume: res ? res.consume : 0, error: res?.error ?? [] };
-    };
-// TODO would be nice to cache the inner thunk, as it's only for circular referencing.
-const defer =
-    (inner: () => Matcher): Matcher =>
-    (nodes, at) =>
-        inner()(nodes, at);
+// export const opt =
+//     (inner: Matcher): Matcher =>
+//     (nodes, at) => {
+//         const res = inner(nodes, at);
+//         return { data: res ? res.data ?? true : false, consume: res ? res.consume : 0, error: res?.error ?? [] };
+//     };
 
-const add =
+const defer = (inner: () => Matcher): Matcher => {
+    let res: null | Function = null;
+    return (nodes, at) => (res ? res : (res = inner()))(nodes, at);
+};
+
+export const add =
     (name: string, value: any, inner: Matcher): Matcher =>
     (nodes, at) => {
         const res = inner(nodes, at);
         return res ? { ...res, data: { ...res.data, [name]: value } } : null;
     };
 
-const matches =
+export const matches =
     (items: Matcher[]): Matcher =>
     (nodes, at) => {
         const data = {};
@@ -66,10 +66,10 @@ const matches =
             }
             error.push(...res.error);
         }
-        return { match: true, data, consume: at - init, error };
+        return { data, consume: at - init, error };
     };
 
-const multi =
+export const multi =
     (item: Matcher): Matcher =>
     (nodes, at) => {
         const data = [];
@@ -81,12 +81,11 @@ const multi =
             at += res.consume;
             data.push(res.data);
             error.push(...res.error);
-            at++;
         }
-        return { match: true, data, consume: at - init, error };
+        return { data, consume: at - init, error };
     };
 
-const space = (items: Matcher[]): Matcher =>
+export const space = (items: Matcher[]): Matcher =>
     one((node) => {
         if (node.type !== 'list' || node.kind !== 'spaced') return null;
         const res = matches(items)(node.children, 0);
@@ -98,7 +97,7 @@ const space = (items: Matcher[]): Matcher =>
         return { data: res.data, consume: 1, error: res.error };
     });
 
-const smoosh = (items: Matcher[]): Matcher =>
+export const smoosh = (items: Matcher[]): Matcher =>
     one((node) => {
         if (node.type !== 'list' || node.kind !== 'smooshed') return null;
         const res = matches(items)(node.children, 0);
@@ -116,7 +115,7 @@ const opts =
         return { data: res ? res.data ?? true : false, consume: res ? res.consume : 0, error: res?.error ?? [] };
     };
 
-const list = (kind: ListKind<any>, item: Matcher): Matcher =>
+export const list = (kind: ListKind<any>, item: Matcher): Matcher =>
     one((node) => {
         if (node.type !== 'list' || node.kind !== kind) return null;
         const data: any[] = [];
@@ -131,7 +130,7 @@ const list = (kind: ListKind<any>, item: Matcher): Matcher =>
             data.push(res.data);
             error.push(...res.error);
         });
-        return { match: true, data, consume: 1, error };
+        return { data, consume: 1, error };
     });
 
 // const list = (kind: ListKind<any>, item: Matcher): Matcher =>
@@ -210,9 +209,12 @@ const precedences: string[][] = [
 
 const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%'];
 
-const expr_ = defer(() => expr);
-
-const pat = id;
+const pat_ = defer(() => pat);
+export const pat = nswch('kind', {
+    id: named('id', id),
+    array: named('items', list('square', swch([add('kind', 'spread', smoosh([kwd('..'), pat_])), pat_]))),
+    string: named('value', string(pat_)),
+});
 
 // Nowww I really want this parser generator to:
 // - give reeeally good error messages
@@ -225,9 +227,10 @@ const pat = id;
 //     to explore 'autocomplete w/ holes' coming ~automatically from this stuff
 // - take care of positional autocomplete for me
 
-const expr = nswch('kind', {
+const expr_ = defer(() => expr);
+export const expr = nswch('kind', {
     id: named('value', id),
-    string: named('value', string),
+    string: named('value', string(expr_)),
     array: named('value', list('square', expr_)),
     record: named('value', table('curly', [named('key', id), named('value', expr_)])),
     tuple: named('value', round(expr_)),
@@ -236,12 +239,15 @@ const expr = nswch('kind', {
     smooshed: smoosh([
         named('prefixes', multi(swch([kwd('+'), kwd('-'), kwd('~'), kwd('!')]))),
         named('base', expr_),
-        multi(
-            nswch('kind', {
-                attr: matches([kwd('.'), named('attr', id)]),
-                index: list('square', expr_),
-                call: round(expr_),
-            }),
+        named(
+            'suffixes',
+            multi(
+                nswch('kind', {
+                    attr: matches([kwd('.'), named('attr', id)]),
+                    index: list('square', expr_),
+                    call: named('args', round(expr_)),
+                }),
+            ),
         ),
     ]),
     // Let's decide for a minute that you have to surround ifs and cases in parens
@@ -252,7 +258,9 @@ const expr = nswch('kind', {
     bops: space([defer(() => binned)]),
 });
 
-// const bops = [named('left', expr_), multi(matches([named('op', swch(binops.map(kwd))), named('right', expr_)]))];
+export const parse = (node: RecNodeT<Loc>, matcher: Matcher) => {
+    return matcher([node], 0);
+};
 
 const fancy = nswch('kind', {
     ifs: matches([kwd('if'), defer(() => binned), named('yes', block), opts([kwd('else'), named('no', block)])]),
@@ -265,45 +273,19 @@ const binned = matches([fancy, multi(matches([named('op', swch(binops.map(kwd)))
 // case 1 + fn { lol } + fn { ho } { yesplease }
 
 // SOOO when we get some /spaces/
-//
 
-/*(
-
-PROVLEM
-
-(1) expr might be dropped in the middle of a spaces and need to eat them all.
-(2) we need to do the whole precedence parsing nonsense
-
-*/
-
-// const expr = nswch('kind', {
-//     id: named('id', id),
-//     if_: space([
-//         kwd('if'),
-//         named('cond', defer(() => expr)),
-//         named('yes', block),
-//         opts([
-//             kwd('else'),
-//             named('no', block)
-//         ])
-//     ]),
-//     case_: space([
-//         kwd('case'),
-//     ])
-// })
-
-const stmt = nswch('kind', {
-    let: space([kwd('let'), named('name', id), kwd('='), named('value', expr)]),
+export const stmt = nswch('kind', {
+    let: space([kwd('let'), named('pat', pat), kwd('='), named('value', expr)]),
     expr: named('expr', expr),
 });
 
-const topfn = space([
-    named('pub', opt(kwd('pub'))),
-    kwd('fn'),
-    smoosh([named('name', id), named('args', round(swch([named('name', id), space([smoosh([named('name', id), kwd(':')]), named('type', typ)])])))]),
-    opts([kwd('->'), named('type', typ)]),
-    block,
-]);
+// const topfn = space([
+//     named('pub', opt(kwd('pub'))),
+//     kwd('fn'),
+//     smoosh([named('name', id), named('args', round(swch([named('name', id), space([smoosh([named('name', id), kwd(':')]), named('type', typ)])])))]),
+//     opts([kwd('->'), named('type', typ)]),
+//     block,
+// ]);
 
 /*
 ok hm am I going to make a combinator library nowwwww
