@@ -32,21 +32,23 @@ export type Matcher<Res> =
 
 type Bag<T> = T | Bag<T>[];
 
-type MatchError = { matcher: Matcher<any>; node?: RecNode };
+const bagSize = (bag: Bag<unknown>): number => (Array.isArray(bag) ? bag.reduce((c, b) => c + bagSize(b), 0) : 1);
+
+type MatchError = { type: 'mismatch' | 'extra'; matcher: Matcher<any>; node: RecNode } | { type: 'missing'; matcher: Matcher<any> };
 type Data = { type: 'single'; value: any } | { type: 'named'; value: Record<string, any> };
 type MatchRes<T> = { result: null | { data: T; consumed: number }; good: Bag<RecNode>; bad: Bag<MatchError> };
 
 const single = (value: any): Data => ({ type: 'single', value });
 const ndata = (name: string, value: any): Data => ({ type: 'named', value: { [name]: value } });
 
-const fail = (matcher: Matcher<any>, node: RecNode): MatchRes<any> => ({ result: null, good: [], bad: [{ matcher, node }] });
+const fail = (matcher: Matcher<any>, node: RecNode): MatchRes<any> => ({ result: null, good: [], bad: [{ type: 'mismatch', matcher, node }] });
 const one = <T>(data: T, node: RecNode, good: Bag<RecNode> = [], bad: Bag<MatchError> = []): MatchRes<T> => ({
     result: { data, consumed: 1 },
     good: [node, good],
     bad,
 });
 
-type Ctx = { matchers: Record<string, Matcher<any>> };
+type Ctx = { matchers: Record<string, Matcher<any>>; kwds: string[] };
 
 /** We need to:
  * - respond with data (& # consumed) OR indicate failure
@@ -80,13 +82,54 @@ const match = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: number): 
                 }
                 Object.assign(value, res.result.data);
             }
+            if (matcher.all) {
+                for (; at < nodes.length; at++) {
+                    bad.push({ type: 'extra', node: nodes[at], matcher });
+                }
+            }
             return { result: { data: value as T, consumed: at - init }, good, bad };
         }
-        // case 'multi'
+        case 'multi': {
+            const init = at;
+            let value: any[] = [];
+            while (at < nodes.length) {
+                const res = match(matcher.item, ctx, nodes, at);
+                if (!res.result) {
+                    if (matcher.all) {
+                        bad.push(res.bad);
+                        good.push(res.good);
+                        at++;
+                        continue;
+                    }
+                    break;
+                }
+                if (!res.result.consumed) throw new Error(`multi must consume`);
+                at += res.result.consumed;
+                value.push(res.result.data);
+                good.push(res.good);
+                bad.push(res.bad);
+            }
+            return { result: { data: value as T, consumed: at - init }, good, bad };
+        }
+        case 'opt': {
+            const res = match(matcher.inner, ctx, nodes, at);
+            return { ...res, result: res.result ?? { consumed: 0, data: null } };
+        }
+        case 'switch': {
+            // Here's where we ... judge them?
+            const misses: { good: Bag<RecNode>; bad: Bag<MatchError>; goods: number }[] = [];
+            for (let choice of matcher.choices) {
+                const res = match(choice, ctx, nodes, at);
+                if (res.result) return res;
+                misses.push({ good: res.good, bad: res.bad, goods: bagSize(res.good) });
+            }
+            misses.sort((a, b) => b.goods - a.goods);
+            return { result: null, good: misses[0].good, bad: misses[0].bad };
+        }
     }
 
     if (at >= nodes.length) {
-        return { good: [], bad: { matcher }, result: null };
+        return { good: [], bad: { type: 'missing', matcher }, result: null };
     }
 
     // Then, we'll do "just one" matchers
@@ -100,7 +143,7 @@ const match = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: number): 
         }
         case 'id':
             if (node.type !== 'id') return fail(matcher, node);
-            if (matcher.kind == null && !node.ref) {
+            if (matcher.kind == null && !node.ref && !ctx.kwds.includes(node.text)) {
                 return one(matcher.f(node), node);
             } else if (node.ref?.type === 'toplevel' && node.ref.kind === matcher.kind) {
                 return one(matcher.f(node), node);
