@@ -6,6 +6,7 @@ export type Matcher<Res> =
     | { type: 'id'; kind: string | null; f: (v: Id<Loc>) => Res } // if kind is provided, this is a toplevel ref
     | { type: 'kwd'; text: string; f: (v: string) => Res }
     | { type: 'text'; embeds: Matcher<any>; f: (v: TextSpan<any>[]) => Res }
+    | { type: 'tx'; inner: Matcher<any>; f: (v: any) => Res }
     | { type: 'named'; name: string; inner: Matcher<any> } // turns a single into a multi, and a multi into a multi
     // | { type: 'add'; name: string; value: any; inner: Matcher }
     | {
@@ -38,7 +39,7 @@ type MatchRes<T> = { result: null | { data: T; consumed: number }; good: Bag<Rec
 const single = (value: any): Data => ({ type: 'single', value });
 const ndata = (name: string, value: any): Data => ({ type: 'named', value: { [name]: value } });
 
-const fail = (matcher: Matcher<any>, node: RecNode): MatchRes => ({ result: null, good: [], bad: [{ matcher, node }] });
+const fail = (matcher: Matcher<any>, node: RecNode): MatchRes<any> => ({ result: null, good: [], bad: [{ matcher, node }] });
 const one = <T>(data: T, node: RecNode, good: Bag<RecNode> = [], bad: Bag<MatchError> = []): MatchRes<T> => ({
     result: { data, consumed: 1 },
     good: [node, good],
@@ -93,6 +94,10 @@ const match = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: number): 
     switch (matcher.type) {
         case 'mref':
             return match(ctx.matchers[matcher.id], ctx, nodes, at);
+        case 'tx': {
+            const res = match(matcher.inner, ctx, nodes, at);
+            return { ...res, result: res.result ? { ...res.result, data: matcher.f(res.result.data) } : null };
+        }
         case 'id':
             if (node.type !== 'id') return fail(matcher, node);
             if (matcher.kind == null && !node.ref) {
@@ -150,15 +155,16 @@ const match = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: number): 
 const id = <T>(kind: string | null, f: (v: Id<Loc>) => T): Matcher<T> => ({ type: 'id', kind, f });
 const kwd = <T>(text: string, f: (v: string) => T): Matcher<T> => ({ type: 'kwd', text, f });
 const text = <E, T>(embeds: Matcher<E>, f: (v: TextSpan<E>[]) => T): Matcher<T> => ({ type: 'text', embeds, f });
-const named = <A, N extends string>(name: N, inner: Matcher<A>): Matcher<Record<N, A>> => ({ type: 'named', name, inner });
 // const add = (name: string, value: any, inner: Matcher): Matcher => ({ type: 'add', name, value, inner });
-const sequence = <T>(items: Matcher<Partial<T>>[], all: boolean, f: (v: Partial<T>) => T): Matcher<T> => ({ type: 'sequence', items, all, f });
-const multi = <T, R>(item: Matcher<T>, all: boolean, f: (v: T[]) => R = (v) => v as R): Matcher<R> => ({ type: 'multi', item, all, f });
+const sequence = <T, R = T>(items: Matcher<Partial<T> | null>[], all: boolean, f: (v: T) => R): Matcher<R> => ({ type: 'sequence', items, all, f });
+const multi = <T, R = T[]>(item: Matcher<T>, all: boolean, f: (v: T[]) => R = (v) => v as R): Matcher<R> => ({ type: 'multi', item, all, f });
 const list = <K, I, O>(kind: ListKind<Matcher<K>>, children: Matcher<I>, f: (v: I) => O): Matcher<O> => ({ type: 'list', kind, children, f });
-const opt = <T, R>(inner: Matcher<T>, f: (v: T) => R): Matcher<R> => ({ type: 'opt', inner, f });
+const opt = <T, R>(inner: Matcher<T>, f: (v: T | null) => R): Matcher<R> => ({ type: 'opt', inner, f });
 const table = <I, R>(kind: TableKind, row: Matcher<I>, f: (v: I[]) => R): Matcher<R> => ({ type: 'table', kind, row, f });
-const switch_ = <C, R>(choices: Matcher<C>[], f: (v: C) => R): Matcher<R> => ({ type: 'switch', choices, f });
+const switch_ = <C, R = C>(choices: Matcher<C>[], f: (v: C) => R): Matcher<R> => ({ type: 'switch', choices, f });
 const mref = <R>(id: string): Matcher<R> => ({ type: 'mref', id });
+const named = <A, N extends string, R = Record<N, A>>(name: N, inner: Matcher<A>): Matcher<R> => ({ type: 'named', name, inner });
+const tx = <A, B>(inner: Matcher<A>, f: (a: A) => B): Matcher<B> => ({ type: 'tx', inner, f });
 
 const pat_ = mref<Pat>('pat');
 const sprpat_ = mref<SPat>('sprpat');
@@ -187,7 +193,7 @@ const _pat: Matcher<Pat>[] = [
     list('square', multi(sprpat_, true, idt), (values) => ({ type: 'array', values })),
     list(
         'smooshed',
-        sequence<PCon>(
+        sequence<PCon, PCon>(
             [
                 //
                 id('constructor', (node) => ({ type: 'constr', constr: node })),
@@ -203,7 +209,7 @@ const _pat: Matcher<Pat>[] = [
 
 const _spat: Matcher<SPat>[] = [
     ..._pat,
-    list('smooshed', sequence<Pat>([kwd('..', () => ({})), pat_], true, idp), (inner) => ({ type: 'spread', inner })),
+    list('smooshed', sequence<Pat, Pat>([kwd('..', () => ({})), pat_], true, idt), (inner) => ({ type: 'spread', inner })),
 ];
 
 export const pat = switch_(_pat, idt);
@@ -211,47 +217,131 @@ export const sprpat = switch_(_spat, idt);
 
 const uops = ['+', '-', '!', '~'];
 
-const block = list('curly', multi(mref('stmt'), true), idt);
+const block = list('curly', multi(mref<Stmt>('stmt'), true, idt), idt);
 
-const expr_ = mref('expr');
-const sprexpr_ = mref('sprexpr');
+const expr_ = mref<Expr>('expr');
+const sprexpr_ = mref<SExpr>('sprexpr');
 
-const binned_ = mref('binned');
-const fancy = kswitch({
-    if: sequence([kwd('if'), binned_, named('yes', block), opt(sequence([kwd('else'), named('no', block)]))]),
-    case: sequence([kwd('case'), binned_, named('body', table('curly', sequence([named('pat', pat_), named('body', expr_)])))]),
-});
+type SExpr = Expr | { type: 'spread'; inner: Expr };
+type Expr =
+    | { type: 'local'; name: string }
+    | { type: 'global'; id: Id<Loc> }
+    | { type: 'text'; spans: TextSpan<SExpr>[] }
+    | { type: 'array'; items: SExpr[] }
+    | { type: 'tuple'; items: SExpr[] }
+    | { type: 'bops'; left: Expr; rights: { op: Id<Loc>; right: Expr }[] }
+    | ESmoosh
+    | { type: 'record'; rows: RecordRow[] };
+type ESmoosh = { type: 'smooshed'; prefixes: Id<Loc>[]; base: Expr; suffixes: Suffix[] };
+
+type Suffix = { type: 'index'; items: SExpr } | { type: 'call'; items: SExpr } | { type: 'attribute'; attribute: Id<Loc> };
+type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
+type Stmt = { type: 'expr'; expr: Expr } | { type: 'let'; pat: Pat; value: Expr };
+
+const binned_ = mref<Binned>('binned');
+
+type Binned = { type: 'binned'; left: Expr; rights: { op: Id<Loc>; right: Expr }[] };
+type Fancy = { type: 'if'; cond: Expr; yes: Stmt[]; no: Stmt[] } | { type: 'case'; target: Expr; cases: { pat: Pat; body: Expr }[] };
+
+const fancy = switch_<Fancy, Fancy>(
+    [
+        sequence<Fancy, Fancy>(
+            [
+                kwd('if', () => ({ type: 'if' })),
+                named('cond', binned_),
+                named('yes', block),
+                opt(sequence<Partial<Fancy>, Partial<Fancy>>([kwd('else', () => null), named('no', block)], false, idt), idt),
+            ],
+            false,
+            idt,
+        ),
+        sequence<Fancy, Fancy>(
+            [
+                kwd('case', () => ({ type: 'case' })),
+                named('target', binned_),
+                named('cases', table('curly', sequence([named('pat', pat_), named('body', expr_)], true, idt), idt)),
+            ],
+            false,
+            idt,
+        ),
+    ],
+    idt,
+);
 
 // const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%'];
-const binned = sequence([named('left', fancy), multi(sequence([named('op', id('binop')), named('right', fancy)]))]);
+const binned: Matcher<Expr> = sequence<{ left: Expr; rights: { op: Id<Loc>; right: Expr }[] }, Expr>(
+    [named('left', fancy), named('rights', multi(sequence([named('op', id('binop', idt)), named('right', fancy)], false, idt), false, idt))],
+    false,
+    ({ left, rights }): Expr => {
+        return rights.length ? { type: 'bops', left, rights } : left;
+    },
+);
 
-const _expr = (spread: boolean) => ({
-    local: id(),
-    global: id('value'),
-    text: text(sprexpr_),
-    array: list('square', multi(sprexpr_, true)),
-    record: table('curly', switch_([named('single', sprexpr_), sequence([named('key', id('attribute')), named('value', expr_)])])),
-    tuple: list('round', multi(sprexpr_, true)),
-    smooshed: list(
-        'smooshed',
-        sequence([
-            ...(spread ? [named('spread', opt(kwd('..')))] : []),
-            named('prefixes', multi(switch_(uops.map(kwd)))),
-            named('base', expr_),
+const _exmoosh: Matcher<Omit<ESmoosh, 'type'>>[] = [
+    named('prefixes', multi(id('unop', idt), false, idt)),
+    named('base', expr_),
+    named(
+        'suffixes',
+        multi(
+            switch_(
+                [
+                    sequence<Suffix>([kwd('.', () => null), named('attr', id('attribute', idt))], false, idt),
+                    list<0, SExpr, Suffix>('square', multi(sprexpr_, true), (items) => ({ type: 'index', items })),
+                    list<0, SExpr, Suffix>('round', multi(sprexpr_, true), (items) => ({ type: 'call', items })),
+                ],
+                idt,
+            ),
+            true,
+        ),
+    ),
+];
+
+const _nosexpr: Matcher<Expr> = list('smooshed', sequence(_exmoosh, true, idt), (data) => ({
+    type: 'smooshed',
+    ...data,
+}));
+
+const _sprood: Matcher<SExpr> = list(
+    'smooshed',
+    sequence<Omit<ESmoosh, 'type'> & { spread: true | null }>(
+        [
             named(
-                'suffixes',
-                multi(
-                    kswitch({
-                        attr: sequence([kwd('.'), named('attr', id('attribute'))]),
-                        index: list('square', multi(sprexpr_, true)),
-                        call: list('round', multi(sprexpr_, true)),
-                    }),
+                'spread',
+                opt(
+                    kwd('..', () => true),
+                    idt,
                 ),
             ),
-        ]),
+            ..._exmoosh,
+        ],
+        true,
+        idt,
     ),
-    bops: list('spaced', binned),
-});
+    ({ spread, ...data }) => (spread ? { type: 'spread', inner: { type: 'smooshed', ...data } } : { type: 'smooshed', ...data }),
+);
 
-export const expr = kswitch(_expr(false));
-export const sprexpr = kswitch(_expr(true)); // expr with spreads
+const _expr: Matcher<Expr>[] = [
+    id(null, (node) => ({ type: 'local', name: node.text })),
+    id('value', (id) => ({ type: 'global', id })),
+    text(sprexpr_, (spans) => ({ type: 'text', spans })),
+    list('square', multi(sprexpr_, true), (items) => ({ type: 'array', items })),
+    table(
+        'curly',
+        switch_<RecordRow, RecordRow>(
+            [
+                tx(sprexpr_, (inner) => ({ type: 'single', inner })),
+                sequence<RecordRow>([id('attribute', (key) => ({ type: 'row', key })), named('value', expr_)], true, idt),
+            ],
+            idt,
+        ),
+        (rows) => ({
+            type: 'record',
+            rows,
+        }),
+    ),
+    list('round', multi(sprexpr_, true), (items) => ({ type: 'tuple', items })),
+    list('spaced', binned, idt),
+];
+
+export const expr = switch_([..._expr, _nosexpr], idt);
+export const sprexpr = switch_([..._expr, _sprood], idt); // expr with spreads
