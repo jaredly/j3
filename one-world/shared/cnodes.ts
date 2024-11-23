@@ -186,6 +186,7 @@ export type RecText<Loc> = {
     loc: Loc;
     src?: Src;
 };
+
 export type RecCollection<Loc> =
     | RecList<Loc>
     | {

@@ -6,6 +6,9 @@ and I think I'd need GADTs to properly type check it?
 Although the "functions" instead of "data" version might be easier to type.
 we'll see.
 
+- [x] show debug gleam parse
+- [ ] ... show parse errors thx
+
 
 
 
