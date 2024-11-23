@@ -18,7 +18,8 @@ import { handleShiftNav, handleSpecial } from '../handleShiftNav';
 import { closerKind, handleClose, handleWrap, wrapKind } from '../handleWrap';
 import { textCursorSides2 } from '../insertId';
 import { root } from '../root';
-export {};
+import { parse } from '../../syntaxes/dsl';
+import { kwds, matchers } from '../../syntaxes/gleam2';
 
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
 const closer = { round: ')', square: ']', curly: '}', angle: '>' };
@@ -261,6 +262,8 @@ const App = () => {
         return () => document.removeEventListener('keydown', f);
     });
 
+    const gleam = parse(matchers.stmt, root(state) as any, { matchers: matchers, kwds: kwds });
+
     return (
         <>
             <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', marginBottom: 100 }}>
@@ -271,6 +274,12 @@ const App = () => {
                 {state.top.root} : {state.top.nextLoc}
             </div>
             <div>{JSON.stringify(state.sel)}</div>
+            <div>{JSON.stringify(gleam.result ?? 'No result')}</div>
+            <div>
+                {gleam.bads.map((bad, i) => (
+                    <div style={{ paddingTop: 16 }}>{JSON.stringify(bad)}</div>
+                ))}
+            </div>
             <button
                 onClick={(evt) => {
                     setState(init);

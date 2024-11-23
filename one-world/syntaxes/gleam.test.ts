@@ -7,24 +7,15 @@ import * as g from './gleam2';
 import * as d from './dsl';
 import { Matcher, MatchError } from './dsl';
 
-const parse = <T>(matcher: Matcher<T>, node: RecNode) => {
-    const res = d.match(matcher, { matchers: g.matchers, kwds: g.kwds }, [node], 0);
-    const goods = d.foldBag([] as RecNode[], res.good, (ar, n) => (ar.push(n), ar));
-    const bads = d.foldBag([] as MatchError[], res.bad, (ar, n) => ((n.type !== 'missing' ? !goods.includes(n.node) : true) ? (ar.push(n), ar) : ar));
-    if (res.result?.consumed === 0) throw new Error('node not consumed');
-    // console.log(JSON.stringify(res.bad));
-    // console.log(JSON.stringify(res.good));
-
-    return { result: res.result?.data, goods, bads };
-};
+const ctx: d.Ctx = { matchers: g.matchers, kwds: g.kwds };
 
 test('gleam id', () => {
-    expect(parse(g.matchers.expr, id('yolo')).result).toEqual({ type: 'local', name: 'yolo' });
+    expect(d.parse(g.matchers.expr, id('yolo'), ctx).result).toEqual({ type: 'local', name: 'yolo' });
 });
 
 test('attr pls', () => {
     const attr = id('please', null as any, undefined, { type: 'toplevel', kind: 'attribute', loc: { id: '', idx: 0 } });
-    const pres = parse(g.matchers.expr, smoosh([id('hello'), id('.'), attr]));
+    const pres = d.parse(g.matchers.expr, smoosh([id('hello'), id('.'), attr]), ctx);
 
     expect(pres.bads).toEqual([]);
     expect(pres.result).toEqual({
@@ -37,7 +28,7 @@ test('attr pls', () => {
 
 test('attr wrong kind...', () => {
     const attr = id<any>('please');
-    const pres = parse(g.matchers.expr, smoosh([id('hello'), id('.'), attr]));
+    const pres = d.parse(g.matchers.expr, smoosh([id('hello'), id('.'), attr]), ctx);
 
     expect(pres.bads).toEqual([]);
     expect(pres.result).toEqual({
@@ -50,7 +41,7 @@ test('attr wrong kind...', () => {
 
 test('lets do some smooshes?', () => {
     const plus = id<any>('+');
-    const pres = parse(g.matchers.expr, smoosh([plus, id('hello'), round([id('123'), id('yes')])]));
+    const pres = d.parse(g.matchers.expr, smoosh([plus, id('hello'), round([id('123'), id('yes')])]), ctx);
 
     expect(pres.bads).toEqual([]);
     expect(pres.result).toEqual({

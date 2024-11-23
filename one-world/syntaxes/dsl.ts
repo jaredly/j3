@@ -71,7 +71,7 @@ const one = <T>(data: T, node: RecNode, good: Bag<RecNode> = [], bad: Bag<MatchE
     good: [node, good],
     bad,
 });
-type Ctx = { matchers: Record<string, Matcher<any>>; kwds: string[]; strictIds?: boolean };
+export type Ctx = { matchers: Record<string, Matcher<any>>; kwds: string[]; strictIds?: boolean };
 /** We need to:
  * - respond with data (& # consumed) OR indicate failure
  * - indicate ... the farthest we got? or at least a record of all Locs sucessfully processed
@@ -241,7 +241,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: n
 // using the types (values) version, as opposed to the functions (combinators) version
 // why is that? do we need GADTs to make it work? 🤔
 export const id = <T>(kind: string | null, f: (v: Id<Loc>) => T): Matcher<T> => ({ type: 'id', kind, f });
-export const kwd = <T>(text: string, f: (v: string) => T): Matcher<T> => ({ type: 'kwd', text, f });
+export const kwd = <T>(text: string, f: (v: Id<Loc>) => T): Matcher<T> => ({ type: 'kwd', text, f });
 export const text = <E, T>(embeds: Matcher<E>, f: (v: TextSpan<E>[]) => T): Matcher<T> => ({ type: 'text', embeds, f });
 // const add = (name: string, value: any, inner: Matcher): Matcher => ({ type: 'add', name, value, inner });
 export const sequence = <T, R = T>(items: Matcher<Partial<T> | null>[], all: boolean, f: (v: T) => R): Matcher<R> => ({
@@ -260,3 +260,12 @@ export const named = <A, N extends string, R = Record<N, A>>(name: N, inner: Mat
 export const tx = <A, B>(inner: Matcher<A>, f: (a: A) => B): Matcher<B> => ({ type: 'tx', inner, f });
 export const idt = <T>(x: T): T => x;
 export const idp = <T>(x: Partial<T>): T => x as T;
+
+export const parse = <T>(matcher: Matcher<T>, node: RecNode, ctx: Ctx) => {
+    const res = match(matcher, ctx, [node], 0);
+    const goods = foldBag([] as RecNode[], res.good, (ar, n) => (ar.push(n), ar));
+    const bads = foldBag([] as MatchError[], res.bad, (ar, n) => ((n.type !== 'missing' ? !goods.includes(n.node) : true) ? (ar.push(n), ar) : ar));
+    if (res.result?.consumed === 0) throw new Error('node not consumed');
+
+    return { result: res.result?.data, goods, bads };
+};

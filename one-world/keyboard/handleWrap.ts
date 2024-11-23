@@ -69,7 +69,7 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
         ncursor = { type: 'list', where: 'before' };
     }
 
-    if (left !== text.length && left > 0) {
+    if (left > 0) {
         nodes[node.loc] = { ...node, text: first.join('') };
     }
 
@@ -77,12 +77,12 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
     for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
 
     // If we're at the end of the ID but not the end of the smoosh, we wrap the next thing
-    if (at < flat.length - 1 && left === text.length) {
-        const next = flat[at + 1];
-        if (next.type !== 'sep' && next.type !== 'space' && next.type !== 'smoosh') {
-            return wrapNode(top, pathWithChildren(parentPath(path), next.loc), next, kind);
-        }
-    }
+    // if (at < flat.length - 1 && left === text.length) {
+    //     const next = flat[at + 1];
+    //     if (next.type !== 'sep' && next.type !== 'space' && next.type !== 'smoosh') {
+    //         return wrapNode(top, pathWithChildren(parentPath(path), next.loc), next, kind);
+    //     }
+    // }
     flat.splice(at + 1, 0, nlist);
 
     if (end.length) {

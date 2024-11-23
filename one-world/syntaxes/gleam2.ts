@@ -60,7 +60,8 @@ type Expr =
     | { type: 'tuple'; items: SExpr[] }
     | { type: 'bops'; left: Expr; rights: { op: Id<Loc>; right: Expr }[] }
     | ESmoosh
-    | { type: 'record'; rows: RecordRow[] };
+    | { type: 'record'; rows: RecordRow[] }
+    | Fancy;
 type ESmoosh = { type: 'smooshed'; prefixes: Id<Loc>[]; base: Expr; suffixes: Suffix[] };
 
 type Suffix = { type: 'index'; items: SExpr } | { type: 'call'; items: SExpr } | { type: 'attribute'; attribute: Id<Loc> };
@@ -71,7 +72,7 @@ const binned_ = mref<Expr>('binned');
 
 type Fancy = { type: 'if'; cond: Expr; yes: Stmt[]; no: Stmt[] } | { type: 'case'; target: Expr; cases: { pat: Pat; body: Expr }[] };
 
-const fancy = switch_<Fancy, Fancy>(
+const fancy = switch_<Expr, Expr>(
     [
         sequence<Fancy, Fancy>(
             [
@@ -92,6 +93,7 @@ const fancy = switch_<Fancy, Fancy>(
             false,
             idt,
         ),
+        expr_,
     ],
     idt,
 );
@@ -194,7 +196,7 @@ export const matchers = {
             list(
                 'spaced',
                 sequence<Stmt, Stmt>(
-                    [kwd('let', () => ({ type: 'let' })), named('pat', pat_), kwd('=', () => null), named('value', expr_)],
+                    [kwd('let', () => ({ type: 'let' })), named('pat', pat_), kwd('=', () => null), named('value', binned_)],
                     true,
                     idt,
                 ),
