@@ -44,12 +44,18 @@ const _spat: Matcher<SPat>[] = [
     list('smooshed', sequence<Pat, Pat>([kwd('..', () => ({})), pat_], true, idt), (inner) => ({ type: 'spread', inner })),
 ];
 
-const uops = ['+', '-', '!', '~'];
-
 const block = list('curly', multi(mref<Stmt>('stmt'), true, idt), idt);
 
 const expr_ = mref<Expr>('expr');
 const sprexpr_ = mref<SExpr>('sprexpr');
+
+// type Shown = {left:}
+
+export const showStmt = (expr: Stmt) => {
+    switch (expr.type) {
+        case 'expr':
+    }
+};
 
 type SExpr = Expr | { type: 'spread'; inner: Expr };
 type Expr =
@@ -99,7 +105,9 @@ const fancy = switch_<Expr, Expr>(
 );
 
 const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%'];
-const unops = ['+', '-', '!'];
+const unops = ['+', '-', '!', '~'];
+
+// const uops = ['+', '-', '!', '~'];
 // const binned: Matcher<Expr> = sequence<{ left: Expr; rights: { op: Id<Loc>; right: Expr }[] }, Expr>(
 //     [named('left', fancy), named('rights', multi(sequence([named('op', id('binop', idt)), named('right', fancy)], false, idt), false, idt))],
 //     false,
@@ -207,7 +215,30 @@ export const matchers = {
         idt,
     ),
     binned: sequence<{ left: Expr; rights: { op: Id<Loc>; right: Expr }[] }, Expr>(
-        [named('left', fancy), named('rights', multi(sequence([named('op', id('binop', idt)), named('right', fancy)], false, idt), false, idt))],
+        [
+            named('left', fancy),
+            named(
+                'rights',
+                multi(
+                    sequence(
+                        [
+                            named(
+                                'op',
+                                switch_(
+                                    binops.map((n) => kwd(n, idt)),
+                                    idt,
+                                ),
+                            ),
+                            named('right', fancy),
+                        ],
+                        false,
+                        idt,
+                    ),
+                    false,
+                    idt,
+                ),
+            ),
+        ],
         false,
         ({ left, rights }): Expr => {
             return rights.length ? { type: 'bops', left, rights } : left;

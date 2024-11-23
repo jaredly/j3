@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { useLatest } from '../../../web/custom/useLatest';
@@ -14,11 +14,11 @@ import { lastChild } from '../utils';
 import { useLocalStorage } from '../../../web/Debug';
 import { asStyle, shape } from '../../shared/shape';
 import { handleNav } from '../handleNav';
-import { handleShiftNav, handleSpecial } from '../handleShiftNav';
+import { handleShiftNav, handleSpecial, Mods } from '../handleShiftNav';
 import { closerKind, handleClose, handleWrap, wrapKind } from '../handleWrap';
 import { textCursorSides2 } from '../insertId';
 import { root } from '../root';
-import { parse } from '../../syntaxes/dsl';
+import { parse, show } from '../../syntaxes/dsl';
 import { kwds, matchers } from '../../syntaxes/gleam2';
 
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
@@ -96,32 +96,49 @@ const TextWithCursor = ({ text, left, right }: { text: string[]; left: number; r
     );
 };
 
-const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inRich: boolean }) => {
+type RCtx = {
+    errors: Record<number, string>;
+    refs: Record<number, HTMLElement>;
+};
+
+const RenderNode = ({ loc, state, inRich, ctx }: { loc: number; state: TestState; inRich: boolean; ctx: RCtx }) => {
     const node = state.top.nodes[loc];
     const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
+    const style: React.CSSProperties | undefined = ctx.errors[loc] ? { textDecoration: 'underline' } : undefined;
+    const ref = (el: HTMLElement) => {
+        ctx.refs[loc] = el;
+    };
     switch (node.type) {
         case 'id':
             if (cursor?.type === 'id') {
                 const { left, right } = cursorSides(cursor);
                 const text = cursor.text ?? splitGraphemes(node.text);
                 return (
-                    <span>
+                    <span style={style} ref={ref}>
                         <TextWithCursor text={text} left={left} right={right} />
                     </span>
                 );
             }
-            return <span>{node.text}</span>;
+            return <span style={style}>{node.text}</span>;
         case 'list':
-            const children = node.children.map((loc) => <RenderNode key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />);
+            const children = node.children.map((loc) => <RenderNode ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />);
             if (typeof node.kind !== 'string') {
-                return <span>lol</span>;
+                return (
+                    <span style={style} ref={ref}>
+                        lol
+                    </span>
+                );
             }
             switch (node.kind) {
                 case 'smooshed':
-                    return <span>{children}</span>;
+                    return (
+                        <span style={style} ref={ref}>
+                            {children}
+                        </span>
+                    );
                 case 'spaced':
                     return (
-                        <span>
+                        <span style={style} ref={ref}>
                             {interleaveF(children, (i) => (
                                 <span key={'sep' + i}>&nbsp;</span>
                             ))}
@@ -129,7 +146,7 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                     );
                 default:
                     return (
-                        <span>
+                        <span style={style} ref={ref}>
                             {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                             {cursor?.type === 'list' && cursor.where === 'start' ? (
                                 <span style={{ background: hl }}>{opener[node.kind]}</span>
@@ -182,7 +199,7 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                                 <Cursor />
                             ) : null}
                             {'${'}
-                            <RenderNode inRich={false} loc={span.item} state={state} />
+                            <RenderNode ctx={ctx} inRich={false} loc={span.item} state={state} />
                             {'}'}
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 1 && sides.right.cursor === 1 ? (
                                 <Cursor />
@@ -197,14 +214,14 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
                 // no quotes, and like ... some other things
                 // are maybe different?
                 return (
-                    <span>
+                    <span ref={ref} style={style}>
                         {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                         {children}
                     </span>
                 );
             }
             return (
-                <span style={{ backgroundColor: 'rgba(255,255,0,0.2)' }}>
+                <span style={{ backgroundColor: 'rgba(255,255,0,0.2)', ...style }} ref={ref}>
                     {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                     {cursor?.type === 'list' && cursor.where === 'start' ? <span style={{ background: hl }}>"</span> : '"'}
                     {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
@@ -215,13 +232,36 @@ const RenderNode = ({ loc, state, inRich }: { loc: number; state: TestState; inR
             );
         }
         case 'table':
-            return <span>Table</span>;
+            return (
+                <span style={style} ref={ref}>
+                    Table
+                </span>
+            );
     }
 };
 
 const getRoot = (): Root => {
     // @ts-ignore
     return window._root ?? (window._root = createRoot(document.getElementById('root')!));
+};
+
+const keyUpdate = (state: TestState, key: string, mods: Mods) => {
+    if (key === 'Enter') key = '\n';
+    if (key === 'Backspace') {
+        return handleDelete(state);
+    } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
+        return mods.shift ? handleShiftNav(state, key) : handleNav(key, state);
+    } else if (splitGraphemes(key).length > 1) {
+        console.log('ignoring', key);
+    } else if (wrapKind(key)) {
+        return handleWrap(state, key);
+    } else if (closerKind(key)) {
+        return handleClose(state, key);
+    } else if (mods.meta || mods.ctrl || mods.alt) {
+        return handleSpecial(state, key, mods);
+    } else {
+        return handleKey(state, key, js);
+    }
 };
 
 const App = () => {
@@ -234,40 +274,37 @@ const App = () => {
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
             let key = evt.key;
-            if (key === 'Enter') key = '\n';
-            if (key === 'Backspace') {
-                const up = handleDelete(cstate.current);
-                setState(applyUpdate(cstate.current, up));
-            } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
-                const up = evt.shiftKey ? handleShiftNav(cstate.current, key) : handleNav(key, cstate.current);
-                setState(applyUpdate(cstate.current, up));
-            } else if (splitGraphemes(key).length > 1) {
-                console.log('ignoring', key);
-            } else if (wrapKind(key)) {
-                setState(applyUpdate(cstate.current, handleWrap(cstate.current, key)));
-            } else if (closerKind(key)) {
-                setState(applyUpdate(cstate.current, handleClose(cstate.current, key)));
-            } else if (evt.metaKey || evt.ctrlKey || evt.altKey) {
-                setState(
-                    applyUpdate(
-                        cstate.current,
-                        handleSpecial(cstate.current, key, { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey }),
-                    ),
-                );
-            } else {
-                setState(applyUpdate(cstate.current, handleKey(cstate.current, key, js)));
-            }
+            const up = keyUpdate(cstate.current, evt.key, { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey });
+            if (!up) return;
+            evt.preventDefault();
+            evt.stopPropagation();
+            setState(applyUpdate(state, up));
         };
         document.addEventListener('keydown', f);
         return () => document.removeEventListener('keydown', f);
     });
 
-    const gleam = parse(matchers.stmt, root(state) as any, { matchers: matchers, kwds: kwds });
+    const gleam = parse(
+        matchers.stmt,
+        root(state, (idx) => [{ id: '', idx }]),
+        { matchers: matchers, kwds: kwds },
+    );
+    const errors = useMemo(() => {
+        const errors: Record<number, string> = {};
+        gleam.bads.forEach((bad) => {
+            if (bad.type !== 'missing') {
+                errors[bad.node.loc[0].idx] = bad.type === 'extra' ? 'Extra node in ' + show(bad.matcher) : 'Mismatch: ' + show(bad.matcher);
+            }
+        });
+        return errors;
+    }, [state, gleam.bads]);
+
+    const refs: Record<number, HTMLElement> = useMemo(() => ({}), []);
 
     return (
         <>
             <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', marginBottom: 100 }}>
-                <RenderNode loc={state.top.root} state={state} inRich={false} />
+                <RenderNode loc={state.top.root} state={state} inRich={false} ctx={{ errors, refs }} />
             </div>
             <div>{shape(root(state))}</div>
             <div>

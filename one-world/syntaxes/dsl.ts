@@ -29,7 +29,7 @@ export type Matcher<Res> =
     | { type: 'mref'; id: string };
 //; f: (v: any) => any }
 // | { type: 'kswitch'; choices: Record<string, Matcher>; f: (v: any) => any };
-const show = (matcher: Matcher<any>): string => {
+export const show = (matcher: Matcher<any>): string => {
     switch (matcher.type) {
         case 'named':
             return `Named(${matcher.name})`;

@@ -2,7 +2,7 @@ import { fromMap } from '../shared/cnodes';
 import { TestState } from './test-utils';
 import { lastChild } from './utils';
 
-export const root = (state: TestState) => {
+export const root = <T>(state: TestState, fromId: (n: number) => T = (x) => x as T) => {
     let nodes = state.top.nodes;
     const { cursor, path } = state.sel.start;
     if (cursor.type === 'id' && cursor.text) {
@@ -31,5 +31,5 @@ export const root = (state: TestState) => {
             nodes = { ...nodes, [loc]: { ...node, spans } };
         }
     }
-    return fromMap(state.top.root, nodes, () => 0);
+    return fromMap(state.top.root, nodes, fromId);
 };
