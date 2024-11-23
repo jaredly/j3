@@ -1,4 +1,4 @@
-import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind, Style } from '../shared/cnodes';
+import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind, Style, IdRef } from '../shared/cnodes';
 import { charClass, Config } from './insertId';
 import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, selStart, TextCursor, Top } from './utils';
 
@@ -66,10 +66,11 @@ export const selPath = (exp: RecNodeT<boolean>) => {
 // - sep
 // - id (everything else)
 // MARK: makers
-export const id = <T>(text: string, loc: T = null as T, config = lisp): Id<T> => ({
+export const id = <T>(text: string, loc: T = null as T, config = lisp, ref?: IdRef): Id<T> => ({
     type: 'id',
     text,
     loc,
+    ref,
     ccls: text.length === 0 ? undefined : charClass(text[0], config),
 });
 export const list =

@@ -1,4 +1,14 @@
 
+# SYntaxes
+
+ok I got nerdsniped into making a whole composable parser dealio
+and I think I'd need GADTs to properly type check it?
+Although the "functions" instead of "data" version might be easier to type.
+we'll see.
+
+
+
+
 # Next ups
 
 - [x] wrap middle of ID
