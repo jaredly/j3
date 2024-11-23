@@ -31,7 +31,7 @@ test('text normal', () => {
 test('start of id', () => {
     let state = asTop(id('hi', true), idc(0));
     state = applyUpdate(state, handleWrap(state, '('));
-    check(state, round([id('hi', true)]), idc(0));
+    check(state, smoosh([round([], true), id('hi')]), listc('inside'));
 });
 
 test('start of id shift', () => {
@@ -49,7 +49,7 @@ test('after id', () => {
 test('middle of smoosh', () => {
     let state = asTop(smoosh([id('hi', true), id('+')]), idc(2));
     state = applyUpdate(state, handleWrap(state, '('));
-    check(state, smoosh([id('hi'), round([id('+', true)])]), idc(0));
+    check(state, smoosh([id('hi'), round([], true), id('+')]), listc('inside'));
 });
 
 test('end of smoosh', () => {
@@ -61,7 +61,7 @@ test('end of smoosh', () => {
 test('middle of an ID', () => {
     let state = asTop(id('hello', true), idc(2));
     state = applyUpdate(state, handleWrap(state, '('));
-    check(state, smoosh([id('he'), round([id('llo')], true)]), listc('before'));
+    check(state, smoosh([id('he'), round([], true), id('llo')]), listc('inside'));
 });
 
 test('close it up', () => {
@@ -69,6 +69,7 @@ test('close it up', () => {
     state = applyUpdate(state, handleClose(state, ')'));
     check(state, round([id('hello')], true), listc('after'));
 });
+
 test('close it up spaced', () => {
     let state = asTop(round([spaced([id('hello', true), id('lol')])]), idc(2));
     state = applyUpdate(state, handleClose(state, ')'));
