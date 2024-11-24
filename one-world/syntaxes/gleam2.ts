@@ -9,8 +9,8 @@ const sprpat_ = mref<SPat>('sprpat');
 // that would be ... interesting.
 
 const _pat: Matcher<Pat>[] = [
-    id(null, (node) => ({ type: 'bound' as const, name: node.text })),
-    list('square', multi(sprpat_, true, idt), (values) => ({ type: 'array', values })),
+    id(null, (node) => ({ type: 'bound' as const, name: node.text, src: nodesSrc(node) })),
+    list('square', multi(sprpat_, true, idt), (values, node) => ({ type: 'array', values, src: nodesSrc(node) })),
     list(
         'smooshed',
         sequence<PCon, PCon>(
@@ -24,12 +24,12 @@ const _pat: Matcher<Pat>[] = [
         ),
         idt,
     ),
-    text(pat_, (spans) => ({ type: 'text', spans })),
+    text(pat_, (spans, node) => ({ type: 'text', spans, src: nodesSrc(node) })),
 ];
 
 const _spat: Matcher<SPat>[] = [
     ..._pat,
-    list('smooshed', sequence<Pat, Pat>([kwd('..', () => ({})), pat_], true, idt), (inner) => ({ type: 'spread', inner })),
+    list('smooshed', sequence<Pat, Pat>([kwd('..', () => ({})), pat_], true, idt), (inner, node) => ({ type: 'spread', inner, src: nodesSrc(node) })),
 ];
 
 const block = list('curly', multi(mref<Stmt>('stmt'), true, idt), idt);
@@ -293,8 +293,8 @@ const _exmoosh: Matcher<Omit<ESmoosh, 'type'>>[] = [
             switch_(
                 [
                     sequence<Suffix>([kwd('.', () => ({ type: 'attribute' })), named('attr', id('attribute', idt))], false, idt),
-                    list<0, SExpr, Suffix>('square', multi(sprexpr_, true), (items) => ({ type: 'index', items })),
-                    list<0, SExpr, Suffix>('round', multi(sprexpr_, true), (items) => ({ type: 'call', items })),
+                    list<0, SExpr, Suffix>('square', multi(sprexpr_, true), (items, node) => ({ type: 'index', items, src: nodesSrc(node) })),
+                    list<0, SExpr, Suffix>('round', multi(sprexpr_, true), (items, node) => ({ type: 'call', items, src: nodesSrc(node) })),
                 ],
                 idt,
             ),
@@ -380,7 +380,7 @@ export const matchers = {
                 ),
                 idt,
             ),
-            tx(expr_, (expr) => ({ type: 'expr', expr })),
+            tx(expr_, (expr) => ({ type: 'expr', expr, src: expr.src })),
         ],
         idt,
     ),
