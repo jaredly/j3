@@ -64,13 +64,13 @@ type Expr =
 type ESmoosh = { type: 'smooshed'; prefixes: Id<Loc>[]; base: Expr; suffixes: Suffix[]; src: Src };
 
 type Suffix =
-    | { type: 'index'; items: SExpr; src: Src }
-    | { type: 'call'; items: SExpr; src: Src }
+    | { type: 'index'; items: SExpr[]; src: Src }
+    | { type: 'call'; items: SExpr[]; src: Src }
     | { type: 'attribute'; attribute: Id<Loc>; src: Src };
 type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
 type Stmt = { type: 'expr'; expr: Expr; src: Src } | { type: 'let'; pat: Pat; value: Expr; src: Src };
 
-type XML = { tag: string; src: Src; attrs?: Record<string, any>; children?: Record<string, XML | XML[]> };
+export type XML = { tag: string; src: Src; attrs?: Record<string, any>; children?: Record<string, XML | XML[]> };
 
 const textSpanToXML = <T>(span: TextSpan<T>, toXML: (t: T) => XML): XML => {
     switch (span.type) {
@@ -103,9 +103,9 @@ const patToXML = (pat: SPat): XML => {
 const suffixToXML = (suffix: Suffix): XML => {
     switch (suffix.type) {
         case 'index':
-            return { tag: 'index', children: { items: toXML(suffix.items) }, src: suffix.src };
+            return { tag: 'index', children: { items: suffix.items.map(toXML) }, src: suffix.src };
         case 'call':
-            return { tag: 'call', children: { items: toXML(suffix.items) }, src: suffix.src };
+            return { tag: 'call', children: { items: suffix.items.map(toXML) }, src: suffix.src };
         case 'attribute':
             return { tag: 'attribute', attrs: { attribute: suffix.attribute }, src: suffix.src };
         default:
@@ -113,7 +113,7 @@ const suffixToXML = (suffix: Suffix): XML => {
     }
 };
 
-const toXML = (value: SExpr | Stmt): XML => {
+export const toXML = (value: SExpr | Stmt): XML => {
     switch (value.type) {
         case 'let':
             return { tag: 'let', src: value.src, children: { pat: patToXML(value.pat), value: toXML(value.value) } };
@@ -138,8 +138,8 @@ const toXML = (value: SExpr | Stmt): XML => {
                     rights: value.rights.map((right) => ({
                         tag: 'right',
                         src: { left: right.op.loc, right: right.right.src.right ?? right.right.src.left },
-                        attrs: { op: right.op },
-                        children: { right: toXML(right.right) },
+                        attrs: { op: right.op.text },
+                        children: { expr: toXML(right.right) },
                     })),
                 },
             };
@@ -175,6 +175,32 @@ const toXML = (value: SExpr | Stmt): XML => {
             };
         case 'spread':
             return { tag: 'spread', src: value.src, children: { inner: toXML(value.inner) } };
+        case 'if':
+            return {
+                tag: value.type,
+                src: value.src,
+                children: {
+                    cond: toXML(value.cond),
+                    yes: value.yes.map(toXML),
+                    no: value.no.map(toXML),
+                },
+            };
+        case 'case':
+            return {
+                tag: value.type,
+                src: value.src,
+                children: {
+                    cases: value.cases.map(({ pat, body }) => ({
+                        tag: 'case',
+                        children: {
+                            pat: patToXML(pat),
+                            body: toXML(body),
+                        },
+                        src: { left: [] },
+                    })),
+                },
+            };
+
         default:
             throw new Error(`Unknown node type: ${(value as any).type}`);
     }
@@ -293,8 +319,8 @@ const _exmoosh: Matcher<Omit<ESmoosh, 'type'>>[] = [
             switch_(
                 [
                     sequence<Suffix>([kwd('.', () => ({ type: 'attribute' })), named('attr', id('attribute', idt))], false, idt),
-                    list<0, SExpr, Suffix>('square', multi(sprexpr_, true), (items, node) => ({ type: 'index', items, src: nodesSrc(node) })),
-                    list<0, SExpr, Suffix>('round', multi(sprexpr_, true), (items, node) => ({ type: 'call', items, src: nodesSrc(node) })),
+                    list<0, SExpr[], Suffix>('square', multi(sprexpr_, true), (items, node) => ({ type: 'index', items, src: nodesSrc(node) })),
+                    list<0, SExpr[], Suffix>('round', multi(sprexpr_, true), (items, node) => ({ type: 'call', items, src: nodesSrc(node) })),
                 ],
                 idt,
             ),
@@ -303,9 +329,10 @@ const _exmoosh: Matcher<Omit<ESmoosh, 'type'>>[] = [
     ),
 ];
 
-const _nosexpr: Matcher<Expr> = list('smooshed', sequence(_exmoosh, true, idt), (data) => ({
+const _nosexpr: Matcher<Expr> = list('smooshed', sequence(_exmoosh, true, idt), (data, node) => ({
     type: 'smooshed',
     ...data,
+    src: nodesSrc(node),
 }));
 
 const _sprood: Matcher<SExpr> = list(
