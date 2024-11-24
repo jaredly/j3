@@ -5,7 +5,7 @@ import { Id, Loc, TextSpan, ListKind, TableKind, RecNode } from '../shared/cnode
 export type Matcher<Res> =
     | { type: 'id'; kind: string | null; f: (v: Id<Loc>) => Res } // if kind is provided, this is a toplevel ref
     | { type: 'kwd'; text: string; f: (v: Id<Loc>) => Res }
-    | { type: 'text'; embeds: Matcher<any>; f: (v: TextSpan<any>[]) => Res }
+    | { type: 'text'; embeds: Matcher<any>; f: (v: TextSpan<any>[], node: RecNode) => Res }
     | { type: 'tx'; inner: Matcher<any>; f: (v: any) => Res }
     | { type: 'named'; name: string; inner: Matcher<any> } // turns a single into a multi, and a multi into a multi
     // | { type: 'add'; name: string; value: any; inner: Matcher }
@@ -19,12 +19,12 @@ export type Matcher<Res> =
           type: 'sequence';
           items: Matcher<any>[];
           all?: boolean;
-          f: (v: any) => Res;
+          f: (v: any, nodes: RecNode[]) => Res;
       }
-    | { type: 'multi'; item: Matcher<any>; all?: boolean; f: (v: any[]) => Res }
-    | { type: 'list'; kind: ListKind<Matcher<any>>; children: Matcher<any>; f: (v: any) => Res }
+    | { type: 'multi'; item: Matcher<any>; all?: boolean; f: (v: any[], nodes: RecNode[]) => Res }
+    | { type: 'list'; kind: ListKind<Matcher<any>>; children: Matcher<any>; f: (v: any, node: RecNode) => Res }
     | { type: 'opt'; inner: Matcher<any>; f: (v: any | null) => Res }
-    | { type: 'table'; kind: TableKind; row: Matcher<any>; f: (v: any) => Res }
+    | { type: 'table'; kind: TableKind; row: Matcher<any>; f: (v: any, node: RecNode) => Res }
     | { type: 'switch'; choices: Matcher<any>[]; f: (v: any) => Res }
     | { type: 'mref'; id: string };
 //; f: (v: any) => any }
@@ -129,7 +129,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: n
                     bad.push({ type: 'extra', node: nodes[at], matcher });
                 }
             }
-            return { result: { data: value as T, consumed: at - init }, good, bad };
+            return { result: { data: matcher.f(value, nodes.slice(init, at)), consumed: at - init }, good, bad };
         }
         case 'multi': {
             const init = at;
@@ -151,11 +151,13 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: n
                 good.push(res.good);
                 bad.push(res.bad);
             }
-            return { result: { data: value as T, consumed: at - init }, good, bad };
+            return { result: { data: matcher.f(value, nodes.slice(init, at)), consumed: at - init }, good, bad };
         }
         case 'opt': {
             const res = match(matcher.inner, ctx, nodes, at);
-            return res.result ? res : { result: { data: null, consumed: 0 }, good: [], bad: res.bad };
+            return res.result
+                ? { ...res, result: { ...res.result, data: matcher.f(res.result.data) } }
+                : { result: { data: matcher.f(null), consumed: 0 }, good: [], bad: res.bad };
         }
         case 'switch': {
             // Here's where we ... judge them?
@@ -163,8 +165,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: n
             for (let choice of matcher.choices) {
                 const res = match(choice, ctx, nodes, at);
                 if (res.result) {
-                    // console.log(white(indent), `switch choice worked`, show(choice));
-                    return res;
+                    return { ...res, result: { data: matcher.f(res.result.data), consumed: res.result.consumed } };
                 }
                 misses.push({ good: res.good, bad: res.bad, goods: bagSize(res.good) });
             }
@@ -215,11 +216,15 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: n
                         items.push(span);
                 }
             });
-            return one(matcher.f(items), node, good, bad);
+            return one(matcher.f(items, node), node, good, bad);
         case 'list':
             if (node.type !== 'list' || node.kind !== matcher.kind) return fail(matcher, node);
             const inner = match(matcher.children, ctx, node.children, 0);
-            return { bad: inner.bad, good: [inner.good, node], result: inner.result ? { data: matcher.f(inner.result.data), consumed: 1 } : null };
+            return {
+                bad: inner.bad,
+                good: [inner.good, node],
+                result: inner.result ? { data: matcher.f(inner.result.data, node), consumed: 1 } : null,
+            };
         case 'table': {
             if (node.type !== 'table' || node.kind !== matcher.kind) return fail(matcher, node);
             const rows = [];
@@ -232,7 +237,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: n
                 }
             }
             good.push(node);
-            return { good, bad, result: { consumed: 1, data: matcher.f(rows) } };
+            return { good, bad, result: { consumed: 1, data: matcher.f(rows, node) } };
         }
     }
 };
@@ -242,18 +247,28 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: n
 // why is that? do we need GADTs to make it work? 🤔
 export const id = <T>(kind: string | null, f: (v: Id<Loc>) => T): Matcher<T> => ({ type: 'id', kind, f });
 export const kwd = <T>(text: string, f: (v: Id<Loc>) => T): Matcher<T> => ({ type: 'kwd', text, f });
-export const text = <E, T>(embeds: Matcher<E>, f: (v: TextSpan<E>[]) => T): Matcher<T> => ({ type: 'text', embeds, f });
+export const text = <E, T>(embeds: Matcher<E>, f: (v: TextSpan<E>[], node: RecNode) => T): Matcher<T> => ({ type: 'text', embeds, f });
 // const add = (name: string, value: any, inner: Matcher): Matcher => ({ type: 'add', name, value, inner });
-export const sequence = <T, R = T>(items: Matcher<Partial<T> | null>[], all: boolean, f: (v: T) => R): Matcher<R> => ({
+export const sequence = <T, R = T>(items: Matcher<Partial<T> | null>[], all: boolean, f: (v: T, nodes: RecNode[]) => R): Matcher<R> => ({
     type: 'sequence',
     items,
     all,
     f,
 });
-export const multi = <T, R = T[]>(item: Matcher<T>, all: boolean, f: (v: T[]) => R = (v) => v as R): Matcher<R> => ({ type: 'multi', item, all, f });
-export const list = <K, I, O>(kind: ListKind<Matcher<K>>, children: Matcher<I>, f: (v: I) => O): Matcher<O> => ({ type: 'list', kind, children, f });
+export const multi = <T, R = T[]>(item: Matcher<T>, all: boolean, f: (v: T[], nodes: RecNode[]) => R = (v) => v as R): Matcher<R> => ({
+    type: 'multi',
+    item,
+    all,
+    f,
+});
+export const list = <K, I, O>(kind: ListKind<Matcher<K>>, children: Matcher<I>, f: (v: I, node: RecNode) => O): Matcher<O> => ({
+    type: 'list',
+    kind,
+    children,
+    f,
+});
 export const opt = <T, R>(inner: Matcher<T>, f: (v: T | null) => R): Matcher<R> => ({ type: 'opt', inner, f });
-export const table = <I, R>(kind: TableKind, row: Matcher<I>, f: (v: I[]) => R): Matcher<R> => ({ type: 'table', kind, row, f });
+export const table = <I, R>(kind: TableKind, row: Matcher<I>, f: (v: I[], node: RecNode) => R): Matcher<R> => ({ type: 'table', kind, row, f });
 export const switch_ = <C, R = C>(choices: Matcher<C>[], f: (v: C) => R): Matcher<R> => ({ type: 'switch', choices, f });
 export const mref = <R>(id: string): Matcher<R> => ({ type: 'mref', id });
 export const named = <A, N extends string, R = Record<N, A>>(name: N, inner: Matcher<A>): Matcher<R> => ({ type: 'named', name, inner });

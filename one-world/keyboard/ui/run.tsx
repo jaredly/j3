@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot, Root } from 'react-dom/client';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { useLatest } from '../../../web/custom/useLatest';
-import { isRich } from '../../shared/cnodes';
+import { isRich, Loc } from '../../shared/cnodes';
 import { applyUpdate } from '../applyUpdate';
 import { cursorSides } from '../cursorSides';
 import { handleDelete } from '../handleDelete';
@@ -19,7 +19,7 @@ import { closerKind, handleClose, handleWrap, wrapKind } from '../handleWrap';
 import { textCursorSides2 } from '../insertId';
 import { root } from '../root';
 import { parse, show } from '../../syntaxes/dsl';
-import { kwds, matchers } from '../../syntaxes/gleam2';
+import { kwds, matchers, visitStmt } from '../../syntaxes/gleam2';
 
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
 const closer = { round: ')', square: ']', curly: '}', angle: '>' };
@@ -300,6 +300,30 @@ const App = () => {
     }, [state, gleam.bads]);
 
     const refs: Record<number, HTMLElement> = useMemo(() => ({}), []);
+
+    const gnodes = useMemo(() => {
+        if (!gleam.result) {
+            return [];
+        }
+        const res: { left: number; right: number; text: string }[] = [];
+        const add = (node: { type: string; src: { left: Loc; right?: Loc } }) => {
+            res.push({ text: node.type, left: node.src.left[0].idx, right: node.src.right?.[0].idx ?? node.src.left[0].idx });
+        };
+        visitStmt(gleam.result, {
+            stmt(s) {
+                add(s);
+            },
+            expr(e) {
+                add(e);
+            },
+            pat(p) {
+                add(p);
+            },
+            sexpr(e) {
+                add(e);
+            },
+        });
+    }, [gleam.result]);
 
     return (
         <>
