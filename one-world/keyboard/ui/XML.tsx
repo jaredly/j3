@@ -20,6 +20,7 @@ const attrs = (v: Record<string, any>) => {
 
 export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State; path: Path; toggle: (p: Path) => void }) => {
     const open = state.expanded.some((p) => pstartsWith(path, p, state.extra)) || state.pinned.some((p) => peq(p, path));
+    const exact = state.expanded.some((p) => peq(p, path));
     if (!open) {
         const pc = state.pinned.filter((p) => pstartsWith(p, path, Infinity));
         if (pc.length) {
@@ -28,7 +29,8 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
             // </>
         }
         return (
-            <div onClick={() => toggle(path)}>
+            <div onClick={() => toggle(path)} style={{ display: 'flex', cursor: 'pointer' }}>
+                <div style={{ width: 10 }}></div>
                 <div>
                     &lt;{node.tag}
                     {node.attrs ? ' ' + attrs(node.attrs) : ''}
@@ -39,19 +41,23 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
     }
     if (!node.children) {
         return (
-            <div onClick={() => toggle(path)}>
-                &lt;{node.tag}
-                {node.attrs ? ' ' + attrs(node.attrs) : ''} /&gt;
+            <div onClick={() => toggle(path)} style={{ display: 'flex', cursor: 'pointer' }}>
+                <div style={{ width: 10 }}>{exact ? '•' : ''}</div>
+                <div>
+                    &lt;{node.tag}
+                    {node.attrs ? ' ' + attrs(node.attrs) : ''} /&gt;
+                </div>
             </div>
         );
     }
     return (
         <div>
-            <div onClick={() => toggle(path)}>
+            <div onClick={() => toggle(path)} style={{ display: 'flex', cursor: 'pointer' }}>
+                <div style={{ width: 10 }}>{exact ? '•' : ''}</div>
                 &lt;{node.tag}
                 {node.attrs ? ' ' + attrs(node.attrs) : ''}&gt;
             </div>
-            <div style={{ paddingLeft: 8, display: 'grid', gridTemplateColumns: 'min-content 1fr', gap: 8 }}>
+            <div style={{ paddingLeft: 24, display: 'grid', gridTemplateColumns: 'min-content 1fr', gap: 8 }}>
                 {/* {node.attrs ? <div style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>{JSON.stringify(node.attrs)}</div> : null} */}
                 {node.children
                     ? Object.entries(node.children).map(([key, value]) => (
@@ -70,7 +76,7 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
                       ))
                     : null}
             </div>
-            <div>&lt;/{node.tag}&gt;</div>
+            <div style={{ paddingLeft: 10 }}>&lt;/{node.tag}&gt;</div>
         </div>
     );
 };
