@@ -41,10 +41,14 @@ const sprexpr_ = mref<SExpr>('sprexpr');
 
 type Src = { left: Loc; right?: Loc };
 
-type PSpread = { type: 'spread'; inner: Pat };
+type PSpread = { type: 'spread'; inner: Pat; src: Src };
 type SPat = Pat | PSpread;
-type Pat = { type: 'bound'; name: string } | { type: 'array'; values: SPat[] } | PCon | { type: 'text'; spans: TextSpan<Pat>[] };
-type PCon = { type: 'constr'; constr: Id<Loc>; args: Pat[] };
+type Pat =
+    | { type: 'bound'; name: string; src: Src }
+    | { type: 'array'; values: SPat[]; src: Src }
+    | PCon
+    | { type: 'text'; spans: TextSpan<Pat>[]; src: Src };
+type PCon = { type: 'constr'; constr: Id<Loc>; args: Pat[]; src: Src };
 
 type SExpr = Expr | { type: 'spread'; inner: Expr };
 type Expr =
@@ -63,14 +67,42 @@ type Suffix = { type: 'index'; items: SExpr } | { type: 'call'; items: SExpr } |
 type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
 type Stmt = { type: 'expr'; expr: Expr; src: Src } | { type: 'let'; pat: Pat; value: Expr; src: Src };
 
-type XML = { tag: string; attrs: Record<string, any>; children: Record<string, XML | XML[]> };
+type XML = { tag: string; src: Src; attrs?: Record<string, any>; children?: Record<string, XML | XML[]> };
 
-// const toXML = (value: SExpr | Stmt | Pat): XML => {
-//     switch (value.type) {
-//         case 'let':
-//             return { tag: 'let', attrs: { src: value.src }, children: { pat: toXML(value.pat) } };
-//     }
-// };
+const textSpanToXML = <T>(span: TextSpan<T>, toXML: (t: T) => XML): XML => {
+    switch (span.type) {
+        case 'text':
+            return { tag: span.type, src: { left: [] }, attrs: { text: span.text, style: span.style, link: span.link } };
+        case 'embed':
+            return { tag: span.type, src: { left: [] }, attrs: { style: span.style, link: span.link }, children: { item: toXML(span.item) } };
+        default:
+            return { tag: span.type, src: { left: [] } };
+    }
+};
+
+const patToXML = (pat: SPat): XML => {
+    switch (pat.type) {
+        case 'bound':
+            return { tag: pat.type, src: pat.src, attrs: { name: pat.name } };
+        case 'array':
+            return { tag: pat.type, src: pat.src, children: { values: pat.values.map(patToXML) } };
+        case 'constr':
+            return { tag: pat.type, src: pat.src, attrs: { constr: pat.constr }, children: { args: pat.args.map(patToXML) } };
+        case 'text':
+            return { tag: pat.type, src: pat.src, children: { spans: pat.spans.map((span) => textSpanToXML(span, patToXML)) } };
+        case 'spread':
+            return { tag: pat.type, src: pat.src, children: { inner: patToXML(pat.inner) } };
+        default:
+            throw new Error(`Unknown pattern type: ${(pat as any).type}`);
+    }
+};
+
+const toXML = (value: SExpr | Stmt): XML => {
+    switch (value.type) {
+        case 'let':
+            return { tag: 'let', src: value.src, children: { pat: patToXML(value.pat) } };
+    }
+};
 
 const binned_ = mref<Expr>('binned');
 
