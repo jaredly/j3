@@ -15,7 +15,7 @@ const chop = (t: string, max: number) => (t.length > max ? t.slice(0, max - 3) +
 const attrs = (v: Record<string, any>) => {
     return Object.keys(v)
         .filter((k) => v[k] !== undefined)
-        .map((k) => `${k}=${chop(JSON.stringify(v[k]), 10)}`)
+        .map((k) => `${k}=${chop(JSON.stringify(v[k]), 20)}`)
         .join(' ');
 };
 

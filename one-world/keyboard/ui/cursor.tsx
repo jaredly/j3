@@ -1,7 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-const hl = 'rgba(100,100,100,0.2)';
-
 export const Cursor = () => (
     <span
         style={{
@@ -9,13 +7,12 @@ export const Cursor = () => (
             width: 1,
             marginRight: 0,
             marginLeft: -1,
-            marginBottom: -4,
-            height: '1em',
             backgroundColor: 'red',
-            // zIndex: -1,
             position: 'relative',
         }}
-    />
+    >
+        {'\u200B'}
+    </span>
 );
 
 const useResizeTick = () => {

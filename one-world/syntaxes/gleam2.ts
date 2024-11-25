@@ -83,6 +83,7 @@ const aToXML = (v: any, name?: string): XML | XML[] | null => {
         //  || !v.type || !v.src
         return null;
     }
+    if (Object.keys(v).length === 0) return null;
     const attrs: XML['attrs'] = {};
     const children: XML['children'] = {};
     Object.keys(v).forEach((k) => {

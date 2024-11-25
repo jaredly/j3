@@ -119,7 +119,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, nodes: RecNode[], at: n
                 if (!res.result) return { result: null, bad, good }; // TODO: recovery pls? or something. like, try the next node?
                 at += res.result.consumed;
                 if (!res.result.data || typeof res.result.data !== 'object') {
-                    console.log('nota thing', res.result);
+                    // console.log('nota thing', res.result);
                     continue;
                 }
                 Object.assign(value, res.result.data);
