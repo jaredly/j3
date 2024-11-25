@@ -1,4 +1,27 @@
 
+# Order of operations
+
+UI stuffs
+- [ ] gleam, better parsing of smooshes and binops
+- [ ] hover the XML, highlight the source (click to selection)
+- [ ] selection in source, highlight the XML
+- [ ] click to select
+- [ ] multiselecttttt
+- [ ] highlighting?
+- [ ] autocompleteness
+
+Other
+- [ ] editor should know 'how to comment' and 'how to quote/unquote'
+- [ ] for macro invocation, it can just 'grab the containing node', right?
+  will that always work? certainly for `(do this)` and `do(this)`. Do we want
+  to ~enforce that it be in 'head position'? I mean might as well, at least to
+  start, right?
+  which then handily removes the requirement that we /talk to the parser/ before we can do
+  macro expansion, right?
+
+I do want to thikn about 'a language that has my parsing DSL baked into a switch-like construct`
+
+
 # SYntaxes
 
 ok I got nerdsniped into making a whole composable parser dealio
@@ -8,6 +31,14 @@ we'll see.
 
 - [x] show debug gleam parse
 - [ ] ... show parse errors thx
+
+
+
+parseeeee
+So, it occurs to me
+that one would want to be able to select logical subsmooshes right
+so a parsed node is .. not a single node, but a range of nodes.
+honestly I've wanted that for the attribute stuffs too. so, solid choice
 
 
 

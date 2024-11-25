@@ -1,5 +1,6 @@
 import { Id, Loc, RecNode, TextSpan } from '../shared/cnodes';
 import { mref, Matcher, id, list, multi, idt, sequence, idp, text, kwd, switch_, named, opt, table, tx } from './dsl';
+import { textSpanToXML, XML } from './xml';
 
 const pat_ = mref<Pat>('pat');
 const sprpat_ = mref<SPat>('sprpat');
@@ -39,7 +40,7 @@ const sprexpr_ = mref<SExpr>('sprexpr');
 
 // type Shown = {left:}
 
-type Src = { left: Loc; right?: Loc };
+export type Src = { left: Loc; right?: Loc };
 
 type PSpread = { type: 'spread'; inner: Pat; src: Src };
 type SPat = Pat | PSpread;
@@ -70,146 +71,167 @@ type Suffix =
 type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
 type Stmt = { type: 'expr'; expr: Expr; src: Src } | { type: 'let'; pat: Pat; value: Expr; src: Src };
 
-export type XML = { tag: string; src: Src; attrs?: Record<string, any>; children?: Record<string, XML | XML[]> };
-
-const textSpanToXML = <T>(span: TextSpan<T>, toXML: (t: T) => XML): XML => {
-    switch (span.type) {
-        case 'text':
-            return { tag: span.type, src: { left: [] }, attrs: { text: span.text, style: span.style, link: span.link } };
-        case 'embed':
-            return { tag: span.type, src: { left: [] }, attrs: { style: span.style, link: span.link }, children: { item: toXML(span.item) } };
-        default:
-            return { tag: span.type, src: { left: [] } };
+const aToXML = (v: any, name?: string): XML | XML[] | null => {
+    if (Array.isArray(v)) {
+        const sub = v.map((n) => aToXML(n, name));
+        if (sub.every(Boolean)) {
+            return sub as XML[];
+        }
+        return null;
     }
+    if (!v || typeof v !== 'object') {
+        //  || !v.type || !v.src
+        return null;
+    }
+    const attrs: XML['attrs'] = {};
+    const children: XML['children'] = {};
+    Object.keys(v).forEach((k) => {
+        if (k === 'type' || k === 'src') return;
+        const res = aToXML(v[k], k);
+        if (res === null) attrs[k] = v[k];
+        else children[k] = res;
+    });
+    const res: XML = { tag: v.type ?? name ?? '?', src: v.src };
+    if (Object.keys(attrs).length) res.attrs = attrs;
+    if (Object.keys(children).length) res.children = children;
+    return res;
+};
+export const toXML = (v: any) => {
+    const res = aToXML(v);
+    if (!res || Array.isArray(res)) {
+        console.log(v, res);
+        throw new Error('why not');
+    }
+    return res;
 };
 
-const patToXML = (pat: SPat): XML => {
-    switch (pat.type) {
-        case 'bound':
-            return { tag: pat.type, src: pat.src, attrs: { name: pat.name } };
-        case 'array':
-            return { tag: pat.type, src: pat.src, children: { values: pat.values.map(patToXML) } };
-        case 'constr':
-            return { tag: pat.type, src: pat.src, attrs: { constr: pat.constr }, children: { args: pat.args.map(patToXML) } };
-        case 'text':
-            return { tag: pat.type, src: pat.src, children: { spans: pat.spans.map((span) => textSpanToXML(span, patToXML)) } };
-        case 'spread':
-            return { tag: pat.type, src: pat.src, children: { inner: patToXML(pat.inner) } };
-        default:
-            throw new Error(`Unknown pattern type: ${(pat as any).type}`);
-    }
-};
+// const patToXML = (pat: SPat): XML => {
+//     switch (pat.type) {
+//         case 'bound':
+//             return { tag: pat.type, src: pat.src, attrs: { name: pat.name } };
+//         case 'array':
+//             return { tag: pat.type, src: pat.src, children: { values: pat.values.map(patToXML) } };
+//         case 'constr':
+//             return { tag: pat.type, src: pat.src, attrs: { constr: pat.constr }, children: { args: pat.args.map(patToXML) } };
+//         case 'text':
+//             return { tag: pat.type, src: pat.src, children: { spans: pat.spans.map((span) => textSpanToXML(span, patToXML)) } };
+//         case 'spread':
+//             return { tag: pat.type, src: pat.src, children: { inner: patToXML(pat.inner) } };
+//         default:
+//             throw new Error(`Unknown pattern type: ${(pat as any).type}`);
+//     }
+// };
 
-const suffixToXML = (suffix: Suffix): XML => {
-    switch (suffix.type) {
-        case 'index':
-            return { tag: 'index', children: { items: suffix.items.map(toXML) }, src: suffix.src };
-        case 'call':
-            return { tag: 'call', children: { items: suffix.items.map(toXML) }, src: suffix.src };
-        case 'attribute':
-            return { tag: 'attribute', attrs: { attribute: suffix.attribute }, src: suffix.src };
-        default:
-            throw new Error(`Unknown suffix type: ${(suffix as any).type}`);
-    }
-};
+// const suffixToXML = (suffix: Suffix): XML => {
+//     switch (suffix.type) {
+//         case 'index':
+//             return { tag: 'index', children: { items: suffix.items.map(toXML) }, src: suffix.src };
+//         case 'call':
+//             return { tag: 'call', children: { items: suffix.items.map(toXML) }, src: suffix.src };
+//         case 'attribute':
+//             return { tag: 'attribute', attrs: { attribute: suffix.attribute }, src: suffix.src };
+//         default:
+//             throw new Error(`Unknown suffix type: ${(suffix as any).type}`);
+//     }
+// };
 
-export const toXML = (value: SExpr | Stmt): XML => {
-    switch (value.type) {
-        case 'let':
-            return { tag: 'let', src: value.src, children: { pat: patToXML(value.pat), value: toXML(value.value) } };
-        case 'expr':
-            return { tag: 'expr', src: value.src, children: { expr: toXML(value.expr) } };
-        case 'local':
-            return { tag: 'local', src: value.src, attrs: { name: value.name } };
-        case 'global':
-            return { tag: 'global', src: value.src, attrs: { id: value.id } };
-        case 'text':
-            return { tag: 'text', src: value.src, children: { spans: value.spans.map((span) => textSpanToXML(span, toXML)) } };
-        case 'array':
-            return { tag: 'array', src: value.src, children: { items: value.items.map(toXML) } };
-        case 'tuple':
-            return { tag: 'tuple', src: value.src, children: { items: value.items.map(toXML) } };
-        case 'bops':
-            return {
-                tag: 'bops',
-                src: value.src,
-                children: {
-                    left: toXML(value.left),
-                    rights: value.rights.map((right) => ({
-                        tag: 'right',
-                        src: { left: right.op.loc, right: right.right.src.right ?? right.right.src.left },
-                        attrs: { op: right.op.text },
-                        children: { expr: toXML(right.right) },
-                    })),
-                },
-            };
-        case 'smooshed':
-            return {
-                tag: 'smooshed',
-                src: value.src,
-                children: {
-                    prefixes: value.prefixes.map((prefix) => ({ tag: 'prefix', attrs: { id: prefix }, src: { left: prefix.loc } })),
-                    base: toXML(value.base),
-                    suffixes: value.suffixes.map(suffixToXML),
-                },
-            };
-        case 'record':
-            return {
-                tag: 'record',
-                src: value.src,
-                children: {
-                    rows: value.rows.map(
-                        (row): XML =>
-                            row.type === 'single'
-                                ? toXML(row.inner)
-                                : {
-                                      tag: 'row',
-                                      attrs: { key: row.key },
-                                      src: { left: row.key.loc, right: row.value.src.right ?? row.value.src.left },
-                                      children: {
-                                          value: toXML(row.value),
-                                      },
-                                  },
-                    ),
-                },
-            };
-        case 'spread':
-            return { tag: 'spread', src: value.src, children: { inner: toXML(value.inner) } };
-        case 'if':
-            return {
-                tag: value.type,
-                src: value.src,
-                children: {
-                    cond: toXML(value.cond),
-                    yes: value.yes.map(toXML),
-                    no: value.no.map(toXML),
-                },
-            };
-        case 'case':
-            return {
-                tag: value.type,
-                src: value.src,
-                children: {
-                    cases: value.cases.map(({ pat, body }) => ({
-                        tag: 'case',
-                        children: {
-                            pat: patToXML(pat),
-                            body: toXML(body),
-                        },
-                        src: { left: [] },
-                    })),
-                },
-            };
+// export const toXML = (value: SExpr | Stmt): XML => {
+//     switch (value.type) {
+//         case 'let':
+//             return { tag: 'let', src: value.src, children: { pat: patToXML(value.pat), value: toXML(value.value) } };
+//         case 'expr':
+//             return { tag: 'stmt-expr', src: value.src, children: { expr: toXML(value.expr) } };
+//         case 'local':
+//             return { tag: 'local', src: value.src, attrs: { name: value.name } };
+//         case 'global':
+//             return { tag: 'global', src: value.src, attrs: { id: value.id } };
+//         case 'text':
+//             return { tag: 'text', src: value.src, children: { spans: value.spans.map((span) => textSpanToXML(span, toXML)) } };
+//         case 'array':
+//             return { tag: 'array', src: value.src, children: { items: value.items.map(toXML) } };
+//         case 'tuple':
+//             return { tag: 'tuple', src: value.src, children: { items: value.items.map(toXML) } };
+//         case 'bops':
+//             return {
+//                 tag: 'bops',
+//                 src: value.src,
+//                 children: {
+//                     left: toXML(value.left),
+//                     rights: value.rights.map((right) => ({
+//                         tag: 'right',
+//                         src: { left: right.op.loc, right: right.right.src.right ?? right.right.src.left },
+//                         attrs: { op: right.op.text },
+//                         children: { expr: toXML(right.right) },
+//                     })),
+//                 },
+//             };
+//         case 'smooshed':
+//             return {
+//                 tag: 'smooshed',
+//                 src: value.src,
+//                 children: {
+//                     prefixes: value.prefixes.map((prefix) => ({ tag: 'prefix', attrs: { id: prefix }, src: { left: prefix.loc } })),
+//                     base: toXML(value.base),
+//                     suffixes: value.suffixes.map(suffixToXML),
+//                 },
+//             };
+//         case 'record':
+//             return {
+//                 tag: 'record',
+//                 src: value.src,
+//                 children: {
+//                     rows: value.rows.map(
+//                         (row): XML =>
+//                             row.type === 'single'
+//                                 ? toXML(row.inner)
+//                                 : {
+//                                       tag: 'row',
+//                                       attrs: { key: row.key },
+//                                       src: { left: row.key.loc, right: row.value.src.right ?? row.value.src.left },
+//                                       children: {
+//                                           value: toXML(row.value),
+//                                       },
+//                                   },
+//                     ),
+//                 },
+//             };
+//         case 'spread':
+//             return { tag: 'spread', src: value.src, children: { inner: toXML(value.inner) } };
+//         case 'if':
+//             return {
+//                 tag: value.type,
+//                 src: value.src,
+//                 children: {
+//                     cond: toXML(value.cond),
+//                     yes: value.yes.map(toXML),
+//                     no: value.no?.map(toXML),
+//                 },
+//             };
+//         case 'case':
+//             return {
+//                 tag: value.type,
+//                 src: value.src,
+//                 children: {
+//                     cases: value.cases.map(({ pat, body }) => ({
+//                         tag: 'case',
+//                         children: {
+//                             pat: patToXML(pat),
+//                             body: toXML(body),
+//                         },
+//                         src: { left: [] },
+//                     })),
+//                 },
+//             };
 
-        default:
-            throw new Error(`Unknown node type: ${(value as any).type}`);
-    }
-};
+//         default:
+//             throw new Error(`Unknown node type: ${(value as any).type}`);
+//     }
+// };
 
 const binned_ = mref<Expr>('binned');
 
 type Fancy =
-    | { type: 'if'; cond: Expr; yes: Stmt[]; no: Stmt[]; src: Src }
+    | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[]; src: Src }
     | { type: 'case'; target: Expr; cases: { pat: Pat; body: Expr }[]; src: Src };
 
 export type Visitor = {
@@ -238,7 +260,7 @@ export const visitExpr = (expr: Expr, v: Visitor) => {
         case 'if':
             visitExpr(expr.cond, v);
             expr.yes.forEach((s) => visitStmt(s, v));
-            expr.no.forEach((s) => visitStmt(s, v));
+            expr.no?.forEach((s) => visitStmt(s, v));
             break;
         case 'local':
         case 'global':
@@ -405,7 +427,7 @@ export const matchers = {
                     true,
                     idt,
                 ),
-                idt,
+                (res, node) => ({ ...res, src: nodesSrc(node) }),
             ),
             tx(expr_, (expr) => ({ type: 'expr', expr, src: expr.src })),
         ],

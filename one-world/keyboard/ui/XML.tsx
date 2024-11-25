@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { XML } from '../../syntaxes/gleam2';
+import { XML } from '../../syntaxes/xml';
 import React from 'react';
 
 type Path = (string | number)[];
@@ -14,6 +14,7 @@ const chop = (t: string, max: number) => (t.length > max ? t.slice(0, max - 3) +
 
 const attrs = (v: Record<string, any>) => {
     return Object.keys(v)
+        .filter((k) => v[k] !== undefined)
         .map((k) => `${k}=${chop(JSON.stringify(v[k]), 10)}`)
         .join(' ');
 };
@@ -34,11 +35,12 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
                 <div>
                     &lt;{node.tag}
                     {node.attrs ? ' ' + attrs(node.attrs) : ''}
-                    {node.children ? ' ...' : ''}&gt;
+                    {node.children ? ' ...' : ' /'}&gt;
                 </div>
             </div>
         );
     }
+
     if (!node.children) {
         return (
             <div onClick={() => toggle(path)} style={{ display: 'flex', cursor: 'pointer' }}>
@@ -50,6 +52,7 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
             </div>
         );
     }
+
     return (
         <div>
             <div onClick={() => toggle(path)} style={{ display: 'flex', cursor: 'pointer' }}>
@@ -57,23 +60,30 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
                 &lt;{node.tag}
                 {node.attrs ? ' ' + attrs(node.attrs) : ''}&gt;
             </div>
-            <div style={{ paddingLeft: 24, display: 'grid', gridTemplateColumns: 'min-content 1fr', gap: 8 }}>
+            <div style={{ paddingLeft: 24, display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: 8 }}>
                 {/* {node.attrs ? <div style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>{JSON.stringify(node.attrs)}</div> : null} */}
                 {node.children
-                    ? Object.entries(node.children).map(([key, value]) => (
-                          <React.Fragment key={key}>
-                              <div style={{ gridColumn: 1 }}>{key}</div>
-                              <div style={{ gridColumn: 2 }}>
-                                  {Array.isArray(value) ? (
-                                      value.map((item, i) => (
-                                          <XMLNode key={i} node={item} state={state} path={path.concat([key, i])} toggle={toggle} />
-                                      ))
-                                  ) : (
-                                      <XMLNode node={value} state={state} path={path.concat([key])} toggle={toggle} />
-                                  )}
-                              </div>
-                          </React.Fragment>
-                      ))
+                    ? Object.entries(node.children).map(([key, value]) =>
+                          value === undefined ? null : (
+                              <React.Fragment key={key}>
+                                  {key !== 'children' ? (
+                                      <div style={{ gridColumn: 1 }}>
+                                          {key}
+                                          {Array.isArray(value) ? '[]' : ''}
+                                      </div>
+                                  ) : null}
+                                  <div style={key === 'children' ? { gridColumnStart: 1, gridColumnEnd: 2 } : { gridColumn: 2 }}>
+                                      {Array.isArray(value) ? (
+                                          value.map((item, i) => (
+                                              <XMLNode key={i} node={item} state={state} path={path.concat([key, i])} toggle={toggle} />
+                                          ))
+                                      ) : (
+                                          <XMLNode node={value} state={state} path={path.concat([key])} toggle={toggle} />
+                                      )}
+                                  </div>
+                              </React.Fragment>
+                          ),
+                      )
                     : null}
             </div>
             <div style={{ paddingLeft: 10 }}>&lt;/{node.tag}&gt;</div>
@@ -82,7 +92,7 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
 };
 
 export const ShowXML = ({ root }: { root: XML }) => {
-    const [state, setState] = useState<State>({ pinned: [], expanded: [[]], extra: 2 });
+    const [state, setState] = useState<State>({ pinned: [], expanded: [[]], extra: 10 });
 
     return (
         <XMLNode

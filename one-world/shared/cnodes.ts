@@ -193,6 +193,7 @@ export type RecCollection<Loc> =
           type: 'table';
           kind: TableKind;
           rows: RecNodeT<Loc>[][];
+          forceMultiline?: boolean;
           loc: Loc;
           src?: Src;
       };

@@ -16,6 +16,7 @@ import { closerKind, handleClose, handleWrap, wrapKind } from '../handleWrap';
 import { root } from '../root';
 import { RenderNode } from './RenderNode';
 import { ShowXML } from './XML';
+import { nodeToXML } from '../../syntaxes/xml';
 
 const keyUpdate = (state: TestState, key: string, mods: Mods) => {
     if (key === 'Enter') key = '\n';
@@ -56,11 +57,9 @@ export const App = () => {
         return () => document.removeEventListener('keydown', f);
     });
 
-    const gleam = parse(
-        matchers.stmt,
-        root(state, (idx) => [{ id: '', idx }]),
-        { matchers: matchers, kwds: kwds },
-    );
+    const rootNode = root(state, (idx) => [{ id: '', idx }]);
+
+    const gleam = parse(matchers.stmt, rootNode, { matchers: matchers, kwds: kwds });
     const errors = useMemo(() => {
         const errors: Record<number, string> = {};
         gleam.bads.forEach((bad) => {
@@ -74,6 +73,7 @@ export const App = () => {
     const refs: Record<number, HTMLElement> = useMemo(() => ({}), []);
 
     const xml = useMemo(() => (gleam.result ? toXML(gleam.result) : null), [gleam.result]);
+    const xmlcst = useMemo(() => nodeToXML(rootNode), [rootNode]);
 
     // const gnodes = useMemo(() => {
     //     if (!gleam.result) {
@@ -100,30 +100,32 @@ export const App = () => {
     // }, [gleam.result]);
 
     return (
-        <>
-            <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', marginBottom: 100 }}>
+        <div style={{ display: 'flex', inset: 0, position: 'absolute', flexDirection: 'column' }}>
+            <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, minHeight: 0 }}>
                 <RenderNode loc={state.top.root} state={state} inRich={false} ctx={{ errors, refs }} />
             </div>
-            <div>{shape(root(state))}</div>
+            {/* <div>{shape(root(state))}</div>
             <div>
                 {state.top.root} : {state.top.nextLoc}
-            </div>
-            {/* <div>{JSON.stringify(state.sel)}</div>
-            <div>{JSON.stringify(gleam.result ?? 'No result')}</div>
-            <div>
-                {gleam.bads.map((bad, i) => (
-                    <div style={{ paddingTop: 16 }}>{JSON.stringify(bad)}</div>
-                ))}
             </div> */}
-            <button
+            {/* <button
                 onClick={(evt) => {
                     setState(init);
                     evt.currentTarget.blur();
                 }}
             >
                 Clear
-            </button>
-            {xml ? <ShowXML root={xml} /> : 'NO xml'}
-        </>
+            </button> */}
+            <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
+                <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
+                    <h3>CST</h3>
+                    <ShowXML root={xmlcst} />
+                </div>
+                <div style={{ flex: 3, overflow: 'auto', padding: 25 }}>
+                    <h3>AST</h3>
+                    {xml ? <ShowXML root={xml} /> : 'NO xml'}
+                </div>
+            </div>
+        </div>
     );
 };
