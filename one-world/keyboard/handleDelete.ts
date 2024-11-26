@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List, Node, Nodes, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { goLeft, justSel, selectEnd, spanEnd, spanStart } from './handleNav';
+import { goLeft, justSel, selectEnd, selUpdate, spanEnd, spanStart } from './handleNav';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
@@ -142,7 +142,14 @@ export const handleDelete = (state: TestState): Update | void => {
             if (current.node.type === 'list') {
                 if (current.cursor.type === 'list') {
                     if (current.cursor.where === 'after') {
-                        return { nodes: {}, selection: { start: selStart(current.path, { type: 'list', where: 'end' }) } };
+                        // return { nodes: {}, selection: { start: selStart(current.path, { type: 'list', where: 'end' }) } };
+
+                        if (current.node.children.length === 0) {
+                            return selUpdate(selStart(current.path, { type: 'list', where: 'inside' }));
+                        }
+                        return selUpdate(
+                            selectEnd(pathWithChildren(current.path, current.node.children[current.node.children.length - 1]), state.top),
+                        );
                     } else if (current.cursor.where === 'before') {
                         // left join agains
                         return leftJoin(state, current.cursor);

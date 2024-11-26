@@ -9,7 +9,7 @@ import { flatten, flatToUpdateNew } from './rough';
 import { TestState } from './test-utils';
 import { Cursor, getCurrent, IdCursor, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
-export const wrapKind = (key: string): ListKind<number> | void => {
+export const wrapKind = (key: string): ListKind<any> | void => {
     switch (key) {
         case '(':
             return 'round';

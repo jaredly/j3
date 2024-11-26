@@ -1,4 +1,62 @@
 
+
+# Hrmrgrm ok I think I need really good tests for my dsl
+
+like to make sure error reporting and stuff is tight.
+
+- [ ] if there's a seq at the end of an "exhaustive seq", we can treat it as exhaustive?
+  hmmmm not if it's a multi, though.
+
+
+- [ ] ok let's really make \n turn a thing into multiline. we'll have auto formating
+  at some point, but this would honestly work for now
+
+# Ok so what we're doing right now
+
+is coming up with autocomplete. right?
+
+
+ALSO I worry that having `kind` on the `IdRef` is a denormalization that will cause problems.
+Seems like the kind would need to be looked up at ... type-inference time?
+
+Ok so when the parser produces a list of `references`, we check that against the actual exported `kind`s and
+can report errors at that point.
+
+
+`hi.` should report an error somewhere.
+oooooh ok so missing should show like a caret at the point where it should be.
+
+
+##
+
+Here's a thing I'm worried about.
+if my DSL is responsible for autocomplete...
+... how do I tell it what locals are in-scope?
+how do I tell it "right here, we are producing
+a local variable name". because, it would have to
+also say ... 'this is where it's legal'.
+Can that be reduced to: `{ancestorLevel: number, bidirectional: boolean}`?
+hrmggggg well if the ID is nested in a PAT, how do we know how far to
+go outttt.
+I guessss we could like ~tag a list as the 'scope ancestor'? with like
+a 'kind' tag. So you could say `{ancestor: 'let-list', bidirectional: true}`
+and `{ancestor: 'let-body', bidirectional: false}`.
+tbh that seems reasonable.
+
+and for a js-style it would be `{ancestor: 'block', bidirectional: true}`
+
+I mean so there's:
+- can be used after (always)
+- can be used in self (not always)
+- can be used in prevs (not always)
+
+hrmmm actually maybe it's the ~scope ancestor that defines behavior like that.
+the local pattern wouldn't know what kind of thing it's in.
+nowww there would have to be something to let a `letrec` not be the scope
+ancestor but impact the behavior of the patterns inside it.
+but that's fine rihgggt.
+
+
 Ok I'm also excited about getting JSX working really smoothly.
 and /Tables/ inside rich lists.
 

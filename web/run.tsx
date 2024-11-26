@@ -3,11 +3,13 @@ import { createRoot, Root } from 'react-dom/client';
 import { Outside } from './ide/ground-up/Outside';
 import './poly';
 
-declare global {
-    var root: Root;
-}
+// declare global {
+//     var root: Root;
+// }
 
+// @ts-ignore
 window.root =
+    // @ts-ignore
     window.root ||
     createRoot(
         (() => {
@@ -17,10 +19,7 @@ window.root =
         })(),
     );
 
-class ErrorBoundary extends React.Component<
-    { children: any },
-    { hasError: Error | null }
-> {
+class ErrorBoundary extends React.Component<{ children: any }, { hasError: Error | null }> {
     state = { hasError: null as null | Error };
 
     static getDerivedStateFromError(error: any) {
@@ -60,6 +59,7 @@ class ErrorBoundary extends React.Component<
 
 // initialData(location.hash ? location.hash.slice(1) : null).then(
 //     (initial) =>
+// @ts-ignore
 root.render(
     // <React.StrictMode>
     <ErrorBoundary>

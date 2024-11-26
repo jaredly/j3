@@ -1,6 +1,6 @@
 import { Id, Loc, RecNode, TextSpan } from '../shared/cnodes';
-import { mref, Matcher, id, list, multi, idt, sequence, idp, text, kwd, switch_, named, opt, table, tx } from './dsl';
-import { textSpanToXML, XML } from './xml';
+import { id, idp, idt, kwd, list, Matcher, mref, multi, named, opt, sequence, switch_, table, text, tx } from './dsl';
+import { XML } from './xml';
 
 const pat_ = mref<Pat>('pat');
 const sprpat_ = mref<SPat>('sprpat');
@@ -10,7 +10,7 @@ const sprpat_ = mref<SPat>('sprpat');
 // that would be ... interesting.
 
 const _pat: Matcher<Pat>[] = [
-    id(null, (node) => ({ type: 'bound' as const, name: node.text, src: nodesSrc(node) })),
+    id(null, (node) => ({ type: 'bound', name: node.text, src: nodesSrc(node) })),
     list('square', multi(sprpat_, true, idt), (values, node) => ({ type: 'array', values, src: nodesSrc(node) })),
     list(
         'smooshed',
@@ -93,9 +93,10 @@ const aToXML = (v: any, name?: string): XML | XML[] | null => {
     const attrs: XML['attrs'] = {};
     const children: XML['children'] = {};
     Object.keys(v).forEach((k) => {
-        if (k === 'type' || k === 'src') return;
+        // if (k === 'type' || k === 'src') return;
+        if (k === 'type') return;
         const res = aToXML(v[k], k);
-        if (res === null) attrs[k] = v[k];
+        if (res === null || k === 'src') attrs[k] = v[k];
         else children[k] = res;
     });
     const res: XML = { tag: v.type ?? name ?? '?', src: v.src };
@@ -120,56 +121,6 @@ type Fancy =
     | Fn
     | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[]; src: Src }
     | { type: 'case'; target: Expr; cases: { pat: Pat; body: Expr }[]; src: Src };
-
-// export type Visitor = {
-//     stmt: (s: Stmt) => void;
-//     expr: (e: Expr) => void;
-//     pat: (p: Pat) => void;
-//     sexpr: (e: SExpr) => void;
-// };
-
-// export const visitSExpr = (expr: SExpr, v: Visitor) => {
-//     if (expr.type === 'spread') {
-//         v.sexpr(expr);
-//         visitExpr(expr.inner, v);
-//     } else {
-//         visitExpr(expr, v);
-//     }
-// };
-
-// export const visitExpr = (expr: Expr, v: Visitor) => {
-//     v.expr(expr);
-//     switch (expr.type) {
-//         case 'array':
-//         case 'tuple':
-//             expr.items.forEach((child) => visitSExpr(child, v));
-//             break;
-//         case 'if':
-//             visitExpr(expr.cond, v);
-//             expr.yes.forEach((s) => visitStmt(s, v));
-//             expr.no?.forEach((s) => visitStmt(s, v));
-//             break;
-//         case 'local':
-//         case 'global':
-//             return;
-//     }
-// };
-
-// export const visitPat = (pat: Pat, v: Visitor) => {
-//     v.pat(pat);
-// };
-
-// export const visitStmt = (stmt: Stmt, v: Visitor) => {
-//     v.stmt(stmt);
-//     switch (stmt.type) {
-//         case 'expr':
-//             return visitExpr(stmt.expr, v);
-//         case 'let':
-//             visitPat(stmt.pat, v);
-//             visitExpr(stmt.value, v);
-//             return;
-//     }
-// };
 
 const fancy = switch_<Expr, Expr>(
     [
@@ -210,15 +161,6 @@ const fancy = switch_<Expr, Expr>(
 );
 
 const unops = ['+', '-', '!', '~'];
-
-// const uops = ['+', '-', '!', '~'];
-// const binned: Matcher<Expr> = sequence<{ left: Expr; rights: { op: Id<Loc>; right: Expr }[] }, Expr>(
-//     [named('left', fancy), named('rights', multi(sequence([named('op', id('binop', idt)), named('right', fancy)], false, idt), false, idt))],
-//     false,
-//     ({ left, rights }): Expr => {
-//         return rights.length ? { type: 'bops', left, rights } : left;
-//     },
-// );
 
 const _exmoosh: Matcher<Omit<ESmoosh, 'type'>>[] = [
     named(
@@ -343,44 +285,6 @@ precedence.forEach((row, i) => {
     row.forEach((n) => (opprec[n] = i));
 });
 
-/*
-
-1 + 2 * 3 / 4 + 5 > 23 + 2 > 5 * 6
-
-                   >          >
-1 +           + 5     23 + 2
-    2 * 3 / 4                    5 * 6
-
-
-                   >          >
-1 +           + 5     23 + 2
-    2 * 3 / 4                    5 * 6
-.
-
-It's like a tree
-
-                  >        >
-  +           +        +
-      *   /                    *
-
-1   2   3   4   5   23   2   5   6
-
-
-1 + 2
-
-* 3 (reach back until you find a higher precedence one, and grab those as the (left))
-
-
--> 1 + (2 * 3)
-
-
-
-/ 4 (again reaching back, see that it's the same level, and glom it on)
-
-+ 5
-
-*/
-
 type Data = { type: 'tmp'; left: Expr | Data; op: Id<Loc>; prec: number; right: Expr | Data };
 
 const add = (data: Data | Expr, op: Id<Loc>, right: Expr): Data => {
@@ -404,6 +308,8 @@ const dataToExpr = (data: Data | Expr): Expr => {
     };
 };
 
+// This is probably the same algorithm as the simple precedence parser
+// https://en.wikipedia.org/wiki/Simple_precedence_parser
 const partition = (left: Expr, rights: { op: Id<Loc>; right: Expr }[]) => {
     let data: Data | Expr = left;
     rights.forEach(({ op, right }) => {
@@ -411,43 +317,6 @@ const partition = (left: Expr, rights: { op: Id<Loc>; right: Expr }[]) => {
     });
     return dataToExpr(data);
 };
-
-//   Needs to take place in expressions and in clause guards.
-//   It is accomplished using the Simple Precedence Parser algorithm.
-//   See: https://en.wikipedia.org/wiki/Simple_precedence_parser
-//
-//   It relies or the operator grammar being in the general form:
-//   e ::= expr op expr | expr
-//   Which just means that exprs and operators always alternate, starting with an expr
-//
-//   The gist of the algorithm is:
-//   Create 2 stacks, one to hold expressions, and one to hold un-reduced operators.
-//   While consuming the input stream,
-/*
-if an expression is encountered add it to the top of the expression stack.
-If an operator is encountered,
-    compare its precedence to the top of the operator stack and perform the appropriate action,
-    which is either
-    - using an operator to reduce 2 expressions on the top of the expression stack
-    - or put it on the top of the operator stack.
-- When the end of the input is reached, attempt to reduce all of the expressions down to a single expression(or no expression)
-  using the remaining operators on the operator stack.
-  If there are any operators left, or more than 1 expression left this is a syntax error.
-
-*/
-
-// const parsePrecedence = <E, O>(left: E, rights: {op: O, right: E}[], prec: (op: O) => number, combine: (left: E, right: E, op: O) => E) => {
-//     const exprs: E[] = [left]
-//     const ops:O[] = []
-
-//     rights.forEach(({op, right}) => {
-//         if (!ops.length || prec(op) >= prec(ops[0])) {
-//             ops.unshift(op)
-//         } else {
-//             exprs.unshift(combine(exprs.shift()!, exprs.shift()!, ops.shift()!))
-//         }
-//     })
-// }
 
 export const matchers = {
     expr: switch_([..._expr, _nosexpr], idt),
@@ -495,17 +364,8 @@ export const matchers = {
             ),
         ],
         false,
-        ({ left, rights }, nodes): Expr => {
-            if (!nodes.length) throw new Error(`binned didnt consume somehow`);
-            return rights.length
-                ? partition(left, rights)
-                : // ? {
-                  //       type: 'bops',
-                  //       left,
-                  //       rights,
-                  //       src: nodesSrc(nodes),
-                  //   }
-                  left;
+        ({ left, rights }): Expr => {
+            return rights.length ? partition(left, rights) : left;
         },
     ),
 };

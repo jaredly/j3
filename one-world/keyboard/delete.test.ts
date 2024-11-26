@@ -52,7 +52,7 @@ test('smoosh sel closer', () => {
     let state = asTop(smoosh([round([]), id('two', true)]), idc(0));
     validate(state);
     state = applyUpdate(state, handleDelete(state));
-    check(state, smoosh([round([], true), id('two')]), listc('end'));
+    check(state, smoosh([round([], true), id('two')]), listc('inside'));
 });
 
 test('join deep smooshed', () => {

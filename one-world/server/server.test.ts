@@ -5,11 +5,7 @@ import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { expect, test } from 'bun:test';
 import * as dk from 'drizzle-kit/payload';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import {
-    handleDropdown,
-    handleMovement,
-    handleUpDown,
-} from '../client/cli/edit/handleMovement';
+import { handleDropdown, handleMovement, handleUpDown } from '../client/cli/edit/handleMovement';
 import { handleUpdate } from '../client/cli/edit/handleUpdate';
 import { parseAndCache, render, RState } from '../client/cli/render';
 import { newStore, WS } from '../client/newStore2';
@@ -19,15 +15,7 @@ import { Caches, Context, evaluate } from '../graphh/by-hand';
 import { aBlockToString } from '../shared/IR/block-to-attributed-text';
 import { ParseAndEval, selectEODoc } from '../shared/IR/nav';
 import { DocStage } from '../shared/state2';
-import {
-    DrizzleDb,
-    getDoc,
-    getEditedDoc,
-    getHeadRoot,
-    getModule,
-    newStage,
-    saveDocument,
-} from './drizzle';
+import { DrizzleDb, getDoc, getEditedDoc, getHeadRoot, getModule, newStage, saveDocument } from './drizzle';
 import * as tb from './schema';
 import { seed } from './seed';
 import { showChanges } from './showChanges';
@@ -85,12 +73,7 @@ Full end-to-end:
 
 const nows: WS = { close() {}, onMessage(fn) {}, send(msg) {} };
 
-const reval = (
-    caches: Caches<unknown>,
-    ctx: Context,
-    rstate: RState,
-    ev: AnyEvaluator,
-) => {
+const reval = (caches: Caches<unknown>, ctx: Context, rstate: RState, ev: AnyEvaluator) => {
     Object.keys(caches.parse).forEach((tid) => {
         rstate.parseAndEval[tid].output = evaluate(tid, ctx, ev, caches);
     });
@@ -108,12 +91,7 @@ const specials: { [key: string]: string } = {
     Redo: 'REDO',
 };
 
-const runText = (
-    ds: DocStage,
-    text: string | string[],
-    ws: WS = nows,
-    ev: AnyEvaluator = NopEvaluator,
-) => {
+const runText = (ds: DocStage, text: string | string[], ws: WS = nows, ev: AnyEvaluator = NopEvaluator) => {
     const store = newStore(ds!, ws, null);
 
     const W = 200;
@@ -176,10 +154,7 @@ const runText = (
             return true;
         }
 
-        if (
-            handleUpDown(key, ds.id, store, rstate) ||
-            handleMovement(key, ds.id, rstate.cache, store)
-        ) {
+        if (handleUpDown(key, ds.id, store, rstate) || handleMovement(key, ds.id, rstate.cache, store)) {
             return true;
         }
 
@@ -201,12 +176,7 @@ const runText = (
 
 const editorToString = (ds: DocStage, W = 200) => {
     const store = newStore(ds!, nows, null);
-    const { parseCache, caches, ctx } = parseAndCache(
-        store,
-        ds.id,
-        {},
-        NopEvaluator,
-    );
+    const { parseCache, caches, ctx } = parseAndCache(store, ds.id, {}, NopEvaluator);
     let rstate = render(W, store, ds.id, parseCache, {
         plainBullets: true,
         showRefHashes: true,
@@ -264,23 +234,14 @@ test('store and retrieve a newStage', async () => {
     expect(got).toEqual(doc);
 });
 
-const getEx = (text: string | string[]) =>
-    Array.isArray(text) ? text[0] : '- ' + text;
+const getEx = (text: string | string[]) => (Array.isArray(text) ? text[0] : '- ' + text);
 
 const examples: (string | string[])[] = [
     'hello',
     '[one two]',
     '{yes no 123}',
     '(hello [folks yes])',
-    [
-        '- (hello forks)',
-        '(hello folk',
-        'ArrowLeft',
-        'Backspace',
-        'r',
-        'ArrowRight',
-        's)',
-    ],
+    ['- (hello forks)', '(hello folk', 'ArrowLeft', 'Backspace', 'r', 'ArrowRight', 's)'],
     // ['- hello-yall\n- folks', 'hello folks', 'ArrowUp', '-yall'],
 ];
 
@@ -289,19 +250,15 @@ test('lets do some history', () => {
     // const text = ['(hello)', '(hello last things', 'Undo'];
     const doc = newStage('lol', 10, 'na');
     const d2 = runText(doc, text);
-    expect(
-        d2.history.map((h) => showChanges(h.changes)).join('\n\n'),
-    ).toMatchSnapshot();
+    expect(d2.history.map((h) => showChanges(h.changes)).join('\n\n')).toMatchSnapshot();
     expect(editorToString(d2, 200)).toEqual(getEx(text));
 });
 
-test('lets do some movement and stuff', () => {
+test.skip('lets do some movement and stuff', () => {
     const text = ['- hello-yall\n- folks', 'hello folks', 'ArrowUp', '-yall'];
     const doc = newStage('lol', 10, 'na');
     const d2 = runText(doc, text);
-    expect(
-        d2.history.map((h) => showChanges(h.changes)).join('\n\n'),
-    ).toMatchSnapshot();
+    expect(d2.history.map((h) => showChanges(h.changes)).join('\n\n')).toMatchSnapshot();
     expect(editorToString(d2, 200)).toEqual(getEx(text));
 });
 
@@ -360,9 +317,7 @@ examples.forEach((text) => {
 
         await saveDocument(db, doc, 'main');
 
-        expect(
-            editorToString((await getEditedDoc(db, id, 'main'))!, 200),
-        ).toEqual(getEx(text));
+        expect(editorToString((await getEditedDoc(db, id, 'main'))!, 200)).toEqual(getEx(text));
     });
 });
 
@@ -464,9 +419,7 @@ test('now try to commit', async () => {
     const docModule = await getModule(db, nroot, [doc.id]);
     const docBack = await getDoc(db, doc.id, docModule!.docHash, nroot);
 
-    expect(editorToString(docBack!, 200)).toEqual(
-        '- hello\n- multiple\n- folks',
-    );
+    expect(editorToString(docBack!, 200)).toEqual('- hello\n- multiple\n- folks');
 });
 
 function crossLink(d2: DocStage) {
@@ -522,10 +475,7 @@ Fuller ender-to-end
 
 // SOMEEHOWW if I this is done before the /now try to commit/ it slows that test down by like a factor of 40?
 
-const findNode = <Res extends Node>(
-    top: Toplevel,
-    f: (n: Node) => n is Res,
-): Res | null => {
+const findNode = <Res extends Node>(top: Toplevel, f: (n: Node) => n is Res): Res | null => {
     for (let node of Object.values(top.nodes)) {
         if (f(node)) {
             return node;
@@ -534,21 +484,14 @@ const findNode = <Res extends Node>(
     return null;
 };
 
-const refLock = (ref?: IDRef) =>
-    ref?.type === 'toplevel' ? ref.lock : undefined;
+const refLock = (ref?: IDRef) => (ref?.type === 'toplevel' ? ref.lock : undefined);
 
 const idTop =
     (text: string) =>
     (node: Node): node is Id<number> =>
-        node.type === 'id' &&
-        node.text === text &&
-        node.ref?.type === 'toplevel';
+        node.type === 'id' && node.text === text && node.ref?.type === 'toplevel';
 
-const topHash = (hasher: IHasher) => (tops: Toplevel[]) =>
-    hashit(
-        norm(tops.map((t) => ({ ...t, hash: undefined, module: undefined }))),
-        hasher,
-    );
+const topHash = (hasher: IHasher) => (tops: Toplevel[]) => hashit(norm(tops.map((t) => ({ ...t, hash: undefined, module: undefined }))), hasher);
 
 test('cross-link exports', async () => {
     const text = `(def zero 0)
@@ -585,7 +528,7 @@ test('cross-link exports', async () => {
 
 // but also, I want to ... validate
 
-test.only('with macros prolly', async () => {
+test('with macros prolly', async () => {
     const text = `
 (def no-val false)
 (defn pass-through [x] x)

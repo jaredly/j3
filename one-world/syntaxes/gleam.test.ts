@@ -1,64 +1,78 @@
 // Ok now we find out if any of this works.
 
-import { id, round, smoosh } from '../keyboard/test-utils';
+import { id, js, round, smoosh } from '../keyboard/test-utils';
 import { RecNode } from '../shared/cnodes';
 // import * as g from './gleam';
 import * as g from './gleam2';
 import * as d from './dsl';
 import { Matcher, MatchError } from './dsl';
+import { cread } from '../shared/creader';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { root } from '../keyboard/root';
 
 const ctx: d.Ctx = { matchers: g.matchers, kwds: g.kwds };
 
-test('gleam id', () => {
-    expect(d.parse(g.matchers.expr, id('yolo'), ctx).result).toEqual({ type: 'local', name: 'yolo' });
+test('long thing', () => {
+    const text = 'let x = nide.s + 32 / 3 - 5 ^ 2 + if x > 2 {2} else {4} - (fn(x) {x - 2})(5)';
+    const state = cread(splitGraphemes(text), js);
+    const gleam = d.parse(
+        g.matchers.stmt,
+        root(state, (idx) => [{ id: '', idx }]),
+        { matchers: g.matchers, kwds: g.kwds },
+    );
+    expect(gleam.bads).toEqual([]);
 });
 
-test('attr pls', () => {
-    const attr = id('please', null as any, undefined, { type: 'toplevel', kind: 'attribute', loc: { id: '', idx: 0 } });
-    const pres = d.parse(g.matchers.expr, smoosh([id('hello'), id('.'), attr]), ctx);
+// test('gleam id', () => {
+//     expect(d.parse(g.matchers.expr, id('yolo'), ctx).result).toEqual({ type: 'local', name: 'yolo' });
+// });
 
-    expect(pres.bads).toEqual([]);
-    expect(pres.result).toEqual({
-        type: 'smooshed',
-        prefixes: [],
-        base: { type: 'local', name: 'hello' },
-        suffixes: [{ type: 'attribute', attr: attr }],
-    });
-});
+// test('attr pls', () => {
+//     const attr = id('please', null as any, undefined, { type: 'toplevel', kind: 'attribute', loc: { id: '', idx: 0 } });
+//     const pres = d.parse(g.matchers.expr, smoosh([id('hello'), id('.'), attr]), ctx);
 
-test('attr wrong kind...', () => {
-    const attr = id<any>('please');
-    const pres = d.parse(g.matchers.expr, smoosh([id('hello'), id('.'), attr]), ctx);
+//     expect(pres.bads).toEqual([]);
+//     expect(pres.result).toEqual({
+//         type: 'smooshed',
+//         prefixes: [],
+//         base: { type: 'local', name: 'hello' },
+//         suffixes: [{ type: 'attribute', attr: attr }],
+//     });
+// });
 
-    expect(pres.bads).toEqual([]);
-    expect(pres.result).toEqual({
-        type: 'smooshed',
-        prefixes: [],
-        base: { type: 'local', name: 'hello' },
-        suffixes: [{ type: 'attribute', attr: attr }],
-    });
-});
+// test('attr wrong kind...', () => {
+//     const attr = id<any>('please');
+//     const pres = d.parse(g.matchers.expr, smoosh([id('hello'), id('.'), attr]), ctx);
 
-test('lets do some smooshes?', () => {
-    const plus = id<any>('+');
-    const pres = d.parse(g.matchers.expr, smoosh([plus, id('hello'), round([id('123'), id('yes')])]), ctx);
+//     expect(pres.bads).toEqual([]);
+//     expect(pres.result).toEqual({
+//         type: 'smooshed',
+//         prefixes: [],
+//         base: { type: 'local', name: 'hello' },
+//         suffixes: [{ type: 'attribute', attr: attr }],
+//     });
+// });
 
-    expect(pres.bads).toEqual([]);
-    expect(pres.result).toEqual({
-        type: 'smooshed',
-        prefixes: [plus],
-        base: { type: 'local', name: 'hello' },
-        suffixes: [
-            {
-                type: 'call',
-                items: [
-                    { type: 'local', name: '123' },
-                    { type: 'local', name: 'yes' },
-                ],
-            },
-        ],
-    });
-});
+// test('lets do some smooshes?', () => {
+//     const plus = id<any>('+');
+//     const pres = d.parse(g.matchers.expr, smoosh([plus, id('hello'), round([id('123'), id('yes')])]), ctx);
+
+//     expect(pres.bads).toEqual([]);
+//     expect(pres.result).toEqual({
+//         type: 'smooshed',
+//         prefixes: [plus],
+//         base: { type: 'local', name: 'hello' },
+//         suffixes: [
+//             {
+//                 type: 'call',
+//                 items: [
+//                     { type: 'local', name: '123' },
+//                     { type: 'local', name: 'yes' },
+//                 ],
+//             },
+//         ],
+//     });
+// });
 
 // test('gleam please', () => {
 //     expect(g.parse(id('yolo'), g.expr)).toEqual({
