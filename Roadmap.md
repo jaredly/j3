@@ -4,10 +4,13 @@ and /Tables/ inside rich lists.
 
 # Order of operations
 
+GOTTA do visual dispaly of where nodes are. nowwwww
+- [x] ok it's decent
+
 UI stuffs
 - [ ] gleam, better parsing of smooshes and binops
   - [x] smooshes
-  - [ ] bops pls
+  - [x] bops pls
 - [ ] hover the XML, highlight the source (click to selection)
 - [ ] selection in source, highlight the XML
 - [ ] click to select

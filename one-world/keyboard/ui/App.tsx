@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { useLatest } from '../../../web/custom/useLatest';
 import { applyUpdate } from '../applyUpdate';
@@ -16,7 +16,8 @@ import { closerKind, handleClose, handleWrap, wrapKind } from '../handleWrap';
 import { root } from '../root';
 import { RenderNode } from './RenderNode';
 import { ShowXML } from './XML';
-import { nodeToXML } from '../../syntaxes/xml';
+import { nodeToXML, XML } from '../../syntaxes/xml';
+import { Loc } from '../../shared/cnodes';
 
 const keyUpdate = (state: TestState, key: string, mods: Mods) => {
     if (key === 'Enter') key = '\n';
@@ -101,9 +102,10 @@ export const App = () => {
 
     return (
         <div style={{ display: 'flex', inset: 0, position: 'absolute', flexDirection: 'column' }}>
-            <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, minHeight: 0 }}>
+            <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, paddingBottom: 0, minHeight: 0 }}>
                 <RenderNode loc={state.top.root} state={state} inRich={false} ctx={{ errors, refs }} />
             </div>
+            {xml ? <XMLShow xml={xml} state={state} refs={refs} /> : null}
             {/* <div>{shape(root(state))}</div>
             <div>
                 {state.top.root} : {state.top.nextLoc}
@@ -127,5 +129,118 @@ export const App = () => {
                 </div>
             </div>
         </div>
+    );
+};
+
+const walxml = (xml: XML, f: (n: XML) => void) => {
+    f(xml);
+    if (xml.children) {
+        Object.values(xml.children).forEach((value) => {
+            if (!value) return;
+            if (Array.isArray(value)) return value.forEach((v) => walxml(v, f));
+            else return walxml(value, f);
+        });
+    }
+};
+
+const XMLShow = ({ xml, refs, state }: { state: TestState; xml: XML; refs: Record<string, HTMLElement> }) => {
+    const alls = useMemo(() => {
+        const lst: XML[] = [];
+        walxml(xml, (m) => {
+            if (m.src.right || state.top.nodes[m.src.left[0].idx].type !== 'id') {
+                lst.push(m);
+            }
+        });
+        return lst;
+    }, [xml, state]);
+
+    const pos = (loc: Loc, right?: Loc): [number, number] | null => {
+        const lf = refs[loc[0].idx];
+        if (!lf) return null;
+        const lb = lf.getBoundingClientRect();
+        if (!right) {
+            return [lb.left, lb.right];
+        }
+        const rf = refs[right[0].idx];
+        if (!rf) return null;
+        const rb = rf.getBoundingClientRect();
+        return [lb.left, rb.right];
+    };
+
+    // const [_, setTick] = useState(0);
+    // useEffect(() => {
+    //     setTimeout(() => {
+    //         setTick(1);
+    //     }, 10);
+    // }, []);
+    const calc = () => {
+        const posed = alls
+            .map((node) => {
+                const sides = pos(node.src.left, node.src.right);
+                if (!sides) return null;
+                return { sides, node };
+            })
+            .filter(Boolean) as { sides: [number, number]; node: XML }[];
+        posed.sort((a, b) => a.sides[1] - a.sides[0] - (b.sides[1] - b.sides[0]));
+
+        const placed: { node: XML; sides: [number, number] }[][] = [[]];
+        posed.forEach(({ node, sides }) => {
+            for (let i = 0; i < placed.length; i++) {
+                const row = placed[i];
+                if (!row.some((one) => collides(one.sides, sides))) {
+                    row.push({ node, sides });
+                    return;
+                }
+            }
+            placed.push([{ node, sides }]);
+        });
+        return placed;
+    };
+    const [placed, setPlaced] = useState<{ node: XML; sides: [number, number] }[][]>([]);
+    useLayoutEffect(() => {
+        // setTimeout(() => {
+        setPlaced(calc());
+        // }, 10);
+    }, [state, xml]);
+
+    return (
+        <div>
+            {placed.map((row, i) => {
+                return (
+                    <div key={i} style={{ position: 'relative', height: 6 }}>
+                        {row.map(({ node, sides }, j) => {
+                            return (
+                                <div
+                                    key={j}
+                                    style={{
+                                        position: 'absolute',
+                                        left: sides[0],
+                                        width: sides[1] - sides[0],
+                                        backgroundColor: 'rgba(200,200,255)',
+                                        marginTop: 2,
+                                        height: 4,
+                                        // height: 4,
+                                        // fontSize: 8,
+                                        borderRadius: 4,
+                                        // padding: 2,
+                                    }}
+                                >
+                                    {/* {node.tag} */}
+                                </div>
+                            );
+                        })}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+const collides = (one: [number, number], two: [number, number]) => {
+    return (
+        (one[0] < two[0] && one[1] > two[0]) ||
+        (one[0] < two[1] && one[1] > two[1]) ||
+        (two[0] < one[0] && two[1] > one[0]) ||
+        (two[0] < one[1] && two[1] > one[1])
     );
 };

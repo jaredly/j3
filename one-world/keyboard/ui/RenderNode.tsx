@@ -36,7 +36,11 @@ export const RenderNode = ({ loc, state, inRich, ctx }: { loc: number; state: Te
                     </span>
                 );
             }
-            return <span style={style}>{node.text}</span>;
+            return (
+                <span style={style} ref={ref}>
+                    {node.text}
+                </span>
+            );
         case 'list':
             const children = node.children.map((loc) => <RenderNode ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />);
             if (typeof node.kind !== 'string') {
