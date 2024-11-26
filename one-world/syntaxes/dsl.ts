@@ -125,7 +125,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             const init = at;
             let value: Record<string, any> = {};
             for (let i = 0; i < matcher.items.length; i++) {
-                const res = match(matcher.items[i], ctx, parent, at, i === matcher.items.length - 1 && matcher.all);
+                const res = match(matcher.items[i], ctx, parent, at, i === matcher.items.length - 1 && (matcher.all || endOfExhaustive));
                 // console.log('iinnner', nodes[at], matcher.items[i].type, res.good);
                 good.push(res.good);
                 bad.push(res.bad);
@@ -183,6 +183,9 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                 misses.push({ good: res.good, bad: res.bad, goods: bagSize(res.good) });
             }
             misses.sort((a, b) => b.goods - a.goods);
+            if (!misses[0].goods) {
+                return { result: null, good: [], bad: misses.map((m) => m.bad) };
+            }
             return { result: null, good: misses[0].good, bad: misses[0].bad };
         }
     }
@@ -202,6 +205,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
         }
         case 'id':
             if (node.type !== 'id' || ctx.kwds.includes(node.text)) return fail(matcher, node);
+            if (node.text === '') return fail(matcher, node);
             if (!ctx.strictIds) return one(matcher.f(node), node);
             if (matcher.kind == null && !node.ref && !ctx.kwds.includes(node.text)) {
                 return one(matcher.f(node), node);
