@@ -58,7 +58,9 @@ type Expr =
     | { type: 'text'; spans: TextSpan<SExpr>[]; src: Src }
     | { type: 'array'; items: SExpr[]; src: Src }
     | { type: 'tuple'; items: SExpr[]; src: Src }
-    | { type: 'bops'; left: Expr; rights: { op: Id<Loc>; right: Expr }[]; src: Src }
+    // Is this how I want to do it?
+    // OR do I make associativity more explicit?
+    | { type: 'bops'; op: Id<Loc>; items: Expr[]; src: Src }
     // | ESmoosh
     | { type: 'record'; rows: RecordRow[]; src: Src }
     | { type: 'call'; target: Expr; args: SExpr[]; src: Src }
@@ -66,7 +68,8 @@ type Expr =
     | { type: 'attribute'; target: Expr; attribute: Id<Loc>; src: Src }
     | { type: 'index'; target: Expr; items: SExpr[]; src: Src }
     | Fancy;
-// type ESmoosh = { type: 'smooshed'; prefixes: Id<Loc>[]; base: Expr; suffixes: Suffix[]; src: Src };
+
+type ESmoosh = { type: 'smooshed'; prefixes: Id<Loc>[]; base: Expr; suffixes: Suffix[]; src: Src };
 
 type Suffix =
     | { type: 'index'; items: SExpr[]; src: Src }
@@ -112,7 +115,9 @@ export const toXML = (v: any) => {
 
 const binned_ = mref<Expr>('binned');
 
+type Fn = { type: 'fn'; args: Pat[]; body: Stmt[]; src: Src };
 type Fancy =
+    | Fn
     | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[]; src: Src }
     | { type: 'case'; target: Expr; cases: { pat: Pat; body: Expr }[]; src: Src };
 
@@ -168,6 +173,18 @@ type Fancy =
 
 const fancy = switch_<Expr, Expr>(
     [
+        sequence<Fn, Fn>(
+            [
+                list(
+                    'smooshed',
+                    sequence<Fn, Fn>([kwd('fn', () => ({ type: 'fn' })), named('args', list('round', multi(pat_, true, idt), idt))], true, idt),
+                    idt,
+                ),
+                named('body', block),
+            ],
+            false,
+            (data, node) => ({ ...data, src: nodesSrc(node) }),
+        ),
         sequence<Fancy, Fancy>(
             [
                 kwd('if', () => ({ type: 'if' })),
@@ -192,7 +209,6 @@ const fancy = switch_<Expr, Expr>(
     idt,
 );
 
-const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%'];
 const unops = ['+', '-', '!', '~'];
 
 // const uops = ['+', '-', '!', '~'];
@@ -261,16 +277,7 @@ const parseSmoosh = ({ base, suffixes, prefixes }: Smoosh, node: RecNode): Expr 
 
 const mergeSrc = (one: Src, two?: Src): Src => ({ left: one.left, right: two?.right ?? two?.left ?? one.right });
 
-const _nosexpr: Matcher<Expr> = list(
-    'smooshed',
-    sequence<Smoosh>(_exmoosh, true, idt),
-    (data, node) => parseSmoosh(data, node),
-    //     {
-    //     type: 'smooshed',
-    //     ...data,
-    //     src: nodesSrc(node),
-    // }
-);
+const _nosexpr: Matcher<Expr> = list('smooshed', sequence<Smoosh>(_exmoosh, true, idt), (data, node) => parseSmoosh(data, node));
 
 const _sprood: Matcher<SExpr> = list(
     'smooshed',
@@ -288,8 +295,8 @@ const _sprood: Matcher<SExpr> = list(
         true,
         idt,
     ),
-    ({ spread, ...data }, nodes) =>
-        spread ? { type: 'spread', inner: { type: 'smooshed', ...data }, src: nodesSrc(nodes) } : { type: 'smooshed', ...data, src: nodesSrc(nodes) },
+    ({ spread, ...data }, node): SExpr =>
+        spread ? { type: 'spread', inner: parseSmoosh(data, node), src: nodesSrc(node) } : parseSmoosh(data, node),
 );
 
 const nodesSrc = (nodes: RecNode | RecNode[]): Src =>
@@ -327,6 +334,120 @@ const _expr: Matcher<Expr>[] = [
 ];
 
 export const kwds = ['if', 'case', 'else', 'let', '=', '..', '.'];
+
+const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%'];
+const precedence = [['!=', '=='], ['>', '<', '>=', '<='], ['%'], ['+', '-'], ['*', '/'], ['^']];
+
+const opprec: Record<string, number> = {};
+precedence.forEach((row, i) => {
+    row.forEach((n) => (opprec[n] = i));
+});
+
+/*
+
+1 + 2 * 3 / 4 + 5 > 23 + 2 > 5 * 6
+
+                   >          >
+1 +           + 5     23 + 2
+    2 * 3 / 4                    5 * 6
+
+
+                   >          >
+1 +           + 5     23 + 2
+    2 * 3 / 4                    5 * 6
+.
+
+It's like a tree
+
+                  >        >
+  +           +        +
+      *   /                    *
+
+1   2   3   4   5   23   2   5   6
+
+
+1 + 2
+
+* 3 (reach back until you find a higher precedence one, and grab those as the (left))
+
+
+-> 1 + (2 * 3)
+
+
+
+/ 4 (again reaching back, see that it's the same level, and glom it on)
+
++ 5
+
+*/
+
+type Data = { type: 'tmp'; left: Expr | Data; op: Id<Loc>; prec: number; right: Expr | Data };
+
+const add = (data: Data | Expr, op: Id<Loc>, right: Expr): Data => {
+    const prec = opprec[op.text];
+    if (data.type !== 'tmp' || prec <= data.prec) {
+        return { type: 'tmp', left: data, op, prec, right };
+    } else {
+        return { ...data, right: add(data.right, op, right) };
+    }
+};
+
+const dataToExpr = (data: Data | Expr): Expr => {
+    if (data.type !== 'tmp') return data;
+    const left = dataToExpr(data.left);
+    const right = dataToExpr(data.right);
+    return {
+        type: 'call',
+        target: { type: 'local', name: data.op.text, src: nodesSrc(data.op) },
+        args: [left, right],
+        src: mergeSrc(left.src, right.src),
+    };
+};
+
+const partition = (left: Expr, rights: { op: Id<Loc>; right: Expr }[]) => {
+    let data: Data | Expr = left;
+    rights.forEach(({ op, right }) => {
+        data = add(data, op, right);
+    });
+    return dataToExpr(data);
+};
+
+//   Needs to take place in expressions and in clause guards.
+//   It is accomplished using the Simple Precedence Parser algorithm.
+//   See: https://en.wikipedia.org/wiki/Simple_precedence_parser
+//
+//   It relies or the operator grammar being in the general form:
+//   e ::= expr op expr | expr
+//   Which just means that exprs and operators always alternate, starting with an expr
+//
+//   The gist of the algorithm is:
+//   Create 2 stacks, one to hold expressions, and one to hold un-reduced operators.
+//   While consuming the input stream,
+/*
+if an expression is encountered add it to the top of the expression stack.
+If an operator is encountered,
+    compare its precedence to the top of the operator stack and perform the appropriate action,
+    which is either
+    - using an operator to reduce 2 expressions on the top of the expression stack
+    - or put it on the top of the operator stack.
+- When the end of the input is reached, attempt to reduce all of the expressions down to a single expression(or no expression)
+  using the remaining operators on the operator stack.
+  If there are any operators left, or more than 1 expression left this is a syntax error.
+
+*/
+
+// const parsePrecedence = <E, O>(left: E, rights: {op: O, right: E}[], prec: (op: O) => number, combine: (left: E, right: E, op: O) => E) => {
+//     const exprs: E[] = [left]
+//     const ops:O[] = []
+
+//     rights.forEach(({op, right}) => {
+//         if (!ops.length || prec(op) >= prec(ops[0])) {
+//             ops.unshift(op)
+//         } else {
+//             exprs.unshift(combine(exprs.shift()!, exprs.shift()!, ops.shift()!))
+//         }
+//     })
+// }
 
 export const matchers = {
     expr: switch_([..._expr, _nosexpr], idt),
@@ -377,13 +498,14 @@ export const matchers = {
         ({ left, rights }, nodes): Expr => {
             if (!nodes.length) throw new Error(`binned didnt consume somehow`);
             return rights.length
-                ? {
-                      type: 'bops',
-                      left,
-                      rights,
-                      src: nodesSrc(nodes),
-                  }
-                : left;
+                ? partition(left, rights)
+                : // ? {
+                  //       type: 'bops',
+                  //       left,
+                  //       rights,
+                  //       src: nodesSrc(nodes),
+                  //   }
+                  left;
         },
     ),
 };

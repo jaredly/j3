@@ -1,8 +1,13 @@
 
+Ok I'm also excited about getting JSX working really smoothly.
+and /Tables/ inside rich lists.
+
 # Order of operations
 
 UI stuffs
 - [ ] gleam, better parsing of smooshes and binops
+  - [x] smooshes
+  - [ ] bops pls
 - [ ] hover the XML, highlight the source (click to selection)
 - [ ] selection in source, highlight the XML
 - [ ] click to select
