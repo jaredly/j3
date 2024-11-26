@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, List, ListKind, Node, Nodes } from '../shared/cnodes';
+import { Collection, Id, List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { findParent } from './flatenate';
 import { justSel } from './handleNav';
@@ -7,7 +7,7 @@ import { handleTextText } from './insertId';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
 import { TestState } from './test-utils';
-import { Cursor, getCurrent, IdCursor, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
+import { CollectionCursor, Cursor, getCurrent, IdCursor, ListCursor, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
 export const wrapKind = (key: string): ListKind<any> | void => {
     switch (key) {
@@ -35,6 +35,36 @@ export const closerKind = (key: string): ListKind<number> | void => {
     }
 };
 
+export const handleListWrap = (top: Top, path: Path, node: Collection<number>, cursor: CollectionCursor, kind: ListKind<number>): Update | void => {
+    if (cursor.type !== 'list') throw new Error('not');
+    if (cursor.where !== 'after') {
+        console.log(cursor);
+        throw new Error('not ' + cursor.where);
+    }
+
+    let nextLoc = top.nextLoc;
+    const loc = nextLoc++;
+    const parent = findParent(0, parentPath(path), top);
+    const flat = parent ? flatten(parent.node, top) : [node];
+    const nlist: List<number> = { type: 'list', children: [], kind, loc };
+    const nodes: Nodes = { [loc]: nlist };
+    let sel: Node = nlist;
+    let ncursor: Cursor = { type: 'list', where: 'inside' };
+
+    let at = flat.indexOf(node);
+    // for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
+
+    flat.splice(at + 1, 0, nlist);
+
+    return flatToUpdateNew(
+        flat,
+        { node: sel, cursor: ncursor },
+        { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
+        nodes,
+        { ...top, nextLoc },
+    );
+};
+
 export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdCursor, kind: ListKind<number>): Update | void => {
     const { left, right } = cursorSides(cursor);
     const text = cursor.text ?? splitGraphemes(node.text);
@@ -46,7 +76,7 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
     const mid = text.slice(left, right);
     const end = text.slice(right);
 
-    // at end
+    // in the middle or the end
     let nextLoc = top.nextLoc;
     const loc = nextLoc++;
     const parent = findParent(0, parentPath(path), top);
@@ -152,8 +182,8 @@ export const handleWrap = (state: TestState, key: string): Update | void => {
     switch (current.type) {
         case 'id':
             return handleIdWrap(state.top, state.sel.start.path, current.node, current.cursor, kind);
-        // case 'list':
-        //     return handleListWrap(state.top, state.sel.start.path, current.cursor, kind);
+        case 'list':
+            return handleListWrap(state.top, state.sel.start.path, current.node, current.cursor, kind);
         // case 'text':
         //     return handleTextWrap(state.top, state.sel.start.path, current.cursor, kind);
         default:

@@ -9,6 +9,8 @@ import { Matcher, MatchError } from './dsl';
 import { cread } from '../shared/creader';
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { root } from '../keyboard/root';
+import { shape } from '../shared/shape';
+import { showXML } from './xml';
 
 const ctx: d.Ctx = { matchers: g.matchers, kwds: g.kwds };
 
@@ -21,6 +23,10 @@ test('long thing', () => {
         { matchers: g.matchers, kwds: g.kwds },
     );
     expect(gleam.bads).toEqual([]);
+    expect(shape(root(state))).toEqual(
+        'list[spaced](id(let/0) id(x/0) id(=/3) list[smooshed](id(nide/0) id(./1) id(s/0)) id(+/3) id(32/0) id(//2) id(3/0) id(-/3) id(5/0) id(^/3) id(2/0) id(+/3) id(if/0) id(x/0) id(>/3) id(2/0) list[curly](id(2/0)) id(else/0) list[curly](id(4/0)) id(-/3) list[smooshed]((list[spaced](list[smooshed](id(fn/0) (id(x/0))) list[curly](list[spaced](id(x/0) id(-/3) id(2/0))))) (id(5/0))))',
+    );
+    expect(showXML(g.toXML(gleam.result))).toMatchSnapshot();
 });
 
 // test('gleam id', () => {

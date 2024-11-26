@@ -69,6 +69,12 @@ type Expr =
     | { type: 'index'; target: Expr; items: SExpr[]; src: Src }
     | Fancy;
 
+type Fn = { type: 'fn'; args: Pat[]; body: Stmt[]; src: Src };
+type Fancy =
+    | Fn
+    | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[]; src: Src }
+    | { type: 'case'; target: Expr; cases: { pat: Pat; body: Expr }[]; src: Src };
+
 type ESmoosh = { type: 'smooshed'; prefixes: Id<Loc>[]; base: Expr; suffixes: Suffix[]; src: Src };
 
 type Suffix =
@@ -77,6 +83,15 @@ type Suffix =
     | { type: 'attribute'; attribute: Id<Loc>; src: Src };
 type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
 type Stmt = { type: 'expr'; expr: Expr; src: Src } | { type: 'let'; pat: Pat; value: Expr; src: Src };
+
+// export const evalExpr = (expr: Expr, scope: Record<string,any>) => {
+//     switch (expr.type) {
+//         case 'local':
+//             if (!(expr.name in scope)) throw new Error('undef ' + expr.name)
+//             return scope[expr.name]
+//         case 'uop'
+//     }
+// }
 
 const aToXML = (v: any, name?: string): XML | XML[] | null => {
     if (Array.isArray(v)) {
@@ -93,8 +108,8 @@ const aToXML = (v: any, name?: string): XML | XML[] | null => {
     const attrs: XML['attrs'] = {};
     const children: XML['children'] = {};
     Object.keys(v).forEach((k) => {
-        // if (k === 'type' || k === 'src') return;
-        if (k === 'type') return;
+        if (k === 'type' || k === 'src') return;
+        // if (k === 'type') return;
         const res = aToXML(v[k], k);
         if (res === null || k === 'src') attrs[k] = v[k];
         else children[k] = res;
@@ -115,12 +130,6 @@ export const toXML = (v: any) => {
 };
 
 const binned_ = mref<Expr>('binned');
-
-type Fn = { type: 'fn'; args: Pat[]; body: Stmt[]; src: Src };
-type Fancy =
-    | Fn
-    | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[]; src: Src }
-    | { type: 'case'; target: Expr; cases: { pat: Pat; body: Expr }[]; src: Src };
 
 const fancy = switch_<Expr, Expr>(
     [

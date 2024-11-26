@@ -11,6 +11,9 @@ like to make sure error reporting and stuff is tight.
 - [ ] ok let's really make \n turn a thing into multiline. we'll have auto formating
   at some point, but this would honestly work for now
 
+- [ ] I reeeeeally need to be able to multiselect so I can wrap multiuple things
+- [ ] alsoooo I want to unwrap lisets at will
+
 # Ok so what we're doing right now
 
 is coming up with autocomplete. right?
