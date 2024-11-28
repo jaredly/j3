@@ -2,6 +2,9 @@
 
 # Hrmrgrm ok I think I need really good tests for my dsl
 
+- [ ] CLIIIIICK
+- [ ] comments should be grayed out
+
 like to make sure error reporting and stuff is tight.
 
 - [ ] if there's a seq at the end of an "exhaustive seq", we can treat it as exhaustive?

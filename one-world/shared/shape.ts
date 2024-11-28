@@ -53,6 +53,9 @@ const styleText = (style?: Style) => {
 export const asStyle = (style?: Style): React.CSSProperties | undefined => {
     if (!style) return undefined;
     const res: React.CSSProperties = {};
+    if (style.color) {
+        res.color = rgb(style.color);
+    }
     if (style.background) {
         res.background = rgb(style.background);
     }

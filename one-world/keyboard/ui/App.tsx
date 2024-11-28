@@ -6,7 +6,7 @@ import { init, TestState } from '../test-utils';
 import { useLocalStorage } from '../../../web/Debug';
 import { shape } from '../../shared/shape';
 import { parse, show } from '../../syntaxes/dsl';
-import { kwds, matchers, toXML } from '../../syntaxes/gleam2';
+import { ctx, kwds, matchers, toXML } from '../../syntaxes/gleam2';
 import { root } from '../root';
 import { RenderNode } from './RenderNode';
 import { ShowXML } from './XML';
@@ -36,7 +36,8 @@ export const App = () => {
 
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
 
-    const gleam = parse(matchers.stmt, rootNode, { matchers: matchers, kwds: kwds });
+    const c = ctx();
+    const gleam = parse(matchers.stmt, rootNode, c);
     const errors = useMemo(() => {
         const errors: Record<number, string> = {};
         gleam.bads.forEach((bad) => {
@@ -55,7 +56,7 @@ export const App = () => {
     return (
         <div style={{ display: 'flex', inset: 0, position: 'absolute', flexDirection: 'column' }}>
             <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, paddingBottom: 0, minHeight: 0 }}>
-                <RenderNode loc={state.top.root} state={state} inRich={false} ctx={{ errors, refs }} />
+                <RenderNode loc={state.top.root} state={state} inRich={false} ctx={{ errors, refs, styles: c.styles }} />
             </div>
             {xml ? <XMLShow xml={xml} state={state} refs={refs} /> : null}
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
@@ -118,12 +119,6 @@ const XMLShow = ({ xml, refs, state }: { state: TestState; xml: XML; refs: Recor
         return [lb.left, rb.right];
     };
 
-    // const [_, setTick] = useState(0);
-    // useEffect(() => {
-    //     setTimeout(() => {
-    //         setTick(1);
-    //     }, 10);
-    // }, []);
     const calc = () => {
         const posed = alls
             .map((node) => {

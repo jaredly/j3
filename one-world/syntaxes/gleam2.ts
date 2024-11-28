@@ -1,5 +1,5 @@
 import { Id, Loc, RecNode, TextSpan } from '../shared/cnodes';
-import { id, idp, idt, kwd, list, Matcher, mref, multi, named, opt, sequence, switch_, table, text, tx } from './dsl';
+import { any, Ctx, id, idp, idt, kwd, list, Matcher, mref, multi, named, opt, sequence, switch_, table, text, tx } from './dsl';
 import { XML } from './xml';
 
 const pat_ = mref<Pat>('pat');
@@ -274,11 +274,7 @@ const _expr: Matcher<Expr>[] = [
             ],
             idt,
         ),
-        (rows, node) => ({
-            type: 'record',
-            rows,
-            src: { left: node.loc },
-        }),
+        (rows, node) => ({ type: 'record', rows, src: { left: node.loc } }),
     ),
     list('round', multi(sprexpr_, true), (items, node) => ({ type: 'tuple', items, src: { left: node.loc } })),
     list('spaced', binned_, idt),
@@ -378,3 +374,14 @@ export const matchers = {
         },
     ),
 };
+
+export const ctx = (): Ctx => ({
+    matchers,
+    kwds,
+    comment: {
+        type: 'styled',
+        inner: list('smooshed', sequence<any>([kwd('//', () => ({ type: 'comment' })), multi(any(idt), true, idt)], true, idt), idt),
+        style: { color: { r: 150, g: 150, b: 150 } },
+    },
+    styles: {},
+});

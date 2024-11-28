@@ -1,8 +1,9 @@
-import { Id, Loc, TextSpan, ListKind, TableKind, RecNode } from '../shared/cnodes';
+import { Id, Loc, TextSpan, ListKind, TableKind, RecNode, Style } from '../shared/cnodes';
 
 // So, we need to provide a 'list of kwds' to be able to reject them from the `id` matcher
 
 export type Matcher<Res> =
+    | { type: 'any'; f: (v: RecNode) => Res }
     | { type: 'id'; kind: string | null; f: (v: Id<Loc>) => Res } // if kind is provided, this is a toplevel ref
     | { type: 'kwd'; text: string; f: (v: Id<Loc>) => Res }
     | { type: 'text'; embeds: Matcher<any>; f: (v: TextSpan<any>[], node: RecNode) => Res }
@@ -26,6 +27,7 @@ export type Matcher<Res> =
     | { type: 'opt'; inner: Matcher<any>; f: (v: any | null) => Res }
     | { type: 'table'; kind: TableKind; row: Matcher<any>; f: (v: any, node: RecNode) => Res }
     | { type: 'switch'; choices: Matcher<any>[]; f: (v: any) => Res }
+    | { type: 'styled'; inner: Matcher<Res>; style: Style }
     | { type: 'mref'; id: string };
 //; f: (v: any) => any }
 // | { type: 'kswitch'; choices: Record<string, Matcher>; f: (v: any) => any };
@@ -79,7 +81,14 @@ const one = <T>(data: T, node: RecNode, good: Bag<RecNode> = [], bad: Bag<MatchE
     good: [node, good],
     bad,
 });
-export type Ctx = { matchers: Record<string, Matcher<any>>; kwds: string[]; strictIds?: boolean };
+
+export type Ctx = {
+    matchers: Record<string, Matcher<any>>;
+    kwds: string[];
+    comment?: Matcher<any>;
+    strictIds?: boolean;
+    styles: Record<number, Style>;
+};
 
 /** We need to:
  * - respond with data (& # consumed) OR indicate failure
@@ -112,6 +121,18 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
     const good: Bag<RecNode> = [];
     const bad: Bag<MatchError> = [];
 
+    // ah need to know if we're in a comment matcher right now folkx
+    if (ctx.comment) {
+        while (true) {
+            const res = match(ctx.comment, { ...ctx, comment: undefined }, parent, at, endOfExhaustive);
+            if (res.result?.consumed) {
+                at += res.result.consumed;
+            } else {
+                break;
+            }
+        }
+    }
+
     // First, let's handle matchers that can handle out of scope
     switch (matcher.type) {
         case 'named': {
@@ -120,6 +141,19 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                 ...res,
                 result: res.result ? { data: { [matcher.name]: res.result.data } as T, consumed: res.result.consumed } : null,
             };
+        }
+        case 'styled': {
+            const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
+            if (res.result) {
+                for (let i = 0; i < res.result.consumed; i++) {
+                    const node = parent.nodes[at + i];
+                    if (node.loc.length === 1) {
+                        // TODO merge somehow idk
+                        ctx.styles[node.loc[0].idx] = matcher.style;
+                    }
+                }
+            }
+            return res;
         }
         case 'sequence': {
             const init = at;
@@ -199,6 +233,8 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
     switch (matcher.type) {
         case 'mref':
             return match(ctx.matchers[matcher.id], ctx, parent, at, endOfExhaustive);
+        case 'any':
+            return { result: { data: matcher.f(node), consumed: 1 }, bad: [], good: [] };
         case 'tx': {
             const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
             return { ...res, result: res.result ? { ...res.result, data: matcher.f(res.result.data) } : null };
@@ -292,6 +328,7 @@ export const named = <A, N extends string, R = Record<N, A>>(name: N, inner: Mat
 export const tx = <A, B>(inner: Matcher<A>, f: (a: A) => B): Matcher<B> => ({ type: 'tx', inner, f });
 export const idt = <T>(x: T): T => x;
 export const idp = <T>(x: Partial<T>): T => x as T;
+export const any = <T>(f: (v: RecNode) => T): Matcher<T> => ({ type: 'any', f });
 
 export const parse = <T>(matcher: Matcher<T>, node: RecNode, ctx: Ctx) => {
     const res = match(matcher, ctx, { nodes: [node], loc: [] }, 0);

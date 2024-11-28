@@ -1,6 +1,6 @@
 import React from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { isRich } from '../../shared/cnodes';
+import { isRich, Style } from '../../shared/cnodes';
 import { cursorSides } from '../cursorSides';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
@@ -16,12 +16,17 @@ const closer = { round: ')', square: ']', curly: '}', angle: '>' };
 type RCtx = {
     errors: Record<number, string>;
     refs: Record<number, HTMLElement>;
+    styles: Record<number, Style>;
 };
 
 export const RenderNode = ({ loc, state, inRich, ctx }: { loc: number; state: TestState; inRich: boolean; ctx: RCtx }) => {
     const node = state.top.nodes[loc];
     const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
-    const style: React.CSSProperties | undefined = ctx.errors[loc] ? { textDecoration: 'underline' } : undefined;
+    const style: React.CSSProperties | undefined = ctx.errors[loc]
+        ? { textDecoration: 'underline' }
+        : ctx.styles[loc]
+        ? asStyle(ctx.styles[loc])
+        : undefined;
     const ref = (el: HTMLElement) => {
         ctx.refs[loc] = el;
     };
