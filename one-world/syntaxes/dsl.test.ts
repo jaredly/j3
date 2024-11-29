@@ -4,7 +4,7 @@ import { Loc } from '../shared/cnodes';
 
 test('match id', () => {
     const node = t.id<Loc>('lol');
-    expect(match(id(null, idt), { matchers: {}, kwds: [], styles: {} }, { nodes: [node], loc: [] }, 0)).toEqual({
+    expect(match(id(null, idt), { matchers: {}, kwds: [], meta: {} }, { nodes: [node], loc: [] }, 0)).toEqual({
         result: { data: node, consumed: 1 },
         good: [node, []],
         bad: [],

@@ -71,8 +71,10 @@ export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node
 
 type FlatParent = { type: 'new'; kind: Kind; current: Node } | { type: 'existing'; node: List<number>; path: Path };
 
+const isBlank = (node?: Flat) => node && node.type === 'id' && node.text === '';
+
 export function addNeighborAfter(at: number, flat: Flat[], neighbor: Flat, sel: Node, ncursor: Cursor) {
-    if (at < flat.length - 1 && flat[at + 1].type === 'space' && neighbor.type === 'space') {
+    if (at < flat.length - 1 && flat[at + 1].type === 'space' && neighbor.type === 'space' && isBlank(flat[at + 2])) {
         sel = flat[at + 2] as Node;
         ncursor = sel.type === 'id' ? { type: 'id', end: 0 } : { type: 'list', where: 'before' };
     } else if (at < flat.length - 1 && flat[at + 1].type === 'id') {

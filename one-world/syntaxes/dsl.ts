@@ -27,7 +27,7 @@ export type Matcher<Res> =
     | { type: 'opt'; inner: Matcher<any>; f: (v: any | null) => Res }
     | { type: 'table'; kind: TableKind; row: Matcher<any>; f: (v: any, node: RecNode) => Res }
     | { type: 'switch'; choices: Matcher<any>[]; f: (v: any) => Res }
-    | { type: 'styled'; inner: Matcher<Res>; style: Style }
+    | { type: 'meta'; inner: Matcher<Res>; kind: string }
     | { type: 'mref'; id: string };
 //; f: (v: any) => any }
 // | { type: 'kswitch'; choices: Record<string, Matcher>; f: (v: any) => any };
@@ -87,7 +87,7 @@ export type Ctx = {
     kwds: string[];
     comment?: Matcher<any>;
     strictIds?: boolean;
-    styles: Record<number, Style>;
+    meta: Record<number, { kind: string }>;
 };
 
 /** We need to:
@@ -142,14 +142,14 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                 result: res.result ? { data: { [matcher.name]: res.result.data } as T, consumed: res.result.consumed } : null,
             };
         }
-        case 'styled': {
+        case 'meta': {
             const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
             if (res.result) {
                 for (let i = 0; i < res.result.consumed; i++) {
                     const node = parent.nodes[at + i];
                     if (node.loc.length === 1) {
                         // TODO merge somehow idk
-                        ctx.styles[node.loc[0].idx] = matcher.style;
+                        ctx.meta[node.loc[0].idx] = { kind: matcher.kind };
                     }
                 }
             }

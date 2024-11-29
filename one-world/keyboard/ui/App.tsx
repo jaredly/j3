@@ -11,8 +11,12 @@ import { root } from '../root';
 import { RenderNode } from './RenderNode';
 import { ShowXML } from './XML';
 import { nodeToXML, XML } from '../../syntaxes/xml';
-import { Loc } from '../../shared/cnodes';
+import { Loc, Style } from '../../shared/cnodes';
 import { keyUpdate } from './keyUpdate';
+
+const styleKinds: Record<string, Style> = {
+    comment: { color: { r: 200, g: 200, b: 200 } },
+};
 
 export const App = () => {
     const [state, setState] = useLocalStorage('nuniiverse', () => init);
@@ -52,11 +56,17 @@ export const App = () => {
 
     const xml = useMemo(() => (gleam.result ? toXML(gleam.result) : null), [gleam.result]);
     const xmlcst = useMemo(() => nodeToXML(rootNode), [rootNode]);
+    const styles: Record<number, Style> = {};
+    Object.entries(c.meta).forEach(([key, meta]) => {
+        if (styleKinds[meta.kind]) {
+            styles[+key] = styleKinds[meta.kind];
+        }
+    });
 
     return (
         <div style={{ display: 'flex', inset: 0, position: 'absolute', flexDirection: 'column' }}>
             <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, paddingBottom: 0, minHeight: 0 }}>
-                <RenderNode loc={state.top.root} state={state} inRich={false} ctx={{ errors, refs, styles: c.styles }} />
+                <RenderNode loc={state.top.root} state={state} inRich={false} ctx={{ errors, refs, styles }} />
             </div>
             {xml ? <XMLShow xml={xml} state={state} refs={refs} /> : null}
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>

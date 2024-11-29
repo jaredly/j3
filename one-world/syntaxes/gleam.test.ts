@@ -12,7 +12,7 @@ import { root } from '../keyboard/root';
 import { shape } from '../shared/shape';
 import { showXML } from './xml';
 
-const ctx: d.Ctx = { matchers: g.matchers, kwds: g.kwds, styles: {} };
+const ctx: d.Ctx = { matchers: g.matchers, kwds: g.kwds, meta: {} };
 
 test('long thing', () => {
     const text = 'let x = nide.s + 32 / 3 - 5 ^ 2 + if x > 2 {2} else {4} - (fn(x) {x - 2})(5)';
@@ -20,7 +20,7 @@ test('long thing', () => {
     const gleam = d.parse(
         g.matchers.stmt,
         root(state, (idx) => [{ id: '', idx }]),
-        { matchers: g.matchers, kwds: g.kwds, styles: {} },
+        { matchers: g.matchers, kwds: g.kwds, meta: {} },
     );
     expect(gleam.bads).toEqual([]);
     expect(shape(root(state))).toEqual(

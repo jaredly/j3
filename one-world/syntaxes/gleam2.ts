@@ -379,9 +379,9 @@ export const ctx = (): Ctx => ({
     matchers,
     kwds,
     comment: {
-        type: 'styled',
+        type: 'meta',
         inner: list('smooshed', sequence<any>([kwd('//', () => ({ type: 'comment' })), multi(any(idt), true, idt)], true, idt), idt),
-        style: { color: { r: 150, g: 150, b: 150 } },
+        kind: 'comment',
     },
-    styles: {},
+    meta: {},
 });

@@ -1,4 +1,10 @@
 
+I should make parsers for:
+- gleam (wip)
+- javascript
+- go(?)
+- clojure
+
 
 # Hrmrgrm ok I think I need really good tests for my dsl
 

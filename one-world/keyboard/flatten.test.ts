@@ -225,3 +225,9 @@ test('id one spaced end', () => {
     state = applyUpdate(state, handleKey(state, ' ', js)!);
     check(state, spaced([id('one'), id('', true), id('two')]), idc(0));
 });
+
+test('space in spaced', () => {
+    let state = asTop(spaced([id('abc', true), id('d')]), idc(3));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    check(state, spaced([id('abc'), id('', true), id('d')]), idc(0));
+});
