@@ -29,6 +29,17 @@ test('long thing', () => {
     expect(showXML(g.toXML(gleam.result))).toMatchSnapshot();
 });
 
+test('expr exhaustive must be', () => {
+    const text = 'one two';
+    const state = cread(splitGraphemes(text), js);
+    const gleam = d.parse(
+        g.matchers.stmt,
+        root(state, (idx) => [{ id: '', idx }]),
+        { matchers: g.matchers, kwds: g.kwds, meta: {} },
+    );
+    expect(gleam.bads).not.toEqual([]);
+});
+
 // test('gleam id', () => {
 //     expect(d.parse(g.matchers.expr, id('yolo'), ctx).result).toEqual({ type: 'local', name: 'yolo' });
 // });

@@ -222,6 +222,8 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             }
             return { result: null, good: misses[0].good, bad: misses[0].bad };
         }
+        case 'mref':
+            return match(ctx.matchers[matcher.id], ctx, parent, at, endOfExhaustive);
     }
 
     if (at >= parent.nodes.length) {
@@ -231,8 +233,6 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
     // Then, we'll do "just one" matchers
     const node = parent.nodes[at];
     switch (matcher.type) {
-        case 'mref':
-            return match(ctx.matchers[matcher.id], ctx, parent, at, endOfExhaustive);
         case 'any':
             return { result: { data: matcher.f(node), consumed: 1 }, bad: [], good: [] };
         case 'tx': {
@@ -272,7 +272,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             return one(matcher.f(items, node), node, good, bad);
         case 'list':
             if (node.type !== 'list' || node.kind !== matcher.kind) return fail(matcher, node);
-            const inner = match(matcher.children, ctx, { nodes: node.children, loc: node.loc }, 0);
+            const inner = match(matcher.children, ctx, { nodes: node.children, loc: node.loc }, 0, true);
             return {
                 bad: inner.bad,
                 good: [inner.good, node],
@@ -332,7 +332,7 @@ export const any = <T>(f: (v: RecNode) => T): Matcher<T> => ({ type: 'any', f })
 export const meta = <T>(kind: string, inner: Matcher<T>): Matcher<T> => ({ type: 'meta', inner, kind });
 
 export const parse = <T>(matcher: Matcher<T>, node: RecNode, ctx: Ctx) => {
-    const res = match(matcher, ctx, { nodes: [node], loc: [] }, 0);
+    const res = match(matcher, ctx, { nodes: [node], loc: [] }, 0, true);
     const goods = foldBag([] as RecNode[], res.good, (ar, n) => (ar.push(n), ar));
     const bads = foldBag([] as MatchError[], res.bad, (ar, n) => ((n.type !== 'missing' ? !goods.includes(n.node) : true) ? (ar.push(n), ar) : ar));
     if (res.result?.consumed === 0) throw new Error('node not consumed');

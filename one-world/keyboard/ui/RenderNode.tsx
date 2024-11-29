@@ -83,9 +83,11 @@ export const RenderNode = ({ loc, state, inRich, ctx }: { loc: number; state: Te
                                 {opener[node.kind]}
                             </span>
                             {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
-                            {interleaveF(children, (i) => (
-                                <span key={'sep' + i}>,&nbsp;</span>
-                            ))}
+                            {node.forceMultiline ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 16 }}>{children}</div>
+                            ) : (
+                                interleaveF(children, (i) => <span key={'sep' + i}>,&nbsp;</span>)
+                            )}
                             {/* {cursor?.type === 'list' && cursor.where === 'end' ? (
                                 <span style={{ background: hl }}>{closer[node.kind]}</span>
                             ) : (
