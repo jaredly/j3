@@ -339,7 +339,7 @@ const _expr: Matcher<Expr>[] = [
     list('spaced', binned_, idt),
 ];
 
-export const kwds = ['if', 'case', 'else', 'let', '=', '..', '.'];
+export const kwds = ['if', 'case', 'else', 'let', '=', '..', '.', 'fn'];
 
 const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%'];
 const precedence = [['!=', '=='], ['>', '<', '>=', '<='], ['%'], ['+', '-'], ['*', '/'], ['^']];

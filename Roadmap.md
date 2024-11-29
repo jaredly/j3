@@ -8,7 +8,16 @@ I should make parsers for:
 
 # Hrmrgrm ok I think I need really good tests for my dsl
 
-- [ ] CLIIIIICK
+- [x] force multiline, seems to be workin ok
+- [ ] let's get up/down working
+- [ ] rainbow parens anyone? and definitely "highlight wrapping parens" pls
+- [ ] muuuultiiiselecccct
+
+- [x] CLIIIIICK (very basic)
+  - [ ] make it better my goodness
+  - [ ] click in an ID
+  - [ ] click a list
+  - [ ] click a text, etc.
 - [x] comments should be grayed out
 
 like to make sure error reporting and stuff is tight.

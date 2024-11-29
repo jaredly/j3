@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { isRich, Style } from '../../shared/cnodes';
 import { cursorSides } from '../cursorSides';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
-import { lastChild } from '../utils';
+import { lastChild, Path, pathWithChildren, Update } from '../utils';
 
 import { asStyle } from '../../shared/shape';
 import { textCursorSides2 } from '../insertId';
 import { Cursor, TextWithCursor } from './cursor';
+import { justSel } from '../handleNav';
 
 const hl = 'rgba(100,100,100,0.2)';
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
@@ -17,9 +18,10 @@ type RCtx = {
     errors: Record<number, string>;
     refs: Record<number, HTMLElement>;
     styles: Record<number, Style>;
+    dispatch: (up: Update) => void;
 };
 
-export const RenderNode = ({ loc, state, inRich, ctx }: { loc: number; state: TestState; inRich: boolean; ctx: RCtx }) => {
+export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; state: TestState; inRich: boolean; ctx: RCtx; parent: Path }) => {
     const node = state.top.nodes[loc];
     const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
     const style: React.CSSProperties | undefined = ctx.errors[loc]
@@ -30,24 +32,41 @@ export const RenderNode = ({ loc, state, inRich, ctx }: { loc: number; state: Te
     const ref = (el: HTMLElement) => {
         ctx.refs[loc] = el;
     };
+    const nextParent = useMemo(() => pathWithChildren(parent, loc), [parent, loc]);
     switch (node.type) {
         case 'id':
             if (cursor?.type === 'id') {
                 const { left, right } = cursorSides(cursor);
                 const text = cursor.text ?? splitGraphemes(node.text);
                 return (
-                    <span style={style} ref={ref}>
+                    <span
+                        style={style}
+                        ref={ref}
+                        onClick={() => {
+                            ctx.dispatch(justSel(nextParent, { type: 'id', end: 0 }));
+                            // ok I cant dispatch just yet
+                        }}
+                    >
                         <TextWithCursor text={text} left={left} right={right} />
                     </span>
                 );
             }
             return (
-                <span style={style} ref={ref}>
+                <span
+                    style={style}
+                    ref={ref}
+                    onClick={() => {
+                        ctx.dispatch(justSel(nextParent, { type: 'id', end: 0 }));
+                        // ok I cant dispatch just yet
+                    }}
+                >
                     {node.text}
                 </span>
             );
         case 'list':
-            const children = node.children.map((loc) => <RenderNode ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />);
+            const children = node.children.map((loc) => (
+                <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />
+            ));
             if (typeof node.kind !== 'string') {
                 return (
                     <span style={style} ref={ref}>
@@ -138,7 +157,7 @@ export const RenderNode = ({ loc, state, inRich, ctx }: { loc: number; state: Te
                                 <Cursor />
                             ) : null}
                             {'${'}
-                            <RenderNode ctx={ctx} inRich={false} loc={span.item} state={state} />
+                            <RenderNode ctx={ctx} parent={nextParent} inRich={false} loc={span.item} state={state} />
                             {'}'}
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 1 && sides.right.cursor === 1 ? (
                                 <Cursor />

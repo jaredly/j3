@@ -69,7 +69,20 @@ export const App = () => {
     return (
         <div style={{ display: 'flex', inset: 0, position: 'absolute', flexDirection: 'column' }}>
             <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, paddingBottom: 0, minHeight: 0 }}>
-                <RenderNode loc={state.top.root} state={state} inRich={false} ctx={{ errors, refs, styles }} />
+                <RenderNode
+                    loc={state.top.root}
+                    parent={{ root: { ids: [], top: '' }, children: [] }}
+                    state={state}
+                    inRich={false}
+                    ctx={{
+                        errors,
+                        refs,
+                        styles,
+                        dispatch(up) {
+                            setState((s) => applyUpdate(s, up));
+                        },
+                    }}
+                />
             </div>
             {xml ? <XMLShow xml={xml} state={state} refs={refs} /> : null}
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
