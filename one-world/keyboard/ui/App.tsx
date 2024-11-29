@@ -16,6 +16,10 @@ import { keyUpdate } from './keyUpdate';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
+    kwd: { color: { r: 123, g: 0, b: 177 }, fontStyle: 'italic' },
+    punct: { color: { r: 150, g: 150, b: 150 } },
+    bop: { color: { r: 150, g: 0, b: 0 } },
+    uop: { color: { r: 150, g: 0, b: 0 } },
 };
 
 export const App = () => {
@@ -27,7 +31,6 @@ export const App = () => {
 
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
-            let key = evt.key;
             const up = keyUpdate(cstate.current, evt.key, { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey });
             if (!up) return;
             evt.preventDefault();

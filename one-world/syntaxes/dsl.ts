@@ -329,6 +329,7 @@ export const tx = <A, B>(inner: Matcher<A>, f: (a: A) => B): Matcher<B> => ({ ty
 export const idt = <T>(x: T): T => x;
 export const idp = <T>(x: Partial<T>): T => x as T;
 export const any = <T>(f: (v: RecNode) => T): Matcher<T> => ({ type: 'any', f });
+export const meta = <T>(kind: string, inner: Matcher<T>): Matcher<T> => ({ type: 'meta', inner, kind });
 
 export const parse = <T>(matcher: Matcher<T>, node: RecNode, ctx: Ctx) => {
     const res = match(matcher, ctx, { nodes: [node], loc: [] }, 0);

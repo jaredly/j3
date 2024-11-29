@@ -1,5 +1,5 @@
 import { Id, Loc, RecNode, TextSpan } from '../shared/cnodes';
-import { any, Ctx, id, idp, idt, kwd, list, Matcher, mref, multi, named, opt, sequence, switch_, table, text, tx } from './dsl';
+import { any, Ctx, id, idp, idt, kwd, list, Matcher, meta, mref, multi, named, opt, sequence, switch_, table, text, tx } from './dsl';
 import { XML } from './xml';
 
 const pat_ = mref<Pat>('pat');
@@ -30,7 +30,21 @@ const _pat: Matcher<Pat>[] = [
 
 const _spat: Matcher<SPat>[] = [
     ..._pat,
-    list('smooshed', sequence<Pat, Pat>([kwd('..', () => ({})), pat_], true, idt), (inner, node) => ({ type: 'spread', inner, src: nodesSrc(node) })),
+    list(
+        'smooshed',
+        sequence<Pat, Pat>(
+            [
+                meta(
+                    'punct',
+                    kwd('..', () => ({})),
+                ),
+                pat_,
+            ],
+            true,
+            idt,
+        ),
+        (inner, node) => ({ type: 'spread', inner, src: nodesSrc(node) }),
+    ),
 ];
 
 const block = list('curly', multi(mref<Stmt>('stmt'), true, idt), idt);
@@ -137,7 +151,17 @@ const fancy = switch_<Expr, Expr>(
             [
                 list(
                     'smooshed',
-                    sequence<Fn, Fn>([kwd('fn', () => ({ type: 'fn' })), named('args', list('round', multi(pat_, true, idt), idt))], true, idt),
+                    sequence<Fn, Fn>(
+                        [
+                            meta(
+                                'kwd',
+                                kwd('fn', () => ({ type: 'fn' })),
+                            ),
+                            named('args', list('round', multi(pat_, true, idt), idt)),
+                        ],
+                        true,
+                        idt,
+                    ),
                     idt,
                 ),
                 named('body', block),
@@ -147,17 +171,36 @@ const fancy = switch_<Expr, Expr>(
         ),
         sequence<Fancy, Fancy>(
             [
-                kwd('if', () => ({ type: 'if' })),
+                meta(
+                    'kwd',
+                    kwd('if', () => ({ type: 'if' })),
+                ),
                 named('cond', binned_),
                 named('yes', block),
-                opt(sequence<Partial<Fancy>, Partial<Fancy>>([kwd('else', () => null), named('no', block)], false, idt), idt),
+                opt(
+                    sequence<Partial<Fancy>, Partial<Fancy>>(
+                        [
+                            meta(
+                                'kwd',
+                                kwd('else', () => null),
+                            ),
+                            named('no', block),
+                        ],
+                        false,
+                        idt,
+                    ),
+                    idt,
+                ),
             ],
             false,
             (f, nodes) => ({ ...f, src: nodesSrc(nodes) }),
         ),
         sequence<Fancy, Fancy>(
             [
-                kwd('case', () => ({ type: 'case' })),
+                meta(
+                    'kwd',
+                    kwd('case', () => ({ type: 'case' })),
+                ),
                 named('target', binned_),
                 named('cases', table('curly', sequence([named('pat', pat_), named('body', expr_)], true, idt), idt)),
             ],
@@ -175,9 +218,12 @@ const _exmoosh: Matcher<Omit<ESmoosh, 'type'>>[] = [
     named(
         'prefixes',
         multi(
-            switch_(
-                unops.map((n) => kwd(n, idt)),
-                idt,
+            meta(
+                'uop',
+                switch_(
+                    unops.map((n) => kwd(n, idt)),
+                    idt,
+                ),
             ),
             false,
             idt,
@@ -189,7 +235,17 @@ const _exmoosh: Matcher<Omit<ESmoosh, 'type'>>[] = [
         multi(
             switch_(
                 [
-                    sequence<Suffix>([kwd('.', () => ({ type: 'attribute' })), named('attribute', id('attribute', idt))], false, idt),
+                    sequence<Suffix>(
+                        [
+                            meta(
+                                'punct',
+                                kwd('.', () => ({ type: 'attribute' })),
+                            ),
+                            named('attribute', id('attribute', idt)),
+                        ],
+                        false,
+                        idt,
+                    ),
                     list<0, SExpr[], Suffix>('square', multi(sprexpr_, true), (items, node) => ({ type: 'index', items, src: nodesSrc(node) })),
                     list<0, SExpr[], Suffix>('round', multi(sprexpr_, true), (items, node) => ({ type: 'call', items, src: nodesSrc(node) })),
                 ],
@@ -237,7 +293,10 @@ const _sprood: Matcher<SExpr> = list(
             named(
                 'spread',
                 opt(
-                    kwd('..', () => true),
+                    meta(
+                        'punct',
+                        kwd('..', () => true),
+                    ),
                     idt,
                 ),
             ),
@@ -333,7 +392,18 @@ export const matchers = {
             list(
                 'spaced',
                 sequence<Stmt, Stmt>(
-                    [kwd('let', () => ({ type: 'let' })), named('pat', pat_), kwd('=', () => null), named('value', binned_)],
+                    [
+                        meta(
+                            'kwd',
+                            kwd('let', () => ({ type: 'let' })),
+                        ),
+                        named('pat', pat_),
+                        meta(
+                            'punct',
+                            kwd('=', () => null),
+                        ),
+                        named('value', binned_),
+                    ],
                     true,
                     idt,
                 ),
@@ -353,9 +423,12 @@ export const matchers = {
                         [
                             named(
                                 'op',
-                                switch_(
-                                    binops.map((n) => kwd(n, idt)),
-                                    idt,
+                                meta(
+                                    'bop',
+                                    switch_(
+                                        binops.map((n) => kwd(n, idt)),
+                                        idt,
+                                    ),
                                 ),
                             ),
                             named('right', fancy),
@@ -378,10 +451,6 @@ export const matchers = {
 export const ctx = (): Ctx => ({
     matchers,
     kwds,
-    comment: {
-        type: 'meta',
-        inner: list('smooshed', sequence<any>([kwd('//', () => ({ type: 'comment' })), multi(any(idt), true, idt)], true, idt), idt),
-        kind: 'comment',
-    },
+    comment: meta('comment', list('smooshed', sequence<any>([kwd('//', () => ({ type: 'comment' })), multi(any(idt), true, idt)], true, idt), idt)),
     meta: {},
 });

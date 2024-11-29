@@ -74,20 +74,31 @@ export const RenderNode = ({ loc, state, inRich, ctx }: { loc: number; state: Te
                     return (
                         <span style={style} ref={ref}>
                             {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
-                            {cursor?.type === 'list' && cursor.where === 'start' ? (
-                                <span style={{ background: hl }}>{opener[node.kind]}</span>
-                            ) : (
-                                opener[node.kind]
-                            )}
+                            <span
+                                style={{
+                                    background: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
+                                    color: 'orange',
+                                }}
+                            >
+                                {opener[node.kind]}
+                            </span>
                             {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                             {interleaveF(children, (i) => (
                                 <span key={'sep' + i}>,&nbsp;</span>
                             ))}
-                            {cursor?.type === 'list' && cursor.where === 'end' ? (
+                            {/* {cursor?.type === 'list' && cursor.where === 'end' ? (
                                 <span style={{ background: hl }}>{closer[node.kind]}</span>
                             ) : (
                                 closer[node.kind]
-                            )}
+                            )} */}
+                            <span
+                                style={{
+                                    background: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined,
+                                    color: 'orange',
+                                }}
+                            >
+                                {closer[node.kind]}
+                            </span>
                             {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                         </span>
                     );
