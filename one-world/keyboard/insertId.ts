@@ -13,6 +13,7 @@ export const textKind = (grem: string, config: Config): Kind => {
     if (config.space.includes(grem)) return 'space';
     return charClass(grem, config);
 };
+
 export const charClass = (grem: string, config: Config): number => {
     for (let i = 0; i < config.punct.length; i++) {
         if (config.punct[i].includes(grem)) {

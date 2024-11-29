@@ -1,12 +1,13 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, Text } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
+import { findParent } from './flatenate';
 import { spanLength } from './handleDelete';
 import { justSel } from './handleNav';
 import { handleSpecialText } from './handleSpecialText';
 import { textCursorSides } from './insertId';
 import { TestState } from './test-utils';
-import { getCurrent, IdCursor, ListCursor, Path, TextCursor, Top, Update } from './utils';
+import { getCurrent, IdCursor, lastChild, ListCursor, parentPath, Path, TextCursor, Top, Update } from './utils';
 
 export const handleShiftNav = (state: TestState, key: string): Update | void => {
     const current = getCurrent(state.sel, state.top);
@@ -78,8 +79,18 @@ export const handleShiftText = (
 
 export type Mods = { meta?: boolean; ctrl?: boolean; alt?: boolean; shift?: boolean };
 
-export const handleSpecial = (state: TestState, key: string, mods: Mods) => {
+export const handleSpecial = (state: TestState, key: string, mods: Mods): void | Update => {
     const current = getCurrent(state.sel, state.top);
+    if (key === '\n' && mods.meta) {
+        let path = state.sel.start.path;
+        while (path.children.length) {
+            const node = state.top.nodes[lastChild(path)];
+            if (node.type === 'list' && node.kind !== 'smooshed' && node.kind !== 'spaced') {
+                return { nodes: { [node.loc]: { ...node, forceMultiline: !node.forceMultiline } } };
+            }
+            path = parentPath(path);
+        }
+    }
     switch (current.type) {
         // case 'id':
         //     return handle(current, state.top, key === 'ArrowLeft');

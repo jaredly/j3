@@ -9,7 +9,7 @@ I should make parsers for:
 # Hrmrgrm ok I think I need really good tests for my dsl
 
 - [ ] CLIIIIICK
-- [ ] comments should be grayed out
+- [x] comments should be grayed out
 
 like to make sure error reporting and stuff is tight.
 

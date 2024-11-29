@@ -93,7 +93,7 @@ export const text = <T>(spans: TextSpan<RecNodeT<T>>[], loc: T = null as T): Rec
 export const lisp = {
     punct: [';', '.', '@', '=#+'],
     space: '',
-    sep: ' ',
+    sep: ' \n',
 };
 export const js = {
     // punct: [],
