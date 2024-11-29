@@ -21,6 +21,21 @@ type RCtx = {
     dispatch: (up: Update) => void;
 };
 
+const spos = (evt: React.MouseEvent, target: HTMLSpanElement, text: string[]) => {
+    const range = new Range();
+    let best = null as null | [number, number];
+    for (let i = 0; i < text.length; i++) {
+        const at = text.slice(0, i).join('').length;
+        range.setStart(target.firstChild!, at);
+        range.setEnd(target.firstChild!, at);
+        const box = range.getBoundingClientRect();
+        if (evt.clientY < box.top || evt.clientY > box.bottom) continue;
+        const dst = Math.abs(box.left - evt.clientX);
+        if (!best || dst < best[0]) best = [dst, i];
+    }
+    return best ? best[1] : null;
+};
+
 export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; state: TestState; inRich: boolean; ctx: RCtx; parent: Path }) => {
     const node = state.top.nodes[loc];
     const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
@@ -39,15 +54,16 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 const { left, right } = cursorSides(cursor);
                 const text = cursor.text ?? splitGraphemes(node.text);
                 return (
-                    <span
-                        style={style}
-                        ref={ref}
-                        onClick={() => {
-                            ctx.dispatch(justSel(nextParent, { type: 'id', end: 0 }));
-                            // ok I cant dispatch just yet
-                        }}
-                    >
-                        <TextWithCursor text={text} left={left} right={right} />
+                    <span style={style} ref={ref}>
+                        <TextWithCursor
+                            onClick={(evt) => {
+                                const pos = spos(evt, evt.currentTarget, text);
+                                ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0 }));
+                            }}
+                            text={text}
+                            left={left}
+                            right={right}
+                        />
                     </span>
                 );
             }
@@ -55,8 +71,9 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 <span
                     style={style}
                     ref={ref}
-                    onClick={() => {
-                        ctx.dispatch(justSel(nextParent, { type: 'id', end: 0 }));
+                    onClick={(evt) => {
+                        const pos = spos(evt, evt.currentTarget, splitGraphemes(node.text));
+                        ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0 }));
                         // ok I cant dispatch just yet
                     }}
                 >
@@ -128,19 +145,35 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             const sides = cursor?.type === 'text' ? textCursorSides2(cursor) : null;
             const children = node.spans.map((span, i) => {
                 if (span.type === 'text') {
+                    const style = { color: 'blue', ...asStyle(span.style) };
                     if (sides && sides.left.index <= i && sides.right.index >= i) {
                         const text = sides.text?.index === i ? sides.text.grems : splitGraphemes(span.text);
                         const left = i === sides.left.index ? sides.left.cursor : 0;
                         const right = i === sides.right.index ? sides.right.cursor : text.length;
                         return (
-                            <span key={i} style={asStyle(span.style)}>
-                                <TextWithCursor text={text} left={left} right={right} />
+                            <span key={i} style={style}>
+                                <TextWithCursor
+                                    onClick={(evt) => {
+                                        const pos = spos(evt, evt.currentTarget, text);
+                                        ctx.dispatch(justSel(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
+                                    }}
+                                    text={text}
+                                    left={left}
+                                    right={right}
+                                />
                             </span>
                         );
                     }
                     // TODO show cursor here
                     return (
-                        <span key={i} style={asStyle(span.style)}>
+                        <span
+                            key={i}
+                            style={style}
+                            onClick={(evt) => {
+                                const pos = spos(evt, evt.currentTarget, splitGraphemes(span.text));
+                                ctx.dispatch(justSel(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
+                            }}
+                        >
                             {span.text}
                         </span>
                     );
@@ -179,7 +212,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 );
             }
             return (
-                <span style={{ backgroundColor: 'rgba(255,255,0,0.2)', ...style }} ref={ref}>
+                <span style={{ backgroundColor: 'rgba(255,255,0,0.4)', ...style }} ref={ref}>
                     {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                     {cursor?.type === 'list' && cursor.where === 'start' ? <span style={{ background: hl }}>"</span> : '"'}
                     {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}

@@ -25,7 +25,17 @@ const useResizeTick = () => {
     return tick;
 };
 
-export const TextWithCursor = ({ text, left, right }: { text: string[]; left: number; right: number }) => {
+export const TextWithCursor = ({
+    text,
+    left,
+    right,
+    onClick,
+}: {
+    text: string[];
+    left: number;
+    right: number;
+    onClick: React.ComponentProps<'span'>['onClick'];
+}) => {
     const ref = useRef<HTMLSpanElement>(null);
     const [rects, setRects] = useState(null as null | { width: number; height: number; left: number; top: number }[]);
     const tick = useResizeTick();
@@ -53,7 +63,9 @@ export const TextWithCursor = ({ text, left, right }: { text: string[]; left: nu
 
     return (
         <span style={{ position: 'relative' }}>
-            <span ref={ref}>{text.length ? text.join('') : '\u200B'}</span>
+            <span ref={ref} onClick={onClick}>
+                {text.length ? text.join('') : '\u200B'}
+            </span>
             {rects?.map((rect, i) => (
                 <div
                     key={i}

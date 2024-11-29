@@ -1,4 +1,6 @@
 
+#
+
 I should make parsers for:
 - gleam (wip)
 - javascript
@@ -9,6 +11,7 @@ I should make parsers for:
 # Hrmrgrm ok I think I need really good tests for my dsl
 
 - [x] force multiline, seems to be workin ok
+- [ ] the sync between selection and the ASTs should be a thing, right?
 - [ ] let's get up/down working
 - [ ] rainbow parens anyone? and definitely "highlight wrapping parens" pls
 - [ ] muuuultiiiselecccct
