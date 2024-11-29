@@ -81,3 +81,9 @@ test('close it up spaced', () => {
 //     state = applyUpdate(state, handleWrap(state, '('));
 //     check(state, smoosh([id('he'), round([id('llo')], true)]), listc('before'));
 // });
+
+test('start of smoosh', () => {
+    let state = asTop(smoosh([id('hello', true), id('+')]), idc(0));
+    state = applyUpdate(state, handleWrap(state, '('));
+    check(state, smoosh([round([], true), id('hello'), id('+')]), listc('inside'));
+});

@@ -104,7 +104,8 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
     }
 
     let at = flat.indexOf(node);
-    for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
+    // honestly not sure what this was abount
+    // for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
 
     // If we're at the end of the ID but not the end of the smoosh, we wrap the next thing
     // if (at < flat.length - 1 && left === text.length) {
