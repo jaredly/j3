@@ -80,7 +80,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         // ok I cant dispatch just yet
                     }}
                 >
-                    {node.text}
+                    {node.text === '' ? '\u200B' : node.text}
                 </span>
             );
         case 'list':
