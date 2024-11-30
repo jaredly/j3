@@ -16,8 +16,8 @@ buuut is it gonna be super hard to track sub-purities? mayyybe
 
 # Nowww
 
-- [ ] up/down got it
-  - [ ] reify cursors I guess
+- [x] up/down got it
+  - [ ] the 'pullToX' thing, make it happen
 - [ ] hmmmmultiselect ok w/ path keys memoized
 
 

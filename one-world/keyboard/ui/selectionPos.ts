@@ -8,7 +8,7 @@ export const posUp = (sel: NodeSelection, top: Top, refs: Record<number, HTMLEle
     const current = selectionPos(sel, refs, top);
     if (!current) return;
     const options = above(sel, top, refs, current);
-    options.sort((a, b) => a.d - b.d);
+    options.sort((a, b) => a.dx - b.dx);
     return options[0].next;
 };
 
@@ -17,7 +17,7 @@ export const posDown = (sel: NodeSelection, top: Top, refs: Record<number, HTMLE
     if (!current) return;
     const options = below(sel, top, refs, current);
     if (!options.length) return;
-    options.sort((a, b) => a.d - b.d);
+    options.sort((a, b) => a.dx - b.dx);
     return options[0].next;
 };
 
@@ -144,13 +144,13 @@ function above(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, 
 
         if (!options.length) {
             if (at.top + at.height > current.top) continue;
-        } else if (at.top + at.height < options[0].at.top) {
+        } else if (at.top + at.height / 2 < options[0].at.top) {
             break;
         }
         options.push({
             at,
             next: next.selection.start,
-            d: (at.left - current.left) * (at.left - current.left) + (at.top - current.top) * (at.top - current.top),
+            dx: Math.abs(at.left - current.left),
         });
     }
     return options;
@@ -170,14 +170,14 @@ function below(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, 
 
         if (!options.length) {
             if (at.top < current.top + current.height) continue;
-        } else if (at.top > options[0].at.top + options[0].at.height) {
+        } else if (at.top > options[0].at.top + options[0].at.height / 2) {
             // console.log('too low');
             break;
         }
         options.push({
             at,
             next: next.selection.start,
-            d: (at.left - current.left) * (at.left - current.left) + (at.top - current.top) * (at.top - current.top),
+            dx: Math.abs(at.left - current.left),
         });
     }
     return options;
