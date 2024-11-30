@@ -16,7 +16,7 @@ const opener = { round: '(', square: '[', curly: '{', angle: '<' };
 const closer = { round: ')', square: ']', curly: '}', angle: '>' };
 type RCtx = {
     errors: Record<number, string>;
-    refs: Record<number, HTMLElement>;
+    refs: Record<number, HTMLElement>; // -1 gets you 'cursor' b/c why not
     styles: Record<number, Style>;
     dispatch: (up: Update) => void;
 };
@@ -47,6 +47,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
     const ref = (el: HTMLElement) => {
         ctx.refs[loc] = el;
     };
+
     const nextParent = useMemo(() => pathWithChildren(parent, loc), [parent, loc]);
     switch (node.type) {
         case 'id':
@@ -57,6 +58,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     <span style={style}>
                         <TextWithCursor
                             innerRef={ref}
+                            // cursorRef={cursorRef}
                             onClick={(evt) => {
                                 const pos = spos(evt, evt.currentTarget, text);
                                 ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0 }));
@@ -110,7 +112,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 default:
                     return (
                         <span style={style} ref={ref}>
-                            <Cursor show={cursor?.type === 'list' && cursor.where === 'before'} />
+                            {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                             <span
                                 style={{
                                     background: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
@@ -119,7 +121,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             >
                                 {opener[node.kind]}
                             </span>
-                            <Cursor show={cursor?.type === 'list' && cursor.where === 'inside'} />
+                            {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                             {node.forceMultiline ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 16 }}>{children}</div>
                             ) : (
@@ -138,7 +140,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             >
                                 {closer[node.kind]}
                             </span>
-                            <Cursor show={cursor?.type === 'list' && cursor.where === 'after'} />
+                            {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                         </span>
                     );
             }
@@ -152,7 +154,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         const left = i === sides.left.index ? sides.left.cursor : 0;
                         const right = i === sides.right.index ? sides.right.cursor : text.length;
                         return (
-                            <span key={i} style={style}>
+                            <span key={i} style={style} data-index={i}>
                                 <TextWithCursor
                                     onClick={(evt) => {
                                         const pos = spos(evt, evt.currentTarget, text);
@@ -169,6 +171,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     return (
                         <span
                             key={i}
+                            data-index={i}
                             style={style}
                             onClick={(evt) => {
                                 const pos = spos(evt, evt.currentTarget, splitGraphemes(span.text));
@@ -186,20 +189,24 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         if (left === 0 && right === 1) selected = true;
                     }
                     return (
-                        <span style={{ background: selected ? hl : 'rgba(255,255,255,0.5)' }} key={i}>
+                        <span style={{ background: selected ? hl : 'rgba(255,255,255,0.5)' }} data-index={i} key={i}>
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 0 && sides.right.cursor === 0 ? (
-                                <Cursor show />
+                                <Cursor />
                             ) : null}
                             {'${'}
                             <RenderNode ctx={ctx} parent={nextParent} inRich={false} loc={span.item} state={state} />
                             {'}'}
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 1 && sides.right.cursor === 1 ? (
-                                <Cursor show />
+                                <Cursor />
                             ) : null}
                         </span>
                     );
                 } else {
-                    return <span key={i}>custom?</span>;
+                    return (
+                        <span data-index={i} key={i}>
+                            custom?
+                        </span>
+                    );
                 }
             });
             if (inRich) {
@@ -207,19 +214,19 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 // are maybe different?
                 return (
                     <span ref={ref} style={style}>
-                        {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor show /> : null}
+                        {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                         {children}
                     </span>
                 );
             }
             return (
                 <span style={{ backgroundColor: 'rgba(255,255,0,0.4)', ...style }} ref={ref}>
-                    {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor show /> : null}
+                    {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                     {cursor?.type === 'list' && cursor.where === 'start' ? <span style={{ background: hl }}>"</span> : '"'}
-                    {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor show /> : null}
+                    {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                     {children}
                     {cursor?.type === 'list' && cursor.where === 'end' ? <span style={{ background: hl }}>"</span> : '"'}
-                    {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor show /> : null}
+                    {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                 </span>
             );
         }

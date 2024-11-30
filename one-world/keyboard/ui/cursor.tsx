@@ -1,13 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export const Cursor = ({ show }: { show: boolean }) => (
+export const Cursor = ({ innerRef }: { innerRef?: (node: HTMLSpanElement | null) => void }) => (
     <span
+        ref={innerRef}
         style={{
             display: 'inline-block',
             width: 1,
             marginRight: 0,
             marginLeft: -1,
-            backgroundColor: show ? 'red' : 'unset',
+            backgroundColor: 'red',
             position: 'relative',
             pointerEvents: 'none',
         }}
@@ -32,8 +33,10 @@ export const TextWithCursor = ({
     right,
     onClick,
     innerRef,
+    cursorRef,
 }: {
     innerRef?: (span: HTMLSpanElement) => void;
+    cursorRef?: (span: HTMLSpanElement) => void;
     text: string[];
     left: number;
     right: number;
@@ -78,8 +81,9 @@ export const TextWithCursor = ({
                 {text.length ? text.join('') : '\u200B'}
             </span>
             {rects?.map((rect, i) => (
-                <div
+                <span
                     key={i}
+                    ref={i === 0 && rect.width === 1 ? cursorRef : null}
                     style={{
                         ...rect,
                         position: 'absolute',

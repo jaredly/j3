@@ -15,6 +15,7 @@ import { Loc, Style } from '../../shared/cnodes';
 import { keyUpdate } from './keyUpdate';
 import { getCurrent, lastChild, Top } from '../utils';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
+import { posDown, posUp, selectionPos } from './selectionPos';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -33,7 +34,22 @@ export const App = () => {
 
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
-            const up = keyUpdate(cstate.current, evt.key, { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey });
+            const up = keyUpdate(
+                cstate.current,
+                evt.key,
+                { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey },
+                {
+                    up(sel) {
+                        const nxt = posUp(sel, cstate.current.top, refs);
+                        return nxt ? { start: nxt } : null;
+                    },
+                    down(sel) {
+                        // return null;
+                        const nxt = posDown(sel, cstate.current.top, refs);
+                        return nxt ? { start: nxt } : null;
+                    },
+                },
+            );
             if (!up) return;
             evt.preventDefault();
             evt.stopPropagation();
@@ -68,8 +84,28 @@ export const App = () => {
         }
     });
 
+    // const [ps, sps] = useState(null as null | { left: number; top: number; height: number });
+    // useLayoutEffect(() => {
+    //     const msp = selectionPos(state.sel, refs, state.top);
+    //     sps(msp);
+    // }, [state.sel, state.top]);
+
     return (
         <div style={{ display: 'flex', inset: 0, position: 'absolute', flexDirection: 'column' }}>
+            {/* {ps ? (
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: ps.top,
+                        left: ps.left,
+                        width: 3,
+                        height: ps.height,
+                        background: 'red',
+                        pointerEvents: 'none',
+                    }}
+                />
+            ) : null} */}
+
             <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, paddingBottom: 0, minHeight: 0 }}>
                 <RenderNode
                     loc={state.top.root}
@@ -85,7 +121,6 @@ export const App = () => {
                         },
                     }}
                 />
-                {selectionPos(state.sel, refs, state.top)}
             </div>
             {xml ? <XMLShow xml={xml} state={state} refs={refs} /> : null}
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
@@ -111,62 +146,6 @@ export const App = () => {
         </div>
     );
 };
-
-const selectionPos = (sel: TestState['sel'], refs: Record<number, HTMLSpanElement>, top: Top) => {
-    const cur = getCurrent(sel, top);
-    const span = refs[cur.node.loc];
-    if (!span) return 'no span';
-    const range = new Range();
-    let box;
-    switch (cur.type) {
-        case 'id': {
-            const text = cur.cursor.text ?? splitGraphemes(cur.node.text);
-            const at = text.slice(0, cur.cursor.end).join('').length;
-            try {
-                range.setStart(span.firstChild!, at);
-                range.setEnd(span.firstChild!, at);
-                box = range.getBoundingClientRect();
-            } catch (err) {
-                return `failed to set offset sry`;
-            }
-            break;
-        }
-        case 'list':
-            if (cur.cursor.type === 'list') {
-                try {
-                    if (cur.cursor.where === 'before') {
-                        range.setStart(span, 0);
-                        range.setEnd(span, 1);
-                    } else {
-                        range.setStart(span, span.childElementCount - 1);
-                        range.setEnd(span, span.childElementCount);
-                    }
-                    box = range.getBoundingClientRect();
-                } catch (err) {
-                    return `failed to set off`;
-                }
-                break;
-            }
-    }
-    if (box && box.height !== 0) {
-        return (
-            <>
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: box.top,
-                        left: box.left,
-                        width: 3,
-                        height: box.height,
-                        background: 'red',
-                    }}
-                />
-            </>
-        );
-    }
-    return 'yes esel pos';
-};
-
 const walxml = (xml: XML, f: (n: XML) => void) => {
     f(xml);
     if (xml.children) {

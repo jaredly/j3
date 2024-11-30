@@ -53,12 +53,12 @@ export const textSpanToXML = <T>(span: TextSpan<T>, toXML: (t: T) => XML): XML =
 export const nodeToXML = (node: RecNode): XML => {
     switch (node.type) {
         case 'id':
-            return { tag: node.type, src: { left: node.loc }, attrs: { text: node.text, ref: node.ref, ccls: node.ccls } };
+            return { tag: node.type, src: { left: node.loc }, attrs: { text: node.text, ref: node.ref, ccls: node.ccls, loc: node.loc[0].idx } };
         case 'list':
             return {
                 tag: node.type,
                 src: { left: node.loc },
-                attrs: { kind: node.kind, forceMultiline: node.forceMultiline },
+                attrs: { kind: node.kind, forceMultiline: node.forceMultiline, loc: node.loc[0].idx },
                 children: {
                     attributes: node.attributes ? nodeToXML(node.attributes) : undefined,
                     children: node.children.map(nodeToXML),
@@ -68,7 +68,7 @@ export const nodeToXML = (node: RecNode): XML => {
             return {
                 tag: node.type,
                 src: { left: node.loc },
-                attrs: { kind: node.kind, forceMultiline: node.forceMultiline },
+                attrs: { kind: node.kind, forceMultiline: node.forceMultiline, loc: node.loc[0].idx },
                 children: {
                     rows: node.rows.map((row) => ({
                         tag: 'row',
@@ -80,6 +80,11 @@ export const nodeToXML = (node: RecNode): XML => {
                 },
             };
         case 'text':
-            return { tag: node.type, src: { left: node.loc }, children: { spans: node.spans.map((span) => textSpanToXML(span, nodeToXML)) } };
+            return {
+                tag: node.type,
+                src: { left: node.loc },
+                attrs: { loc: node.loc[0].idx },
+                children: { spans: node.spans.map((span) => textSpanToXML(span, nodeToXML)) },
+            };
     }
 };
