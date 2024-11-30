@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export const Cursor = () => (
+export const Cursor = ({ show }: { show: boolean }) => (
     <span
         style={{
             display: 'inline-block',
             width: 1,
             marginRight: 0,
             marginLeft: -1,
-            backgroundColor: 'red',
+            backgroundColor: show ? 'red' : 'unset',
             position: 'relative',
+            pointerEvents: 'none',
         }}
     >
         {'\u200B'}
@@ -30,13 +31,15 @@ export const TextWithCursor = ({
     left,
     right,
     onClick,
+    innerRef,
 }: {
+    innerRef?: (span: HTMLSpanElement) => void;
     text: string[];
     left: number;
     right: number;
     onClick: React.ComponentProps<'span'>['onClick'];
 }) => {
-    const ref = useRef<HTMLSpanElement>(null);
+    const ref = useRef<HTMLSpanElement>();
     const [rects, setRects] = useState(null as null | { width: number; height: number; left: number; top: number }[]);
     const tick = useResizeTick();
 
@@ -63,7 +66,15 @@ export const TextWithCursor = ({
 
     return (
         <span style={{ position: 'relative' }}>
-            <span ref={ref} onClick={onClick}>
+            <span
+                ref={(span) => {
+                    if (span) {
+                        innerRef?.(span);
+                        ref.current = span;
+                    }
+                }}
+                onClick={onClick}
+            >
                 {text.length ? text.join('') : '\u200B'}
             </span>
             {rects?.map((rect, i) => (

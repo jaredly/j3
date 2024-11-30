@@ -13,6 +13,8 @@ import { ShowXML } from './XML';
 import { nodeToXML, XML } from '../../syntaxes/xml';
 import { Loc, Style } from '../../shared/cnodes';
 import { keyUpdate } from './keyUpdate';
+import { getCurrent, lastChild, Top } from '../utils';
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -83,6 +85,7 @@ export const App = () => {
                         },
                     }}
                 />
+                {selectionPos(state.sel, refs, state.top)}
             </div>
             {xml ? <XMLShow xml={xml} state={state} refs={refs} /> : null}
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
@@ -107,6 +110,61 @@ export const App = () => {
             </div>
         </div>
     );
+};
+
+const selectionPos = (sel: TestState['sel'], refs: Record<number, HTMLSpanElement>, top: Top) => {
+    const cur = getCurrent(sel, top);
+    const span = refs[cur.node.loc];
+    if (!span) return 'no span';
+    const range = new Range();
+    let box;
+    switch (cur.type) {
+        case 'id': {
+            const text = cur.cursor.text ?? splitGraphemes(cur.node.text);
+            const at = text.slice(0, cur.cursor.end).join('').length;
+            try {
+                range.setStart(span.firstChild!, at);
+                range.setEnd(span.firstChild!, at);
+                box = range.getBoundingClientRect();
+            } catch (err) {
+                return `failed to set offset sry`;
+            }
+            break;
+        }
+        case 'list':
+            if (cur.cursor.type === 'list') {
+                try {
+                    if (cur.cursor.where === 'before') {
+                        range.setStart(span, 0);
+                        range.setEnd(span, 1);
+                    } else {
+                        range.setStart(span, span.childElementCount - 1);
+                        range.setEnd(span, span.childElementCount);
+                    }
+                    box = range.getBoundingClientRect();
+                } catch (err) {
+                    return `failed to set off`;
+                }
+                break;
+            }
+    }
+    if (box && box.height !== 0) {
+        return (
+            <>
+                <div
+                    style={{
+                        position: 'absolute',
+                        top: box.top,
+                        left: box.left,
+                        width: 3,
+                        height: box.height,
+                        background: 'red',
+                    }}
+                />
+            </>
+        );
+    }
+    return 'yes esel pos';
 };
 
 const walxml = (xml: XML, f: (n: XML) => void) => {

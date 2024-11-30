@@ -54,8 +54,9 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 const { left, right } = cursorSides(cursor);
                 const text = cursor.text ?? splitGraphemes(node.text);
                 return (
-                    <span style={style} ref={ref}>
+                    <span style={style}>
                         <TextWithCursor
+                            innerRef={ref}
                             onClick={(evt) => {
                                 const pos = spos(evt, evt.currentTarget, text);
                                 ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0 }));
@@ -109,7 +110,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 default:
                     return (
                         <span style={style} ref={ref}>
-                            {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+                            <Cursor show={cursor?.type === 'list' && cursor.where === 'before'} />
                             <span
                                 style={{
                                     background: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
@@ -118,7 +119,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             >
                                 {opener[node.kind]}
                             </span>
-                            {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+                            <Cursor show={cursor?.type === 'list' && cursor.where === 'inside'} />
                             {node.forceMultiline ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 16 }}>{children}</div>
                             ) : (
@@ -137,7 +138,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             >
                                 {closer[node.kind]}
                             </span>
-                            {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+                            <Cursor show={cursor?.type === 'list' && cursor.where === 'after'} />
                         </span>
                     );
             }
@@ -187,13 +188,13 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     return (
                         <span style={{ background: selected ? hl : 'rgba(255,255,255,0.5)' }} key={i}>
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 0 && sides.right.cursor === 0 ? (
-                                <Cursor />
+                                <Cursor show />
                             ) : null}
                             {'${'}
                             <RenderNode ctx={ctx} parent={nextParent} inRich={false} loc={span.item} state={state} />
                             {'}'}
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 1 && sides.right.cursor === 1 ? (
-                                <Cursor />
+                                <Cursor show />
                             ) : null}
                         </span>
                     );
@@ -206,19 +207,19 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 // are maybe different?
                 return (
                     <span ref={ref} style={style}>
-                        {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+                        {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor show /> : null}
                         {children}
                     </span>
                 );
             }
             return (
                 <span style={{ backgroundColor: 'rgba(255,255,0,0.4)', ...style }} ref={ref}>
-                    {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+                    {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor show /> : null}
                     {cursor?.type === 'list' && cursor.where === 'start' ? <span style={{ background: hl }}>"</span> : '"'}
-                    {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+                    {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor show /> : null}
                     {children}
                     {cursor?.type === 'list' && cursor.where === 'end' ? <span style={{ background: hl }}>"</span> : '"'}
-                    {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+                    {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor show /> : null}
                 </span>
             );
         }

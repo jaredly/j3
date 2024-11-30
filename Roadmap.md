@@ -7,20 +7,37 @@ I should make parsers for:
 - go(?)
 - clojure
 
+#
+
+it would be cool to make a 'javascript, the pure parts'
+that is a nearly transformationless (just a little sugar for ADTs)
+syntax ... which does purity inference. ok yeah it does let you do impurities.
+buuut is it gonna be super hard to track sub-purities? mayyybe
+
+# Nowww
+
+- [ ] up/down got it
+  - [ ] reify cursors I guess
+- [ ] hmmmmultiselect ok w/ path keys memoized
+
 
 # Hrmrgrm ok I think I need really good tests for my dsl
 
 - [x] force multiline, seems to be workin ok
 - [ ] the sync between selection and the ASTs should be a thing, right?
 - [ ] let's get up/down working
+  - hmmm
+  - so do I just ... iterate over all refs?
+    seems a little wasteful, but prolly fine
+    still need to do the 'goalColumn' or w/e
 - [ ] rainbow parens anyone? and definitely "highlight wrapping parens" pls
 - [ ] muuuultiiiselecccct
 
 - [x] CLIIIIICK (very basic)
-  - [ ] make it better my goodness
-  - [ ] click in an ID
-  - [ ] click a list
-  - [ ] click a text, etc.
+  - [x] make it better my goodness
+  - [x] click in an ID
+  - [ ] click a list (open/close/space/sep)
+  - [x] click a text, etc.
 - [x] comments should be grayed out
 
 like to make sure error reporting and stuff is tight.
