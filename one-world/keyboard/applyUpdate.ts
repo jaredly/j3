@@ -1,4 +1,4 @@
-import { Id } from '../shared/cnodes';
+import { Id, Text } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { TestState } from './test-utils';
 import { lastChild, Update } from './utils';
@@ -27,13 +27,42 @@ export function applyUpdate(state: TestState, update: Update | void) {
     // This is "maybe commit text changes"
     if (prev.start.cursor.type === 'id' && prev.start.cursor.text != null && update.selection && update.selection.start.key !== prev.start.key) {
         const loc = lastChild(prev.start.path);
-        if (!update.nodes[loc]) {
+
+        if (!update.nodes[loc] && state.top.nodes[loc]) {
+            const node = state.top.nodes[loc] as Id<number>;
             state.top.nodes[loc] = {
-                ...(state.top.nodes[loc] as Id<number>),
+                ...node,
                 text: prev.start.cursor.text.join(''),
+                ccls: prev.start.cursor.text.length === 0 ? undefined : node.ccls,
             };
         }
     }
+
+    // This is "maybe commit text changes"
+    if (
+        prev.start.cursor.type === 'text' &&
+        prev.start.cursor.end.text != null &&
+        update.selection &&
+        (update.selection.start.key !== prev.start.key ||
+            update.selection.start.cursor.type !== 'text' ||
+            update.selection.start.cursor.end.index !== prev.start.cursor.end.index)
+    ) {
+        const { end } = prev.start.cursor;
+        const loc = lastChild(prev.start.path);
+        if (!update.nodes[loc] && state.top.nodes[loc]) {
+            const node = state.top.nodes[loc] as Text<number>;
+            const spans = node.spans.slice();
+            const span = spans[end.index];
+            if (span.type === 'text') {
+                spans[end.index] = { ...span, text: end.text!.join('') };
+                state.top.nodes[loc] = {
+                    ...node,
+                    spans,
+                };
+            }
+        }
+    }
+
     try {
         validate(state);
     } catch (err) {

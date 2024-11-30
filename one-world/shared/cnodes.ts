@@ -45,10 +45,22 @@ export type Style = {
     fontFamily?: string;
     fontStyle?: string;
     textDecoration?: string;
-    background?: { r: number; g: number; b: number } | false;
+    background?: RGB;
     border?: string;
     outline?: string;
-    color?: { r: number; g: number; b: number } | false;
+    color?: RGB;
+};
+export type RGB = { r: number; g: number; b: number };
+
+export const rgbEqual = (one?: RGB, two?: RGB) => (!one || !two ? one === two : one.r === two.r && one.g === two.g && one.b === two.b);
+
+export const stylesEqual = (one?: Style, two?: Style) => {
+    if (!one || !two) return (!one || Object.keys(one).length === 0) && (!two || Object.keys(two).length === 0);
+    for (let key of ['fontWeight', 'fontFamily', 'fontStyle', 'textDecoration', 'border', 'outline'] as const) {
+        if (one[key] !== two[key]) return false;
+    }
+    if (!rgbEqual(one.background, two.background)) return false;
+    return rgbEqual(one.color, two.color);
 };
 
 // type Text = {
@@ -56,6 +68,12 @@ export type Style = {
 //     first: string;
 //     templates: { expr: Node; suffix: string }[];
 // };
+
+// Used to track "the place some code was copied from", to aid in
+// more intelligent merges
+type Src = { top: string; loc: number; moved: boolean };
+
+export type Loc = { id: string; idx: number }[];
 
 export type IdRef =
     | {
@@ -70,14 +88,23 @@ export type IdRef =
     | { type: 'keyword' }
     | { type: 'placeholder'; text: string };
 
-export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc; punct?: boolean };
+// ccls = "char class" i.e. what kind of punctuation. 0 = normal text
+export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc; ccls?: number; src?: Src };
 
 export type Link = { type: 'www'; href: string } | { type: 'term'; id: string; hash?: string } | { type: 'doc'; id: string; hash?: string };
+
+export const linksEqual = (one?: Link, two?: Link) => {
+    if (!one || !two) return one === two;
+    if (one.type === 'www' && two.type === 'www') return one.href === two.href;
+    if (one.type === 'term' && two.type === 'term') return one.id === two.id && one.hash === two.hash;
+    if (one.type === 'doc' && two.type === 'doc') return one.id === two.id && one.hash === two.hash;
+    return false;
+};
 
 export type TextSpan<Embed> =
     | { type: 'text'; text: string; link?: Link; style?: Style }
     // Jump back to a normal node I guess
-    | { type: 'embed'; item: Embed }
+    | { type: 'embed'; item: Embed; link?: Link; style?: Style }
     // I kinda forget what this was about? Maybe like letting you supply rich-text plugins or something
     | { type: 'custom'; id: string; data: any }
     // How are these different from `embed`? Well these actually yoink the source
@@ -113,7 +140,7 @@ export type ListKind<Tag> =
     | { type: 'tag'; node: Tag }
     | RichKind;
 
-export type Text<Loc> = { type: 'text'; spans: TextSpan<Loc>[]; loc: Loc };
+export type Text<Loc> = { type: 'text'; spans: TextSpan<Loc>[]; loc: Loc; src?: Src };
 export type List<Loc> = {
     type: 'list';
     kind: ListKind<number>;
@@ -124,6 +151,7 @@ export type List<Loc> = {
     attributes?: number;
     children: number[];
     loc: Loc;
+    src?: Src;
 };
 export type TableKind = 'round' | 'square' | 'curly';
 export type Collection<Loc> =
@@ -133,6 +161,7 @@ export type Collection<Loc> =
           kind: TableKind;
           rows: number[][];
           loc: Loc;
+          src?: Src;
       };
 
 export type NodeT<Loc> = Id<Loc> | Text<Loc> | Collection<Loc>;
@@ -148,24 +177,29 @@ export type RecList<Loc> = {
     attributes?: RecNodeT<Loc>;
     children: RecNodeT<Loc>[];
     loc: Loc;
+    src?: Src;
 };
 
 export type RecText<Loc> = {
     type: 'text';
     spans: TextSpan<RecNodeT<Loc>>[];
     loc: Loc;
+    src?: Src;
 };
+
 export type RecCollection<Loc> =
     | RecList<Loc>
     | {
           type: 'table';
           kind: TableKind;
           rows: RecNodeT<Loc>[][];
+          forceMultiline?: boolean;
           loc: Loc;
+          src?: Src;
       };
 
 export type RecNodeT<Loc> = Id<Loc> | RecText<Loc> | RecCollection<Loc>;
-export type RecNode = RecNodeT<{ id: string; idx: number }[]>;
+export type RecNode = RecNodeT<Loc>;
 export type Nodes = Record<number, Node>;
 
 const refsEqual = (one: IdRef, two: IdRef): boolean => {

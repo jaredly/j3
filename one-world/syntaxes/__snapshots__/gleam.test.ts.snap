@@ -1,0 +1,63 @@
+// Bun Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`long thing 1`] = `
+"<let>
+  pat <bound name="x"/>
+  value <call>
+          target <local name="-"/>
+          args[] <call>
+                   target <local name="+"/>
+                   args[] <call>
+                            target <local name="-"/>
+                            args[] <call>
+                                     target <local name="+"/>
+                                     args[] <attribute>
+                                              target <local name="nide"/>
+                                              attribute <id text="s" ccls=0>
+                                                          loc[] <loc id="" idx=7/>
+                                                        </id>
+                                            </attribute>
+                                            <call>
+                                              target <local name="/"/>
+                                              args[] <local name="32"/>
+                                                     <local name="3"/>
+                                            </call>
+                                   </call>
+                                   <call>
+                                     target <local name="^"/>
+                                     args[] <local name="5"/>
+                                            <local name="2"/>
+                                   </call>
+                          </call>
+                          <if>
+                            cond <call>
+                                   target <local name=">"/>
+                                   args[] <local name="x"/>
+                                          <local name="2"/>
+                                 </call>
+                            yes[] <expr>
+                                    expr <local name="2"/>
+                                  </expr>
+                            no[] <expr>
+                                   expr <local name="4"/>
+                                 </expr>
+                          </if>
+                 </call>
+                 <call>
+                   target <tuple>
+                            items[] <fn>
+                                      args[] <bound name="x"/>
+                                      body[] <expr>
+                                               expr <call>
+                                                      target <local name="-"/>
+                                                      args[] <local name="x"/>
+                                                             <local name="2"/>
+                                                    </call>
+                                             </expr>
+                                    </fn>
+                          </tuple>
+                   args[] <local name="5"/>
+                 </call>
+        </call>
+</let>"
+`;

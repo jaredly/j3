@@ -34,15 +34,15 @@ const validateNextLoc = (top: Top) => {
 const validateNodes = (top: Top, id: number) => {
     const node = top.nodes[id];
 
-    if (node.type === 'id' && ((node.text !== '') !== node.punct) == null) {
-        throw new Error(`punct must be set if text is not empty, and vice versa`);
+    if (node.type === 'id' && (node.text === '') !== (node.ccls == null)) {
+        throw new Error(`punct must be set if text is not empty ${node.text} vs ${node.ccls}, and vice versa`);
     }
 
     if (node.type === 'list' && node.kind === 'smooshed') {
         if (node.children.length < 2) {
             throw new Error(`smooshed list shouldn't have fewer than 2 items`);
         }
-        let kinds: ('id' | 'punct' | 'other')[] = [];
+        let kinds: ('id' | number | 'other')[] = [];
         node.children.forEach((cid) => {
             const child = top.nodes[cid];
             if (!child) throw new Error(`invalid child ${cid}`);
@@ -50,8 +50,8 @@ const validateNodes = (top: Top, id: number) => {
                 if (child.text === '') {
                     throw new Error(`blank id in smooshed should not be`);
                 }
-                if (child.punct) {
-                    kinds.push('punct');
+                if (child.ccls != null) {
+                    kinds.push(child.ccls);
                 } else {
                     kinds.push('id');
                 }
@@ -81,7 +81,7 @@ export const validate = (state: TestState) => {
     try {
         validatePath(state.top, state.sel.start.path);
     } catch (err) {
-        console.log(state.sel.start.path);
+        console.log('path', state.sel.start.path);
         throw err;
     }
     validateNextLoc(state.top);

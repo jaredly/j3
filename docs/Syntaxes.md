@@ -1,5 +1,51 @@
 
 
+# Thinking about the layout engine, and what we'll need to accommodate.
+
+There's a "splayed open" mode {
+  contents
+  contents
+} that's relevant for Lists and Tables too tbh
+
+anyway for this round I think I'll be ok ... leaning on web tech more? idk.
+
+There's also "closed" mode
+
+{ contents
+  contents }
+
+that's more ... lispy.
+
+Then of course we can't forget JSX
+for that matter, let's see if we can rustle some up.
+hmmm buuut before we do that, we need reliable autocomplete. Because
+the editor can't know where < looks like the start of JSX vs something else.
+**ok so that'll come later**
+
+So, here's a thing to grapple with.
+The 'table' layout, feels so natural for pattern maching (e.g. switch)
+buuut there's definitely something be to said for the indent display.
+
+Does this just mean that tables need a `drop-last` format? Where the last column
+is dropped & indented? sounds fine to me tbh.
+
+You know what, let's try to make a little parser for gleam
+its for fun
+
+
+
+
+###
+
+OK Folks, let's support Gleam-like syntax too! because it seems very cool.
+
+Syntaxes to try and demo:
+- [ ] JS/TS
+- [ ] Gleam
+- [ ] Clojure+ (jerd3)
+- [ ] Elm? Roc?
+
+
 
 
 # Syntax ... Families?

@@ -1,6 +1,6 @@
-import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind } from '../shared/cnodes';
-import { Config } from './insertId';
-import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, selStart, Top } from './utils';
+import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind, Style, IdRef } from '../shared/cnodes';
+import { charClass, Config } from './insertId';
+import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, selStart, TextCursor, Top } from './utils';
 
 export type TestState = { top: Top; sel: NodeSelection };
 
@@ -44,29 +44,34 @@ export const atPath = (root: number, top: Top, path: number[]) => {
     }
     return res;
 };
+
 export const selPath = (exp: RecNodeT<boolean>) => {
     let found: number[] | null = null;
     const visit = (node: RecNodeT<boolean>, path: number[]) => {
         if (node.loc) {
+            if (found != null) throw new Error(`multiple nodes marked as selected`);
             found = path;
-            return;
+            // return;
         }
         childNodes(node).forEach((child, i) => visit(child, path.concat([i])));
     };
     visit(exp, []);
     if (found == null) throw new Error(`no node marked for selection`);
     return found;
-}; // kinds of keys:
+};
+
+// kinds of keys:
 // - tight
 // - space
 // - sep
 // - id (everything else)
 // MARK: makers
-export const id = <T>(text: string, loc: T = null as T): Id<T> => ({
+export const id = <T>(text: string, loc: T = null as T, config = lisp, ref?: IdRef): Id<T> => ({
     type: 'id',
     text,
     loc,
-    punct: text.length === 0 ? undefined : [...text].some((k) => lisp.punct.includes(k)),
+    ref,
+    ccls: text.length === 0 ? undefined : charClass(text[0], config),
 });
 export const list =
     (kind: ListKind<RecNodeT<unknown>>) =>
@@ -79,18 +84,23 @@ export const list =
 export const smoosh = list('smooshed');
 export const spaced = list('spaced');
 export const round = list('round');
+export const square = list('square');
+export const curly = list('curly');
+// What do I do about you now
+// export const angle = list('angle');
 export const table = <T>(kind: TableKind, rows: RecNodeT<T>[][], loc: T = null as T): RecNodeT<T> => ({ type: 'table', kind, rows, loc });
 export const text = <T>(spans: TextSpan<RecNodeT<T>>[], loc: T = null as T): RecText<T> => ({ type: 'text', loc, spans });
 export const lisp = {
-    punct: '.=#@;+',
+    punct: [';', '.', '@', '=#+'],
     space: '',
-    sep: ' ',
+    sep: ' \n',
 };
 export const js = {
     // punct: [],
     // so js's default is just 'everything for itself'
     // tight: [...'~`!@#$%^&*_+-=\\./?:'],
-    punct: '~`!@#$%^&*_+-=\\./?:',
+    // punct: '~`!@#$%^&*_+-=\\./?:',
+    punct: ['.', '/', '~`!@#$%^&*+-=\\/?:><'],
     space: ' ',
     sep: ';,\n',
 }; // Classes of keys
@@ -99,6 +109,17 @@ const allkeys = '1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM~
 const idkeys = (config: Config) => [...allkeys].filter((k) => !config.punct.includes(k) && !config.space.includes(k) && !config.sep.includes(k));
 const lispId = idkeys(lisp);
 const jsId = idkeys(js);
-export const idc = (end: number): IdCursor => ({ type: 'id', end });
+export const idc = (end: number, start?: number): IdCursor => ({ type: 'id', end, start });
 export const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
-export const noText = (cursor: Cursor) => (cursor.type === 'id' ? { ...cursor, text: undefined } : cursor);
+export const noText = (cursor: Cursor): Cursor =>
+    cursor.type === 'id' ? { ...cursor, text: undefined } : cursor.type === 'text' ? { ...cursor, end: { ...cursor.end, text: undefined } } : cursor;
+export const textc = (index: number, cursor: number, text?: string[]): TextCursor => ({
+    type: 'text',
+    end: { index, cursor, text },
+});
+export const textcs = (index: number, cursor: number, sindex: number, scursor: number, text?: string[]): TextCursor => ({
+    type: 'text',
+    end: { index, cursor, text },
+    start: { index: sindex, cursor: scursor },
+});
+export const tspan = (text: string, style?: Style): TextSpan<any> => ({ type: 'text', text, style });

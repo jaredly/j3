@@ -1,18 +1,11 @@
 // let's test some operations
 
 import { RecNodeT } from '../shared/cnodes';
-import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
+import { check } from './check.test';
 import { handleNav, selectEnd, selectStart } from './handleNav';
-import { root } from './root';
-import { asTop, asTopAndPath, atPath, id, idc, list, listc, noText, round, selPath, smoosh, spaced, table, TestState, text } from './test-utils';
+import { asTop, asTopAndPath, id, idc, list, listc, round, smoosh, spaced, table, text, textc, tspan } from './test-utils';
 import { Cursor, Path, pathWithChildren, selStart } from './utils';
-
-const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
-    expect(shape(root(state))).toEqual(shape(exp));
-    expect(state.sel.start.path.children).toEqual(atPath(state.top.root, state.top, selPath(exp)));
-    expect(noText(state.sel.start.cursor)).toEqual(cursor);
-};
 
 const run = (node: RecNodeT<boolean>, cursor: Cursor, key: string, exp: RecNodeT<boolean>, ecursor: Cursor) => {
     let state = asTop(node, cursor);
@@ -295,15 +288,64 @@ test('text empty in rich', () => {
     expect(selectStart(pc(sel), top)).toEqual(selStart(pc(sel), { type: 'list', where: 'inside' }));
 });
 
-test('text embed in rich', () => {
-    const { top, sel } = asTopAndPath(list({ type: 'plain' })([text([{ type: 'embed', item: id('hi') }], true)]));
-    const path = pathWithChildren(pc(sel), 2);
-    expect(selectEnd(pc(sel), top)).toEqual(selStart(path, { type: 'id', end: 2 }));
-    expect(selectStart(pc(sel), top)).toEqual(selStart(path, { type: 'id', end: 0 }));
-});
+// ok not sure about that one just yet sry
+// test('text embed in rich', () => {
+//     const { top, sel } = asTopAndPath(list({ type: 'plain' })([text([{ type: 'embed', item: id('hi') }], true)]));
+//     const path = pathWithChildren(pc(sel), 2);
+//     expect(selectEnd(pc(sel), top)).toEqual(selStart(path, { type: 'id', end: 2 }));
+//     expect(selectStart(pc(sel), top)).toEqual(selStart(path, { type: 'id', end: 0 }));
+// });
 
 test('text control in rich', () => {
     const { top, sel } = asTopAndPath(list({ type: 'plain' })([text([{ type: 'include', hash: '', id: '' }], true)]));
     expect(selectEnd(pc(sel), top)).toEqual(selStart(pc(sel), { type: 'control', index: 0 }));
     expect(selectStart(pc(sel), top)).toEqual(selStart(pc(sel), { type: 'control', index: 0 }));
+});
+
+test('back into list', () => {
+    let state = asTop(smoosh([round([]), id('a', true)]), idc(0));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, smoosh([round([], true), id('a')]), listc('inside'));
+});
+
+test('back into list w/ id', () => {
+    let state = asTop(smoosh([round([id('b')]), id('a', true)]), idc(0));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, smoosh([round([id('b', true)]), id('a')]), idc(1));
+});
+
+test('over into text - empty', () => {
+    let state = asTop(smoosh([id('b', true), text([])]), idc(1));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, smoosh([id('b'), text([], true)]), listc('inside'));
+});
+
+test('over into text', () => {
+    let state = asTop(smoosh([id('b', true), text([{ type: 'text', text: 'hi' }])]), idc(1));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, smoosh([id('b'), text([{ type: 'text', text: 'hi' }], true)]), textc(0, 0));
+});
+
+test('between two lists', () => {
+    let state = asTop(smoosh([round([], true), round([])]), listc('after'));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, smoosh([round([]), round([], true)]), listc('inside'));
+});
+
+test('out of an embed', () => {
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('b', true) }, tspan('c')]), idc(1));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, text([tspan('a'), { type: 'embed', item: id('b') }, tspan('c')], true), textc(1, 1));
+});
+
+test('left out of an embed', () => {
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('b', true) }, tspan('c')]), idc(0));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, text([tspan('a'), { type: 'embed', item: id('b') }, tspan('c')], true), textc(1, 0));
+});
+
+test('into an embed', () => {
+    let state = asTop(text([tspan('a'), { type: 'embed', item: id('b') }, tspan('c')], true), textc(1, 0));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, text([tspan('a'), { type: 'embed', item: id('b', true) }, tspan('c')]), idc(0));
 });

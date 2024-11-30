@@ -2,21 +2,34 @@ import { fromMap } from '../shared/cnodes';
 import { TestState } from './test-utils';
 import { lastChild } from './utils';
 
-export const root = (state: TestState) => {
+export const root = <T>(state: TestState, fromId: (n: number) => T = (x) => x as T) => {
     let nodes = state.top.nodes;
-    if (state.sel.start.cursor.type === 'id' && state.sel.start.cursor.text) {
-        const loc = lastChild(state.sel.start.path);
+    const { cursor, path } = state.sel.start;
+    if (cursor.type === 'id' && cursor.text) {
+        const loc = lastChild(path);
         const node = nodes[loc];
         if (node.type === 'id') {
             nodes = {
                 ...nodes,
                 [loc]: {
                     ...node,
-                    text: state.sel.start.cursor.text.join(''),
-                    punct: state.sel.start.cursor.text.length === 0 ? undefined : node.punct,
+                    text: cursor.text.join(''),
+                    ccls: cursor.text.length === 0 ? undefined : node.ccls,
                 },
             };
         }
     }
-    return fromMap(state.top.root, nodes, () => 0);
+    if (cursor.type === 'text' && cursor.end.text) {
+        const loc = lastChild(path);
+        const node = nodes[loc];
+        if (node.type === 'text') {
+            const spans = node.spans.slice();
+            const span = spans[cursor.end.index];
+            if (span.type === 'text') {
+                spans[cursor.end.index] = { ...span, text: cursor.end.text.join('') };
+            }
+            nodes = { ...nodes, [loc]: { ...node, spans } };
+        }
+    }
+    return fromMap(state.top.root, nodes, fromId);
 };

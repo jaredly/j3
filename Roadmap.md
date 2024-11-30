@@ -1,11 +1,268 @@
 
+#
+
+I should make parsers for:
+- gleam (wip)
+- javascript
+- go(?)
+- clojure
+
+#
+
+it would be cool to make a 'javascript, the pure parts'
+that is a nearly transformationless (just a little sugar for ADTs)
+syntax ... which does purity inference. ok yeah it does let you do impurities.
+buuut is it gonna be super hard to track sub-purities? mayyybe
+
+# Nowww
+
+- [x] up/down got it
+  - [ ] the 'pullToX' thing, make it happen
+- [ ] hmmmmultiselect ok w/ path keys memoized
+
+
+# Hrmrgrm ok I think I need really good tests for my dsl
+
+- [x] force multiline, seems to be workin ok
+- [ ] the sync between selection and the ASTs should be a thing, right?
+- [ ] let's get up/down working
+  - hmmm
+  - so do I just ... iterate over all refs?
+    seems a little wasteful, but prolly fine
+    still need to do the 'goalColumn' or w/e
+- [ ] rainbow parens anyone? and definitely "highlight wrapping parens" pls
+- [ ] muuuultiiiselecccct
+
+- [x] CLIIIIICK (very basic)
+  - [x] make it better my goodness
+  - [x] click in an ID
+  - [ ] click a list (open/close/space/sep)
+  - [x] click a text, etc.
+- [x] comments should be grayed out
+
+like to make sure error reporting and stuff is tight.
+
+- [ ] if there's a seq at the end of an "exhaustive seq", we can treat it as exhaustive?
+  hmmmm not if it's a multi, though.
+
+
+- [ ] ok let's really make \n turn a thing into multiline. we'll have auto formating
+  at some point, but this would honestly work for now
+
+- [ ] I reeeeeally need to be able to multiselect so I can wrap multiuple things
+- [ ] alsoooo I want to unwrap lisets at will
+
+# Ok so what we're doing right now
+
+is coming up with autocomplete. right?
+
+
+ALSO I worry that having `kind` on the `IdRef` is a denormalization that will cause problems.
+Seems like the kind would need to be looked up at ... type-inference time?
+
+Ok so when the parser produces a list of `references`, we check that against the actual exported `kind`s and
+can report errors at that point.
+
+
+`hi.` should report an error somewhere.
+oooooh ok so missing should show like a caret at the point where it should be.
+
+
+##
+
+Here's a thing I'm worried about.
+if my DSL is responsible for autocomplete...
+... how do I tell it what locals are in-scope?
+how do I tell it "right here, we are producing
+a local variable name". because, it would have to
+also say ... 'this is where it's legal'.
+Can that be reduced to: `{ancestorLevel: number, bidirectional: boolean}`?
+hrmggggg well if the ID is nested in a PAT, how do we know how far to
+go outttt.
+I guessss we could like ~tag a list as the 'scope ancestor'? with like
+a 'kind' tag. So you could say `{ancestor: 'let-list', bidirectional: true}`
+and `{ancestor: 'let-body', bidirectional: false}`.
+tbh that seems reasonable.
+
+and for a js-style it would be `{ancestor: 'block', bidirectional: true}`
+
+I mean so there's:
+- can be used after (always)
+- can be used in self (not always)
+- can be used in prevs (not always)
+
+hrmmm actually maybe it's the ~scope ancestor that defines behavior like that.
+the local pattern wouldn't know what kind of thing it's in.
+nowww there would have to be something to let a `letrec` not be the scope
+ancestor but impact the behavior of the patterns inside it.
+but that's fine rihgggt.
+
+
+Ok I'm also excited about getting JSX working really smoothly.
+and /Tables/ inside rich lists.
+
+# Order of operations
+
+GOTTA do visual dispaly of where nodes are. nowwwww
+- [x] ok it's decent
+
+UI stuffs
+- [ ] gleam, better parsing of smooshes and binops
+  - [x] smooshes
+  - [x] bops pls
+- [ ] hover the XML, highlight the source (click to selection)
+- [ ] selection in source, highlight the XML
+- [ ] click to select
+- [ ] multiselecttttt
+- [ ] highlighting?
+- [ ] autocompleteness
+
+Other
+- [ ] editor should know 'how to comment' and 'how to quote/unquote'
+- [ ] for macro invocation, it can just 'grab the containing node', right?
+  will that always work? certainly for `(do this)` and `do(this)`. Do we want
+  to ~enforce that it be in 'head position'? I mean might as well, at least to
+  start, right?
+  which then handily removes the requirement that we /talk to the parser/ before we can do
+  macro expansion, right?
+
+I do want to thikn about 'a language that has my parsing DSL baked into a switch-like construct`
+
+
+# SYntaxes
+
+ok I got nerdsniped into making a whole composable parser dealio
+and I think I'd need GADTs to properly type check it?
+Although the "functions" instead of "data" version might be easier to type.
+we'll see.
+
+- [x] show debug gleam parse
+- [ ] ... show parse errors thx
+
+
+
+parseeeee
+So, it occurs to me
+that one would want to be able to select logical subsmooshes right
+so a parsed node is .. not a single node, but a range of nodes.
+honestly I've wanted that for the attribute stuffs too. so, solid choice
+
+
+
+
+# Next ups
+
+- [x] wrap middle of ID
+- [x] select within an id
+- [x] rewrite the whole flatten algorthm thanks
+- [ ] stringgggggg interpolations
+- [ ] multiselect pleeease
+- [ ] wrap start of list or text or stuff
+- [ ] wrap multiselected stuff
+- [ ] jump to closer
+  - [x] from id
+  - [ ] from inside a list n stuff
+- [ ] lets get Text Embeds up and running pls
+- [x] multiselect between spansss
+
+vvvvvvvvvvvv
+- [x] style across spans
+
+- [x] needs to be possible to delete a span
+- [ ] thennn let's get tables working baybeee
+- [x] " at the end of string should be a closerr
+- [ ] \n as a spacer should set 'explicitMultiline' thx
+  - gonna need to do some layout there champ
+- [x] better closer handling
+
+I do need an unsmoosh.
+
+It occurs to me that `wrap` is not necessarily what I want.
+- [ ] really, I want only to wrap when there's a selection. This does make some sense.
+
+
+## Text Embeds
+
+- [x] getem workin
+- [x] text insert in the before & after
+  - [x] after
+  - [x] before
+  - [x] delete back to an embed
+
+
+I think cursor type=control needs where=start/cover/end...
+like, there needs to be a way to select 'between two embed spans',
+and enforcing that there's always a text span between non-texts feels
+like a cludge...
+
+hrmmmm but is /control/ the right move? maybe ... type=span could be it.
+for generic before/after/cover? Yeah I kinda like that.
+
+ORRR I could pretend ... that non-text spans just have a length of 1? and 0 is before, 1 is after...
+herm that might be the right call actually.
+
+#
+
+I, had a thought.
+and it was, "what if I refactor some logic out of one term and break it into its own
+function.... and then in a separate ~branch I make a tweak to that logic that
+shouldn't really be incompatible. What do I do about that?
+
+This is a case that's actually solved by the 'have a global mapping of nodes' that
+I had going before.
+but that has major scale issues.
+
+ok so the ~least I can do, which would definitely help somewhat, would be to have an optional
+attr on `node` that is like 'here's where it came from'.
+
+Yeah actually `copiedFrom` would be cool in a number of ways, including if you /duplicate/ some
+code, and then want to merge a tweak in; might want to merge it in all the places it was copied to.
+
+# Ok folks, time for multiselect
+at least a little
+
+buutt before we do that, list creation right?
+- [ ] create pls
+- [ ] and then we can multi it up yeas
+
+# Thinking about Rich Text checkboxes
+
+[ ] one level
+[ ] same level
+    [ ] next level
+
+We have some options.
+
+1) all checkboxes are children of the same root,
+   but 'indent levels' are varied.
+
+Things that would be nice to support:
+- collapsing nested levels down
+- reporting completion amounts
+
+# multiple char class
+
+options:
+- id hangs on to the char class (like current 'punct')
+  - as an (index)number
+  - as a (string)the actual set of chars
+- id is just ID, we do a check for 'what char class is this' whenever we do a thing.
+
+So, like, I'm thinking the parser itself would specify the
+charclasses?
+ok nope, we'll probably have just a few predefined ones.
+anyway.
+DECISION: save (index) number
+
 # All the New Things
 
 Kinds of interactions:
 
 - type a text
   - [x] id
-  - [ ] text :/
+  - [x] text :/
+    - [ ] get it working in the web UI
+    - [ ] get keyboard nav in a text working
 - type a different idclass
   - [ ] make it so we can have multiple character classes
   - [x] handle smooshes nicely

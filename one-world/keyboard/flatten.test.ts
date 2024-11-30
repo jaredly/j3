@@ -1,18 +1,12 @@
 import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
-import { collapseAdjacentIds } from './flatenate';
+import { check } from './check.test';
 import { handleKey } from './handleKey';
 import { root } from './root';
 import { asTop, atPath, id, idc, js, listc, noText, round, selPath, smoosh, spaced, TestState, text } from './test-utils';
 import { Cursor } from './utils';
 import { validate } from './validate';
-
-const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
-    expect(shape(root(state))).toEqual(shape(exp));
-    expect(state.sel.start.path.children).toEqual(atPath(state.top.root, state.top, selPath(exp)));
-    expect(noText(state.sel.start.cursor)).toEqual(cursor);
-};
 
 // MARK: space sep
 
@@ -232,12 +226,8 @@ test('id one spaced end', () => {
     check(state, spaced([id('one'), id('', true), id('two')]), idc(0));
 });
 
-// MARK: Collapse adjacent
-
-test('collapse adjacent', () => {
-    const node = id('one', 10);
-    const [flat, sel, cursor] = collapseAdjacentIds([id('pre', 0), node, id('post', 1)], node, { type: 'id', end: 0 });
-    expect(flat).toHaveLength(1);
-    expect(flat[0]).toBe(sel);
-    expect(cursor).toEqual({ type: 'id', end: 3 });
+test('space in spaced', () => {
+    let state = asTop(spaced([id('abc', true), id('d')]), idc(3));
+    state = applyUpdate(state, handleKey(state, ' ', js)!);
+    check(state, spaced([id('abc'), id('', true), id('d')]), idc(0));
 });
