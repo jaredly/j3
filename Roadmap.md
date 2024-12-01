@@ -17,15 +17,17 @@ buuut is it gonna be super hard to track sub-purities? mayyybe
 # Nowww
 
 - [x] up/down got it
-  - [ ] the 'pullToX' thing, make it happen
+  - [x] the 'pullToHoriz' thing, make it happen
 - [ ] hmmmmultiselect ok w/ path keys memoized
+  - [ ] shift up/down thx
 
 
 # Hrmrgrm ok I think I need really good tests for my dsl
 
 - [x] force multiline, seems to be workin ok
 - [ ] the sync between selection and the ASTs should be a thing, right?
-- [ ] let's get up/down working
+  - so I can click the XML and it will highlight / select the right thing
+- [x] let's get up/down working
   - hmmm
   - so do I just ... iterate over all refs?
     seems a little wasteful, but prolly fine

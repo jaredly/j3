@@ -4,22 +4,53 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { getCurrent, NodeSelection, Top } from '../utils';
 import { goLeft, goRight, handleNav } from '../handleNav';
 
+const CLOSE = 10;
+
+const deb = (at: { left: number; top: number; height: number }, color: string) => {
+    const node = document.createElement('div');
+    Object.assign(node.style, {
+        position: 'absolute',
+        background: color,
+        left: at.left + 'px',
+        top: at.top + 'px',
+        height: at.height + 'px',
+        width: '3px',
+    });
+    node.classList.add('DEB');
+    document.body.append(node);
+};
+
 export const posUp = (sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>) => {
     const current = selectionPos(sel, refs, top);
     if (!current) return;
+    if (sel.start.returnToHoriz != null) {
+        current.left = sel.start.returnToHoriz;
+    }
     const options = above(sel, top, refs, current);
+    if (!options.length) return;
     options.sort((a, b) => a.dx - b.dx);
+    if (Math.abs(options[0].at.left - current.left) > CLOSE) {
+        options[0].next.returnToHoriz = current.left;
+    }
     return options[0].next;
 };
 
 export const posDown = (sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>) => {
     const current = selectionPos(sel, refs, top);
     if (!current) return;
+    if (sel.start.returnToHoriz != null) {
+        current.left = sel.start.returnToHoriz;
+    }
     const options = below(sel, top, refs, current);
     if (!options.length) return;
     options.sort((a, b) => a.dx - b.dx);
+    if (Math.abs(options[0].at.left - current.left) > CLOSE) {
+        options[0].next.returnToHoriz = current.left;
+    }
     return options[0].next;
 };
+
+const boxAt = (box: DOMRect): CPos => ({ left: box.left, top: box.top, height: box.height });
 
 // OK I broke down and did. I think its the right call.
 export const selectionPos = (
@@ -39,7 +70,7 @@ export const selectionPos = (
                 range.setStart(span.firstChild!, at);
                 range.setEnd(span.firstChild!, at);
                 const box = range.getBoundingClientRect();
-                return box;
+                return boxAt(box);
             } catch (err) {
                 return null;
             }
@@ -54,11 +85,11 @@ export const selectionPos = (
                 if (cur.cursor.where === 'before') {
                     range.setStart(span, 0);
                     range.setEnd(span, 1);
-                    return range.getBoundingClientRect();
+                    return boxAt(range.getBoundingClientRect());
                 } else if (cur.cursor.where === 'inside') {
                     range.setStart(span, 2);
                     range.setEnd(span, 3);
-                    return range.getBoundingClientRect();
+                    return boxAt(range.getBoundingClientRect());
                 } else {
                     range.setStart(span, span.childNodes.length - 1);
                     range.setEnd(span, span.childNodes.length);
@@ -74,11 +105,11 @@ export const selectionPos = (
                     if (cur.cursor.where === 'before') {
                         range.setStart(span, 0);
                         range.setEnd(span, 1);
-                        return range.getBoundingClientRect();
+                        return boxAt(range.getBoundingClientRect());
                     } else if (cur.cursor.where === 'inside') {
                         range.setStart(span, 2);
                         range.setEnd(span, 3);
-                        return range.getBoundingClientRect();
+                        return boxAt(range.getBoundingClientRect());
                     } else {
                         range.setStart(span, span.childNodes.length - 1);
                         range.setEnd(span, span.childNodes.length);
@@ -100,7 +131,7 @@ export const selectionPos = (
                         if (cur.cursor.end.cursor === 0) {
                             range.setStart(got, 0);
                             range.setEnd(got, 1);
-                            return range.getBoundingClientRect();
+                            return boxAt(range.getBoundingClientRect());
                         } else {
                             range.setStart(got, got.childNodes.length - 1);
                             range.setEnd(got, got.childNodes.length);
@@ -119,7 +150,7 @@ export const selectionPos = (
                     const at = text.slice(0, cur.cursor.end.cursor).join('').length;
                     range.setStart(first, at);
                     range.setEnd(first, at);
-                    return range.getBoundingClientRect();
+                    return boxAt(range.getBoundingClientRect());
                 } catch (err) {
                     return null;
                 }
