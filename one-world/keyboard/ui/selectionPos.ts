@@ -1,8 +1,8 @@
 import { TestState } from '../test-utils';
 
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { getCurrent, NodeSelection, Top } from '../utils';
-import { goLeft, goRight, handleNav } from '../handleNav';
+import { getCurrent, lastChild, NodeSelection, Path, pathWithChildren, selStart, Top } from '../utils';
+import { goLeft, goRight, handleNav, selectEnd, selectStart } from '../handleNav';
 
 const CLOSE = 10;
 
@@ -161,6 +161,44 @@ export const selectionPos = (
 };
 
 export type CPos = { left: number; top: number; height: number };
+
+// We only need to check the starts & ends of all children for the closest one.
+// maybe?
+export const posInList = (path: Path, pos: { x: number; y: number }, refs: Record<number, HTMLElement>, top: Top) => {
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'list') {
+        console.warn('not a list', node);
+        return null;
+    }
+    let best = null as [number, NodeSelection['start']] | null;
+
+    const add = (can?: CPos | null, v?: NodeSelection['start'] | void) => {
+        if (!can || !v) return;
+        const dx = can.left - pos.x;
+        const dy = pos.y >= can.top && pos.y <= can.top + can.height ? 0 : pos.y < can.top ? pos.y - can.top : pos.y - (can.top + can.height);
+        const d = dx * dx + dy * dy;
+        if (!best || best[0] > d) {
+            best = [d, v];
+        }
+    };
+
+    const sides = (path: Path) => {
+        const bsel = selectStart(path, top);
+        const before = bsel ? selectionPos({ start: bsel }, refs, top) : null;
+        const asel = selectEnd(path, top);
+        const after = asel ? selectionPos({ start: asel }, refs, top) : null;
+        add(before, bsel);
+        add(after, asel);
+    };
+
+    sides(path);
+    node.children.forEach((child) => {
+        const cpath = pathWithChildren(path, child);
+        sides(cpath);
+    });
+
+    return best ? best[1] : null;
+};
 
 function above(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, current: CPos) {
     const options = [];

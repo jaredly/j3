@@ -9,7 +9,8 @@ import { lastChild, Path, pathWithChildren, Update } from '../utils';
 import { asStyle } from '../../shared/shape';
 import { textCursorSides2 } from '../insertId';
 import { Cursor, TextWithCursor } from './cursor';
-import { justSel } from '../handleNav';
+import { justSel, selUpdate } from '../handleNav';
+import { posInList } from './selectionPos';
 
 const hl = 'rgba(100,100,100,0.2)';
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
@@ -21,7 +22,7 @@ type RCtx = {
     dispatch: (up: Update) => void;
 };
 
-const spos = (evt: React.MouseEvent, target: HTMLSpanElement, text: string[]) => {
+const cursorPositionInSpanForEvt = (evt: React.MouseEvent, target: HTMLSpanElement, text: string[]) => {
     const range = new Range();
     let best = null as null | [number, number];
     for (let i = 0; i < text.length; i++) {
@@ -60,7 +61,8 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             innerRef={ref}
                             // cursorRef={cursorRef}
                             onClick={(evt) => {
-                                const pos = spos(evt, evt.currentTarget, text);
+                                evt.stopPropagation();
+                                const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
                                 ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0 }));
                             }}
                             text={text}
@@ -75,7 +77,8 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     style={style}
                     ref={ref}
                     onClick={(evt) => {
-                        const pos = spos(evt, evt.currentTarget, splitGraphemes(node.text));
+                        evt.stopPropagation();
+                        const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(node.text));
                         ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0 }));
                         // ok I cant dispatch just yet
                     }}
@@ -103,7 +106,18 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     );
                 case 'spaced':
                     return (
-                        <span style={style} ref={ref}>
+                        <span
+                            style={style}
+                            ref={ref}
+                            data-yes="yes"
+                            onClick={(evt) => {
+                                evt.stopPropagation();
+                                const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                                if (sel) {
+                                    ctx.dispatch(selUpdate(sel)!);
+                                }
+                            }}
+                        >
                             {interleaveF(children, (i) => (
                                 <span key={'sep' + i}>&nbsp;</span>
                             ))}
@@ -111,7 +125,17 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     );
                 default:
                     return (
-                        <span style={style} ref={ref}>
+                        <span
+                            style={style}
+                            ref={ref}
+                            onClick={(evt) => {
+                                evt.stopPropagation();
+                                const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                                if (sel) {
+                                    ctx.dispatch(selUpdate(sel)!);
+                                }
+                            }}
+                        >
                             {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                             <span
                                 style={{
@@ -157,7 +181,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             <span key={i} style={style} data-index={i}>
                                 <TextWithCursor
                                     onClick={(evt) => {
-                                        const pos = spos(evt, evt.currentTarget, text);
+                                        const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
                                         ctx.dispatch(justSel(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
                                     }}
                                     text={text}
@@ -174,7 +198,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             data-index={i}
                             style={style}
                             onClick={(evt) => {
-                                const pos = spos(evt, evt.currentTarget, splitGraphemes(span.text));
+                                const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(span.text));
                                 ctx.dispatch(justSel(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
                             }}
                         >
