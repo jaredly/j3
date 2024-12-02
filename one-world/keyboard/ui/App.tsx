@@ -122,6 +122,7 @@ export const App = () => {
                     }}
                 />
             </div>
+            {/* {JSON.stringify(state.sel.start)} */}
             {xml ? <XMLShow xml={xml} state={state} refs={refs} /> : null}
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
                 <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>

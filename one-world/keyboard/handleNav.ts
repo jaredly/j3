@@ -105,7 +105,7 @@ const richNode = (node: Node | undefined) => {
     return node?.type === 'list' && isRich(node.kind);
 };
 
-export const goLeft = (path: Path, top: Top): NodeSelection['start'] | void => {
+export const goLeft = (path: Path, top: Top, tight = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const ploc = parentLoc(path);
     const pnode = top.nodes[ploc];
@@ -119,7 +119,7 @@ export const goLeft = (path: Path, top: Top): NodeSelection['start'] | void => {
             }
             return selStart(parentPath(path), { type: 'list', where: 'before' });
         }
-        return selectEnd(pathWithChildren(parentPath(path), pnode.children[at - 1]), top, pnode.kind === 'smooshed');
+        return selectEnd(pathWithChildren(parentPath(path), pnode.children[at - 1]), top, !tight && pnode.kind === 'smooshed');
     }
     if (pnode.type === 'text') {
         const index = pnode.spans.findIndex((n) => n.type === 'embed' && n.item === loc);
@@ -128,7 +128,7 @@ export const goLeft = (path: Path, top: Top): NodeSelection['start'] | void => {
     }
 };
 
-export const goRight = (path: Path, top: Top): NodeSelection['start'] | void => {
+export const goRight = (path: Path, top: Top, tight = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const ploc = parentLoc(path);
     const pnode = top.nodes[ploc];
@@ -142,7 +142,7 @@ export const goRight = (path: Path, top: Top): NodeSelection['start'] | void => 
             }
             return selStart(parentPath(path), { type: 'list', where: 'after' });
         }
-        return selectStart(pathWithChildren(parentPath(path), pnode.children[at + 1]), top, pnode.kind === 'smooshed');
+        return selectStart(pathWithChildren(parentPath(path), pnode.children[at + 1]), top, !tight && pnode.kind === 'smooshed');
     }
     if (pnode.type === 'text') {
         const index = pnode.spans.findIndex((n) => n.type === 'embed' && n.item === loc);

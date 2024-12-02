@@ -38,7 +38,7 @@ export const handleTab = (state: TestState, shift?: boolean): Update | void => {
             return selUpdate(selectStart(pathWithChildren(path, node.children[0]), state.top));
         }
     }
-    return selUpdate(shift ? goLeft(state.sel.start.path, state.top) : goRight(state.sel.start.path, state.top));
+    return selUpdate(shift ? goLeft(state.sel.start.path, state.top, true) : goRight(state.sel.start.path, state.top, true));
 };
 
 // TabLeft
