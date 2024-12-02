@@ -153,18 +153,18 @@ export const App = () => {
                     }}
                 />
             </div>
-            {JSON.stringify(state.sel)}
             {xml ? (
                 <XMLShow
                     xml={xml}
                     state={state}
                     refs={refs}
-                    spans={gleam.spans}
+                    // spans={gleam.spans}
                     dispatch={(up) => {
                         setState((s) => applyUpdate(s, up));
                     }}
                 />
             ) : null}
+            {JSON.stringify(state.sel)}
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
                 <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                     <h3>CST</h3>
@@ -203,25 +203,25 @@ const XMLShow = ({
     xml,
     refs,
     state,
-    spans,
+    // spans,
     dispatch,
 }: {
-    spans: { start: Loc; end?: Loc }[];
+    // spans: { start: Loc; end?: Loc }[];
     state: TestState;
     xml: XML;
     refs: Record<string, HTMLElement>;
     dispatch: (up: Update | void) => void;
 }) => {
-    // const alls = useMemo(() => {
-    //     const lst: XML[] = [];
-    //     walxml(xml, (m) => {
-    //         if (!m.src) return;
-    //         if (m.src.right || state.top.nodes[m.src.left[0].idx].type !== 'id') {
-    //             lst.push(m);
-    //         }
-    //     });
-    //     return lst;
-    // }, [xml, state]);
+    const alls = useMemo(() => {
+        const lst: XML[] = [];
+        walxml(xml, (m) => {
+            if (!m.src) return;
+            if (m.src.right || state.top.nodes[m.src.left[0].idx].type !== 'id') {
+                lst.push(m);
+            }
+        });
+        return lst;
+    }, [xml, state]);
 
     const pos = (loc: Loc, right?: Loc): [number, number] | null => {
         const lf = refs[loc[0].idx];
@@ -237,12 +237,13 @@ const XMLShow = ({
     };
 
     const calc = () => {
-        const posed = spans
-            .map(({ start, end }) => {
-                if (!end) return null;
-                const sides = pos(start, end);
+        const posed = alls
+            .map((node) => {
+                const { left, right } = node.src;
+                if (!right) return null;
+                const sides = pos(left, right);
                 if (!sides) return null;
-                return { sides, span: { start, end } };
+                return { sides, span: { start: left, end: right } };
             })
             .filter(Boolean) as { sides: [number, number]; node?: XML; span: Span }[];
         posed.sort((a, b) => a.sides[1] - a.sides[0] - (b.sides[1] - b.sides[0]));
