@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, Text } from '../shared/cnodes';
 import { spanLength } from './handleDelete';
-import { goLeft, goRight, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
+import { goLateral, goLeft, goRight, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
 import { handleSpecialText } from './handleSpecialText';
 import { TestState } from './test-utils';
 import { Cursor, getCurrent, IdCursor, lastChild, ListCursor, parentLoc, parentPath, Path, pathWithChildren, TextCursor, Top, Update } from './utils';
@@ -20,12 +20,11 @@ export const expandShiftRight = (): Update | void => {};
 
 export const expandShiftLeft = (path: Path, cursor: Cursor, top: Top): Update | void => {};
 
-// export const next
-
-export const handleTab = (state: TestState, shift?: boolean): Update | void => {
+export const handleTab = (state: TestState, shift: boolean): Update | void => {
     const { path, cursor } = state.sel.start;
     const node = state.top.nodes[lastChild(path)];
     if (node.type === 'list' && cursor.type === 'list') {
+        // Maybe go inside?
         if (shift && cursor.where === 'after') {
             if (node.children.length === 0) {
                 return justSel(path, { type: 'list', where: 'inside' });
@@ -38,7 +37,22 @@ export const handleTab = (state: TestState, shift?: boolean): Update | void => {
             return selUpdate(selectStart(pathWithChildren(path, node.children[0]), state.top));
         }
     }
-    return selUpdate(shift ? goLeft(state.sel.start.path, state.top, true) : goRight(state.sel.start.path, state.top, true));
+    if (cursor.type === 'list') {
+        if (cursor.where === (shift ? 'before' : 'after')) {
+            // check for smoosh
+            const parent = state.top.nodes[parentLoc(path)];
+            if (parent?.type === 'list' && parent.kind === 'smooshed') {
+                const at = parent.children.indexOf(lastChild(path));
+                if (at !== (shift ? 0 : parent.children.length - 1)) {
+                    // go double
+                    const next = goLateral(state.sel.start.path, state.top, shift, true);
+                    return selUpdate(next ? goLateral(next.path, state.top, shift, true) : next);
+                }
+            }
+        }
+    }
+
+    return selUpdate(goLateral(state.sel.start.path, state.top, shift, true));
 };
 
 // TabLeft

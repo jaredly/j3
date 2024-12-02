@@ -105,6 +105,10 @@ const richNode = (node: Node | undefined) => {
     return node?.type === 'list' && isRich(node.kind);
 };
 
+export const goLateral = (path: Path, top: Top, left: boolean, tight = false): NodeSelection['start'] | void => {
+    return left ? goLeft(path, top, tight) : goRight(path, top, tight);
+};
+
 export const goLeft = (path: Path, top: Top, tight = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const ploc = parentLoc(path);
