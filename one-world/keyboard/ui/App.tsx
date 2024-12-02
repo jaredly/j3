@@ -26,7 +26,7 @@ const styleKinds: Record<string, Style> = {
 const lastCommonAncestor = (one: number[], two: number[]) => {
     let i = 0;
     for (; i < one.length && i < two.length && one[i] === two[i]; i++);
-    return { common: one.slice(0, i), one: one[i + 1], two: two[i + 1] };
+    return { common: one.slice(0, i), one: one[i], two: two[i] };
 };
 
 const multiSelChildren = (sel: NodeSelection, top: Top) => {

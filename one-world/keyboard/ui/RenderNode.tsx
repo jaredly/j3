@@ -4,7 +4,7 @@ import { isRich, Style } from '../../shared/cnodes';
 import { cursorSides } from '../cursorSides';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
-import { lastChild, Path, pathWithChildren, Update } from '../utils';
+import { lastChild, Path, pathKey, pathWithChildren, Update } from '../utils';
 
 import { asStyle } from '../../shared/shape';
 import { textCursorSides2 } from '../insertId';
@@ -38,22 +38,45 @@ const cursorPositionInSpanForEvt = (evt: React.MouseEvent, target: HTMLSpanEleme
     return best ? best[1] : null;
 };
 
+const shadow = (x: number, y: number, color: string) => {
+    return `${x}px ${y}px 0 ${color},-${x}px ${y}px 0 ${color},-${x}px -${y}px 0 ${color},6px -${y}px 0 ${color},0 ${y}px 0 ${color}, 0 -${y}px 0 ${color}`;
+};
+
+// const msk = 'rgb(255,100,100)'
+
 export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; state: TestState; inRich: boolean; ctx: RCtx; parent: Path }) => {
     const node = state.top.nodes[loc];
     const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
-    const style: React.CSSProperties | undefined = ctx.errors[loc]
+    let style: React.CSSProperties | undefined = ctx.errors[loc]
         ? { textDecoration: 'underline' }
         : ctx.styles[loc]
         ? asStyle(ctx.styles[loc])
         : undefined;
+
+    const nextParent = useMemo(() => pathWithChildren(parent, loc), [parent, loc]);
+    const key = useMemo(() => pathKey(nextParent), [nextParent]);
+
+    if (ctx.msel?.includes(key)) {
+        if (!style) style = {};
+        style.background = 'rgb(255,100,100,0.5)';
+        style.borderRadius = '2px';
+        style.outline = `2px solid rgb(255,100,100,0.5)`;
+    }
+
+    if (state.sel.end?.key === key) {
+        if (!style) style = {};
+        style.borderRadius = '2px';
+        style.background = 'rgb(255,100,100)';
+        style.outline = '2px solid rgb(255,100,100)';
+    }
+
     const ref = (el: HTMLElement) => {
         ctx.refs[loc] = el;
     };
 
-    const nextParent = useMemo(() => pathWithChildren(parent, loc), [parent, loc]);
     switch (node.type) {
         case 'id':
-            if (cursor?.type === 'id') {
+            if (cursor?.type === 'id' && !ctx.msel) {
                 const { left, right } = cursorSides(cursor);
                 const text = cursor.text ?? splitGraphemes(node.text);
                 return (
@@ -142,13 +165,15 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                                 style={{
                                     background: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
                                     color: 'orange',
+                                    // ...style,
+                                    // borderRadius: style?.borderRadius,
                                 }}
                             >
                                 {opener[node.kind]}
                             </span>
                             {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                             {node.forceMultiline ? (
-                                <div style={{ display: 'flex', flexDirection: 'column', marginLeft: 16 }}>{children}</div>
+                                <div style={{ ...style, display: 'flex', flexDirection: 'column', marginLeft: 16 }}>{children}</div>
                             ) : (
                                 interleaveF(children, (i) => <span key={'sep' + i}>,&nbsp;</span>)
                             )}
@@ -161,6 +186,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                                 style={{
                                     background: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined,
                                     color: 'orange',
+                                    // borderRadius: style?.borderRadius,
                                 }}
                             >
                                 {closer[node.kind]}
