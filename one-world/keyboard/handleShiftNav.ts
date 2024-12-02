@@ -1,13 +1,10 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, Text } from '../shared/cnodes';
-import { cursorSides } from './cursorSides';
-import { findParent } from './flatenate';
 import { spanLength } from './handleDelete';
-import { justSel } from './handleNav';
+import { goLeft, goRight, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
 import { handleSpecialText } from './handleSpecialText';
-import { textCursorSides } from './insertId';
 import { TestState } from './test-utils';
-import { getCurrent, IdCursor, lastChild, ListCursor, parentPath, Path, TextCursor, Top, Update } from './utils';
+import { Cursor, getCurrent, IdCursor, lastChild, ListCursor, parentLoc, parentPath, Path, pathWithChildren, TextCursor, Top, Update } from './utils';
 
 export const handleShiftNav = (state: TestState, key: string): Update | void => {
     const current = getCurrent(state.sel, state.top);
@@ -19,10 +16,69 @@ export const handleShiftNav = (state: TestState, key: string): Update | void => 
     }
 };
 
-export const handleShiftId = ({ node, path, cursor }: { node: Id<number>; path: Path; cursor: IdCursor }, top: Top, left: boolean) => {
-    if (left && cursor.end === 0) throw new Error('nt not');
+export const expandShiftRight = (): Update | void => {};
+
+export const expandShiftLeft = (path: Path, cursor: Cursor, top: Top): Update | void => {};
+
+// export const next
+
+export const handleTab = (state: TestState, shift?: boolean): Update | void => {
+    const { path, cursor } = state.sel.start;
+    const node = state.top.nodes[lastChild(path)];
+    if (node.type === 'list' && cursor.type === 'list') {
+        if (shift && cursor.where === 'after') {
+            if (node.children.length === 0) {
+                return justSel(path, { type: 'list', where: 'inside' });
+            }
+            return selUpdate(selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), state.top));
+        } else if (!shift && cursor.where === 'before') {
+            if (node.children.length === 0) {
+                return justSel(path, { type: 'list', where: 'inside' });
+            }
+            return selUpdate(selectStart(pathWithChildren(path, node.children[0]), state.top));
+        }
+    }
+    return selUpdate(shift ? goLeft(state.sel.start.path, state.top) : goRight(state.sel.start.path, state.top));
+};
+
+// TabLeft
+
+export const handleShiftId = ({ node, path, cursor }: { node: Id<number>; path: Path; cursor: IdCursor }, top: Top, left: boolean): Update | void => {
+    if (left && cursor.end === 0) {
+        if (cursor.start == null || cursor.start === cursor.end) {
+            const parent = top.nodes[parentLoc(path)];
+            if (parent.type === 'list' && parent.kind === 'smooshed') {
+                const idx = parent.children.indexOf(node.loc);
+                if (idx === -1) throw new Error(`node ${node.loc} not in parent ${parent.children}`);
+                if (idx > 0) {
+                    const next = parent.children[idx - 1];
+                    const sel = selectEnd(pathWithChildren(parentPath(path), next), top);
+                    if (!sel) return;
+                    return handleShiftNav({ top, sel: { start: sel } }, left ? 'ArrowLeft' : 'ArrowRight');
+                }
+            }
+        }
+
+        return expandShiftLeft(path, cursor, top);
+    }
+
     const text = cursor.text ?? splitGraphemes(node.text);
-    if (!left && cursor.end === text.length) throw new Error('rt not');
+    if (!left && cursor.end === text.length) {
+        if (cursor.start == null || cursor.start === cursor.end) {
+            const parent = top.nodes[parentLoc(path)];
+            if (parent.type === 'list' && parent.kind === 'smooshed') {
+                const idx = parent.children.indexOf(node.loc);
+                if (idx === -1) throw new Error(`node ${node.loc} not in parent ${parent.children}`);
+                if (idx < parent.children.length - 1) {
+                    const next = parent.children[idx + 1];
+                    const sel = selectStart(pathWithChildren(parentPath(path), next), top);
+                    if (!sel) return;
+                    return handleShiftNav({ top, sel: { start: sel } }, left ? 'ArrowLeft' : 'ArrowRight');
+                }
+            }
+        }
+        return expandShiftRight();
+    }
     // left--
     return justSel(path, { ...cursor, start: cursor.start ?? cursor.end, end: cursor.end + (left ? -1 : 1) });
 };

@@ -19,7 +19,13 @@ buuut is it gonna be super hard to track sub-purities? mayyybe
 - [x] up/down got it
   - [x] the 'pullToHoriz' thing, make it happen
 - [ ] hmmmmultiselect ok w/ path keys memoized
+  - [ ] shift left/right, it'll be fine
   - [ ] shift up/down thx
+
+
+I ... have strayed far from the testing path.
+butttt things that rely in clicks are tricker to test, right?
+mayyybe.
 
 
 # Hrmrgrm ok I think I need really good tests for my dsl

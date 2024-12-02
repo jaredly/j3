@@ -3,7 +3,7 @@ import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleKey } from './handleKey';
 import { handleShiftNav, handleSpecial } from './handleShiftNav';
-import { asTop, id, idc, lisp, text, textc, textcs, tspan } from './test-utils';
+import { asTop, id, idc, lisp, smoosh, text, textc, textcs, tspan } from './test-utils';
 import { Cursor } from './utils';
 
 const run = (name: string, [init, cursor]: [RecNodeT<boolean>, Cursor], key: string, [exp, ecursor]: [RecNodeT<boolean>, Cursor]) => {
@@ -28,6 +28,18 @@ test('id shift-left and write', () => {
     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
     state = applyUpdate(state, handleKey(state, 'M', lisp));
     check(state, id('hiMo', true), idc(3));
+});
+
+test('id at smoosh boundary', () => {
+    let state = asTop(smoosh([id('ab', true), id('+')]), idc(2));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    check(state, smoosh([id('ab'), id('+', true)]), idc(1, 0));
+});
+
+test('id at smoosh boundary left', () => {
+    let state = asTop(smoosh([id('ab'), id('+', true)]), idc(0));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
+    check(state, smoosh([id('ab', true), id('+')]), idc(1, 2));
 });
 
 test('bold no shift', () => {
@@ -93,4 +105,18 @@ test('style across spans', () => {
         ),
         textcs(2, 1, 1, 0),
     );
+});
+
+// MARK: text shift
+
+test('right across span', () => {
+    let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(0, 2));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    check(state, text([tspan('ab'), tspan('cd')], true), textcs(1, 1, 0, 2));
+});
+
+test('left across span', () => {
+    let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(1, 0));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
+    check(state, text([tspan('ab'), tspan('cd')], true), textcs(0, 1, 1, 0));
 });
