@@ -4,16 +4,18 @@ import { applyUpdate } from '../applyUpdate';
 import { init, TestState } from '../test-utils';
 
 import { useLocalStorage } from '../../../web/Debug';
-import { Loc, Style } from '../../shared/cnodes';
-import { parse, show } from '../../syntaxes/dsl';
+import { childLocs, Loc, Style } from '../../shared/cnodes';
+import { parse, show, Span } from '../../syntaxes/dsl';
 import { ctx, matchers, toXML } from '../../syntaxes/gleam2';
 import { nodeToXML, XML } from '../../syntaxes/xml';
 import { root } from '../root';
-import { lastChild, NodeSelection, Path, pathKey, pathWithChildren, Top } from '../utils';
+import { lastChild, NodeSelection, Path, pathKey, pathWithChildren, Top, Update } from '../utils';
 import { keyUpdate } from './keyUpdate';
 import { RenderNode } from './RenderNode';
 import { posDown, posUp } from './selectionPos';
 import { ShowXML } from './XML';
+import { selectStart } from '../handleNav';
+import { selEnd } from '../handleShiftNav';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -152,7 +154,17 @@ export const App = () => {
                 />
             </div>
             {JSON.stringify(state.sel)}
-            {xml ? <XMLShow xml={xml} state={state} refs={refs} spans={c.spans} /> : null}
+            {xml ? (
+                <XMLShow
+                    xml={xml}
+                    state={state}
+                    refs={refs}
+                    spans={gleam.spans}
+                    dispatch={(up) => {
+                        setState((s) => applyUpdate(s, up));
+                    }}
+                />
+            ) : null}
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
                 <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                     <h3>CST</h3>
@@ -187,17 +199,29 @@ const walxml = (xml: XML, f: (n: XML) => void) => {
     }
 };
 
-const XMLShow = ({ xml, refs, state, spans }: { spans: [Loc, Loc][]; state: TestState; xml: XML; refs: Record<string, HTMLElement> }) => {
-    const alls = useMemo(() => {
-        const lst: XML[] = [];
-        walxml(xml, (m) => {
-            if (!m.src) return;
-            if (m.src.right || state.top.nodes[m.src.left[0].idx].type !== 'id') {
-                lst.push(m);
-            }
-        });
-        return lst;
-    }, [xml, state]);
+const XMLShow = ({
+    xml,
+    refs,
+    state,
+    spans,
+    dispatch,
+}: {
+    spans: { start: Loc; end?: Loc }[];
+    state: TestState;
+    xml: XML;
+    refs: Record<string, HTMLElement>;
+    dispatch: (up: Update | void) => void;
+}) => {
+    // const alls = useMemo(() => {
+    //     const lst: XML[] = [];
+    //     walxml(xml, (m) => {
+    //         if (!m.src) return;
+    //         if (m.src.right || state.top.nodes[m.src.left[0].idx].type !== 'id') {
+    //             lst.push(m);
+    //         }
+    //     });
+    //     return lst;
+    // }, [xml, state]);
 
     const pos = (loc: Loc, right?: Loc): [number, number] | null => {
         const lf = refs[loc[0].idx];
@@ -214,58 +238,80 @@ const XMLShow = ({ xml, refs, state, spans }: { spans: [Loc, Loc][]; state: Test
 
     const calc = () => {
         const posed = spans
-            .map(([left, right]) => {
-                if (left === right) return null;
-                const sides = pos(left, right);
+            .map(({ start, end }) => {
+                if (!end) return null;
+                const sides = pos(start, end);
                 if (!sides) return null;
-                return { sides };
+                return { sides, span: { start, end } };
             })
-            .filter(Boolean) as { sides: [number, number]; node: XML }[];
+            .filter(Boolean) as { sides: [number, number]; node?: XML; span: Span }[];
         posed.sort((a, b) => a.sides[1] - a.sides[0] - (b.sides[1] - b.sides[0]));
 
-        const placed: { node: XML; sides: [number, number] }[][] = [[]];
-        posed.forEach(({ node, sides }) => {
+        const placed: { node?: XML; sides: [number, number]; span: Span }[][] = [[]];
+        posed.forEach(({ node, sides, span }) => {
             for (let i = 0; i < placed.length; i++) {
                 const row = placed[i];
                 if (!row.some((one) => collides(one.sides, sides))) {
-                    row.push({ node, sides });
+                    row.push({ node, sides, span });
                     return;
                 }
             }
-            placed.push([{ node, sides }]);
+            placed.push([{ node, sides, span }]);
         });
         return placed;
     };
-    const [placed, setPlaced] = useState<{ node: XML; sides: [number, number] }[][]>([]);
+    const [placed, setPlaced] = useState<{ node?: XML; sides: [number, number]; span: Span }[][]>([]);
     useLayoutEffect(() => {
         // setTimeout(() => {
         setPlaced(calc());
         // }, 10);
     }, [state, xml]);
 
+    const h = 14;
+
     return (
         <div>
             {placed.map((row, i) => {
                 return (
-                    <div key={i} style={{ position: 'relative', height: 6 }}>
-                        {row.map(({ node, sides }, j) => {
+                    <div key={i} style={{ position: 'relative', height: h + 2 }}>
+                        {row.map(({ node, sides, span }, j) => {
                             return (
                                 <div
                                     key={j}
+                                    onClick={() => {
+                                        const all = allPaths(state.top);
+                                        const st = all[span.start[0].idx];
+                                        if (!span.end) {
+                                            return;
+                                        }
+                                        const ssel = selectStart(st, state.top);
+                                        if (!ssel) return;
+
+                                        const ed = all[span.end[0].idx];
+                                        dispatch({
+                                            nodes: {},
+                                            selection: {
+                                                start: ssel,
+                                                end: selEnd(ed),
+                                            },
+                                        });
+                                        console.log(span, all[span.start[0].idx]);
+                                        state.top;
+                                    }}
                                     style={{
                                         position: 'absolute',
                                         left: sides[0],
                                         width: sides[1] - sides[0],
                                         backgroundColor: 'rgba(200,200,255)',
                                         marginTop: 2,
-                                        height: 4,
+                                        height: h,
                                         // height: 4,
                                         // fontSize: 8,
                                         borderRadius: 4,
                                         // padding: 2,
                                     }}
                                 >
-                                    {/* {node.tag} */}
+                                    {node?.tag}
                                 </div>
                             );
                         })}
@@ -283,4 +329,18 @@ const collides = (one: [number, number], two: [number, number]) => {
         (two[0] < one[0] && two[1] > one[0]) ||
         (two[0] < one[1] && two[1] > one[1])
     );
+};
+
+const allPaths = (top: Top) => {
+    const paths: Record<number, Path> = {};
+    const add = (id: number, parent: Path) => {
+        const path = pathWithChildren(parent, id);
+        paths[id] = path;
+
+        const node = top.nodes[id];
+        const children = childLocs(node);
+        children.forEach((child) => add(child, path));
+    };
+    add(top.root, { children: [], root: { ids: [], top: '' } });
+    return paths;
 };

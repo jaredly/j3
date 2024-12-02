@@ -72,14 +72,20 @@ export type MatchError =
           sub: MatchParent['sub'];
       };
 type Data = { type: 'single'; value: any } | { type: 'named'; value: Record<string, any> };
-type MatchRes<T> = { result: null | { data: T; consumed: number }; good: Bag<RecNode>; bad: Bag<MatchError> };
+type MatchRes<T> = { result: null | { data: T; consumed: number }; good: Bag<RecNode>; bad: Bag<MatchError>; spans: Bag<{ start: Loc; end?: Loc }> };
 // const single = (value: any): Data => ({ type: 'single', value });
 // const ndata = (name: string, value: any): Data => ({ type: 'named', value: { [name]: value } });
-const fail = (matcher: Matcher<any>, node: RecNode): MatchRes<any> => ({ result: null, good: [], bad: [{ type: 'mismatch', matcher, node }] });
+const fail = (matcher: Matcher<any>, node: RecNode): MatchRes<any> => ({
+    result: null,
+    good: [],
+    bad: [{ type: 'mismatch', matcher, node }],
+    spans: [],
+});
 const one = <T>(data: T, node: RecNode, good: Bag<RecNode> = [], bad: Bag<MatchError> = []): MatchRes<T> => ({
     result: { data, consumed: 1 },
     good: [node, good],
     bad,
+    spans: { start: node.loc },
 });
 
 export type Ctx = {
@@ -88,7 +94,6 @@ export type Ctx = {
     comment?: Matcher<any>;
     strictIds?: boolean;
     meta: Record<number, { kind: string }>;
-    spans: [Loc, Loc][];
 };
 
 /** We need to:
@@ -105,9 +110,12 @@ export const match = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at:
     // console.log(white(indent), 'enter', show(matcher));
     // indent++;
     const res = match_(matcher, ctx, parent, at, endOfExhaustive);
-    if (res.result && res.result.consumed) {
-        ctx.spans.push([parent.nodes[at].loc, parent.nodes[at + res.result.consumed - 1].loc]);
-    }
+    // if (res.result && res.result.consumed) {
+    //     // ctx.spans.push([parent.nodes[at].loc, parent.nodes[at + res.result.consumed - 1].loc]);
+    //     const span = { start: parent.nodes[at].loc, end: res.result.consumed > 1 ? parent.nodes[at + res.result.consumed - 1].loc : undefined };
+    //     res.spans = res.spans ? [res.spans, span] : span;
+    //     console.log(res.spans);
+    // }
     // res.result?.consumed
     // indent--;
     // if (res.result) {
@@ -122,9 +130,12 @@ export const match = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at:
     return res;
 };
 
+export type Span = { start: Loc; end?: Loc };
+
 export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at: number, endOfExhaustive?: boolean): MatchRes<T> => {
     const good: Bag<RecNode> = [];
     const bad: Bag<MatchError> = [];
+    const spans: Bag<Span> = [];
 
     // ah need to know if we're in a comment matcher right now folkx
     if (ctx.comment) {
@@ -168,7 +179,8 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                 // console.log('iinnner', nodes[at], matcher.items[i].type, res.good);
                 good.push(res.good);
                 bad.push(res.bad);
-                if (!res.result) return { result: null, bad, good }; // TODO: recovery pls? or something. like, try the next node?
+                spans.push(res.spans);
+                if (!res.result) return { result: null, bad, good, spans: [] }; // TODO: recovery pls? or something. like, try the next node?
                 at += res.result.consumed;
                 if (!res.result.data || typeof res.result.data !== 'object') {
                     // console.log('nota thing', res.result);
@@ -181,7 +193,10 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                     bad.push({ type: 'extra', node: parent.nodes[at], matcher });
                 }
             }
-            return { result: { data: matcher.f(value, parent.nodes.slice(init, at)), consumed: at - init }, good, bad };
+            if (at > init) {
+                spans.push({ start: parent.nodes[init].loc, end: parent.nodes[at - 1].loc });
+            }
+            return { result: { data: matcher.f(value, parent.nodes.slice(init, at)), consumed: at - init }, good, bad, spans };
         }
         case 'multi': {
             const init = at;
@@ -202,14 +217,18 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                 value.push(res.result.data);
                 good.push(res.good);
                 bad.push(res.bad);
+                spans.push(res.spans);
             }
-            return { result: { data: matcher.f(value, parent.nodes.slice(init, at)), consumed: at - init }, good, bad };
+            if (at > init) {
+                spans.push({ start: parent.nodes[init].loc, end: parent.nodes[at - 1].loc });
+            }
+            return { result: { data: matcher.f(value, parent.nodes.slice(init, at)), consumed: at - init }, good, bad, spans };
         }
         case 'opt': {
             const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
             return res.result
                 ? { ...res, result: { ...res.result, data: matcher.f(res.result.data) } }
-                : { result: { data: matcher.f(null), consumed: 0 }, good: [], bad: res.bad };
+                : { result: { data: matcher.f(null), consumed: 0 }, good: [], bad: res.bad, spans: [] };
         }
         case 'switch': {
             // Here's where we ... judge them?
@@ -223,27 +242,27 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             }
             misses.sort((a, b) => b.goods - a.goods);
             if (!misses[0].goods) {
-                return { result: null, good: [], bad: misses.map((m) => m.bad) };
+                return { result: null, good: [], bad: misses.map((m) => m.bad), spans: [] };
             }
-            return { result: null, good: misses[0].good, bad: misses[0].bad };
+            return { result: null, good: misses[0].good, bad: misses[0].bad, spans: [] };
         }
         case 'mref':
             return match(ctx.matchers[matcher.id], ctx, parent, at, endOfExhaustive);
+        case 'tx': {
+            const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
+            return { ...res, result: res.result ? { ...res.result, data: matcher.f(res.result.data) } : null };
+        }
     }
 
     if (at >= parent.nodes.length) {
-        return { good: [], bad: { type: 'missing', matcher, at, parent: parent.loc, sub: parent.sub }, result: null };
+        return { good: [], bad: { type: 'missing', matcher, at, parent: parent.loc, sub: parent.sub }, result: null, spans: [] };
     }
 
     // Then, we'll do "just one" matchers
     const node = parent.nodes[at];
     switch (matcher.type) {
         case 'any':
-            return { result: { data: matcher.f(node), consumed: 1 }, bad: [], good: [] };
-        case 'tx': {
-            const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
-            return { ...res, result: res.result ? { ...res.result, data: matcher.f(res.result.data) } : null };
-        }
+            return { result: { data: matcher.f(node), consumed: 1 }, bad: [], good: [], spans: { start: node.loc } };
         case 'id':
             if (node.type !== 'id' || ctx.kwds.includes(node.text)) return fail(matcher, node);
             if (node.text === '') return fail(matcher, node);
@@ -282,6 +301,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                 bad: inner.bad,
                 good: [inner.good, node],
                 result: inner.result ? { data: matcher.f(inner.result.data, node), consumed: 1 } : null,
+                spans: inner.result ? [inner.spans, { start: node.loc }] : [],
             };
         case 'table': {
             if (node.type !== 'table' || node.kind !== matcher.kind) return fail(matcher, node);
@@ -295,7 +315,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                 }
             }
             good.push(node);
-            return { good, bad, result: { consumed: 1, data: matcher.f(rows, node) } };
+            return { good, bad, result: { consumed: 1, data: matcher.f(rows, node) }, spans: { start: node.loc } };
         }
     }
 };
@@ -340,7 +360,8 @@ export const parse = <T>(matcher: Matcher<T>, node: RecNode, ctx: Ctx) => {
     const res = match(matcher, ctx, { nodes: [node], loc: [] }, 0, true);
     const goods = foldBag([] as RecNode[], res.good, (ar, n) => (ar.push(n), ar));
     const bads = foldBag([] as MatchError[], res.bad, (ar, n) => ((n.type !== 'missing' ? !goods.includes(n.node) : true) ? (ar.push(n), ar) : ar));
+    // console.log('the end', res.spans);
     if (res.result?.consumed === 0) throw new Error('node not consumed');
 
-    return { result: res.result?.data, goods, bads };
+    return { result: res.result?.data, goods, bads, spans: foldBag([] as { start: Loc; end?: Loc }[], res.spans ?? [], (ar, n) => (ar.push(n), ar)) };
 };
