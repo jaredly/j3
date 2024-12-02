@@ -1,10 +1,11 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, Text } from '../shared/cnodes';
+import { childLocs, Id, Node, Text } from '../shared/cnodes';
 import { spanLength } from './handleDelete';
 import { goLateral, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
 import { handleSpecialText } from './handleSpecialText';
 import { TestState } from './test-utils';
 import {
+    Cursor,
     getCurrent,
     IdCursor,
     lastChild,
@@ -21,9 +22,16 @@ import {
     Update,
 } from './utils';
 
+export const shiftExpand = (state: TestState): Update | void => {
+    const path = state.sel.end?.path ?? state.sel.start.path;
+    // TODO: use the parsed's stufffffff here too
+    const parent = parentPath(path);
+    return { nodes: {}, selection: { start: state.sel.start, end: selEnd(parent) } };
+};
+
 export const handleShiftNav = (state: TestState, key: string): Update | void => {
     if (state.sel.end) {
-        const next = goTabLateral(state.sel.end, state.top, key === 'ArrowLeft');
+        const next = nextLateral(state.sel.end, state.top, key === 'ArrowLeft');
         if (!next) return;
         return { nodes: {}, selection: { start: state.sel.start, end: next } };
     }
@@ -36,17 +44,42 @@ export const handleShiftNav = (state: TestState, key: string): Update | void => 
     }
 };
 
-export const expandShiftRight = (): Update | void => {};
+const isSmooshSpace = (node: Node) => {
+    return node.type === 'list' && (node.kind === 'smooshed' || node.kind === 'spaced');
+};
 
-export const expandLateral = (side: SelSide, top: Top, shift: boolean): Update | void => {
-    const next = goTabLateral(side, top, shift);
-    if (!next) return;
-    return { nodes: {}, selection: { start: side, end: next } };
+export const selEnd = (path: Path): SelSide => ({ path, key: pathKey(path) });
+
+export const nextLateral = (side: { path: Path }, top: Top, shift: boolean): SelSide | void => {
+    const parent = top.nodes[parentLoc(side.path)];
+    if (!parent) return;
+    if (parent.type === 'text') {
+        return selStart(parentPath(side.path), { type: 'list', where: shift ? 'before' : 'after' });
+    }
+    const cnodes = childLocs(parent);
+    const at = cnodes.indexOf(lastChild(side.path));
+    if (at === (shift ? 0 : cnodes.length - 1)) {
+        return selEnd(parentPath(side.path));
+        // if (isSmooshSpace(parent)) {
+        //     return nextLateral({ path: parentPath(side.path) }, top, shift);
+        // }
+        // return selStart(parentPath(side.path), { type: 'list', where: shift ? 'before' : 'after' });
+    }
+    const nxt = cnodes[at + (shift ? -1 : 1)];
+    const npath = pathWithChildren(parentPath(side.path), nxt);
+    return selEnd(npath);
+    // return shift ? selectStart(npath, top) : selectEnd(npath, top);
+};
+
+export const expandLateral = (side: SelStart, top: Top, shift: boolean): Update | void => {
+    const sel = nextLateral(side, top, shift);
+    return sel ? { nodes: {}, selection: { start: side, end: sel } } : undefined;
 };
 
 export type SelSide = NonNullable<NodeSelection['end']>;
+export type SelStart = NodeSelection['start'];
 
-export const goTabLateral = (side: SelSide, top: Top, shift: boolean): NodeSelection['start'] | void => {
+export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSelection['start'] | void => {
     const { path, cursor } = side;
     const node = top.nodes[lastChild(path)];
     if (node.type === 'list' && cursor.type === 'list') {
@@ -82,7 +115,8 @@ export const goTabLateral = (side: SelSide, top: Top, shift: boolean): NodeSelec
 };
 
 export const handleTab = (state: TestState, shift: boolean): Update | void => {
-    const next = goTabLateral(state.sel.end ?? state.sel.start, state.top, shift);
+    // if (state.sel.end)
+    const next = goTabLateral(state.sel.start, state.top, shift);
     return selUpdate(next);
 };
 

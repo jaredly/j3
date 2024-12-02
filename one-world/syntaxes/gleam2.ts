@@ -453,4 +453,5 @@ export const ctx = (): Ctx => ({
     kwds,
     comment: meta('comment', list('smooshed', sequence<any>([kwd('//', () => ({ type: 'comment' })), multi(any(idt), true, idt)], true, idt), idt)),
     meta: {},
+    spans: [],
 });

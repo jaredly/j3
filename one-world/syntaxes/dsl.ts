@@ -88,6 +88,7 @@ export type Ctx = {
     comment?: Matcher<any>;
     strictIds?: boolean;
     meta: Record<number, { kind: string }>;
+    spans: [Loc, Loc][];
 };
 
 /** We need to:
@@ -104,6 +105,10 @@ export const match = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at:
     // console.log(white(indent), 'enter', show(matcher));
     // indent++;
     const res = match_(matcher, ctx, parent, at, endOfExhaustive);
+    if (res.result && res.result.consumed) {
+        ctx.spans.push([parent.nodes[at].loc, parent.nodes[at + res.result.consumed - 1].loc]);
+    }
+    // res.result?.consumed
     // indent--;
     // if (res.result) {
     //     console.log(white(indent), 'match success', show(matcher), res.result.consumed);

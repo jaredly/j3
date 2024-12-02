@@ -152,7 +152,7 @@ export const App = () => {
                 />
             </div>
             {JSON.stringify(state.sel)}
-            {xml ? <XMLShow xml={xml} state={state} refs={refs} /> : null}
+            {xml ? <XMLShow xml={xml} state={state} refs={refs} spans={c.spans} /> : null}
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
                 <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                     <h3>CST</h3>
@@ -187,7 +187,7 @@ const walxml = (xml: XML, f: (n: XML) => void) => {
     }
 };
 
-const XMLShow = ({ xml, refs, state }: { state: TestState; xml: XML; refs: Record<string, HTMLElement> }) => {
+const XMLShow = ({ xml, refs, state, spans }: { spans: [Loc, Loc][]; state: TestState; xml: XML; refs: Record<string, HTMLElement> }) => {
     const alls = useMemo(() => {
         const lst: XML[] = [];
         walxml(xml, (m) => {
@@ -213,11 +213,12 @@ const XMLShow = ({ xml, refs, state }: { state: TestState; xml: XML; refs: Recor
     };
 
     const calc = () => {
-        const posed = alls
-            .map((node) => {
-                const sides = pos(node.src.left, node.src.right);
+        const posed = spans
+            .map(([left, right]) => {
+                if (left === right) return null;
+                const sides = pos(left, right);
                 if (!sides) return null;
-                return { sides, node };
+                return { sides };
             })
             .filter(Boolean) as { sides: [number, number]; node: XML }[];
         posed.sort((a, b) => a.sides[1] - a.sides[0] - (b.sides[1] - b.sides[0]));

@@ -105,11 +105,11 @@ const richNode = (node: Node | undefined) => {
     return node?.type === 'list' && isRich(node.kind);
 };
 
-export const goLateral = (path: Path, top: Top, left: boolean, tight = false): NodeSelection['start'] | void => {
-    return left ? goLeft(path, top, tight) : goRight(path, top, tight);
+export const goLateral = (path: Path, top: Top, left: boolean, tab = false): NodeSelection['start'] | void => {
+    return left ? goLeft(path, top, tab) : goRight(path, top, tab);
 };
 
-export const goLeft = (path: Path, top: Top, tight = false): NodeSelection['start'] | void => {
+export const goLeft = (path: Path, top: Top, tab = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const ploc = parentLoc(path);
     const pnode = top.nodes[ploc];
@@ -123,7 +123,8 @@ export const goLeft = (path: Path, top: Top, tight = false): NodeSelection['star
             }
             return selStart(parentPath(path), { type: 'list', where: 'before' });
         }
-        return selectEnd(pathWithChildren(parentPath(path), pnode.children[at - 1]), top, !tight && pnode.kind === 'smooshed');
+        const next = pathWithChildren(parentPath(path), pnode.children[at - 1]);
+        return selectEnd(next, top, !tab && pnode.kind === 'smooshed');
     }
     if (pnode.type === 'text') {
         const index = pnode.spans.findIndex((n) => n.type === 'embed' && n.item === loc);

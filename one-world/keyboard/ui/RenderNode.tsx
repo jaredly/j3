@@ -58,16 +58,20 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
 
     if (ctx.msel?.includes(key)) {
         if (!style) style = {};
-        style.background = 'rgb(255,100,100,0.5)';
         style.borderRadius = '2px';
-        style.outline = `2px solid rgb(255,100,100,0.5)`;
+        const color = 'rgb(255,200,200)';
+        // const color = 'rgb(255,100,100,0.5)';
+        style.background = color;
+        style.outline = `2px solid ${color}`;
     }
 
     if (state.sel.end?.key === key) {
         if (!style) style = {};
         style.borderRadius = '2px';
-        style.background = 'rgb(255,100,100)';
-        style.outline = '2px solid rgb(255,100,100)';
+        const color = 'rgb(255,100,100)';
+        style.background = color;
+        style.outline = `2px solid ${color}`;
+        style.position = 'relative';
     }
 
     const ref = (el: HTMLElement) => {
