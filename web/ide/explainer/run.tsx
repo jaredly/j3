@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
 
+// @ts-ignore
 window.root =
+    // @ts-ignore
     window.root ||
     createRoot(
         (() => {
@@ -13,4 +15,5 @@ window.root =
         })(),
     );
 
+// @ts-ignore
 window.root.render(<RouterProvider router={router} />);

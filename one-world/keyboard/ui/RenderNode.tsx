@@ -20,6 +20,7 @@ type RCtx = {
     refs: Record<number, HTMLElement>; // -1 gets you 'cursor' b/c why not
     styles: Record<number, Style>;
     dispatch: (up: Update) => void;
+    msel: null | string[];
 };
 
 const cursorPositionInSpanForEvt = (evt: React.MouseEvent, target: HTMLSpanElement, text: string[]) => {

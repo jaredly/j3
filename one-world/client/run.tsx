@@ -23,7 +23,9 @@ import { createBrowserRouter } from 'react-router-dom';
 //     },
 // ]);
 
+// @ts-ignore
 window.root =
+    // @ts-ignore
     window.root ||
     createRoot(
         (() => {

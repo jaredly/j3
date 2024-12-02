@@ -1,12 +1,32 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, Text } from '../shared/cnodes';
 import { spanLength } from './handleDelete';
-import { goLateral, goLeft, goRight, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
+import { goLateral, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
 import { handleSpecialText } from './handleSpecialText';
 import { TestState } from './test-utils';
-import { Cursor, getCurrent, IdCursor, lastChild, ListCursor, parentLoc, parentPath, Path, pathWithChildren, TextCursor, Top, Update } from './utils';
+import {
+    getCurrent,
+    IdCursor,
+    lastChild,
+    ListCursor,
+    NodeSelection,
+    parentLoc,
+    parentPath,
+    Path,
+    pathKey,
+    pathWithChildren,
+    selStart,
+    TextCursor,
+    Top,
+    Update,
+} from './utils';
 
 export const handleShiftNav = (state: TestState, key: string): Update | void => {
+    if (state.sel.end) {
+        const next = goTabLateral(state.sel.end, state.top, key === 'ArrowLeft');
+        if (!next) return;
+        return { nodes: {}, selection: { start: state.sel.start, end: next } };
+    }
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
         case 'id':
@@ -18,41 +38,52 @@ export const handleShiftNav = (state: TestState, key: string): Update | void => 
 
 export const expandShiftRight = (): Update | void => {};
 
-export const expandShiftLeft = (path: Path, cursor: Cursor, top: Top): Update | void => {};
+export const expandLateral = (side: SelSide, top: Top, shift: boolean): Update | void => {
+    const next = goTabLateral(side, top, shift);
+    if (!next) return;
+    return { nodes: {}, selection: { start: side, end: next } };
+};
 
-export const handleTab = (state: TestState, shift: boolean): Update | void => {
-    const { path, cursor } = state.sel.start;
-    const node = state.top.nodes[lastChild(path)];
+export type SelSide = NonNullable<NodeSelection['end']>;
+
+export const goTabLateral = (side: SelSide, top: Top, shift: boolean): NodeSelection['start'] | void => {
+    const { path, cursor } = side;
+    const node = top.nodes[lastChild(path)];
     if (node.type === 'list' && cursor.type === 'list') {
         // Maybe go inside?
         if (shift && cursor.where === 'after') {
             if (node.children.length === 0) {
-                return justSel(path, { type: 'list', where: 'inside' });
+                return selStart(path, { type: 'list', where: 'inside' });
             }
-            return selUpdate(selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), state.top));
+            return selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), top);
         } else if (!shift && cursor.where === 'before') {
             if (node.children.length === 0) {
-                return justSel(path, { type: 'list', where: 'inside' });
+                return selStart(path, { type: 'list', where: 'inside' });
             }
-            return selUpdate(selectStart(pathWithChildren(path, node.children[0]), state.top));
+            return selectStart(pathWithChildren(path, node.children[0]), top);
         }
     }
     if (cursor.type === 'list') {
         if (cursor.where === (shift ? 'before' : 'after')) {
             // check for smoosh
-            const parent = state.top.nodes[parentLoc(path)];
+            const parent = top.nodes[parentLoc(path)];
             if (parent?.type === 'list' && parent.kind === 'smooshed') {
                 const at = parent.children.indexOf(lastChild(path));
                 if (at !== (shift ? 0 : parent.children.length - 1)) {
                     // go double
-                    const next = goLateral(state.sel.start.path, state.top, shift, true);
-                    return selUpdate(next ? goLateral(next.path, state.top, shift, true) : next);
+                    const next = goLateral(path, top, shift, true);
+                    return next ? goLateral(next.path, top, shift, true) : next;
                 }
             }
         }
     }
 
-    return selUpdate(goLateral(state.sel.start.path, state.top, shift, true));
+    return goLateral(path, top, shift, true);
+};
+
+export const handleTab = (state: TestState, shift: boolean): Update | void => {
+    const next = goTabLateral(state.sel.end ?? state.sel.start, state.top, shift);
+    return selUpdate(next);
 };
 
 // TabLeft
@@ -73,7 +104,8 @@ export const handleShiftId = ({ node, path, cursor }: { node: Id<number>; path: 
             }
         }
 
-        return expandShiftLeft(path, cursor, top);
+        console.log('lateral');
+        return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
     }
 
     const text = cursor.text ?? splitGraphemes(node.text);
@@ -91,7 +123,7 @@ export const handleShiftId = ({ node, path, cursor }: { node: Id<number>; path: 
                 }
             }
         }
-        return expandShiftRight();
+        return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
     }
     // left--
     return justSel(path, { ...cursor, start: cursor.start ?? cursor.end, end: cursor.end + (left ? -1 : 1) });

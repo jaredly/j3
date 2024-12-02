@@ -22,7 +22,7 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
             return next ? { nodes: {}, selection: next } : undefined;
         }
     } else if (key === 'Tab') {
-        return handleTab(state, mods.shift);
+        return handleTab(state, !!mods.shift);
     } else if (mods.meta || mods.ctrl || mods.alt) {
         return handleSpecial(state, key, mods);
     } else if (splitGraphemes(key).length > 1) {

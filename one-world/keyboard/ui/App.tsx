@@ -4,18 +4,16 @@ import { applyUpdate } from '../applyUpdate';
 import { init, TestState } from '../test-utils';
 
 import { useLocalStorage } from '../../../web/Debug';
-import { shape } from '../../shared/shape';
-import { parse, show } from '../../syntaxes/dsl';
-import { ctx, kwds, matchers, toXML } from '../../syntaxes/gleam2';
-import { root } from '../root';
-import { RenderNode } from './RenderNode';
-import { ShowXML } from './XML';
-import { nodeToXML, XML } from '../../syntaxes/xml';
 import { Loc, Style } from '../../shared/cnodes';
+import { parse, show } from '../../syntaxes/dsl';
+import { ctx, matchers, toXML } from '../../syntaxes/gleam2';
+import { nodeToXML, XML } from '../../syntaxes/xml';
+import { root } from '../root';
+import { lastChild, NodeSelection, Path, pathKey, pathWithChildren, Top } from '../utils';
 import { keyUpdate } from './keyUpdate';
-import { getCurrent, lastChild, Top } from '../utils';
-import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { posDown, posUp, selectionPos } from './selectionPos';
+import { RenderNode } from './RenderNode';
+import { posDown, posUp } from './selectionPos';
+import { ShowXML } from './XML';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -25,12 +23,43 @@ const styleKinds: Record<string, Style> = {
     uop: { color: { r: 150, g: 0, b: 0 } },
 };
 
+const lastCommonAncestor = (one: number[], two: number[]) => {
+    let i = 0;
+    for (; i < one.length && i < two.length && one[i] === two[i]; i++);
+    return { common: one.slice(0, i), one: one[i + 1], two: two[i + 1] };
+};
+
+const multiSelChildren = (sel: NodeSelection, top: Top) => {
+    if (!sel.end) return null;
+    // so, we ... find the least common ancestor
+    if (sel.start.path.root.top !== sel.end.path.root.top) return null; // TODO multi-top life
+    let lca = lastCommonAncestor(sel.start.path.children, sel.end.path.children);
+    const parent: Path = { root: sel.start.path.root, children: lca.common };
+    if (lca.one == null || lca.two == null) {
+        return { parent, children: lca.one == null ? [lca.two] : [lca.one] };
+    }
+    const pnode = top.nodes[lastChild(parent)];
+    if (pnode.type !== 'list') return null; // not strings or stuff just yet sry
+    const one = pnode.children.indexOf(lca.one);
+    const two = pnode.children.indexOf(lca.two);
+    const left = one < two ? one : two;
+    const right = one < two ? two : one;
+    return { parent, children: pnode.children.slice(left, right + 1) };
+};
+
+const multiSelKeys = (parent: Path, children: number[]) => {
+    return children.map((child) => pathKey(pathWithChildren(parent, child)));
+};
+
 export const App = () => {
     const [state, setState] = useLocalStorage('nuniiverse', () => init);
 
     const cstate = useLatest(state);
     // @ts-ignore
     window.state = state;
+
+    const msel = multiSelChildren(state.sel, state.top);
+    const mkeys = msel ? multiSelKeys(msel.parent, msel.children) : null;
 
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
@@ -44,7 +73,6 @@ export const App = () => {
                         return nxt ? { start: nxt } : null;
                     },
                     down(sel) {
-                        // return null;
                         const nxt = posDown(sel, cstate.current.top, refs);
                         return nxt ? { start: nxt } : null;
                     },
@@ -116,13 +144,14 @@ export const App = () => {
                         errors,
                         refs,
                         styles,
+                        msel: mkeys,
                         dispatch(up) {
                             setState((s) => applyUpdate(s, up));
                         },
                     }}
                 />
             </div>
-            {/* {JSON.stringify(state.sel.start)} */}
+            {JSON.stringify(state.sel)}
             {xml ? <XMLShow xml={xml} state={state} refs={refs} /> : null}
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
                 <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
