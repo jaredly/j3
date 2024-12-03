@@ -6,7 +6,7 @@ import { init, TestState } from '../test-utils';
 import { useLocalStorage } from '../../../web/Debug';
 import { childLocs, Loc, Style } from '../../shared/cnodes';
 import { parse, show, Span } from '../../syntaxes/dsl';
-import { ctx, matchers, toXML } from '../../syntaxes/gleam2';
+import { ctx, matchers, Src, stmtSpans, toXML } from '../../syntaxes/gleam2';
 import { nodeToXML, XML } from '../../syntaxes/xml';
 import { root } from '../root';
 import { lastChild, NodeSelection, Path, pathKey, pathWithChildren, Top, Update } from '../utils';
@@ -114,6 +114,8 @@ export const App = () => {
         }
     });
 
+    const spans: Src[] = gleam.result ? stmtSpans(gleam.result) : [];
+
     // const [ps, sps] = useState(null as null | { left: number; top: number; height: number });
     // useLayoutEffect(() => {
     //     const msp = selectionPos(state.sel, refs, state.top);
@@ -158,7 +160,7 @@ export const App = () => {
                     xml={xml}
                     state={state}
                     refs={refs}
-                    // spans={gleam.spans}
+                    spans={spans}
                     dispatch={(up) => {
                         setState((s) => applyUpdate(s, up));
                     }}
@@ -188,6 +190,7 @@ export const App = () => {
         </div>
     );
 };
+
 const walxml = (xml: XML, f: (n: XML) => void) => {
     f(xml);
     if (xml.children) {
@@ -203,10 +206,10 @@ const XMLShow = ({
     xml,
     refs,
     state,
-    // spans,
+    spans,
     dispatch,
 }: {
-    // spans: { start: Loc; end?: Loc }[];
+    spans: Src[];
     state: TestState;
     xml: XML;
     refs: Record<string, HTMLElement>;
@@ -237,18 +240,19 @@ const XMLShow = ({
     };
 
     const calc = () => {
-        const posed = alls
-            .map((node) => {
-                const { left, right } = node.src;
+        const posed = spans
+            .map((src) => {
+                const { left, right } = src;
+                // const { left, right } = node.src;
                 if (!right) return null;
                 const sides = pos(left, right);
                 if (!sides) return null;
-                return { sides, span: { start: left, end: right } };
+                return { sides, span: { left, right } };
             })
-            .filter(Boolean) as { sides: [number, number]; node?: XML; span: Span }[];
+            .filter(Boolean) as { sides: [number, number]; node?: XML; span: Src }[];
         posed.sort((a, b) => a.sides[1] - a.sides[0] - (b.sides[1] - b.sides[0]));
 
-        const placed: { node?: XML; sides: [number, number]; span: Span }[][] = [[]];
+        const placed: { node?: XML; sides: [number, number]; span: Src }[][] = [[]];
         posed.forEach(({ node, sides, span }) => {
             for (let i = 0; i < placed.length; i++) {
                 const row = placed[i];
@@ -261,7 +265,7 @@ const XMLShow = ({
         });
         return placed;
     };
-    const [placed, setPlaced] = useState<{ node?: XML; sides: [number, number]; span: Span }[][]>([]);
+    const [placed, setPlaced] = useState<{ node?: XML; sides: [number, number]; span: Src }[][]>([]);
     useLayoutEffect(() => {
         // setTimeout(() => {
         setPlaced(calc());
@@ -281,14 +285,14 @@ const XMLShow = ({
                                     key={j}
                                     onClick={() => {
                                         const all = allPaths(state.top);
-                                        const st = all[span.start[0].idx];
-                                        if (!span.end) {
+                                        const st = all[span.left[0].idx];
+                                        if (!span.right) {
                                             return;
                                         }
                                         const ssel = selectStart(st, state.top);
                                         if (!ssel) return;
 
-                                        const ed = all[span.end[0].idx];
+                                        const ed = all[span.right[0].idx];
                                         dispatch({
                                             nodes: {},
                                             selection: {
@@ -296,7 +300,7 @@ const XMLShow = ({
                                                 end: selEnd(ed),
                                             },
                                         });
-                                        console.log(span, all[span.start[0].idx]);
+                                        console.log(span, all[span.left[0].idx]);
                                         state.top;
                                     }}
                                     style={{
