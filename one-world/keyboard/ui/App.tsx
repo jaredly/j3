@@ -122,7 +122,6 @@ export const App = () => {
 
     const clickSrc = (src: Src | null) => {
         if (!src) return;
-        console.log('clikc src', src);
         const l = paths[src.left[0].idx];
         const start = selectStart(l, state.top);
         if (!start) return;

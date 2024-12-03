@@ -3,9 +3,10 @@ import { Node } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { cursorSplit } from './cursorSplit';
 import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
+import { braced } from './handleListKey';
 import { Config, textKind } from './insertId';
 import { flatToUpdateNew, flatten } from './rough';
-import { Cursor, IdCursor, Path, Top, Update, lastChild, parentPath, selStart } from './utils';
+import { Cursor, IdCursor, Path, Top, Update, lastChild, parentLoc, parentPath, selStart } from './utils';
 
 export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update => {
     let current = top.nodes[lastChild(path)];
@@ -29,7 +30,16 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
         }
     }
 
+    const pnode = top.nodes[parentLoc(path)];
+    if (pnode?.type === 'list' && braced(pnode) && pnode.children.length === 1 && !pnode.forceMultiline) {
+        const chars = cursor.text?.slice() ?? splitGraphemes(current.text);
+        if (chars.length === 0) {
+            return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: true } } };
+        }
+    }
+
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
+
     const flat = parent ? flatten(parent.node, top) : [current];
     const at = flat.indexOf(current);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
@@ -43,10 +53,9 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
 
     const split = cursorSplit(current.text, cursor);
 
-    // console.log('before', flat);
     const neighbor: Flat =
         kind === 'sep'
-            ? { type: 'sep', loc: -1 }
+            ? { type: 'sep', loc: -1, multiLine: grem === '\n' }
             : kind === 'space'
             ? { type: 'space', loc: -1 }
             : kind === 'string'

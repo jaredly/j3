@@ -106,6 +106,9 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             return sel ? { nodes: {}, selection: { start: sel } } : undefined;
         }
         if (node.type === 'id' && node.text === '' && pnode.children.length === 1) {
+            if (pnode.forceMultiline) {
+                return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: false } } };
+            }
             return removeSelf(state, { path: parent, node: pnode });
             // // HERG got to check grandparent smoosh here folks
             // const up = replaceAt(parentPath(parent).children, state.top, pnode.loc, node.loc);

@@ -75,9 +75,10 @@ export const id = <T>(text: string, loc: T = null as T, config = lisp, ref?: IdR
 });
 export const list =
     (kind: ListKind<RecNodeT<unknown>>) =>
-    <T>(children: RecNodeT<T>[], loc: T = null as T): RecNodeT<T> => ({
+    <T>(children: RecNodeT<T>[], loc: T = null as T, forceMultiline?: boolean): RecNodeT<T> => ({
         type: 'list',
         kind: kind as ListKind<RecNodeT<T>>,
+        forceMultiline,
         children,
         loc,
     });

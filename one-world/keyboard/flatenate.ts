@@ -34,7 +34,7 @@ import { Cursor, Path, Top, lastChild, parentPath } from './utils';
 export const listKindForKeyKind = (kind: Kind): 0 | 1 | 2 => (kind === 'sep' ? OTHER : kind === 'space' ? SPACED : SMOOSH);
 
 // TODO add like rsmoosh and lsmoosh, to track the locs of the smooshes
-export type Flat = Node | { type: 'space'; loc: number } | { type: 'smoosh'; loc: number } | { type: 'sep'; loc: number };
+export type Flat = Node | { type: 'space'; loc: number } | { type: 'smoosh'; loc: number } | { type: 'sep'; loc: number; multiLine?: boolean };
 
 /*
 kind:

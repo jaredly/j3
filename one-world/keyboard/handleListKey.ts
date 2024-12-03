@@ -5,10 +5,22 @@ import { Config, textKind } from './insertId';
 import { flatten, flatToUpdateNew } from './rough';
 import { Top, Path, CollectionCursor, Update, lastChild, selStart, pathWithChildren, parentPath, Cursor } from './utils';
 
+export const braced = (node: Node) => node.type !== 'list' || (node.kind !== 'smooshed' && node.kind !== 'spaced');
+
 export const handleListKey = (config: Config, top: Top, path: Path, cursor: CollectionCursor, grem: string): Update | void => {
     const current = top.nodes[lastChild(path)];
     const kind = textKind(grem, config);
     if (cursor.type !== 'list') throw new Error('controls not handled yet');
+
+    if (grem === '\n' && braced(current) && current.type === 'list' && !current.forceMultiline && cursor.where === 'inside') {
+        let nextLoc = top.nextLoc;
+        const loc = nextLoc++;
+        return {
+            nodes: { [current.loc]: { ...current, forceMultiline: true, children: [loc] }, [loc]: { type: 'id', text: '', loc } },
+            nextLoc,
+            selection: { start: selStart(pathWithChildren(path, loc), { type: 'id', end: 0 }) },
+        };
+    }
 
     if (cursor.where === 'inside') {
         if (current.type === 'text') {

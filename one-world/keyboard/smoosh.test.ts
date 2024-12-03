@@ -4,6 +4,7 @@ import { fromMap, RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
+import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
 import { asTop, id, idc, js, lisp, listc, round, smoosh, spaced, text } from './test-utils';
@@ -216,4 +217,28 @@ test('after list', () => {
     let state = asTop(round([id('')], true), listc('after'));
     state = applyUpdate(state, handleKey(state, 'a', js));
     check(state, smoosh([round([id('')]), id('a', true)]), idc(1));
+});
+
+test('newline list', () => {
+    let state = asTop(round([], true), listc('inside'));
+    state = applyUpdate(state, handleKey(state, '\n', js));
+    check(state, round([id('', true)], false, true), idc(0));
+});
+
+test('newline list id', () => {
+    let state = asTop(round([id('', true)]), idc(0));
+    state = applyUpdate(state, handleKey(state, '\n', js));
+    check(state, round([id('', true)], false, true), idc(0));
+});
+
+test('newline list 2', () => {
+    let state = asTop(round([id('a', true)]), idc(1));
+    state = applyUpdate(state, handleKey(state, '\n', js));
+    check(state, round([id('a'), id('', true)], false, true), idc(0));
+});
+
+test('backspace in multiline unforces it', () => {
+    let state = asTop(round([id('', true)], false, true), idc(0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([id('', true)]), idc(0));
 });

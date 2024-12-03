@@ -8,16 +8,17 @@ export const shape = (node: RecNodeT<unknown>): string => {
             }
             return `id(${node.text}${node.ccls != null ? '/' + node.ccls : ''})`;
         case 'list':
+            const ml = node.forceMultiline ? '/ML' : '';
             if (node.kind === 'round') {
-                return `(${node.children.map(shape).join(' ')})`;
+                return `(${node.children.map(shape).join(' ')}${ml})`;
             }
             if (node.kind === 'square') {
-                return `[${node.children.map(shape).join(' ')}]`;
+                return `[${node.children.map(shape).join(' ')}${ml}]`;
             }
             if (typeof node.kind === 'string') {
-                return `list[${node.kind}](${node.children.map(shape).join(' ')})`;
+                return `list[${node.kind}](${node.children.map(shape).join(' ')}${ml})`;
             }
-            return `list[${node.kind.type}](${node.children.map(shape).join(' ')})`;
+            return `list[${node.kind.type}](${node.children.map(shape).join(' ')}${ml})`;
         case 'table':
             return `table...`;
         case 'text':

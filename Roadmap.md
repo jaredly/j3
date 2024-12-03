@@ -10,6 +10,8 @@ ALSO it means we get placeholders without explicitly autocompleting it up.
 - [ ] \n should set forceMultiline
 - [ ] \n in an empty list (inside) shouldn't create a double child
 
+- [ ] mutliselect doesn't actually do any useful editing yet tho
+
 OK and then let's really get Tables and Rich Lists going
 buuut first ok we need scads of tests to bring coverage uppp.
 

@@ -32,6 +32,8 @@ export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
 
     let sloc: number | null = null;
 
+    let forceMultiline = false;
+
     const other: number[] = [];
     for (let i = 0; i < flat.length; i++) {
         const children: number[] = [];
@@ -86,6 +88,11 @@ export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
             if (i < flat.length && flat[i].type === 'sep') break;
         }
 
+        const that = flat[i];
+        if (that && that.type === 'sep' && that.multiLine) {
+            forceMultiline = true;
+        }
+
         if (children.length === 1) {
             other.push(children[0]);
         } else {
@@ -116,7 +123,7 @@ export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
         const parent = top.nodes[outer];
         if (parent.type !== 'list') throw new Error(`outer not a list`);
         if (parent.kind !== 'spaced' && parent.kind !== 'smooshed') {
-            nodes[outer] = { ...parent, children: other };
+            nodes[outer] = { ...parent, children: other, forceMultiline: parent.forceMultiline || forceMultiline };
             root = outer;
         }
     }
