@@ -9,7 +9,7 @@ import { parse, show, Span } from '../../syntaxes/dsl';
 import { ctx, matchers, stmtSpans, toXML } from '../../syntaxes/gleam2';
 import { nodeToXML, XML } from '../../syntaxes/xml';
 import { root } from '../root';
-import { Update } from '../utils';
+import { lastChild, NodeSelection, selStart, Update } from '../utils';
 import { keyUpdate } from './keyUpdate';
 import { RenderNode } from './RenderNode';
 import { posDown, posUp } from './selectionPos';
@@ -32,8 +32,13 @@ export const App = () => {
     // @ts-ignore
     window.state = state;
 
+    const [hover, setHover] = useState(null as null | NodeSelection);
+
     const msel = multiSelChildren(state.sel, state.top);
     const mkeys = msel ? multiSelKeys(msel.parent, msel.children) : null;
+
+    const mhover = hover ? multiSelChildren(hover, state.top) : null;
+    const hoverkeys = mhover ? multiSelKeys(mhover.parent, mhover.children) : null;
 
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
@@ -90,28 +95,36 @@ export const App = () => {
     const spans: Src[] = gleam.result ? stmtSpans(gleam.result) : [];
     const cspans = useLatest(spans);
 
-    // const [ps, sps] = useState(null as null | { left: number; top: number; height: number });
-    // useLayoutEffect(() => {
-    //     const msp = selectionPos(state.sel, refs, state.top);
-    //     sps(msp);
-    // }, [state.sel, state.top]);
+    const paths = useMemo(() => allPaths(state.top), [state.top]);
+    const hoverSrc = (src: Src | null) => {
+        if (!src) return setHover(null);
+        const l = paths[src.left[0].idx];
+        if (!src.right)
+            return setHover({
+                start: selStart(l, { type: 'list', where: 'before' }),
+                multi: { end: selEnd(l), aux: selEnd(l) },
+            });
+        const r = paths[src.right[0].idx];
+        return setHover({
+            start: selStart(l, { type: 'list', where: 'before' }),
+            multi: { end: selEnd(r) },
+        });
+    };
+
+    const clickSrc = (src: Src | null) => {
+        if (!src) return;
+        const l = paths[src.left[0].idx];
+        const start = selectStart(l, state.top);
+        if (!start) return;
+        if (!src.right) {
+            return setState((s) => applyUpdate(s, { nodes: {}, selection: { start, multi: { end: selEnd(l) } } }));
+        }
+        const r = paths[src.right[0].idx];
+        return setState((s) => applyUpdate(s, { nodes: {}, selection: { start, multi: { end: selEnd(r) } } }));
+    };
 
     return (
         <div style={{ display: 'flex', inset: 0, position: 'absolute', flexDirection: 'column' }}>
-            {/* {ps ? (
-                <div
-                    style={{
-                        position: 'absolute',
-                        top: ps.top,
-                        left: ps.left,
-                        width: 3,
-                        height: ps.height,
-                        background: 'red',
-                        pointerEvents: 'none',
-                    }}
-                />
-            ) : null} */}
-
             <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, paddingBottom: 0, minHeight: 0 }}>
                 <RenderNode
                     loc={state.top.root}
@@ -123,32 +136,25 @@ export const App = () => {
                         refs,
                         styles,
                         msel: mkeys,
+                        mhover: hoverkeys,
                         dispatch(up) {
                             setState((s) => applyUpdate(s, up));
                         },
                     }}
                 />
             </div>
-            {xml ? (
-                <XMLShow
-                    xml={xml}
-                    state={state}
-                    refs={refs}
-                    spans={spans}
-                    dispatch={(up) => {
-                        setState((s) => applyUpdate(s, up));
-                    }}
-                />
-            ) : null}
-            {JSON.stringify(state.sel)}
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
                 <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                     <h3>CST</h3>
-                    <ShowXML root={xmlcst} />
+                    <ShowXML root={xmlcst} onClick={clickSrc} setHover={hoverSrc} sel={msel?.children ?? [lastChild(state.sel.start.path)]} />
                 </div>
                 <div style={{ flex: 3, overflow: 'auto', padding: 25 }}>
                     <h3>AST</h3>
-                    {xml ? <ShowXML root={xml} /> : 'NO xml'}
+                    {xml ? (
+                        <ShowXML root={xml} onClick={clickSrc} setHover={hoverSrc} sel={msel?.children ?? [lastChild(state.sel.start.path)]} />
+                    ) : (
+                        'NO xml'
+                    )}
                     <div style={{ marginTop: 50, whiteSpace: 'pre-wrap' }}>
                         {gleam.bads.map((er, i) => (
                             <div key={i} style={{ color: 'red' }}>

@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { XML } from '../../syntaxes/xml';
 import React from 'react';
+import { NodeSelection, Top } from '../utils';
+import { allPaths, Src } from '../handleShiftNav';
+import { Loc } from '../../shared/cnodes';
 
 type Path = (string | number)[];
 type State = { pinned: Path[]; expanded: Path[]; extra: number };
@@ -19,9 +22,44 @@ const attrs = (v: Record<string, any>) => {
         .join(' ');
 };
 
-export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State; path: Path; toggle: (p: Path) => void }) => {
+const tagStyle = {
+    cursor: 'pointer',
+    //
+    // backgroundColor: 'rgb(200,200,255)',
+    color: 'rgb(50, 50, 200)',
+    borderRadius: 4,
+    width: 'fit-content',
+};
+
+export const XMLNode = ({
+    sel,
+    parentSelected,
+    node,
+    state,
+    path,
+    toggle,
+    setHover,
+    onClick,
+}: {
+    setHover: (hover: null | Src) => void;
+    onClick: (src: null | Src) => void;
+    parentSelected?: boolean;
+    sel: number[];
+    node: XML;
+    state: State;
+    path: Path;
+    toggle: (p: Path) => void;
+}) => {
     const open = state.expanded.some((p) => pstartsWith(path, p, state.extra)) || state.pinned.some((p) => peq(p, path));
     const exact = state.expanded.some((p) => peq(p, path));
+
+    const selected = parentSelected || (sel.includes(node.src.left[0].idx) && (!node.src.right || sel.includes(node.src.right[0].idx)));
+
+    const style = { ...tagStyle, background: 'transparent' };
+    if (selected) {
+        style.background = 'rgb(200,230,255)';
+    }
+
     if (!open) {
         const pc = state.pinned.filter((p) => pstartsWith(p, path, Infinity));
         if (pc.length) {
@@ -30,8 +68,15 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
             // </>
         }
         return (
-            <div onClick={() => toggle(path)} style={{ display: 'flex', cursor: 'pointer' }}>
-                <div style={{ width: 10 }}></div>
+            <div
+                onClick={() => onClick(node.src)}
+                style={{ display: 'flex', ...style }}
+                onMouseOver={() => setHover(node.src)}
+                onMouseOut={() => setHover(null)}
+            >
+                <div style={{ width: 10 }} onClick={() => toggle(path)}>
+                    -
+                </div>
                 <div>
                     &lt;{node.tag}
                     {node.attrs ? ' ' + attrs(node.attrs) : ''}
@@ -43,8 +88,15 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
 
     if (!node.children) {
         return (
-            <div onClick={() => toggle(path)} style={{ display: 'flex', cursor: 'pointer' }}>
-                <div style={{ width: 10 }}>{exact ? '•' : ''}</div>
+            <div
+                onClick={() => onClick(node.src)}
+                style={{ display: 'flex', ...style }}
+                onMouseOver={() => setHover(node.src)}
+                onMouseOut={() => setHover(null)}
+            >
+                <div style={{ width: 10 }} onClick={() => toggle(path)}>
+                    {exact ? '•' : ''}
+                </div>
                 <div>
                     &lt;{node.tag}
                     {node.attrs ? ' ' + attrs(node.attrs) : ''} /&gt;
@@ -55,19 +107,25 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
 
     return (
         <div>
-            <div onClick={() => toggle(path)} style={{ display: 'flex', cursor: 'pointer' }}>
-                <div style={{ width: 10 }}>{exact ? '•' : ''}</div>
+            <div
+                style={{ display: 'flex', ...style }}
+                onMouseOver={() => setHover(node.src)}
+                onMouseOut={() => setHover(null)}
+                onClick={() => onClick(node.src)}
+            >
+                <div style={{ width: 10 }} onClick={() => toggle(path)}>
+                    {exact ? '•' : ''}
+                </div>
                 &lt;{node.tag}
                 {node.attrs ? ' ' + attrs(node.attrs) : ''}&gt;
             </div>
             <div style={{ paddingLeft: 24, display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: 8 }}>
-                {/* {node.attrs ? <div style={{ gridColumnStart: 1, gridColumnEnd: 2 }}>{JSON.stringify(node.attrs)}</div> : null} */}
                 {node.children
                     ? Object.entries(node.children).map(([key, value]) =>
                           value === undefined ? null : (
                               <React.Fragment key={key}>
                                   {key !== 'children' ? (
-                                      <div style={{ gridColumn: 1 }}>
+                                      <div style={{ gridColumn: 1, fontWeight: 'bold' }}>
                                           {key}
                                           {Array.isArray(value) ? '[]' : ''}
                                       </div>
@@ -75,10 +133,29 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
                                   <div style={key === 'children' ? { gridColumnStart: 1, gridColumnEnd: 2 } : { gridColumn: 2 }}>
                                       {Array.isArray(value) ? (
                                           value.map((item, i) => (
-                                              <XMLNode key={i} node={item} state={state} path={path.concat([key, i])} toggle={toggle} />
+                                              <XMLNode
+                                                  key={i}
+                                                  parentSelected={selected}
+                                                  onClick={onClick}
+                                                  sel={sel}
+                                                  setHover={setHover}
+                                                  node={item}
+                                                  state={state}
+                                                  path={path.concat([key, i])}
+                                                  toggle={toggle}
+                                              />
                                           ))
                                       ) : (
-                                          <XMLNode node={value} state={state} path={path.concat([key])} toggle={toggle} />
+                                          <XMLNode
+                                              node={value}
+                                              sel={sel}
+                                              onClick={onClick}
+                                              parentSelected={selected}
+                                              setHover={setHover}
+                                              state={state}
+                                              path={path.concat([key])}
+                                              toggle={toggle}
+                                          />
                                       )}
                                   </div>
                               </React.Fragment>
@@ -86,18 +163,33 @@ export const XMLNode = ({ node, state, path, toggle }: { node: XML; state: State
                       )
                     : null}
             </div>
-            <div style={{ paddingLeft: 10 }}>&lt;/{node.tag}&gt;</div>
+            <div style={{ paddingLeft: 10, ...style }} onMouseOver={() => setHover(node.src)} onMouseOut={() => setHover(null)}>
+                &lt;/{node.tag}&gt;
+            </div>
         </div>
     );
 };
 
-export const ShowXML = ({ root }: { root: XML }) => {
-    const [state, setState] = useState<State>({ pinned: [], expanded: [[]], extra: 10 });
+export const ShowXML = ({
+    root,
+    setHover,
+    sel,
+    onClick,
+}: {
+    root: XML;
+    setHover: (hover: null | Src) => void;
+    sel: number[];
+    onClick: (src: null | Src) => void;
+}) => {
+    const [state, setState] = useState<State>({ pinned: [], expanded: [[]], extra: Infinity });
 
     return (
         <XMLNode
+            sel={sel}
             node={root}
             state={state}
+            setHover={setHover}
+            onClick={onClick}
             toggle={(p) =>
                 setState((s) => {
                     return s.expanded.some((e) => peq(p, e))

@@ -15,12 +15,14 @@ import { posInList } from './selectionPos';
 const hl = 'rgba(100,100,100,0.2)';
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
 const closer = { round: ')', square: ']', curly: '}', angle: '>' };
+const braceColor = 'rgb(100, 200, 200)';
 type RCtx = {
     errors: Record<number, string>;
     refs: Record<number, HTMLElement>; // -1 gets you 'cursor' b/c why not
     styles: Record<number, Style>;
     dispatch: (up: Update) => void;
     msel: null | string[];
+    mhover: null | string[];
 };
 
 const cursorPositionInSpanForEvt = (evt: React.MouseEvent, target: HTMLSpanElement, text: string[]) => {
@@ -56,22 +58,31 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
     const nextParent = useMemo(() => pathWithChildren(parent, loc), [parent, loc]);
     const key = useMemo(() => pathKey(nextParent), [nextParent]);
 
+    const lightColor = 'rgb(255,200,200)';
     if (ctx.msel?.includes(key)) {
         if (!style) style = {};
         style.borderRadius = '2px';
-        const color = 'rgb(255,200,200)';
-        // const color = 'rgb(255,100,100,0.5)';
-        style.background = color;
-        style.outline = `2px solid ${color}`;
+        // const lightColor = 'rgb(255,100,100,0.5)';
+        style.background = lightColor;
+        style.outline = `2px solid ${lightColor}`;
     }
 
     if (state.sel.multi?.end?.key === key) {
         if (!style) style = {};
         style.borderRadius = '2px';
         const color = 'rgb(255,100,100)';
-        style.background = color;
+        style.background = lightColor;
         style.outline = `2px solid ${color}`;
         style.position = 'relative';
+    }
+
+    const hoverColor = 'rgb(200,230,255)';
+    if (ctx.mhover?.includes(key)) {
+        if (!style) style = {};
+        style.borderRadius = '2px';
+        // const lightColor = 'rgb(255,100,100,0.5)';
+        style.background = hoverColor;
+        style.outline = `2px solid ${hoverColor}`;
     }
 
     const ref = (el: HTMLElement) => {
@@ -118,6 +129,9 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             const children = node.children.map((loc) => (
                 <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />
             ));
+            // if (style) {
+            //     style.display = 'inline-block';
+            // }
             if (typeof node.kind !== 'string') {
                 return (
                     <span style={style} ref={ref}>
@@ -135,7 +149,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 case 'spaced':
                     return (
                         <span
-                            style={style}
+                            style={{ ...style, display: 'inline-block' }}
                             ref={ref}
                             data-yes="yes"
                             onClick={(evt) => {
@@ -168,7 +182,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             <span
                                 style={{
                                     background: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
-                                    color: 'orange',
+                                    color: braceColor,
                                     // ...style,
                                     // borderRadius: style?.borderRadius,
                                 }}
@@ -177,7 +191,9 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             </span>
                             {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                             {node.forceMultiline ? (
-                                <div style={{ ...style, display: 'flex', flexDirection: 'column', marginLeft: 16 }}>{children}</div>
+                                <div style={{ ...style, display: 'flex', width: 'fit-content', flexDirection: 'column', marginLeft: 16 }}>
+                                    {children}
+                                </div>
                             ) : (
                                 interleaveF(children, (i) => <span key={'sep' + i}>,&nbsp;</span>)
                             )}
@@ -189,7 +205,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             <span
                                 style={{
                                     background: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined,
-                                    color: 'orange',
+                                    color: braceColor,
                                     // borderRadius: style?.borderRadius,
                                 }}
                             >
