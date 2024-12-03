@@ -32,7 +32,7 @@ export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
 
     let sloc: number | null = null;
 
-    let forceMultiline = false;
+    let forceMultiline = undefined as undefined | boolean;
 
     const other: number[] = [];
     for (let i = 0; i < flat.length; i++) {
