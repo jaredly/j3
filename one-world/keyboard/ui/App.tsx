@@ -4,7 +4,7 @@ import { applyUpdate } from '../applyUpdate';
 import { init, TestState } from '../test-utils';
 
 import { useLocalStorage } from '../../../web/Debug';
-import { Loc, Style } from '../../shared/cnodes';
+import { childLocs, Loc, Style } from '../../shared/cnodes';
 import { parse, show, Span } from '../../syntaxes/dsl';
 import { ctx, matchers, stmtSpans, toXML } from '../../syntaxes/gleam2';
 import { nodeToXML, XML } from '../../syntaxes/xml';
@@ -39,6 +39,15 @@ export const App = () => {
 
     const mhover = hover ? multiSelChildren(hover, state.top) : null;
     const hoverkeys = mhover ? multiSelKeys(mhover.parent, mhover.children) : null;
+
+    const xmlKeys = useMemo(() => {
+        const keys = msel?.children ?? [lastChild(state.sel.start.path)];
+        const extra: number[] = [];
+        keys.forEach((key) => {
+            extra.push(...childLocs(state.top.nodes[key]));
+        });
+        return keys.concat(extra);
+    }, [msel, state.sel]);
 
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
@@ -113,6 +122,7 @@ export const App = () => {
 
     const clickSrc = (src: Src | null) => {
         if (!src) return;
+        console.log('clikc src', src);
         const l = paths[src.left[0].idx];
         const start = selectStart(l, state.top);
         if (!start) return;
@@ -146,15 +156,11 @@ export const App = () => {
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
                 <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                     <h3>CST</h3>
-                    <ShowXML root={xmlcst} onClick={clickSrc} setHover={hoverSrc} sel={msel?.children ?? [lastChild(state.sel.start.path)]} />
+                    <ShowXML root={xmlcst} onClick={clickSrc} setHover={hoverSrc} sel={xmlKeys} />
                 </div>
                 <div style={{ flex: 3, overflow: 'auto', padding: 25 }}>
                     <h3>AST</h3>
-                    {xml ? (
-                        <ShowXML root={xml} onClick={clickSrc} setHover={hoverSrc} sel={msel?.children ?? [lastChild(state.sel.start.path)]} />
-                    ) : (
-                        'NO xml'
-                    )}
+                    {xml ? <ShowXML root={xml} onClick={clickSrc} setHover={hoverSrc} sel={xmlKeys} /> : 'NO xml'}
                     <div style={{ marginTop: 50, whiteSpace: 'pre-wrap' }}>
                         {gleam.bads.map((er, i) => (
                             <div key={i} style={{ color: 'red' }}>

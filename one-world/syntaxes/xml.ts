@@ -1,7 +1,7 @@
 import { Src } from '../keyboard/handleShiftNav';
 import { RecNode, TextSpan } from '../shared/cnodes';
 
-export type XML = { tag: string; src: Src; attrs?: Record<string, any>; children?: Record<string, XML | XML[] | undefined> };
+export type XML = { tag: string; src: null | Src; attrs?: Record<string, any>; children?: Record<string, XML | XML[] | undefined> };
 
 const white = (n: number) => Array(n + 1).join(' ');
 

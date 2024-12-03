@@ -407,7 +407,7 @@ const parseSmoosh = ({ base, suffixes, prefixes }: Smoosh, node: RecNode): Expr 
     suffixes.forEach((suffix) => {
         switch (suffix.type) {
             case 'attribute':
-                base = { type: 'attribute', target: base, attribute: suffix.attribute, src: mergeSrc(base.src, suffix.src) };
+                base = { type: 'attribute', target: base, attribute: suffix.attribute, src: mergeSrc(base.src, nodesSrc(suffix.attribute)) };
                 return;
             case 'call':
                 base = { type: 'call', target: base, args: suffix.items, src: mergeSrc(base.src, suffix.src) };

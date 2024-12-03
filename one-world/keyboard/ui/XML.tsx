@@ -43,7 +43,7 @@ export const XMLNode = ({
 }: {
     setHover: (hover: null | Src) => void;
     onClick: (src: null | Src) => void;
-    parentSelected?: boolean;
+    parentSelected?: boolean | null;
     sel: number[];
     node: XML;
     state: State;
@@ -53,7 +53,7 @@ export const XMLNode = ({
     const open = state.expanded.some((p) => pstartsWith(path, p, state.extra)) || state.pinned.some((p) => peq(p, path));
     const exact = state.expanded.some((p) => peq(p, path));
 
-    const selected = parentSelected || (sel.includes(node.src.left[0].idx) && (!node.src.right || sel.includes(node.src.right[0].idx)));
+    const selected = parentSelected || (node.src && sel.includes(node.src.left[0].idx) && (!node.src.right || sel.includes(node.src.right[0].idx)));
 
     const style = { ...tagStyle, background: 'transparent' };
     if (selected) {
@@ -117,6 +117,7 @@ export const XMLNode = ({
                     {exact ? '•' : ''}
                 </div>
                 &lt;{node.tag}
+                {/* {node.src?.left[0].idx}-{node.src?.right?.[0].idx} */}
                 {node.attrs ? ' ' + attrs(node.attrs) : ''}&gt;
             </div>
             <div style={{ paddingLeft: 24, display: 'grid', gridTemplateColumns: 'max-content 1fr', gap: 8 }}>
@@ -182,6 +183,8 @@ export const ShowXML = ({
     onClick: (src: null | Src) => void;
 }) => {
     const [state, setState] = useState<State>({ pinned: [], expanded: [[]], extra: Infinity });
+
+    // console.log('sell', sel);
 
     return (
         <XMLNode
