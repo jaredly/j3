@@ -1,4 +1,18 @@
 
+# PLACEHOLDERS
+
+WHattttt iffff we ditch /placeholders/ in the CST, and have them only be an artifact of the parsing?
+that's really attractive, because it's weird if you like (space) and then the placeholder item is in a weird place.
+ALSO it means we get placeholders without explicitly autocompleting it up.
+- Oooooh can I automagic based on `named`? Like if it's named, you get a placeholder?
+
+
+- [ ] \n should set forceMultiline
+- [ ] \n in an empty list (inside) shouldn't create a double child
+
+OK and then let's really get Tables and Rich Lists going
+buuut first ok we need scads of tests to bring coverage uppp.
+
 #
 
 I should make parsers for:
@@ -6,6 +20,57 @@ I should make parsers for:
 - javascript
 - go(?)
 - clojure
+- julia why not
+- pythonnnn but ... need a list that is 'indent'
+  - hrmmm, do I need to ... ensure that it's the "last" thing in a `spaced`? or ok two ways I can think of:
+    - spaced(id(if) smoosh(id(True) id(:)) indent(lolwhat))
+    - OR some-multiline-list(spaced(id(if) smoosh(id(True) id(:))) indent(lolwhat))
+    The first way is .. easier to parse, makes more sense from a parser perspective.
+    The second way is maybe easier to ... navigate?
+    Like with the first way, it would be _very_ weird if you could have something, /in the spaced/, that's after the block.
+    ANOTHER POSSIBILITY
+    could ... : be, a new kind of separator?
+    (how does this play with haskell's "you can have a block after an = sign"? hmm)
+
+    AHhhhh I think actually what I want ... is like ... an `indent` list, should actually contain the unindented line
+    as the first item or w/e.
+
+    SO the `indent` list would be this special case, because it needs a minimum of 2 items. kinda fun.
+
+    Ok so that makes the haskell hanging indent after `=` work just fine.
+    But let's talk about python's tight `:`.
+
+    what a weird thing. it breaks the "tight is always tighter than loose" precedence that I rely on.
+
+```py
+class MapAcceleratorClassPage(BasePageObject):
+
+    def __init__(self, app):
+        super(MapAcceleratorClassPage, self).__init__(app)
+        # Strands are topics in MAP subjects like Geometry,
+        # Data & Measurement etc.
+        # ids are strand code that is not readable from test
+        # perspective
+        self.strand_map = {"Geometry": "kmapCell_x53ab",
+                           "Measurement & Data": "kmapCell_x3d21",
+                           "Numbers & Operations": "kmapCell_x7c3",
+                           "Operations and Algebraic Thinking":
+                               "kmapCell_x1a3f"}
+```
+
+I feel like what I would have to do is have `:` be a ~magical trigger, that ... maybe produces an `indent`?
+hmmm what if an `indent` sometimes ... like .... doesn't indent? Like if there are only 2 items (and forceMultiline
+isn't true), it's just inline (although it couuuuld wrapp to the indented dealio)
+if there are more than two items we go into the indented multiline life.
+
+Yeah OK, for python : does have to be magical. and thats ok.
+
+For haskell ... what's the trigger?
+like
+= and then \n?
+or just = in general? ok actually yeah. for haskell, looks like `=` is always gonna be a thing
+that can be indented afterwards. soooo we can always do 'space after = makes it an indent'
+which has the benefit of making wrapping do what I want.
 
 #
 
