@@ -1,5 +1,5 @@
+import { Src } from '../keyboard/handleShiftNav';
 import { RecNode, TextSpan } from '../shared/cnodes';
-import { Src } from './gleam2';
 
 export type XML = { tag: string; src: Src; attrs?: Record<string, any>; children?: Record<string, XML | XML[] | undefined> };
 

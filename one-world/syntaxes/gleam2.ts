@@ -1,3 +1,4 @@
+import { Src } from '../keyboard/handleShiftNav';
 import { Id, Loc, RecNode, TextSpan } from '../shared/cnodes';
 import { any, Ctx, id, idp, idt, kwd, list, Matcher, meta, mref, multi, named, opt, sequence, switch_, table, text, tx } from './dsl';
 import { XML } from './xml';
@@ -53,8 +54,6 @@ const expr_ = mref<Expr>('expr');
 const sprexpr_ = mref<SExpr>('sprexpr');
 
 // type Shown = {left:}
-
-export type Src = { left: Loc; right?: Loc };
 
 type PSpread = { type: 'spread'; inner: Pat; src: Src };
 type SPat = Pat | PSpread;

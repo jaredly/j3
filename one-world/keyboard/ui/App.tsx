@@ -4,18 +4,18 @@ import { applyUpdate } from '../applyUpdate';
 import { init, TestState } from '../test-utils';
 
 import { useLocalStorage } from '../../../web/Debug';
-import { childLocs, Loc, Style } from '../../shared/cnodes';
+import { Loc, Style } from '../../shared/cnodes';
 import { parse, show, Span } from '../../syntaxes/dsl';
-import { ctx, matchers, Src, stmtSpans, toXML } from '../../syntaxes/gleam2';
+import { ctx, matchers, stmtSpans, toXML } from '../../syntaxes/gleam2';
 import { nodeToXML, XML } from '../../syntaxes/xml';
 import { root } from '../root';
-import { lastChild, NodeSelection, Path, pathKey, pathWithChildren, Top, Update } from '../utils';
+import { Update } from '../utils';
 import { keyUpdate } from './keyUpdate';
 import { RenderNode } from './RenderNode';
 import { posDown, posUp } from './selectionPos';
 import { ShowXML } from './XML';
 import { selectStart } from '../handleNav';
-import { selEnd } from '../handleShiftNav';
+import { allPaths, multiSelChildren, multiSelKeys, selEnd, Src } from '../handleShiftNav';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -23,34 +23,6 @@ const styleKinds: Record<string, Style> = {
     punct: { color: { r: 150, g: 150, b: 150 } },
     bop: { color: { r: 150, g: 0, b: 0 } },
     uop: { color: { r: 150, g: 0, b: 0 } },
-};
-
-const lastCommonAncestor = (one: number[], two: number[]) => {
-    let i = 0;
-    for (; i < one.length && i < two.length && one[i] === two[i]; i++);
-    return { common: one.slice(0, i), one: one[i], two: two[i] };
-};
-
-const multiSelChildren = (sel: NodeSelection, top: Top) => {
-    if (!sel.end) return null;
-    // so, we ... find the least common ancestor
-    if (sel.start.path.root.top !== sel.end.path.root.top) return null; // TODO multi-top life
-    let lca = lastCommonAncestor(sel.start.path.children, sel.end.path.children);
-    const parent: Path = { root: sel.start.path.root, children: lca.common };
-    if (lca.one == null || lca.two == null) {
-        return { parent, children: lca.one == null ? [lca.two] : [lca.one] };
-    }
-    const pnode = top.nodes[lastChild(parent)];
-    if (pnode.type !== 'list') return null; // not strings or stuff just yet sry
-    const one = pnode.children.indexOf(lca.one);
-    const two = pnode.children.indexOf(lca.two);
-    const left = one < two ? one : two;
-    const right = one < two ? two : one;
-    return { parent, children: pnode.children.slice(left, right + 1) };
-};
-
-const multiSelKeys = (parent: Path, children: number[]) => {
-    return children.map((child) => pathKey(pathWithChildren(parent, child)));
 };
 
 export const App = () => {
@@ -78,6 +50,7 @@ export const App = () => {
                         const nxt = posDown(sel, cstate.current.top, refs);
                         return nxt ? { start: nxt } : null;
                     },
+                    spans: cspans.current,
                 },
             );
             if (!up) return;
@@ -115,6 +88,7 @@ export const App = () => {
     });
 
     const spans: Src[] = gleam.result ? stmtSpans(gleam.result) : [];
+    const cspans = useLatest(spans);
 
     // const [ps, sps] = useState(null as null | { left: number; top: number; height: number });
     // useLayoutEffect(() => {
@@ -297,7 +271,7 @@ const XMLShow = ({
                                             nodes: {},
                                             selection: {
                                                 start: ssel,
-                                                end: selEnd(ed),
+                                                multi: { end: selEnd(ed) },
                                             },
                                         });
                                         console.log(span, all[span.left[0].idx]);
@@ -334,18 +308,4 @@ const collides = (one: [number, number], two: [number, number]) => {
         (two[0] < one[0] && two[1] > one[0]) ||
         (two[0] < one[1] && two[1] > one[1])
     );
-};
-
-const allPaths = (top: Top) => {
-    const paths: Record<number, Path> = {};
-    const add = (id: number, parent: Path) => {
-        const path = pathWithChildren(parent, id);
-        paths[id] = path;
-
-        const node = top.nodes[id];
-        const children = childLocs(node);
-        children.forEach((child) => add(child, path));
-    };
-    add(top.root, { children: [], root: { ids: [], top: '' } });
-    return paths;
 };

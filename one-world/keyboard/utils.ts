@@ -78,7 +78,7 @@ export type PartialSel = { children: number[]; cursor: Cursor };
 
 export type NodeSelection = {
     start: { path: Path; key: string; cursor: Cursor; returnToHoriz?: number };
-    end?: { path: Path; key: string; cursor?: Cursor };
+    multi?: { end: { path: Path; key: string; cursor?: Cursor }; aux?: { path: Path; key: string; cursor?: Cursor } };
 };
 
 export type Top = { nodes: Nodes; root: number; nextLoc: number };

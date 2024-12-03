@@ -65,7 +65,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
         style.outline = `2px solid ${color}`;
     }
 
-    if (state.sel.end?.key === key) {
+    if (state.sel.multi?.end?.key === key) {
         if (!style) style = {};
         style.borderRadius = '2px';
         const color = 'rgb(255,100,100)';

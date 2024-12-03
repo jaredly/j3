@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { childLocs, Id, Node, Text } from '../shared/cnodes';
+import { childLocs, Id, Loc, Node, Text } from '../shared/cnodes';
 import { spanLength } from './handleDelete';
 import { goLateral, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
 import { handleSpecialText } from './handleSpecialText';
@@ -22,18 +22,80 @@ import {
     Update,
 } from './utils';
 
-export const shiftExpand = (state: TestState): Update | void => {
-    const path = state.sel.end?.path ?? state.sel.start.path;
+export type Src = { left: Loc; right?: Loc };
+
+export const nextLargerSpan = (sel: NodeSelection, spans: Src[], top: Top) => {
+    const multi = sel.multi ? multiSelChildren(sel, top) : { parent: parentPath(sel.start.path), children: [lastChild(sel.start.path)] };
+
+    if (!multi) {
+        console.log('no multi');
+        return;
+    }
+
+    const parent = top.nodes[lastChild(multi?.parent)];
+    const sibs = childLocs(parent);
+
+    const first = sibs.indexOf(multi.children[0]);
+    const last = sibs.indexOf(multi.children[multi.children.length - 1]);
+
+    if (first === -1 || last === -1) {
+        console.log('not there', multi.children, sibs, parent, sel);
+        return;
+    }
+
+    // number is "how much bigger"
+    let best = null as null | [number, Loc, Loc];
+
+    spans.forEach((span) => {
+        if (
+            !span.right ||
+            span.left.length !== 1 ||
+            span.right.length !== 1 ||
+            span.left[0].id !== multi.parent.root.top ||
+            span.right[0].id !== multi.parent.root.top
+        )
+            return;
+        const left = sibs.indexOf(span.left[0].idx);
+        const right = sibs.indexOf(span.right[0].idx);
+        if (left === -1 || right === -1) return;
+        const min = left < right ? left : right;
+        const max = left < right ? right : left;
+        if (min > first || max < last) return;
+        const delta = first - min + (max - last);
+        if (delta === 0) return;
+        if (best === null || best[0] > delta) best = [delta, span.left, span.right];
+    });
+    console.log('nest best', best);
+
+    return best ? { left: best[1], right: best[2], parent: multi.parent } : null;
+};
+
+export const shiftExpand = (state: TestState, spans?: Src[]): Update | void => {
+    console.log('hi');
+    if (!state.sel.multi) {
+        return { nodes: {}, selection: { start: state.sel.start, multi: { end: state.sel.start } } };
+    }
+
+    const next = spans ? nextLargerSpan(state.sel, spans, state.top) : null;
+
+    if (next) {
+        const left = pathWithChildren(next.parent, next.left[0].idx);
+        const right = pathWithChildren(next.parent, next.right[0].idx);
+        // TODO.... thissssss meansssss hm. that I'll need to be more fancy in how I store 'selection bounds'
+        return { nodes: {}, selection: { start: state.sel.start, multi: { end: selEnd(left), aux: selEnd(right) } } };
+    }
+
+    const path = state.sel.multi?.end.path ?? state.sel.start.path;
     // TODO: use the parsed's stufffffff here too
     const parent = parentPath(path);
-    return { nodes: {}, selection: { start: state.sel.start, end: selEnd(parent) } };
+    return { nodes: {}, selection: { start: state.sel.start, multi: { end: selEnd(parent) } } };
 };
 
 export const handleShiftNav = (state: TestState, key: string): Update | void => {
-    if (state.sel.end) {
-        const next = nextLateral(state.sel.end, state.top, key === 'ArrowLeft');
+    if (state.sel.multi) {
+        const next = nextLateral(state.sel.multi?.end, state.top, key === 'ArrowLeft');
         if (!next) return;
-        return { nodes: {}, selection: { start: state.sel.start, end: next } };
+        return { nodes: {}, selection: { start: state.sel.start, multi: { end: next } } };
     }
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
@@ -73,10 +135,10 @@ export const nextLateral = (side: { path: Path }, top: Top, shift: boolean): Sel
 
 export const expandLateral = (side: SelStart, top: Top, shift: boolean): Update | void => {
     const sel = nextLateral(side, top, shift);
-    return sel ? { nodes: {}, selection: { start: side, end: sel } } : undefined;
+    return sel ? { nodes: {}, selection: { start: side, multi: { end: sel } } } : undefined;
 };
 
-export type SelSide = NonNullable<NodeSelection['end']>;
+export type SelSide = NonNullable<NodeSelection['multi']>['end'];
 export type SelStart = NodeSelection['start'];
 
 export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSelection['start'] | void => {
@@ -233,4 +295,48 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
         case 'text':
             return handleSpecialText(current, state.top, key, mods);
     }
+};
+export const allPaths = (top: Top) => {
+    const paths: Record<number, Path> = {};
+    const add = (id: number, parent: Path) => {
+        const path = pathWithChildren(parent, id);
+        paths[id] = path;
+
+        const node = top.nodes[id];
+        const children = childLocs(node);
+        children.forEach((child) => add(child, path));
+    };
+    add(top.root, { children: [], root: { ids: [], top: '' } });
+    return paths;
+};
+const lastCommonAncestor = (one: number[], two: number[]) => {
+    let i = 0;
+    for (; i < one.length && i < two.length && one[i] === two[i]; i++);
+    return { common: one.slice(0, i), one: one[i], two: two[i] };
+};
+
+export const multiSelChildren = (sel: NodeSelection, top: Top) => {
+    if (!sel.multi) return null;
+    debugger;
+    const base = sel.multi.aux ?? sel.start;
+    if (base.path.root.top !== sel.multi.end.path.root.top) return null; // TODO multi-top life
+    if (base.key === sel.multi.end.key) {
+        return { parent: parentPath(base.path), children: [lastChild(base.path)] };
+    }
+    // so, we ... find the least common ancestor
+    let lca = lastCommonAncestor(base.path.children, sel.multi.end.path.children);
+    const parent: Path = { root: base.path.root, children: lca.common };
+    if (lca.one == null || lca.two == null) {
+        return { parent, children: lca.one == null ? [lca.two] : [lca.one] };
+    }
+    const pnode = top.nodes[lastChild(parent)];
+    if (pnode.type !== 'list') return null; // not strings or stuff just yet sry
+    const one = pnode.children.indexOf(lca.one);
+    const two = pnode.children.indexOf(lca.two);
+    const left = one < two ? one : two;
+    const right = one < two ? two : one;
+    return { parent, children: pnode.children.slice(left, right + 1) };
+};
+export const multiSelKeys = (parent: Path, children: number[]) => {
+    return children.map((child) => pathKey(pathWithChildren(parent, child)));
 };

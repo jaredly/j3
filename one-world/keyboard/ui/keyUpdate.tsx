@@ -2,12 +2,16 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { handleDelete } from '../handleDelete';
 import { handleKey } from '../handleKey';
 import { handleNav } from '../handleNav';
-import { Mods, handleShiftNav, handleSpecial, handleTab, shiftExpand } from '../handleShiftNav';
+import { Mods, Src, handleShiftNav, handleSpecial, handleTab, shiftExpand } from '../handleShiftNav';
 import { wrapKind, handleWrap, closerKind, handleClose } from '../handleWrap';
 import { TestState, js } from '../test-utils';
 import { NodeSelection, Update } from '../utils';
 
-type Visual = { up: (sel: NodeSelection) => NodeSelection | null; down: (sel: NodeSelection) => NodeSelection | null };
+type Visual = {
+    up: (sel: NodeSelection) => NodeSelection | null;
+    down: (sel: NodeSelection) => NodeSelection | null;
+    spans: Src[];
+};
 
 export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Visual, config = js): Update | void => {
     if (key === 'Enter') key = '\n';
@@ -19,7 +23,7 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
         // TODO shift=up/down
         if (mods.shift) {
             if (key === 'ArrowUp') {
-                return shiftExpand(state);
+                return shiftExpand(state, visual?.spans);
             }
         }
         if (visual) {
