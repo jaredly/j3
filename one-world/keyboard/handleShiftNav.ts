@@ -28,7 +28,7 @@ export const nextLargerSpan = (sel: NodeSelection, spans: Src[], top: Top) => {
     const multi = sel.multi ? multiSelChildren(sel, top) : { parent: parentPath(sel.start.path), children: [lastChild(sel.start.path)] };
 
     if (!multi) {
-        console.log('no multi');
+        // console.log('no multi');
         return;
     }
 
@@ -39,9 +39,11 @@ export const nextLargerSpan = (sel: NodeSelection, spans: Src[], top: Top) => {
     const last = sibs.indexOf(multi.children[multi.children.length - 1]);
 
     if (first === -1 || last === -1) {
-        console.log('not there', multi.children, sibs, parent, sel);
+        // console.log('not there', multi.children, sibs, parent, sel);
         return;
     }
+
+    // console.log('mmulti', multi, first, last, sel);
 
     // number is "how much bigger"
     let best = null as null | [number, Loc, Loc];
@@ -65,13 +67,13 @@ export const nextLargerSpan = (sel: NodeSelection, spans: Src[], top: Top) => {
         if (delta === 0) return;
         if (best === null || best[0] > delta) best = [delta, span.left, span.right];
     });
-    console.log('nest best', best);
+    // console.log('nest best', best);
 
     return best ? { left: best[1], right: best[2], parent: multi.parent } : null;
 };
 
 export const shiftExpand = (state: TestState, spans?: Src[]): Update | void => {
-    console.log('hi');
+    // console.log('hi');
     if (!state.sel.multi) {
         return { nodes: {}, selection: { start: state.sel.start, multi: { end: state.sel.start } } };
     }
@@ -200,7 +202,7 @@ export const handleShiftId = ({ node, path, cursor }: { node: Id<number>; path: 
             }
         }
 
-        console.log('lateral');
+        // console.log('lateral');
         return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
     }
 
@@ -309,15 +311,15 @@ export const allPaths = (top: Top) => {
     add(top.root, { children: [], root: { ids: [], top: '' } });
     return paths;
 };
+
 const lastCommonAncestor = (one: number[], two: number[]) => {
     let i = 0;
-    for (; i < one.length && i < two.length && one[i] === two[i]; i++);
+    for (; i < one.length - 1 && i < two.length - 1 && one[i] === two[i]; i++);
     return { common: one.slice(0, i), one: one[i], two: two[i] };
 };
 
 export const multiSelChildren = (sel: NodeSelection, top: Top) => {
     if (!sel.multi) return null;
-    debugger;
     const base = sel.multi.aux ?? sel.start;
     if (base.path.root.top !== sel.multi.end.path.root.top) return null; // TODO multi-top life
     if (base.key === sel.multi.end.key) {
@@ -325,6 +327,8 @@ export const multiSelChildren = (sel: NodeSelection, top: Top) => {
     }
     // so, we ... find the least common ancestor
     let lca = lastCommonAncestor(base.path.children, sel.multi.end.path.children);
+    // console.log('cla', lca);
+    if (!lca.common.length) return null;
     const parent: Path = { root: base.path.root, children: lca.common };
     if (lca.one == null || lca.two == null) {
         return { parent, children: lca.one == null ? [lca.two] : [lca.one] };
@@ -337,6 +341,7 @@ export const multiSelChildren = (sel: NodeSelection, top: Top) => {
     const right = one < two ? two : one;
     return { parent, children: pnode.children.slice(left, right + 1) };
 };
+
 export const multiSelKeys = (parent: Path, children: number[]) => {
     return children.map((child) => pathKey(pathWithChildren(parent, child)));
 };
