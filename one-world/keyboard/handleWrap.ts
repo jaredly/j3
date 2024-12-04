@@ -2,12 +2,26 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Collection, Id, List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { findParent } from './flatenate';
-import { justSel } from './handleNav';
+import { justSel, selectStart } from './handleNav';
+import { multiSelChildren, SelStart } from './handleShiftNav';
 import { handleTextText } from './insertId';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
 import { TestState } from './test-utils';
-import { CollectionCursor, Cursor, getCurrent, IdCursor, ListCursor, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
+import {
+    CollectionCursor,
+    Cursor,
+    getCurrent,
+    IdCursor,
+    lastChild,
+    ListCursor,
+    parentPath,
+    Path,
+    pathWithChildren,
+    selStart,
+    Top,
+    Update,
+} from './utils';
 
 export const wrapKind = (key: string): ListKind<any> | void => {
     switch (key) {
@@ -173,7 +187,70 @@ export const handleClose = (state: TestState, key: string): Update | void => {
     // }
 };
 
+const handleWrapMulti = (state: TestState, key: string): Update | void => {
+    const kind = wrapKind(key);
+    if (!kind) return;
+    const multi = multiSelChildren(state.sel, state.top);
+    if (!multi) return;
+    const parent = state.top.nodes[lastChild(multi.parent)];
+    if (parent.type !== 'list') {
+        return; // sorry not yet
+    }
+    const first = parent.children.indexOf(multi.children[0]);
+    const last = parent.children.indexOf(multi.children[multi.children.length - 1]);
+    if (first === -1 || last === -1) return;
+
+    // we actually want to wrap the smooshed / spaced
+    if (first === 0 && last === parent.children.length - 1 && (parent.kind === 'smooshed' || parent.kind === 'spaced')) {
+        const gpath = parentPath(multi.parent);
+        let nextLoc = state.top.nextLoc;
+        const loc = nextLoc++;
+        const up = replaceAt(gpath.children, state.top, parent.loc, loc);
+        up.nodes[loc] = { type: 'list', kind, children: [parent.loc], loc };
+        const start = selectStart(pathWithChildren(gpath, loc, parent.loc, multi.children[0]), state.top);
+        if (!start) return;
+        return { ...up, selection: { start }, nextLoc };
+    }
+
+    const children = parent.children.slice();
+    let nextLoc = state.top.nextLoc;
+    const loc = nextLoc++;
+    children.splice(first, last + 1 - first, loc);
+
+    let inner = multi.children;
+
+    const nodes: Nodes = { [parent.loc]: { ...parent, children } };
+
+    let sel: SelStart;
+
+    if (parent.kind === 'smooshed' || parent.kind === 'spaced') {
+        const wrap = nextLoc++;
+        nodes[wrap] = { ...parent, children: multi.children, loc: wrap };
+        inner = [wrap];
+        const start = selectStart(pathWithChildren(multi.parent, loc, wrap, multi.children[0]), state.top);
+        if (!start) return;
+        sel = start;
+    } else {
+        const start = selectStart(pathWithChildren(multi.parent, loc, multi.children[0]), state.top);
+        if (!start) return;
+        sel = start;
+    }
+
+    nodes[loc] = { type: 'list', kind, loc, children: inner };
+
+    return {
+        nodes,
+        selection: { start: sel },
+        nextLoc,
+    };
+    // we just do the thing
+};
+
 export const handleWrap = (state: TestState, key: string): Update | void => {
+    if (state.sel.multi) {
+        return handleWrapMulti(state, key);
+    }
+
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
         return handleTextText(current.cursor, current.node, key, current.path, state.top);

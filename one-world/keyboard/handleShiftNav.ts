@@ -343,7 +343,8 @@ export const multiSelChildren = (sel: NodeSelection, top: Top) => {
     if (!lca.common.length) return null;
     const parent: Path = { root: base.path.root, children: lca.common };
     if (lca.one == null || lca.two == null) {
-        return { parent, children: lca.one == null ? [lca.two] : [lca.one] };
+        // return { parent, children: lca.one == null ? [lca.two] : [lca.one] };
+        throw new Error(`lca didnt work`);
     }
     const pnode = top.nodes[lastChild(parent)];
     if (pnode.type !== 'list') return null; // not strings or stuff just yet sry

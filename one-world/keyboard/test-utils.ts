@@ -1,4 +1,5 @@
 import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind, Style, IdRef } from '../shared/cnodes';
+import { selEnd } from './handleShiftNav';
 import { charClass, Config } from './insertId';
 import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, Path, selStart, TextCursor, Top } from './utils';
 
@@ -73,6 +74,21 @@ export const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
     return { top, sel: { start: selStart({ children: sel, root: { ids: [], top: '' } }, cursor) } };
 };
 
+export const asMultiTop = (node: RecNodeT<number>, cursor: Cursor): TestState => {
+    const { top, locs } = asTopAndLocs(node);
+    if (!locs[0] || !locs[1]) throw new Error(`need locs 0 and 1`);
+    return {
+        top,
+        sel: {
+            start: selStart({ children: locs[0], root: { ids: [], top: '' } }, cursor),
+            multi: {
+                end: selEnd({ children: locs[1], root: { ids: [], top: '' } }),
+                aux: locs[2] ? selEnd({ children: locs[2], root: { ids: [], top: '' } }) : undefined,
+            },
+        },
+    };
+};
+
 export const atPath = (root: number, top: Top, path: number[]) => {
     const res: number[] = [root];
     path = path.slice();
@@ -83,17 +99,21 @@ export const atPath = (root: number, top: Top, path: number[]) => {
     return res;
 };
 
-export const selPath = (exp: RecNodeT<boolean>) => {
-    let found: number[] | null = null;
-    const visit = (node: RecNodeT<boolean>, path: number[]) => {
-        if (node.loc) {
+export const selPathN = <T>(exp: RecNodeT<T>, n: T) => {
+    let found = null as number[] | null;
+    const visit = (node: RecNodeT<T>, path: number[]) => {
+        if (node.loc === n) {
             if (found != null) throw new Error(`multiple nodes marked as selected`);
             found = path;
-            // return;
         }
         childNodes(node).forEach((child, i) => visit(child, path.concat([i])));
     };
     visit(exp, []);
+    return found;
+};
+
+export const selPath = (exp: RecNodeT<boolean>) => {
+    const found = selPathN(exp, true);
     if (found == null) throw new Error(`no node marked for selection`);
     return found;
 };

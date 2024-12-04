@@ -2,7 +2,7 @@ import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleKey } from './handleKey';
 import { handleClose, handleWrap } from './handleWrap';
-import { asTop, curly, id, idc, listc, round, smoosh, spaced, square, text, textc } from './test-utils';
+import { asMultiTop, asTop, curly, id, idc, listc, round, smoosh, spaced, square, text, textc } from './test-utils';
 
 test('round', () => {
     let state = asTop(id('', true), idc(0));
@@ -86,4 +86,10 @@ test('start of smoosh', () => {
     let state = asTop(smoosh([id('hello', true), id('+')]), idc(0));
     state = applyUpdate(state, handleWrap(state, '('));
     check(state, smoosh([round([], true), id('hello'), id('+')]), listc('inside'));
+});
+
+test.only('wrap multi', () => {
+    let state = asMultiTop(spaced([id('pre'), id('hello', 0), id('folks', 1)]), idc(0));
+    state = applyUpdate(state, handleWrap(state, '('));
+    check(state, spaced([id('pre'), round([spaced([id('hello', true), id('folks')])])]), idc(0));
 });

@@ -19,6 +19,13 @@ COVERAEG
 
 
 
+Soooo `[one| two]` with , should ... just make `[one, two]`, right? insteade of `[one,  two]`
+but then `[one, |two]` would do whcih: `[one|two]`, or `[one two]`?
+and `[one|two]` with `,` becomes `[one, two]` obvs
+
+
+
+
 andddd then, ok let's check on other coverages
 
 OK and then let's really get Tables and Rich Lists going
