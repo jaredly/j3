@@ -2,11 +2,26 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List, Node, Nodes, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { goLeft, justSel, selectEnd, selUpdate, spanEnd, spanStart } from './handleNav';
+import { selEnd } from './handleShiftNav';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
 import { TestState } from './test-utils';
-import { Current, Cursor, getCurrent, lastChild, parentLoc, parentPath, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
+import {
+    Current,
+    Cursor,
+    getCurrent,
+    lastChild,
+    NodeSelection,
+    parentLoc,
+    parentPath,
+    Path,
+    pathWithChildren,
+    selStart,
+    TextCursor,
+    Top,
+    Update,
+} from './utils';
 
 export const joinParent = (path: Path, top: Top): void | { at: number; pnode: List<number>; parent: Path } => {
     const loc = lastChild(path);
@@ -17,6 +32,30 @@ export const joinParent = (path: Path, top: Top): void | { at: number; pnode: Li
     if (at > 0 || (pnode.kind !== 'spaced' && pnode.kind !== 'smooshed')) return { pnode, parent, at };
     const up = joinParent(parent, top);
     return up ?? { pnode, parent, at };
+};
+
+const removeInPath = ({ root, children }: Path, loc: number): Path => ({
+    root,
+    children: children.filter((f) => f != loc),
+});
+
+const removeParent = (sel: NodeSelection, loc: number): NodeSelection => ({
+    start: { ...sel.start, ...selEnd(removeInPath(sel.start.path, loc)) },
+    multi: sel.multi
+        ? {
+              end: { ...sel.multi.end, ...selEnd(removeInPath(sel.multi.end.path, loc)) },
+              aux: sel.multi.aux ? { ...sel.multi.aux, ...selEnd(removeInPath(sel.multi.aux.path, loc)) } : undefined,
+          }
+        : undefined,
+});
+
+// TODO: rebalance smooshed
+export const unwrap = (path: Path, top: Top, sel: NodeSelection) => {
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'list') return; // TODO idk
+    const repl = replaceAt(parentPath(path).children, top, lastChild(path), ...node.children);
+    repl.selection = removeParent(sel, lastChild(path));
+    return repl;
 };
 
 const removeSelf = (state: TestState, current: { path: Path; node: Node }) => {
@@ -93,6 +132,7 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
         }
         return; // prolly at the toplevel? or in a text or table, gotta handle tat
     }
+
     const { at, parent, pnode } = got;
     let node = state.top.nodes[lastChild(state.sel.start.path)];
     const remap: Nodes = {};
@@ -100,6 +140,7 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
     if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
         node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
     }
+
     if (at === 0) {
         if (pnode.kind === 'smooshed' || pnode.kind === 'spaced') {
             const sel = goLeft(parent, state.top);
@@ -116,8 +157,10 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             // return up;
         }
         // Select the '(' opener
-        return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
+        // return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
+        return unwrap(parent, state.top, state.sel);
     }
+
     let flat = flatten(pnode, state.top, remap);
     let fat = flat.indexOf(node);
     if (fat === -1) throw new Error(`node not in flattened`);
