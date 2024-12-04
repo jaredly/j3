@@ -7,10 +7,19 @@ ALSO it means we get placeholders without explicitly autocompleting it up.
 - Oooooh can I automagic based on `named`? Like if it's named, you get a placeholder?
 
 
-- [ ] \n should set forceMultiline
-- [ ] \n in an empty list (inside) shouldn't create a double child
+- [x] \n should set forceMultiline
+- [x] \n in an empty list (inside) shouldn't create a double child
 
 - [ ] mutliselect doesn't actually do any useful editing yet tho
+
+
+COVERAEG
+- [ ] handleShiftNav
+- [ ] insertId
+
+
+
+andddd then, ok let's check on other coverages
 
 OK and then let's really get Tables and Rich Lists going
 buuut first ok we need scads of tests to bring coverage uppp.

@@ -39,11 +39,8 @@ export const nextLargerSpan = (sel: NodeSelection, spans: Src[], top: Top) => {
     const last = sibs.indexOf(multi.children[multi.children.length - 1]);
 
     if (first === -1 || last === -1) {
-        // console.log('not there', multi.children, sibs, parent, sel);
         return;
     }
-
-    // console.log('mmulti', multi, first, last, sel);
 
     // number is "how much bigger"
     let best = null as null | [number, Loc, Loc];
@@ -148,16 +145,15 @@ export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSele
     const node = top.nodes[lastChild(path)];
     if (node.type === 'list' && cursor.type === 'list') {
         // Maybe go inside?
-        if (shift && cursor.where === 'after') {
+        if ((shift && cursor.where === 'after') || (!shift && cursor.where === 'before')) {
             if (node.children.length === 0) {
                 return selStart(path, { type: 'list', where: 'inside' });
             }
-            return selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), top);
-        } else if (!shift && cursor.where === 'before') {
-            if (node.children.length === 0) {
-                return selStart(path, { type: 'list', where: 'inside' });
+            if (shift) {
+                return selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), top);
+            } else {
+                return selectStart(pathWithChildren(path, node.children[0]), top);
             }
-            return selectStart(pathWithChildren(path, node.children[0]), top);
         }
     }
     if (cursor.type === 'list') {
@@ -169,7 +165,23 @@ export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSele
                 if (at !== (shift ? 0 : parent.children.length - 1)) {
                     // go double
                     const next = goLateral(path, top, shift, true);
-                    return next ? goLateral(next.path, top, shift, true) : next;
+                    // return next;
+                    return next ? goTabLateral(next, top, shift) : next;
+                }
+            }
+        }
+    }
+
+    if (cursor.type === 'id' && node.type === 'id') {
+        const text = cursor.text ?? splitGraphemes(node.text);
+        if (cursor.end === (shift ? 0 : text.length)) {
+            const parent = top.nodes[parentLoc(path)];
+            if (parent?.type === 'list' && parent.kind === 'smooshed') {
+                const at = parent.children.indexOf(lastChild(path));
+                if (at !== (shift ? 0 : parent.children.length - 1)) {
+                    // go double
+                    const next = goLateral(path, top, shift, true);
+                    return next ? goTabLateral(next, top, shift) : next;
                 }
             }
         }

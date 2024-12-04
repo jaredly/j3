@@ -1,6 +1,6 @@
 import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind, Style, IdRef } from '../shared/cnodes';
 import { charClass, Config } from './insertId';
-import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, selStart, TextCursor, Top } from './utils';
+import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, Path, selStart, TextCursor, Top } from './utils';
 
 export type TestState = { top: Top; sel: NodeSelection };
 
@@ -28,6 +28,44 @@ export const asTopAndPath = (node: RecNodeT<boolean>): { top: Top; sel: number[]
         return loc;
     });
     return { top: { nextLoc, nodes, root }, sel };
+};
+
+export type Sels = null | [number, Cursor] | [number, Cursor][];
+
+export const asTopAndLocs = (node: RecNodeT<number>): { top: Top; locs: Record<number, number[]> } => {
+    const nodes: Nodes = {};
+    let nextLoc = 0;
+    let locs: Record<number, number[]> = {};
+    const rootLoc = fromRec(node, nodes, (l, node, path) => {
+        const loc = nextLoc++;
+        if (l != null) {
+            if (locs[l]) throw new Error(`duplicate num ${l}`);
+            locs[l] = path.concat([loc]);
+        }
+        return loc;
+    });
+    return { top: { nextLoc, nodes, root: rootLoc }, locs };
+};
+
+export const asTopAndPaths = (node: RecNodeT<Sels>, root: Path['root']): { top: Top; sels: Record<number, NodeSelection> } => {
+    const nodes: Nodes = {};
+    let nextLoc = 0;
+    let sels: Record<number, NodeSelection> = {};
+    const rootLoc = fromRec(node, nodes, (l, node, path) => {
+        const loc = nextLoc++;
+        if (l != null) {
+            if (Array.isArray(l[0])) {
+                (l as [number, Cursor][]).forEach(([num, cursor]) => {
+                    sels[num] = { start: selStart({ children: path.concat([loc]), root }, cursor) };
+                });
+            } else {
+                const [num, cursor] = l as [number, Cursor];
+                sels[num] = { start: selStart({ children: path.concat([loc]), root }, cursor) };
+            }
+        }
+        return loc;
+    });
+    return { top: { nextLoc, nodes, root: rootLoc }, sels };
 };
 
 export const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
