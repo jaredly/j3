@@ -2,6 +2,11 @@
 # Next up story
 
 - let's really get placeholders going. that sounds fun.
+- [x] yay placeholdersss
+
+# OK it's high time that we do tabs. gotta do it.
+- [x] tabs
+- [ ] nominal capacity to switch up parsers
 
 # Can I do JS?
 

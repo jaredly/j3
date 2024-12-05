@@ -1,9 +1,18 @@
-import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind, Style, IdRef } from '../shared/cnodes';
-import { selEnd } from './handleShiftNav';
+import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind, Style, IdRef, RecNode } from '../shared/cnodes';
+import { Ctx, ParseResult } from '../syntaxes/dsl';
+import { selEnd, Src } from './handleShiftNav';
 import { charClass, Config } from './insertId';
 import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, Path, selStart, TextCursor, Top } from './utils';
 
-export type TestState = { top: Top; sel: NodeSelection };
+export type TestState = {
+    top: Top;
+    sel: NodeSelection;
+    parser?: {
+        config: Config;
+        parse(node: RecNode): ParseResult<any>;
+        spans(ast: any): Src[];
+    };
+};
 
 export const initTop: Top = {
     nextLoc: 1,

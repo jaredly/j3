@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLatest } from '../../../web/custom/useLatest';
 import { applyUpdate } from '../applyUpdate';
-import { init, TestState } from '../test-utils';
+import { init, js, TestState } from '../test-utils';
 
 import { useLocalStorage } from '../../../web/Debug';
 import { childLocs, Loc, Style } from '../../shared/cnodes';
@@ -27,8 +27,17 @@ const styleKinds: Record<string, Style> = {
     uop: { color: { r: 150, g: 0, b: 0 } },
 };
 
-export const App = () => {
-    const [state, setState] = useLocalStorage('nuniiverse', () => init);
+const defaultParser: TestState['parser'] = {
+    config: js,
+    parse(node) {
+        return parse(ts.matchers.stmt, node, ts.ctx());
+    },
+    spans: ts.stmtSpans,
+};
+
+// 'nuniiverse'
+export const App = ({ id }: { id: string }) => {
+    const [state, setState] = useLocalStorage(id, () => init);
 
     const cstate = useLatest(state);
     // @ts-ignore
@@ -80,8 +89,9 @@ export const App = () => {
 
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
 
-    const c = ts.ctx();
-    const parsed = parse(ts.matchers.stmt, rootNode, c);
+    const parser = state.parser ?? defaultParser;
+
+    const parsed = parser.parse(rootNode);
     const errors = useMemo(() => {
         const errors: Record<number, string> = {};
         parsed.bads.forEach((bad) => {
@@ -98,7 +108,7 @@ export const App = () => {
     const xmlcst = useMemo(() => nodeToXML(rootNode), [rootNode]);
     const styles: Record<number, Style> = {};
     const placeholders: Record<number, string> = {};
-    Object.entries(c.meta).forEach(([key, meta]) => {
+    Object.entries(parsed.ctx.meta).forEach(([key, meta]) => {
         if (meta.kind && styleKinds[meta.kind]) {
             styles[+key] = styleKinds[meta.kind];
         }
@@ -107,7 +117,7 @@ export const App = () => {
         }
     });
 
-    const spans: Src[] = parsed.result ? ts.stmtSpans(parsed.result) : [];
+    const spans: Src[] = parsed.result ? parser.spans(parsed.result) : [];
     const cspans = useLatest(spans);
 
     const paths = useMemo(() => allPaths(state.top), [state.top]);
@@ -139,7 +149,7 @@ export const App = () => {
     };
 
     return (
-        <div style={{ display: 'flex', inset: 0, position: 'absolute', flexDirection: 'column' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, paddingBottom: 0, minHeight: 0 }}>
                 <RenderNode
                     loc={state.top.root}

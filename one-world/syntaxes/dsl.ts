@@ -359,11 +359,18 @@ export const idp = <T>(x: Partial<T>): T => x as T;
 export const any = <T>(f: (v: RecNode) => T): Matcher<T> => ({ type: 'any', f });
 export const meta = <T>(kind: string, inner: Matcher<T>): Matcher<T> => ({ type: 'meta', inner, kind });
 
-export const parse = <T>(matcher: Matcher<T>, node: RecNode, ctx: Ctx) => {
+export type ParseResult<T> = {
+    result: T | undefined;
+    goods: RecNode[];
+    bads: MatchError[];
+    ctx: Ctx;
+};
+
+export const parse = <T>(matcher: Matcher<T>, node: RecNode, ctx: Ctx): ParseResult<T> => {
     const res = match(matcher, ctx, { nodes: [node], loc: [] }, 0, true);
     const goods = foldBag([] as RecNode[], res.good, (ar, n) => (ar.push(n), ar));
     const bads = foldBag([] as MatchError[], res.bad, (ar, n) => ((n.type !== 'missing' ? !goods.includes(n.node) : true) ? (ar.push(n), ar) : ar));
     if (res.result?.consumed === 0) throw new Error('node not consumed');
 
-    return { result: res.result?.data, goods, bads };
+    return { result: res.result?.data, goods, bads, ctx };
 };

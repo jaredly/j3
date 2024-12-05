@@ -1,27 +1,10 @@
-import { useEffect, useState } from 'react';
 import { layout } from '../../../src/old-layout';
 import { emptyMap } from '../../../src/parse/parse';
 import { paste } from '../../../src/state/clipboard';
-import {
-    NsUpdateMap,
-    StateChange,
-    applyUpdate,
-    getKeyUpdate,
-    isRootPath,
-} from '../../../src/state/getKeyUpdate';
+import { NsUpdateMap, StateChange, applyUpdate, getKeyUpdate, isRootPath } from '../../../src/state/getKeyUpdate';
 import { moveNode } from '../../../src/state/moveNode';
-import {
-    Action,
-    NUIState,
-    RealizedNamespace,
-    SandboxNamespace,
-    UpdatableAction,
-} from '../../custom/UIState';
-import {
-    UIStateChange,
-    calcHistoryItem,
-    undoRedo,
-} from '../../custom/old-stuff/reduce';
+import { Action, NUIState, RealizedNamespace, SandboxNamespace, UpdatableAction } from '../../custom/UIState';
+import { UIStateChange, calcHistoryItem, undoRedo } from '../../custom/old-stuff/reduce';
 import { ResultsCache } from '../../custom/store/ResultsCache';
 import { verticalMove } from '../../custom/verticalMove';
 // import { newResults } from '../newResults';
@@ -29,10 +12,7 @@ import { findTops, verifyPath } from './findTops';
 import { urlForId } from './urlForId';
 import { white } from './white';
 
-export const reduceUpdate = (
-    state: NUIState,
-    update: StateChange | UIStateChange,
-): NUIState => {
+export const reduceUpdate = (state: NUIState, update: StateChange | UIStateChange): NUIState => {
     if (!update) {
         return state;
     }
@@ -83,10 +63,7 @@ export const reduceUpdate = (
     }
 };
 
-export const actionToUpdate = (
-    state: NUIState,
-    action: UpdatableAction,
-): StateChange | UIStateChange | void => {
+export const actionToUpdate = (state: NUIState, action: UpdatableAction): StateChange | UIStateChange | void => {
     switch (action.type) {
         case 'update':
         case 'config:evaluator':
@@ -100,11 +77,7 @@ export const actionToUpdate = (
                 return;
             }
             if (action.key === 'ArrowUp' || action.key === 'ArrowDown') {
-                return verticalMove(
-                    { ...state, menu: undefined },
-                    action.key === 'ArrowUp',
-                    action.mods,
-                );
+                return verticalMove({ ...state, menu: undefined }, action.key === 'ArrowUp', action.mods);
             }
             if (action.key === 'Escape') {
                 return {
@@ -167,10 +140,7 @@ export const actionToUpdate = (
                             end: result.selectionEnd,
                         });
                         continue;
-                    } else if (
-                        result.type === 'select' &&
-                        common.type === 'full-select'
-                    ) {
+                    } else if (result.type === 'select' && common.type === 'full-select') {
                         // erghhh `select` needs to allow multiplesssss
                         common.at.push({
                             start: result.selection,
@@ -191,11 +161,7 @@ export const actionToUpdate = (
             let changed = false;
             const nsMap: NsUpdateMap = {};
             for (let { start } of action.at) {
-                for (
-                    let i = 1;
-                    i < start.length && start[i].type === 'ns';
-                    i++
-                ) {
+                for (let i = 1; i < start.length && start[i].type === 'ns'; i++) {
                     const ns = state.nsMap[start[i].idx] as RealizedNamespace;
                     if (ns.collapsed && !nsMap[ns.id]) {
                         changed = true;
@@ -386,10 +352,7 @@ export const actionToUpdate = (
  *
  * hm will this work
  */
-export const debounce = <T,>(
-    fn: (arg: T) => Promise<void>,
-    time: number,
-): ((arg: T) => void) => {
+export const debounce = <T,>(fn: (arg: T) => Promise<void>, time: number): ((arg: T) => void) => {
     let tid = null as null | Timer;
     let last = Date.now();
     let wait = null as null | Promise<void>;
@@ -470,11 +433,7 @@ export const onSaveState = (fn: Function) => {
     };
 };
 
-export const saveState = async (
-    id: string,
-    state: NUIState,
-    cache?: ResultsCache<any>,
-): Promise<void> => {
+export const saveState = async (id: string, state: NUIState, cache?: ResultsCache<any>): Promise<void> => {
     if (saving) {
         saveQueue[id] = state;
         return;
@@ -493,9 +452,7 @@ export const saveState = async (
         listeners.forEach((f) => f(false));
         console.log(`saving took ${Date.now() - now}ms`);
         if (res.status !== 200) {
-            alert(
-                `Error ${res.status} while saving state! ${await res.text()}`,
-            );
+            alert(`Error ${res.status} while saving state! ${await res.text()}`);
         }
         clearTimeout(ti);
     } catch (err) {
@@ -511,12 +468,7 @@ export const saveState = async (
 };
 
 export function loadState(state: NUIState = initialState()) {
-    console.log(
-        `Loaded state, modified at: `,
-        new Date(
-            state.history[state.history.length - 1]?.ts,
-        ).toLocaleTimeString(),
-    );
+    console.log(`Loaded state, modified at: `, new Date(state.history[state.history.length - 1]?.ts).toLocaleTimeString());
     let idx =
         Object.keys(state.map)
             .concat(Object.keys(state.nsMap || {}))
@@ -549,18 +501,6 @@ export function loadState(state: NUIState = initialState()) {
     };
 }
 
-export const useHash = (): string => {
-    const [hash, update] = useState(location.hash);
-    useEffect(() => {
-        const fn = () => {
-            update(location.hash);
-        };
-        window.addEventListener('hashchange', fn);
-        return () => window.removeEventListener('hashchange', fn);
-    }, []);
-    return hash;
-};
-
 export const stringify = (v: any, level: number, max: number): string => {
     if (level === max) {
         return JSON.stringify(v);
@@ -568,25 +508,17 @@ export const stringify = (v: any, level: number, max: number): string => {
     const id = white(level * 2);
     if (Array.isArray(v)) {
         if (!v.length) return '[]';
-        return `[\n${v
-            .map((n) => id + stringify(n, level + 1, max))
-            .join('\n')}\n${white(level * 2 - 2)}]`;
+        return `[\n${v.map((n) => id + stringify(n, level + 1, max)).join('\n')}\n${white(level * 2 - 2)}]`;
     }
     if (v && typeof v === 'object') {
         const items = Object.entries(v);
         if (!items.length) return '{}';
-        return `{\n${items
-            .map(([k, v]) => id + `${k}: ${stringify(v, level + 1, max)}`)
-            .join('\n')}\n${white(level * 2 - 2)}}`;
+        return `{\n${items.map(([k, v]) => id + `${k}: ${stringify(v, level + 1, max)}`).join('\n')}\n${white(level * 2 - 2)}}`;
     }
     return JSON.stringify(v);
 };
 
-export const reduce = (
-    state: NUIState,
-    action: Action,
-    usages: Record<number, number[]>,
-): NUIState => {
+export const reduce = (state: NUIState, action: Action, usages: Record<number, number[]>): NUIState => {
     if (action.type === 'undo' || action.type === 'redo') {
         return undoRedo(state, action.type);
     }
@@ -649,11 +581,7 @@ export const reduce = (
     return next;
 };
 
-export const traverseNS = (
-    id: number,
-    state: NUIState,
-    fn: (ns: SandboxNamespace) => void,
-) => {
+export const traverseNS = (id: number, state: NUIState, fn: (ns: SandboxNamespace) => void) => {
     const ns = state.nsMap[id];
     fn(ns);
     if (ns.type === 'normal') {
@@ -673,11 +601,7 @@ export const verifyState = (state: NUIState) => {
         traverseNS(card.top, state, (ns) => {
             if (ns.type === 'normal') {
                 if (seen[ns.top] != null) {
-                    throw new Error(
-                        `top appears twice ${ns.top} - first in ${
-                            seen[ns.top]
-                        }, again in ${ns.id}`,
-                    );
+                    throw new Error(`top appears twice ${ns.top} - first in ${seen[ns.top]}, again in ${ns.id}`);
                 }
                 seen[ns.top] = ns.id;
             }
@@ -695,11 +619,7 @@ function verifySelection(state: NUIState) {
                 verifyPath(cursor.end, state);
             }
         } catch (err) {
-            throw new Error(
-                `${(err as Error).message}\n\nInvalid path:\n${cursor.start
-                    .map((path) => JSON.stringify(path))
-                    .join('\n')}`,
-            );
+            throw new Error(`${(err as Error).message}\n\nInvalid path:\n${cursor.start.map((path) => JSON.stringify(path)).join('\n')}`);
         }
     });
 }
