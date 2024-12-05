@@ -108,7 +108,7 @@ test('unwrap in space', () => {
     check(state, spaced([id('hello', true), id('folks')]), idc(0));
 });
 
-test.only('unwrap in space in space', () => {
+test('unwrap in space in space', () => {
     let state = asTop(spaced([round([spaced([id('hello', true), id('my')])]), id('folks')]), idc(0));
     state = applyUpdate(state, handleDelete(state));
     check(state, spaced([id('hello', true), id('my'), id('folks')]), idc(0));
@@ -121,6 +121,12 @@ test('unwrap in smoosh', () => {
 });
 
 test('unwrap smoosh in smoosh', () => {
+    let state = asTop(smoosh([round([smoosh([id('hello', true), id('+')])]), id('a')]), idc(0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, smoosh([id('hello', true), id('+'), id('a')]), idc(0));
+});
+
+test('unwrap smoosh in smoosh join', () => {
     let state = asTop(smoosh([round([smoosh([id('hello', true), id('+')])]), id('+')]), idc(0));
     state = applyUpdate(state, handleDelete(state));
     check(state, smoosh([id('hello', true), id('++')]), idc(0));
@@ -130,4 +136,10 @@ test('unwrap in smoosh join', () => {
     let state = asTop(smoosh([id('ha'), round([id('hi', true)]), id('ho')]), idc(0));
     state = applyUpdate(state, handleDelete(state));
     check(state, id('hahiho', true), idc(2));
+});
+
+test('unwrap in smoosh join in child', () => {
+    let state = asTop(round([smoosh([id('ha'), round([id('hi', true)]), id('ho')])]), idc(0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([id('hahiho', true)]), idc(2));
 });

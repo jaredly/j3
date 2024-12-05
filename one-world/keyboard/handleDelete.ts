@@ -2,9 +2,10 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, List, Node, Nodes, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { goLeft, justSel, selectEnd, selUpdate, spanEnd, spanStart } from './handleNav';
-import { selEnd } from './handleShiftNav';
+import { selEnd, SelSide, SelStart } from './handleShiftNav';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { replaceAt } from './replaceAt';
+import { replaceIn } from './replaceIn';
 import { flatten, flatToUpdateNew } from './rough';
 import { TestState } from './test-utils';
 import {
@@ -39,6 +40,24 @@ const removeInPath = ({ root, children }: Path, loc: number): Path => ({
     children: children.filter((f) => f != loc),
 });
 
+const modSelSideTip = (sel: SelStart, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): SelStart => {
+    const res = mod(lastChild(sel.path), sel.cursor);
+    if (res) {
+        return selStart(pathWithChildren(parentPath(sel.path), res.loc), res.cursor);
+    }
+    return sel;
+};
+
+const modSelTip = (sel: NodeSelection, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): NodeSelection => ({
+    start: modSelSideTip(sel.start, mod),
+    multi: sel.multi
+        ? {
+              end: sel.multi.end.cursor ? modSelSideTip(sel.multi.end as SelStart, mod) : sel.multi.end,
+              aux: sel.multi.aux?.cursor ? modSelSideTip(sel.multi.aux as SelStart, mod) : sel.multi.aux,
+          }
+        : undefined,
+});
+
 const removeParent = (sel: NodeSelection, loc: number): NodeSelection => ({
     start: { ...sel.start, ...selEnd(removeInPath(sel.start.path, loc)) },
     multi: sel.multi
@@ -56,19 +75,111 @@ export const unwrap = (path: Path, top: Top, sel: NodeSelection) => {
     const repl = replaceAt(parentPath(path).children, top, lastChild(path), ...node.children);
     repl.selection = removeParent(sel, lastChild(path));
     rebalanceSmooshed(repl, top);
+    joinSmooshed(repl, top);
+    disolveSmooshed(repl, top);
     return repl;
+};
+
+// oofs. the horror.
+// like. now I gotta know who the parent issss
+// waittt I can just assert that the relevant thing needs to be in the selection path.
+// good deal.
+export const disolveSmooshed = (update: Update, top: Top) => {
+    // So, we go through anything that has an update...
+    Object.keys(update.nodes).forEach((loc) => {
+        let node = update.nodes[+loc];
+        if (node?.type === 'list' && (node.kind === 'smooshed' || node.kind === 'spaced') && node.children.length === 1) {
+            const child = node.children[0];
+            const spath = update.selection?.start.path;
+            if (!spath) return;
+            const at = spath.children.indexOf(node.loc);
+            if (at === -1) return;
+            update.nodes[node.loc] = null;
+            if (at === 0) {
+                update.root = child;
+            } else {
+                const pnode = top.nodes[spath.children[at - 1]];
+                const parent = replaceIn(pnode, node.loc, child);
+                update.nodes[parent.loc] = parent;
+            }
+            update.selection = removeParent(update.selection!, node.loc);
+        }
+    });
+};
+
+export const joinSmooshed = (update: Update, top: Top) => {
+    // So, we go through anything that has an update...
+    Object.keys(update.nodes).forEach((loc) => {
+        let node = update.nodes[+loc];
+        if (node?.type === 'list' && node.kind === 'smooshed') {
+            for (let i = 1; i < node.children.length; i++) {
+                const cloc = node.children[i];
+                const ploc = node.children[i - 1];
+                const child = update.nodes[cloc] ?? top.nodes[cloc];
+                const prev = update.nodes[ploc] ?? top.nodes[ploc];
+
+                if (prev.type === 'id' && child.type === 'id' && prev.ccls === child.ccls) {
+                    // we delete one of these
+                    update.nodes[prev.loc] = { ...prev, text: prev.text + child.text };
+                    update.nodes[child.loc] = null;
+
+                    const children = node.children.slice();
+                    children.splice(i, 1);
+                    node = { ...node, children };
+                    update.nodes[node.loc] = node;
+                    i--;
+
+                    if (update.selection) {
+                        update.selection = modSelTip(update.selection, (last, cursor) => {
+                            if (last === cloc) {
+                                if (cursor.type === 'id') {
+                                    return {
+                                        loc: ploc,
+                                        cursor: {
+                                            type: 'id',
+                                            end: cursor.end + splitGraphemes(prev.text).length,
+                                        },
+                                    };
+                                }
+                                return { loc: ploc, cursor };
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    });
 };
 
 export const rebalanceSmooshed = (update: Update, top: Top) => {
     // So, we go through anything that has an update...
     Object.keys(update.nodes).forEach((loc) => {
-        const node = update.nodes[+loc];
+        let node = update.nodes[+loc];
         if (node?.type === 'list' && node.kind === 'spaced') {
             for (let i = 0; i < node.children.length; i++) {
                 const cloc = node.children[i];
                 const child = update.nodes[cloc] ?? top.nodes[cloc];
                 if (child?.type === 'list' && child.kind === 'spaced') {
-                    node.children.splice(i, 1, ...child.children);
+                    const children = node.children.slice();
+                    children.splice(i, 1, ...child.children);
+                    node = { ...node, children };
+                    update.nodes[node.loc] = node;
+                    i += child.children.length - 1;
+                    // remove the thing
+                    if (update.selection) update.selection = removeParent(update.selection, cloc);
+                }
+            }
+        }
+
+        if (node?.type === 'list' && node.kind === 'smooshed') {
+            for (let i = 0; i < node.children.length; i++) {
+                const cloc = node.children[i];
+                const child = update.nodes[cloc] ?? top.nodes[cloc];
+                if (child?.type === 'list' && child.kind === 'smooshed') {
+                    const children = node.children.slice();
+                    children.splice(i, 1, ...child.children);
+                    node = { ...node, children };
+                    update.nodes[node.loc] = node;
                     i += child.children.length - 1;
                     // remove the thing
                     if (update.selection) update.selection = removeParent(update.selection, cloc);
