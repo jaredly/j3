@@ -143,3 +143,9 @@ test('unwrap in smoosh join in child', () => {
     state = applyUpdate(state, handleDelete(state));
     check(state, round([id('hahiho', true)]), idc(2));
 });
+
+test.only('unwrap a spaced in a spaced', () => {
+    let state = asTop(round([spaced([id('ha'), round([spaced([id('hi', true), id('ho')])]), id('he')])]), idc(0));
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([spaced([id('ha'), id('hi', true), id('ho'), id('he')])]), idc(0));
+});

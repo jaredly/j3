@@ -91,7 +91,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
 
     switch (node.type) {
         case 'id':
-            if (cursor?.type === 'id' && !ctx.msel) {
+            if (cursor?.type === 'id') {
                 const { left, right } = cursorSides(cursor);
                 const text = cursor.text ?? splitGraphemes(node.text);
                 return (
@@ -102,7 +102,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             onClick={(evt) => {
                                 evt.stopPropagation();
                                 const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                                ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0 }));
+                                ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0, text: cursor.text }));
                             }}
                             text={text}
                             left={left}
