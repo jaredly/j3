@@ -55,7 +55,27 @@ export const unwrap = (path: Path, top: Top, sel: NodeSelection) => {
     if (node.type !== 'list') return; // TODO idk
     const repl = replaceAt(parentPath(path).children, top, lastChild(path), ...node.children);
     repl.selection = removeParent(sel, lastChild(path));
+    rebalanceSmooshed(repl, top);
     return repl;
+};
+
+export const rebalanceSmooshed = (update: Update, top: Top) => {
+    // So, we go through anything that has an update...
+    Object.keys(update.nodes).forEach((loc) => {
+        const node = update.nodes[+loc];
+        if (node?.type === 'list' && node.kind === 'spaced') {
+            for (let i = 0; i < node.children.length; i++) {
+                const cloc = node.children[i];
+                const child = update.nodes[cloc] ?? top.nodes[cloc];
+                if (child?.type === 'list' && child.kind === 'spaced') {
+                    node.children.splice(i, 1, ...child.children);
+                    i += child.children.length - 1;
+                    // remove the thing
+                    if (update.selection) update.selection = removeParent(update.selection, cloc);
+                }
+            }
+        }
+    });
 };
 
 const removeSelf = (state: TestState, current: { path: Path; node: Node }) => {
