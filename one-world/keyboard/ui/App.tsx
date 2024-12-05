@@ -97,9 +97,13 @@ export const App = () => {
     const xml = useMemo(() => (parsed.result ? toXML(parsed.result) : null), [parsed.result]);
     const xmlcst = useMemo(() => nodeToXML(rootNode), [rootNode]);
     const styles: Record<number, Style> = {};
+    const placeholders: Record<number, string> = {};
     Object.entries(c.meta).forEach(([key, meta]) => {
-        if (styleKinds[meta.kind]) {
+        if (meta.kind && styleKinds[meta.kind]) {
             styles[+key] = styleKinds[meta.kind];
+        }
+        if (meta.placeholder) {
+            placeholders[+key] = meta.placeholder;
         }
     });
 
@@ -146,6 +150,7 @@ export const App = () => {
                         errors,
                         refs,
                         styles,
+                        placeholders,
                         msel: mkeys,
                         mhover: hoverkeys,
                         dispatch(up) {

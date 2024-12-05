@@ -369,7 +369,12 @@ export const handleDelete = (state: TestState): Update | void => {
         case 'text': {
             if (current.cursor.type === 'list') {
                 if (current.cursor.where === 'after') {
-                    return justSel(current.path, { type: 'list', where: 'end' });
+                    // return justSel(current.path, { type: 'list', where: 'end' });
+                    if (current.node.spans.length === 0) {
+                        return selUpdate(selStart(current.path, { type: 'list', where: 'inside' }));
+                    }
+                    const last = current.node.spans[current.node.spans.length - 1];
+                    return selUpdate(spanEnd(last, current.path, current.node.spans.length - 1, state.top, false));
                 } else if (current.cursor.where === 'before') {
                     // left join agains
                     return leftJoin(state, current.cursor);

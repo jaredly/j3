@@ -1,4 +1,4 @@
-import { Id, Loc, TextSpan, ListKind, TableKind, RecNode, Style } from '../shared/cnodes';
+import { Id, Loc, TextSpan, ListKind, TableKind, RecNode, Style, Node } from '../shared/cnodes';
 
 // So, we need to provide a 'list of kwds' to be able to reject them from the `id` matcher
 
@@ -91,7 +91,7 @@ export type Ctx = {
     kwds: string[];
     comment?: Matcher<any>;
     strictIds?: boolean;
-    meta: Record<number, { kind: string }>;
+    meta: Record<number, { kind?: string; placeholder?: string }>;
 };
 
 /** We need to:
@@ -130,6 +130,8 @@ export const match = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at:
 
 export type Span = { start: Loc; end?: Loc };
 
+const isBlank = (node: RecNode) => node.type === 'id' && node.text === '';
+
 export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at: number, endOfExhaustive?: boolean): MatchRes<T> => {
     const good: Bag<RecNode> = [];
     const bad: Bag<MatchError> = [];
@@ -154,6 +156,9 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
     // First, let's handle matchers that can handle out of scope
     switch (matcher.type) {
         case 'named': {
+            if (at < parent.nodes.length && isBlank(parent.nodes[at])) {
+                ctx.meta[parent.nodes[at].loc[0].idx] = { placeholder: matcher.name };
+            }
             const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
             return {
                 ...res,
@@ -241,6 +246,10 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             return { result: null, good: misses[0].good, bad: misses[0].bad };
         }
         case 'mref':
+            if (at < parent.nodes.length && isBlank(parent.nodes[at])) {
+                const loc = parent.nodes[at].loc[0].idx;
+                ctx.meta[loc] = { placeholder: matcher.id };
+            }
             return match(ctx.matchers[matcher.id], ctx, parent, at, endOfExhaustive);
         case 'tx': {
             const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
@@ -259,7 +268,8 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             return { result: { data: matcher.f(node), consumed: 1 }, bad: [], good: [] };
         case 'id':
             if (node.type !== 'id' || ctx.kwds.includes(node.text)) return fail(matcher, node);
-            if (node.text === '') return fail(matcher, node);
+            // TODO: this is ... so that we'll keep going with placeholders and stuff
+            // if (node.text === '') return fail(matcher, node);
             if (!ctx.strictIds) return one(matcher.f(node), node);
             if (matcher.kind == null && !node.ref && !ctx.kwds.includes(node.text)) {
                 return one(matcher.f(node), node);

@@ -1,4 +1,8 @@
 
+# Next up story
+
+- let's really get placeholders going. that sounds fun.
+
 # Can I do JS?
 
 - `new` [expr] is annoying
@@ -62,7 +66,35 @@ hmm so does the parser just get the kinds of everything it depends on?
 I mean, it's probably fine. It will over-index, sometimes, but how often are you
 actually changing the /kind/ of something you're exporting anyways. seems like a relatively low cost situation.
 
+yeah so the thing about autocomplete
+is it would be nice to know what ~kinds of things are valid.
+e.g. don't complete a term when a type is wanted.
 
+Q:
+can/should an export have multiple /kind/s?
+like the (>=) export could have a ... oh yeah btw those binops aren't left or right associative,
+they would be 'multi-ops' or whatever.
+anyway,
+(>=) would be [binop, multi-op, value]
+(*) would be [binop, left-binop, value]
+(|>) would be [binop, left-binop, value]
+($) would be [binop, right-binop, value]
+right? they would all be values.
+
+anyway, the parser would look at those things and say
+"here I am resolving binops, so does this thing
+I'm looking at have `left-binop` or `right-binop` or `multi-op` on it?"
+
+And the autocompleter, when in the ~binop location would just be looking
+for `kind=binop`.
+
+yeah that's cool.
+SO: parser gets a mapping of `{id+idx: string[]}` that it can use to parse stuff.
+
+also, a macro export would declare itself to be *also* a (value) or (type) or whatever
+for the purpose of autocomplete. sounds great.
+
+Yeah ok I'm feeling good about that.
 
 # PLACEHOLDERS
 

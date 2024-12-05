@@ -20,6 +20,7 @@ type RCtx = {
     errors: Record<number, string>;
     refs: Record<number, HTMLElement>; // -1 gets you 'cursor' b/c why not
     styles: Record<number, Style>;
+    placeholders: Record<number, string>;
     dispatch: (up: Update) => void;
     msel: null | string[];
     mhover: null | string[];
@@ -45,6 +46,16 @@ const shadow = (x: number, y: number, color: string) => {
 };
 
 // const msk = 'rgb(255,100,100)'
+
+const phBg = 'rgb(240,240,240)';
+const placeholderStyle: React.CSSProperties = {
+    backgroundColor: phBg,
+    fontStyle: 'italic',
+    color: 'rgb(100,100,100)',
+    borderRadius: 4,
+    outline: '2px solid ' + phBg,
+    width: 'min-content',
+};
 
 export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; state: TestState; inRich: boolean; ctx: RCtx; parent: Path }) => {
     const node = state.top.nodes[loc];
@@ -91,9 +102,15 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
 
     switch (node.type) {
         case 'id':
+            const plh = ctx.placeholders[loc];
             if (cursor?.type === 'id') {
                 const { left, right } = cursorSides(cursor);
-                const text = cursor.text ?? splitGraphemes(node.text);
+                let text = cursor.text ?? splitGraphemes(node.text);
+                if (text.length === 0 && plh) {
+                    if (!style) style = {};
+                    Object.assign(style, placeholderStyle);
+                    text = splitGraphemes(plh);
+                }
                 return (
                     <span style={style}>
                         <TextWithCursor
@@ -111,6 +128,10 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     </span>
                 );
             }
+            if (node.text === '' && plh != null) {
+                if (!style) style = {};
+                Object.assign(style, placeholderStyle);
+            }
             return (
                 <span
                     style={style}
@@ -122,7 +143,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         // ok I cant dispatch just yet
                     }}
                 >
-                    {node.text === '' ? '\u200B' : node.text}
+                    {node.text === '' ? plh ?? '\u200B' : node.text}
                 </span>
             );
         case 'list':
