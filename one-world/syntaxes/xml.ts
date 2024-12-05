@@ -88,3 +88,38 @@ export const nodeToXML = (node: RecNode): XML => {
             };
     }
 };
+const aToXML = (v: any, name?: string): XML | XML[] | null => {
+    if (Array.isArray(v)) {
+        const sub = v.map((n) => aToXML(n, name));
+        if (sub.every(Boolean)) {
+            return sub as XML[];
+        }
+        return null;
+    }
+    if (!v || typeof v !== 'object') {
+        return null;
+    }
+    if (Object.keys(v).length === 0) return null;
+    const attrs: XML['attrs'] = {};
+    const children: XML['children'] = {};
+    Object.keys(v).forEach((k) => {
+        if (k === 'type' || k === 'src') return;
+        // if (k === 'type') return;
+        const res = aToXML(v[k], k);
+        if (res === null || k === 'src') attrs[k] = v[k];
+        else children[k] = res;
+    });
+    const res: XML = { tag: v.type ?? name ?? '?', src: v.src };
+    if (Object.keys(attrs).length) res.attrs = attrs;
+    if (Object.keys(children).length) res.children = children;
+    return res;
+};
+
+export const toXML = (v: any) => {
+    const res = aToXML(v);
+    if (!res || Array.isArray(res)) {
+        console.log(v, res);
+        throw new Error('why not');
+    }
+    return res;
+};

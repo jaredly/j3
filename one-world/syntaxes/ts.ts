@@ -1,8 +1,104 @@
+/*
+
+// const {a: b = 5, 'c': ms} = {c: 3}
+// const [a = 5] = []
+// const n = (n = 5, [[a, b] = [5, 4]], {m = 5}) => 5
+
+type Expr =
+    | { type: 'var'; name: string; src: Src }
+    | { type: 'text'; spans: TextSpan<Expr>[]; src: Src }
+    | { type: 'array' | 'tuple'; items: SExpr[]; src: Src }
+    | { type: 'bops'; op: Id<Loc>; items: Expr[]; src: Src }
+    | { type: 'record'; rows: RecordRow[]; src: Src }
+    | { type: 'call'; target: Expr; args: SExpr[]; src: Src }
+    | { type: 'uop'; op: Id<Loc>; target: Expr; src: Src }
+    | { type: 'attribute'; target: Expr; attribute: Id<Loc>; src: Src }
+    | { type: 'index'; target: Expr; items: SExpr[]; src: Src }
+    | Fancy;
+type SExpr = { type: 'spread'; inner: Expr; src: Src };
+type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
+
+type Fn = { type: 'fn'; args: Pat[]; body: Expr | Stmt[]; src: Src };
+type Fancy =
+    | Fn
+    | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[]; src: Src }
+    | { type: 'switch'; target: Expr; cases: { pat: Pat; body: Stmt[] | Expr }[]; src: Src };
+
+type Stmt = { type: 'expr'; expr: Expr; src: Src } | { type: 'let'; pat: Pat; value: Expr; src: Src } | { type: 'return'; expr?: Expr; src: Src };
+
+const pat_ = mref<Pat>('pat');
+const sprpat_ = mref<SPat>('sprpat');
+const expr_ = mref<Expr>('expr');
+const sprexpr_ = mref<SExpr>('sprexpr');
+
+const exprCommon: Matcher<Expr>[] = [
+    id(null, node => ({type: 'var', name: node.text, src: nodesSrc(node)})),
+    text(expr_, (spans, node) => ({ type: 'text', spans, src: nodesSrc(node) })),
+    list('square', multi(sprexpr_, true), (items, node) => ({ type: 'array', items, src: { left: node.loc } })),
+    table(
+        'curly',
+        switch_<RecordRow, RecordRow>(
+            [
+                tx(sprexpr_, (inner) => ({ type: 'single', inner })),
+                sequence<RecordRow>([id('attribute', (key) => ({ type: 'row', key })), named('value', expr_)], true, idt),
+            ],
+            idt,
+        ),
+        (rows, node) => ({ type: 'record', rows, src: { left: node.loc } }),
+    ),
+    list('round', multi(sprexpr_, true), (items, node) => ({ type: 'tuple', items, src: { left: node.loc } })),
+    // list('spaced', binned_, idt),
+]
+
+export const matchers = {
+
+}
+*/
+
 import { Src } from '../keyboard/handleShiftNav';
 import { Id, Loc, RecNode, TextSpan } from '../shared/cnodes';
 import { any, Ctx, id, idp, idt, kwd, list, Matcher, meta, mref, multi, named, opt, sequence, switch_, table, text, tx } from './dsl';
-import { XML } from './xml';
 
+type Pat =
+    | { type: 'var'; name: string; src: Src }
+    | { type: 'array'; values: SPat[]; src: Src }
+    | { type: 'default'; inner: Pat; value: Expr; src: Src }
+    | { type: 'record'; values: PRecordRow[]; src: Src }
+    | { type: 'typed'; inner: Pat; ann: Type; src: Src }
+    | PCon
+    | { type: 'text'; spans: TextSpan<Pat>[]; src: Src };
+type SPat = Pat | { type: 'spread'; inner: Pat; src: Src };
+
+type Type =
+    | { type: 'ref'; name: string; src: Src }
+    | { type: 'app'; target: Type; args: Type[]; src: Src }
+    | { type: 'fn'; args: { name: string; type: Type }[]; body: Type; src: Src };
+
+type PRecordRow =
+    | { type: 'spread'; inner: Pat; src: Src }
+    | {
+          type: 'row';
+          name?: string; // if name is undef, then value should be var or default(var)
+          nsrc: Src;
+          value: Pat;
+          src: Src;
+      };
+type PCon = { type: 'constr'; constr: Id<Loc>; args: Pat[]; src: Src };
+
+/*
+
+type PSpread = { type: 'spread'; inner: Pat; src: Src };
+type SPat = Pat | PSpread;
+type Pat =
+    | { type: 'bound'; name: string; src: Src }
+    | { type: 'array'; values: SPat[]; src: Src }
+    | PCon
+    | { type: 'text'; spans: TextSpan<Pat>[]; src: Src };
+type PCon = { type: 'constr'; constr: Id<Loc>; args: Pat[]; src: Src };
+
+*/
+
+const type_ = mref<Type>('type');
 const pat_ = mref<Pat>('pat');
 const sprpat_ = mref<SPat>('sprpat');
 
@@ -11,8 +107,18 @@ const sprpat_ = mref<SPat>('sprpat');
 // that would be ... interesting.
 
 const _pat: Matcher<Pat>[] = [
-    id(null, (node) => ({ type: 'bound', name: node.text, src: nodesSrc(node) })),
+    id(null, (node) => ({ type: 'var', name: node.text, src: nodesSrc(node) })),
     list('square', multi(sprpat_, true, idt), (values, node) => ({ type: 'array', values, src: nodesSrc(node) })),
+    list(
+        'smooshed',
+        sequence<{ inner: Pat; ann: Type }, Pat>([named('inner', pat_), kwd(':', () => null), named('ann', type_)], true, ({ inner, ann }, node) => ({
+            type: 'typed',
+            inner,
+            ann,
+            src: nodesSrc(node),
+        })),
+        idt,
+    ),
     list(
         'smooshed',
         sequence<PCon, PCon>(
@@ -37,7 +143,7 @@ const _spat: Matcher<SPat>[] = [
             [
                 meta(
                     'punct',
-                    kwd('..', () => ({})),
+                    kwd('...', () => ({})),
                 ),
                 pat_,
             ],
@@ -53,21 +159,15 @@ const block = list('curly', multi(mref<Stmt>('stmt'), true, idt), idt);
 const expr_ = mref<Expr>('expr');
 const sprexpr_ = mref<SExpr>('sprexpr');
 
-// type Shown = {left:}
+// async function m() {
+//     let x = 2 + await new Number
+// }
 
-type PSpread = { type: 'spread'; inner: Pat; src: Src };
-type SPat = Pat | PSpread;
-type Pat =
-    | { type: 'bound'; name: string; src: Src }
-    | { type: 'array'; values: SPat[]; src: Src }
-    | PCon
-    | { type: 'text'; spans: TextSpan<Pat>[]; src: Src };
-type PCon = { type: 'constr'; constr: Id<Loc>; args: Pat[]; src: Src };
+// type Shown = {left:}
 
 type SExpr = Expr | { type: 'spread'; inner: Expr; src: Src };
 type Expr =
-    | { type: 'local'; name: string; src: Src }
-    | { type: 'global'; id: Id<Loc>; src: Src }
+    | { type: 'var'; name: string; src: Src }
     | { type: 'text'; spans: TextSpan<SExpr>[]; src: Src }
     | { type: 'array'; items: SExpr[]; src: Src }
     | { type: 'tuple'; items: SExpr[]; src: Src }
@@ -89,6 +189,7 @@ type Visitor<T> = {
     expr(expr: SExpr, v: T): T;
     stmt(stmt: Stmt, v: T): T;
     pat(pat: SPat, v: T): T;
+    typ(typ: Type, v: T): T;
 };
 
 export const stmtSpans = (stmt: Stmt) => {
@@ -103,8 +204,30 @@ export const stmtSpans = (stmt: Stmt) => {
         stmt(stmt, v) {
             spans.push(stmt.src);
         },
+        typ(typ, v) {
+            spans.push(typ.src);
+        },
     });
     return spans;
+};
+
+export const foldType = <T>(typ: Type, i: T, v: Visitor<T>): T => {
+    i = v.typ(typ, i);
+    switch (typ.type) {
+        case 'fn':
+            typ.args.forEach((arg) => {
+                i = foldType(arg.type, i, v);
+            });
+            i = foldType(typ.body, i, v);
+            return i;
+        case 'app':
+            i = foldType(typ.target, i, v);
+            typ.args.forEach((arg) => {
+                i = foldType(arg, i, v);
+            });
+            return i;
+    }
+    return i;
 };
 
 export const foldPat = <T>(pat: SPat, i: T, v: Visitor<T>): T => {
@@ -115,7 +238,24 @@ export const foldPat = <T>(pat: SPat, i: T, v: Visitor<T>): T => {
                 i = foldPat(item, i, v);
             });
             return i;
-        case 'bound':
+        case 'typed':
+            i = foldPat(pat.inner, i, v);
+            i = foldType(pat.ann, i, v);
+            return i;
+        case 'default':
+            i = foldPat(pat.inner, i, v);
+            i = foldExpr(pat.value, i, v);
+            return i;
+        case 'record':
+            pat.values.forEach((row) => {
+                if (row.type === 'spread') {
+                    i = foldPat(row.inner, i, v);
+                } else {
+                    i = foldPat(row.value, i, v);
+                }
+            });
+            return i;
+        case 'var':
             return i;
         case 'constr':
             pat.args.forEach((arg) => {
@@ -229,6 +369,8 @@ export const foldExpr = <T>(expr: SExpr, i: T, v: Visitor<T>): T => {
 type Fn = { type: 'fn'; args: Pat[]; body: Stmt[]; src: Src };
 type Fancy =
     | Fn
+    | { type: 'new'; target: Expr; src: Src }
+    | { type: 'await'; target: Expr; src: Src }
     | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[]; src: Src }
     | { type: 'case'; target: Expr; cases: { pat: Pat; body: Stmt[] | Expr }[]; src: Src };
 
@@ -241,67 +383,26 @@ type Suffix =
 type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
 type Stmt = { type: 'expr'; expr: Expr; src: Src } | { type: 'let'; pat: Pat; value: Expr; src: Src };
 
-const aToXML = (v: any, name?: string): XML | XML[] | null => {
-    if (Array.isArray(v)) {
-        const sub = v.map((n) => aToXML(n, name));
-        if (sub.every(Boolean)) {
-            return sub as XML[];
-        }
-        return null;
-    }
-    if (!v || typeof v !== 'object') {
-        return null;
-    }
-    if (Object.keys(v).length === 0) return null;
-    const attrs: XML['attrs'] = {};
-    const children: XML['children'] = {};
-    Object.keys(v).forEach((k) => {
-        if (k === 'type' || k === 'src') return;
-        // if (k === 'type') return;
-        const res = aToXML(v[k], k);
-        if (res === null || k === 'src') attrs[k] = v[k];
-        else children[k] = res;
-    });
-    const res: XML = { tag: v.type ?? name ?? '?', src: v.src };
-    if (Object.keys(attrs).length) res.attrs = attrs;
-    if (Object.keys(children).length) res.children = children;
-    return res;
-};
-
-export const toXML = (v: any) => {
-    const res = aToXML(v);
-    if (!res || Array.isArray(res)) {
-        console.log(v, res);
-        throw new Error('why not');
-    }
-    return res;
-};
-
 const binned_ = mref<Expr>('binned');
+const fancy_ = mref<Expr>('fancy');
 
 const fancy = switch_<Expr, Expr>(
     [
-        sequence<Fn, Fn>(
+        sequence<Fancy, Fancy>(
             [
-                list(
-                    'smooshed',
-                    sequence<Fn, Fn>(
-                        [
-                            meta(
-                                'kwd',
-                                kwd('fn', () => ({ type: 'fn' })),
-                            ),
-                            named('args', list('round', multi(pat_, true, idt), idt)),
-                        ],
-                        true,
-                        idt,
-                    ),
-                    idt,
+                meta(
+                    'kwd',
+                    kwd('new', () => ({ type: 'new' })),
                 ),
-                named('body', block),
+                named('target', fancy_),
             ],
             false,
-            (data, node) => ({ ...data, src: nodesSrc(node) }),
+            idt,
+        ),
+        sequence<Fn, Fn>(
+            [named('args', list('round', multi(pat_, true, idt), idt)), kwd('=>', () => null), named('body', block)],
+            false,
+            (data, node) => ({ ...data, type: 'fn', src: nodesSrc(node) }),
         ),
         sequence<Fancy, Fancy>(
             [
@@ -461,8 +562,7 @@ export const nodesSrc = (nodes: RecNode | RecNode[]): Src =>
         : { left: nodes.loc };
 
 const _expr: Matcher<Expr>[] = [
-    id(null, (node) => ({ type: 'local', name: node.text, src: { left: node.loc } })),
-    // id('value', (id) => ({ type: 'global', id, src })),
+    id(null, (node) => ({ type: 'var', name: node.text, src: { left: node.loc } })),
     text(sprexpr_, (spans, node) => ({ type: 'text', spans, src: { left: node.loc } })),
     list('square', multi(sprexpr_, true), (items, node) => ({ type: 'array', items, src: { left: node.loc } })),
     table(
@@ -480,7 +580,7 @@ const _expr: Matcher<Expr>[] = [
     list('spaced', binned_, idt),
 ];
 
-export const kwds = ['if', 'case', 'else', 'let', '=', '..', '.', 'fn'];
+export const kwds = ['if', 'case', 'else', 'let', 'const', '=', '..', '.', 'fn'];
 
 const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%'];
 const precedence = [['!=', '=='], ['>', '<', '>=', '<='], ['%'], ['+', '-'], ['*', '/'], ['^']];
@@ -507,7 +607,7 @@ const dataToExpr = (data: Data | Expr): Expr => {
     const right = dataToExpr(data.right);
     return {
         type: 'call',
-        target: { type: 'local', name: data.op.text, src: nodesSrc(data.op) },
+        target: { type: 'var', name: data.op.text, src: nodesSrc(data.op) },
         args: [left, right],
         src: mergeSrc(left.src, right.src),
     };
@@ -528,16 +628,14 @@ export const matchers = {
     sprexpr: switch_([..._expr, _sprood], idt), // expr with spreads,
     pat: switch_(_pat, idt),
     sprpat: switch_(_spat, idt),
+    type: switch_<Type>([id(null, (node) => ({ type: 'ref', name: node.text, src: nodesSrc(node) }))], idt),
     stmt: switch_<Stmt, Stmt>(
         [
             list(
                 'spaced',
                 sequence<Stmt, Stmt>(
                     [
-                        meta(
-                            'kwd',
-                            kwd('let', () => ({ type: 'let' })),
-                        ),
+                        meta('kwd', switch_([kwd('let', () => ({ type: 'let' })), kwd('const', () => ({ type: 'let' }))], idt)),
                         named('pat', pat_),
                         meta(
                             'punct',
@@ -587,6 +685,7 @@ export const matchers = {
             return rights.length ? partition(left, rights) : left;
         },
     ),
+    fancy,
 };
 
 export const ctx = (): Ctx => ({

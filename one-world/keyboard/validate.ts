@@ -38,6 +38,18 @@ const validateNodes = (top: Top, id: number) => {
         throw new Error(`punct must be set if text is not empty ${node.text} vs ${node.ccls}, and vice versa`);
     }
 
+    if (node.type === 'list' && node.kind === 'spaced') {
+        if (node.children.length < 2) {
+            throw new Error(`spaced list shouldn't have fewer than 2 items`);
+        }
+        node.children.forEach((cid) => {
+            const child = top.nodes[cid];
+            if (child.type === 'list' && child.kind === 'spaced') {
+                throw new Error(`spaced child cant be spaced: ${child.kind}`);
+            }
+        });
+    }
+
     if (node.type === 'list' && node.kind === 'smooshed') {
         if (node.children.length < 2) {
             throw new Error(`smooshed list shouldn't have fewer than 2 items`);

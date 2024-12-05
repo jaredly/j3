@@ -223,7 +223,7 @@ const handleWrapMulti = (state: TestState, key: string): Update | void => {
 
     let sel: SelStart;
 
-    if (parent.kind === 'smooshed' || parent.kind === 'spaced') {
+    if ((parent.kind === 'smooshed' || parent.kind === 'spaced') && multi.children.length > 1) {
         const wrap = nextLoc++;
         nodes[wrap] = { ...parent, children: multi.children, loc: wrap };
         inner = [wrap];

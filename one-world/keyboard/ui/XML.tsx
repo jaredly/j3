@@ -53,7 +53,7 @@ export const XMLNode = ({
     const open = state.expanded.some((p) => pstartsWith(path, p, state.extra)) || state.pinned.some((p) => peq(p, path));
     const exact = state.expanded.some((p) => peq(p, path));
 
-    const selected = parentSelected || (node.src && sel.includes(node.src.left[0].idx) && (!node.src.right || sel.includes(node.src.right[0].idx)));
+    const selected = parentSelected || (node.src && sel.includes(node.src.left[0]?.idx) && (!node.src.right || sel.includes(node.src.right[0]?.idx)));
 
     const style = { ...tagStyle, background: 'transparent' };
     if (selected) {

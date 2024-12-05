@@ -6,7 +6,9 @@ import { init, TestState } from '../test-utils';
 import { useLocalStorage } from '../../../web/Debug';
 import { childLocs, Loc, Style } from '../../shared/cnodes';
 import { parse, show, Span } from '../../syntaxes/dsl';
-import { ctx, matchers, stmtSpans, toXML } from '../../syntaxes/gleam2';
+import * as glm from '../../syntaxes/gleam2';
+import * as ts from '../../syntaxes/ts';
+import { toXML } from '../../syntaxes/xml';
 import { nodeToXML, XML } from '../../syntaxes/xml';
 import { root } from '../root';
 import { lastChild, NodeSelection, selStart, Update } from '../utils';
@@ -78,21 +80,21 @@ export const App = () => {
 
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
 
-    const c = ctx();
-    const gleam = parse(matchers.stmt, rootNode, c);
+    const c = ts.ctx();
+    const parsed = parse(ts.matchers.stmt, rootNode, c);
     const errors = useMemo(() => {
         const errors: Record<number, string> = {};
-        gleam.bads.forEach((bad) => {
+        parsed.bads.forEach((bad) => {
             if (bad.type !== 'missing') {
                 errors[bad.node.loc[0].idx] = bad.type === 'extra' ? 'Extra node in ' + show(bad.matcher) : 'Mismatch: ' + show(bad.matcher);
             }
         });
         return errors;
-    }, [state, gleam.bads]);
+    }, [state, parsed.bads]);
 
     const refs: Record<number, HTMLElement> = useMemo(() => ({}), []);
 
-    const xml = useMemo(() => (gleam.result ? toXML(gleam.result) : null), [gleam.result]);
+    const xml = useMemo(() => (parsed.result ? toXML(parsed.result) : null), [parsed.result]);
     const xmlcst = useMemo(() => nodeToXML(rootNode), [rootNode]);
     const styles: Record<number, Style> = {};
     Object.entries(c.meta).forEach(([key, meta]) => {
@@ -101,7 +103,7 @@ export const App = () => {
         }
     });
 
-    const spans: Src[] = gleam.result ? stmtSpans(gleam.result) : [];
+    const spans: Src[] = parsed.result ? ts.stmtSpans(parsed.result) : [];
     const cspans = useLatest(spans);
 
     const paths = useMemo(() => allPaths(state.top), [state.top]);
@@ -161,7 +163,7 @@ export const App = () => {
                     <h3>AST</h3>
                     {xml ? <ShowXML root={xml} onClick={clickSrc} setHover={hoverSrc} sel={xmlKeys} /> : 'NO xml'}
                     <div style={{ marginTop: 50, whiteSpace: 'pre-wrap' }}>
-                        {gleam.bads.map((er, i) => (
+                        {parsed.bads.map((er, i) => (
                             <div key={i} style={{ color: 'red' }}>
                                 <div>
                                     {show(er.matcher)} {er.type}

@@ -264,9 +264,9 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 0 && sides.right.cursor === 0 ? (
                                 <Cursor />
                             ) : null}
-                            {'${'}
+                            <span style={{ color: 'rgb(248 136 0)' }}>{'${'}</span>
                             <RenderNode ctx={ctx} parent={nextParent} inRich={false} loc={span.item} state={state} />
-                            {'}'}
+                            <span style={{ color: 'rgb(248 136 0)' }}>{'}'}</span>
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 1 && sides.right.cursor === 1 ? (
                                 <Cursor />
                             ) : null}

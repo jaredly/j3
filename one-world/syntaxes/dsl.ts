@@ -135,6 +135,10 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
     const bad: Bag<MatchError> = [];
     const spans: Bag<Span> = [];
 
+    if (!matcher) {
+        throw new Error('no matcher');
+    }
+
     // ah need to know if we're in a comment matcher right now folkx
     if (ctx.comment) {
         while (true) {
