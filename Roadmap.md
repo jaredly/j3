@@ -8,6 +8,62 @@ ok those were fine actually.
 howww bout suffixes? ++ and --? Shouldn't be too bad. just add 'em to the mix
 of a smooshed.
 
+- yay it workss
+
+# What about custom binops?
+
+with ... different associativity?
+ok, so you're using a resolved whatsit, right?
+andd the parser is allowed to know, what things its interacting with
+as previously discussed, we shouldn't be denoramlizing the `kind` of references
+or anything like that
+in the `id(ref)`
+instead we should pass a map of the ... resolved exports of the things you're
+referencing when you parse? 🤔 hm that can get a little hairy if we're working
+with recursive references. so. what's the idea there.
+
+OK SO THE THING IS
+- parser will get a mapping of IDs to ~parsed export information.
+  FOR ANY that are mutually recursive, we just up and bail, and give it a `recursive` indicator.
+  so, if you're using something, it better not rely on specific export information (like associativity)
+
+:( :( :( so the sad part is, this means that parsing can't just rely on the contents. )))
+it also relies on that mapping that's passed in.
+
+whichhhh honestly is part of what I had planned to do for resolution of stuff, right? although,
+wait that means I wouldn't get renames for free, right? welll I would, kinda. Like, I would get them for
+/committed stuff/. But not for ... stuff that is loaded up? right? honestly that would be interesting.
+
+So, I need to know ... what kind of things, refs are, for parsing, because
+- macro expansion (the parser doesn't need to know, the outer system can just do it)
+  - BUT this does mean that 'the parsed state of things' is not just based on a hash of the source,
+    but ALSO a hash of the macros used in it. very relevant.
+- binop associativity, right?
+
+yeah I think that's probably the only things that impact parsing.
+
+ON THE OTHER HAND
+are we going to try to do... any presentation changes based on `kind`s? idk, doesnt matter.
+
+OK, so: defining a macro, has to be a thing that you tell the management.
+the results of parsing, we have
+- exports
+  - IF it has a `kind`, then we assume that the kind information is relevant to the parser.
+    but it doesnt have to have a kind.
+- macroExports?
+  - are there different kinds of macros
+  - there are the ones that might be used in the `auxiliaries` list of a toplevel, which might apply to the whole dealio
+    - so, these would receive, like, the containing container, and if that's the root of the auxiliary, you'd also get the full toplevel source(s).
+  - and the ones that are used inline, and get passed the 'containing container' of the thing to muck with.
+    - cool thing about that, you can do a template-string as a macro or a normal function. you choose.
+
+WAIT so `kind`s were going to be useful for autocomplete.
+hmm so does the parser just get the kinds of everything it depends on?
+I mean, it's probably fine. It will over-index, sometimes, but how often are you
+actually changing the /kind/ of something you're exporting anyways. seems like a relatively low cost situation.
+
+
+
 # PLACEHOLDERS
 
 WHattttt iffff we ditch /placeholders/ in the CST, and have them only be an artifact of the parsing?

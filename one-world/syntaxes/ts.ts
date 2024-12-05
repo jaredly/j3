@@ -393,6 +393,7 @@ type ESmoosh = { type: 'smooshed'; prefixes: Id<Loc>[]; base: Expr; suffixes: Su
 type Suffix =
     | { type: 'index'; items: SExpr[]; src: Src }
     | { type: 'call'; items: SExpr[]; src: Src }
+    | { type: 'suffix'; op: Id<Loc>; src: Src }
     | { type: 'attribute'; attribute: Id<Loc>; src: Src };
 type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
 type Stmt =
@@ -487,6 +488,7 @@ const fancy = switch_<Expr, Expr>(
 );
 
 const unops = ['+', '-', '!', '~'];
+const suffixops = ['++', '--'];
 
 const _exmoosh: Matcher<Omit<ESmoosh, 'type'>>[] = [
     named(
@@ -522,6 +524,13 @@ const _exmoosh: Matcher<Omit<ESmoosh, 'type'>>[] = [
                     ),
                     list<0, SExpr[], Suffix>('square', multi(sprexpr_, true), (items, node) => ({ type: 'index', items, src: nodesSrc(node) })),
                     list<0, SExpr[], Suffix>('round', multi(sprexpr_, true), (items, node) => ({ type: 'call', items, src: nodesSrc(node) })),
+                    meta(
+                        'uop',
+                        switch_<Suffix>(
+                            suffixops.map((op) => kwd(op, (node) => ({ type: 'suffix', op: node, src: nodesSrc(node) }))),
+                            idt,
+                        ),
+                    ),
                 ],
                 idt,
             ),
@@ -547,6 +556,9 @@ const parseSmoosh = ({ base, suffixes, prefixes }: Smoosh, node: RecNode): Expr 
                 return;
             case 'index':
                 base = { type: 'index', target: base, items: suffix.items, src: mergeSrc(base.src, suffix.src) };
+                return;
+            case 'suffix':
+                base = { type: 'uop', op: suffix.op, src: mergeSrc(base.src, suffix.src), target: base };
                 return;
         }
     });
