@@ -60,6 +60,8 @@ export const App = ({ id }: { id: string }) => {
         return keys.concat(extra);
     }, [msel, state.sel]);
 
+    const parser = state.parser ?? defaultParser;
+
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
             const up = keyUpdate(
@@ -77,6 +79,7 @@ export const App = ({ id }: { id: string }) => {
                     },
                     spans: cspans.current,
                 },
+                parser.config,
             );
             if (!up) return;
             evt.preventDefault();
@@ -88,8 +91,6 @@ export const App = ({ id }: { id: string }) => {
     });
 
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
-
-    const parser = state.parser ?? defaultParser;
 
     const parsed = parser.parse(rootNode);
     const errors = useMemo(() => {

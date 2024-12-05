@@ -7,6 +7,7 @@
 # OK it's high time that we do tabs. gotta do it.
 - [x] tabs
 - [ ] nominal capacity to switch up parsers
+- [ ] actually make it so you can switch it up
 
 # Can I do JS?
 
