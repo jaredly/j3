@@ -1,4 +1,13 @@
 
+# Can I do JS?
+
+- `new` [expr] is annoying
+- also `await` and `yield`
+ok those were fine actually.
+
+howww bout suffixes? ++ and --? Shouldn't be too bad. just add 'em to the mix
+of a smooshed.
+
 # PLACEHOLDERS
 
 WHattttt iffff we ditch /placeholders/ in the CST, and have them only be an artifact of the parsing?

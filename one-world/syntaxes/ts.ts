@@ -157,6 +157,7 @@ const _spat: Matcher<SPat>[] = [
 const block = list('curly', multi(mref<Stmt>('stmt'), true, idt), idt);
 
 const expr_ = mref<Expr>('expr');
+const stmt_ = mref<Stmt>('stmt');
 const sprexpr_ = mref<SExpr>('sprexpr');
 
 // async function m() {
@@ -280,13 +281,26 @@ export const foldStmt = <T>(stmt: Stmt, i: T, v: Visitor<T>): T => {
     switch (stmt.type) {
         case 'expr':
             return foldExpr(stmt.expr, i, v);
+        case 'return':
+            return stmt.value ? foldExpr(stmt.value, i, v) : i;
+        case 'throw':
+            return foldExpr(stmt.target, i, v);
         case 'let':
             i = foldPat(stmt.pat, i, v);
             return foldExpr(stmt.value, i, v);
+        case 'for':
+            i = foldExpr(stmt.init, i, v);
+            i = foldExpr(stmt.cond, i, v);
+            i = foldExpr(stmt.cond, i, v);
+            stmt.body.forEach((s) => {
+                i = foldStmt(s, i, v);
+            });
+            return i;
     }
 };
 
-export const foldExpr = <T>(expr: SExpr, i: T, v: Visitor<T>): T => {
+export const foldExpr = <T>(expr: SExpr | Blank, i: T, v: Visitor<T>): T => {
+    if (expr.type === 'blank') return i;
     i = v.expr(expr, i);
 
     switch (expr.type) {
@@ -381,7 +395,14 @@ type Suffix =
     | { type: 'call'; items: SExpr[]; src: Src }
     | { type: 'attribute'; attribute: Id<Loc>; src: Src };
 type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
-type Stmt = { type: 'expr'; expr: Expr; src: Src } | { type: 'let'; pat: Pat; value: Expr; src: Src };
+type Stmt =
+    | { type: 'expr'; expr: Expr; src: Src }
+    | { type: 'throw'; target: Expr; src: Src }
+    | { type: 'return'; value?: Expr; src: Src }
+    | { type: 'for'; init: Expr | Blank; cond: Expr | Blank; update: Expr | Blank; src: Src; body: Stmt[] }
+    | { type: 'let'; pat: Pat; value: Expr; src: Src };
+
+type Blank = { type: 'blank'; src: Src };
 
 const binned_ = mref<Expr>('binned');
 const fancy_ = mref<Expr>('fancy');
@@ -397,7 +418,18 @@ const fancy = switch_<Expr, Expr>(
                 named('target', fancy_),
             ],
             false,
-            idt,
+            (v, node) => ({ ...v, src: nodesSrc(node) }),
+        ),
+        sequence<Fancy, Fancy>(
+            [
+                meta(
+                    'kwd',
+                    kwd('await', () => ({ type: 'await' })),
+                ),
+                named('target', fancy_),
+            ],
+            false,
+            (v, node) => ({ ...v, src: nodesSrc(node) }),
         ),
         sequence<Fn, Fn>(
             [named('args', list('round', multi(pat_, true, idt), idt)), kwd('=>', () => null), named('body', block)],
@@ -580,7 +612,7 @@ const _expr: Matcher<Expr>[] = [
     list('spaced', binned_, idt),
 ];
 
-export const kwds = ['if', 'case', 'else', 'let', 'const', '=', '..', '.', 'fn'];
+export const kwds = ['for', 'return', 'new', 'await', 'throw', 'if', 'case', 'else', 'let', 'const', '=', '..', '.', 'fn'];
 
 const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%'];
 const precedence = [['!=', '=='], ['>', '<', '>=', '<='], ['%'], ['+', '-'], ['*', '/'], ['^']];
@@ -635,7 +667,63 @@ export const matchers = {
                 'spaced',
                 sequence<Stmt, Stmt>(
                     [
-                        meta('kwd', switch_([kwd('let', () => ({ type: 'let' })), kwd('const', () => ({ type: 'let' }))], idt)),
+                        meta(
+                            'kwd',
+                            kwd<Partial<Stmt>>('for', () => ({ type: 'for' })),
+                        ),
+                        list('round', sequence<any, any>([named('init', stmt_), named('cond', expr_), named('update', expr_)], true, idt), idt),
+                        named('body', block),
+                    ],
+                    false,
+                    (v, node) => ({ ...v, src: nodesSrc(node) }),
+                ),
+                idt,
+            ),
+            list(
+                'spaced',
+                sequence<Stmt, Stmt>(
+                    [
+                        meta(
+                            'kwd',
+                            kwd<Partial<Stmt>>('throw', () => ({ type: 'throw' })),
+                        ),
+                        named('target', fancy_),
+                    ],
+                    false,
+                    (v, node) => ({ ...v, src: nodesSrc(node) }),
+                ),
+                idt,
+            ),
+            list(
+                'spaced',
+                sequence<Stmt, Stmt>(
+                    [
+                        meta(
+                            'kwd',
+                            kwd<Partial<Stmt>>('return', () => ({ type: 'return' })),
+                        ),
+                        named('value', fancy_),
+                    ],
+                    false,
+                    (v, node) => ({ ...v, src: nodesSrc(node) }),
+                ),
+                idt,
+            ),
+            list(
+                'spaced',
+                sequence<Stmt, Stmt>(
+                    [
+                        meta(
+                            'kwd',
+                            switch_(
+                                [
+                                    //
+                                    kwd<Partial<Stmt>>('let', () => ({ type: 'let' })),
+                                    kwd<Partial<Stmt>>('const', () => ({ type: 'let' })),
+                                ],
+                                idt,
+                            ),
+                        ),
                         named('pat', pat_),
                         meta(
                             'punct',
