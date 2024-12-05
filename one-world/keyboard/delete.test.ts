@@ -194,7 +194,7 @@ test('del two', () => {
 test('text adfter', () => {
     let state = asTop(text([], true), listc('after'));
     state = applyUpdate(state, handleDelete(state));
-    check(state, text([], true), listc('end'));
+    check(state, text([], true), listc('inside'));
 });
 
 test('text before', () => {
