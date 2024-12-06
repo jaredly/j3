@@ -166,10 +166,6 @@ export type CPos = { left: number; top: number; height: number };
 // maybe?
 export const posInList = (path: Path, pos: { x: number; y: number }, refs: Record<number, HTMLElement>, top: Top) => {
     const node = top.nodes[lastChild(path)];
-    if (node.type !== 'list') {
-        console.warn('not a list', node);
-        return null;
-    }
     let best = null as [number, NodeSelection['start']] | null;
 
     const add = (can?: CPos | null, v?: NodeSelection['start'] | void) => {
@@ -192,10 +188,23 @@ export const posInList = (path: Path, pos: { x: number; y: number }, refs: Recor
     };
 
     sides(path);
-    node.children.forEach((child) => {
-        const cpath = pathWithChildren(path, child);
-        sides(cpath);
-    });
+
+    if (node.type === 'table') {
+        node.rows.forEach((row) => {
+            row.forEach((child) => {
+                const cpath = pathWithChildren(path, child);
+                sides(cpath);
+            });
+        });
+    } else if (node.type !== 'list') {
+        console.warn('not a list', node);
+        return null;
+    } else {
+        node.children.forEach((child) => {
+            const cpath = pathWithChildren(path, child);
+            sides(cpath);
+        });
+    }
 
     return best ? best[1] : null;
 };

@@ -96,6 +96,7 @@ export const App = ({ id }: { id: string }) => {
                 parser.config,
             );
             if (!up) return;
+            // console.log('up', up);
             evt.preventDefault();
             evt.stopPropagation();
             setState(applyUpdate(cstate.current, up));

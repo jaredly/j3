@@ -13,8 +13,14 @@ import { justSel, selUpdate } from '../handleNav';
 import { posInList } from './selectionPos';
 
 const hl = 'rgba(100,100,100,0.2)';
-const topener = { round: '(|', square: '[|', curly: '{|', angle: '<|' };
-const tcloser = { round: '|)', square: '|]', curly: '|}', angle: '|>' };
+// ? ''
+// ? ''
+// : '',
+// ? ''
+// ? ''
+// : '',
+const topener = { round: '⦇', square: '⟦', curly: '⦃', angle: '⦉' };
+const tcloser = { round: '⦈', square: '⟧', curly: '⦄', angle: '⦊' };
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
 const closer = { round: ')', square: ']', curly: '}', angle: '>' };
 const braceColor = 'rgb(100, 200, 200)';

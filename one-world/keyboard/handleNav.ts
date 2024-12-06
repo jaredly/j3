@@ -3,7 +3,21 @@ import { isRich, Node, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { TestState } from './test-utils';
-import { Current, Cursor, getCurrent, lastChild, NodeSelection, parentLoc, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
+import {
+    Current,
+    Cursor,
+    findTableLoc,
+    getCurrent,
+    lastChild,
+    NodeSelection,
+    parentLoc,
+    parentPath,
+    Path,
+    pathWithChildren,
+    selStart,
+    Top,
+    Update,
+} from './utils';
 
 export const justSel = (path: Path, cursor: Cursor) => ({ nodes: {}, selection: { start: selStart(path, cursor) } });
 
@@ -126,6 +140,14 @@ export const goLeft = (path: Path, top: Top, tab = false): NodeSelection['start'
         const next = pathWithChildren(parentPath(path), pnode.children[at - 1]);
         return selectEnd(next, top, !tab && pnode.kind === 'smooshed');
     }
+
+    if (pnode.type === 'table') {
+        const { row, col } = findTableLoc(pnode.rows, loc);
+        if (row === 0 && col === 0) {
+            return selStart(parentPath(path), { type: 'list', where: 'before' });
+        }
+    }
+
     if (pnode.type === 'text') {
         const index = pnode.spans.findIndex((n) => n.type === 'embed' && n.item === loc);
         if (index === -1) throw new Error('not actually in the text idk ' + loc);
@@ -149,6 +171,14 @@ export const goRight = (path: Path, top: Top, tight = false): NodeSelection['sta
         }
         return selectStart(pathWithChildren(parentPath(path), pnode.children[at + 1]), top, !tight && pnode.kind === 'smooshed');
     }
+
+    if (pnode.type === 'table') {
+        const { row, col } = findTableLoc(pnode.rows, loc);
+        if (row === pnode.rows.length - 1 && col === pnode.rows[row].length - 1) {
+            return selStart(parentPath(path), { type: 'list', where: 'after' });
+        }
+    }
+
     if (pnode.type === 'text') {
         const index = pnode.spans.findIndex((n) => n.type === 'embed' && n.item === loc);
         if (index === -1) throw new Error('not actually in the text idk ' + loc);
@@ -156,7 +186,7 @@ export const goRight = (path: Path, top: Top, tight = false): NodeSelection['sta
     }
 };
 
-export const handleNav = (key: string, state: TestState): Update | void => {
+export const handleNav = (key: 'ArrowLeft' | 'ArrowRight', state: TestState): Update | void => {
     if (key === 'ArrowLeft') {
         const current = getCurrent(state.sel, state.top);
         return navLeft(current, state);
@@ -260,6 +290,14 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                                 return justSel(current.path, { type: 'list', where: 'inside' });
                             }
                         }
+                        if (current.node.type === 'table') {
+                            if (current.node.rows.length > 0) {
+                                const start = selectStart(pathWithChildren(current.path, current.node.rows[0][0]), state.top);
+                                return start ? { nodes: {}, selection: { start } } : undefined;
+                            } else {
+                                return justSel(current.path, { type: 'list', where: 'inside' });
+                            }
+                        }
                     case 'inside':
                     case 'end':
                         return justSel(current.path, { type: 'list', where: 'after' });
@@ -351,6 +389,15 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
                                         false,
                                     ),
                                 );
+                            }
+                        }
+                        if (current.node.type === 'table') {
+                            if (current.node.rows.length > 0) {
+                                const last = current.node.rows[current.node.rows.length - 1];
+                                const start = selectEnd(pathWithChildren(current.path, last[last.length - 1]), state.top);
+                                return start ? { nodes: {}, selection: { start } } : undefined;
+                            } else {
+                                return justSel(current.path, { type: 'list', where: 'inside' });
                             }
                         }
                     case 'inside':

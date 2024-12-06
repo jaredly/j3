@@ -24,3 +24,39 @@ test('table n stuff', () => {
     state = applyUpdate(state, handleKey(state, '|', lisp)!);
     check(state, table('round', [[id('hi', true)]]), idc(0));
 });
+
+test('table to before', () => {
+    let state = asTop(table('round', [[id('hi', true)]]), idc(0));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, table('round', [[id('hi')]], true), listc('before'));
+});
+
+test('table to after', () => {
+    let state = asTop(table('round', [[id('hi', true)]]), idc(2));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, table('round', [[id('hi')]], true), listc('after'));
+});
+
+test('table into start', () => {
+    let state = asTop(table('round', [[id('hi')]], true), listc('before'));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, table('round', [[id('hi', true)]]), idc(0));
+});
+
+test('table into start empty', () => {
+    let state = asTop(table('round', [], true), listc('before'));
+    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    check(state, table('round', [], true), listc('inside'));
+});
+
+test('table into end', () => {
+    let state = asTop(table('round', [[id('hi')]], true), listc('after'));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, table('round', [[id('hi', true)]]), idc(2));
+});
+
+test('table into end empty', () => {
+    let state = asTop(table('round', [], true), listc('after'));
+    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    check(state, table('round', [], true), listc('inside'));
+});

@@ -71,7 +71,7 @@ export type MatchError =
           parent: Loc;
           sub: MatchParent['sub'];
       };
-type Data = { type: 'single'; value: any } | { type: 'named'; value: Record<string, any> };
+// type Data = { type: 'single'; value: any } | { type: 'named'; value: Record<string, any> };
 export type MatchRes<T> = { result: null | { data: T; consumed: number }; good: Bag<RecNode>; bad: Bag<MatchError> };
 // const single = (value: any): Data => ({ type: 'single', value });
 // const ndata = (name: string, value: any): Data => ({ type: 'named', value: { [name]: value } });
@@ -308,7 +308,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                         good.push(res.good);
                         bad.push(res.bad);
                         if (res.result) {
-                            items.push({ ...span, item: res.result.data.value });
+                            items.push({ ...span, item: res.result.data });
                         }
                         return;
                     default:
@@ -329,10 +329,11 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             const rows = [];
             for (let row = 0; row < node.rows.length; row++) {
                 const inner = match(matcher.row, ctx, { nodes: node.rows[row], loc: node.loc, sub: { type: 'table', row } }, 0);
+                // debugger;
                 good.push(inner.good);
                 bad.push(inner.bad);
                 if (inner.result) {
-                    rows.push(inner.result.data.value);
+                    rows.push(inner.result.data);
                 }
             }
             good.push(node);

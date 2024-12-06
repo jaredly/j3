@@ -38,6 +38,15 @@ const validateNodes = (top: Top, id: number) => {
         throw new Error(`punct must be set if text is not empty ${node.text} vs ${node.ccls}, and vice versa`);
     }
 
+    // Every row in a table must have at least one item.
+    if (node.type === 'table') {
+        node.rows.forEach((row) => {
+            if (row.length === 0) {
+                throw new Error(`table row has 0 items; must have at least 1`);
+            }
+        });
+    }
+
     if (node.type === 'list' && node.kind === 'spaced') {
         if (node.children.length < 2) {
             throw new Error(`spaced list shouldn't have fewer than 2 items`);

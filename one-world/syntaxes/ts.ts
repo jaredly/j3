@@ -320,8 +320,8 @@ const _expr: Matcher<Expr>[] = [
         'curly',
         switch_<RecordRow, RecordRow>(
             [
-                tx(sprexpr_, (inner) => ({ type: 'single', inner })),
                 sequence<RecordRow>([id('attribute', (key) => ({ type: 'row', key })), named('value', expr_)], true, idt),
+                tx(sprexpr_, (inner) => ({ type: 'single', inner })),
             ],
             idt,
         ),

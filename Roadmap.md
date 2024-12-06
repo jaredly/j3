@@ -11,6 +11,11 @@ can a row be empty?
 sure a table can, but a row ... probably cant
 idk
 
+yeah let's declare that a table isn't allowed to be empty.
+
+- [x] empty table
+- [x] table with one item
+
 ## Tables
 
 {|}
