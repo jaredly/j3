@@ -217,7 +217,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                                     {children}
                                 </div>
                             ) : (
-                                interleaveF(children, (i) => <span key={'sep' + i}>,&nbsp;</span>)
+                                interleaveF(children, (i) => <span key={'sep' + i}>{node.kind === 'curly' ? ';' : ','}&nbsp;</span>)
                             )}
                             {/* {cursor?.type === 'list' && cursor.where === 'end' ? (
                                 <span style={{ backgroundColor: hl }}>{closer[node.kind]}</span>

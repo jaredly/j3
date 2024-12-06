@@ -4,6 +4,22 @@ instead of the thing-that-wants-to-be-a-gadt that I have now.
 BUT thoes functions would be less introspectable I believe.
 anddd I need to make sure I can get autocomplete working in a way that makes sense.
 
+So, let's talk about the basics of autocomplete.
+
+
+
+BTW the meta needs to be somewhat aware of success.
+
+const x = (a, )
+
+currently placeholders as `pat` because it's trying to be a function
+but it successfully parses as expressions.
+
+btw this is a case where ... you would want autocomplete to allow
+either pat or value. So like, yeah maybe collect attempts even
+from failed parses.
+
+
 # Next up story
 
 - let's really get placeholders going. that sounds fun.

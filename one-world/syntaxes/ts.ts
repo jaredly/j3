@@ -292,9 +292,13 @@ export const foldStmt = <T>(stmt: Stmt, i: T, v: Visitor<T>): T => {
             i = foldExpr(stmt.init, i, v);
             i = foldExpr(stmt.cond, i, v);
             i = foldExpr(stmt.cond, i, v);
-            stmt.body.forEach((s) => {
-                i = foldStmt(s, i, v);
-            });
+            if (Array.isArray(stmt.body)) {
+                stmt.body.forEach((s) => {
+                    i = foldStmt(s, i, v);
+                });
+            } else {
+                i = foldStmt(stmt.body, i, v);
+            }
             return i;
     }
 };
@@ -404,7 +408,7 @@ type Stmt =
     | { type: 'expr'; expr: Expr; src: Src }
     | { type: 'throw'; target: Expr; src: Src }
     | { type: 'return'; value?: Expr; src: Src }
-    | { type: 'for'; init: Expr | Blank; cond: Expr | Blank; update: Expr | Blank; src: Src; body: Stmt[] }
+    | { type: 'for'; init: Expr | Blank; cond: Expr | Blank; update: Expr | Blank; src: Src; body: Stmt[] | Stmt }
     | { type: 'let'; pat: Pat; value: Expr; src: Src };
 
 type Blank = { type: 'blank'; src: Src };
@@ -475,7 +479,7 @@ const fancy = switch_<Expr, Expr>(
             [
                 meta(
                     'kwd',
-                    kwd('case', () => ({ type: 'case' })),
+                    kwd('switch', () => ({ type: 'case' })),
                 ),
                 named('target', binned_),
                 named(
@@ -675,91 +679,75 @@ const partition = (left: Expr, rights: { op: Id<Loc>; right: Expr }[]) => {
     return dataToExpr(data);
 };
 
+const stmtSpaced: Matcher<Stmt>[] = [
+    sequence<Stmt, Stmt>(
+        [
+            meta(
+                'kwd',
+                kwd<Partial<Stmt>>('for', () => ({ type: 'for' })),
+            ),
+            list('round', sequence<any, any>([named('init', stmt_), named('cond', expr_), named('update', expr_)], true, idt), idt),
+            named('body', switch_<Stmt[] | Stmt>([block, mref<Stmt>('stmtSpaced')], idt)),
+        ],
+        true,
+        (v, node) => ({ ...v, src: nodesSrc(node) }),
+    ),
+    sequence<Stmt, Stmt>(
+        [
+            meta(
+                'kwd',
+                kwd<Partial<Stmt>>('throw', () => ({ type: 'throw' })),
+            ),
+            named('target', fancy_),
+        ],
+        true,
+        (v, node) => ({ ...v, src: nodesSrc(node) }),
+    ),
+    sequence<Stmt, Stmt>(
+        [
+            meta(
+                'kwd',
+                kwd<Partial<Stmt>>('return', () => ({ type: 'return' })),
+            ),
+            named('value', fancy_),
+        ],
+        true,
+        (v, node) => ({ ...v, src: nodesSrc(node) }),
+    ),
+    sequence<Stmt, Stmt>(
+        [
+            meta(
+                'kwd',
+                switch_(
+                    [
+                        //
+                        kwd<Partial<Stmt>>('let', () => ({ type: 'let' })),
+                        kwd<Partial<Stmt>>('const', () => ({ type: 'let' })),
+                    ],
+                    idt,
+                ),
+            ),
+            named('pat', pat_),
+            meta(
+                'punct',
+                kwd('=', () => null),
+            ),
+            named('value', binned_),
+        ],
+        true,
+        idt,
+    ),
+    tx(binned_, (expr) => ({ type: 'expr', expr, src: expr.src })),
+];
+
 export const matchers = {
     expr: switch_([..._expr, _nosexpr], idt),
     sprexpr: switch_([..._expr, _sprood], idt), // expr with spreads,
     pat: switch_(_pat, idt),
     sprpat: switch_(_spat, idt),
     type: switch_<Type>([id(null, (node) => ({ type: 'ref', name: node.text, src: nodesSrc(node) }))], idt),
-    stmt: switch_<Stmt, Stmt>(
-        [
-            list(
-                'spaced',
-                sequence<Stmt, Stmt>(
-                    [
-                        meta(
-                            'kwd',
-                            kwd<Partial<Stmt>>('for', () => ({ type: 'for' })),
-                        ),
-                        list('round', sequence<any, any>([named('init', stmt_), named('cond', expr_), named('update', expr_)], true, idt), idt),
-                        named('body', block),
-                    ],
-                    false,
-                    (v, node) => ({ ...v, src: nodesSrc(node) }),
-                ),
-                idt,
-            ),
-            list(
-                'spaced',
-                sequence<Stmt, Stmt>(
-                    [
-                        meta(
-                            'kwd',
-                            kwd<Partial<Stmt>>('throw', () => ({ type: 'throw' })),
-                        ),
-                        named('target', fancy_),
-                    ],
-                    false,
-                    (v, node) => ({ ...v, src: nodesSrc(node) }),
-                ),
-                idt,
-            ),
-            list(
-                'spaced',
-                sequence<Stmt, Stmt>(
-                    [
-                        meta(
-                            'kwd',
-                            kwd<Partial<Stmt>>('return', () => ({ type: 'return' })),
-                        ),
-                        named('value', fancy_),
-                    ],
-                    false,
-                    (v, node) => ({ ...v, src: nodesSrc(node) }),
-                ),
-                idt,
-            ),
-            list(
-                'spaced',
-                sequence<Stmt, Stmt>(
-                    [
-                        meta(
-                            'kwd',
-                            switch_(
-                                [
-                                    //
-                                    kwd<Partial<Stmt>>('let', () => ({ type: 'let' })),
-                                    kwd<Partial<Stmt>>('const', () => ({ type: 'let' })),
-                                ],
-                                idt,
-                            ),
-                        ),
-                        named('pat', pat_),
-                        meta(
-                            'punct',
-                            kwd('=', () => null),
-                        ),
-                        named('value', binned_),
-                    ],
-                    true,
-                    idt,
-                ),
-                (res, node) => ({ ...res, src: nodesSrc(node) }),
-            ),
-            tx(expr_, (expr) => ({ type: 'expr', expr, src: expr.src })),
-        ],
-        idt,
-    ),
+    stmtSpaced: switch_<Stmt, Stmt>(stmtSpaced, idt),
+    stmt: switch_<Stmt, Stmt>([list('spaced', switch_(stmtSpaced, idt), idt), tx(expr_, (expr) => ({ type: 'expr', expr, src: expr.src }))], idt),
     binned: sequence<{ left: Expr; rights: { op: Id<Loc>; right: Expr }[] }, Expr>(
         [
             named('left', fancy),
