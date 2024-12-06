@@ -1,7 +1,7 @@
 import { Src } from '../keyboard/handleShiftNav';
 import { Id, Loc, RecNode } from '../shared/cnodes';
 import { Bag, Ctx, MatchParent } from './dsl';
-import { binops, Expr, partition } from './ts-types';
+import { binops, Expr, partition, Stmt } from './ts-types';
 
 type AutoComplete = string;
 
@@ -58,9 +58,9 @@ type Next<T> = <R>(inner: (v: T) => MRes<R>) => MRes<R>;
 type Start = { at: number; parent: MatchParent; loc: Loc };
 
 const start =
-    <T>(inner: (start: Start) => MRes<T>): MRes<T> =>
+    <T>(inner: (finish: <I>(f: (src: Src) => I) => MRes<I>) => MRes<T>): MRes<T> =>
     (parent, at) =>
-        inner({ parent, at, loc: parent.nodes[at].loc })(parent, at);
+        inner((f) => finish({ parent, at, loc: parent.nodes[at].loc }, f))(parent, at);
 
 const finish =
     <T>(start: Start, f: (src: Src) => T): MRes<T> =>
@@ -103,7 +103,8 @@ const multi =
     };
 
 const switch_ =
-    <I, T>(options: MRes<I>[], next: (v: I) => MRes<T>): MRes<T> =>
+    <I>(options: MRes<I>[]) =>
+    <T>(next: (v: I) => MRes<T>): MRes<T> =>
     (parent, at) => {
         for (let opt of options) {
             const res = opt(parent, at);
@@ -114,25 +115,24 @@ const switch_ =
         return { type: 'failed' };
     };
 
-const fancy = <T>(next: (v: Expr) => MRes<T>): MRes<T> =>
-    switch_([start((start) => kwd('new', () => binned((target) => finish(start, (src): Expr => ({ type: 'new', target, src })))))], next);
+const fancy = switch_<Expr>([
+    //
+    start((finish) => kwd('new', () => binned((target) => finish((src) => ({ type: 'new', target, src }))))),
+]);
+const bop = switch_(binops.map((bop) => kwd(bop, just)));
 
-const bop = <T>(next: (op: Id<Loc>) => MRes<T>) =>
-    switch_(
-        binops.map((bop) => kwd(bop, just)),
-        next,
-    );
-
-const binned: Next<Expr> = <R>(next: (v: Expr) => MRes<R>) =>
+const binned = <R>(next: (v: Expr) => MRes<R>): MRes<R> =>
     fancy((left) =>
         multi<{ op: Id<Loc>; right: Expr }, R>(
-            start((start) => bop((op) => fancy((right) => finish(start, (src) => ({ op, right }))))),
+            start((finish) => bop((op) => fancy((right) => finish((src) => ({ op, right }))))),
             (rights) => next(rights.length ? partition(left, rights) : left),
         ),
     );
 
-const thr = start((start) => kwd('throw', () => binned((target) => finish(start, (src) => ({ type: 'throw', target, src })))));
-
+const stmt = switch_<Stmt>([
+    //
+    start((finish) => kwd('throw', () => binned((target) => finish((src) => ({ type: 'throw', target, src }))))),
+]);
 /*
 
 if it returns ... a matcher, then keep going?
