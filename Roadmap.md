@@ -10,6 +10,28 @@
 - [ ] THEN do auto-scoping goodness
 
 
+So,
+seems like we only need to do autocomplete on ids.
+but
+there's this thing, were it might be nice to have like
+speculative spaced and smooshed.
+like, if we get to a node,
+and we're autocompleting it.
+yeahhh like we want different behavior maybe?
+like autocomplete is kinda speculative.
+
+BTW we're checking for comments wayyyy too much.
+like
+honestly they should only be valid at the start of a smooshed.
+and like
+nowhere else.
+ooh it could be cool to have `sequence` be able to specify
+"only match at the start". like ^ in regex.
+I already have $ which is .all
+
+
+
+
 # I want to try actual functions combinators again,with types
 instead of the thing-that-wants-to-be-a-gadt that I have now.
 BUT thoes functions would be less introspectable I believe.

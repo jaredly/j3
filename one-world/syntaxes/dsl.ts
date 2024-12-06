@@ -53,8 +53,8 @@ export const show = (matcher: Matcher<any>): string => {
             return matcher.type;
     }
 };
-type Bag<T> = T | Bag<T>[];
-const bagSize = (bag: Bag<unknown>): number => (Array.isArray(bag) ? bag.reduce((c, b) => c + bagSize(b), 0) : 1);
+export type Bag<T> = T | Bag<T>[];
+export const bagSize = (bag: Bag<unknown>): number => (Array.isArray(bag) ? bag.reduce((c, b) => c + bagSize(b), 0) : 1);
 export const foldBag = <T, R>(i: R, bag: Bag<T>, f: (i: R, v: T) => R): R => {
     if (Array.isArray(bag)) {
         return bag.reduce((i, b) => foldBag(i, b, f), i);
@@ -72,7 +72,7 @@ export type MatchError =
           sub: MatchParent['sub'];
       };
 type Data = { type: 'single'; value: any } | { type: 'named'; value: Record<string, any> };
-type MatchRes<T> = { result: null | { data: T; consumed: number }; good: Bag<RecNode>; bad: Bag<MatchError> };
+export type MatchRes<T> = { result: null | { data: T; consumed: number }; good: Bag<RecNode>; bad: Bag<MatchError> };
 // const single = (value: any): Data => ({ type: 'single', value });
 // const ndata = (name: string, value: any): Data => ({ type: 'named', value: { [name]: value } });
 const fail = (matcher: Matcher<any>, node: RecNode): MatchRes<any> => ({

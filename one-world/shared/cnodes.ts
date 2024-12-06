@@ -85,8 +85,7 @@ export type IdRef =
     // Soo this will have a look-uppable name too
     | { type: 'resource'; id: string; kind: string; hash?: string }
     | { type: 'builtin'; kind: string }
-    | { type: 'keyword' }
-    | { type: 'placeholder'; text: string };
+    | { type: 'keyword' };
 
 // ccls = "char class" i.e. what kind of punctuation. 0 = normal text
 export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc; ccls?: number; src?: Src };
@@ -208,8 +207,6 @@ const refsEqual = (one: IdRef, two: IdRef): boolean => {
             return two.type === 'builtin' && two.kind === one.kind;
         case 'keyword':
             return two.type === 'keyword';
-        case 'placeholder':
-            return two.type === 'placeholder' && two.text === one.text;
         case 'resource':
             return two.type === 'resource' && two.id === one.id && two.hash === one.hash;
         case 'toplevel':

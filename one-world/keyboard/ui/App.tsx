@@ -8,6 +8,7 @@ import { childLocs, Loc, Style } from '../../shared/cnodes';
 import { parse, show, Span } from '../../syntaxes/dsl';
 import * as glm from '../../syntaxes/gleam2';
 import * as ts from '../../syntaxes/ts';
+import * as tsTypes from '../../syntaxes/ts-types';
 import { toXML } from '../../syntaxes/xml';
 import { nodeToXML, XML } from '../../syntaxes/xml';
 import { root } from '../root';
@@ -32,7 +33,7 @@ const defaultParser: TestState['parser'] = {
     parse(node, cursor) {
         return parse(ts.matchers.stmt, node, ts.ctx(cursor));
     },
-    spans: ts.stmtSpans,
+    spans: tsTypes.stmtSpans,
 };
 
 const showKey = (evt: KeyboardEvent) => {
