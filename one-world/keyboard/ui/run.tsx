@@ -36,13 +36,19 @@ const Loader = () => {
                         {name}
                     </a>
                 ))}
-                <input onKeyDown={(evt) => evt.stopPropagation()} value={name} onChange={(evt) => setName(evt.target.value)} />
+                <input
+                    onKeyDown={(evt) => evt.stopPropagation()}
+                    value={name}
+                    onChange={(evt) => setName(evt.target.value)}
+                    placeholder="New scratchpad"
+                />
                 <button
                     onClick={() => {
                         if (name !== '' && !names.includes(name)) {
                             names.push(name);
                             localStorage['ow:tabs'] = JSON.stringify(names);
                             location.hash = '#' + name;
+                            setName('');
                         }
                     }}
                 >

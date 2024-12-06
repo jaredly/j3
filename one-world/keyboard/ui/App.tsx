@@ -35,6 +35,16 @@ const defaultParser: TestState['parser'] = {
     spans: ts.stmtSpans,
 };
 
+const showKey = (evt: KeyboardEvent) => {
+    let key = evt.key;
+    if (key === ' ') key = 'Space';
+    if (evt.metaKey) key = 'Meta ' + key;
+    if (evt.shiftKey) key = 'Shift ' + key;
+    if (evt.altKey) key = 'Alt ' + key;
+    if (evt.ctrlKey) key = 'Ctrl ' + key;
+    return key;
+};
+
 // 'nuniiverse'
 export const App = ({ id }: { id: string }) => {
     const [state, setState] = useLocalStorage(id, () => init);
@@ -62,8 +72,11 @@ export const App = ({ id }: { id: string }) => {
 
     const parser = state.parser ?? defaultParser;
 
+    const [lastKey, setLastKey] = useState(null as null | string);
+
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
+            setLastKey(showKey(evt));
             const up = keyUpdate(
                 cstate.current,
                 evt.key,
@@ -84,11 +97,11 @@ export const App = ({ id }: { id: string }) => {
             if (!up) return;
             evt.preventDefault();
             evt.stopPropagation();
-            setState(applyUpdate(state, up));
+            setState(applyUpdate(cstate.current, up));
         };
         document.addEventListener('keydown', f);
         return () => document.removeEventListener('keydown', f);
-    });
+    }, []);
 
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
 
@@ -152,6 +165,7 @@ export const App = ({ id }: { id: string }) => {
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, paddingBottom: 0, minHeight: 0 }}>
+                <div style={{ height: '1em', paddingBottom: 20 }}>{lastKey ?? ''}</div>
                 <RenderNode
                     loc={state.top.root}
                     parent={{ root: { ids: [], top: '' }, children: [] }}

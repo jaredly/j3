@@ -187,7 +187,19 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                 // console.log('iinnner', nodes[at], matcher.items[i].type, res.good);
                 good.push(res.good);
                 bad.push(res.bad);
-                if (!res.result) return { result: null, bad, good }; // TODO: recovery pls? or something. like, try the next node?
+                if (!res.result) {
+                    // I think ... I need a way to indicate
+                    // to the matcher, whether there are other options to consider.
+                    // like. if we're at the top of a switch, then don't bother trying
+                    // to go the course.
+                    // but, if we're not, then ... keep going?
+                    // hm so this might be fixed by saying that switches
+                    // should keep trying, if the match is, like, incomplete. or has errors.
+                    // now if there's a match with no errors, we early out.
+                    // hmmmmm.
+                    // if (matcher.all || endOfExhaustive)
+                    return { result: null, bad, good }; // TODO: recovery pls? or something. like, try the next node?
+                }
                 at += res.result.consumed;
                 if (!res.result.data || typeof res.result.data !== 'object') {
                     // console.log('nota thing', res.result);

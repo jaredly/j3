@@ -638,8 +638,17 @@ const _expr: Matcher<Expr>[] = [
 
 export const kwds = ['for', 'return', 'new', 'await', 'throw', 'if', 'case', 'else', 'let', 'const', '=', '..', '.', 'fn'];
 
-const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%'];
-const precedence = [['!=', '=='], ['>', '<', '>=', '<='], ['%'], ['+', '-'], ['*', '/'], ['^']];
+const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%', '=', '+=', '-=', '|=', '/=', '*='];
+const precedence = [
+    //
+    ['=', '+=', '-=', '|=', '/=', '*='],
+    ['!=', '=='],
+    ['>', '<', '>=', '<='],
+    ['%'],
+    ['+', '-'],
+    ['*', '/'],
+    ['^'],
+];
 
 const opprec: Record<string, number> = {};
 precedence.forEach((row, i) => {
@@ -692,13 +701,15 @@ const stmtSpaced: Matcher<Stmt>[] = [
         true,
         (v, node) => ({ ...v, src: nodesSrc(node) }),
     ),
+    // meta('kwd', kwd('break', () => ({type: 'break'}))),
+    // meta('kwd', kwd('break', () => ({type: 'continue'}))),
     sequence<Stmt, Stmt>(
         [
             meta(
                 'kwd',
                 kwd<Partial<Stmt>>('throw', () => ({ type: 'throw' })),
             ),
-            named('target', fancy_),
+            named('target', binned_),
         ],
         true,
         (v, node) => ({ ...v, src: nodesSrc(node) }),
@@ -709,7 +720,7 @@ const stmtSpaced: Matcher<Stmt>[] = [
                 'kwd',
                 kwd<Partial<Stmt>>('return', () => ({ type: 'return' })),
             ),
-            named('value', fancy_),
+            named('value', binned_),
         ],
         true,
         (v, node) => ({ ...v, src: nodesSrc(node) }),
