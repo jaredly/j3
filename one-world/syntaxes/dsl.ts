@@ -157,7 +157,8 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
     switch (matcher.type) {
         case 'named': {
             if (at < parent.nodes.length && isBlank(parent.nodes[at])) {
-                ctx.meta[parent.nodes[at].loc[0].idx] = { placeholder: matcher.name };
+                const loc = parent.nodes[at].loc[0].idx;
+                if (!ctx.meta[loc]) ctx.meta[loc] = { placeholder: matcher.name };
             }
             const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
             return {
@@ -248,7 +249,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
         case 'mref':
             if (at < parent.nodes.length && isBlank(parent.nodes[at])) {
                 const loc = parent.nodes[at].loc[0].idx;
-                ctx.meta[loc] = { placeholder: matcher.id };
+                if (!ctx.meta[loc]) ctx.meta[loc] = { placeholder: matcher.id };
             }
             return match(ctx.matchers[matcher.id], ctx, parent, at, endOfExhaustive);
         case 'tx': {

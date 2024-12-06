@@ -74,7 +74,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
         if (!style) style = {};
         style.borderRadius = '2px';
         // const lightColor = 'rgb(255,100,100,0.5)';
-        style.background = lightColor;
+        style.backgroundColor = lightColor;
         style.outline = `2px solid ${lightColor}`;
     }
 
@@ -82,7 +82,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
         if (!style) style = {};
         style.borderRadius = '2px';
         const color = 'rgb(255,100,100)';
-        style.background = lightColor;
+        style.backgroundColor = lightColor;
         style.outline = `2px solid ${color}`;
         style.position = 'relative';
     }
@@ -92,7 +92,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
         if (!style) style = {};
         style.borderRadius = '2px';
         // const lightColor = 'rgb(255,100,100,0.5)';
-        style.background = hoverColor;
+        style.backgroundColor = hoverColor;
         style.outline = `2px solid ${hoverColor}`;
     }
 
@@ -106,8 +106,10 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             if (cursor?.type === 'id') {
                 const { left, right } = cursorSides(cursor);
                 let text = cursor.text ?? splitGraphemes(node.text);
+                let usingPlaceholder = false;
                 if (text.length === 0 && plh) {
                     if (!style) style = {};
+                    usingPlaceholder = true;
                     Object.assign(style, placeholderStyle);
                     text = splitGraphemes(plh);
                 }
@@ -115,10 +117,9 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     <span style={style}>
                         <TextWithCursor
                             innerRef={ref}
-                            // cursorRef={cursorRef}
                             onClick={(evt) => {
                                 evt.stopPropagation();
-                                const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
+                                const pos = usingPlaceholder ? 0 : cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
                                 ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0, text: cursor.text }));
                             }}
                             text={text}
@@ -202,7 +203,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                             <span
                                 style={{
-                                    background: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
+                                    backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
                                     color: braceColor,
                                     // ...style,
                                     // borderRadius: style?.borderRadius,
@@ -219,13 +220,13 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                                 interleaveF(children, (i) => <span key={'sep' + i}>,&nbsp;</span>)
                             )}
                             {/* {cursor?.type === 'list' && cursor.where === 'end' ? (
-                                <span style={{ background: hl }}>{closer[node.kind]}</span>
+                                <span style={{ backgroundColor: hl }}>{closer[node.kind]}</span>
                             ) : (
                                 closer[node.kind]
                             )} */}
                             <span
                                 style={{
-                                    background: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined,
+                                    backgroundColor: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined,
                                     color: braceColor,
                                     // borderRadius: style?.borderRadius,
                                 }}
@@ -281,7 +282,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         if (left === 0 && right === 1) selected = true;
                     }
                     return (
-                        <span style={{ background: selected ? hl : 'rgba(255,255,255,0.5)' }} data-index={i} key={i}>
+                        <span style={{ backgroundColor: selected ? hl : 'rgba(255,255,255,0.5)' }} data-index={i} key={i}>
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 0 && sides.right.cursor === 0 ? (
                                 <Cursor />
                             ) : null}
@@ -314,10 +315,10 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             return (
                 <span style={{ backgroundColor: 'rgba(255,255,0,0.4)', ...style }} ref={ref}>
                     {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
-                    {cursor?.type === 'list' && cursor.where === 'start' ? <span style={{ background: hl }}>"</span> : '"'}
+                    {cursor?.type === 'list' && cursor.where === 'start' ? <span style={{ backgroundColor: hl }}>"</span> : '"'}
                     {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                     {children}
-                    {cursor?.type === 'list' && cursor.where === 'end' ? <span style={{ background: hl }}>"</span> : '"'}
+                    {cursor?.type === 'list' && cursor.where === 'end' ? <span style={{ backgroundColor: hl }}>"</span> : '"'}
                     {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                 </span>
             );

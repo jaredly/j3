@@ -341,9 +341,13 @@ export const foldExpr = <T>(expr: SExpr | Blank, i: T, v: Visitor<T>): T => {
             expr.args.forEach((pat) => {
                 i = foldPat(pat, i, v);
             });
-            expr.body.forEach((stmt) => {
-                i = foldStmt(stmt, i, v);
-            });
+            if (Array.isArray(expr.body)) {
+                expr.body.forEach((stmt) => {
+                    i = foldStmt(stmt, i, v);
+                });
+            } else {
+                i = foldExpr(expr.body, i, v);
+            }
             return i;
         case 'if':
             i = foldExpr(expr.cond, i, v);
@@ -380,7 +384,7 @@ export const foldExpr = <T>(expr: SExpr | Blank, i: T, v: Visitor<T>): T => {
     }
 };
 
-type Fn = { type: 'fn'; args: Pat[]; body: Stmt[]; src: Src };
+type Fn = { type: 'fn'; args: Pat[]; body: Stmt[] | Expr; src: Src };
 type Fancy =
     | Fn
     | { type: 'new'; target: Expr; src: Src }
@@ -433,7 +437,11 @@ const fancy = switch_<Expr, Expr>(
             (v, node) => ({ ...v, src: nodesSrc(node) }),
         ),
         sequence<Fn, Fn>(
-            [named('args', list('round', multi(pat_, true, idt), idt)), kwd('=>', () => null), named('body', block)],
+            [
+                named('args', list('round', multi(pat_, true, idt), idt)),
+                kwd('=>', () => null),
+                named('body', switch_<Stmt[] | Expr>([block, expr_], idt)),
+            ],
             false,
             (data, node) => ({ ...data, type: 'fn', src: nodesSrc(node) }),
         ),

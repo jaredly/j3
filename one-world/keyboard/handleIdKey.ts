@@ -31,7 +31,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     }
 
     const pnode = top.nodes[parentLoc(path)];
-    if (pnode?.type === 'list' && braced(pnode) && pnode.children.length === 1 && !pnode.forceMultiline) {
+    if (grem === '\n' && pnode?.type === 'list' && braced(pnode) && pnode.children.length === 1 && !pnode.forceMultiline) {
         const chars = cursor.text?.slice() ?? splitGraphemes(current.text);
         if (chars.length === 0) {
             return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: true } } };

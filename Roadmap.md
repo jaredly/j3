@@ -1,4 +1,9 @@
 
+# I want to try actual functions combinators again,with types
+instead of the thing-that-wants-to-be-a-gadt that I have now.
+BUT thoes functions would be less introspectable I believe.
+anddd I need to make sure I can get autocomplete working in a way that makes sense.
+
 # Next up story
 
 - let's really get placeholders going. that sounds fun.
