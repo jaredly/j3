@@ -101,6 +101,8 @@ type PCon = { type: 'constr'; constr: Id<Loc>; args: Pat[]; src: Src };
 const type_ = mref<Type>('type');
 const pat_ = mref<Pat>('pat');
 const sprpat_ = mref<SPat>('sprpat');
+const binned_ = mref<Expr>('binned');
+const fancy_ = mref<Expr>('fancy');
 
 // Should all matcher be ... records?
 // in order?
@@ -109,6 +111,20 @@ const sprpat_ = mref<SPat>('sprpat');
 const _pat: Matcher<Pat>[] = [
     id(null, (node) => ({ type: 'var', name: node.text, src: nodesSrc(node) })),
     list('square', multi(sprpat_, true, idt), (values, node) => ({ type: 'array', values, src: nodesSrc(node) })),
+    list(
+        'spaced',
+        sequence<Extract<Pat, { type: 'default' }>>(
+            [
+                //
+                named('inner', pat_),
+                kwd('=', () => null),
+                named('value', binned_),
+            ],
+            true,
+            ({ inner, value }, node) => ({ type: 'default', inner, value, src: nodesSrc(node) }),
+        ),
+        idt,
+    ),
     list(
         'smooshed',
         sequence<{ inner: Pat; ann: Type }, Pat>([named('inner', pat_), kwd(':', () => null), named('ann', type_)], true, ({ inner, ann }, node) => ({
@@ -412,9 +428,6 @@ type Stmt =
     | { type: 'let'; pat: Pat; value: Expr; src: Src };
 
 type Blank = { type: 'blank'; src: Src };
-
-const binned_ = mref<Expr>('binned');
-const fancy_ = mref<Expr>('fancy');
 
 const fancy = switch_<Expr, Expr>(
     [

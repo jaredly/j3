@@ -105,6 +105,7 @@ let indent = 0;
 export type MatchParent = { nodes: RecNode[]; loc: Loc; sub?: { type: 'text'; index: number } | { type: 'table'; row: number } };
 
 export const match = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at: number, endOfExhaustive?: boolean): MatchRes<T> => {
+    // debugger;
     // console.log(white(indent), 'enter', show(matcher));
     // indent++;
     const res = match_(matcher, ctx, parent, at, endOfExhaustive);
@@ -119,7 +120,7 @@ export const match = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at:
     // if (res.result) {
     //     console.log(white(indent), 'match success', show(matcher), res.result.consumed);
     //     if (res.result.consumed) {
-    //         console.log(nodes.slice(at, at + res.result.consumed));
+    //         console.log(parent.nodes.slice(at, at + res.result.consumed));
     //         console.log(res.result.data);
     //     }
     // } else {

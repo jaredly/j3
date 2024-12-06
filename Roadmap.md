@@ -1,4 +1,11 @@
 
+# autocomplete
+
+- [ ] needs to collect all the options
+- [ ] also ... I think we want to ~know about local definitions
+  at some level, right?
+
+
 # I want to try actual functions combinators again,with types
 instead of the thing-that-wants-to-be-a-gadt that I have now.
 BUT thoes functions would be less introspectable I believe.
