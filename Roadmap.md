@@ -1,4 +1,43 @@
 
+# I'm torn
+
+between working on tables
+and working on the combinators dealio and autocomplete and stuff.
+
+ok let's do tables?
+
+CAN A TABLE be empty
+can a row be empty?
+sure a table can, but a row ... probably cant
+idk
+
+## Tables
+
+{|}
+right?
+any other options?
+I could require a \ like `\(` being talbe or `\{`
+yeah I like it. has resonance with markdown.
+
+wait, will that make doing things like || more weird?
+I mean, you can just wrap in a () right
+
+ergh.
+yeah using | to separate columns would make doing something like `a || b` inside a column
+needlessly annoying. which I sure would like to avoid.
+what if I make you do `\`? like \| for a new column. in general would it be rare?
+I mean
+everry time you want to make a record.
+hmmmm. or just commas?
+
+lol ok commas
+yeah that's the one that makes sense right
+I mean
+ok that'll be something you can customize too.
+in a lisp world, call it `|`, in a js world, `,`
+
+
+
 # autocomplete
 
 - [ ] needs to collect all the options

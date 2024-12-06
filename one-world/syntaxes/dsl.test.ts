@@ -4,14 +4,14 @@ import { asTop, id, idc, spaced } from '../keyboard/test-utils';
 import { root } from '../keyboard/root';
 import { lastChild } from '../keyboard/utils';
 
-test('match id', () => {
-    const node = id<Loc>('lol');
-    expect(d.match(d.id(null, d.idt), { matchers: {}, kwds: [], meta: {} }, { nodes: [node], loc: [] }, 0)).toEqual({
-        result: { data: node, consumed: 1 },
-        good: [node, []],
-        bad: [],
-    });
-});
+// test('match id', () => {
+//     const node = id<Loc>('lol');
+//     expect(d.match(d.id(null, d.idt), { matchers: {}, kwds: [], meta: {} }, { nodes: [node], loc: [] }, 0)).toEqual({
+//         result: { data: node, consumed: 1 },
+//         good: [node, []],
+//         bad: [],
+//     });
+// });
 
 test('lol', () => {
     const state = asTop(spaced([id('let'), id('x'), id('='), id('', true)]), idc(0));

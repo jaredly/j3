@@ -158,11 +158,37 @@ export const curly = list('curly');
 // export const angle = list('angle');
 export const table = <T>(kind: TableKind, rows: RecNodeT<T>[][], loc: T = null as T): RecNodeT<T> => ({ type: 'table', kind, rows, loc });
 export const text = <T>(spans: TextSpan<RecNodeT<T>>[], loc: T = null as T): RecText<T> => ({ type: 'text', loc, spans });
+
+// ugh.
+/*
+
+In lisp, we want:
+- ' ' to be the list sep
+- no space sep
+- '|' to be the table sep, but NOT the list sep
+
+I guess it would be
+
+list: ' \n'
+table: '|\n
+
+and js
+
+list: ',;\n',
+table: ';\n',
+
+So instead of `listKind` it would be something like .. `isListSep(key, config)` and `isTableSep(key, config)`
+*/
+
 export const lisp = {
     punct: [';', '.', '@', '=#+'],
     space: '',
+    lisp: ' ',
+    table: '|',
     sep: ' \n',
+    // |
 };
+
 export const js = {
     // punct: [],
     // so js's default is just 'everything for itself'
@@ -171,7 +197,10 @@ export const js = {
     punct: ['.', '/', '~`!@#$%^&*+-=\\/?:><'],
     space: ' ',
     sep: ';,\n',
-}; // Classes of keys
+    // ,
+};
+
+// Classes of keys
 /// IDkeys
 const allkeys = '1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM~!@#$%^&*()_+{}|:"<>?`-=[]\\;\',./';
 const idkeys = (config: Config) => [...allkeys].filter((k) => !config.punct.includes(k) && !config.space.includes(k) && !config.sep.includes(k));

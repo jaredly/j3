@@ -5,7 +5,7 @@ import { justSel, selUpdate } from './handleNav';
 import { lastChild, ListCursor, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
 
 export type Config = { punct: string[]; space: string; sep: string };
-export type Kind = number | 'space' | 'sep' | 'string';
+export type Kind = number | 'space' | 'sep' | 'string'; // | 'bar';
 
 export const textKind = (grem: string, config: Config): Kind => {
     if (grem === '"') return 'string';
