@@ -54,6 +54,17 @@ const Loader = () => {
                 >
                     Create
                 </button>
+                <button
+                    onClick={() => {
+                        if (confirm('Really delete current scratchpad')) {
+                            localStorage.removeItem(hash);
+                            localStorage['ow:tabs'] = JSON.stringify(names.filter((n) => n !== hash));
+                            setName('');
+                        }
+                    }}
+                >
+                    Delete
+                </button>
             </div>
             <App key={hash} id={hash} />
         </div>

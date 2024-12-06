@@ -1,7 +1,7 @@
 import { RecNodeT, Nodes, fromRec, childLocs, childNodes, Id, ListKind, RecText, TextSpan, TableKind, Style, IdRef, RecNode } from '../shared/cnodes';
 import { Ctx, ParseResult } from '../syntaxes/dsl';
 import { selEnd, Src } from './handleShiftNav';
-import { charClass, Config } from './insertId';
+import { charClass } from './insertId';
 import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, Path, selStart, TextCursor, Top } from './utils';
 
 export type TestState = {
@@ -178,16 +178,19 @@ list: ',;\n',
 table: ';\n',
 
 So instead of `listKind` it would be something like .. `isListSep(key, config)` and `isTableSep(key, config)`
+
+and we only check tableSep in certain circumstances.
+
 */
 
 export const lisp = {
     punct: [';', '.', '@', '=#+'],
     space: '',
-    lisp: ' ',
-    table: '|',
     sep: ' \n',
-    // |
-};
+    tableCol: '|',
+    tableRow: '\n',
+    tableNew: '|',
+} satisfies Config;
 
 export const js = {
     // punct: [],
@@ -196,8 +199,19 @@ export const js = {
     // punct: '~`!@#$%^&*_+-=\\./?:',
     punct: ['.', '/', '~`!@#$%^&*+-=\\/?:><'],
     space: ' ',
-    sep: ';,\n',
-    // ,
+    sep: ',;\n',
+    tableCol: ',',
+    tableRow: ';\n',
+    tableNew: '|',
+} satisfies Config;
+
+export type Config = {
+    punct: string[];
+    space: string;
+    sep: string;
+    tableCol: string;
+    tableRow: string;
+    tableNew: string;
 };
 
 // Classes of keys

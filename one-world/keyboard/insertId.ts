@@ -2,9 +2,9 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { stylesEqual, Text } from '../shared/cnodes';
 import { handleListKey } from './handleListKey';
 import { justSel, selUpdate } from './handleNav';
+import { Config } from './test-utils';
 import { lastChild, ListCursor, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
 
-export type Config = { punct: string[]; space: string; sep: string };
 export type Kind = number | 'space' | 'sep' | 'string'; // | 'bar';
 
 export const textKind = (grem: string, config: Config): Kind => {

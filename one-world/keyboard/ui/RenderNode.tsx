@@ -13,6 +13,8 @@ import { justSel, selUpdate } from '../handleNav';
 import { posInList } from './selectionPos';
 
 const hl = 'rgba(100,100,100,0.2)';
+const topener = { round: '(|', square: '[|', curly: '{|', angle: '<|' };
+const tcloser = { round: '|)', square: '|]', curly: '|}', angle: '|>' };
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
 const closer = { round: ')', square: ']', curly: '}', angle: '>' };
 const braceColor = 'rgb(100, 200, 200)';
@@ -323,11 +325,50 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 </span>
             );
         }
-        case 'table':
+        case 'table': {
+            const children = node.rows.map((row) =>
+                interleaveF(
+                    row.map((loc) => <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />),
+                    (i) => <span key={`sep${i}`}>,</span>,
+                ),
+            );
             return (
-                <span style={style} ref={ref}>
-                    Table
+                <span
+                    style={style}
+                    ref={ref}
+                    onClick={(evt) => {
+                        evt.stopPropagation();
+                        const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                        if (sel) {
+                            ctx.dispatch(selUpdate(sel)!);
+                        }
+                    }}
+                >
+                    {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+                    <span
+                        style={{
+                            backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
+                            color: braceColor,
+                            // ...style,
+                            // borderRadius: style?.borderRadius,
+                        }}
+                    >
+                        {topener[node.kind]}
+                    </span>
+                    {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+                    {interleaveF(children, (i) => [<span key={`row${i}`}>{';'}</span>])}
+                    <span
+                        style={{
+                            backgroundColor: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined,
+                            color: braceColor,
+                            // borderRadius: style?.borderRadius,
+                        }}
+                    >
+                        {tcloser[node.kind]}
+                    </span>
+                    {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                 </span>
             );
+        }
     }
 };

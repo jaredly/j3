@@ -1,7 +1,8 @@
 import { Node, Nodes } from '../shared/cnodes';
 import { findParent, listKindForKeyKind, Flat, addNeighborBefore, addNeighborAfter } from './flatenate';
 import { justSel } from './handleNav';
-import { Config, textKind } from './insertId';
+import { textKind } from './insertId';
+import { Config } from './test-utils';
 import { flatten, flatToUpdateNew } from './rough';
 import { Top, Path, CollectionCursor, Update, lastChild, selStart, pathWithChildren, parentPath, Cursor } from './utils';
 
@@ -11,6 +12,16 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     const current = top.nodes[lastChild(path)];
     const kind = textKind(grem, config);
     if (cursor.type !== 'list') throw new Error('controls not handled yet');
+
+    if (
+        grem === config.tableNew &&
+        current.type === 'list' &&
+        current.children.length === 0 &&
+        cursor.where === 'inside' &&
+        (current.kind === 'round' || current.kind === 'square' || current.kind === 'curly')
+    ) {
+        return { nodes: { [current.loc]: { type: 'table', kind: current.kind, rows: [], loc: current.loc } } };
+    }
 
     if (grem === '\n' && braced(current) && current.type === 'list' && !current.forceMultiline && cursor.where === 'inside') {
         let nextLoc = top.nextLoc;

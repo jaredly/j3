@@ -1,5 +1,5 @@
 import { applyUpdate } from '../keyboard/applyUpdate';
-import { Config } from '../keyboard/insertId';
+import { Config } from '../keyboard/test-utils';
 import { init, TestState } from '../keyboard/test-utils';
 import { keyUpdate } from '../keyboard/ui/keyUpdate';
 

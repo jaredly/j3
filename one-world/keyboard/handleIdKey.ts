@@ -4,7 +4,8 @@ import { cursorSides } from './cursorSides';
 import { cursorSplit } from './cursorSplit';
 import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
 import { braced } from './handleListKey';
-import { Config, textKind } from './insertId';
+import { textKind } from './insertId';
+import { Config } from './test-utils';
 import { flatToUpdateNew, flatten } from './rough';
 import { Cursor, IdCursor, Path, Top, Update, lastChild, parentLoc, parentPath, selStart } from './utils';
 
@@ -12,6 +13,13 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     let current = top.nodes[lastChild(path)];
     if (current.type !== 'id') throw new Error('not id');
     const kind = textKind(grem, config);
+
+    if (grem === config.tableNew && cursor.end === 0) {
+        const parent = top.nodes[parentLoc(path)];
+        if (parent?.type === 'list' && (parent.kind === 'round' || parent.kind === 'curly' || parent.kind === 'square')) {
+            return { nodes: { [parent.loc]: { type: 'table', kind: parent.kind, loc: parent.loc, rows: [[current.loc]] } } };
+        }
+    }
 
     if (typeof kind === 'number') {
         if (current.ccls == null) {
