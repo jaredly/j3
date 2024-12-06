@@ -9,7 +9,7 @@ export type TestState = {
     sel: NodeSelection;
     parser?: {
         config: Config;
-        parse(node: RecNode): ParseResult<any>;
+        parse(node: RecNode, cursor?: number): ParseResult<any>;
         spans(ast: any): Src[];
     };
 };

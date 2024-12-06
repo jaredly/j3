@@ -27,7 +27,7 @@ export type Matcher<Res> =
     | { type: 'opt'; inner: Matcher<any>; f: (v: any | null) => Res }
     | { type: 'table'; kind: TableKind; row: Matcher<any>; f: (v: any, node: RecNode) => Res }
     | { type: 'switch'; choices: Matcher<any>[]; f: (v: any) => Res }
-    | { type: 'meta'; inner: Matcher<Res>; kind: string }
+    | { type: 'meta'; inner: Matcher<Res>; kind?: string; autocomplete?: AutoComplete }
     | { type: 'mref'; id: string };
 //; f: (v: any) => any }
 // | { type: 'kswitch'; choices: Record<string, Matcher>; f: (v: any) => any };
@@ -86,12 +86,19 @@ const one = <T>(data: T, node: RecNode, good: Bag<RecNode> = [], bad: Bag<MatchE
     bad,
 });
 
+type AutoComplete = string;
+
 export type Ctx = {
     matchers: Record<string, Matcher<any>>;
     kwds: string[];
     comment?: Matcher<any>;
     strictIds?: boolean;
     meta: Record<number, { kind?: string; placeholder?: string }>;
+    autocomplete?: {
+        loc: number;
+        concrete: AutoComplete[];
+        kinds: (string | null)[];
+    };
 };
 
 /** We need to:
@@ -103,19 +110,15 @@ const white = (n: number) => Array(n).join('| ');
 let indent = 0;
 
 export type MatchParent = { nodes: RecNode[]; loc: Loc; sub?: { type: 'text'; index: number } | { type: 'table'; row: number } };
+export type Span = { start: Loc; end?: Loc };
+
+const isBlank = (node: RecNode) => node.type === 'id' && node.text === '';
 
 export const match = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at: number, endOfExhaustive?: boolean): MatchRes<T> => {
     // debugger;
     // console.log(white(indent), 'enter', show(matcher));
     // indent++;
     const res = match_(matcher, ctx, parent, at, endOfExhaustive);
-    // if (res.result && res.result.consumed) {
-    //     // ctx.spans.push([parent.nodes[at].loc, parent.nodes[at + res.result.consumed - 1].loc]);
-    //     const span = { start: parent.nodes[at].loc, end: res.result.consumed > 1 ? parent.nodes[at + res.result.consumed - 1].loc : undefined };
-    //     res.spans = res.spans ? [res.spans, span] : span;
-    //     console.log(res.spans);
-    // }
-    // res.result?.consumed
     // indent--;
     // if (res.result) {
     //     console.log(white(indent), 'match success', show(matcher), res.result.consumed);
@@ -129,14 +132,9 @@ export const match = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at:
     return res;
 };
 
-export type Span = { start: Loc; end?: Loc };
-
-const isBlank = (node: RecNode) => node.type === 'id' && node.text === '';
-
 export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at: number, endOfExhaustive?: boolean): MatchRes<T> => {
     const good: Bag<RecNode> = [];
     const bad: Bag<MatchError> = [];
-    const spans: Bag<Span> = [];
 
     if (!matcher) {
         throw new Error('no matcher');
@@ -282,6 +280,9 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             return { result: { data: matcher.f(node), consumed: 1 }, bad: [], good: [] };
         case 'id':
             if (node.type !== 'id' || ctx.kwds.includes(node.text)) return fail(matcher, node);
+            if (node.loc[0].idx === ctx.autocomplete?.loc) {
+                ctx.autocomplete.kinds.push(matcher.kind);
+            }
             // TODO: this is ... so that we'll keep going with placeholders and stuff
             // if (node.text === '') return fail(matcher, node);
             if (!ctx.strictIds) return one(matcher.f(node), node);
@@ -292,6 +293,9 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             }
             return fail(matcher, node);
         case 'kwd':
+            if (node.loc[0].idx === ctx.autocomplete?.loc) {
+                ctx.autocomplete.concrete.push(matcher.text);
+            }
             if (node.type !== 'id' || node.ref || node.text !== matcher.text) return fail(matcher, node);
             return one(matcher.f(node), node);
         case 'text':
@@ -372,6 +376,7 @@ export const idt = <T>(x: T): T => x;
 export const idp = <T>(x: Partial<T>): T => x as T;
 export const any = <T>(f: (v: RecNode) => T): Matcher<T> => ({ type: 'any', f });
 export const meta = <T>(kind: string, inner: Matcher<T>): Matcher<T> => ({ type: 'meta', inner, kind });
+export const autocomplete = <T>(autocomplete: AutoComplete, inner: Matcher<T>): Matcher<T> => ({ type: 'meta', inner, autocomplete });
 
 export type ParseResult<T> = {
     result: T | undefined;

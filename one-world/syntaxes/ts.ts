@@ -1,60 +1,3 @@
-/*
-
-// const {a: b = 5, 'c': ms} = {c: 3}
-// const [a = 5] = []
-// const n = (n = 5, [[a, b] = [5, 4]], {m = 5}) => 5
-
-type Expr =
-    | { type: 'var'; name: string; src: Src }
-    | { type: 'text'; spans: TextSpan<Expr>[]; src: Src }
-    | { type: 'array' | 'tuple'; items: SExpr[]; src: Src }
-    | { type: 'bops'; op: Id<Loc>; items: Expr[]; src: Src }
-    | { type: 'record'; rows: RecordRow[]; src: Src }
-    | { type: 'call'; target: Expr; args: SExpr[]; src: Src }
-    | { type: 'uop'; op: Id<Loc>; target: Expr; src: Src }
-    | { type: 'attribute'; target: Expr; attribute: Id<Loc>; src: Src }
-    | { type: 'index'; target: Expr; items: SExpr[]; src: Src }
-    | Fancy;
-type SExpr = { type: 'spread'; inner: Expr; src: Src };
-type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
-
-type Fn = { type: 'fn'; args: Pat[]; body: Expr | Stmt[]; src: Src };
-type Fancy =
-    | Fn
-    | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[]; src: Src }
-    | { type: 'switch'; target: Expr; cases: { pat: Pat; body: Stmt[] | Expr }[]; src: Src };
-
-type Stmt = { type: 'expr'; expr: Expr; src: Src } | { type: 'let'; pat: Pat; value: Expr; src: Src } | { type: 'return'; expr?: Expr; src: Src };
-
-const pat_ = mref<Pat>('pat');
-const sprpat_ = mref<SPat>('sprpat');
-const expr_ = mref<Expr>('expr');
-const sprexpr_ = mref<SExpr>('sprexpr');
-
-const exprCommon: Matcher<Expr>[] = [
-    id(null, node => ({type: 'var', name: node.text, src: nodesSrc(node)})),
-    text(expr_, (spans, node) => ({ type: 'text', spans, src: nodesSrc(node) })),
-    list('square', multi(sprexpr_, true), (items, node) => ({ type: 'array', items, src: { left: node.loc } })),
-    table(
-        'curly',
-        switch_<RecordRow, RecordRow>(
-            [
-                tx(sprexpr_, (inner) => ({ type: 'single', inner })),
-                sequence<RecordRow>([id('attribute', (key) => ({ type: 'row', key })), named('value', expr_)], true, idt),
-            ],
-            idt,
-        ),
-        (rows, node) => ({ type: 'record', rows, src: { left: node.loc } }),
-    ),
-    list('round', multi(sprexpr_, true), (items, node) => ({ type: 'tuple', items, src: { left: node.loc } })),
-    // list('spaced', binned_, idt),
-]
-
-export const matchers = {
-
-}
-*/
-
 import { Src } from '../keyboard/handleShiftNav';
 import { Id, Loc, RecNode, TextSpan } from '../shared/cnodes';
 import { any, Ctx, id, idp, idt, kwd, list, Matcher, meta, mref, multi, named, opt, sequence, switch_, table, text, tx } from './dsl';
@@ -109,6 +52,8 @@ const fancy_ = mref<Expr>('fancy');
 // that would be ... interesting.
 
 const _pat: Matcher<Pat>[] = [
+    // id('constructor', (node) => ({ type: 'constr', constr: node, src: nodesSrc(node), args: [] })),
+    // TODO: allow multiple kinds here...
     id(null, (node) => ({ type: 'var', name: node.text, src: nodesSrc(node) })),
     list('square', multi(sprpat_, true, idt), (values, node) => ({ type: 'array', values, src: nodesSrc(node) })),
     list(
@@ -631,7 +576,7 @@ export const nodesSrc = (nodes: RecNode | RecNode[]): Src =>
         : { left: nodes.loc };
 
 const _expr: Matcher<Expr>[] = [
-    id(null, (node) => ({ type: 'var', name: node.text, src: { left: node.loc } })),
+    id('value', (node) => ({ type: 'var', name: node.text, src: { left: node.loc } })),
     text(sprexpr_, (spans, node) => ({ type: 'text', spans, src: { left: node.loc } })),
     list('square', multi(sprexpr_, true), (items, node) => ({ type: 'array', items, src: { left: node.loc } })),
     table(
@@ -769,7 +714,7 @@ export const matchers = {
     sprexpr: switch_([..._expr, _sprood], idt), // expr with spreads,
     pat: switch_(_pat, idt),
     sprpat: switch_(_spat, idt),
-    type: switch_<Type>([id(null, (node) => ({ type: 'ref', name: node.text, src: nodesSrc(node) }))], idt),
+    type: switch_<Type>([id('type', (node) => ({ type: 'ref', name: node.text, src: nodesSrc(node) }))], idt),
     stmtSpaced: switch_<Stmt, Stmt>(stmtSpaced, idt),
     stmt: switch_<Stmt, Stmt>([list('spaced', switch_(stmtSpaced, idt), idt), tx(expr_, (expr) => ({ type: 'expr', expr, src: expr.src }))], idt),
     binned: sequence<{ left: Expr; rights: { op: Id<Loc>; right: Expr }[] }, Expr>(
@@ -808,9 +753,10 @@ export const matchers = {
     fancy,
 };
 
-export const ctx = (): Ctx => ({
+export const ctx = (cursor?: number): Ctx => ({
     matchers,
     kwds,
     comment: meta('comment', list('smooshed', sequence<any>([kwd('//', () => ({ type: 'comment' })), multi(any(idt), true, idt)], true, idt), idt)),
     meta: {},
+    autocomplete: cursor ? { loc: cursor, concrete: [], kinds: [] } : undefined,
 });

@@ -29,8 +29,8 @@ const styleKinds: Record<string, Style> = {
 
 const defaultParser: TestState['parser'] = {
     config: js,
-    parse(node) {
-        return parse(ts.matchers.stmt, node, ts.ctx());
+    parse(node, cursor) {
+        return parse(ts.matchers.stmt, node, ts.ctx(cursor));
     },
     spans: ts.stmtSpans,
 };
@@ -105,7 +105,8 @@ export const App = ({ id }: { id: string }) => {
 
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
 
-    const parsed = parser.parse(rootNode);
+    const cursor = state.sel.multi ? undefined : lastChild(state.sel.start.path);
+    const parsed = parser.parse(rootNode, cursor);
     const errors = useMemo(() => {
         const errors: Record<number, string> = {};
         parsed.bads.forEach((bad) => {
@@ -184,6 +185,7 @@ export const App = ({ id }: { id: string }) => {
                     }}
                 />
             </div>
+            <div style={{ paddingLeft: 50, paddingTop: 20 }}>Auto complete {JSON.stringify(parsed.ctx.autocomplete)}</div>
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
                 <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                     <h3>CST</h3>

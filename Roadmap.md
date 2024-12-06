@@ -6,6 +6,10 @@
   at some level, right?
 
 
+- [ ] FIRST produce autocomplete info
+- [ ] THEN do auto-scoping goodness
+
+
 # I want to try actual functions combinators again,with types
 instead of the thing-that-wants-to-be-a-gadt that I have now.
 BUT thoes functions would be less introspectable I believe.
