@@ -251,7 +251,7 @@ export type Fancy =
     | Fn
     | { type: 'new'; target: Expr; src: Src }
     | { type: 'await'; target: Expr; src: Src }
-    | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[]; src: Src }
+    | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[] | null; src: Src }
     | { type: 'case'; target: Expr; cases: { pat: Pat; body: Stmt[] | Expr }[]; src: Src };
 export type ESmoosh = { type: 'smooshed'; prefixes: Id<Loc>[]; base: Expr; suffixes: Suffix[]; src: Src };
 export type Suffix =
