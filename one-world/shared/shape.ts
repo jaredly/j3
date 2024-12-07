@@ -22,12 +22,12 @@ export const shape = (node: RecNodeT<unknown>): string => {
         case 'table':
             const mi = node.rows.map((row) => row.map(shape).join(',')).join(';');
             if (node.kind === 'curly') {
-                return `{|${mi}|}`;
+                return `{:${mi}:}`;
             }
             if (node.kind === 'round') {
-                return `(|${mi}|)`;
+                return `(:${mi}:)`;
             }
-            return `[|${mi}|]`;
+            return `[:${mi}:]`;
         case 'text':
             return `text(${node.spans
                 .map((span) => {

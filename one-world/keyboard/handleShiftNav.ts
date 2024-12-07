@@ -294,7 +294,7 @@ export type Mods = { meta?: boolean; ctrl?: boolean; alt?: boolean; shift?: bool
 export const handleSpecial = (state: TestState, key: string, mods: Mods): void | Update => {
     const current = getCurrent(state.sel, state.top);
     if (key === '\n' && mods.meta) {
-        let path = state.sel.start.path;
+        let path = current.cursor.type === 'list' && current.cursor.where === 'inside' ? state.sel.start.path : parentPath(state.sel.start.path);
         while (path.children.length) {
             const node = state.top.nodes[lastChild(path)];
             if (node.type === 'table' || (node.type === 'list' && node.kind !== 'smooshed' && node.kind !== 'spaced')) {

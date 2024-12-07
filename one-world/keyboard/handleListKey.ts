@@ -1,10 +1,11 @@
-import { Node, Nodes } from '../shared/cnodes';
+import { List, Node, Nodes } from '../shared/cnodes';
 import { findParent, listKindForKeyKind, Flat, addNeighborBefore, addNeighborAfter } from './flatenate';
 import { justSel } from './handleNav';
-import { textKind } from './insertId';
+import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
-import { flatten, flatToUpdateNew } from './rough';
-import { Top, Path, CollectionCursor, Update, lastChild, selStart, pathWithChildren, parentPath, Cursor } from './utils';
+import { collapseAdjacentIDs, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
+import { Top, Path, CollectionCursor, Update, lastChild, selStart, pathWithChildren, parentPath, Cursor, findTableLoc, ListCursor } from './utils';
+import { flatNeighbor, handleTableSplit } from './handleIdKey';
 
 export const braced = (node: Node) => node.type !== 'list' || (node.kind !== 'smooshed' && node.kind !== 'spaced');
 
@@ -115,20 +116,40 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
         }
     }
 
+    const table = handleTableSplit(grem, config, path, top, splitCell(current, cursor));
+    if (table) return table;
+
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
+
     const flat = parent ? flatten(parent.node, top) : [current];
+    var { sel, ncursor, nodes } = addNeighbor({ flat, current, neighbor: flatNeighbor(kind, grem), cursor });
+
+    return flatToUpdateNew(
+        flat,
+        { node: sel, cursor: ncursor },
+        { isParent: parent != null, node: parent?.node ?? current, path: parent?.path ?? path },
+        nodes,
+        top,
+    );
+};
+
+export const splitCell = (current: Node, cursor: ListCursor) => (cell: Node, top: Top, loc: number) => {
+    const flat = flatten(cell, top, undefined, 1);
+    const nodes: Update['nodes'] = {};
+    const neighbor: Flat = { type: 'sep', loc };
+    const { sel, ncursor } = addNeighbor({ current, cursor, flat, neighbor });
+    const one = pruneEmptyIds(flat, { node: sel, cursor: ncursor });
+    const two = collapseAdjacentIDs(one.items, one.selection);
+    const result = unflat(top, two.items, two.selection.node);
+    Object.assign(result.nodes, nodes);
+    return { result, two };
+};
+
+function addNeighbor({ flat, current, neighbor, cursor }: { flat: Flat[]; current: Node; neighbor: Flat; cursor: ListCursor }) {
     let at = flat.indexOf(current);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
     // for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
     const nodes: Update['nodes'] = {};
-    const neighbor: Flat =
-        kind === 'sep'
-            ? { type: 'sep', loc: -1 }
-            : kind === 'space'
-            ? { type: 'space', loc: -1 }
-            : kind === 'string'
-            ? { type: 'text', spans: [], loc: -1 }
-            : { type: 'id', text: grem, loc: -1, ccls: kind };
 
     let sel: Node = current;
     let ncursor: Cursor = cursor;
@@ -143,12 +164,5 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
             ({ sel, ncursor } = addNeighborAfter(at, flat, neighbor, sel, ncursor));
             break;
     }
-
-    return flatToUpdateNew(
-        flat,
-        { node: sel, cursor: ncursor },
-        { isParent: parent != null, node: parent?.node ?? current, path: parent?.path ?? path },
-        nodes,
-        top,
-    );
-};
+    return { sel, ncursor, nodes };
+}

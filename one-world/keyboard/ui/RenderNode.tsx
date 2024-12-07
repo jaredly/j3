@@ -4,7 +4,7 @@ import { isRich, Style } from '../../shared/cnodes';
 import { cursorSides } from '../cursorSides';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
-import { lastChild, Path, pathKey, pathWithChildren, Update } from '../utils';
+import { lastChild, parentLoc, Path, pathKey, pathWithChildren, Update } from '../utils';
 
 import { asStyle } from '../../shared/shape';
 import { textCursorSides2 } from '../insertId';
@@ -33,6 +33,7 @@ type RCtx = {
     msel: null | string[];
     mhover: null | string[];
 };
+const textColor = 'rgb(248 136 0)';
 
 const cursorPositionInSpanForEvt = (evt: React.MouseEvent, target: HTMLSpanElement, text: string[]) => {
     const range = new Range();
@@ -137,9 +138,18 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     </span>
                 );
             }
-            if (node.text === '' && plh != null) {
-                if (!style) style = {};
-                Object.assign(style, placeholderStyle);
+            let text = node.text;
+            if (text === '' && plh != null) {
+                const pnode = state.top.nodes[lastChild(parent)];
+                if (
+                    (pnode.type === 'list' && pnode.children.length === 1) ||
+                    (pnode.type === 'table' && pnode.rows.length === 1 && pnode.rows[0].length === 1)
+                ) {
+                } else {
+                    if (!style) style = {};
+                    Object.assign(style, placeholderStyle);
+                    text = plh;
+                }
             }
             return (
                 <span
@@ -152,7 +162,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         // ok I cant dispatch just yet
                     }}
                 >
-                    {node.text === '' ? plh ?? '\u200B' : node.text}
+                    {text === '' ? '\u200B' : text}
                 </span>
             );
         case 'list':
@@ -249,7 +259,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             const sides = cursor?.type === 'text' ? textCursorSides2(cursor) : null;
             const children = node.spans.map((span, i) => {
                 if (span.type === 'text') {
-                    const style = { color: 'blue', ...asStyle(span.style) };
+                    const style = { color: textColor, ...asStyle(span.style) };
                     if (sides && sides.left.index <= i && sides.right.index >= i) {
                         const text = sides.text?.index === i ? sides.text.grems : splitGraphemes(span.text);
                         const left = i === sides.left.index ? sides.left.cursor : 0;
@@ -321,12 +331,12 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 );
             }
             return (
-                <span style={{ backgroundColor: 'rgba(255,255,0,0.4)', ...style }} ref={ref}>
+                <span style={style} ref={ref}>
                     {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
-                    {cursor?.type === 'list' && cursor.where === 'start' ? <span style={{ backgroundColor: hl }}>"</span> : '"'}
+                    <span style={{ backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined, color: textColor }}>"</span>
                     {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                     {children}
-                    {cursor?.type === 'list' && cursor.where === 'end' ? <span style={{ backgroundColor: hl }}>"</span> : '"'}
+                    <span style={{ backgroundColor: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined, color: textColor }}>"</span>
                     {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                 </span>
             );

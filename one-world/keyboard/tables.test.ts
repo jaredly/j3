@@ -9,19 +9,19 @@ import { asTop, id, idc, js, lisp, list, listc, round, smoosh, table, text, text
 
 test('table pls', () => {
     let state = asTop(round([], true), listc('inside'));
-    state = applyUpdate(state, handleKey(state, '|', lisp)!);
+    state = applyUpdate(state, handleKey(state, ':', lisp)!);
     check(state, table('round', [], true), listc('inside'));
 });
 
 test('table w/ blank', () => {
     let state = asTop(round([id('', true)]), idc(0));
-    state = applyUpdate(state, handleKey(state, '|', lisp)!);
+    state = applyUpdate(state, handleKey(state, ':', lisp)!);
     check(state, table('round', [[id('', true)]]), idc(0));
 });
 
 test('table n stuff', () => {
     let state = asTop(round([id('hi', true)]), idc(0));
-    state = applyUpdate(state, handleKey(state, '|', lisp)!);
+    state = applyUpdate(state, handleKey(state, ':', lisp)!);
     check(state, table('round', [[id('hi', true)]]), idc(0));
 });
 

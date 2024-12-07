@@ -32,7 +32,7 @@ type JoinParent =
           pnode: List<number>;
           parent: Path;
       }
-    | { type: 'table'; pat: { row: number; col: number }; at: { row: number; col: number }; pnode: Table<number>; parent: Path };
+    | { type: 'table'; pat: null | { row: number; col: number }; at: { row: number; col: number }; pnode: Table<number>; parent: Path };
 export const joinParent = (path: Path, top: Top): void | JoinParent => {
     const loc = lastChild(path);
     const parent = parentPath(path);
@@ -40,13 +40,13 @@ export const joinParent = (path: Path, top: Top): void | JoinParent => {
     if (!pnode) return;
     if (pnode.type === 'table') {
         const { row, col } = findTableLoc(pnode.rows, loc);
-        if (col === 0 && row === 0) return;
+        // if (col === 0 && row === 0) return;
         return {
             type: 'table',
             pnode,
             parent,
             at: { row, col },
-            pat: { row: col === 0 ? row - 1 : row, col: col === 0 ? pnode.rows[row - 1].length - 1 : col - 1 },
+            pat: row !== 0 || col !== 0 ? { row: col === 0 ? row - 1 : row, col: col === 0 ? pnode.rows[row - 1].length - 1 : col - 1 } : null,
         };
     }
     if (!pnode || pnode.type !== 'list') return;
@@ -294,6 +294,16 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
     // Here's the table folks
     if (got.type === 'table') {
         const { at, parent, pnode, pat } = got;
+
+        if (node.type === 'id' && node.text === '' && pnode.rows.length === 1 && pnode.rows[0].length === 1) {
+            if (pnode.forceMultiline) {
+                return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: false } } };
+            }
+            return removeSelf(state, { path: parent, node: pnode });
+        } else if (!pat) {
+            return;
+        }
+
         const lloc = at.col === 0 ? pnode.rows[at.row - 1][pnode.rows[at.row - 1].length - 1] : pnode.rows[at.row][at.col - 1];
         const rloc = pnode.rows[at.row][at.col];
         const left = flatten(state.top.nodes[lloc], state.top, undefined, 1);
@@ -356,10 +366,6 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
                 return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: false } } };
             }
             return removeSelf(state, { path: parent, node: pnode });
-            // // HERG got to check grandparent smoosh here folks
-            // const up = replaceAt(parentPath(parent).children, state.top, pnode.loc, node.loc);
-            // up.selection = { start: selStart(pathWithChildren(parentPath(parent), node.loc), cursor) };
-            // return up;
         }
         // Select the '(' opener
         // return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
