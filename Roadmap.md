@@ -1,4 +1,31 @@
 
+# ForceMultiline needs to bubble up
+
+# So, I want
+something
+
+flatten and stuff
+I want it to ... be able to ...
+
+So, in a table, you only need to look at the current row
+unless you're joining two rows, which doesn't require the whole flatenation.
+
+in a list, you also only need to look at the two adjacent items, in reality.
+maybe that would be useful?
+
+I feel like ... what you want is just,
+
+
+# Table thoughts
+
+: is the sep for js-like languages. obvs. and then ; or \n for newlines. love it.
+and thennn for lispy languages, do we still go with |? hmm idk, |> is a common thing.
+So maybe : there too.
+
+anyyywayyy, with this intermediate layer, does that make the parsing step
+into regular expressions? that would be super cool.
+
+
 # I'm torn
 
 between working on tables

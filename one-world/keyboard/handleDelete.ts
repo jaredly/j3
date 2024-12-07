@@ -1,16 +1,17 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, List, Node, Nodes, Text, TextSpan } from '../shared/cnodes';
+import { Collection, Id, List, Node, Nodes, Table, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { goLeft, justSel, selectEnd, selUpdate, spanEnd, spanStart } from './handleNav';
 import { selEnd, SelSide, SelStart } from './handleShiftNav';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { replaceAt } from './replaceAt';
 import { replaceIn } from './replaceIn';
-import { flatten, flatToUpdateNew } from './rough';
+import { collapseAdjacentIDs, findPath, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
 import { TestState } from './test-utils';
 import {
     Current,
     Cursor,
+    findTableLoc,
     getCurrent,
     lastChild,
     NodeSelection,
@@ -24,15 +25,35 @@ import {
     Update,
 } from './utils';
 
-export const joinParent = (path: Path, top: Top): void | { at: number; pnode: List<number>; parent: Path } => {
+type JoinParent =
+    | {
+          type: 'list';
+          at: number;
+          pnode: List<number>;
+          parent: Path;
+      }
+    | { type: 'table'; pat: { row: number; col: number }; at: { row: number; col: number }; pnode: Table<number>; parent: Path };
+export const joinParent = (path: Path, top: Top): void | JoinParent => {
     const loc = lastChild(path);
     const parent = parentPath(path);
     const pnode = top.nodes[lastChild(parent)];
+    if (!pnode) return;
+    if (pnode.type === 'table') {
+        const { row, col } = findTableLoc(pnode.rows, loc);
+        if (col === 0 && row === 0) return;
+        return {
+            type: 'table',
+            pnode,
+            parent,
+            at: { row, col },
+            pat: { row: col === 0 ? row - 1 : row, col: col === 0 ? pnode.rows[row - 1].length - 1 : col - 1 },
+        };
+    }
     if (!pnode || pnode.type !== 'list') return;
     const at = pnode.children.indexOf(loc);
-    if (at > 0 || (pnode.kind !== 'spaced' && pnode.kind !== 'smooshed')) return { pnode, parent, at };
+    if (at > 0 || (pnode.kind !== 'spaced' && pnode.kind !== 'smooshed')) return { type: 'list', pnode, parent, at };
     const up = joinParent(parent, top);
-    return up ?? { pnode, parent, at };
+    return up ?? { type: 'list', pnode, parent, at };
 };
 
 const removeInPath = ({ root, children }: Path, loc: number): Path => ({
@@ -68,7 +89,6 @@ const removeParent = (sel: NodeSelection, loc: number): NodeSelection => ({
         : undefined,
 });
 
-// TODO: rebalance smooshed
 export const unwrap = (path: Path, top: Top, sel: NodeSelection) => {
     const node = top.nodes[lastChild(path)];
     if (node.type !== 'list') return; // TODO idk
@@ -118,7 +138,7 @@ export const joinSmooshed = (update: Update, top: Top) => {
                 const child = update.nodes[cloc] ?? top.nodes[cloc];
                 const prev = update.nodes[ploc] ?? top.nodes[ploc];
 
-                if (prev.type === 'id' && child.type === 'id' && prev.ccls === child.ccls) {
+                if (prev.type === 'id' && child.type === 'id' && (prev.ccls === child.ccls || child.text === '' || prev.text === '')) {
                     // we delete one of these
                     update.nodes[prev.loc] = { ...prev, text: prev.text + child.text };
                     update.nodes[child.loc] = null;
@@ -264,7 +284,6 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
         return; // prolly at the toplevel? or in a text or table, gotta handle tat
     }
 
-    const { at, parent, pnode } = got;
     let node = state.top.nodes[lastChild(state.sel.start.path)];
     const remap: Nodes = {};
     // "maybe commit text changes"
@@ -272,6 +291,61 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
         node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
     }
 
+    // Here's the table folks
+    if (got.type === 'table') {
+        const { at, parent, pnode, pat } = got;
+        const lloc = at.col === 0 ? pnode.rows[at.row - 1][pnode.rows[at.row - 1].length - 1] : pnode.rows[at.row][at.col - 1];
+        const rloc = pnode.rows[at.row][at.col];
+        const left = flatten(state.top.nodes[lloc], state.top, undefined, 1);
+        const right = flatten(node, state.top, undefined, 1);
+        // const right = flatten(state.top.nodes[rloc], state.top, remap, 1);
+        if (rloc !== node.loc) throw new Error('very bad news indeed');
+
+        const flat = [...left, ...right];
+
+        const one = pruneEmptyIds(flat, { node, cursor: state.sel.start.cursor });
+        const two = collapseAdjacentIDs(one.items, one.selection);
+        const result = unflat(state.top, two.items, two.selection.node);
+        const cursor = two.selection.cursor;
+        // const result = unflat(state.top, flat, node);
+        // const cursor = state.sel.start.cursor;
+        if (result.sloc == null) throw new Error(`sel node not encountered`);
+        // Object.assign(result.nodes, remap);
+
+        if (result.other.length !== 1) throw new Error(`join should result in 1 top`);
+
+        const rows = pnode.rows.slice();
+        rows[at.row] = rows[at.row].slice();
+        rows[at.row].splice(at.col - 1, 1); // , ...result.other);
+        if (pat.row !== at.row) {
+            rows[pat.row] = rows[pat.row].concat(rows[at.row]);
+            rows.splice(at.row, 1);
+        }
+        rows[pat.row][pat.col] = result.other[0];
+
+        result.nodes[pnode.loc] = { ...pnode, rows };
+
+        const selPath = findPath(pnode.loc, result.nodes, result.sloc);
+        if (!selPath) throw new Error(`can't find sel in selpath.`);
+
+        const up: Update = {
+            nodes: result.nodes,
+            nextLoc: result.nextLoc,
+            selection: {
+                start: selStart(pathWithChildren(parentPath(parent), ...selPath), cursor),
+            },
+        };
+
+        rebalanceSmooshed(up, state.top);
+        joinSmooshed(up, state.top);
+        disolveSmooshed(up, state.top);
+
+        return up;
+    }
+
+    // There's the listies
+
+    const { at, parent, pnode } = got;
     if (at === 0) {
         if (pnode.kind === 'smooshed' || pnode.kind === 'spaced') {
             const sel = goLeft(parent, state.top);

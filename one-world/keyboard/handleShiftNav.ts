@@ -297,7 +297,7 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
         let path = state.sel.start.path;
         while (path.children.length) {
             const node = state.top.nodes[lastChild(path)];
-            if (node.type === 'list' && node.kind !== 'smooshed' && node.kind !== 'spaced') {
+            if (node.type === 'table' || (node.type === 'list' && node.kind !== 'smooshed' && node.kind !== 'spaced')) {
                 return { nodes: { [node.loc]: { ...node, forceMultiline: !node.forceMultiline } } };
             }
             path = parentPath(path);

@@ -146,6 +146,10 @@ export const goLeft = (path: Path, top: Top, tab = false): NodeSelection['start'
         if (row === 0 && col === 0) {
             return selStart(parentPath(path), { type: 'list', where: 'before' });
         }
+        if (col === 0) {
+            return selectEnd(pathWithChildren(parentPath(path), pnode.rows[row - 1][pnode.rows[row - 1].length - 1]), top);
+        }
+        return selectEnd(pathWithChildren(parentPath(path), pnode.rows[row][col - 1]), top);
     }
 
     if (pnode.type === 'text') {
@@ -177,6 +181,10 @@ export const goRight = (path: Path, top: Top, tight = false): NodeSelection['sta
         if (row === pnode.rows.length - 1 && col === pnode.rows[row].length - 1) {
             return selStart(parentPath(path), { type: 'list', where: 'after' });
         }
+        if (col === pnode.rows[row].length - 1) {
+            return selectStart(pathWithChildren(parentPath(path), pnode.rows[row + 1][0]), top);
+        }
+        return selectStart(pathWithChildren(parentPath(path), pnode.rows[row][col + 1]), top);
     }
 
     if (pnode.type === 'text') {

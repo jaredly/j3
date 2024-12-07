@@ -187,9 +187,9 @@ export const lisp = {
     punct: [';', '.', '@', '=#+'],
     space: '',
     sep: ' \n',
-    tableCol: '|',
+    tableCol: ' :',
     tableRow: '\n',
-    tableNew: '|',
+    tableNew: ':',
 } satisfies Config;
 
 export const js = {
@@ -200,9 +200,9 @@ export const js = {
     punct: ['.', '/', '~`!@#$%^&*+-=\\/?:><'],
     space: ' ',
     sep: ',;\n',
-    tableCol: ',',
+    tableCol: ':',
     tableRow: ';\n',
-    tableNew: '|',
+    tableNew: ':',
 } satisfies Config;
 
 export type Config = {

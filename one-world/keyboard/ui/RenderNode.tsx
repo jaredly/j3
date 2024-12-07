@@ -332,12 +332,36 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             );
         }
         case 'table': {
-            const children = node.rows.map((row) =>
-                interleaveF(
-                    row.map((loc) => <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />),
-                    (i) => <span key={`sep${i}`}>,</span>,
-                ),
-            );
+            const children = node.rows.map((row) => {
+                const nodes = row.map((loc) => (
+                    <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />
+                ));
+                if (!node.forceMultiline) {
+                    return interleaveF(nodes, (i) => <span key={`sep${i}`}>: </span>);
+                }
+                return interleaveF(
+                    nodes.map((node, i) => (
+                        <span
+                            key={i}
+                            style={{
+                                gridColumn: i * 2 + 1,
+                            }}
+                        >
+                            {node}
+                        </span>
+                    )),
+                    (i) => (
+                        <span
+                            style={{
+                                gridColumn: i * 2 + 2,
+                            }}
+                            key={`sep${i}`}
+                        >
+                            {': '}
+                        </span>
+                    ),
+                );
+            });
             return (
                 <span
                     style={style}
@@ -359,10 +383,16 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             // borderRadius: style?.borderRadius,
                         }}
                     >
-                        {topener[node.kind]}
+                        {opener[node.kind]}
+                        <span style={{ marginLeft: '-0.3em' }}>:</span>
                     </span>
                     {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
-                    {interleaveF(children, (i) => [<span key={`row${i}`}>{';'}</span>])}
+
+                    {node.forceMultiline ? (
+                        <div style={{ ...style, display: 'grid', width: 'fit-content', flexDirection: 'column', marginLeft: 16 }}>{children}</div>
+                    ) : (
+                        interleaveF(children, (i) => [<span key={`row${i}`}>{'; '}</span>])
+                    )}
                     <span
                         style={{
                             backgroundColor: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined,
@@ -370,7 +400,8 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             // borderRadius: style?.borderRadius,
                         }}
                     >
-                        {tcloser[node.kind]}
+                        <span style={{ marginRight: '-0.3em', position: 'relative', fontVariantLigatures: 'none' }}>:</span>
+                        {closer[node.kind]}
                     </span>
                     {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                 </span>

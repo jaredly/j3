@@ -27,7 +27,7 @@ Game plan:
  */
 
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, List, Node } from '../shared/cnodes';
+import { Collection, Id, List, Node } from '../shared/cnodes';
 import { Kind } from './insertId';
 import { Cursor, Path, Top, lastChild, parentPath } from './utils';
 
@@ -50,11 +50,11 @@ const SMOOSH = 0;
 const SPACED = 1;
 const OTHER = 2;
 
-export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node: List<number>; path: Path } => {
+export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node: Collection<number>; path: Path } => {
     const loc = lastChild(path);
     if (loc == null) return;
     const node = top.nodes[loc];
-    if (node.type !== 'list') return;
+    if (node.type !== 'list' && node.type !== 'table') return;
 
     const got = node.kind === 'smooshed' ? SMOOSH : node.kind === 'spaced' ? SPACED : OTHER;
 

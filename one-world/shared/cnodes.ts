@@ -153,15 +153,15 @@ export type List<Loc> = {
     src?: Src;
 };
 export type TableKind = 'round' | 'square' | 'curly';
-export type Collection<Loc> =
-    | List<Loc>
-    | {
-          type: 'table';
-          kind: TableKind;
-          rows: number[][];
-          loc: Loc;
-          src?: Src;
-      };
+export type Collection<Loc> = List<Loc> | Table<Loc>;
+export type Table<Loc> = {
+    type: 'table';
+    kind: TableKind;
+    forceMultiline?: boolean;
+    rows: number[][];
+    loc: Loc;
+    src?: Src;
+};
 
 export type NodeT<Loc> = Id<Loc> | Text<Loc> | Collection<Loc>;
 export type Node = NodeT<number>;

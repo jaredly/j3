@@ -5,6 +5,13 @@ import { interleave } from './interleave';
 import { replaceAt } from './replaceAt';
 import { Cursor, IdCursor, ListCursor, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
+export const flattenRow = (nodes: number[], sep: Flat, top: Top, remap: Nodes = {}, depth: number = 0): Flat[] => {
+    return interleave(
+        nodes.map((id) => flatten(remap[id] ?? top.nodes[id], top, remap, depth + 1)),
+        [sep],
+    ).flat();
+};
+
 export const flatten = (node: Node, top: Top, remap: Nodes = {}, depth: number = 0): Flat[] => {
     if (node.type !== 'list') return [node];
     if (node.kind === 'smooshed') {
@@ -26,90 +33,11 @@ export const flatten = (node: Node, top: Top, remap: Nodes = {}, depth: number =
     ).flat();
 };
 
+// TODO I think forceMultiline here is making things way too complicated.
+// can't we just look at the parent (from findParent) in the handleId key?
+// I guess that wouldn't handle the other places where flat/rough get called...
 export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
-    const nodes: Nodes = {};
-    let nextLoc = top.nextLoc;
-
-    let sloc: number | null = null;
-
-    let forceMultiline = undefined as undefined | boolean;
-
-    const other: number[] = [];
-    for (let i = 0; i < flat.length; i++) {
-        const children: number[] = [];
-        let ploc = -1;
-
-        for (; i < flat.length && flat[i].type !== 'sep'; i++) {
-            const schildren: number[] = [];
-            let loc = -1;
-
-            for (; i < flat.length && flat[i].type !== 'space' && flat[i].type !== 'sep'; i++) {
-                if (loc === -1 && flat[i].type === 'smoosh' && !nodes[flat[i].loc]) {
-                    loc = flat[i].loc;
-                    continue;
-                }
-                if (flat[i].type === 'smoosh') continue;
-                const node = flat[i] as Node;
-                if (node.loc === -1) {
-                    let nloc = nextLoc++;
-                    nodes[nloc] = { ...node, loc: nloc };
-                    schildren.push(nloc);
-                    if (node === sel) {
-                        sloc = nloc;
-                    }
-                } else {
-                    nodes[node.loc] = node;
-                    schildren.push(node.loc);
-                    if (node === sel) {
-                        sloc = node.loc;
-                    }
-                }
-            }
-
-            if (schildren.length === 1) {
-                children.push(schildren[0]);
-            } else {
-                if (loc === -1) {
-                    loc = nextLoc++;
-                    nodes[loc] = { type: 'list', kind: 'smooshed', loc, children: schildren };
-                } else {
-                    const parent = top.nodes[loc];
-                    if (parent.type !== 'list' || parent.kind !== 'smooshed') throw new Error(`not smoshed ${loc}`);
-                    nodes[loc] = { ...parent, children: schildren };
-                }
-                children.push(loc);
-            }
-
-            // it's a space, and the loc hasnt been used yet
-            if (ploc === -1 && i < flat.length && flat[i].type === 'space' && !nodes[flat[i].loc]) {
-                ploc = flat[i].loc;
-            }
-
-            if (i < flat.length && flat[i].type === 'sep') break;
-        }
-
-        const that = flat[i];
-        if (that && that.type === 'sep' && that.multiLine) {
-            forceMultiline = true;
-        }
-
-        if (children.length === 1) {
-            other.push(children[0]);
-        } else {
-            if (ploc === -1) {
-                const loc = nextLoc++;
-                nodes[loc] = { type: 'list', kind: 'spaced', loc, children };
-                other.push(loc);
-            } else {
-                const node = top.nodes[ploc];
-                if (node.type !== 'list' || node.kind !== 'spaced') throw new Error(`not spaced list ${ploc}`);
-                // TODO: This will produce unnecessary "writes" unless we check
-                // if children has changed
-                nodes[ploc] = { ...node, children };
-                other.push(ploc);
-            }
-        }
-    }
+    const { sloc, other, nodes, forceMultiline, nextLoc } = unflat(top, flat, sel);
 
     if (sloc == null) throw new Error(`sel node not encountered`);
 
@@ -219,11 +147,15 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
 
             // Update selections
             if (prev === selection.node) {
-                selection = { ...selection, node: res[at] as Id<number> };
+                selection = {
+                    ...selection,
+                    cursor: selection.cursor.type === 'id' ? { ...selection.cursor, text: undefined } : selection.cursor,
+                    node: res[at] as Id<number>,
+                };
             } else if (item === selection.node && selection.cursor.type === 'id') {
                 selection = {
                     node: res[at] as Id<number>,
-                    cursor: { ...selection.cursor, end: selection.cursor.end + splitGraphemes(prev.text).length },
+                    cursor: { ...selection.cursor, text: undefined, end: selection.cursor.end + splitGraphemes(prev.text).length },
                 };
             }
             return;
@@ -233,6 +165,90 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
     });
     return { items: res, selection };
 };
+
+export function unflat(top: Top, flat: Flat[], sel: Node) {
+    const nodes: Nodes = {};
+    let nextLoc = top.nextLoc;
+    let sloc: number | null = null;
+    let forceMultiline = undefined as undefined | boolean;
+    const other: number[] = [];
+    for (let i = 0; i < flat.length; i++) {
+        const children: number[] = [];
+        let ploc = -1;
+
+        for (; i < flat.length && flat[i].type !== 'sep'; i++) {
+            const schildren: number[] = [];
+            let loc = -1;
+
+            for (; i < flat.length && flat[i].type !== 'space' && flat[i].type !== 'sep'; i++) {
+                if (loc === -1 && flat[i].type === 'smoosh' && !nodes[flat[i].loc]) {
+                    loc = flat[i].loc;
+                    continue;
+                }
+                if (flat[i].type === 'smoosh') continue;
+                const node = flat[i] as Node;
+                if (node.loc === -1) {
+                    let nloc = nextLoc++;
+                    nodes[nloc] = { ...node, loc: nloc };
+                    schildren.push(nloc);
+                    if (node === sel) {
+                        sloc = nloc;
+                    }
+                } else {
+                    nodes[node.loc] = node;
+                    schildren.push(node.loc);
+                    if (node === sel) {
+                        sloc = node.loc;
+                    }
+                }
+            }
+
+            if (schildren.length === 1) {
+                children.push(schildren[0]);
+            } else {
+                if (loc === -1) {
+                    loc = nextLoc++;
+                    nodes[loc] = { type: 'list', kind: 'smooshed', loc, children: schildren };
+                } else {
+                    const parent = top.nodes[loc];
+                    if (parent.type !== 'list' || parent.kind !== 'smooshed') throw new Error(`not smoshed ${loc}`);
+                    nodes[loc] = { ...parent, children: schildren };
+                }
+                children.push(loc);
+            }
+
+            // it's a space, and the loc hasnt been used yet
+            if (ploc === -1 && i < flat.length && flat[i].type === 'space' && !nodes[flat[i].loc]) {
+                ploc = flat[i].loc;
+            }
+
+            if (i < flat.length && flat[i].type === 'sep') break;
+        }
+
+        const that = flat[i];
+        if (that && that.type === 'sep' && that.multiLine) {
+            forceMultiline = true;
+        }
+
+        if (children.length === 1) {
+            other.push(children[0]);
+        } else {
+            if (ploc === -1) {
+                const loc = nextLoc++;
+                nodes[loc] = { type: 'list', kind: 'spaced', loc, children };
+                other.push(loc);
+            } else {
+                const node = top.nodes[ploc];
+                if (node.type !== 'list' || node.kind !== 'spaced') throw new Error(`not spaced list ${ploc}`);
+                // TODO: This will produce unnecessary "writes" unless we check
+                // if children has changed
+                nodes[ploc] = { ...node, children };
+                other.push(ploc);
+            }
+        }
+    }
+    return { sloc, other, nodes, forceMultiline, nextLoc };
+}
 
 export function flatToUpdateNew(
     flat: Flat[],
