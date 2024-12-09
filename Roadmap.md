@@ -26,6 +26,9 @@ anyyywayyy, with this intermediate layer, does that make the parsing step
 into regular expressions? that would be super cool.
 
 
+- [ ] new col makes new col for all
+- [ ] del col dels col for all
+
 # I'm torn
 
 between working on tables

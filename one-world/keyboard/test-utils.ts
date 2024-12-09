@@ -200,7 +200,7 @@ export const js = {
     punct: ['.', '/', '~`!@#$%^&*+-=\\/?:><'],
     space: ' ',
     sep: ',;\n',
-    tableCol: ':',
+    tableCol: ',:',
     tableRow: ';\n',
     tableNew: ':',
 } satisfies Config;

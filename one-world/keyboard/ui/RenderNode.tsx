@@ -69,7 +69,7 @@ const placeholderStyle: React.CSSProperties = {
 export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; state: TestState; inRich: boolean; ctx: RCtx; parent: Path }) => {
     const node = state.top.nodes[loc];
     const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
-    let style: React.CSSProperties | undefined = ctx.errors[loc]
+    let style: React.CSSProperties | undefined = false //ctx.errors[loc]
         ? { textDecoration: 'underline' }
         : ctx.styles[loc]
         ? asStyle(ctx.styles[loc])
@@ -394,7 +394,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         }}
                     >
                         {opener[node.kind]}
-                        <span style={{ marginLeft: '-0.3em' }}>:</span>
+                        <span style={{ marginLeft: '-0.3em', fontVariantLigatures: 'none' }}>:</span>
                     </span>
                     {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
 
@@ -410,7 +410,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             // borderRadius: style?.borderRadius,
                         }}
                     >
-                        <span style={{ marginRight: '-0.3em', position: 'relative', fontVariantLigatures: 'none' }}>:</span>
+                        <span style={{ marginRight: '-0.3em', fontVariantLigatures: 'none' }}>:</span>
                         {closer[node.kind]}
                     </span>
                     {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
