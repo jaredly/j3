@@ -264,6 +264,7 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                 const idx = end.index + 1;
                 return selUpdate(spanStart(current.node.spans[idx], idx, current.path, state.top, true));
             }
+
             if (current.cursor.type === 'list') {
                 switch (current.cursor.where) {
                     case 'after':

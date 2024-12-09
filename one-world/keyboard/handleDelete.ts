@@ -396,23 +396,31 @@ export const handleDelete = (state: TestState): Update | void => {
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
         case 'list': {
-            if (current.node.type === 'list') {
-                if (current.cursor.type === 'list') {
-                    if (current.cursor.where === 'after') {
-                        // return { nodes: {}, selection: { start: selStart(current.path, { type: 'list', where: 'end' }) } };
-
+            if (current.cursor.type === 'list') {
+                if (current.cursor.where === 'after') {
+                    // return { nodes: {}, selection: { start: selStart(current.path, { type: 'list', where: 'end' }) } };
+                    if (current.node.type === 'list') {
                         if (current.node.children.length === 0) {
                             return selUpdate(selStart(current.path, { type: 'list', where: 'inside' }));
                         }
                         return selUpdate(
                             selectEnd(pathWithChildren(current.path, current.node.children[current.node.children.length - 1]), state.top),
                         );
-                    } else if (current.cursor.where === 'before') {
-                        // left join agains
-                        return leftJoin(state, current.cursor);
-                    } else if (current.cursor.where === 'inside') {
-                        return removeSelf(state, current);
                     }
+                    if (current.node.type === 'table') {
+                        if (current.node.rows.length === 0) {
+                            return selUpdate(selStart(current.path, { type: 'list', where: 'inside' }));
+                        }
+                        const rows = current.node.rows;
+                        const last = rows[rows.length - 1];
+                        const cell = last[last.length - 1];
+                        return selUpdate(selectEnd(pathWithChildren(current.path, cell), state.top));
+                    }
+                } else if (current.cursor.where === 'before') {
+                    // left join agains
+                    return leftJoin(state, current.cursor);
+                } else if (current.cursor.where === 'inside') {
+                    return removeSelf(state, current);
                 }
             }
             return;

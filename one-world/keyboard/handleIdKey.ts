@@ -98,7 +98,7 @@ export const handleTableSplit = (grem: string, config: Config, path: Path, top: 
             rows[row] = [...rows[row].slice(0, col), result.other[0]];
             rows.splice(row + 1, 0, newRow);
 
-            result.nodes[loc] = { ...parent.node, rows };
+            result.nodes[loc] = { ...parent.node, rows, forceMultiline: grem === '\n' ? true : parent.node.forceMultiline };
 
             const selPath = findPath(loc, result.nodes, result.sloc);
             if (!selPath) throw new Error(`can't find sel in selpath.`);
