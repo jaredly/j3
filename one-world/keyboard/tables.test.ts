@@ -114,3 +114,15 @@ test('table del row? join', () => {
     state = applyUpdate(state, handleDelete(state)!);
     check(state, table('round', [[id('a'), id('hiho', true)]]), idc(2));
 });
+
+test('table del row? join smoosh', () => {
+    let state = asTop(table('round', [[id('a'), id('hi')], [smoosh([id('ho', true), id('+')])]]), idc(0));
+    state = applyUpdate(state, handleDelete(state)!);
+    check(state, table('round', [[id('a'), smoosh([id('hiho', true), id('+')])]]), idc(2));
+});
+
+test('table del row? join double smoosh', () => {
+    let state = asTop(table('round', [[id('a'), smoosh([id('+'), id('hi')])], [smoosh([id('ho', true), id('+')])]]), idc(0));
+    state = applyUpdate(state, handleDelete(state)!);
+    check(state, table('round', [[id('a'), smoosh([id('+'), id('hiho', true), id('+')])]]), idc(2));
+});

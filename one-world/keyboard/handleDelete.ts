@@ -306,10 +306,10 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
 
         const lloc = at.col === 0 ? pnode.rows[at.row - 1][pnode.rows[at.row - 1].length - 1] : pnode.rows[at.row][at.col - 1];
         const rloc = pnode.rows[at.row][at.col];
-        const left = flatten(state.top.nodes[lloc], state.top, undefined, 1);
-        const right = flatten(node, state.top, undefined, 1);
+        const left = flatten(remap[lloc] ?? state.top.nodes[lloc], state.top, remap, 1);
+        const right = flatten(remap[rloc] ?? state.top.nodes[rloc], state.top, remap, 1);
         // const right = flatten(state.top.nodes[rloc], state.top, remap, 1);
-        if (rloc !== node.loc) throw new Error('very bad news indeed');
+        // if (rloc !== node.loc) throw new Error('very bad news indeed');
 
         const flat = [...left, ...right];
 
@@ -418,7 +418,12 @@ export const handleDelete = (state: TestState): Update | void => {
                     }
                 } else if (current.cursor.where === 'before') {
                     // left join agains
-                    return leftJoin(state, current.cursor);
+                    const up = leftJoin(state, current.cursor);
+                    // if (!up) return;
+                    // rebalanceSmooshed(up, state.top);
+                    // joinSmooshed(up, state.top);
+                    // disolveSmooshed(up, state.top);
+                    return up;
                 } else if (current.cursor.where === 'inside') {
                     return removeSelf(state, current);
                 }

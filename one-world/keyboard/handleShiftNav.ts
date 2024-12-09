@@ -347,12 +347,13 @@ export const multiSelChildren = (sel: NodeSelection, top: Top) => {
         throw new Error(`lca didnt work`);
     }
     const pnode = top.nodes[lastChild(parent)];
-    if (pnode.type !== 'list') return null; // not strings or stuff just yet sry
-    const one = pnode.children.indexOf(lca.one);
-    const two = pnode.children.indexOf(lca.two);
+    const locs = childLocs(pnode);
+    // if (pnode.type !== 'list') return null; // not strings or stuff just yet sry
+    const one = locs.indexOf(lca.one);
+    const two = locs.indexOf(lca.two);
     const left = one < two ? one : two;
     const right = one < two ? two : one;
-    return { parent, children: pnode.children.slice(left, right + 1) };
+    return { parent, children: locs.slice(left, right + 1) };
 };
 
 export const multiSelKeys = (parent: Path, children: number[]) => {

@@ -389,7 +389,7 @@ const stmtSpaced: Matcher<Stmt>[] = [
             named('value', binned_),
         ],
         true,
-        idt,
+        (v, node) => ({ ...v, src: nodesSrc(node) }),
     ),
     tx(binned_, (expr) => ({ type: 'expr', expr, src: expr.src })),
 ];
