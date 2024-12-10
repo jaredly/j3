@@ -56,7 +56,7 @@ export const selectStart = (path: Path, top: Top, plus1 = false, tab = false): N
     if (ploc != null) {
         const parent = top.nodes[ploc];
         // Rich Text, we select the start of the first item in the text
-        if (parent.type === 'list' && isRich(parent.kind)) {
+        if (richNode(parent)) {
             if (node.spans.length === 0) {
                 return selStart(path, { type: 'list', where: 'inside' });
             }
@@ -119,7 +119,7 @@ export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSel
 };
 
 export const richNode = (node: Node | undefined) => {
-    return node?.type === 'list' && isRich(node.kind);
+    return (node?.type === 'list' || node?.type === 'table') && isRich(node.kind);
 };
 
 export const goLateral = (path: Path, top: Top, left: boolean, tab = false): NodeSelection['start'] | void => {
@@ -265,7 +265,7 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                 if (end.index >= current.node.spans.length - 1) {
                     const parent = state.top.nodes[parentLoc(current.path)];
                     // Rich Text, we jump to the next item thankx
-                    if (parent?.type === 'list' && isRich(parent.kind)) {
+                    if (richNode(parent)) {
                         return selUpdate(goRight(current.path, state.top));
                     }
                     return justSel(current.path, { type: 'list', where: 'after' });

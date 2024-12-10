@@ -482,10 +482,45 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
         }
 
         case 'table': {
+            if (isRich(node.kind)) {
+                const cols: string[] = [];
+                const mx = node.rows.reduce((c, r) => Math.max(c, r.length), 0);
+                for (let i = 0; i < mx; i++) cols.push('max-content');
+                return (
+                    <span style={{ display: 'inline-flex', flexDirection: 'row' }}>
+                        {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+
+                        <span
+                            ref={ref}
+                            style={{
+                                ...style,
+                                border: '1px solid teal',
+                                padding: 8,
+                                gridTemplateColumns: cols.join(' '),
+                                columnGap: 4,
+                                display: 'grid',
+                            }}
+                        >
+                            {node.rows.map((row) =>
+                                row.map((cell, i) => [
+                                    i > 0 ? (
+                                        <span key={cell + ' |'} style={{ gridColumn: i * 2 }}>
+                                            {'|'}
+                                        </span>
+                                    ) : null,
+                                    <span key={cell} style={{ gridColumn: i * 2 + 1 }}>
+                                        <RenderNode parent={nextParent} ctx={ctx} loc={cell} state={state} inRich={true} />
+                                    </span>,
+                                ]),
+                            )}
+                        </span>
+                        {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+                    </span>
+                );
+            }
+
             const children = node.rows.map((row) => {
-                const nodes = row.map((loc) => (
-                    <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />
-                ));
+                const nodes = row.map((loc) => <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={false} />);
                 if (!node.forceMultiline) {
                     return interleaveF(nodes, (i) => <span key={`sep${i}`}>: </span>);
                 }

@@ -125,7 +125,7 @@ export type RichKind =
     | { type: 'indent'; quote: boolean }
     | { type: 'callout'; vibe: 'info' | 'warning' | 'error' };
 
-export const isRich = (kind: ListKind<any>) => typeof kind !== 'string' && kind.type !== 'tag';
+export const isRich = (kind: ListKind<any> | TableKind) => typeof kind !== 'string' && kind.type !== 'tag';
 export const hasControls = (kind: ListKind<any>) => typeof kind !== 'string' && (kind.type === 'opts' || kind.type === 'checks');
 
 export type ListKind<Tag> =
@@ -153,7 +153,7 @@ export type List<Loc> = {
     loc: Loc;
     src?: Src;
 };
-export type TableKind = 'round' | 'square' | 'curly';
+export type TableKind = 'round' | 'square' | 'curly' | { type: 'rich'; colWidths?: Record<number, number> };
 export type Collection<Loc> = List<Loc> | Table<Loc>;
 export type Table<Loc> = {
     type: 'table';

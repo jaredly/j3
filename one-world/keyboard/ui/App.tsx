@@ -163,32 +163,69 @@ export const App = ({ id }: { id: string }) => {
         setMenu({
             top: pos.top + pos.height,
             left: pos.left,
-            items: kinds.map(({ title, kind }) => ({
-                title,
-                action() {
-                    setState((s) =>
-                        applyUpdate(s, {
-                            nodes: {
-                                [current.node.loc]: {
-                                    type: 'list',
-                                    kind,
-                                    loc: current.node.loc,
-                                    children: [state.top.nextLoc],
+            items: kinds
+                .map(({ title, kind }) => ({
+                    title,
+                    action() {
+                        setState((s) =>
+                            applyUpdate(s, {
+                                nodes: {
+                                    [current.node.loc]: {
+                                        type: 'list',
+                                        kind,
+                                        loc: current.node.loc,
+                                        children: [s.top.nextLoc],
+                                    },
+                                    [s.top.nextLoc]: {
+                                        type: 'text',
+                                        loc: s.top.nextLoc,
+                                        spans: [{ type: 'text', text: '' }],
+                                    },
                                 },
-                                [state.top.nextLoc]: {
-                                    type: 'text',
-                                    loc: state.top.nextLoc,
-                                    spans: [{ type: 'text', text: '' }],
+                                selection: {
+                                    start: selStart(pathWithChildren(current.path, s.top.nextLoc), { type: 'text', end: { index: 0, cursor: 0 } }),
                                 },
-                            },
-                            selection: {
-                                start: selStart(pathWithChildren(current.path, state.top.nextLoc), { type: 'text', end: { index: 0, cursor: 0 } }),
-                            },
-                            nextLoc: state.top.nextLoc + 1,
-                        }),
-                    );
-                },
-            })),
+                                nextLoc: s.top.nextLoc + 1,
+                            }),
+                        );
+                    },
+                }))
+                .concat([
+                    {
+                        title: 'Rich Table',
+                        action() {
+                            setState((s) => {
+                                return applyUpdate(s, {
+                                    nodes: {
+                                        [current.node.loc]: {
+                                            type: 'table',
+                                            kind: { type: 'rich' },
+                                            loc: current.node.loc,
+                                            rows: [[state.top.nextLoc, state.top.nextLoc + 1]],
+                                        },
+                                        [state.top.nextLoc]: {
+                                            type: 'text',
+                                            loc: state.top.nextLoc,
+                                            spans: [{ type: 'text', text: '' }],
+                                        },
+                                        [state.top.nextLoc + 1]: {
+                                            type: 'text',
+                                            loc: state.top.nextLoc + 1,
+                                            spans: [{ type: 'text', text: '' }],
+                                        },
+                                    },
+                                    selection: {
+                                        start: selStart(pathWithChildren(current.path, state.top.nextLoc + 1), {
+                                            type: 'text',
+                                            end: { index: 0, cursor: 0 },
+                                        }),
+                                    },
+                                    nextLoc: state.top.nextLoc + 2,
+                                });
+                            });
+                        },
+                    },
+                ]),
         });
     }, [state.sel, state.top]);
 
@@ -225,6 +262,7 @@ export const App = ({ id }: { id: string }) => {
                 <div
                     style={{
                         position: 'absolute',
+                        zIndex: 10,
                         // height: 5,
                         // width: 5,
                         borderRadius: 5,

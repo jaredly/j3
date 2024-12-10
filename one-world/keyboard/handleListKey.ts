@@ -1,6 +1,6 @@
 import { isRich, List, Node, Nodes } from '../shared/cnodes';
 import { findParent, listKindForKeyKind, Flat, addNeighborBefore, addNeighborAfter } from './flatenate';
-import { justSel } from './handleNav';
+import { justSel, richNode } from './handleNav';
 import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
 import { collapseAdjacentIDs, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
@@ -147,7 +147,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     }
 
     const pnode = top.nodes[parentLoc(path)];
-    const blank: Node = pnode?.type === 'list' && isRich(pnode.kind) ? { type: 'text', spans: [], loc: -1 } : { type: 'id', text: '', loc: -1 };
+    const blank: Node = richNode(pnode) ? { type: 'text', spans: [], loc: -1 } : { type: 'id', text: '', loc: -1 };
 
     const table = handleTableSplit(grem, config, path, top, splitCell(current, cursor, blank));
     if (table) return table;

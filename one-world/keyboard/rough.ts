@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { childLocs, Id, isRich, Node, Nodes } from '../shared/cnodes';
 import { Flat } from './flatenate';
-import { spanEnd, spanStart } from './handleNav';
+import { richNode, spanEnd, spanStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { interleave } from './interleave';
 import { replaceAt } from './replaceAt';
@@ -291,7 +291,7 @@ const fixSelection = (sel: SelStart, nodes: Nodes, top: Top): SelStart => {
     const ploc = parentLoc(sel.path);
     if (ploc == null) return sel;
     const parent = nodes[ploc] ?? top.nodes[ploc];
-    if (parent.type === 'list' && isRich(parent.kind)) {
+    if (richNode(parent)) {
         if (node.spans.length === 0) return { ...sel, cursor: { type: 'list', where: 'inside' } };
         const utop = { ...top, nodes: { ...top.nodes, ...nodes } };
         if (sel.cursor.where === 'before') {

@@ -1,4 +1,5 @@
 import { childLocs, isRich } from '../shared/cnodes';
+import { richNode } from './handleNav';
 import { TestState } from './test-utils';
 import { getCurrent, parentLoc, Path, Top } from './utils';
 
@@ -102,7 +103,7 @@ const validateCursor = (state: TestState) => {
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text') {
         const parent = state.top.nodes[parentLoc(current.path)];
-        if (parent?.type === 'list' && isRich(parent.kind) && current.cursor.type === 'list' && current.cursor.where !== 'inside') {
+        if (richNode(parent) && current.cursor.type === 'list' && current.cursor.where !== 'inside') {
             throw new Error(`Rich text texts can't be selected before or after`);
         }
     }
