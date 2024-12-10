@@ -1,6 +1,6 @@
-import { childLocs } from '../shared/cnodes';
+import { childLocs, isRich } from '../shared/cnodes';
 import { TestState } from './test-utils';
-import { Path, Top } from './utils';
+import { getCurrent, Path, Top } from './utils';
 
 const validatePath = (top: Top, path: Path) => {
     if (path.children.length === 0) {
@@ -98,6 +98,15 @@ const validateNodes = (top: Top, id: number) => {
     childLocs(node).forEach((cid) => validateNodes(top, cid));
 };
 
+const validateCursor = (state: TestState) => {
+    const current = getCurrent(state.sel, state.top);
+    if (current.type === 'list') {
+        if (current.node.type === 'list' && isRich(current.node.kind)) {
+            throw new Error(`Rich lists can't be empty, and can't be selected before or after`);
+        }
+    }
+};
+
 export const validate = (state: TestState) => {
     try {
         validatePath(state.top, state.sel.start.path);
@@ -105,6 +114,7 @@ export const validate = (state: TestState) => {
         console.log('path', state.sel.start.path);
         throw err;
     }
+    validateCursor(state);
     validateNextLoc(state.top);
     validateNodes(state.top, state.top.root);
 };

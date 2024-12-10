@@ -32,8 +32,8 @@ export const selectStart = (path: Path, top: Top, plus1 = false): NodeSelection[
         return selStart(path, { type: 'id', end: plus1 ? 1 : 0 });
     }
     if (node.type === 'list') {
-        if (node.kind === 'spaced' || node.kind === 'smooshed') {
-            if (!node.children.length) throw new Error('empty spaced/smooshed');
+        if (node.kind === 'spaced' || node.kind === 'smooshed' || isRich(node.kind)) {
+            if (!node.children.length) throw new Error('empty spaced/smooshed/rich');
             return selectStart(pathWithChildren(path, node.children[0]), top, plus1);
         }
         if (plus1) {
@@ -80,8 +80,8 @@ export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSel
         return selStart(path, { type: 'id', end: end - (plus1 ? 1 : 0) });
     }
     if (node.type === 'list') {
-        if (node.kind === 'spaced' || node.kind === 'smooshed') {
-            if (!node.children.length) throw new Error('empty spaced/smooshed');
+        if (node.kind === 'spaced' || node.kind === 'smooshed' || isRich(node.kind)) {
+            if (!node.children.length) throw new Error('empty spaced/smooshed/rich');
             return selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), top, plus1);
         }
         if (plus1) {
@@ -132,7 +132,7 @@ export const goLeft = (path: Path, top: Top, tab = false): NodeSelection['start'
         const at = pnode.children.indexOf(loc);
         if (at === -1) return;
         if (at === 0) {
-            if (pnode.kind === 'smooshed' || pnode.kind === 'spaced') {
+            if (pnode.kind === 'smooshed' || pnode.kind === 'spaced' || isRich(pnode.kind)) {
                 return goLeft(parentPath(path), top);
             }
             return selStart(parentPath(path), { type: 'list', where: 'before' });
@@ -168,7 +168,7 @@ export const goRight = (path: Path, top: Top, tight = false): NodeSelection['sta
         const at = pnode.children.indexOf(loc);
         if (at === -1) return;
         if (at === pnode.children.length - 1) {
-            if (pnode.kind === 'smooshed' || pnode.kind === 'spaced') {
+            if (pnode.kind === 'smooshed' || pnode.kind === 'spaced' || isRich(pnode.kind)) {
                 return goRight(parentPath(path), top);
             }
             return selStart(parentPath(path), { type: 'list', where: 'after' });
@@ -410,6 +410,9 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
                             }
                         }
                     case 'inside':
+                        if (richNode(current.node)) {
+                            return selUpdate(goLeft(current.path, state.top));
+                        }
                         return justSel(current.path, { type: 'list', where: 'before' });
                 }
             }

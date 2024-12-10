@@ -1,20 +1,20 @@
 
+# So, the next thing
+
+Is... rich text, right?
+
+- [x] CLICK inside a text, why is it not workings.
+- [ ] alt/left-right should move you by word in a rich text
+- [ ] highlight the ~rich text list that you're inside of
+- [ ] highlight parens
+- [x] Rich Lists shouldn't have inside/before/after.
+  - [ ] test it
+- [ ] enter in a rich should make a new text in the rich
+- [ ] render bullets and checkboxes and such
+- [ ] deal with selecting controls (checkboxes, bullets, etc.)
+
+
 # ForceMultiline needs to bubble up
-
-# So, I want
-something
-
-flatten and stuff
-I want it to ... be able to ...
-
-So, in a table, you only need to look at the current row
-unless you're joining two rows, which doesn't require the whole flatenation.
-
-in a list, you also only need to look at the two adjacent items, in reality.
-maybe that would be useful?
-
-I feel like ... what you want is just,
-
 
 # Table thoughts
 
@@ -26,8 +26,16 @@ anyyywayyy, with this intermediate layer, does that make the parsing step
 into regular expressions? that would be super cool.
 
 
-- [ ] new col makes new col for all
-- [ ] del col dels col for all
+- [/] new col makes new col for all
+  - actually do we want this? not sure.
+  - orr you could multicursor it, right?
+    wow I don't think I've even ... been thinking about multicursor.
+- [/] del col dels col for all
+- [ ] shift-down needs to do 'shrink'
+- [ ] I guess ... I want the ability to select like a whole column? and delete it.
+  or several consecutive cells?
+  that would be multiselect in a different ... flavor?
+
 
 # I'm torn
 

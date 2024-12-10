@@ -4,18 +4,18 @@ import { applyUpdate } from '../applyUpdate';
 import { init, js, TestState } from '../test-utils';
 
 import { useLocalStorage } from '../../../web/Debug';
-import { childLocs, Loc, Style } from '../../shared/cnodes';
-import { parse, show, Span } from '../../syntaxes/dsl';
+import { childLocs, Loc, RichKind, Style } from '../../shared/cnodes';
+import { parse, ParseResult, show, Span } from '../../syntaxes/dsl';
 import * as glm from '../../syntaxes/gleam2';
 import * as ts from '../../syntaxes/ts';
 import * as tsTypes from '../../syntaxes/ts-types';
 import { toXML } from '../../syntaxes/xml';
 import { nodeToXML, XML } from '../../syntaxes/xml';
 import { root } from '../root';
-import { lastChild, NodeSelection, selStart, Update } from '../utils';
+import { getCurrent, lastChild, NodeSelection, pathWithChildren, selStart, Update } from '../utils';
 import { keyUpdate } from './keyUpdate';
 import { RenderNode } from './RenderNode';
-import { posDown, posUp } from './selectionPos';
+import { posDown, posUp, selectionPos } from './selectionPos';
 import { ShowXML } from './XML';
 import { selectStart } from '../handleNav';
 import { allPaths, multiSelChildren, multiSelKeys, selEnd, Src } from '../handleShiftNav';
@@ -50,7 +50,6 @@ const showKey = (evt: KeyboardEvent) => {
 export const App = ({ id }: { id: string }) => {
     const [state, setState] = useLocalStorage(id, () => init);
 
-    const cstate = useLatest(state);
     // @ts-ignore
     window.state = state;
 
@@ -72,41 +71,7 @@ export const App = ({ id }: { id: string }) => {
     }, [msel, state.sel]);
 
     const parser = state.parser ?? defaultParser;
-
-    const [lastKey, setLastKey] = useState(null as null | string);
-
-    useEffect(() => {
-        const f = (evt: KeyboardEvent) => {
-            setLastKey(showKey(evt));
-            const up = keyUpdate(
-                cstate.current,
-                evt.key,
-                { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey },
-                {
-                    up(sel) {
-                        const nxt = posUp(sel, cstate.current.top, refs);
-                        return nxt ? { start: nxt } : null;
-                    },
-                    down(sel) {
-                        const nxt = posDown(sel, cstate.current.top, refs);
-                        return nxt ? { start: nxt } : null;
-                    },
-                    spans: cspans.current,
-                },
-                parser.config,
-            );
-            if (!up) return;
-            // console.log('up', up);
-            evt.preventDefault();
-            evt.stopPropagation();
-            setState(applyUpdate(cstate.current, up));
-        };
-        document.addEventListener('keydown', f);
-        return () => document.removeEventListener('keydown', f);
-    }, []);
-
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
-
     const cursor = state.sel.multi ? undefined : lastChild(state.sel.start.path);
     const parsed = parser.parse(rootNode, cursor);
     const errors = useMemo(() => {
@@ -118,8 +83,6 @@ export const App = ({ id }: { id: string }) => {
         });
         return errors;
     }, [state, parsed.bads]);
-
-    const refs: Record<number, HTMLElement> = useMemo(() => ({}), []);
 
     const xml = useMemo(() => (parsed.result ? toXML(parsed.result) : null), [parsed.result]);
     const xmlcst = useMemo(() => nodeToXML(rootNode), [rootNode]);
@@ -134,8 +97,7 @@ export const App = ({ id }: { id: string }) => {
         }
     });
 
-    const spans: Src[] = parsed.result ? parser.spans(parsed.result) : [];
-    const cspans = useLatest(spans);
+    const { lastKey, refs } = useKeyHandler(state, parsed, setState, parser);
 
     const paths = useMemo(() => allPaths(state.top), [state.top]);
     const hoverSrc = (src: Src | null) => {
@@ -165,6 +127,78 @@ export const App = ({ id }: { id: string }) => {
         return setState((s) => applyUpdate(s, { nodes: {}, selection: { start, multi: { end: selEnd(r) } } }));
     };
 
+    const [menu, setMenu] = useState(
+        null as null | {
+            top: number;
+            left: number;
+            items: { title: string; action(): void }[];
+        },
+    );
+
+    useEffect(() => {
+        if (state.sel.multi) return setMenu(null);
+        const pos = selectionPos(state.sel, refs, state.top);
+        if (!pos) return;
+        const current = getCurrent(state.sel, state.top);
+        if (current.type !== 'id') return setMenu(null);
+        // oh lol. the slash.
+        // it's gotta be, a thing. gotta parse that out my good folks.
+        const slash = current.cursor.text ? current.cursor.text[0] === '\\' : current.node.text.startsWith('\\');
+        if (!slash) return setMenu(null);
+
+        const kinds: { title: string; kind: RichKind }[] = [
+            { title: 'Rich Text', kind: { type: 'plain' } },
+            { title: 'Rich Text: Bullet', kind: { type: 'list', ordered: false } },
+            { title: 'Rich Text: Section', kind: { type: 'section' } },
+            { title: 'Rich Text: Numbered', kind: { type: 'list', ordered: true } },
+            { title: 'Rich Text: Checkboxes', kind: { type: 'checks', checked: {} } },
+            { title: 'Rich Text: Radio', kind: { type: 'opts' } },
+            { title: 'Rich Text: Quote', kind: { type: 'indent', quote: true } },
+            { title: 'Rich Text: Indent', kind: { type: 'indent', quote: false } },
+            { title: 'Rich Text: Info', kind: { type: 'callout', vibe: 'info' } },
+            { title: 'Rich Text: Warning', kind: { type: 'callout', vibe: 'info' } },
+            { title: 'Rich Text: Error', kind: { type: 'callout', vibe: 'info' } },
+        ];
+
+        setMenu({
+            top: pos.top + pos.height,
+            left: pos.left,
+            items: kinds.map(({ title, kind }) => ({
+                title,
+                action() {
+                    setState((s) =>
+                        applyUpdate(s, {
+                            nodes: {
+                                [current.node.loc]: {
+                                    type: 'list',
+                                    kind,
+                                    loc: current.node.loc,
+                                    children: [state.top.nextLoc],
+                                },
+                                [state.top.nextLoc]: {
+                                    type: 'text',
+                                    loc: state.top.nextLoc,
+                                    spans: [{ type: 'text', text: '' }],
+                                },
+                            },
+                            selection: {
+                                start: selStart(pathWithChildren(current.path, state.top.nextLoc), { type: 'text', end: { index: 0, cursor: 0 } }),
+                            },
+                            nextLoc: state.top.nextLoc + 1,
+                        }),
+                    );
+                },
+            })),
+        });
+    }, [state.sel, state.top]);
+
+    // sooo
+    // do I just have, like, some state here? Yeah, right?
+    // autocomplete menu, would live here.
+    // Anddd if
+    // oh wait, what if I just do \"" produces a rich?
+    // but yeah I want to allow ... different options n stuff.
+
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, paddingBottom: 0, minHeight: 0 }}>
@@ -187,6 +221,30 @@ export const App = ({ id }: { id: string }) => {
                     }}
                 />
             </div>
+            {menu ? (
+                <div
+                    style={{
+                        position: 'absolute',
+                        // height: 5,
+                        // width: 5,
+                        borderRadius: 5,
+                        top: menu.top,
+                        left: menu.left,
+                        background: 'red',
+                    }}
+                >
+                    {menu.items.map(({ title, action }, i) => (
+                        <div
+                            key={i}
+                            onClick={() => {
+                                action();
+                            }}
+                        >
+                            {title}
+                        </div>
+                    ))}
+                </div>
+            ) : null}
             {/* <div style={{ paddingLeft: 50, paddingTop: 20 }}>Auto complete {JSON.stringify(parsed.ctx.autocomplete)}</div> */}
             <div style={{ paddingLeft: 50, paddingTop: 20 }}>Auto complete {JSON.stringify(state.sel)}</div>
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
@@ -356,4 +414,47 @@ const collides = (one: [number, number], two: [number, number]) => {
         (two[0] < one[0] && two[1] > one[0]) ||
         (two[0] < one[1] && two[1] > one[1])
     );
+};
+
+const useKeyHandler = (state: TestState, parsed: ParseResult<any>, setState: (s: TestState) => void, parser: NonNullable<TestState['parser']>) => {
+    const cstate = useLatest(state);
+    const spans: Src[] = parsed.result ? parser.spans(parsed.result) : [];
+    const cspans = useLatest(spans);
+    const [lastKey, setLastKey] = useState(null as null | string);
+    const refs: Record<number, HTMLElement> = useMemo(() => ({}), []);
+    // const [autoComplete, setAutocomplete] = useState(null as null | {
+    //     items: string[]
+    // })
+
+    useEffect(() => {
+        const f = (evt: KeyboardEvent) => {
+            setLastKey(showKey(evt));
+            const up = keyUpdate(
+                cstate.current,
+                evt.key,
+                { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey },
+                {
+                    up(sel) {
+                        const nxt = posUp(sel, cstate.current.top, refs);
+                        return nxt ? { start: nxt } : null;
+                    },
+                    down(sel) {
+                        const nxt = posDown(sel, cstate.current.top, refs);
+                        return nxt ? { start: nxt } : null;
+                    },
+                    spans: cspans.current,
+                },
+                parser.config,
+            );
+            if (!up) return;
+            // console.log('up', up);
+            evt.preventDefault();
+            evt.stopPropagation();
+            setState(applyUpdate(cstate.current, up));
+        };
+        document.addEventListener('keydown', f);
+        return () => document.removeEventListener('keydown', f);
+    }, []);
+
+    return { lastKey, refs };
 };

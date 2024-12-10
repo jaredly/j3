@@ -4,7 +4,7 @@ import { isRich, Style } from '../../shared/cnodes';
 import { cursorSides } from '../cursorSides';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
-import { lastChild, parentLoc, Path, pathKey, pathWithChildren, Update } from '../utils';
+import { lastChild, parentLoc, parentPath, Path, pathKey, pathWithChildren, Top, Update } from '../utils';
 
 import { asStyle } from '../../shared/shape';
 import { textCursorSides2 } from '../insertId';
@@ -24,6 +24,7 @@ const tcloser = { round: '⦈', square: '⟧', curly: '⦄', angle: '⦊' };
 const opener = { round: '(', square: '[', curly: '{', angle: '<' };
 const closer = { round: ')', square: ']', curly: '}', angle: '>' };
 const braceColor = 'rgb(100, 200, 200)';
+const braceColorHl = 'rgb(0, 150, 150)';
 type RCtx = {
     errors: Record<number, string>;
     refs: Record<number, HTMLElement>; // -1 gets you 'cursor' b/c why not
@@ -66,6 +67,15 @@ const placeholderStyle: React.CSSProperties = {
     width: 'min-content',
 };
 
+const closestVisibleList = (path: Path, top: Top) => {
+    for (let i = path.children.length - 1; i >= 0; i--) {
+        const node = top.nodes[path.children[i]];
+        if (node.type === 'table' || (node.type === 'list' && node.kind !== 'smooshed' && node.kind !== 'spaced')) {
+            return node.loc;
+        }
+    }
+};
+
 export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; state: TestState; inRich: boolean; ctx: RCtx; parent: Path }) => {
     const node = state.top.nodes[loc];
     const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
@@ -77,6 +87,11 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
 
     const nextParent = useMemo(() => pathWithChildren(parent, loc), [parent, loc]);
     const key = useMemo(() => pathKey(nextParent), [nextParent]);
+
+    const closest = closestVisibleList(
+        state.sel.start.cursor.type === 'list' && state.sel.start.cursor.where !== 'inside' ? parentPath(state.sel.start.path) : state.sel.start.path,
+        state.top,
+    );
 
     const lightColor = 'rgb(255,200,200)';
     if (ctx.msel?.includes(key)) {
@@ -104,6 +119,13 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
         style.backgroundColor = hoverColor;
         style.outline = `2px solid ${hoverColor}`;
     }
+
+    const hlBraces = closest === loc;
+
+    // if (closest === loc) {
+    //     if (!style) style = {};
+    //     style.outline = '4px solid red';
+    // }
 
     const ref = (el: HTMLElement) => {
         ctx.refs[loc] = el;
@@ -173,9 +195,15 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             //     style.display = 'inline-block';
             // }
             if (typeof node.kind !== 'string') {
+                if (hlBraces) {
+                    if (!style) style = {};
+                    // style.outline = '2px solid teal';
+                    style.zIndex = 1;
+                    style.boxShadow = '-2px 0 0 teal';
+                }
                 return (
-                    <span style={style} ref={ref}>
-                        lol
+                    <span style={{ ...style, backgroundColor: 'rgb(240,255,240)' }} ref={ref}>
+                        {children}
                     </span>
                 );
             }
@@ -222,7 +250,11 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             <span
                                 style={{
                                     backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
-                                    color: braceColor,
+                                    color: hlBraces ? braceColorHl : braceColor,
+                                    fontWeight: hlBraces ? 'bold' : undefined,
+                                    // outline: hlBraces ? '1px solid teal' : undefined,
+                                    // textDecoration: hlBraces ? 'underline' : undefined,
+                                    // textDecorationSkipInk: 'none',
                                     // ...style,
                                     // borderRadius: style?.borderRadius,
                                 }}
@@ -245,7 +277,11 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             <span
                                 style={{
                                     backgroundColor: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined,
-                                    color: braceColor,
+                                    color: hlBraces ? braceColorHl : braceColor,
+                                    // outline: hlBraces ? '1px solid teal' : undefined,
+                                    // textDecoration: hlBraces ? 'underline' : undefined,
+                                    // textDecorationSkipInk: 'none',
+                                    fontWeight: hlBraces ? 'bold' : undefined,
                                     // borderRadius: style?.borderRadius,
                                 }}
                             >
@@ -259,7 +295,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             const sides = cursor?.type === 'text' ? textCursorSides2(cursor) : null;
             const children = node.spans.map((span, i) => {
                 if (span.type === 'text') {
-                    const style = { color: textColor, ...asStyle(span.style) };
+                    const style = inRich ? asStyle(span.style) : { color: textColor, ...asStyle(span.style) };
                     if (sides && sides.left.index <= i && sides.right.index >= i) {
                         const text = sides.text?.index === i ? sides.text.grems : splitGraphemes(span.text);
                         const left = i === sides.left.index ? sides.left.cursor : 0;
@@ -268,6 +304,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             <span key={i} style={style} data-index={i}>
                                 <TextWithCursor
                                     onClick={(evt) => {
+                                        evt.stopPropagation();
                                         const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
                                         ctx.dispatch(justSel(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
                                     }}
@@ -285,6 +322,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                             data-index={i}
                             style={style}
                             onClick={(evt) => {
+                                evt.stopPropagation();
                                 const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(span.text));
                                 ctx.dispatch(justSel(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
                             }}
@@ -324,7 +362,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 // no quotes, and like ... some other things
                 // are maybe different?
                 return (
-                    <span ref={ref} style={style}>
+                    <span ref={ref} style={{ ...style, fontFamily: 'Garamond' }}>
                         {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                         {children}
                     </span>
@@ -341,6 +379,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 </span>
             );
         }
+
         case 'table': {
             const children = node.rows.map((row) => {
                 const nodes = row.map((loc) => (
