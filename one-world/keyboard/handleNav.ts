@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { isRich, Node, Text, TextSpan } from '../shared/cnodes';
+import { hasControls, isRich, Node, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { TestState } from './test-utils';
@@ -131,6 +131,9 @@ export const goLeft = (path: Path, top: Top, tab = false): NodeSelection['start'
     if (pnode.type === 'list') {
         const at = pnode.children.indexOf(loc);
         if (at === -1) return;
+        if (tab && hasControls(pnode.kind)) {
+            return selStart(parentPath(path), { type: 'control', index: at });
+        }
         if (at === 0) {
             if (pnode.kind === 'smooshed' || pnode.kind === 'spaced') {
                 return goLeft(parentPath(path), top);
@@ -159,7 +162,7 @@ export const goLeft = (path: Path, top: Top, tab = false): NodeSelection['start'
     }
 };
 
-export const goRight = (path: Path, top: Top, tight = false): NodeSelection['start'] | void => {
+export const goRight = (path: Path, top: Top, tab = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const ploc = parentLoc(path);
     const pnode = top.nodes[ploc];
@@ -173,7 +176,10 @@ export const goRight = (path: Path, top: Top, tight = false): NodeSelection['sta
             }
             return selStart(parentPath(path), { type: 'list', where: 'after' });
         }
-        return selectStart(pathWithChildren(parentPath(path), pnode.children[at + 1]), top, !tight && pnode.kind === 'smooshed');
+        if (tab && hasControls(pnode.kind)) {
+            return selStart(parentPath(path), { type: 'control', index: at + 1 });
+        }
+        return selectStart(pathWithChildren(parentPath(path), pnode.children[at + 1]), top, !tab && pnode.kind === 'smooshed');
     }
 
     if (pnode.type === 'table') {
@@ -367,6 +373,13 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
             }
         }
         case 'list': {
+            if (current.cursor.type === 'control' && current.node.type === 'list') {
+                if (current.cursor.index === 0) {
+                    return selUpdate(goLeft(current.path, state.top));
+                }
+                const start = selectEnd(pathWithChildren(current.path, current.node.children[current.cursor.index - 1]), state.top);
+                return start ? { nodes: {}, selection: { start } } : undefined;
+            }
             if (current.cursor.type === 'list') {
                 switch (current.cursor.where) {
                     case 'before':

@@ -225,6 +225,7 @@ const lispId = idkeys(lisp);
 const jsId = idkeys(js);
 export const idc = (end: number, start?: number): IdCursor => ({ type: 'id', end, start });
 export const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
+export const controlc = (index: number): CollectionCursor => ({ type: 'control', index });
 export const noText = (cursor: Cursor): Cursor =>
     cursor.type === 'id' ? { ...cursor, text: undefined } : cursor.type === 'text' ? { ...cursor, end: { ...cursor.end, text: undefined } } : cursor;
 export const textc = (index: number, cursor: number, text?: string[]): TextCursor => ({

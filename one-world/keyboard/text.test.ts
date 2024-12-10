@@ -5,7 +5,7 @@ import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { asTop, checks, id, idc, lisp, list, listc, rich, round, smoosh, text, textc, tspan } from './test-utils';
+import { asTop, checks, controlc, id, idc, lisp, list, listc, rich, round, smoosh, text, textc, tspan } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 
 test('text before', () => {
@@ -347,8 +347,22 @@ test('shift-enter in rich', () => {
     check(state, rich([text([tspan('hel\nlo')], true)]), textc(0, 4));
 });
 
-test.only('enter after sub rich', () => {
+test('enter after sub rich', () => {
     let state = asTop(rich([checks([text([tspan('hello')])], true)]), listc('after'));
     state = applyUpdate(state, keyUpdate(state, ',', {}));
     check(state, rich([checks([text([tspan('hello')])]), text([], true)]), listc('inside'));
+});
+
+test('select a controlll', () => {
+    let state = asTop(checks([text([tspan('hello')], true), text([])]), textc(0, 5));
+    state = applyUpdate(state, keyUpdate(state, 'Tab', {}));
+    check(state, checks([text([tspan('hello')]), text([])], true), controlc(1));
+});
+
+test.only('select a controlll and back', () => {
+    let state = asTop(checks([text([tspan('hello')]), text([], true)]), listc('inside'));
+    state = applyUpdate(state, keyUpdate(state, 'Tab', { shift: true }));
+    check(state, checks([text([tspan('hello')]), text([])], true), controlc(1));
+    state = applyUpdate(state, keyUpdate(state, 'Tab', { shift: true }));
+    check(state, checks([text([tspan('hello')], true), text([])]), textc(0, 5));
 });

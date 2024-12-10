@@ -171,6 +171,15 @@ export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSele
             }
         }
     }
+    if (cursor.type === 'control' && node.type === 'list') {
+        if (!shift || cursor.index > 0) {
+            if (shift) {
+                return selectEnd(pathWithChildren(path, node.children[cursor.index - 1]), top);
+            } else {
+                return selectStart(pathWithChildren(path, node.children[cursor.index]), top);
+            }
+        }
+    }
 
     if (cursor.type === 'id' && node.type === 'id') {
         const text = cursor.text ?? splitGraphemes(node.text);

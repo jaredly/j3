@@ -126,6 +126,7 @@ export type RichKind =
     | { type: 'callout'; vibe: 'info' | 'warning' | 'error' };
 
 export const isRich = (kind: ListKind<any>) => typeof kind !== 'string' && kind.type !== 'tag';
+export const hasControls = (kind: ListKind<any>) => typeof kind !== 'string' && (kind.type === 'opts' || kind.type === 'checks');
 
 export type ListKind<Tag> =
     | 'round'
