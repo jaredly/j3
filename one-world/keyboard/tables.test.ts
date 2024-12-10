@@ -74,6 +74,19 @@ test('table add row', () => {
     check(state, table('round', [[id('hi')], [id('', true)]]), idc(0));
 });
 
+test('table add row - two cells', () => {
+    let state = asTop(table('round', [[id('hi'), id('', true)]]), idc(0));
+    state = applyUpdate(state, handleKey(state, ';', js)!);
+    check(
+        state,
+        table('round', [
+            [id('hi'), id('')],
+            [id('', true), id('')],
+        ]),
+        idc(0),
+    );
+});
+
 test('table nav between columns', () => {
     let state = asTop(table('round', [[id('hi', true), id('ho')]]), idc(2));
     state = applyUpdate(state, handleNav('ArrowRight', state)!);
@@ -135,7 +148,7 @@ test('tab into table', () => {
 });
 
 // test.only('table in rich should have text by default', () => {
-//     let state = asTop(rich([table('round', [[id('')]], true)]), listc('before'));
-//     state = applyUpdate(state, keyUpdate(state, 'Tab', {})!);
-//     check(state, table('round', [[id('', true)]]), idc(0));
+//     let state = asTop(rich([table('round', [[id('', true)]], )]), idc(0));
+//     state = applyUpdate(state, keyUpdate(state, '|', {})!);
+//     check(state, rich([table('round', [[id('')]])]), idc(0));
 // });

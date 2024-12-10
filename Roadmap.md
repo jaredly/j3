@@ -32,6 +32,27 @@ yes, yes it would.
 does that mean that, we must necessarily reparse on every keystroke?
 hrm.
 
+So, rich tables.
+Extra things in the rich world
+- custom column widths
+- how bout merged cells? I don't totally have a way to represent that.
+  I guess I could specify, on a row that doesn't have all the cells expected,
+  which one is which amount of wide...
+
+Ok, but so how do we go about adding cells
+in a rich table?
+Do I just go with |?
+and \n for a new row?
+Or do I do the copout thing, where you have to use the mouse?
+AH what if, you have to shift-up to select the cell, and then you
+can do the things?
+BUT
+that does mean, that at least in the rich text world, we definitely want new rows to have
+the full complement of items.
+Do we just want that anyways?
+sure, let's turn that on.
+we can turn it off in general if we like
+
 
 # ForceMultiline needs to bubble up
 

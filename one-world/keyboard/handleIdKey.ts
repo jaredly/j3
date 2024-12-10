@@ -98,6 +98,14 @@ export const handleTableSplit = (grem: string, config: Config, path: Path, top: 
             rows[row] = [...rows[row].slice(0, col), result.other[0]];
             rows.splice(row + 1, 0, newRow);
 
+            if (newRow.length === 1) {
+                for (let i = 1; i < rows[row].length; i++) {
+                    const nloc = result.nextLoc++;
+                    newRow.push(nloc);
+                    result.nodes[nloc] = { type: 'id', text: '', loc: nloc };
+                }
+            }
+
             result.nodes[loc] = { ...parent.node, rows, forceMultiline: grem === '\n' ? true : parent.node.forceMultiline };
 
             const selPath = findPath(loc, result.nodes, result.sloc);
