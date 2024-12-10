@@ -147,8 +147,22 @@ test('tab into table', () => {
     check(state, table('round', [[id('', true)]]), idc(0));
 });
 
-// test.only('table in rich should have text by default', () => {
-//     let state = asTop(rich([table('round', [[id('', true)]], )]), idc(0));
-//     state = applyUpdate(state, keyUpdate(state, '|', {})!);
-//     check(state, rich([table('round', [[id('')]])]), idc(0));
-// });
+test.only('rich table enter in text', () => {
+    let state = asTop(table({ type: 'rich' }, [[id(''), text([tspan('hi')], true)]]), textc(0, 2));
+    state = applyUpdate(state, keyUpdate(state, '\n', {})!);
+    check(
+        state,
+        table({ type: 'rich' }, [
+            [id(''), text([tspan('hi')])],
+            [text([tspan('')], true), text([tspan('')])],
+        ]),
+        textc(0, 0),
+    );
+});
+
+test('rich table delete row', () => {
+    let state = asTop(table({ type: 'rich' }, [[text([tspan('hi')])], [text([tspan('')], true)]]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {})!);
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {})!);
+    check(state, table({ type: 'rich' }, [[text([tspan('hi')], true)]]), textc(0, 2));
+});

@@ -283,7 +283,7 @@ export function flatToUpdateNew(
     };
 }
 
-const fixSelection = (sel: SelStart, nodes: Nodes, top: Top): SelStart => {
+export const fixSelection = (sel: SelStart, nodes: Update['nodes'], top: Top): SelStart => {
     if (sel.cursor.type !== 'list' || sel.cursor.where === 'inside') return sel;
     const loc = lastChild(sel.path);
     const node = nodes[loc] ?? top.nodes[loc];

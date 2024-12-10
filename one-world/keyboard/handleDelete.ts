@@ -6,7 +6,7 @@ import { selEnd, SelSide, SelStart } from './handleShiftNav';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { replaceAt } from './replaceAt';
 import { replaceIn } from './replaceIn';
-import { collapseAdjacentIDs, findPath, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
+import { collapseAdjacentIDs, findPath, fixSelection, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
 import { TestState } from './test-utils';
 import {
     Current,
@@ -342,7 +342,7 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             nodes: result.nodes,
             nextLoc: result.nextLoc,
             selection: {
-                start: selStart(pathWithChildren(parentPath(parent), ...selPath), cursor),
+                start: fixSelection(selStart(pathWithChildren(parentPath(parent), ...selPath), cursor), result.nodes, state.top),
             },
         };
 

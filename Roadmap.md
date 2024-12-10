@@ -1,4 +1,14 @@
 
+## Rich Table
+
+aha
+so, default is a cell has text
+and its rich
+BUT enter makes a new row
+AND shift+enter does \n in the text
+IF YOU WANT a full rich list, you need to insert that. awesome.
+maybe call the 'plain' rich text "paragraphs" or something.
+
 # So, the next thing
 
 Is... rich text, right?

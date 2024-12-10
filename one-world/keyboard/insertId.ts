@@ -1,10 +1,10 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { stylesEqual, Text } from '../shared/cnodes';
+import { Nodes, stylesEqual, Text } from '../shared/cnodes';
 import { handleListKey } from './handleListKey';
 import { justSel, richNode, selUpdate } from './handleNav';
 import { Mods } from './handleShiftNav';
 import { Config } from './test-utils';
-import { lastChild, ListCursor, parentLoc, parentPath, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
+import { findTableLoc, lastChild, ListCursor, parentLoc, parentPath, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
 
 export type Kind = number | 'space' | 'sep' | 'string'; // | 'bar';
 
@@ -99,8 +99,8 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
     }
 
     if (grem === '\n' && !mods?.shift) {
-        const parent = top.nodes[parentLoc(path)];
-        if (parent?.type === 'list' && richNode(parent)) {
+        let parent = top.nodes[parentLoc(path)];
+        if (richNode(parent)) {
             // nowww we split.
             // hrm but we also need to allow a mods
             const before = current.spans.slice(0, cursor.end.index + 1);
@@ -111,16 +111,36 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
             let nextLoc = top.nextLoc;
             const loc = nextLoc++;
 
-            const pat = parent.children.indexOf(current.loc);
-            if (pat === -1) throw new Error(`canrt find ${current.loc} in parent ${parent.loc} : ${parent.children}`);
-            const children = parent.children.slice();
-            children.splice(pat + 1, 0, loc);
+            const nodes: Nodes = {};
+
+            if (parent.type === 'list') {
+                const pat = parent.children.indexOf(current.loc);
+                if (pat === -1) throw new Error(`canrt find ${current.loc} in parent ${parent.loc} : ${parent.children}`);
+                const children = parent.children.slice();
+                children.splice(pat + 1, 0, loc);
+                parent = { ...parent, children };
+            } else if (parent.type === 'table') {
+                const { row, col } = findTableLoc(parent.rows, current.loc);
+                const rows = parent.rows.slice();
+                const right = rows[row].slice(col + 1);
+                rows[row] = rows[row].slice(0, col + 1);
+                rows.splice(row + 1, 0, [loc, ...right]);
+                if (!right.length) {
+                    for (let i = 1; i < rows[row].length; i++) {
+                        const cloc = nextLoc++;
+                        nodes[cloc] = { type: 'text', spans: [], loc: cloc };
+                        rows[row + 1].push(cloc);
+                    }
+                }
+                parent = { ...parent, rows };
+            }
 
             return {
                 nodes: {
+                    ...nodes,
                     [current.loc]: { ...current, spans: before },
                     [loc]: { type: 'text', loc, spans: after },
-                    [parent.loc]: { ...parent, children },
+                    [parent.loc]: parent,
                 },
                 selection: { start: selStart(pathWithChildren(parentPath(path), loc), { type: 'text', end: { index: 0, cursor: 0 } }) },
                 nextLoc,
