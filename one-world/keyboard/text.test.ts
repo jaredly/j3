@@ -5,7 +5,7 @@ import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { asTop, id, idc, lisp, list, listc, rich, round, smoosh, text, textc, tspan } from './test-utils';
+import { asTop, checks, id, idc, lisp, list, listc, rich, round, smoosh, text, textc, tspan } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 
 test('text before', () => {
@@ -345,4 +345,10 @@ test('shift-enter in rich', () => {
     let state = asTop(rich([text([tspan('hello')], true)]), textc(0, 3));
     state = applyUpdate(state, keyUpdate(state, '\n', { shift: true }));
     check(state, rich([text([tspan('hel\nlo')], true)]), textc(0, 4));
+});
+
+test.only('enter after sub rich', () => {
+    let state = asTop(rich([checks([text([tspan('hello')])], true)]), listc('after'));
+    state = applyUpdate(state, keyUpdate(state, ',', {}));
+    check(state, rich([checks([text([tspan('hello')])]), text([], true)]), listc('inside'));
 });

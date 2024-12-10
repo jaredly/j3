@@ -9,9 +9,28 @@ Is... rich text, right?
 - [x] highlight parens
 - [x] Rich Lists shouldn't have inside/before/after.
   - [ ] test it
-- [ ] enter in a rich should make a new text in the rich
-- [ ] render bullets and checkboxes and such
+- [x] enter in a rich should make a new text in the rich
+- [x] render bullets and checkboxes and such
 - [ ] deal with selecting controls (checkboxes, bullets, etc.)
+
+- [ ] Controls! Selectable controls in rich text. yess
+
+- [x] enter in rich (after sub rich) needs to rich
+- [x] cursor should indicate richnesss
+- [ ] want to be able to split a rich. probably the double enter?
+- [ ] up/down at end of rich doesn't work right because it assumes 1 line height
+- [ ] I don't think it makes sense to smooshify in a rich. I think it should create a new item? or something.
+  - oh wow. hm.
+    so, text in a table, we want that to be auto-rich. so why not smoosh? I guess theres no reason.
+
+
+if you start a comment, ... on a blank id ...
+it should turn into a rich text automatically, right? right?
+seems like that would be right.
+Does that mean, that the editor needs to know what a comment is?
+yes, yes it would.
+does that mean that, we must necessarily reparse on every keystroke?
+hrm.
 
 
 # ForceMultiline needs to bubble up

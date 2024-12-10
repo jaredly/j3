@@ -1,9 +1,11 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { childLocs, Id, Node, Nodes } from '../shared/cnodes';
+import { childLocs, Id, isRich, Node, Nodes } from '../shared/cnodes';
 import { Flat } from './flatenate';
+import { spanEnd, spanStart } from './handleNav';
+import { SelStart } from './handleShiftNav';
 import { interleave } from './interleave';
 import { replaceAt } from './replaceAt';
-import { Cursor, IdCursor, ListCursor, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
+import { Cursor, IdCursor, lastChild, ListCursor, parentLoc, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
 export const flattenRow = (nodes: number[], sep: Flat, top: Top, remap: Nodes = {}, depth: number = 0): Flat[] => {
     return interleave(
@@ -276,7 +278,27 @@ export function flatToUpdateNew(
         nodes: r.nodes,
         nextLoc: r.nextLoc,
         selection: {
-            start: selStart(pathWithChildren(parentPath(parent.path), ...r.selPath), two.selection.cursor),
+            start: fixSelection(selStart(pathWithChildren(parentPath(parent.path), ...r.selPath), two.selection.cursor), r.nodes, top),
         },
     };
 }
+
+const fixSelection = (sel: SelStart, nodes: Nodes, top: Top): SelStart => {
+    if (sel.cursor.type !== 'list' || sel.cursor.where === 'inside') return sel;
+    const loc = lastChild(sel.path);
+    const node = nodes[loc] ?? top.nodes[loc];
+    if (node.type !== 'text') return sel;
+    const ploc = parentLoc(sel.path);
+    if (ploc == null) return sel;
+    const parent = nodes[ploc] ?? top.nodes[ploc];
+    if (parent.type === 'list' && isRich(parent.kind)) {
+        if (node.spans.length === 0) return { ...sel, cursor: { type: 'list', where: 'inside' } };
+        const utop = { ...top, nodes: { ...top.nodes, ...nodes } };
+        if (sel.cursor.where === 'before') {
+            return spanStart(node.spans[0], 0, sel.path, utop, false) ?? sel;
+        } else {
+            return spanEnd(node.spans[node.spans.length - 1], sel.path, node.spans.length - 1, utop, false) ?? sel;
+        }
+    }
+    return sel;
+};

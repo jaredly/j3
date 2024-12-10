@@ -73,7 +73,14 @@ type FlatParent = { type: 'new'; kind: Kind; current: Node } | { type: 'existing
 
 const isBlank = (node?: Flat) => node && node.type === 'id' && node.text === '';
 
-export function addNeighborAfter(at: number, flat: Flat[], neighbor: Flat, sel: Node, ncursor: Cursor) {
+export function addNeighborAfter(
+    at: number,
+    flat: Flat[],
+    neighbor: Flat,
+    sel: Node,
+    ncursor: Cursor,
+    blank: Node = { type: 'id', text: '', loc: -1 },
+) {
     if (at < flat.length - 1 && flat[at + 1].type === 'space' && neighbor.type === 'space' && isBlank(flat[at + 2])) {
         sel = flat[at + 2] as Node;
         ncursor = sel.type === 'id' ? { type: 'id', end: 0 } : { type: 'list', where: 'before' };
@@ -88,17 +95,24 @@ export function addNeighborAfter(at: number, flat: Flat[], neighbor: Flat, sel: 
         flat.splice(at + 1, 0, (sel = neighbor));
         ncursor = { type: 'list', where: 'inside' };
     } else {
-        flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: '', loc: -1 }));
-        ncursor = { type: 'id', end: 0 };
+        flat.splice(at + 1, 0, neighbor, (sel = blank));
+        ncursor = blank.type === 'id' ? { type: 'id', end: 0 } : { type: 'list', where: 'inside' };
     }
     return { sel, ncursor };
 }
 
-export function addNeighborBefore(at: number, flat: Flat[], neighbor: Flat, sel: Node, ncursor: Cursor) {
+export function addNeighborBefore(
+    at: number,
+    flat: Flat[],
+    neighbor: Flat,
+    sel: Node,
+    ncursor: Cursor,
+    blank: Node = { type: 'id', text: '', loc: -1 },
+) {
     if ((at !== 0 && flat[at - 1].type === 'id') || (at === 0 && neighbor.type === 'id')) {
         flat.splice(at, 0, neighbor);
     } else {
-        flat.splice(at, 0, { type: 'id', text: '', loc: -1 }, neighbor);
+        flat.splice(at, 0, blank, neighbor);
     }
     if (neighbor.type === 'id') {
         sel = neighbor;

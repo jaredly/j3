@@ -156,6 +156,7 @@ export const square = list('square');
 export const curly = list('curly');
 export const rich = list({ type: 'plain' });
 export const bullet = list({ type: 'list', ordered: false });
+export const checks = list({ type: 'checks', checked: {} });
 // What do I do about you now
 // export const angle = list('angle');
 export const table = <T>(kind: TableKind, rows: RecNodeT<T>[][], loc: T = null as T): RecNodeT<T> => ({ type: 'table', kind, rows, loc });

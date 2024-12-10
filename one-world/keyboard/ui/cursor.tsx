@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 
-export const Cursor = ({ innerRef }: { innerRef?: (node: HTMLSpanElement | null) => void }) => (
+export const Cursor = ({ innerRef, rich }: { rich?: boolean; innerRef?: (node: HTMLSpanElement | null) => void }) => (
     <span
         ref={innerRef}
         style={{
@@ -13,6 +13,10 @@ export const Cursor = ({ innerRef }: { innerRef?: (node: HTMLSpanElement | null)
             pointerEvents: 'none',
         }}
     >
+        {rich ? <span style={{ position: 'absolute', top: 0, left: -1, width: 3, height: 3, borderRadius: '50%', backgroundColor: 'red' }} /> : null}
+        {rich ? (
+            <span style={{ position: 'absolute', bottom: 0, left: -1, width: 3, height: 3, borderRadius: '50%', backgroundColor: 'red' }} />
+        ) : null}
         {'\u200B'}
     </span>
 );
@@ -34,12 +38,14 @@ export const TextWithCursor = ({
     onClick,
     innerRef,
     cursorRef,
+    rich,
 }: {
     innerRef?: (span: HTMLSpanElement) => void;
     cursorRef?: (span: HTMLSpanElement) => void;
     text: string[];
     left: number;
     right: number;
+    rich?: boolean;
     onClick: React.ComponentProps<'span'>['onClick'];
 }) => {
     const ref = useRef<HTMLSpanElement>();
@@ -80,18 +86,42 @@ export const TextWithCursor = ({
             >
                 {text.length ? text.join('') : '\u200B'}
             </span>
-            {rects?.map((rect, i) => (
+            {rects?.length === 1 && rects[0].width === 1 ? (
                 <span
-                    key={i}
-                    ref={i === 0 && rect.width === 1 ? cursorRef : null}
+                    ref={cursorRef}
                     style={{
-                        ...rect,
+                        ...rects[0],
                         position: 'absolute',
                         backgroundColor: 'red',
-                        opacity: rect.width === 1 ? 1 : 0.2,
+                        opacity: 1,
                     }}
-                />
-            ))}
+                >
+                    {rich ? (
+                        <span style={{ position: 'absolute', top: 0, left: -1, width: 3, height: 3, borderRadius: '50%', backgroundColor: 'red' }} />
+                    ) : null}
+                    {rich ? (
+                        <span
+                            style={{ position: 'absolute', bottom: 0, left: -1, width: 3, height: 3, borderRadius: '50%', backgroundColor: 'red' }}
+                        />
+                    ) : null}
+                    {/* {rich ? <span style={{ position: 'absolute', bottom: 0, left: -2, width: 5, height: 1, backgroundColor: 'red' }} /> : null} */}
+                    {/* {rich ? <span style={{ position: 'absolute', top: 0, left: -2, width: 5, height: 1, backgroundColor: 'red' }} /> : null}
+                    {rich ? <span style={{ position: 'absolute', bottom: 0, left: -2, width: 5, height: 1, backgroundColor: 'red' }} /> : null} */}
+                </span>
+            ) : (
+                rects?.map((rect, i) => (
+                    <span
+                        key={i}
+                        ref={i === 0 && rect.width === 1 ? cursorRef : null}
+                        style={{
+                            ...rect,
+                            position: 'absolute',
+                            backgroundColor: 'red',
+                            opacity: rect.width === 1 ? 1 : 0.2,
+                        }}
+                    />
+                ))
+            )}
         </span>
     );
 };

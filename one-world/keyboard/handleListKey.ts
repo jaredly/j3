@@ -1,10 +1,23 @@
-import { List, Node, Nodes } from '../shared/cnodes';
+import { isRich, List, Node, Nodes } from '../shared/cnodes';
 import { findParent, listKindForKeyKind, Flat, addNeighborBefore, addNeighborAfter } from './flatenate';
 import { justSel } from './handleNav';
 import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
 import { collapseAdjacentIDs, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
-import { Top, Path, CollectionCursor, Update, lastChild, selStart, pathWithChildren, parentPath, Cursor, findTableLoc, ListCursor } from './utils';
+import {
+    Top,
+    Path,
+    CollectionCursor,
+    Update,
+    lastChild,
+    selStart,
+    pathWithChildren,
+    parentPath,
+    Cursor,
+    findTableLoc,
+    ListCursor,
+    parentLoc,
+} from './utils';
 import { flatNeighbor, handleTableSplit } from './handleIdKey';
 
 export const braced = (node: Node) => node.type !== 'list' || (node.kind !== 'smooshed' && node.kind !== 'spaced');
@@ -43,12 +56,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                 nodes: {
                     [current.loc]: {
                         ...current,
-                        spans: [
-                            {
-                                type: 'text',
-                                text: grem,
-                            },
-                        ],
+                        spans: [{ type: 'text', text: grem }],
                     },
                 },
                 selection: {
@@ -116,13 +124,16 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
         }
     }
 
-    const table = handleTableSplit(grem, config, path, top, splitCell(current, cursor));
+    const pnode = top.nodes[parentLoc(path)];
+    const blank: Node = pnode.type === 'list' && isRich(pnode.kind) ? { type: 'text', spans: [], loc: -1 } : { type: 'id', text: '', loc: -1 };
+
+    const table = handleTableSplit(grem, config, path, top, splitCell(current, cursor, blank));
     if (table) return table;
 
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
 
     const flat = parent ? flatten(parent.node, top) : [current];
-    var { sel, ncursor, nodes } = addNeighbor({ flat, current, neighbor: flatNeighbor(kind, grem), cursor });
+    var { sel, ncursor, nodes } = addNeighbor({ flat, current, neighbor: flatNeighbor(kind, grem), cursor, blank });
 
     return flatToUpdateNew(
         flat,
@@ -133,11 +144,11 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     );
 };
 
-export const splitCell = (current: Node, cursor: ListCursor) => (cell: Node, top: Top, loc: number) => {
+export const splitCell = (current: Node, cursor: ListCursor, blank: Node) => (cell: Node, top: Top, loc: number) => {
     const flat = flatten(cell, top, undefined, 1);
     const nodes: Update['nodes'] = {};
     const neighbor: Flat = { type: 'sep', loc };
-    const { sel, ncursor } = addNeighbor({ current, cursor, flat, neighbor });
+    const { sel, ncursor } = addNeighbor({ current, cursor, flat, neighbor, blank });
     const one = pruneEmptyIds(flat, { node: sel, cursor: ncursor });
     const two = collapseAdjacentIDs(one.items, one.selection);
     const result = unflat(top, two.items, two.selection.node);
@@ -145,7 +156,7 @@ export const splitCell = (current: Node, cursor: ListCursor) => (cell: Node, top
     return { result, two };
 };
 
-function addNeighbor({ flat, current, neighbor, cursor }: { flat: Flat[]; current: Node; neighbor: Flat; cursor: ListCursor }) {
+function addNeighbor({ flat, current, neighbor, cursor, blank }: { flat: Flat[]; current: Node; neighbor: Flat; cursor: ListCursor; blank: Node }) {
     let at = flat.indexOf(current);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
     // for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
@@ -157,11 +168,11 @@ function addNeighbor({ flat, current, neighbor, cursor }: { flat: Flat[]; curren
     switch (cursor.where) {
         case 'before':
         case 'start':
-            ({ sel, ncursor } = addNeighborBefore(at, flat, neighbor, sel, ncursor));
+            ({ sel, ncursor } = addNeighborBefore(at, flat, neighbor, sel, ncursor, blank));
             break;
         case 'after':
         case 'end':
-            ({ sel, ncursor } = addNeighborAfter(at, flat, neighbor, sel, ncursor));
+            ({ sel, ncursor } = addNeighborAfter(at, flat, neighbor, sel, ncursor, blank));
             break;
     }
     return { sel, ncursor, nodes };

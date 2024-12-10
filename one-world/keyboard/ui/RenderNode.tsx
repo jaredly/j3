@@ -204,6 +204,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     paddingBottom: 4,
                     paddingLeft: 8,
                     paddingRight: 8,
+                    color: 'black',
                 });
 
                 if (hlBraces) {
@@ -232,7 +233,10 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         contents = node.children.map((loc, i) => (
                             <React.Fragment key={loc}>
                                 <input
-                                    style={{ gridColumn: 1 }}
+                                    style={{
+                                        gridColumn: 1,
+                                        outline: cursor?.type === 'control' && cursor.index === i ? '2px solid red' : undefined,
+                                    }}
                                     type="checkbox"
                                     checked={!!ch[loc]}
                                     onClick={(evt) => {
@@ -264,7 +268,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         contents = node.children.map((loc, i) => (
                             <React.Fragment key={loc}>
                                 <input
-                                    style={{ gridColumn: 1 }}
+                                    style={{ gridColumn: 1, outline: cursor?.type === 'control' && cursor.index === i ? '2px solid red' : undefined }}
                                     type="radio"
                                     checked={loc === which}
                                     onClick={(evt) => {
@@ -392,6 +396,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         return (
                             <span key={i} style={style} data-index={i}>
                                 <TextWithCursor
+                                    rich
                                     onClick={(evt) => {
                                         evt.stopPropagation();
                                         const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
@@ -459,7 +464,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 // are maybe different?
                 return (
                     <span ref={ref} style={{ ...style, fontFamily: 'Garamond' }}>
-                        {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+                        {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor rich /> : null}
                         {children}
                     </span>
                 );
