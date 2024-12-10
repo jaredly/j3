@@ -25,6 +25,28 @@ export const braced = (node: Node) => node.type !== 'list' || (node.kind !== 'sm
 export const handleListKey = (config: Config, top: Top, path: Path, cursor: CollectionCursor, grem: string): Update | void => {
     const current = top.nodes[lastChild(path)];
     const kind = textKind(grem, config);
+    if (cursor.type === 'control' && current.type === 'list') {
+        if (grem === ' ' || grem === '\n') {
+            if (typeof current.kind !== 'string') {
+                if (current.kind.type === 'checks') {
+                    const loc = current.children[cursor.index];
+                    return {
+                        nodes: {
+                            [current.loc]: {
+                                ...current,
+                                kind: { type: 'checks', checked: { ...current.kind.checked, [loc]: !current.kind.checked[loc] } },
+                            },
+                        },
+                    };
+                }
+                if (current.kind.type === 'opts') {
+                    const loc = current.children[cursor.index];
+                    return { nodes: { [current.loc]: { ...current, kind: { type: 'opts', which: loc === current.kind.which ? undefined : loc } } } };
+                }
+            }
+        }
+        return;
+    }
     if (cursor.type !== 'list') throw new Error('controls not handled yet');
 
     if (
@@ -125,7 +147,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     }
 
     const pnode = top.nodes[parentLoc(path)];
-    const blank: Node = pnode.type === 'list' && isRich(pnode.kind) ? { type: 'text', spans: [], loc: -1 } : { type: 'id', text: '', loc: -1 };
+    const blank: Node = pnode?.type === 'list' && isRich(pnode.kind) ? { type: 'text', spans: [], loc: -1 } : { type: 'id', text: '', loc: -1 };
 
     const table = handleTableSplit(grem, config, path, top, splitCell(current, cursor, blank));
     if (table) return table;

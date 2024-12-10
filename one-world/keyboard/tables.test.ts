@@ -5,7 +5,8 @@ import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { asTop, id, idc, js, lisp, list, listc, round, smoosh, table, text, textc, tspan } from './test-utils';
+import { asTop, id, idc, js, lisp, list, listc, rich, round, smoosh, table, text, textc, tspan } from './test-utils';
+import { keyUpdate } from './ui/keyUpdate';
 
 test('table pls', () => {
     let state = asTop(round([], true), listc('inside'));
@@ -126,3 +127,15 @@ test('table del row? join double smoosh', () => {
     state = applyUpdate(state, handleDelete(state)!);
     check(state, table('round', [[id('a'), smoosh([id('+'), id('hiho', true), id('+')])]]), idc(2));
 });
+
+test('tab into table', () => {
+    let state = asTop(table('round', [[id('')]], true), listc('before'));
+    state = applyUpdate(state, keyUpdate(state, 'Tab', {})!);
+    check(state, table('round', [[id('', true)]]), idc(0));
+});
+
+// test.only('table in rich should have text by default', () => {
+//     let state = asTop(rich([table('round', [[id('')]], true)]), listc('before'));
+//     state = applyUpdate(state, keyUpdate(state, 'Tab', {})!);
+//     check(state, table('round', [[id('', true)]]), idc(0));
+// });

@@ -21,7 +21,7 @@ import {
 
 export const justSel = (path: Path, cursor: Cursor) => ({ nodes: {}, selection: { start: selStart(path, cursor) } });
 
-export const selectStart = (path: Path, top: Top, plus1 = false): NodeSelection['start'] | void => {
+export const selectStart = (path: Path, top: Top, plus1 = false, tab = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const node = top.nodes[loc];
     if (node.type === 'id') {
@@ -32,6 +32,9 @@ export const selectStart = (path: Path, top: Top, plus1 = false): NodeSelection[
         return selStart(path, { type: 'id', end: plus1 ? 1 : 0 });
     }
     if (node.type === 'list') {
+        if (tab && hasControls(node.kind) && node.children.length > 0) {
+            return selStart(path, { type: 'control', index: 0 });
+        }
         if (node.kind === 'spaced' || node.kind === 'smooshed') {
             if (!node.children.length) throw new Error('empty spaced/smooshed/rich');
             return selectStart(pathWithChildren(path, node.children[0]), top, plus1);
@@ -179,7 +182,7 @@ export const goRight = (path: Path, top: Top, tab = false): NodeSelection['start
         if (tab && hasControls(pnode.kind)) {
             return selStart(parentPath(path), { type: 'control', index: at + 1 });
         }
-        return selectStart(pathWithChildren(parentPath(path), pnode.children[at + 1]), top, !tab && pnode.kind === 'smooshed');
+        return selectStart(pathWithChildren(parentPath(path), pnode.children[at + 1]), top, !tab && pnode.kind === 'smooshed', tab);
     }
 
     if (pnode.type === 'table') {
@@ -188,9 +191,9 @@ export const goRight = (path: Path, top: Top, tab = false): NodeSelection['start
             return selStart(parentPath(path), { type: 'list', where: 'after' });
         }
         if (col === pnode.rows[row].length - 1) {
-            return selectStart(pathWithChildren(parentPath(path), pnode.rows[row + 1][0]), top);
+            return selectStart(pathWithChildren(parentPath(path), pnode.rows[row + 1][0]), top, false, tab);
         }
-        return selectStart(pathWithChildren(parentPath(path), pnode.rows[row][col + 1]), top);
+        return selectStart(pathWithChildren(parentPath(path), pnode.rows[row][col + 1]), top, false, tab);
     }
 
     if (pnode.type === 'text') {

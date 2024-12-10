@@ -359,10 +359,16 @@ test('select a controlll', () => {
     check(state, checks([text([tspan('hello')]), text([])], true), controlc(1));
 });
 
-test.only('select a controlll and back', () => {
+test('select a controlll and back', () => {
     let state = asTop(checks([text([tspan('hello')]), text([], true)]), listc('inside'));
     state = applyUpdate(state, keyUpdate(state, 'Tab', { shift: true }));
     check(state, checks([text([tspan('hello')]), text([])], true), controlc(1));
     state = applyUpdate(state, keyUpdate(state, 'Tab', { shift: true }));
     check(state, checks([text([tspan('hello')], true), text([])]), textc(0, 5));
+});
+
+test('toggle a control', () => {
+    let state = asTop(checks([text([])], true), controlc(0));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, checks([text([])], true), controlc(0));
 });

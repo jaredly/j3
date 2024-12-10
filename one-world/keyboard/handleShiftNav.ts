@@ -143,19 +143,32 @@ export type SelStart = NodeSelection['start'];
 export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSelection['start'] | void => {
     const { path, cursor } = side;
     const node = top.nodes[lastChild(path)];
-    if (node.type === 'list' && cursor.type === 'list') {
+    if (cursor.type === 'list') {
         // Maybe go inside?
         if ((shift && cursor.where === 'after') || (!shift && cursor.where === 'before')) {
-            if (node.children.length === 0) {
-                return selStart(path, { type: 'list', where: 'inside' });
-            }
-            if (shift) {
-                return selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), top);
-            } else {
-                return selectStart(pathWithChildren(path, node.children[0]), top);
+            if (node.type === 'list') {
+                if (node.children.length === 0) {
+                    return selStart(path, { type: 'list', where: 'inside' });
+                }
+                if (shift) {
+                    return selectEnd(pathWithChildren(path, node.children[node.children.length - 1]), top);
+                } else {
+                    return selectStart(pathWithChildren(path, node.children[0]), top);
+                }
+            } else if (node.type === 'table') {
+                if (node.rows.length === 0) {
+                    return selStart(path, { type: 'list', where: 'inside' });
+                }
+                if (shift) {
+                    const last = node.rows[node.rows.length - 1];
+                    return selectEnd(pathWithChildren(path, last[last.length - 1]), top);
+                } else {
+                    return selectStart(pathWithChildren(path, node.rows[0][0]), top);
+                }
             }
         }
     }
+
     if (cursor.type === 'list') {
         if (cursor.where === (shift ? 'before' : 'after')) {
             // check for smoosh

@@ -13,7 +13,7 @@ Is... rich text, right?
 - [x] render bullets and checkboxes and such
 - [ ] deal with selecting controls (checkboxes, bullets, etc.)
 
-- [ ] Controls! Selectable controls in rich text. yess
+- [x] Controls! Selectable controls in rich text. yess
 
 - [x] enter in rich (after sub rich) needs to rich
 - [x] cursor should indicate richnesss
