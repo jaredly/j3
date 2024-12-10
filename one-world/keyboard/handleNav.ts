@@ -115,7 +115,7 @@ export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSel
     return selStart(path, { type: 'list', where: 'after' });
 };
 
-const richNode = (node: Node | undefined) => {
+export const richNode = (node: Node | undefined) => {
     return node?.type === 'list' && isRich(node.kind);
 };
 

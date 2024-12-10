@@ -5,8 +5,8 @@ Is... rich text, right?
 
 - [x] CLICK inside a text, why is it not workings.
 - [ ] alt/left-right should move you by word in a rich text
-- [ ] highlight the ~rich text list that you're inside of
-- [ ] highlight parens
+- [x] highlight the ~rich text list that you're inside of
+- [x] highlight parens
 - [x] Rich Lists shouldn't have inside/before/after.
   - [ ] test it
 - [ ] enter in a rich should make a new text in the rich

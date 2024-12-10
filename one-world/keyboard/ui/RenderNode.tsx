@@ -195,14 +195,55 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             //     style.display = 'inline-block';
             // }
             if (typeof node.kind !== 'string') {
+                if (!style) style = {};
+                Object.assign(style, {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    backgroundColor: 'rgb(240,255,240)',
+                    paddingTop: 4,
+                    paddingBottom: 4,
+                    paddingLeft: 8,
+                });
+
                 if (hlBraces) {
-                    if (!style) style = {};
                     // style.outline = '2px solid teal';
                     style.zIndex = 1;
                     style.boxShadow = '-2px 0 0 teal';
                 }
+
+                switch (node.kind.type) {
+                    case 'checks':
+                        const ch = node.kind.checked;
+                        return (
+                            <span style={{ ...style, display: 'grid', columnGap: 4, gridTemplateColumns: 'min-content 1fr' }} ref={ref}>
+                                {node.children.map((loc, i) => (
+                                    <React.Fragment key={loc}>
+                                        <input
+                                            style={{ gridColumn: 1 }}
+                                            type="checkbox"
+                                            checked={!!ch[loc]}
+                                            onClick={(evt) => {
+                                                evt.stopPropagation();
+                                            }}
+                                            onChange={(evt) => {
+                                                ctx.dispatch({
+                                                    nodes: {
+                                                        [node.loc]: {
+                                                            ...node,
+                                                            kind: { type: 'checks', checked: { ...ch, [loc]: !ch[loc] } },
+                                                        },
+                                                    },
+                                                });
+                                            }}
+                                        />
+                                        <div style={{ gridColumn: 2 }}>{children[i]}</div>
+                                    </React.Fragment>
+                                ))}
+                            </span>
+                        );
+                }
                 return (
-                    <span style={{ ...style, backgroundColor: 'rgb(240,255,240)' }} ref={ref}>
+                    <span style={style} ref={ref}>
                         {children}
                     </span>
                 );
@@ -327,7 +368,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                                 ctx.dispatch(justSel(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
                             }}
                         >
-                            {span.text}
+                            {span.text === '' ? '\u200B' : span.text}
                         </span>
                     );
                 } else if (span.type === 'embed') {
@@ -338,7 +379,14 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         if (left === 0 && right === 1) selected = true;
                     }
                     return (
-                        <span style={{ backgroundColor: selected ? hl : 'rgba(255,255,255,0.5)' }} data-index={i} key={i}>
+                        <span
+                            style={{
+                                fontFamily: 'Jet Brains',
+                                backgroundColor: selected ? hl : 'rgba(255,255,255,0.5)',
+                            }}
+                            data-index={i}
+                            key={i}
+                        >
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 0 && sides.right.cursor === 0 ? (
                                 <Cursor />
                             ) : null}

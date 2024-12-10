@@ -5,7 +5,8 @@ import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { asTop, id, idc, lisp, list, listc, round, smoosh, text, textc, tspan } from './test-utils';
+import { asTop, id, idc, lisp, list, listc, rich, round, smoosh, text, textc, tspan } from './test-utils';
+import { keyUpdate } from './ui/keyUpdate';
 
 test('text before', () => {
     let state = asTop(text([], true), listc('before'));
@@ -324,4 +325,24 @@ test('del in an embed', () => {
     let state = asTop(text([{ type: 'embed', item: id('', true) }, tspan('a')]), idc(0));
     state = applyUpdate(state, handleDelete(state));
     check(state, text([tspan('a')], true), textc(0, 0));
+});
+
+// MARK: rich n stuff
+
+test('enter in non rich', () => {
+    let state = asTop(text([tspan('hello')], true), textc(0, 3));
+    state = applyUpdate(state, keyUpdate(state, '\n', {}));
+    check(state, text([tspan('hel\nlo')], true), textc(0, 4));
+});
+
+test('enter in rich', () => {
+    let state = asTop(rich([text([tspan('hello')], true)]), textc(0, 3));
+    state = applyUpdate(state, keyUpdate(state, '\n', {}));
+    check(state, rich([text([tspan('hel')]), text([tspan('lo')], true)]), textc(0, 0));
+});
+
+test('shift-enter in rich', () => {
+    let state = asTop(rich([text([tspan('hello')], true)]), textc(0, 3));
+    state = applyUpdate(state, keyUpdate(state, '\n', { shift: true }));
+    check(state, rich([text([tspan('hel\nlo')], true)]), textc(0, 4));
 });

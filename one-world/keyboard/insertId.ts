@@ -1,9 +1,10 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { stylesEqual, Text } from '../shared/cnodes';
 import { handleListKey } from './handleListKey';
-import { justSel, selUpdate } from './handleNav';
+import { justSel, richNode, selUpdate } from './handleNav';
+import { Mods } from './handleShiftNav';
 import { Config } from './test-utils';
-import { lastChild, ListCursor, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
+import { lastChild, ListCursor, parentLoc, parentPath, Path, pathWithChildren, selStart, TextCursor, Top, Update } from './utils';
 
 export type Kind = number | 'space' | 'sep' | 'string'; // | 'bar';
 
@@ -40,7 +41,7 @@ export const textCursorSides2 = (
     return { left: cursor.start, right: cursor.end, text };
 };
 
-export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: string, path: Path, top: Top): Update | void => {
+export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: string, path: Path, top: Top, mods?: Mods): Update | void => {
     if (cursor.start && cursor.start.index !== cursor.end.index) {
         throw new Error('not multi yet sry');
     }
@@ -97,6 +98,36 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
         };
     }
 
+    if (grem === '\n' && !mods?.shift) {
+        const parent = top.nodes[parentLoc(path)];
+        if (parent?.type === 'list' && richNode(parent)) {
+            // nowww we split.
+            // hrm but we also need to allow a mods
+            const before = current.spans.slice(0, cursor.end.index + 1);
+            before[before.length - 1] = { ...span, text: text.slice(0, left).join('') };
+            const after = current.spans.slice(cursor.end.index);
+            after[0] = { ...span, text: text.slice(right).join('') };
+
+            let nextLoc = top.nextLoc;
+            const loc = nextLoc++;
+
+            const pat = parent.children.indexOf(current.loc);
+            if (pat === -1) throw new Error(`canrt find ${current.loc} in parent ${parent.loc} : ${parent.children}`);
+            const children = parent.children.slice();
+            children.splice(pat + 1, 0, loc);
+
+            return {
+                nodes: {
+                    [current.loc]: { ...current, spans: before },
+                    [loc]: { type: 'text', loc, spans: after },
+                    [parent.loc]: { ...parent, children },
+                },
+                selection: { start: selStart(pathWithChildren(parentPath(path), loc), { type: 'text', end: { index: 0, cursor: 0 } }) },
+                nextLoc,
+            };
+        }
+    }
+
     // Sooo now we come to a choice.
     // How to do embeds?
     /*
@@ -136,12 +167,12 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
     });
 };
 
-export const handleTextKey = (config: Config, top: Top, path: Path, cursor: ListCursor | TextCursor, grem: string): Update | void => {
+export const handleTextKey = (config: Config, top: Top, path: Path, cursor: ListCursor | TextCursor, grem: string, mods?: Mods): Update | void => {
     const current = top.nodes[lastChild(path)];
     if (current.type !== 'text') throw new Error('not text');
     if (cursor.type === 'list') {
         return handleListKey(config, top, path, cursor, grem);
     }
 
-    return handleTextText(cursor, current, grem, path, top);
+    return handleTextText(cursor, current, grem, path, top, mods);
 };

@@ -41,6 +41,7 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
     } else if (closerKind(key)) {
         return handleClose(state, key);
     } else {
-        return handleKey(state, key, config);
+        // TODO ctrl-enter, need to pipe it in
+        return handleKey(state, key, config, mods);
     }
 };
