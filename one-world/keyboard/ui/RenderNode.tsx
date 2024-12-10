@@ -203,6 +203,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     paddingTop: 4,
                     paddingBottom: 4,
                     paddingLeft: 8,
+                    paddingRight: 8,
                 });
 
                 if (hlBraces) {
@@ -211,40 +212,87 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     style.boxShadow = '-2px 0 0 teal';
                 }
 
+                let contents = children;
+
                 switch (node.kind.type) {
+                    case 'list':
+                        contents = node.children.map((loc, i) => (
+                            <React.Fragment key={loc}>
+                                <div style={{ gridColumn: 1 }}>{'-'}</div>
+                                <div style={{ gridColumn: 2 }}>{children[i]}</div>
+                            </React.Fragment>
+                        ));
+
+                        style.display = 'grid';
+                        style.columnGap = 4;
+                        style.gridTemplateColumns = 'min-content 1fr';
+                        break;
                     case 'checks':
                         const ch = node.kind.checked;
-                        return (
-                            <span style={{ ...style, display: 'grid', columnGap: 4, gridTemplateColumns: 'min-content 1fr' }} ref={ref}>
-                                {node.children.map((loc, i) => (
-                                    <React.Fragment key={loc}>
-                                        <input
-                                            style={{ gridColumn: 1 }}
-                                            type="checkbox"
-                                            checked={!!ch[loc]}
-                                            onClick={(evt) => {
-                                                evt.stopPropagation();
-                                            }}
-                                            onChange={(evt) => {
-                                                ctx.dispatch({
-                                                    nodes: {
-                                                        [node.loc]: {
-                                                            ...node,
-                                                            kind: { type: 'checks', checked: { ...ch, [loc]: !ch[loc] } },
-                                                        },
-                                                    },
-                                                });
-                                            }}
-                                        />
-                                        <div style={{ gridColumn: 2 }}>{children[i]}</div>
-                                    </React.Fragment>
-                                ))}
-                            </span>
-                        );
+                        contents = node.children.map((loc, i) => (
+                            <React.Fragment key={loc}>
+                                <input
+                                    style={{ gridColumn: 1 }}
+                                    type="checkbox"
+                                    checked={!!ch[loc]}
+                                    onClick={(evt) => {
+                                        evt.stopPropagation();
+                                    }}
+                                    onChange={(evt) => {
+                                        ctx.dispatch({
+                                            nodes: {
+                                                [node.loc]: {
+                                                    ...node,
+                                                    kind: { type: 'checks', checked: { ...ch, [loc]: !ch[loc] } },
+                                                },
+                                            },
+                                        });
+                                    }}
+                                />
+                                <div style={{ gridColumn: 2 }}>{children[i]}</div>
+                            </React.Fragment>
+                        ));
+                        style.display = 'grid';
+                        style.columnGap = 4;
+                        style.gridTemplateColumns = 'min-content 1fr';
+                        break;
+                    case 'opts':
+                        style.display = 'grid';
+                        style.columnGap = 4;
+                        style.gridTemplateColumns = 'min-content 1fr';
+                        const which = node.kind.which;
+                        contents = node.children.map((loc, i) => (
+                            <React.Fragment key={loc}>
+                                <input
+                                    style={{ gridColumn: 1 }}
+                                    type="radio"
+                                    checked={loc === which}
+                                    onClick={(evt) => {
+                                        evt.stopPropagation();
+                                        ctx.dispatch({
+                                            nodes: {
+                                                [node.loc]: {
+                                                    ...node,
+                                                    kind: { type: 'opts', which: which === loc ? undefined : loc },
+                                                },
+                                            },
+                                        });
+                                    }}
+                                    // to appease react
+                                    onChange={(evt) => {}}
+                                />
+                                <div style={{ gridColumn: 2 }}>{children[i]}</div>
+                            </React.Fragment>
+                        ));
+                        break;
                 }
                 return (
-                    <span style={style} ref={ref}>
-                        {children}
+                    <span style={{ display: 'inline-flex', flexDirection: 'row' }}>
+                        {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+                        <span style={style} ref={ref}>
+                            {contents}
+                        </span>
+                        {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                     </span>
                 );
             }
