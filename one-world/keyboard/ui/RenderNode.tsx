@@ -485,7 +485,10 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             if (isRich(node.kind)) {
                 const cols: string[] = [];
                 const mx = node.rows.reduce((c, r) => Math.max(c, r.length), 0);
-                for (let i = 0; i < mx; i++) cols.push('max-content');
+                for (let i = 0; i < mx; i++) {
+                    if (i > 0) cols.push('min-content');
+                    cols.push('max-content');
+                }
                 return (
                     <span style={{ display: 'inline-flex', flexDirection: 'row' }}>
                         {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
@@ -508,7 +511,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                                             {'|'}
                                         </span>
                                     ) : null,
-                                    <span key={cell} style={{ gridColumn: i * 2 + 1 }}>
+                                    <span key={cell} style={{ gridColumn: row.length === 1 ? `span ${mx * 2 - 1}` : i * 2 + 1 }}>
                                         <RenderNode parent={nextParent} ctx={ctx} loc={cell} state={state} inRich={true} />
                                     </span>,
                                 ]),
