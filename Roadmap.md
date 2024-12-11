@@ -1,13 +1,40 @@
 
+## Image EMBEDS
+
+let's goooo
+
+SO
+this is ... a part of a rich text?
+orrr a whole nother node entirely?
+I can definitely imagine wanting "a list of images" that you just drop in.
+on the other hand, why wouldn't they just be identified by their name or whatnot.
+And a rich text context is the main place I can imagine wanting to just dump an image.
+BUT importantly we'll need to not embed the image data in the /span/ because those
+get copied all over the place in updates.
+
+Soooo I need a way to ... have attachements... somewhere.
+
+anddd a way to look them up? I guess?
+- actually so for UI i can just like /paste/ them in, right?
+- andddddd maybe let's try to do like embedding skethy drawings or whatever
+
+
+btw my multiselect has a bunch of issues.
+
+- [x] `code` backticks pls
+- [x] prevent code backticks in a code backtick?
+
 ## Rich Table
 
 aha
 so, default is a cell has text
 and its rich
-BUT enter makes a new row
-AND shift+enter does \n in the text
+- [x] BUT enter makes a new row
+- [x] AND shift+enter does \n in the text
 IF YOU WANT a full rich list, you need to insert that. awesome.
 maybe call the 'plain' rich text "paragraphs" or something.
+
+- [ ] BUG go left into empty text in table, need to select inside, not after
 
 # So, the next thing
 

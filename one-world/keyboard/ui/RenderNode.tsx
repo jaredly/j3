@@ -463,7 +463,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 // no quotes, and like ... some other things
                 // are maybe different?
                 return (
-                    <span ref={ref} style={{ ...style, fontFamily: 'Garamond' }}>
+                    <span ref={ref} style={{ ...style, fontFamily: 'Merriweather' }}>
                         {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor rich /> : null}
                         {children}
                     </span>

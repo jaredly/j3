@@ -1,4 +1,16 @@
 
+# Assembly
+
+https://github.com/dmtrKovalenko/macos-assembly-http-server/blob/main/server.s
+
+What if I made a language called like 'almost assembly'
+is that what c is trying to be? maybe.
+but it would have ... a better type system? idk.
+I'd probably have to learn more assembly.
+
+#
+
+
 Spoofax
 
 https://flix.dev/

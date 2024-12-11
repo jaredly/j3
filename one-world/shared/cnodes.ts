@@ -41,6 +41,7 @@ my rich-text nodes.
 */
 
 export type Style = {
+    format?: 'code';
     fontWeight?: number | string;
     fontFamily?: string;
     fontStyle?: string;
@@ -56,7 +57,7 @@ export const rgbEqual = (one?: RGB, two?: RGB) => (!one || !two ? one === two : 
 
 export const stylesEqual = (one?: Style, two?: Style) => {
     if (!one || !two) return (!one || Object.keys(one).length === 0) && (!two || Object.keys(two).length === 0);
-    for (let key of ['fontWeight', 'fontFamily', 'fontStyle', 'textDecoration', 'border', 'outline'] as const) {
+    for (let key of ['fontWeight', 'fontFamily', 'fontStyle', 'textDecoration', 'border', 'outline', 'format'] as const) {
         if (one[key] !== two[key]) return false;
     }
     if (!rgbEqual(one.background, two.background)) return false;
@@ -104,6 +105,7 @@ export type TextSpan<Embed> =
     | { type: 'text'; text: string; link?: Link; style?: Style }
     // Jump back to a normal node I guess
     | { type: 'embed'; item: Embed; link?: Link; style?: Style }
+    | { type: 'attachment'; id: string; display: 'name' | 'small' | 'large' }
     // I kinda forget what this was about? Maybe like letting you supply rich-text plugins or something
     | { type: 'custom'; id: string; data: any }
     // How are these different from `embed`? Well these actually yoink the source

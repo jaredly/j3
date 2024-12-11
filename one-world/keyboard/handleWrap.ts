@@ -4,7 +4,7 @@ import { cursorSides } from './cursorSides';
 import { findParent } from './flatenate';
 import { justSel, selectStart } from './handleNav';
 import { multiSelChildren, SelStart } from './handleShiftNav';
-import { handleTextText } from './insertId';
+import { handleTextText } from './handleTextText';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
 import { TestState } from './test-utils';
@@ -252,8 +252,16 @@ export const handleWrap = (state: TestState, key: string): Update | void => {
     }
 
     const current = getCurrent(state.sel, state.top);
-    if (current.type === 'text' && current.cursor.type === 'text') {
-        return handleTextText(current.cursor, current.node, key, current.path, state.top);
+    if (current.type === 'text') {
+        if (current.cursor.type === 'text') {
+            return handleTextText(current.cursor, current.node, key, current.path, state.top);
+        }
+        if (current.cursor.type === 'list' && current.cursor.where === 'inside') {
+            return {
+                nodes: { [current.node.loc]: { ...current.node, spans: [{ type: 'text', text: key }] } },
+                selection: { start: { ...state.sel.start, cursor: { type: 'text', end: { index: 0, cursor: 1 } } } },
+            };
+        }
     }
     const kind = wrapKind(key);
     if (!kind) return;

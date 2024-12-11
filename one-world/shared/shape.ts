@@ -85,5 +85,12 @@ export const asStyle = (style?: Style): React.CSSProperties | undefined => {
     if (style.textDecoration) {
         res.textDecoration = style.textDecoration;
     }
+    if (style.format === 'code') {
+        // res.padding = '0px 4px';
+        // res.backgroundColor = 'rgba(200, 200, 200, 0.4)';
+        res.fontFamily = 'Jet Brains';
+        // res.borderRadius = '4px';
+        res.color = '#a5741b';
+    }
     return res;
 };

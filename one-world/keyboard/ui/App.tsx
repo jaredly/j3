@@ -19,6 +19,7 @@ import { posDown, posUp, selectionPos } from './selectionPos';
 import { ShowXML } from './XML';
 import { selectStart } from '../handleNav';
 import { allPaths, multiSelChildren, multiSelKeys, selEnd, Src } from '../handleShiftNav';
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -140,6 +141,42 @@ export const App = ({ id }: { id: string }) => {
         const pos = selectionPos(state.sel, refs, state.top);
         if (!pos) return;
         const current = getCurrent(state.sel, state.top);
+        if (current.type === 'text' && current.cursor.type === 'text') {
+            const span = current.node.spans[current.cursor.end.index];
+            const end = current.cursor.end;
+            if (span.type === 'text') {
+                const text = current.cursor.end.text ?? splitGraphemes(span.text);
+                if (text[current.cursor.end.cursor - 1] === '\\') {
+                    return setMenu({
+                        top: pos.top + pos.height,
+                        left: pos.left,
+                        items: [
+                            {
+                                title: 'Image embed',
+                                action() {
+                                    //         const spans = current.node.spans.slice()
+                                    //         spans[end.index] = {type: 'embed'}
+                                    // setState((s) =>
+                                    //     applyUpdate(s, {
+                                    //         nodes: {
+                                    //             [current.node.loc]: {
+                                    //                 ...current.node,
+                                    //                 spans
+                                    //             },
+                                    //         },
+                                    //         selection: {
+                                    //             start: selStart(pathWithChildren(current.path, s.top.nextLoc), { type: 'text', end: { index: 0, cursor: 0 } }),
+                                    //         },
+                                    //         nextLoc: s.top.nextLoc + 1,
+                                    //     }),
+                                    // );
+                                },
+                            },
+                        ],
+                    });
+                }
+            }
+        }
         if (current.type !== 'id') return setMenu(null);
         // oh lol. the slash.
         // it's gotta be, a thing. gotta parse that out my good folks.
@@ -191,6 +228,12 @@ export const App = ({ id }: { id: string }) => {
                     },
                 }))
                 .concat([
+                    {
+                        title: 'Attachment',
+                        action() {
+                            // doing a thing
+                        },
+                    },
                     {
                         title: 'Rich Table',
                         action() {

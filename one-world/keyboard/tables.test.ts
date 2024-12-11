@@ -147,7 +147,7 @@ test('tab into table', () => {
     check(state, table('round', [[id('', true)]]), idc(0));
 });
 
-test.only('rich table enter in text', () => {
+test('rich table enter in text', () => {
     let state = asTop(table({ type: 'rich' }, [[id(''), text([tspan('hi')], true)]]), textc(0, 2));
     state = applyUpdate(state, keyUpdate(state, '\n', {})!);
     check(
