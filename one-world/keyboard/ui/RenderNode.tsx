@@ -482,9 +482,9 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
         }
 
         case 'table': {
+            const mx = node.rows.reduce((c, r) => Math.max(c, r.length), 0);
             if (isRich(node.kind)) {
                 const cols: string[] = [];
-                const mx = node.rows.reduce((c, r) => Math.max(c, r.length), 0);
                 for (let i = 0; i < mx; i++) {
                     if (i > 0) cols.push('min-content');
                     cols.push('max-content');
@@ -532,7 +532,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                         <span
                             key={i}
                             style={{
-                                gridColumn: i * 2 + 1,
+                                gridColumn: row.length === 1 ? `span ${mx * 2 - 1}` : i * 2 + 1,
                             }}
                         >
                             {node}
@@ -550,6 +550,13 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     ),
                 );
             });
+
+            const cols: string[] = [];
+            for (let i = 0; i < mx; i++) {
+                if (i > 0) cols.push('min-content');
+                cols.push('max-content');
+            }
+
             return (
                 <span
                     style={style}
@@ -577,7 +584,18 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
 
                     {node.forceMultiline ? (
-                        <div style={{ ...style, display: 'grid', width: 'fit-content', flexDirection: 'column', marginLeft: 16 }}>{children}</div>
+                        <div
+                            style={{
+                                ...style,
+                                display: 'grid',
+                                width: 'fit-content',
+                                gridTemplateColumns: cols.join(' '),
+                                flexDirection: 'column',
+                                marginLeft: 16,
+                            }}
+                        >
+                            {children}
+                        </div>
                     ) : (
                         interleaveF(children, (i) => [<span key={`row${i}`}>{'; '}</span>])
                     )}
