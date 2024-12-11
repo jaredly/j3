@@ -24,6 +24,26 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     const table = handleTableSplit(grem, config, path, top, splitCell(current, cursor));
     if (table) return table;
 
+    if (config.xml && grem === '<' && (cursor.text ? cursor.text.length === 0 : current.text === '')) {
+        console.log('hm');
+        const pnode = top.nodes[parentLoc(path)];
+        if (pnode?.type !== 'list' || pnode.kind !== 'smooshed') {
+            return {
+                nodes: {
+                    [current.loc]: {
+                        type: 'list',
+                        kind: { type: 'tag', node: top.nextLoc },
+                        loc: current.loc,
+                        children: [],
+                    },
+                    [top.nextLoc]: { type: 'id', text: '', loc: top.nextLoc },
+                },
+                selection: { start: selStart(pathWithChildren(path, top.nextLoc), { type: 'id', end: 0 }) },
+                nextLoc: top.nextLoc + 1,
+            };
+        }
+    }
+
     if (typeof kind === 'number') {
         if (current.ccls == null) {
             return {

@@ -4,7 +4,7 @@ import { isRich, Style } from '../../shared/cnodes';
 import { cursorSides } from '../cursorSides';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
-import { lastChild, parentLoc, parentPath, Path, pathKey, pathWithChildren, Top, Update } from '../utils';
+import { lastChild, parentLoc, parentPath, Path, pathKey, pathWithChildren, selStart, Top, Update } from '../utils';
 
 import { asStyle } from '../../shared/shape';
 import { textCursorSides2 } from '../insertId';
@@ -76,7 +76,21 @@ const closestVisibleList = (path: Path, top: Top) => {
     }
 };
 
-export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; state: TestState; inRich: boolean; ctx: RCtx; parent: Path }) => {
+export const RenderNode = ({
+    loc,
+    state,
+    inRich,
+    ctx,
+    parent,
+    readOnly,
+}: {
+    loc: number;
+    state: TestState;
+    inRich: boolean;
+    ctx: RCtx;
+    parent: Path;
+    readOnly?: boolean;
+}) => {
     const node = state.top.nodes[loc];
     const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
     let style: React.CSSProperties | undefined = false //ctx.errors[loc]
@@ -88,13 +102,17 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
     const nextParent = useMemo(() => pathWithChildren(parent, loc), [parent, loc]);
     const key = useMemo(() => pathKey(nextParent), [nextParent]);
 
-    const closest = closestVisibleList(
-        state.sel.start.cursor.type === 'list' && state.sel.start.cursor.where !== 'inside' ? parentPath(state.sel.start.path) : state.sel.start.path,
-        state.top,
-    );
+    const closest =
+        !readOnly &&
+        closestVisibleList(
+            state.sel.start.cursor.type === 'list' && state.sel.start.cursor.where !== 'inside'
+                ? parentPath(state.sel.start.path)
+                : state.sel.start.path,
+            state.top,
+        );
 
     const lightColor = 'rgb(255,200,200)';
-    if (ctx.msel?.includes(key)) {
+    if (!readOnly && ctx.msel?.includes(key)) {
         if (!style) style = {};
         style.borderRadius = '2px';
         // const lightColor = 'rgb(255,100,100,0.5)';
@@ -102,7 +120,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
         style.outline = `2px solid ${lightColor}`;
     }
 
-    if (state.sel.multi?.end?.key === key) {
+    if (!readOnly && state.sel.multi?.end?.key === key) {
         if (!style) style = {};
         style.borderRadius = '2px';
         const color = 'rgb(255,100,100)';
@@ -112,7 +130,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
     }
 
     const hoverColor = 'rgb(200,230,255)';
-    if (ctx.mhover?.includes(key)) {
+    if (!readOnly && ctx.mhover?.includes(key)) {
         if (!style) style = {};
         style.borderRadius = '2px';
         // const lightColor = 'rgb(255,100,100,0.5)';
@@ -146,17 +164,21 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                 }
                 return (
                     <span style={style}>
-                        <TextWithCursor
-                            innerRef={ref}
-                            onClick={(evt) => {
-                                evt.stopPropagation();
-                                const pos = usingPlaceholder ? 0 : cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                                ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0, text: cursor.text }));
-                            }}
-                            text={text}
-                            left={left}
-                            right={right}
-                        />
+                        {readOnly ? (
+                            text.join('')
+                        ) : (
+                            <TextWithCursor
+                                innerRef={ref}
+                                onClick={(evt) => {
+                                    evt.stopPropagation();
+                                    const pos = usingPlaceholder ? 0 : cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
+                                    ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0, text: cursor.text }));
+                                }}
+                                text={text}
+                                left={left}
+                                right={right}
+                            />
+                        )}
                     </span>
                 );
             }
@@ -189,7 +211,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             );
         case 'list':
             const children = node.children.map((loc) => (
-                <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />
+                <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} readOnly={readOnly} />
             ));
             // if (style) {
             //     style.display = 'inline-block';
@@ -211,6 +233,44 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                     // style.outline = '2px solid teal';
                     style.zIndex = 1;
                     style.boxShadow = '-2px 0 0 teal';
+                }
+
+                if (node.kind.type === 'tag') {
+                    return (
+                        <span style={{ display: 'inline-flex', flexDirection: 'row' }}>
+                            {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+                            <span style={style} ref={ref}>
+                                <span>
+                                    <span style={{ fontVariantLigatures: 'none' }}>&lt;</span>
+                                    <RenderNode
+                                        loc={node.kind.node}
+                                        ctx={ctx}
+                                        readOnly={readOnly}
+                                        parent={nextParent}
+                                        key={node.kind.node}
+                                        state={state}
+                                        inRich={false}
+                                    />
+                                    <span style={{ fontVariantLigatures: 'none' }}>&gt;</span>
+                                </span>
+                                <span style={{ display: 'flex', flexDirection: 'column', paddingLeft: 14 }}>{children}</span>
+                                <span>
+                                    <span style={{ fontVariantLigatures: 'none' }}>&lt;/</span>
+                                    <RenderNode
+                                        loc={node.kind.node}
+                                        ctx={{ ...ctx, refs: {} }}
+                                        parent={nextParent}
+                                        key={node.kind.node + 'close'}
+                                        state={state}
+                                        inRich={false}
+                                        readOnly
+                                    />
+                                    <span style={{ fontVariantLigatures: 'none' }}>&gt;</span>
+                                </span>
+                            </span>
+                            {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+                        </span>
+                    );
                 }
 
                 let contents = children;
@@ -444,7 +504,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                                 <Cursor />
                             ) : null}
                             <span style={{ color: 'rgb(248 136 0)' }}>{'${'}</span>
-                            <RenderNode ctx={ctx} parent={nextParent} inRich={false} loc={span.item} state={state} />
+                            <RenderNode ctx={ctx} parent={nextParent} inRich={false} loc={span.item} state={state} readOnly={readOnly} />
                             <span style={{ color: 'rgb(248 136 0)' }}>{'}'}</span>
                             {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 1 && sides.right.cursor === 1 ? (
                                 <Cursor />
@@ -512,7 +572,7 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
                                         </span>
                                     ) : null,
                                     <span key={cell} style={{ gridColumn: row.length === 1 ? `span ${mx * 2 - 1}` : i * 2 + 1 }}>
-                                        <RenderNode parent={nextParent} ctx={ctx} loc={cell} state={state} inRich={true} />
+                                        <RenderNode parent={nextParent} ctx={ctx} loc={cell} state={state} inRich={true} readOnly={readOnly} />
                                     </span>,
                                 ]),
                             )}
@@ -523,7 +583,9 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
             }
 
             const children = node.rows.map((row) => {
-                const nodes = row.map((loc) => <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={false} />);
+                const nodes = row.map((loc) => (
+                    <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={false} readOnly={readOnly} />
+                ));
                 if (!node.forceMultiline) {
                     return interleaveF(nodes, (i) => <span key={`sep${i}`}>: </span>);
                 }

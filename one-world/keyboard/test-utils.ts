@@ -206,12 +206,14 @@ export const js = {
     tableCol: ',:',
     tableRow: ';\n',
     tableNew: ':',
+    xml: true,
 } satisfies Config;
 
 export type Config = {
     punct: string[];
     space: string;
     sep: string;
+    xml?: boolean;
     tableCol: string;
     tableRow: string;
     tableNew: string;

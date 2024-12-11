@@ -4,7 +4,7 @@ import { handleKey } from '../handleKey';
 import { handleNav } from '../handleNav';
 import { Mods, Src, handleShiftNav, handleSpecial, handleTab, shiftExpand } from '../handleShiftNav';
 import { wrapKind, handleWrap, closerKind, handleClose } from '../handleWrap';
-import { TestState, js } from '../test-utils';
+import { Config, TestState, js } from '../test-utils';
 import { NodeSelection, Update } from '../utils';
 
 type Visual = {
@@ -13,7 +13,7 @@ type Visual = {
     spans: Src[];
 };
 
-export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Visual, config = js): Update | void => {
+export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Visual, config: Config = js): Update | void => {
     if (key === 'Enter') key = '\n';
     if (key === 'Backspace') {
         return handleDelete(state);

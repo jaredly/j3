@@ -24,6 +24,12 @@ btw my multiselect has a bunch of issues.
 - [x] `code` backticks pls
 - [x] prevent code backticks in a code backtick?
 
+
+## Now for React JSX
+
+hrm.
+
+
 ## Rich Table
 
 aha
