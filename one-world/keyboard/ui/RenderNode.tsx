@@ -220,9 +220,9 @@ export const RenderNode = ({
                 if (node.kind.type === 'tag') {
                     return (
                         <span style={{ display: 'inline-flex', flexDirection: 'row' }}>
-                            {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                             <span style={style} ref={ref}>
                                 <span>
+                                    {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                                     <span style={{ fontVariantLigatures: 'none' }}>&lt;</span>
                                     <RenderNode
                                         loc={node.kind.node}
@@ -254,6 +254,7 @@ export const RenderNode = ({
                                         </>
                                     ) : null}
                                     <span style={{ fontVariantLigatures: 'none' }}>&gt;</span>
+                                    {!node.children.length && cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                                 </span>
                                 {node.children.length ? (
                                     <>
@@ -270,11 +271,11 @@ export const RenderNode = ({
                                                 readOnly
                                             />
                                             <span style={{ fontVariantLigatures: 'none' }}>&gt;</span>
+                                            {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                                         </span>
                                     </>
                                 ) : null}
                             </span>
-                            {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                         </span>
                     );
                 }
