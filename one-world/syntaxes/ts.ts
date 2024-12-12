@@ -9,6 +9,8 @@ import {
     Fancy,
     Fn,
     kwds,
+    mergeSrc,
+    nodesSrc,
     partition,
     Pat,
     PCon,
@@ -277,8 +279,6 @@ const parseSmoosh = ({ base, suffixes, prefixes }: Smoosh, node: RecNode): Expr 
     return base;
 };
 
-export const mergeSrc = (one: Src, two?: Src): Src => ({ left: one.left, right: two?.right ?? two?.left ?? one.right });
-
 const _nosexpr: Matcher<Expr> = list('smooshed', sequence<Smoosh>(_exmoosh, true, idt), (data, node) => parseSmoosh(data, node));
 
 const _sprood: Matcher<SExpr> = list(
@@ -303,16 +303,6 @@ const _sprood: Matcher<SExpr> = list(
     ({ spread, ...data }, node): SExpr =>
         spread ? { type: 'spread', inner: parseSmoosh(data, node), src: nodesSrc(node) } : parseSmoosh(data, node),
 );
-
-export const nodesSrc = (nodes: RecNode | RecNode[]): Src =>
-    Array.isArray(nodes)
-        ? nodes.length === 1
-            ? { left: nodes[0].loc }
-            : {
-                  left: nodes[0].loc,
-                  right: nodes[nodes.length - 1].loc,
-              }
-        : { left: nodes.loc };
 
 const _expr: Matcher<Expr>[] = [
     id('value', (node) => ({ type: 'var', name: node.text, src: { left: node.loc } })),

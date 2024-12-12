@@ -1,6 +1,17 @@
 import { Src } from '../keyboard/handleShiftNav';
-import { TextSpan, Id, Loc } from '../shared/cnodes';
-import { nodesSrc, mergeSrc } from './ts';
+import { TextSpan, Id, Loc, RecNode } from '../shared/cnodes';
+
+export const mergeSrc = (one: Src, two?: Src): Src => ({ left: one.left, right: two?.right ?? two?.left ?? one.right });
+
+export const nodesSrc = (nodes: RecNode | RecNode[]): Src =>
+    Array.isArray(nodes)
+        ? nodes.length === 1
+            ? { left: nodes[0].loc }
+            : {
+                  left: nodes[0].loc,
+                  right: nodes[nodes.length - 1].loc,
+              }
+        : { left: nodes.loc };
 
 export type Pat =
     | { type: 'var'; name: string; src: Src }
