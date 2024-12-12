@@ -6,18 +6,20 @@ import { binops, Expr, partition, Pat, Stmt } from './ts-types';
 
 type AutoComplete = string;
 
-type Failed = { type: 'failed'; message: string; parent: MatchParent; at: number };
-type Finished<T> = { type: 'finished'; result: T; consumed: number };
+// type Failed = { type: 'failed'; message: string; parent: MatchParent; at: number };
+type Finished<T> = { result: T; consumed: number };
 type Match<T> = {
     type: 'match';
-    result: Finished<T> | Failed;
-    good?: Bag<RecNode>;
-    bad?: Bag<MatchError>;
+    result?: Finished<T> | null | undefined;
+    ctx: MCtx;
 };
 
+// TODO: hmm how about including a "path" for these errors? Yeah that would be great.
 type MatchError =
-    | { type: 'missing'; parent: Omit<MatchParent, 'nodes'>; at: number }
-    | { type: 'mismatch' | 'extra'; node: RecNode; matcher: MRes<any> };
+    | { type: 'other'; parent: Omit<MatchParent, 'nodes'>; at: number; expected: string }
+    | { type: 'missing'; parent: Omit<MatchParent, 'nodes'>; at: number; expected: string }
+    | { type: 'mismatch'; node: RecNode; expected: string }
+    | { type: 'extra'; node: RecNode };
 
 type Next<T> = <R>(inner: (v: T) => MRes<R>) => MRes<R>;
 
@@ -26,9 +28,17 @@ type Next<T> = <R>(inner: (v: T) => MRes<R>) => MRes<R>;
 // - .match()
 // - .describe()
 
+type MCtx = { good: Bag<RecNode>; bad: Bag<MatchError> };
+
+// const empty: any[] = [];
+export const ictx: MCtx = { good: [], bad: [] };
+
+const band = <T>(one: Bag<T>, two: Bag<T>): Bag<T> =>
+    Array.isArray(one) && one.length === 0 ? two : Array.isArray(two) && two.length === 0 ? one : [one, two];
+
 type MRes<T> = {
     type: 'matcher';
-    match: (parent: MatchParent, at: number) => Match<T> | MRes<T>;
+    match: (parent: MatchParent, at: number, ctx: MCtx) => Match<T> | MRes<T>;
     describe(): string;
 };
 
@@ -41,53 +51,69 @@ const asMatch = <T>(desc: string, match: MRes<T>['match']): MRes<T> => ({
 type Start = { at: number; parent: MatchParent; loc: Loc };
 
 const start = <T>(name: string, inner: (finish: <I>(f: (src: Src) => I) => MRes<I>) => MRes<T>): MRes<T> =>
-    asMatch(name, (parent, at) => inner((f) => finish({ parent, at, loc: parent.nodes[at].loc }, f)).match(parent, at));
+    asMatch(name, (parent, at, ctx) => inner((f) => finish({ parent, at, loc: parent.nodes[at].loc }, f)).match(parent, at, ctx));
 
 const finish = <T>(start: Start, f: (src: Src) => T): MRes<T> =>
-    asMatch('finisher', (parent: MatchParent, at: number) => {
+    asMatch('finisher', (parent: MatchParent, at: number, ctx: MCtx) => {
         const node = parent.nodes[at - 1];
         return {
             type: 'match',
             result: { type: 'finished', result: f({ left: start.loc, right: at > start.at ? node.loc : undefined }), consumed: at - start.at },
+            ctx,
         };
     });
 
+const err = (ctx: MCtx, err: MatchError): MCtx => {
+    return { ...ctx, bad: band(ctx.bad, err) };
+};
+const good = (ctx: MCtx, node: RecNode): MCtx => {
+    return { ...ctx, good: band(ctx.good, node) };
+};
+const mctx = (one: MCtx, two: MCtx): MCtx => ({ good: band(one.good, two.good), bad: band(one.bad, two.bad) });
+
 const id = <T>(kind: string | null, next: (node: Id<Loc>) => MRes<T>): MRes<T> =>
-    asMatch('id', (parent, at) => {
+    asMatch('id', (parent, at, ctx) => {
         if (at >= parent.nodes.length) {
-            return { type: 'match', result: { type: 'failed', message: 'missing: id', parent, at } };
+            ctx = err(ctx, { type: 'missing', parent, at, expected: `id` });
+            return { type: 'match', ctx };
         }
         const node = parent.nodes[at];
-        if (!node || node.type !== 'id') {
-            return { type: 'match', result: { type: 'failed', message: 'not an id', parent, at } };
+        if (node.type !== 'id') {
+            ctx = err(ctx, { type: 'mismatch', node, expected: `id` });
+            return { type: 'match', ctx };
         }
-        return next(node).match(parent, at + 1);
+        ctx = good(ctx, node);
+        return next(node).match(parent, at + 1, ctx);
     });
 
 const kwd = <T>(kwd: string, next: (node: Id<Loc>) => MRes<T>): MRes<T> =>
-    asMatch('kwd ' + kwd, (parent, at) => {
+    asMatch('kwd ' + kwd, (parent, at, ctx) => {
         if (at >= parent.nodes.length) {
-            return { type: 'match', result: { type: 'failed', message: 'missing: kwd ' + kwd, parent, at } };
+            ctx = err(ctx, { type: 'missing', parent, at, expected: `kwd ${kwd}` });
+            return { type: 'match', ctx };
         }
         const node = parent.nodes[at];
-        if (!node || node.type !== 'id' || node.ref || node.text !== kwd)
-            return { type: 'match', result: { type: 'failed', message: 'not a kwd: ' + kwd, parent, at } };
+        if (!node || node.type !== 'id' || node.ref || node.text !== kwd) {
+            ctx = err(ctx, { type: 'mismatch', node, expected: `kwd ${kwd}` });
+            return { type: 'match', ctx };
+        }
+        ctx = good(ctx, node);
         // TODO: iff it's blank, maybe return, like, an 'incomplete'?
-        return next(node).match(parent, at + 1);
+        return next(node).match(parent, at + 1, ctx);
     });
 
-export const just = <T>(result: T): MRes<T> =>
-    asMatch('just', (parent, at) => ({ type: 'match', result: { type: 'finished', consumed: 1, result } }));
+export const just = <T>(result: T): MRes<T> => asMatch('just', (parent, at, ctx) => ({ type: 'match', result: { consumed: 1, result }, ctx }));
 
 const multi = <I, T>(inner: MRes<I>, next: (v: I[]) => MRes<T>): MRes<T> =>
-    asMatch('multi ' + inner.describe(), (parent, at) => {
+    asMatch('multi ' + inner.describe(), (parent, at, ctx) => {
         const values: I[] = [];
         while (at < parent.nodes.length) {
-            const v = inner.match(parent, at);
+            const v = inner.match(parent, at, ctx);
             if (v.type === 'matcher') {
                 throw new Error('incomplete?');
             }
-            if (v.result.type === 'failed') {
+            ctx = v.ctx;
+            if (!v.result) {
                 break;
             }
             values.push(v.result.result);
@@ -96,79 +122,89 @@ const multi = <I, T>(inner: MRes<I>, next: (v: I[]) => MRes<T>): MRes<T> =>
             }
             at += v.result.consumed;
         }
-        return next(values).match(parent, at);
+        return next(values).match(parent, at, ctx);
     });
 
 const table = <I, R>(kind: TableKind, inner: MRes<I>, next: (v: I[]) => MRes<R>): MRes<R> =>
-    asMatch('table ' + kind + ' inner ' + inner.describe(), (parent, at) => {
+    asMatch('table ' + kind + ' inner ' + inner.describe(), (parent, at, ctx) => {
         const node = parent.nodes[at];
         if (node?.type === 'table' && node.kind === kind) {
             const results: I[] = [];
             node.rows.forEach((row, i) => {
-                const result = inner.match({ loc: node.loc, nodes: row, sub: { type: 'table', row: i } }, 0);
-                if (result.type === 'match' && result.result.type === 'finished') {
+                const result = inner.match({ loc: node.loc, nodes: row, sub: { type: 'table', row: i } }, 0, ctx);
+                if (result.type === 'matcher') throw new Error('incomplete?');
+                ctx = result.ctx;
+                if (result.type === 'match' && result.result) {
                     results.push(result.result.result);
                 }
             });
-            return next(results).match(parent, at + 1); // { type: 'finished', consumed: 1, result: results };
+            ctx = good(ctx, node);
+            return next(results).match(parent, at + 1, ctx); // { type: 'finished', consumed: 1, result: results };
         } else {
-            return { type: 'match', result: { type: 'failed', message: 'not a table of kind ' + kind, parent, at } };
+            ctx = err(ctx, { type: 'mismatch', node, expected: `table ${kind}` });
+            return { type: 'match', ctx };
         }
     });
 
 const list = <I>(kind: ListKind<RecNode>, inner: MRes<I>): MRes<I> =>
-    asMatch('list ' + kind + ' ' + inner.describe(), (parent, at) => {
+    asMatch('list ' + kind + ' ' + inner.describe(), (parent, at, ctx) => {
         const node = parent.nodes[at];
         if (node?.type === 'list' && node.kind === kind) {
-            return inner.match({ loc: node.loc, nodes: node.children }, 0);
+            ctx = good(ctx, node);
+            return inner.match({ loc: node.loc, nodes: node.children }, 0, ctx);
         } else {
-            return { type: 'match', result: { type: 'failed', message: 'not a list of kind ' + kind, parent, at } };
+            ctx = err(ctx, { type: 'mismatch', node, expected: `list ${kind}` });
+            return { type: 'match', ctx };
         }
     });
 
 const opt = <T, R>(inner: MRes<T>, next: (v: T | null) => MRes<R>): MRes<R> =>
-    asMatch('optional ' + inner.describe(), (parent, at) => {
-        const result = inner.match(parent, at);
-        if (result.type === 'match' && result.result.type === 'finished') {
-            return next(result.result.result).match(parent, at + result.result.consumed);
+    asMatch('optional ' + inner.describe(), (parent, at, ctx) => {
+        const result = inner.match(parent, at, ctx);
+        if (result.type === 'match' && result.result) {
+            return next(result.result.result).match(parent, at + result.result.consumed, ctx);
         }
-        return next(null).match(parent, at);
+        return next(null).match(parent, at, ctx);
     });
 
 // start of stream
 const SOS = <T>(next: MRes<T>): MRes<T> =>
-    asMatch('Start of Stream + ' + next.describe(), (parent, at) => {
-        if (at > 0) return { type: 'match', result: { type: 'failed', message: 'expected start of stream', parent, at } };
-        return next.match(parent, at);
+    asMatch('Start of Stream + ' + next.describe(), (parent, at, ctx) => {
+        if (at > 0) {
+            ctx = err(ctx, { type: 'other', parent, at, expected: 'start of stream' });
+            return { type: 'match', ctx };
+        }
+        return next.match(parent, at, ctx);
     });
 
 // end of stream
 const EOS = <T>(next: MRes<T>): MRes<T> =>
-    asMatch('EOS ' + next.describe(), (parent, at) => {
+    asMatch('EOS ' + next.describe(), (parent, at, ctx) => {
         for (; at < parent.nodes.length; at++) {
-            // errors, rack em up
+            ctx = err(ctx, { type: 'extra', node: parent.nodes[at] });
         }
-        // howw do we add on errors? and such.
-        return next.match(parent, at);
+        return next.match(parent, at, ctx);
     });
 
 const switch_ =
     <I>(name: string, options: MRes<I>[]) =>
     <T>(next: (v: I) => MRes<T>): MRes<T> =>
-        asMatch('switch:' + options.map((m) => m.describe()).join(', '), (parent, at) => {
-            const failed: Failed[] = [];
+        asMatch('switch:' + options.map((m) => m.describe()).join(', '), (parent, at, ctx) => {
+            // const failed: Failed[] = [];
+            let failed: MCtx = { good: [], bad: [] };
             for (let opt of options) {
-                const res = opt.match(parent, at);
+                const res = opt.match(parent, at, ictx);
                 if (res.type === 'matcher') {
                     throw new Error('ended at a matcher?');
                 }
-                if (res.result.type === 'finished') {
-                    return next(res.result.result).match(parent, at + res.result.consumed);
+                if (res.result) {
+                    return next(res.result.result).match(parent, at + res.result.consumed, mctx(ctx, res.ctx));
                 }
-                failed.push(res.result);
+                failed.good = band(failed.good, res.ctx.good);
+                failed.bad = band(failed.bad, res.ctx.bad);
             }
-            console.log(failed);
-            return { type: 'match', result: { type: 'failed', message: 'no switch options matched ' + name, parent, at } };
+            ctx = err(ctx, { type: 'other', parent, at, expected: `switch ${name}` });
+            return { type: 'match', ctx: mctx(ctx, failed) };
         });
 
 export const pat = switch_<Pat>('pat', [

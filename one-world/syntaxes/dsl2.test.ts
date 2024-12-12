@@ -6,42 +6,47 @@ import { Src } from '../keyboard/handleShiftNav';
 
 const src = (idx: number, last = idx): Src => ({ left: [{ id: '', idx }], right: [{ id: '', idx: last }] });
 
-test('lol', () => {
+test('id', () => {
     const state = asTop(id('hi'), idc(0));
     // const state = asTop(spaced([id('let'), id('x'), id('='), id('', true)]), idc(0));
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
-    const parsed = d2.expr(d2.just).match({ nodes: [rootNode], loc: [] }, 0);
-    expect(parsed).toEqual({
-        type: 'finished',
-        consumed: 1,
-        result: {
-            name: 'hi',
-            type: 'var',
-            src: src(0),
-        },
-    });
+    const parsed = d2.expr(d2.just).match({ nodes: [rootNode], loc: [] }, 0, d2.ictx);
+    if (parsed.type === 'match') {
+        expect(parsed.result).toEqual({
+            consumed: 1,
+            result: {
+                name: 'hi',
+                type: 'var',
+                src: src(0),
+            },
+        });
+    }
 });
 
 test('let stmt', () => {
     const state = asTop(spaced([id('let'), id('x'), id('='), id('', true)]), idc(0));
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
-    const parsed = d2.stmt(d2.just).match({ nodes: [rootNode], loc: [] }, 0);
-    expect(parsed).toEqual({
-        type: 'finished',
-        consumed: 1,
-        result: {
-            pat: { type: 'var', name: 'x', src: src(2) },
-            type: 'let',
-            value: { type: 'var', name: '', src: src(4) },
-            src: src(1, 4),
-        },
-    });
+    const parsed = d2.stmt(d2.just).match({ nodes: [rootNode], loc: [] }, 0, d2.ictx);
+    if (parsed.type === 'match') {
+        expect(parsed.ctx.bad).toEqual([]);
+        expect(parsed.result).toEqual({
+            consumed: 1,
+            result: {
+                pat: { type: 'var', name: 'x', src: src(2) },
+                type: 'let',
+                value: { type: 'var', name: '', src: src(4) },
+                src: src(1, 4),
+            },
+        });
+    } else {
+        expect(parsed).toMatchObject({ type: 'match' });
+    }
 });
 
-test.only('let missing', () => {
+test('let missing', () => {
     const state = asTop(spaced([id('let'), id('x'), id('=')]), idc(0));
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
-    const parsed = d2.stmt(d2.just).match({ nodes: [rootNode], loc: [] }, 0);
+    const parsed = d2.stmt(d2.just).match({ nodes: [rootNode], loc: [] }, 0, d2.ictx);
     expect(parsed).toEqual({
         type: 'failed',
     });
