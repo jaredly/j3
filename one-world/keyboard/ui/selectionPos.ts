@@ -2,7 +2,7 @@ import { TestState } from '../test-utils';
 
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { getCurrent, lastChild, NodeSelection, Path, pathWithChildren, selStart, Top } from '../utils';
-import { goLeft, goRight, handleNav, selectEnd, selectStart } from '../handleNav';
+import { goLeft, goRight, handleNav, isTag, selectEnd, selectStart } from '../handleNav';
 
 const CLOSE = 10;
 
@@ -42,7 +42,6 @@ export const posDown = (sel: NodeSelection, top: Top, refs: Record<number, HTMLE
         current.left = sel.start.returnToHoriz;
     }
     const options = below(sel, top, refs, current);
-    console.log('opts', options, current, refs);
     if (!options.length) return;
     options.sort((a, b) => a.dx - b.dx);
     if (Math.abs(options[0].at.left - current.left) > CLOSE) {
@@ -70,7 +69,6 @@ export const selectionPos = (
         case 'id': {
             const text = cur.cursor.text ?? splitGraphemes(cur.node.text);
             const at = text.slice(0, cur.cursor.end).join('').length;
-            console.log('hat', at);
             try {
                 range.setStart(span.firstChild!, at);
                 range.setEnd(span.firstChild!, at);
@@ -80,7 +78,6 @@ export const selectionPos = (
                 console.log('er', err);
                 return null;
             }
-            console.log('hi', cur);
         }
         case 'list':
             // TODO controls
@@ -94,8 +91,13 @@ export const selectionPos = (
                     range.setEnd(span, 1);
                     return boxAt(range.getBoundingClientRect());
                 } else if (cur.cursor.where === 'inside') {
-                    range.setStart(span, 2);
-                    range.setEnd(span, 3);
+                    if (cur.node.type === 'list' && isTag(cur.node.kind)) {
+                        range.setStart(span.firstChild!, 2);
+                        range.setEnd(span.firstChild!, 3);
+                    } else {
+                        range.setStart(span, 2);
+                        range.setEnd(span, 3);
+                    }
                     return boxAt(range.getBoundingClientRect());
                 } else {
                     range.setStart(span, span.childNodes.length - 1);

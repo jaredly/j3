@@ -24,8 +24,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     const table = handleTableSplit(grem, config, path, top, splitCell(current, cursor));
     if (table) return table;
 
-    if (config.xml && grem === '<' && (cursor.text ? cursor.text.length === 0 : current.text === '')) {
-        console.log('hm');
+    if (config.xml && grem === '>' && cursor.end === 1 && (cursor.text ? cursor.text.length === 1 && cursor.text[0] === '<' : current.text === '<')) {
         const pnode = top.nodes[parentLoc(path)];
         if (pnode?.type !== 'list' || pnode.kind !== 'smooshed') {
             return {

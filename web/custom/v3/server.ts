@@ -10,7 +10,7 @@ Bun.serve({
     },
     websocket: {
         message(ws, message) {
-            ws.send(message);
+            ws.send(message as string);
         },
     },
 });

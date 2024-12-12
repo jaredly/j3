@@ -21,7 +21,7 @@ import {
 
 export const justSel = (path: Path, cursor: Cursor) => ({ nodes: {}, selection: { start: selStart(path, cursor) } });
 
-const isTag = (kind: ListKind<any>) => typeof kind !== 'string' && kind.type === 'tag';
+export const isTag = (kind: ListKind<any>) => typeof kind !== 'string' && kind.type === 'tag';
 
 export const selectStart = (path: Path, top: Top, plus1 = false, tab = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
@@ -321,7 +321,7 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                     case 'before':
                     case 'start':
                         if (current.node.type === 'list') {
-                            if (typeof current.node.kind !== 'string' && current.node.kind.type === 'tag') {
+                            if (isTag(current.node.kind)) {
                                 const start = selectStart(pathWithChildren(current.path, current.node.kind.node), state.top);
                                 return start ? { nodes: {}, selection: { start } } : undefined;
                             }
@@ -450,6 +450,10 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
                             }
                         }
                     case 'inside':
+                        if (current.node.type === 'list' && isTag(current.node.kind)) {
+                            const start = selectEnd(pathWithChildren(current.path, current.node.kind.node), state.top);
+                            return start ? { nodes: {}, selection: { start } } : undefined;
+                        }
                         if (richNode(current.node)) {
                             return selUpdate(goLeft(current.path, state.top));
                         }

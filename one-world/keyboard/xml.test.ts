@@ -13,3 +13,27 @@ test('xml before into tag', () => {
     state = applyUpdate(state, keyUpdate(state, 'ArrowRight', {})!);
     check(state, list({ type: 'tag', node: id('hello', true) })([]), idc(0));
 });
+
+test('xml start', () => {
+    let state = asTop(id('<', true, js), idc(1));
+    state = applyUpdate(state, keyUpdate(state, '>', {})!);
+    check(state, list({ type: 'tag', node: id('', true) })([]), idc(0));
+});
+
+test('xml out of start', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello', true) })([]), idc(0));
+    state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', {})!);
+    check(state, list({ type: 'tag', node: id('hello') })([], true), listc('before'));
+});
+
+test('xml out of inner', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello') })([], true), listc('inside'));
+    state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', {})!);
+    check(state, list({ type: 'tag', node: id('hello', true) })([]), idc(5));
+});
+
+test('xml out of child', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello') })([id('hi', true)]), idc(0));
+    state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', {})!);
+    check(state, list({ type: 'tag', node: id('hello', true) })([id('hi')]), idc(5));
+});

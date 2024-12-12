@@ -233,22 +233,32 @@ export const RenderNode = ({
                                         state={state}
                                         inRich={false}
                                     />
+                                    {!node.children.length ? (
+                                        <>
+                                            {' /'}
+                                            {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+                                        </>
+                                    ) : null}
                                     <span style={{ fontVariantLigatures: 'none' }}>&gt;</span>
                                 </span>
-                                <span style={{ display: 'flex', flexDirection: 'column', paddingLeft: 14 }}>{children}</span>
-                                <span>
-                                    <span style={{ fontVariantLigatures: 'none' }}>&lt;/</span>
-                                    <RenderNode
-                                        loc={node.kind.node}
-                                        ctx={{ ...ctx, refs: {} }}
-                                        parent={nextParent}
-                                        key={node.kind.node + 'close'}
-                                        state={state}
-                                        inRich={false}
-                                        readOnly
-                                    />
-                                    <span style={{ fontVariantLigatures: 'none' }}>&gt;</span>
-                                </span>
+                                {node.children.length ? (
+                                    <>
+                                        <span style={{ display: 'flex', flexDirection: 'column', paddingLeft: 14 }}>{children}</span>
+                                        <span>
+                                            <span style={{ fontVariantLigatures: 'none' }}>&lt;/</span>
+                                            <RenderNode
+                                                loc={node.kind.node}
+                                                ctx={{ ...ctx, refs: {} }}
+                                                parent={nextParent}
+                                                key={node.kind.node + 'close'}
+                                                state={state}
+                                                inRich={false}
+                                                readOnly
+                                            />
+                                            <span style={{ fontVariantLigatures: 'none' }}>&gt;</span>
+                                        </span>
+                                    </>
+                                ) : null}
                             </span>
                             {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                         </span>

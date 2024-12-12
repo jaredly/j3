@@ -6,6 +6,8 @@
 // rather different keyboard shortcuts.
 //
 
+import { isTag } from '../keyboard/handleNav';
+
 /*
 
 ok hot stuff, what would it take to also handle JSX?
@@ -139,7 +141,7 @@ export type ListKind<Tag> =
     | 'smooshed'
     // these are for binops and such. not used for lisp-mode
     | 'spaced'
-    | { type: 'tag'; node: Tag }
+    | { type: 'tag'; node: Tag; attributes?: Tag }
     | RichKind;
 
 export type Text<Loc> = { type: 'text'; spans: TextSpan<Loc>[]; loc: Loc; src?: Src };
@@ -149,8 +151,6 @@ export type List<Loc> = {
     // Whether the user has specified that it should be multiline.
     // If absent, multiline is calculated based on pretty-printing logic
     forceMultiline?: boolean;
-    // For JSX, this will be a /table/, and 'kind' will be {type: 'tag'}
-    attributes?: number;
     children: number[];
     loc: Loc;
     src?: Src;
@@ -274,11 +274,11 @@ export const childLocs = (node: Node): number[] => {
             return [];
         case 'list':
             let children: number[] = [];
-            if (typeof node.kind !== 'string' && node.kind.type === 'tag') {
+            if (isTag(node.kind)) {
                 children.push(node.kind.node);
-            }
-            if (node.attributes) {
-                children.push(node.attributes);
+                if (node.kind.attributes) {
+                    children.push(node.kind.attributes);
+                }
             }
             return children.length ? [...children, ...node.children] : node.children;
         case 'table':
@@ -304,12 +304,12 @@ export const fromMap = <Loc>(id: number, nodes: Nodes, toLoc: (l: number) => Loc
             return {
                 ...node,
                 loc,
-                attributes: node.attributes != null ? fromMap(node.attributes, nodes, toLoc) : undefined,
                 kind:
                     typeof node.kind !== 'string' && node.kind.type === 'tag'
                         ? {
                               ...node.kind,
                               node: fromMap(node.kind.node, nodes, toLoc),
+                              attributes: node.kind.attributes != null ? fromMap(node.kind.attributes, nodes, toLoc) : undefined,
                           }
                         : node.kind,
                 children: node.children.map((id) => fromMap(id, nodes, toLoc)),
@@ -346,12 +346,12 @@ export const fromRec = <Loc>(
             map[loc] = {
                 ...node,
                 loc,
-                attributes: node.attributes != null ? fromRec(node.attributes, map, get, inner) : undefined,
                 kind:
                     typeof node.kind !== 'string' && node.kind.type === 'tag'
                         ? {
                               ...node.kind,
                               node: fromRec(node.kind.node, map, get, inner),
+                              attributes: node.attributes != null ? fromRec(node.attributes, map, get, inner) : undefined,
                           }
                         : node.kind,
                 children: node.children.map((id) => fromRec(id, map, get, inner)),
