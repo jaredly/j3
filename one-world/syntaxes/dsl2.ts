@@ -6,211 +6,196 @@ import { binops, Expr, partition, Pat, Stmt } from './ts-types';
 
 type AutoComplete = string;
 
-// export type Matcher<Res> = {
-//     match: (ctx: Ctx, parent: MatchParent, at: number, endOfExhaustive?: boolean) => MatchRes<Res>;
-//     complete(): { kinds: (string | null)[]; concrete: AutoComplete[] };
-// };
+type Failed = { type: 'failed'; message: string; parent: MatchParent; at: number };
+type Finished<T> = { type: 'finished'; result: T; consumed: number };
+type Match<T> = {
+    type: 'match';
+    result: Finished<T> | Failed;
+    good?: Bag<RecNode>;
+    bad?: Bag<MatchError>;
+};
 
-// export type MatchRes<T> = { result: null | { data: T; consumed: number }; good: Bag<RecNode>; bad: Bag<MatchError> };
-// export type MatchError =
-//     | { type: 'mismatch' | 'extra'; matcher: Matcher<any>; node: RecNode }
-//     | {
-//           type: 'missing';
-//           matcher: Matcher<any>;
-//           at: number;
-//           parent: Loc;
-//           sub: MatchParent['sub'];
-//       };
+type MatchError =
+    | { type: 'missing'; parent: Omit<MatchParent, 'nodes'>; at: number }
+    | { type: 'mismatch' | 'extra'; node: RecNode; matcher: MRes<any> };
 
-// const fail = (matcher: Matcher<any>, node: RecNode): MatchRes<any> => ({
-//     result: null,
-//     good: [],
-//     bad: [{ type: 'mismatch', matcher, node }],
-// });
-// const one = <T>(data: T, node: RecNode, good: Bag<RecNode> = [], bad: Bag<MatchError> = []): MatchRes<T> => ({
-//     result: { data, consumed: 1 },
-//     good: [node, good],
-//     bad,
-// });
-
-// export const id = (kind: string | null): Matcher<Id<Loc>> => {
-//     const matcher: Matcher<Id<Loc>> = {
-//         match: (ctx, parent, at) => {
-//             const node = parent.nodes[at];
-//             if (!node) return { result: null, good: [], bad: [{ type: 'missing', matcher, parent: parent.loc, at, sub: parent.sub }] };
-//             if (node.type !== 'id') return fail(matcher, node);
-//             return one(node, node);
-//         },
-//         complete() {
-//             return { kinds: [kind], concrete: [] };
-//         },
-//     };
-//     return matcher;
-// };
-
-// export const switch_ = <T>(matchers: Matcher<null | Partial<T>>[]) => {
-// }
-
-// dreamcode for a sec
-
-type MRes<T> = (
-    parent: MatchParent,
-    at: number,
-) => { type: 'finished'; result: T; consumed: number } | { type: 'failed'; message: string; node?: RecNode } | MRes<T>;
 type Next<T> = <R>(inner: (v: T) => MRes<R>) => MRes<R>;
+
+// TODO: turn this into a
+// - type: 'matcher'
+// - .match()
+// - .describe()
+
+type MRes<T> = {
+    type: 'matcher';
+    match: (parent: MatchParent, at: number) => Match<T> | MRes<T>;
+    describe(): string;
+};
+
+const asMatch = <T>(desc: string, match: MRes<T>['match']): MRes<T> => ({
+    type: 'matcher',
+    match,
+    describe: () => desc,
+});
 
 type Start = { at: number; parent: MatchParent; loc: Loc };
 
-const start =
-    <T>(inner: (finish: <I>(f: (src: Src) => I) => MRes<I>) => MRes<T>): MRes<T> =>
-    (parent, at) =>
-        inner((f) => finish({ parent, at, loc: parent.nodes[at].loc }, f))(parent, at);
+const start = <T>(name: string, inner: (finish: <I>(f: (src: Src) => I) => MRes<I>) => MRes<T>): MRes<T> =>
+    asMatch(name, (parent, at) => inner((f) => finish({ parent, at, loc: parent.nodes[at].loc }, f)).match(parent, at));
 
-const finish =
-    <T>(start: Start, f: (src: Src) => T): MRes<T> =>
-    (parent: MatchParent, at: number) => {
+const finish = <T>(start: Start, f: (src: Src) => T): MRes<T> =>
+    asMatch('finisher', (parent: MatchParent, at: number) => {
         const node = parent.nodes[at - 1];
-        return { type: 'finished', result: f({ left: start.loc, right: at > start.at ? node.loc : undefined }), consumed: at - start.at };
-    };
+        return {
+            type: 'match',
+            result: { type: 'finished', result: f({ left: start.loc, right: at > start.at ? node.loc : undefined }), consumed: at - start.at },
+        };
+    });
 
-const id =
-    <T>(kind: string | null, next: (node: Id<Loc>) => MRes<T>): MRes<T> =>
-    (parent, at) => {
+const id = <T>(kind: string | null, next: (node: Id<Loc>) => MRes<T>): MRes<T> =>
+    asMatch('id', (parent, at) => {
+        if (at >= parent.nodes.length) {
+            return { type: 'match', result: { type: 'failed', message: 'missing: id', parent, at } };
+        }
         const node = parent.nodes[at];
-        if (!node || node.type !== 'id') return { type: 'failed', message: 'not an id', node };
-        return next(node)(parent, at + 1);
-    };
+        if (!node || node.type !== 'id') {
+            return { type: 'match', result: { type: 'failed', message: 'not an id', parent, at } };
+        }
+        return next(node).match(parent, at + 1);
+    });
 
-const kwd =
-    <T>(kwd: string, next: (node: Id<Loc>) => MRes<T>): MRes<T> =>
-    (parent, at) => {
+const kwd = <T>(kwd: string, next: (node: Id<Loc>) => MRes<T>): MRes<T> =>
+    asMatch('kwd ' + kwd, (parent, at) => {
+        if (at >= parent.nodes.length) {
+            return { type: 'match', result: { type: 'failed', message: 'missing: kwd ' + kwd, parent, at } };
+        }
         const node = parent.nodes[at];
-        if (!node || node.type !== 'id' || node.ref || node.text !== kwd) return { type: 'failed', message: 'not a kwd: ' + kwd, node };
+        if (!node || node.type !== 'id' || node.ref || node.text !== kwd)
+            return { type: 'match', result: { type: 'failed', message: 'not a kwd: ' + kwd, parent, at } };
         // TODO: iff it's blank, maybe return, like, an 'incomplete'?
-        return next(node)(parent, at + 1);
-    };
+        return next(node).match(parent, at + 1);
+    });
 
-export const just =
-    <T>(result: T): MRes<T> =>
-    (parent, at) => ({ type: 'finished', consumed: 1, result });
+export const just = <T>(result: T): MRes<T> =>
+    asMatch('just', (parent, at) => ({ type: 'match', result: { type: 'finished', consumed: 1, result } }));
 
-const multi =
-    <I, T>(inner: MRes<I>, next: (v: I[]) => MRes<T>): MRes<T> =>
-    (parent, at) => {
+const multi = <I, T>(inner: MRes<I>, next: (v: I[]) => MRes<T>): MRes<T> =>
+    asMatch('multi ' + inner.describe(), (parent, at) => {
         const values: I[] = [];
         while (at < parent.nodes.length) {
-            const v = inner(parent, at);
-            if (typeof v === 'function') {
+            const v = inner.match(parent, at);
+            if (v.type === 'matcher') {
                 throw new Error('incomplete?');
             }
-            if (v.type === 'failed') {
+            if (v.result.type === 'failed') {
                 break;
             }
-            values.push(v.result);
-            if (v.consumed === 0) {
+            values.push(v.result.result);
+            if (v.result.consumed === 0) {
                 throw new Error(`multi inner must consume`);
             }
-            at += v.consumed;
+            at += v.result.consumed;
         }
-        return next(values)(parent, at);
-    };
+        return next(values).match(parent, at);
+    });
 
-const table =
-    <I, R>(kind: TableKind, inner: MRes<I>, next: (v: I[]) => MRes<R>): MRes<R> =>
-    (parent, at) => {
+const table = <I, R>(kind: TableKind, inner: MRes<I>, next: (v: I[]) => MRes<R>): MRes<R> =>
+    asMatch('table ' + kind + ' inner ' + inner.describe(), (parent, at) => {
         const node = parent.nodes[at];
         if (node?.type === 'table' && node.kind === kind) {
             const results: I[] = [];
             node.rows.forEach((row, i) => {
-                const result = inner({ loc: node.loc, nodes: row, sub: { type: 'table', row: i } }, 0);
-                if (typeof result === 'object' && result.type === 'finished') {
-                    results.push(result.result);
+                const result = inner.match({ loc: node.loc, nodes: row, sub: { type: 'table', row: i } }, 0);
+                if (result.type === 'match' && result.result.type === 'finished') {
+                    results.push(result.result.result);
                 }
             });
-            return next(results)(parent, at + 1); // { type: 'finished', consumed: 1, result: results };
+            return next(results).match(parent, at + 1); // { type: 'finished', consumed: 1, result: results };
         } else {
-            return { type: 'failed', message: 'not a table of kind ' + kind, node };
+            return { type: 'match', result: { type: 'failed', message: 'not a table of kind ' + kind, parent, at } };
         }
-    };
+    });
 
-const list =
-    <I>(kind: ListKind<RecNode>, inner: MRes<I>): MRes<I> =>
-    (parent, at) => {
+const list = <I>(kind: ListKind<RecNode>, inner: MRes<I>): MRes<I> =>
+    asMatch('list ' + kind + ' ' + inner.describe(), (parent, at) => {
         const node = parent.nodes[at];
         if (node?.type === 'list' && node.kind === kind) {
-            return inner({ loc: node.loc, nodes: node.children }, 0);
+            return inner.match({ loc: node.loc, nodes: node.children }, 0);
         } else {
-            return { type: 'failed', message: 'not a list of kind ' + kind, node };
+            return { type: 'match', result: { type: 'failed', message: 'not a list of kind ' + kind, parent, at } };
         }
-    };
+    });
 
-const opt =
-    <T, R>(inner: MRes<T>, next: (v: T | null) => MRes<R>): MRes<R> =>
-    (parent, at) => {
-        const result = inner(parent, at);
-        if (typeof result === 'object' && result.type === 'finished') {
-            return next(result.result)(parent, at + result.consumed);
+const opt = <T, R>(inner: MRes<T>, next: (v: T | null) => MRes<R>): MRes<R> =>
+    asMatch('optional ' + inner.describe(), (parent, at) => {
+        const result = inner.match(parent, at);
+        if (result.type === 'match' && result.result.type === 'finished') {
+            return next(result.result.result).match(parent, at + result.result.consumed);
         }
-        return next(null)(parent, at);
-    };
+        return next(null).match(parent, at);
+    });
 
 // start of stream
-const SOS =
-    <T>(next: MRes<T>): MRes<T> =>
-    (parent, at) => {
-        if (at > 0) return { type: 'failed', message: 'expected start of stream' };
-        return next(parent, at);
-    };
+const SOS = <T>(next: MRes<T>): MRes<T> =>
+    asMatch('Start of Stream + ' + next.describe(), (parent, at) => {
+        if (at > 0) return { type: 'match', result: { type: 'failed', message: 'expected start of stream', parent, at } };
+        return next.match(parent, at);
+    });
 
 // end of stream
-const EOS =
-    <T>(next: MRes<T>): MRes<T> =>
-    (parent, at) => {
+const EOS = <T>(next: MRes<T>): MRes<T> =>
+    asMatch('EOS ' + next.describe(), (parent, at) => {
         for (; at < parent.nodes.length; at++) {
             // errors, rack em up
         }
         // howw do we add on errors? and such.
-        return next(parent, at);
-    };
+        return next.match(parent, at);
+    });
 
 const switch_ =
-    <I>(options: MRes<I>[]) =>
+    <I>(name: string, options: MRes<I>[]) =>
     <T>(next: (v: I) => MRes<T>): MRes<T> =>
-    (parent, at) => {
-        for (let opt of options) {
-            const res = opt(parent, at);
-            if (typeof res === 'object' && res.type === 'finished') {
-                return next(res.result)(parent, at + res.consumed);
+        asMatch('switch:' + options.map((m) => m.describe()).join(', '), (parent, at) => {
+            const failed: Failed[] = [];
+            for (let opt of options) {
+                const res = opt.match(parent, at);
+                if (res.type === 'matcher') {
+                    throw new Error('ended at a matcher?');
+                }
+                if (res.result.type === 'finished') {
+                    return next(res.result.result).match(parent, at + res.result.consumed);
+                }
+                failed.push(res.result);
             }
-        }
-        return { type: 'failed', message: 'no switch options matched' };
-    };
+            console.log(failed);
+            return { type: 'match', result: { type: 'failed', message: 'no switch options matched ' + name, parent, at } };
+        });
 
-export const pat = switch_<Pat>([
-    start((finish) => id(null, (node) => finish((src) => ({ type: 'var', name: node.text, src })))),
+export const pat = switch_<Pat>('pat', [
+    start('pat var', (finish) => id(null, (node) => finish((src) => ({ type: 'var', name: node.text, src })))),
     //
 ]);
 
-export const expr = switch_<Expr>([
-    start((finish) => id(null, (node) => finish((src) => ({ type: 'var', name: node.text, src })))),
+export const expr = switch_<Expr>('expr', [
+    start('expr var', (finish) => id(null, (node) => finish((src) => ({ type: 'var', name: node.text, src })))),
     //
 ]);
 
-const fancy = switch_<Expr>([
+const fancy = switch_<Expr>('fancy', [
     //
-    start((finish) => kwd('new', () => binned((target) => finish((src) => ({ type: 'new', target, src }))))),
-    start((finish) => kwd('await', () => binned((target) => finish((src) => ({ type: 'await', target, src }))))),
-    start((finish) =>
+    start('expr new', (finish) => kwd('new', () => binned((target) => finish((src) => ({ type: 'new', target, src }))))),
+    start('expr await', (finish) => kwd('await', () => binned((target) => finish((src) => ({ type: 'await', target, src }))))),
+    start('expr lambda', (finish) =>
         list(
             'round',
             multi(pat(just), (args) =>
                 kwd('=>', () =>
-                    switch_<Stmt[] | Expr>([block(just), expr(just)])((body) => finish((src): Expr => ({ type: 'fn', args, body, src }))),
+                    switch_<Stmt[] | Expr>('fnbody', [block(just), expr(just)])((body) => finish((src): Expr => ({ type: 'fn', args, body, src }))),
                 ),
             ),
         ),
     ),
-    start((finish) =>
+    start('expr if', (finish) =>
         kwd('if', () =>
             binned((cond) =>
                 block((yes) =>
@@ -222,12 +207,12 @@ const fancy = switch_<Expr>([
             ),
         ),
     ),
-    start((finish) =>
+    start('expr switch', (finish) =>
         kwd('switch', () =>
             binned((target) =>
                 table(
                     'curly',
-                    pat((pat) => switch_<Stmt[] | Expr>([block(just), expr(just)])((body) => just({ pat, body }))),
+                    pat((pat) => switch_<Stmt[] | Expr>('switchbody', [block(just), expr(just)])((body) => just({ pat, body }))),
                     (cases) => finish((src) => ({ type: 'case', cases, src, target })),
                 ),
             ),
@@ -236,7 +221,10 @@ const fancy = switch_<Expr>([
     expr(just),
 ]);
 
-const bop = switch_(binops.map((bop) => kwd(bop, just)));
+const bop = switch_(
+    'bop',
+    binops.map((bop) => kwd(bop, just)),
+);
 
 const binned = <R>(next: (v: Expr) => MRes<R>): MRes<R> =>
     fancy((left) =>
@@ -246,19 +234,21 @@ const binned = <R>(next: (v: Expr) => MRes<R>): MRes<R> =>
         ),
     );
 
-const stmtSpaced = switch_<Stmt>([
+const stmtSpaced = switch_<Stmt>('stmt-spaced', [
     //
-    start((finish) => kwd('throw', () => binned((target) => finish((src) => ({ type: 'throw', target, src }))))),
-    start((finish) => kwd('let', () => pat((pat) => kwd('=', () => binned((value) => finish((src) => ({ type: 'let', pat, value, src }))))))),
+    start('stmt throw', (finish) => kwd('throw', () => binned((target) => finish((src) => ({ type: 'throw', target, src }))))),
+    start('stmt let', (finish) =>
+        kwd('let', () => pat((pat) => kwd('=', () => binned((value) => finish((src) => ({ type: 'let', pat, value, src })))))),
+    ),
 ]);
 
-export const stmt = switch_<Stmt>([
+export const stmt = switch_<Stmt>('stmt', [
     //
     list(
         'spaced',
         stmtSpaced((val) => EOS(just(val))),
     ),
-    start((finish) => expr((expr) => finish((src) => ({ type: 'expr', expr, src })))),
+    start('stmt expr', (finish) => expr((expr) => finish((src) => ({ type: 'expr', expr, src })))),
 ]);
 
 const block = <T>(next: (s: Stmt[]) => MRes<T>): MRes<T> => list('curly', multi(stmt(just), next));
