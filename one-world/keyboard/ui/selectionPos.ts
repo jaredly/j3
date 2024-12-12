@@ -42,6 +42,7 @@ export const posDown = (sel: NodeSelection, top: Top, refs: Record<number, HTMLE
         current.left = sel.start.returnToHoriz;
     }
     const options = below(sel, top, refs, current);
+    console.log('opts', options, current, refs);
     if (!options.length) return;
     options.sort((a, b) => a.dx - b.dx);
     if (Math.abs(options[0].at.left - current.left) > CLOSE) {
@@ -60,20 +61,26 @@ export const selectionPos = (
 ): { left: number; top: number; height: number } | null => {
     const cur = getCurrent(sel, top);
     const span = refs[cur.node.loc];
-    if (!span) return null;
+    if (!span) {
+        console.log('no span for', cur.node.loc);
+        return null;
+    }
     const range = new Range();
     switch (cur.type) {
         case 'id': {
             const text = cur.cursor.text ?? splitGraphemes(cur.node.text);
             const at = text.slice(0, cur.cursor.end).join('').length;
+            console.log('hat', at);
             try {
                 range.setStart(span.firstChild!, at);
                 range.setEnd(span.firstChild!, at);
                 const box = range.getBoundingClientRect();
                 return boxAt(box);
             } catch (err) {
+                console.log('er', err);
                 return null;
             }
+            console.log('hi', cur);
         }
         case 'list':
             // TODO controls
@@ -97,6 +104,7 @@ export const selectionPos = (
                     return { left: box.right, top: box.top, height: box.height };
                 }
             } catch (err) {
+                console.log('er', err);
                 return null;
             }
         case 'text': {
@@ -117,12 +125,14 @@ export const selectionPos = (
                         return { left: box.right, top: box.top, height: box.height };
                     }
                 } catch (err) {
+                    console.log('er', err);
                     return null;
                 }
             }
             if (cur.cursor.type === 'text') {
                 const got = span.querySelector(`& > [data-index="${cur.cursor.end.index}"]`);
                 if (!got) {
+                    console.log('nop');
                     return null;
                 }
                 try {
@@ -152,6 +162,7 @@ export const selectionPos = (
                     range.setEnd(first, at);
                     return boxAt(range.getBoundingClientRect());
                 } catch (err) {
+                    console.log('er', err);
                     return null;
                 }
             }

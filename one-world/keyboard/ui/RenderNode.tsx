@@ -217,24 +217,6 @@ export const RenderNode = ({
             //     style.display = 'inline-block';
             // }
             if (typeof node.kind !== 'string') {
-                if (!style) style = {};
-                Object.assign(style, {
-                    display: 'flex',
-                    flexDirection: 'column',
-                    backgroundColor: 'rgb(240,255,240)',
-                    paddingTop: 4,
-                    paddingBottom: 4,
-                    paddingLeft: 8,
-                    paddingRight: 8,
-                    color: 'black',
-                });
-
-                if (hlBraces) {
-                    // style.outline = '2px solid teal';
-                    style.zIndex = 1;
-                    style.boxShadow = '-2px 0 0 teal';
-                }
-
                 if (node.kind.type === 'tag') {
                     return (
                         <span style={{ display: 'inline-flex', flexDirection: 'row' }}>
@@ -271,6 +253,24 @@ export const RenderNode = ({
                             {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                         </span>
                     );
+                }
+
+                if (!style) style = {};
+                Object.assign(style, {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    backgroundColor: 'rgb(240,255,240)',
+                    paddingTop: 4,
+                    paddingBottom: 4,
+                    paddingLeft: 8,
+                    paddingRight: 8,
+                    color: 'black',
+                });
+
+                if (hlBraces) {
+                    // style.outline = '2px solid teal';
+                    style.zIndex = 1;
+                    style.boxShadow = '-2px 0 0 teal';
                 }
 
                 let contents = children;

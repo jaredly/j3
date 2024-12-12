@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { hasControls, isRich, Node, Text, TextSpan } from '../shared/cnodes';
+import { hasControls, isRich, ListKind, Node, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { TestState } from './test-utils';
@@ -21,6 +21,8 @@ import {
 
 export const justSel = (path: Path, cursor: Cursor) => ({ nodes: {}, selection: { start: selStart(path, cursor) } });
 
+const isTag = (kind: ListKind<any>) => typeof kind !== 'string' && kind.type === 'tag';
+
 export const selectStart = (path: Path, top: Top, plus1 = false, tab = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const node = top.nodes[loc];
@@ -40,6 +42,9 @@ export const selectStart = (path: Path, top: Top, plus1 = false, tab = false): N
             return selectStart(pathWithChildren(path, node.children[0]), top, plus1);
         }
         if (plus1) {
+            if (isTag(node.kind)) {
+                return selectStart(pathWithChildren(path, node.kind.node), top);
+            }
             if (node.children.length) {
                 return selectStart(pathWithChildren(path, node.children[0]), top);
             }
@@ -132,12 +137,18 @@ export const goLeft = (path: Path, top: Top, tab = false): NodeSelection['start'
     const pnode = top.nodes[ploc];
     if (!pnode) return;
     if (pnode.type === 'list') {
+        if (isTag(pnode.kind) && pnode.kind.node === loc) {
+            return selStart(parentPath(path), { type: 'list', where: 'before' });
+        }
         const at = pnode.children.indexOf(loc);
         if (at === -1) return;
         if (tab && hasControls(pnode.kind)) {
             return selStart(parentPath(path), { type: 'control', index: at });
         }
         if (at === 0) {
+            if (isTag(pnode.kind)) {
+                return selectEnd(pathWithChildren(parentPath(path), pnode.kind.node), top);
+            }
             if (pnode.kind === 'smooshed' || pnode.kind === 'spaced') {
                 return goLeft(parentPath(path), top);
             }
@@ -171,8 +182,17 @@ export const goRight = (path: Path, top: Top, tab = false): NodeSelection['start
     const pnode = top.nodes[ploc];
     if (!pnode) return;
     if (pnode.type === 'list') {
+        if (typeof pnode.kind !== 'string' && pnode.kind.type === 'tag' && pnode.kind.node === loc) {
+            if (!pnode.children.length) {
+                return selStart(parentPath(path), { type: 'list', where: 'inside' });
+            }
+            return selectStart(pathWithChildren(parentPath(path), pnode.children[0]), top, false, tab);
+        }
         const at = pnode.children.indexOf(loc);
-        if (at === -1) return;
+        if (at === -1) {
+            console.warn(`child not in parent`, loc, pnode.children);
+            return;
+        }
         if (at === pnode.children.length - 1) {
             if (pnode.kind === 'smooshed' || pnode.kind === 'spaced') {
                 return goRight(parentPath(path), top);
@@ -301,6 +321,10 @@ export const navRight = (current: Current, state: TestState): Update | void => {
                     case 'before':
                     case 'start':
                         if (current.node.type === 'list') {
+                            if (typeof current.node.kind !== 'string' && current.node.kind.type === 'tag') {
+                                const start = selectStart(pathWithChildren(current.path, current.node.kind.node), state.top);
+                                return start ? { nodes: {}, selection: { start } } : undefined;
+                            }
                             if (current.node.children.length > 0) {
                                 const start = selectStart(pathWithChildren(current.path, current.node.children[0]), state.top);
                                 return start ? { nodes: {}, selection: { start } } : undefined;
