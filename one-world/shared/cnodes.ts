@@ -175,8 +175,6 @@ export type RecList<Loc> = {
     // Whether the user has specified that it should be multiline.
     // If absent, multiline is calculated based on pretty-printing logic
     forceMultiline?: boolean;
-    // For JSX, this will be a /table/, and 'kind' will be {type: 'tag'}
-    attributes?: RecNodeT<Loc>;
     children: RecNodeT<Loc>[];
     loc: Loc;
     src?: Src;
@@ -230,7 +228,6 @@ export const equal = <One, Two>(one: RecNodeT<One>, two: RecNodeT<Two>, loc: (on
         if (two.type !== 'list') return false;
         return (
             one.kind === two.kind &&
-            one.attributes === two.attributes &&
             one.forceMultiline === two.forceMultiline &&
             one.children.length === two.children.length &&
             one.children.every((one, i) => equal(one, two.children[i], loc))
@@ -254,11 +251,11 @@ export const childNodes = <Loc>(node: RecNodeT<Loc>): RecNodeT<Loc>[] => {
             return [];
         case 'list':
             let children: RecNodeT<Loc>[] = [];
-            if (typeof node.kind !== 'string' && node.kind.type === 'tag') {
+            if (isTag(node.kind)) {
                 children.push(node.kind.node);
-            }
-            if (node.attributes) {
-                children.push(node.attributes);
+                if (node.kind.attributes) {
+                    children.push(node.kind.attributes);
+                }
             }
             return children.length ? [...children, ...node.children] : node.children;
         case 'table':
@@ -351,7 +348,7 @@ export const fromRec = <Loc>(
                         ? {
                               ...node.kind,
                               node: fromRec(node.kind.node, map, get, inner),
-                              attributes: node.attributes != null ? fromRec(node.attributes, map, get, inner) : undefined,
+                              attributes: node.kind.attributes != null ? fromRec(node.kind.attributes, map, get, inner) : undefined,
                           }
                         : node.kind,
                 children: node.children.map((id) => fromRec(id, map, get, inner)),

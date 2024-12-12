@@ -61,3 +61,21 @@ test('del tag del node', () => {
     state = applyUpdate(state, keyUpdate(state, 'Backspace', {})!);
     check(state, id('', true), idc(0));
 });
+
+test('lets do some attribute', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello', true) })([]), idc(5));
+    state = applyUpdate(state, keyUpdate(state, ' ', {})!);
+    check(state, list({ type: 'tag', node: id('hello'), attributes: table('curly', [], true) })([]), listc('inside'));
+});
+
+test('attributes del', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello', true), attributes: table('curly', [], true) })([]), listc('inside'));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {})!);
+    check(state, list({ type: 'tag', node: id('hello', true) })([]), idc(5));
+});
+
+test('attributes write', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello'), attributes: table('curly', [], true) })([]), listc('inside'));
+    state = applyUpdate(state, keyUpdate(state, 'a', {})!);
+    check(state, list({ type: 'tag', node: id('hello'), attributes: table('curly', [[id('a', true)]]) })([]), idc(1));
+});

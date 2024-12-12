@@ -20,6 +20,12 @@ test('table w/ blank', () => {
     check(state, table('round', [[id('', true)]]), idc(0));
 });
 
+test('table w/ empty', () => {
+    let state = asTop(table('round', [], true), listc('inside'));
+    state = applyUpdate(state, handleKey(state, 'a', lisp)!);
+    check(state, table('round', [[id('a', true)]]), idc(1));
+});
+
 test('table n stuff', () => {
     let state = asTop(round([id('hi', true)]), idc(0));
     state = applyUpdate(state, handleKey(state, ':', lisp)!);

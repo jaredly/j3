@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { hasControls, isRich, ListKind, Node, Text, TextSpan } from '../shared/cnodes';
+import { hasControls, isRich, ListKind, Node, TableKind, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { TestState } from './test-utils';
@@ -21,7 +21,7 @@ import {
 
 export const justSel = (path: Path, cursor: Cursor) => ({ nodes: {}, selection: { start: selStart(path, cursor) } });
 
-export const isTag = (kind: ListKind<any>) => typeof kind !== 'string' && kind.type === 'tag';
+export const isTag = (kind: ListKind<any> | TableKind) => typeof kind !== 'string' && kind.type === 'tag';
 
 export const selectStart = (path: Path, top: Top, plus1 = false, tab = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);

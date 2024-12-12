@@ -1,5 +1,5 @@
 import { childLocs, isRich } from '../shared/cnodes';
-import { richNode } from './handleNav';
+import { isTag, richNode } from './handleNav';
 import { TestState } from './test-utils';
 import { getCurrent, parentLoc, Path, Top } from './utils';
 
@@ -58,6 +58,13 @@ const validateNodes = (top: Top, id: number) => {
                 throw new Error(`spaced child cant be spaced: ${child.kind}`);
             }
         });
+    }
+
+    if (node.type === 'list' && isTag(node.kind)) {
+        const tag = top.nodes[node.kind.node];
+        if (tag.type === 'list' && tag.kind === 'spaced') {
+            throw new Error(`xml tag cant be spaced`);
+        }
     }
 
     if (node.type === 'list' && node.kind === 'smooshed') {

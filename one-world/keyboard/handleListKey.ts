@@ -92,7 +92,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                 },
             };
         }
-        if (current.type !== 'list') throw new Error('not list');
+        if (current.type !== 'list' && current.type !== 'table') throw new Error('not list');
         switch (kind) {
             case 'string': {
                 let nextLoc = top.nextLoc;
@@ -100,7 +100,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                 return {
                     nodes: {
                         [loc]: { type: 'text', spans: [], loc },
-                        [current.loc]: { ...current, children: [loc] },
+                        [current.loc]: current.type === 'table' ? { ...current, rows: [[loc]] } : { ...current, children: [loc] },
                     },
                     nextLoc,
                     selection: { start: selStart(pathWithChildren(path, loc), { type: 'list', where: 'inside' }) },
@@ -108,7 +108,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
             }
             case 'space':
             case 'sep': {
-                if (isTag(current.kind)) {
+                if (current.type === 'list' && isTag(current.kind)) {
                     let nextLoc = top.nextLoc;
                     const loc = nextLoc++;
                     return {
@@ -137,7 +137,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                         ...nodes,
                         [left]: { type: 'id', loc: left, text: '' },
                         [right]: { type: 'id', loc: right, text: '' },
-                        [current.loc]: { ...current, children },
+                        [current.loc]: current.type === 'table' ? { ...current, rows: [children] } : { ...current, children },
                     },
                     nextLoc,
                     selection: { start: selStart(selPath, { type: 'id', end: 0 }) },
@@ -149,7 +149,7 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                 return {
                     nodes: {
                         [loc]: { type: 'id', loc, text: grem, ccls: kind },
-                        [current.loc]: { ...current, children: [loc] },
+                        [current.loc]: current.type === 'table' ? { ...current, rows: [[loc]] } : { ...current, children: [loc] },
                     },
                     nextLoc,
                     selection: { start: selStart(pathWithChildren(path, loc), { type: 'id', end: 1 }) },

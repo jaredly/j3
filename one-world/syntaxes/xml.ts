@@ -1,3 +1,4 @@
+import { isTag } from '../keyboard/handleNav';
 import { Src } from '../keyboard/handleShiftNav';
 import { RecNode, TextSpan } from '../shared/cnodes';
 
@@ -58,9 +59,10 @@ export const nodeToXML = (node: RecNode): XML => {
             return {
                 tag: node.type,
                 src: { left: node.loc },
-                attrs: { kind: node.kind, forceMultiline: node.forceMultiline, loc: node.loc[0].idx },
+                attrs: { kind: isTag(node.kind) ? undefined : node.kind, forceMultiline: node.forceMultiline, loc: node.loc[0].idx },
                 children: {
-                    attributes: node.attributes ? nodeToXML(node.attributes) : undefined,
+                    tag: isTag(node.kind) ? nodeToXML(node.kind.node) : undefined,
+                    attributes: isTag(node.kind) && node.kind.attributes ? nodeToXML(node.kind.attributes) : undefined,
                     children: node.children.map(nodeToXML),
                 },
             };

@@ -8,6 +8,7 @@ import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
 import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, flattenRow, pruneEmptyIds, rough, unflat } from './rough';
 import { Cursor, IdCursor, Path, Top, Update, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
+import { isTag } from './handleNav';
 
 export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update | void => {
     let current = top.nodes[lastChild(path)];
@@ -75,6 +76,20 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     if (parent?.node.type === 'table') {
         // throw new Error('shouldnt have gotten here?')
         return; // nope, handle above
+    }
+
+    const grand = parentPath(parent ? parent.path : path);
+    const gnode = top.nodes[lastChild(grand)];
+    if (gnode?.type === 'list' && isTag(gnode.kind) && gnode.kind.node === (parent ? parent.node.loc : current.loc)) {
+        return {
+            nodes: {
+                [gnode.loc]: { ...gnode, kind: { ...gnode.kind, attributes: top.nextLoc } },
+                [top.nextLoc]: { type: 'table', kind: 'curly', loc: top.nextLoc, rows: [] },
+            },
+            nextLoc: top.nextLoc + 1,
+            selection: { start: selStart(pathWithChildren(grand, top.nextLoc), { type: 'list', where: 'inside' }) },
+        };
+        return;
     }
 
     const flat = parent ? flatten(parent.node, top) : [current];

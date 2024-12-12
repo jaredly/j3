@@ -213,7 +213,7 @@ export const rebalanceSmooshed = (update: Update, top: Top) => {
     });
 };
 
-const removeSelf = (state: TestState, current: { path: Path; node: Node }) => {
+const removeSelf = (state: TestState, current: { path: Path; node: Node }): Update | void => {
     const pnode = state.top.nodes[parentLoc(current.path)];
     if (pnode && pnode.type === 'list' && pnode.kind === 'smooshed') {
         // removing an item from a smooshed, got to reevaulate it
@@ -241,6 +241,15 @@ const removeSelf = (state: TestState, current: { path: Path; node: Node }) => {
             { [current.node.loc]: null },
             state.top,
         );
+    }
+    if (pnode?.type === 'list' && isTag(pnode.kind) && pnode.kind.attributes === current.node.loc) {
+        const sel = selectEnd(pathWithChildren(parentPath(current.path), pnode.kind.node), state.top);
+        return sel
+            ? {
+                  nodes: { [pnode.loc]: { ...pnode, kind: { ...pnode.kind, attributes: undefined } } },
+                  selection: { start: sel },
+              }
+            : undefined;
     }
     let nextLoc = state.top.nextLoc;
     const loc = nextLoc++;
