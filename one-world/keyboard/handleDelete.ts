@@ -456,7 +456,9 @@ export const handleDelete = (state: TestState): Update | void => {
                     return up;
                 } else if (current.cursor.where === 'inside') {
                     if (current.node.type === 'list' && isTag(current.node.kind)) {
-                        return selUpdate(selectEnd(pathWithChildren(current.path, current.node.kind.node), state.top));
+                        return selUpdate(
+                            selectEnd(pathWithChildren(current.path, current.node.kind.attributes ?? current.node.kind.node), state.top),
+                        );
                     }
                     return removeSelf(state, current);
                 }

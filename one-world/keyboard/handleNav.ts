@@ -140,6 +140,9 @@ export const goLeft = (path: Path, top: Top, tab = false): NodeSelection['start'
         if (isTag(pnode.kind) && pnode.kind.node === loc) {
             return selStart(parentPath(path), { type: 'list', where: 'before' });
         }
+        if (isTag(pnode.kind) && pnode.kind.attributes === loc) {
+            return selectEnd(pathWithChildren(parentPath(path), pnode.kind.node), top, false);
+        }
         const at = pnode.children.indexOf(loc);
         if (at === -1) return;
         if (tab && hasControls(pnode.kind)) {
@@ -147,6 +150,9 @@ export const goLeft = (path: Path, top: Top, tab = false): NodeSelection['start'
         }
         if (at === 0) {
             if (isTag(pnode.kind)) {
+                if (pnode.kind.attributes != null) {
+                    return selectEnd(pathWithChildren(parentPath(path), pnode.kind.attributes), top, true);
+                }
                 return selectEnd(pathWithChildren(parentPath(path), pnode.kind.node), top);
             }
             if (pnode.kind === 'smooshed' || pnode.kind === 'spaced') {
@@ -182,7 +188,16 @@ export const goRight = (path: Path, top: Top, tab = false): NodeSelection['start
     const pnode = top.nodes[ploc];
     if (!pnode) return;
     if (pnode.type === 'list') {
-        if (typeof pnode.kind !== 'string' && pnode.kind.type === 'tag' && pnode.kind.node === loc) {
+        if (isTag(pnode.kind) && pnode.kind.node === loc) {
+            if (pnode.kind.attributes != null) {
+                return selectStart(pathWithChildren(parentPath(path), pnode.kind.attributes), top, true, tab);
+            }
+            if (!pnode.children.length) {
+                return selStart(parentPath(path), { type: 'list', where: 'inside' });
+            }
+            return selectStart(pathWithChildren(parentPath(path), pnode.children[0]), top, false, tab);
+        }
+        if (isTag(pnode.kind) && pnode.kind.attributes === loc) {
             if (!pnode.children.length) {
                 return selStart(parentPath(path), { type: 'list', where: 'inside' });
             }
@@ -451,6 +466,10 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
                         }
                     case 'inside':
                         if (current.node.type === 'list' && isTag(current.node.kind)) {
+                            if (current.node.kind.attributes) {
+                                const start = selectEnd(pathWithChildren(current.path, current.node.kind.attributes), state.top);
+                                return start ? { nodes: {}, selection: { start } } : undefined;
+                            }
                             const start = selectEnd(pathWithChildren(current.path, current.node.kind.node), state.top);
                             return start ? { nodes: {}, selection: { start } } : undefined;
                         }

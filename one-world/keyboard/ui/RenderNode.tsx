@@ -233,6 +233,20 @@ export const RenderNode = ({
                                         state={state}
                                         inRich={false}
                                     />
+                                    {node.kind.attributes != null ? (
+                                        <>
+                                            <span style={{ width: 8, display: 'inline-block' }} />
+                                            <RenderNode
+                                                loc={node.kind.attributes}
+                                                ctx={ctx}
+                                                readOnly={readOnly}
+                                                parent={nextParent}
+                                                key={node.kind.attributes}
+                                                state={state}
+                                                inRich={false}
+                                            />
+                                        </>
+                                    ) : undefined}
                                     {!node.children.length ? (
                                         <>
                                             {' /'}
