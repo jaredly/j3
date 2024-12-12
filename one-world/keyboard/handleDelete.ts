@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Collection, Id, List, Node, Nodes, Table, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { goLeft, justSel, selectEnd, selUpdate, spanEnd, spanStart } from './handleNav';
+import { goLeft, isTag, justSel, selectEnd, selUpdate, spanEnd, spanStart } from './handleNav';
 import { selEnd, SelSide, SelStart } from './handleShiftNav';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { replaceAt } from './replaceAt';
@@ -32,6 +32,7 @@ type JoinParent =
           pnode: List<number>;
           parent: Path;
       }
+    | { type: 'tag'; pnode: List<number>; parent: Path }
     | { type: 'table'; pat: null | { row: number; col: number }; at: { row: number; col: number }; pnode: Table<number>; parent: Path };
 export const joinParent = (path: Path, top: Top): void | JoinParent => {
     const loc = lastChild(path);
@@ -50,6 +51,9 @@ export const joinParent = (path: Path, top: Top): void | JoinParent => {
         };
     }
     if (!pnode || pnode.type !== 'list') return;
+    if (isTag(pnode.kind) && pnode.kind.node === loc) {
+        return { type: 'tag', pnode, parent };
+    }
     const at = pnode.children.indexOf(loc);
     if (at > 0 || (pnode.kind !== 'spaced' && pnode.kind !== 'smooshed')) return { type: 'list', pnode, parent, at };
     const up = joinParent(parent, top);
@@ -353,6 +357,15 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
         return up;
     }
 
+    if (got.type === 'tag') {
+        if (node.type === 'id' && node.text === '' && isTag(got.pnode.kind) && got.pnode.kind.node === node.loc) {
+            if (got.pnode.children.length === 0) {
+                return removeSelf(state, { path: got.parent, node: got.pnode });
+            }
+        }
+        return;
+    }
+
     // There's the listies
 
     const { at, parent, pnode } = got;
@@ -364,6 +377,14 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
         if (node.type === 'id' && node.text === '' && pnode.children.length === 1) {
             if (pnode.forceMultiline) {
                 return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: false } } };
+            }
+            if (isTag(pnode.kind)) {
+                return {
+                    nodes: { [pnode.loc]: { ...pnode, children: [] } },
+                    selection: {
+                        start: selStart(parent, { type: 'list', where: 'inside' }),
+                    },
+                };
             }
             return removeSelf(state, { path: parent, node: pnode });
         }
@@ -425,6 +446,9 @@ export const handleDelete = (state: TestState): Update | void => {
                     // disolveSmooshed(up, state.top);
                     return up;
                 } else if (current.cursor.where === 'inside') {
+                    if (current.node.type === 'list' && isTag(current.node.kind)) {
+                        return selUpdate(selectEnd(pathWithChildren(current.path, current.node.kind.node), state.top));
+                    }
                     return removeSelf(state, current);
                 }
             }

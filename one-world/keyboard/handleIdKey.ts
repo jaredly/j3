@@ -33,12 +33,13 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
                         type: 'list',
                         kind: { type: 'tag', node: top.nextLoc },
                         loc: current.loc,
-                        children: [],
+                        children: [top.nextLoc + 1],
                     },
+                    [top.nextLoc + 1]: { type: 'id', text: '', loc: top.nextLoc + 1 },
                     [top.nextLoc]: { type: 'id', text: '', loc: top.nextLoc },
                 },
                 selection: { start: selStart(pathWithChildren(path, top.nextLoc), { type: 'id', end: 0 }) },
-                nextLoc: top.nextLoc + 1,
+                nextLoc: top.nextLoc + 2,
             };
         }
     }

@@ -17,7 +17,7 @@ test('xml before into tag', () => {
 test('xml start', () => {
     let state = asTop(id('<', true, js), idc(1));
     state = applyUpdate(state, keyUpdate(state, '>', {})!);
-    check(state, list({ type: 'tag', node: id('', true) })([]), idc(0));
+    check(state, list({ type: 'tag', node: id('', true) })([id('')]), idc(0));
 });
 
 test('xml out of start', () => {
@@ -36,4 +36,28 @@ test('xml out of child', () => {
     let state = asTop(list({ type: 'tag', node: id('hello') })([id('hi', true)]), idc(0));
     state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', {})!);
     check(state, list({ type: 'tag', node: id('hello', true) })([id('hi')]), idc(5));
+});
+
+test('space inside xml just makes an id', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello') })([], true), listc('inside'));
+    state = applyUpdate(state, keyUpdate(state, ' ', {})!);
+    check(state, list({ type: 'tag', node: id('hello') })([id('', true)]), idc(0));
+});
+
+test('del inside xml rms the child', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello') })([id('', true)]), idc(0));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {})!);
+    check(state, list({ type: 'tag', node: id('hello') })([], true), listc('inside'));
+});
+
+test('del inside empty xml moves the cursor', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello') })([], true), listc('inside'));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {})!);
+    check(state, list({ type: 'tag', node: id('hello', true) })([]), idc(5));
+});
+
+test('del tag del node', () => {
+    let state = asTop(list({ type: 'tag', node: id('', true) })([]), idc(0));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {})!);
+    check(state, id('', true), idc(0));
 });

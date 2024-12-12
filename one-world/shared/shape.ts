@@ -18,6 +18,11 @@ export const shape = (node: RecNodeT<unknown>): string => {
             if (typeof node.kind === 'string') {
                 return `list[${node.kind}](${node.children.map(shape).join(' ')}${ml})`;
             }
+            if (node.kind.type === 'tag') {
+                return `xml[${shape(node.kind.node)}${node.kind.attributes ? ' ' + shape(node.kind.attributes) : ''}](${node.children
+                    .map(shape)
+                    .join(' ')}${ml})`;
+            }
             return `list[${node.kind.type}](${node.children.map(shape).join(' ')}${ml})`;
         case 'table':
             const mi = node.rows.map((row) => row.map(shape).join(',')).join(';');

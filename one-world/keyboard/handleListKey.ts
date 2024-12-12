@@ -1,6 +1,6 @@
 import { isRich, List, Node, Nodes } from '../shared/cnodes';
 import { findParent, listKindForKeyKind, Flat, addNeighborBefore, addNeighborAfter } from './flatenate';
-import { justSel, richNode } from './handleNav';
+import { isTag, justSel, richNode } from './handleNav';
 import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
 import { collapseAdjacentIDs, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
@@ -108,6 +108,18 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
             }
             case 'space':
             case 'sep': {
+                if (isTag(current.kind)) {
+                    let nextLoc = top.nextLoc;
+                    const loc = nextLoc++;
+                    return {
+                        nodes: {
+                            [loc]: { type: 'id', loc, text: '' },
+                            [current.loc]: { ...current, children: [loc] },
+                        },
+                        nextLoc,
+                        selection: { start: selStart(pathWithChildren(path, loc), { type: 'id', end: 0 }) },
+                    };
+                }
                 let nextLoc = top.nextLoc;
                 const left = nextLoc++;
                 const right = nextLoc++;
