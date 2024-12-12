@@ -1,6 +1,7 @@
 import { Src } from '../keyboard/handleShiftNav';
+import { js, TestParser, TestState } from '../keyboard/test-utils';
 import { Id, Loc, RecNode } from '../shared/cnodes';
-import { any, Ctx, id, idp, idt, kwd, list, Matcher, meta, mref, multi, named, opt, sequence, switch_, table, text, tx } from './dsl';
+import { any, Ctx, id, idp, idt, kwd, list, Matcher, meta, mref, multi, named, opt, parse, sequence, switch_, table, text, tx } from './dsl';
 import {
     binops,
     ESmoosh,
@@ -15,6 +16,7 @@ import {
     SExpr,
     SPat,
     Stmt,
+    stmtSpans,
     Suffix,
     suffixops,
     Type,
@@ -316,6 +318,9 @@ const _expr: Matcher<Expr>[] = [
     id('value', (node) => ({ type: 'var', name: node.text, src: { left: node.loc } })),
     text(sprexpr_, (spans, node) => ({ type: 'text', spans, src: { left: node.loc } })),
     list('square', multi(sprexpr_, true), (items, node) => ({ type: 'array', items, src: { left: node.loc } })),
+    // list({
+    //     type: 'tag',
+    // }, multi(sprexpr_, true), (items, node, tag, attributes) => ({type: 'jsx', tag})),
     table(
         'curly',
         switch_<RecordRow, RecordRow>(
@@ -445,3 +450,11 @@ export const ctx = (cursor?: number): Ctx => ({
     meta: {},
     autocomplete: cursor ? { loc: cursor, concrete: [], kinds: [] } : undefined,
 });
+
+export const tsParser: TestParser = {
+    config: js,
+    parse(node, cursor) {
+        return parse(matchers.stmt, node, ctx(cursor));
+    },
+    spans: stmtSpans,
+};

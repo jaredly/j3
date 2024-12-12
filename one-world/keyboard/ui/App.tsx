@@ -29,14 +29,6 @@ const styleKinds: Record<string, Style> = {
     uop: { color: { r: 150, g: 0, b: 0 } },
 };
 
-const defaultParser: TestState['parser'] = {
-    config: js,
-    parse(node, cursor) {
-        return parse(ts.matchers.stmt, node, ts.ctx(cursor));
-    },
-    spans: tsTypes.stmtSpans,
-};
-
 const showKey = (evt: KeyboardEvent) => {
     let key = evt.key;
     if (key === ' ') key = 'Space';
@@ -71,7 +63,7 @@ export const App = ({ id }: { id: string }) => {
         return keys.concat(extra);
     }, [msel, state.sel]);
 
-    const parser = state.parser ?? defaultParser;
+    const parser = state.parser ?? ts.tsParser;
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
     const cursor = state.sel.multi ? undefined : lastChild(state.sel.start.path);
     const parsed = parser.parse(rootNode, cursor);

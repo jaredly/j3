@@ -7,11 +7,12 @@ import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, Path, sel
 export type TestState = {
     top: Top;
     sel: NodeSelection;
-    parser?: {
-        config: Config;
-        parse(node: RecNode, cursor?: number): ParseResult<any>;
-        spans(ast: any): Src[];
-    };
+    parser?: TestParser;
+};
+export type TestParser = {
+    config: Config;
+    parse(node: RecNode, cursor?: number): ParseResult<any>;
+    spans(ast: any): Src[];
 };
 
 export const initTop: Top = {

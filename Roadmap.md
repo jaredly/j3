@@ -1,4 +1,13 @@
 
+# NEXT
+
+- [ ] jsx is working ok
+- [ ] shift-select we need some real tests for this, nail down the behavior
+- [ ] let's get copy/paste going
+- [ ] undo/redo
+- [ ] anddd the dsl2, let's switch to that. parsing jsx is being weirdly tricky
+
+
 ## Image EMBEDS
 
 let's goooo
