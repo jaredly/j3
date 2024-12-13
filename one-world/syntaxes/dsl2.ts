@@ -1,7 +1,7 @@
 import { Src } from '../keyboard/handleShiftNav';
 import { js, TestParser } from '../keyboard/test-utils';
 import { Id, ListKind, Loc, RecNode, TableKind } from '../shared/cnodes';
-import { Bag, Ctx, MatchParent } from './dsl';
+import { Bag, bagSize, Ctx, MatchParent } from './dsl';
 import { binops, Expr, partition, Pat, Stmt } from './ts-types';
 
 type AutoComplete = string;
@@ -28,10 +28,10 @@ type Next<T> = <R>(inner: (v: T) => MRes<R>) => MRes<R>;
 // - .match()
 // - .describe()
 
-type MCtx = { good: Bag<RecNode>; bad: Bag<MatchError> };
+type MCtx = { good: Bag<RecNode>; bad: Bag<MatchError>; path: MRes<any>[] };
 
 // const empty: any[] = [];
-export const ictx: MCtx = { good: [], bad: [] };
+export const ictx: MCtx = { good: [], bad: [], path: [] };
 
 const band = <T>(one: Bag<T>, two: Bag<T>): Bag<T> =>
     Array.isArray(one) && one.length === 0 ? two : Array.isArray(two) && two.length === 0 ? one : [one, two];
@@ -42,11 +42,16 @@ type MRes<T> = {
     describe(): string;
 };
 
-const asMatch = <T>(desc: string, match: MRes<T>['match']): MRes<T> => ({
-    type: 'matcher',
-    match,
-    describe: () => desc,
-});
+const apath = (ctx: MCtx, m: MRes<any>) => ({ ...ctx, path: ctx.path.concat([m]) });
+
+const asMatch = <T>(desc: string, match: MRes<T>['match']): MRes<T> => {
+    const self: MRes<T> = {
+        type: 'matcher',
+        match: (parent, at, ctx) => match(parent, at, apath(ctx, self)),
+        describe: () => desc,
+    };
+    return self;
+};
 
 type Start = { at: number; parent: MatchParent; loc: Loc };
 
@@ -58,7 +63,7 @@ const finish = <T>(start: Start, f: (src: Src) => T): MRes<T> =>
         const node = parent.nodes[at - 1];
         return {
             type: 'match',
-            result: { type: 'finished', result: f({ left: start.loc, right: at > start.at ? node.loc : undefined }), consumed: at - start.at },
+            result: { result: f({ left: start.loc, right: at > start.at ? node.loc : undefined }), consumed: at - start.at },
             ctx,
         };
     });
@@ -69,7 +74,7 @@ const err = (ctx: MCtx, err: MatchError): MCtx => {
 const good = (ctx: MCtx, node: RecNode): MCtx => {
     return { ...ctx, good: band(ctx.good, node) };
 };
-const mctx = (one: MCtx, two: MCtx): MCtx => ({ good: band(one.good, two.good), bad: band(one.bad, two.bad) });
+const mctx = (one: MCtx, two: MCtx): MCtx => ({ good: band(one.good, two.good), bad: band(one.bad, two.bad), path: two.path });
 
 const id = <T>(kind: string | null, next: (node: Id<Loc>) => MRes<T>): MRes<T> =>
     asMatch('id', (parent, at, ctx) => {
@@ -191,20 +196,23 @@ const switch_ =
     <T>(next: (v: I) => MRes<T>): MRes<T> =>
         asMatch('switch:' + options.map((m) => m.describe()).join(', '), (parent, at, ctx) => {
             // const failed: Failed[] = [];
-            let failed: MCtx = { good: [], bad: [] };
+            let failed: { ctx: MCtx; goods: number }[] = [];
+            // let failed: MCtx = { good: [], bad: [], path: ctx.path };
             for (let opt of options) {
-                const res = opt.match(parent, at, ictx);
+                const res = opt.match(parent, at, { ...ictx, path: ctx.path });
                 if (res.type === 'matcher') {
                     throw new Error('ended at a matcher?');
                 }
                 if (res.result) {
                     return next(res.result.result).match(parent, at + res.result.consumed, mctx(ctx, res.ctx));
                 }
-                failed.good = band(failed.good, res.ctx.good);
-                failed.bad = band(failed.bad, res.ctx.bad);
+                failed.push({ ctx: res.ctx, goods: bagSize(res.ctx.good) });
+                // failed.good = band(failed.good, res.ctx.good);
+                // failed.bad = band(failed.bad, res.ctx.bad);
             }
+            failed.sort((a, b) => b.goods - a.goods);
             ctx = err(ctx, { type: 'other', parent, at, expected: `switch ${name}` });
-            return { type: 'match', ctx: mctx(ctx, failed) };
+            return { type: 'match', ctx: mctx(ctx, failed[0].ctx) };
         });
 
 export const pat = switch_<Pat>('pat', [

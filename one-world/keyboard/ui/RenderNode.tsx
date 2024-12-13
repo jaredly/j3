@@ -8,7 +8,7 @@ import { lastChild, parentLoc, parentPath, Path, pathKey, pathWithChildren, selS
 
 import { asStyle } from '../../shared/shape';
 import { textCursorSides2 } from '../insertId';
-import { Cursor, TextWithCursor } from './cursor';
+import { Cursor, TextWithCursor, Zwd } from './cursor';
 import { justSel, selUpdate } from '../handleNav';
 import { posInList } from './selectionPos';
 
@@ -156,12 +156,12 @@ export const RenderNode = ({
                 const { left, right } = cursorSides(cursor);
                 let text = cursor.text ?? splitGraphemes(node.text);
                 let usingPlaceholder = false;
-                if (text.length === 0 && plh) {
-                    if (!style) style = {};
-                    usingPlaceholder = true;
-                    Object.assign(style, placeholderStyle);
-                    text = splitGraphemes(plh);
-                }
+                // if (text.length === 0 && plh) {
+                //     if (!style) style = {};
+                //     usingPlaceholder = true;
+                //     Object.assign(style, placeholderStyle);
+                //     text = splitGraphemes(plh);
+                // }
                 return (
                     <span style={style}>
                         {readOnly ? (
@@ -183,18 +183,18 @@ export const RenderNode = ({
                 );
             }
             let text = node.text;
-            if (text === '' && plh != null) {
-                const pnode = state.top.nodes[lastChild(parent)];
-                if (
-                    (pnode.type === 'list' && pnode.children.length === 1) ||
-                    (pnode.type === 'table' && pnode.rows.length === 1 && pnode.rows[0].length === 1)
-                ) {
-                } else {
-                    if (!style) style = {};
-                    Object.assign(style, placeholderStyle);
-                    text = plh;
-                }
-            }
+            // if (text === '' && plh != null) {
+            //     const pnode = state.top.nodes[lastChild(parent)];
+            //     if (
+            //         (pnode.type === 'list' && pnode.children.length === 1) ||
+            //         (pnode.type === 'table' && pnode.rows.length === 1 && pnode.rows[0].length === 1)
+            //     ) {
+            //     } else {
+            //         if (!style) style = {};
+            //         Object.assign(style, placeholderStyle);
+            //         text = plh;
+            //     }
+            // }
             return (
                 <span
                     style={style}
@@ -206,7 +206,7 @@ export const RenderNode = ({
                         // ok I cant dispatch just yet
                     }}
                 >
-                    {text === '' ? '\u200B' : text}
+                    {text === '' ? <Zwd /> : text}
                 </span>
             );
         case 'list':

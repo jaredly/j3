@@ -54,6 +54,12 @@ export const TextWithCursor = ({
 
     useEffect(() => {
         if (!ref.current) return;
+
+        if (text.length === 0) {
+            const box = ref.current.getBoundingClientRect();
+            return setRects([{ width: 1, height: box.height, left: 0, top: 0 }]);
+        }
+
         const range = new Range();
         range.setStart(ref.current.firstChild!, text.slice(0, left).join('').length);
         range.setEnd(ref.current.firstChild!, text.slice(0, right).join('').length);
@@ -84,7 +90,7 @@ export const TextWithCursor = ({
                 }}
                 onClick={onClick}
             >
-                {text.length ? text.join('') : '\u200B'}
+                {text.length ? text.join('') : <Zwd />}
             </span>
             {rects?.length === 1 && rects[0].width === 1 ? (
                 <span
@@ -122,6 +128,28 @@ export const TextWithCursor = ({
                     />
                 ))
             )}
+        </span>
+    );
+};
+
+export const Zwd = () => {
+    // return '\u200B';
+    return (
+        <span style={{ position: 'relative' }}>
+            {'\u200B'}
+            <div
+                style={{
+                    position: 'absolute',
+                    top: '50%',
+                    backgroundColor: '#ddd',
+                    height: 4,
+                    width: 4,
+                    left: 0,
+                    borderRadius: 2,
+                    marginLeft: -2,
+                    marginTop: -2,
+                }}
+            />
         </span>
     );
 };

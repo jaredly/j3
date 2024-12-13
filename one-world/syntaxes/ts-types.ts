@@ -13,7 +13,10 @@ export const nodesSrc = (nodes: RecNode | RecNode[]): Src =>
               }
         : { left: nodes.loc };
 
+type Err = { type: 'error'; src: Src };
+
 export type Pat =
+    | Err
     | { type: 'var'; name: string; src: Src }
     | { type: 'array'; values: SPat[]; src: Src }
     | { type: 'default'; inner: Pat; value: Expr; src: Src }
@@ -23,6 +26,7 @@ export type Pat =
     | { type: 'text'; spans: TextSpan<Pat>[]; src: Src };
 export type SPat = Pat | { type: 'spread'; inner: Pat; src: Src };
 export type Type =
+    | Err
     | { type: 'ref'; name: string; src: Src }
     | { type: 'app'; target: Type; args: Type[]; src: Src }
     | { type: 'fn'; args: { name: string; type: Type }[]; body: Type; src: Src };
@@ -39,6 +43,7 @@ export type PCon = { type: 'constr'; constr: Id<Loc>; args: Pat[]; src: Src };
 
 export type SExpr = Expr | { type: 'spread'; inner: Expr; src: Src };
 export type Expr =
+    | Err
     | { type: 'jsx'; tag: Expr; attributes?: RecordRow[]; children: Expr[]; src: Src }
     | { type: 'var'; name: string; src: Src }
     | { type: 'text'; spans: TextSpan<SExpr>[]; src: Src }
@@ -54,6 +59,48 @@ export type Expr =
     | { type: 'attribute'; target: Expr; attribute: Id<Loc>; src: Src }
     | { type: 'index'; target: Expr; items: SExpr[]; src: Src }
     | Fancy;
+
+export type Fn = { type: 'fn'; args: Pat[]; body: Stmt[] | Expr; src: Src };
+export type Fancy =
+    | Fn
+    | { type: 'new'; target: Expr; src: Src }
+    | { type: 'await'; target: Expr; src: Src }
+    | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[] | null; src: Src }
+    | { type: 'case'; target: Expr; cases: { pat: Pat; body: Stmt[] | Expr }[]; src: Src };
+export type ESmoosh = { type: 'smooshed'; prefixes: Id<Loc>[]; base: Expr; suffixes: Suffix[]; src: Src };
+export type Suffix =
+    | { type: 'index'; items: SExpr[]; src: Src }
+    | { type: 'call'; items: SExpr[]; src: Src }
+    | { type: 'suffix'; op: Id<Loc>; src: Src }
+    | { type: 'attribute'; attribute: Id<Loc>; src: Src };
+export type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
+export type Stmt =
+    | Err
+    | { type: 'expr'; expr: Expr; src: Src }
+    | { type: 'throw'; target: Expr; src: Src }
+    | { type: 'return'; value?: Expr; src: Src }
+    | { type: 'for'; init: Stmt | Blank; cond: Expr | Blank; update: Expr | Blank; src: Src; body: Stmt[] | Stmt }
+    | { type: 'let'; pat: Pat; value: Expr; src: Src };
+type Blank = { type: 'blank'; src: Src };
+
+export const unops = ['+', '-', '!', '~'];
+export const suffixops = ['++', '--'];
+export const kwds = ['for', 'return', 'new', 'await', 'throw', 'if', 'case', 'else', 'let', 'const', '=', '..', '.', 'fn'];
+export const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%', '=', '+=', '-=', '|=', '/=', '*='];
+export const precedence = [
+    //
+    ['=', '+=', '-=', '|=', '/=', '*='],
+    ['!=', '=='],
+    ['>', '<', '>=', '<='],
+    ['%'],
+    ['+', '-'],
+    ['*', '/'],
+    ['^'],
+];
+const opprec: Record<string, number> = {};
+precedence.forEach((row, i) => {
+    row.forEach((n) => (opprec[n] = i));
+});
 
 // Stmtssss
 // Ok, so Exprs, Pats, and Stmts...
@@ -110,6 +157,8 @@ export const foldPat = <T>(pat: SPat, i: T, v: Visitor<T>): T => {
                 i = foldPat(item, i, v);
             });
             return i;
+        case 'error':
+            return i;
         case 'typed':
             i = foldPat(pat.inner, i, v);
             i = foldType(pat.ann, i, v);
@@ -146,10 +195,13 @@ export const foldPat = <T>(pat: SPat, i: T, v: Visitor<T>): T => {
     }
 };
 
-export const foldStmt = <T>(stmt: Stmt, i: T, v: Visitor<T>): T => {
+export const foldStmt = <T>(stmt: Stmt | Blank, i: T, v: Visitor<T>): T => {
+    if (stmt.type === 'blank') return i;
     i = v.stmt(stmt, i);
 
     switch (stmt.type) {
+        case 'error':
+            return i;
         case 'expr':
             return foldExpr(stmt.expr, i, v);
         case 'return':
@@ -160,7 +212,7 @@ export const foldStmt = <T>(stmt: Stmt, i: T, v: Visitor<T>): T => {
             i = foldPat(stmt.pat, i, v);
             return foldExpr(stmt.value, i, v);
         case 'for':
-            i = foldExpr(stmt.init, i, v);
+            i = foldStmt(stmt.init, i, v);
             i = foldExpr(stmt.cond, i, v);
             i = foldExpr(stmt.cond, i, v);
             if (Array.isArray(stmt.body)) {
@@ -179,6 +231,8 @@ export const foldExpr = <T>(expr: SExpr | Blank, i: T, v: Visitor<T>): T => {
     i = v.expr(expr, i);
 
     switch (expr.type) {
+        case 'error':
+            return i;
         case 'spread':
             foldExpr(expr.inner, i, v);
             return i;
@@ -258,45 +312,7 @@ export const foldExpr = <T>(expr: SExpr | Blank, i: T, v: Visitor<T>): T => {
             return i;
     }
 };
-export type Fn = { type: 'fn'; args: Pat[]; body: Stmt[] | Expr; src: Src };
-export type Fancy =
-    | Fn
-    | { type: 'new'; target: Expr; src: Src }
-    | { type: 'await'; target: Expr; src: Src }
-    | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[] | null; src: Src }
-    | { type: 'case'; target: Expr; cases: { pat: Pat; body: Stmt[] | Expr }[]; src: Src };
-export type ESmoosh = { type: 'smooshed'; prefixes: Id<Loc>[]; base: Expr; suffixes: Suffix[]; src: Src };
-export type Suffix =
-    | { type: 'index'; items: SExpr[]; src: Src }
-    | { type: 'call'; items: SExpr[]; src: Src }
-    | { type: 'suffix'; op: Id<Loc>; src: Src }
-    | { type: 'attribute'; attribute: Id<Loc>; src: Src };
-export type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
-export type Stmt =
-    | { type: 'expr'; expr: Expr; src: Src }
-    | { type: 'throw'; target: Expr; src: Src }
-    | { type: 'return'; value?: Expr; src: Src }
-    | { type: 'for'; init: Expr | Blank; cond: Expr | Blank; update: Expr | Blank; src: Src; body: Stmt[] | Stmt }
-    | { type: 'let'; pat: Pat; value: Expr; src: Src };
-type Blank = { type: 'blank'; src: Src };
-export const unops = ['+', '-', '!', '~'];
-export const suffixops = ['++', '--'];
-export const kwds = ['for', 'return', 'new', 'await', 'throw', 'if', 'case', 'else', 'let', 'const', '=', '..', '.', 'fn'];
-export const binops = ['<', '>', '<=', '>=', '!=', '==', '+', '-', '*', '/', '^', '%', '=', '+=', '-=', '|=', '/=', '*='];
-export const precedence = [
-    //
-    ['=', '+=', '-=', '|=', '/=', '*='],
-    ['!=', '=='],
-    ['>', '<', '>=', '<='],
-    ['%'],
-    ['+', '-'],
-    ['*', '/'],
-    ['^'],
-];
-const opprec: Record<string, number> = {};
-precedence.forEach((row, i) => {
-    row.forEach((n) => (opprec[n] = i));
-});
+
 type Data = { type: 'tmp'; left: Expr | Data; op: Id<Loc>; prec: number; right: Expr | Data };
 const add = (data: Data | Expr, op: Id<Loc>, right: Expr): Data => {
     const prec = opprec[op.text];

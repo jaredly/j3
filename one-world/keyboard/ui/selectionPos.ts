@@ -68,6 +68,9 @@ export const selectionPos = (
     switch (cur.type) {
         case 'id': {
             const text = cur.cursor.text ?? splitGraphemes(cur.node.text);
+            if (text.length === 0) {
+                return boxAt(span.getBoundingClientRect());
+            }
             const at = text.slice(0, cur.cursor.end).join('').length;
             try {
                 range.setStart(span.firstChild!, at);
