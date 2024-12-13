@@ -136,6 +136,14 @@ const isNumberPair = (one: Id<number>, two: Id<number>) => {
     return (one.text === '.' && two.text.match(/^[0-9]+$/)) || (two.text === '.' && one.text.match(/^[0-9]+$/));
 };
 
+const isWordOrDotBefore = (flat: Flat[], at: number) => {
+    at--;
+    if (at < 0) return false;
+    for (; at > 0 && flat[at].type === 'smoosh'; at--); // ignore intervening smooshes
+    const prev = flat[at];
+    return prev.type === 'id' && (prev.ccls === 0 || prev.text === '.');
+};
+
 export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; cursor: Cursor }) => {
     const res: Flat[] = [];
     flat.forEach((item) => {
@@ -144,9 +152,12 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
             return;
         }
         let at = res.length - 1;
-        for (; at >= 0 && res[at].type === 'smoosh'; at--); // ignore intervening smooshes
+        for (; at > 0 && res[at].type === 'smoosh'; at--); // ignore intervening smooshes
         const prev = res[at];
-        if (prev.type === 'id' && (prev.ccls == null || item.ccls == null || prev.ccls === item.ccls || isNumberPair(prev, item))) {
+        if (
+            prev.type === 'id' &&
+            (prev.ccls == null || item.ccls == null || prev.ccls === item.ccls || (isNumberPair(prev, item) && !isWordOrDotBefore(res, at)))
+        ) {
             const ccls = item.ccls != null && prev.text === '.' ? item.ccls : prev.ccls;
             // mergerate
             const base = prev.loc === -1 ? item : prev;

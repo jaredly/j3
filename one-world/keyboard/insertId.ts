@@ -18,7 +18,7 @@ export const charClass = (grem: string, config: Config): number => {
             return i + 1;
         }
     }
-    return 0;
+    return 0; // 0 is the class for text
 };
 
 export const textCursorSides = (cursor: TextCursor) => {

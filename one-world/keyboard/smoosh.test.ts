@@ -269,6 +269,25 @@ test('num and such', () => {
     check(state, id('23.', true), idc(3));
 });
 
+test('num and smoosh', () => {
+    let state = asTop(id('a', true, js), idc(1));
+    state = applyUpdate(state, handleKey(state, '.', js));
+    state = applyUpdate(state, handleKey(state, '2', js));
+    check(state, smoosh([id('a'), id('.', false, js), id('2', true)]), idc(1));
+});
+
+test('num and num', () => {
+    let state = asTop(smoosh([id('a'), id('.'), id('2', true)]), idc(1));
+    state = applyUpdate(state, handleKey(state, '.', lisp));
+    check(state, smoosh([id('a'), id('.'), id('2'), id('.', true)]), idc(1));
+});
+
+test('plus decimal', () => {
+    let state = asTop(smoosh([id('+'), id('23', true)]), idc(2));
+    state = applyUpdate(state, handleKey(state, '.', lisp));
+    check(state, smoosh([id('+'), id('23.', true)]), idc(3));
+});
+
 test('fn(x)', () => {
     let state = asTop(id('f', true), { type: 'id', end: 2, text: ['f', 'n'] });
     state = applyUpdate(state, keyUpdate(state, '(', {}, undefined, js));
