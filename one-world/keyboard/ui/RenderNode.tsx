@@ -163,7 +163,7 @@ export const RenderNode = ({
                 //     text = splitGraphemes(plh);
                 // }
                 return (
-                    <span style={style}>
+                    <span style={{ ...style, position: 'relative' }}>
                         {readOnly ? (
                             text.join('')
                         ) : (
@@ -179,6 +179,7 @@ export const RenderNode = ({
                                 right={right}
                             />
                         )}
+                        {text.length === 0 && plh != null ? <PLHPopover text={plh} /> : null}
                     </span>
                 );
             }
@@ -701,4 +702,50 @@ export const RenderNode = ({
             );
         }
     }
+};
+
+const PLHPopover = ({ text }: { text: string }) => {
+    return (
+        <div
+            style={{
+                position: 'absolute',
+                bottom: '100%',
+                left: 0,
+                marginLeft: -10,
+                marginBottom: 10,
+                zIndex: 10,
+                backgroundColor: '#eef',
+                borderRadius: 4,
+                padding: '0px 3px',
+                border: '1px solid #777',
+                fontSize: '80%',
+            }}
+        >
+            {text}
+            <div
+                style={{
+                    width: 0,
+                    height: 0,
+                    borderLeft: '4px solid transparent',
+                    borderRight: '4px solid transparent',
+                    borderTop: '8px solid #777',
+                    position: 'absolute',
+                    left: 6,
+                    top: '100%',
+                }}
+            />
+            <div
+                style={{
+                    width: 0,
+                    height: 0,
+                    borderLeft: '3px solid transparent',
+                    borderRight: '3px solid transparent',
+                    borderTop: '6px solid #eef',
+                    position: 'absolute',
+                    left: 7,
+                    top: '100%',
+                }}
+            />
+        </div>
+    );
 };
