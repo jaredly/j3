@@ -15,7 +15,7 @@ const examples = [
     'person.2.3',
     '127.0.0.1',
     'localhost:8080',
-    '1.23e370',
+    // '1.23e370',
     // 'let x = (x,y) => {\nlet z = 12;z + 4}',
 ];
 
