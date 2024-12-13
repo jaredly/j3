@@ -3,10 +3,14 @@
 
 - [ ] USE the dsl2, let's switch to that. parsing jsx is being weirdly tricky
 
-- [ ] jsx is working ok
+- [x] jsx is working ok
 - [ ] shift-select we need some real tests for this, nail down the behavior
 - [ ] let's get copy/paste going
 - [ ] undo/redo
+
+
+IFF I want to be practical and not put undue burden on the parsers, I really need to handle decimal numbers.
+
 
 
 ## Image EMBEDS

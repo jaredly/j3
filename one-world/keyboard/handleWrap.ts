@@ -113,11 +113,10 @@ export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdC
         ncursor = { type: 'list', where: 'before' };
     }
 
-    if (left > 0) {
-        nodes[node.loc] = { ...node, text: first.join('') };
-    }
-
     let at = flat.indexOf(node);
+    if (left > 0) {
+        flat[at] = nodes[node.loc] = { ...node, text: first.join('') };
+    }
     // honestly not sure what this was abount
     // for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
 

@@ -69,7 +69,7 @@ export const rough = (flat: Flat[], top: Top, sel: Node, outer?: number) => {
 
 // type FNode = Omit<List<number>, 'type' | 'children'> & { type: 'flist'; children: (Node | FNode)[] };
 
-export const findPath = (root: number, nodes: Nodes, needle: number): number[] | null => {
+export const findPath = (root: number, nodes: Update['nodes'], needle: number): number[] | null => {
     let found: number[] | null = null;
     const traverse = (loc: number, path: number[]) => {
         if (path.includes(loc)) throw new Error(`recursion?? ${loc} ${path}`);
@@ -132,6 +132,10 @@ export const pruneEmptyIds = (flat: Flat[], selection: { node: Node; cursor: Cur
     return { items: res, selection };
 };
 
+const isNumberPair = (one: Id<number>, two: Id<number>) => {
+    return (one.text === '.' && two.text.match(/^[0-9]+$/)) || (two.text === '.' && one.text.match(/^[0-9]+$/));
+};
+
 export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; cursor: Cursor }) => {
     const res: Flat[] = [];
     flat.forEach((item) => {
@@ -142,10 +146,11 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
         let at = res.length - 1;
         for (; at >= 0 && res[at].type === 'smoosh'; at--); // ignore intervening smooshes
         const prev = res[at];
-        if (prev.type === 'id' && (prev.ccls == null || item.ccls == null || prev.ccls === item.ccls)) {
+        if (prev.type === 'id' && (prev.ccls == null || item.ccls == null || prev.ccls === item.ccls || isNumberPair(prev, item))) {
+            const ccls = item.ccls != null && prev.text === '.' ? item.ccls : prev.ccls;
             // mergerate
             const base = prev.loc === -1 ? item : prev;
-            res[at] = { ...base, text: prev.text + item.text };
+            res[at] = { ...base, text: prev.text + item.text, ccls };
 
             // Update selections
             if (prev === selection.node) {
@@ -169,7 +174,7 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
 };
 
 export function unflat(top: Top, flat: Flat[], sel: Node) {
-    const nodes: Nodes = {};
+    const nodes: Update['nodes'] = {};
     let nextLoc = top.nextLoc;
     let sloc: number | null = null;
     let forceMultiline = undefined as undefined | boolean;
@@ -263,7 +268,12 @@ export function flatToUpdateNew(
     const two = collapseAdjacentIDs(one.items, one.selection);
 
     const r = rough(two.items, top, two.selection.node, parent.isParent ? parent.node.loc : undefined);
-    Object.assign(r.nodes, nodes);
+    Object.keys(nodes).forEach((key) => {
+        if (r.nodes[+key] === undefined) {
+            r.nodes[+key] = nodes[+key]!;
+        }
+    });
+    // Object.assign(r.nodes, nodes);
     // Object.assign(nodes, r.nodes);
 
     let root = undefined;

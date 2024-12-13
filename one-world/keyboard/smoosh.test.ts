@@ -8,6 +8,7 @@ import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
 import { asTop, id, idc, js, lisp, listc, round, smoosh, spaced, text } from './test-utils';
+import { keyUpdate } from './ui/keyUpdate';
 import { IdCursor } from './utils';
 
 const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.') => {
@@ -241,4 +242,35 @@ test('backspace in multiline unforces it', () => {
     let state = asTop(round([id('', true)], false, true), idc(0));
     state = applyUpdate(state, handleDelete(state));
     check(state, round([id('', true)]), idc(0));
+});
+
+// hmmm.
+//
+/*
+so, the smooshing of it.
+
+*/
+
+test('decimal pls', () => {
+    let state = asTop(id('2', true), idc(1));
+    state = applyUpdate(state, handleKey(state, '.', js));
+    check(state, id('2.', true), idc(2));
+});
+
+test('dot to decimal', () => {
+    let state = asTop(id('.', true), idc(1));
+    state = applyUpdate(state, handleKey(state, '2', js));
+    check(state, id('.2', true), idc(2));
+});
+
+test('num and such', () => {
+    let state = asTop(id('2', true), { type: 'id', end: 2, text: ['2', '3'] });
+    state = applyUpdate(state, handleKey(state, '.', js));
+    check(state, id('23.', true), idc(3));
+});
+
+test('fn(x)', () => {
+    let state = asTop(id('f', true), { type: 'id', end: 2, text: ['f', 'n'] });
+    state = applyUpdate(state, keyUpdate(state, '(', {}, undefined, js));
+    check(state, smoosh([id('fn'), round([], true)]), listc('inside'));
 });

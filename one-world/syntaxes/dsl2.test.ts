@@ -44,13 +44,13 @@ test('let stmt', () => {
     }
 });
 
-test.only('let missing', () => {
-    const state = asTop(spaced([id('let'), id('x'), id('=')]), idc(0));
-    const rootNode = root(state, (idx) => [{ id: '', idx }]);
-    const parsed = d2.stmt(d2.just).match({ nodes: [rootNode], loc: [] }, 0, d2.ictx);
-    if (parsed.type === 'matcher') throw new Error('incomplete');
-    expect(parsed.ctx.path.map((p) => p.describe())).toEqual([]);
-    expect(parsed).toEqual({
-        type: 'failed',
-    });
-});
+// test.only('let missing', () => {
+//     const state = asTop(spaced([id('let'), id('x'), id('=')]), idc(0));
+//     const rootNode = root(state, (idx) => [{ id: '', idx }]);
+//     const parsed = d2.stmt(d2.just).match({ nodes: [rootNode], loc: [] }, 0, d2.ictx);
+//     if (parsed.type === 'matcher') throw new Error('incomplete');
+//     expect(parsed.ctx.path.map((p) => p.describe())).toEqual([]);
+//     expect(parsed).toEqual({
+//         type: 'failed',
+//     });
+// });

@@ -1,4 +1,6 @@
+import { isTag } from '../keyboard/handleNav';
 import { Id, ListKind, Loc, Text, TextSpan } from '../shared/cnodes';
+import { MatchParent } from './dsl';
 import { Expr, Pat, SPat, Stmt, Type } from './ts-types';
 
 /*
@@ -24,6 +26,7 @@ export type Src = { left: Loc; right?: Loc };
 type Ctx = {
     ref<T>(name: string): T;
     rules: Record<string, Rule<any>>;
+    scope?: null | Record<string, any>;
 };
 
 type Rule<T> =
@@ -38,6 +41,106 @@ type Rule<T> =
     | { type: 'id'; kind?: string | null }
     | { type: 'text'; embed: Rule<unknown> }
     | { type: 'list'; kind: ListKind<Rule<unknown>>; item: Rule<unknown> };
+
+const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
+    const node = parent.nodes[at];
+    switch (rule.type) {
+        case 'kwd':
+            if (node.type !== 'id' || node.text !== rule.kwd) return;
+        case 'id':
+            if (node.type !== 'id') return;
+            return { value: node, consumed: 1 };
+        case 'text':
+            if (node.type !== 'text') return;
+            const spans: TextSpan<any>[] = [];
+            for (let i = 0; i < node.spans.length; i++) {
+                const span = node.spans[i];
+                if (span.type === 'embed') {
+                    const m = match(rule.embed, ctx, { nodes: [span.item], loc: node.loc, sub: { type: 'text', index: i } }, 0);
+                    if (!m) return; // recovery
+                    spans.push({ ...span, item: m.value });
+                } else {
+                    spans.push(span);
+                }
+            }
+            return { value: spans, consumed: 1 };
+
+        case 'list': {
+            if (node.type !== 'list') return;
+            if (isTag(node.kind)) {
+                if (!isTag(rule.kind)) return;
+                const tag = match(rule.kind.node, ctx, { nodes: [node.kind.node], loc: node.loc, sub: { type: 'xml', which: 'tag' } }, 0);
+                if (!tag) return; // TODO recovery?
+                if (rule.kind.attributes) {
+                    const attributes = match(
+                        rule.kind.attributes,
+                        ctx,
+                        { nodes: node.kind.attributes ? [node.kind.attributes] : [], loc: node.loc, sub: { type: 'xml', which: 'attributes' } },
+                        0,
+                    );
+                    if (!attributes) return; // TODO recovery?
+                } else if (node.kind.attributes) {
+                    // attributes not matched? make an 'extra' error
+                }
+            }
+
+            return match(rule.item, ctx, { nodes: node.children, loc: node.loc }, 0);
+        }
+
+        case 'ref': {
+            const inner = match(ctx.rules[rule.name], { ...ctx, scope: null }, parent, at);
+            if (!inner) return;
+            if (rule.bind) {
+                if (!ctx.scope) throw new Error(`not in a scoped context`);
+                ctx.scope[rule.bind] = inner.value;
+                return { consumed: inner.consumed };
+            }
+            return inner;
+        }
+        case 'seq': {
+            const start = at;
+            for (let item of rule.rules) {
+                const m = match(item, ctx, parent, at);
+                if (!m) return; // err? err. errrr
+                at += m.consumed;
+            }
+            return { consumed: at - start };
+        }
+        case 'star': {
+            const start = at;
+            const values: any[] = [];
+            while (at < parent.nodes.length) {
+                const m = match(rule.inner, ctx, parent, at);
+                if (!m) break;
+                values.push(m.value);
+                at += m.consumed;
+            }
+            return { consumed: at - start, value: values };
+        }
+        case 'or': {
+            for (let opt of rule.opts) {
+                const m = match(opt, ctx, parent, at);
+                if (m) return m;
+            }
+            return; // TODO errsss
+        }
+        case 'tx': {
+            const ictx: Ctx = { ...ctx, scope: {} };
+            const left = parent.nodes[at].loc;
+            const m = match(rule.inner, ctx, parent, at);
+            if (!m) return;
+            const right = m.consumed > 1 ? parent.nodes[at + m.consumed - 1].loc : undefined;
+            return { value: rule.f(ictx, { left, right }), consumed: m.consumed };
+        }
+        case 'group': {
+            if (!ctx.scope) throw new Error(`group out of scope, must be within a tx()`);
+            const m = match(rule.inner, ctx, parent, at);
+            if (!m) return;
+            ctx.scope[rule.name] = m.value;
+            return { consumed: m.consumed };
+        }
+    }
+};
 
 const isSingle = (rule: Rule<any>, ctx: Ctx): boolean => {
     switch (rule.type) {

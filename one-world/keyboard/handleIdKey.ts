@@ -10,6 +10,16 @@ import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, flattenRow, pr
 import { Cursor, IdCursor, Path, Top, Update, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 import { isTag } from './handleNav';
 
+const isNumber = (grems: undefined | string[], text: string) => {
+    if (grems) {
+        return grems.every((g) => g.match(/[0-9]/));
+    }
+    return text.match(/^[0-9]*$/);
+};
+const isDot = (grems: undefined | string[], text: string) => {
+    return grems ? grems.length === 1 && grems[0] === '.' : text === '.';
+};
+
 export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update | void => {
     let current = top.nodes[lastChild(path)];
     if (current.type !== 'id') throw new Error('not id');
@@ -60,6 +70,14 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
             chars.splice(left, right - left, grem);
             return { nodes: {}, selection: { start: selStart(path, { ...cursor, start: undefined, text: chars, end: left + 1 }) } };
         }
+
+        // (grem === '.' && isNumber(cursor.text, current.text))
+        // if (isDot(cursor.text, current.text) && grem.match(/^[0-9]$/)) {
+        //     return {
+        //         nodes: { [current.loc]: { ...current, ccls: kind, text: grem } },
+        //         selection: { start: selStart(path, { type: 'id', end: 1 }) },
+        //     };
+        // }
     }
 
     const pnode = top.nodes[parentLoc(path)];
@@ -98,6 +116,8 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
 
     const neighbor = flatNeighbor(kind, grem);
     const { sel, ncursor } = addNeighbor({ neighbor, current, cursor, flat, nodes });
+
+    // console.log(flat);
 
     return flatToUpdateNew(
         flat,
@@ -195,7 +215,7 @@ export const handleTableSplit = (grem: string, config: Config, path: Path, top: 
 };
 
 export type SplitRes = {
-    result: { sloc: number | null; other: number[]; nodes: Nodes; forceMultiline: boolean | undefined; nextLoc: number };
+    result: { sloc: number | null; other: number[]; nodes: Update['nodes']; forceMultiline: boolean | undefined; nextLoc: number };
     two: { items: Flat[]; selection: { node: Node; cursor: Cursor } };
 };
 const splitCell =
@@ -247,7 +267,7 @@ function addNeighbor({
             break;
         }
         case 'between': {
-            nodes[current.loc] = { ...current, text: split.left };
+            flat[at] = nodes[current.loc] = { ...current, text: split.left };
             flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: split.right, loc: -1, ccls: current.ccls }));
             ncursor = { type: 'id', end: 0 };
             break;

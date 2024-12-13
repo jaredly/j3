@@ -109,7 +109,11 @@ export type Ctx = {
 const white = (n: number) => Array(n).join('| ');
 let indent = 0;
 
-export type MatchParent = { nodes: RecNode[]; loc: Loc; sub?: { type: 'text'; index: number } | { type: 'table'; row: number } };
+export type MatchParent = {
+    nodes: RecNode[];
+    loc: Loc;
+    sub?: { type: 'text'; index: number } | { type: 'table'; row: number } | { type: 'xml'; which: 'tag' | 'attributes' };
+};
 export type Span = { start: Loc; end?: Loc };
 
 const isBlank = (node: RecNode) => node.type === 'id' && node.text === '';

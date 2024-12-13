@@ -139,7 +139,7 @@ export const id = <T>(text: string, loc: T = null as T, config = lisp, ref?: IdR
     text,
     loc,
     ref,
-    ccls: text.length === 0 ? undefined : charClass(text[0], config),
+    ccls: text.length === 0 ? undefined : text[0] === '.' && text.length > 1 ? charClass(text[1], config) : charClass(text[0], config),
 });
 export const list =
     (kind: ListKind<RecNodeT<unknown>>) =>
