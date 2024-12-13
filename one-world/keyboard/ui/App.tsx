@@ -39,6 +39,16 @@ const showKey = (evt: KeyboardEvent) => {
     return key;
 };
 
+export type Menu = {
+    top: number;
+    left: number;
+    selection: number;
+    items: {
+        title: string;
+        action(): void;
+    }[];
+};
+
 // 'nuniiverse'
 export const App = ({ id }: { id: string }) => {
     const [state, setState] = useLocalStorage(id, () => init);
@@ -90,8 +100,6 @@ export const App = ({ id }: { id: string }) => {
         }
     });
 
-    const { lastKey, refs } = useKeyHandler(state, parsed, setState, parser);
-
     const paths = useMemo(() => allPaths(state.top), [state.top]);
     const hoverSrc = (src: Src | null) => {
         if (!src) return setHover(null);
@@ -120,13 +128,9 @@ export const App = ({ id }: { id: string }) => {
         return setState((s) => applyUpdate(s, { nodes: {}, selection: { start, multi: { end: selEnd(r) } } }));
     };
 
-    const [menu, setMenu] = useState(
-        null as null | {
-            top: number;
-            left: number;
-            items: { title: string; action(): void }[];
-        },
-    );
+    const [menu, setMenu] = useState(null as null | Menu);
+
+    const { lastKey, refs } = useKeyHandler(state, parsed, setState, parser, menu, setMenu);
 
     useEffect(() => {
         if (state.sel.multi) return setMenu(null);
@@ -142,6 +146,7 @@ export const App = ({ id }: { id: string }) => {
                     return setMenu({
                         top: pos.top + pos.height,
                         left: pos.left,
+                        selection: 0,
                         items: [
                             {
                                 title: 'Image embed',
@@ -192,6 +197,7 @@ export const App = ({ id }: { id: string }) => {
         setMenu({
             top: pos.top + pos.height,
             left: pos.left,
+            selection: 0,
             items: kinds
                 .map(({ title, kind }) => ({
                     title,
@@ -303,12 +309,17 @@ export const App = ({ id }: { id: string }) => {
                         borderRadius: 5,
                         top: menu.top,
                         left: menu.left,
-                        background: 'red',
+                        background: '#eee',
                     }}
                 >
                     {menu.items.map(({ title, action }, i) => (
                         <div
                             key={i}
+                            style={{
+                                backgroundColor: i === menu.selection ? '#ddd' : undefined,
+                                padding: '2px 4px',
+                                cursor: 'pointer',
+                            }}
                             onClick={() => {
                                 action();
                             }}
@@ -489,7 +500,14 @@ const collides = (one: [number, number], two: [number, number]) => {
     );
 };
 
-const useKeyHandler = (state: TestState, parsed: ParseResult<any>, setState: (s: TestState) => void, parser: NonNullable<TestState['parser']>) => {
+const useKeyHandler = (
+    state: TestState,
+    parsed: ParseResult<any>,
+    setState: (s: TestState) => void,
+    parser: NonNullable<TestState['parser']>,
+    menu: Menu | null,
+    setMenu: (m: Menu | null) => void,
+) => {
     const cstate = useLatest(state);
     const spans: Src[] = parsed.result ? parser.spans(parsed.result) : [];
     const cspans = useLatest(spans);
@@ -498,9 +516,44 @@ const useKeyHandler = (state: TestState, parsed: ParseResult<any>, setState: (s:
     // const [autoComplete, setAutocomplete] = useState(null as null | {
     //     items: string[]
     // })
+    const cmenu = useLatest(menu);
 
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
+            if (cmenu.current) {
+                const menu = cmenu.current;
+                if (evt.key === 'Escape') {
+                    setMenu(null);
+                    evt.preventDefault();
+                    return;
+                }
+                if (evt.key === 'ArrowUp') {
+                    setMenu({
+                        ...menu,
+                        selection: menu.selection <= 0 ? menu.items.length - 1 : menu.selection - 1,
+                    });
+                    evt.preventDefault();
+                    return;
+                }
+                if (evt.key === 'ArrowDown') {
+                    setMenu({
+                        ...menu,
+                        selection: menu.selection >= menu.items.length - 1 ? 0 : menu.selection + 1,
+                    });
+                    evt.preventDefault();
+                    return;
+                }
+                if (evt.key === 'Enter') {
+                    const item = menu.items[menu.selection];
+                    if (item) {
+                        item.action();
+                        setMenu(null);
+                        evt.preventDefault();
+                        return;
+                    }
+                }
+            }
+
             setLastKey(showKey(evt));
             const up = keyUpdate(
                 cstate.current,

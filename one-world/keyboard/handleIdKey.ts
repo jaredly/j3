@@ -10,15 +10,15 @@ import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, flattenRow, pr
 import { Cursor, IdCursor, Path, Top, Update, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 import { isTag } from './handleNav';
 
-const isNumber = (grems: undefined | string[], text: string) => {
-    if (grems) {
-        return grems.every((g) => g.match(/[0-9]/));
-    }
-    return text.match(/^[0-9]*$/);
-};
-const isDot = (grems: undefined | string[], text: string) => {
-    return grems ? grems.length === 1 && grems[0] === '.' : text === '.';
-};
+// const isNumber = (grems: undefined | string[], text: string) => {
+//     if (grems) {
+//         return grems.every((g) => g.match(/[0-9]/));
+//     }
+//     return text.match(/^[0-9.]*$/);
+// };
+// const isDot = (grems: undefined | string[], text: string) => {
+//     return grems ? grems.length === 1 && grems[0] === '.' : text === '.';
+// };
 
 export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update | void => {
     let current = top.nodes[lastChild(path)];
@@ -70,14 +70,6 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
             chars.splice(left, right - left, grem);
             return { nodes: {}, selection: { start: selStart(path, { ...cursor, start: undefined, text: chars, end: left + 1 }) } };
         }
-
-        // (grem === '.' && isNumber(cursor.text, current.text))
-        // if (isDot(cursor.text, current.text) && grem.match(/^[0-9]$/)) {
-        //     return {
-        //         nodes: { [current.loc]: { ...current, ccls: kind, text: grem } },
-        //         selection: { start: selStart(path, { type: 'id', end: 1 }) },
-        //     };
-        // }
     }
 
     const pnode = top.nodes[parentLoc(path)];

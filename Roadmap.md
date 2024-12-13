@@ -1,4 +1,19 @@
 
+- [ ] oooooh let's make an examples page.
+
+# DECIMALSSS
+
+- [ ] 127.0.0.1
+- [ ] +34.23
+- [ ] 1.23e456
+
+cannn we do
+- [ ] 1.23e-456?
+
+like
+-+ prefixes, should they be joined with leading numbers?
+
+
 # NEXT
 
 - [ ] USE the dsl2, let's switch to that. parsing jsx is being weirdly tricky

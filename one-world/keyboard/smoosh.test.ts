@@ -1,6 +1,8 @@
 // let's test some operations
 
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { fromMap, RecNodeT } from '../shared/cnodes';
+import { cread } from '../shared/creader';
 import { shape } from '../shared/shape';
 import { applyUpdate } from './applyUpdate';
 import { check } from './check.test';
@@ -292,4 +294,14 @@ test('fn(x)', () => {
     let state = asTop(id('f', true), { type: 'id', end: 2, text: ['f', 'n'] });
     state = applyUpdate(state, keyUpdate(state, '(', {}, undefined, js));
     check(state, smoosh([id('fn'), round([], true)]), listc('inside'));
+});
+
+test('localhost', () => {
+    let state = cread(splitGraphemes('127.0.0.1'), js);
+    check(state, id('127.0.0.1', true), idc(9));
+});
+
+test('localhost', () => {
+    let state = cread(splitGraphemes('127.a.c.1'), js);
+    check(state, id('127.a.c.1', true), idc(9));
 });

@@ -98,16 +98,16 @@ export const TextWithCursor = ({
                     style={{
                         ...rects[0],
                         position: 'absolute',
-                        backgroundColor: 'red',
+                        backgroundColor: rich ? 'teal' : 'red',
                         opacity: 1,
                     }}
                 >
                     {rich ? (
-                        <span style={{ position: 'absolute', top: 0, left: -1, width: 3, height: 3, borderRadius: '50%', backgroundColor: 'red' }} />
+                        <span style={{ position: 'absolute', top: 0, left: -1, width: 3, height: 3, borderRadius: '50%', backgroundColor: 'teal' }} />
                     ) : null}
                     {rich ? (
                         <span
-                            style={{ position: 'absolute', bottom: 0, left: -1, width: 3, height: 3, borderRadius: '50%', backgroundColor: 'red' }}
+                            style={{ position: 'absolute', bottom: 0, left: -1, width: 3, height: 3, borderRadius: '50%', backgroundColor: 'teal' }}
                         />
                     ) : null}
                     {/* {rich ? <span style={{ position: 'absolute', bottom: 0, left: -2, width: 5, height: 1, backgroundColor: 'red' }} /> : null} */}

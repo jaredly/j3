@@ -3,6 +3,7 @@ import { createRoot, Root } from 'react-dom/client';
 
 import { App } from './App';
 import { useHash } from '../../../web/ide/ground-up/useHash';
+import { Examples } from './Examples';
 
 const getRoot = (): Root => {
     // @ts-ignore
@@ -14,6 +15,10 @@ const Loader = () => {
     const namesRaw = localStorage['ow:tabs'];
     const names: string[] = namesRaw ? JSON.parse(namesRaw) : [hash];
     const [name, setName] = useState('');
+
+    if (hash === 'examples') {
+        return <Examples />;
+    }
 
     return (
         <div style={{ display: 'flex', inset: 0, position: 'absolute', flexDirection: 'column' }}>

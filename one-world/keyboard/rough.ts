@@ -133,7 +133,7 @@ export const pruneEmptyIds = (flat: Flat[], selection: { node: Node; cursor: Cur
 };
 
 const isNumberPair = (one: Id<number>, two: Id<number>) => {
-    return (one.text === '.' && two.text.match(/^[0-9]+$/)) || (two.text === '.' && one.text.match(/^[0-9]+$/));
+    return (one.text === '.' && two.text.match(/^[0-9]/)) || (two.text === '.' && one.text.match(/^[0-9]/));
 };
 
 const isWordOrDotBefore = (flat: Flat[], at: number) => {
