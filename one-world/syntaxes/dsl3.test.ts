@@ -29,6 +29,11 @@ const pats = {
     'pattern typed': ['one:int', '[one]:list'],
     'pattern constructor': ['Some(body)', 'Once([told,me])'],
     'pattern text': ['"Hi"', '"Hello ${name}"'],
+    // how to do ... jsx?
+};
+
+const exps = {
+    'expr jsx': ['<>Hello\tinner'],
 };
 
 // hm

@@ -9,9 +9,10 @@ let's get back to that.
 - [-] numbered
   - [x] render
 - [-] headers
-  - [ ] render
+  - [x] render
 - [ ] backspace deleting a nested Rich list should replace it with a string, not a blank
   - it'll be 'removeSelf' I imagine
+- [ ] I sure need drag-to-select, esp in riches
 
 
 
