@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { isRich, Style } from '../../shared/cnodes';
 import { cursorSides } from '../cursorSides';
@@ -303,9 +303,10 @@ export const RenderNode = ({
 
                 switch (node.kind.type) {
                     case 'list':
+                        const ordered = node.kind.ordered;
                         contents = node.children.map((loc, i) => (
                             <React.Fragment key={loc}>
-                                <div style={{ gridColumn: 1 }}>{'-'}</div>
+                                <div style={{ gridColumn: 1 }}>{ordered ? `${i + 1}.` : '•'}</div>
                                 <div style={{ gridColumn: 2 }}>{children[i]}</div>
                             </React.Fragment>
                         ));
@@ -375,6 +376,32 @@ export const RenderNode = ({
                             </React.Fragment>
                         ));
                         break;
+                    case 'section': {
+                        if (contents.length) {
+                            contents = contents.slice();
+                            const style = { margin: 0, padding: 0, marginBottom: '0.3em', marginTop: '0.6em' };
+                            if (node.kind.level === 1) {
+                                contents[0] = (
+                                    <h1 style={style} key="header">
+                                        {contents[0]}
+                                    </h1>
+                                );
+                            } else if (node.kind.level === 2) {
+                                contents[0] = (
+                                    <h2 style={style} key="header">
+                                        {contents[0]}
+                                    </h2>
+                                );
+                            } else if (node.kind.level === 3) {
+                                contents[0] = (
+                                    <h3 style={style} key="header">
+                                        {contents[0]}
+                                    </h3>
+                                );
+                            }
+                            contents = [<Section key="section" contents={contents} />];
+                        }
+                    }
                 }
                 return (
                     <span style={{ display: 'inline-flex', flexDirection: 'row' }}>
@@ -486,7 +513,16 @@ export const RenderNode = ({
                                     onClick={(evt) => {
                                         evt.stopPropagation();
                                         const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                                        ctx.dispatch(justSel(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
+                                        ctx.dispatch(
+                                            justSel(nextParent, {
+                                                type: 'text',
+                                                end: {
+                                                    index: i,
+                                                    cursor: pos ?? 0,
+                                                    text: sides.text?.index === i ? sides.text.grems : undefined,
+                                                },
+                                            }),
+                                        );
                                     }}
                                     text={text}
                                     left={left}
@@ -702,6 +738,30 @@ export const RenderNode = ({
             );
         }
     }
+};
+
+const Section = ({ contents }: { contents: JSX.Element[] }) => {
+    const [open, setOpen] = useState(true);
+
+    const head = (
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+            <button
+                style={{ marginRight: 4, marginTop: '0.6em', background: 'none', border: 'none', cursor: 'pointer' }}
+                onClick={() => setOpen(!open)}
+            >
+                {open ? '▼' : '▶'}
+            </button>
+            {contents[0]}
+        </div>
+    );
+    return open ? (
+        <>
+            {head}
+            {contents.slice(1)}
+        </>
+    ) : (
+        head
+    );
 };
 
 const PLHPopover = ({ text }: { text: string }) => {

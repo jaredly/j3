@@ -3,6 +3,16 @@
 we were nailing down dsl3.
 let's get back to that.
 
+# Rich stuff
+
+- [x] bullet
+- [-] numbered
+  - [x] render
+- [-] headers
+  - [ ] render
+- [ ] backspace deleting a nested Rich list should replace it with a string, not a blank
+  - it'll be 'removeSelf' I imagine
+
 
 
 #
