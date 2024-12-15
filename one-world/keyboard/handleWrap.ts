@@ -51,9 +51,19 @@ export const closerKind = (key: string): ListKind<number> | void => {
 
 export const handleListWrap = (top: Top, path: Path, node: Collection<number>, cursor: CollectionCursor, kind: ListKind<number>): Update | void => {
     if (cursor.type !== 'list') throw new Error('not');
+    if (cursor.where === 'inside') {
+        return {
+            nodes: {
+                [top.nextLoc]: { type: 'list', kind, children: [], loc: top.nextLoc },
+                [node.loc]: node.type === 'list' ? { ...node, children: [top.nextLoc] } : { ...node, rows: [[top.nextLoc]] },
+            },
+            selection: { start: selStart(pathWithChildren(path, top.nextLoc), { type: 'list', where: 'inside' }) },
+            nextLoc: top.nextLoc + 1,
+        };
+    }
     if (cursor.where !== 'after') {
         console.log(cursor);
-        throw new Error('not ' + cursor.where);
+        throw new Error('cant wrap a list from ' + cursor.where);
     }
 
     let nextLoc = top.nextLoc;

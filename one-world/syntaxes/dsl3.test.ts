@@ -2,8 +2,11 @@
 
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { applyUpdate } from '../keyboard/applyUpdate';
-import { init } from '../keyboard/test-utils';
+import { root } from '../keyboard/root';
+import { init, js } from '../keyboard/test-utils';
 import { keyUpdate } from '../keyboard/ui/keyUpdate';
+import { cread } from '../shared/creader';
+import { match, rules } from './dsl3';
 
 /*
 
@@ -19,14 +22,6 @@ where parsing "continues successfully" and just reports that the expr was an err
 
 */
 
-const parse = (text: string) => {
-    let state = init;
-    splitGraphemes(text).forEach((key) => {
-        state = applyUpdate(state, keyUpdate(state, key, {}));
-    });
-    return state;
-};
-
 const pats = {
     'pattern var': ['hello', '23'],
     'pattern array': ['[]', '[one]', '[...one]', '[one,two,...three]'],
@@ -35,3 +30,31 @@ const pats = {
     'pattern constructor': ['Some(body)', 'Once([told,me])'],
     'pattern text': ['"Hi"', '"Hello ${name}"'],
 };
+
+// hm
+// so, Type<constructors> vs <jsx>.
+// currently I'm doing <> to jsx, but maybe I want </ ?
+// and then <> would be for the list?
+
+Object.entries(pats).forEach(([key, values]) => {
+    values.forEach((value) => {
+        test(`${key} + ${value}`, () => {
+            const state = cread(splitGraphemes(value), js);
+            const rt = root(state, (idx) => [{ id: '', idx }]);
+            const res = match(
+                { type: 'ref', name: key },
+                {
+                    rules,
+                    ref(name) {
+                        // throw new Error('reff toplevel ' + name);
+                        if (!this.scope) throw new Error(`no  scope`);
+                        return this.scope[name];
+                    },
+                },
+                { nodes: [rt], loc: [] },
+                0,
+            );
+            expect(res?.consumed).toEqual(1);
+        });
+    });
+});

@@ -1,7 +1,7 @@
 import { isTag } from '../keyboard/handleNav';
 import { Id, ListKind, Loc, Text, TextSpan } from '../shared/cnodes';
 import { MatchParent } from './dsl';
-import { Expr, Pat, SPat, Stmt, Type } from './ts-types';
+import { binops, Expr, partition, Pat, Right, SPat, Stmt, Type } from './ts-types';
 
 /*
 
@@ -42,7 +42,8 @@ type Rule<T> =
     | { type: 'text'; embed: Rule<unknown> }
     | { type: 'list'; kind: ListKind<Rule<unknown>>; item: Rule<unknown> };
 
-const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
+// TODO: track a pathhhh
+export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
     const node = parent.nodes[at];
     switch (rule.type) {
         case 'kwd':
@@ -84,14 +85,17 @@ const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): unde
                 }
             }
 
-            return match(rule.item, ctx, { nodes: node.children, loc: node.loc }, 0);
+            const res = match(rule.item, ctx, { nodes: node.children, loc: node.loc }, 0);
+            return res ? { value: res.value, consumed: 1 } : res;
         }
 
         case 'ref': {
+            // console.log('ref', rule.name);
+            if (!ctx.rules[rule.name]) throw new Error(`no rule named '${rule.name}'`);
             const inner = match(ctx.rules[rule.name], { ...ctx, scope: null }, parent, at);
             if (!inner) return;
             if (rule.bind) {
-                if (!ctx.scope) throw new Error(`not in a scoped context`);
+                if (!ctx.scope) throw new Error(`not in a scoped context, cant bind ${rule.bind} for ${rule.name}`);
                 ctx.scope[rule.bind] = inner.value;
                 return { consumed: inner.consumed };
             }
@@ -127,14 +131,17 @@ const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): unde
         case 'tx': {
             const ictx: Ctx = { ...ctx, scope: {} };
             const left = parent.nodes[at].loc;
-            const m = match(rule.inner, ctx, parent, at);
+            const m = match(rule.inner, ictx, parent, at);
             if (!m) return;
-            const right = m.consumed > 1 ? parent.nodes[at + m.consumed - 1].loc : undefined;
+            const rat = at + m.consumed - 1;
+            if (rat >= parent.nodes.length) throw new Error(`consume doo much ${at} ${rat} ${parent.nodes.length} ${m.consumed}`);
+            // if (rat >= parent.nodes.length) console.error(`consume doo much ${at} ${rat} ${parent.nodes.length} ${m.consumed}`);
+            const right = m.consumed > 1 && rat < parent.nodes.length ? parent.nodes[at + m.consumed - 1].loc : undefined;
             return { value: rule.f(ictx, { left, right }), consumed: m.consumed };
         }
         case 'group': {
             if (!ctx.scope) throw new Error(`group out of scope, must be within a tx()`);
-            const m = match(rule.inner, ctx, parent, at);
+            const m = match(rule.inner, { ...ctx, scope: null }, parent, at);
             if (!m) return;
             ctx.scope[rule.name] = m.value;
             return { consumed: m.consumed };
@@ -170,7 +177,7 @@ const isSingle = (rule: Rule<any>, ctx: Ctx): boolean => {
 // regex stuff
 const or = <T>(...opts: Rule<T>[]): Rule<T> => ({ type: 'or', opts });
 const tx = <T>(inner: Rule<any>, f: (ctx: Ctx, src: Src) => T): Rule<T> => ({ type: 'tx', inner, f });
-const ref = <T>(name: string, bind: string = name): Rule<T> => ({ type: 'ref', name, bind });
+const ref = <T>(name: string, bind?: string): Rule<T> => ({ type: 'ref', name, bind });
 const seq = (...rules: Rule<any>[]): Rule<unknown> => ({ type: 'seq', rules });
 const group = <T>(name: string, inner: Rule<T>): Rule<T> => ({ type: 'group', name, inner });
 const star = <T>(inner: Rule<T>): Rule<T[]> => ({ type: 'star', inner });
@@ -185,6 +192,14 @@ const text = <T>(embed: Rule<T>): Rule<TextSpan<T>[]> => ({ type: 'text', embed 
 const kwd = (kwd: string, meta?: string): Rule<unknown> => ({ type: 'kwd', kwd, meta });
 const id = (kind?: string | null): Rule<unknown> => ({ type: 'id', kind });
 const list = <T>(kind: ListKind<Rule<unknown>>, item: Rule<T>): Rule<T> => ({ type: 'list', kind, item });
+
+const types: Record<string, Rule<Type>> = {
+    'type ref': tx(group('id', id(null)), (ctx, src) => ({ type: 'ref', name: ctx.ref<Id<Loc>>('id').text, src })),
+};
+
+const exprs: Record<string, Rule<Expr>> = {
+    'expr var': tx(group('id', id(null)), (ctx, src) => ({ type: 'var', name: ctx.ref<Id<Loc>>('id').text, src })),
+};
 
 const pats: Record<string, Rule<Pat>> = {
     'pattern var': tx(group('id', id(null)), (ctx, src) => ({ type: 'var', name: ctx.ref<Id<Loc>>('id').text, src })),
@@ -232,7 +247,7 @@ const stmts: Record<string, Rule<Stmt>> = {
 
 const stmtSpaced = or(...Object.keys(stmts).map((name) => ref(name)));
 
-const rules = {
+export const rules = {
     id: id(null),
     stmt: or(
         list('spaced', stmtSpaced),
@@ -240,8 +255,28 @@ const rules = {
     ),
     ...stmts,
     'pattern spread': tx(list('smooshed', seq(kwd('...'), ref('pat', 'inner'))), (ctx, src) => ({ type: 'spread', inner: ctx.ref<Pat>('inner') })),
+    expr: or(...Object.keys(exprs).map((name) => ref(name))),
+    'expr ': tx<Expr>(
+        seq(
+            ref('fancy', 'left'),
+            group(
+                'rights',
+                star(tx(seq(ref('bop', 'op'), ref('fancy', 'right')), (ctx, src) => ({ op: ctx.ref<Id<Loc>>('op'), right: ctx.ref<Expr>('right') }))),
+            ),
+        ),
+        (ctx, src) => {
+            const rights = ctx.ref<Right[]>('rights');
+            const left = ctx.ref<Expr>('left');
+            return rights.length ? { ...partition(left, rights), src } : left;
+        },
+    ),
+    fancy: or(ref('expr')),
+    bop: or(...binops.map((m) => kwd(m))),
+    ...exprs,
     ...pats,
     pat: or(...Object.keys(pats).map((name) => ref(name))),
+    type: or(...Object.keys(types).map((name) => ref(name))),
+    ...types,
     'pat*': or(ref('pattern spread'), ...Object.keys(pats).map((name) => ref(name))),
 };
 

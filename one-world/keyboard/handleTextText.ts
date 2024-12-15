@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { stylesEqual, Nodes, Text, TextSpan } from '../shared/cnodes';
+import { stylesEqual, Nodes, Text, TextSpan, ListKind } from '../shared/cnodes';
 import { handleListKey } from './handleListKey';
 import { justSel, richNode } from './handleNav';
 import { Mods } from './handleShiftNav';
@@ -35,6 +35,36 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
 
     const text = cursor.end.text ?? splitGraphemes(span.text);
     const { left, right } = textCursorSides(cursor);
+
+    if (grem === ' ' && current.spans.length === 1) {
+        let parent = top.nodes[parentLoc(path)];
+        if (richNode(parent)) {
+            let kind: ListKind<number> | null = null;
+            if (text.length === 1 && text.join('') === '-') {
+                kind = { type: 'list', ordered: false };
+            } else if (text.length === 3 && text.join('') === '[ ]') {
+                kind = { type: 'checks', checked: {} };
+            } else if (text.length === 3 && text.join('') === '( )') {
+                kind = { type: 'opts' };
+            } else if (text.length > 0 && text.every((s) => s === '#')) {
+                kind = { type: 'section', level: text.length };
+            } else if (text.length === 2 && text.join('') === '1.') {
+                kind = { type: 'list', ordered: true };
+            }
+            if (kind != null) {
+                // so, if we're in a [plain], and we start a [bullet], do we want it to be nested?
+                // seems like we might.
+                return {
+                    nodes: {
+                        [current.loc]: { type: 'list', kind, children: [top.nextLoc], loc: current.loc },
+                        [top.nextLoc]: { ...current, spans: [{ type: 'text', text: '' }], loc: top.nextLoc },
+                    },
+                    nextLoc: top.nextLoc + 1,
+                    selection: { start: selStart(pathWithChildren(path, top.nextLoc), { type: 'text', end: { index: 0, cursor: 0 } }) },
+                };
+            }
+        }
+    }
 
     if (grem === '"' && cursor.end.index === current.spans.length - 1 && left === text.length) {
         return justSel(path, { type: 'list', where: 'after' });

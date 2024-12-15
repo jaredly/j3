@@ -335,7 +335,8 @@ const dataToExpr = (data: Data | Expr): Expr => {
 };
 // This is probably the same algorithm as the simple precedence parser
 // https://en.wikipedia.org/wiki/Simple_precedence_parser
-export const partition = (left: Expr, rights: { op: Id<Loc>; right: Expr }[]) => {
+export type Right = { op: Id<Loc>; right: Expr };
+export const partition = (left: Expr, rights: Right[]) => {
     let data: Data | Expr = left;
     rights.forEach(({ op, right }) => {
         data = add(data, op, right);

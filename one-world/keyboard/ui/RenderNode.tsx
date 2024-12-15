@@ -179,7 +179,7 @@ export const RenderNode = ({
                                 right={right}
                             />
                         )}
-                        {text.length === 0 && plh != null ? <PLHPopover text={plh} /> : null}
+                        {/* {text.length === 0 && plh != null ? <PLHPopover text={plh} /> : null} */}
                     </span>
                 );
             }

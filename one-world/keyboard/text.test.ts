@@ -5,7 +5,7 @@ import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { asTop, checks, controlc, id, idc, lisp, list, listc, rich, round, smoosh, text, textc, tspan } from './test-utils';
+import { asTop, bullet, checks, controlc, id, idc, lisp, list, listc, rich, round, smoosh, text, textc, tspan } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 
 test('text before', () => {
@@ -371,4 +371,34 @@ test('toggle a control', () => {
     let state = asTop(checks([text([])], true), controlc(0));
     state = applyUpdate(state, keyUpdate(state, ' ', {}));
     check(state, checks([text([])], true), controlc(0));
+});
+
+test('bullets', () => {
+    let state = asTop(rich([text([tspan('-')], true)]), textc(0, 1));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, rich([bullet([text([tspan('')], true)])]), textc(0, 0));
+});
+
+test('numbers', () => {
+    let state = asTop(rich([text([tspan('1.')], true)]), textc(0, 1));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, rich([list({ type: 'list', ordered: true })([text([tspan('')], true)])]), textc(0, 0));
+});
+
+test('checks', () => {
+    let state = asTop(rich([text([tspan('[ ]')], true)]), textc(0, 1));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, rich([list({ type: 'checks', checked: {} })([text([tspan('')], true)])]), textc(0, 0));
+});
+
+test('opts', () => {
+    let state = asTop(rich([text([tspan('( )')], true)]), textc(0, 1));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, rich([list({ type: 'opts' })([text([tspan('')], true)])]), textc(0, 0));
+});
+
+test('header', () => {
+    let state = asTop(rich([text([tspan('##')], true)]), textc(0, 1));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, rich([list({ type: 'section', level: 2 })([text([tspan('')], true)])]), textc(0, 0));
 });

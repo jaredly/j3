@@ -122,7 +122,7 @@ export type TextSpan<Embed> =
 
 export type RichKind =
     | { type: 'plain' }
-    | { type: 'section' } // collapsible, and first item is treated as a header
+    | { type: 'section'; level?: number } // collapsible, and first item is treated as a header
     | { type: 'list'; ordered: boolean }
     | { type: 'checks'; checked: Record<number, boolean> }
     | { type: 'opts'; which?: number }

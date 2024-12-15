@@ -1,11 +1,19 @@
 
-- [ ] oooooh let's make an examples page.
+# Ok, when we last left our heroes
+we were nailing down dsl3.
+let's get back to that.
+
+
+
+#
+
+- [x] oooooh let's make an examples page.
 
 # DECIMALSSS
 
-- [ ] 127.0.0.1
-- [ ] +34.23
-- [ ] 1.23e456
+- [x] 127.0.0.1
+- [x] +34.23
+- [x] 1.23e456
 
 cannn we do
 - [ ] 1.23e-456?

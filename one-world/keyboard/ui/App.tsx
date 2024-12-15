@@ -336,7 +336,7 @@ export const App = ({ id }: { id: string }) => {
                     <h3>CST</h3>
                     <ShowXML root={xmlcst} onClick={clickSrc} setHover={hoverSrc} sel={xmlKeys} />
                 </div>
-                <div style={{ flex: 3, overflow: 'auto', padding: 25 }}>
+                <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                     <h3>AST</h3>
                     {xml ? <ShowXML root={xml} onClick={clickSrc} setHover={hoverSrc} sel={xmlKeys} /> : 'NO xml'}
                     <div style={{ marginTop: 50, whiteSpace: 'pre-wrap' }}>
