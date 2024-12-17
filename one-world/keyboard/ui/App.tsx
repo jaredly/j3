@@ -7,6 +7,7 @@ import { useLocalStorage } from '../../../web/Debug';
 import { childLocs, Loc, RichKind, Style } from '../../shared/cnodes';
 import { parse, ParseResult, show, Span } from '../../syntaxes/dsl';
 import * as glm from '../../syntaxes/gleam2';
+import * as dsl3 from '../../syntaxes/dsl3';
 import * as ts from '../../syntaxes/ts';
 import * as tsTypes from '../../syntaxes/ts-types';
 import { toXML } from '../../syntaxes/xml';
@@ -73,7 +74,8 @@ export const App = ({ id }: { id: string }) => {
         return keys.concat(extra);
     }, [msel, state.sel]);
 
-    const parser = state.parser ?? ts.tsParser;
+    const parser = state.parser ?? dsl3.parser;
+    // const parser = state.parser ?? ts.tsParser;
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
     const cursor = state.sel.multi ? undefined : lastChild(state.sel.start.path);
     const parsed = parser.parse(rootNode, cursor);

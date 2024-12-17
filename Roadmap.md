@@ -1,4 +1,15 @@
 
+# DSL3 let's go
+
+- [x] basic things, looks like we're in business
+- [ ] can we hook it uppp
+
+
+
+
+
+
+
 # Ok, when we last left our heroes
 we were nailing down dsl3.
 let's get back to that.

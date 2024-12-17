@@ -1,7 +1,25 @@
 import { isTag } from '../keyboard/handleNav';
+import { js, TestParser } from '../keyboard/test-utils';
 import { Id, ListKind, Loc, RecNode, TableKind, Text, TextSpan } from '../shared/cnodes';
 import { MatchParent } from './dsl';
-import { binops, Expr, mergeSrc, nodesSrc, partition, Pat, RecordRow, Right, SExpr, SPat, Stmt, Suffix, suffixops, Type, unops } from './ts-types';
+import {
+    binops,
+    Expr,
+    mergeSrc,
+    nodesSrc,
+    partition,
+    Pat,
+    RecordRow,
+    Right,
+    SExpr,
+    SPat,
+    Stmt,
+    stmtSpans,
+    Suffix,
+    suffixops,
+    Type,
+    unops,
+} from './ts-types';
 
 /*
 
@@ -23,10 +41,18 @@ $
 
 export type Src = { left: Loc; right?: Loc };
 
+type AutoComplete = string;
+
 export type Ctx = {
     ref<T>(name: string): T;
     rules: Record<string, Rule<any>>;
     scope?: null | Record<string, any>;
+    meta: Record<number, { kind?: string; placeholder?: string }>;
+    autocomplete?: {
+        loc: number;
+        concrete: AutoComplete[];
+        kinds: (string | null)[];
+    };
 };
 
 type Rule<T> =
@@ -38,6 +64,7 @@ type Rule<T> =
     | { type: 'group'; name: string; inner: Rule<T> }
     | { type: 'star'; inner: Rule<unknown> }
     | { type: 'opt'; inner: Rule<unknown> }
+    | { type: 'any' }
     //
     | { type: 'id'; kind?: string | null }
     | { type: 'text'; embed: Rule<unknown> }
@@ -78,6 +105,17 @@ type Rule<T> =
 let indent = 0;
 
 export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
+    if (ctx.rules.comment) {
+        const { comment, ...without } = ctx.rules;
+        const cm = match_(ctx.rules.comment, { ...ctx, rules: without }, parent, at);
+        if (cm) {
+            for (let i = 0; i < cm.consumed; i++) {
+                const node = parent.nodes[at + i];
+                ctx.meta[node.loc[0].idx] = { kind: 'comment' };
+            }
+            at += cm.consumed;
+        }
+    }
     // console.log(`> `.padStart(2 + indent), show(rule));
     // indent++;
     const res = match_(rule, ctx, parent, at);
@@ -92,6 +130,7 @@ export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: numbe
     switch (rule.type) {
         case 'kwd':
             if (node?.type !== 'id' || node.text !== rule.kwd) return;
+            ctx.meta[node.loc[0].idx] = { kind: rule.meta ?? 'kwd' };
         case 'id':
             if (node?.type !== 'id') return;
             return { value: node, consumed: 1 };
@@ -156,6 +195,10 @@ export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: numbe
             if (!inner) return { consumed: 0 };
             return inner;
         }
+
+        case 'any':
+            if (!node) return;
+            return { consumed: 1 };
 
         case 'ref': {
             // console.log('ref', rule.name);
@@ -226,6 +269,7 @@ const isBlank = (node: RecNode) => node.type === 'id' && node.text === '';
 // const isSingle = (rule: Rule<any>, ctx: Ctx): boolean => {
 //     switch (rule.type) {
 //         case 'kwd':
+//         case 'any':
 //             return true;
 //         case 'ref':
 //             return isSingle(ctx.rules[rule.name], ctx);
@@ -398,6 +442,7 @@ export const rules = {
         list('spaced', stmtSpaced),
         tx<Stmt>(ref('expr', 'expr'), (ctx, src) => ({ type: 'expr', expr: ctx.ref<Expr>('expr'), src })),
     ),
+    comment: list('smooshed', seq(kwd('//', 'comment'), { type: 'any' })),
     block: list('curly', star(ref('stmt'))),
     ...stmts,
     '...expr': or(
@@ -458,6 +503,36 @@ export const rules = {
     type: or(...Object.keys(types).map((name) => ref(name))),
     ...types,
     'pat*': or(ref('pattern spread'), ...Object.keys(pats).map((name) => ref(name))),
+};
+
+export const ctx: Ctx = {
+    rules,
+    ref(name) {
+        if (!this.scope) throw new Error(`no  scope`);
+        return this.scope[name];
+    },
+    meta: {},
+};
+
+export const parser: TestParser = {
+    config: js,
+    parse(node, cursor) {
+        const c = {
+            ...ctx,
+            meta: {},
+            autocomplete: cursor != null ? { loc: cursor, concrete: [], kinds: [] } : undefined,
+        };
+        const res = match({ type: 'ref', name: 'stmt' }, c, { nodes: [node], loc: [] }, 0);
+        console.log('metas', c.meta);
+
+        return {
+            result: res?.value,
+            ctx: { meta: c.meta },
+            bads: [],
+            goods: [],
+        };
+    },
+    spans: stmtSpans,
 };
 
 /*

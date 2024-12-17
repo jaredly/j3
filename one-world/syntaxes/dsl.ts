@@ -387,7 +387,7 @@ export type ParseResult<T> = {
     result: T | undefined;
     goods: RecNode[];
     bads: MatchError[];
-    ctx: Ctx;
+    ctx: Pick<Ctx, 'autocomplete' | 'meta'>;
 };
 
 export const parse = <T>(matcher: Matcher<T>, node: RecNode, ctx: Ctx): ParseResult<T> => {

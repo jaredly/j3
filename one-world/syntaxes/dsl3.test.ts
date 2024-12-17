@@ -29,6 +29,7 @@ const ctx: Ctx = {
         if (!this.scope) throw new Error(`no  scope`);
         return this.scope[name];
     },
+    meta: {},
 };
 
 const fixes = {
