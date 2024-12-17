@@ -1,7 +1,7 @@
 import { isTag } from '../keyboard/handleNav';
 import { Id, ListKind, Loc, RecNode, TableKind, Text, TextSpan } from '../shared/cnodes';
 import { MatchParent } from './dsl';
-import { binops, Expr, nodesSrc, partition, Pat, RecordRow, Right, SPat, Stmt, Type } from './ts-types';
+import { binops, Expr, mergeSrc, nodesSrc, partition, Pat, RecordRow, Right, SExpr, SPat, Stmt, Suffix, suffixops, Type, unops } from './ts-types';
 
 /*
 
@@ -44,8 +44,50 @@ type Rule<T> =
     | { type: 'list'; kind: ListKind<Rule<unknown>>; item: Rule<unknown> }
     | { type: 'table'; kind: TableKind; row: Rule<unknown> };
 
-// TODO: track a pathhhh
+// const show = (rule: Rule<unknown>): string => {
+//     switch (rule.type) {
+//         case 'kwd':
+//             return rule.kwd;
+//         case 'ref':
+//             return '$' + rule.name;
+//         case 'seq':
+//             return `seq(${rule.rules.map(show).join(' ')})`;
+//         case 'star':
+//             return `${show(rule.inner)}*`;
+//         case 'opt':
+//             return `${show(rule.inner)}?`;
+//         case 'id':
+//             return `id`;
+//         case 'text':
+//             return `text(${show(rule.embed)})`;
+//         case 'list':
+//             return `list[${isTag(rule.kind) ? show(rule.kind.node) : typeof rule.kind === 'string' ? rule.kind : JSON.stringify(rule.kind)}](${show(
+//                 rule.item,
+//             )})`;
+//         case 'table':
+//             return `table[${rule.kind}](${show(rule.row)})`;
+//         case 'or':
+//             return `(${rule.opts.map(show).join('|')})`;
+//         case 'tx':
+//             return show(rule.inner);
+//         case 'group':
+//             return show(rule.inner);
+//     }
+// };
+
+let indent = 0;
+
 export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
+    // console.log(`> `.padStart(2 + indent), show(rule));
+    // indent++;
+    const res = match_(rule, ctx, parent, at);
+    // indent--;
+    // console.log(`${res ? '<' : 'x'} `.padStart(2 + indent), show(rule));
+    return res;
+};
+
+// TODO: track a pathhhh
+export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
     const node = parent.nodes[at];
     switch (rule.type) {
         case 'kwd':
@@ -97,7 +139,10 @@ export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number
                     if (!attributes) return; // TODO recovery?
                 } else if (node.kind.attributes) {
                     // attributes not matched? make an 'extra' error
+                    return;
                 }
+            } else if (node.kind !== rule.kind) {
+                return;
             }
 
             const res = match(rule.item, ctx, { nodes: node.children, loc: node.loc }, 0);
@@ -230,6 +275,30 @@ const types: Record<string, Rule<Type>> = {
     'type ref': tx(group('id', id(null)), (ctx, src) => ({ type: 'ref', name: ctx.ref<Id<Loc>>('id').text, src })),
 };
 
+const parseSmoosh = (base: Expr, suffixes: Suffix[], prefixes: Id<Loc>[], src: Src): Expr => {
+    if (!suffixes.length && !prefixes.length) return base;
+    suffixes.forEach((suffix) => {
+        switch (suffix.type) {
+            case 'attribute':
+                base = { type: 'attribute', target: base, attribute: suffix.attribute, src: mergeSrc(base.src, nodesSrc(suffix.attribute)) };
+                return;
+            case 'call':
+                base = { type: 'call', target: base, args: suffix.items, src: mergeSrc(base.src, suffix.src) };
+                return;
+            case 'index':
+                base = { type: 'index', target: base, items: suffix.items, src: mergeSrc(base.src, suffix.src) };
+                return;
+            case 'suffix':
+                base = { type: 'uop', op: suffix.op, src: mergeSrc(base.src, suffix.src), target: base };
+                return;
+        }
+    });
+    for (let i = prefixes.length - 1; i >= 0; i--) {
+        base = { type: 'uop', op: prefixes[i], target: base, src: mergeSrc(nodesSrc(prefixes[i]), base.src) };
+    }
+    return { ...base, src };
+};
+
 const exprs: Record<string, Rule<Expr>> = {
     'expr var': tx(group('id', id(null)), (ctx, src) => ({ type: 'var', name: ctx.ref<Id<Loc>>('id').text, src })),
     'expr table': tx(
@@ -254,6 +323,7 @@ const exprs: Record<string, Rule<Expr>> = {
         ),
         (ctx, src) => ({ type: 'record', rows: ctx.ref<RecordRow[]>('rows'), src }),
     ),
+    'expr!': list('smooshed', ref('expr..')),
     'expr jsx': tx(
         list(
             {
@@ -310,9 +380,9 @@ const stmts: Record<string, Rule<Stmt>> = {
             src,
         }),
     ),
-    return: tx(seq(kwd('return'), ref('expr ', 'target')), (ctx, src) => ({ type: 'return', target: ctx.ref<Expr>('target'), src })),
+    return: tx(seq(kwd('return'), ref('expr ', 'value')), (ctx, src) => ({ type: 'return', value: ctx.ref<Expr>('value'), src })),
     throw: tx(seq(kwd('throw'), ref('expr ', 'target')), (ctx, src) => ({ type: 'throw', target: ctx.ref<Expr>('target'), src })),
-    let: tx(seq(kwd('let'), ref('pat'), kwd('='), ref('expr ', 'value')), (ctx, src) => ({
+    let: tx(seq(kwd('let'), ref('pat', 'pat'), kwd('='), ref('expr ', 'value')), (ctx, src) => ({
         type: 'let',
         pat: ctx.ref<Pat>('pat'),
         value: ctx.ref<Expr>('value'),
@@ -330,8 +400,42 @@ export const rules = {
     ),
     block: list('curly', star(ref('stmt'))),
     ...stmts,
+    '...expr': or(
+        tx<SExpr>(seq(kwd('...'), ref('expr..', 'inner')), (ctx, src) => ({ type: 'spread', inner: ctx.ref<Expr>('inner'), src })),
+        ref('expr'),
+    ),
+    'expr..': tx<Expr>(
+        seq(
+            group('prefixes', star(or(...unops.map((k) => kwd(k))))),
+            ref('expr', 'base'),
+            group(
+                'suffixes',
+                star(
+                    or<Suffix>(
+                        tx(seq(kwd('.'), group('attribute', id('attribute'))), (ctx, src) => ({
+                            type: 'attribute',
+                            attribute: ctx.ref<Id<Loc>>('attribute'),
+                            src,
+                        })),
+                        tx(list('square', group('items', star(ref('...expr')))), (ctx, src) => ({
+                            type: 'index',
+                            items: ctx.ref<SExpr[]>('items'),
+                            src,
+                        })),
+                        tx(list('round', group('items', star(ref('...expr')))), (ctx, src) => ({
+                            type: 'call',
+                            items: ctx.ref<SExpr[]>('items'),
+                            src,
+                        })),
+                        tx(group('op', or(...suffixops.map((s) => kwd(s)))), (ctx, src) => ({ type: 'suffix', op: ctx.ref<Id<Loc>>('op'), src })),
+                    ),
+                ),
+            ),
+        ),
+        (ctx, src) => parseSmoosh(ctx.ref<Expr>('base'), ctx.ref<Suffix[]>('suffixes'), ctx.ref<Id<Loc>[]>('prefixes'), src),
+    ),
     'pattern spread': tx(list('smooshed', seq(kwd('...'), ref('pat', 'inner'))), (ctx, src) => ({ type: 'spread', inner: ctx.ref<Pat>('inner') })),
-    expr: or(...Object.keys(exprs).map((name) => ref(name))),
+    expr: or(...Object.keys(exprs).map((name) => ref(name)), list('spaced', ref('expr '))),
     'expr ': tx<Expr>(
         seq(
             ref('fancy', 'left'),

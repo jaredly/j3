@@ -7,6 +7,7 @@ import { init, js } from '../keyboard/test-utils';
 import { keyUpdate } from '../keyboard/ui/keyUpdate';
 import { cread } from '../shared/creader';
 import { Ctx, match, rules } from './dsl3';
+import { Expr } from './ts-types';
 
 /*
 
@@ -39,7 +40,7 @@ const fixes = {
     'pattern text': ['"Hi"', '"Hello ${name}"'],
     // how to do ... jsx?
     'expr jsx': ['<>Hello\tinner', '<>Hello hi\t\tinner'],
-    stmt: ['let x = 2', 'return 12', 'for (let x = 1;x<3;x++) {y}'],
+    // stmt: ['let x = 2', 'return 12', 'for (let x = 1;x<3;x++) {y}'],
 };
 
 const run = (input: string, matcher: string) => {
@@ -129,13 +130,13 @@ test('pattern text', () => {
     });
 });
 
-test.only('expr jsx', () => {
-    // expect(run('<>Hello\tinner', 'expr jsx')?.value).toMatchObject({
-    //     type: 'jsx',
-    //     tag: { type: 'var', name: 'Hello' },
-    //     attributes: undefined,
-    //     children: [{ type: 'var', name: 'inner' }],
-    // });
+test('expr jsx', () => {
+    expect(run('<>Hello\tinner', 'expr jsx')?.value).toMatchObject({
+        type: 'jsx',
+        tag: { type: 'var', name: 'Hello' },
+        attributes: undefined,
+        children: [{ type: 'var', name: 'inner' }],
+    });
 
     expect(run('<>Hello hello:folks\t\tinner', 'expr jsx')?.value).toMatchObject({
         type: 'jsx',
@@ -145,10 +146,111 @@ test.only('expr jsx', () => {
     });
 });
 
+const supermap = (v: any, f: (n: any) => any): any => {
+    v = f(v);
+    if (v == null) return v;
+    if (Array.isArray(v)) return v.map((s) => supermap(s, f));
+    if (typeof v === 'object') {
+        const res: Record<string, any> = {};
+        Object.entries(v).forEach(([key, v]) => {
+            res[key] = supermap(v, f);
+        });
+        return res;
+    }
+    return v;
+};
+
+const nosrc = (v: any) =>
+    supermap(v, (o) => {
+        if (o && typeof o === 'object' && 'src' in o) {
+            const { src, ...rest } = o;
+            return rest;
+        }
+        return o;
+    });
+
+test('expr smoosh', () => {
+    expect(nosrc(run('-a.b.c(d)[2]++', 'expr')?.value)).toMatchObject<DeepPartial<Expr>>({
+        type: 'uop',
+        target: {
+            type: 'uop',
+            op: { type: 'id', text: '++' },
+            target: {
+                type: 'index',
+                items: [{ type: 'var', name: '2' }],
+                target: {
+                    type: 'call',
+                    args: [{ type: 'var', name: 'd' }],
+                    target: {
+                        type: 'attribute',
+                        attribute: { type: 'id', text: 'c' },
+                        target: {
+                            type: 'attribute',
+                            attribute: { type: 'id', text: 'b' },
+                            target: { type: 'var', name: 'a' },
+                        },
+                    },
+                },
+            },
+        },
+        op: { type: 'id', text: '-' },
+    });
+
+    expect(run('b', '...expr')?.value).toMatchObject({
+        type: 'var',
+        name: 'b',
+    });
+
+    expect(run('a(b)', 'expr')?.value).toMatchObject({
+        type: 'call',
+        target: { type: 'var', name: 'a' },
+        args: [{ type: 'var', name: 'b' }],
+    });
+
+    expect(run('a.b', 'expr')?.value).toMatchObject({
+        type: 'attribute',
+        target: { type: 'var', name: 'a' },
+        attribute: { type: 'id', text: 'b' },
+    });
+
+    expect(run('x++', 'expr')?.value).toMatchObject<DeepPartial<Expr>>({
+        type: 'uop',
+        target: { type: 'var', name: 'x' },
+        op: { type: 'id', text: '++' },
+    });
+});
+
+test('stmt', () => {
+    expect(run('let x = 2', 'stmt')?.value).toMatchObject({
+        type: 'let',
+        pat: { type: 'var', name: 'x' },
+        value: { type: 'var', name: '2' },
+    });
+    expect(run('return 1', 'stmt')?.value).toMatchObject({
+        type: 'return',
+        value: { type: 'var', name: '1' },
+    });
+    expect(run('throw 1', 'stmt')?.value).toMatchObject({
+        type: 'throw',
+        target: { type: 'var', name: '1' },
+    });
+    expect(run('for (let x = 1;x < 3;x++) {y}', 'stmt')?.value).toMatchObject({
+        type: 'for',
+        init: { type: 'let', pat: { type: 'var', name: 'x' }, value: { type: 'var', name: '1' } },
+        cond: {
+            type: 'call',
+            target: { type: 'var', name: '<' },
+            args: [
+                { type: 'var', name: 'x' },
+                { type: 'var', name: '3' },
+            ],
+        },
+        update: { type: 'uop', op: { type: 'id', text: '++' }, target: { type: 'var', name: 'x' } },
+        body: [{ type: 'expr', expr: { type: 'var', name: 'y' } }],
+    });
+});
+
 // const fixes = {
-//     'pattern text': ['"Hi"', '"Hello ${name}"'],
-//     // how to do ... jsx?
-//     'expr jsx': ['<>Hello\tinner', '<>Hello hi\t\tinner'],
 //     stmt: ['let x = 2', 'return 12', 'for (let x = 1;x<3;x++) {y}'],
 // };
 
@@ -162,3 +264,17 @@ test.only('expr jsx', () => {
 //         });
 //     });
 // });
+
+type DeepPartial<Thing> = Thing extends Function
+    ? Thing
+    : Thing extends Array<infer InferredArrayMember>
+    ? DeepPartialArray<InferredArrayMember>
+    : Thing extends object
+    ? DeepPartialObject<Thing>
+    : Thing | undefined;
+
+interface DeepPartialArray<Thing> extends Array<DeepPartial<Thing>> {}
+
+type DeepPartialObject<Thing> = {
+    [Key in keyof Thing]?: DeepPartial<Thing[Key]>;
+};
