@@ -24,10 +24,11 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
-    kwd: { color: { r: 123, g: 0, b: 177 }, fontStyle: 'italic' },
+    kwd: { color: { r: 123, g: 0, b: 177 } },
     punct: { color: { r: 150, g: 150, b: 150 } },
     bop: { color: { r: 150, g: 0, b: 0 } },
     uop: { color: { r: 150, g: 0, b: 0 } },
+    number: { color: { r: 0, g: 166, b: 255 } },
 };
 
 const showKey = (evt: KeyboardEvent) => {

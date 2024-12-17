@@ -45,6 +45,7 @@ export type SExpr = Expr | { type: 'spread'; inner: Expr; src: Src };
 export type Expr =
     | Err
     | { type: 'jsx'; tag: Expr; attributes?: RecordRow[]; children: Expr[]; src: Src }
+    | { type: 'number'; value: number; src: Src }
     | { type: 'var'; name: string; src: Src }
     | { type: 'text'; spans: TextSpan<SExpr>[]; src: Src }
     | { type: 'array'; items: SExpr[]; src: Src }

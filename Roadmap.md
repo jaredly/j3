@@ -2,7 +2,8 @@
 # DSL3 let's go
 
 - [x] basic things, looks like we're in business
-- [ ] can we hook it uppp
+- [x] can we hook it uppp
+- [ ] I kinda want to ... be able to select "after the opener" of a multiline list...
 
 
 

@@ -5,6 +5,7 @@ import { MatchParent } from './dsl';
 import {
     binops,
     Expr,
+    kwds,
     mergeSrc,
     nodesSrc,
     partition,
@@ -47,6 +48,7 @@ export type Ctx = {
     ref<T>(name: string): T;
     rules: Record<string, Rule<any>>;
     scope?: null | Record<string, any>;
+    kwds: string[];
     meta: Record<number, { kind?: string; placeholder?: string }>;
     autocomplete?: {
         loc: number;
@@ -67,6 +69,7 @@ type Rule<T> =
     | { type: 'any' }
     //
     | { type: 'id'; kind?: string | null }
+    | { type: 'number'; just?: 'int' | 'float' }
     | { type: 'text'; embed: Rule<unknown> }
     | { type: 'list'; kind: ListKind<Rule<unknown>>; item: Rule<unknown> }
     | { type: 'table'; kind: TableKind; row: Rule<unknown> };
@@ -131,9 +134,19 @@ export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: numbe
         case 'kwd':
             if (node?.type !== 'id' || node.text !== rule.kwd) return;
             ctx.meta[node.loc[0].idx] = { kind: rule.meta ?? 'kwd' };
-        case 'id':
-            if (node?.type !== 'id') return;
             return { value: node, consumed: 1 };
+        case 'id':
+            if (node?.type !== 'id' || ctx.kwds.includes(node.text)) return;
+            return { value: node, consumed: 1 };
+        case 'number': {
+            if (node?.type !== 'id') return;
+            if (rule.just === 'float' && !node.text.includes('.')) return;
+            const num = Number(node.text);
+            if (!Number.isFinite(num)) return;
+            if (rule.just === 'int' && !Number.isInteger(num)) return;
+            ctx.meta[node.loc[0].idx] = { kind: 'number' };
+            return { value: num, consumed: 1 };
+        }
         case 'text':
             if (node?.type !== 'text') return;
             const spans: TextSpan<any>[] = [];
@@ -312,6 +325,9 @@ const text = <T>(embed: Rule<T>): Rule<TextSpan<T>[]> => ({ type: 'text', embed 
 // - Table
 const kwd = (kwd: string, meta?: string): Rule<unknown> => ({ type: 'kwd', kwd, meta });
 const id = (kind?: string | null): Rule<unknown> => ({ type: 'id', kind });
+const int: Rule<number> = { type: 'number', just: 'int' };
+const float: Rule<number> = { type: 'number', just: 'float' };
+const number: Rule<number> = { type: 'number' };
 const list = <T>(kind: ListKind<Rule<unknown>>, item: Rule<T>): Rule<T> => ({ type: 'list', kind, item });
 const table = <T>(kind: TableKind, row: Rule<T>): Rule<T> => ({ type: 'table', kind, row });
 
@@ -344,6 +360,7 @@ const parseSmoosh = (base: Expr, suffixes: Suffix[], prefixes: Id<Loc>[], src: S
 };
 
 const exprs: Record<string, Rule<Expr>> = {
+    'expr num': tx(group('value', number), (ctx, src) => ({ type: 'number', value: ctx.ref<number>('value'), src })),
     'expr var': tx(group('id', id(null)), (ctx, src) => ({ type: 'var', name: ctx.ref<Id<Loc>>('id').text, src })),
     'expr table': tx(
         group(
@@ -393,13 +410,13 @@ const exprs: Record<string, Rule<Expr>> = {
 const pats: Record<string, Rule<Pat>> = {
     'pattern var': tx(group('id', id(null)), (ctx, src) => ({ type: 'var', name: ctx.ref<Id<Loc>>('id').text, src })),
     'pattern array': tx(list('square', group('items', star(ref('pat*')))), (ctx, src) => ({ type: 'array', src, values: ctx.ref<SPat[]>('items') })),
-    'pattern default': tx(list('spaced', seq(ref('pat', 'inner'), kwd('='), ref('expr ', 'value'))), (ctx, src) => ({
+    'pattern default': tx(list('spaced', seq(ref('pat', 'inner'), kwd('=', 'punct'), ref('expr ', 'value'))), (ctx, src) => ({
         type: 'default',
         inner: ctx.ref<Pat>('inner'),
         value: ctx.ref<Expr>('value'),
         src,
     })),
-    'pattern typed': tx(list('smooshed', seq(ref('pat', 'inner'), kwd(':'), ref('type', 'annotation'))), (ctx, src) => ({
+    'pattern typed': tx(list('smooshed', seq(ref('pat', 'inner'), kwd(':', 'punct'), ref('type', 'annotation'))), (ctx, src) => ({
         type: 'typed',
         inner: ctx.ref<Pat>('inner'),
         ann: ctx.ref<Type>('annotation'),
@@ -426,7 +443,7 @@ const stmts: Record<string, Rule<Stmt>> = {
     ),
     return: tx(seq(kwd('return'), ref('expr ', 'value')), (ctx, src) => ({ type: 'return', value: ctx.ref<Expr>('value'), src })),
     throw: tx(seq(kwd('throw'), ref('expr ', 'target')), (ctx, src) => ({ type: 'throw', target: ctx.ref<Expr>('target'), src })),
-    let: tx(seq(kwd('let'), ref('pat', 'pat'), kwd('='), ref('expr ', 'value')), (ctx, src) => ({
+    let: tx(seq(kwd('let'), ref('pat', 'pat'), kwd('=', 'punct'), ref('expr ', 'value')), (ctx, src) => ({
         type: 'let',
         pat: ctx.ref<Pat>('pat'),
         value: ctx.ref<Expr>('value'),
@@ -451,7 +468,7 @@ export const rules = {
     ),
     'expr..': tx<Expr>(
         seq(
-            group('prefixes', star(or(...unops.map((k) => kwd(k))))),
+            group('prefixes', star(or(...unops.map((k) => kwd(k, 'uop'))))),
             ref('expr', 'base'),
             group(
                 'suffixes',
@@ -472,7 +489,11 @@ export const rules = {
                             items: ctx.ref<SExpr[]>('items'),
                             src,
                         })),
-                        tx(group('op', or(...suffixops.map((s) => kwd(s)))), (ctx, src) => ({ type: 'suffix', op: ctx.ref<Id<Loc>>('op'), src })),
+                        tx(group('op', or(...suffixops.map((s) => kwd(s, 'uop')))), (ctx, src) => ({
+                            type: 'suffix',
+                            op: ctx.ref<Id<Loc>>('op'),
+                            src,
+                        })),
                     ),
                 ),
             ),
@@ -495,8 +516,16 @@ export const rules = {
             return rights.length ? { ...partition(left, rights), src } : left;
         },
     ),
-    fancy: or(ref('expr')),
-    bop: or(...binops.map((m) => kwd(m))),
+    fancy: or<Expr>(
+        tx(seq(list('round', group('args', star(ref('pat')))), kwd('=>', 'punct'), group('body', or(ref('expr'), ref('block')))), (ctx, src) => ({
+            type: 'fn',
+            args: ctx.ref<Pat[]>('args'),
+            src,
+            body: ctx.ref<Expr | Stmt[]>('body'),
+        })),
+        ref('expr'),
+    ),
+    bop: or(...binops.map((m) => kwd(m, 'bop'))),
     ...exprs,
     ...pats,
     pat: or(...Object.keys(pats).map((name) => ref(name))),
@@ -511,6 +540,7 @@ export const ctx: Ctx = {
         if (!this.scope) throw new Error(`no  scope`);
         return this.scope[name];
     },
+    kwds: kwds,
     meta: {},
 };
 

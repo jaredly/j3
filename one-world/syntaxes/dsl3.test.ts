@@ -6,8 +6,8 @@ import { root } from '../keyboard/root';
 import { init, js } from '../keyboard/test-utils';
 import { keyUpdate } from '../keyboard/ui/keyUpdate';
 import { cread } from '../shared/creader';
-import { Ctx, match, rules } from './dsl3';
-import { Expr } from './ts-types';
+import { ctx, Ctx, match, rules } from './dsl3';
+import { Expr, Stmt } from './ts-types';
 
 /*
 
@@ -22,15 +22,6 @@ BTW at certain points, like `expr` and `stmt`, I want to have a "bail" case,
 where parsing "continues successfully" and just reports that the expr was an error.
 
 */
-
-const ctx: Ctx = {
-    rules,
-    ref(name) {
-        if (!this.scope) throw new Error(`no  scope`);
-        return this.scope[name];
-    },
-    meta: {},
-};
 
 const fixes = {
     // 'pattern var': ['hello', '23'],
@@ -89,8 +80,8 @@ test('pattern default', () => {
             type: 'call',
             target: { type: 'var', name: '+' },
             args: [
-                { type: 'var', name: '3' },
-                { type: 'var', name: '4' },
+                { type: 'number', value: 3 },
+                { type: 'number', value: 4 },
             ],
         },
     });
@@ -98,7 +89,7 @@ test('pattern default', () => {
     expect(run('[] = 3', 'pattern default')?.value).toMatchObject({
         type: 'default',
         inner: { type: 'array', values: [] },
-        value: { type: 'var', name: '3' },
+        value: { type: 'number', value: 3 },
     });
 });
 
@@ -178,7 +169,7 @@ test('expr smoosh', () => {
             op: { type: 'id', text: '++' },
             target: {
                 type: 'index',
-                items: [{ type: 'var', name: '2' }],
+                items: [{ type: 'number', value: 2 }],
                 target: {
                     type: 'call',
                     args: [{ type: 'var', name: 'd' }],
@@ -225,25 +216,25 @@ test('stmt', () => {
     expect(run('let x = 2', 'stmt')?.value).toMatchObject({
         type: 'let',
         pat: { type: 'var', name: 'x' },
-        value: { type: 'var', name: '2' },
+        value: { type: 'number', value: 2 },
     });
     expect(run('return 1', 'stmt')?.value).toMatchObject({
         type: 'return',
-        value: { type: 'var', name: '1' },
+        value: { type: 'number', value: 1 },
     });
     expect(run('throw 1', 'stmt')?.value).toMatchObject({
         type: 'throw',
-        target: { type: 'var', name: '1' },
+        target: { type: 'number', value: 1 },
     });
-    expect(run('for (let x = 1;x < 3;x++) {y}', 'stmt')?.value).toMatchObject({
+    expect(run('for (let x = 1;x < 3;x++) {y}', 'stmt')?.value).toMatchObject<DeepPartial<Stmt>>({
         type: 'for',
-        init: { type: 'let', pat: { type: 'var', name: 'x' }, value: { type: 'var', name: '1' } },
+        init: { type: 'let', pat: { type: 'var', name: 'x' }, value: { type: 'number', value: 1 } },
         cond: {
             type: 'call',
             target: { type: 'var', name: '<' },
             args: [
                 { type: 'var', name: 'x' },
-                { type: 'var', name: '3' },
+                { type: 'number', value: 3 },
             ],
         },
         update: { type: 'uop', op: { type: 'id', text: '++' }, target: { type: 'var', name: 'x' } },
