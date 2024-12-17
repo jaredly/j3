@@ -423,3 +423,17 @@ test('" in a rich', () => {
     state = applyUpdate(state, keyUpdate(state, '"', {}));
     check(state, rich([text([tspan('"')], true)]), textc(0, 1));
 });
+
+test('del in rich', () => {
+    let state = asTop(rich([text([tspan('')], true)]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {}));
+    check(state, id('', true), idc(0));
+});
+
+test('remove list item', () => {
+    let state = asTop(bullet([text([tspan('one')]), text([tspan('')], true)]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {}));
+    check(state, bullet([text([tspan('one')], true)]), textc(0, 3));
+});
+
+// TODO delete rich in table

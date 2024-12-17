@@ -4,6 +4,8 @@
 - [x] basic things, looks like we're in business
 - [x] can we hook it uppp
 - [ ] I kinda want to ... be able to select "after the opener" of a multiline list...
+- [x] texts and such
+- [x] numbers, love it
 
 
 

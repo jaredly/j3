@@ -80,6 +80,7 @@ export const selectStart = (path: Path, top: Top, plus1 = false, tab = false): N
 export const selectEnd = (path: Path, top: Top, plus1: boolean = false): NodeSelection['start'] | void => {
     const loc = lastChild(path);
     const node = top.nodes[loc];
+    if (!node) throw new Error(`no node ${loc} : ${JSON.stringify(path)}`);
     if (node.type === 'id') {
         const end = splitGraphemes(node.text).length;
         if (end === 0 && plus1) {

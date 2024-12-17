@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Collection, Id, List, Node, Nodes, Table, Text, TextSpan } from '../shared/cnodes';
+import { Collection, Id, isRich, List, Node, Nodes, Table, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { goLeft, isTag, justSel, selectEnd, selUpdate, spanEnd, spanStart } from './handleNav';
 import { selEnd, SelSide, SelStart } from './handleShiftNav';
@@ -242,6 +242,7 @@ const removeSelf = (state: TestState, current: { path: Path; node: Node }): Upda
             state.top,
         );
     }
+
     if (pnode?.type === 'list' && isTag(pnode.kind) && pnode.kind.attributes === current.node.loc) {
         const sel = selectEnd(pathWithChildren(parentPath(current.path), pnode.kind.node), state.top);
         return sel
@@ -251,13 +252,33 @@ const removeSelf = (state: TestState, current: { path: Path; node: Node }): Upda
               }
             : undefined;
     }
+
+    if (pnode?.type === 'list' && isRich(pnode.kind)) {
+        if (current.node.type === 'text') {
+            if (pnode.children.length === 1) {
+                return removeSelf(state, { path: parentPath(current.path), node: pnode });
+            }
+            const children = pnode.children.slice();
+            const at = children.indexOf(current.node.loc);
+            children.splice(at, 1);
+            const nsel = selectEnd(pathWithChildren(parentPath(current.path), children[at === 0 ? 0 : at - 1]), state.top);
+            if (!nsel) return;
+            return { nodes: { [pnode.loc]: { ...pnode, children } }, selection: { start: nsel } };
+        }
+    }
+
+    const inRich = pnode?.type === 'list' && isRich(pnode.kind);
+
     let nextLoc = state.top.nextLoc;
     const loc = nextLoc++;
     const up = replaceAt(parentPath(current.path).children, state.top, current.node.loc, loc);
     up.nextLoc = nextLoc;
-    up.nodes[loc] = { type: 'id', loc, text: '' };
+    up.nodes[loc] = inRich ? { type: 'text', spans: [{ type: 'text', text: '' }], loc } : { type: 'id', loc, text: '' };
     up.selection = {
-        start: selStart(pathWithChildren(parentPath(current.path), loc), { type: 'id', end: 0 }),
+        start: selStart(
+            pathWithChildren(parentPath(current.path), loc),
+            inRich ? { type: 'text', end: { index: 0, cursor: 0 } } : { type: 'id', end: 0 },
+        ),
     };
     return up;
 };
