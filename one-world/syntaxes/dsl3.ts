@@ -362,6 +362,7 @@ const parseSmoosh = (base: Expr, suffixes: Suffix[], prefixes: Id<Loc>[], src: S
 const exprs: Record<string, Rule<Expr>> = {
     'expr num': tx(group('value', number), (ctx, src) => ({ type: 'number', value: ctx.ref<number>('value'), src })),
     'expr var': tx(group('id', id(null)), (ctx, src) => ({ type: 'var', name: ctx.ref<Id<Loc>>('id').text, src })),
+    'expr text': tx(group('spans', text(ref('expr'))), (ctx, src) => ({ type: 'text', spans: ctx.ref<TextSpan<Expr>[]>('spans'), src })),
     'expr table': tx(
         group(
             'rows',
@@ -553,7 +554,6 @@ export const parser: TestParser = {
             autocomplete: cursor != null ? { loc: cursor, concrete: [], kinds: [] } : undefined,
         };
         const res = match({ type: 'ref', name: 'stmt' }, c, { nodes: [node], loc: [] }, 0);
-        console.log('metas', c.meta);
 
         return {
             result: res?.value,

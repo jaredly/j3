@@ -120,7 +120,7 @@ export function addNeighborBefore(
     }
     if (neighbor.type === 'text') {
         sel = neighbor;
-        ncursor = { type: 'list', where: 'inside' };
+        ncursor = { type: 'text', end: { index: 0, cursor: 0 } };
     }
     return { sel, ncursor };
 }

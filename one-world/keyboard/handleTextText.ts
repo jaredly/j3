@@ -17,6 +17,29 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
             // Either 0 or 1
             // do we ... go with ... hm. OK I do think that /embeds/ ought to be styleable.
             // Otherwise that diminishes their usefulness.
+            if (cursor.end.cursor === 0) {
+                const spans = current.spans.slice();
+                if (cursor.end.index > 0) {
+                    const prev = spans[cursor.end.index - 1];
+                    if (prev.type === 'text') {
+                        const grems = splitGraphemes(prev.text);
+                        return justSel(path, {
+                            type: 'text',
+                            end: {
+                                index: cursor.end.index - 1,
+                                cursor: grems.length + 1,
+                                text: grems.concat([grem]),
+                            },
+                        });
+                    }
+                }
+                spans.splice(cursor.end.index, 0, { type: 'text', text: grem });
+                return {
+                    nodes: { [current.loc]: { ...current, spans } },
+                    selection: { start: selStart(path, { type: 'text', end: { index: cursor.end.index, cursor: 1 } }) },
+                };
+            }
+
             if (cursor.end.cursor === 1) {
                 if (grem === '"' && cursor.end.index === current.spans.length - 1) {
                     return justSel(path, { type: 'list', where: 'after' });
@@ -40,7 +63,7 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
     const text = cursor.end.text ?? splitGraphemes(span.text);
     const { left, right } = textCursorSides(cursor);
 
-    if (grem === ' ' && current.spans.length === 1) {
+    if (grem === ' ' && current.spans.length === 1 && left === text.length) {
         let parent = top.nodes[parentLoc(path)];
         if (richNode(parent)) {
             let kind: ListKind<number> | null = null;
@@ -71,7 +94,10 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
     }
 
     if (grem === '"' && cursor.end.index === current.spans.length - 1 && left === text.length) {
-        return justSel(path, { type: 'list', where: 'after' });
+        let parent = top.nodes[parentLoc(path)];
+        if (!richNode(parent)) {
+            return justSel(path, { type: 'list', where: 'after' });
+        }
     }
 
     if (grem === '`' && left === right && left > 0 && text[left - 1] !== '\\' && span.style?.format !== 'code') {

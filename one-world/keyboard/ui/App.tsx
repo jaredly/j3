@@ -1,26 +1,22 @@
 import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLatest } from '../../../web/custom/useLatest';
 import { applyUpdate } from '../applyUpdate';
-import { init, js, TestState } from '../test-utils';
+import { init, TestState } from '../test-utils';
 
+import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { useLocalStorage } from '../../../web/Debug';
 import { childLocs, Loc, RichKind, Style } from '../../shared/cnodes';
-import { parse, ParseResult, show, Span } from '../../syntaxes/dsl';
-import * as glm from '../../syntaxes/gleam2';
+import { ParseResult, show } from '../../syntaxes/dsl';
 import * as dsl3 from '../../syntaxes/dsl3';
-import * as ts from '../../syntaxes/ts';
-import * as tsTypes from '../../syntaxes/ts-types';
-import { toXML } from '../../syntaxes/xml';
-import { nodeToXML, XML } from '../../syntaxes/xml';
+import { nodeToXML, toXML, XML } from '../../syntaxes/xml';
+import { selectStart } from '../handleNav';
+import { allPaths, multiSelChildren, multiSelKeys, selEnd, Src } from '../handleShiftNav';
 import { root } from '../root';
 import { getCurrent, lastChild, NodeSelection, pathWithChildren, selStart, Update } from '../utils';
 import { keyUpdate } from './keyUpdate';
 import { RenderNode } from './RenderNode';
 import { posDown, posUp, selectionPos } from './selectionPos';
 import { ShowXML } from './XML';
-import { selectStart } from '../handleNav';
-import { allPaths, multiSelChildren, multiSelKeys, selEnd, Src } from '../handleShiftNav';
-import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -105,9 +101,9 @@ export const App = ({ id }: { id: string }) => {
 
     const paths = useMemo(() => allPaths(state.top), [state.top]);
     const hoverSrc = (src: Src | null) => {
-        if (!src) return setHover(null);
+        if (!src || !src.left.length) return setHover(null);
         const l = paths[src.left[0].idx];
-        if (!src.right)
+        if (!src.right || !src.right.length)
             return setHover({
                 start: selStart(l, { type: 'list', where: 'before' }),
                 multi: { end: selEnd(l), aux: selEnd(l) },
@@ -333,7 +329,7 @@ export const App = ({ id }: { id: string }) => {
                 </div>
             ) : null}
             {/* <div style={{ paddingLeft: 50, paddingTop: 20 }}>Auto complete {JSON.stringify(parsed.ctx.autocomplete)}</div> */}
-            {/* <div style={{ paddingLeft: 50, paddingTop: 20 }}>Auto complete {JSON.stringify(state.sel)}</div> */}
+            <div style={{ paddingLeft: 50, paddingTop: 20 }}>SEL {JSON.stringify(state.sel)}</div>
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
                 <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                     <h3>CST</h3>

@@ -80,6 +80,8 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
         }
     }
 
+    // STRING
+
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
 
     //
@@ -274,6 +276,6 @@ export function flatNeighbor(kind: Kind, grem: string): Flat {
         : kind === 'space'
         ? { type: 'space', loc: -1 }
         : kind === 'string'
-        ? { type: 'text', spans: [], loc: -1 }
+        ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: -1 }
         : { type: 'id', text: grem, loc: -1, ccls: kind };
 }

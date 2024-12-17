@@ -29,6 +29,21 @@ test('text inside type', () => {
     });
 });
 
+test('before embed', () => {
+    let state = asTop(text([{ type: 'embed', item: id('') }], true), textc(0, 0));
+    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
+    check(state, text([tspan('A'), { type: 'embed', item: id('') }], true), {
+        type: 'text',
+        end: { index: 0, cursor: 1 },
+    });
+});
+
+test('id to text', () => {
+    let state = asTop(id('', true), idc(0));
+    state = applyUpdate(state, handleKey(state, '"', lisp)!);
+    check(state, text([tspan('')], true), textc(0, 0));
+});
+
 test('text inside leavee', () => {
     let state = asTop(text([], true), listc('inside'));
     state = applyUpdate(state, handleKey(state, '"', lisp)!);
@@ -380,25 +395,31 @@ test('bullets', () => {
 });
 
 test('numbers', () => {
-    let state = asTop(rich([text([tspan('1.')], true)]), textc(0, 1));
+    let state = asTop(rich([text([tspan('1.')], true)]), textc(0, 2));
     state = applyUpdate(state, keyUpdate(state, ' ', {}));
     check(state, rich([list({ type: 'list', ordered: true })([text([tspan('')], true)])]), textc(0, 0));
 });
 
 test('checks', () => {
-    let state = asTop(rich([text([tspan('[ ]')], true)]), textc(0, 1));
+    let state = asTop(rich([text([tspan('[ ]')], true)]), textc(0, 3));
     state = applyUpdate(state, keyUpdate(state, ' ', {}));
     check(state, rich([list({ type: 'checks', checked: {} })([text([tspan('')], true)])]), textc(0, 0));
 });
 
 test('opts', () => {
-    let state = asTop(rich([text([tspan('( )')], true)]), textc(0, 1));
+    let state = asTop(rich([text([tspan('( )')], true)]), textc(0, 3));
     state = applyUpdate(state, keyUpdate(state, ' ', {}));
     check(state, rich([list({ type: 'opts' })([text([tspan('')], true)])]), textc(0, 0));
 });
 
 test('header', () => {
-    let state = asTop(rich([text([tspan('##')], true)]), textc(0, 1));
+    let state = asTop(rich([text([tspan('##')], true)]), textc(0, 2));
     state = applyUpdate(state, keyUpdate(state, ' ', {}));
     check(state, rich([list({ type: 'section', level: 2 })([text([tspan('')], true)])]), textc(0, 0));
+});
+
+test('" in a rich', () => {
+    let state = asTop(rich([text([tspan('')], true)]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, '"', {}));
+    check(state, rich([text([tspan('"')], true)]), textc(0, 1));
 });
