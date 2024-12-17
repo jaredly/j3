@@ -181,16 +181,9 @@ const findCurlyClose = (path: Path, top: Top): SelStart | void => {
             const inner = path.children[i + 1];
             const at = node.spans.findIndex((s) => s.type === 'embed' && s.item === inner);
             return selStart({ ...path, children: path.children.slice(0, i + 1) }, { type: 'text', end: { index: at, cursor: 1 } });
-            // return { path: {...path, children: path.children.slice(0, )}}
         }
     }
 };
-
-// export const handleIdClose = (top: Top, { path, cursor }: { path: Path; cursor: Cursor }, kind: ListKind<number>) => {
-//     const parent = findListParent(kind, cursor.type === 'list' && cursor.where !== 'inside' ? parentPath(path) : path, top);
-//     if (!parent) return;
-//     return justSel(parent.path, { type: 'list', where: 'after' });
-// };
 
 export const handleClose = (state: TestState, key: string): Update | void => {
     const current = getCurrent(state.sel, state.top);

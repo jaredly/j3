@@ -18,6 +18,10 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
             // do we ... go with ... hm. OK I do think that /embeds/ ought to be styleable.
             // Otherwise that diminishes their usefulness.
             if (cursor.end.cursor === 1) {
+                if (grem === '"' && cursor.end.index === current.spans.length - 1) {
+                    return justSel(path, { type: 'list', where: 'after' });
+                }
+
                 let next = current.spans[cursor.end.index + 1];
                 if (cursor.end.index === current.spans.length - 1 || next.type !== 'text' || !stylesEqual(span.style, next.style)) {
                     const spans = current.spans.slice();
