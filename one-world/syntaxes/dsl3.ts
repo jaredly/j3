@@ -1,5 +1,5 @@
 import { isTag } from '../keyboard/handleNav';
-import { Id, ListKind, Loc, Text, TextSpan } from '../shared/cnodes';
+import { Id, ListKind, Loc, RecNode, TableKind, Text, TextSpan } from '../shared/cnodes';
 import { MatchParent } from './dsl';
 import { binops, Expr, partition, Pat, Right, SPat, Stmt, Type } from './ts-types';
 
@@ -23,7 +23,7 @@ $
 
 export type Src = { left: Loc; right?: Loc };
 
-type Ctx = {
+export type Ctx = {
     ref<T>(name: string): T;
     rules: Record<string, Rule<any>>;
     scope?: null | Record<string, any>;
@@ -36,23 +36,25 @@ type Rule<T> =
     | { type: 'ref'; name: string; bind?: string }
     | { type: 'seq'; rules: Rule<any>[] }
     | { type: 'group'; name: string; inner: Rule<T> }
-    | { type: 'star'; inner: Rule<unknown> } // *
+    | { type: 'star'; inner: Rule<unknown> }
+    | { type: 'opt'; inner: Rule<unknown> }
     //
     | { type: 'id'; kind?: string | null }
     | { type: 'text'; embed: Rule<unknown> }
     | { type: 'list'; kind: ListKind<Rule<unknown>>; item: Rule<unknown> };
+// | { type: 'table'; kind: TableKind; item: Rule<unknown> } ;
 
 // TODO: track a pathhhh
 export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
     const node = parent.nodes[at];
     switch (rule.type) {
         case 'kwd':
-            if (node.type !== 'id' || node.text !== rule.kwd) return;
+            if (node?.type !== 'id' || node.text !== rule.kwd) return;
         case 'id':
-            if (node.type !== 'id') return;
+            if (node?.type !== 'id') return;
             return { value: node, consumed: 1 };
         case 'text':
-            if (node.type !== 'text') return;
+            if (node?.type !== 'text') return;
             const spans: TextSpan<any>[] = [];
             for (let i = 0; i < node.spans.length; i++) {
                 const span = node.spans[i];
@@ -67,7 +69,7 @@ export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number
             return { value: spans, consumed: 1 };
 
         case 'list': {
-            if (node.type !== 'list') return;
+            if (node?.type !== 'list') return;
             if (isTag(node.kind)) {
                 if (!isTag(rule.kind)) return;
                 const tag = match(rule.kind.node, ctx, { nodes: [node.kind.node], loc: node.loc, sub: { type: 'xml', which: 'tag' } }, 0);
@@ -87,6 +89,13 @@ export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number
 
             const res = match(rule.item, ctx, { nodes: node.children, loc: node.loc }, 0);
             return res ? { value: res.value, consumed: 1 } : res;
+        }
+
+        case 'opt': {
+            if (!node) return { consumed: 0 };
+            const inner = match(rule.inner, ctx, parent, at);
+            if (!inner) return { consumed: 0 };
+            return inner;
         }
 
         case 'ref': {
@@ -114,6 +123,10 @@ export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number
             const start = at;
             const values: any[] = [];
             while (at < parent.nodes.length) {
+                if (isBlank(parent.nodes[at])) {
+                    at++;
+                    continue;
+                }
                 const m = match(rule.inner, ctx, parent, at);
                 if (!m) break;
                 values.push(m.value);
@@ -130,7 +143,7 @@ export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number
         }
         case 'tx': {
             const ictx: Ctx = { ...ctx, scope: {} };
-            const left = parent.nodes[at].loc;
+            const left = at < parent.nodes.length ? parent.nodes[at].loc : [];
             const m = match(rule.inner, ictx, parent, at);
             if (!m) return;
             const rat = at + m.consumed - 1;
@@ -149,35 +162,40 @@ export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number
     }
 };
 
-const isSingle = (rule: Rule<any>, ctx: Ctx): boolean => {
-    switch (rule.type) {
-        case 'kwd':
-            return true;
-        case 'ref':
-            return isSingle(ctx.rules[rule.name], ctx);
-        case 'seq':
-            return rule.rules.length === 1 && isSingle(rule.rules[0], ctx);
-        case 'star':
-            return false;
-        case 'id':
-            return true;
-        case 'text':
-            return true;
-        case 'list':
-            return true;
-        case 'or':
-            return rule.opts.every((opt) => isSingle(opt, ctx));
-        case 'tx':
-            return isSingle(rule.inner, ctx);
-        case 'group':
-            return isSingle(rule.inner, ctx);
-    }
-};
+const isBlank = (node: RecNode) => node.type === 'id' && node.text === '';
+
+// const isSingle = (rule: Rule<any>, ctx: Ctx): boolean => {
+//     switch (rule.type) {
+//         case 'kwd':
+//             return true;
+//         case 'ref':
+//             return isSingle(ctx.rules[rule.name], ctx);
+//         case 'seq':
+//             return rule.rules.length === 1 && isSingle(rule.rules[0], ctx);
+//         case 'star':
+//             return false;
+//         case 'id':
+//             return true;
+//         case 'text':
+//             return true;
+//         case 'list':
+//             return true;
+//         case 'opt':
+//             return false;
+//         case 'or':
+//             return rule.opts.every((opt) => isSingle(opt, ctx));
+//         case 'tx':
+//             return isSingle(rule.inner, ctx);
+//         case 'group':
+//             return isSingle(rule.inner, ctx);
+//     }
+// };
 
 // regex stuff
 const or = <T>(...opts: Rule<T>[]): Rule<T> => ({ type: 'or', opts });
 const tx = <T>(inner: Rule<any>, f: (ctx: Ctx, src: Src) => T): Rule<T> => ({ type: 'tx', inner, f });
 const ref = <T>(name: string, bind?: string): Rule<T> => ({ type: 'ref', name, bind });
+const opt = <T>(inner: Rule<T>): Rule<T | null> => ({ type: 'opt', inner });
 const seq = (...rules: Rule<any>[]): Rule<unknown> => ({ type: 'seq', rules });
 const group = <T>(name: string, inner: Rule<T>): Rule<T> => ({ type: 'group', name, inner });
 const star = <T>(inner: Rule<T>): Rule<T[]> => ({ type: 'star', inner });
@@ -199,6 +217,17 @@ const types: Record<string, Rule<Type>> = {
 
 const exprs: Record<string, Rule<Expr>> = {
     'expr var': tx(group('id', id(null)), (ctx, src) => ({ type: 'var', name: ctx.ref<Id<Loc>>('id').text, src })),
+    'expr jsx': tx(
+        list(
+            {
+                type: 'tag',
+                node: ref('expr', 'tag'),
+                attributes: opt(ref('expr', 'attributes')),
+            },
+            group('items', star(ref('expr'))),
+        ),
+        (ctx, src) => ({ type: 'jsx', src, children: ctx.ref<Expr[]>('items'), tag: ctx.ref<Expr>('tag') }),
+    ),
 };
 
 const pats: Record<string, Rule<Pat>> = {
@@ -253,6 +282,7 @@ export const rules = {
         list('spaced', stmtSpaced),
         tx<Stmt>(ref('expr', 'expr'), (ctx, src) => ({ type: 'expr', expr: ctx.ref<Expr>('expr'), src })),
     ),
+    block: list('curly', star(ref('stmt'))),
     ...stmts,
     'pattern spread': tx(list('smooshed', seq(kwd('...'), ref('pat', 'inner'))), (ctx, src) => ({ type: 'spread', inner: ctx.ref<Pat>('inner') })),
     expr: or(...Object.keys(exprs).map((name) => ref(name))),

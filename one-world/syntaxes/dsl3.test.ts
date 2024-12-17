@@ -6,7 +6,7 @@ import { root } from '../keyboard/root';
 import { init, js } from '../keyboard/test-utils';
 import { keyUpdate } from '../keyboard/ui/keyUpdate';
 import { cread } from '../shared/creader';
-import { match, rules } from './dsl3';
+import { Ctx, match, rules } from './dsl3';
 
 /*
 
@@ -22,44 +22,127 @@ where parsing "continues successfully" and just reports that the expr was an err
 
 */
 
-const pats = {
-    'pattern var': ['hello', '23'],
-    'pattern array': ['[]', '[one]', '[...one]', '[one,two,...three]'],
+const ctx: Ctx = {
+    rules,
+    ref(name) {
+        if (!this.scope) throw new Error(`no  scope`);
+        return this.scope[name];
+    },
+};
+
+const fixes = {
+    // 'pattern var': ['hello', '23'],
+    // 'pattern array': ['[]', '[one]', '[...one]', '[one,two,...three]'],
     'pattern default': ['x = 3 + 3', '[] = 3'],
     'pattern typed': ['one:int', '[one]:list'],
     'pattern constructor': ['Some(body)', 'Once([told,me])'],
     'pattern text': ['"Hi"', '"Hello ${name}"'],
     // how to do ... jsx?
+    'expr jsx': ['<>Hello\tinner', '<>Hello hi\t\tinner'],
+    stmt: ['let x = 2', 'return 12', 'for (let x = 1;x<3;x++) {y}'],
 };
 
-const exps = {
-    'expr jsx': ['<>Hello\tinner'],
+const run = (input: string, matcher: string) => {
+    const state = cread(splitGraphemes(input), js);
+    const rt = root(state, (idx) => [{ id: '', idx }]);
+    const res = match({ type: 'ref', name: matcher }, ctx, { nodes: [rt], loc: [] }, 0);
+    return res;
 };
 
-// hm
-// so, Type<constructors> vs <jsx>.
-// currently I'm doing <> to jsx, but maybe I want </ ?
-// and then <> would be for the list?
-
-Object.entries(pats).forEach(([key, values]) => {
+Object.entries(fixes).forEach(([key, values]) => {
     values.forEach((value) => {
         test(`${key} + ${value}`, () => {
-            const state = cread(splitGraphemes(value), js);
-            const rt = root(state, (idx) => [{ id: '', idx }]);
-            const res = match(
-                { type: 'ref', name: key },
-                {
-                    rules,
-                    ref(name) {
-                        // throw new Error('reff toplevel ' + name);
-                        if (!this.scope) throw new Error(`no  scope`);
-                        return this.scope[name];
-                    },
-                },
-                { nodes: [rt], loc: [] },
-                0,
-            );
-            expect(res?.consumed).toEqual(1);
+            expect(run(value, key)?.consumed).toEqual(1);
         });
     });
 });
+
+test('pattern var', () => {
+    expect(run('hello', 'pattern var')?.value).toMatchObject({ type: 'var', name: 'hello' });
+    expect(run('23', 'pattern var')?.value).toMatchObject({ type: 'var', name: '23' });
+});
+
+test('pattern array', () => {
+    expect(run('[]', 'pattern array')?.value).toMatchObject({ type: 'array', values: [] });
+    expect(run('[one]', 'pattern array')?.value).toMatchObject({ type: 'array', values: [{ type: 'var', name: 'one' }] });
+    expect(run('[...one]', 'pattern array')?.value).toMatchObject({
+        type: 'array',
+        values: [{ type: 'spread', inner: { type: 'var', name: 'one' } }],
+    });
+    expect(run('[one,two,...three]', 'pattern array')?.value).toMatchObject({
+        type: 'array',
+        values: [
+            { type: 'var', name: 'one' },
+            { type: 'var', name: 'two' },
+            { type: 'spread', inner: { type: 'var', name: 'three' } },
+        ],
+    });
+});
+
+test('pattern default', () => {
+    expect(run('x = 3 + 4', 'pattern default')?.value).toMatchObject({
+        type: 'default',
+        inner: { type: 'var', name: 'x' },
+        value: {
+            type: 'call',
+            target: { type: 'var', name: '+' },
+            args: [
+                { type: 'var', name: '3' },
+                { type: 'var', name: '4' },
+            ],
+        },
+    });
+
+    expect(run('[] = 3', 'pattern default')?.value).toMatchObject({
+        type: 'default',
+        inner: { type: 'array', values: [] },
+        value: { type: 'var', name: '3' },
+    });
+});
+
+test('pattern typed', () => {
+    expect(run('one:int', 'pattern typed')?.value).toMatchObject({
+        type: 'typed',
+        ann: { type: 'ref', name: 'int' },
+        inner: { type: 'var', name: 'one' },
+    });
+});
+
+test('pattern constructor', () => {
+    expect(run('Some(body,[once])', 'pattern constructor')?.value).toMatchObject({
+        type: 'constr',
+        constr: { type: 'id', text: 'Some' },
+        args: [
+            { type: 'var', name: 'body' },
+            { type: 'array', values: [{ type: 'var', name: 'once' }] },
+        ],
+    });
+});
+
+test('pattern text', () => {
+    expect(run('"Hello ${name}"', 'pattern text')?.value).toMatchObject({
+        type: 'text',
+        spans: [
+            { type: 'text', text: 'Hello ' },
+            { type: 'embed', item: { type: 'var', name: 'name' } },
+        ],
+    });
+});
+
+// const fixes = {
+//     'pattern text': ['"Hi"', '"Hello ${name}"'],
+//     // how to do ... jsx?
+//     'expr jsx': ['<>Hello\tinner', '<>Hello hi\t\tinner'],
+//     stmt: ['let x = 2', 'return 12', 'for (let x = 1;x<3;x++) {y}'],
+// };
+
+// Object.entries(exps).forEach(([key, values]) => {
+//     values.forEach((value) => {
+//         test(`${key} + ${value}`, () => {
+//             const state = cread(splitGraphemes(value), js);
+//             const rt = root(state, (idx) => [{ id: '', idx }]);
+//             const res = match({ type: 'ref', name: key }, ctx, { nodes: [rt], loc: [] }, 0);
+//             expect(res?.consumed).toEqual(1);
+//         });
+//     });
+// });

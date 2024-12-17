@@ -30,7 +30,7 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
             const next = (key === 'ArrowDown' ? visual.down : visual.up)(state.sel);
             return next ? { nodes: {}, selection: next } : undefined;
         }
-    } else if (key === 'Tab') {
+    } else if (key === 'Tab' || key === '\t') {
         return handleTab(state, !!mods.shift);
     } else if (mods.meta || mods.ctrl || mods.alt) {
         return handleSpecial(state, key, mods);

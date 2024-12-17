@@ -15,6 +15,10 @@ let's get back to that.
 - [ ] I sure need drag-to-select, esp in riches
 
 
+soooo
+what do I do about 'a blank in an empty list'
+do I just always ignore it, from a parser standpoint?
+
 
 #
 

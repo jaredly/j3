@@ -1,8 +1,9 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { change } from '../../web/ide/infer/mini/union_find';
 import { Collection, Id, List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { findParent } from './flatenate';
-import { justSel, selectStart } from './handleNav';
+import { justSel, selectStart, spanStart } from './handleNav';
 import { multiSelChildren, SelStart } from './handleShiftNav';
 import { handleTextText } from './handleTextText';
 import { replaceAt } from './replaceAt';
@@ -170,11 +171,26 @@ const findListParent = (kind: ListKind<number>, path: Path, top: Top) => {
     }
 };
 
-export const handleIdClose = (top: Top, { path, cursor }: { path: Path; cursor: Cursor }, kind: ListKind<number>) => {
-    const parent = findListParent(kind, cursor.type === 'list' && cursor.where !== 'inside' ? parentPath(path) : path, top);
-    if (!parent) return;
-    return justSel(parent.path, { type: 'list', where: 'after' });
+const findCurlyClose = (path: Path, top: Top): SelStart | void => {
+    for (let i = path.children.length - 1; i >= 0; i--) {
+        const node = top.nodes[path.children[i]];
+        if (node.type === 'list' && node.kind === 'curly') {
+            return selStart({ ...path, children: path.children.slice(0, i + 1) }, { type: 'list', where: 'after' });
+        }
+        if (node.type === 'text' && i < path.children.length - 1) {
+            const inner = path.children[i + 1];
+            const at = node.spans.findIndex((s) => s.type === 'embed' && s.item === inner);
+            return selStart({ ...path, children: path.children.slice(0, i + 1) }, { type: 'text', end: { index: at, cursor: 1 } });
+            // return { path: {...path, children: path.children.slice(0, )}}
+        }
+    }
 };
+
+// export const handleIdClose = (top: Top, { path, cursor }: { path: Path; cursor: Cursor }, kind: ListKind<number>) => {
+//     const parent = findListParent(kind, cursor.type === 'list' && cursor.where !== 'inside' ? parentPath(path) : path, top);
+//     if (!parent) return;
+//     return justSel(parent.path, { type: 'list', where: 'after' });
+// };
 
 export const handleClose = (state: TestState, key: string): Update | void => {
     const current = getCurrent(state.sel, state.top);
@@ -183,17 +199,15 @@ export const handleClose = (state: TestState, key: string): Update | void => {
     }
     const kind = closerKind(key);
     if (!kind) return;
-    return handleIdClose(state.top, current, kind);
-    // switch (current.type) {
-    //     case 'id':
-    //     case 'list':
-    //         return handleIdClose(state.top, current.path, kind);
-    //     // return handleListWrap(state.top, state.sel.start.path, current.cursor, kind);
-    //     // case 'text':
-    //     //     return handleTextWrap(state.top, state.sel.start.path, current.cursor, kind);
-    //     default:
-    //         throw new Error('not doing');
-    // }
+    const { path, cursor } = current;
+    // soooo there's a special case, for text curly
+    if (kind === 'curly') {
+        const sel = findCurlyClose(cursor.type === 'list' && cursor.where !== 'inside' ? parentPath(path) : path, state.top);
+        return sel ? { nodes: {}, selection: { start: sel } } : sel;
+    }
+    const parent = findListParent(kind, cursor.type === 'list' && cursor.where !== 'inside' ? parentPath(path) : path, state.top);
+    if (!parent) return;
+    return justSel(parent.path, { type: 'list', where: 'after' });
 };
 
 const handleWrapMulti = (state: TestState, key: string): Update | void => {

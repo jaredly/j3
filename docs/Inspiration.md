@@ -8,6 +8,17 @@ is that what c is trying to be? maybe.
 but it would have ... a better type system? idk.
 I'd probably have to learn more assembly.
 
+malloc https://samwho.dev/memory-allocation/
+ropes https://www.cs.tufts.edu/comp/150FP/archive/hans-boehm/ropes.pdf
+
+bicameral (intermediate AST layer) https://parentheticallyspeaking.org/articles/bicameral-not-homoiconic/
+
+garbage collection
+https://www.cs.purdue.edu/homes/hosking/690M/p285-bacon.pdf
+https://sites.cs.ucsb.edu/~ckrintz/racelab/gc/papers/bacon-concurrent.pdf
+
+"Pragmatic Type-level design" file:///Users/jared/Downloads/pragmatic-type-level-design.pdf
+
 #
 
 
