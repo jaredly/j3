@@ -129,6 +129,22 @@ test('pattern text', () => {
     });
 });
 
+test.only('expr jsx', () => {
+    // expect(run('<>Hello\tinner', 'expr jsx')?.value).toMatchObject({
+    //     type: 'jsx',
+    //     tag: { type: 'var', name: 'Hello' },
+    //     attributes: undefined,
+    //     children: [{ type: 'var', name: 'inner' }],
+    // });
+
+    expect(run('<>Hello hello:folks\t\tinner', 'expr jsx')?.value).toMatchObject({
+        type: 'jsx',
+        tag: { type: 'var', name: 'Hello' },
+        attributes: [{ type: 'row', name: 'hello', value: { type: 'var', name: 'folks' } }],
+        children: [{ type: 'var', name: 'inner' }],
+    });
+});
+
 // const fixes = {
 //     'pattern text': ['"Hi"', '"Hello ${name}"'],
 //     // how to do ... jsx?

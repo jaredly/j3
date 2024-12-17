@@ -1,7 +1,7 @@
 import { isTag } from '../keyboard/handleNav';
 import { Id, ListKind, Loc, RecNode, TableKind, Text, TextSpan } from '../shared/cnodes';
 import { MatchParent } from './dsl';
-import { binops, Expr, partition, Pat, Right, SPat, Stmt, Type } from './ts-types';
+import { binops, Expr, nodesSrc, partition, Pat, RecordRow, Right, SPat, Stmt, Type } from './ts-types';
 
 /*
 
@@ -41,8 +41,8 @@ type Rule<T> =
     //
     | { type: 'id'; kind?: string | null }
     | { type: 'text'; embed: Rule<unknown> }
-    | { type: 'list'; kind: ListKind<Rule<unknown>>; item: Rule<unknown> };
-// | { type: 'table'; kind: TableKind; item: Rule<unknown> } ;
+    | { type: 'list'; kind: ListKind<Rule<unknown>>; item: Rule<unknown> }
+    | { type: 'table'; kind: TableKind; row: Rule<unknown> };
 
 // TODO: track a pathhhh
 export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
@@ -68,6 +68,18 @@ export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number
             }
             return { value: spans, consumed: 1 };
 
+        case 'table': {
+            if (node?.type !== 'table') return;
+            const res: any[] = [];
+            for (let i = 0; i < node.rows.length; i++) {
+                const m = match(rule.row, { ...ctx, scope: null }, { nodes: node.rows[i], loc: node.loc, sub: { type: 'table', row: i } }, 0);
+                if (m) {
+                    res.push(m.value);
+                }
+            }
+            return { value: res, consumed: 1 };
+        }
+
         case 'list': {
             if (node?.type !== 'list') return;
             if (isTag(node.kind)) {
@@ -81,6 +93,7 @@ export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number
                         { nodes: node.kind.attributes ? [node.kind.attributes] : [], loc: node.loc, sub: { type: 'xml', which: 'attributes' } },
                         0,
                     );
+                    // console.log('rule kind', attributes, node.kind.attributes);
                     if (!attributes) return; // TODO recovery?
                 } else if (node.kind.attributes) {
                     // attributes not matched? make an 'extra' error
@@ -92,8 +105,9 @@ export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number
         }
 
         case 'opt': {
-            if (!node) return { consumed: 0 };
+            // if (!node) return { consumed: 0 };
             const inner = match(rule.inner, ctx, parent, at);
+            // console.log('matching opt', inner, rule.inner);
             if (!inner) return { consumed: 0 };
             return inner;
         }
@@ -210,6 +224,7 @@ const text = <T>(embed: Rule<T>): Rule<TextSpan<T>[]> => ({ type: 'text', embed 
 const kwd = (kwd: string, meta?: string): Rule<unknown> => ({ type: 'kwd', kwd, meta });
 const id = (kind?: string | null): Rule<unknown> => ({ type: 'id', kind });
 const list = <T>(kind: ListKind<Rule<unknown>>, item: Rule<T>): Rule<T> => ({ type: 'list', kind, item });
+const table = <T>(kind: TableKind, row: Rule<T>): Rule<T> => ({ type: 'table', kind, row });
 
 const types: Record<string, Rule<Type>> = {
     'type ref': tx(group('id', id(null)), (ctx, src) => ({ type: 'ref', name: ctx.ref<Id<Loc>>('id').text, src })),
@@ -217,6 +232,28 @@ const types: Record<string, Rule<Type>> = {
 
 const exprs: Record<string, Rule<Expr>> = {
     'expr var': tx(group('id', id(null)), (ctx, src) => ({ type: 'var', name: ctx.ref<Id<Loc>>('id').text, src })),
+    'expr table': tx(
+        group(
+            'rows',
+            table(
+                'curly',
+                or(
+                    tx(seq(group('key', id(null)), ref('expr', 'value')), (ctx, src) => ({
+                        type: 'row',
+                        name: ctx.ref<Id<Loc>>('key').text,
+                        src,
+                        value: ctx.ref<Expr>('value'),
+                    })),
+                    list('smooshed', seq(kwd('...'), ref('expr', 'value'))),
+                    tx(group('single', id(null)), (ctx, src) => {
+                        const key = ctx.ref<Id<Loc>>('single');
+                        return { type: 'row', name: key.text, src, nsrc: src, value: { type: 'var', name: key.text, src: nodesSrc(key) } };
+                    }),
+                ),
+            ),
+        ),
+        (ctx, src) => ({ type: 'record', rows: ctx.ref<RecordRow[]>('rows'), src }),
+    ),
     'expr jsx': tx(
         list(
             {
@@ -226,7 +263,16 @@ const exprs: Record<string, Rule<Expr>> = {
             },
             group('items', star(ref('expr'))),
         ),
-        (ctx, src) => ({ type: 'jsx', src, children: ctx.ref<Expr[]>('items'), tag: ctx.ref<Expr>('tag') }),
+        (ctx, src) => {
+            const attrs = ctx.ref<Expr | null>('attributes');
+            return {
+                type: 'jsx',
+                src,
+                attributes: attrs?.type === 'record' ? attrs.rows : undefined,
+                children: ctx.ref<Expr[]>('items'),
+                tag: ctx.ref<Expr>('tag'),
+            };
+        },
     ),
 };
 
