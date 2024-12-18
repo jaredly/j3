@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Collection, Id, isRich, List, Node, Nodes, Table, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { goLeft, isTag, justSel, selectEnd, selUpdate, spanEnd, spanStart } from './handleNav';
+import { goLeft, isTag, justSel, selectEnd, selectStart, selUpdate, spanEnd, spanStart } from './handleNav';
 import { selEnd, SelSide, SelStart } from './handleShiftNav';
 import { mergeAdjacentSpans } from './handleSpecialText';
 import { textCursorSides, textCursorSides2 } from './insertId';
@@ -96,6 +96,10 @@ const removeParent = (sel: NodeSelection, loc: number): NodeSelection => ({
 
 export const unwrap = (path: Path, top: Top, sel: NodeSelection) => {
     const node = top.nodes[lastChild(path)];
+    if (node.type === 'table') {
+        // TODO
+        console.warn('cant unwrap table just yet');
+    }
     if (node.type !== 'list') return; // TODO idk
     const repl = replaceAt(parentPath(path).children, top, lastChild(path), ...node.children);
     repl.selection = removeParent(sel, lastChild(path));
@@ -336,7 +340,7 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             }
             return removeSelf(state, { path: parent, node: pnode });
         } else if (!pat) {
-            return;
+            return selUpdate(selStart(parent, { type: 'list', where: 'start' }));
         }
 
         const lloc = at.col === 0 ? pnode.rows[at.row - 1][pnode.rows[at.row - 1].length - 1] : pnode.rows[at.row][at.col - 1];
@@ -420,8 +424,8 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             return removeSelf(state, { path: parent, node: pnode });
         }
         // Select the '(' opener
-        // return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
-        return unwrap(parent, state.top, state.sel);
+        return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
+        // return unwrap(parent, state.top, state.sel);
     }
 
     let flat = flatten(pnode, state.top, remap);
@@ -477,12 +481,27 @@ export const handleDelete = (state: TestState): Update | void => {
                     // disolveSmooshed(up, state.top);
                     return up;
                 } else if (current.cursor.where === 'inside') {
+                    if (current.node.type === 'list' && current.node.children.length === 0) {
+                        return removeSelf(state, current);
+                    }
+                    if (current.node.type === 'table' && current.node.rows.length === 0) {
+                        return removeSelf(state, current);
+                    }
+                    return selUpdate(selStart(current.path, { type: 'list', where: 'start' }));
+                } else if (current.cursor.where === 'start' && current.node.type === 'list' && current.node.children.length === 0) {
                     if (current.node.type === 'list' && isTag(current.node.kind)) {
                         return selUpdate(
                             selectEnd(pathWithChildren(current.path, current.node.kind.attributes ?? current.node.kind.node), state.top),
                         );
                     }
                     return removeSelf(state, current);
+                } else if (current.cursor.where === 'start') {
+                    const sel =
+                        current.node.type === 'list' && current.node.children.length
+                            ? selectStart(pathWithChildren(current.path, current.node.children[0]), state.top)
+                            : state.sel.start;
+                    if (!sel) return console.warn('cant select start');
+                    return unwrap(current.path, state.top, { start: sel });
                 }
             }
             return;
@@ -604,7 +623,7 @@ export const handleTextDelete = (state: TestState, current: Extract<Current, { t
         const loff = normalizeTextCursorSide(spans, left, text);
         if (loff === 'before') {
             const parent = state.top.nodes[parentLoc(current.path)];
-            if (parent.type === 'list' && isRich(parent.kind)) {
+            if (parent?.type === 'list' && isRich(parent.kind)) {
                 // joinn
                 const at = parent.children.indexOf(current.node.loc);
                 if (at === 0) {
