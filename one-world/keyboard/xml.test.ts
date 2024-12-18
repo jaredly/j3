@@ -70,7 +70,7 @@ test('lets do some attribute', () => {
 
 test('lets do a dot', () => {
     let state = asTop(list({ type: 'tag', node: id('hello', true) })([]), idc(5));
-    state = applyUpdate(state, keyUpdate(state, '.', {}, undefined, lisp)!);
+    state = applyUpdate(state, keyUpdate(state, '.', {})!);
     check(state, list({ type: 'tag', node: smoosh([id('hello'), id('.', true)]) })([]), idc(1));
 });
 
@@ -103,3 +103,9 @@ test('> to get inside childful', () => {
     state = applyUpdate(state, keyUpdate(state, '>', {})!);
     check(state, list({ type: 'tag', node: id('hello') })([id('hi', true)]), idc(0));
 });
+
+// test('<hello> should make it happen pls', () => {
+//     let state = asTop(smoosh([id('<'), id('hello')]), idc(5));
+//     state = applyUpdate(state, keyUpdate(state, '>', {})!);
+//     check(state, list({ type: 'tag', node: id('hello') })([id('hi', true)]), idc(0));
+// });

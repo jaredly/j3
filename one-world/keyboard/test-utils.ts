@@ -134,7 +134,7 @@ export const selPath = (exp: RecNodeT<boolean>) => {
 // - sep
 // - id (everything else)
 // MARK: makers
-export const id = <T>(text: string, loc: T = null as T, config = lisp, ref?: IdRef): Id<T> => ({
+export const id = <T>(text: string, loc: T = null as T, config: Config = js, ref?: IdRef): Id<T> => ({
     type: 'id',
     text,
     loc,

@@ -9,13 +9,13 @@ import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { asTop, id, idc, js, lisp, listc, round, smoosh, spaced, text } from './test-utils';
+import { asTop, Config, id, idc, js, lisp, listc, round, smoosh, spaced, text } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 import { IdCursor } from './utils';
 
-const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.') => {
+const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown>, text = '.', config: Config = js) => {
     let state = asTop(init, cursor);
-    const up = handleKey(state, text, lisp);
+    const up = handleKey(state, text, config);
     state = applyUpdate(state, up);
     expect(shape(fromMap(state.top.root, state.top.nodes, () => 0))).toEqual(shape(out));
 };
@@ -26,43 +26,43 @@ const testId = (init: RecNodeT<boolean>, cursor: IdCursor, out: RecNodeT<unknown
 
 test('list before pls', () => {
     let state = asTop(round([], true), listc('before'));
-    state = applyUpdate(state, handleKey(state, 'A', lisp));
+    state = applyUpdate(state, handleKey(state, 'A', js));
     check(state, smoosh([id('A', true), round([])]), idc(1));
 });
 
 test('list after', () => {
     let state = asTop(round([], true), listc('after'));
-    state = applyUpdate(state, handleKey(state, 'A', lisp));
+    state = applyUpdate(state, handleKey(state, 'A', js));
     check(state, smoosh([round([]), id('A', true)]), idc(1));
 });
 
 test('list smoosh end', () => {
     let state = asTop(smoosh([id('a'), round([], true)]), listc('after'));
-    state = applyUpdate(state, handleKey(state, 'A', lisp));
+    state = applyUpdate(state, handleKey(state, 'A', js));
     check(state, smoosh([id('a'), round([]), id('A', true)]), idc(1));
 });
 
 test('list smoosh start', () => {
     let state = asTop(smoosh([round([], true), id('a')]), listc('before'));
-    state = applyUpdate(state, handleKey(state, 'A', lisp));
+    state = applyUpdate(state, handleKey(state, 'A', js));
     check(state, smoosh([id('A', true), round([]), id('a')]), idc(1));
 });
 
 test('list insidesss', () => {
     let state = asTop(round([], true), listc('inside'));
-    state = applyUpdate(state, handleKey(state, 'A', lisp));
+    state = applyUpdate(state, handleKey(state, 'A', js));
     check(state, round([id('A', true)]), idc(1));
 });
 
 test('between twoo', () => {
     let state = asTop(smoosh([round([], true), round([])]), listc('after'));
-    state = applyUpdate(state, handleKey(state, 'A', lisp));
+    state = applyUpdate(state, handleKey(state, 'A', js));
     check(state, smoosh([round([]), id('A', true), round([])]), idc(1));
 });
 
 test('text after', () => {
     let state = asTop(id('hi', true), idc(2));
-    state = applyUpdate(state, handleKey(state, '"', lisp));
+    state = applyUpdate(state, handleKey(state, '"', js));
     check(state, smoosh([id('hi'), text([], true)]), listc('inside'));
 });
 
@@ -70,37 +70,37 @@ test('text after', () => {
 
 test('same kind', () => {
     let state = asTop(id('hello', true), idc(2));
-    state = applyUpdate(state, handleKey(state, 'A', lisp));
+    state = applyUpdate(state, handleKey(state, 'A', js));
     check(state, id('heAllo', true), idc(3));
 });
 
 test('same kind punct', () => {
     let state = asTop(id('+++', true), idc(2));
-    state = applyUpdate(state, handleKey(state, '=', lisp));
+    state = applyUpdate(state, handleKey(state, '=', js));
     check(state, id('++=+', true), idc(3));
 });
 
 test('start empty', () => {
     let state = asTop(id('', true), idc(0));
-    state = applyUpdate(state, handleKey(state, '=', lisp));
+    state = applyUpdate(state, handleKey(state, '=', js));
     check(state, id('=', true), idc(1));
 });
 
 test('and smoosh', () => {
     let state = asTop(id('ab', true), idc(0));
-    state = applyUpdate(state, handleKey(state, '=', lisp));
+    state = applyUpdate(state, handleKey(state, '=', js));
     check(state, smoosh([id('=', true), id('ab')]), idc(1));
 });
 
 test('smoosh to left', () => {
     let state = asTop(smoosh([id('#'), id('ab', true)]), idc(0));
-    state = applyUpdate(state, handleKey(state, '=', lisp));
+    state = applyUpdate(state, handleKey(state, '=', js));
     check(state, smoosh([id('#=', true), id('ab')]), idc(2));
 });
 
 test('commit text change', () => {
     let state = asTop(round([id('hi', true)]), idc(2));
-    state = applyUpdate(state, handleKey(state, 'A', lisp));
+    state = applyUpdate(state, handleKey(state, 'A', js));
     state = applyUpdate(state, handleNav('ArrowRight', state));
     check(state, round([id('hiA')], true), listc('after'));
 });
@@ -204,8 +204,9 @@ test('comment out', () => {
         //
         id('hello', true),
         { type: 'id', end: 0 },
-        smoosh([id(';'), id('hello')]),
+        smoosh([id(';', undefined, lisp), id('hello')]),
         ';',
+        lisp,
     );
 });
 
@@ -280,13 +281,13 @@ test('num and smoosh', () => {
 
 test('num and num', () => {
     let state = asTop(smoosh([id('a'), id('.'), id('2', true)]), idc(1));
-    state = applyUpdate(state, handleKey(state, '.', lisp));
+    state = applyUpdate(state, handleKey(state, '.', js));
     check(state, smoosh([id('a'), id('.'), id('2'), id('.', true)]), idc(1));
 });
 
 test('plus decimal', () => {
     let state = asTop(smoosh([id('+'), id('23', true)]), idc(2));
-    state = applyUpdate(state, handleKey(state, '.', lisp));
+    state = applyUpdate(state, handleKey(state, '.', js));
     check(state, smoosh([id('+'), id('23.', true)]), idc(3));
 });
 
