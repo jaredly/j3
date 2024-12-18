@@ -108,7 +108,6 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
             nextLoc: top.nextLoc + 1,
             selection: { start: selStart(pathWithChildren(grand, top.nextLoc), { type: 'list', where: 'inside' }) },
         };
-        return;
     }
 
     const flat = parent ? flatten(parent.node, top) : [current];

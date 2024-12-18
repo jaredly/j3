@@ -79,3 +79,15 @@ test('attributes write', () => {
     state = applyUpdate(state, keyUpdate(state, 'a', {})!);
     check(state, list({ type: 'tag', node: id('hello'), attributes: table('curly', [[id('a', true)]]) })([]), idc(1));
 });
+
+test('> to get to end of childless', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello', true) })([]), idc(5));
+    state = applyUpdate(state, keyUpdate(state, '>', {})!);
+    check(state, list({ type: 'tag', node: id('hello') })([], true), listc('after'));
+});
+
+test('> to get inside childful', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello', true) })([id('hi')]), idc(5));
+    state = applyUpdate(state, keyUpdate(state, '>', {})!);
+    check(state, list({ type: 'tag', node: id('hello') })([id('hi', true)]), idc(0));
+});
