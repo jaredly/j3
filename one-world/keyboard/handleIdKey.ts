@@ -55,6 +55,29 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
         }
     }
 
+    if (config.xml && grem === '>') {
+        const pnode = top.nodes[parentLoc(path)];
+        const chars = cursor.text ?? splitGraphemes(current.text);
+        if (
+            pnode.type === 'list' &&
+            pnode.kind === 'smooshed' &&
+            pnode.children.length === 2 &&
+            pnode.children[1] === current.loc &&
+            cursor.end === chars.length
+        ) {
+            const prev = top.nodes[pnode.children[0]];
+            if (prev.type === 'id' && prev.text === '<') {
+                return {
+                    nodes: {
+                        [pnode.loc]: { type: 'list', kind: { type: 'tag', node: current.loc }, children: [prev.loc], loc: pnode.loc },
+                        [prev.loc]: { loc: prev.loc, type: 'id', text: '' },
+                    },
+                    selection: { start: selStart(pathWithChildren(parentPath(path), prev.loc), { type: 'id', end: 0 }) },
+                };
+            }
+        }
+    }
+
     if (typeof kind === 'number') {
         if (current.ccls == null) {
             return {

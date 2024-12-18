@@ -92,7 +92,10 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                 },
             };
         }
-        if (current.type !== 'list' && current.type !== 'table') throw new Error('not list');
+        if (current.type !== 'list' && current.type !== 'table') throw new Error('not list or table');
+        if (grem === '>' && current.type === 'list' && isTag(current.kind)) {
+            return justSel(path, { type: 'list', where: 'after' });
+        }
         switch (kind) {
             case 'string': {
                 let nextLoc = top.nextLoc;

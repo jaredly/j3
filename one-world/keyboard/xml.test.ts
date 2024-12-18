@@ -104,8 +104,8 @@ test('> to get inside childful', () => {
     check(state, list({ type: 'tag', node: id('hello') })([id('hi', true)]), idc(0));
 });
 
-// test('<hello> should make it happen pls', () => {
-//     let state = asTop(smoosh([id('<'), id('hello')]), idc(5));
-//     state = applyUpdate(state, keyUpdate(state, '>', {})!);
-//     check(state, list({ type: 'tag', node: id('hello') })([id('hi', true)]), idc(0));
-// });
+test('<hello> should make it happen pls', () => {
+    let state = asTop(smoosh([id('<'), id('hello', true)]), idc(5));
+    state = applyUpdate(state, keyUpdate(state, '>', {})!);
+    check(state, list({ type: 'tag', node: id('hello') })([id('', true)]), idc(0));
+});
