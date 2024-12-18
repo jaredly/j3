@@ -8,7 +8,7 @@ import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
 import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, flattenRow, pruneEmptyIds, rough, unflat } from './rough';
 import { Cursor, IdCursor, Path, Top, Update, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
-import { isTag } from './handleNav';
+import { isTag, justSel, selectStart, selUpdate } from './handleNav';
 
 // const isNumber = (grems: undefined | string[], text: string) => {
 //     if (grems) {
@@ -35,7 +35,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     const table = handleTableSplit(grem, config, path, top, splitCell(current, cursor));
     if (table) return table;
 
-    if (config.xml && grem === '>' && cursor.end === 1 && (cursor.text ? cursor.text.length === 1 && cursor.text[0] === '<' : current.text === '<')) {
+    if (config.xml && grem === '/' && cursor.end === 1 && (cursor.text ? cursor.text.length === 1 && cursor.text[0] === '<' : current.text === '<')) {
         const pnode = top.nodes[parentLoc(path)];
         if (pnode?.type !== 'list' || pnode.kind !== 'smooshed') {
             return {
@@ -93,6 +93,13 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     const grand = parentPath(parent ? parent.path : path);
     const gnode = top.nodes[lastChild(grand)];
     if (gnode?.type === 'list' && isTag(gnode.kind) && gnode.kind.node === (parent ? parent.node.loc : current.loc)) {
+        if (grem === '>') {
+            return selUpdate(
+                gnode.children.length
+                    ? selectStart(pathWithChildren(grand, gnode.children[0]), top)
+                    : selStart(grand, { type: 'list', where: 'after' }),
+            );
+        }
         return {
             nodes: {
                 [gnode.loc]: { ...gnode, kind: { ...gnode.kind, attributes: top.nextLoc } },

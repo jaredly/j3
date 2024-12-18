@@ -16,7 +16,7 @@ test('xml before into tag', () => {
 
 test('xml start', () => {
     let state = asTop(id('<', true, js), idc(1));
-    state = applyUpdate(state, keyUpdate(state, '>', {})!);
+    state = applyUpdate(state, keyUpdate(state, '/', {})!);
     check(state, list({ type: 'tag', node: id('', true) })([id('')]), idc(0));
 });
 

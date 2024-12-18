@@ -481,6 +481,11 @@ export const handleDelete = (state: TestState): Update | void => {
                     // disolveSmooshed(up, state.top);
                     return up;
                 } else if (current.cursor.where === 'inside') {
+                    if (current.node.type === 'list' && isTag(current.node.kind)) {
+                        return selUpdate(
+                            selectEnd(pathWithChildren(current.path, current.node.kind.attributes ?? current.node.kind.node), state.top),
+                        );
+                    }
                     if (current.node.type === 'list' && current.node.children.length === 0) {
                         return removeSelf(state, current);
                     }
@@ -489,11 +494,6 @@ export const handleDelete = (state: TestState): Update | void => {
                     }
                     return selUpdate(selStart(current.path, { type: 'list', where: 'start' }));
                 } else if (current.cursor.where === 'start' && current.node.type === 'list' && current.node.children.length === 0) {
-                    if (current.node.type === 'list' && isTag(current.node.kind)) {
-                        return selUpdate(
-                            selectEnd(pathWithChildren(current.path, current.node.kind.attributes ?? current.node.kind.node), state.top),
-                        );
-                    }
                     return removeSelf(state, current);
                 } else if (current.cursor.where === 'start') {
                     const sel =

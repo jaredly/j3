@@ -12,6 +12,10 @@
   - will need to ~not allow selecting the controllll
 - [ ] rich table removeSelf - remove the cell (joinLeft)
 
+- [ ] JSX intro syntax, I... want a way to allow angle lists too.
+  so maybe </ is for jsx, and <> is for angle lists?
+  what about <hello and then > makes it a jsx?
+
 
 
 
