@@ -212,23 +212,83 @@ export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSele
     return goLateral(path, top, shift, true);
 };
 
-export const wordNav = (state: TestState, left: boolean): Update | void => {
-    const current = getCurrent(state.sel, state.top);
-    if (current.type === 'text' && current.cursor.type === 'text') {
-        const span = current.node.spans[current.cursor.end.index];
-        if (span.type === 'text') {
-            const text = current.cursor.end.text ?? splitGraphemes(span.text);
-            let i;
-            if (left && current.cursor.end.cursor > 0) {
-                for (i = current.cursor.end.cursor - 2; i >= 0 && text[i] !== ' ' && text[i] !== '\n'; i--);
-                i++;
-                return justSel(current.path, { type: 'text', end: { ...current.cursor.end, cursor: i } });
-            } else if (!left && current.cursor.end.cursor < text.length) {
-                for (i = current.cursor.end.cursor + 2; i < text.length && text[i] !== ' ' && text[i] !== '\n'; i++);
-                if (i > text.length) i = text.length;
-                return justSel(current.path, { type: 'text', end: { ...current.cursor.end, cursor: i } });
+const wordNext = (node: Text<number>, left: boolean, index: number, cursor: number, grems?: string[]): { index: number; cursor: number } | null => {
+    const span = node.spans[index];
+
+    if (left) {
+        if (cursor === 0) {
+            if (index === 0) return null;
+            const prev = node.spans[index - 1];
+            if (prev.type === 'text') {
+                const pt = splitGraphemes(prev.text);
+                return wordNext(node, left, index - 1, pt.length, pt);
+            } else {
+                return { index: index - 1, cursor: 0 };
             }
         }
+
+        if (span.type === 'text') {
+            let text = grems ?? splitGraphemes(span.text);
+            let i = cursor - 2;
+            for (; i >= 0 && text[i] !== ' ' && text[i] !== '\n'; i--);
+            i++;
+            return { index, cursor: i };
+        }
+    }
+
+    let text = span.type === 'text' ? grems ?? splitGraphemes(span.text) : ['_'];
+    if (cursor >= text.length) {
+        if (index >= node.spans.length - 1) return null;
+        const next = node.spans[index + 1];
+        if (next.type === 'text') {
+            const grems = splitGraphemes(next.text);
+            return wordNext(node, left, index + 1, 0, grems);
+        } else {
+            return { index: index + 1, cursor: 1 };
+        }
+    }
+
+    let i = cursor + 2;
+    for (; i < text.length && text[i] !== ' ' && text[i] !== '\n'; i++);
+    if (i > text.length) i = text.length;
+    return { index, cursor: i };
+};
+
+export const wordNav = (state: TestState, left: boolean, shift: boolean | undefined): Update | void => {
+    const current = getCurrent(state.sel, state.top);
+    if (current.type === 'text' && current.cursor.type === 'text') {
+        const { index, cursor, text } = current.cursor.end;
+        const next = wordNext(current.node, left, index, cursor, text);
+        if (next != null) {
+            return justSel(current.path, {
+                type: 'text',
+                end: { cursor: next.cursor, index: next.index, text: current.cursor.end.index === next.index ? current.cursor.end.text : undefined },
+                start: shift ? current.cursor.start ?? current.cursor.end : undefined,
+            });
+        }
+        // const span = current.node.spans[index];
+        // if (span.type === 'text') {
+        //     const text = current.cursor.end.text ?? splitGraphemes(span.text);
+        //     let i;
+        //     // TODO:
+        //     if (left && cursor > 0) {
+        //         for (i = cursor - 2; i >= 0 && text[i] !== ' ' && text[i] !== '\n'; i--);
+        //         i++;
+        //         return justSel(current.path, {
+        //             type: 'text',
+        //             end: { ...current.cursor.end, cursor: i },
+        //             start: shift ? current.cursor.start ?? current.cursor.end : undefined,
+        //         });
+        //     } else if (!left && cursor < text.length) {
+        //         for (i = current.cursor.end.cursor + 2; i < text.length && text[i] !== ' ' && text[i] !== '\n'; i++);
+        //         if (i > text.length) i = text.length;
+        //         return justSel(current.path, {
+        //             type: 'text',
+        //             end: { ...current.cursor.end, cursor: i },
+        //             start: shift ? current.cursor.start ?? current.cursor.end : undefined,
+        //         });
+        //     }
+        // }
     }
     const next = goTabLateral(state.sel.start, state.top, left);
     return selUpdate(next);

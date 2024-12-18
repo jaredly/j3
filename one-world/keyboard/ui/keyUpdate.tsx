@@ -18,11 +18,11 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
     if (key === 'Backspace') {
         return handleDelete(state);
     } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
+        if (mods.alt) {
+            return wordNav(state, key === 'ArrowLeft', mods.shift);
+        }
         if (mods.shift) {
             return handleShiftNav(state, key);
-        }
-        if (mods.ctrl) {
-            return wordNav(state, key === 'ArrowLeft');
         }
         return handleNav(key, state);
     } else if (key === 'ArrowUp' || key === 'ArrowDown') {
