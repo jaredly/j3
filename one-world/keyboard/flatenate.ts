@@ -96,7 +96,12 @@ export function addNeighborAfter(
         ncursor = { type: 'list', where: 'inside' };
     } else {
         flat.splice(at + 1, 0, neighbor, (sel = blank));
-        ncursor = blank.type === 'id' ? { type: 'id', end: 0 } : { type: 'list', where: 'inside' };
+        ncursor =
+            blank.type === 'id'
+                ? { type: 'id', end: 0 }
+                : blank.type === 'text'
+                ? { type: 'text', end: { cursor: 0, index: 0 } }
+                : { type: 'list', where: 'inside' };
     }
     return { sel, ncursor };
 }

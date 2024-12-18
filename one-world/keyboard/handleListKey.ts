@@ -99,11 +99,11 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
                 const loc = nextLoc++;
                 return {
                     nodes: {
-                        [loc]: { type: 'text', spans: [], loc },
+                        [loc]: { type: 'text', spans: [{ type: 'text', text: '' }], loc },
                         [current.loc]: current.type === 'table' ? { ...current, rows: [[loc]] } : { ...current, children: [loc] },
                     },
                     nextLoc,
-                    selection: { start: selStart(pathWithChildren(path, loc), { type: 'list', where: 'inside' }) },
+                    selection: { start: selStart(pathWithChildren(path, loc), { type: 'text', end: { index: 0, cursor: 0 } }) },
                 };
             }
             case 'space':
@@ -159,10 +159,12 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     }
 
     const pnode = top.nodes[parentLoc(path)];
-    const blank: Node = richNode(pnode) ? { type: 'text', spans: [], loc: -1 } : { type: 'id', text: '', loc: -1 };
+    const blank: Node = richNode(pnode) ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: -1 } : { type: 'id', text: '', loc: -1 };
 
     const table = handleTableSplit(grem, config, path, top, splitCell(current, cursor, blank));
     if (table) return table;
+
+    console.log('adding', blank);
 
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
 

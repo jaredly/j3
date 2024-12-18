@@ -5,7 +5,20 @@ import { justSel, richNode } from './handleNav';
 import { Mods } from './handleShiftNav';
 import { textCursorSides } from './insertId';
 import { Config } from './test-utils';
-import { TextCursor, Path, Top, Update, selStart, pathWithChildren, parentLoc, findTableLoc, parentPath, ListCursor, lastChild } from './utils';
+import {
+    TextCursor,
+    Path,
+    Top,
+    Update,
+    selStart,
+    pathWithChildren,
+    parentLoc,
+    findTableLoc,
+    parentPath,
+    ListCursor,
+    lastChild,
+    gparentLoc,
+} from './utils';
 
 export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: string, path: Path, top: Top, mods?: Mods): Update | void => {
     if (cursor.start && cursor.start.index !== cursor.end.index) {
@@ -157,6 +170,42 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
     if (grem === '\n' && !mods?.shift) {
         let parent = top.nodes[parentLoc(path)];
         if (richNode(parent)) {
+            if (current.spans.length === 1 && span.text === '') {
+                // hrm hrm
+                let gparent = top.nodes[gparentLoc(path)];
+                if (parent?.type === 'list' && gparent?.type === 'list' && richNode(gparent)) {
+                    const gchildren = gparent.children.slice();
+                    const children = parent.children.slice();
+                    const at = children.indexOf(current.loc);
+                    const gat = gchildren.indexOf(parent.loc);
+                    const after = children.slice(at + 1);
+                    children.splice(at);
+                    gchildren.splice(gat + 1, 0, current.loc);
+                    let nextLoc = top.nextLoc;
+                    const nodes: Nodes = {};
+                    if (after.length) {
+                        const loc = nextLoc++;
+                        gchildren.splice(gat + 2, 0, loc);
+                        nodes[loc] = { ...parent, children: after, loc };
+                    }
+                    nodes[gparent.loc] = { ...gparent, children: gchildren };
+                    nodes[parent.loc] = { ...parent, children };
+                    return {
+                        nodes,
+                        selection: {
+                            start: selStart(pathWithChildren(parentPath(parentPath(path)), current.loc), {
+                                type: 'text',
+                                end: { index: 0, cursor: 0 },
+                            }),
+                        },
+                        nextLoc,
+                    };
+                    // const gafter = gchildren.slice(gat + 1)
+                } else {
+                    // otherwise ... wrap the parent in a rich?
+                }
+            }
+
             // nowww we split.
             // hrm but we also need to allow a mods
             const before = current.spans.slice(0, cursor.end.index + 1);
@@ -184,7 +233,7 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
                 if (!right.length) {
                     for (let i = 1; i < rows[row].length; i++) {
                         const cloc = nextLoc++;
-                        nodes[cloc] = { type: 'text', spans: [], loc: cloc };
+                        nodes[cloc] = { type: 'text', spans: [{ type: 'text', text: '' }], loc: cloc };
                         rows[row + 1].push(cloc);
                     }
                 }

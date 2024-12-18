@@ -128,7 +128,7 @@ export const XMLNode = ({
                                   {key !== 'children' ? (
                                       <div style={{ gridColumn: 1, fontWeight: 'bold' }}>
                                           {key}
-                                          {Array.isArray(value) ? '[]' : ''}
+                                          {Array.isArray(value) ? `[${value.length}]` : ''}
                                       </div>
                                   ) : null}
                                   <div style={key === 'children' ? { gridColumnStart: 1, gridColumnEnd: 2 } : { gridColumn: 2 }}>

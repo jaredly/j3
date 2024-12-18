@@ -53,7 +53,7 @@ test('text inside leavee', () => {
 test('text inside list', () => {
     let state = asTop(round([], true), listc('inside'));
     state = applyUpdate(state, handleKey(state, '"', lisp)!);
-    check(state, round([text([], true)]), listc('inside'));
+    check(state, round([text([tspan('')], true)]), textc(0, 0));
 });
 
 test('text after id', () => {
@@ -365,7 +365,7 @@ test('shift-enter in rich', () => {
 test('enter after sub rich', () => {
     let state = asTop(rich([checks([text([tspan('hello')])], true)]), listc('after'));
     state = applyUpdate(state, keyUpdate(state, ',', {}));
-    check(state, rich([checks([text([tspan('hello')])]), text([], true)]), listc('inside'));
+    check(state, rich([checks([text([tspan('hello')])]), text([tspan('')], true)]), textc(0, 0));
 });
 
 test('select a controlll', () => {
@@ -434,6 +434,16 @@ test('remove list item', () => {
     let state = asTop(bullet([text([tspan('one')]), text([tspan('')], true)]), textc(0, 0));
     state = applyUpdate(state, keyUpdate(state, 'Backspace', {}));
     check(state, bullet([text([tspan('one')], true)]), textc(0, 3));
+});
+
+test('remove list item', () => {
+    let state = asTop(rich([bullet([text([tspan('one')]), text([tspan('')], true)])]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, '\n', {}));
+    check(state, rich([bullet([text([tspan('one')])]), text([tspan('')], true)]), textc(0, 0));
+});
+
+test('join two rich lists pls', () => {
+    ///
 });
 
 // TODO delete rich in table

@@ -588,6 +588,7 @@ export const RenderNode = ({
                     <span ref={ref} style={{ ...style, fontFamily: 'Merriweather' }}>
                         {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor rich /> : null}
                         {children}
+                        {!children.length ? <Zwd /> : null}
                     </span>
                 );
             }
@@ -597,6 +598,7 @@ export const RenderNode = ({
                     <span style={{ backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined, color: textColor }}>"</span>
                     {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
                     {children}
+                    {!children.length ? <Zwd /> : null}
                     <span style={{ backgroundColor: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined, color: textColor }}>"</span>
                     {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
                 </span>
