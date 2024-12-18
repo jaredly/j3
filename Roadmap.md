@@ -18,6 +18,8 @@ like, there should be a way to do it without too much disruption.
 I just need, like
 the product of the first cursor to produce a "here's how to transform other cursors as a result of this change" function.
 
+- [ ] next, shift-up and down, gotta make it more normal
+
 
 
 # DSL3 let's go

@@ -266,29 +266,6 @@ export const wordNav = (state: TestState, left: boolean, shift: boolean | undefi
                 start: shift ? current.cursor.start ?? current.cursor.end : undefined,
             });
         }
-        // const span = current.node.spans[index];
-        // if (span.type === 'text') {
-        //     const text = current.cursor.end.text ?? splitGraphemes(span.text);
-        //     let i;
-        //     // TODO:
-        //     if (left && cursor > 0) {
-        //         for (i = cursor - 2; i >= 0 && text[i] !== ' ' && text[i] !== '\n'; i--);
-        //         i++;
-        //         return justSel(current.path, {
-        //             type: 'text',
-        //             end: { ...current.cursor.end, cursor: i },
-        //             start: shift ? current.cursor.start ?? current.cursor.end : undefined,
-        //         });
-        //     } else if (!left && cursor < text.length) {
-        //         for (i = current.cursor.end.cursor + 2; i < text.length && text[i] !== ' ' && text[i] !== '\n'; i++);
-        //         if (i > text.length) i = text.length;
-        //         return justSel(current.path, {
-        //             type: 'text',
-        //             end: { ...current.cursor.end, cursor: i },
-        //             start: shift ? current.cursor.start ?? current.cursor.end : undefined,
-        //         });
-        //     }
-        // }
     }
     const next = goTabLateral(state.sel.start, state.top, left);
     return selUpdate(next);

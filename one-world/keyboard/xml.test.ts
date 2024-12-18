@@ -68,6 +68,18 @@ test('lets do some attribute', () => {
     check(state, list({ type: 'tag', node: id('hello'), attributes: table('curly', [], true) })([]), listc('inside'));
 });
 
+test('lets do a dot', () => {
+    let state = asTop(list({ type: 'tag', node: id('hello', true) })([]), idc(5));
+    state = applyUpdate(state, keyUpdate(state, '.', {}, undefined, lisp)!);
+    check(state, list({ type: 'tag', node: smoosh([id('hello'), id('.', true)]) })([]), idc(1));
+});
+
+test('del in tag', () => {
+    let state = asTop(list({ type: 'tag', node: smoosh([id('hello'), id('.', true)]), attributes: id('lol') })([]), idc(1));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {}, undefined, lisp)!);
+    check(state, list({ type: 'tag', node: id('hello', true), attributes: id('lol') })([]), idc(5));
+});
+
 test('attributes del', () => {
     let state = asTop(list({ type: 'tag', node: id('hello', true), attributes: table('curly', [], true) })([]), listc('inside'));
     state = applyUpdate(state, keyUpdate(state, 'Backspace', {})!);

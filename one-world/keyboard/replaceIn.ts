@@ -1,4 +1,5 @@
 import { Node } from '../shared/cnodes';
+import { isTag } from './handleNav';
 
 export const replaceIn = (node: Node, old: number, ...locs: number[]): Node => {
     if (node.type === 'id') {
@@ -21,12 +22,19 @@ export const replaceIn = (node: Node, old: number, ...locs: number[]): Node => {
     }
 
     if (node.type === 'list') {
-        if (typeof node.kind !== 'string' && node.kind.type === 'tag' && node.kind.node === old) {
+        if (isTag(node.kind) && node.kind.node === old) {
             if (locs.length !== 1) {
                 // hm or I could wrap them in a spaced or something? or a smooshed?
                 throw new Error(`Tag must be replaced with only a single node?`);
             }
-            return { ...node, kind: { type: 'tag', node: locs[0] } };
+            return { ...node, kind: { type: 'tag', node: locs[0], attributes: node.kind.attributes } };
+        }
+        if (isTag(node.kind) && node.kind.attributes === old) {
+            if (locs.length !== 1) {
+                // hm or I could wrap them in a spaced or something? or a smooshed?
+                throw new Error(`Tag must be replaced with only a single node?`);
+            }
+            return { ...node, kind: { type: 'tag', node: node.kind.node, attributes: locs[0] } };
         }
         const at = node.children.indexOf(old);
         if (at === -1) throw new Error(`cant find ${old} child of list ${node.loc}`);
