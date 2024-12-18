@@ -212,6 +212,28 @@ export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSele
     return goLateral(path, top, shift, true);
 };
 
+export const wordNav = (state: TestState, left: boolean): Update | void => {
+    const current = getCurrent(state.sel, state.top);
+    if (current.type === 'text' && current.cursor.type === 'text') {
+        const span = current.node.spans[current.cursor.end.index];
+        if (span.type === 'text') {
+            const text = current.cursor.end.text ?? splitGraphemes(span.text);
+            let i;
+            if (left && current.cursor.end.cursor > 0) {
+                for (i = current.cursor.end.cursor - 2; i >= 0 && text[i] !== ' ' && text[i] !== '\n'; i--);
+                i++;
+                return justSel(current.path, { type: 'text', end: { ...current.cursor.end, cursor: i } });
+            } else if (!left && current.cursor.end.cursor < text.length) {
+                for (i = current.cursor.end.cursor + 2; i < text.length && text[i] !== ' ' && text[i] !== '\n'; i++);
+                if (i > text.length) i = text.length;
+                return justSel(current.path, { type: 'text', end: { ...current.cursor.end, cursor: i } });
+            }
+        }
+    }
+    const next = goTabLateral(state.sel.start, state.top, left);
+    return selUpdate(next);
+};
+
 export const handleTab = (state: TestState, shift: boolean): Update | void => {
     // if (state.sel.end)
     const next = goTabLateral(state.sel.start, state.top, shift);

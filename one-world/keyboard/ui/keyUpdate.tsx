@@ -2,7 +2,7 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { handleDelete } from '../handleDelete';
 import { handleKey } from '../handleKey';
 import { handleNav } from '../handleNav';
-import { Mods, Src, handleShiftNav, handleSpecial, handleTab, shiftExpand } from '../handleShiftNav';
+import { Mods, Src, handleShiftNav, handleSpecial, handleTab, shiftExpand, wordNav } from '../handleShiftNav';
 import { wrapKind, handleWrap, closerKind, handleClose } from '../handleWrap';
 import { Config, TestState, js } from '../test-utils';
 import { NodeSelection, Update } from '../utils';
@@ -18,7 +18,13 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
     if (key === 'Backspace') {
         return handleDelete(state);
     } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
-        return mods.shift ? handleShiftNav(state, key) : handleNav(key, state);
+        if (mods.shift) {
+            return handleShiftNav(state, key);
+        }
+        if (mods.ctrl) {
+            return wordNav(state, key === 'ArrowLeft');
+        }
+        return handleNav(key, state);
     } else if (key === 'ArrowUp' || key === 'ArrowDown') {
         // TODO shift=up/down
         if (mods.shift) {

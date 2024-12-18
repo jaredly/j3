@@ -454,4 +454,10 @@ test('delete at start', () => {
     check(state, bullet([text([tspan('one')]), text([tspan('two')])], true), listc('before'));
 });
 
+test('ctrl-left in text', () => {
+    let state = asTop(text([tspan('one two three')], true), textc(0, 8));
+    state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { ctrl: true }));
+    check(state, text([tspan('one two three')], true), textc(0, 4));
+});
+
 // TODO delete rich in table
