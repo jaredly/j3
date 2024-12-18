@@ -1,6 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Collection, Id, isRich, List, Node, Nodes, Table, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
+import { isBlank } from './flatenate';
 import { goLeft, isTag, justSel, selectEnd, selectStart, selUpdate, spanEnd, spanStart } from './handleNav';
 import { selEnd, SelSide, SelStart } from './handleShiftNav';
 import { mergeAdjacentSpans } from './handleSpecialText';
@@ -394,11 +395,11 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
 
     if (got.type === 'tag') {
         if (node.type === 'id' && node.text === '' && isTag(got.pnode.kind) && got.pnode.kind.node === node.loc) {
-            if (got.pnode.children.length === 0) {
+            if (got.pnode.children.length === 0 || (got.pnode.children.length === 1 && isBlank(state.top.nodes[got.pnode.children[0]]))) {
                 return removeSelf(state, { path: got.parent, node: got.pnode });
             }
         }
-        return;
+        return justSel(got.parent, { type: 'list', where: 'start' });
     }
 
     // There's the listies

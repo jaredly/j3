@@ -71,7 +71,7 @@ export const findParent = (kind: 0 | 1 | 2, path: Path, top: Top): void | { node
 
 type FlatParent = { type: 'new'; kind: Kind; current: Node } | { type: 'existing'; node: List<number>; path: Path };
 
-const isBlank = (node?: Flat) => node && node.type === 'id' && node.text === '';
+export const isBlank = (node?: Flat) => node && node.type === 'id' && node.text === '';
 
 export function addNeighborAfter(
     at: number,

@@ -222,7 +222,11 @@ export const RenderNode = ({
                     return (
                         <span style={{ display: 'inline-flex', flexDirection: 'row' }}>
                             <span style={style} ref={ref}>
-                                <span>
+                                <span
+                                    style={{
+                                        backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
+                                    }}
+                                >
                                     {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                                     <span style={{ fontVariantLigatures: 'none' }}>&lt;</span>
                                     <RenderNode

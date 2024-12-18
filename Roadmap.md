@@ -1,4 +1,25 @@
 
+# Shift select
+ok, so I'm thikning the multiselect ought to be a little different.
+like
+
+shift+up/down should do the same things as shift-left/right, which is to say...
+(left/right), if we're in a "rich text" then we'll move by individual characters...
+unless ctrl is selected too?
+or maybe always do that.
+so ctrl+(left/right) is for "tabbing", normal left/right is just normal.
+maybe I'll try that.
+
+anyway, then you can hit `escape` to "select up a level". that sounds cool.
+and then ctrl+left/right to move the cursor to the start/end of the current multiselect.
+
+annnnnnnnd I haven't thought /at all/ about multicursor. so there's that.
+like, there should be a way to do it without too much disruption.
+I just need, like
+the product of the first cursor to produce a "here's how to transform other cursors as a result of this change" function.
+
+
+
 # DSL3 let's go
 
 - [x] basic things, looks like we're in business
