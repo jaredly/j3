@@ -164,8 +164,6 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     const table = handleTableSplit(grem, config, path, top, splitCell(current, cursor, blank));
     if (table) return table;
 
-    console.log('adding', blank);
-
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
 
     const flat = parent ? flatten(parent.node, top) : [current];

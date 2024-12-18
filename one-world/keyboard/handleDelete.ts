@@ -3,6 +3,7 @@ import { Collection, Id, isRich, List, Node, Nodes, Table, Text, TextSpan } from
 import { cursorSides } from './cursorSides';
 import { goLeft, isTag, justSel, selectEnd, selUpdate, spanEnd, spanStart } from './handleNav';
 import { selEnd, SelSide, SelStart } from './handleShiftNav';
+import { mergeAdjacentSpans } from './handleSpecialText';
 import { textCursorSides, textCursorSides2 } from './insertId';
 import { replaceAt } from './replaceAt';
 import { replaceIn } from './replaceIn';
@@ -602,15 +603,44 @@ export const handleTextDelete = (state: TestState, current: Extract<Current, { t
 
         const loff = normalizeTextCursorSide(spans, left, text);
         if (loff === 'before') {
+            const parent = state.top.nodes[parentLoc(current.path)];
+            if (parent.type === 'list' && isRich(parent.kind)) {
+                // joinn
+                const at = parent.children.indexOf(current.node.loc);
+                if (at === 0) {
+                    return justSel(parentPath(current.path), { type: 'list', where: 'before' });
+                }
+                const ploc = parent.children[at - 1];
+                const pnode = state.top.nodes[ploc];
+                const children = parent.children.slice();
+                children.splice(at, 1);
+                if (pnode.type === 'text') {
+                    const spans = pnode.spans.concat(current.node.spans);
+                    const cursor: TextCursor = {
+                        type: 'text',
+                        end: { index: pnode.spans.length, cursor: 0 },
+                    };
+                    return {
+                        nodes: {
+                            [pnode.loc]: { ...pnode, spans: mergeAdjacentSpans(spans, cursor) },
+                            [parent.loc]: { ...parent, children },
+                        },
+                        selection: {
+                            start: selStart(pathWithChildren(parentPath(current.path), ploc), cursor),
+                        },
+                    };
+                }
+            }
+
             if (spans[0].type === 'text' && spans[0].text.length === 0) {
                 // Remove empty spans
                 return {
                     nodes: { [current.node.loc]: { ...current.node, spans: spans.filter((s) => s.type !== 'text' || s.text !== '') } },
-                    selection: { start: selStart(current.path, { type: 'list', where: 'start' }) },
+                    selection: { start: selStart(current.path, { type: 'list', where: 'before' }) },
                 };
             }
             // TODO remove empty at the starts
-            return justSel(current.path, { type: 'list', where: 'start' });
+            return justSel(current.path, { type: 'list', where: 'before' });
         }
         if (loff === 'after') throw new Error(`cant be after`);
         left = loff;

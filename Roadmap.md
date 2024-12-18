@@ -7,7 +7,7 @@
 - [x] texts and such
 - [x] numbers, love it
 
-- [ ] rich list double enter (backs out)
+- [x] rich list double enter (backs out)
 - [ ] nested rich lists, ~hide the control? hmmmm. maybe.
   - will need to ~not allow selecting the controllll
 - [ ] rich table removeSelf - remove the cell (joinLeft)

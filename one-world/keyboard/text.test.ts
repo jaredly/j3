@@ -442,8 +442,16 @@ test('remove list item', () => {
     check(state, rich([bullet([text([tspan('one')])]), text([tspan('')], true)]), textc(0, 0));
 });
 
-test('join two rich lists pls', () => {
-    ///
+test('delete previous', () => {
+    let state = asTop(bullet([text([tspan('one')]), text([tspan('two')], true)]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {}));
+    check(state, bullet([text([tspan('onetwo')], true)]), textc(0, 3));
+});
+
+test('delete at start', () => {
+    let state = asTop(bullet([text([tspan('one')], true), text([tspan('two')])]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {}));
+    check(state, bullet([text([tspan('one')]), text([tspan('two')])], true), listc('before'));
 });
 
 // TODO delete rich in table
