@@ -103,8 +103,6 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
         }
     }
 
-    // STRING
-
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
 
     //

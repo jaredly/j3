@@ -76,8 +76,10 @@ export const selStart = (path: Path, cursor: Cursor): NodeSelection['start'] => 
 
 export type PartialSel = { children: number[]; cursor: Cursor };
 
+// TODO maybe join path & key into a `pk: {path, key}` thing
 export type NodeSelection = {
-    start: { path: Path; key: string; cursor: Cursor; returnToHoriz?: number };
+    start: { path: Path; key: string; cursor: Cursor; returnToHoriz?: number; level?: number };
+    end?: { path: Path; key: string; cursor?: Cursor; level?: number; excel?: number };
     multi?: { end: { path: Path; key: string; cursor?: Cursor }; aux?: { path: Path; key: string; cursor?: Cursor } };
 };
 
