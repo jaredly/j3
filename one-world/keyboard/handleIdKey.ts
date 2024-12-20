@@ -7,7 +7,7 @@ import { braced } from './handleListKey';
 import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
 import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, flattenRow, pruneEmptyIds, rough, unflat } from './rough';
-import { Cursor, IdCursor, Path, Top, Update, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
+import { Current, Cursor, IdCursor, Path, Top, Update, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 import { isTag, justSel, selectStart, selUpdate } from './handleNav';
 
 // const isNumber = (grems: undefined | string[], text: string) => {
@@ -20,30 +20,33 @@ import { isTag, justSel, selectStart, selUpdate } from './handleNav';
 //     return grems ? grems.length === 1 && grems[0] === '.' : text === '.';
 // };
 
-export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCursor, grem: string): Update | void => {
-    let current = top.nodes[lastChild(path)];
-    if (current.type !== 'id') throw new Error('not id');
+export const handleIdKey = (config: Config, top: Top, current: Extract<Current, { type: 'id' }>, grem: string): Update | void => {
+    // let node = top.nodes[lastChild(current.path)];
+    // if (node.type !== 'id') throw new Error('not id');
     const kind = textKind(grem, config);
+    const path = current.path;
+    const cursor = current.cursor;
+    const node = current.node;
 
-    if (grem === config.tableNew && cursor.end === 0) {
+    if (grem === config.tableNew && current.cursor.end === 0) {
         const parent = top.nodes[parentLoc(path)];
         if (parent?.type === 'list' && (parent.kind === 'round' || parent.kind === 'curly' || parent.kind === 'square')) {
-            return { nodes: { [parent.loc]: { type: 'table', kind: parent.kind, loc: parent.loc, rows: [[current.loc]] } } };
+            return { nodes: { [parent.loc]: { type: 'table', kind: parent.kind, loc: parent.loc, rows: [[current.node.loc]] } } };
         }
     }
 
-    const table = handleTableSplit(grem, config, path, top, splitCell(current, cursor));
+    const table = handleTableSplit(grem, config, path, top, splitCell(current));
     if (table) return table;
 
-    if (config.xml && grem === '/' && cursor.end === 1 && (cursor.text ? cursor.text.length === 1 && cursor.text[0] === '<' : current.text === '<')) {
+    if (config.xml && grem === '/' && cursor.end === 1 && (cursor.text ? cursor.text.length === 1 && cursor.text[0] === '<' : node.text === '<')) {
         const pnode = top.nodes[parentLoc(path)];
         if (pnode?.type !== 'list' || pnode.kind !== 'smooshed') {
             return {
                 nodes: {
-                    [current.loc]: {
+                    [node.loc]: {
                         type: 'list',
                         kind: { type: 'tag', node: top.nextLoc },
-                        loc: current.loc,
+                        loc: node.loc,
                         children: [top.nextLoc + 1],
                     },
                     [top.nextLoc + 1]: { type: 'id', text: '', loc: top.nextLoc + 1 },
@@ -57,19 +60,19 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
 
     if (config.xml && grem === '>') {
         const pnode = top.nodes[parentLoc(path)];
-        const chars = cursor.text ?? splitGraphemes(current.text);
+        const chars = cursor.text ?? splitGraphemes(node.text);
         if (
             pnode.type === 'list' &&
             pnode.kind === 'smooshed' &&
             pnode.children.length === 2 &&
-            pnode.children[1] === current.loc &&
+            pnode.children[1] === node.loc &&
             cursor.end === chars.length
         ) {
             const prev = top.nodes[pnode.children[0]];
             if (prev.type === 'id' && prev.text === '<') {
                 return {
                     nodes: {
-                        [pnode.loc]: { type: 'list', kind: { type: 'tag', node: current.loc }, children: [prev.loc], loc: pnode.loc },
+                        [pnode.loc]: { type: 'list', kind: { type: 'tag', node: node.loc }, children: [prev.loc], loc: pnode.loc },
                         [prev.loc]: { loc: prev.loc, type: 'id', text: '' },
                     },
                     selection: { start: selStart(pathWithChildren(parentPath(path), prev.loc), { type: 'id', end: 0 }) },
@@ -79,25 +82,25 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
     }
 
     if (typeof kind === 'number') {
-        if (current.ccls == null) {
+        if (node.ccls == null) {
             return {
-                nodes: { [current.loc]: { ...current, ccls: kind, text: grem } },
+                nodes: { [node.loc]: { ...node, ccls: kind, text: grem } },
                 selection: { start: selStart(path, { type: 'id', end: 1 }) },
             };
         }
 
-        if (current.ccls === kind) {
+        if (node.ccls === kind) {
             // Just update the selection
-            const chars = cursor.text?.slice() ?? splitGraphemes(current.text);
-            const { left, right } = cursorSides(cursor);
+            const chars = cursor.text?.slice() ?? splitGraphemes(node.text);
+            const { left, right } = cursorSides(cursor, current.start);
             chars.splice(left, right - left, grem);
-            return { nodes: {}, selection: { start: selStart(path, { ...cursor, start: undefined, text: chars, end: left + 1 }) } };
+            return { nodes: {}, selection: { start: selStart(path, { ...cursor, _start: undefined, text: chars, end: left + 1 }) } };
         }
     }
 
     const pnode = top.nodes[parentLoc(path)];
     if (grem === '\n' && pnode?.type === 'list' && braced(pnode) && pnode.children.length === 1 && !pnode.forceMultiline) {
-        const chars = cursor.text?.slice() ?? splitGraphemes(current.text);
+        const chars = cursor.text?.slice() ?? splitGraphemes(node.text);
         if (chars.length === 0) {
             return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: true } } };
         }
@@ -113,7 +116,7 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
 
     const grand = parentPath(parent ? parent.path : path);
     const gnode = top.nodes[lastChild(grand)];
-    if (gnode?.type === 'list' && isTag(gnode.kind) && gnode.kind.node === (parent ? parent.node.loc : current.loc)) {
+    if (gnode?.type === 'list' && isTag(gnode.kind) && gnode.kind.node === (parent ? parent.node.loc : node.loc)) {
         if (grem === '>') {
             return selUpdate(
                 gnode.children.length
@@ -136,19 +139,19 @@ export const handleIdKey = (config: Config, top: Top, path: Path, cursor: IdCurs
         }
     }
 
-    const flat = parent ? flatten(parent.node, top) : [current];
+    const flat = parent ? flatten(parent.node, top) : [node];
 
     const nodes: Update['nodes'] = {};
 
     const neighbor = flatNeighbor(kind, grem);
-    const { sel, ncursor } = addNeighbor({ neighbor, current, cursor, flat, nodes });
+    const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes });
 
     // console.log(flat);
 
     return flatToUpdateNew(
         flat,
         { node: sel, cursor: ncursor },
-        { isParent: parent != null, node: parent?.node ?? current, path: parent?.path ?? path },
+        { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
         nodes,
         top,
     );
@@ -245,12 +248,12 @@ export type SplitRes = {
     two: { items: Flat[]; selection: { node: Node; cursor: Cursor } };
 };
 const splitCell =
-    (current: Id<number>, cursor: IdCursor) =>
+    (current: Extract<Current, { type: 'id' }>) =>
     (cell: Node, top: Top, loc: number): SplitRes => {
         const flat = flatten(cell, top, undefined, 1);
         const nodes: Update['nodes'] = {};
         const neighbor: Flat = { type: 'sep', loc };
-        const { sel, ncursor } = addNeighbor({ neighbor, current, cursor, flat, nodes });
+        const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes });
         const one = pruneEmptyIds(flat, { node: sel, cursor: ncursor });
         const two = collapseAdjacentIDs(one.items, one.selection);
         const result = unflat(top, two.items, two.selection.node);
@@ -261,27 +264,29 @@ const splitCell =
 function addNeighbor({
     neighbor,
     current,
-    cursor,
+    // cursor,
     flat,
     nodes,
 }: {
     neighbor: Flat;
-    current: Id<number>;
-    cursor: IdCursor;
+    current: Extract<Current, { type: 'id' }>;
+    // current: Id<number>;
+    // cursor: IdCursor;
     flat: Flat[];
     nodes: Record<string, Node | null>;
 }) {
-    const at = flat.indexOf(current);
+    let { node, cursor } = current;
+    const at = flat.indexOf(node);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
-    if (current.type === 'id' && cursor.type === 'id' && cursor.text) {
-        current = nodes[current.loc] = { ...current, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : current.ccls };
-        flat[at] = current;
+    if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
+        node = nodes[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
+        flat[at] = node;
     }
 
-    const split = cursorSplit(current.text, cursor);
+    const split = cursorSplit(node.text, cursor, current.start);
 
-    let sel: Node = current;
-    let ncursor: Cursor = { ...cursor, start: undefined };
+    let sel: Node = node;
+    let ncursor: Cursor = { ...cursor, _start: undefined };
 
     switch (split.type) {
         case 'before': {
@@ -293,8 +298,8 @@ function addNeighbor({
             break;
         }
         case 'between': {
-            flat[at] = nodes[current.loc] = { ...current, text: split.left };
-            flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: split.right, loc: -1, ccls: current.ccls }));
+            flat[at] = nodes[node.loc] = { ...node, text: split.left };
+            flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: split.right, loc: -1, ccls: node.ccls }));
             ncursor = { type: 'id', end: 0 };
             break;
         }

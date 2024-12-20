@@ -11,6 +11,7 @@ import { flatten, flatToUpdateNew } from './rough';
 import { TestState } from './test-utils';
 import {
     CollectionCursor,
+    Current,
     Cursor,
     getCurrent,
     IdCursor,
@@ -90,13 +91,14 @@ export const handleListWrap = (top: Top, path: Path, node: Collection<number>, c
     );
 };
 
-export const handleIdWrap = (top: Top, path: Path, node: Id<number>, cursor: IdCursor, kind: ListKind<number>): Update | void => {
-    const { left, right } = cursorSides(cursor);
-    const text = cursor.text ?? splitGraphemes(node.text);
+export const handleIdWrap = (top: Top, current: Extract<Current, { type: 'id' }>, kind: ListKind<number>): Update | void => {
+    const { left, right } = cursorSides(current.cursor, current.start);
+    const text = current.cursor.text ?? splitGraphemes(current.node.text);
     // Wrap the whole thing
     if (left === 0 && right === text.length) {
-        return wrapNode(top, path, node, kind);
+        return wrapNode(top, current.path, current.node, kind);
     }
+    const { path, node } = current;
     const first = text.slice(0, left);
     const mid = text.slice(left, right);
     const end = text.slice(right);
@@ -283,7 +285,7 @@ export const handleWrap = (state: TestState, key: string): Update | void => {
     if (!kind) return;
     switch (current.type) {
         case 'id':
-            return handleIdWrap(state.top, state.sel.start.path, current.node, current.cursor, kind);
+            return handleIdWrap(state.top, current, kind);
         case 'list':
             return handleListWrap(state.top, state.sel.start.path, current.node, current.cursor, kind);
         // case 'text':

@@ -508,7 +508,7 @@ export const handleDelete = (state: TestState): Update | void => {
             return;
         }
         case 'id': {
-            let { left, right } = cursorSides(current.cursor);
+            let { left, right } = cursorSides(current.cursor, current.start);
             if (left === 0 && right === 0) {
                 // doin a left join
                 return leftJoin(state, current.cursor);

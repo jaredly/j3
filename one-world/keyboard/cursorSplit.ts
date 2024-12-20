@@ -2,10 +2,10 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { cursorSides } from './cursorSides';
 import { IdCursor } from './utils';
 
-export const cursorSplit = (orig: string, cursor: IdCursor): Split => {
+export const cursorSplit = (orig: string, cursor: IdCursor, start: number | undefined): Split => {
     const text = cursor.text ?? splitGraphemes(orig);
 
-    const { left, right } = cursorSides(cursor);
+    const { left, right } = cursorSides(cursor, start);
 
     if (left === 0) {
         return {

@@ -47,7 +47,7 @@ export const pathWithChildren = (path: Path, ...children: number[]) => ({
 
 export type IdCursor = {
     type: 'id';
-    start?: number;
+    _start?: number;
     end: number;
     text?: string[];
 };
@@ -88,17 +88,17 @@ export type Top = { nodes: Nodes; root: number; nextLoc: number };
 export const getNode = (path: Path, top: Top) => top.nodes[path.children[path.children.length - 1]];
 
 export type Current =
-    | { type: 'id'; node: Id<number>; cursor: Extract<Cursor, { type: 'id' }>; path: Path }
+    | { type: 'id'; node: Id<number>; cursor: IdCursor; start?: number; path: Path }
     | {
           type: 'text';
           node: Text<number>;
-          cursor: Extract<Cursor, { type: 'text' | 'list' }>;
+          cursor: TextCursor | ListCursor;
           path: Path;
       }
     | {
           type: 'list';
           node: Collection<number>;
-          cursor: Extract<Cursor, { type: 'list' | 'control' }>;
+          cursor: CollectionCursor;
           path: Path;
       };
 
@@ -111,7 +111,7 @@ export const getCurrent = (selection: NodeSelection, top: Top): Current => {
         if (cursor.type !== 'id') {
             throw new Error(`id select must have cursor id`);
         }
-        return { type: 'id', node, cursor, path };
+        return { type: 'id', node, cursor, path, start: cursor._start };
     }
     if (node.type === 'text') {
         if (cursor.type !== 'text' && cursor.type !== 'list') {
@@ -135,12 +135,12 @@ export type Update = {
     selection?: NodeSelection;
 };
 
-export const splitOnCursor = (id: Id<number>, cursor: IdCursor): [string[], string[], string[]] => {
-    const text = cursor.text ?? splitGraphemes(id.text);
-    const left = cursor.start ? Math.min(cursor.start, cursor.end) : cursor.end;
-    const right = cursor.start ? Math.max(cursor.start, cursor.end) : cursor.end;
-    return [text.slice(0, left), text.slice(left, right), text.slice(right)];
-};
+// export const splitOnCursor = (id: Id<number>, cursor: IdCursor): [string[], string[], string[]] => {
+//     const text = cursor.text ?? splitGraphemes(id.text);
+//     const left = cursor.start ? Math.min(cursor.start, cursor.end) : cursor.end;
+//     const right = cursor.start ? Math.max(cursor.start, cursor.end) : cursor.end;
+//     return [text.slice(0, left), text.slice(left, right), text.slice(right)];
+// };
 
 export const withPartial = (path: Path, sel?: PartialSel) =>
     sel

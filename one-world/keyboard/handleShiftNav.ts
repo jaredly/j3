@@ -5,6 +5,7 @@ import { goLateral, justSel, selectEnd, selectStart, selUpdate } from './handleN
 import { handleSpecialText } from './handleSpecialText';
 import { TestState } from './test-utils';
 import {
+    Current,
     Cursor,
     getCurrent,
     IdCursor,
@@ -279,9 +280,9 @@ export const handleTab = (state: TestState, shift: boolean): Update | void => {
 
 // TabLeft
 
-export const handleShiftId = ({ node, path, cursor }: { node: Id<number>; path: Path; cursor: IdCursor }, top: Top, left: boolean): Update | void => {
+export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { type: 'id' }>, top: Top, left: boolean): Update | void => {
     if (left && cursor.end === 0) {
-        if (cursor.start == null || cursor.start === cursor.end) {
+        if (start == null || start === cursor.end) {
             const parent = top.nodes[parentLoc(path)];
             if (parent.type === 'list' && parent.kind === 'smooshed') {
                 const idx = parent.children.indexOf(node.loc);
@@ -301,7 +302,7 @@ export const handleShiftId = ({ node, path, cursor }: { node: Id<number>; path: 
 
     const text = cursor.text ?? splitGraphemes(node.text);
     if (!left && cursor.end === text.length) {
-        if (cursor.start == null || cursor.start === cursor.end) {
+        if (start == null || start === cursor.end) {
             const parent = top.nodes[parentLoc(path)];
             if (parent.type === 'list' && parent.kind === 'smooshed') {
                 const idx = parent.children.indexOf(node.loc);
@@ -317,7 +318,7 @@ export const handleShiftId = ({ node, path, cursor }: { node: Id<number>; path: 
         return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
     }
     // left--
-    return justSel(path, { ...cursor, start: cursor.start ?? cursor.end, end: cursor.end + (left ? -1 : 1) });
+    return justSel(path, { ...cursor, _start: start ?? cursor.end, end: cursor.end + (left ? -1 : 1) });
 };
 
 export const handleShiftText = (

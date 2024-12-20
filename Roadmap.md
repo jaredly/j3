@@ -1,4 +1,29 @@
 
+# What should I be excited about right now?
+
+... so it shouldn't be tooo long until I can write javascript, right?
+how hard would it be to edit itself?
+
+it would take producing a server of some kind, clearly.
+ALSO we'd need some way of ~preserving comments, right?
+like, the parser ignores comments, which I think is fair and proper.
+~but, when generating the code, we probably do want comments put back in, right?
+
+like ideally, we could have a seamless (js -> cst -> js) transformation.
+and maybe that's the key, the parser does a certain thing, but really
+we work at the level of the cst?
+
+hmmmm that would be an interesting dual system.
+
+
+OK SO
+transitioning the multiselect story, here's what we do:
+
+- rename .end or something, and .multi
+- have `getCurrent` produce somethign derivitive
+
+
+
 # Shift select
 ok, so I'm thikning the multiselect ought to be a little different.
 like

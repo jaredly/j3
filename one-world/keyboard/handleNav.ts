@@ -256,8 +256,8 @@ export const sideEqual = (one: { cursor: number; index: number }, two: { cursor:
 export const navRight = (current: Current, state: TestState): Update | void => {
     switch (current.type) {
         case 'id': {
-            if (current.cursor.start != null && current.cursor.start !== current.cursor.end) {
-                const { right } = cursorSides(current.cursor);
+            if (current.start != null && current.start !== current.cursor.end) {
+                const { right } = cursorSides(current.cursor, current.start);
                 return justSel(current.path, { type: 'id', end: right, text: current.cursor.text });
             }
             const text = current.cursor.text ?? splitGraphemes(current.node.text);
@@ -370,8 +370,8 @@ export const selUpdate = (sel?: void | NodeSelection['start']): Update | void =>
 export const navLeft = (current: Current, state: TestState): Update | void => {
     switch (current.type) {
         case 'id': {
-            if (current.cursor.start != null && current.cursor.start !== current.cursor.end) {
-                const { left } = cursorSides(current.cursor);
+            if (current.start != null && current.start !== current.cursor.end) {
+                const { left } = cursorSides(current.cursor, current.start);
                 return justSel(current.path, { type: 'id', end: left, text: current.cursor.text });
             }
             if (current.cursor.end > 0) {

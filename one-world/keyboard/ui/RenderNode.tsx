@@ -4,7 +4,7 @@ import { isRich, Style } from '../../shared/cnodes';
 import { cursorSides } from '../cursorSides';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
-import { lastChild, parentLoc, parentPath, Path, pathKey, pathWithChildren, selStart, Top, Update } from '../utils';
+import { getCurrent, lastChild, parentLoc, parentPath, Path, pathKey, pathWithChildren, selStart, Top, Update } from '../utils';
 
 import { asStyle } from '../../shared/shape';
 import { textCursorSides2 } from '../insertId';
@@ -92,7 +92,7 @@ export const RenderNode = ({
     readOnly?: boolean;
 }) => {
     const node = state.top.nodes[loc];
-    const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
+    const current = loc === lastChild(state.sel.start.path) ? getCurrent(state.sel, state.top) : null;
     let style: React.CSSProperties | undefined = false //ctx.errors[loc]
         ? { textDecoration: 'underline' }
         : ctx.styles[loc]
@@ -152,9 +152,9 @@ export const RenderNode = ({
     switch (node.type) {
         case 'id':
             const plh = ctx.placeholders[loc];
-            if (cursor?.type === 'id') {
-                const { left, right } = cursorSides(cursor);
-                let text = cursor.text ?? splitGraphemes(node.text);
+            if (current?.type === 'id') {
+                const { left, right } = cursorSides(current.cursor, current.start);
+                let text = current.cursor.text ?? splitGraphemes(node.text);
                 let usingPlaceholder = false;
                 // if (text.length === 0 && plh) {
                 //     if (!style) style = {};
@@ -172,7 +172,7 @@ export const RenderNode = ({
                                 onClick={(evt) => {
                                     evt.stopPropagation();
                                     const pos = usingPlaceholder ? 0 : cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                                    ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0, text: cursor.text }));
+                                    ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0, text: current.cursor.text }));
                                 }}
                                 text={text}
                                 left={left}
@@ -217,6 +217,7 @@ export const RenderNode = ({
             // if (style) {
             //     style.display = 'inline-block';
             // }
+            const cursor = current?.cursor;
             if (typeof node.kind !== 'string') {
                 if (node.kind.type === 'tag') {
                     return (
