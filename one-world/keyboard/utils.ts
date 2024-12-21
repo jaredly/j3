@@ -1,5 +1,6 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Nodes, Id, Collection, Text, Node } from '../shared/cnodes';
+import { SelStart } from './handleShiftNav';
 
 // import { IRSelection } from "../shared/IR/intermediate";
 /*
@@ -75,6 +76,14 @@ export const selStart = (path: Path, cursor: Cursor): NodeSelection['start'] => 
 });
 
 export type PartialSel = { children: number[]; cursor: Cursor };
+
+export const selectedPath = (sel: NodeSelection) => (sel.end ? null : sel.start.path);
+export const selectedLoc = (sel: NodeSelection) => {
+    const path = selectedPath(sel);
+    return path ? lastChild(path) : null;
+};
+
+export const singleSelect = (sel: SelStart): NodeSelection => ({ start: sel });
 
 // TODO maybe join path & key into a `pk: {path, key}` thing
 export type NodeSelection = {
