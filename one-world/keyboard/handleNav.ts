@@ -19,7 +19,10 @@ import {
     Update,
 } from './utils';
 
-export const justSel = (path: Path, cursor: Cursor) => ({ nodes: {}, selection: { start: selStart(path, cursor) } });
+export const justSel = (path: Path, cursor: Cursor, startCursor?: Cursor) => ({
+    nodes: {},
+    selection: { start: selStart(path, startCursor ?? cursor), end: startCursor ? selStart(path, cursor) : undefined },
+});
 
 export const isTag = (kind: ListKind<any> | TableKind) => typeof kind !== 'string' && kind.type === 'tag';
 

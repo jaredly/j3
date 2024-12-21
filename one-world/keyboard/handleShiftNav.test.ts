@@ -31,7 +31,7 @@ import { NodeSelection, Path, selStart, Top } from './utils';
 test('id shift-left', () => {
     let state = asTop(id('hi', true), idc(0));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
-    check(state, id('hiMo', true), idc(1), idc(0));
+    check(state, id('hi', true), idc(0), idc(1));
 });
 
 test('id shift-left and write', () => {
@@ -45,13 +45,13 @@ test('id shift-left and write', () => {
 test('id at smoosh boundary', () => {
     let state = asTop(smoosh([id('ab', true), id('+')]), idc(2));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
-    check(state, smoosh([id('ab'), id('+', true)]), idc(1), idc(0));
+    check(state, smoosh([id('ab'), id('+', true)]), idc(0), idc(1));
 });
 
 test('id at smoosh boundary left', () => {
     let state = asTop(smoosh([id('ab'), id('+', true)]), idc(0));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
-    check(state, smoosh([id('ab', true), id('+')]), idc(1), idc(2));
+    check(state, smoosh([id('ab', true), id('+')]), idc(2), idc(1));
 });
 
 test('bold no shift', () => {

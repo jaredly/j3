@@ -134,7 +134,7 @@ test('id move left', () => {
 test('id move shift left', () => {
     let state = asTop(round([id('abc', true)]), idc(1));
     state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { shift: true }));
-    check(state, round([id('abc', true)]), idc(0), idc(1));
+    check(state, round([id('abc', true)]), idc(1), idc(0));
 });
 
 test('id shift sel type', () => {

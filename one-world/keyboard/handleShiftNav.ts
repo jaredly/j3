@@ -318,7 +318,7 @@ export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { 
         return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
     }
     // left--
-    return justSel(path, { ...cursor, end: cursor.end + (left ? -1 : 1) });
+    return justSel(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }, start ? { ...cursor, end: start } : cursor);
 };
 
 export const handleShiftText = (
