@@ -79,9 +79,15 @@ export const asTopAndPaths = (node: RecNodeT<Sels>, root: Path['root']): { top: 
     return { top: { nextLoc, nodes, root: rootLoc }, sels };
 };
 
-export const asTop = (node: RecNodeT<boolean>, cursor: Cursor): TestState => {
+export const asTop = (node: RecNodeT<boolean>, cursor: Cursor, endCursor?: Cursor): TestState => {
     const { top, sel } = asTopAndPath(node);
-    return { top, sel: { start: selStart({ children: sel, root: { ids: [], top: '' } }, cursor) } };
+    return {
+        top,
+        sel: {
+            start: selStart({ children: sel, root: { ids: [], top: '' } }, cursor),
+            end: endCursor ? selStart({ children: sel, root: { ids: [], top: '' } }, endCursor) : undefined,
+        },
+    };
 };
 
 export const asMultiTop = (node: RecNodeT<number>, cursor: Cursor): TestState => {
@@ -226,7 +232,7 @@ const allkeys = '1234567890qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM~
 const idkeys = (config: Config) => [...allkeys].filter((k) => !config.punct.includes(k) && !config.space.includes(k) && !config.sep.includes(k));
 const lispId = idkeys(lisp);
 const jsId = idkeys(js);
-export const idc = (end: number, start?: number): IdCursor => ({ type: 'id', end, _start: start });
+export const idc = (end: number): IdCursor => ({ type: 'id', end });
 export const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
 export const controlc = (index: number): CollectionCursor => ({ type: 'control', index });
 export const noText = (cursor: Cursor): Cursor =>

@@ -26,23 +26,13 @@ import {
     textcs,
     tspan,
 } from './test-utils';
-import { Cursor, NodeSelection, Path, selStart, Top } from './utils';
+import { NodeSelection, Path, selStart, Top } from './utils';
 
-const run = (name: string, [init, cursor]: [RecNodeT<boolean>, Cursor], key: string, [exp, ecursor]: [RecNodeT<boolean>, Cursor]) => {
-    test(name, () => {
-        let state = asTop(init, cursor);
-        state = applyUpdate(state, handleShiftNav(state, key));
-        check(state, exp, ecursor);
-    });
-};
-
-run(
-    'id shift-left',
-    //
-    [id('hi', true), idc(0)],
-    'ArrowRight',
-    [id('hi', true), idc(1, 0)],
-);
+test('id shift-left', () => {
+    let state = asTop(id('hi', true), idc(0));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    check(state, id('hiMo', true), idc(1), idc(0));
+});
 
 test('id shift-left and write', () => {
     let state = asTop(id('hillo', true), idc(2));
@@ -55,13 +45,13 @@ test('id shift-left and write', () => {
 test('id at smoosh boundary', () => {
     let state = asTop(smoosh([id('ab', true), id('+')]), idc(2));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
-    check(state, smoosh([id('ab'), id('+', true)]), idc(1, 0));
+    check(state, smoosh([id('ab'), id('+', true)]), idc(1), idc(0));
 });
 
 test('id at smoosh boundary left', () => {
     let state = asTop(smoosh([id('ab'), id('+', true)]), idc(0));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
-    check(state, smoosh([id('ab', true), id('+')]), idc(1, 2));
+    check(state, smoosh([id('ab', true), id('+')]), idc(1), idc(2));
 });
 
 test('bold no shift', () => {

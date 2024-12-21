@@ -36,7 +36,7 @@ test('start of id', () => {
 });
 
 test('start of id shift', () => {
-    let state = asTop(id('hillo', true), idc(0, 2));
+    let state = asTop(id('hillo', true), idc(0), idc(2));
     state = applyUpdate(state, handleWrap(state, '('));
     check(state, smoosh([round([id('hi')], true), id('llo')]), listc('before'));
 });

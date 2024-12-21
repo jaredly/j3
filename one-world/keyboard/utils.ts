@@ -48,10 +48,10 @@ export const pathWithChildren = (path: Path, ...children: number[]) => ({
 
 export type IdCursor = {
     type: 'id';
-    _start?: number;
     end: number;
     text?: string[];
 };
+
 export type TextCursor = {
     type: 'text';
     start?: { index: number; cursor: number };
@@ -88,7 +88,7 @@ export const singleSelect = (sel: SelStart): NodeSelection => ({ start: sel });
 // TODO maybe join path & key into a `pk: {path, key}` thing
 export type NodeSelection = {
     start: { path: Path; key: string; cursor: Cursor; returnToHoriz?: number; level?: number };
-    end?: { path: Path; key: string; cursor?: Cursor; level?: number; excel?: number };
+    end?: { path: Path; key: string; cursor: Cursor; level?: number; excel?: number };
     multi?: { end: { path: Path; key: string; cursor?: Cursor }; aux?: { path: Path; key: string; cursor?: Cursor } };
 };
 
@@ -113,6 +113,10 @@ export type Current =
 
 export const getCurrent = (selection: NodeSelection, top: Top): Current => {
     const path = selection.start.path;
+    if (selection.end && selection.end.key !== selection.start.key) {
+        // we have a problem
+        throw new Error('todo multi');
+    }
     const node = getNode(path, top);
     if (node == null) throw new Error('bad path');
     const cursor = selection.start.cursor;
@@ -120,7 +124,11 @@ export const getCurrent = (selection: NodeSelection, top: Top): Current => {
         if (cursor.type !== 'id') {
             throw new Error(`id select must have cursor id`);
         }
-        return { type: 'id', node, cursor, path, start: cursor._start };
+        const ec = selection.end?.cursor;
+        if (ec && ec.type !== 'id') {
+            throw new Error(`id select must have cursor id (end)`);
+        }
+        return { type: 'id', node, cursor: ec ?? cursor, path, start: ec ? cursor.end : undefined };
     }
     if (node.type === 'text') {
         if (cursor.type !== 'text' && cursor.type !== 'list') {

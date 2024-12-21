@@ -5,14 +5,16 @@ import { atPath, noText, selPath, selPathN, TestState } from './test-utils';
 import { Cursor } from './utils';
 import { expect } from 'bun:test';
 
-export const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor) => {
+export const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor, endCursor?: Cursor) => {
     expect(shape(root(state))).toEqual(shape(exp));
     expect({
         sel: state.sel.start.path.children,
         cursor: noText(state.sel.start.cursor),
+        endCursor: state.sel.end ? noText(state.sel.end.cursor) : undefined,
     }).toEqual({
         sel: atPath(state.top.root, state.top, selPath(exp)),
         cursor,
+        endCursor,
     });
 };
 

@@ -94,7 +94,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
             const chars = cursor.text?.slice() ?? splitGraphemes(node.text);
             const { left, right } = cursorSides(cursor, current.start);
             chars.splice(left, right - left, grem);
-            return { nodes: {}, selection: { start: selStart(path, { ...cursor, _start: undefined, text: chars, end: left + 1 }) } };
+            return { nodes: {}, selection: { start: selStart(path, { ...cursor, text: chars, end: left + 1 }) } };
         }
     }
 
@@ -286,7 +286,7 @@ function addNeighbor({
     const split = cursorSplit(node.text, cursor, current.start);
 
     let sel: Node = node;
-    let ncursor: Cursor = { ...cursor, _start: undefined };
+    let ncursor: Cursor = { ...cursor };
 
     switch (split.type) {
         case 'before': {

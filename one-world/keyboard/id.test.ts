@@ -109,7 +109,7 @@ OK SO we have currently:
 collapsing `control` into `list` feels kinda dicey. So yeah, let's keep these distinct. I'd say it's worth it.
 wellll ok maybe id and text can collapse?
 
-
+Alright, anyway, I've decided that any of these things can be the side of a multiselect.
 
 */
 
@@ -134,7 +134,7 @@ test('id move left', () => {
 test('id move shift left', () => {
     let state = asTop(round([id('abc', true)]), idc(1));
     state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { shift: true }));
-    check(state, round([id('abc', true)]), idc(0, 1));
+    check(state, round([id('abc', true)]), idc(0), idc(1));
 });
 
 test('id shift sel type', () => {
