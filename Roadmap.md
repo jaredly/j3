@@ -1,4 +1,10 @@
 
+# How to make multiselect more of a thing
+
+- [x] move `.start` from the IdCursor into the NodeSelection (and call it `end`)
+- [ ] move `.start` from TextCursor into NodeSelection (and call it `end`)
+
+
 # What should I be excited about right now?
 
 ... so it shouldn't be tooo long until I can write javascript, right?
