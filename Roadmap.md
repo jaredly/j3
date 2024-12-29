@@ -3,6 +3,20 @@
 
 - [x] move `.start` from the IdCursor into the NodeSelection (and call it `end`)
 - [ ] move `.start` from TextCursor into NodeSelection (and call it `end`)
+  - I'm like in the middle of making a function or something ... about normalizing the selection? maybe?
+
+
+/getSelectionStatuses` looks to be working like a charm.
+now to use it.... in <App> I shouldn't wonder.
+then remove .start from textcursor.
+
+
+in RednerNode, I should have something like `getSelectionState`
+and it might be
+`start: (at)`
+`end: (at)`
+`sub: (start, end)`
+`covered`
 
 
 # What should I be excited about right now?

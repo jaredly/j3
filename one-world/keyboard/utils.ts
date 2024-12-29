@@ -1,6 +1,9 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Nodes, Id, Collection, Text, Node } from '../shared/cnodes';
+import { Nodes, Id, Collection, Text, Node, childLocs, TextSpan } from '../shared/cnodes';
 import { SelStart } from './handleShiftNav';
+
+export const spanLength = (span: TextSpan<unknown>, text: undefined | TextCursor['end'], index: number) =>
+    index === text?.index && text?.text ? text.text.length : span.type === 'text' ? splitGraphemes(span.text).length : 1;
 
 // import { IRSelection } from "../shared/IR/intermediate";
 /*
@@ -110,6 +113,183 @@ export type Current =
           cursor: CollectionCursor;
           path: Path;
       };
+
+/*
+
+ok so actually what I want is:
+- cursors[] Cursor
+- highlight ; SelectionHighlight
+
+
+*/
+
+type SelectionStatuses = Record<
+    string,
+    {
+        cursors: Cursor[];
+        highlight?: Highlight;
+    }
+>;
+
+type Highlight =
+    | { type: 'full' }
+    | { type: 'id'; start?: number; end?: number }
+    | { type: 'list'; opener: boolean; closer: boolean }
+    // TODO table??
+    | { type: 'text'; spans: (boolean | { start?: number; end?: number })[] };
+
+// type SelectionStatus =
+//     | { type: 'start' | 'end' | 'at'; at: number; text?: string[] }
+//     | {
+//           type: 'text';
+//           // we list out, for each span, what the selection status is
+//           spans: (boolean | { type: 'start' | 'end'; at: number; text?: string[] } | { type: 'sub'; start: number; end: number; text?: string[] })[];
+//       }
+//     // TODO text pls
+//     // OHHHK, so if we're between controls, for example,
+//     // we need to go over the /items/ of the list, and mark them as `covered`.
+//     // yes that makes sense.
+//     | { type: 'control'; index: number; rest?: 'before' | 'after' }
+//     | { type: 'list'; where: ListWhere; cover?: boolean }
+//     | { type: 'sub'; start: number; end: number; text?: string[] }
+//     | { type: 'covered' };
+
+const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor): Highlight | undefined => {
+    if (node.type === 'id') {
+        if (left && left.type !== 'id') throw new Error(`id must have id cursor`);
+        if (right && right.type !== 'id') throw new Error(`id must have id cursor`);
+        return { type: 'id', start: left?.end, end: right?.end };
+    }
+
+    if (node.type === 'text') {
+        return {
+            type: 'text',
+            spans: node.spans.map((span, i) => {
+                if (left?.type === 'text') {
+                    if (left.end.index > i) return false;
+                    if (left.end.index === i) {
+                        if (right?.type === 'text' && right.end.index === i) {
+                            return { start: left.end.cursor, end: right.end.cursor };
+                        }
+                        return { start: left.end.cursor };
+                    }
+                }
+                if (right?.type === 'text') {
+                    if (right.end.index < i) return false;
+                    if (right.end.index === i) {
+                        return { end: right.end.cursor };
+                    }
+                }
+                return true;
+            }),
+        };
+    }
+
+    if (node.type === 'list') {
+        let opener = true;
+        let closer = true;
+        if (left?.type === 'list') {
+            if (left.where === 'inside' || left.where === 'after' || left.where === 'end') {
+                opener = false;
+            }
+        }
+        if (right?.type === 'list') {
+            if (right.where === 'inside' || right.where === 'before' || right.where === 'start') {
+                closer = false;
+            }
+        }
+        return { type: 'list', opener, closer };
+    }
+};
+
+export const getSelectionStatuses = (selection: NodeSelection, top: Top): SelectionStatuses => {
+    if (!selection.end) {
+        const { cursor, key } = selection.start;
+        return { [key]: { cursors: [cursor] } };
+    }
+
+    if (selection.start.key === selection.end.key) {
+        const [left, right] = ltCursor(selection.start.cursor, selection.end.cursor)
+            ? [selection.start, selection.end]
+            : [selection.end, selection.start];
+
+        return {
+            [left.key]: {
+                cursors: [left.cursor, right.cursor],
+                highlight: cursorHighlight(top.nodes[lastChild(left.path)], left.cursor, right.cursor),
+            },
+        };
+    }
+
+    const [left, middle, right] = orderSelections(selection.start, selection.end, top);
+
+    const statuses: SelectionStatuses = {};
+
+    statuses[left.key] = { cursors: [left.cursor], highlight: cursorHighlight(top.nodes[lastChild(left.path)], left.cursor, undefined) };
+
+    statuses[right.key] = { cursors: [right.cursor], highlight: cursorHighlight(top.nodes[lastChild(right.path)], undefined, right.cursor) };
+
+    middle.forEach((md) => {
+        statuses[pathKey(md)] = { cursors: [], highlight: { type: 'full' } };
+    });
+
+    return statuses;
+};
+
+const ltCursor = (one: Cursor, two: Cursor) => {
+    switch (one.type) {
+        case 'id':
+            return two.type === 'id' ? one.end < two.end : false;
+        case 'text':
+            return two.type === 'list'
+                ? two.where === 'after'
+                : two.type === 'text'
+                ? two.end.index === one.end.index
+                    ? one.end.cursor < two.end.cursor
+                    : one.end.index < two.end.index
+                : false;
+        case 'list':
+            return two.type === 'list'
+                ? two.where === 'before'
+                    ? false
+                    : one.where === 'after'
+                    ? false
+                    : one.where === 'before' || one.where === 'start' || two.where === 'end' || two.where === 'after'
+                : one.where === 'before' || one.where === 'start';
+        case 'control':
+            throw new Error('not handling right nowwww');
+    }
+};
+
+const orderSelections = (one: SelStart, two: SelStart, top: Top): [SelStart, Path[], SelStart] => {
+    if (one.path.root.top !== two.path.root.top) throw new Error(`sorry not yettt`);
+    if (one.key === two.key) {
+        if (ltCursor(one.cursor, two.cursor)) {
+            return [one, [], two];
+        } else {
+            return [two, [], one];
+        }
+    }
+    for (let i = 1; i < one.path.children.length && i < two.path.children.length; i++) {
+        const o = one.path.children[i];
+        const t = two.path.children[i];
+        if (o === t) continue;
+        const pnode = top.nodes[one.path.children[i - 1]];
+        const locs = childLocs(pnode);
+        const oat = locs.indexOf(o);
+        const tat = locs.indexOf(t);
+        if (oat === -1 || tat === -1) throw new Error(`not innnn`);
+        // NOTE it's possible to have one be inside the other, if the outer one is a Text selection.
+        // gotta handle that
+        const ppath: Path = { ...one.path, children: one.path.children.slice(0, i) };
+        if (oat < tat) {
+            return [one, locs.slice(oat + 1, tat).map((c) => pathWithChildren(ppath, c)), two];
+        } else {
+            return [two, locs.slice(tat + 1, oat).map((c) => pathWithChildren(ppath, c)), one];
+        }
+    }
+    throw new Error(`ran out, cant handle yext just yets`);
+};
 
 export const getCurrent = (selection: NodeSelection, top: Top): Current => {
     const path = selection.start.path;

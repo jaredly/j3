@@ -3,34 +3,15 @@ import { ParseResult } from '../../evaluators/boot-ex/types';
 import { Action, ToplevelUpdate } from '../../shared/action2';
 import { IRCursor, IRSelection, nodeToIR } from '../../shared/IR/intermediate';
 import { IRForLoc } from '../../shared/IR/layout';
-import {
-    cursorForNode,
-    cursorSelect,
-    IRCache,
-    irNavigable,
-    selectNode,
-    toSelection,
-} from '../../shared/IR/nav';
-import {
-    childLocs,
-    Loc,
-    Node,
-    Nodes,
-    Path,
-    PathRoot,
-    pathWithChildren,
-    RecNodeT,
-    serializePath,
-    toMapInner,
-} from '../../shared/nodes';
+import { cursorForNode, cursorSelect, IRCache, irNavigable, selectNode, toSelection } from '../../shared/IR/nav';
+import { childLocs, Loc, Node, Nodes, Path, PathRoot, pathWithChildren, RecNodeT, serializePath, toMapInner } from '../../shared/nodes';
 import { Toplevel } from '../../shared/toplevels';
 // import { getNodeForPath, selectAll, selectNode } from '../selectNode';
 
 export const isText = (node: Node): node is TextT => node.type === 'id';
 // node.type === 'stringText' ||
 // node.type === 'accessText';
-export const isCollection = (node: Node): node is CollectionT =>
-    node.type === 'list' || node.type === 'record' || node.type === 'array';
+export const isCollection = (node: Node): node is CollectionT => node.type === 'list' || node.type === 'record' || node.type === 'array';
 export type CollectionT = Extract<Node, { type: 'list' | 'array' | 'record' }>;
 export type TextT = Extract<Node, { type: 'id' }>;
 
@@ -96,11 +77,7 @@ const replaceChild = (node: Node, old: number, nw: number): Node | void => {
     }
 };
 
-const replaceWith = (
-    top: Toplevel,
-    path: Path,
-    loc: number,
-): ToplevelUpdate | void => {
+const replaceWith = (top: Toplevel, path: Path, loc: number): ToplevelUpdate | void => {
     const self = path.children[path.children.length - 1];
     if (path.children.length > 1) {
         const parent = top.nodes[path.children[path.children.length - 2]];
@@ -111,12 +88,7 @@ const replaceWith = (
     return { type: 'update', update: { root: loc } };
 };
 
-const unwrap = (
-    path: Path,
-    top: Toplevel,
-    parent: CollectionT,
-    cache: IRForLoc,
-): void | [ToplevelUpdate, IRSelection] => {
+const unwrap = (path: Path, top: Toplevel, parent: CollectionT, cache: IRForLoc): void | [ToplevelUpdate, IRSelection] => {
     if (path.children.length < 3) return;
     const lloc = path.children[path.children.length - 1];
     const gloc = path.children[path.children.length - 3];
@@ -143,12 +115,7 @@ const unwrap = (
     ];
 };
 
-export const joinLeft = (
-    path: Path,
-    top: Toplevel,
-    rightText: string[],
-    cache: IRCache,
-): void | [ToplevelUpdate, IRSelection] => {
+export const joinLeft = (path: Path, top: Toplevel, rightText: string[], cache: IRCache): void | [ToplevelUpdate, IRSelection] => {
     if (path.children.length === 1) {
         // soooo remove the toplevel, right? so it won't be a toplevelupdate.
         return;
@@ -196,11 +163,7 @@ export const joinLeft = (
 
     if (node.type !== 'id') return;
 
-    if (
-        parent.type !== 'list' &&
-        parent.type !== 'array' &&
-        parent.type !== 'record'
-    ) {
+    if (parent.type !== 'list' && parent.type !== 'array' && parent.type !== 'record') {
         return;
     }
 
@@ -332,10 +295,7 @@ export const addSibling = (
     const idx = parent.items.indexOf(child);
     if (idx === -1) return;
 
-    const { selected, nloc, nodes, nidx } = inflateRecNode(
-        top.nextLoc,
-        sibling,
-    );
+    const { selected, nloc, nodes, nidx } = inflateRecNode(top.nextLoc, sibling);
 
     if (selected == null) {
         throw new Error(`invalid "sibling"; one node must have loc=true`);
@@ -348,9 +308,7 @@ export const addSibling = (
 
     const npath: Path = {
         root: path.root,
-        children: path.children
-            .slice(0, containerParent + 1)
-            .concat(selected.children),
+        children: path.children.slice(0, containerParent + 1).concat(selected.children),
     };
 
     return {
@@ -1098,11 +1056,11 @@ export const idSel = (cursor: number, path: Path): IRSelection => ({
 //     );
 // };
 
-const justSel = (sel: IRSelection, doc: string): Action | void => ({
-    type: 'selection',
-    doc,
-    selections: [sel],
-});
+// const justSel = (sel: IRSelection, doc: string): Action | void => ({
+//     type: 'selection',
+//     doc,
+//     selections: [sel],
+// });
 
 export const createIRCache = (
     root: number,

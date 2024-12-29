@@ -151,7 +151,7 @@ export const RenderNode = ({
 
     switch (node.type) {
         case 'id':
-            const plh = ctx.placeholders[loc];
+            // const plh = ctx.placeholders[loc];
             if (current?.type === 'id') {
                 const { left, right } = cursorSides(current.cursor, current.start);
                 let text = current.cursor.text ?? splitGraphemes(node.text);
