@@ -304,9 +304,10 @@ export const getCurrent = (selection: NodeSelection, top: Top): Current => {
         if (cursor.type !== 'id') {
             throw new Error(`id select must have cursor id`);
         }
-        const ec = selection.end?.cursor;
+        let ec = selection.end?.cursor;
         if (ec && ec.type !== 'id') {
-            throw new Error(`id select must have cursor id (end)`);
+            ec = undefined;
+            // throw new Error(`id select must have cursor id (end)`);
         }
         return { type: 'id', node, cursor: ec ?? cursor, path, start: ec ? cursor.end : undefined };
     }
