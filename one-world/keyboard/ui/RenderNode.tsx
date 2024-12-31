@@ -4,7 +4,23 @@ import { isRich, Style } from '../../shared/cnodes';
 import { cursorSides } from '../cursorSides';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
-import { getCurrent, lastChild, parentLoc, parentPath, Path, pathKey, pathWithChildren, selStart, Top, Update } from '../utils';
+import {
+    CollectionCursor,
+    getCurrent,
+    IdCursor,
+    lastChild,
+    ListCursor,
+    parentLoc,
+    parentPath,
+    Path,
+    pathKey,
+    pathWithChildren,
+    SelectionStatuses,
+    selStart,
+    TextCursor,
+    Top,
+    Update,
+} from '../utils';
 
 import { asStyle } from '../../shared/shape';
 import { textCursorSides2 } from '../insertId';
@@ -30,6 +46,7 @@ type RCtx = {
     refs: Record<number, HTMLElement>; // -1 gets you 'cursor' b/c why not
     styles: Record<number, Style>;
     placeholders: Record<number, string>;
+    selectionStatuses: SelectionStatuses;
     dispatch: (up: Update) => void;
     msel: null | string[];
     mhover: null | string[];
@@ -92,7 +109,9 @@ export const RenderNode = ({
     readOnly?: boolean;
 }) => {
     const node = state.top.nodes[loc];
-    const current = loc === lastChild(state.sel.start.path) ? getCurrent(state.sel, state.top) : null;
+
+    // const current = loc === lastChild(state.sel.start.path) ? getCurrent(state.sel, state.top) : null;
+
     let style: React.CSSProperties | undefined = false //ctx.errors[loc]
         ? { textDecoration: 'underline' }
         : ctx.styles[loc]
@@ -111,8 +130,10 @@ export const RenderNode = ({
             state.top,
         );
 
+    const status = ctx.selectionStatuses[key];
+
     const lightColor = 'rgb(255,200,200)';
-    if (!readOnly && ctx.msel?.includes(key)) {
+    if (!readOnly && status?.highlight?.type === 'full') {
         if (!style) style = {};
         style.borderRadius = '2px';
         // const lightColor = 'rgb(255,100,100,0.5)';
@@ -120,14 +141,14 @@ export const RenderNode = ({
         style.outline = `2px solid ${lightColor}`;
     }
 
-    if (!readOnly && state.sel.multi?.end?.key === key) {
-        if (!style) style = {};
-        style.borderRadius = '2px';
-        const color = 'rgb(255,100,100)';
-        style.backgroundColor = lightColor;
-        style.outline = `2px solid ${color}`;
-        style.position = 'relative';
-    }
+    // if (!readOnly && state.sel.multi?.end?.key === key) {
+    //     if (!style) style = {};
+    //     style.borderRadius = '2px';
+    //     const color = 'rgb(255,100,100)';
+    //     style.backgroundColor = lightColor;
+    //     style.outline = `2px solid ${color}`;
+    //     style.position = 'relative';
+    // }
 
     const hoverColor = 'rgb(200,230,255)';
     if (!readOnly && ctx.mhover?.includes(key)) {
@@ -152,9 +173,10 @@ export const RenderNode = ({
     switch (node.type) {
         case 'id':
             // const plh = ctx.placeholders[loc];
-            if (current?.type === 'id') {
-                const { left, right } = cursorSides(current.cursor, current.start);
-                let text = current.cursor.text ?? splitGraphemes(node.text);
+            if (status?.cursors.length && !readOnly) {
+                const text = (status.cursors.find((c) => c.type === 'id' && c.text) as IdCursor)?.text ?? splitGraphemes(node.text);
+                // const { left, right } = cursorSides(current.cursor, current.start);
+                // let text = current.cursor.text ?? splitGraphemes(node.text);
                 let usingPlaceholder = false;
                 // if (text.length === 0 && plh) {
                 //     if (!style) style = {};
@@ -164,21 +186,17 @@ export const RenderNode = ({
                 // }
                 return (
                     <span style={{ ...style, position: 'relative' }}>
-                        {readOnly ? (
-                            text.join('')
-                        ) : (
-                            <TextWithCursor
-                                innerRef={ref}
-                                onClick={(evt) => {
-                                    evt.stopPropagation();
-                                    const pos = usingPlaceholder ? 0 : cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                                    ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0, text: current.cursor.text }));
-                                }}
-                                text={text}
-                                left={left}
-                                right={right}
-                            />
-                        )}
+                        <TextWithCursor
+                            innerRef={ref}
+                            onClick={(evt) => {
+                                evt.stopPropagation();
+                                const pos = usingPlaceholder ? 0 : cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
+                                // ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0, text: current.cursor.text }));
+                            }}
+                            text={text}
+                            highlight={status.highlight?.type === 'id' ? status.highlight : undefined}
+                            cursors={(status.cursors.filter((c) => c.type === 'id') as IdCursor[]).map((c) => c.end)}
+                        />
                         {/* {text.length === 0 && plh != null ? <PLHPopover text={plh} /> : null} */}
                     </span>
                 );
@@ -217,7 +235,7 @@ export const RenderNode = ({
             // if (style) {
             //     style.display = 'inline-block';
             // }
-            const cursor = current?.cursor;
+            const cursor = undefined as undefined | CollectionCursor; // current?.cursor;
             if (typeof node.kind !== 'string') {
                 if (node.kind.type === 'tag') {
                     return (
@@ -503,6 +521,7 @@ export const RenderNode = ({
                     );
             }
         case 'text': {
+            const cursor = undefined as undefined | TextCursor | CollectionCursor; //  current?.cursor;
             const sides = cursor?.type === 'text' ? textCursorSides2(cursor) : null;
             const children = node.spans.map((span, i) => {
                 if (span.type === 'text') {
@@ -530,8 +549,9 @@ export const RenderNode = ({
                                         );
                                     }}
                                     text={text}
-                                    left={left}
-                                    right={right}
+                                    // left={left}
+                                    // right={right}
+                                    cursors={[]}
                                 />
                             </span>
                         );

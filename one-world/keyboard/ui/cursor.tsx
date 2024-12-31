@@ -33,23 +33,34 @@ const useResizeTick = () => {
 
 export const TextWithCursor = ({
     text,
-    left,
-    right,
+    // left,
+    // right,
     onClick,
     innerRef,
     cursorRef,
+    cursors,
+    highlight,
     rich,
 }: {
     innerRef?: (span: HTMLSpanElement) => void;
     cursorRef?: (span: HTMLSpanElement) => void;
     text: string[];
-    left: number;
-    right: number;
+    cursors: number[];
+    highlight?: { start?: number; end?: number };
+    // left: number;
+    // right: number;
     rich?: boolean;
     onClick: React.ComponentProps<'span'>['onClick'];
 }) => {
     const ref = useRef<HTMLSpanElement>();
-    const [rects, setRects] = useState(null as null | { width: number; height: number; left: number; top: number }[]);
+    type Rect = {
+        width: number;
+        height: number;
+        left: number;
+        top: number;
+    }[];
+
+    const [rects, setRects] = useState(null as null | Rect);
     const tick = useResizeTick();
 
     useEffect(() => {
@@ -60,10 +71,22 @@ export const TextWithCursor = ({
             return setRects([{ width: 1, height: box.height, left: 0, top: 0 }]);
         }
 
+        let rects: DOMRect[] = [];
+
         const range = new Range();
-        range.setStart(ref.current.firstChild!, text.slice(0, left).join('').length);
-        range.setEnd(ref.current.firstChild!, text.slice(0, right).join('').length);
-        const rects = [...range.getClientRects()];
+
+        if (highlight) {
+            range.setStart(ref.current.firstChild!, text.slice(0, highlight.start ?? 0).join('').length);
+            range.setEnd(ref.current.firstChild!, text.slice(0, highlight.end ?? text.length).join('').length);
+            rects = [...range.getClientRects()];
+        }
+
+        cursors.forEach((at) => {
+            const cat = text.slice(0, at).join('').length;
+            range.setStart(ref.current!.firstChild!, cat);
+            range.setEnd(ref.current!.firstChild!, cat);
+            rects.push(...range.getClientRects());
+        });
 
         range.setStart(ref.current.firstChild!, 0);
         range.setEnd(ref.current.firstChild!, 0);
@@ -77,7 +100,7 @@ export const TextWithCursor = ({
                 top: rect.top - rbox.top,
             })),
         );
-    }, [text, left, right, tick]);
+    }, [text, highlight, tick]);
 
     return (
         <span style={{ position: 'relative' }}>

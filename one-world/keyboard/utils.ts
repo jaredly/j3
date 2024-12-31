@@ -123,7 +123,7 @@ ok so actually what I want is:
 
 */
 
-type SelectionStatuses = Record<
+export type SelectionStatuses = Record<
     string,
     {
         cursors: Cursor[];
@@ -293,10 +293,10 @@ const orderSelections = (one: SelStart, two: SelStart, top: Top): [SelStart, Pat
 
 export const getCurrent = (selection: NodeSelection, top: Top): Current => {
     const path = selection.start.path;
-    if (selection.end && selection.end.key !== selection.start.key) {
-        // we have a problem
-        throw new Error('todo multi');
-    }
+    // if (selection.end && selection.end.key !== selection.start.key) {
+    //     // we have a problem
+    //     throw new Error('todo multi');
+    // }
     const node = getNode(path, top);
     if (node == null) throw new Error('bad path');
     const cursor = selection.start.cursor;

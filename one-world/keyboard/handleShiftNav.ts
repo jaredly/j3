@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { childLocs, Id, Loc, Node, Text } from '../shared/cnodes';
 import { spanLength } from './handleDelete';
-import { goLateral, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
+import { goLateral, handleNav, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
 import { handleSpecialText } from './handleSpecialText';
 import { TestState } from './test-utils';
 import {
@@ -91,19 +91,24 @@ export const shiftExpand = (state: TestState, spans?: Src[]): Update | void => {
     return { nodes: {}, selection: { start: state.sel.start, multi: { end: selEnd(parent) } } };
 };
 
-export const handleShiftNav = (state: TestState, key: string): Update | void => {
-    if (state.sel.multi) {
-        const next = nextLateral(state.sel.multi?.end, state.top, key === 'ArrowLeft');
-        if (!next) return;
-        return { nodes: {}, selection: { start: state.sel.start, multi: { end: next } } };
+export const handleShiftNav = (state: TestState, key: 'ArrowLeft' | 'ArrowRight'): Update | void => {
+    const at = state.sel.end ?? state.sel.start;
+    const next = handleNav(key, { ...state, sel: { start: at } });
+    if (next && next.selection) {
+        return { nodes: {}, selection: { start: state.sel.start, end: next.selection.start } };
     }
-    const current = getCurrent(state.sel, state.top);
-    switch (current.type) {
-        case 'id':
-            return handleShiftId(current, state.top, key === 'ArrowLeft');
-        case 'text':
-            return handleShiftText(current, state.top, key === 'ArrowLeft');
-    }
+    // if (state.sel.multi) {
+    //     const next = nextLateral(state.sel.multi?.end, state.top, key === 'ArrowLeft');
+    //     if (!next) return;
+    //     return { nodes: {}, selection: { start: state.sel.start, multi: { end: next } } };
+    // }
+    // const current = getCurrent(state.sel, state.top);
+    // switch (current.type) {
+    //     case 'id':
+    //         return handleShiftId(current, state.top, key === 'ArrowLeft');
+    //     case 'text':
+    //         return handleShiftText(current, state.top, key === 'ArrowLeft');
+    // }
 };
 
 const isSmooshSpace = (node: Node) => {

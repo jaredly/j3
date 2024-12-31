@@ -12,7 +12,7 @@ import { nodeToXML, toXML, XML } from '../../syntaxes/xml';
 import { selectStart } from '../handleNav';
 import { allPaths, multiSelChildren, multiSelKeys, selEnd, Src } from '../handleShiftNav';
 import { root } from '../root';
-import { getCurrent, lastChild, NodeSelection, pathWithChildren, selStart, Update } from '../utils';
+import { getCurrent, getSelectionStatuses, lastChild, NodeSelection, pathWithChildren, selStart, Update } from '../utils';
 import { keyUpdate } from './keyUpdate';
 import { RenderNode } from './RenderNode';
 import { posDown, posUp, selectionPos } from './selectionPos';
@@ -269,6 +269,8 @@ export const App = ({ id }: { id: string }) => {
         });
     }, [state.sel, state.top]);
 
+    const selectionStatuses = useMemo(() => getSelectionStatuses(state.sel, state.top), [state.sel, state.top]);
+
     // sooo
     // do I just have, like, some state here? Yeah, right?
     // autocomplete menu, would live here.
@@ -290,6 +292,7 @@ export const App = ({ id }: { id: string }) => {
                         refs,
                         styles,
                         placeholders,
+                        selectionStatuses,
                         msel: mkeys,
                         mhover: hoverkeys,
                         dispatch(up) {
