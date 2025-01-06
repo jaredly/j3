@@ -7,7 +7,6 @@ import {
     Current,
     Cursor,
     findTableLoc,
-    getCurrent,
     lastChild,
     NodeSelection,
     parentLoc,
@@ -18,6 +17,7 @@ import {
     Top,
     Update,
 } from './utils';
+import { getCurrent } from './selections';
 
 export const justSel = (path: Path, cursor: Cursor, startCursor?: Cursor) => ({
     nodes: {},

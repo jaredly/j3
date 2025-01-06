@@ -1,18 +1,21 @@
 import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { root } from './root';
-import { atPath, noText, selPath, selPathN, TestState } from './test-utils';
+import { atPath, noText, selPath, selPathN, selPaths, TestState } from './test-utils';
 import { Cursor } from './utils';
 import { expect } from 'bun:test';
 
-export const check = (state: TestState, exp: RecNodeT<boolean>, cursor: Cursor, endCursor?: Cursor) => {
+export const check = (state: TestState, exp: RecNodeT<boolean | number>, cursor: Cursor, endCursor?: Cursor) => {
+    const { main, paths } = selPaths(exp);
     expect(shape(root(state))).toEqual(shape(exp));
     expect({
         sel: state.sel.start.path.children,
         cursor: noText(state.sel.start.cursor),
         endCursor: state.sel.end ? noText(state.sel.end.cursor) : undefined,
+        endPath: state.sel.end?.path.children ?? state.sel.start.path.children,
     }).toEqual({
-        sel: atPath(state.top.root, state.top, selPath(exp)),
+        sel: atPath(state.top.root, state.top, main),
+        endPath: paths[2] ? atPath(state.top.root, state.top, paths[2]) : atPath(state.top.root, state.top, main),
         cursor,
         endCursor,
     });

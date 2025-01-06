@@ -3,7 +3,8 @@ import { handleTextKey } from './handleTextText';
 import { Config } from './test-utils';
 import { handleListKey } from './handleListKey';
 import { TestState } from './test-utils';
-import { Update, getCurrent } from './utils';
+import { Update } from './utils';
+import { getCurrent } from './selections';
 import { Mods } from './handleShiftNav';
 
 export const handleKey = (state: TestState, key: string, config: Config, mods?: Mods): Update | void => {

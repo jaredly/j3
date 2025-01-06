@@ -27,18 +27,21 @@ export const init: TestState = {
     },
 };
 
-export const asTopAndPath = (node: RecNodeT<boolean>): { top: Top; sel: number[] } => {
+export const asTopAndPath = (node: RecNodeT<boolean | number>): { top: Top; sel: number[]; sels: Record<number, number[]> } => {
     const nodes: Nodes = {};
     let nextLoc = 0;
     let sel: number[] = [];
+    const sels: Record<number, number[]> = {};
     const root = fromRec(node, nodes, (l, node, path) => {
         const loc = nextLoc++;
-        if (l) {
+        if (l === true || l === 1) {
             sel = path.concat([loc]);
+        } else if (typeof l === 'number') {
+            sels[l] = path.concat([loc]);
         }
         return loc;
     });
-    return { top: { nextLoc, nodes, root }, sel };
+    return { top: { nextLoc, nodes, root }, sel, sels };
 };
 
 export type Sels = null | [number, Cursor] | [number, Cursor][];
@@ -79,13 +82,18 @@ export const asTopAndPaths = (node: RecNodeT<Sels>, root: Path['root']): { top: 
     return { top: { nextLoc, nodes, root: rootLoc }, sels };
 };
 
-export const asTop = (node: RecNodeT<boolean>, cursor: Cursor, endCursor?: Cursor): TestState => {
-    const { top, sel } = asTopAndPath(node);
+/**
+ * Either RecNodeT<boolean> or RecNodeT<number>
+ * if <number>, 1 = the start, 2 = end
+ * if <boolean>, true = the start
+ */
+export const asTop = (node: RecNodeT<number | boolean>, cursor: Cursor, endCursor?: Cursor): TestState => {
+    const { top, sel, sels } = asTopAndPath(node);
     return {
         top,
         sel: {
             start: selStart({ children: sel, root: { ids: [], top: '' } }, cursor),
-            end: endCursor ? selStart({ children: sel, root: { ids: [], top: '' } }, endCursor) : undefined,
+            end: endCursor ? selStart({ children: sels[2] ?? sel, root: { ids: [], top: '' } }, endCursor) : undefined,
         },
     };
 };
@@ -115,10 +123,10 @@ export const atPath = (root: number, top: Top, path: number[]) => {
     return res;
 };
 
-export const selPathN = <T>(exp: RecNodeT<T>, n: T) => {
+export const selPathN = <T>(exp: RecNodeT<T>, needle: T) => {
     let found = null as number[] | null;
     const visit = (node: RecNodeT<T>, path: number[]) => {
-        if (node.loc === n) {
+        if (node.loc === needle) {
             if (found != null) throw new Error(`multiple nodes marked as selected`);
             found = path;
         }
@@ -128,8 +136,25 @@ export const selPathN = <T>(exp: RecNodeT<T>, n: T) => {
     return found;
 };
 
-export const selPath = (exp: RecNodeT<boolean>) => {
-    const found = selPathN(exp, true);
+export const selPaths = (exp: RecNodeT<number | boolean>) => {
+    const paths: Record<number, number[]> = {};
+    let main: number[] | null = null;
+    const visit = (node: RecNodeT<number | boolean>, path: number[]) => {
+        if (node.loc === true || node.loc === 1) {
+            if (main != null) throw new Error(`multiple nodes marked as selected`);
+            main = path;
+        } else if (typeof node.loc === 'number') {
+            paths[node.loc] = path;
+        }
+        childNodes(node).forEach((child, i) => visit(child, path.concat([i])));
+    };
+    visit(exp, []);
+    if (main === null) throw new Error(`selected node not found`);
+    return { main, paths };
+};
+
+export const selPath = (exp: RecNodeT<boolean | number>, which?: number) => {
+    const found = selPathN(exp, which ?? true);
     if (found == null) throw new Error(`no node marked for selection`);
     return found;
 };

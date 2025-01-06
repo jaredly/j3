@@ -1,4 +1,8 @@
 
+
+- [ ] allllrightlyho, it's def time to be writin tests for these multiselection dealios
+
+
 # How to make multiselect more of a thing
 
 - [x] move `.start` from the IdCursor into the NodeSelection (and call it `end`)

@@ -6,7 +6,6 @@ import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
 import {
     CollectionCursor,
-    getCurrent,
     IdCursor,
     lastChild,
     ListCursor,
@@ -21,6 +20,7 @@ import {
     Top,
     Update,
 } from '../utils';
+import { getCurrent } from '../selections';
 
 import { asStyle } from '../../shared/shape';
 import { textCursorSides2 } from '../insertId';

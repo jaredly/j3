@@ -7,7 +7,6 @@ import { TestState } from './test-utils';
 import {
     Current,
     Cursor,
-    getCurrent,
     IdCursor,
     lastChild,
     ListCursor,
@@ -22,6 +21,7 @@ import {
     Top,
     Update,
 } from './utils';
+import { getCurrent } from './selections';
 
 export type Src = { left: Loc; right?: Loc };
 

@@ -13,7 +13,6 @@ import {
     CollectionCursor,
     Current,
     Cursor,
-    getCurrent,
     IdCursor,
     lastChild,
     ListCursor,
@@ -24,6 +23,7 @@ import {
     Top,
     Update,
 } from './utils';
+import { getCurrent } from './selections';
 
 export const wrapKind = (key: string): ListKind<any> | void => {
     switch (key) {

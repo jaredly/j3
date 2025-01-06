@@ -14,7 +14,6 @@ import {
     Current,
     Cursor,
     findTableLoc,
-    getCurrent,
     lastChild,
     NodeSelection,
     parentLoc,
@@ -26,6 +25,7 @@ import {
     Top,
     Update,
 } from './utils';
+import { getCurrent } from './selections';
 
 type JoinParent =
     | {

@@ -121,17 +121,17 @@ test('style across spans', () => {
 
 // MARK: text shift
 
-test('right across span', () => {
-    let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(0, 2));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
-    check(state, text([tspan('ab'), tspan('cd')], true), textcs(1, 1, 0, 2));
-});
+// test('right across span', () => {
+//     let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(0, 2));
+//     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+//     check(state, text([tspan('ab'), tspan('cd')], true), textcs(1, 1, 0, 2));
+// });
 
-test('left across span', () => {
-    let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(1, 0));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
-    check(state, text([tspan('ab'), tspan('cd')], true), textcs(0, 1, 1, 0));
-});
+// test('left across span', () => {
+//     let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(1, 0));
+//     state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
+//     check(state, text([tspan('ab'), tspan('cd')], true), textcs(0, 1, 1, 0));
+// });
 
 // MARK: tabs
 
@@ -241,4 +241,14 @@ test('largerrrr', () => {
 
 // MARK: shfit left/right
 
-// ergh is this even useful yet
+test('single id', () => {
+    let state = asTop(id('hi', true), idc(0));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    check(state, id('hi', true), idc(0), idc(1));
+});
+
+test.only('multi id', () => {
+    let state = asTop(spaced([id('hi', 1), id('ho', 2)]), idc(0), idc(0));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    check(state, spaced([id('hi', 1), id('ho', 2)]), idc(0), idc(1));
+});

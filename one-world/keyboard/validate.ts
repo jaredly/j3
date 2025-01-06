@@ -1,7 +1,8 @@
 import { childLocs, isRich } from '../shared/cnodes';
 import { isTag, richNode } from './handleNav';
 import { TestState } from './test-utils';
-import { getCurrent, parentLoc, Path, Top } from './utils';
+import { parentLoc, Path, Top } from './utils';
+import { getCurrent } from './selections';
 
 const validatePath = (top: Top, path: Path) => {
     if (path.children.length === 0) {

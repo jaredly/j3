@@ -1,7 +1,8 @@
 import { TestState } from '../test-utils';
 
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { getCurrent, lastChild, NodeSelection, Path, pathWithChildren, selStart, Top } from '../utils';
+import { lastChild, NodeSelection, Path, pathWithChildren, selStart, Top } from '../utils';
+import { getCurrent } from '../selections';
 import { goLeft, goRight, handleNav, isTag, selectEnd, selectStart } from '../handleNav';
 
 const CLOSE = 10;
