@@ -334,6 +334,13 @@ export const App = ({ id }: { id: string }) => {
             ) : null}
             {/* <div style={{ paddingLeft: 50, paddingTop: 20 }}>Auto complete {JSON.stringify(parsed.ctx.autocomplete)}</div> */}
             <div style={{ paddingLeft: 50, paddingTop: 20 }}>SEL {JSON.stringify(state.sel)}</div>
+            <div style={{ paddingLeft: 50, paddingTop: 14 }}>
+                {Object.entries(selectionStatuses).map(([k, v]) => (
+                    <div key={k}>
+                        {k}: {JSON.stringify(v)}
+                    </div>
+                ))}
+            </div>
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
                 <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                     <h3>CST</h3>

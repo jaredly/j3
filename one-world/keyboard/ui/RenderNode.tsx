@@ -9,6 +9,7 @@ import {
     IdCursor,
     lastChild,
     ListCursor,
+    ListWhere,
     parentLoc,
     parentPath,
     Path,
@@ -165,6 +166,7 @@ export const RenderNode = ({
     //     if (!style) style = {};
     //     style.outline = '4px solid red';
     // }
+    const has = (where: ListWhere) => status?.cursors.some((c) => c.type === 'list' && c.where === where);
 
     const ref = (el: HTMLElement) => {
         ctx.refs[loc] = el;
@@ -228,14 +230,15 @@ export const RenderNode = ({
                     {text === '' ? <Zwd /> : text}
                 </span>
             );
-        case 'list':
+        case 'list': {
             const children = node.children.map((loc) => (
                 <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} readOnly={readOnly} />
             ));
             // if (style) {
             //     style.display = 'inline-block';
             // }
-            const cursor = undefined as undefined | CollectionCursor; // current?.cursor;
+            // const cursor = undefined as undefined | CollectionCursor; // current?.cursor;
+            // const start = status?.cursors.find(c => c.type === 'list' && c.where === 'before')
             if (typeof node.kind !== 'string') {
                 if (node.kind.type === 'tag') {
                     return (
@@ -243,10 +246,10 @@ export const RenderNode = ({
                             <span style={style} ref={ref}>
                                 <span
                                     style={{
-                                        backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
+                                        backgroundColor: has('start') ? hl : undefined,
                                     }}
                                 >
-                                    {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+                                    {has('before') ? <Cursor /> : null}
                                     <span style={{ fontVariantLigatures: 'none' }}>&lt;</span>
                                     <RenderNode
                                         loc={node.kind.node}
@@ -274,11 +277,11 @@ export const RenderNode = ({
                                     {!node.children.length ? (
                                         <>
                                             {' /'}
-                                            {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+                                            {has('inside') ? <Cursor /> : null}
                                         </>
                                     ) : null}
                                     <span style={{ fontVariantLigatures: 'none' }}>&gt;</span>
-                                    {!node.children.length && cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+                                    {!node.children.length && has('after') ? <Cursor /> : null}
                                 </span>
                                 {node.children.length ? (
                                     <>
@@ -295,7 +298,7 @@ export const RenderNode = ({
                                                 readOnly
                                             />
                                             <span style={{ fontVariantLigatures: 'none' }}>&gt;</span>
-                                            {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+                                            {has('after') ? <Cursor /> : null}
                                         </span>
                                     </>
                                 ) : null}
@@ -324,6 +327,8 @@ export const RenderNode = ({
 
                 let contents = children;
 
+                const hasControl = (index: number) => status?.cursors.some((c) => c.type === 'control' && c.index === index);
+
                 switch (node.kind.type) {
                     case 'list':
                         const ordered = node.kind.ordered;
@@ -345,7 +350,7 @@ export const RenderNode = ({
                                 <input
                                     style={{
                                         gridColumn: 1,
-                                        outline: cursor?.type === 'control' && cursor.index === i ? '2px solid red' : undefined,
+                                        outline: hasControl(i) ? '2px solid red' : undefined,
                                     }}
                                     type="checkbox"
                                     checked={!!ch[loc]}
@@ -378,7 +383,7 @@ export const RenderNode = ({
                         contents = node.children.map((loc, i) => (
                             <React.Fragment key={loc}>
                                 <input
-                                    style={{ gridColumn: 1, outline: cursor?.type === 'control' && cursor.index === i ? '2px solid red' : undefined }}
+                                    style={{ gridColumn: 1, outline: hasControl(i) ? '2px solid red' : undefined }}
                                     type="radio"
                                     checked={loc === which}
                                     onClick={(evt) => {
@@ -428,11 +433,11 @@ export const RenderNode = ({
                 }
                 return (
                     <span style={{ display: 'inline-flex', flexDirection: 'row' }}>
-                        {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+                        {has('before') ? <Cursor /> : null}
                         <span style={style} ref={ref}>
                             {contents}
                         </span>
-                        {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+                        {has('after') ? <Cursor /> : null}
                     </span>
                 );
             }
@@ -475,10 +480,10 @@ export const RenderNode = ({
                                 }
                             }}
                         >
-                            {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+                            {has('before') ? <Cursor /> : null}
                             <span
                                 style={{
-                                    backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
+                                    backgroundColor: has('start') ? hl : undefined,
                                     color: hlBraces ? braceColorHl : braceColor,
                                     fontWeight: hlBraces ? 'bold' : undefined,
                                     // outline: hlBraces ? '1px solid teal' : undefined,
@@ -490,7 +495,7 @@ export const RenderNode = ({
                             >
                                 {opener[node.kind]}
                             </span>
-                            {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+                            {has('inside') ? <Cursor /> : null}
                             {node.forceMultiline ? (
                                 <div style={{ ...style, display: 'flex', width: 'fit-content', flexDirection: 'column', marginLeft: 16 }}>
                                     {children}
@@ -498,14 +503,14 @@ export const RenderNode = ({
                             ) : (
                                 interleaveF(children, (i) => <span key={'sep' + i}>{node.kind === 'curly' ? ';' : ','}&nbsp;</span>)
                             )}
-                            {/* {cursor?.type === 'list' && cursor.where === 'end' ? (
+                            {/* {has('end') ? (
                                 <span style={{ backgroundColor: hl }}>{closer[node.kind]}</span>
                             ) : (
                                 closer[node.kind]
                             )} */}
                             <span
                                 style={{
-                                    backgroundColor: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined,
+                                    backgroundColor: has('end') ? hl : undefined,
                                     color: hlBraces ? braceColorHl : braceColor,
                                     // outline: hlBraces ? '1px solid teal' : undefined,
                                     // textDecoration: hlBraces ? 'underline' : undefined,
@@ -516,20 +521,26 @@ export const RenderNode = ({
                             >
                                 {closer[node.kind]}
                             </span>
-                            {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+                            {has('after') ? <Cursor /> : null}
                         </span>
                     );
             }
+        }
+
         case 'text': {
-            const cursor = undefined as undefined | TextCursor | CollectionCursor; //  current?.cursor;
-            const sides = cursor?.type === 'text' ? textCursorSides2(cursor) : null;
+            // const cursor = undefined as undefined | TextCursor | CollectionCursor; //  current?.cursor;
+            // const sides = cursor?.type === 'text' ? textCursorSides2(cursor) : null;
             const children = node.spans.map((span, i) => {
                 if (span.type === 'text') {
                     const style = inRich ? asStyle(span.style) : { color: textColor, ...asStyle(span.style) };
-                    if (sides && sides.left.index <= i && sides.right.index >= i) {
-                        const text = sides.text?.index === i ? sides.text.grems : splitGraphemes(span.text);
-                        const left = i === sides.left.index ? sides.left.cursor : 0;
-                        const right = i === sides.right.index ? sides.right.cursor : text.length;
+                    const sc = status?.cursors.filter((c) => c.type === 'text' && c.end.index === i);
+                    if (sc?.length) {
+                        const cursorText = (sc.find((c) => c.type === 'text' && c.end.index === i && c.end.text) as TextCursor)?.end.text;
+                        const text = cursorText ?? splitGraphemes(span.text);
+                        // const text = sides.text?.index === i ? sides.text.grems : splitGraphemes(span.text);
+                        // const left = i === sides.left.index ? sides.left.cursor : 0;
+                        // const right = i === sides.right.index ? sides.right.cursor : text.length;
+                        const hl = status?.highlight?.type === 'text' ? status.highlight.spans[i] : undefined;
                         return (
                             <span key={i} style={style} data-index={i}>
                                 <TextWithCursor
@@ -543,15 +554,14 @@ export const RenderNode = ({
                                                 end: {
                                                     index: i,
                                                     cursor: pos ?? 0,
-                                                    text: sides.text?.index === i ? sides.text.grems : undefined,
+                                                    text: cursorText,
                                                 },
                                             }),
                                         );
                                     }}
                                     text={text}
-                                    // left={left}
-                                    // right={right}
-                                    cursors={[]}
+                                    highlight={hl}
+                                    cursors={sc.map((s) => (s.type === 'text' ? s.end.cursor : 0))}
                                 />
                             </span>
                         );
@@ -573,11 +583,11 @@ export const RenderNode = ({
                     );
                 } else if (span.type === 'embed') {
                     let selected = false;
-                    if (sides && sides.left.index <= i && sides.right.index >= i) {
-                        const left = i === sides?.left.index ? sides.left.cursor : 0;
-                        const right = i === sides?.right.index ? sides.right.cursor : 1;
-                        if (left === 0 && right === 1) selected = true;
-                    }
+                    // if (sides && sides.left.index <= i && sides.right.index >= i) {
+                    //     const left = i === sides?.left.index ? sides.left.cursor : 0;
+                    //     const right = i === sides?.right.index ? sides.right.cursor : 1;
+                    //     if (left === 0 && right === 1) selected = true;
+                    // }
                     return (
                         <span
                             style={{
@@ -587,15 +597,11 @@ export const RenderNode = ({
                             data-index={i}
                             key={i}
                         >
-                            {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 0 && sides.right.cursor === 0 ? (
-                                <Cursor />
-                            ) : null}
+                            {status?.cursors.some((c) => c.type === 'text' && c.end.index === i && c.end.cursor === 0) ? <Cursor /> : null}
                             <span style={{ color: 'rgb(248 136 0)' }}>{'${'}</span>
                             <RenderNode ctx={ctx} parent={nextParent} inRich={false} loc={span.item} state={state} readOnly={readOnly} />
                             <span style={{ color: 'rgb(248 136 0)' }}>{'}'}</span>
-                            {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 1 && sides.right.cursor === 1 ? (
-                                <Cursor />
-                            ) : null}
+                            {status?.cursors.some((c) => c.type === 'text' && c.end.index === i && c.end.cursor === 1) ? <Cursor /> : null}
                         </span>
                     );
                 } else {
@@ -611,7 +617,7 @@ export const RenderNode = ({
                 // are maybe different?
                 return (
                     <span ref={ref} style={{ ...style, fontFamily: 'Merriweather' }}>
-                        {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor rich /> : null}
+                        {has('inside') ? <Cursor rich /> : null}
                         {children}
                         {!children.length ? <Zwd /> : null}
                     </span>
@@ -619,19 +625,20 @@ export const RenderNode = ({
             }
             return (
                 <span style={style} ref={ref}>
-                    {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
-                    <span style={{ backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined, color: textColor }}>"</span>
-                    {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+                    {has('before') ? <Cursor /> : null}
+                    <span style={{ backgroundColor: has('start') ? hl : undefined, color: textColor }}>"</span>
+                    {has('inside') ? <Cursor /> : null}
                     {children}
                     {!children.length ? <Zwd /> : null}
-                    <span style={{ backgroundColor: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined, color: textColor }}>"</span>
-                    {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+                    <span style={{ backgroundColor: has('end') ? hl : undefined, color: textColor }}>"</span>
+                    {has('after') ? <Cursor /> : null}
                 </span>
             );
         }
 
         case 'table': {
             const mx = node.rows.reduce((c, r) => Math.max(c, r.length), 0);
+            const cursor = undefined as CollectionCursor | undefined;
             if (isRich(node.kind)) {
                 const cols: string[] = [];
                 for (let i = 0; i < mx; i++) {

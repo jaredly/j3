@@ -46,7 +46,7 @@ export const TextWithCursor = ({
     cursorRef?: (span: HTMLSpanElement) => void;
     text: string[];
     cursors: number[];
-    highlight?: { start?: number; end?: number };
+    highlight?: { start?: number; end?: number } | boolean;
     // left: number;
     // right: number;
     rich?: boolean;
@@ -76,8 +76,8 @@ export const TextWithCursor = ({
         const range = new Range();
 
         if (highlight) {
-            range.setStart(ref.current.firstChild!, text.slice(0, highlight.start ?? 0).join('').length);
-            range.setEnd(ref.current.firstChild!, text.slice(0, highlight.end ?? text.length).join('').length);
+            range.setStart(ref.current.firstChild!, highlight === true ? 0 : text.slice(0, highlight.start ?? 0).join('').length);
+            range.setEnd(ref.current.firstChild!, highlight === true ? text.length : text.slice(0, highlight.end ?? text.length).join('').length);
             rects = [...range.getClientRects()];
         }
 
