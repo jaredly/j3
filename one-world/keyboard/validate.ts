@@ -114,6 +114,11 @@ const validateCursor = (state: TestState) => {
         if (richNode(parent) && current.cursor.type === 'list' && current.cursor.where !== 'inside') {
             throw new Error(`Rich text texts can't be selected before or after`);
         }
+        if (current.cursor.type === 'text') {
+            if (current.cursor.end.index < 0 || current.cursor.end.index >= current.node.spans.length) {
+                throw new Error(`cursor text index out of range`);
+            }
+        }
     }
 };
 

@@ -78,6 +78,9 @@ export const specialTextMod = (
 
     for (let i = left.index; i <= right.index; i++) {
         const span = node.spans[i];
+        if (!span) {
+            console.log(node, left, right);
+        }
         if (span.type !== 'text') continue;
         const style = { ...span.style };
         mod(style);
@@ -105,17 +108,15 @@ export const specialTextMod = (
     }
     if (scur == null || ecur == null) return;
 
-    const ncursor: TextCursor = {
-        type: 'text',
-        start: { index: scur, cursor: 0 },
-        end: ecur,
-    };
+    // const ncursor: TextCursor = {
+    //     type: 'text',
+    //     start: { index: scur, cursor: 0 },
+    //     end: ecur,
+    // };
+    const start: Spat = { index: scur, cursor: 0 };
+    const end = ecur;
 
-    return {
-        node: { ...node, spans: mergeAdjacentSpans(spans, ncursor) },
-        start: { index: scur, cursor: 0 },
-        end: ecur,
-    };
+    return { node: { ...node, spans: mergeAdjacentSpans(spans, { start, end }) }, start, end };
 };
 
 export const handleSpecialText = (
@@ -141,7 +142,7 @@ export const handleSpecialText = (
     };
 };
 
-export const mergeAdjacentSpans = <T>(spans: TextSpan<T>[], cursor: TextCursor): TextSpan<T>[] => {
+export const mergeAdjacentSpans = <T>(spans: TextSpan<T>[], cursor: { start?: Spat; end: Spat }): TextSpan<T>[] => {
     let results: TextSpan<T>[] = [];
     spans.forEach((span, i) => {
         if (span.type === 'text' && results.length) {
