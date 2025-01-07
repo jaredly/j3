@@ -28,8 +28,9 @@ import { asStyle } from '../../shared/shape';
 import { Cursor, TextWithCursor, Zwd } from './cursor';
 import { justSel, selUpdate } from '../handleNav';
 import { posInList } from './selectionPos';
+import { lightColor } from './colors';
 
-const hl = 'rgba(100,100,100,0.2)';
+const hlColor = 'rgba(100,100,100,0.2)';
 // ? ''
 // ? ''
 // : '',
@@ -133,11 +134,9 @@ export const RenderNode = ({
 
     const status = ctx.selectionStatuses[key];
 
-    const lightColor = 'rgb(255,200,200)';
     if (!readOnly && status?.highlight?.type === 'full') {
         if (!style) style = {};
         style.borderRadius = '2px';
-        // const lightColor = 'rgb(255,100,100,0.5)';
         style.backgroundColor = lightColor;
         style.outline = `2px solid ${lightColor}`;
     }
@@ -246,7 +245,7 @@ export const RenderNode = ({
                             <span style={style} ref={ref}>
                                 <span
                                     style={{
-                                        backgroundColor: has('start') ? hl : undefined,
+                                        backgroundColor: has('start') ? hlColor : undefined,
                                     }}
                                 >
                                     {has('before') ? <Cursor /> : null}
@@ -483,7 +482,7 @@ export const RenderNode = ({
                             {has('before') ? <Cursor /> : null}
                             <span
                                 style={{
-                                    backgroundColor: has('start') ? hl : undefined,
+                                    backgroundColor: has('start') ? hlColor : undefined,
                                     color: hlBraces ? braceColorHl : braceColor,
                                     fontWeight: hlBraces ? 'bold' : undefined,
                                     // outline: hlBraces ? '1px solid teal' : undefined,
@@ -510,7 +509,7 @@ export const RenderNode = ({
                             )} */}
                             <span
                                 style={{
-                                    backgroundColor: has('end') ? hl : undefined,
+                                    backgroundColor: has('end') ? hlColor : undefined,
                                     color: hlBraces ? braceColorHl : braceColor,
                                     // outline: hlBraces ? '1px solid teal' : undefined,
                                     // textDecoration: hlBraces ? 'underline' : undefined,
@@ -566,12 +565,15 @@ export const RenderNode = ({
                             </span>
                         );
                     }
+                    const hl = status?.highlight?.type === 'text' ? status.highlight.spans[i] : undefined;
                     // TODO show cursor here
                     return (
                         <span
                             key={i}
                             data-index={i}
-                            style={style}
+                            style={hl ? { ...style, backgroundColor: lightColor } : style}
+                            // style={style}
+                            // style={{ backgroundColor: 'red' }}
                             onClick={(evt) => {
                                 evt.stopPropagation();
                                 const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(span.text));
@@ -592,7 +594,7 @@ export const RenderNode = ({
                         <span
                             style={{
                                 fontFamily: 'Jet Brains',
-                                backgroundColor: selected ? hl : 'rgba(255,255,255,0.5)',
+                                backgroundColor: selected ? hlColor : 'rgba(255,255,255,0.5)',
                             }}
                             data-index={i}
                             key={i}
@@ -626,11 +628,11 @@ export const RenderNode = ({
             return (
                 <span style={style} ref={ref}>
                     {has('before') ? <Cursor /> : null}
-                    <span style={{ backgroundColor: has('start') ? hl : undefined, color: textColor }}>"</span>
+                    <span style={{ backgroundColor: has('start') ? hlColor : undefined, color: textColor }}>"</span>
                     {has('inside') ? <Cursor /> : null}
                     {children}
                     {!children.length ? <Zwd /> : null}
-                    <span style={{ backgroundColor: has('end') ? hl : undefined, color: textColor }}>"</span>
+                    <span style={{ backgroundColor: has('end') ? hlColor : undefined, color: textColor }}>"</span>
                     {has('after') ? <Cursor /> : null}
                 </span>
             );
@@ -730,7 +732,7 @@ export const RenderNode = ({
                     {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
                     <span
                         style={{
-                            backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
+                            backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hlColor : undefined,
                             color: braceColor,
                             // ...style,
                             // borderRadius: style?.borderRadius,
@@ -759,7 +761,7 @@ export const RenderNode = ({
                     )}
                     <span
                         style={{
-                            backgroundColor: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined,
+                            backgroundColor: cursor?.type === 'list' && cursor.where === 'end' ? hlColor : undefined,
                             color: braceColor,
                             // borderRadius: style?.borderRadius,
                         }}

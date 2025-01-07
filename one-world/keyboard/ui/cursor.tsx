@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { lightColor } from './colors';
 
 export const Cursor = ({ innerRef, rich }: { rich?: boolean; innerRef?: (node: HTMLSpanElement | null) => void }) => (
     <span
@@ -63,7 +64,7 @@ export const TextWithCursor = ({
     const [rects, setRects] = useState(null as null | Rect);
     const tick = useResizeTick();
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         if (!ref.current) return;
 
         if (text.length === 0) {
@@ -112,6 +113,7 @@ export const TextWithCursor = ({
                     }
                 }}
                 onClick={onClick}
+                style={{ zIndex: 1, position: 'relative' }}
             >
                 {text.length ? text.join('') : <Zwd />}
             </span>
@@ -145,8 +147,8 @@ export const TextWithCursor = ({
                         style={{
                             ...rect,
                             position: 'absolute',
-                            backgroundColor: 'red',
-                            opacity: rect.width === 1 ? 1 : 0.2,
+                            backgroundColor: rect.width === 1 ? 'red' : lightColor,
+                            opacity: 1, // rect.width === 1 ? 1 : 0.2,
                         }}
                     />
                 ))
