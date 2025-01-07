@@ -139,41 +139,6 @@ export const orderSelections = (one: SelStart, two: SelStart, top: Top): [SelSta
     throw new Error(`ran out, cant handle yext just yets`);
 };
 
-// export const getSelCurrent = (sel:SelStart, top:Top):Current => {
-//     const path = sel.path;
-//     // if (selection.end && selection.end.key !== sel.key) {
-//     //     // we have a problem
-//     //     throw new Error('todo multi');
-//     // }
-//     const node = getNode(path, top);
-//     if (node == null) throw new Error('bad path');
-//     const cursor = sel.cursor;
-//     if (node.type === 'id') {
-//         if (cursor.type !== 'id') {
-//             throw new Error(`id select must have cursor id`);
-//         }
-//         let ec = selection.end?.cursor;
-//         if (ec && ec.type !== 'id') {
-//             ec = undefined;
-//             // throw new Error(`id select must have cursor id (end)`);
-//         }
-//         return { type: 'id', node, cursor: ec ?? cursor, path, start: ec ? cursor.end : undefined };
-//     }
-//     if (node.type === 'text') {
-//         if (cursor.type !== 'text' && cursor.type !== 'list') {
-//             throw new Error(`text select must have cursor text or list`);
-//         }
-//         return { type: 'text', node, cursor, path };
-//     }
-//     if (node.type === 'list' || node.type === 'table') {
-//         if (cursor.type !== 'list' && cursor.type !== 'control') {
-//             throw new Error(`list/table select must have cursor list`);
-//         }
-//         return { type: 'list', node, cursor, path };
-//     }
-//     throw new Error('unknown node and cursor combo');
-// }
-
 export const getCurrent = (selection: NodeSelection, top: Top): Current => {
     const sel = selection.end ?? selection.start;
     // const sel = selection.start;
