@@ -412,8 +412,8 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
                     ? {
                           nodes: { [node.loc]: res.node },
                           selection: {
-                              start: selStart(current.path, { type: 'text', end: res.start }),
-                              end: selStart(current.path, { type: 'text', end: res.end }),
+                              end: selStart(current.path, { type: 'text', end: res.start }),
+                              start: selStart(current.path, { type: 'text', end: res.end }),
                           },
                       }
                     : undefined;

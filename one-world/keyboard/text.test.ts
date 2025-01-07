@@ -5,7 +5,7 @@ import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { asTop, bullet, checks, controlc, id, idc, lisp, list, listc, rich, round, smoosh, text, textc, textcs, tspan } from './test-utils';
+import { asTop, bullet, checks, controlc, id, idc, lisp, list, listc, rich, round, smoosh, text, textc, tspan } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 
 test('text before', () => {
@@ -463,7 +463,7 @@ test('alt-left in text', () => {
 test('shift-alt-left in text', () => {
     let state = asTop(text([tspan('one two three')], true), textc(0, 8));
     state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { alt: true, shift: true }));
-    check(state, text([tspan('one two three')], true), textcs(0, 4, 0, 8));
+    check(state, text([tspan('one two three')], true), textc(0, 4), textc(0, 8));
 });
 
 // TODO delete rich in table
