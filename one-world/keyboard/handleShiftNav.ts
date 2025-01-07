@@ -22,7 +22,7 @@ import {
     Update,
 } from './utils';
 import { getCurrent, ltCursor, orderSelections } from './selections';
-import { textCursorSides2 } from './insertId';
+// import { textCursorSides2 } from './insertId';
 
 export type Src = { left: Loc; right?: Loc };
 
@@ -267,11 +267,18 @@ export const wordNav = (state: TestState, left: boolean, shift: boolean | undefi
         const { index, cursor, text } = current.cursor.end;
         const next = wordNext(current.node, left, index, cursor, text);
         if (next != null) {
-            return justSel(current.path, {
-                type: 'text',
-                end: { cursor: next.cursor, index: next.index, text: current.cursor.end.index === next.index ? current.cursor.end.text : undefined },
-                start: shift ? current.cursor.start ?? current.cursor.end : undefined,
-            });
+            return selUpdate(
+                selStart(current.path, {
+                    type: 'text',
+                    end: {
+                        cursor: next.cursor,
+                        index: next.index,
+                        text: current.cursor.end.index === next.index ? current.cursor.end.text : undefined,
+                    },
+                }),
+                shift ? state.sel.end ?? state.sel.start : undefined,
+                // state.sel.end,
+            );
         }
     }
     const next = goTabLateral(state.sel.start, state.top, left);
@@ -327,55 +334,55 @@ export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { 
     return justSel(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }, start ? { ...cursor, end: start } : cursor);
 };
 
-export const handleShiftText = (
-    { node, path, cursor }: { node: Text<number>; path: Path; cursor: TextCursor | ListCursor },
-    top: Top,
-    left: boolean,
-) => {
-    if (cursor.type === 'list') {
-        return; /// TODO
-    }
-    let end = cursor.end;
-    const span = node.spans[end.index];
-    if (left) {
-        if (end.cursor === 0) {
-            if (end.index > 0) {
-                let index = end.index - 1;
-                for (; index >= 0 && node.spans[index].type !== 'text'; index--);
-                if (index < 0) return;
-                const pspan = node.spans[index];
-                if (pspan.type !== 'text') return;
-                end = { index, cursor: splitGraphemes(pspan.text).length };
-                if (index === cursor.end.index - 1 && pspan.text !== '') {
-                    end.cursor--;
-                }
-            } else {
-                return;
-            }
-        } else {
-            end = { ...end, cursor: end.cursor - 1 };
-        }
-    } else {
-        const len = span.type === 'text' ? cursor.end.text?.length ?? splitGraphemes(span.text).length : 1;
-        if (end.cursor === len) {
-            if (end.index < node.spans.length) {
-                let index = end.index + 1;
-                const txt = end.text ? { grems: end.text, index: end.index } : undefined;
-                for (; index < node.spans.length && spanLength(node.spans[index], txt, index) === 0; index++);
-                if (index >= node.spans.length) return;
-                const pspan = node.spans[index];
-                // if (pspan.type !== 'text') return;
-                end = { index, cursor: 0 };
-                if (index === cursor.end.index + 1 && spanLength(node.spans[index], txt, index) > 0) {
-                    end.cursor++;
-                }
-            }
-        } else {
-            end = { ...end, cursor: end.cursor + 1 };
-        }
-    }
-    return justSel(path, { ...cursor, start: cursor.start ?? cursor.end, end });
-};
+// export const handleShiftText = (
+//     { node, path, cursor }: { node: Text<number>; path: Path; cursor: TextCursor | ListCursor },
+//     top: Top,
+//     left: boolean,
+// ) => {
+//     if (cursor.type === 'list') {
+//         return; /// TODO
+//     }
+//     let end = cursor.end;
+//     const span = node.spans[end.index];
+//     if (left) {
+//         if (end.cursor === 0) {
+//             if (end.index > 0) {
+//                 let index = end.index - 1;
+//                 for (; index >= 0 && node.spans[index].type !== 'text'; index--);
+//                 if (index < 0) return;
+//                 const pspan = node.spans[index];
+//                 if (pspan.type !== 'text') return;
+//                 end = { index, cursor: splitGraphemes(pspan.text).length };
+//                 if (index === cursor.end.index - 1 && pspan.text !== '') {
+//                     end.cursor--;
+//                 }
+//             } else {
+//                 return;
+//             }
+//         } else {
+//             end = { ...end, cursor: end.cursor - 1 };
+//         }
+//     } else {
+//         const len = span.type === 'text' ? cursor.end.text?.length ?? splitGraphemes(span.text).length : 1;
+//         if (end.cursor === len) {
+//             if (end.index < node.spans.length) {
+//                 let index = end.index + 1;
+//                 const txt = end.text ? { grems: end.text, index: end.index } : undefined;
+//                 for (; index < node.spans.length && spanLength(node.spans[index], txt, index) === 0; index++);
+//                 if (index >= node.spans.length) return;
+//                 const pspan = node.spans[index];
+//                 // if (pspan.type !== 'text') return;
+//                 end = { index, cursor: 0 };
+//                 if (index === cursor.end.index + 1 && spanLength(node.spans[index], txt, index) > 0) {
+//                     end.cursor++;
+//                 }
+//             }
+//         } else {
+//             end = { ...end, cursor: end.cursor + 1 };
+//         }
+//     }
+//     return justSel(path, { ...cursor, start: cursor.start ?? cursor.end, end });
+// };
 
 export type Mods = { meta?: boolean; ctrl?: boolean; alt?: boolean; shift?: boolean };
 

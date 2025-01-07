@@ -24,7 +24,7 @@ import {
 import { getCurrent } from '../selections';
 
 import { asStyle } from '../../shared/shape';
-import { textCursorSides2 } from '../insertId';
+// import { textCursorSides2 } from '../insertId';
 import { Cursor, TextWithCursor, Zwd } from './cursor';
 import { justSel, selUpdate } from '../handleNav';
 import { posInList } from './selectionPos';

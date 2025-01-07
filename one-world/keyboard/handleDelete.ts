@@ -4,8 +4,8 @@ import { cursorSides } from './cursorSides';
 import { isBlank } from './flatenate';
 import { goLeft, isTag, justSel, selectEnd, selectStart, selUpdate, spanEnd, spanStart } from './handleNav';
 import { selEnd, SelSide, SelStart } from './handleShiftNav';
-import { mergeAdjacentSpans } from './handleSpecialText';
-import { textCursorSides, textCursorSides2 } from './insertId';
+import { mergeAdjacentSpans, Spat } from './handleSpecialText';
+// import { textCursorSides, textCursorSides2 } from './insertId';
 import { replaceAt } from './replaceAt';
 import { replaceIn } from './replaceIn';
 import { collapseAdjacentIDs, findPath, fixSelection, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
@@ -554,7 +554,21 @@ export const handleDelete = (state: TestState): Update | void => {
                 return;
             }
 
-            return handleTextDelete(state, current);
+            // TODO: gotta do a left/right story here pls
+
+            if (current.cursor.type !== 'text') return;
+            return handleTextDelete(
+                state,
+                current,
+                current.cursor.end,
+                current.cursor.end,
+                current.cursor.end.text
+                    ? {
+                          index: current.cursor.end.index,
+                          grems: current.cursor.end.text,
+                      }
+                    : undefined,
+            );
         }
 
         default:
@@ -602,10 +616,16 @@ export const normalizeTextCursorSide = (
     return side;
 };
 
-export const handleTextDelete = (state: TestState, current: Extract<Current, { type: 'text' }>): Update | void => {
-    if (current.cursor.type !== 'text') return;
+export const handleTextDelete = (
+    state: TestState,
+    current: { node: Text<number>; path: Path },
+    left: Spat,
+    right: Spat,
+    text?: { index: number; grems: string[] },
+): Update | void => {
+    // if (current.cursor.type !== 'text') return;
     const spans = current.node.spans.slice();
-    let { left, right, text } = textCursorSides2(current.cursor);
+    // let { left, right, text } = textCursorSides2(current.cursor);
 
     if (text) {
         const span = spans[text.index];

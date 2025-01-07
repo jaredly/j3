@@ -2,7 +2,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { linksEqual, Style, stylesEqual, Text, TextSpan } from '../shared/cnodes';
 import { sideEqual } from './handleNav';
 import { Mods } from './handleShiftNav';
-import { textCursorSides2 } from './insertId';
+// import { textCursorSides2 } from './insertId';
 import { Path, TextCursor, ListCursor, Top, Update, selStart } from './utils';
 
 const isStyleKey = (key: string) => key === 'b' || key === 'i' || key === 'u';
@@ -62,7 +62,7 @@ export const keyMod = (key: string, mods: Mods): void | ((style: Style) => void)
 //     return true;
 // };
 
-type Spat = { cursor: number; index: number };
+export type Spat = { cursor: number; index: number };
 
 export const specialTextMod = (
     node: Text<number>,
@@ -130,13 +130,24 @@ export const handleSpecialText = (
     mods: Mods,
 ): Update | void => {
     if (cursor.type === 'list') return;
-    const { left, right, text } = textCursorSides2(cursor);
+    // const { left, right, text } = textCursorSides2(cursor);
 
     if (!isStyleKey(key) || (!mods.ctrl && !mods.meta)) return;
     const mod = keyMod(key, mods);
     if (!mod) return;
 
-    const res = specialTextMod(node, text, left, right, mod);
+    const res = specialTextMod(
+        node,
+        cursor.end.text
+            ? {
+                  index: cursor.end.index,
+                  grems: cursor.end.text,
+              }
+            : undefined,
+        cursor.end,
+        cursor.end,
+        mod,
+    );
     if (!res) return;
 
     return {

@@ -190,7 +190,7 @@ const findCurlyClose = (path: Path, top: Top): SelStart | void => {
 export const handleClose = (state: TestState, key: string): Update | void => {
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
-        return handleTextText(current.cursor, current.node, key, current.path, state.top);
+        return handleTextText(current.cursor, undefined, current.node, key, current.path, state.top);
     }
     const kind = closerKind(key);
     if (!kind) return;
@@ -272,7 +272,7 @@ export const handleWrap = (state: TestState, key: string): Update | void => {
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text') {
         if (current.cursor.type === 'text') {
-            return handleTextText(current.cursor, current.node, key, current.path, state.top);
+            return handleTextText(current.cursor, undefined, current.node, key, current.path, state.top);
         }
         if (current.cursor.type === 'list' && current.cursor.where === 'inside') {
             return {

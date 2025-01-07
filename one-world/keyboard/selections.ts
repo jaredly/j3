@@ -140,14 +140,15 @@ export const orderSelections = (one: SelStart, two: SelStart, top: Top): [SelSta
 };
 
 export const getCurrent = (selection: NodeSelection, top: Top): Current => {
-    const path = selection.start.path;
-    // if (selection.end && selection.end.key !== selection.start.key) {
+    const sel = selection.start;
+    const path = sel.path;
+    // if (selection.end && selection.end.key !== sel.key) {
     //     // we have a problem
     //     throw new Error('todo multi');
     // }
     const node = getNode(path, top);
     if (node == null) throw new Error('bad path');
-    const cursor = selection.start.cursor;
+    const cursor = sel.cursor;
     if (node.type === 'id') {
         if (cursor.type !== 'id') {
             throw new Error(`id select must have cursor id`);

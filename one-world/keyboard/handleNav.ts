@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { hasControls, isRich, ListKind, Node, TableKind, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { textCursorSides, textCursorSides2 } from './insertId';
+// import { textCursorSides, textCursorSides2 } from './insertId';
 import { TestState } from './test-utils';
 import {
     Current,
@@ -275,10 +275,10 @@ export const navRight = (current: Current, state: TestState): Update | void => {
         }
         case 'text': {
             if (current.cursor.type === 'text') {
-                if (current.cursor.start && !sideEqual(current.cursor.start, current.cursor.end)) {
-                    const { right } = textCursorSides2(current.cursor);
-                    return justSel(current.path, { type: 'text', end: right });
-                }
+                // if (current.cursor.start && !sideEqual(current.cursor.start, current.cursor.end)) {
+                //     const { right } = textCursorSides2(current.cursor);
+                //     return justSel(current.path, { type: 'text', end: right });
+                // }
                 const { end } = current.cursor;
                 const span = current.node.spans[end.index];
                 if (span.type !== 'text') {
@@ -368,7 +368,8 @@ export const navRight = (current: Current, state: TestState): Update | void => {
     }
 };
 
-export const selUpdate = (sel?: void | NodeSelection['start']): Update | void => (sel ? { nodes: {}, selection: { start: sel } } : undefined);
+export const selUpdate = (sel?: void | NodeSelection['start'], start?: NodeSelection['end']): Update | void =>
+    sel ? { nodes: {}, selection: start ? { start, end: sel } : { start: sel } } : undefined;
 
 export const navLeft = (current: Current, state: TestState): Update | void => {
     switch (current.type) {
@@ -388,10 +389,10 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
         }
         case 'text': {
             if (current.cursor.type === 'text') {
-                if (current.cursor.start && !sideEqual(current.cursor.start, current.cursor.end)) {
-                    const { left } = textCursorSides2(current.cursor);
-                    return justSel(current.path, { type: 'text', end: left });
-                }
+                // if (current.cursor.start && !sideEqual(current.cursor.start, current.cursor.end)) {
+                //     const { left } = textCursorSides2(current.cursor);
+                //     return justSel(current.path, { type: 'text', end: left });
+                // }
                 const { end } = current.cursor;
                 if (end.cursor > 0) {
                     const span = current.node.spans[end.index];

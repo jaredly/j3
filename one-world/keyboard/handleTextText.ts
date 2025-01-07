@@ -3,7 +3,7 @@ import { stylesEqual, Nodes, Text, TextSpan, ListKind } from '../shared/cnodes';
 import { handleListKey } from './handleListKey';
 import { justSel, richNode } from './handleNav';
 import { Mods } from './handleShiftNav';
-import { textCursorSides } from './insertId';
+// import { textCursorSides } from './insertId';
 import { Config } from './test-utils';
 import {
     TextCursor,
@@ -20,10 +20,18 @@ import {
     gparentLoc,
 } from './utils';
 
-export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: string, path: Path, top: Top, mods?: Mods): Update | void => {
-    if (cursor.start && cursor.start.index !== cursor.end.index) {
-        throw new Error('not multi yet sry');
-    }
+export const handleTextText = (
+    cursor: TextCursor,
+    sel: number | undefined,
+    current: Text<number>,
+    grem: string,
+    path: Path,
+    top: Top,
+    mods?: Mods,
+): Update | void => {
+    // if (cursor.start && cursor.start.index !== cursor.end.index) {
+    //     throw new Error('not multi yet sry');
+    // }
     const span = current.spans[cursor.end.index];
     if (span.type !== 'text') {
         if (span.type === 'embed') {
@@ -74,7 +82,9 @@ export const handleTextText = (cursor: TextCursor, current: Text<number>, grem: 
     }
 
     const text = cursor.end.text ?? splitGraphemes(span.text);
-    const { left, right } = textCursorSides(cursor);
+    const [left, right] =
+        sel == null ? [cursor.end.cursor, cursor.end.cursor] : sel < cursor.end.cursor ? [sel, cursor.end.cursor] : [cursor.end.cursor, sel];
+    // const { left, right } = textCursorSides(cursor);
 
     if (grem === ' ' && current.spans.length === 1 && left === text.length) {
         let parent = top.nodes[parentLoc(path)];
@@ -298,5 +308,6 @@ export const handleTextKey = (config: Config, top: Top, path: Path, cursor: List
         return handleListKey(config, top, path, cursor, grem);
     }
 
-    return handleTextText(cursor, current, grem, path, top, mods);
+    // TODO: selectionnnnn
+    return handleTextText(cursor, undefined, current, grem, path, top, mods);
 };

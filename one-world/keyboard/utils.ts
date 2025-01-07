@@ -57,7 +57,6 @@ export type IdCursor = {
 
 export type TextCursor = {
     type: 'text';
-    start?: { index: number; cursor: number };
     end: { index: number; cursor: number; text?: string[] };
 };
 export type ListWhere = 'before' | 'start' | 'inside' | 'end' | 'after';
