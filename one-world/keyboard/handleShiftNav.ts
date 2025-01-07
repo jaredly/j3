@@ -421,12 +421,9 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
         }
         const [left, middle, right] = orderSelections(state.sel.start, state.sel.end, state.top);
 
-        // let [left, right] = [state.sel.end.cursor, state.sel.start.cursor];
-        // if (ltCursor(right, left)) [left, right] = [right, left];
+        // TODO: iterate through all middles, and if everything is a text, go to town.
     }
     switch (current.type) {
-        // case 'id':
-        //     return handle(current, state.top, key === 'ArrowLeft');
         case 'text':
             if (current.cursor.type === 'text') {
                 return handleSpecialText(current, state.top, key, mods);
