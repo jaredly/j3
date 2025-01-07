@@ -83,7 +83,8 @@ export const getSelectionStatuses = (selection: NodeSelection, top: Top): Select
 
     return statuses;
 };
-const ltCursor = (one: Cursor, two: Cursor) => {
+
+export const ltCursor = (one: Cursor, two: Cursor) => {
     switch (one.type) {
         case 'id':
             return two.type === 'id' ? one.end < two.end : false;
@@ -107,7 +108,8 @@ const ltCursor = (one: Cursor, two: Cursor) => {
             throw new Error('not handling right nowwww');
     }
 };
-const orderSelections = (one: SelStart, two: SelStart, top: Top): [SelStart, Path[], SelStart] => {
+
+export const orderSelections = (one: SelStart, two: SelStart, top: Top): [SelStart, Path[], SelStart] => {
     if (one.path.root.top !== two.path.root.top) throw new Error(`sorry not yettt`);
     if (one.key === two.key) {
         if (ltCursor(one.cursor, two.cursor)) {

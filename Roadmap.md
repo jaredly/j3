@@ -1,6 +1,12 @@
 
 
 - [ ] allllrightlyho, it's def time to be writin tests for these multiselection dealios
+  - [ ] get the multiselect running in my example for
+    - [x] ids
+    - [x] lists
+    - [x] text mostly
+    - [ ] text multi
+  - [ ] multi across lists pls
 
 
 # How to make multiselect more of a thing

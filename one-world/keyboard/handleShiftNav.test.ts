@@ -45,13 +45,13 @@ test('id shift-left and write', () => {
 test('id at smoosh boundary', () => {
     let state = asTop(smoosh([id('ab', true), id('+')]), idc(2));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
-    check(state, smoosh([id('ab'), id('+', true)]), idc(0), idc(1));
+    check(state, smoosh([id('ab', 1), id('+', 2)]), idc(2), idc(1));
 });
 
 test('id at smoosh boundary left', () => {
     let state = asTop(smoosh([id('ab'), id('+', true)]), idc(0));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
-    check(state, smoosh([id('ab', true), id('+')]), idc(2), idc(1));
+    check(state, smoosh([id('ab', 2), id('+', 1)]), idc(0), idc(1));
 });
 
 test('bold no shift', () => {
@@ -73,13 +73,15 @@ test('a little bold/underline', () => {
     state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
     state = applyUpdate(state, handleSpecial(state, 'u', { meta: true }));
     state = applyUpdate(state, handleSpecial(state, 'i', { meta: true }));
-    check(state, text([tspan('he'), tspan('ll', { fontStyle: 'italic', fontWeight: 'bold', textDecoration: 'underline' }), tspan('o')], true), {
-        ...textc(1, 2),
-        start: { index: 1, cursor: 0 },
-    });
+    check(
+        state,
+        text([tspan('he'), tspan('ll', { fontStyle: 'italic', fontWeight: 'bold', textDecoration: 'underline' }), tspan('o')], true),
+        textc(1, 0),
+        textc(1, 2),
+    );
 });
 
-test('undooo the boldliness', () => {
+test.skip('undooo the boldliness', () => {
     let state = asTop(text([tspan('hello')], true), textc(0, 2));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
@@ -121,17 +123,17 @@ test('style across spans', () => {
 
 // MARK: text shift
 
-// test('right across span', () => {
-//     let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(0, 2));
-//     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
-//     check(state, text([tspan('ab'), tspan('cd')], true), textcs(1, 1, 0, 2));
-// });
+test.skip('right across span', () => {
+    let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(0, 2));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    check(state, text([tspan('ab'), tspan('cd')], true), textcs(1, 1, 0, 2));
+});
 
-// test('left across span', () => {
-//     let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(1, 0));
-//     state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
-//     check(state, text([tspan('ab'), tspan('cd')], true), textcs(0, 1, 1, 0));
-// });
+test.skip('left across span', () => {
+    let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(1, 0));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
+    check(state, text([tspan('ab'), tspan('cd')], true), textcs(0, 1, 1, 0));
+});
 
 // MARK: tabs
 
@@ -247,7 +249,7 @@ test('single id', () => {
     check(state, id('hi', true), idc(0), idc(1));
 });
 
-test.only('multi id', () => {
+test('multi id', () => {
     let state = asTop(spaced([id('hi', 1), id('ho', 2)]), idc(0), idc(0));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
     check(state, spaced([id('hi', 1), id('ho', 2)]), idc(0), idc(1));

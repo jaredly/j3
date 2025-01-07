@@ -2,7 +2,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { childLocs, Id, Loc, Node, Text } from '../shared/cnodes';
 import { spanLength } from './handleDelete';
 import { goLateral, handleNav, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
-import { handleSpecialText } from './handleSpecialText';
+import { handleSpecialText, keyMod, specialTextMod } from './handleSpecialText';
 import { TestState } from './test-utils';
 import {
     Current,
@@ -21,7 +21,8 @@ import {
     Top,
     Update,
 } from './utils';
-import { getCurrent } from './selections';
+import { getCurrent, ltCursor, orderSelections } from './selections';
+import { textCursorSides2 } from './insertId';
 
 export type Src = { left: Loc; right?: Loc };
 
@@ -390,13 +391,49 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
             path = parentPath(path);
         }
     }
+    if (state.sel.end?.cursor.type === 'text' && state.sel.start.cursor.type === 'text') {
+        const sc = state.sel.start.cursor;
+        const ec = state.sel.end.cursor;
+        if (state.sel.end.key === state.sel.start.key) {
+            const mod = keyMod(key, mods);
+            if (!mod) return;
+
+            const [left, right] = ltCursor(sc, ec) ? [sc, ec] : [ec, sc];
+
+            const text = sc.end.text
+                ? { grems: sc.end.text, index: sc.end.index }
+                : ec.end.text
+                ? { grems: ec.end.text, index: ec.end.index }
+                : undefined;
+            const node = state.top.nodes[lastChild(state.sel.start.path)];
+            if (node.type === 'text') {
+                const res = specialTextMod(node, text, left.end, right.end, mod);
+                return res
+                    ? {
+                          nodes: { [node.loc]: res.node },
+                          selection: {
+                              start: selStart(current.path, { type: 'text', end: res.start }),
+                              end: selStart(current.path, { type: 'text', end: res.end }),
+                          },
+                      }
+                    : undefined;
+            }
+        }
+        const [left, middle, right] = orderSelections(state.sel.start, state.sel.end, state.top);
+
+        // let [left, right] = [state.sel.end.cursor, state.sel.start.cursor];
+        // if (ltCursor(right, left)) [left, right] = [right, left];
+    }
     switch (current.type) {
         // case 'id':
         //     return handle(current, state.top, key === 'ArrowLeft');
         case 'text':
-            return handleSpecialText(current, state.top, key, mods);
+            if (current.cursor.type === 'text') {
+                return handleSpecialText(current, state.top, key, mods);
+            }
     }
 };
+
 export const allPaths = (top: Top) => {
     const paths: Record<number, Path> = {};
     const add = (id: number, parent: Path) => {

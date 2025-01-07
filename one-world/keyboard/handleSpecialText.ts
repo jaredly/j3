@@ -7,55 +7,81 @@ import { Path, TextCursor, ListCursor, Top, Update, selStart } from './utils';
 
 const isStyleKey = (key: string) => key === 'b' || key === 'i' || key === 'u';
 
-const styleKey = (style: Style, key: string, mods: Mods): boolean => {
-    if (!mods.ctrl && !mods.meta) return false;
+export const keyMod = (key: string, mods: Mods): void | ((style: Style) => void) => {
+    if (!mods.ctrl && !mods.meta) return;
     if (key === 'b') {
-        if (style.fontWeight === 'bold') {
-            delete style.fontWeight;
-        } else {
-            style.fontWeight = 'bold';
-        }
+        return (style) => {
+            if (style.fontWeight === 'bold') {
+                delete style.fontWeight;
+            } else {
+                style.fontWeight = 'bold';
+            }
+        };
     } else if (key === 'u') {
-        if (style.textDecoration === 'underline') {
-            delete style.textDecoration;
-        } else {
-            style.textDecoration = 'underline';
-        }
+        return (style) => {
+            if (style.textDecoration === 'underline') {
+                delete style.textDecoration;
+            } else {
+                style.textDecoration = 'underline';
+            }
+        };
     } else if (key === 'i') {
-        if (style.fontStyle === 'italic') {
-            delete style.fontStyle;
-        } else {
-            style.fontStyle = 'italic';
-        }
-    } else {
-        return false;
+        return (style) => {
+            if (style.fontStyle === 'italic') {
+                delete style.fontStyle;
+            } else {
+                style.fontStyle = 'italic';
+            }
+        };
     }
-
-    return true;
 };
 
-export const handleSpecialText = (
-    { node, path, cursor }: { node: Text<number>; path: Path; cursor: TextCursor | ListCursor },
-    top: Top,
-    key: string,
-    mods: Mods,
-): Update | void => {
-    if (cursor.type === 'list') return;
-    const { left, right, text } = textCursorSides2(cursor);
-    const spans = node.spans.slice();
+// const styleKey = (style: Style, key: string, mods: Mods): boolean => {
+//     if (!mods.ctrl && !mods.meta) return false;
+//     if (key === 'b') {
+//         if (style.fontWeight === 'bold') {
+//             delete style.fontWeight;
+//         } else {
+//             style.fontWeight = 'bold';
+//         }
+//     } else if (key === 'u') {
+//         if (style.textDecoration === 'underline') {
+//             delete style.textDecoration;
+//         } else {
+//             style.textDecoration = 'underline';
+//         }
+//     } else if (key === 'i') {
+//         if (style.fontStyle === 'italic') {
+//             delete style.fontStyle;
+//         } else {
+//             style.fontStyle = 'italic';
+//         }
+//     } else {
+//         return false;
+//     }
+//     return true;
+// };
 
-    if (!isStyleKey(key) || (!mods.ctrl && !mods.meta)) return;
+type Spat = { cursor: number; index: number };
 
+export const specialTextMod = (
+    node: Text<number>,
+    text: undefined | { grems: string[]; index: number },
+    left: Spat,
+    right: Spat,
+    mod: (style: Style) => void,
+) => {
     let off = 0;
     let scur: number | null = null;
     let ecur: { cursor: number; index: number } | null = null;
+    const spans = node.spans.slice();
 
     for (let i = left.index; i <= right.index; i++) {
         const span = node.spans[i];
         if (span.type !== 'text') continue;
         const style = { ...span.style };
-        styleKey(style, key, mods);
-        const grems = text?.grems ?? splitGraphemes(span.text);
+        mod(style);
+        const grems = (text?.index === i ? text.grems : null) ?? splitGraphemes(span.text);
 
         const start = i === left.index ? left.cursor : 0;
         const end = i === right.index ? right.cursor : grems.length;
@@ -86,10 +112,32 @@ export const handleSpecialText = (
     };
 
     return {
-        nodes: { [node.loc]: { ...node, spans: mergeAdjacentSpans(spans, ncursor) } },
-        selection: {
-            start: selStart(path, ncursor),
-        },
+        node: { ...node, spans: mergeAdjacentSpans(spans, ncursor) },
+        start: { index: scur, cursor: 0 },
+        end: ecur,
+    };
+};
+
+export const handleSpecialText = (
+    { node, path, cursor }: { node: Text<number>; path: Path; cursor: TextCursor | ListCursor },
+    top: Top,
+    key: string,
+    mods: Mods,
+): Update | void => {
+    if (cursor.type === 'list') return;
+    const { left, right, text } = textCursorSides2(cursor);
+    const spans = node.spans.slice();
+
+    if (!isStyleKey(key) || (!mods.ctrl && !mods.meta)) return;
+    const mod = keyMod(key, mods);
+    if (!mod) return;
+
+    const res = specialTextMod(node, text, left, right, mod);
+    if (!res) return;
+
+    return {
+        nodes: { [node.loc]: res.node },
+        selection: { start: selStart(path, { type: 'text', start: res.start, end: res.end }) },
     };
 };
 
