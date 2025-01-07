@@ -89,6 +89,10 @@ export const specialTextMod = (
         const start = i === left.index ? left.cursor : 0;
         const end = i === right.index ? right.cursor : grems.length;
 
+        if (start === end && left.index !== right.index) {
+            continue;
+        }
+
         if (start > 0) {
             spans.splice(i + off, 0, { ...span, text: grems.slice(0, start).join('') });
             off++;
@@ -127,7 +131,6 @@ export const handleSpecialText = (
 ): Update | void => {
     if (cursor.type === 'list') return;
     const { left, right, text } = textCursorSides2(cursor);
-    const spans = node.spans.slice();
 
     if (!isStyleKey(key) || (!mods.ctrl && !mods.meta)) return;
     const mod = keyMod(key, mods);
@@ -138,7 +141,10 @@ export const handleSpecialText = (
 
     return {
         nodes: { [node.loc]: res.node },
-        selection: { start: selStart(path, { type: 'text', start: res.start, end: res.end }) },
+        selection: {
+            start: selStart(path, { type: 'text', end: res.end }),
+            end: selStart(path, { type: 'text', end: res.start }),
+        },
     };
 };
 

@@ -57,13 +57,13 @@ test('id at smoosh boundary left', () => {
 test('bold no shift', () => {
     let state = asTop(text([tspan('hello')], true), textc(0, 2));
     state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
-    check(state, text([tspan('he'), tspan('', { fontWeight: 'bold' }), tspan('llo')], true), textcs(1, 0, 1, 0));
+    check(state, text([tspan('he'), tspan('', { fontWeight: 'bold' }), tspan('llo')], true), textc(1, 0), textc(1, 0));
 });
 
 test('bold no shift at end', () => {
     let state = asTop(text([tspan('hello')], true), textc(0, 5));
     state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
-    check(state, text([tspan('hello'), tspan('', { fontWeight: 'bold' })], true), textcs(1, 0, 1, 0));
+    check(state, text([tspan('hello'), tspan('', { fontWeight: 'bold' })], true), textc(1, 0), textc(1, 0));
 });
 
 test('a little bold/underline', () => {
@@ -97,20 +97,20 @@ test('undooo the boldliness', () => {
 test('join stuffs', () => {
     let state = asTop(text([tspan('hello folks')], true), textcs(0, 6, 0, 11));
     state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
-    check(state, text([tspan('hello '), tspan('folks', { fontWeight: 'bold' })], true), textcs(1, 5, 1, 0));
+    check(state, text([tspan('hello '), tspan('folks', { fontWeight: 'bold' })], true), textc(1, 5), textc(1, 0));
 });
 
 test('style across spans kinda', () => {
     let state = asTop(text([tspan('ab'), tspan('cd', { fontWeight: 'bold' })], true), textcs(0, 2, 1, 2));
     state = applyUpdate(state, handleSpecial(state, 'i', { meta: true }));
-    check(state, text([tspan('ab'), tspan('cd', { fontWeight: 'bold', fontStyle: 'italic' })], true), textcs(1, 2, 1, 0));
+    check(state, text([tspan('ab'), tspan('cd', { fontWeight: 'bold', fontStyle: 'italic' })], true), textc(1, 2), textc(1, 0));
 });
 
 // TODO: fix the empty styled span that gets added.
 test('style across spans kinda', () => {
     let state = asTop(text([tspan('ab', { fontWeight: 'bold' }), tspan('cd')], true), textcs(1, 0, 0, 0));
     state = applyUpdate(state, handleSpecial(state, 'i', { meta: true }));
-    check(state, text([tspan('ab', { fontWeight: 'bold', fontStyle: 'italic' }), tspan('cd')], true), textcs(1, 0, 0, 0));
+    check(state, text([tspan('ab', { fontWeight: 'bold', fontStyle: 'italic' }), tspan('cd')], true), textc(0, 2), textc(0, 0));
 });
 
 test('style across spans', () => {
@@ -127,22 +127,23 @@ test('style across spans', () => {
             ],
             true,
         ),
-        textcs(2, 1, 1, 0),
+        textc(2, 1),
+        textc(1, 0),
     );
 });
 
 // MARK: text shift
 
-test.skip('right across span', () => {
+test('right across span', () => {
     let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(0, 2));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
-    check(state, text([tspan('ab'), tspan('cd')], true), textcs(1, 1, 0, 2));
+    check(state, text([tspan('ab'), tspan('cd')], true), textc(0, 2), textc(1, 1));
 });
 
-test.skip('left across span', () => {
+test('left across span', () => {
     let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(1, 0));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
-    check(state, text([tspan('ab'), tspan('cd')], true), textcs(0, 1, 1, 0));
+    check(state, text([tspan('ab'), tspan('cd')], true), textc(1, 0), textc(0, 1));
 });
 
 // MARK: tabs
