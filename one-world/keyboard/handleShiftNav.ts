@@ -276,7 +276,7 @@ export const wordNav = (state: TestState, left: boolean, shift: boolean | undefi
                         text: current.cursor.end.index === next.index ? current.cursor.end.text : undefined,
                     },
                 }),
-                shift ? state.sel.end ?? state.sel.start : undefined,
+                shift ? state.sel.start : undefined,
                 // state.sel.end,
             );
         }
