@@ -35,6 +35,8 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
                 }
                 return true;
             }),
+            opener: left ? left.type === 'list' && left.where === 'before' : inside == null,
+            closer: right ? right.type === 'list' && right.where === 'after' : inside == null,
         };
     }
 
@@ -176,28 +178,41 @@ export const orderSelections = (
         const t = two.path.children[i];
         if (o === t) continue;
         const pnode = top.nodes[one.path.children[i - 1]];
+        const ppath: Path = { ...one.path, children: one.path.children.slice(0, i) };
+        if (pnode.type === 'text') {
+            const oat = pnode.spans.findIndex((s) => s.type === 'embed' && s.item === o);
+            const tat = pnode.spans.findIndex((s) => s.type === 'embed' && s.item === t);
+            if (oat === -1 || tat === -1) throw new Error(`not innnn`);
+            const statuses: SelectionStatuses = {
+                [pathKey(ppath)]: {
+                    cursors: [],
+                    highlight: {
+                        type: 'text',
+                        spans: pnode.spans.map((span, i) => {
+                            if (i > Math.min(oat, tat) + 1 && i < Math.max(oat, tat)) {
+                                return true;
+                            }
+                            return false;
+                        }),
+                        opener: false,
+                        closer: false,
+                    },
+                },
+            };
+            getNeighbors(one.path, i, top, oat < tat ? 'after' : 'before', statuses);
+            getNeighbors(two.path, i, top, oat < tat ? 'before' : 'after', statuses);
+            return oat < tat ? [one, statuses, two, null] : [two, statuses, one, null];
+        }
         const locs = childLocs(pnode);
         const oat = locs.indexOf(o);
         const tat = locs.indexOf(t);
         if (oat === -1 || tat === -1) throw new Error(`not innnn`);
-        const ppath: Path = { ...one.path, children: one.path.children.slice(0, i) };
-        if (oat < tat) {
-            const mid = locs.slice(oat + 1, tat).map((c) => pathWithChildren(ppath, c));
-            const statuses: SelectionStatuses = {};
-            mid.forEach((path) => (statuses[pathKey(path)] = { cursors: [], highlight: { type: 'full' } }));
-            getNeighbors(one.path, i, top, 'after', statuses);
-            getNeighbors(two.path, i, top, 'before', statuses);
-            return [one, statuses, two, null];
-        } else {
-            const mid = locs.slice(tat + 1, oat).map((c) => pathWithChildren(ppath, c));
-            const statuses: SelectionStatuses = {};
-            mid.forEach((path) => (statuses[pathKey(path)] = { cursors: [], highlight: { type: 'full' } }));
-            getNeighbors(two.path, i, top, 'after', statuses);
-            getNeighbors(one.path, i, top, 'before', statuses);
-            // mid.unshift(...getNeighbors(two.path, i, top, 'after'));
-            // mid.push(...getNeighbors(one.path, i, top, 'before'));
-            return [two, statuses, one, null];
-        }
+        const statuses: SelectionStatuses = {};
+        const mid = oat < tat ? locs.slice(oat + 1, tat) : locs.slice(tat + 1, oat);
+        mid.forEach((c) => (statuses[pathKey(pathWithChildren(ppath, c))] = { cursors: [], highlight: { type: 'full' } }));
+        getNeighbors(one.path, i, top, oat < tat ? 'after' : 'before', statuses);
+        getNeighbors(two.path, i, top, oat < tat ? 'before' : 'after', statuses);
+        return oat < tat ? [one, statuses, two, null] : [two, statuses, one, null];
     }
 
     const [outer, inner] = one.path.children.length < two.path.children.length ? [one, two] : [two, one];
@@ -261,7 +276,12 @@ const getNeighbors = (path: Path, i: number, top: Top, side: 'before' | 'after',
             if (at === -1) throw new Error(`child not in parent spans`);
             statuses[pathKey(ppath)] = {
                 cursors: [],
-                highlight: { type: 'text', spans: pnode.spans.map((span, i) => (side === 'before' ? i < at : i > at)) },
+                highlight: {
+                    type: 'text',
+                    spans: pnode.spans.map((span, i) => (side === 'before' ? i < at : i > at)),
+                    opener: side === 'before',
+                    closer: side === 'after',
+                },
             };
             // if (side === 'after') {
             //     // for (let i=at + 1; i<pnode.spans.length; i++) {

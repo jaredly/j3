@@ -135,7 +135,7 @@ export type Highlight =
     | { type: 'id'; start?: number; end?: number }
     | { type: 'list'; opener: boolean; closer: boolean }
     // TODO table??
-    | { type: 'text'; spans: (boolean | { start?: number; end?: number })[] };
+    | { type: 'text'; spans: (boolean | { start?: number; end?: number })[]; opener: boolean; closer: boolean };
 
 export type Update = {
     nodes: Record<string, Node | null>;

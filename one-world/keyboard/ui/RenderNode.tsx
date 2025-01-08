@@ -626,11 +626,25 @@ export const RenderNode = ({
             return (
                 <span style={style} ref={ref}>
                     {has('before') ? <Cursor /> : null}
-                    <span style={{ backgroundColor: has('start') ? hlColor : undefined, color: textColor }}>"</span>
+                    <span
+                        style={{
+                            backgroundColor: has('start') || (status?.highlight?.type === 'text' && status.highlight.opener) ? lightColor : undefined,
+                            color: textColor,
+                        }}
+                    >
+                        "
+                    </span>
                     {has('inside') ? <Cursor /> : null}
                     {children}
                     {!children.length ? <Zwd /> : null}
-                    <span style={{ backgroundColor: has('end') ? hlColor : undefined, color: textColor }}>"</span>
+                    <span
+                        style={{
+                            backgroundColor: has('end') || (status?.highlight?.type === 'text' && status.highlight.closer) ? lightColor : undefined,
+                            color: textColor,
+                        }}
+                    >
+                        "
+                    </span>
                     {has('after') ? <Cursor /> : null}
                 </span>
             );
