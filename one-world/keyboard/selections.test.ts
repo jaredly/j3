@@ -84,7 +84,7 @@ test('text simple', () => {
     expect(statuses).toEqual({
         ';;0': {
             cursors: [textc(0, 2), textc(0, 4)],
-            highlight: { type: 'text', spans: [{ start: 2, end: 4 }, false] },
+            highlight: { type: 'text', spans: [{ start: 2, end: 4 }, false], opener: false, closer: false },
         },
     });
 });
@@ -95,7 +95,7 @@ test('text simple across spans', () => {
     expect(statuses).toEqual({
         ';;0': {
             cursors: [textc(0, 2), textc(2, 2)],
-            highlight: { type: 'text', spans: [{ start: 2 }, true, { end: 2 }] },
+            highlight: { type: 'text', spans: [{ start: 2 }, true, { end: 2 }], opener: false, closer: false },
         },
     });
 });
@@ -113,6 +113,8 @@ test('text into', () => {
             highlight: {
                 type: 'text',
                 spans: [{ start: 2 }, false, false],
+                opener: false,
+                closer: false,
             },
         },
         ';;0,1': {
@@ -138,7 +140,7 @@ test('text into more', () => {
         },
         ';;0,2': {
             cursors: [],
-            highlight: { type: 'text', spans: [true, false, false] },
+            highlight: { type: 'text', spans: [true, false, false], opener: true, closer: false },
         },
         ';;0,2,3': {
             cursors: [],
@@ -146,5 +148,20 @@ test('text into more', () => {
         },
         ';;0,2,3,4': { cursors: [], highlight: { type: 'full' } },
         ';;0,2,3,5': { cursors: [idc(2)], highlight: { type: 'id', end: 2 } },
+    });
+});
+
+test('text into start', () => {
+    let state = asTop(round([id('one', 1), text([tspan('two'), tspan('three')], 2)]), idc(1), listc('before'));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses).toEqual({
+        ';;0,1': {
+            cursors: [idc(1)],
+            highlight: { type: 'id', start: 1 },
+        },
+        ';;0,2': {
+            cursors: [{ type: 'list', where: 'before' }],
+            highlight: { type: 'text', spans: [false, false], opener: false, closer: false },
+        },
     });
 });

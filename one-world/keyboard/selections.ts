@@ -16,6 +16,8 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
         return {
             type: 'text',
             spans: node.spans.map((span, i) => {
+                if (!left && right?.type === 'list' && (right.where === 'before' || right.where === 'start')) return false;
+                if (!right && left?.type === 'list' && (left.where === 'after' || left.where === 'end')) return false;
                 if (left?.type === 'text') {
                     if (left.end.index > i) return false;
                     if (inside != null && inside <= i) return false;
@@ -35,8 +37,8 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
                 }
                 return true;
             }),
-            opener: left ? left.type === 'list' && left.where === 'before' : inside == null,
-            closer: right ? right.type === 'list' && right.where === 'after' : inside == null,
+            opener: left ? left.type === 'list' && left.where === 'before' : inside == null && !(right?.type === 'list' && right.where === 'before'),
+            closer: right ? right.type === 'list' && right.where === 'after' : inside == null && !(left?.type === 'list' && left.where === 'after'),
         };
     }
 
@@ -189,7 +191,7 @@ export const orderSelections = (
                     highlight: {
                         type: 'text',
                         spans: pnode.spans.map((span, i) => {
-                            if (i > Math.min(oat, tat) + 1 && i < Math.max(oat, tat)) {
+                            if (i > Math.min(oat, tat) && i < Math.max(oat, tat)) {
                                 return true;
                             }
                             return false;
