@@ -112,13 +112,7 @@ export const RenderNode = ({
 }) => {
     const node = state.top.nodes[loc];
 
-    // const current = loc === lastChild(state.sel.start.path) ? getCurrent(state.sel, state.top) : null;
-
-    let style: React.CSSProperties | undefined = false //ctx.errors[loc]
-        ? { textDecoration: 'underline' }
-        : ctx.styles[loc]
-        ? asStyle(ctx.styles[loc])
-        : undefined;
+    let style: React.CSSProperties | undefined = false ? { textDecoration: 'underline' } : ctx.styles[loc] ? asStyle(ctx.styles[loc]) : undefined;
 
     const nextParent = useMemo(() => pathWithChildren(parent, loc), [parent, loc]);
     const key = useMemo(() => pathKey(nextParent), [nextParent]);
@@ -173,26 +167,17 @@ export const RenderNode = ({
 
     switch (node.type) {
         case 'id':
-            // const plh = ctx.placeholders[loc];
             if (status?.cursors.length && !readOnly) {
-                const text = (status.cursors.find((c) => c.type === 'id' && c.text) as IdCursor)?.text ?? splitGraphemes(node.text);
-                // const { left, right } = cursorSides(current.cursor, current.start);
-                // let text = current.cursor.text ?? splitGraphemes(node.text);
-                let usingPlaceholder = false;
-                // if (text.length === 0 && plh) {
-                //     if (!style) style = {};
-                //     usingPlaceholder = true;
-                //     Object.assign(style, placeholderStyle);
-                //     text = splitGraphemes(plh);
-                // }
+                const cursorText = (status.cursors.find((c) => c.type === 'id' && c.text) as IdCursor)?.text;
+                const text = cursorText ?? splitGraphemes(node.text);
                 return (
                     <span style={{ ...style, position: 'relative' }}>
                         <TextWithCursor
                             innerRef={ref}
                             onClick={(evt) => {
                                 evt.stopPropagation();
-                                const pos = usingPlaceholder ? 0 : cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                                // ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0, text: current.cursor.text }));
+                                const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
+                                ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0, text: cursorText }));
                             }}
                             text={text}
                             highlight={status.highlight?.type === 'id' ? status.highlight : undefined}

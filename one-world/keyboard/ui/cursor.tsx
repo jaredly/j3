@@ -101,7 +101,7 @@ export const TextWithCursor = ({
                 top: rect.top - rbox.top,
             })),
         );
-    }, [text, highlight, tick]);
+    }, [text, highlight, tick, cursors]);
 
     return (
         <span style={{ position: 'relative' }}>
