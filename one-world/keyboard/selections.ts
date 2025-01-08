@@ -131,12 +131,34 @@ export const orderSelections = (one: SelStart, two: SelStart, top: Top): [SelSta
         // gotta handle that
         const ppath: Path = { ...one.path, children: one.path.children.slice(0, i) };
         if (oat < tat) {
-            return [one, locs.slice(oat + 1, tat).map((c) => pathWithChildren(ppath, c)), two];
+            const mid = locs.slice(oat + 1, tat).map((c) => pathWithChildren(ppath, c));
+            mid.unshift(...getNeighbors(one.path, i, top, 'after'));
+            mid.push(...getNeighbors(two.path, i, top, 'before'));
+            return [one, mid, two];
         } else {
-            return [two, locs.slice(tat + 1, oat).map((c) => pathWithChildren(ppath, c)), one];
+            const mid = locs.slice(tat + 1, oat).map((c) => pathWithChildren(ppath, c));
+            mid.unshift(...getNeighbors(two.path, i, top, 'after'));
+            mid.push(...getNeighbors(one.path, i, top, 'before'));
+            return [two, mid, one];
         }
     }
     throw new Error(`ran out, cant handle yext just yets`);
+};
+
+const getNeighbors = (path: Path, i: number, top: Top, side: 'before' | 'after'): Path[] => {
+    const paths: Path[] = [];
+    for (; i < path.children.length - 1; i++) {
+        const parent = path.children[i];
+        const next = path.children[i + 1];
+        const children = childLocs(top.nodes[parent]);
+        const at = children.indexOf(next);
+        if (at === -1) throw new Error(`child not in parent children`);
+        const ppath: Path = { ...path, children: path.children.slice(0, i + 1) };
+        const neighbors = (side === 'after' ? children.slice(at + 1) : children.slice(0, at)).map((c) => pathWithChildren(ppath, c));
+        if (side === 'after') paths.push(...neighbors);
+        else paths.unshift(...neighbors);
+    }
+    return paths;
 };
 
 export const getCurrent = (selection: NodeSelection, top: Top): Current => {

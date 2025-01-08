@@ -309,6 +309,11 @@ export const RenderNode = ({
                     style.boxShadow = '-2px 0 0 teal';
                 }
 
+                if (status?.highlight?.type === 'list' && status.highlight.opener && status.highlight.closer) {
+                    style.backgroundColor = hlColor;
+                }
+                console.log('here statss', status);
+
                 let contents = children;
 
                 const hasControl = (index: number) => status?.cursors.some((c) => c.type === 'control' && c.index === index);
@@ -424,6 +429,13 @@ export const RenderNode = ({
                         {has('after') ? <Cursor /> : null}
                     </span>
                 );
+            }
+
+            if (status?.highlight?.type === 'list' && status.highlight.opener && status.highlight.closer) {
+                if (!style) style = {};
+                style.borderRadius = '2px';
+                style.backgroundColor = lightColor;
+                style.outline = `2px solid ${lightColor}`;
             }
             switch (node.kind) {
                 case 'smooshed':
