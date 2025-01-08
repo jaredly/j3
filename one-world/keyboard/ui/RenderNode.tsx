@@ -584,15 +584,8 @@ export const RenderNode = ({
                         </span>
                     );
                 } else if (span.type === 'embed') {
-                    // let selected = status?.highlight?.type === 'text' && status.highlight.spans[i] === true;
-                    let spa = status?.highlight?.type === 'text' ? status.highlight.spans[i] : null;
-                    let selected = spa === true || (spa && (spa.start == null || spa.start === 0) && (spa.end == null || spa.end >= 1));
-                    // let selected = false;
-                    // if (sides && sides.left.index <= i && sides.right.index >= i) {
-                    //     const left = i === sides?.left.index ? sides.left.cursor : 0;
-                    //     const right = i === sides?.right.index ? sides.right.cursor : 1;
-                    //     if (left === 0 && right === 1) selected = true;
-                    // }
+                    const spa = status?.highlight?.type === 'text' ? status.highlight.spans[i] : null;
+                    const selected = spa === true || (spa && (spa.start == null || spa.start === 0) && (spa.end == null || spa.end >= 1));
                     return (
                         <span
                             style={{
