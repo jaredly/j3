@@ -27,13 +27,16 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
         return handleNav(key, state);
     } else if (key === 'ArrowUp' || key === 'ArrowDown') {
         // TODO shift=up/down
-        if (mods.shift) {
-            if (key === 'ArrowUp') {
-                return shiftExpand(state, visual?.spans);
-            }
-        }
+        // if (mods.shift) {
+        //     // if (key === 'ArrowUp') {
+        //     //     return shiftExpand(state, visual?.spans);
+        //     // }
+        // }
         if (visual) {
             const next = (key === 'ArrowDown' ? visual.down : visual.up)(state.sel);
+            if (mods.shift && next) {
+                return { nodes: {}, selection: { start: state.sel.start, end: next.start } };
+            }
             return next ? { nodes: {}, selection: next } : undefined;
         }
     } else if (key === 'Tab' || key === '\t') {

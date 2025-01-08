@@ -12,9 +12,10 @@
   - hmmmmmmmmmmm how do I do /column + 2D area select/ vs /normal wrapping select/ ??? howw.
     I thiiiink what we want is a {table} cursor type. yeahh. and that can contain the madness.
     like if you're doing a normal selection thing, you won't be selecting /cells/.
-- [ ] BETWEEN two emebds in a text, select the intervening spans
-- [ ] start of text, shouldn't select the whole spannn
+- [x] BETWEEN two emebds in a text, select the intervening spans
+- [x] start of text, shouldn't select the whole spannn
 - [x] openers and closers, hl them
+- [ ] tagsssss got a lot to do there
 
 
 # How to make multiselect more of a thing

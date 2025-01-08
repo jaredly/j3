@@ -28,6 +28,12 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
                         return { start: left.end.cursor };
                     }
                 }
+                if (left?.type === 'list' && (left.where === 'before' || left.where === 'start')) {
+                    if (inside != null && inside <= i) return false;
+                }
+                if (right?.type === 'list' && (right.where === 'after' || right.where === 'end')) {
+                    if (inside != null && inside >= i) return false;
+                }
                 if (right?.type === 'text') {
                     if (right.end.index < i) return false;
                     if (inside != null && inside >= i) return false;
