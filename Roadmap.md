@@ -14,6 +14,7 @@
     like if you're doing a normal selection thing, you won't be selecting /cells/.
 - [ ] BETWEEN two emebds in a text, select the intervening spans
 - [ ] start of text, shouldn't select the whole spannn
+- [x] openers and closers, hl them
 
 
 # How to make multiselect more of a thing

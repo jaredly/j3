@@ -482,7 +482,8 @@ export const RenderNode = ({
                             {has('before') ? <Cursor /> : null}
                             <span
                                 style={{
-                                    backgroundColor: has('start') ? hlColor : undefined,
+                                    backgroundColor:
+                                        has('start') || (status?.highlight?.type === 'list' && status.highlight.opener) ? lightColor : undefined,
                                     color: hlBraces ? braceColorHl : braceColor,
                                     fontWeight: hlBraces ? 'bold' : undefined,
                                     // outline: hlBraces ? '1px solid teal' : undefined,
@@ -509,7 +510,8 @@ export const RenderNode = ({
                             )} */}
                             <span
                                 style={{
-                                    backgroundColor: has('end') ? hlColor : undefined,
+                                    backgroundColor:
+                                        has('end') || (status?.highlight?.type === 'list' && status.highlight.closer) ? lightColor : undefined,
                                     color: hlBraces ? braceColorHl : braceColor,
                                     // outline: hlBraces ? '1px solid teal' : undefined,
                                     // textDecoration: hlBraces ? 'underline' : undefined,
