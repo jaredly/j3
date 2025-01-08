@@ -164,7 +164,8 @@ export const RenderList = (
                             }}
                             type="checkbox"
                             checked={!!ch[loc]}
-                            onClick={(evt) => {
+                            onMouseDown={(evt) => {
+                                evt.preventDefault();
                                 evt.stopPropagation();
                             }}
                             onChange={(evt) => {
@@ -196,8 +197,9 @@ export const RenderList = (
                             style={{ gridColumn: 1, outline: hasControl(i) ? '2px solid red' : undefined }}
                             type="radio"
                             checked={loc === which}
-                            onClick={(evt) => {
+                            onMouseDown={(evt) => {
                                 evt.stopPropagation();
+                                evt.preventDefault();
                                 ctx.dispatch({
                                     nodes: {
                                         [node.loc]: {
@@ -271,11 +273,23 @@ export const RenderList = (
                     style={{ ...style, display: 'inline-block' }}
                     ref={ref}
                     data-yes="yes"
-                    onClick={(evt) => {
+                    onMouseDown={(evt) => {
+                        evt.preventDefault();
                         evt.stopPropagation();
                         const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
                         if (sel) {
-                            ctx.dispatch(selUpdate(sel)!);
+                            ctx.drag.start(sel);
+                            // ctx.dispatch(selUpdate(sel)!);
+                        }
+                    }}
+                    onMouseMove={(evt) => {
+                        if (ctx.drag.dragging) {
+                            evt.preventDefault();
+                            evt.stopPropagation();
+                            const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                            if (sel) {
+                                ctx.drag.move(sel);
+                            }
                         }
                     }}
                 >
@@ -289,11 +303,23 @@ export const RenderList = (
                 <span
                     style={style}
                     ref={ref}
-                    onClick={(evt) => {
+                    onMouseDown={(evt) => {
+                        evt.preventDefault();
                         evt.stopPropagation();
                         const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
                         if (sel) {
-                            ctx.dispatch(selUpdate(sel)!);
+                            ctx.drag.start(sel);
+                            // ctx.dispatch(selUpdate(sel)!);
+                        }
+                    }}
+                    onMouseMove={(evt) => {
+                        if (ctx.drag.dragging) {
+                            evt.preventDefault();
+                            evt.stopPropagation();
+                            const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                            if (sel) {
+                                ctx.drag.move(sel);
+                            }
                         }
                     }}
                 >

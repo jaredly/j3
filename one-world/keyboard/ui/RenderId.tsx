@@ -2,7 +2,7 @@ import React from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Id } from '../../shared/cnodes';
 import { justSel } from '../handleNav';
-import { SelectionStatuses, Path, IdCursor } from '../utils';
+import { SelectionStatuses, Path, IdCursor, selStart } from '../utils';
 import { TextWithCursor, Zwd } from './cursor';
 import { RCtx, cursorPositionInSpanForEvt } from './RenderNode';
 
@@ -22,10 +22,19 @@ export const RenderId = (
             <span style={{ ...style, position: 'relative' }}>
                 <TextWithCursor
                     innerRef={ref}
-                    onClick={(evt) => {
+                    onMouseDown={(evt) => {
+                        evt.preventDefault();
                         evt.stopPropagation();
                         const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                        ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0, text: cursorText }));
+                        ctx.drag.start(selStart(nextParent, { type: 'id', end: pos ?? 0, text: cursorText }));
+                    }}
+                    onMouseMove={(evt) => {
+                        if (ctx.drag.dragging) {
+                            evt.preventDefault();
+                            evt.stopPropagation();
+                            const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
+                            ctx.drag.move(selStart(nextParent, { type: 'id', end: pos ?? 0, text: cursorText }));
+                        }
                     }}
                     text={text}
                     highlight={status.highlight?.type === 'id' ? status.highlight : undefined}
@@ -39,10 +48,19 @@ export const RenderId = (
         <span
             style={style}
             ref={ref}
-            onClick={(evt) => {
+            onMouseDown={(evt) => {
+                evt.preventDefault();
                 evt.stopPropagation();
                 const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(node.text));
-                ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0 }));
+                ctx.drag.start(selStart(nextParent, { type: 'id', end: pos ?? 0 }));
+            }}
+            onMouseMove={(evt) => {
+                if (ctx.drag.dragging) {
+                    evt.preventDefault();
+                    evt.stopPropagation();
+                    const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(node.text));
+                    ctx.drag.move(selStart(nextParent, { type: 'id', end: pos ?? 0 }));
+                }
             }}
         >
             {text === '' ? <Zwd /> : text}

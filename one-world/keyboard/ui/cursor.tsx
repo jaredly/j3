@@ -36,7 +36,8 @@ export const TextWithCursor = ({
     text,
     // left,
     // right,
-    onClick,
+    onMouseDown,
+    onMouseMove,
     innerRef,
     cursorRef,
     cursors,
@@ -51,7 +52,8 @@ export const TextWithCursor = ({
     // left: number;
     // right: number;
     rich?: boolean;
-    onClick: React.ComponentProps<'span'>['onClick'];
+    onMouseDown: React.ComponentProps<'span'>['onMouseDown'];
+    onMouseMove: React.ComponentProps<'span'>['onMouseMove'];
 }) => {
     const ref = useRef<HTMLSpanElement>();
     type Rect = {
@@ -112,7 +114,8 @@ export const TextWithCursor = ({
                         ref.current = span;
                     }
                 }}
-                onClick={onClick}
+                onMouseDown={onMouseDown}
+                onMouseMove={onMouseMove}
                 style={{ zIndex: 1, position: 'relative' }}
             >
                 {text.length ? text.join('') : <Zwd />}

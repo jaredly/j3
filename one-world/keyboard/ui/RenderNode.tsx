@@ -10,6 +10,7 @@ import { RenderId } from './RenderId';
 import { RenderList } from './RenderList';
 import { RenderText } from './RenderText';
 import { RenderTable } from './RenderTable';
+import { SelStart } from '../handleShiftNav';
 
 export const hlColor = 'rgba(100,100,100,0.2)';
 // ? ''
@@ -33,6 +34,11 @@ export type RCtx = {
     dispatch: (up: Update) => void;
     msel: null | string[];
     mhover: null | string[];
+    drag: {
+        dragging: boolean;
+        start: (sel: SelStart) => void;
+        move: (sel: SelStart) => void;
+    };
 };
 export const textColor = 'rgb(248 136 0)';
 
@@ -123,7 +129,7 @@ export const Section = ({ contents }: { contents: JSX.Element[] }) => {
         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
             <button
                 style={{ marginRight: 4, marginTop: '0.6em', background: 'none', border: 'none', cursor: 'pointer' }}
-                onClick={() => setOpen(!open)}
+                onMouseDown={() => setOpen(!open)}
             >
                 {open ? '▼' : '▶'}
             </button>
@@ -198,7 +204,10 @@ function nodeStyle(
 ) {
     let style: React.CSSProperties | undefined = false ? { textDecoration: 'underline' } : ctx.styles[loc] ? asStyle(ctx.styles[loc]) : undefined;
 
-    if (!readOnly && status?.highlight?.type === 'full') {
+    if (
+        !readOnly &&
+        (status?.highlight?.type === 'full' || (status?.highlight?.type === 'list' && status.highlight.opener && status.highlight.closer))
+    ) {
         if (!style) style = {};
         style.borderRadius = '2px';
         style.backgroundColor = lightColor;

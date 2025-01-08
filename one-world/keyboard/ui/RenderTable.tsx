@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Table, isRich } from '../../shared/cnodes';
 import { selUpdate } from '../handleNav';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
-import { CollectionCursor, Path, SelectionStatuses } from '../utils';
+import { CollectionCursor, ListWhere, Path, pathKey, SelectionStatuses } from '../utils';
 import { Cursor } from './cursor';
 import { RCtx, RenderNode, braceColor, closer, hlColor, opener } from './RenderNode';
 import { posInList } from './selectionPos';
+import { lightColor } from './colors';
 
 export const RenderTable = (
     status: SelectionStatuses[''],
@@ -19,8 +20,17 @@ export const RenderTable = (
     state: TestState,
     inRich: boolean,
 ) => {
+    const has = (where: ListWhere) => status?.cursors.some((c) => c.type === 'list' && c.where === where);
     const mx = node.rows.reduce((c, r) => Math.max(c, r.length), 0);
-    const cursor = undefined as CollectionCursor | undefined;
+
+    if (status?.highlight?.type === 'list' && status.highlight.opener && status.highlight.closer) {
+        if (!style) style = {};
+        style.backgroundColor = lightColor;
+    }
+
+    // const key = useMemo(() => pathKey(nextParent), [nextParent])
+    // const status = ctx.selectionStatuses[key]
+    // const cursor = undefined as CollectionCursor | undefined;
     if (isRich(node.kind)) {
         const cols: string[] = [];
         for (let i = 0; i < mx; i++) {
@@ -29,7 +39,7 @@ export const RenderTable = (
         }
         return (
             <span style={{ display: 'inline-flex', flexDirection: 'row' }}>
-                {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+                {has('before') ? <Cursor /> : null}
 
                 <span
                     ref={ref}
@@ -55,7 +65,7 @@ export const RenderTable = (
                         ]),
                     )}
                 </span>
-                {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+                {has('after') ? <Cursor /> : null}
             </span>
         );
     }
@@ -101,18 +111,31 @@ export const RenderTable = (
         <span
             style={style}
             ref={ref}
-            onClick={(evt) => {
+            onMouseDown={(evt) => {
                 evt.stopPropagation();
+                evt.preventDefault();
                 const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
                 if (sel) {
-                    ctx.dispatch(selUpdate(sel)!);
+                    ctx.drag.start(sel);
+                    // ctx.dispatch(selUpdate(sel)!);
+                }
+            }}
+            onMouseMove={(evt) => {
+                if (ctx.drag.dragging) {
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                    const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                    if (sel) {
+                        ctx.drag.move(sel);
+                        // ctx.dispatch(selUpdate(sel)!);
+                    }
                 }
             }}
         >
-            {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
+            {has('before') ? <Cursor /> : null}
             <span
                 style={{
-                    backgroundColor: cursor?.type === 'list' && cursor.where === 'start' ? hlColor : undefined,
+                    backgroundColor: has('start') || (status?.highlight?.type === 'list' && status.highlight.opener) ? lightColor : undefined,
                     color: braceColor,
                     // ...style,
                     // borderRadius: style?.borderRadius,
@@ -121,7 +144,7 @@ export const RenderTable = (
                 {opener[node.kind]}
                 <span style={{ marginLeft: '-0.3em', fontVariantLigatures: 'none' }}>:</span>
             </span>
-            {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
+            {has('inside') ? <Cursor /> : null}
 
             {node.forceMultiline ? (
                 <div
@@ -141,7 +164,7 @@ export const RenderTable = (
             )}
             <span
                 style={{
-                    backgroundColor: cursor?.type === 'list' && cursor.where === 'end' ? hlColor : undefined,
+                    backgroundColor: has('end') || (status?.highlight?.type === 'list' && status.highlight.closer) ? lightColor : undefined,
                     color: braceColor,
                     // borderRadius: style?.borderRadius,
                 }}
@@ -149,7 +172,7 @@ export const RenderTable = (
                 <span style={{ marginRight: '-0.3em', fontVariantLigatures: 'none' }}>:</span>
                 {closer[node.kind]}
             </span>
-            {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
+            {has('after') ? <Cursor /> : null}
         </span>
     );
 };

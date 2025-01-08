@@ -48,7 +48,7 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
         };
     }
 
-    if (node.type === 'list') {
+    if (node.type === 'list' || node.type === 'table') {
         let opener = true;
         let closer = true;
         if (left?.type === 'list') {
@@ -141,7 +141,7 @@ const innerSide = (outer: SelStart, inner: SelStart, top: Top): { side: 'before'
                 ? node.children.indexOf(child)
                 : node.type === 'text'
                 ? node.spans.findIndex((s) => s.type === 'embed' && s.item === child)
-                : -1;
+                : childLocs(node).indexOf(child);
         // TODO table plesssss
         if (at === -1) throw new Error(`cant find location of child for inner side`);
         if (outer.cursor.where === 'before' || outer.cursor.where === 'start') {
@@ -296,7 +296,7 @@ const getNeighbors = (path: Path, i: number, top: Top, side: 'before' | 'after',
             //     // }
             // }
         } else {
-            if (pnode.type === 'list') {
+            if (pnode.type === 'list' || pnode.type === 'table') {
                 statuses[pathKey(ppath)] = { cursors: [], highlight: { type: 'list', opener: side === 'before', closer: side === 'after' } };
             }
 

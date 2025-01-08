@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { useLatest } from '../../../web/custom/useLatest';
 import { applyUpdate } from '../applyUpdate';
 import { init, TestState } from '../test-utils';
@@ -10,7 +10,7 @@ import { ParseResult, show } from '../../syntaxes/dsl';
 import * as dsl3 from '../../syntaxes/dsl3';
 import { nodeToXML, toXML, XML } from '../../syntaxes/xml';
 import { selectStart } from '../handleNav';
-import { allPaths, multiSelChildren, multiSelKeys, selEnd, Src } from '../handleShiftNav';
+import { allPaths, multiSelChildren, multiSelKeys, selEnd, SelStart, Src } from '../handleShiftNav';
 import { root } from '../root';
 import { lastChild, NodeSelection, pathWithChildren, selStart, Update } from '../utils';
 import { getCurrent, getSelectionStatuses } from '../selections';
@@ -272,6 +272,37 @@ export const App = ({ id }: { id: string }) => {
 
     const selectionStatuses = useMemo(() => getSelectionStatuses(state.sel, state.top), [state.sel, state.top]);
 
+    const drag = useMemo(() => {
+        const up = (evt: MouseEvent) => {
+            document.removeEventListener('mouseup', up);
+            drag.dragging = false;
+        };
+        const drag = {
+            dragging: false,
+            start(sel: SelStart) {
+                drag.dragging = true;
+                setState((s) => applyUpdate(s, { nodes: {}, selection: { start: sel } }));
+                document.addEventListener('mouseup', up);
+            },
+            move(sel: SelStart) {
+                setState((s) => applyUpdate(s, { nodes: {}, selection: { start: s.sel.start, end: sel } }));
+            },
+        };
+        return drag;
+    }, []);
+
+    // const startDrag = useCallback((sel: SelStart) => {
+    //     const move = (evt: MouseEvent) => {
+    //         selectionPos
+    //     }
+    //     const up = (evt: MouseEvent) => {
+    //         document.removeEventListener('mousemove', move)
+    //         document.removeEventListener('mouseup', up)
+    //     }
+    //     document.addEventListener('mousemove', move)
+    //     document.addEventListener('mouseup', up)
+    // }, [])
+
     // sooo
     // do I just have, like, some state here? Yeah, right?
     // autocomplete menu, would live here.
@@ -289,6 +320,7 @@ export const App = ({ id }: { id: string }) => {
                     state={state}
                     inRich={false}
                     ctx={{
+                        drag,
                         errors,
                         refs,
                         styles,

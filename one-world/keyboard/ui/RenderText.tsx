@@ -4,7 +4,7 @@ import { Text } from '../../shared/cnodes';
 import { asStyle } from '../../shared/shape';
 import { justSel } from '../handleNav';
 import { TestState } from '../test-utils';
-import { SelectionStatuses, Path, ListWhere, TextCursor } from '../utils';
+import { SelectionStatuses, Path, ListWhere, TextCursor, selStart } from '../utils';
 import { lightColor } from './colors';
 import { TextWithCursor, Cursor, Zwd } from './cursor';
 import { RCtx, textColor, cursorPositionInSpanForEvt, RenderNode } from './RenderNode';
@@ -38,19 +38,27 @@ export const RenderText = (
                     <span key={i} style={style} data-index={i}>
                         <TextWithCursor
                             rich
-                            onClick={(evt) => {
+                            onMouseDown={(evt) => {
                                 evt.stopPropagation();
                                 const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                                ctx.dispatch(
-                                    justSel(nextParent, {
+                                ctx.drag.start(
+                                    selStart(nextParent, {
                                         type: 'text',
-                                        end: {
-                                            index: i,
-                                            cursor: pos ?? 0,
-                                            text: cursorText,
-                                        },
+                                        end: { index: i, cursor: pos ?? 0, text: cursorText },
                                     }),
                                 );
+                            }}
+                            onMouseMove={(evt) => {
+                                if (ctx.drag.dragging) {
+                                    evt.stopPropagation();
+                                    const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
+                                    ctx.drag.move(
+                                        selStart(nextParent, {
+                                            type: 'text',
+                                            end: { index: i, cursor: pos ?? 0, text: cursorText },
+                                        }),
+                                    );
+                                }
                             }}
                             text={text}
                             highlight={hl}
@@ -68,10 +76,17 @@ export const RenderText = (
                     style={hl ? { ...style, backgroundColor: lightColor } : style}
                     // style={style}
                     // style={{ backgroundColor: 'red' }}
-                    onClick={(evt) => {
+                    onMouseDown={(evt) => {
                         evt.stopPropagation();
                         const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(span.text));
-                        ctx.dispatch(justSel(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
+                        ctx.drag.start(selStart(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
+                    }}
+                    onMouseMove={(evt) => {
+                        if (ctx.drag.dragging) {
+                            evt.stopPropagation();
+                            const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(span.text));
+                            ctx.drag.move(selStart(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
+                        }
                     }}
                 >
                     {span.text === '' ? '\u200B' : span.text}

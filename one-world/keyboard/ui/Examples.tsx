@@ -55,6 +55,7 @@ const Example = ({ text }: { text: string[] }) => {
                     state={state.state}
                     inRich={false}
                     ctx={{
+                        drag: { dragging: false, start() {}, move() {} },
                         selectionStatuses: {},
                         errors: {},
                         refs: {},
