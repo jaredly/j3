@@ -310,7 +310,10 @@ export const RenderNode = ({
                 }
 
                 if (status?.highlight?.type === 'list' && status.highlight.opener && status.highlight.closer) {
-                    style.backgroundColor = hlColor;
+                    style.backgroundColor = lightColor;
+                }
+                if (status?.highlight?.type === 'full') {
+                    style.backgroundColor = lightColor;
                 }
                 console.log('here statss', status);
 
@@ -581,7 +584,10 @@ export const RenderNode = ({
                         </span>
                     );
                 } else if (span.type === 'embed') {
-                    let selected = false;
+                    // let selected = status?.highlight?.type === 'text' && status.highlight.spans[i] === true;
+                    let spa = status?.highlight?.type === 'text' ? status.highlight.spans[i] : null;
+                    let selected = spa === true || (spa && (spa.start == null || spa.start === 0) && (spa.end == null || spa.end >= 1));
+                    // let selected = false;
                     // if (sides && sides.left.index <= i && sides.right.index >= i) {
                     //     const left = i === sides?.left.index ? sides.left.cursor : 0;
                     //     const right = i === sides?.right.index ? sides.right.cursor : 1;
@@ -591,7 +597,7 @@ export const RenderNode = ({
                         <span
                             style={{
                                 fontFamily: 'Jet Brains',
-                                backgroundColor: selected ? hlColor : 'rgba(255,255,255,0.5)',
+                                backgroundColor: selected ? lightColor : 'rgba(255,255,255,0.5)',
                             }}
                             data-index={i}
                             key={i}
