@@ -48,11 +48,19 @@ export const RenderList = (
                     <span style={style} ref={ref}>
                         <span
                             style={{
-                                backgroundColor: has('start') ? hlColor : undefined,
+                                backgroundColor: has('start') ? lightColor : undefined,
                             }}
                         >
                             {has('before') ? <Cursor /> : null}
-                            <span style={{ fontVariantLigatures: 'none' }}>&lt;</span>
+                            <span
+                                style={{
+                                    fontVariantLigatures: 'none',
+                                    backgroundColor:
+                                        has('start') || (status?.highlight?.type === 'list' && status.highlight.opener) ? lightColor : undefined,
+                                }}
+                            >
+                                &lt;
+                            </span>
                             <RenderNode
                                 loc={node.kind.node}
                                 ctx={ctx}
@@ -82,13 +90,26 @@ export const RenderList = (
                                     {has('inside') ? <Cursor /> : null}
                                 </>
                             ) : null}
-                            <span style={{ fontVariantLigatures: 'none' }}>&gt;</span>
+                            <span
+                                style={{
+                                    fontVariantLigatures: 'none',
+                                    backgroundColor:
+                                        has('start') || (status?.highlight?.type === 'list' && status.highlight.opener) ? lightColor : undefined,
+                                }}
+                            >
+                                &gt;
+                            </span>
                             {!node.children.length && has('after') ? <Cursor /> : null}
                         </span>
                         {node.children.length ? (
                             <>
                                 <span style={{ display: 'flex', flexDirection: 'column', paddingLeft: 14 }}>{children}</span>
-                                <span>
+                                <span
+                                    style={{
+                                        backgroundColor:
+                                            has('end') || (status?.highlight?.type === 'list' && status.highlight.closer) ? lightColor : undefined,
+                                    }}
+                                >
                                     <span style={{ fontVariantLigatures: 'none' }}>&lt;/</span>
                                     <RenderNode
                                         loc={node.kind.node}

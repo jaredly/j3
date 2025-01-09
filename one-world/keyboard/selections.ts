@@ -1,4 +1,5 @@
 import { Node, childLocs } from '../shared/cnodes';
+import { isTag } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { Cursor, Highlight, NodeSelection, Top, SelectionStatuses, lastChild, pathKey, Path, pathWithChildren, Current, getNode } from './utils';
 
@@ -137,13 +138,15 @@ const innerSide = (outer: SelStart, inner: SelStart, top: Top): { side: 'before'
     const child = inner.path.children[outer.path.children.length];
     if (outer.cursor.type === 'list') {
         const at =
-            node.type === 'list'
+            node.type === 'list' && !isTag(node.kind)
                 ? node.children.indexOf(child)
                 : node.type === 'text'
                 ? node.spans.findIndex((s) => s.type === 'embed' && s.item === child)
                 : childLocs(node).indexOf(child);
         // TODO table plesssss
-        if (at === -1) throw new Error(`cant find location of child for inner side`);
+        if (at === -1) {
+            throw new Error(`cant find location of child for inner side`);
+        }
         if (outer.cursor.where === 'before' || outer.cursor.where === 'start') {
             return { side: 'before', at };
         }
