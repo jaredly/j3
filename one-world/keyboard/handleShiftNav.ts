@@ -261,34 +261,31 @@ const wordNext = (node: Text<number>, left: boolean, index: number, cursor: numb
     return { index, cursor: i };
 };
 
-export const wordNav = (state: TestState, left: boolean, shift: boolean | undefined): Update | void => {
+export const wordNav = (state: TestState, left: boolean, shift: boolean | undefined): NodeSelection | void => {
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
         const { index, cursor, text } = current.cursor.end;
         const next = wordNext(current.node, left, index, cursor, text);
         if (next != null) {
-            return selUpdate(
-                selStart(current.path, {
-                    type: 'text',
-                    end: {
-                        cursor: next.cursor,
-                        index: next.index,
-                        text: current.cursor.end.index === next.index ? current.cursor.end.text : undefined,
-                    },
-                }),
-                shift ? state.sel.start : undefined,
-                // state.sel.end,
-            );
+            const start = selStart(current.path, {
+                type: 'text',
+                end: {
+                    cursor: next.cursor,
+                    index: next.index,
+                    text: current.cursor.end.index === next.index ? current.cursor.end.text : undefined,
+                },
+            });
+            return shift ? { start: state.sel.start, end: start } : { start };
         }
     }
     const next = goTabLateral(state.sel.start, state.top, left);
-    return selUpdate(next);
+    return next ? { start: next } : undefined;
 };
 
-export const handleTab = (state: TestState, shift: boolean): Update | void => {
+export const handleTab = (state: TestState, shift: boolean): SelStart | void => {
     // if (state.sel.end)
     const next = goTabLateral(state.sel.start, state.top, shift);
-    return selUpdate(next);
+    return next;
 };
 
 // TabLeft

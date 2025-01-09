@@ -19,7 +19,8 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
         return handleDelete(state);
     } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
         if (mods.alt) {
-            return wordNav(state, key === 'ArrowLeft', mods.shift);
+            const sel = wordNav(state, key === 'ArrowLeft', mods.shift);
+            return sel ? { nodes: {}, selection: sel } : undefined;
         }
         if (mods.shift) {
             const selection = handleShiftNav(state, key);
@@ -36,7 +37,7 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
         }
         return;
     } else if (key === 'Tab' || key === '\t') {
-        return handleTab(state, !!mods.shift);
+        return selUpdate(handleTab(state, !!mods.shift));
     } else if (mods.meta || mods.ctrl || mods.alt) {
         return handleSpecial(state, key, mods);
     } else if (splitGraphemes(key).length > 1) {

@@ -26,6 +26,7 @@ import {
     tspan,
 } from './test-utils';
 import { NodeSelection, Path, selStart, Top } from './utils';
+import { selUpdate } from './handleNav';
 
 const applySelection = (state: TestState, sel: NodeSelection | void) => (sel ? applyUpdate(state, { nodes: {}, selection: sel }) : state);
 
@@ -156,7 +157,7 @@ function checkTabs(
 ) {
     let state: TestState = { top, sel: sels[0] };
     for (let i = 1; sels[i]; i++) {
-        state = applyUpdate(state, handleTab(state, shift));
+        state = applyUpdate(state, selUpdate(handleTab(state, shift)));
         expect(state.sel).toEqual(sels[i]);
     }
 }
