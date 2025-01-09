@@ -1,7 +1,8 @@
+import { isTag } from '../keyboard/handleNav';
+import { Src } from '../keyboard/handleShiftNav';
 import { RecNode, TextSpan } from '../shared/cnodes';
-import { Src } from './gleam2';
 
-export type XML = { tag: string; src: Src; attrs?: Record<string, any>; children?: Record<string, XML | XML[] | undefined> };
+export type XML = { tag: string; src: null | Src; attrs?: Record<string, any>; children?: Record<string, XML | XML[] | undefined> };
 
 const white = (n: number) => Array(n + 1).join(' ');
 
@@ -58,9 +59,10 @@ export const nodeToXML = (node: RecNode): XML => {
             return {
                 tag: node.type,
                 src: { left: node.loc },
-                attrs: { kind: node.kind, forceMultiline: node.forceMultiline, loc: node.loc[0].idx },
+                attrs: { kind: isTag(node.kind) ? undefined : node.kind, forceMultiline: node.forceMultiline, loc: node.loc[0].idx },
                 children: {
-                    attributes: node.attributes ? nodeToXML(node.attributes) : undefined,
+                    tag: isTag(node.kind) ? nodeToXML(node.kind.node) : undefined,
+                    attributes: isTag(node.kind) && node.kind.attributes ? nodeToXML(node.kind.attributes) : undefined,
                     children: node.children.map(nodeToXML),
                 },
             };
@@ -87,4 +89,39 @@ export const nodeToXML = (node: RecNode): XML => {
                 children: { spans: node.spans.map((span) => textSpanToXML(span, nodeToXML)) },
             };
     }
+};
+const aToXML = (v: any, name?: string): XML | XML[] | null => {
+    if (Array.isArray(v)) {
+        const sub = v.map((n) => aToXML(n, name));
+        if (sub.every(Boolean)) {
+            return sub as XML[];
+        }
+        return null;
+    }
+    if (!v || typeof v !== 'object') {
+        return null;
+    }
+    if (Object.keys(v).length === 0) return null;
+    const attrs: XML['attrs'] = {};
+    const children: XML['children'] = {};
+    Object.keys(v).forEach((k) => {
+        if (k === 'type' || k === 'src') return;
+        // if (k === 'type') return;
+        const res = aToXML(v[k], k);
+        if (res === null || k === 'src') attrs[k] = v[k];
+        else children[k] = res;
+    });
+    const res: XML = { tag: v.type ?? name ?? '?', src: v.src };
+    if (Object.keys(attrs).length) res.attrs = attrs;
+    if (Object.keys(children).length) res.children = children;
+    return res;
+};
+
+export const toXML = (v: any) => {
+    const res = aToXML(v);
+    if (!res || Array.isArray(res)) {
+        console.log(v, res);
+        throw new Error('why not');
+    }
+    return res;
 };

@@ -8,18 +8,31 @@ export const shape = (node: RecNodeT<unknown>): string => {
             }
             return `id(${node.text}${node.ccls != null ? '/' + node.ccls : ''})`;
         case 'list':
+            const ml = node.forceMultiline ? '/ML' : '';
             if (node.kind === 'round') {
-                return `(${node.children.map(shape).join(' ')})`;
+                return `(${node.children.map(shape).join(' ')}${ml})`;
             }
             if (node.kind === 'square') {
-                return `[${node.children.map(shape).join(' ')}]`;
+                return `[${node.children.map(shape).join(' ')}${ml}]`;
             }
             if (typeof node.kind === 'string') {
-                return `list[${node.kind}](${node.children.map(shape).join(' ')})`;
+                return `list[${node.kind}](${node.children.map(shape).join(' ')}${ml})`;
             }
-            return `list[${node.kind.type}](${node.children.map(shape).join(' ')})`;
+            if (node.kind.type === 'tag') {
+                return `xml[${shape(node.kind.node)}${node.kind.attributes ? ' ' + shape(node.kind.attributes) : ''}](${node.children
+                    .map(shape)
+                    .join(' ')}${ml})`;
+            }
+            return `list[${node.kind.type}](${node.children.map(shape).join(' ')}${ml})`;
         case 'table':
-            return `table...`;
+            const mi = node.rows.map((row) => row.map(shape).join(',')).join(';');
+            if (node.kind === 'curly') {
+                return `{:${mi}:}`;
+            }
+            if (node.kind === 'round') {
+                return `(:${mi}:)`;
+            }
+            return `[:${mi}:]`;
         case 'text':
             return `text(${node.spans
                 .map((span) => {
@@ -76,6 +89,13 @@ export const asStyle = (style?: Style): React.CSSProperties | undefined => {
     }
     if (style.textDecoration) {
         res.textDecoration = style.textDecoration;
+    }
+    if (style.format === 'code') {
+        // res.padding = '0px 4px';
+        // res.backgroundColor = 'rgba(200, 200, 200, 0.4)';
+        res.fontFamily = 'Jet Brains';
+        // res.borderRadius = '4px';
+        res.color = '#a5741b';
     }
     return res;
 };

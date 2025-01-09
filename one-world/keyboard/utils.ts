@@ -1,5 +1,9 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Nodes, Id, Collection, Text, Node } from '../shared/cnodes';
+import { Nodes, Id, Collection, Text, Node, TextSpan } from '../shared/cnodes';
+import { SelStart } from './handleShiftNav';
+
+export const spanLength = (span: TextSpan<unknown>, text: undefined | TextCursor['end'], index: number) =>
+    index === text?.index && text?.text ? text.text.length : span.type === 'text' ? splitGraphemes(span.text).length : 1;
 
 // import { IRSelection } from "../shared/IR/intermediate";
 /*
@@ -47,13 +51,12 @@ export const pathWithChildren = (path: Path, ...children: number[]) => ({
 
 export type IdCursor = {
     type: 'id';
-    start?: number;
     end: number;
     text?: string[];
 };
+
 export type TextCursor = {
     type: 'text';
-    start?: { index: number; cursor: number };
     end: { index: number; cursor: number; text?: string[] };
 };
 export type ListWhere = 'before' | 'start' | 'inside' | 'end' | 'after';
@@ -76,9 +79,19 @@ export const selStart = (path: Path, cursor: Cursor): NodeSelection['start'] => 
 
 export type PartialSel = { children: number[]; cursor: Cursor };
 
+export const selectedPath = (sel: NodeSelection) => (sel.end ? null : sel.start.path);
+export const selectedLoc = (sel: NodeSelection) => {
+    const path = selectedPath(sel);
+    return path ? lastChild(path) : null;
+};
+
+export const singleSelect = (sel: SelStart): NodeSelection => ({ start: sel });
+
+// TODO maybe join path & key into a `pk: {path, key}` thing
 export type NodeSelection = {
-    start: { path: Path; key: string; cursor: Cursor; returnToHoriz?: number };
-    end?: { path: Path; key: string; cursor: Cursor };
+    start: { path: Path; key: string; cursor: Cursor; returnToHoriz?: number; level?: number };
+    end?: { path: Path; key: string; cursor: Cursor; level?: number; excel?: number };
+    multi?: { end: { path: Path; key: string; cursor?: Cursor }; aux?: { path: Path; key: string; cursor?: Cursor } };
 };
 
 export type Top = { nodes: Nodes; root: number; nextLoc: number };
@@ -86,45 +99,43 @@ export type Top = { nodes: Nodes; root: number; nextLoc: number };
 export const getNode = (path: Path, top: Top) => top.nodes[path.children[path.children.length - 1]];
 
 export type Current =
-    | { type: 'id'; node: Id<number>; cursor: Extract<Cursor, { type: 'id' }>; path: Path }
+    | { type: 'id'; node: Id<number>; cursor: IdCursor; start?: number; path: Path }
     | {
           type: 'text';
           node: Text<number>;
-          cursor: Extract<Cursor, { type: 'text' | 'list' }>;
+          cursor: TextCursor | ListCursor;
           path: Path;
       }
     | {
           type: 'list';
           node: Collection<number>;
-          cursor: Extract<Cursor, { type: 'list' | 'control' }>;
+          cursor: CollectionCursor;
           path: Path;
       };
 
-export const getCurrent = (selection: NodeSelection, top: Top): Current => {
-    const path = selection.start.path;
-    const node = getNode(path, top);
-    if (node == null) throw new Error('bad path');
-    const cursor = selection.start.cursor;
-    if (node.type === 'id') {
-        if (cursor.type !== 'id') {
-            throw new Error(`id select must have cursor id`);
-        }
-        return { type: 'id', node, cursor, path };
+/*
+
+ok so actually what I want is:
+- cursors[] Cursor
+- highlight ; SelectionHighlight
+
+
+*/
+
+export type SelectionStatuses = Record<
+    string,
+    {
+        cursors: Cursor[];
+        highlight?: Highlight;
     }
-    if (node.type === 'text') {
-        if (cursor.type !== 'text' && cursor.type !== 'list') {
-            throw new Error(`text select must have cursor text or list`);
-        }
-        return { type: 'text', node, cursor, path };
-    }
-    if (node.type === 'list' || node.type === 'table') {
-        if (cursor.type !== 'list' && cursor.type !== 'control') {
-            throw new Error(`list/table select must have cursor list`);
-        }
-        return { type: 'list', node, cursor, path };
-    }
-    throw new Error('unknown node and cursor combo');
-};
+>;
+
+export type Highlight =
+    | { type: 'full' }
+    | { type: 'id'; start?: number; end?: number }
+    | { type: 'list'; opener: boolean; closer: boolean }
+    // TODO table??
+    | { type: 'text'; spans: (boolean | { start?: number; end?: number })[]; opener: boolean; closer: boolean };
 
 export type Update = {
     nodes: Record<string, Node | null>;
@@ -133,12 +144,12 @@ export type Update = {
     selection?: NodeSelection;
 };
 
-export const splitOnCursor = (id: Id<number>, cursor: IdCursor): [string[], string[], string[]] => {
-    const text = cursor.text ?? splitGraphemes(id.text);
-    const left = cursor.start ? Math.min(cursor.start, cursor.end) : cursor.end;
-    const right = cursor.start ? Math.max(cursor.start, cursor.end) : cursor.end;
-    return [text.slice(0, left), text.slice(left, right), text.slice(right)];
-};
+// export const splitOnCursor = (id: Id<number>, cursor: IdCursor): [string[], string[], string[]] => {
+//     const text = cursor.text ?? splitGraphemes(id.text);
+//     const left = cursor.start ? Math.min(cursor.start, cursor.end) : cursor.end;
+//     const right = cursor.start ? Math.max(cursor.start, cursor.end) : cursor.end;
+//     return [text.slice(0, left), text.slice(left, right), text.slice(right)];
+// };
 
 export const withPartial = (path: Path, sel?: PartialSel) =>
     sel

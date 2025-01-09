@@ -1,4 +1,4 @@
-import { Id, Loc, TextSpan, ListKind, TableKind, RecNode, Style } from '../shared/cnodes';
+import { Id, Loc, TextSpan, ListKind, TableKind, RecNode, Style, Node } from '../shared/cnodes';
 
 // So, we need to provide a 'list of kwds' to be able to reject them from the `id` matcher
 
@@ -27,7 +27,7 @@ export type Matcher<Res> =
     | { type: 'opt'; inner: Matcher<any>; f: (v: any | null) => Res }
     | { type: 'table'; kind: TableKind; row: Matcher<any>; f: (v: any, node: RecNode) => Res }
     | { type: 'switch'; choices: Matcher<any>[]; f: (v: any) => Res }
-    | { type: 'meta'; inner: Matcher<Res>; kind: string }
+    | { type: 'meta'; inner: Matcher<Res>; kind?: string; autocomplete?: AutoComplete }
     | { type: 'mref'; id: string };
 //; f: (v: any) => any }
 // | { type: 'kswitch'; choices: Record<string, Matcher>; f: (v: any) => any };
@@ -53,8 +53,8 @@ export const show = (matcher: Matcher<any>): string => {
             return matcher.type;
     }
 };
-type Bag<T> = T | Bag<T>[];
-const bagSize = (bag: Bag<unknown>): number => (Array.isArray(bag) ? bag.reduce((c, b) => c + bagSize(b), 0) : 1);
+export type Bag<T> = T | Bag<T>[];
+export const bagSize = (bag: Bag<unknown>): number => (Array.isArray(bag) ? bag.reduce((c, b) => c + bagSize(b), 0) : 1);
 export const foldBag = <T, R>(i: R, bag: Bag<T>, f: (i: R, v: T) => R): R => {
     if (Array.isArray(bag)) {
         return bag.reduce((i, b) => foldBag(i, b, f), i);
@@ -71,23 +71,34 @@ export type MatchError =
           parent: Loc;
           sub: MatchParent['sub'];
       };
-type Data = { type: 'single'; value: any } | { type: 'named'; value: Record<string, any> };
-type MatchRes<T> = { result: null | { data: T; consumed: number }; good: Bag<RecNode>; bad: Bag<MatchError> };
+// type Data = { type: 'single'; value: any } | { type: 'named'; value: Record<string, any> };
+export type MatchRes<T> = { result: null | { data: T; consumed: number }; good: Bag<RecNode>; bad: Bag<MatchError> };
 // const single = (value: any): Data => ({ type: 'single', value });
 // const ndata = (name: string, value: any): Data => ({ type: 'named', value: { [name]: value } });
-const fail = (matcher: Matcher<any>, node: RecNode): MatchRes<any> => ({ result: null, good: [], bad: [{ type: 'mismatch', matcher, node }] });
+const fail = (matcher: Matcher<any>, node: RecNode): MatchRes<any> => ({
+    result: null,
+    good: [],
+    bad: [{ type: 'mismatch', matcher, node }],
+});
 const one = <T>(data: T, node: RecNode, good: Bag<RecNode> = [], bad: Bag<MatchError> = []): MatchRes<T> => ({
     result: { data, consumed: 1 },
     good: [node, good],
     bad,
 });
 
+type AutoComplete = string;
+
 export type Ctx = {
     matchers: Record<string, Matcher<any>>;
     kwds: string[];
     comment?: Matcher<any>;
     strictIds?: boolean;
-    meta: Record<number, { kind: string }>;
+    meta: Record<number, { kind?: string; placeholder?: string }>;
+    autocomplete?: {
+        loc: number;
+        concrete: AutoComplete[];
+        kinds: (string | null)[];
+    };
 };
 
 /** We need to:
@@ -98,9 +109,17 @@ export type Ctx = {
 const white = (n: number) => Array(n).join('| ');
 let indent = 0;
 
-export type MatchParent = { nodes: RecNode[]; loc: Loc; sub?: { type: 'text'; index: number } | { type: 'table'; row: number } };
+export type MatchParent = {
+    nodes: RecNode[];
+    loc: Loc;
+    sub?: { type: 'text'; index: number } | { type: 'table'; row: number } | { type: 'xml'; which: 'tag' | 'attributes' };
+};
+export type Span = { start: Loc; end?: Loc };
+
+const isBlank = (node: RecNode) => node.type === 'id' && node.text === '';
 
 export const match = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at: number, endOfExhaustive?: boolean): MatchRes<T> => {
+    // debugger;
     // console.log(white(indent), 'enter', show(matcher));
     // indent++;
     const res = match_(matcher, ctx, parent, at, endOfExhaustive);
@@ -108,7 +127,7 @@ export const match = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at:
     // if (res.result) {
     //     console.log(white(indent), 'match success', show(matcher), res.result.consumed);
     //     if (res.result.consumed) {
-    //         console.log(nodes.slice(at, at + res.result.consumed));
+    //         console.log(parent.nodes.slice(at, at + res.result.consumed));
     //         console.log(res.result.data);
     //     }
     // } else {
@@ -120,6 +139,10 @@ export const match = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at:
 export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at: number, endOfExhaustive?: boolean): MatchRes<T> => {
     const good: Bag<RecNode> = [];
     const bad: Bag<MatchError> = [];
+
+    if (!matcher) {
+        throw new Error('no matcher');
+    }
 
     // ah need to know if we're in a comment matcher right now folkx
     if (ctx.comment) {
@@ -136,6 +159,10 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
     // First, let's handle matchers that can handle out of scope
     switch (matcher.type) {
         case 'named': {
+            if (at < parent.nodes.length && isBlank(parent.nodes[at])) {
+                const loc = parent.nodes[at].loc[0].idx;
+                if (!ctx.meta[loc]) ctx.meta[loc] = { placeholder: matcher.name };
+            }
             const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
             return {
                 ...res,
@@ -163,7 +190,19 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                 // console.log('iinnner', nodes[at], matcher.items[i].type, res.good);
                 good.push(res.good);
                 bad.push(res.bad);
-                if (!res.result) return { result: null, bad, good }; // TODO: recovery pls? or something. like, try the next node?
+                if (!res.result) {
+                    // I think ... I need a way to indicate
+                    // to the matcher, whether there are other options to consider.
+                    // like. if we're at the top of a switch, then don't bother trying
+                    // to go the course.
+                    // but, if we're not, then ... keep going?
+                    // hm so this might be fixed by saying that switches
+                    // should keep trying, if the match is, like, incomplete. or has errors.
+                    // now if there's a match with no errors, we early out.
+                    // hmmmmm.
+                    // if (matcher.all || endOfExhaustive)
+                    return { result: null, bad, good }; // TODO: recovery pls? or something. like, try the next node?
+                }
                 at += res.result.consumed;
                 if (!res.result.data || typeof res.result.data !== 'object') {
                     // console.log('nota thing', res.result);
@@ -223,7 +262,15 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             return { result: null, good: misses[0].good, bad: misses[0].bad };
         }
         case 'mref':
+            if (at < parent.nodes.length && isBlank(parent.nodes[at])) {
+                const loc = parent.nodes[at].loc[0].idx;
+                if (!ctx.meta[loc]) ctx.meta[loc] = { placeholder: matcher.id };
+            }
             return match(ctx.matchers[matcher.id], ctx, parent, at, endOfExhaustive);
+        case 'tx': {
+            const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
+            return { ...res, result: res.result ? { ...res.result, data: matcher.f(res.result.data) } : null };
+        }
     }
 
     if (at >= parent.nodes.length) {
@@ -235,13 +282,13 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
     switch (matcher.type) {
         case 'any':
             return { result: { data: matcher.f(node), consumed: 1 }, bad: [], good: [] };
-        case 'tx': {
-            const res = match(matcher.inner, ctx, parent, at, endOfExhaustive);
-            return { ...res, result: res.result ? { ...res.result, data: matcher.f(res.result.data) } : null };
-        }
         case 'id':
             if (node.type !== 'id' || ctx.kwds.includes(node.text)) return fail(matcher, node);
-            if (node.text === '') return fail(matcher, node);
+            if (node.loc[0].idx === ctx.autocomplete?.loc) {
+                ctx.autocomplete.kinds.push(matcher.kind);
+            }
+            // TODO: this is ... so that we'll keep going with placeholders and stuff
+            // if (node.text === '') return fail(matcher, node);
             if (!ctx.strictIds) return one(matcher.f(node), node);
             if (matcher.kind == null && !node.ref && !ctx.kwds.includes(node.text)) {
                 return one(matcher.f(node), node);
@@ -250,6 +297,9 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             }
             return fail(matcher, node);
         case 'kwd':
+            if (node.loc[0].idx === ctx.autocomplete?.loc) {
+                ctx.autocomplete.concrete.push(matcher.text);
+            }
             if (node.type !== 'id' || node.ref || node.text !== matcher.text) return fail(matcher, node);
             return one(matcher.f(node), node);
         case 'text':
@@ -262,7 +312,7 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
                         good.push(res.good);
                         bad.push(res.bad);
                         if (res.result) {
-                            items.push({ ...span, item: res.result.data.value });
+                            items.push({ ...span, item: res.result.data });
                         }
                         return;
                     default:
@@ -283,10 +333,11 @@ export const match_ = <T>(matcher: Matcher<T>, ctx: Ctx, parent: MatchParent, at
             const rows = [];
             for (let row = 0; row < node.rows.length; row++) {
                 const inner = match(matcher.row, ctx, { nodes: node.rows[row], loc: node.loc, sub: { type: 'table', row } }, 0);
+                // debugger;
                 good.push(inner.good);
                 bad.push(inner.bad);
                 if (inner.result) {
-                    rows.push(inner.result.data.value);
+                    rows.push(inner.result.data);
                 }
             }
             good.push(node);
@@ -330,12 +381,20 @@ export const idt = <T>(x: T): T => x;
 export const idp = <T>(x: Partial<T>): T => x as T;
 export const any = <T>(f: (v: RecNode) => T): Matcher<T> => ({ type: 'any', f });
 export const meta = <T>(kind: string, inner: Matcher<T>): Matcher<T> => ({ type: 'meta', inner, kind });
+export const autocomplete = <T>(autocomplete: AutoComplete, inner: Matcher<T>): Matcher<T> => ({ type: 'meta', inner, autocomplete });
 
-export const parse = <T>(matcher: Matcher<T>, node: RecNode, ctx: Ctx) => {
+export type ParseResult<T> = {
+    result: T | undefined;
+    goods: RecNode[];
+    bads: MatchError[];
+    ctx: Pick<Ctx, 'autocomplete' | 'meta'>;
+};
+
+export const parse = <T>(matcher: Matcher<T>, node: RecNode, ctx: Ctx): ParseResult<T> => {
     const res = match(matcher, ctx, { nodes: [node], loc: [] }, 0, true);
     const goods = foldBag([] as RecNode[], res.good, (ar, n) => (ar.push(n), ar));
     const bads = foldBag([] as MatchError[], res.bad, (ar, n) => ((n.type !== 'missing' ? !goods.includes(n.node) : true) ? (ar.push(n), ar) : ar));
     if (res.result?.consumed === 0) throw new Error('node not consumed');
 
-    return { result: res.result?.data, goods, bads };
+    return { result: res.result?.data, goods, bads, ctx };
 };

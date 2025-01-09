@@ -1,32 +1,51 @@
-import React, { useMemo } from 'react';
-import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { isRich, Style } from '../../shared/cnodes';
-import { cursorSides } from '../cursorSides';
-import { interleaveF } from '../interleave';
+import React, { useMemo, useState } from 'react';
+import { Style } from '../../shared/cnodes';
 import { TestState } from '../test-utils';
-import { lastChild, Path, pathKey, pathWithChildren, Update } from '../utils';
+import { Path, pathKey, pathWithChildren, SelectionStatuses, Top, Update } from '../utils';
 
 import { asStyle } from '../../shared/shape';
-import { textCursorSides2 } from '../insertId';
-import { Cursor, TextWithCursor } from './cursor';
-import { justSel, selUpdate } from '../handleNav';
-import { posInList } from './selectionPos';
+// import { textCursorSides2 } from '../insertId';
+import { lightColor } from './colors';
+import { RenderId } from './RenderId';
+import { RenderList } from './RenderList';
+import { RenderText } from './RenderText';
+import { RenderTable } from './RenderTable';
+import { SelStart } from '../handleShiftNav';
 
-const hl = 'rgba(100,100,100,0.2)';
-const opener = { round: '(', square: '[', curly: '{', angle: '<' };
-const closer = { round: ')', square: ']', curly: '}', angle: '>' };
-type RCtx = {
+export const hlColor = 'rgba(100,100,100,0.2)';
+// ? ''
+// ? ''
+// : '',
+// ? ''
+// ? ''
+// : '',
+const topener = { round: '⦇', square: '⟦', curly: '⦃', angle: '⦉' };
+const tcloser = { round: '⦈', square: '⟧', curly: '⦄', angle: '⦊' };
+export const opener = { round: '(', square: '[', curly: '{', angle: '<' };
+export const closer = { round: ')', square: ']', curly: '}', angle: '>' };
+export const braceColor = 'rgb(100, 200, 200)';
+export const braceColorHl = 'rgb(0, 150, 150)';
+export type RCtx = {
     errors: Record<number, string>;
     refs: Record<number, HTMLElement>; // -1 gets you 'cursor' b/c why not
     styles: Record<number, Style>;
+    placeholders: Record<number, string>;
+    selectionStatuses: SelectionStatuses;
     dispatch: (up: Update) => void;
     msel: null | string[];
+    mhover: null | string[];
+    drag: {
+        dragging: boolean;
+        start: (sel: SelStart) => void;
+        move: (sel: SelStart) => void;
+    };
 };
+export const textColor = 'rgb(248 136 0)';
 
-const cursorPositionInSpanForEvt = (evt: React.MouseEvent, target: HTMLSpanElement, text: string[]) => {
+export const cursorPositionInSpanForEvt = (evt: React.MouseEvent, target: HTMLSpanElement, text: string[]) => {
     const range = new Range();
     let best = null as null | [number, number];
-    for (let i = 0; i < text.length; i++) {
+    for (let i = 0; i <= text.length; i++) {
         const at = text.slice(0, i).join('').length;
         range.setStart(target.firstChild!, at);
         range.setEnd(target.firstChild!, at);
@@ -44,31 +63,48 @@ const shadow = (x: number, y: number, color: string) => {
 
 // const msk = 'rgb(255,100,100)'
 
-export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; state: TestState; inRich: boolean; ctx: RCtx; parent: Path }) => {
+const phBg = 'rgb(240,240,240)';
+const placeholderStyle: React.CSSProperties = {
+    backgroundColor: phBg,
+    fontStyle: 'italic',
+    color: 'rgb(100,100,100)',
+    borderRadius: 4,
+    outline: '2px solid ' + phBg,
+    width: 'min-content',
+};
+
+export const closestVisibleList = (path: Path, top: Top) => {
+    for (let i = path.children.length - 1; i >= 0; i--) {
+        const node = top.nodes[path.children[i]];
+        if (node.type === 'table' || (node.type === 'list' && node.kind !== 'smooshed' && node.kind !== 'spaced')) {
+            return node.loc;
+        }
+    }
+};
+
+export const RenderNode = ({
+    loc,
+    state,
+    inRich,
+    ctx,
+    parent,
+    readOnly,
+}: {
+    loc: number;
+    state: TestState;
+    inRich: boolean;
+    ctx: RCtx;
+    parent: Path;
+    readOnly?: boolean;
+}) => {
     const node = state.top.nodes[loc];
-    const cursor = loc === lastChild(state.sel.start.path) ? state.sel.start.cursor : null;
-    let style: React.CSSProperties | undefined = ctx.errors[loc]
-        ? { textDecoration: 'underline' }
-        : ctx.styles[loc]
-        ? asStyle(ctx.styles[loc])
-        : undefined;
 
     const nextParent = useMemo(() => pathWithChildren(parent, loc), [parent, loc]);
     const key = useMemo(() => pathKey(nextParent), [nextParent]);
 
-    if (ctx.msel?.includes(key)) {
-        if (!style) style = {};
-        style.background = 'rgb(255,100,100,0.5)';
-        style.borderRadius = '2px';
-        style.outline = `2px solid rgb(255,100,100,0.5)`;
-    }
+    const status = ctx.selectionStatuses[key];
 
-    if (state.sel.end?.key === key) {
-        if (!style) style = {};
-        style.borderRadius = '2px';
-        style.background = 'rgb(255,100,100)';
-        style.outline = '2px solid rgb(255,100,100)';
-    }
+    let style = nodeStyle(ctx, loc, readOnly, status, key);
 
     const ref = (el: HTMLElement) => {
         ctx.refs[loc] = el;
@@ -76,216 +112,114 @@ export const RenderNode = ({ loc, state, inRich, ctx, parent }: { loc: number; s
 
     switch (node.type) {
         case 'id':
-            if (cursor?.type === 'id' && !ctx.msel) {
-                const { left, right } = cursorSides(cursor);
-                const text = cursor.text ?? splitGraphemes(node.text);
-                return (
-                    <span style={style}>
-                        <TextWithCursor
-                            innerRef={ref}
-                            // cursorRef={cursorRef}
-                            onClick={(evt) => {
-                                evt.stopPropagation();
-                                const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                                ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0 }));
-                            }}
-                            text={text}
-                            left={left}
-                            right={right}
-                        />
-                    </span>
-                );
-            }
-            return (
-                <span
-                    style={style}
-                    ref={ref}
-                    onClick={(evt) => {
-                        evt.stopPropagation();
-                        const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(node.text));
-                        ctx.dispatch(justSel(nextParent, { type: 'id', end: pos ?? 0 }));
-                        // ok I cant dispatch just yet
-                    }}
-                >
-                    {node.text === '' ? '\u200B' : node.text}
-                </span>
-            );
+            return RenderId(status, readOnly, node, style, ref, ctx, nextParent);
         case 'list':
-            const children = node.children.map((loc) => (
-                <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} />
-            ));
-            if (typeof node.kind !== 'string') {
-                return (
-                    <span style={style} ref={ref}>
-                        lol
-                    </span>
-                );
-            }
-            switch (node.kind) {
-                case 'smooshed':
-                    return (
-                        <span style={style} ref={ref}>
-                            {children}
-                        </span>
-                    );
-                case 'spaced':
-                    return (
-                        <span
-                            style={style}
-                            ref={ref}
-                            data-yes="yes"
-                            onClick={(evt) => {
-                                evt.stopPropagation();
-                                const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
-                                if (sel) {
-                                    ctx.dispatch(selUpdate(sel)!);
-                                }
-                            }}
-                        >
-                            {interleaveF(children, (i) => (
-                                <span key={'sep' + i}>&nbsp;</span>
-                            ))}
-                        </span>
-                    );
-                default:
-                    return (
-                        <span
-                            style={style}
-                            ref={ref}
-                            onClick={(evt) => {
-                                evt.stopPropagation();
-                                const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
-                                if (sel) {
-                                    ctx.dispatch(selUpdate(sel)!);
-                                }
-                            }}
-                        >
-                            {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
-                            <span
-                                style={{
-                                    background: cursor?.type === 'list' && cursor.where === 'start' ? hl : undefined,
-                                    color: 'orange',
-                                    // ...style,
-                                    // borderRadius: style?.borderRadius,
-                                }}
-                            >
-                                {opener[node.kind]}
-                            </span>
-                            {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
-                            {node.forceMultiline ? (
-                                <div style={{ ...style, display: 'flex', flexDirection: 'column', marginLeft: 16 }}>{children}</div>
-                            ) : (
-                                interleaveF(children, (i) => <span key={'sep' + i}>,&nbsp;</span>)
-                            )}
-                            {/* {cursor?.type === 'list' && cursor.where === 'end' ? (
-                                <span style={{ background: hl }}>{closer[node.kind]}</span>
-                            ) : (
-                                closer[node.kind]
-                            )} */}
-                            <span
-                                style={{
-                                    background: cursor?.type === 'list' && cursor.where === 'end' ? hl : undefined,
-                                    color: 'orange',
-                                    // borderRadius: style?.borderRadius,
-                                }}
-                            >
-                                {closer[node.kind]}
-                            </span>
-                            {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
-                        </span>
-                    );
-            }
-        case 'text': {
-            const sides = cursor?.type === 'text' ? textCursorSides2(cursor) : null;
-            const children = node.spans.map((span, i) => {
-                if (span.type === 'text') {
-                    const style = { color: 'blue', ...asStyle(span.style) };
-                    if (sides && sides.left.index <= i && sides.right.index >= i) {
-                        const text = sides.text?.index === i ? sides.text.grems : splitGraphemes(span.text);
-                        const left = i === sides.left.index ? sides.left.cursor : 0;
-                        const right = i === sides.right.index ? sides.right.cursor : text.length;
-                        return (
-                            <span key={i} style={style} data-index={i}>
-                                <TextWithCursor
-                                    onClick={(evt) => {
-                                        const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                                        ctx.dispatch(justSel(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
-                                    }}
-                                    text={text}
-                                    left={left}
-                                    right={right}
-                                />
-                            </span>
-                        );
-                    }
-                    // TODO show cursor here
-                    return (
-                        <span
-                            key={i}
-                            data-index={i}
-                            style={style}
-                            onClick={(evt) => {
-                                const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(span.text));
-                                ctx.dispatch(justSel(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
-                            }}
-                        >
-                            {span.text}
-                        </span>
-                    );
-                } else if (span.type === 'embed') {
-                    let selected = false;
-                    if (sides && sides.left.index <= i && sides.right.index >= i) {
-                        const left = i === sides?.left.index ? sides.left.cursor : 0;
-                        const right = i === sides?.right.index ? sides.right.cursor : 1;
-                        if (left === 0 && right === 1) selected = true;
-                    }
-                    return (
-                        <span style={{ background: selected ? hl : 'rgba(255,255,255,0.5)' }} data-index={i} key={i}>
-                            {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 0 && sides.right.cursor === 0 ? (
-                                <Cursor />
-                            ) : null}
-                            {'${'}
-                            <RenderNode ctx={ctx} parent={nextParent} inRich={false} loc={span.item} state={state} />
-                            {'}'}
-                            {sides?.left.index === i && sides.right.index === i && sides.left.cursor === 1 && sides.right.cursor === 1 ? (
-                                <Cursor />
-                            ) : null}
-                        </span>
-                    );
-                } else {
-                    return (
-                        <span data-index={i} key={i}>
-                            custom?
-                        </span>
-                    );
-                }
-            });
-            if (inRich) {
-                // no quotes, and like ... some other things
-                // are maybe different?
-                return (
-                    <span ref={ref} style={style}>
-                        {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
-                        {children}
-                    </span>
-                );
-            }
-            return (
-                <span style={{ backgroundColor: 'rgba(255,255,0,0.4)', ...style }} ref={ref}>
-                    {cursor?.type === 'list' && cursor.where === 'before' ? <Cursor /> : null}
-                    {cursor?.type === 'list' && cursor.where === 'start' ? <span style={{ background: hl }}>"</span> : '"'}
-                    {cursor?.type === 'list' && cursor.where === 'inside' ? <Cursor /> : null}
-                    {children}
-                    {cursor?.type === 'list' && cursor.where === 'end' ? <span style={{ background: hl }}>"</span> : '"'}
-                    {cursor?.type === 'list' && cursor.where === 'after' ? <Cursor /> : null}
-                </span>
-            );
-        }
+            return RenderList(status, readOnly, node, style, ref, ctx, nextParent, state, inRich);
+        case 'text':
+            return RenderText(status, readOnly, node, style, ref, ctx, nextParent, state, inRich);
         case 'table':
-            return (
-                <span style={style} ref={ref}>
-                    Table
-                </span>
-            );
+            return RenderTable(status, readOnly, node, style, ref, ctx, nextParent, state, inRich);
     }
 };
+
+export const Section = ({ contents }: { contents: JSX.Element[] }) => {
+    const [open, setOpen] = useState(true);
+
+    const head = (
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+            <button
+                style={{ marginRight: 4, marginTop: '0.6em', background: 'none', border: 'none', cursor: 'pointer' }}
+                onMouseDown={() => setOpen(!open)}
+            >
+                {open ? '▼' : '▶'}
+            </button>
+            {contents[0]}
+        </div>
+    );
+    return open ? (
+        <>
+            {head}
+            {contents.slice(1)}
+        </>
+    ) : (
+        head
+    );
+};
+
+const PLHPopover = ({ text }: { text: string }) => {
+    return (
+        <div
+            style={{
+                position: 'absolute',
+                bottom: '100%',
+                left: 0,
+                marginLeft: -10,
+                marginBottom: 10,
+                zIndex: 10,
+                backgroundColor: '#eef',
+                borderRadius: 4,
+                padding: '0px 3px',
+                border: '1px solid #777',
+                fontSize: '80%',
+            }}
+        >
+            {text}
+            <div
+                style={{
+                    width: 0,
+                    height: 0,
+                    borderLeft: '4px solid transparent',
+                    borderRight: '4px solid transparent',
+                    borderTop: '8px solid #777',
+                    position: 'absolute',
+                    left: 6,
+                    top: '100%',
+                }}
+            />
+            <div
+                style={{
+                    width: 0,
+                    height: 0,
+                    borderLeft: '3px solid transparent',
+                    borderRight: '3px solid transparent',
+                    borderTop: '6px solid #eef',
+                    position: 'absolute',
+                    left: 7,
+                    top: '100%',
+                }}
+            />
+        </div>
+    );
+};
+
+function nodeStyle(
+    ctx: RCtx,
+    loc: number,
+    readOnly: boolean | undefined,
+    status: {
+        cursors: import('/Users/jared/clone/exploration/j3/one-world/keyboard/utils').Cursor[];
+        highlight?: import('/Users/jared/clone/exploration/j3/one-world/keyboard/utils').Highlight;
+    },
+    key: string,
+) {
+    let style: React.CSSProperties | undefined = false ? { textDecoration: 'underline' } : ctx.styles[loc] ? asStyle(ctx.styles[loc]) : undefined;
+
+    if (
+        !readOnly &&
+        (status?.highlight?.type === 'full' || (status?.highlight?.type === 'list' && status.highlight.opener && status.highlight.closer))
+    ) {
+        if (!style) style = {};
+        style.borderRadius = '2px';
+        style.backgroundColor = lightColor;
+        style.outline = `2px solid ${lightColor}`;
+    }
+
+    if (!readOnly && ctx.mhover?.includes(key)) {
+        const hoverColor = 'rgb(200,230,255)';
+        if (!style) style = {};
+        style.borderRadius = '2px';
+        style.backgroundColor = hoverColor;
+        style.outline = `2px solid ${hoverColor}`;
+    }
+    return style;
+}

@@ -69,29 +69,29 @@ test('del smoosh prev', () => {
     check(state, smoosh([id('..', true), id('two')]), idc(2));
 });
 
-test('inside list in smoosh', () => {
-    let state = asTop(smoosh([id('a'), round([], true), id('b')]), listc('inside'));
+test('start list in smoosh', () => {
+    let state = asTop(smoosh([id('a'), round([], true), id('b')]), listc('start'));
     validate(state);
     state = applyUpdate(state, handleDelete(state));
     check(state, id('ab', true), idc(1));
 });
 
-test('inside list in smoosh with one sib', () => {
-    let state = asTop(smoosh([id('a'), round([], true)]), listc('inside'));
+test('start list in smoosh with one sib', () => {
+    let state = asTop(smoosh([id('a'), round([], true)]), listc('start'));
     validate(state);
     state = applyUpdate(state, handleDelete(state));
     check(state, id('a', true), idc(1));
 });
 
-test('inside list in smoosh with one sib', () => {
-    let state = asTop(round([smoosh([id('a'), round([], true)])]), listc('inside'));
+test('start list in smoosh with one sib', () => {
+    let state = asTop(round([smoosh([id('a'), round([], true)])]), listc('start'));
     validate(state);
     state = applyUpdate(state, handleDelete(state));
     check(state, round([id('a', true)]), idc(1));
 });
 
-test('inside list', () => {
-    let state = asTop(round([], true), listc('inside'));
+test('start list', () => {
+    let state = asTop(round([], true), listc('start'));
     validate(state);
     state = applyUpdate(state, handleDelete(state));
     check(state, id('', true), idc(0));
@@ -194,7 +194,7 @@ test('del two', () => {
 test('text adfter', () => {
     let state = asTop(text([], true), listc('after'));
     state = applyUpdate(state, handleDelete(state));
-    check(state, text([], true), listc('end'));
+    check(state, text([], true), listc('inside'));
 });
 
 test('text before', () => {
@@ -212,7 +212,7 @@ test('text delete', () => {
 test('text delete', () => {
     let state = asTop(text([tspan('aa')], true), textc(0, 0));
     state = applyUpdate(state, handleDelete(state));
-    check(state, text([tspan('aa')], true), listc('start'));
+    check(state, text([tspan('aa')], true), listc('before'));
 });
 
 test('text delete prev span', () => {
@@ -254,7 +254,7 @@ test('text delete prev empty span', () => {
 test('text delete prev empty span to start', () => {
     let state = asTop(text([tspan(''), tspan('a')], true), textc(1, 0));
     state = applyUpdate(state, handleDelete(state));
-    check(state, text([tspan('a')], true), listc('start'));
+    check(state, text([tspan('a')], true), listc('before'));
 });
 
 //
@@ -262,4 +262,11 @@ test('text delete prev empty span to start', () => {
 test('norm', () => {
     const side = { index: 2, cursor: -1 };
     expect(normalizeTextCursorSide([tspan('na'), tspan(''), tspan('')], side)).toEqual({ index: 0, cursor: 1 });
+});
+
+test('inside list', () => {
+    let state = asTop(round([], true), listc('start'));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('', true), idc(0));
 });

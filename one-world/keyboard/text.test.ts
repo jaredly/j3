@@ -5,7 +5,8 @@ import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav } from './handleNav';
-import { asTop, id, idc, lisp, list, listc, round, smoosh, text, textc, tspan } from './test-utils';
+import { asTop, bullet, checks, controlc, id, idc, lisp, list, listc, rich, round, smoosh, text, textc, tspan } from './test-utils';
+import { keyUpdate } from './ui/keyUpdate';
 
 test('text before', () => {
     let state = asTop(text([], true), listc('before'));
@@ -28,6 +29,21 @@ test('text inside type', () => {
     });
 });
 
+test('before embed', () => {
+    let state = asTop(text([{ type: 'embed', item: id('') }], true), textc(0, 0));
+    state = applyUpdate(state, handleKey(state, 'A', lisp)!);
+    check(state, text([tspan('A'), { type: 'embed', item: id('') }], true), {
+        type: 'text',
+        end: { index: 0, cursor: 1 },
+    });
+});
+
+test('id to text', () => {
+    let state = asTop(id('', true), idc(0));
+    state = applyUpdate(state, handleKey(state, '"', lisp)!);
+    check(state, text([tspan('')], true), textc(0, 0));
+});
+
 test('text inside leavee', () => {
     let state = asTop(text([], true), listc('inside'));
     state = applyUpdate(state, handleKey(state, '"', lisp)!);
@@ -37,7 +53,7 @@ test('text inside leavee', () => {
 test('text inside list', () => {
     let state = asTop(round([], true), listc('inside'));
     state = applyUpdate(state, handleKey(state, '"', lisp)!);
-    check(state, round([text([], true)]), listc('inside'));
+    check(state, round([text([tspan('')], true)]), textc(0, 0));
 });
 
 test('text after id', () => {
@@ -325,3 +341,129 @@ test('del in an embed', () => {
     state = applyUpdate(state, handleDelete(state));
     check(state, text([tspan('a')], true), textc(0, 0));
 });
+
+// MARK: rich n stuff
+
+test('enter in non rich', () => {
+    let state = asTop(text([tspan('hello')], true), textc(0, 3));
+    state = applyUpdate(state, keyUpdate(state, '\n', {}));
+    check(state, text([tspan('hel\nlo')], true), textc(0, 4));
+});
+
+test('enter in rich', () => {
+    let state = asTop(rich([text([tspan('hello')], true)]), textc(0, 3));
+    state = applyUpdate(state, keyUpdate(state, '\n', {}));
+    check(state, rich([text([tspan('hel')]), text([tspan('lo')], true)]), textc(0, 0));
+});
+
+test('shift-enter in rich', () => {
+    let state = asTop(rich([text([tspan('hello')], true)]), textc(0, 3));
+    state = applyUpdate(state, keyUpdate(state, '\n', { shift: true }));
+    check(state, rich([text([tspan('hel\nlo')], true)]), textc(0, 4));
+});
+
+test('enter after sub rich', () => {
+    let state = asTop(rich([checks([text([tspan('hello')])], true)]), listc('after'));
+    state = applyUpdate(state, keyUpdate(state, ',', {}));
+    check(state, rich([checks([text([tspan('hello')])]), text([tspan('')], true)]), textc(0, 0));
+});
+
+test('select a controlll', () => {
+    let state = asTop(checks([text([tspan('hello')], true), text([])]), textc(0, 5));
+    state = applyUpdate(state, keyUpdate(state, 'Tab', {}));
+    check(state, checks([text([tspan('hello')]), text([])], true), controlc(1));
+});
+
+test('select a controlll and back', () => {
+    let state = asTop(checks([text([tspan('hello')]), text([], true)]), listc('inside'));
+    state = applyUpdate(state, keyUpdate(state, 'Tab', { shift: true }));
+    check(state, checks([text([tspan('hello')]), text([])], true), controlc(1));
+    state = applyUpdate(state, keyUpdate(state, 'Tab', { shift: true }));
+    check(state, checks([text([tspan('hello')], true), text([])]), textc(0, 5));
+});
+
+test('toggle a control', () => {
+    let state = asTop(checks([text([])], true), controlc(0));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, checks([text([])], true), controlc(0));
+});
+
+test('bullets', () => {
+    let state = asTop(rich([text([tspan('-')], true)]), textc(0, 1));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, rich([bullet([text([tspan('')], true)])]), textc(0, 0));
+});
+
+test('numbers', () => {
+    let state = asTop(rich([text([tspan('1.')], true)]), textc(0, 2));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, rich([list({ type: 'list', ordered: true })([text([tspan('')], true)])]), textc(0, 0));
+});
+
+test('checks', () => {
+    let state = asTop(rich([text([tspan('[ ]')], true)]), textc(0, 3));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, rich([list({ type: 'checks', checked: {} })([text([tspan('')], true)])]), textc(0, 0));
+});
+
+test('opts', () => {
+    let state = asTop(rich([text([tspan('( )')], true)]), textc(0, 3));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, rich([list({ type: 'opts' })([text([tspan('')], true)])]), textc(0, 0));
+});
+
+test('header', () => {
+    let state = asTop(rich([text([tspan('##')], true)]), textc(0, 2));
+    state = applyUpdate(state, keyUpdate(state, ' ', {}));
+    check(state, rich([list({ type: 'section', level: 2 })([text([tspan('')], true)])]), textc(0, 0));
+});
+
+test('" in a rich', () => {
+    let state = asTop(rich([text([tspan('')], true)]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, '"', {}));
+    check(state, rich([text([tspan('"')], true)]), textc(0, 1));
+});
+
+test('del in rich', () => {
+    let state = asTop(rich([text([tspan('')], true)]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {}));
+    check(state, id('', true), idc(0));
+});
+
+test('remove list item', () => {
+    let state = asTop(bullet([text([tspan('one')]), text([tspan('')], true)]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {}));
+    check(state, bullet([text([tspan('one')], true)]), textc(0, 3));
+});
+
+test('remove list item', () => {
+    let state = asTop(rich([bullet([text([tspan('one')]), text([tspan('')], true)])]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, '\n', {}));
+    check(state, rich([bullet([text([tspan('one')])]), text([tspan('')], true)]), textc(0, 0));
+});
+
+test('delete previous', () => {
+    let state = asTop(bullet([text([tspan('one')]), text([tspan('two')], true)]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {}));
+    check(state, bullet([text([tspan('onetwo')], true)]), textc(0, 3));
+});
+
+test('delete at start', () => {
+    let state = asTop(bullet([text([tspan('one')], true), text([tspan('two')])]), textc(0, 0));
+    state = applyUpdate(state, keyUpdate(state, 'Backspace', {}));
+    check(state, bullet([text([tspan('one')]), text([tspan('two')])], true), listc('before'));
+});
+
+test('alt-left in text', () => {
+    let state = asTop(text([tspan('one two three')], true), textc(0, 8));
+    state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { alt: true }));
+    check(state, text([tspan('one two three')], true), textc(0, 4));
+});
+
+test.only('shift-alt-left in text', () => {
+    let state = asTop(text([tspan('one two three')], true), textc(0, 8));
+    state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { alt: true, shift: true }));
+    check(state, text([tspan('one two three')], true), textc(0, 8), textc(0, 4));
+});
+
+// TODO delete rich in table

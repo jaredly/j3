@@ -6,6 +6,8 @@
 // rather different keyboard shortcuts.
 //
 
+import { isTag } from '../keyboard/handleNav';
+
 /*
 
 ok hot stuff, what would it take to also handle JSX?
@@ -41,6 +43,7 @@ my rich-text nodes.
 */
 
 export type Style = {
+    format?: 'code';
     fontWeight?: number | string;
     fontFamily?: string;
     fontStyle?: string;
@@ -56,7 +59,7 @@ export const rgbEqual = (one?: RGB, two?: RGB) => (!one || !two ? one === two : 
 
 export const stylesEqual = (one?: Style, two?: Style) => {
     if (!one || !two) return (!one || Object.keys(one).length === 0) && (!two || Object.keys(two).length === 0);
-    for (let key of ['fontWeight', 'fontFamily', 'fontStyle', 'textDecoration', 'border', 'outline'] as const) {
+    for (let key of ['fontWeight', 'fontFamily', 'fontStyle', 'textDecoration', 'border', 'outline', 'format'] as const) {
         if (one[key] !== two[key]) return false;
     }
     if (!rgbEqual(one.background, two.background)) return false;
@@ -85,8 +88,7 @@ export type IdRef =
     // Soo this will have a look-uppable name too
     | { type: 'resource'; id: string; kind: string; hash?: string }
     | { type: 'builtin'; kind: string }
-    | { type: 'keyword' }
-    | { type: 'placeholder'; text: string };
+    | { type: 'keyword' };
 
 // ccls = "char class" i.e. what kind of punctuation. 0 = normal text
 export type Id<Loc> = { type: 'id'; text: string; ref?: IdRef; loc: Loc; ccls?: number; src?: Src };
@@ -105,6 +107,7 @@ export type TextSpan<Embed> =
     | { type: 'text'; text: string; link?: Link; style?: Style }
     // Jump back to a normal node I guess
     | { type: 'embed'; item: Embed; link?: Link; style?: Style }
+    | { type: 'attachment'; id: string; display: 'name' | 'small' | 'large' }
     // I kinda forget what this was about? Maybe like letting you supply rich-text plugins or something
     | { type: 'custom'; id: string; data: any }
     // How are these different from `embed`? Well these actually yoink the source
@@ -119,14 +122,15 @@ export type TextSpan<Embed> =
 
 export type RichKind =
     | { type: 'plain' }
-    | { type: 'section' } // collapsible, and first item is treated as a header
+    | { type: 'section'; level?: number } // collapsible, and first item is treated as a header
     | { type: 'list'; ordered: boolean }
     | { type: 'checks'; checked: Record<number, boolean> }
     | { type: 'opts'; which?: number }
     | { type: 'indent'; quote: boolean }
     | { type: 'callout'; vibe: 'info' | 'warning' | 'error' };
 
-export const isRich = (kind: ListKind<any>) => typeof kind !== 'string' && kind.type !== 'tag';
+export const isRich = (kind: ListKind<any> | TableKind) => typeof kind !== 'string' && kind.type !== 'tag';
+export const hasControls = (kind: ListKind<any>) => typeof kind !== 'string' && (kind.type === 'opts' || kind.type === 'checks');
 
 export type ListKind<Tag> =
     | 'round'
@@ -137,7 +141,7 @@ export type ListKind<Tag> =
     | 'smooshed'
     // these are for binops and such. not used for lisp-mode
     | 'spaced'
-    | { type: 'tag'; node: Tag }
+    | { type: 'tag'; node: Tag; attributes?: Tag }
     | RichKind;
 
 export type Text<Loc> = { type: 'text'; spans: TextSpan<Loc>[]; loc: Loc; src?: Src };
@@ -147,22 +151,20 @@ export type List<Loc> = {
     // Whether the user has specified that it should be multiline.
     // If absent, multiline is calculated based on pretty-printing logic
     forceMultiline?: boolean;
-    // For JSX, this will be a /table/, and 'kind' will be {type: 'tag'}
-    attributes?: number;
     children: number[];
     loc: Loc;
     src?: Src;
 };
-export type TableKind = 'round' | 'square' | 'curly';
-export type Collection<Loc> =
-    | List<Loc>
-    | {
-          type: 'table';
-          kind: TableKind;
-          rows: number[][];
-          loc: Loc;
-          src?: Src;
-      };
+export type TableKind = 'round' | 'square' | 'curly' | { type: 'rich'; colWidths?: Record<number, number> };
+export type Collection<Loc> = List<Loc> | Table<Loc>;
+export type Table<Loc> = {
+    type: 'table';
+    kind: TableKind;
+    forceMultiline?: boolean;
+    rows: number[][];
+    loc: Loc;
+    src?: Src;
+};
 
 export type NodeT<Loc> = Id<Loc> | Text<Loc> | Collection<Loc>;
 export type Node = NodeT<number>;
@@ -173,8 +175,6 @@ export type RecList<Loc> = {
     // Whether the user has specified that it should be multiline.
     // If absent, multiline is calculated based on pretty-printing logic
     forceMultiline?: boolean;
-    // For JSX, this will be a /table/, and 'kind' will be {type: 'tag'}
-    attributes?: RecNodeT<Loc>;
     children: RecNodeT<Loc>[];
     loc: Loc;
     src?: Src;
@@ -208,8 +208,6 @@ const refsEqual = (one: IdRef, two: IdRef): boolean => {
             return two.type === 'builtin' && two.kind === one.kind;
         case 'keyword':
             return two.type === 'keyword';
-        case 'placeholder':
-            return two.type === 'placeholder' && two.text === one.text;
         case 'resource':
             return two.type === 'resource' && two.id === one.id && two.hash === one.hash;
         case 'toplevel':
@@ -230,7 +228,6 @@ export const equal = <One, Two>(one: RecNodeT<One>, two: RecNodeT<Two>, loc: (on
         if (two.type !== 'list') return false;
         return (
             one.kind === two.kind &&
-            one.attributes === two.attributes &&
             one.forceMultiline === two.forceMultiline &&
             one.children.length === two.children.length &&
             one.children.every((one, i) => equal(one, two.children[i], loc))
@@ -254,11 +251,11 @@ export const childNodes = <Loc>(node: RecNodeT<Loc>): RecNodeT<Loc>[] => {
             return [];
         case 'list':
             let children: RecNodeT<Loc>[] = [];
-            if (typeof node.kind !== 'string' && node.kind.type === 'tag') {
+            if (isTag(node.kind)) {
                 children.push(node.kind.node);
-            }
-            if (node.attributes) {
-                children.push(node.attributes);
+                if (node.kind.attributes) {
+                    children.push(node.kind.attributes);
+                }
             }
             return children.length ? [...children, ...node.children] : node.children;
         case 'table':
@@ -274,11 +271,11 @@ export const childLocs = (node: Node): number[] => {
             return [];
         case 'list':
             let children: number[] = [];
-            if (typeof node.kind !== 'string' && node.kind.type === 'tag') {
+            if (isTag(node.kind)) {
                 children.push(node.kind.node);
-            }
-            if (node.attributes) {
-                children.push(node.attributes);
+                if (node.kind.attributes) {
+                    children.push(node.kind.attributes);
+                }
             }
             return children.length ? [...children, ...node.children] : node.children;
         case 'table':
@@ -304,12 +301,12 @@ export const fromMap = <Loc>(id: number, nodes: Nodes, toLoc: (l: number) => Loc
             return {
                 ...node,
                 loc,
-                attributes: node.attributes != null ? fromMap(node.attributes, nodes, toLoc) : undefined,
                 kind:
                     typeof node.kind !== 'string' && node.kind.type === 'tag'
                         ? {
                               ...node.kind,
                               node: fromMap(node.kind.node, nodes, toLoc),
+                              attributes: node.kind.attributes != null ? fromMap(node.kind.attributes, nodes, toLoc) : undefined,
                           }
                         : node.kind,
                 children: node.children.map((id) => fromMap(id, nodes, toLoc)),
@@ -346,12 +343,12 @@ export const fromRec = <Loc>(
             map[loc] = {
                 ...node,
                 loc,
-                attributes: node.attributes != null ? fromRec(node.attributes, map, get, inner) : undefined,
                 kind:
                     typeof node.kind !== 'string' && node.kind.type === 'tag'
                         ? {
                               ...node.kind,
                               node: fromRec(node.kind.node, map, get, inner),
+                              attributes: node.kind.attributes != null ? fromRec(node.kind.attributes, map, get, inner) : undefined,
                           }
                         : node.kind,
                 children: node.children.map((id) => fromRec(id, map, get, inner)),

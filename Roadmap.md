@@ -1,4 +1,524 @@
 
+
+- [ ] allllrightlyho, it's def time to be writin tests for these multiselection dealios
+  - [ ] get the multiselect running in my example for
+    - [x] ids
+    - [x] lists
+    - [x] text mostly
+    - [x] text multi
+  - [x] multi across lists pls
+  - [x] across texts
+- [x] tABLES
+  - hmmmmmmmmmmm how do I do /column + 2D area select/ vs /normal wrapping select/ ??? howw.
+    I thiiiink what we want is a {table} cursor type. yeahh. and that can contain the madness.
+    like if you're doing a normal selection thing, you won't be selecting /cells/.
+  - [ ] column / 2D select plsss
+- [x] BETWEEN two emebds in a text, select the intervening spans
+- [x] start of text, shouldn't select the whole spannn
+- [x] openers and closers, hl them
+- [x] table little fix
+- [ ] tagsssss got a lot to do there
+- [ ] alt- while select/dragging, should select full atoms pls
+- [ ] ctrl- while select/dragging ...
+
+
+# How to make multiselect more of a thing
+
+- [x] move `.start` from the IdCursor into the NodeSelection (and call it `end`)
+- [ ] move `.start` from TextCursor into NodeSelection (and call it `end`)
+  - I'm like in the middle of making a function or something ... about normalizing the selection? maybe?
+
+
+/getSelectionStatuses` looks to be working like a charm.
+now to use it.... in <App> I shouldn't wonder.
+then remove .start from textcursor.
+
+
+in RednerNode, I should have something like `getSelectionState`
+and it might be
+`start: (at)`
+`end: (at)`
+`sub: (start, end)`
+`covered`
+
+
+# What should I be excited about right now?
+
+... so it shouldn't be tooo long until I can write javascript, right?
+how hard would it be to edit itself?
+
+it would take producing a server of some kind, clearly.
+ALSO we'd need some way of ~preserving comments, right?
+like, the parser ignores comments, which I think is fair and proper.
+~but, when generating the code, we probably do want comments put back in, right?
+
+like ideally, we could have a seamless (js -> cst -> js) transformation.
+and maybe that's the key, the parser does a certain thing, but really
+we work at the level of the cst?
+
+hmmmm that would be an interesting dual system.
+
+
+OK SO
+transitioning the multiselect story, here's what we do:
+
+- rename .end or something, and .multi
+- have `getCurrent` produce somethign derivitive
+
+
+
+# Shift select
+ok, so I'm thikning the multiselect ought to be a little different.
+like
+
+shift+up/down should do the same things as shift-left/right, which is to say...
+(left/right), if we're in a "rich text" then we'll move by individual characters...
+unless ctrl is selected too?
+or maybe always do that.
+so ctrl+(left/right) is for "tabbing", normal left/right is just normal.
+maybe I'll try that.
+
+anyway, then you can hit `escape` to "select up a level". that sounds cool.
+and then ctrl+left/right to move the cursor to the start/end of the current multiselect.
+
+annnnnnnnd I haven't thought /at all/ about multicursor. so there's that.
+like, there should be a way to do it without too much disruption.
+I just need, like
+the product of the first cursor to produce a "here's how to transform other cursors as a result of this change" function.
+
+- [ ] next, shift-up and down, gotta make it more normal
+
+
+
+# DSL3 let's go
+
+- [x] basic things, looks like we're in business
+- [x] can we hook it uppp
+- [ ] I kinda want to ... be able to select "after the opener" of a multiline list...
+- [x] texts and such
+- [x] numbers, love it
+
+- [x] rich list double enter (backs out)
+- [ ] nested rich lists, ~hide the control? hmmmm. maybe.
+  - will need to ~not allow selecting the controllll
+- [ ] rich table removeSelf - remove the cell (joinLeft)
+
+- [ ] JSX intro syntax, I... want a way to allow angle lists too.
+  so maybe </ is for jsx, and <> is for angle lists?
+  what about <hello and then > makes it a jsx?
+
+
+
+
+
+
+
+# Ok, when we last left our heroes
+we were nailing down dsl3.
+let's get back to that.
+
+# Rich stuff
+
+- [x] bullet
+- [-] numbered
+  - [x] render
+- [-] headers
+  - [x] render
+- [ ] backspace deleting a nested Rich list should replace it with a string, not a blank
+  - it'll be 'removeSelf' I imagine
+- [ ] I sure need drag-to-select, esp in riches
+
+
+soooo
+what do I do about 'a blank in an empty list'
+do I just always ignore it, from a parser standpoint?
+
+
+#
+
+- [x] oooooh let's make an examples page.
+
+# DECIMALSSS
+
+- [x] 127.0.0.1
+- [x] +34.23
+- [x] 1.23e456
+
+cannn we do
+- [ ] 1.23e-456?
+
+like
+-+ prefixes, should they be joined with leading numbers?
+
+
+# NEXT
+
+- [ ] USE the dsl2, let's switch to that. parsing jsx is being weirdly tricky
+
+- [x] jsx is working ok
+- [ ] shift-select we need some real tests for this, nail down the behavior
+- [ ] let's get copy/paste going
+- [ ] undo/redo
+
+
+IFF I want to be practical and not put undue burden on the parsers, I really need to handle decimal numbers.
+
+
+
+## Image EMBEDS
+
+let's goooo
+
+SO
+this is ... a part of a rich text?
+orrr a whole nother node entirely?
+I can definitely imagine wanting "a list of images" that you just drop in.
+on the other hand, why wouldn't they just be identified by their name or whatnot.
+And a rich text context is the main place I can imagine wanting to just dump an image.
+BUT importantly we'll need to not embed the image data in the /span/ because those
+get copied all over the place in updates.
+
+Soooo I need a way to ... have attachements... somewhere.
+
+anddd a way to look them up? I guess?
+- actually so for UI i can just like /paste/ them in, right?
+- andddddd maybe let's try to do like embedding skethy drawings or whatever
+
+
+btw my multiselect has a bunch of issues.
+
+- [x] `code` backticks pls
+- [x] prevent code backticks in a code backtick?
+
+
+## Now for React JSX
+
+hrm.
+
+
+## Rich Table
+
+aha
+so, default is a cell has text
+and its rich
+- [x] BUT enter makes a new row
+- [x] AND shift+enter does \n in the text
+IF YOU WANT a full rich list, you need to insert that. awesome.
+maybe call the 'plain' rich text "paragraphs" or something.
+
+- [ ] BUG go left into empty text in table, need to select inside, not after
+
+# So, the next thing
+
+Is... rich text, right?
+
+- [x] CLICK inside a text, why is it not workings.
+- [ ] alt/left-right should move you by word in a rich text
+- [x] highlight the ~rich text list that you're inside of
+- [x] highlight parens
+- [x] Rich Lists shouldn't have inside/before/after.
+  - [ ] test it
+- [x] enter in a rich should make a new text in the rich
+- [x] render bullets and checkboxes and such
+- [ ] deal with selecting controls (checkboxes, bullets, etc.)
+
+- [x] Controls! Selectable controls in rich text. yess
+
+- [x] enter in rich (after sub rich) needs to rich
+- [x] cursor should indicate richnesss
+- [ ] want to be able to split a rich. probably the double enter?
+- [ ] up/down at end of rich doesn't work right because it assumes 1 line height
+- [ ] I don't think it makes sense to smooshify in a rich. I think it should create a new item? or something.
+  - oh wow. hm.
+    so, text in a table, we want that to be auto-rich. so why not smoosh? I guess theres no reason.
+
+
+if you start a comment, ... on a blank id ...
+it should turn into a rich text automatically, right? right?
+seems like that would be right.
+Does that mean, that the editor needs to know what a comment is?
+yes, yes it would.
+does that mean that, we must necessarily reparse on every keystroke?
+hrm.
+
+So, rich tables.
+Extra things in the rich world
+- custom column widths
+- how bout merged cells? I don't totally have a way to represent that.
+  I guess I could specify, on a row that doesn't have all the cells expected,
+  which one is which amount of wide...
+
+Ok, but so how do we go about adding cells
+in a rich table?
+Do I just go with |?
+and \n for a new row?
+Or do I do the copout thing, where you have to use the mouse?
+AH what if, you have to shift-up to select the cell, and then you
+can do the things?
+BUT
+that does mean, that at least in the rich text world, we definitely want new rows to have
+the full complement of items.
+Do we just want that anyways?
+sure, let's turn that on.
+we can turn it off in general if we like
+
+
+# ForceMultiline needs to bubble up
+
+# Table thoughts
+
+: is the sep for js-like languages. obvs. and then ; or \n for newlines. love it.
+and thennn for lispy languages, do we still go with |? hmm idk, |> is a common thing.
+So maybe : there too.
+
+anyyywayyy, with this intermediate layer, does that make the parsing step
+into regular expressions? that would be super cool.
+
+
+- [/] new col makes new col for all
+  - actually do we want this? not sure.
+  - orr you could multicursor it, right?
+    wow I don't think I've even ... been thinking about multicursor.
+- [/] del col dels col for all
+- [ ] shift-down needs to do 'shrink'
+- [ ] I guess ... I want the ability to select like a whole column? and delete it.
+  or several consecutive cells?
+  that would be multiselect in a different ... flavor?
+
+
+# I'm torn
+
+between working on tables
+and working on the combinators dealio and autocomplete and stuff.
+
+ok let's do tables?
+
+CAN A TABLE be empty
+can a row be empty?
+sure a table can, but a row ... probably cant
+idk
+
+yeah let's declare that a table isn't allowed to be empty.
+
+- [x] empty table
+- [x] table with one item
+
+## Tables
+
+{|}
+right?
+any other options?
+I could require a \ like `\(` being talbe or `\{`
+yeah I like it. has resonance with markdown.
+
+wait, will that make doing things like || more weird?
+I mean, you can just wrap in a () right
+
+ergh.
+yeah using | to separate columns would make doing something like `a || b` inside a column
+needlessly annoying. which I sure would like to avoid.
+what if I make you do `\`? like \| for a new column. in general would it be rare?
+I mean
+everry time you want to make a record.
+hmmmm. or just commas?
+
+lol ok commas
+yeah that's the one that makes sense right
+I mean
+ok that'll be something you can customize too.
+in a lisp world, call it `|`, in a js world, `,`
+
+
+
+# autocomplete
+
+- [ ] needs to collect all the options
+- [ ] also ... I think we want to ~know about local definitions
+  at some level, right?
+
+
+- [ ] FIRST produce autocomplete info
+- [ ] THEN do auto-scoping goodness
+
+
+So,
+seems like we only need to do autocomplete on ids.
+but
+there's this thing, were it might be nice to have like
+speculative spaced and smooshed.
+like, if we get to a node,
+and we're autocompleting it.
+yeahhh like we want different behavior maybe?
+like autocomplete is kinda speculative.
+
+BTW we're checking for comments wayyyy too much.
+like
+honestly they should only be valid at the start of a smooshed.
+and like
+nowhere else.
+ooh it could be cool to have `sequence` be able to specify
+"only match at the start". like ^ in regex.
+I already have $ which is .all
+
+
+
+
+# I want to try actual functions combinators again,with types
+instead of the thing-that-wants-to-be-a-gadt that I have now.
+BUT thoes functions would be less introspectable I believe.
+anddd I need to make sure I can get autocomplete working in a way that makes sense.
+
+So, let's talk about the basics of autocomplete.
+
+
+
+BTW the meta needs to be somewhat aware of success.
+
+const x = (a, )
+
+currently placeholders as `pat` because it's trying to be a function
+but it successfully parses as expressions.
+
+btw this is a case where ... you would want autocomplete to allow
+either pat or value. So like, yeah maybe collect attempts even
+from failed parses.
+
+
+# Next up story
+
+- let's really get placeholders going. that sounds fun.
+- [x] yay placeholdersss
+
+# OK it's high time that we do tabs. gotta do it.
+- [x] tabs
+- [ ] nominal capacity to switch up parsers
+- [ ] actually make it so you can switch it up
+
+# Can I do JS?
+
+- `new` [expr] is annoying
+- also `await` and `yield`
+ok those were fine actually.
+
+howww bout suffixes? ++ and --? Shouldn't be too bad. just add 'em to the mix
+of a smooshed.
+
+- yay it workss
+
+# What about custom binops?
+
+with ... different associativity?
+ok, so you're using a resolved whatsit, right?
+andd the parser is allowed to know, what things its interacting with
+as previously discussed, we shouldn't be denoramlizing the `kind` of references
+or anything like that
+in the `id(ref)`
+instead we should pass a map of the ... resolved exports of the things you're
+referencing when you parse? 🤔 hm that can get a little hairy if we're working
+with recursive references. so. what's the idea there.
+
+OK SO THE THING IS
+- parser will get a mapping of IDs to ~parsed export information.
+  FOR ANY that are mutually recursive, we just up and bail, and give it a `recursive` indicator.
+  so, if you're using something, it better not rely on specific export information (like associativity)
+
+:( :( :( so the sad part is, this means that parsing can't just rely on the contents. )))
+it also relies on that mapping that's passed in.
+
+whichhhh honestly is part of what I had planned to do for resolution of stuff, right? although,
+wait that means I wouldn't get renames for free, right? welll I would, kinda. Like, I would get them for
+/committed stuff/. But not for ... stuff that is loaded up? right? honestly that would be interesting.
+
+So, I need to know ... what kind of things, refs are, for parsing, because
+- macro expansion (the parser doesn't need to know, the outer system can just do it)
+  - BUT this does mean that 'the parsed state of things' is not just based on a hash of the source,
+    but ALSO a hash of the macros used in it. very relevant.
+- binop associativity, right?
+
+yeah I think that's probably the only things that impact parsing.
+
+ON THE OTHER HAND
+are we going to try to do... any presentation changes based on `kind`s? idk, doesnt matter.
+
+OK, so: defining a macro, has to be a thing that you tell the management.
+the results of parsing, we have
+- exports
+  - IF it has a `kind`, then we assume that the kind information is relevant to the parser.
+    but it doesnt have to have a kind.
+- macroExports?
+  - are there different kinds of macros
+  - there are the ones that might be used in the `auxiliaries` list of a toplevel, which might apply to the whole dealio
+    - so, these would receive, like, the containing container, and if that's the root of the auxiliary, you'd also get the full toplevel source(s).
+  - and the ones that are used inline, and get passed the 'containing container' of the thing to muck with.
+    - cool thing about that, you can do a template-string as a macro or a normal function. you choose.
+
+WAIT so `kind`s were going to be useful for autocomplete.
+hmm so does the parser just get the kinds of everything it depends on?
+I mean, it's probably fine. It will over-index, sometimes, but how often are you
+actually changing the /kind/ of something you're exporting anyways. seems like a relatively low cost situation.
+
+yeah so the thing about autocomplete
+is it would be nice to know what ~kinds of things are valid.
+e.g. don't complete a term when a type is wanted.
+
+Q:
+can/should an export have multiple /kind/s?
+like the (>=) export could have a ... oh yeah btw those binops aren't left or right associative,
+they would be 'multi-ops' or whatever.
+anyway,
+(>=) would be [binop, multi-op, value]
+(*) would be [binop, left-binop, value]
+(|>) would be [binop, left-binop, value]
+($) would be [binop, right-binop, value]
+right? they would all be values.
+
+anyway, the parser would look at those things and say
+"here I am resolving binops, so does this thing
+I'm looking at have `left-binop` or `right-binop` or `multi-op` on it?"
+
+And the autocompleter, when in the ~binop location would just be looking
+for `kind=binop`.
+
+yeah that's cool.
+SO: parser gets a mapping of `{id+idx: string[]}` that it can use to parse stuff.
+
+also, a macro export would declare itself to be *also* a (value) or (type) or whatever
+for the purpose of autocomplete. sounds great.
+
+Yeah ok I'm feeling good about that.
+
+# PLACEHOLDERS
+
+WHattttt iffff we ditch /placeholders/ in the CST, and have them only be an artifact of the parsing?
+that's really attractive, because it's weird if you like (space) and then the placeholder item is in a weird place.
+ALSO it means we get placeholders without explicitly autocompleting it up.
+- Oooooh can I automagic based on `named`? Like if it's named, you get a placeholder?
+
+
+- [x] \n should set forceMultiline
+- [x] \n in an empty list (inside) shouldn't create a double child
+
+- [ ] mutliselect doesn't actually do any useful editing yet tho
+
+
+COVERAEG
+- [ ] handleShiftNav
+- [ ] insertId
+
+
+
+Soooo `[one| two]` with , should ... just make `[one, two]`, right? insteade of `[one,  two]`
+but then `[one, |two]` would do whcih: `[one|two]`, or `[one two]`?
+and `[one|two]` with `,` becomes `[one, two]` obvs
+
+
+
+
+andddd then, ok let's check on other coverages
+
+OK and then let's really get Tables and Rich Lists going
+buuut first ok we need scads of tests to bring coverage uppp.
+
 #
 
 I should make parsers for:
@@ -6,6 +526,57 @@ I should make parsers for:
 - javascript
 - go(?)
 - clojure
+- julia why not
+- pythonnnn but ... need a list that is 'indent'
+  - hrmmm, do I need to ... ensure that it's the "last" thing in a `spaced`? or ok two ways I can think of:
+    - spaced(id(if) smoosh(id(True) id(:)) indent(lolwhat))
+    - OR some-multiline-list(spaced(id(if) smoosh(id(True) id(:))) indent(lolwhat))
+    The first way is .. easier to parse, makes more sense from a parser perspective.
+    The second way is maybe easier to ... navigate?
+    Like with the first way, it would be _very_ weird if you could have something, /in the spaced/, that's after the block.
+    ANOTHER POSSIBILITY
+    could ... : be, a new kind of separator?
+    (how does this play with haskell's "you can have a block after an = sign"? hmm)
+
+    AHhhhh I think actually what I want ... is like ... an `indent` list, should actually contain the unindented line
+    as the first item or w/e.
+
+    SO the `indent` list would be this special case, because it needs a minimum of 2 items. kinda fun.
+
+    Ok so that makes the haskell hanging indent after `=` work just fine.
+    But let's talk about python's tight `:`.
+
+    what a weird thing. it breaks the "tight is always tighter than loose" precedence that I rely on.
+
+```py
+class MapAcceleratorClassPage(BasePageObject):
+
+    def __init__(self, app):
+        super(MapAcceleratorClassPage, self).__init__(app)
+        # Strands are topics in MAP subjects like Geometry,
+        # Data & Measurement etc.
+        # ids are strand code that is not readable from test
+        # perspective
+        self.strand_map = {"Geometry": "kmapCell_x53ab",
+                           "Measurement & Data": "kmapCell_x3d21",
+                           "Numbers & Operations": "kmapCell_x7c3",
+                           "Operations and Algebraic Thinking":
+                               "kmapCell_x1a3f"}
+```
+
+I feel like what I would have to do is have `:` be a ~magical trigger, that ... maybe produces an `indent`?
+hmmm what if an `indent` sometimes ... like .... doesn't indent? Like if there are only 2 items (and forceMultiline
+isn't true), it's just inline (although it couuuuld wrapp to the indented dealio)
+if there are more than two items we go into the indented multiline life.
+
+Yeah OK, for python : does have to be magical. and thats ok.
+
+For haskell ... what's the trigger?
+like
+= and then \n?
+or just = in general? ok actually yeah. for haskell, looks like `=` is always gonna be a thing
+that can be indented afterwards. soooo we can always do 'space after = makes it an indent'
+which has the benefit of making wrapping do what I want.
 
 #
 

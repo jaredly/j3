@@ -1,3 +1,4 @@
+import { Src } from '../keyboard/handleShiftNav';
 import { Id, Loc, RecNode, TextSpan } from '../shared/cnodes';
 import { any, Ctx, id, idp, idt, kwd, list, Matcher, meta, mref, multi, named, opt, sequence, switch_, table, text, tx } from './dsl';
 import { XML } from './xml';
@@ -54,8 +55,6 @@ const sprexpr_ = mref<SExpr>('sprexpr');
 
 // type Shown = {left:}
 
-export type Src = { left: Loc; right?: Loc };
-
 type PSpread = { type: 'spread'; inner: Pat; src: Src };
 type SPat = Pat | PSpread;
 type Pat =
@@ -83,11 +82,155 @@ type Expr =
     | { type: 'index'; target: Expr; items: SExpr[]; src: Src }
     | Fancy;
 
+// Stmtssss
+// Ok, so Exprs, Pats, and Stmts...
+
+type Visitor<T> = {
+    expr(expr: SExpr, v: T): T;
+    stmt(stmt: Stmt, v: T): T;
+    pat(pat: SPat, v: T): T;
+};
+
+export const stmtSpans = (stmt: Stmt) => {
+    const spans: Src[] = [];
+    foldStmt<void>(stmt, undefined, {
+        expr(expr, v) {
+            spans.push(expr.src);
+        },
+        pat(pat, v) {
+            spans.push(pat.src);
+        },
+        stmt(stmt, v) {
+            spans.push(stmt.src);
+        },
+    });
+    return spans;
+};
+
+export const foldPat = <T>(pat: SPat, i: T, v: Visitor<T>): T => {
+    i = v.pat(pat, i);
+    switch (pat.type) {
+        case 'array':
+            pat.values.forEach((item) => {
+                i = foldPat(item, i, v);
+            });
+            return i;
+        case 'bound':
+            return i;
+        case 'constr':
+            pat.args.forEach((arg) => {
+                i = foldPat(arg, i, v);
+            });
+            return i;
+        case 'text':
+            pat.spans.forEach((span) => {
+                if (span.type === 'embed') {
+                    i = foldPat(span.item, i, v);
+                }
+            });
+            return i;
+        case 'spread':
+            return foldPat(pat.inner, i, v);
+    }
+};
+
+export const foldStmt = <T>(stmt: Stmt, i: T, v: Visitor<T>): T => {
+    i = v.stmt(stmt, i);
+
+    switch (stmt.type) {
+        case 'expr':
+            return foldExpr(stmt.expr, i, v);
+        case 'let':
+            i = foldPat(stmt.pat, i, v);
+            return foldExpr(stmt.value, i, v);
+    }
+};
+
+export const foldExpr = <T>(expr: SExpr, i: T, v: Visitor<T>): T => {
+    i = v.expr(expr, i);
+
+    switch (expr.type) {
+        case 'spread':
+            foldExpr(expr.inner, i, v);
+            return i;
+        case 'text':
+            expr.spans.forEach((span) => {
+                if (span.type === 'embed') {
+                    i = foldExpr(span.item, i, v);
+                }
+            });
+            return i;
+        case 'array':
+        case 'tuple':
+        case 'bops':
+            expr.items.forEach((item) => {
+                i = foldExpr(item, i, v);
+            });
+            return i;
+        case 'call':
+            i = foldExpr(expr.target, i, v);
+            expr.args.forEach((arg) => {
+                i = foldExpr(arg, i, v);
+            });
+            return i;
+        case 'uop':
+        case 'attribute':
+            i = foldExpr(expr.target, i, v);
+            return i;
+        case 'index':
+            i = foldExpr(expr.target, i, v);
+            expr.items.forEach((item) => {
+                i = foldExpr(item, i, v);
+            });
+            return i;
+        case 'fn':
+            expr.args.forEach((pat) => {
+                i = foldPat(pat, i, v);
+            });
+            expr.body.forEach((stmt) => {
+                i = foldStmt(stmt, i, v);
+            });
+            return i;
+        case 'if':
+            i = foldExpr(expr.cond, i, v);
+            expr.yes.forEach((stmt) => {
+                i = foldStmt(stmt, i, v);
+            });
+            expr.no?.forEach((stmt) => {
+                i = foldStmt(stmt, i, v);
+            });
+            return i;
+        case 'case':
+            i = foldExpr(expr.target, i, v);
+            expr.cases.forEach((kase) => {
+                i = foldPat(kase.pat, i, v);
+                if (Array.isArray(kase.body)) {
+                    kase.body.forEach((stmt) => {
+                        i = foldStmt(stmt, i, v);
+                    });
+                } else {
+                    i = foldExpr(kase.body, i, v);
+                }
+            });
+            return i;
+        case 'record':
+            expr.rows.forEach((row) => {
+                if (row.type === 'single') {
+                    i = foldExpr(row.inner, i, v);
+                } else {
+                    i = foldExpr(row.value, i, v);
+                }
+            });
+        default:
+            return i;
+    }
+};
+
 type Fn = { type: 'fn'; args: Pat[]; body: Stmt[]; src: Src };
 type Fancy =
     | Fn
     | { type: 'if'; cond: Expr; yes: Stmt[]; no?: Stmt[]; src: Src }
-    | { type: 'case'; target: Expr; cases: { pat: Pat; body: Expr }[]; src: Src };
+    | { type: 'case'; target: Expr; cases: { pat: Pat; body: Stmt[] | Expr }[]; src: Src };
 
 type ESmoosh = { type: 'smooshed'; prefixes: Id<Loc>[]; base: Expr; suffixes: Suffix[]; src: Src };
 
@@ -97,15 +240,6 @@ type Suffix =
     | { type: 'attribute'; attribute: Id<Loc>; src: Src };
 type RecordRow = { type: 'single'; inner: SExpr } | { type: 'row'; key: Id<Loc>; value: Expr };
 type Stmt = { type: 'expr'; expr: Expr; src: Src } | { type: 'let'; pat: Pat; value: Expr; src: Src };
-
-// export const evalExpr = (expr: Expr, scope: Record<string,any>) => {
-//     switch (expr.type) {
-//         case 'local':
-//             if (!(expr.name in scope)) throw new Error('undef ' + expr.name)
-//             return scope[expr.name]
-//         case 'uop'
-//     }
-// }
 
 const aToXML = (v: any, name?: string): XML | XML[] | null => {
     if (Array.isArray(v)) {
@@ -202,7 +336,14 @@ const fancy = switch_<Expr, Expr>(
                     kwd('case', () => ({ type: 'case' })),
                 ),
                 named('target', binned_),
-                named('cases', table('curly', sequence([named('pat', pat_), named('body', expr_)], true, idt), idt)),
+                named(
+                    'cases',
+                    table(
+                        'curly',
+                        sequence([named('pat', pat_), named('body', switch_<Expr | Stmt[], Expr | Stmt[]>([block, expr_], idt))], true, idt),
+                        idt,
+                    ),
+                ),
             ],
             false,
             (f, nodes) => ({ ...f, src: nodesSrc(nodes) }),
@@ -266,7 +407,7 @@ const parseSmoosh = ({ base, suffixes, prefixes }: Smoosh, node: RecNode): Expr 
     suffixes.forEach((suffix) => {
         switch (suffix.type) {
             case 'attribute':
-                base = { type: 'attribute', target: base, attribute: suffix.attribute, src: mergeSrc(base.src, suffix.src) };
+                base = { type: 'attribute', target: base, attribute: suffix.attribute, src: mergeSrc(base.src, nodesSrc(suffix.attribute)) };
                 return;
             case 'call':
                 base = { type: 'call', target: base, args: suffix.items, src: mergeSrc(base.src, suffix.src) };
@@ -309,7 +450,7 @@ const _sprood: Matcher<SExpr> = list(
         spread ? { type: 'spread', inner: parseSmoosh(data, node), src: nodesSrc(node) } : parseSmoosh(data, node),
 );
 
-const nodesSrc = (nodes: RecNode | RecNode[]): Src =>
+export const nodesSrc = (nodes: RecNode | RecNode[]): Src =>
     Array.isArray(nodes)
         ? nodes.length === 1
             ? { left: nodes[0].loc }

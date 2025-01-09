@@ -1,4 +1,26 @@
 
+# Just Enough Structure
+
+"What structure are you editing" can be determined by the question "what am I /not allowed/ to control?"
+- for most text editors, you're not allowed to control individual bytes
+
+
+What is a structured editor?
+A structured editor, as I use the term, is an editor whose manipulation representation of the "code being edited" is more high level than "a sequence of utf8 characters", while still being recognizeable as "source code" (e.g. not a node editor) or/and at the very least keyboard-first.
+Historically, structured editors have operated on the Abstract Syntax Tree of the programming language they were designed for (see examples).
+More recently, TYLR paved a way to have an editor that works at an intermediate level.
+And then there's that blog post.
+
+Talking points:
+Comas before, or after? How about none!
+Go strict definitions have a third column
+
+
+
+
+
+-----
+
 See also Syntaxes.md
 
 Hrm

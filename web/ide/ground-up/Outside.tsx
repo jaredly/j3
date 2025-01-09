@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { NUIState } from '../../custom/UIState';
 import { debounce } from './reduce';
-import { useHash, saveState, onSaveState, loadState } from './reduce';
+import { saveState, onSaveState, loadState } from './reduce';
+import { useHash } from './useHash';
 import { urlForId } from './urlForId';
 import { GroundUp } from './GroundUp';
 import { useLocalStorage } from '../../Debug';
@@ -14,9 +15,7 @@ export const Outside = ({ override }: { override?: string[] }) => {
     const [listing, setListing] = useState(null as null | string[]);
     const hash = useHash();
 
-    const [recent, setRecent] = useLocalStorage<
-        { title: string; access: number }[]
-    >('recent', () => []);
+    const [recent, setRecent] = useLocalStorage<{ title: string; access: number }[]>('recent', () => []);
 
     useEffect(() => {
         fetch(urlForId(''))
@@ -49,33 +48,22 @@ export const Outside = ({ override }: { override?: string[] }) => {
                         alignItems: 'center',
                     }}
                 >
-                    {(override
-                        ? override.map((n) => ({ title: n }))
-                        : recent
-                    ).map(({ title }) => (
+                    {(override ? override.map((n) => ({ title: n })) : recent).map(({ title }) => (
                         <span key={title} style={{ minWidth: 'max-content' }}>
                             <a
                                 href={'#' + title}
                                 style={{
                                     display: 'inline-block',
                                     padding: '8px 0px 8px 16px',
-                                    color:
-                                        hash === '#' + title
-                                            ? 'yellow'
-                                            : 'white',
-                                    textDecoration:
-                                        hash === '#' + title
-                                            ? 'none'
-                                            : 'underline',
+                                    color: hash === '#' + title ? 'yellow' : 'white',
+                                    textDecoration: hash === '#' + title ? 'none' : 'underline',
                                 }}
                             >
                                 {title}
                             </a>
                             <button
                                 onClick={() => {
-                                    setRecent((r) =>
-                                        r.filter((r) => r.title !== title),
-                                    );
+                                    setRecent((r) => r.filter((r) => r.title !== title));
                                     // location.hash = '';
                                 }}
                                 style={{
@@ -119,11 +107,7 @@ export const Outside = ({ override }: { override?: string[] }) => {
                         Close
                     </a>
                 </div>
-                <Loader
-                    id={hash.slice(1)}
-                    key={hash.slice(1)}
-                    listing={listing}
-                />
+                <Loader id={hash.slice(1)} key={hash.slice(1)} listing={listing} />
             </div>
         );
     }
@@ -152,11 +136,7 @@ export const Outside = ({ override }: { override?: string[] }) => {
                         padding: '8px 16px',
                     }}
                 >
-                    <input
-                        value={name}
-                        onChange={(evt) => setName(evt.target.value)}
-                        placeholder="New file name"
-                    />
+                    <input value={name} onChange={(evt) => setName(evt.target.value)} placeholder="New file name" />
 
                     <a
                         href={name ? `#${name}` : ''}
@@ -174,11 +154,7 @@ export const Outside = ({ override }: { override?: string[] }) => {
     );
 };
 
-export const onlyLast = <T,>(
-    fn: (arg: T) => void,
-    time: number,
-    longTime: number,
-) => {
+export const onlyLast = <T,>(fn: (arg: T) => void, time: number, longTime: number) => {
     let last = Date.now();
     let tid: Timer | null = null;
     return (arg: T) => {
@@ -197,13 +173,7 @@ export const onlyLast = <T,>(
 };
 
 let lastSaveTime = Date.now();
-export const Loader = ({
-    id,
-    listing,
-}: {
-    id: string;
-    listing: null | string[];
-}) => {
+export const Loader = ({ id, listing }: { id: string; listing: null | string[] }) => {
     const latest = useRef<NUIState | null>(null);
     const [saving, setSaving] = useState(false);
     useEffect(() => {
@@ -250,12 +220,8 @@ export const Loader = ({
                     return setInitial({ state: loadState() });
                 }
                 const state = await res.json();
-                const cache = await fetch(urlForId(id) + '.cache').then((res) =>
-                    res.status === 200 ? res.json() : null,
-                );
-                const evaluator = await new Promise<AnyEnv | null>((res) =>
-                    loadEvaluator(state.evaluator, (ev) => res(ev)),
-                );
+                const cache = await fetch(urlForId(id) + '.cache').then((res) => (res.status === 200 ? res.json() : null));
+                const evaluator = await new Promise<AnyEnv | null>((res) => loadEvaluator(state.evaluator, (ev) => res(ev)));
                 setInitial({ state: loadState(state), cache, evaluator });
             })
             .catch((err) => {
@@ -271,20 +237,13 @@ export const Loader = ({
                 onClick={() => {
                     const id = prompt('Clone name');
                     if (id && id.endsWith('.json')) {
-                        saveState(id, latest.current!).then(
-                            () => (location.hash = '#' + id),
-                        );
+                        saveState(id, latest.current!).then(() => (location.hash = '#' + id));
                     }
                 }}
             >
                 Clone
             </button>
-            <GroundUp
-                id={id}
-                listing={listing}
-                save={(state) => save({ state })}
-                initial={initial}
-            />
+            <GroundUp id={id} listing={listing} save={(state) => save({ state })} initial={initial} />
             {saving ? <Saving /> : null}
         </div>
     );
