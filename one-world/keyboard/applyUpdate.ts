@@ -4,6 +4,10 @@ import { TestState } from './test-utils';
 import { lastChild, Update } from './utils';
 import { validate } from './validate';
 import { root } from './root';
+import { SelStart } from './handleShiftNav';
+import { selUpdate } from './handleNav';
+
+export const applySel = (state: TestState, sel: SelStart | void) => applyUpdate(state, selUpdate(sel));
 
 export function applyUpdate(state: TestState, update: Update | null | void) {
     if (!update) return state;

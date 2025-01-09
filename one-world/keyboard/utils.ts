@@ -155,9 +155,18 @@ Action...
 
 ok, so an update should ... also have like a 'selectionDiff'
 
+hrmmmm whattttt about start/enddddd.
+so, for the most part, updates... hm.
+OK So SelectionUpdate is updating a Cursor.
+but a cursor might jump to a different path.
+OK So more concretely, it's updating a SelStart.
+
+? is it possible for an Update action to need multiple SelectionUpdates? might be.
+ooh ok so the /multicursor/ case would be like /dup + update/
+
 */
 
-export type SelectionUpdate =
+export type SelStartUpdate =
     | {
           type: 'id';
           fromPath: Path;
@@ -179,13 +188,17 @@ export type SelectionUpdate =
           fromOffset: number;
           toIndex: number;
           toOffset: number;
-      };
+      }
+    // this goes multicursor on you.
+    // if it's already multi, then we .. don't bother? yeah that sounds right.
+    | { type: 'dup'; inner: SelStartUpdate };
 
 export type Update = {
     nodes: Record<string, Node | null>;
     root?: number;
     nextLoc?: number;
     selection?: NodeSelection;
+    selUpdates?: SelStartUpdate[];
 };
 
 export const withPartial = (path: Path, sel?: PartialSel) =>

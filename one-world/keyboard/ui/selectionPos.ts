@@ -4,6 +4,7 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { lastChild, NodeSelection, Path, pathWithChildren, selStart, Top } from '../utils';
 import { getCurrent } from '../selections';
 import { goLeft, goRight, handleNav, isTag, selectEnd, selectStart } from '../handleNav';
+import { SelStart } from '../handleShiftNav';
 
 const CLOSE = 10;
 
@@ -22,7 +23,7 @@ const deb = (at: { left: number; top: number; height: number }, color: string) =
 };
 
 export const posUp = (sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>) => {
-    const current = selectionPos(sel, refs, top);
+    const current = selectionPos(sel.start, refs, top);
     if (!current) return;
     if (sel.start.returnToHoriz != null) {
         current.left = sel.start.returnToHoriz;
@@ -37,7 +38,7 @@ export const posUp = (sel: NodeSelection, top: Top, refs: Record<number, HTMLEle
 };
 
 export const posDown = (sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>) => {
-    const current = selectionPos(sel, refs, top);
+    const current = selectionPos(sel.start, refs, top);
     if (!current) return;
     if (sel.start.returnToHoriz != null) {
         current.left = sel.start.returnToHoriz;
@@ -55,11 +56,11 @@ const boxAt = (box: DOMRect): CPos => ({ left: box.left, top: box.top, height: b
 
 // OK I broke down and did. I think its the right call.
 export const selectionPos = (
-    sel: TestState['sel'],
+    sel: SelStart,
     refs: Record<number, HTMLSpanElement>,
     top: Top,
 ): { left: number; top: number; height: number } | null => {
-    const cur = getCurrent(sel, top);
+    const cur = getCurrent({ start: sel }, top);
     const span = refs[cur.node.loc];
     if (!span) {
         console.log('no span for', cur.node.loc);
@@ -197,9 +198,9 @@ export const posInList = (path: Path, pos: { x: number; y: number }, refs: Recor
 
     const sides = (path: Path) => {
         const bsel = selectStart(path, top);
-        const before = bsel ? selectionPos({ start: bsel }, refs, top) : null;
+        const before = bsel ? selectionPos(bsel, refs, top) : null;
         const asel = selectEnd(path, top);
-        const after = asel ? selectionPos({ start: asel }, refs, top) : null;
+        const after = asel ? selectionPos(asel, refs, top) : null;
         add(before, bsel);
         add(after, asel);
     };
@@ -228,13 +229,14 @@ export const posInList = (path: Path, pos: { x: number; y: number }, refs: Recor
 
 function above(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, current: CPos) {
     const options = [];
+    let start = sel.start;
     while (true) {
         // const next = goLeft(sel.start.path, top);
-        const next = handleNav('ArrowLeft', { top, sel });
-        if (!next || !next.selection) break;
-        sel = next.selection;
+        const next = handleNav('ArrowLeft', { top, sel: { start } });
+        if (!next) break;
+        start = next;
 
-        const at = selectionPos(sel, refs, top);
+        const at = selectionPos(start, refs, top);
         if (!at) continue; // or break??
 
         if (!options.length) {
@@ -244,7 +246,7 @@ function above(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, 
         }
         options.push({
             at,
-            next: next.selection.start,
+            next: start,
             dx: Math.abs(at.left - current.left),
         });
     }
@@ -253,14 +255,15 @@ function above(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, 
 
 function below(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, current: CPos) {
     const options = [];
+    let start = sel.start;
     while (true) {
         const next = handleNav('ArrowRight', { top, sel });
-        if (!next || !next.selection) {
+        if (!next) {
             break;
         }
-        sel = next.selection;
+        start = next;
 
-        const at = selectionPos(sel, refs, top);
+        const at = selectionPos(start, refs, top);
         if (!at) continue; // or break??
 
         if (!options.length) {
@@ -271,7 +274,7 @@ function below(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, 
         }
         options.push({
             at,
-            next: next.selection.start,
+            next: start,
             dx: Math.abs(at.left - current.left),
         });
     }

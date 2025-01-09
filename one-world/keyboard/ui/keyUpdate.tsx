@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { handleDelete } from '../handleDelete';
 import { handleKey } from '../handleKey';
-import { handleNav } from '../handleNav';
+import { handleNav, selUpdate } from '../handleNav';
 import { Mods, Src, handleShiftNav, handleSpecial, handleTab, shiftExpand, wordNav } from '../handleShiftNav';
 import { wrapKind, handleWrap, closerKind, handleClose } from '../handleWrap';
 import { Config, TestState, js } from '../test-utils';
@@ -24,7 +24,7 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
         if (mods.shift) {
             return handleShiftNav(state, key);
         }
-        return handleNav(key, state);
+        return selUpdate(handleNav(key, state));
     } else if (key === 'ArrowUp' || key === 'ArrowDown') {
         if (visual) {
             const next = (key === 'ArrowDown' ? visual.down : visual.up)(state.sel);

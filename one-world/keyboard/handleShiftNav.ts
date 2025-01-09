@@ -95,8 +95,8 @@ export const shiftExpand = (state: TestState, spans?: Src[]): Update | void => {
 export const handleShiftNav = (state: TestState, key: 'ArrowLeft' | 'ArrowRight'): Update | void => {
     const at = state.sel.end ?? state.sel.start;
     const next = handleNav(key, { ...state, sel: { start: at } });
-    if (next && next.selection) {
-        return { nodes: {}, selection: { start: state.sel.start, end: next.selection.start } };
+    if (next) {
+        return { nodes: {}, selection: { start: state.sel.start, end: next } };
     }
     // if (state.sel.multi) {
     //     const next = nextLateral(state.sel.multi?.end, state.top, key === 'ArrowLeft');

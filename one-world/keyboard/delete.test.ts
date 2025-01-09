@@ -1,6 +1,6 @@
 import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
-import { applyUpdate } from './applyUpdate';
+import { applySel, applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleDelete, normalizeTextCursorSide } from './handleDelete';
 import { handleKey } from './handleKey';
@@ -151,7 +151,7 @@ test('join why broked', () => {
     let state = asTop(smoosh([id('a'), id('+', true)]), idc(1));
     state = applyUpdate(state, handleKey(state, 'b', lisp));
     state = applyUpdate(state, handleKey(state, 'c', lisp));
-    state = applyUpdate(state, handleNav('ArrowLeft', state));
+    state = applySel(state, handleNav('ArrowLeft', state));
     state = applyUpdate(state, handleDelete(state));
     check(state, smoosh([id('a'), id('+'), id('c', true)]), idc(0));
     state = applyUpdate(state, handleDelete(state));

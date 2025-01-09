@@ -4,7 +4,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { fromMap, RecNodeT } from '../shared/cnodes';
 import { cread } from '../shared/creader';
 import { shape } from '../shared/shape';
-import { applyUpdate } from './applyUpdate';
+import { applySel, applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
@@ -101,7 +101,7 @@ test('smoosh to left', () => {
 test('commit text change', () => {
     let state = asTop(round([id('hi', true)]), idc(2));
     state = applyUpdate(state, handleKey(state, 'A', js));
-    state = applyUpdate(state, handleNav('ArrowRight', state));
+    state = applySel(state, handleNav('ArrowRight', state));
     check(state, round([id('hiA')], true), listc('after'));
 });
 

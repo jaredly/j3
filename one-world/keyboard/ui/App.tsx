@@ -157,7 +157,7 @@ export const App = ({ id }: { id: string }) => {
 
     useEffect(() => {
         if (state.sel.multi) return setMenu(null);
-        const pos = selectionPos(state.sel, refs, state.top);
+        const pos = selectionPos(state.sel.start, refs, state.top);
         if (!pos) return;
         const current = getCurrent(state.sel, state.top);
         if (current.type === 'text' && current.cursor.type === 'text') {
