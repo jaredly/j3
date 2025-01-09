@@ -460,7 +460,7 @@ test('alt-left in text', () => {
     check(state, text([tspan('one two three')], true), textc(0, 4));
 });
 
-test.only('shift-alt-left in text', () => {
+test('shift-alt-left in text', () => {
     let state = asTop(text([tspan('one two three')], true), textc(0, 8));
     state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { alt: true, shift: true }));
     check(state, text([tspan('one two three')], true), textc(0, 8), textc(0, 4));

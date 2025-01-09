@@ -117,8 +117,7 @@ export type Current =
 
 ok so actually what I want is:
 - cursors[] Cursor
-- highlight ; SelectionHighlight
-
+- highlight : SelectionHighlight
 
 */
 
@@ -137,19 +136,57 @@ export type Highlight =
     // TODO table??
     | { type: 'text'; spans: (boolean | { start?: number; end?: number })[]; opener: boolean; closer: boolean };
 
+/*
+
+TopAction = {
+    type: 'update',
+    nodes: Record<string, Node | null>;
+    root?: number;
+    nextLoc?: number;
+    // the selectionChange would update the Selection to the new dealio, right?
+    selectionChange?: SelectionChange;
+}
+
+{
+    type: 'selection',
+}
+
+Action...
+
+ok, so an update should ... also have like a 'selectionDiff'
+
+*/
+
+export type SelectionUpdate =
+    | {
+          type: 'id';
+          fromPath: Path;
+          toPath: Path;
+          fromOffset: number;
+          toOffset: number;
+      }
+    | {
+          // jumping, annnd. it should only apply to the single one.
+          type: 'jump';
+          // from: NodeSelection,
+          to: NodeSelection;
+      }
+    | {
+          type: 'text';
+          fromPath: Path;
+          toPath: Path;
+          fromIndex: number;
+          fromOffset: number;
+          toIndex: number;
+          toOffset: number;
+      };
+
 export type Update = {
     nodes: Record<string, Node | null>;
     root?: number;
     nextLoc?: number;
     selection?: NodeSelection;
 };
-
-// export const splitOnCursor = (id: Id<number>, cursor: IdCursor): [string[], string[], string[]] => {
-//     const text = cursor.text ?? splitGraphemes(id.text);
-//     const left = cursor.start ? Math.min(cursor.start, cursor.end) : cursor.end;
-//     const right = cursor.start ? Math.max(cursor.start, cursor.end) : cursor.end;
-//     return [text.slice(0, left), text.slice(left, right), text.slice(right)];
-// };
 
 export const withPartial = (path: Path, sel?: PartialSel) =>
     sel

@@ -4,6 +4,7 @@ Major next things
 
 
 - [x] no STATE in RenderNode pls
+- [x] now for dispatchhh
 - [ ] can I hollow out /top/ as well? it looks like `nodes` is the only thing being used...
   - yeah I can
 

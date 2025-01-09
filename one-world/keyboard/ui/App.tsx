@@ -66,13 +66,15 @@ const useAppState = (id: string) => {
     return [state, dispatch] as const;
 };
 
+const putOnWindow = (obj: any) => {
+    Object.assign(window, obj);
+};
+
 // 'nuniiverse'
 export const App = ({ id }: { id: string }) => {
     const [state, dispatch] = useAppState(id);
-    // const [state, setState] = useLocalStorage(id, () => init);
 
-    // @ts-ignore
-    window.state = state;
+    putOnWindow({ state });
 
     const [hover, setHover] = useState(null as null | NodeSelection);
 
@@ -311,25 +313,6 @@ export const App = ({ id }: { id: string }) => {
         return drag;
     }, []);
 
-    // const startDrag = useCallback((sel: SelStart) => {
-    //     const move = (evt: MouseEvent) => {
-    //         selectionPos
-    //     }
-    //     const up = (evt: MouseEvent) => {
-    //         document.removeEventListener('mousemove', move)
-    //         document.removeEventListener('mouseup', up)
-    //     }
-    //     document.addEventListener('mousemove', move)
-    //     document.addEventListener('mouseup', up)
-    // }, [])
-
-    // sooo
-    // do I just have, like, some state here? Yeah, right?
-    // autocomplete menu, would live here.
-    // Anddd if
-    // oh wait, what if I just do \"" produces a rich?
-    // but yeah I want to allow ... different options n stuff.
-
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, paddingBottom: 0, minHeight: 0 }}>
@@ -359,8 +342,6 @@ export const App = ({ id }: { id: string }) => {
                     style={{
                         position: 'absolute',
                         zIndex: 10,
-                        // height: 5,
-                        // width: 5,
                         borderRadius: 5,
                         top: menu.top,
                         left: menu.left,
@@ -384,7 +365,6 @@ export const App = ({ id }: { id: string }) => {
                     ))}
                 </div>
             ) : null}
-            {/* <div style={{ paddingLeft: 50, paddingTop: 20 }}>Auto complete {JSON.stringify(parsed.ctx.autocomplete)}</div> */}
             <div style={{ paddingLeft: 50, paddingTop: 20 }}>SEL {JSON.stringify(state.sel)}</div>
             <div style={{ paddingLeft: 50, paddingTop: 14 }}>
                 {Object.entries(selectionStatuses).map(([k, v]) => (
