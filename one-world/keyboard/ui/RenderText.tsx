@@ -2,9 +2,8 @@ import React from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Text } from '../../shared/cnodes';
 import { asStyle } from '../../shared/shape';
-import { justSel, spanEnd, spanStart } from '../handleNav';
-import { TestState } from '../test-utils';
-import { SelectionStatuses, Path, ListWhere, TextCursor, selStart } from '../utils';
+import { spanEnd, spanStart } from '../handleNav';
+import { SelectionStatuses, Path, ListWhere, TextCursor, selStart, Top } from '../utils';
 import { lightColor } from './colors';
 import { TextWithCursor, Cursor, Zwd } from './cursor';
 import { RCtx, textColor, cursorPositionInSpanForEvt, RenderNode } from './RenderNode';
@@ -17,7 +16,7 @@ export const RenderText = (
     ref: (el: HTMLElement) => void,
     ctx: RCtx,
     nextParent: Path,
-    state: TestState,
+    top: Top,
     inRich: boolean,
 ) => {
     const has = (where: ListWhere) => status?.cursors.some((c) => c.type === 'list' && c.where === where);
@@ -110,7 +109,7 @@ export const RenderText = (
                 >
                     {status?.cursors.some((c) => c.type === 'text' && c.end.index === i && c.end.cursor === 0) ? <Cursor /> : null}
                     <span style={{ color: 'rgb(248 136 0)' }}>{'${'}</span>
-                    <RenderNode ctx={ctx} parent={nextParent} inRich={false} loc={span.item} state={state} readOnly={readOnly} />
+                    <RenderNode ctx={ctx} parent={nextParent} inRich={false} loc={span.item} top={top} readOnly={readOnly} />
                     <span style={{ color: 'rgb(248 136 0)' }}>{'}'}</span>
                     {status?.cursors.some((c) => c.type === 'text' && c.end.index === i && c.end.cursor === 1) ? <Cursor /> : null}
                 </span>
@@ -156,7 +155,7 @@ export const RenderText = (
                             ctx.drag.move(selStart(nextParent, { type: 'list', where: 'before' }));
                         } else {
                             if (node.spans.length) {
-                                const sel = spanStart(node.spans[0], 0, nextParent, state.top, false);
+                                const sel = spanStart(node.spans[0], 0, nextParent, top, false);
                                 if (sel) {
                                     ctx.drag.move(sel);
                                 }
@@ -171,7 +170,7 @@ export const RenderText = (
                         ctx.drag.start(selStart(nextParent, { type: 'list', where: 'before' }));
                     } else {
                         if (node.spans.length) {
-                            const sel = spanStart(node.spans[0], 0, nextParent, state.top, false);
+                            const sel = spanStart(node.spans[0], 0, nextParent, top, false);
                             if (sel) {
                                 ctx.drag.start(sel);
                             }
@@ -197,7 +196,7 @@ export const RenderText = (
                             ctx.drag.move(selStart(nextParent, { type: 'list', where: 'after' }));
                         } else {
                             if (node.spans.length) {
-                                const sel = spanEnd(node.spans[node.spans.length - 1], nextParent, node.spans.length - 1, state.top, false);
+                                const sel = spanEnd(node.spans[node.spans.length - 1], nextParent, node.spans.length - 1, top, false);
                                 if (sel) {
                                     ctx.drag.move(sel);
                                 }
@@ -212,7 +211,7 @@ export const RenderText = (
                         ctx.drag.start(selStart(nextParent, { type: 'list', where: 'after' }));
                     } else {
                         if (node.spans.length) {
-                            const sel = spanEnd(node.spans[node.spans.length - 1], nextParent, node.spans.length - 1, state.top, false);
+                            const sel = spanEnd(node.spans[node.spans.length - 1], nextParent, node.spans.length - 1, top, false);
                             if (sel) {
                                 ctx.drag.start(sel);
                             }

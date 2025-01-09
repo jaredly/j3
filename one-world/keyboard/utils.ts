@@ -133,7 +133,7 @@ export type SelectionStatuses = Record<
 export type Highlight =
     | { type: 'full' }
     | { type: 'id'; start?: number; end?: number }
-    | { type: 'list'; opener: boolean; closer: boolean }
+    | { type: 'list'; opener: boolean; closer: boolean; paired?: number }
     // TODO table??
     | { type: 'text'; spans: (boolean | { start?: number; end?: number })[]; opener: boolean; closer: boolean };
 

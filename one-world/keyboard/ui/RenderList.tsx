@@ -3,7 +3,7 @@ import { List, isRich } from '../../shared/cnodes';
 import { selUpdate } from '../handleNav';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
-import { SelectionStatuses, Path, ListWhere, parentPath } from '../utils';
+import { SelectionStatuses, Path, ListWhere, parentPath, Top } from '../utils';
 import { lightColor } from './colors';
 import { Cursor } from './cursor';
 import { RCtx, closestVisibleList, RenderNode, hlColor, Section, braceColorHl, braceColor, opener, closer } from './RenderNode';
@@ -17,30 +17,19 @@ export const RenderList = (
     ref: (el: HTMLElement) => void,
     ctx: RCtx,
     nextParent: Path,
-    state: TestState,
+    top: Top,
     inRich: boolean,
 ) => {
     const has = (where: ListWhere) => status?.cursors.some((c) => c.type === 'list' && c.where === where);
 
-    const closest =
-        !readOnly &&
-        closestVisibleList(
-            state.sel.start.cursor.type === 'list' && state.sel.start.cursor.where !== 'inside'
-                ? parentPath(state.sel.start.path)
-                : state.sel.start.path,
-            state.top,
-        );
-
-    const hlBraces = closest === node.loc;
+    const hlBraceLevel = status?.highlight?.type === 'list' && status.highlight.paired;
+    // TODO make an hlBraceColor
+    const hlBraces = hlBraceLevel != null;
 
     const children = node.children.map((loc) => (
-        <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={isRich(node.kind)} readOnly={readOnly} />
+        <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} top={top} inRich={isRich(node.kind)} readOnly={readOnly} />
     ));
-    // if (style) {
-    //     style.display = 'inline-block';
-    // }
-    // const cursor = undefined as undefined | CollectionCursor; // current?.cursor;
-    // const start = status?.cursors.find(c => c.type === 'list' && c.where === 'before')
+
     if (typeof node.kind !== 'string') {
         if (node.kind.type === 'tag') {
             return (
@@ -67,7 +56,7 @@ export const RenderList = (
                                 readOnly={readOnly}
                                 parent={nextParent}
                                 key={node.kind.node}
-                                state={state}
+                                top={top}
                                 inRich={false}
                             />
                             {node.kind.attributes != null ? (
@@ -79,7 +68,7 @@ export const RenderList = (
                                         readOnly={readOnly}
                                         parent={nextParent}
                                         key={node.kind.attributes}
-                                        state={state}
+                                        top={top}
                                         inRich={false}
                                     />
                                 </>
@@ -116,7 +105,7 @@ export const RenderList = (
                                         ctx={{ ...ctx, refs: {} }}
                                         parent={nextParent}
                                         key={node.kind.node + 'close'}
-                                        state={state}
+                                        top={top}
                                         inRich={false}
                                         readOnly
                                     />
@@ -300,7 +289,7 @@ export const RenderList = (
                     onMouseDown={(evt) => {
                         evt.preventDefault();
                         evt.stopPropagation();
-                        const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                        const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                         if (sel) {
                             ctx.drag.start(sel);
                             // ctx.dispatch(selUpdate(sel)!);
@@ -310,7 +299,7 @@ export const RenderList = (
                         if (ctx.drag.dragging) {
                             evt.preventDefault();
                             evt.stopPropagation();
-                            const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                            const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                             if (sel) {
                                 ctx.drag.move(sel);
                             }
@@ -330,7 +319,7 @@ export const RenderList = (
                     onMouseDown={(evt) => {
                         evt.preventDefault();
                         evt.stopPropagation();
-                        const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                        const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                         if (sel) {
                             ctx.drag.start(sel);
                             // ctx.dispatch(selUpdate(sel)!);
@@ -340,7 +329,7 @@ export const RenderList = (
                         if (ctx.drag.dragging) {
                             evt.preventDefault();
                             evt.stopPropagation();
-                            const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                            const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                             if (sel) {
                                 ctx.drag.move(sel);
                             }

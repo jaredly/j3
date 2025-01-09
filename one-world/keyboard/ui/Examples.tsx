@@ -52,7 +52,7 @@ const Example = ({ text }: { text: string[] }) => {
                 <RenderNode
                     loc={state.state.top.root}
                     parent={{ root: { ids: [], top: '' }, children: [] }}
-                    state={state.state}
+                    top={state.state.top}
                     inRich={false}
                     ctx={{
                         drag: { dragging: false, start() {}, move() {} },

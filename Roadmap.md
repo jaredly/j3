@@ -1,5 +1,26 @@
 
 
+Major next things
+
+
+- [x] no STATE in RenderNode pls
+- [ ] can I hollow out /top/ as well? it looks like `nodes` is the only thing being used...
+  - yeah I can
+
+
+
+- undo/redo
+- multicursorrrrrrrrr
+  - so what we do here, is TestState still has a single `sel`
+    (and a single top). `Update` ought to ... hmmm "have a way to transform selections
+    that would be impacted by the change". So like "cursors in this ID are now in this other ID with this offset."
+    hhnmmmmmmmmmm ok so with multicursor, having `edittext` live on the cursor feels off.
+    maybe it should just live on the TestState? yeah honestly I think I like that better.
+    ->>>>>
+
+
+
+
 - [ ] allllrightlyho, it's def time to be writin tests for these multiselection dealios
   - [x] get the multiselect running in my example for
     - [x] ids
@@ -21,8 +42,22 @@
 - [ ] alt- while select/dragging, should select full atoms pls
 - [ ] ctrl- while select/dragging ...
 
-
 LAYout... do I need to make it happen?
+
+and like,
+what is next?
+
+- backspace in the only item of a table, it should ... delete the table?
+  - ah yes, please unwrap the table
+- [ ] UNDO/REDO PLES
+- [ ] multiple tops, gotta have it
+
+BUG
+- [ ] rich, bullet, enter at the end, somehow moves it outside, as though I
+  AHHH we're not taking the {edited} text into account. gotta fix that.
+  onceee again I wonder if the {edited} thing was the right call,... and I think so?
+
+
 
 
 # How to make multiselect more of a thing

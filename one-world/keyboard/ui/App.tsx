@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from 'react';
 import { useLatest } from '../../../web/custom/useLatest';
 import { applyUpdate } from '../applyUpdate';
 import { init, TestState } from '../test-utils';
@@ -48,9 +48,28 @@ export type Menu = {
     }[];
 };
 
+const reducer = (state: TestState, action: Update) => {
+    return applyUpdate(state, action);
+};
+
+const getInitialState = (id: string): TestState => {
+    return localStorage[id] ? JSON.parse(localStorage[id]) : init;
+};
+
+const useAppState = (id: string) => {
+    const [state, dispatch] = useReducer(reducer, id, getInitialState);
+    useEffect(() => {
+        if (state != null && state !== init) {
+            localStorage[id] = JSON.stringify(state);
+        }
+    }, [state, id]);
+    return [state, dispatch] as const;
+};
+
 // 'nuniiverse'
 export const App = ({ id }: { id: string }) => {
-    const [state, setState] = useLocalStorage(id, () => init);
+    const [state, dispatch] = useAppState(id);
+    // const [state, setState] = useLocalStorage(id, () => init);
 
     // @ts-ignore
     window.state = state;
@@ -122,15 +141,17 @@ export const App = ({ id }: { id: string }) => {
         const start = selectStart(l, state.top);
         if (!start) return;
         if (!src.right) {
-            return setState((s) => applyUpdate(s, { nodes: {}, selection: { start, multi: { end: selEnd(l) } } }));
+            return dispatch({ nodes: {}, selection: { start, multi: { end: selEnd(l) } } });
         }
         const r = paths[src.right[0].idx];
-        return setState((s) => applyUpdate(s, { nodes: {}, selection: { start, multi: { end: selEnd(r) } } }));
+        return dispatch({ nodes: {}, selection: { start, multi: { end: selEnd(r) } } });
     };
 
     const [menu, setMenu] = useState(null as null | Menu);
 
-    const { lastKey, refs } = useKeyHandler(state, parsed, setState, parser, menu, setMenu);
+    const { lastKey, refs } = useKeyHandler(state, parsed, dispatch, parser, menu, setMenu);
+
+    const cstate = useLatest(state);
 
     useEffect(() => {
         if (state.sel.multi) return setMenu(null);
@@ -202,27 +223,28 @@ export const App = ({ id }: { id: string }) => {
                 .map(({ title, kind }) => ({
                     title,
                     action() {
-                        setState((s) =>
-                            applyUpdate(s, {
-                                nodes: {
-                                    [current.node.loc]: {
-                                        type: 'list',
-                                        kind,
-                                        loc: current.node.loc,
-                                        children: [s.top.nextLoc],
-                                    },
-                                    [s.top.nextLoc]: {
-                                        type: 'text',
-                                        loc: s.top.nextLoc,
-                                        spans: [{ type: 'text', text: '' }],
-                                    },
+                        dispatch({
+                            nodes: {
+                                [current.node.loc]: {
+                                    type: 'list',
+                                    kind,
+                                    loc: current.node.loc,
+                                    children: [cstate.current.top.nextLoc],
                                 },
-                                selection: {
-                                    start: selStart(pathWithChildren(current.path, s.top.nextLoc), { type: 'text', end: { index: 0, cursor: 0 } }),
+                                [cstate.current.top.nextLoc]: {
+                                    type: 'text',
+                                    loc: cstate.current.top.nextLoc,
+                                    spans: [{ type: 'text', text: '' }],
                                 },
-                                nextLoc: s.top.nextLoc + 1,
-                            }),
-                        );
+                            },
+                            selection: {
+                                start: selStart(pathWithChildren(current.path, cstate.current.top.nextLoc), {
+                                    type: 'text',
+                                    end: { index: 0, cursor: 0 },
+                                }),
+                            },
+                            nextLoc: cstate.current.top.nextLoc + 1,
+                        });
                     },
                 }))
                 .concat([
@@ -235,34 +257,32 @@ export const App = ({ id }: { id: string }) => {
                     {
                         title: 'Rich Table',
                         action() {
-                            setState((s) => {
-                                return applyUpdate(s, {
-                                    nodes: {
-                                        [current.node.loc]: {
-                                            type: 'table',
-                                            kind: { type: 'rich' },
-                                            loc: current.node.loc,
-                                            rows: [[state.top.nextLoc, state.top.nextLoc + 1]],
-                                        },
-                                        [state.top.nextLoc]: {
-                                            type: 'text',
-                                            loc: state.top.nextLoc,
-                                            spans: [{ type: 'text', text: '' }],
-                                        },
-                                        [state.top.nextLoc + 1]: {
-                                            type: 'text',
-                                            loc: state.top.nextLoc + 1,
-                                            spans: [{ type: 'text', text: '' }],
-                                        },
+                            dispatch({
+                                nodes: {
+                                    [current.node.loc]: {
+                                        type: 'table',
+                                        kind: { type: 'rich' },
+                                        loc: current.node.loc,
+                                        rows: [[cstate.current.top.nextLoc, cstate.current.top.nextLoc + 1]],
                                     },
-                                    selection: {
-                                        start: selStart(pathWithChildren(current.path, state.top.nextLoc + 1), {
-                                            type: 'text',
-                                            end: { index: 0, cursor: 0 },
-                                        }),
+                                    [cstate.current.top.nextLoc]: {
+                                        type: 'text',
+                                        loc: cstate.current.top.nextLoc,
+                                        spans: [{ type: 'text', text: '' }],
                                     },
-                                    nextLoc: state.top.nextLoc + 2,
-                                });
+                                    [cstate.current.top.nextLoc + 1]: {
+                                        type: 'text',
+                                        loc: cstate.current.top.nextLoc + 1,
+                                        spans: [{ type: 'text', text: '' }],
+                                    },
+                                },
+                                selection: {
+                                    start: selStart(pathWithChildren(current.path, cstate.current.top.nextLoc + 1), {
+                                        type: 'text',
+                                        end: { index: 0, cursor: 0 },
+                                    }),
+                                },
+                                nextLoc: cstate.current.top.nextLoc + 2,
                             });
                         },
                     },
@@ -281,11 +301,11 @@ export const App = ({ id }: { id: string }) => {
             dragging: false,
             start(sel: SelStart) {
                 drag.dragging = true;
-                setState((s) => applyUpdate(s, { nodes: {}, selection: { start: sel } }));
+                dispatch({ nodes: {}, selection: { start: sel } });
                 document.addEventListener('mouseup', up);
             },
             move(sel: SelStart) {
-                setState((s) => applyUpdate(s, { nodes: {}, selection: { start: s.sel.start, end: sel } }));
+                dispatch({ nodes: {}, selection: { start: cstate.current.sel.start, end: sel } });
             },
         };
         return drag;
@@ -317,7 +337,7 @@ export const App = ({ id }: { id: string }) => {
                 <RenderNode
                     loc={state.top.root}
                     parent={{ root: { ids: [], top: '' }, children: [] }}
-                    state={state}
+                    top={state.top}
                     inRich={false}
                     ctx={{
                         drag,
@@ -329,7 +349,7 @@ export const App = ({ id }: { id: string }) => {
                         msel: mkeys,
                         mhover: hoverkeys,
                         dispatch(up) {
-                            setState((s) => applyUpdate(s, up));
+                            dispatch(up);
                         },
                     }}
                 />
@@ -545,7 +565,7 @@ const collides = (one: [number, number], two: [number, number]) => {
 const useKeyHandler = (
     state: TestState,
     parsed: ParseResult<any>,
-    setState: (s: TestState) => void,
+    dispatch: (s: Update) => void,
     parser: NonNullable<TestState['parser']>,
     menu: Menu | null,
     setMenu: (m: Menu | null) => void,
@@ -618,7 +638,7 @@ const useKeyHandler = (
             // console.log('up', up);
             evt.preventDefault();
             evt.stopPropagation();
-            setState(applyUpdate(cstate.current, up));
+            dispatch(up);
         };
         document.addEventListener('keydown', f);
         return () => document.removeEventListener('keydown', f);

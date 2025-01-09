@@ -4,7 +4,6 @@ import { TestState } from '../test-utils';
 import { Path, pathKey, pathWithChildren, SelectionStatuses, Top, Update } from '../utils';
 
 import { asStyle } from '../../shared/shape';
-// import { textCursorSides2 } from '../insertId';
 import { lightColor } from './colors';
 import { RenderId } from './RenderId';
 import { RenderList } from './RenderList';
@@ -84,20 +83,20 @@ export const closestVisibleList = (path: Path, top: Top) => {
 
 export const RenderNode = ({
     loc,
-    state,
+    top,
     inRich,
     ctx,
     parent,
     readOnly,
 }: {
     loc: number;
-    state: TestState;
+    top: Top;
     inRich: boolean;
     ctx: RCtx;
     parent: Path;
     readOnly?: boolean;
 }) => {
-    const node = state.top.nodes[loc];
+    const node = top.nodes[loc];
 
     const nextParent = useMemo(() => pathWithChildren(parent, loc), [parent, loc]);
     const key = useMemo(() => pathKey(nextParent), [nextParent]);
@@ -114,11 +113,11 @@ export const RenderNode = ({
         case 'id':
             return RenderId(status, readOnly, node, style, ref, ctx, nextParent);
         case 'list':
-            return RenderList(status, readOnly, node, style, ref, ctx, nextParent, state, inRich);
+            return RenderList(status, readOnly, node, style, ref, ctx, nextParent, top, inRich);
         case 'text':
-            return RenderText(status, readOnly, node, style, ref, ctx, nextParent, state, inRich);
+            return RenderText(status, readOnly, node, style, ref, ctx, nextParent, top, inRich);
         case 'table':
-            return RenderTable(status, readOnly, node, style, ref, ctx, nextParent, state, inRich);
+            return RenderTable(status, readOnly, node, style, ref, ctx, nextParent, top, inRich);
     }
 };
 

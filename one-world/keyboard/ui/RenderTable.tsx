@@ -1,13 +1,11 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Table, isRich } from '../../shared/cnodes';
-import { selUpdate } from '../handleNav';
 import { interleaveF } from '../interleave';
-import { TestState } from '../test-utils';
-import { CollectionCursor, ListWhere, Path, pathKey, SelectionStatuses } from '../utils';
-import { Cursor } from './cursor';
-import { RCtx, RenderNode, braceColor, closer, hlColor, opener } from './RenderNode';
-import { posInList } from './selectionPos';
+import { ListWhere, Path, SelectionStatuses, Top } from '../utils';
 import { lightColor } from './colors';
+import { Cursor } from './cursor';
+import { RCtx, RenderNode, braceColor, closer, opener } from './RenderNode';
+import { posInList } from './selectionPos';
 
 export const RenderTable = (
     status: SelectionStatuses[''],
@@ -17,7 +15,7 @@ export const RenderTable = (
     ref: (el: HTMLElement) => void,
     ctx: RCtx,
     nextParent: Path,
-    state: TestState,
+    top: Top,
     inRich: boolean,
 ) => {
     const has = (where: ListWhere) => status?.cursors.some((c) => c.type === 'list' && c.where === where);
@@ -60,7 +58,7 @@ export const RenderTable = (
                                 </span>
                             ) : null,
                             <span key={cell} style={{ gridColumn: row.length === 1 ? `span ${mx * 2 - 1}` : i * 2 + 1 }}>
-                                <RenderNode parent={nextParent} ctx={ctx} loc={cell} state={state} inRich={true} readOnly={readOnly} />
+                                <RenderNode parent={nextParent} ctx={ctx} loc={cell} top={top} inRich={true} readOnly={readOnly} />
                             </span>,
                         ]),
                     )}
@@ -71,9 +69,7 @@ export const RenderTable = (
     }
 
     const children = node.rows.map((row) => {
-        const nodes = row.map((loc) => (
-            <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} state={state} inRich={false} readOnly={readOnly} />
-        ));
+        const nodes = row.map((loc) => <RenderNode parent={nextParent} ctx={ctx} key={loc} loc={loc} top={top} inRich={false} readOnly={readOnly} />);
         if (!node.forceMultiline) {
             return interleaveF(nodes, (i) => <span key={`sep${i}`}>: </span>);
         }
@@ -114,7 +110,7 @@ export const RenderTable = (
             onMouseDown={(evt) => {
                 evt.stopPropagation();
                 evt.preventDefault();
-                const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                 if (sel) {
                     ctx.drag.start(sel);
                     // ctx.dispatch(selUpdate(sel)!);
@@ -124,7 +120,7 @@ export const RenderTable = (
                 if (ctx.drag.dragging) {
                     evt.stopPropagation();
                     evt.preventDefault();
-                    const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, state.top);
+                    const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                     if (sel) {
                         ctx.drag.move(sel);
                         // ctx.dispatch(selUpdate(sel)!);
