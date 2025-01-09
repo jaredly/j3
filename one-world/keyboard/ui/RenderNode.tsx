@@ -45,7 +45,7 @@ export const textColor = 'rgb(248 136 0)';
 export const cursorPositionInSpanForEvt = (evt: React.MouseEvent, target: HTMLSpanElement, text: string[]) => {
     const range = new Range();
     let best = null as null | [number, number];
-    for (let i = 0; i < text.length; i++) {
+    for (let i = 0; i <= text.length; i++) {
         const at = text.slice(0, i).join('').length;
         range.setStart(target.firstChild!, at);
         range.setEnd(target.firstChild!, at);

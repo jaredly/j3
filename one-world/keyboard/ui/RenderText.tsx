@@ -2,7 +2,7 @@ import React from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Text } from '../../shared/cnodes';
 import { asStyle } from '../../shared/shape';
-import { justSel } from '../handleNav';
+import { justSel, spanEnd, spanStart } from '../handleNav';
 import { TestState } from '../test-utils';
 import { SelectionStatuses, Path, ListWhere, TextCursor, selStart } from '../utils';
 import { lightColor } from './colors';
@@ -40,6 +40,7 @@ export const RenderText = (
                             rich
                             onMouseDown={(evt) => {
                                 evt.stopPropagation();
+                                evt.preventDefault();
                                 const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
                                 ctx.drag.start(
                                     selStart(nextParent, {
@@ -51,6 +52,7 @@ export const RenderText = (
                             onMouseMove={(evt) => {
                                 if (ctx.drag.dragging) {
                                     evt.stopPropagation();
+                                    evt.preventDefault();
                                     const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
                                     ctx.drag.move(
                                         selStart(nextParent, {
@@ -78,12 +80,14 @@ export const RenderText = (
                     // style={{ backgroundColor: 'red' }}
                     onMouseDown={(evt) => {
                         evt.stopPropagation();
+                        evt.preventDefault();
                         const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(span.text));
                         ctx.drag.start(selStart(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
                     }}
                     onMouseMove={(evt) => {
                         if (ctx.drag.dragging) {
                             evt.stopPropagation();
+                            evt.preventDefault();
                             const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(span.text));
                             ctx.drag.move(selStart(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
                         }
@@ -131,12 +135,48 @@ export const RenderText = (
         );
     }
     return (
-        <span style={style} ref={ref}>
+        <span
+            style={style}
+            ref={ref}
+            onMouseMove={(evt) => {
+                evt.stopPropagation();
+            }}
+        >
             {has('before') ? <Cursor /> : null}
             <span
                 style={{
                     backgroundColor: has('start') || (status?.highlight?.type === 'text' && status.highlight.opener) ? lightColor : undefined,
                     color: textColor,
+                }}
+                onMouseMove={(evt) => {
+                    if (ctx.drag.dragging) {
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        if (!evtRight(evt)) {
+                            ctx.drag.move(selStart(nextParent, { type: 'list', where: 'before' }));
+                        } else {
+                            if (node.spans.length) {
+                                const sel = spanStart(node.spans[0], 0, nextParent, state.top, false);
+                                if (sel) {
+                                    ctx.drag.move(sel);
+                                }
+                            }
+                        }
+                    }
+                }}
+                onMouseDown={(evt) => {
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                    if (!evtRight(evt)) {
+                        ctx.drag.start(selStart(nextParent, { type: 'list', where: 'before' }));
+                    } else {
+                        if (node.spans.length) {
+                            const sel = spanStart(node.spans[0], 0, nextParent, state.top, false);
+                            if (sel) {
+                                ctx.drag.start(sel);
+                            }
+                        }
+                    }
                 }}
             >
                 "
@@ -149,10 +189,45 @@ export const RenderText = (
                     backgroundColor: has('end') || (status?.highlight?.type === 'text' && status.highlight.closer) ? lightColor : undefined,
                     color: textColor,
                 }}
+                onMouseMove={(evt) => {
+                    if (ctx.drag.dragging) {
+                        evt.stopPropagation();
+                        evt.preventDefault();
+                        if (evtRight(evt)) {
+                            ctx.drag.move(selStart(nextParent, { type: 'list', where: 'after' }));
+                        } else {
+                            if (node.spans.length) {
+                                const sel = spanEnd(node.spans[node.spans.length - 1], nextParent, node.spans.length - 1, state.top, false);
+                                if (sel) {
+                                    ctx.drag.move(sel);
+                                }
+                            }
+                        }
+                    }
+                }}
+                onMouseDown={(evt) => {
+                    evt.stopPropagation();
+                    evt.preventDefault();
+                    if (evtRight(evt)) {
+                        ctx.drag.start(selStart(nextParent, { type: 'list', where: 'after' }));
+                    } else {
+                        if (node.spans.length) {
+                            const sel = spanEnd(node.spans[node.spans.length - 1], nextParent, node.spans.length - 1, state.top, false);
+                            if (sel) {
+                                ctx.drag.start(sel);
+                            }
+                        }
+                    }
+                }}
             >
                 "
             </span>
             {has('after') ? <Cursor /> : null}
         </span>
     );
+};
+
+const evtRight = (evt: React.MouseEvent) => {
+    const box = evt.currentTarget.getBoundingClientRect();
+    return (box.left + box.right) / 2 < evt.clientX;
 };
