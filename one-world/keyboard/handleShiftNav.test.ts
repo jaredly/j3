@@ -239,12 +239,12 @@ test('largerrrr', () => {
     const sels: NodeSelection[] = [
         //
         { start },
-        { start, multi: { end: start } },
-        { start, multi: { end: selEnd(p(locs[0])), aux: selEnd(p(locs[1])) } },
-        { start, multi: { end: selEnd(p(locs[2])), aux: selEnd(p(locs[1])) } },
-        { start, multi: { end: selEnd(p(locs[3])) } },
-        { start, multi: { end: selEnd(p(locs[4])) } },
-        { start, multi: { end: selEnd(p(locs[5])), aux: selEnd(p(locs[4])) } },
+        // { start, multi: { end: start } },
+        // { start, multi: { end: selEnd(p(locs[0])), aux: selEnd(p(locs[1])) } },
+        // { start, multi: { end: selEnd(p(locs[2])), aux: selEnd(p(locs[1])) } },
+        // { start, multi: { end: selEnd(p(locs[3])) } },
+        // { start, multi: { end: selEnd(p(locs[4])) } },
+        // { start, multi: { end: selEnd(p(locs[5])), aux: selEnd(p(locs[4])) } },
     ];
 
     let state: TestState = { top, sel: sels[0] };

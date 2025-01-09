@@ -9,10 +9,11 @@ import { selUpdate } from './handleNav';
 
 export const applySel = (state: TestState, sel: SelStart | void) => applyUpdate(state, selUpdate(sel));
 
-export function applyUpdate(state: TestState, update: Update | null | void) {
+export function applyUpdate<T extends TestState>(state: T, update: Update | null | void): T {
     if (!update) return state;
     const prev = state.sel;
     state = {
+        ...state,
         sel: update.selection ?? state.sel,
         top: {
             nextLoc: update.nextLoc ?? state.top.nextLoc,

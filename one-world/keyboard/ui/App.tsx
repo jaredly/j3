@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from 'react';
 import { useLatest } from '../../../web/custom/useLatest';
 import { applyUpdate } from '../applyUpdate';
-import { init, TestState } from '../test-utils';
+import { init, TestParser, TestState } from '../test-utils';
 
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { useLocalStorage } from '../../../web/Debug';
@@ -48,11 +48,11 @@ export type Menu = {
     }[];
 };
 
-const reducer = (state: TestState, action: Update) => {
+const reducer = (state: AppState, action: Update) => {
     return applyUpdate(state, action);
 };
 
-const getInitialState = (id: string): TestState => {
+const getInitialState = (id: string): AppState => {
     return localStorage[id] ? JSON.parse(localStorage[id]) : init;
 };
 
@@ -70,6 +70,8 @@ const putOnWindow = (obj: any) => {
     Object.assign(window, obj);
 };
 
+type AppState = TestState & { parser?: TestParser };
+
 // 'nuniiverse'
 export const App = ({ id }: { id: string }) => {
     const [state, dispatch] = useAppState(id);
@@ -79,13 +81,14 @@ export const App = ({ id }: { id: string }) => {
     const [hover, setHover] = useState(null as null | NodeSelection);
 
     const msel = multiSelChildren(state.sel, state.top);
-    const mkeys = msel ? multiSelKeys(msel.parent, msel.children) : null;
+    // const mkeys = msel ? multiSelKeys(msel.parent, msel.children) : null;
 
     const mhover = hover ? multiSelChildren(hover, state.top) : null;
-    const hoverkeys = mhover ? multiSelKeys(mhover.parent, mhover.children) : null;
+    // const hoverkeys = mhover ? multiSelKeys(mhover.parent, mhover.children) : null;
 
     const xmlKeys = useMemo(() => {
-        const keys = msel?.children ?? [lastChild(state.sel.start.path)];
+        // msel?.children ??
+        const keys = [lastChild(state.sel.start.path)];
         const extra: number[] = [];
         keys.forEach((key) => {
             extra.push(...childLocs(state.top.nodes[key]));
@@ -96,7 +99,8 @@ export const App = ({ id }: { id: string }) => {
     const parser = state.parser ?? dsl3.parser;
     // const parser = state.parser ?? ts.tsParser;
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
-    const cursor = state.sel.multi ? undefined : lastChild(state.sel.start.path);
+    // state.sel.multi ? undefined :
+    const cursor = lastChild(state.sel.start.path);
     const parsed = parser.parse(rootNode, cursor);
     const errors = useMemo(() => {
         const errors: Record<number, string> = {};
@@ -128,12 +132,12 @@ export const App = ({ id }: { id: string }) => {
         if (!src.right || !src.right.length)
             return setHover({
                 start: selStart(l, { type: 'list', where: 'before' }),
-                multi: { end: selEnd(l), aux: selEnd(l) },
+                // multi: { end: selEnd(l), aux: selEnd(l) },
             });
         const r = paths[src.right[0].idx];
         return setHover({
             start: selStart(l, { type: 'list', where: 'before' }),
-            multi: { end: selEnd(r) },
+            // multi: { end: selEnd(r) },
         });
     };
 
@@ -143,10 +147,10 @@ export const App = ({ id }: { id: string }) => {
         const start = selectStart(l, state.top);
         if (!start) return;
         if (!src.right) {
-            return dispatch({ nodes: {}, selection: { start, multi: { end: selEnd(l) } } });
+            return dispatch({ nodes: {}, selection: { start } }); // multi: { end: selEnd(l) }
         }
         const r = paths[src.right[0].idx];
-        return dispatch({ nodes: {}, selection: { start, multi: { end: selEnd(r) } } });
+        return dispatch({ nodes: {}, selection: { start } }); // multi: { end: selEnd(r) }
     };
 
     const [menu, setMenu] = useState(null as null | Menu);
@@ -156,7 +160,7 @@ export const App = ({ id }: { id: string }) => {
     const cstate = useLatest(state);
 
     useEffect(() => {
-        if (state.sel.multi) return setMenu(null);
+        // if (state.sel.multi) return setMenu(null);
         const pos = selectionPos(state.sel.start, refs, state.top);
         if (!pos) return;
         const current = getCurrent(state.sel, state.top);
@@ -329,8 +333,8 @@ export const App = ({ id }: { id: string }) => {
                         styles,
                         placeholders,
                         selectionStatuses,
-                        msel: mkeys,
-                        mhover: hoverkeys,
+                        // msel: mkeys,
+                        // mhover: hoverkeys,
                         dispatch(up) {
                             dispatch(up);
                         },
@@ -503,7 +507,7 @@ const XMLShow = ({
                                             nodes: {},
                                             selection: {
                                                 start: ssel,
-                                                multi: { end: selEnd(ed) },
+                                                // multi: { end: selEnd(ed) },
                                             },
                                         });
                                         console.log(span, all[span.left[0].idx]);
@@ -546,7 +550,7 @@ const useKeyHandler = (
     state: TestState,
     parsed: ParseResult<any>,
     dispatch: (s: Update) => void,
-    parser: NonNullable<TestState['parser']>,
+    parser: TestParser,
     menu: Menu | null,
     setMenu: (m: Menu | null) => void,
 ) => {

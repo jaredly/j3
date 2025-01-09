@@ -61,8 +61,8 @@ const Example = ({ text }: { text: string[] }) => {
                         refs: {},
                         styles: {},
                         placeholders: {},
-                        msel: null,
-                        mhover: null,
+                        // msel: null,
+                        // mhover: null,
                         dispatch(up) {
                             // setState((s) => applyUpdate(s, up));
                         },

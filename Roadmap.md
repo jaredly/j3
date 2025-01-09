@@ -9,9 +9,18 @@ Major next things
   - yeah I can
 
 
-- [ ] pull back `Updates` wherever they're used too generally, make them into SelStart or NodeSelection if necessary
+- [x] pull back `Updates` wherever they're used too generally, make them into SelStart or NodeSelection if necessary
   - so that's `justSel` and `selUpdate` all over the place.
   - and `nodes: {},`
+
+ok now folks
+weeeeeee now do some things, right
+Ok, soooo fo things that didn't make any changes, the `selUpdates` of the world, that can just be a `jump` right?
+
+AH BUT BEFORE we embark on those shenanigans, let's take `.text` off of cursor, and put it somewhere more reasonable.
+likkeeeee on TestState? maybe. like. we'll only have .. one .. active .. at a time, right? well I guess one per cursor.
+I mean ... like one per ... NodeSelection.
+but if both are editing the same ,we dont want it duplicated.
 
 
 - undo/redo

@@ -77,22 +77,22 @@ const modSelSideTip = (sel: SelStart, mod: (loc: number, cursor: Cursor) => void
 
 const modSelTip = (sel: NodeSelection, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): NodeSelection => ({
     start: modSelSideTip(sel.start, mod),
-    multi: sel.multi
-        ? {
-              end: sel.multi.end.cursor ? modSelSideTip(sel.multi.end as SelStart, mod) : sel.multi.end,
-              aux: sel.multi.aux?.cursor ? modSelSideTip(sel.multi.aux as SelStart, mod) : sel.multi.aux,
-          }
-        : undefined,
+    // multi: sel.multi
+    //     ? {
+    //           end: sel.multi.end.cursor ? modSelSideTip(sel.multi.end as SelStart, mod) : sel.multi.end,
+    //           aux: sel.multi.aux?.cursor ? modSelSideTip(sel.multi.aux as SelStart, mod) : sel.multi.aux,
+    //       }
+    //     : undefined,
 });
 
 const removeParent = (sel: NodeSelection, loc: number): NodeSelection => ({
     start: { ...sel.start, ...selEnd(removeInPath(sel.start.path, loc)) },
-    multi: sel.multi
-        ? {
-              end: { ...sel.multi.end, ...selEnd(removeInPath(sel.multi.end.path, loc)) },
-              aux: sel.multi.aux ? { ...sel.multi.aux, ...selEnd(removeInPath(sel.multi.aux.path, loc)) } : undefined,
-          }
-        : undefined,
+    // multi: sel.multi
+    //     ? {
+    //           end: { ...sel.multi.end, ...selEnd(removeInPath(sel.multi.end.path, loc)) },
+    //           aux: sel.multi.aux ? { ...sel.multi.aux, ...selEnd(removeInPath(sel.multi.aux.path, loc)) } : undefined,
+    //       }
+    //     : undefined,
 });
 
 export const unwrap = (path: Path, top: Top, sel: NodeSelection) => {

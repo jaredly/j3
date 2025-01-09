@@ -31,8 +31,8 @@ export type RCtx = {
     placeholders: Record<number, string>;
     selectionStatuses: SelectionStatuses;
     dispatch: (up: Update) => void;
-    msel: null | string[];
-    mhover: null | string[];
+    // msel: null | string[];
+    // mhover: null | string[];
     drag: {
         dragging: boolean;
         start: (sel: SelStart) => void;
@@ -213,12 +213,12 @@ function nodeStyle(
         style.outline = `2px solid ${lightColor}`;
     }
 
-    if (!readOnly && ctx.mhover?.includes(key)) {
-        const hoverColor = 'rgb(200,230,255)';
-        if (!style) style = {};
-        style.borderRadius = '2px';
-        style.backgroundColor = hoverColor;
-        style.outline = `2px solid ${hoverColor}`;
-    }
+    // if (!readOnly && ctx.mhover?.includes(key)) {
+    //     const hoverColor = 'rgb(200,230,255)';
+    //     if (!style) style = {};
+    //     style.borderRadius = '2px';
+    //     style.backgroundColor = hoverColor;
+    //     style.outline = `2px solid ${hoverColor}`;
+    // }
     return style;
 }

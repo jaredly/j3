@@ -91,7 +91,7 @@ export const singleSelect = (sel: SelStart): NodeSelection => ({ start: sel });
 export type NodeSelection = {
     start: { path: Path; key: string; cursor: Cursor; returnToHoriz?: number; level?: number };
     end?: { path: Path; key: string; cursor: Cursor; level?: number; excel?: number };
-    multi?: { end: { path: Path; key: string; cursor?: Cursor }; aux?: { path: Path; key: string; cursor?: Cursor } };
+    // multi?: { end: { path: Path; key: string; cursor?: Cursor }; aux?: { path: Path; key: string; cursor?: Cursor } };
 };
 
 export type Top = { nodes: Nodes; root: number; nextLoc: number };

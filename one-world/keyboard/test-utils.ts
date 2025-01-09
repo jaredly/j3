@@ -7,7 +7,6 @@ import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, Path, sel
 export type TestState = {
     top: Top;
     sel: NodeSelection;
-    parser?: TestParser;
 };
 export type TestParser = {
     config: Config;
@@ -105,10 +104,10 @@ export const asMultiTop = (node: RecNodeT<number>, cursor: Cursor): TestState =>
         top,
         sel: {
             start: selStart({ children: locs[0], root: { ids: [], top: '' } }, cursor),
-            multi: {
-                end: selEnd({ children: locs[1], root: { ids: [], top: '' } }),
-                aux: locs[2] ? selEnd({ children: locs[2], root: { ids: [], top: '' } }) : undefined,
-            },
+            // multi: {
+            //     end: selEnd({ children: locs[1], root: { ids: [], top: '' } }),
+            //     aux: locs[2] ? selEnd({ children: locs[2], root: { ids: [], top: '' } }) : undefined,
+            // },
         },
     };
 };

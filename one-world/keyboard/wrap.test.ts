@@ -83,17 +83,17 @@ test('start of smoosh', () => {
     check(state, smoosh([round([], true), id('hello'), id('+')]), listc('inside'));
 });
 
-test('wrap multi', () => {
-    let state = asMultiTop(spaced([id('pre'), id('hello', 0), id('folks', 1)]), idc(0));
-    state = applyUpdate(state, handleWrap(state, '('));
-    check(state, spaced([id('pre'), round([spaced([id('hello', true), id('folks')])])]), idc(0));
-});
+// test('wrap multi', () => {
+//     let state = asMultiTop(spaced([id('pre'), id('hello', 0), id('folks', 1)]), idc(0));
+//     state = applyUpdate(state, handleWrap(state, '('));
+//     check(state, spaced([id('pre'), round([spaced([id('hello', true), id('folks')])])]), idc(0));
+// });
 
-test('wrap all of spaced', () => {
-    let state = asMultiTop(round([spaced([id('pre', 0), id('hello'), id('folks', 1)])]), idc(0));
-    state = applyUpdate(state, handleWrap(state, '{'));
-    check(state, round([curly([spaced([id('pre', true), id('hello'), id('folks')])])]), idc(0));
-});
+// test('wrap all of spaced', () => {
+//     let state = asMultiTop(round([spaced([id('pre', 0), id('hello'), id('folks', 1)])]), idc(0));
+//     state = applyUpdate(state, handleWrap(state, '{'));
+//     check(state, round([curly([spaced([id('pre', true), id('hello'), id('folks')])])]), idc(0));
+// });
 
 // MARK: unwrap please
 test('unwrap I think', () => {
