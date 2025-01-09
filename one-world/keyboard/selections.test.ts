@@ -20,6 +20,7 @@ import {
     smoosh,
     spaced,
     square,
+    table,
     TestState,
     text,
     textc,
@@ -162,6 +163,25 @@ test('text into start', () => {
         ';;0,2': {
             cursors: [{ type: 'list', where: 'before' }],
             highlight: { type: 'text', spans: [false, false], opener: false, closer: false },
+        },
+    });
+});
+
+test('side into a table', () => {
+    let state = asTop(table('curly', [[id('hi'), id('ho', 2)]], 1), listc('before'), idc(1));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses).toEqual({
+        ';;0': {
+            cursors: [{ type: 'list', where: 'before' }],
+            highlight: { type: 'list', opener: true, closer: false },
+        },
+        ';;0,1': {
+            cursors: [],
+            highlight: { type: 'full' },
+        },
+        ';;0,2': {
+            cursors: [idc(1)],
+            highlight: { type: 'id', end: 1 },
         },
     });
 });

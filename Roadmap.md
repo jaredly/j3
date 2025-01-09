@@ -8,14 +8,18 @@
     - [x] text multi
   - [x] multi across lists pls
   - [x] across texts
-- [ ] tABLES
+- [x] tABLES
   - hmmmmmmmmmmm how do I do /column + 2D area select/ vs /normal wrapping select/ ??? howw.
     I thiiiink what we want is a {table} cursor type. yeahh. and that can contain the madness.
     like if you're doing a normal selection thing, you won't be selecting /cells/.
+  - [ ] column / 2D select plsss
 - [x] BETWEEN two emebds in a text, select the intervening spans
 - [x] start of text, shouldn't select the whole spannn
 - [x] openers and closers, hl them
+- [x] table little fix
 - [ ] tagsssss got a lot to do there
+- [ ] alt- while select/dragging, should select full atoms pls
+- [ ] ctrl- while select/dragging ...
 
 
 # How to make multiselect more of a thing

@@ -227,11 +227,11 @@ export const orderSelections = (
     const side = innerSide(outer, inner, top);
     if (side.side === 'before') {
         const statuses: SelectionStatuses = {};
-        getNeighbors(inner.path, outer.path.children.length, top, 'before', statuses);
+        getNeighbors(inner.path, outer.path.children.length - 1, top, 'before', statuses);
         return [outer, statuses, inner, side];
     } else {
         const statuses: SelectionStatuses = {};
-        getNeighbors(inner.path, outer.path.children.length, top, 'after', statuses);
+        getNeighbors(inner.path, outer.path.children.length - 1, top, 'after', statuses);
         return [inner, statuses, outer, side];
     }
     // if (outer.cursor.type === 'list') {
