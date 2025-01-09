@@ -71,10 +71,10 @@ export const nextLargerSpan = (sel: NodeSelection, spans: Src[], top: Top) => {
     return best ? { left: best[1], right: best[2], parent: multi.parent } : null;
 };
 
-export const shiftExpand = (state: TestState, spans?: Src[]): Update | void => {
+export const shiftExpand = (state: TestState, spans?: Src[]): NodeSelection | void => {
     // console.log('hi');
     if (!state.sel.multi) {
-        return { nodes: {}, selection: { start: state.sel.start, multi: { end: state.sel.start } } };
+        return { start: state.sel.start, multi: { end: state.sel.start } };
     }
 
     const next = spans ? nextLargerSpan(state.sel, spans, state.top) : null;
@@ -83,20 +83,20 @@ export const shiftExpand = (state: TestState, spans?: Src[]): Update | void => {
         const left = pathWithChildren(next.parent, next.left[0].idx);
         const right = pathWithChildren(next.parent, next.right[0].idx);
         // TODO.... thissssss meansssss hm. that I'll need to be more fancy in how I store 'selection bounds'
-        return { nodes: {}, selection: { start: state.sel.start, multi: { end: selEnd(left), aux: selEnd(right) } } };
+        return { start: state.sel.start, multi: { end: selEnd(left), aux: selEnd(right) } };
     }
 
     const path = state.sel.multi?.end.path ?? state.sel.start.path;
     // TODO: use the parsed's stufffffff here too
     const parent = parentPath(path);
-    return { nodes: {}, selection: { start: state.sel.start, multi: { end: selEnd(parent) } } };
+    return { start: state.sel.start, multi: { end: selEnd(parent) } };
 };
 
-export const handleShiftNav = (state: TestState, key: 'ArrowLeft' | 'ArrowRight'): Update | void => {
+export const handleShiftNav = (state: TestState, key: 'ArrowLeft' | 'ArrowRight'): NodeSelection | void => {
     const at = state.sel.end ?? state.sel.start;
     const next = handleNav(key, { ...state, sel: { start: at } });
     if (next) {
-        return { nodes: {}, selection: { start: state.sel.start, end: next } };
+        return { start: state.sel.start, end: next };
     }
     // if (state.sel.multi) {
     //     const next = nextLateral(state.sel.multi?.end, state.top, key === 'ArrowLeft');
@@ -139,9 +139,9 @@ export const nextLateral = (side: { path: Path }, top: Top, shift: boolean): Sel
     // return shift ? selectStart(npath, top) : selectEnd(npath, top);
 };
 
-export const expandLateral = (side: SelStart, top: Top, shift: boolean): Update | void => {
+export const expandLateral = (side: SelStart, top: Top, shift: boolean): NodeSelection | void => {
     const sel = nextLateral(side, top, shift);
-    return sel ? { nodes: {}, selection: { start: side, multi: { end: sel } } } : undefined;
+    return sel ? { start: side, multi: { end: sel } } : undefined;
 };
 
 export type SelSide = NonNullable<NodeSelection['multi']>['end'];
@@ -293,7 +293,7 @@ export const handleTab = (state: TestState, shift: boolean): Update | void => {
 
 // TabLeft
 
-export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { type: 'id' }>, top: Top, left: boolean): Update | void => {
+export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { type: 'id' }>, top: Top, left: boolean): NodeSelection | void => {
     if (left && cursor.end === 0) {
         if (start == null || start === cursor.end) {
             const parent = top.nodes[parentLoc(path)];
@@ -331,7 +331,11 @@ export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { 
         return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
     }
     // left--
-    return justSel(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }, start ? { ...cursor, end: start } : cursor);
+    return {
+        start: selStart(path, start ? { ...cursor, end: start } : cursor),
+        end: selStart(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }),
+    };
+    // return justSel(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }, start ? { ...cursor, end: start } : cursor);
 };
 
 // export const handleShiftText = (

@@ -9,6 +9,10 @@ Major next things
   - yeah I can
 
 
+- [ ] pull back `Updates` wherever they're used too generally, make them into SelStart or NodeSelection if necessary
+  - so that's `justSel` and `selUpdate` all over the place.
+  - and `nodes: {},`
+
 
 - undo/redo
 - multicursorrrrrrrrr

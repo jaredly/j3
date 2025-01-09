@@ -22,7 +22,8 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
             return wordNav(state, key === 'ArrowLeft', mods.shift);
         }
         if (mods.shift) {
-            return handleShiftNav(state, key);
+            const selection = handleShiftNav(state, key);
+            return selection ? { nodes: {}, selection } : undefined;
         }
         return selUpdate(handleNav(key, state));
     } else if (key === 'ArrowUp' || key === 'ArrowDown') {

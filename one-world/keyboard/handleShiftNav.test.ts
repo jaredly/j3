@@ -27,29 +27,31 @@ import {
 } from './test-utils';
 import { NodeSelection, Path, selStart, Top } from './utils';
 
+const applySelection = (state: TestState, sel: NodeSelection | void) => (sel ? applyUpdate(state, { nodes: {}, selection: sel }) : state);
+
 test('id shift-left', () => {
     let state = asTop(id('hi', true), idc(0));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowRight'));
     check(state, id('hi', true), idc(0), idc(1));
 });
 
 test('id shift-left and write', () => {
     let state = asTop(id('hillo', true), idc(2));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowRight'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowRight'));
     state = applyUpdate(state, handleKey(state, 'M', lisp));
     check(state, id('hiMo', true), idc(3));
 });
 
 test('id at smoosh boundary', () => {
     let state = asTop(smoosh([id('ab', true), id('+')]), idc(2));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowRight'));
     check(state, smoosh([id('ab', 1), id('+', 2)]), idc(2), idc(1));
 });
 
 test('id at smoosh boundary left', () => {
     let state = asTop(smoosh([id('ab'), id('+', true)]), idc(0));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowLeft'));
     check(state, smoosh([id('ab', 2), id('+', 1)]), idc(0), idc(1));
 });
 
@@ -67,8 +69,8 @@ test('bold no shift at end', () => {
 
 test('a little bold/underline', () => {
     let state = asTop(text([tspan('hello')], true), textc(0, 2));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowRight'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowRight'));
     state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
     state = applyUpdate(state, handleSpecial(state, 'u', { meta: true }));
     state = applyUpdate(state, handleSpecial(state, 'i', { meta: true }));
@@ -82,8 +84,8 @@ test('a little bold/underline', () => {
 
 test('undooo the boldliness', () => {
     let state = asTop(text([tspan('hello')], true), textc(0, 2));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowRight'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowRight'));
     state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
     state = applyUpdate(state, handleSpecial(state, 'u', { meta: true }));
     state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
@@ -135,13 +137,13 @@ test('style across spans', () => {
 
 test('right across span', () => {
     let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(0, 2));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowRight'));
     check(state, text([tspan('ab'), tspan('cd')], true), textc(0, 2), textc(1, 1));
 });
 
 test('left across span', () => {
     let state = asTop(text([tspan('ab'), tspan('cd')], true), textc(1, 0));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowLeft'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowLeft'));
     check(state, text([tspan('ab'), tspan('cd')], true), textc(1, 0), textc(0, 1));
 });
 
@@ -246,7 +248,7 @@ test('largerrrr', () => {
 
     let state: TestState = { top, sel: sels[0] };
     for (let i = 1; sels[i]; i++) {
-        state = applyUpdate(state, shiftExpand(state, spans));
+        state = applySelection(state, shiftExpand(state, spans));
         expect(state.sel).toEqual(sels[i]);
     }
 });
@@ -255,12 +257,12 @@ test('largerrrr', () => {
 
 test('single id', () => {
     let state = asTop(id('hi', true), idc(0));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowRight'));
     check(state, id('hi', true), idc(0), idc(1));
 });
 
 test('multi id', () => {
     let state = asTop(spaced([id('hi', 1), id('ho', 2)]), idc(0), idc(0));
-    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applySelection(state, handleShiftNav(state, 'ArrowRight'));
     check(state, spaced([id('hi', 1), id('ho', 2)]), idc(0), idc(1));
 });
