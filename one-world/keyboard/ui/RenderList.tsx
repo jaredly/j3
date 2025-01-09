@@ -154,7 +154,6 @@ export const RenderList = (
         if (status?.highlight?.type === 'full') {
             style.backgroundColor = lightColor;
         }
-        console.log('here statss', status);
 
         let contents = children;
 
@@ -265,7 +264,11 @@ export const RenderList = (
             }
         }
         return (
-            <span style={{ display: 'inline-flex', flexDirection: 'row' }}>
+            <span
+                style={{ display: 'inline-flex', flexDirection: 'row' }}
+                onMouseDown={(evt) => evt.stopPropagation()}
+                onMouseMove={(evt) => evt.stopPropagation()}
+            >
                 {has('before') ? <Cursor /> : null}
                 <span style={style} ref={ref}>
                     {contents}

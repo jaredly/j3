@@ -1,7 +1,7 @@
 
 
 - [ ] allllrightlyho, it's def time to be writin tests for these multiselection dealios
-  - [ ] get the multiselect running in my example for
+  - [x] get the multiselect running in my example for
     - [x] ids
     - [x] lists
     - [x] text mostly
@@ -20,6 +20,9 @@
 - [ ] tagsssss got a lot to do there
 - [ ] alt- while select/dragging, should select full atoms pls
 - [ ] ctrl- while select/dragging ...
+
+
+LAYout... do I need to make it happen?
 
 
 # How to make multiselect more of a thing
