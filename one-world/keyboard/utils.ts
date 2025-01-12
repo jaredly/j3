@@ -164,41 +164,67 @@ OK So more concretely, it's updating a SelStart.
 ? is it possible for an Update action to need multiple SelectionUpdates? might be.
 ooh ok so the /multicursor/ case would be like /dup + update/
 
+
+Multi select:
+selUpdates -
+- move NodeSelection
+- reparent Path -> Path
+- dump (like if a bunch of nodes were deleted, you list the path keys to filter by, and all visits within get dumped on a single spot)
+- if a list was unwrapped, handle before/after
+-
+
 */
 
-export type SelStartUpdate =
-    | {
-          type: 'id';
-          fromPath: Path;
-          toPath: Path;
-          fromOffset: number;
-          toOffset: number;
-      }
-    | {
-          // jumping, annnd. it should only apply to the single one.
-          type: 'jump';
-          // from: NodeSelection,
-          to: NodeSelection;
-      }
-    | {
-          type: 'text';
-          fromPath: Path;
-          toPath: Path;
-          fromIndex: number;
-          fromOffset: number;
-          toIndex: number;
-          toOffset: number;
-      }
-    // this goes multicursor on you.
-    // if it's already multi, then we .. don't bother? yeah that sounds right.
-    | { type: 'dup'; inner: SelStartUpdate };
+export const move = (to: NodeSelection): SelUpdate => ({ type: 'move', to });
+
+export type SelUpdate =
+    | { type: 'move' | 'expand'; to: NodeSelection }
+    | { type: 'reparent'; oldPath: Path; newPath: Path }
+    | { type: 'unparent'; loc: number } // remove from a parent list
+    | { type: 'addparent'; loc: number; parent: number }
+    | { type: 'unwrapList'; path: Path; left: SelStart; right: SelStart }
+    | { type: 'delete'; paths: Path[]; dest: SelStart }
+    // This assumes:
+    // that for a split, the [right] side is what gets a new path. I think that's fine to
+    // rely on?
+    // How about for a join? Again it would be the Right side that would be subsumed.
+    // Assuming that from and to are siblings. things would break otherwise
+    | { type: 'id'; from: { loc: number; offset: number }; to: { loc: number; offset: number } };
+// | { type: 'id'; from: { path: Path; offset: number }; to: { path: Path; offset: number } };
+
+// export type SelStartUpdate =
+//     | {
+//           type: 'id';
+//           fromPath: Path;
+//           toPath: Path;
+//           fromOffset: number;
+//           toOffset: number;
+//       }
+//     | {
+//           // jumping, annnd. it should only apply to the single one.
+//           type: 'jump';
+//           // from: NodeSelection,
+//           to: NodeSelection;
+//       }
+//     | {
+//           type: 'text';
+//           fromPath: Path;
+//           toPath: Path;
+//           fromIndex: number;
+//           fromOffset: number;
+//           toIndex: number;
+//           toOffset: number;
+//       }
+//     // this goes multicursor on you.
+//     // if it's already multi, then we .. don't bother? yeah that sounds right.
+//     | { type: 'dup'; inner: SelStartUpdate };
 
 export type Update = {
-    nodes: Record<string, Node | null>;
+    nodes: Record<number, Node | null>;
     root?: number;
     nextLoc?: number;
-    selection?: NodeSelection;
-    selUpdates?: SelStartUpdate[];
+    selection?: NodeSelection | SelUpdate[];
+    // selection?: SelUpdate[];
 };
 
 export const withPartial = (path: Path, sel?: PartialSel) =>

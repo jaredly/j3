@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Collection, Id, isRich, List, Node, Nodes, Table, Text, TextSpan } from '../shared/cnodes';
+import { childLocs, Collection, Id, isRich, List, Node, Nodes, Table, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { isBlank } from './flatenate';
 import { goLeft, isTag, justSel, selectEnd, selectStart, selUpdate, spanEnd, spanStart } from './handleNav';
@@ -15,12 +15,14 @@ import {
     Cursor,
     findTableLoc,
     lastChild,
+    move,
     NodeSelection,
     parentLoc,
     parentPath,
     Path,
     pathWithChildren,
     selStart,
+    SelUpdate,
     TextCursor,
     Top,
     Update,
@@ -103,11 +105,24 @@ export const unwrap = (path: Path, top: Top, sel: NodeSelection) => {
     }
     if (node.type !== 'list') return; // TODO idk
     const repl = replaceAt(parentPath(path).children, top, lastChild(path), ...node.children);
-    repl.selection = removeParent(sel, lastChild(path));
+    repl.selection = [move(removeParent(sel, lastChild(path)))];
     rebalanceSmooshed(repl, top);
     joinSmooshed(repl, top);
     disolveSmooshed(repl, top);
     return repl;
+};
+
+export const findParent = (nodes: Update['nodes'], loc: number): number | null => {
+    for (let key of Object.keys(nodes)) {
+        const node = nodes[+key];
+        if (node) {
+            const children = childLocs(node);
+            if (children.includes(loc)) {
+                return +key;
+            }
+        }
+    }
+    return null;
 };
 
 // oofs. the horror.
@@ -120,19 +135,24 @@ export const disolveSmooshed = (update: Update, top: Top) => {
         let node = update.nodes[+loc];
         if (node?.type === 'list' && (node.kind === 'smooshed' || node.kind === 'spaced') && node.children.length === 1) {
             const child = node.children[0];
-            const spath = update.selection?.start.path;
-            if (!spath) return;
-            const at = spath.children.indexOf(node.loc);
-            if (at === -1) return;
-            update.nodes[node.loc] = null;
-            if (at === 0) {
+            // const spath = update.selection?.start.path;
+            // if (!spath) return;
+            // const at = spath.children.indexOf(node.loc);
+            // if (at === -1) return;
+            if (top.root === node.loc) {
                 update.root = child;
             } else {
-                const pnode = top.nodes[spath.children[at - 1]];
+                const ploc = findParent(update.nodes, node.loc) ?? findParent(top.nodes, node.loc);
+                if (ploc == null) {
+                    console.warn(`cant collapse smoosh; cant find parent of ${node.loc}`);
+                    return;
+                }
+                const pnode = top.nodes[ploc];
                 const parent = replaceIn(pnode, node.loc, child);
                 update.nodes[parent.loc] = parent;
             }
-            update.selection = removeParent(update.selection!, node.loc);
+            update.nodes[node.loc] = null;
+            update.selection = addUpdate(update.selection, { type: 'unparent', loc: node.loc });
         }
     });
 };
@@ -159,27 +179,35 @@ export const joinSmooshed = (update: Update, top: Top) => {
                     update.nodes[node.loc] = node;
                     i--;
 
-                    if (update.selection) {
-                        update.selection = modSelTip(update.selection, (last, cursor) => {
-                            if (last === cloc) {
-                                if (cursor.type === 'id') {
-                                    return {
-                                        loc: ploc,
-                                        cursor: {
-                                            type: 'id',
-                                            end: cursor.end + splitGraphemes(prev.text).length,
-                                        },
-                                    };
-                                }
-                                return { loc: ploc, cursor };
-                            }
-                        });
-                    }
+                    update.selection = addUpdate(update.selection, {
+                        type: 'id',
+                        from: { loc: cloc, offset: 0 },
+                        to: { loc: ploc, offset: splitGraphemes(prev.text).length },
+                    });
+                    // if (update.selection) {
+                    //     update.selection = modSelTip(update.selection, (last, cursor) => {
+                    //         if (last === cloc) {
+                    //             if (cursor.type === 'id') {
+                    //                 return {
+                    //                     loc: ploc,
+                    //                     cursor: {
+                    //                         type: 'id',
+                    //                         end: cursor.end + splitGraphemes(prev.text).length,
+                    //                     },
+                    //                 };
+                    //             }
+                    //             return { loc: ploc, cursor };
+                    //         }
+                    //     });
+                    // }
                 }
             }
         }
     });
 };
+
+export const addUpdate = (s: NodeSelection | SelUpdate[] | undefined, update: SelUpdate) =>
+    s == null ? [update] : Array.isArray(s) ? [...s, update] : [move(s), update];
 
 export const rebalanceSmooshed = (update: Update, top: Top) => {
     // So, we go through anything that has an update...
@@ -189,6 +217,7 @@ export const rebalanceSmooshed = (update: Update, top: Top) => {
             for (let i = 0; i < node.children.length; i++) {
                 const cloc = node.children[i];
                 const child = update.nodes[cloc] ?? top.nodes[cloc];
+                // We have a spaces within a spaced. splice grandchildren in
                 if (child?.type === 'list' && child.kind === 'spaced') {
                     const children = node.children.slice();
                     children.splice(i, 1, ...child.children);
@@ -196,7 +225,7 @@ export const rebalanceSmooshed = (update: Update, top: Top) => {
                     update.nodes[node.loc] = node;
                     i += child.children.length - 1;
                     // remove the thing
-                    if (update.selection) update.selection = removeParent(update.selection, cloc);
+                    update.selection = addUpdate(update.selection, { type: 'unparent', loc: cloc });
                 }
             }
         }
@@ -212,7 +241,7 @@ export const rebalanceSmooshed = (update: Update, top: Top) => {
                     update.nodes[node.loc] = node;
                     i += child.children.length - 1;
                     // remove the thing
-                    if (update.selection) update.selection = removeParent(update.selection, cloc);
+                    update.selection = addUpdate(update.selection, { type: 'unparent', loc: cloc });
                 }
             }
         }
