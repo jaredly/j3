@@ -1,7 +1,7 @@
 import { Id, Text } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { TestState } from './test-utils';
-import { lastChild, NodeSelection, Path, selStart, SelUpdate, Update } from './utils';
+import { lastChild, NodeSelection, parentPath, Path, pathWithChildren, selStart, SelUpdate, Update } from './utils';
 import { validate } from './validate';
 import { root } from './root';
 import { SelStart } from './handleShiftNav';
@@ -11,6 +11,14 @@ import { removeInPath } from './handleDelete';
 export const applySel = (state: TestState, sel: SelStart | void) => applyUpdate(state, selUpdate(sel));
 
 // const addParent = (path: Path, )
+const modId = (sel: SelStart, mod: Extract<SelUpdate, { type: 'id' }>) => {
+    const at = lastChild(sel.path);
+    if (at !== mod.from.loc) return sel;
+    if (sel.cursor.type !== 'id') throw new Error(`selUpdate (id), but non-id cursor ${sel.cursor.type}`);
+    if (sel.cursor.end < mod.from.offset) return sel;
+    const newEnd = sel.cursor.end - mod.from.offset + mod.to.offset;
+    return selStart(pathWithChildren(parentPath(sel.path), mod.to.loc), { type: 'id', end: newEnd });
+};
 
 export const applySelUp = (sel: NodeSelection, up: SelUpdate): NodeSelection => {
     switch (up.type) {
@@ -25,8 +33,9 @@ export const applySelUp = (sel: NodeSelection, up: SelUpdate): NodeSelection => 
         // case 'addparent':
         // case 'unwrapList':
         // case 'delete':
-        case 'id':
-            return sel;
+        case 'id': {
+            return { start: modId(sel.start, up), end: sel.end ? modId(sel.end, up) : undefined };
+        }
     }
 };
 
