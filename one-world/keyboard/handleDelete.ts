@@ -64,7 +64,7 @@ export const joinParent = (path: Path, top: Top): void | JoinParent => {
     return up ?? { type: 'list', pnode, parent, at };
 };
 
-const removeInPath = ({ root, children }: Path, loc: number): Path => ({
+export const removeInPath = ({ root, children }: Path, loc: number): Path => ({
     root,
     children: children.filter((f) => f != loc),
 });

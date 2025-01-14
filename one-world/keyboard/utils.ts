@@ -178,12 +178,12 @@ selUpdates -
 export const move = (to: NodeSelection): SelUpdate => ({ type: 'move', to });
 
 export type SelUpdate =
-    | { type: 'move' | 'expand'; to: NodeSelection }
-    | { type: 'reparent'; oldPath: Path; newPath: Path }
+    | { type: 'move'; to: NodeSelection }
+    // | { type: 'reparent'; oldPath: Path; newPath: Path }
     | { type: 'unparent'; loc: number } // remove from a parent list
-    | { type: 'addparent'; loc: number; parent: number }
-    | { type: 'unwrapList'; path: Path; left: SelStart; right: SelStart }
-    | { type: 'delete'; paths: Path[]; dest: SelStart }
+    // | { type: 'addparent'; loc: number; parent: number }
+    // | { type: 'unwrapList'; path: Path; left: SelStart; right: SelStart }
+    // | { type: 'delete'; paths: Path[]; dest: SelStart }
     // This assumes:
     // that for a split, the [right] side is what gets a new path. I think that's fine to
     // rely on?
