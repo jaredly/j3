@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Id, Loc, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { cursorSplit, Split } from './cursorSplit';
+import { cursorSplit, idText, Split } from './cursorSplit';
 import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
 import { braced } from './handleListKey';
 import { Kind, textKind } from './insertId';
@@ -60,7 +60,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
 
     if (config.xml && grem === '>') {
         const pnode = top.nodes[parentLoc(path)];
-        const chars = cursor.text ?? splitGraphemes(node.text);
+        const chars = idText(cursor, node);
         if (
             pnode.type === 'list' &&
             pnode.kind === 'smooshed' &&

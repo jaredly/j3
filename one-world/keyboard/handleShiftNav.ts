@@ -22,6 +22,7 @@ import {
     Update,
 } from './utils';
 import { getCurrent, ltCursor, orderSelections } from './selections';
+import { idText } from './cursorSplit';
 // import { textCursorSides2 } from './insertId';
 
 export type Src = { left: Loc; right?: Loc };
@@ -200,7 +201,7 @@ export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSele
     }
 
     if (cursor.type === 'id' && node.type === 'id') {
-        const text = cursor.text ?? splitGraphemes(node.text);
+        const text = idText(cursor, node);
         if (cursor.end === (shift ? 0 : text.length)) {
             const parent = top.nodes[parentLoc(path)];
             if (parent?.type === 'list' && parent.kind === 'smooshed') {
@@ -308,7 +309,7 @@ export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { 
         return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
     }
 
-    const text = cursor.text ?? splitGraphemes(node.text);
+    const text = idText(cursor, node);
     if (!left && cursor.end === text.length) {
         if (start == null || start === cursor.end) {
             const parent = top.nodes[parentLoc(path)];

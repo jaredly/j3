@@ -18,6 +18,7 @@ import { keyUpdate } from './keyUpdate';
 import { RenderNode } from './RenderNode';
 import { posDown, posUp, selectionPos } from './selectionPos';
 import { ShowXML } from './XML';
+import { idText } from '../cursorSplit';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -168,7 +169,7 @@ export const App = ({ id }: { id: string }) => {
             const span = current.node.spans[current.cursor.end.index];
             const end = current.cursor.end;
             if (span.type === 'text') {
-                const text = current.cursor.end.text ?? splitGraphemes(span.text);
+                const text = idText(current.cursor.end, span);
                 if (text[current.cursor.end.cursor - 1] === '\\') {
                     return setMenu({
                         top: pos.top + pos.height,

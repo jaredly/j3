@@ -24,6 +24,7 @@ import {
     Update,
 } from './utils';
 import { getCurrent } from './selections';
+import { idText } from './cursorSplit';
 
 export const wrapKind = (key: string): ListKind<any> | void => {
     switch (key) {
@@ -93,7 +94,7 @@ export const handleListWrap = (top: Top, path: Path, node: Collection<number>, c
 
 export const handleIdWrap = (top: Top, current: Extract<Current, { type: 'id' }>, kind: ListKind<number>): Update | void => {
     const { left, right } = cursorSides(current.cursor, current.start);
-    const text = current.cursor.text ?? splitGraphemes(current.node.text);
+    const text = idText(current.cursor, current.node);
     // Wrap the whole thing
     if (left === 0 && right === text.length) {
         return wrapNode(top, current.path, current.node, kind);

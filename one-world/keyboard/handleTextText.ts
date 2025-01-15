@@ -1,5 +1,6 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { stylesEqual, Nodes, Text, TextSpan, ListKind } from '../shared/cnodes';
+import { idText } from './cursorSplit';
 import { handleListKey } from './handleListKey';
 import { justSel, richNode } from './handleNav';
 import { Mods } from './handleShiftNav';
@@ -81,7 +82,7 @@ export const handleTextText = (
         return;
     }
 
-    const text = cursor.end.text ?? splitGraphemes(span.text);
+    const text = idText(cursor.end, span);
     const [left, right] =
         sel == null ? [cursor.end.cursor, cursor.end.cursor] : sel < cursor.end.cursor ? [sel, cursor.end.cursor] : [cursor.end.cursor, sel];
     // const { left, right } = textCursorSides(cursor);

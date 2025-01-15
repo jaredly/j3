@@ -19,6 +19,7 @@ import {
 } from './utils';
 import { getCurrent } from './selections';
 import { SelStart } from './handleShiftNav';
+import { idText } from './cursorSplit';
 
 export const justSel = (path: Path, cursor: Cursor, startCursor?: Cursor) => ({
     nodes: {},
@@ -264,7 +265,7 @@ export const navRight = (current: Current, state: TestState): SelStart | void =>
                 const { right } = cursorSides(current.cursor, current.start);
                 return selStart(current.path, { type: 'id', end: right, text: current.cursor.text });
             }
-            const text = current.cursor.text ?? splitGraphemes(current.node.text);
+            const text = idText(current.cursor, current.node);
             if (current.cursor.end < text.length) {
                 return selStart(current.path, { type: 'id', end: current.cursor.end + 1, text: current.cursor.text });
             }
@@ -291,7 +292,7 @@ export const navRight = (current: Current, state: TestState): SelStart | void =>
                     }
                     return selStart(current.path, { type: 'list', where: 'after' });
                 }
-                const text = end.text ?? splitGraphemes(span.text);
+                const text = idText(end, span);
                 if (end.cursor < text.length) {
                     return selStart(current.path, {
                         type: 'text',

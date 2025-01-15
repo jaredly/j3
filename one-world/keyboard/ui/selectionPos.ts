@@ -5,6 +5,7 @@ import { lastChild, NodeSelection, Path, pathWithChildren, selStart, Top } from 
 import { getCurrent } from '../selections';
 import { goLeft, goRight, handleNav, isTag, selectEnd, selectStart } from '../handleNav';
 import { SelStart } from '../handleShiftNav';
+import { idText } from '../cursorSplit';
 
 const CLOSE = 10;
 
@@ -69,7 +70,7 @@ export const selectionPos = (
     const range = new Range();
     switch (cur.type) {
         case 'id': {
-            const text = cur.cursor.text ?? splitGraphemes(cur.node.text);
+            const text = idText(cur.cursor, cur.node);
             if (text.length === 0) {
                 return boxAt(span.getBoundingClientRect());
             }
@@ -163,7 +164,7 @@ export const selectionPos = (
                         first = first.firstChild;
                     }
                     if (!first) return null;
-                    const text = cur.cursor.end.text ?? splitGraphemes(tspan.text);
+                    const text = idText(cur.cursor.end, tspan);
                     const at = text.slice(0, cur.cursor.end.cursor).join('').length;
                     range.setStart(first, at);
                     range.setEnd(first, at);
