@@ -28,6 +28,7 @@ import {
     Update,
 } from './utils';
 import { getCurrent } from './selections';
+import { idText } from './cursorSplit';
 
 type JoinParent =
     | {
@@ -328,8 +329,9 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             if (at === -1) return;
             const node = state.top.nodes[loc];
             if (node.type === 'id') {
+                if (cursor.type !== 'id') throw new Error(`invalid cursor for id node`);
                 // check empty cursor
-                const text = (cursor.type === 'id' && cursor.text) || splitGraphemes(node.text);
+                const text = idText(state.top.tmpText, cursor, node);
                 if (text.length === 0) {
                     // remove the span
                     const spans = pnode.spans.slice();
@@ -545,7 +547,7 @@ export const handleDelete = (state: TestState): Update | void => {
                 if (left === right) {
                     left--;
                 }
-                const text = current.cursor.text?.slice() ?? splitGraphemes(current.node.text);
+                const text = idText(state.top.tmpText, current.cursor, current.node).slice();
                 text.splice(left, right - left);
                 if (text.length === 0) {
                     const ppath = parentPath(state.sel.start.path);

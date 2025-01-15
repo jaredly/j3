@@ -205,7 +205,7 @@ export const App = ({ id }: { id: string }) => {
         if (current.type !== 'id') return setMenu(null);
         // oh lol. the slash.
         // it's gotta be, a thing. gotta parse that out my good folks.
-        const slash = current.cursor.text ? current.cursor.text[0] === '\\' : current.node.text.startsWith('\\');
+        const slash = idText(state.top.tmpText, current.cursor, current.node)[0] === '\\';
         if (!slash) return setMenu(null);
 
         const kinds: { title: string; kind: RichKind }[] = [

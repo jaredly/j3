@@ -38,7 +38,8 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
     const table = handleTableSplit(grem, config, path, top, splitCell(current));
     if (table) return table;
 
-    if (config.xml && grem === '/' && cursor.end === 1 && (cursor.text ? cursor.text.length === 1 && cursor.text[0] === '<' : node.text === '<')) {
+    const text = idText(top.tmpText, cursor, node);
+    if (config.xml && grem === '/' && cursor.end === 1 && text.length === 1 && text[0] === '<') {
         const pnode = top.nodes[parentLoc(path)];
         if (pnode?.type !== 'list' || pnode.kind !== 'smooshed') {
             return {
@@ -91,7 +92,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
 
         if (node.ccls === kind) {
             // Just update the selection
-            const chars = cursor.text?.slice() ?? splitGraphemes(node.text);
+            const chars = idText(top.tmpText, cursor, node).slice();
             const { left, right } = cursorSides(cursor, current.start);
             chars.splice(left, right - left, grem);
             return { nodes: {}, selection: { start: selStart(path, { ...cursor, text: chars, end: left + 1 }) } };
@@ -100,8 +101,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
 
     const pnode = top.nodes[parentLoc(path)];
     if (grem === '\n' && pnode?.type === 'list' && braced(pnode) && pnode.children.length === 1 && !pnode.forceMultiline) {
-        const chars = cursor.text?.slice() ?? splitGraphemes(node.text);
-        if (chars.length === 0) {
+        if (idText(top.tmpText, cursor, node).length === 0) {
             return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: true } } };
         }
     }
