@@ -94,12 +94,17 @@ export type NodeSelection = {
     // multi?: { end: { path: Path; key: string; cursor?: Cursor }; aux?: { path: Path; key: string; cursor?: Cursor } };
 };
 
+export type TmpText = Record<string, string[]>;
+
+export const getIdText = (tmp: TmpText, loc: number): string[] | undefined => tmp[loc + ''];
+export const getTextText = (tmp: TmpText, loc: number, index: number): string[] | undefined => tmp[`${loc}:${index}`];
+
 // tmpText... on top? yeah ok seems like the right spot for it.
 export type Top = {
     nodes: Nodes;
     root: number;
     nextLoc: number;
-    tmpText: Record<string, string[]>;
+    tmpText: TmpText;
 };
 
 export const getNode = (path: Path, top: Top) => top.nodes[path.children[path.children.length - 1]];
@@ -230,7 +235,7 @@ export type Update = {
     root?: number;
     nextLoc?: number;
     selection?: NodeSelection | SelUpdate[];
-    // selection?: SelUpdate[];
+    tmpText?: Record<string, string[] | undefined>;
 };
 
 export const withPartial = (path: Path, sel?: PartialSel) =>

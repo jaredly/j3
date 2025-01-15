@@ -48,8 +48,21 @@ export function applyUpdate<T extends TestState>(state: T, update: Update | null
             nextLoc: update.nextLoc ?? state.top.nextLoc,
             nodes: { ...state.top.nodes, ...update.nodes },
             root: update.root ?? state.top.root,
+            tmpText: state.top.tmpText,
         },
     };
+
+    if (update.tmpText) {
+        state.top.tmpText = { ...state.top.tmpText };
+        Object.keys(update.tmpText).forEach((key) => {
+            if (!update.tmpText![key]) {
+                delete state.top.tmpText[key];
+            } else {
+                state.top.tmpText[key];
+            }
+        });
+    }
+
     if (Array.isArray(update.selection)) {
         // sel: update.selection ?? state.sel,
         update.selection.forEach((selup) => {

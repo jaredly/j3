@@ -4,6 +4,9 @@ Edit text -> centralize...
 => going to put it on `Top`, although it won't live
 in the persisted top, obviously.
 
+- [x] ok reduced the usage of cursor.text
+- [ ] now, move over the 'id update' stuff to the top tmpText
+
 - [ ] How do we /update/ the tmpText?
 
 

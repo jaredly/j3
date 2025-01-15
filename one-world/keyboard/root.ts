@@ -1,9 +1,9 @@
 import { fromMap } from '../shared/cnodes';
-import { TestState } from './test-utils';
 import { lastChild, NodeSelection, Top } from './utils';
 
 export const root = <T>(state: { top: Top; sel?: NodeSelection }, fromId: (n: number) => T = (x) => x as T) => {
     let nodes = state.top.nodes;
+    // Object.keys(state.top.tmpText)
     if (state.sel) {
         const { cursor, path } = state.sel.start;
         if (cursor.type === 'id' && cursor.text) {
