@@ -201,7 +201,7 @@ export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSele
     }
 
     if (cursor.type === 'id' && node.type === 'id') {
-        const text = idText(cursor, node);
+        const text = idText(top.tmpText, cursor, node);
         if (cursor.end === (shift ? 0 : text.length)) {
             const parent = top.nodes[parentLoc(path)];
             if (parent?.type === 'list' && parent.kind === 'smooshed') {
@@ -309,7 +309,7 @@ export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { 
         return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
     }
 
-    const text = idText(cursor, node);
+    const text = idText(top.tmpText, cursor, node);
     if (!left && cursor.end === text.length) {
         if (start == null || start === cursor.end) {
             const parent = top.nodes[parentLoc(path)];

@@ -60,7 +60,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
 
     if (config.xml && grem === '>') {
         const pnode = top.nodes[parentLoc(path)];
-        const chars = idText(cursor, node);
+        const chars = idText(top.tmpText, cursor, node);
         if (
             pnode.type === 'list' &&
             pnode.kind === 'smooshed' &&
@@ -144,7 +144,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
     const nodes: Update['nodes'] = {};
 
     const neighbor = flatNeighbor(kind, grem);
-    const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes });
+    const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes, top });
 
     // console.log(flat);
 
@@ -253,7 +253,7 @@ const splitCell =
         const flat = flatten(cell, top, undefined, 1);
         const nodes: Update['nodes'] = {};
         const neighbor: Flat = { type: 'sep', loc };
-        const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes });
+        const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes, top });
         const one = pruneEmptyIds(flat, { node: sel, cursor: ncursor });
         const two = collapseAdjacentIDs(one.items, one.selection);
         const result = unflat(top, two.items, two.selection.node);
@@ -267,6 +267,7 @@ function addNeighbor({
     // cursor,
     flat,
     nodes,
+    top,
 }: {
     neighbor: Flat;
     current: Extract<Current, { type: 'id' }>;
@@ -274,6 +275,7 @@ function addNeighbor({
     // cursor: IdCursor;
     flat: Flat[];
     nodes: Record<string, Node | null>;
+    top: Top;
 }) {
     let { node, cursor } = current;
     const at = flat.indexOf(node);
@@ -283,7 +285,7 @@ function addNeighbor({
         flat[at] = node;
     }
 
-    const split = cursorSplit(node.text, cursor, current.start);
+    const split = cursorSplit(top.tmpText, node.text, cursor, current.start);
 
     let sel: Node = node;
     let ncursor: Cursor = { ...cursor };

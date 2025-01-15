@@ -1,4 +1,11 @@
 
+Edit text -> centralize...
+
+=> going to put it on `Top`, although it won't live
+in the persisted top, obviously.
+
+- [ ] How do we /update/ the tmpText?
+
 
 Major next things
 

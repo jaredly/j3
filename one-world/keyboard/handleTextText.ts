@@ -82,7 +82,7 @@ export const handleTextText = (
         return;
     }
 
-    const text = idText(cursor.end, span);
+    const text = idText(top.tmpText, cursor.end, span);
     const [left, right] =
         sel == null ? [cursor.end.cursor, cursor.end.cursor] : sel < cursor.end.cursor ? [sel, cursor.end.cursor] : [cursor.end.cursor, sel];
     // const { left, right } = textCursorSides(cursor);

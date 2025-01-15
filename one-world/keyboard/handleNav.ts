@@ -265,7 +265,7 @@ export const navRight = (current: Current, state: TestState): SelStart | void =>
                 const { right } = cursorSides(current.cursor, current.start);
                 return selStart(current.path, { type: 'id', end: right, text: current.cursor.text });
             }
-            const text = idText(current.cursor, current.node);
+            const text = idText(state.top.tmpText, current.cursor, current.node);
             if (current.cursor.end < text.length) {
                 return selStart(current.path, { type: 'id', end: current.cursor.end + 1, text: current.cursor.text });
             }
@@ -292,7 +292,7 @@ export const navRight = (current: Current, state: TestState): SelStart | void =>
                     }
                     return selStart(current.path, { type: 'list', where: 'after' });
                 }
-                const text = idText(end, span);
+                const text = idText(state.top.tmpText, end, span);
                 if (end.cursor < text.length) {
                     return selStart(current.path, {
                         type: 'text',

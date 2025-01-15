@@ -94,7 +94,13 @@ export type NodeSelection = {
     // multi?: { end: { path: Path; key: string; cursor?: Cursor }; aux?: { path: Path; key: string; cursor?: Cursor } };
 };
 
-export type Top = { nodes: Nodes; root: number; nextLoc: number };
+// tmpText... on top? yeah ok seems like the right spot for it.
+export type Top = {
+    nodes: Nodes;
+    root: number;
+    nextLoc: number;
+    tmpText: Record<string, string[]>;
+};
 
 export const getNode = (path: Path, top: Top) => top.nodes[path.children[path.children.length - 1]];
 

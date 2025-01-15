@@ -94,7 +94,7 @@ export const handleListWrap = (top: Top, path: Path, node: Collection<number>, c
 
 export const handleIdWrap = (top: Top, current: Extract<Current, { type: 'id' }>, kind: ListKind<number>): Update | void => {
     const { left, right } = cursorSides(current.cursor, current.start);
-    const text = idText(current.cursor, current.node);
+    const text = idText(top.tmpText, current.cursor, current.node);
     // Wrap the whole thing
     if (left === 0 && right === text.length) {
         return wrapNode(top, current.path, current.node, kind);

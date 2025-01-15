@@ -169,7 +169,7 @@ export const App = ({ id }: { id: string }) => {
             const span = current.node.spans[current.cursor.end.index];
             const end = current.cursor.end;
             if (span.type === 'text') {
-                const text = idText(current.cursor.end, span);
+                const text = idText(state.top.tmpText, current.cursor.end, span);
                 if (text[current.cursor.end.cursor - 1] === '\\') {
                     return setMenu({
                         top: pos.top + pos.height,
