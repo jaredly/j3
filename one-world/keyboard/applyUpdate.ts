@@ -58,7 +58,7 @@ export function applyUpdate<T extends TestState>(state: T, update: Update | null
             if (!update.tmpText![key]) {
                 delete state.top.tmpText[key];
             } else {
-                state.top.tmpText[key];
+                state.top.tmpText[key] = update.tmpText![key]!;
             }
         });
     }
@@ -80,8 +80,10 @@ export function applyUpdate<T extends TestState>(state: T, update: Update | null
         }
     });
 
+    // console.log('maube', update.tmpText);
     // This is "maybe commit text changes"
-    maybeCommitTextChanges<T>(prev, update, state);
+    maybeCommitTextChanges(prev, update, state);
+    // console.log(state.top, update.tmpText);
 
     // if (
     //     prev.start.cursor.type === 'text' &&

@@ -49,4 +49,23 @@ export function maybeCommitTextChanges<T extends TestState>(prev: NodeSelection,
             }
         }
     }
+
+    const selId = lastChild(state.sel.start.path);
+    // console.log('com', update.tmpText, selId);
+    let up = false;
+    Object.keys(state.top.tmpText).forEach((key) => {
+        if (key !== selId + '') {
+            if (!up) {
+                up = true;
+                state.top = { ...state.top, tmpText: { ...state.top.tmpText }, nodes: { ...state.top.nodes } };
+            }
+
+            const node = state.top.nodes[+key];
+            if (node.type === 'id') {
+                state.top.nodes[+key] = { ...node, text: state.top.tmpText[key].join('') };
+                delete state.top.tmpText[key];
+                // console.log('yooo');
+            }
+        }
+    });
 }

@@ -95,7 +95,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
             const chars = idText(top.tmpText, cursor, node).slice();
             const { left, right } = cursorSides(cursor, current.start);
             chars.splice(left, right - left, grem);
-            return { nodes: {}, selection: { start: selStart(path, { ...cursor, text: chars, end: left + 1 }) } };
+            return { nodes: {}, selection: { start: selStart(path, { ...cursor, end: left + 1 }) }, tmpText: { [node.loc]: chars } };
         }
     }
 

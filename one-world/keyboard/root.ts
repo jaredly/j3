@@ -33,5 +33,21 @@ export const root = <T>(state: { top: Top; sel?: NodeSelection }, fromId: (n: nu
             }
         }
     }
+
+    let up = false;
+    Object.keys(state.top.tmpText).forEach((key) => {
+        if (!up) {
+            up = true;
+            state.top = { ...state.top, tmpText: { ...state.top.tmpText } };
+            nodes = { ...state.top.nodes };
+        }
+
+        const node = nodes[+key];
+        if (node.type === 'id') {
+            nodes[+key] = { ...node, text: state.top.tmpText[key].join('') };
+        }
+        delete state.top.tmpText[key];
+    });
+
     return fromMap(state.top.root, nodes, fromId);
 };
