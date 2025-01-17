@@ -8,10 +8,11 @@ export const spanText = (tmpText: Top['tmpText'], loc: number, end: { text?: str
 
 export const idText = (tmpText: Top['tmpText'], cursor: IdCursor | { text?: string[] }, node: { text: string; loc: number }) =>
     getIdText(tmpText, node.loc) ?? cursor.text ?? splitGraphemes(node.text);
-export const idString = (tmpText: Top['tmpText'], cursor: IdCursor | { text?: string[] }, text: string) => cursor.text ?? splitGraphemes(text);
+// export const idString = (tmpText: Top['tmpText'], cursor: IdCursor | { text?: string[] }, loc: number, text: string) =>
+//     getIdText(tmpText, loc) ?? cursor.text ?? splitGraphemes(text);
 
-export const cursorSplit = (tmpText: Top['tmpText'], orig: string, cursor: IdCursor, start: number | undefined): Split => {
-    const text = idString(tmpText, cursor, orig);
+export const cursorSplit = (tmpText: Top['tmpText'], node: { text: string; loc: number }, cursor: IdCursor, start: number | undefined): Split => {
+    const text = idText(tmpText, cursor, node);
 
     const { left, right } = cursorSides(cursor, start);
 
@@ -27,6 +28,7 @@ export const cursorSplit = (tmpText: Top['tmpText'], orig: string, cursor: IdCur
             text: left !== right ? text.slice(0, left).join('') : text.join(''),
         };
     }
+
     return {
         type: 'between',
         left: text.slice(0, left).join(''),

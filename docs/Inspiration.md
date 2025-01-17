@@ -1,4 +1,7 @@
 
+https://tylr.fun/vlhcc23.pdf
+https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/putting.pdf
+
 # Assembly
 
 https://github.com/dmtrKovalenko/macos-assembly-http-server/blob/main/server.s

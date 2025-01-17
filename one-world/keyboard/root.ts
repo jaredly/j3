@@ -34,19 +34,19 @@ export const root = <T>(state: { top: Top; sel?: NodeSelection }, fromId: (n: nu
         }
     }
 
+    const tmpText = { ...state.top.tmpText };
     let up = false;
-    Object.keys(state.top.tmpText).forEach((key) => {
+    Object.keys(tmpText).forEach((key) => {
         if (!up) {
             up = true;
-            state.top = { ...state.top, tmpText: { ...state.top.tmpText } };
+            state.top = { ...state.top, tmpText: { ...tmpText } };
             nodes = { ...state.top.nodes };
         }
 
         const node = nodes[+key];
         if (node.type === 'id') {
-            nodes[+key] = { ...node, text: state.top.tmpText[key].join('') };
+            nodes[+key] = { ...node, text: tmpText[key].join(''), ccls: tmpText[key].length === 0 ? undefined : node.ccls };
         }
-        delete state.top.tmpText[key];
     });
 
     return fromMap(state.top.root, nodes, fromId);

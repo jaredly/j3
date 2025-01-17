@@ -285,7 +285,7 @@ function addNeighbor({
         flat[at] = node;
     }
 
-    const split = cursorSplit(top.tmpText, node.text, cursor, current.start);
+    const split = cursorSplit(top.tmpText, node, cursor, current.start);
 
     let sel: Node = node;
     let ncursor: Cursor = { ...cursor };
@@ -301,7 +301,7 @@ function addNeighbor({
         }
         case 'between': {
             flat[at] = nodes[node.loc] = { ...node, text: split.left };
-            flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: split.right, loc: -1, ccls: node.ccls }));
+            flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: split.right, loc: -1, ccls: split.right === '' ? undefined : node.ccls }));
             ncursor = { type: 'id', end: 0 };
             break;
         }

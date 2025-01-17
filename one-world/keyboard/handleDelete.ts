@@ -355,11 +355,18 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
         return; // prolly at the toplevel? or in a text or table, gotta handle tat
     }
 
+    const tmpText: NonNullable<Update['tmpText']> = {};
+
     let node = state.top.nodes[lastChild(state.sel.start.path)];
     const remap: Nodes = {};
     // "maybe commit text changes"
     if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
         node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
+    }
+    if (node.type === 'id' && state.top.tmpText[node.loc]) {
+        tmpText[node.loc] = undefined;
+        const text = state.top.tmpText[node.loc];
+        node = remap[node.loc] = { ...node, text: text.join(''), ccls: text.length === 0 ? undefined : node.ccls };
     }
 
     // Here's the table folks
@@ -415,6 +422,7 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             selection: {
                 start: fixSelection(selStart(pathWithChildren(parentPath(parent), ...selPath), cursor), result.nodes, state.top),
             },
+            tmpText,
         };
 
         rebalanceSmooshed(up, state.top);
@@ -456,7 +464,7 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             return removeSelf(state, { path: parent, node: pnode });
         }
         // Select the '(' opener
-        return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
+        return { nodes: {}, tmpText, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
         // return unwrap(parent, state.top, state.sel);
     }
 
@@ -564,7 +572,11 @@ export const handleDelete = (state: TestState): Update | void => {
                         );
                     }
                 }
-                return { nodes: {}, selection: { start: selStart(state.sel.start.path, { type: 'id', end: left, text }) } };
+                return {
+                    nodes: {},
+                    tmpText: { [current.node.loc]: text },
+                    selection: { start: selStart(state.sel.start.path, { type: 'id', end: left }) },
+                };
             }
         }
         case 'text': {
@@ -654,9 +666,7 @@ export const handleTextDelete = (
     right: Spat,
     text?: { index: number; grems: string[] },
 ): Update | void => {
-    // if (current.cursor.type !== 'text') return;
     const spans = current.node.spans.slice();
-    // let { left, right, text } = textCursorSides2(current.cursor);
 
     if (text) {
         const span = spans[text.index];

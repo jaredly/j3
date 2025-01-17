@@ -37,7 +37,7 @@ const validateNodes = (top: Top, id: number) => {
     const node = top.nodes[id];
 
     if (node.type === 'id' && (node.text === '') !== (node.ccls == null)) {
-        throw new Error(`punct must be set if text is not empty ${node.text} vs ${node.ccls}, and vice versa`);
+        throw new Error(`punct must be set if text is not empty "${node.text}" vs ${node.ccls}, and vice versa`);
     }
 
     // Every row in a table must have at least one item.

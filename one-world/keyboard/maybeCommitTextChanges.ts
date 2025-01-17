@@ -62,7 +62,11 @@ export function maybeCommitTextChanges<T extends TestState>(prev: NodeSelection,
 
             const node = state.top.nodes[+key];
             if (node.type === 'id') {
-                state.top.nodes[+key] = { ...node, text: state.top.tmpText[key].join('') };
+                state.top.nodes[+key] = {
+                    ...node,
+                    text: state.top.tmpText[key].join(''),
+                    ccls: state.top.tmpText[key].length === 0 ? undefined : node.ccls,
+                };
                 delete state.top.tmpText[key];
                 // console.log('yooo');
             }

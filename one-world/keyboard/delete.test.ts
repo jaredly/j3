@@ -154,7 +154,10 @@ test('join why broked', () => {
     state = applySel(state, handleNav('ArrowLeft', state));
     state = applyUpdate(state, handleDelete(state));
     check(state, smoosh([id('a'), id('+'), id('c', true)]), idc(0));
+    console.log(state.top.tmpText, state.sel.start.cursor);
+    console.log(state.sel.start.cursor, state.top.tmpText, state.top.nodes);
     state = applyUpdate(state, handleDelete(state));
+    console.log(state.sel.start.cursor, state.top.tmpText, state.top.nodes);
     check(state, id('ac', true), idc(1));
 });
 

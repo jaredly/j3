@@ -71,7 +71,7 @@ test('close it up', () => {
     check(state, round([id('hello')], true), listc('after'));
 });
 
-test('close it up spaced', () => {
+test('closer spaced', () => {
     let state = asTop(round([spaced([id('hello', true), id('lol')])]), idc(2));
     state = applyUpdate(state, handleClose(state, ')'));
     check(state, round([spaced([id('hello'), id('lol')])], true), listc('after'));
