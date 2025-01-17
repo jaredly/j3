@@ -3,7 +3,7 @@ import { List, isRich } from '../../shared/cnodes';
 import { selUpdate } from '../handleNav';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
-import { SelectionStatuses, Path, ListWhere, parentPath, Top } from '../utils';
+import { SelectionStatuses, Path, ListWhere, parentPath, Top, TmpText } from '../utils';
 import { lightColor } from './colors';
 import { Cursor } from './cursor';
 import { RCtx, closestVisibleList, RenderNode, hlColor, Section, braceColorHl, braceColor, opener, closer } from './RenderNode';

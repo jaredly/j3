@@ -54,7 +54,9 @@ const reducer = (state: AppState, action: Update) => {
 };
 
 const getInitialState = (id: string): AppState => {
-    return localStorage[id] ? JSON.parse(localStorage[id]) : init;
+    const data: AppState = localStorage[id] ? JSON.parse(localStorage[id]) : init;
+    if (!data.top.tmpText) data.top.tmpText = {};
+    return data;
 };
 
 const useAppState = (id: string) => {

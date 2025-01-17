@@ -2,7 +2,7 @@ import React from 'react';
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { Id } from '../../shared/cnodes';
 import { justSel } from '../handleNav';
-import { SelectionStatuses, Path, IdCursor, selStart } from '../utils';
+import { SelectionStatuses, Path, IdCursor, selStart, TmpText } from '../utils';
 import { TextWithCursor, Zwd } from './cursor';
 import { RCtx, cursorPositionInSpanForEvt } from './RenderNode';
 
@@ -10,6 +10,7 @@ export const RenderId = (
     status: SelectionStatuses[''],
     readOnly: boolean | undefined,
     node: Id<number>,
+    tmpText: TmpText,
     style: React.CSSProperties | undefined,
     ref: (el: HTMLElement) => void,
     ctx: RCtx,
@@ -17,7 +18,7 @@ export const RenderId = (
 ) => {
     if (status?.cursors.length && !readOnly) {
         // STOPSHIP need to render tmpText here
-        const cursorText = null; // (status.cursors.find((c) => c.type === 'id' && c.text) as IdCursor)?.text;
+        const cursorText = tmpText[node.loc]; // (status.cursors.find((c) => c.type === 'id' && c.text) as IdCursor)?.text;
         const text = cursorText ?? splitGraphemes(node.text);
         return (
             <span style={{ ...style, position: 'relative' }}>

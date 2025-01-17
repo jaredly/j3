@@ -111,7 +111,7 @@ export const RenderNode = ({
 
     switch (node.type) {
         case 'id':
-            return RenderId(status, readOnly, node, style, ref, ctx, nextParent);
+            return RenderId(status, readOnly, node, top.tmpText, style, ref, ctx, nextParent);
         case 'list':
             return RenderList(status, readOnly, node, style, ref, ctx, nextParent, top, inRich);
         case 'text':
