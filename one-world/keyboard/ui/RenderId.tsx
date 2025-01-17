@@ -16,7 +16,8 @@ export const RenderId = (
     nextParent: Path,
 ) => {
     if (status?.cursors.length && !readOnly) {
-        const cursorText = (status.cursors.find((c) => c.type === 'id' && c.text) as IdCursor)?.text;
+        // STOPSHIP need to render tmpText here
+        const cursorText = null; // (status.cursors.find((c) => c.type === 'id' && c.text) as IdCursor)?.text;
         const text = cursorText ?? splitGraphemes(node.text);
         return (
             <span style={{ ...style, position: 'relative' }}>
@@ -26,14 +27,14 @@ export const RenderId = (
                         evt.preventDefault();
                         evt.stopPropagation();
                         const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                        ctx.drag.start(selStart(nextParent, { type: 'id', end: pos ?? 0, text: cursorText }));
+                        ctx.drag.start(selStart(nextParent, { type: 'id', end: pos ?? 0 }));
                     }}
                     onMouseMove={(evt) => {
                         if (ctx.drag.dragging) {
                             evt.preventDefault();
                             evt.stopPropagation();
                             const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                            ctx.drag.move(selStart(nextParent, { type: 'id', end: pos ?? 0, text: cursorText }));
+                            ctx.drag.move(selStart(nextParent, { type: 'id', end: pos ?? 0 }));
                         }
                     }}
                     text={text}

@@ -267,7 +267,8 @@ test('dot to decimal', () => {
 });
 
 test('num and such', () => {
-    let state = asTop(id('2', true), { type: 'id', end: 2, text: ['2', '3'] });
+    let state = asTop(id('2', true), { type: 'id', end: 2 });
+    state.top.tmpText[0] = ['2', '3'];
     state = applyUpdate(state, handleKey(state, '.', js));
     check(state, id('23.', true), idc(3));
 });
@@ -292,7 +293,8 @@ test('plus decimal', () => {
 });
 
 test('fn(x)', () => {
-    let state = asTop(id('f', true), { type: 'id', end: 2, text: ['f', 'n'] });
+    let state = asTop(id('f', true), { type: 'id', end: 2 });
+    state.top.tmpText[0] = ['f', 'n'];
     state = applyUpdate(state, keyUpdate(state, '(', {}, undefined, js));
     check(state, smoosh([id('fn'), round([], true)]), listc('inside'));
 });

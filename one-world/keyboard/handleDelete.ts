@@ -360,9 +360,9 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
     let node = state.top.nodes[lastChild(state.sel.start.path)];
     const remap: Nodes = {};
     // "maybe commit text changes"
-    if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
-        node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
-    }
+    // if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
+    //     node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
+    // }
     if (node.type === 'id' && state.top.tmpText[node.loc]) {
         tmpText[node.loc] = undefined;
         const text = state.top.tmpText[node.loc];

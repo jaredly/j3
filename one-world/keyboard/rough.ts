@@ -167,13 +167,13 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
             if (prev === selection.node) {
                 selection = {
                     ...selection,
-                    cursor: selection.cursor.type === 'id' ? { ...selection.cursor, text: undefined } : selection.cursor,
+                    cursor: selection.cursor.type === 'id' ? { ...selection.cursor } : selection.cursor,
                     node: res[at] as Id<number>,
                 };
             } else if (item === selection.node && selection.cursor.type === 'id') {
                 selection = {
                     node: res[at] as Id<number>,
-                    cursor: { ...selection.cursor, text: undefined, end: selection.cursor.end + splitGraphemes(prev.text).length },
+                    cursor: { ...selection.cursor, end: selection.cursor.end + splitGraphemes(prev.text).length },
                 };
             }
             return;

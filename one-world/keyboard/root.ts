@@ -6,20 +6,20 @@ export const root = <T>(state: { top: Top; sel?: NodeSelection }, fromId: (n: nu
     // Object.keys(state.top.tmpText)
     if (state.sel) {
         const { cursor, path } = state.sel.start;
-        if (cursor.type === 'id' && cursor.text) {
-            const loc = lastChild(path);
-            const node = nodes[loc];
-            if (node.type === 'id') {
-                nodes = {
-                    ...nodes,
-                    [loc]: {
-                        ...node,
-                        text: cursor.text.join(''),
-                        ccls: cursor.text.length === 0 ? undefined : node.ccls,
-                    },
-                };
-            }
-        }
+        // if (cursor.type === 'id' && cursor.text) {
+        //     const loc = lastChild(path);
+        //     const node = nodes[loc];
+        //     if (node.type === 'id') {
+        //         nodes = {
+        //             ...nodes,
+        //             [loc]: {
+        //                 ...node,
+        //                 text: cursor.text.join(''),
+        //                 ccls: cursor.text.length === 0 ? undefined : node.ccls,
+        //             },
+        //         };
+        //     }
+        // }
         if (cursor.type === 'text' && cursor.end.text) {
             const loc = lastChild(path);
             const node = nodes[loc];

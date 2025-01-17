@@ -263,11 +263,11 @@ export const navRight = (current: Current, state: TestState): SelStart | void =>
         case 'id': {
             if (current.start != null && current.start !== current.cursor.end) {
                 const { right } = cursorSides(current.cursor, current.start);
-                return selStart(current.path, { type: 'id', end: right, text: current.cursor.text });
+                return selStart(current.path, { type: 'id', end: right });
             }
             const text = idText(state.top.tmpText, current.cursor, current.node);
             if (current.cursor.end < text.length) {
-                return selStart(current.path, { type: 'id', end: current.cursor.end + 1, text: current.cursor.text });
+                return selStart(current.path, { type: 'id', end: current.cursor.end + 1 });
             }
             const sel = goRight(current.path, state.top);
             if (sel) {
@@ -375,10 +375,10 @@ export const navLeft = (current: Current, state: TestState): SelStart | void => 
         case 'id': {
             if (current.start != null && current.start !== current.cursor.end) {
                 const { left } = cursorSides(current.cursor, current.start);
-                return selStart(current.path, { type: 'id', end: left, text: current.cursor.text });
+                return selStart(current.path, { type: 'id', end: left });
             }
             if (current.cursor.end > 0) {
-                return selStart(current.path, { type: 'id', end: current.cursor.end - 1, text: current.cursor.text });
+                return selStart(current.path, { type: 'id', end: current.cursor.end - 1 });
             }
             const sel = goLeft(current.path, state.top);
             if (sel) {

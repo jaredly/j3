@@ -52,7 +52,7 @@ export const pathWithChildren = (path: Path, ...children: number[]) => ({
 export type IdCursor = {
     type: 'id';
     end: number;
-    text?: string[];
+    // text?: string[];
 };
 
 export type TextCursor = {

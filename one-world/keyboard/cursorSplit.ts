@@ -7,7 +7,7 @@ export const spanText = (tmpText: Top['tmpText'], loc: number, end: { text?: str
     getTextText(tmpText, loc, end.index) ?? end.text ?? splitGraphemes(span.text);
 
 export const idText = (tmpText: Top['tmpText'], cursor: IdCursor | { text?: string[] }, node: { text: string; loc: number }) =>
-    getIdText(tmpText, node.loc) ?? cursor.text ?? splitGraphemes(node.text);
+    getIdText(tmpText, node.loc) ?? splitGraphemes(node.text);
 // export const idString = (tmpText: Top['tmpText'], cursor: IdCursor | { text?: string[] }, loc: number, text: string) =>
 //     getIdText(tmpText, loc) ?? cursor.text ?? splitGraphemes(text);
 

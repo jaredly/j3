@@ -7,7 +7,21 @@ import { braced } from './handleListKey';
 import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
 import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, flattenRow, pruneEmptyIds, rough, unflat } from './rough';
-import { Current, Cursor, IdCursor, Path, Top, Update, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
+import {
+    Current,
+    Cursor,
+    IdCursor,
+    Path,
+    TmpText,
+    Top,
+    Update,
+    findTableLoc,
+    lastChild,
+    parentLoc,
+    parentPath,
+    pathWithChildren,
+    selStart,
+} from './utils';
 import { isTag, justSel, selectStart, selUpdate } from './handleNav';
 
 // const isNumber = (grems: undefined | string[], text: string) => {
@@ -144,17 +158,16 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
     const nodes: Update['nodes'] = {};
 
     const neighbor = flatNeighbor(kind, grem);
-    const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes, top });
+    const { sel, ncursor, tmpText } = addNeighbor({ neighbor, current, flat, nodes, top });
 
-    // console.log(flat);
-
-    return flatToUpdateNew(
+    const up = flatToUpdateNew(
         flat,
         { node: sel, cursor: ncursor },
         { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
         nodes,
         top,
     );
+    return up ? { ...up, tmpText } : undefined;
 };
 
 export const handleTableSplit = (grem: string, config: Config, path: Path, top: Top, splitCell: (cell: Node, top: Top, loc: number) => SplitRes) => {
@@ -279,10 +292,17 @@ function addNeighbor({
 }) {
     let { node, cursor } = current;
     const at = flat.indexOf(node);
+    const tmpText: Update['tmpText'] = {};
     if (at === -1) throw new Error(`flatten didnt work I guess`);
-    if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
-        node = nodes[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
+    // if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
+    //     node = nodes[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
+    //     flat[at] = node;
+    // }
+    if (top.tmpText[node.loc]) {
+        const text = top.tmpText[node.loc];
+        node = nodes[node.loc] = { ...node, text: text.join(''), ccls: text.length === 0 ? undefined : node.ccls };
         flat[at] = node;
+        tmpText[node.loc] = undefined;
     }
 
     const split = cursorSplit(top.tmpText, node, cursor, current.start);
@@ -306,7 +326,7 @@ function addNeighbor({
             break;
         }
     }
-    return { sel, ncursor };
+    return { sel, ncursor, tmpText };
 }
 
 export function flatNeighbor(kind: Kind, grem: string): Flat {
