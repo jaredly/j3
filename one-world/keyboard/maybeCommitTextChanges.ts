@@ -54,14 +54,9 @@ export function maybeCommitTextChanges<T extends TestState>(prev: NodeSelection,
     // console.log('com', update.tmpText, selId);
     let up = false;
     Object.keys(state.top.tmpText).forEach((key) => {
-        if (key !== selId + '') {
-            if (!up) {
-                up = true;
-                state.top = { ...state.top, tmpText: { ...state.top.tmpText }, nodes: { ...state.top.nodes } };
-            }
-
-            if (key.includes(':')) {
-                const [loc, idx] = key.split(':');
+        if (key.includes(':')) {
+            const [loc, idx] = key.split(':');
+            if (+loc !== selId) {
                 const node = state.top.nodes[+loc];
                 if (node.type === 'text') {
                     const spans = node.spans.slice();
@@ -73,7 +68,14 @@ export function maybeCommitTextChanges<T extends TestState>(prev: NodeSelection,
                     state.top.nodes[+loc] = { ...node, spans };
                     delete state.top.tmpText[key];
                 }
-            } else {
+            }
+        } else {
+            if (key !== selId + '') {
+                if (!up) {
+                    up = true;
+                    state.top = { ...state.top, tmpText: { ...state.top.tmpText }, nodes: { ...state.top.nodes } };
+                }
+
                 const node = state.top.nodes[+key];
                 if (node.type === 'id') {
                     state.top.nodes[+key] = {

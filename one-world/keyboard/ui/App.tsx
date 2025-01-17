@@ -374,6 +374,7 @@ export const App = ({ id }: { id: string }) => {
                 </div>
             ) : null}
             <div style={{ paddingLeft: 50, paddingTop: 20 }}>SEL {JSON.stringify(state.sel)}</div>
+            <div style={{ paddingLeft: 50, paddingTop: 20 }}>TMPText {JSON.stringify(state.top.tmpText)}</div>
             <div style={{ paddingLeft: 50, paddingTop: 14 }}>
                 {Object.entries(selectionStatuses).map(([k, v]) => (
                     <div key={k}>

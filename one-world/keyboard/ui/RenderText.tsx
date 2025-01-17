@@ -25,9 +25,9 @@ export const RenderText = (
     const children = node.spans.map((span, i) => {
         if (span.type === 'text') {
             const style = inRich ? asStyle(span.style) : { color: textColor, ...asStyle(span.style) };
+            const cursorText = top.tmpText[`${node.loc}:${i}`];
             const sc = status?.cursors.filter((c) => c.type === 'text' && c.end.index === i);
             if (sc?.length) {
-                const cursorText = top.tmpText[`${node.loc}:${i}`];
                 // (sc.find((c) => c.type === 'text' && c.end.index === i && c.end.text) as TextCursor)?.end.text;
                 const text = cursorText ?? splitGraphemes(span.text);
                 // const text = sides.text?.index === i ? sides.text.grems : splitGraphemes(span.text);
@@ -69,6 +69,7 @@ export const RenderText = (
                     </span>
                 );
             }
+            const text = cursorText?.join('') ?? span.text;
             const hl = status?.highlight?.type === 'text' ? status.highlight.spans[i] : undefined;
             // TODO show cursor here
             return (
@@ -93,7 +94,7 @@ export const RenderText = (
                         }
                     }}
                 >
-                    {span.text === '' ? '\u200B' : span.text}
+                    {text === '' ? '\u200B' : text}
                 </span>
             );
         } else if (span.type === 'embed') {
