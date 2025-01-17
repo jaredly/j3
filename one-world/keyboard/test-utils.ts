@@ -260,11 +260,12 @@ const jsId = idkeys(js);
 export const idc = (end: number): IdCursor => ({ type: 'id', end });
 export const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
 export const controlc = (index: number): CollectionCursor => ({ type: 'control', index });
-export const noText = (cursor: Cursor): Cursor =>
-    cursor.type === 'id' ? { ...cursor } : cursor.type === 'text' ? { ...cursor, end: { ...cursor.end, text: undefined } } : cursor;
-export const textc = (index: number, cursor: number, text?: string[]): TextCursor => ({
+export const noText = (cursor: Cursor): Cursor => cursor;
+// cursor.type === 'id' ? { ...cursor } : cursor.type === 'text' ? { ...cursor, end: { ...cursor.end, text: undefined } } : cursor;
+export const textc = (index: number, cursor: number): TextCursor => ({
+    // text?: string[]
     type: 'text',
-    end: { index, cursor, text },
+    end: { index, cursor }, // text
 });
 // export const textcs = (index: number, cursor: number, sindex: number, scursor: number, text?: string[]): TextCursor => ({
 //     type: 'text',

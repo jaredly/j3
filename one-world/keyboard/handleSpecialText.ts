@@ -3,7 +3,7 @@ import { linksEqual, Style, stylesEqual, Text, TextSpan } from '../shared/cnodes
 import { sideEqual } from './handleNav';
 import { Mods } from './handleShiftNav';
 // import { textCursorSides2 } from './insertId';
-import { Path, TextCursor, ListCursor, Top, Update, selStart } from './utils';
+import { Path, TextCursor, ListCursor, Top, Update, selStart, TmpText } from './utils';
 
 const isStyleKey = (key: string) => key === 'b' || key === 'i' || key === 'u';
 
@@ -66,7 +66,8 @@ export type Spat = { cursor: number; index: number };
 
 export const specialTextMod = (
     node: Text<number>,
-    text: undefined | { grems: string[]; index: number },
+    // text: undefined | { grems: string[]; index: number },
+    tmpText: TmpText,
     left: Spat,
     right: Spat,
     mod: (style: Style) => void,
@@ -84,7 +85,7 @@ export const specialTextMod = (
         if (span.type !== 'text') continue;
         const style = { ...span.style };
         mod(style);
-        const grems = (text?.index === i ? text.grems : null) ?? splitGraphemes(span.text);
+        const grems = tmpText[`${node.loc}:${i}`] ?? splitGraphemes(span.text);
 
         const start = i === left.index ? left.cursor : 0;
         const end = i === right.index ? right.cursor : grems.length;
@@ -136,18 +137,8 @@ export const handleSpecialText = (
     const mod = keyMod(key, mods);
     if (!mod) return;
 
-    const res = specialTextMod(
-        node,
-        cursor.end.text
-            ? {
-                  index: cursor.end.index,
-                  grems: cursor.end.text,
-              }
-            : undefined,
-        cursor.end,
-        cursor.end,
-        mod,
-    );
+    const grems = top.tmpText[`${node.loc}:${cursor.end.index}`];
+    const res = specialTextMod(node, top.tmpText, cursor.end, cursor.end, mod);
     if (!res) return;
 
     return {

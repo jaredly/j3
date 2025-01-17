@@ -27,7 +27,8 @@ export const RenderText = (
             const style = inRich ? asStyle(span.style) : { color: textColor, ...asStyle(span.style) };
             const sc = status?.cursors.filter((c) => c.type === 'text' && c.end.index === i);
             if (sc?.length) {
-                const cursorText = (sc.find((c) => c.type === 'text' && c.end.index === i && c.end.text) as TextCursor)?.end.text;
+                const cursorText = top.tmpText[`${node.loc}:${i}`];
+                // (sc.find((c) => c.type === 'text' && c.end.index === i && c.end.text) as TextCursor)?.end.text;
                 const text = cursorText ?? splitGraphemes(span.text);
                 // const text = sides.text?.index === i ? sides.text.grems : splitGraphemes(span.text);
                 // const left = i === sides.left.index ? sides.left.cursor : 0;
@@ -44,7 +45,7 @@ export const RenderText = (
                                 ctx.drag.start(
                                     selStart(nextParent, {
                                         type: 'text',
-                                        end: { index: i, cursor: pos ?? 0, text: cursorText },
+                                        end: { index: i, cursor: pos ?? 0 },
                                     }),
                                 );
                             }}
@@ -56,7 +57,7 @@ export const RenderText = (
                                     ctx.drag.move(
                                         selStart(nextParent, {
                                             type: 'text',
-                                            end: { index: i, cursor: pos ?? 0, text: cursorText },
+                                            end: { index: i, cursor: pos ?? 0 },
                                         }),
                                     );
                                 }

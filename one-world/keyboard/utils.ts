@@ -2,7 +2,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Nodes, Id, Collection, Text, Node, TextSpan } from '../shared/cnodes';
 import { SelStart } from './handleShiftNav';
 
-export const spanLength = (span: TextSpan<unknown>, text: undefined | TextCursor['end'], index: number) =>
+export const spanLength = (span: TextSpan<unknown>, text: undefined | { index: number; text?: string[] }, index: number) =>
     index === text?.index && text?.text ? text.text.length : span.type === 'text' ? splitGraphemes(span.text).length : 1;
 
 // import { IRSelection } from "../shared/IR/intermediate";
@@ -52,12 +52,15 @@ export const pathWithChildren = (path: Path, ...children: number[]) => ({
 export type IdCursor = {
     type: 'id';
     end: number;
-    // text?: string[];
 };
 
 export type TextCursor = {
     type: 'text';
-    end: { index: number; cursor: number; text?: string[] };
+    end: {
+        index: number;
+        cursor: number;
+        // text?: string[]
+    };
 };
 export type ListWhere = 'before' | 'start' | 'inside' | 'end' | 'after';
 export type CollectionCursor = ListCursor | { type: 'control'; index: number };
@@ -202,33 +205,6 @@ export type SelUpdate =
     // Assuming that from and to are siblings. things would break otherwise
     | { type: 'id'; from: { loc: number; offset: number }; to: { loc: number; offset: number } };
 // | { type: 'id'; from: { path: Path; offset: number }; to: { path: Path; offset: number } };
-
-// export type SelStartUpdate =
-//     | {
-//           type: 'id';
-//           fromPath: Path;
-//           toPath: Path;
-//           fromOffset: number;
-//           toOffset: number;
-//       }
-//     | {
-//           // jumping, annnd. it should only apply to the single one.
-//           type: 'jump';
-//           // from: NodeSelection,
-//           to: NodeSelection;
-//       }
-//     | {
-//           type: 'text';
-//           fromPath: Path;
-//           toPath: Path;
-//           fromIndex: number;
-//           fromOffset: number;
-//           toIndex: number;
-//           toOffset: number;
-//       }
-//     // this goes multicursor on you.
-//     // if it's already multi, then we .. don't bother? yeah that sounds right.
-//     | { type: 'dup'; inner: SelStartUpdate };
 
 export type Update = {
     nodes: Record<number, Node | null>;

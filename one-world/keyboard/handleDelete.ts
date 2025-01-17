@@ -600,17 +600,13 @@ export const handleDelete = (state: TestState): Update | void => {
             // TODO: gotta do a left/right story here pls
 
             if (current.cursor.type !== 'text') return;
+            const grems = state.top.tmpText[`${current.node.loc}:${current.cursor.end.index}`];
             return handleTextDelete(
                 state,
                 current,
                 current.cursor.end,
                 current.cursor.end,
-                current.cursor.end.text
-                    ? {
-                          index: current.cursor.end.index,
-                          grems: current.cursor.end.text,
-                      }
-                    : undefined,
+                grems ? { index: current.cursor.end.index, grems } : undefined,
             );
         }
 
@@ -735,8 +731,9 @@ export const handleTextDelete = (
             return {
                 nodes: {},
                 selection: {
-                    start: selStart(state.sel.start.path, { type: 'text', end: { index: left.index, text: grems, cursor: left.cursor } }),
+                    start: selStart(state.sel.start.path, { type: 'text', end: { index: left.index, cursor: left.cursor } }),
                 },
+                tmpText: { [`${current.node.loc}:${left.index}`]: grems },
             };
         }
     }

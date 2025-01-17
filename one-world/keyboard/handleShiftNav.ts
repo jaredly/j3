@@ -263,16 +263,12 @@ const wordNext = (node: Text<number>, left: boolean, index: number, cursor: numb
 export const wordNav = (state: TestState, left: boolean, shift: boolean | undefined): NodeSelection | void => {
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
-        const { index, cursor, text } = current.cursor.end;
-        const next = wordNext(current.node, left, index, cursor, text);
+        const { index, cursor } = current.cursor.end;
+        const next = wordNext(current.node, left, index, cursor, state.top.tmpText[`${current.node.loc}:${index}`]);
         if (next != null) {
             const start = selStart(current.path, {
                 type: 'text',
-                end: {
-                    cursor: next.cursor,
-                    index: next.index,
-                    text: current.cursor.end.index === next.index ? current.cursor.end.text : undefined,
-                },
+                end: { cursor: next.cursor, index: next.index },
             });
             return shift ? { start: state.sel.start, end: start } : { start };
         }
@@ -407,14 +403,15 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
 
             const [left, right] = ltCursor(sc, ec) ? [sc, ec] : [ec, sc];
 
-            const text = sc.end.text
-                ? { grems: sc.end.text, index: sc.end.index }
-                : ec.end.text
-                ? { grems: ec.end.text, index: ec.end.index }
-                : undefined;
             const node = state.top.nodes[lastChild(state.sel.start.path)];
+            // const grems = state.top.tmpText[`${node.loc}:${cursor.end.index}`]
+            // const text = sc.end.text
+            //     ? { grems: sc.end.text, index: sc.end.index }
+            //     : ec.end.text
+            //     ? { grems: ec.end.text, index: ec.end.index }
+            //     : undefined;
             if (node.type === 'text') {
-                const res = specialTextMod(node, text, left.end, right.end, mod);
+                const res = specialTextMod(node, state.top.tmpText, left.end, right.end, mod);
                 return res
                     ? {
                           nodes: { [node.loc]: res.node },

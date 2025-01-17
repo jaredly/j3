@@ -45,14 +45,17 @@ export const handleTextText = (
                     const prev = spans[cursor.end.index - 1];
                     if (prev.type === 'text') {
                         const grems = splitGraphemes(prev.text);
-                        return justSel(path, {
-                            type: 'text',
-                            end: {
-                                index: cursor.end.index - 1,
-                                cursor: grems.length + 1,
-                                text: grems.concat([grem]),
-                            },
-                        });
+                        return {
+                            ...justSel(path, {
+                                type: 'text',
+                                end: {
+                                    index: cursor.end.index - 1,
+                                    cursor: grems.length + 1,
+                                    // text: grems.concat([grem]),
+                                },
+                            }),
+                            tmpText: { [`${current.loc}:${cursor.end.index - 1}`]: grems.concat([grem]) },
+                        };
                     }
                 }
                 spans.splice(cursor.end.index, 0, { type: 'text', text: grem });
@@ -76,7 +79,17 @@ export const handleTextText = (
                         selection: { start: selStart(path, { type: 'text', end: { index: cursor.end.index + 1, cursor: 1 } }) },
                     };
                 }
-                return justSel(path, { type: 'text', end: { index: cursor.end.index + 1, cursor: 1, text: [grem, ...splitGraphemes(next.text)] } });
+                return {
+                    ...justSel(path, {
+                        type: 'text',
+                        end: {
+                            index: cursor.end.index + 1,
+                            cursor: 1,
+                            // text: [grem, ...splitGraphemes(next.text)]
+                        },
+                    }),
+                    tmpText: { [`${current.loc}:${cursor.end.index + 1}`]: [grem, ...splitGraphemes(next.text)] },
+                };
             }
         }
         return;
@@ -292,14 +305,15 @@ export const handleTextText = (
     */
     const ntext = text.slice(0, left).concat([grem]).concat(text.slice(right));
 
-    return justSel(path, {
+    const up = justSel(path, {
         type: 'text',
         end: {
             index: cursor.end.index,
             cursor: left + 1,
-            text: ntext,
+            // text: ntext,
         },
     });
+    return { ...up, tmpText: { [`${current.loc}:${cursor.end.index}`]: ntext } };
 };
 
 export const handleTextKey = (config: Config, top: Top, path: Path, cursor: ListCursor | TextCursor, grem: string, mods?: Mods): Update | void => {

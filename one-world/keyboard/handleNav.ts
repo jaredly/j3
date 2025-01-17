@@ -296,11 +296,7 @@ export const navRight = (current: Current, state: TestState): SelStart | void =>
                 if (end.cursor < text.length) {
                     return selStart(current.path, {
                         type: 'text',
-                        end: {
-                            index: end.index,
-                            cursor: end.cursor + 1,
-                            text: end.text,
-                        },
+                        end: { index: end.index, cursor: end.cursor + 1 },
                     });
                 }
                 if (end.index >= current.node.spans.length - 1) {
@@ -401,11 +397,7 @@ export const navLeft = (current: Current, state: TestState): SelStart | void => 
 
                     return selStart(current.path, {
                         type: 'text',
-                        end: {
-                            index: end.index,
-                            cursor: end.cursor - 1,
-                            text: end.text,
-                        },
+                        end: { index: end.index, cursor: end.cursor - 1 },
                     });
                 }
                 if (end.index > 0) {

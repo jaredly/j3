@@ -225,7 +225,8 @@ test('text delete prev span', () => {
 });
 
 test('text delete prev span tmp text', () => {
-    let state = asTop(text([tspan('aa'), tspan('bb')], true), textc(1, 0, ['c']));
+    let state = asTop(text([tspan('aa'), tspan('bb')], true), textc(1, 0));
+    state.top.tmpText[`0:1`] = ['c'];
     state = applyUpdate(state, handleDelete(state));
     check(state, text([tspan('a'), tspan('c')], true), textc(0, 1));
 });
