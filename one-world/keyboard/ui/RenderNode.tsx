@@ -35,7 +35,7 @@ export type RCtx = {
     // mhover: null | string[];
     drag: {
         dragging: boolean;
-        start: (sel: SelStart) => void;
+        start: (sel: SelStart, meta?: boolean) => void;
         move: (sel: SelStart) => void;
     };
 };

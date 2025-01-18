@@ -28,7 +28,7 @@ export const RenderId = (
                         evt.preventDefault();
                         evt.stopPropagation();
                         const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                        ctx.drag.start(selStart(nextParent, { type: 'id', end: pos ?? 0 }));
+                        ctx.drag.start(selStart(nextParent, { type: 'id', end: pos ?? 0 }), evt.metaKey);
                     }}
                     onMouseMove={(evt) => {
                         if (ctx.drag.dragging) {
@@ -54,7 +54,7 @@ export const RenderId = (
                 evt.preventDefault();
                 evt.stopPropagation();
                 const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(node.text));
-                ctx.drag.start(selStart(nextParent, { type: 'id', end: pos ?? 0 }));
+                ctx.drag.start(selStart(nextParent, { type: 'id', end: pos ?? 0 }), evt.metaKey);
             }}
             onMouseMove={(evt) => {
                 if (ctx.drag.dragging) {
