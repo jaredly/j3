@@ -1,8 +1,15 @@
 
 Ok next
 
-- [ ] ok, so now ... multi cursor, right?
+- [x] ok, so now ... multi cursor, right?
+- [x] multiple highlights in a single text id or span
 - [ ] one way to test multi-user is to have a button to let you switch userssss
+
+- [ ] yeahhh we have multimultiii
+  - aw shunks not quite uyet.
+    need to (apply first update) and then (calculate second update).
+    otherwise we can't have two edits to the same id, or multiple nextLoc++s happening.
+    ok.
 
 #
 

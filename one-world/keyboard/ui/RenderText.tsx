@@ -99,7 +99,7 @@ export const RenderText = (
             );
         } else if (span.type === 'embed') {
             const spa = status?.highlight?.type === 'text' ? status.highlight.spans[i] : null;
-            const selected = spa === true || (spa && (spa.start == null || spa.start === 0) && (spa.end == null || spa.end >= 1));
+            const selected = spa === true || (spa && spa.some((spa) => (spa.start == null || spa.start === 0) && (spa.end == null || spa.end >= 1)));
             return (
                 <span
                     style={{

@@ -7,7 +7,7 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
     if (node.type === 'id') {
         if (left && left.type !== 'id') throw new Error(`id must have id cursor`);
         if (right && right.type !== 'id') throw new Error(`id must have id cursor`);
-        return { type: 'id', start: left?.end, end: right?.end };
+        return { type: 'id', spans: [{ start: left?.end, end: right?.end }] };
     }
 
     // hrmmmm
@@ -24,9 +24,9 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
                     if (inside != null && inside <= i) return false;
                     if (left.end.index === i) {
                         if (right?.type === 'text' && right.end.index === i) {
-                            return { start: left.end.cursor, end: right.end.cursor };
+                            return [{ start: left.end.cursor, end: right.end.cursor }];
                         }
-                        return { start: left.end.cursor };
+                        return [{ start: left.end.cursor }];
                     }
                 }
                 if (left?.type === 'list' && (left.where === 'before' || left.where === 'start')) {
@@ -39,7 +39,7 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
                     if (right.end.index < i) return false;
                     if (inside != null && inside >= i) return false;
                     if (right.end.index === i) {
-                        return { end: right.end.cursor };
+                        return [{ end: right.end.cursor }];
                     }
                 }
                 return true;

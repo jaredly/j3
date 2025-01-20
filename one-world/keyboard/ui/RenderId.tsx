@@ -39,7 +39,7 @@ export const RenderId = (
                         }
                     }}
                     text={text}
-                    highlight={status.highlight?.type === 'id' ? status.highlight : undefined}
+                    highlight={status.highlight?.type === 'id' ? status.highlight.spans : undefined}
                     cursors={(status.cursors.filter((c) => c.type === 'id') as IdCursor[]).map((c) => c.end)}
                 />
             </span>

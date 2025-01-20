@@ -12,7 +12,7 @@ import { nodeToXML, toXML, XML } from '../../syntaxes/xml';
 import { selectStart } from '../handleNav';
 import { allPaths, multiSelChildren, multiSelKeys, selEnd, SelStart, Src } from '../handleShiftNav';
 import { root } from '../root';
-import { lastChild, NodeSelection, pathWithChildren, SelectionStatuses, selStart, Top, Update } from '../utils';
+import { lastChild, mergeHighlights, NodeSelection, pathWithChildren, SelectionStatuses, selStart, Top, Update } from '../utils';
 import { getCurrent, getSelectionStatuses } from '../selections';
 import { keyUpdate } from './keyUpdate';
 import { RenderNode } from './RenderNode';
@@ -346,8 +346,7 @@ export const App = ({ id }: { id: string }) => {
             Object.entries(st).forEach(([key, status]) => {
                 if (statuses[key]) {
                     statuses[key].cursors.push(...status.cursors);
-                    // TODO merge highlights
-                    statuses[key].highlight = statuses[key].highlight ?? status.highlight;
+                    statuses[key].highlight = mergeHighlights(statuses[key].highlight, status.highlight);
                 } else {
                     statuses[key] = status;
                 }
@@ -365,10 +364,13 @@ export const App = ({ id }: { id: string }) => {
             dragging: false,
             start(sel: SelStart, meta = false) {
                 if (meta) {
-                    dispatch([undefined, { nodes: [], selection: { start: sel } }]);
+                    dispatch(
+                        cstate.current.selections.map((s): undefined | Update => undefined).concat([{ nodes: [], selection: { start: sel } }]),
+                        // [undefined, { nodes: [], selection: { start: sel } }]
+                    );
                 } else {
                     drag.dragging = true;
-                    dispatch(meta ? [undefined, { nodes: [], selection: { start: sel } }] : { nodes: {}, selection: { start: sel } });
+                    dispatch({ nodes: {}, selection: { start: sel } });
                     document.addEventListener('mouseup', up);
                 }
             },
@@ -635,6 +637,9 @@ const useKeyHandler = (
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
             if (evt.metaKey && (evt.key === 'r' || evt.key === 'l')) return;
+            if (evt.key === 'Dead') {
+                return;
+            }
             if (cmenu.current) {
                 const menu = cmenu.current;
                 if (evt.key === 'Escape') {

@@ -145,10 +145,34 @@ export type SelectionStatuses = Record<
 
 export type Highlight =
     | { type: 'full' }
-    | { type: 'id'; start?: number; end?: number }
+    | { type: 'id'; spans: { start?: number; end?: number }[] }
     | { type: 'list'; opener: boolean; closer: boolean; paired?: number }
     // TODO table??
-    | { type: 'text'; spans: (boolean | { start?: number; end?: number })[]; opener: boolean; closer: boolean };
+    | { type: 'text'; spans: (boolean | { start?: number; end?: number }[])[]; opener: boolean; closer: boolean };
+
+export const mergeHighlights = (one: Highlight | undefined, two: Highlight | undefined): Highlight | undefined => {
+    if (!one) return two;
+    if (!two) return one;
+    if (one.type === 'full') return one;
+    if (two.type === 'full') return two;
+    if (one.type === 'id' && two.type === 'id') {
+        return { type: 'id', spans: one.spans.concat(two.spans) };
+    }
+    if (one.type === 'text' && two.type === 'text') {
+        return {
+            type: 'text',
+            opener: one.opener || two.opener,
+            closer: one.closer || two.closer,
+            spans: one.spans.map((s, i) =>
+                s === true || two.spans[i] === true ? true : s === false ? two.spans[i] : two.spans[i] === false ? s : [...s, ...two.spans[i]],
+            ),
+        };
+    }
+    if (one.type === 'list' && two.type === 'list') {
+        return { type: 'list', closer: one.closer || two.closer, opener: one.opener || two.opener, paired: one.paired ?? two.paired };
+    }
+    return one; // arbitrary
+};
 
 /*
 
