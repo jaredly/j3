@@ -258,7 +258,7 @@ function below(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, 
     const options = [];
     let start = sel.start;
     while (true) {
-        const next = handleNav('ArrowRight', { top, sel });
+        const next = handleNav('ArrowRight', { top, sel: { start } });
         if (!next) {
             break;
         }

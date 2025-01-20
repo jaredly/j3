@@ -3,6 +3,10 @@ Ok next
 
 - [x] ok, so now ... multi cursor, right?
 - [x] multiple highlights in a single text id or span
+- [ ] multi UPDATE is broken
+
+
+
 - [ ] one way to test multi-user is to have a button to let you switch userssss
 
 - [ ] yeahhh we have multimultiii

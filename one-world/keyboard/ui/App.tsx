@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from 'react';
 import { useLatest } from '../../../web/custom/useLatest';
-import { applyUpdate } from '../applyUpdate';
-import { init, TestParser, TestState } from '../test-utils';
+import { applySelUp, applyUpdate } from '../applyUpdate';
+import { Config, init, TestParser, TestState } from '../test-utils';
 
 import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { useLocalStorage } from '../../../web/Debug';
@@ -10,11 +10,11 @@ import { ParseResult, show } from '../../syntaxes/dsl';
 import * as dsl3 from '../../syntaxes/dsl3';
 import { nodeToXML, toXML, XML } from '../../syntaxes/xml';
 import { selectStart } from '../handleNav';
-import { allPaths, multiSelChildren, multiSelKeys, selEnd, SelStart, Src } from '../handleShiftNav';
+import { allPaths, Mods, multiSelChildren, multiSelKeys, selEnd, SelStart, Src } from '../handleShiftNav';
 import { root } from '../root';
 import { lastChild, mergeHighlights, NodeSelection, pathWithChildren, SelectionStatuses, selStart, Top, Update } from '../utils';
 import { getCurrent, getSelectionStatuses } from '../selections';
-import { keyUpdate } from './keyUpdate';
+import { keyUpdate, Visual } from './keyUpdate';
 import { RenderNode } from './RenderNode';
 import { posDown, posUp, selectionPos } from './selectionPos';
 import { ShowXML } from './XML';
@@ -49,32 +49,69 @@ export type Menu = {
     }[];
 };
 
-const applyAppUpdate = (state: AppState, action: Update | (void | Update)[]): AppState => {
-    let top = state.top;
+// Ahhhhhhhhhhhh ok. sO actually what wee need is to, like, coalesce the updates?
+// hm. yeah
 
-    if (Array.isArray(action)) {
-        const selections = action.map((action, i) => {
-            const result = applyUpdate({ top, sel: i >= state.selections.length ? state.selections[0] : state.selections[i] }, action);
-            top = result.top;
-            return result.sel;
-        });
-        return { ...state, top, selections };
+type Action =
+    | { type: 'add-sel'; sel: NodeSelection }
+    | { type: 'update'; update: Update | null | undefined }
+    | { type: 'key'; key: string; mods: Mods; visual: Visual; config: Config };
+
+const applyAppUpdate = (state: AppState, action: Action): AppState => {
+    switch (action.type) {
+        case 'add-sel':
+            return { ...state, selections: state.selections.concat([action.sel]) };
+        case 'update':
+            const result = applyUpdate({ top: state.top, sel: state.selections[0] }, action.update);
+            return { ...state, top: result.top, selections: [result.sel] };
+
+        case 'key':
+            const selections = state.selections.slice();
+            let top = state.top;
+            for (let i = 0; i < selections.length; i++) {
+                const sel = selections[i];
+                const update = keyUpdate({ top, sel }, action.key, action.mods, action.visual, action.config);
+                const result = applyUpdate({ top, sel }, update);
+                top = result.top;
+                selections[i] = result.sel;
+                if (update && Array.isArray(update.selection)) {
+                    for (let j = 0; j < selections.length; j++) {
+                        if (j !== i) {
+                            update.selection.forEach((up) => {
+                                selections[j] = applySelUp(selections[i], up);
+                            });
+                        }
+                    }
+                }
+            }
+            return { ...state, top, selections };
     }
 
-    if (!state.selections.length) return state;
+    // let top = state.top;
 
-    const result = applyUpdate({ top, sel: state.selections[0] }, action);
+    // if (Array.isArray(action)) {
+    //     const selections = action.map((action, i) => {
+    //         const result = applyUpdate({ top, sel: i >= state.selections.length ? state.selections[0] : state.selections[i] }, action);
+    //         top = result.top;
+    //         return result.sel;
+    //     });
+    //     return { ...state, top, selections };
+    // }
 
-    // const selections = state.selections.map((sel, i) => {
-    //     const result = applyUpdate({ top, sel }, action);
-    //     top = result.top;
-    //     return result.sel;
-    // });
+    // if (!state.selections.length) return state;
 
-    return { ...state, top: result.top, selections: [result.sel] };
+    // const result = applyUpdate({ top, sel: state.selections[0] }, action);
+
+    // // const selections = state.selections.map((sel, i) => {
+    // //     const result = applyUpdate({ top, sel }, action);
+    // //     top = result.top;
+    // //     return result.sel;
+    // // });
+
+    // return { ...state, top: result.top, selections: [result.sel] };
 };
 
-const reducer = (state: AppState, action: Update | (void | Update)[]) => {
+const reducer = (state: AppState, action: Action) => {
     return applyAppUpdate(state, action);
 };
 
@@ -188,10 +225,10 @@ export const App = ({ id }: { id: string }) => {
         const start = selectStart(l, state.top);
         if (!start) return;
         if (!src.right) {
-            return dispatch({ nodes: {}, selection: { start } }); // multi: { end: selEnd(l) }
+            return dispatch({ type: 'update', update: { nodes: {}, selection: { start } } }); // multi: { end: selEnd(l) }
         }
         const r = paths[src.right[0].idx];
-        return dispatch({ nodes: {}, selection: { start } }); // multi: { end: selEnd(r) }
+        return dispatch({ type: 'update', update: { nodes: {}, selection: { start } } }); // multi: { end: selEnd(r) }
     };
 
     const [menu, setMenu] = useState(null as null | Menu);
@@ -273,26 +310,29 @@ export const App = ({ id }: { id: string }) => {
                     title,
                     action() {
                         dispatch({
-                            nodes: {
-                                [current.node.loc]: {
-                                    type: 'list',
-                                    kind,
-                                    loc: current.node.loc,
-                                    children: [cstate.current.top.nextLoc],
+                            type: 'update',
+                            update: {
+                                nodes: {
+                                    [current.node.loc]: {
+                                        type: 'list',
+                                        kind,
+                                        loc: current.node.loc,
+                                        children: [cstate.current.top.nextLoc],
+                                    },
+                                    [cstate.current.top.nextLoc]: {
+                                        type: 'text',
+                                        loc: cstate.current.top.nextLoc,
+                                        spans: [{ type: 'text', text: '' }],
+                                    },
                                 },
-                                [cstate.current.top.nextLoc]: {
-                                    type: 'text',
-                                    loc: cstate.current.top.nextLoc,
-                                    spans: [{ type: 'text', text: '' }],
+                                selection: {
+                                    start: selStart(pathWithChildren(current.path, cstate.current.top.nextLoc), {
+                                        type: 'text',
+                                        end: { index: 0, cursor: 0 },
+                                    }),
                                 },
+                                nextLoc: cstate.current.top.nextLoc + 1,
                             },
-                            selection: {
-                                start: selStart(pathWithChildren(current.path, cstate.current.top.nextLoc), {
-                                    type: 'text',
-                                    end: { index: 0, cursor: 0 },
-                                }),
-                            },
-                            nextLoc: cstate.current.top.nextLoc + 1,
                         });
                     },
                 }))
@@ -307,31 +347,34 @@ export const App = ({ id }: { id: string }) => {
                         title: 'Rich Table',
                         action() {
                             dispatch({
-                                nodes: {
-                                    [current.node.loc]: {
-                                        type: 'table',
-                                        kind: { type: 'rich' },
-                                        loc: current.node.loc,
-                                        rows: [[cstate.current.top.nextLoc, cstate.current.top.nextLoc + 1]],
+                                type: 'update',
+                                update: {
+                                    nodes: {
+                                        [current.node.loc]: {
+                                            type: 'table',
+                                            kind: { type: 'rich' },
+                                            loc: current.node.loc,
+                                            rows: [[cstate.current.top.nextLoc, cstate.current.top.nextLoc + 1]],
+                                        },
+                                        [cstate.current.top.nextLoc]: {
+                                            type: 'text',
+                                            loc: cstate.current.top.nextLoc,
+                                            spans: [{ type: 'text', text: '' }],
+                                        },
+                                        [cstate.current.top.nextLoc + 1]: {
+                                            type: 'text',
+                                            loc: cstate.current.top.nextLoc + 1,
+                                            spans: [{ type: 'text', text: '' }],
+                                        },
                                     },
-                                    [cstate.current.top.nextLoc]: {
-                                        type: 'text',
-                                        loc: cstate.current.top.nextLoc,
-                                        spans: [{ type: 'text', text: '' }],
+                                    selection: {
+                                        start: selStart(pathWithChildren(current.path, cstate.current.top.nextLoc + 1), {
+                                            type: 'text',
+                                            end: { index: 0, cursor: 0 },
+                                        }),
                                     },
-                                    [cstate.current.top.nextLoc + 1]: {
-                                        type: 'text',
-                                        loc: cstate.current.top.nextLoc + 1,
-                                        spans: [{ type: 'text', text: '' }],
-                                    },
+                                    nextLoc: cstate.current.top.nextLoc + 2,
                                 },
-                                selection: {
-                                    start: selStart(pathWithChildren(current.path, cstate.current.top.nextLoc + 1), {
-                                        type: 'text',
-                                        end: { index: 0, cursor: 0 },
-                                    }),
-                                },
-                                nextLoc: cstate.current.top.nextLoc + 2,
                             });
                         },
                     },
@@ -365,17 +408,18 @@ export const App = ({ id }: { id: string }) => {
             start(sel: SelStart, meta = false) {
                 if (meta) {
                     dispatch(
-                        cstate.current.selections.map((s): undefined | Update => undefined).concat([{ nodes: [], selection: { start: sel } }]),
+                        { type: 'add-sel', sel: { start: sel } },
+                        // cstate.current.selections.map((s): undefined | Update => undefined).concat([{ nodes: [], selection: { start: sel } }]),
                         // [undefined, { nodes: [], selection: { start: sel } }]
                     );
                 } else {
                     drag.dragging = true;
-                    dispatch({ nodes: {}, selection: { start: sel } });
+                    dispatch({ type: 'update', update: { nodes: {}, selection: { start: sel } } });
                     document.addEventListener('mouseup', up);
                 }
             },
             move(sel: SelStart) {
-                dispatch({ nodes: {}, selection: { start: cstate.current.selections[0].start, end: sel } });
+                dispatch({ type: 'update', update: { nodes: {}, selection: { start: cstate.current.selections[0].start, end: sel } } });
             },
         };
         return drag;
@@ -400,7 +444,7 @@ export const App = ({ id }: { id: string }) => {
                         // msel: mkeys,
                         // mhover: hoverkeys,
                         dispatch(up) {
-                            dispatch(up);
+                            dispatch({ type: 'update', update: up });
                         },
                     }}
                 />
@@ -619,7 +663,7 @@ const collides = (one: [number, number], two: [number, number]) => {
 const useKeyHandler = (
     state: AppState,
     parsed: ParseResult<any>,
-    dispatch: (s: Update | (Update | void)[]) => void,
+    dispatch: (s: Action) => void,
     parser: TestParser,
     menu: Menu | null,
     setMenu: (m: Menu | null) => void,
@@ -676,29 +720,47 @@ const useKeyHandler = (
 
             setLastKey(showKey(evt));
 
-            const updates = cstate.current.selections.map((sel) =>
-                keyUpdate(
-                    { top: cstate.current.top, sel },
-                    evt.key,
-                    { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey },
-                    {
-                        up(sel) {
-                            const nxt = posUp(sel, cstate.current.top, refs);
-                            return nxt ? { start: nxt } : null;
-                        },
-                        down(sel) {
-                            const nxt = posDown(sel, cstate.current.top, refs);
-                            return nxt ? { start: nxt } : null;
-                        },
-                        spans: cspans.current,
+            dispatch({
+                type: 'key',
+                key: evt.key,
+                mods: { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey },
+                visual: {
+                    up(sel) {
+                        const nxt = posUp(sel, cstate.current.top, refs);
+                        return nxt ? { start: nxt } : null;
                     },
-                    parser.config,
-                ),
-            );
+                    down(sel) {
+                        const nxt = posDown(sel, cstate.current.top, refs);
+                        return nxt ? { start: nxt } : null;
+                    },
+                    spans: cspans.current,
+                },
+                config: parser.config,
+            });
+
+            // const updates = cstate.current.selections.map((sel) =>
+            //     keyUpdate(
+            //         { top: cstate.current.top, sel },
+            //         evt.key,
+            //         { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey },
+            //         {
+            //             up(sel) {
+            //                 const nxt = posUp(sel, cstate.current.top, refs);
+            //                 return nxt ? { start: nxt } : null;
+            //             },
+            //             down(sel) {
+            //                 const nxt = posDown(sel, cstate.current.top, refs);
+            //                 return nxt ? { start: nxt } : null;
+            //             },
+            //             spans: cspans.current,
+            //         },
+            //         parser.config,
+            //     ),
+            // );
 
             evt.preventDefault();
             evt.stopPropagation();
-            dispatch(updates);
+            // dispatch(updates);
         };
         document.addEventListener('keydown', f);
         return () => document.removeEventListener('keydown', f);

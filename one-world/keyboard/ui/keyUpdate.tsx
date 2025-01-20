@@ -7,7 +7,7 @@ import { wrapKind, handleWrap, closerKind, handleClose } from '../handleWrap';
 import { Config, TestState, js } from '../test-utils';
 import { NodeSelection, Update } from '../utils';
 
-type Visual = {
+export type Visual = {
     up: (sel: NodeSelection) => NodeSelection | null;
     down: (sel: NodeSelection) => NodeSelection | null;
     spans: Src[];
