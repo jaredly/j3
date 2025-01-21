@@ -3,8 +3,22 @@ Ok next
 
 - [x] ok, so now ... multi cursor, right?
 - [x] multiple highlights in a single text id or span
-- [ ] multi UPDATE is broken
+- [x] multi UPDATE is broken
+  - ok we're on top of things now. but, I don't know if we're validating...
+- [ ] wrap should end with the cursor just inside, not at the start
 
+- [x] UNDOREDO
+  - [ ] some bug? like, undo + action + undo undo does some redoing. need to skips.
+
+
+thouuught, maybe instead of reverts?:number, I want
+{type: 'do', top: {prev,next}, selection:{prev,next}}
+and
+{type: 'reverts', target: string} // and not have any payload. just be referencing the previous thing?
+--->>> and also, we can do a gut check of the prev/next (do they line up? if not, abort abort)
+
+
+- [ ] multi wrap, I do want it
 
 
 - [ ] one way to test multi-user is to have a button to let you switch userssss

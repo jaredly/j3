@@ -1,24 +1,22 @@
-import React, { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useReducer, useState } from 'react';
 import { useLatest } from '../../../web/custom/useLatest';
-import { applySelUp, applyUpdate } from '../applyUpdate';
-import { Config, init, TestParser, TestState } from '../test-utils';
+import { Config, TestParser, TestState } from '../test-utils';
 
-import { splitGraphemes } from '../../../src/parse/splitGraphemes';
-import { useLocalStorage } from '../../../web/Debug';
-import { childLocs, Loc, RichKind, Style } from '../../shared/cnodes';
+import { Loc, RichKind, Style } from '../../shared/cnodes';
 import { ParseResult, show } from '../../syntaxes/dsl';
 import * as dsl3 from '../../syntaxes/dsl3';
 import { nodeToXML, toXML, XML } from '../../syntaxes/xml';
+import { idText, spanText } from '../cursorSplit';
 import { selectStart } from '../handleNav';
-import { allPaths, Mods, multiSelChildren, multiSelKeys, selEnd, SelStart, Src } from '../handleShiftNav';
+import { allPaths, Mods, SelStart, Src } from '../handleShiftNav';
 import { root } from '../root';
-import { lastChild, mergeHighlights, NodeSelection, pathWithChildren, SelectionStatuses, selStart, Top, Update } from '../utils';
 import { getCurrent, getSelectionStatuses } from '../selections';
-import { keyUpdate, Visual } from './keyUpdate';
+import { lastChild, mergeHighlights, NodeSelection, pathWithChildren, SelectionStatuses, selStart, Top, Update } from '../utils';
+import { HistoryItem, initialAppState, reducer } from './history';
+import { Visual } from './keyUpdate';
 import { RenderNode } from './RenderNode';
 import { posDown, posUp, selectionPos } from './selectionPos';
 import { ShowXML } from './XML';
-import { idText, spanText } from '../cursorSplit';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -52,70 +50,12 @@ export type Menu = {
 // Ahhhhhhhhhhhh ok. sO actually what wee need is to, like, coalesce the updates?
 // hm. yeah
 
-type Action =
+export type Action =
     | { type: 'add-sel'; sel: NodeSelection }
     | { type: 'update'; update: Update | null | undefined }
-    | { type: 'key'; key: string; mods: Mods; visual: Visual; config: Config };
-
-const applyAppUpdate = (state: AppState, action: Action): AppState => {
-    switch (action.type) {
-        case 'add-sel':
-            return { ...state, selections: state.selections.concat([action.sel]) };
-        case 'update':
-            const result = applyUpdate({ top: state.top, sel: state.selections[0] }, action.update);
-            return { ...state, top: result.top, selections: [result.sel] };
-
-        case 'key':
-            const selections = state.selections.slice();
-            let top = state.top;
-            for (let i = 0; i < selections.length; i++) {
-                const sel = selections[i];
-                const update = keyUpdate({ top, sel }, action.key, action.mods, action.visual, action.config);
-                const result = applyUpdate({ top, sel }, update);
-                top = result.top;
-                selections[i] = result.sel;
-                if (update && Array.isArray(update.selection)) {
-                    for (let j = 0; j < selections.length; j++) {
-                        if (j !== i) {
-                            update.selection.forEach((up) => {
-                                selections[j] = applySelUp(selections[i], up);
-                            });
-                        }
-                    }
-                }
-            }
-            return { ...state, top, selections };
-    }
-
-    // let top = state.top;
-
-    // if (Array.isArray(action)) {
-    //     const selections = action.map((action, i) => {
-    //         const result = applyUpdate({ top, sel: i >= state.selections.length ? state.selections[0] : state.selections[i] }, action);
-    //         top = result.top;
-    //         return result.sel;
-    //     });
-    //     return { ...state, top, selections };
-    // }
-
-    // if (!state.selections.length) return state;
-
-    // const result = applyUpdate({ top, sel: state.selections[0] }, action);
-
-    // // const selections = state.selections.map((sel, i) => {
-    // //     const result = applyUpdate({ top, sel }, action);
-    // //     top = result.top;
-    // //     return result.sel;
-    // // });
-
-    // return { ...state, top: result.top, selections: [result.sel] };
-};
-
-const reducer = (state: AppState, action: Action) => {
-    return applyAppUpdate(state, action);
-};
-
-const initialAppState: AppState = { top: init.top, selections: [init.sel] };
+    | { type: 'key'; key: string; mods: Mods; visual?: Visual; config: Config }
+    | { type: 'undo' }
+    | { type: 'redo' };
 
 const getInitialState = (id: string): AppState => {
     const data: AppState = localStorage[id] ? JSON.parse(localStorage[id]) : initialAppState;
@@ -127,6 +67,7 @@ const getInitialState = (id: string): AppState => {
         // @ts-ignore
         delete data.sel;
     }
+    if (!data.history) data.history = [];
     return data;
 };
 
@@ -144,10 +85,11 @@ const putOnWindow = (obj: any) => {
     Object.assign(window, obj);
 };
 
-type AppState = {
+export type AppState = {
     top: Top;
     selections: NodeSelection[];
     parser?: TestParser;
+    history: HistoryItem[];
 };
 
 // 'nuniiverse'
@@ -493,6 +435,16 @@ export const App = ({ id }: { id: string }) => {
             </div>
             <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
                 <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
+                    <h3>History</h3>
+                    <div>
+                        {state.history.map((item, i) => (
+                            <div key={i}>
+                                {i}: {JSON.stringify(item)}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                     <h3>CST</h3>
                     <ShowXML root={xmlcst} onClick={clickSrc} setHover={hoverSrc} sel={[]} />
                 </div>
@@ -681,8 +633,15 @@ const useKeyHandler = (
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
             if (evt.metaKey && (evt.key === 'r' || evt.key === 'l')) return;
+            console.log('fff', evt.key);
             if (evt.key === 'Dead') {
                 return;
+            }
+            if (evt.key === 'z' && evt.metaKey) {
+                evt.preventDefault();
+                evt.stopPropagation();
+                console.log('undo');
+                return dispatch({ type: evt.shiftKey ? 'redo' : 'undo' });
             }
             if (cmenu.current) {
                 const menu = cmenu.current;
