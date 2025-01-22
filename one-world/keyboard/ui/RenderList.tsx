@@ -355,7 +355,7 @@ export const RenderList = (
                     {node.forceMultiline ? (
                         <div style={{ ...style, display: 'flex', width: 'fit-content', flexDirection: 'column', marginLeft: 16 }}>{children}</div>
                     ) : (
-                        interleaveF(children, (i) => <span key={'sep' + i}>{node.kind === 'curly' ? ';' : ','}&nbsp;</span>)
+                        interleaveF(children, (i) => <span key={'sep' + i}>{ctx.config.sep[node.kind as 'round'] ?? ', '}</span>)
                     )}
                     {/* {has('end') ? (
                                 <span style={{ backgroundColor: hl }}>{closer[node.kind]}</span>

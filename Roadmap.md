@@ -9,6 +9,12 @@
 
 ministering interview; sit down with someone and treat them as though they are the most important person in the world, the most interesting person.
 
+# Tmptext
+
+andddd
+ok now
+the story is: collapse history items.
+
 #
 
 Ok next

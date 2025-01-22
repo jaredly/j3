@@ -24,9 +24,15 @@ export const opener = { round: '(', square: '[', curly: '{', angle: '<' };
 export const closer = { round: ')', square: ']', curly: '}', angle: '>' };
 export const braceColor = 'rgb(100, 200, 200)';
 export const braceColorHl = 'rgb(0, 150, 150)';
+
+export type DisplayConfig = {
+    sep: { curly: string; round: string; square: string };
+};
+
 export type RCtx = {
     errors: Record<number, string>;
     refs: Record<number, HTMLElement>; // -1 gets you 'cursor' b/c why not
+    config: DisplayConfig;
     styles: Record<number, Style>;
     placeholders: Record<number, string>;
     selectionStatuses: SelectionStatuses;

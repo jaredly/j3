@@ -44,3 +44,18 @@ test.skip('some history', () => {
     state = applyAppUpdate(state, { type: 'redo' });
     check(appStateToTestState(state), round([id('abc', true)]), idc(3));
 });
+
+test.skip('some history', () => {
+    let state = initialAppState;
+    state = applyAppUpdate(state, keyAction('a'), true);
+    state = applyAppUpdate(state, keyAction('b'), true);
+    state = applyAppUpdate(state, keyAction('c'), true);
+    check(appStateToTestState(state), id('abc', true), idc(3));
+    state = applyAppUpdate(state, { type: 'undo' });
+    check(appStateToTestState(state), id('ab', true), idc(2));
+    state = applyAppUpdate(state, { type: 'redo' });
+    check(appStateToTestState(state), id('abc', true), idc(3));
+    // check(appStateToTestState(state), round([id('', true)]), idc(0));
+    // state = applyAppUpdate(state, { type: 'redo' });
+    // check(appStateToTestState(state), round([id('abc', true)]), idc(3));
+});

@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, Loc, Node, Nodes } from '../shared/cnodes';
+import { Collection, Id, Loc, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { cursorSplit, idText, Split } from './cursorSplit';
 import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
@@ -133,6 +133,58 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
         return; // nope, handle above
     }
 
+    const closeUp = handleTagCloser(top, node, grem, parent, path);
+    if (closeUp) return closeUp;
+
+    // const grand = parentPath(parent ? parent.path : path);
+    // const gnode = top.nodes[lastChild(grand)];
+    // if (gnode?.type === 'list' && isTag(gnode.kind) && gnode.kind.node === (parent ? parent.node.loc : node.loc)) {
+    //     if (grem === '>') {
+    //         return selUpdate(
+    //             gnode.children.length
+    //                 ? selectStart(pathWithChildren(grand, gnode.children[0]), top)
+    //                 : selStart(grand, { type: 'list', where: 'after' }),
+    //         );
+    //     } else if (grem === ' ') {
+    //         if (gnode.kind.attributes == null) {
+    //             return {
+    //                 nodes: {
+    //                     [gnode.loc]: { ...gnode, kind: { ...gnode.kind, attributes: top.nextLoc } },
+    //                     [top.nextLoc]: { type: 'table', kind: 'curly', loc: top.nextLoc, rows: [] },
+    //                 },
+    //                 nextLoc: top.nextLoc + 1,
+    //                 selection: { start: selStart(pathWithChildren(grand, top.nextLoc), { type: 'list', where: 'inside' }) },
+    //             };
+    //         } else {
+    //             return selUpdate(selectStart(pathWithChildren(grand, gnode.kind.attributes), top));
+    //         }
+    //     }
+    // }
+
+    const flat = parent ? flatten(parent.node, top) : [node];
+
+    const nodes: Update['nodes'] = {};
+
+    const neighbor = flatNeighbor(kind, grem);
+    const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes, top });
+
+    const up = flatToUpdateNew(
+        flat,
+        { node: sel, cursor: ncursor },
+        { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
+        nodes,
+        top,
+    );
+    return up;
+};
+
+export const handleTagCloser = (
+    top: Top,
+    node: Node,
+    grem: string,
+    parent: void | { node: Collection<number>; path: Path },
+    path: Path,
+): Update | void => {
     const grand = parentPath(parent ? parent.path : path);
     const gnode = top.nodes[lastChild(grand)];
     if (gnode?.type === 'list' && isTag(gnode.kind) && gnode.kind.node === (parent ? parent.node.loc : node.loc)) {
@@ -157,22 +209,6 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
             }
         }
     }
-
-    const flat = parent ? flatten(parent.node, top) : [node];
-
-    const nodes: Update['nodes'] = {};
-
-    const neighbor = flatNeighbor(kind, grem);
-    const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes, top });
-
-    const up = flatToUpdateNew(
-        flat,
-        { node: sel, cursor: ncursor },
-        { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
-        nodes,
-        top,
-    );
-    return up;
 };
 
 export const handleTableSplit = (grem: string, config: Config, path: Path, top: Top, splitCell: (cell: Node, top: Top, loc: number) => SplitRes) => {

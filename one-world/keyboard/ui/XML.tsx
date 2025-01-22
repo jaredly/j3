@@ -131,7 +131,7 @@ export const XMLNode = ({
                                           {Array.isArray(value) ? `[${value.length}]` : ''}
                                       </div>
                                   ) : null}
-                                  <div style={key === 'children' ? { gridColumnStart: 1, gridColumnEnd: 2 } : { gridColumn: 2 }}>
+                                  <div style={key === 'children' ? { gridColumnStart: 1, gridColumnEnd: 3 } : { gridColumn: 2 }}>
                                       {Array.isArray(value) ? (
                                           value.map((item, i) => (
                                               <XMLNode

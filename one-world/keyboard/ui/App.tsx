@@ -383,6 +383,7 @@ export const App = ({ id }: { id: string }) => {
                         styles,
                         placeholders,
                         selectionStatuses,
+                        config: { sep: { curly: '; ', round: ', ', square: ', ' } },
                         // msel: mkeys,
                         // mhover: hoverkeys,
                         dispatch(up) {
@@ -439,7 +440,8 @@ export const App = ({ id }: { id: string }) => {
                     <div>
                         {state.history.map((item, i) => (
                             <div key={i}>
-                                {i}: {JSON.stringify(item)}
+                                {/* {i}: {JSON.stringify(item)} */}
+                                <ShowHistoryItem item={item} />
                             </div>
                         ))}
                     </div>
@@ -463,6 +465,19 @@ export const App = ({ id }: { id: string }) => {
                     </div>
                 </div>
             </div>
+        </div>
+    );
+};
+
+const ShowHistoryItem = ({ item }: { item: HistoryItem }) => {
+    const nodes = Object.keys(item.top.next.nodes).length;
+    return (
+        <div>
+            {/* {item.id + ' '} */}
+            {/* onlyy {item.onlyy}
+            reverts {item.reverts} */}
+            {new Date(item.ts).toLocaleString()}
+            {' ' + nodes + ' nodes'}
         </div>
     );
 };

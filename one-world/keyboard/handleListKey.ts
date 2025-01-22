@@ -1,6 +1,6 @@
 import { isRich, List, Node, Nodes } from '../shared/cnodes';
 import { findParent, listKindForKeyKind, Flat, addNeighborBefore, addNeighborAfter } from './flatenate';
-import { isTag, justSel, richNode } from './handleNav';
+import { isTag, justSel, richNode, selectStart, selUpdate } from './handleNav';
 import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
 import { collapseAdjacentIDs, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
@@ -18,7 +18,7 @@ import {
     ListCursor,
     parentLoc,
 } from './utils';
-import { flatNeighbor, handleTableSplit } from './handleIdKey';
+import { flatNeighbor, handleTableSplit, handleTagCloser } from './handleIdKey';
 
 export const braced = (node: Node) => node.type !== 'list' || (node.kind !== 'smooshed' && node.kind !== 'spaced');
 
@@ -168,6 +168,33 @@ export const handleListKey = (config: Config, top: Top, path: Path, cursor: Coll
     if (table) return table;
 
     const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
+    const closeUp = handleTagCloser(top, current, grem, parent, path);
+    if (closeUp) return closeUp;
+
+    // const grand = parentPath(parent ? parent.path : path);
+    // const gnode = top.nodes[lastChild(grand)];
+    // if (gnode?.type === 'list' && isTag(gnode.kind) && gnode.kind.node === (parent ? parent.node.loc : current.loc)) {
+    //     if (grem === '>') {
+    //         return selUpdate(
+    //             gnode.children.length
+    //                 ? selectStart(pathWithChildren(grand, gnode.children[0]), top)
+    //                 : selStart(grand, { type: 'list', where: 'after' }),
+    //         );
+    //     } else if (grem === ' ') {
+    //         if (gnode.kind.attributes == null) {
+    //             return {
+    //                 nodes: {
+    //                     [gnode.loc]: { ...gnode, kind: { ...gnode.kind, attributes: top.nextLoc } },
+    //                     [top.nextLoc]: { type: 'table', kind: 'curly', loc: top.nextLoc, rows: [] },
+    //                 },
+    //                 nextLoc: top.nextLoc + 1,
+    //                 selection: { start: selStart(pathWithChildren(grand, top.nextLoc), { type: 'list', where: 'inside' }) },
+    //             };
+    //         } else {
+    //             return selUpdate(selectStart(pathWithChildren(grand, gnode.kind.attributes), top));
+    //         }
+    //     }
+    // }
 
     const flat = parent ? flatten(parent.node, top) : [current];
     var { sel, ncursor, nodes } = addNeighbor({ flat, current, neighbor: flatNeighbor(kind, grem), cursor, blank });
