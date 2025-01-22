@@ -1,30 +1,15 @@
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { change } from '../../web/ide/infer/mini/union_find';
-import { Collection, Id, List, ListKind, Node, Nodes } from '../shared/cnodes';
+import { Collection, List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
+import { idText } from './cursorSplit';
 import { findParent } from './flatenate';
-import { justSel, selectStart, spanStart } from './handleNav';
-import { multiSelChildren, SelStart } from './handleShiftNav';
+import { justSel } from './handleNav';
+import { SelStart } from './handleShiftNav';
 import { handleTextText } from './handleTextText';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
-import { TestState } from './test-utils';
-import {
-    CollectionCursor,
-    Current,
-    Cursor,
-    IdCursor,
-    lastChild,
-    ListCursor,
-    parentPath,
-    Path,
-    pathWithChildren,
-    selStart,
-    Top,
-    Update,
-} from './utils';
 import { getCurrent } from './selections';
-import { idText } from './cursorSplit';
+import { TestState } from './test-utils';
+import { CollectionCursor, Current, Cursor, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
 export const wrapKind = (key: string): ListKind<any> | void => {
     switch (key) {
@@ -174,10 +159,11 @@ const findListParent = (kind: ListKind<number>, path: Path, top: Top) => {
     }
 };
 
-const findCurlyClose = (path: Path, top: Top): SelStart | void => {
+const findCurlyClose = (path: Path, top: Top, notListTop: boolean): SelStart | void => {
     for (let i = path.children.length - 1; i >= 0; i--) {
         const node = top.nodes[path.children[i]];
-        if (node.type === 'list' && node.kind === 'curly') {
+        // console.log('at', i, node.loc, path);
+        if (node.type === 'list' && node.kind === 'curly' && (!notListTop || i < path.children.length - 1)) {
             return selStart({ ...path, children: path.children.slice(0, i + 1) }, { type: 'list', where: 'after' });
         }
         if (node.type === 'text' && i < path.children.length - 1) {
@@ -198,7 +184,8 @@ export const handleClose = (state: TestState, key: string): Update | void => {
     const { path, cursor } = current;
     // soooo there's a special case, for text curly
     if (kind === 'curly') {
-        const sel = findCurlyClose(cursor.type === 'list' && cursor.where !== 'inside' ? parentPath(path) : path, state.top);
+        const sel = findCurlyClose(path, state.top, cursor.type === 'list' && cursor.where !== 'inside');
+        // console.log('aaa', sel, cursor, path);
         return sel ? { nodes: {}, selection: { start: sel } } : sel;
     }
     const parent = findListParent(kind, cursor.type === 'list' && cursor.where !== 'inside' ? parentPath(path) : path, state.top);

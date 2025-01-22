@@ -136,31 +136,6 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
     const closeUp = handleTagCloser(top, node, grem, parent, path);
     if (closeUp) return closeUp;
 
-    // const grand = parentPath(parent ? parent.path : path);
-    // const gnode = top.nodes[lastChild(grand)];
-    // if (gnode?.type === 'list' && isTag(gnode.kind) && gnode.kind.node === (parent ? parent.node.loc : node.loc)) {
-    //     if (grem === '>') {
-    //         return selUpdate(
-    //             gnode.children.length
-    //                 ? selectStart(pathWithChildren(grand, gnode.children[0]), top)
-    //                 : selStart(grand, { type: 'list', where: 'after' }),
-    //         );
-    //     } else if (grem === ' ') {
-    //         if (gnode.kind.attributes == null) {
-    //             return {
-    //                 nodes: {
-    //                     [gnode.loc]: { ...gnode, kind: { ...gnode.kind, attributes: top.nextLoc } },
-    //                     [top.nextLoc]: { type: 'table', kind: 'curly', loc: top.nextLoc, rows: [] },
-    //                 },
-    //                 nextLoc: top.nextLoc + 1,
-    //                 selection: { start: selStart(pathWithChildren(grand, top.nextLoc), { type: 'list', where: 'inside' }) },
-    //             };
-    //         } else {
-    //             return selUpdate(selectStart(pathWithChildren(grand, gnode.kind.attributes), top));
-    //         }
-    //     }
-    // }
-
     const flat = parent ? flatten(parent.node, top) : [node];
 
     const nodes: Update['nodes'] = {};

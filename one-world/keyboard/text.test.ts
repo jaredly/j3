@@ -467,4 +467,10 @@ test('shift-alt-left in text', () => {
     check(state, text([tspan('one two three')], true), textc(0, 8), textc(0, 4));
 });
 
+test('getting out of an embed', () => {
+    let state = asTop(text([tspan('hi'), { type: 'embed', item: round([id('a')], true) }, tspan('ho')]), listc('after'));
+    state = applyUpdate(state, keyUpdate(state, '}', {}));
+    check(state, text([tspan('hi'), { type: 'embed', item: round([id('a')]) }, tspan('ho')], true), textc(1, 1));
+});
+
 // TODO delete rich in table

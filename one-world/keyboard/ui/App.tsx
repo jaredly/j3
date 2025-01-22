@@ -470,13 +470,14 @@ export const App = ({ id }: { id: string }) => {
 };
 
 const ShowHistoryItem = ({ item }: { item: HistoryItem }) => {
-    const nodes = Object.keys(item.top.next.nodes).length;
+    const nodes = item.type === 'change' ? Object.keys(item.top.next.nodes).length : 0;
     return (
         <div>
             {/* {item.id + ' '} */}
             {/* onlyy {item.onlyy}
             reverts {item.reverts} */}
             {new Date(item.ts).toLocaleString()}
+            {' ' + item.type}
             {' ' + nodes + ' nodes'}
         </div>
     );

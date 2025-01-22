@@ -129,14 +129,18 @@ export const Examples = () => {
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
+                    paddingBottom: 50,
                 }}
             >
-                <h3>Lisp style</h3>
+                <h1>Concrete Syntax Tree</h1>
+                <p>The missing layer between "plain text" and "abstract syntax".</p>
+                <h2>Lisp style</h2>
                 <ExTable examples={lispEx} config={lisp} dconfig={{ sep: { curly: ' ', round: ' ', square: ' ' } }} />
-                <h3>C style</h3>
+                <h2>C style</h2>
                 <ExTable examples={jsEx} config={js} dconfig={{ sep: { curly: '; ', round: ', ', square: ', ' } }} />
-                <h3>Even cooler</h3>
+                <h2>Going beyond "plain text"</h2>
                 <ExTable examples={coolEx} config={js} dconfig={{ sep: { curly: '; ', round: ', ', square: ', ' } }} />
+                <div style={{ flexBasis: 500, flexShrink: 0, width: 10 }} />
             </div>
         );
     }
@@ -155,7 +159,7 @@ const lispEx: [string, string][] = [
     ['list(round)', '(abc def)'],
     ['list(square)', '[abc def]'],
     ['list(curly)', '{1 2 3}'],
-    ['string', '"string w/ ${vbl}"'],
+    ['string', '"string w/ ${(str vbl)}"'],
     ['method defn', '(def dup [x] (* x x))'],
 ];
 
@@ -174,7 +178,7 @@ const coolEx: [string, string][] = [
     ['Table(curly)', 'let person = {:name:"me"\nage\t3;cows\t7'],
     ['Table(square)', '[:1:0:0\n0:1:0;0\t0\t1'],
     ["JSX y'all", '</div>"Hello world",</fancy(expr) id:"xyz"\t\tchild\nchild'],
-    ['richh', '\rRich text\nin a block, with \bformatting\b.\n- and bullets\nfor lists\n\n[ ] and checkboxes\nfor todo items'],
+    ['rich text', '\rRich text\nin a block, with \bformatting\b.\n- and bullets\nfor lists\n\n[ ] and checkboxes\nfor todo items'],
 ];
 
 const ExTable = ({ examples, config, dconfig }: { examples: [string, string][]; config: Config; dconfig: DisplayConfig }) => {

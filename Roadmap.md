@@ -1,13 +1,18 @@
 
-# Elders Quorum Training
+# at popl yay
 
-- the council! send out an email a few days before; what is the topic of the council?
+- [x] made a nice little #examples page, to showcase the concrete syntax tree and such
+- [ ] undo and redo are still WIP. I think redo isn't working yet
+- [ ] oh, wrap a select needs to come back on the stage.
+- [ ] also (cut/copy/paste) plsss
+- [ ] and thennnn maybe I can get back to actual parsers? can't remember when I left that off.
+  orrr maybe the next step is to allow multiple toplevels?
 
-"The temple is how we access the savior"
 
-... I should be attending ward council ...
+# Thinking about robustness of my CST
 
-ministering interview; sit down with someone and treat them as though they are the most important person in the world, the most interesting person.
+we don't yet handle indents. so we can't do python. and like, haskell's "with" or something.
+
 
 # Tmptext
 

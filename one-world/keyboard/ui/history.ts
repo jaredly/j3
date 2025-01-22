@@ -64,21 +64,25 @@ const applyChange = (state: AppState, item: HistoryChange) => {
     return state;
 };
 
-const revert = (state: AppState, item: HistoryItem) => {
+const revert = (state: AppState, item: HistoryItem, undo: boolean) => {
+    // console.log('revert', item.type);
     if (item.type === 'change') {
         state = applyChange(state, invertChange(item));
-        const next: HistoryItem = { type: 'revert', reverts: item.id, id: genId(), ts: Date.now(), undo: true };
+        const next: HistoryItem = { type: 'revert', reverts: item.id, id: genId(), ts: Date.now(), undo: undo };
         state.history = state.history.concat([next]);
         return state;
     }
     const found = state.history.find((h) => h.id === item.reverts);
     if (!found) return state;
     if (found.type === 'change') {
-        state = applyChange(state, invertChange(item));
-        const next: HistoryItem = { type: 'revert', reverts: item.id, id: genId(), ts: Date.now(), undo: true };
+        state = applyChange(state, found);
+        const next: HistoryItem = { type: 'revert', reverts: item.id, id: genId(), ts: Date.now(), undo: undo };
         state.history = state.history.concat([next]);
         return state;
     }
+    const back = state.history.find((h) => h.id === found.reverts);
+    if (!back) return state;
+    return revert(state, back, !undo);
 };
 
 const withNodes = (nodes: Nodes, up: Record<number, Node | null>): Nodes => {
@@ -93,6 +97,11 @@ const withNodes = (nodes: Nodes, up: Record<number, Node | null>): Nodes => {
     return nodes;
 };
 
+/*
+take the top item
+if it is a normal change, revert it!
+if it is an undo of a normal change, jump to the corresponding thing, and go back one more.
+*/
 export const findUndo = (history: HistoryItem[]): HistoryItem | void => {
     if (!history.length) return;
     let at = history.length - 1;
@@ -123,31 +132,32 @@ A B C -> ABC
 A B C ^ -> AB
 A B C ^ ! -> ABC
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 */
 
+/*
+take the top item
+if it is a normal change, bail
+if it is an 'undo' revert, you're good
+if it is a 'redo' revert, back up to it's corresponding undo - 1
+
+*/
 export const findRedo = (history: HistoryItem[]): HistoryItem | void => {
     if (!history.length) return;
     let at = history.length - 1;
-    const last = history[at];
-    if (!last) return;
-    if (last.type === 'change') return;
-    if (last.undo) {
+    while (at >= 0) {
+        const last = history[at];
+        if (!last) return;
+        if (last.type === 'change') return;
+        if (last.undo) return last;
+        const found = history.findIndex((h) => h.id === last.reverts);
+        if (found === -1) return;
+        at = found - 1;
+        // return last;
     }
-    if (last.type === 'revert') return last;
+    // if (last.type === 'change') return;
+    // if (last.undo) {
+    // }
+    // if (last.type === 'revert') return last;
     // if (last.type === 'revert') {
     //     return history.find((h) => h.id === last.reverts);
     // }
@@ -164,74 +174,13 @@ export const findRedo = (history: HistoryItem[]): HistoryItem | void => {
 
 const redo = (state: AppState): AppState => {
     const item = findRedo(state.history);
-    // console.log('redone', item, state.history);
-    state.history.forEach((item) => {
-        if (item.type === 'revert') {
-            return console.log(item);
-        }
-        const { top, selections, ...one } = item;
-        console.log(one);
-        console.log(top.next.nodes);
-        console.log(selections.next);
-    });
-    // return item != null ? revert(state, item) : state;
-    return state;
+    return item != null ? revert(state, item, false) : state;
 };
 
-/*
-
-so, thinking about tmptext
-and history items.
-what ifff
-history items never have tmptext?
-so like,
-if we're triggering a history item,
-we lock in the tmptext.
-eh i dont know about that. is that real.
-
-i meeeean what if I get rid of tmptext altogether?
-yeah like it seems like, I'm just making things more complicated for myself.
-yeah.
-well, so the difference is this: maybe it's like "sending ... an update"
-
-I think, the server doesn't have history items?
-
-
-*/
-
 const undo = (state: AppState) => {
-    // const last = state.history[state.history.length - 1];
-    // if (!last) {
-    //     console.warn('nothing to undo');
-    //     return state;
-    // }
-    // if (last.reverts != null) {
-    //     const at = state.history.findIndex((h) => h.id === last.reverts);
-    //     if (at === -1 || at === 0) {
-    //         console.warn(`reverted item not fgound`);
-    //         return state;
-    //     }
-    //     console.log(`reverting item at ${at - 1}`, state.history[at - 1]);
-    //     return revert(state, state.history[at - 1]);
-    // }
-    // console.log(`reverting`, last);
-    // return revert(state, last);
     if (!state.history.length) return state;
-
-    // const last = state.history[state.history.length - 1];
-    // if (!equal(state.top.tmpText, last.top.next.tmpText)) {
-    //     const nitem: HistoryItem = {
-    //         id: genId(),
-    //         ts:Date.now(),
-    //         selections: { prev: last.selections.next, next: state.selections },
-    //         top: { prev: { ...last.top.next, nodes: {} }, next: { ...state.top, nodes: {} } },
-    //     };
-    //     // add an item for the tmpTExt
-    //     // then revert it.
-    // }
-
     const item = findUndo(state.history);
-    return item != null ? revert(state, item) : state;
+    return item != null ? revert(state, item, item.type === 'change') : state;
 };
 
 const diffTop = (prev: Top, next: Top): [HistoryChange['top']['next'], boolean, number | undefined] => {
