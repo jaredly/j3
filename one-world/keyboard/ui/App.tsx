@@ -59,7 +59,7 @@ export type Action =
 
 const getInitialState = (id: string): AppState => {
     const data: AppState = localStorage[id] ? JSON.parse(localStorage[id]) : initialAppState;
-    if (!data.top.tmpText) data.top.tmpText = {};
+    // if (!data.top.tmpText) data.top.tmpText = {};
     // @ts-ignore
     if (data.sel) {
         // @ts-ignore

@@ -109,7 +109,12 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
             const chars = idText(top.tmpText, cursor, node).slice();
             const { left, right } = cursorSides(cursor, current.start);
             chars.splice(left, right - left, grem);
-            return { nodes: {}, selection: { start: selStart(path, { ...cursor, end: left + 1 }) }, tmpText: { [node.loc]: chars } };
+            return {
+                nodes: {
+                    [node.loc]: { ...node, text: chars.join('') },
+                },
+                selection: { start: selStart(path, { ...cursor, end: left + 1 }) },
+            };
         }
     }
 
@@ -158,7 +163,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
     const nodes: Update['nodes'] = {};
 
     const neighbor = flatNeighbor(kind, grem);
-    const { sel, ncursor, tmpText } = addNeighbor({ neighbor, current, flat, nodes, top });
+    const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes, top });
 
     const up = flatToUpdateNew(
         flat,
@@ -167,7 +172,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
         nodes,
         top,
     );
-    return up ? { ...up, tmpText } : undefined;
+    return up;
 };
 
 export const handleTableSplit = (grem: string, config: Config, path: Path, top: Top, splitCell: (cell: Node, top: Top, loc: number) => SplitRes) => {
@@ -292,18 +297,18 @@ function addNeighbor({
 }) {
     let { node, cursor } = current;
     const at = flat.indexOf(node);
-    const tmpText: Update['tmpText'] = {};
+    // const tmpText: Update['tmpText'] = {};
     if (at === -1) throw new Error(`flatten didnt work I guess`);
     // if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
     //     node = nodes[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
     //     flat[at] = node;
     // }
-    if (top.tmpText[node.loc]) {
-        const text = top.tmpText[node.loc];
-        node = nodes[node.loc] = { ...node, text: text.join(''), ccls: text.length === 0 ? undefined : node.ccls };
-        flat[at] = node;
-        tmpText[node.loc] = undefined;
-    }
+    // if (top.tmpText[node.loc]) {
+    //     const text = top.tmpText[node.loc];
+    //     node = nodes[node.loc] = { ...node, text: text.join(''), ccls: text.length === 0 ? undefined : node.ccls };
+    //     flat[at] = node;
+    //     tmpText[node.loc] = undefined;
+    // }
 
     const split = cursorSplit(top.tmpText, node, cursor, current.start);
 
@@ -326,7 +331,7 @@ function addNeighbor({
             break;
         }
     }
-    return { sel, ncursor, tmpText };
+    return { sel, ncursor };
 }
 
 export function flatNeighbor(kind: Kind, grem: string): Flat {

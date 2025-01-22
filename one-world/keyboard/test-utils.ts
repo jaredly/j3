@@ -18,7 +18,7 @@ export const initTop: Top = {
     nextLoc: 1,
     nodes: { [0]: { type: 'id', text: '', loc: 0 } },
     root: 0,
-    tmpText: {},
+    // tmpText: {},
 };
 export const init: TestState = {
     top: initTop,
@@ -41,7 +41,7 @@ export const asTopAndPath = (node: RecNodeT<boolean | number>): { top: Top; sel:
         }
         return loc;
     });
-    return { top: { nextLoc, nodes, root, tmpText: {} }, sel, sels };
+    return { top: { nextLoc, nodes, root }, sel, sels };
 };
 
 export type Sels = null | [number, Cursor] | [number, Cursor][];
@@ -58,7 +58,7 @@ export const asTopAndLocs = (node: RecNodeT<number>): { top: Top; locs: Record<n
         }
         return loc;
     });
-    return { top: { nextLoc, nodes, root: rootLoc, tmpText: {} }, locs };
+    return { top: { nextLoc, nodes, root: rootLoc }, locs };
 };
 
 export const asTopAndPaths = (node: RecNodeT<Sels>, root: Path['root']): { top: Top; sels: Record<number, NodeSelection> } => {
@@ -79,7 +79,7 @@ export const asTopAndPaths = (node: RecNodeT<Sels>, root: Path['root']): { top: 
         }
         return loc;
     });
-    return { top: { nextLoc, nodes, root: rootLoc, tmpText: {} }, sels };
+    return { top: { nextLoc, nodes, root: rootLoc }, sels };
 };
 
 /**

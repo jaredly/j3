@@ -45,16 +45,14 @@ export const handleTextText = (
                     const prev = spans[cursor.end.index - 1];
                     if (prev.type === 'text') {
                         const grems = splitGraphemes(prev.text);
+                        spans[cursor.end.index - 1] = { ...prev, text: grems.concat([grem]).join('') };
                         return {
                             ...justSel(path, {
                                 type: 'text',
-                                end: {
-                                    index: cursor.end.index - 1,
-                                    cursor: grems.length + 1,
-                                    // text: grems.concat([grem]),
-                                },
+                                end: { index: cursor.end.index - 1, cursor: grems.length + 1 },
                             }),
-                            tmpText: { [`${current.loc}:${cursor.end.index - 1}`]: grems.concat([grem]) },
+                            nodes: { [current.loc]: { ...current, spans } },
+                            // tmpText: { [`${current.loc}:${cursor.end.index - 1}`]: grems.concat([grem]) },
                         };
                     }
                 }
@@ -88,7 +86,7 @@ export const handleTextText = (
                             // text: [grem, ...splitGraphemes(next.text)]
                         },
                     }),
-                    tmpText: { [`${current.loc}:${cursor.end.index + 1}`]: [grem, ...splitGraphemes(next.text)] },
+                    // tmpText: { [`${current.loc}:${cursor.end.index + 1}`]: [grem, ...splitGraphemes(next.text)] },
                 };
             }
         }
@@ -313,7 +311,13 @@ export const handleTextText = (
             // text: ntext,
         },
     });
-    return { ...up, tmpText: { [`${current.loc}:${cursor.end.index}`]: ntext } };
+    const spans = current.spans.slice();
+    spans[cursor.end.index] = { ...span, text: ntext.join('') };
+    return {
+        ...up,
+        nodes: { [current.loc]: { ...current, spans } },
+        //  tmpText: { [`${current.loc}:${cursor.end.index}`]: ntext }
+    };
 };
 
 export const handleTextKey = (config: Config, top: Top, path: Path, cursor: ListCursor | TextCursor, grem: string, mods?: Mods): Update | void => {

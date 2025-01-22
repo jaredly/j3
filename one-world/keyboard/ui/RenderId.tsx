@@ -18,8 +18,8 @@ export const RenderId = (
 ) => {
     if (status?.cursors.length && !readOnly) {
         // STOPSHIP need to render tmpText here
-        const cursorText = tmpText[node.loc]; // (status.cursors.find((c) => c.type === 'id' && c.text) as IdCursor)?.text;
-        const text = cursorText ?? splitGraphemes(node.text);
+        // const cursorText = tmpText[node.loc]; // (status.cursors.find((c) => c.type === 'id' && c.text) as IdCursor)?.text;
+        const text = splitGraphemes(node.text);
         return (
             <span style={{ ...style, position: 'relative' }}>
                 <TextWithCursor

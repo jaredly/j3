@@ -34,33 +34,33 @@ export const root = <T>(state: { top: Top; sel?: NodeSelection }, fromId: (n: nu
     //     // }
     // }
 
-    const tmpText = { ...state.top.tmpText };
-    let up = false;
-    Object.keys(tmpText).forEach((key) => {
-        if (!up) {
-            up = true;
-            state.top = { ...state.top, tmpText: { ...tmpText } };
-            nodes = { ...state.top.nodes };
-        }
-        if (key.includes(':')) {
-            const [loc, idx] = key.split(':');
-            const node = nodes[+loc];
-            if (node.type === 'text') {
-                const spans = node.spans.slice();
-                const span = spans[+idx];
-                if (span.type !== 'text') {
-                    throw new Error(`not a text span`);
-                }
-                spans[+idx] = { ...span, text: tmpText[key].join('') };
-                nodes[+loc] = { ...node, spans };
-            }
-        } else {
-            const node = nodes[+key];
-            if (node.type === 'id') {
-                nodes[+key] = { ...node, text: tmpText[key].join(''), ccls: tmpText[key].length === 0 ? undefined : node.ccls };
-            }
-        }
-    });
+    // const tmpText = { ...state.top.tmpText };
+    // let up = false;
+    // Object.keys(tmpText).forEach((key) => {
+    //     if (!up) {
+    //         up = true;
+    //         state.top = { ...state.top, tmpText: { ...tmpText } };
+    //         nodes = { ...state.top.nodes };
+    //     }
+    //     if (key.includes(':')) {
+    //         const [loc, idx] = key.split(':');
+    //         const node = nodes[+loc];
+    //         if (node.type === 'text') {
+    //             const spans = node.spans.slice();
+    //             const span = spans[+idx];
+    //             if (span.type !== 'text') {
+    //                 throw new Error(`not a text span`);
+    //             }
+    //             spans[+idx] = { ...span, text: tmpText[key].join('') };
+    //             nodes[+loc] = { ...node, spans };
+    //         }
+    //     } else {
+    //         const node = nodes[+key];
+    //         if (node.type === 'id') {
+    //             nodes[+key] = { ...node, text: tmpText[key].join(''), ccls: tmpText[key].length === 0 ? undefined : node.ccls };
+    //         }
+    //     }
+    // });
 
     return fromMap(state.top.root, nodes, fromId);
 };

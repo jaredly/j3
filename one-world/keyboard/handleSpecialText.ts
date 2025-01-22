@@ -85,7 +85,8 @@ export const specialTextMod = (
         if (span.type !== 'text') continue;
         const style = { ...span.style };
         mod(style);
-        const grems = tmpText[`${node.loc}:${i}`] ?? splitGraphemes(span.text);
+        const grems = splitGraphemes(span.text);
+        // const grems = tmpText[`${node.loc}:${i}`] ?? splitGraphemes(span.text);
 
         const start = i === left.index ? left.cursor : 0;
         const end = i === right.index ? right.cursor : grems.length;
@@ -137,7 +138,7 @@ export const handleSpecialText = (
     const mod = keyMod(key, mods);
     if (!mod) return;
 
-    const grems = top.tmpText[`${node.loc}:${cursor.end.index}`];
+    // const grems = top.tmpText[`${node.loc}:${cursor.end.index}`];
     const res = specialTextMod(node, top.tmpText, cursor.end, cursor.end, mod);
     if (!res) return;
 

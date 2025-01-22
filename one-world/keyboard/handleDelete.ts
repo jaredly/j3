@@ -355,7 +355,7 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
         return; // prolly at the toplevel? or in a text or table, gotta handle tat
     }
 
-    const tmpText: NonNullable<Update['tmpText']> = {};
+    // const tmpText: NonNullable<Update['tmpText']> = {};
 
     let node = state.top.nodes[lastChild(state.sel.start.path)];
     const remap: Nodes = {};
@@ -363,11 +363,11 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
     // if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
     //     node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
     // }
-    if (node.type === 'id' && state.top.tmpText[node.loc]) {
-        tmpText[node.loc] = undefined;
-        const text = state.top.tmpText[node.loc];
-        node = remap[node.loc] = { ...node, text: text.join(''), ccls: text.length === 0 ? undefined : node.ccls };
-    }
+    // if (node.type === 'id' && state.top.tmpText[node.loc]) {
+    //     tmpText[node.loc] = undefined;
+    //     const text = state.top.tmpText[node.loc];
+    //     node = remap[node.loc] = { ...node, text: text.join(''), ccls: text.length === 0 ? undefined : node.ccls };
+    // }
 
     // Here's the table folks
     if (got.type === 'table') {
@@ -422,7 +422,7 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             selection: {
                 start: fixSelection(selStart(pathWithChildren(parentPath(parent), ...selPath), cursor), result.nodes, state.top),
             },
-            tmpText,
+            // tmpText,
         };
 
         rebalanceSmooshed(up, state.top);
@@ -464,7 +464,7 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             return removeSelf(state, { path: parent, node: pnode });
         }
         // Select the '(' opener
-        return { nodes: {}, tmpText, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
+        return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
         // return unwrap(parent, state.top, state.sel);
     }
 
@@ -573,8 +573,8 @@ export const handleDelete = (state: TestState): Update | void => {
                     }
                 }
                 return {
-                    nodes: {},
-                    tmpText: { [current.node.loc]: text },
+                    nodes: { [current.node.loc]: { ...current.node, text: text.join(''), ccls: text.length === 0 ? undefined : current.node.ccls } },
+                    // tmpText: { [current.node.loc]: text },
                     selection: { start: selStart(state.sel.start.path, { type: 'id', end: left }) },
                 };
             }
@@ -600,13 +600,14 @@ export const handleDelete = (state: TestState): Update | void => {
             // TODO: gotta do a left/right story here pls
 
             if (current.cursor.type !== 'text') return;
-            const grems = state.top.tmpText[`${current.node.loc}:${current.cursor.end.index}`];
+            // const grems = state.top.tmpText[`${current.node.loc}:${current.cursor.end.index}`];
             return handleTextDelete(
                 state,
                 current,
                 current.cursor.end,
                 current.cursor.end,
-                grems ? { index: current.cursor.end.index, grems } : undefined,
+                // grems ? { index: current.cursor.end.index, grems } : undefined,
+                undefined,
             );
         }
 
@@ -728,12 +729,13 @@ export const handleTextDelete = (
         if (span.type === 'text') {
             const grems = text?.index === left.index ? text.grems : splitGraphemes(span.text);
             grems.splice(left.cursor, right.cursor - left.cursor);
+            spans[left.index] = { ...span, text: grems.join('') };
             return {
-                nodes: {},
+                nodes: { [current.node.loc]: { ...current.node, spans } },
                 selection: {
                     start: selStart(state.sel.start.path, { type: 'text', end: { index: left.index, cursor: left.cursor } }),
                 },
-                tmpText: { [`${current.node.loc}:${left.index}`]: grems },
+                // tmpText: { [`${current.node.loc}:${left.index}`]: grems },
             };
         }
     }

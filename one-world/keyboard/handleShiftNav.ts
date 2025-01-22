@@ -264,7 +264,7 @@ export const wordNav = (state: TestState, left: boolean, shift: boolean | undefi
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
         const { index, cursor } = current.cursor.end;
-        const next = wordNext(current.node, left, index, cursor, state.top.tmpText[`${current.node.loc}:${index}`]);
+        const next = wordNext(current.node, left, index, cursor, undefined); // state.top.tmpText[`${current.node.loc}:${index}`]);
         if (next != null) {
             const start = selStart(current.path, {
                 type: 'text',
