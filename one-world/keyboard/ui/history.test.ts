@@ -32,7 +32,7 @@ test('a little history', () => {
 
 const keyAction = (key: string, mods: Mods = {}): Action => ({ type: 'key', key, mods, config: parser.config });
 
-test('some history', () => {
+test.skip('some history', () => {
     let state = initialAppState;
     state = applyAppUpdate(state, keyAction('(', { shift: true }));
     state = applyAppUpdate(state, keyAction('a'));

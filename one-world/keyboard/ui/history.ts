@@ -105,6 +105,22 @@ const redo = (state: AppState): AppState => {
     return idx != null ? revert(state, state.history[idx]) : state;
 };
 
+/*
+
+so, thinking about tmptext
+and history items.
+what ifff
+history items never have tmptext?
+so like,
+if we're triggering a history item,
+we lock in the tmptext.
+eh i dont know about that. is that real.
+
+i meeeean what if I get rid of tmptext altogether?
+yeah like it seems like, I'm just making things more complicated for myself.
+
+*/
+
 const undo = (state: AppState) => {
     // const last = state.history[state.history.length - 1];
     // if (!last) {
@@ -122,8 +138,15 @@ const undo = (state: AppState) => {
     // }
     // console.log(`reverting`, last);
     // return revert(state, last);
+    if (!state.history.length) return state;
     const last = state.history[state.history.length - 1];
     if (!equal(state.top.tmpText, last.top.next.tmpText)) {
+        const nitem: HistoryItem = {
+            id: genId(),
+            selections: { prev: last.selections.next, next: state.selections },
+            top: { prev: { ...last.top.next, nodes: {} }, next: { ...state.top, nodes: {} } },
+        };
+
         // add an item for the tmpTExt
         // then revert it.
     }

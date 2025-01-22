@@ -1,4 +1,16 @@
 
+# Elders Quorum Training
+
+- the council! send out an email a few days before; what is the topic of the council?
+
+"The temple is how we access the savior"
+
+... I should be attending ward council ...
+
+ministering interview; sit down with someone and treat them as though they are the most important person in the world, the most interesting person.
+
+#
+
 Ok next
 
 - [x] ok, so now ... multi cursor, right?
