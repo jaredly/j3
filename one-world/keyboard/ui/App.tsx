@@ -458,11 +458,11 @@ export const App = ({ id }: { id: string }) => {
                 </div> */}
             <div style={{ overflow: 'auto', padding: 25 }}>
                 <h3>CST</h3>
-                <ShowXML root={xmlcst} onClick={clickSrc} setHover={hoverSrc} sel={[]} />
+                <ShowXML root={xmlcst} onClick={clickSrc} setHover={hoverSrc} sel={[]} statuses={selectionStatuses} />
             </div>
             <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                 <h3>AST</h3>
-                {xml ? <ShowXML root={xml} onClick={clickSrc} setHover={hoverSrc} sel={[]} /> : 'NO xml'}
+                {xml ? <ShowXML root={xml} onClick={clickSrc} setHover={hoverSrc} statuses={selectionStatuses} sel={[]} /> : 'NO xml'}
                 <div style={{ marginTop: 50, whiteSpace: 'pre-wrap' }}>
                     {parsed.bads.map((er, i) => (
                         <div key={i} style={{ color: 'red' }}>
