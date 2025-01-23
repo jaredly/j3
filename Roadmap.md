@@ -2,11 +2,21 @@
 # at popl yay
 
 - [x] made a nice little #examples page, to showcase the concrete syntax tree and such
-- [ ] undo and redo are still WIP. I think redo isn't working yet
+- [x] undo and redo are still WIP. I think redo isn't working yet
 - [ ] oh, wrap a select needs to come back on the stage.
 - [ ] also (cut/copy/paste) plsss
 - [ ] and thennnn maybe I can get back to actual parsers? can't remember when I left that off.
   orrr maybe the next step is to allow multiple toplevels?
+
+- [x] 🤔 in the presence of mutlicursor, we want undo (history item joinings) to also make sense.
+  ...
+  Can we say:
+  - iff all changed nodes are of type (id) or (text)
+  - andd changes to /text/ don't modify the number or type of spans
+  - thenn we can join them.
+  - alsoo we want to /break/ coalescing if there is a non-updating action
+
+
 
 
 # Thinking about robustness of my CST

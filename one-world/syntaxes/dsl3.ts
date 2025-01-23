@@ -524,6 +524,13 @@ export const rules = {
             src,
             body: ctx.ref<Expr | Stmt[]>('body'),
         })),
+        tx(seq(kwd('if'), ref('expr', 'cond'), ref('block', 'yes'), kwd('else'), ref('block', 'no')), (ctx, src) => ({
+            type: 'if',
+            cond: ctx.ref<Expr>('cond'),
+            yes: ctx.ref<Stmt[]>('yes'),
+            no: ctx.ref<Stmt[]>('no'),
+            src,
+        })),
         ref('expr'),
     ),
     bop: or(...binops.map((m) => kwd(m, 'bop'))),

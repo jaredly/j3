@@ -368,8 +368,19 @@ export const App = ({ id }: { id: string }) => {
     }, []);
 
     return (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            <div style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', padding: 50, paddingBottom: 0, minHeight: 0 }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'row', minHeight: 0 }}>
+            <div
+                style={{
+                    whiteSpace: 'pre-wrap',
+                    wordWrap: 'break-word',
+                    padding: 50,
+                    paddingBottom: 0,
+                    minHeight: 0,
+                    maxHeight: '30vh',
+                    overflow: 'auto',
+                    flexShrink: 1,
+                }}
+            >
                 <div style={{ height: '1em', paddingBottom: 20 }}>{lastKey ?? ''}</div>
                 <RenderNode
                     loc={state.top.root}
@@ -420,7 +431,7 @@ export const App = ({ id }: { id: string }) => {
                     ))}
                 </div>
             ) : null}
-            <div style={{ paddingLeft: 50, paddingTop: 20 }}>
+            {/* <div style={{ paddingLeft: 50, paddingTop: 20 }}>
                 SEL{' '}
                 {state.selections.map((sel, i) => (
                     <div key={i}>{JSON.stringify(sel)}</div>
@@ -433,38 +444,37 @@ export const App = ({ id }: { id: string }) => {
                         {k}: {JSON.stringify(v)}
                     </div>
                 ))}
-            </div>
-            <div style={{ display: 'flex', flex: 3, minHeight: 0, whiteSpace: 'nowrap' }}>
-                <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
+            </div> */}
+            {/* <div style={{ display: 'flex', flex: 1, minHeight: 0, overflow: 'auto', whiteSpace: 'nowrap' }}> */}
+            {/* <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
                     <h3>History</h3>
                     <div>
                         {state.history.map((item, i) => (
                             <div key={i}>
-                                {/* {i}: {JSON.stringify(item)} */}
                                 <ShowHistoryItem item={item} />
                             </div>
                         ))}
                     </div>
-                </div>
-                <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
-                    <h3>CST</h3>
-                    <ShowXML root={xmlcst} onClick={clickSrc} setHover={hoverSrc} sel={[]} />
-                </div>
-                <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
-                    <h3>AST</h3>
-                    {xml ? <ShowXML root={xml} onClick={clickSrc} setHover={hoverSrc} sel={[]} /> : 'NO xml'}
-                    <div style={{ marginTop: 50, whiteSpace: 'pre-wrap' }}>
-                        {parsed.bads.map((er, i) => (
-                            <div key={i} style={{ color: 'red' }}>
-                                <div>
-                                    {show(er.matcher)} {er.type}
-                                </div>
-                                <div style={{ fontSize: '80%', padding: 12 }}>{JSON.stringify(er)}</div>
+                </div> */}
+            <div style={{ overflow: 'auto', padding: 25 }}>
+                <h3>CST</h3>
+                <ShowXML root={xmlcst} onClick={clickSrc} setHover={hoverSrc} sel={[]} />
+            </div>
+            <div style={{ flex: 1, overflow: 'auto', padding: 25 }}>
+                <h3>AST</h3>
+                {xml ? <ShowXML root={xml} onClick={clickSrc} setHover={hoverSrc} sel={[]} /> : 'NO xml'}
+                <div style={{ marginTop: 50, whiteSpace: 'pre-wrap' }}>
+                    {parsed.bads.map((er, i) => (
+                        <div key={i} style={{ color: 'red' }}>
+                            <div>
+                                {show(er.matcher)} {er.type}
                             </div>
-                        ))}
-                    </div>
+                            <div style={{ fontSize: '80%', padding: 12 }}>{JSON.stringify(er)}</div>
+                        </div>
+                    ))}
                 </div>
             </div>
+            {/* </div> */}
         </div>
     );
 };

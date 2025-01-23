@@ -23,34 +23,11 @@ export type HistoryChange = {
     type: 'change';
     ts: number;
     id: string;
-    onlyy?: number; // the id or text:index that is the "only" thing that was modified
+    onlyy?: SimpleChangeIds; // the id or text:index that is the "only" thing that was modified
     // session: string;
     top: Delta<Omit<Top, 'nodes'> & { nodes: Record<number, Node | null> }>;
     selections: Delta<NodeSelection[]>;
 };
-
-/*
-
-// undo the stack
-A B C C' B' A'
-
-// undo/redo/undo/undo
-A B C C' C" C' B'
-
-//
--------------------
-  --------------
-    ---------
-  ---  ---
-A B B' C C' B" B' A'
-    - top is normal, revert it
-         - top is normal, revert it
-            - top is a revert, jump to pair, and revert the one before
-               - top is a revert, jump to pair revert the one before
-- IF TOP is a normal, revert it
-- IF TOP is a revert, revert whatever was right before the pair
-
-*/
 
 export const genId = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 const revDelta = <T>(d: Delta<T>): Delta<T> => ({ next: d.prev, prev: d.next });
@@ -65,7 +42,6 @@ const applyChange = (state: AppState, item: HistoryChange) => {
 };
 
 const revert = (state: AppState, item: HistoryItem, undo: boolean) => {
-    // console.log('revert', item.type);
     if (item.type === 'change') {
         state = applyChange(state, invertChange(item));
         const next: HistoryItem = { type: 'revert', reverts: item.id, id: genId(), ts: Date.now(), undo: undo };
@@ -115,31 +91,10 @@ export const findUndo = (history: HistoryItem[]): HistoryItem | void => {
 };
 
 /*
-
-A B C -> ABC
-
-A B C ^ -> AB
-
-A B C ^ ! -> ABC
-
-A B C ^ ^ A -> AA
-
-A B C ^ ! A ^ ^ -> AB
-
-A -> A
-A B -> AB
-A B C -> ABC
-A B C ^ -> AB
-A B C ^ ! -> ABC
-
-*/
-
-/*
 take the top item
 if it is a normal change, bail
 if it is an 'undo' revert, you're good
 if it is a 'redo' revert, back up to it's corresponding undo - 1
-
 */
 export const findRedo = (history: HistoryItem[]): HistoryItem | void => {
     if (!history.length) return;
@@ -152,24 +107,7 @@ export const findRedo = (history: HistoryItem[]): HistoryItem | void => {
         const found = history.findIndex((h) => h.id === last.reverts);
         if (found === -1) return;
         at = found - 1;
-        // return last;
     }
-    // if (last.type === 'change') return;
-    // if (last.undo) {
-    // }
-    // if (last.type === 'revert') return last;
-    // if (last.type === 'revert') {
-    //     return history.find((h) => h.id === last.reverts);
-    // }
-    // while (at >= 1) {
-    //     const item = history[at];
-    //     if (item.type === 'revert') return;
-    //     const found = history.findIndex((h) => h.id === item.reverts);
-    //     if (found === -1) return;
-    //     return item
-    // }
-    // if (at === -1) return;
-    // return at;
 };
 
 const redo = (state: AppState): AppState => {
@@ -183,19 +121,31 @@ const undo = (state: AppState) => {
     return item != null ? revert(state, item, item.type === 'change') : state;
 };
 
-const diffTop = (prev: Top, next: Top): [HistoryChange['top']['next'], boolean, number | undefined] => {
+type SimpleChangeIds = string;
+
+const diffTop = (prev: Top, next: Top): [HistoryChange['top']['next'], boolean, SimpleChangeIds | undefined] => {
     const diff: HistoryChange['top']['next'] = {
         ...next,
         nodes: {},
     };
-    let only = undefined as undefined | false | number;
+    let only = [] as false | number[];
     let changed = next.nextLoc !== prev.nextLoc || next.root !== prev.root; // || !equal(next.tmpText, prev.tmpText);
     Object.entries(next.nodes).forEach(([key, value]) => {
         if (prev.nodes[+key] !== value) {
-            if (only === undefined) {
-                only = +key;
-            } else {
-                only = false;
+            if (only) {
+                const pnode = prev.nodes[+key];
+
+                if (
+                    (pnode?.type === 'id' && value.type === 'id') ||
+                    (pnode?.type === 'text' &&
+                        value.type === 'text' &&
+                        pnode.spans.length === value.spans.length &&
+                        pnode.spans.every((span, i) => span.type === value.spans[i].type))
+                ) {
+                    only.push(+key);
+                } else {
+                    only = false;
+                }
             }
             diff.nodes[+key] = value;
             changed = true;
@@ -207,7 +157,7 @@ const diffTop = (prev: Top, next: Top): [HistoryChange['top']['next'], boolean, 
             changed = true;
         }
     });
-    return [diff, changed, only === false ? undefined : only];
+    return [diff, changed, only === false ? undefined : only.sort().join(':')];
 };
 
 const calculateHistoryItem = (prev: AppState, next: AppState): HistoryChange | void => {
@@ -232,13 +182,17 @@ const joinHistory = (prev: HistoryChange, next: HistoryChange): HistoryChange =>
     };
 };
 
+const canJoinItems = (prev: HistoryItem | null, item: HistoryItem): prev is HistoryChange => {
+    return prev?.type === 'change' && item.type === 'change' && prev.onlyy != null && prev.onlyy === item.onlyy && item.ts - prev.ts < 10000;
+};
+
 const recordHistory = (prev: AppState, next: AppState, noJoin = false): AppState => {
     if (prev === next) return next;
     const item = calculateHistoryItem(prev, next);
     if (!item) return next;
     const history = next.history.slice();
     const pitem = next.history[next.history.length - 1];
-    if (!noJoin && pitem?.type === 'change' && pitem.onlyy != null && pitem.onlyy === item.onlyy && item.ts - pitem.ts < 10000) {
+    if (!noJoin && canJoinItems(pitem, item)) {
         history[history.length - 1] = joinHistory(pitem, item);
         return { ...next, history };
     }
