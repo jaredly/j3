@@ -1,8 +1,22 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Node, childLocs } from '../shared/cnodes';
-import { isTag } from './handleNav';
+import { isTag, selectEnd, selectStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
-import { Cursor, Highlight, NodeSelection, Top, SelectionStatuses, lastChild, pathKey, Path, pathWithChildren, Current, getNode } from './utils';
+import {
+    Cursor,
+    Highlight,
+    NodeSelection,
+    Top,
+    SelectionStatuses,
+    lastChild,
+    pathKey,
+    Path,
+    pathWithChildren,
+    Current,
+    getNode,
+    parentLoc,
+    parentPath,
+} from './utils';
 
 const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: number | null = null): Highlight | undefined => {
     if (node.type === 'id') {
@@ -96,10 +110,33 @@ const rightCursor = (cursor: Cursor, node: Node): Cursor => {
 const leftSide = (sel: SelStart): SelStart => ({ ...sel, cursor: leftCursor(sel.cursor) });
 const rightSide = (sel: SelStart, top: Top): SelStart => ({ ...sel, cursor: rightCursor(sel.cursor, top.nodes[lastChild(sel.path)]) });
 
+// for alt+drag
 export const atomify = (start: SelStart, sel: SelStart, top: Top): [SelStart, SelStart] => {
     const startLeft = compareSelections(start, sel, top) === -1;
     if (startLeft) return [leftSide(start), rightSide(sel, top)];
     return [rightSide(start, top), leftSide(sel)];
+};
+
+const upToList = (path: Path, top: Top) => {
+    const ploc = parentLoc(path);
+    const pnode = top.nodes[ploc];
+    if (!pnode) return;
+    if (pnode.type === 'list' && pnode.kind !== 'smooshed' && pnode.kind !== 'spaced') {
+        return path;
+    }
+    return upToList(parentPath(path), top);
+};
+
+// for ctrl+drag, select "up to an argument of a list"
+export const argify = (start: SelStart, sel: SelStart, top: Top): [SelStart, SelStart] => {
+    const startLeft = compareSelections(start, sel, top) === -1;
+    const spath = upToList(start.path, top);
+    const epath = upToList(sel.path, top);
+    if (!spath || !epath) return [start, sel];
+    const start1 = startLeft ? selectStart(spath, top) : selectEnd(spath, top);
+    const sel1 = startLeft ? selectEnd(epath, top) : selectStart(epath, top);
+    if (!start1 || !sel1) return [start, sel];
+    return [start1, sel1];
 };
 
 export const getSelectionStatuses = (selection: NodeSelection, top: Top): SelectionStatuses => {

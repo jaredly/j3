@@ -11,7 +11,8 @@ yeah. so that once the dragging stops, it's still a thing.
 
 - maybe record a video of me interacting with the compiler.jaredforsyth.com version, showcasing various things
 - [ ] wrap a selection
-  - [ ] BUT FIRST let's do alt+drag?
+  - [x] BUT FIRST let's do alt+drag?
+  - [ ] ctrl-drag for selecting "element of a list"
 - [ ] cut/copy/paste a selection
 - [ ] alt+select (by word)
 - [ ] ctrl-select (by ... list item?)

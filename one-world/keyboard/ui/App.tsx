@@ -10,7 +10,7 @@ import { idText, spanText } from '../cursorSplit';
 import { selectStart } from '../handleNav';
 import { allPaths, Mods, SelStart, Src } from '../handleShiftNav';
 import { root } from '../root';
-import { atomify, getCurrent, getSelectionStatuses } from '../selections';
+import { argify, atomify, getCurrent, getSelectionStatuses } from '../selections';
 import { lastChild, mergeHighlights, NodeSelection, pathWithChildren, SelectionStatuses, selStart, Top, Update } from '../utils';
 import { HistoryItem, initialAppState, reducer } from './history';
 import { Visual } from './keyUpdate';
@@ -366,7 +366,9 @@ export const App = ({ id }: { id: string }) => {
             },
             move(sel: SelStart) {
                 let start = cstate.current.selections[0].start;
-                if (latestDragMods.current.alt) {
+                if (latestDragMods.current.ctrl) {
+                    [start, sel] = argify(start, sel, cstate.current.top);
+                } else if (latestDragMods.current.alt) {
                     [start, sel] = atomify(start, sel, cstate.current.top);
                 }
                 dispatch({ type: 'update', update: { nodes: {}, selection: { start, end: sel } } });
