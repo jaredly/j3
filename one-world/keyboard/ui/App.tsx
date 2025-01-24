@@ -10,7 +10,7 @@ import { idText, spanText } from '../cursorSplit';
 import { selectStart } from '../handleNav';
 import { allPaths, Mods, SelStart, Src } from '../handleShiftNav';
 import { root } from '../root';
-import { getCurrent, getSelectionStatuses } from '../selections';
+import { atomify, getCurrent, getSelectionStatuses } from '../selections';
 import { lastChild, mergeHighlights, NodeSelection, pathWithChildren, SelectionStatuses, selStart, Top, Update } from '../utils';
 import { HistoryItem, initialAppState, reducer } from './history';
 import { Visual } from './keyUpdate';
@@ -175,7 +175,9 @@ export const App = ({ id }: { id: string }) => {
 
     const [menu, setMenu] = useState(null as null | Menu);
 
-    const { lastKey, refs } = useKeyHandler(state, parsed, dispatch, parser, menu, setMenu);
+    const [dragMods, setDragMods] = useState({} as Mods);
+
+    const { lastKey, refs } = useKeyHandler(state, parsed, dispatch, parser, menu, setMenu, setDragMods);
 
     const cstate = useLatest(state);
 
@@ -338,7 +340,9 @@ export const App = ({ id }: { id: string }) => {
             });
         });
         return statuses;
-    }, [state.selections, state.top]);
+    }, [state.selections, state.top, dragMods]);
+
+    const latestDragMods = useLatest(dragMods);
 
     const drag = useMemo(() => {
         const up = (evt: MouseEvent) => {
@@ -361,7 +365,11 @@ export const App = ({ id }: { id: string }) => {
                 }
             },
             move(sel: SelStart) {
-                dispatch({ type: 'update', update: { nodes: {}, selection: { start: cstate.current.selections[0].start, end: sel } } });
+                let start = cstate.current.selections[0].start;
+                if (latestDragMods.current.alt) {
+                    [start, sel] = atomify(start, sel, cstate.current.top);
+                }
+                dispatch({ type: 'update', update: { nodes: {}, selection: { start, end: sel } } });
             },
         };
         return drag;
@@ -645,6 +653,7 @@ const useKeyHandler = (
     parser: TestParser,
     menu: Menu | null,
     setMenu: (m: Menu | null) => void,
+    setDragMods: (f: (m: Mods) => Mods) => void,
 ) => {
     const cstate = useLatest(state);
     const spans: Src[] = parsed.result ? parser.spans(parsed.result) : [];
@@ -659,6 +668,15 @@ const useKeyHandler = (
     useEffect(() => {
         const f = (evt: KeyboardEvent) => {
             if (evt.metaKey && (evt.key === 'r' || evt.key === 'l')) return;
+
+            if (evt.key === 'Meta') {
+                return setDragMods((m) => ({ ...m, meta: true }));
+            } else if (evt.key === 'Alt') {
+                return setDragMods((m) => ({ ...m, alt: true }));
+            } else if (evt.key === 'Control') {
+                return setDragMods((m) => ({ ...m, ctrl: true }));
+            }
+
             console.log('fff', evt.key);
             if (evt.key === 'Dead') {
                 return;
@@ -723,32 +741,24 @@ const useKeyHandler = (
                 config: parser.config,
             });
 
-            // const updates = cstate.current.selections.map((sel) =>
-            //     keyUpdate(
-            //         { top: cstate.current.top, sel },
-            //         evt.key,
-            //         { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey },
-            //         {
-            //             up(sel) {
-            //                 const nxt = posUp(sel, cstate.current.top, refs);
-            //                 return nxt ? { start: nxt } : null;
-            //             },
-            //             down(sel) {
-            //                 const nxt = posDown(sel, cstate.current.top, refs);
-            //                 return nxt ? { start: nxt } : null;
-            //             },
-            //             spans: cspans.current,
-            //         },
-            //         parser.config,
-            //     ),
-            // );
-
             evt.preventDefault();
             evt.stopPropagation();
-            // dispatch(updates);
+        };
+        const up = (evt: KeyboardEvent) => {
+            if (evt.key === 'Meta') {
+                return setDragMods((m) => ({ ...m, meta: false }));
+            } else if (evt.key === 'Alt') {
+                return setDragMods((m) => ({ ...m, alt: false }));
+            } else if (evt.key === 'Control') {
+                return setDragMods((m) => ({ ...m, ctrl: false }));
+            }
         };
         document.addEventListener('keydown', f);
-        return () => document.removeEventListener('keydown', f);
+        document.addEventListener('keyup', up);
+        return () => {
+            document.removeEventListener('keydown', f);
+            document.removeEventListener('keyup', up);
+        };
     }, []);
 
     return { lastKey, refs };

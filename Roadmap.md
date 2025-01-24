@@ -2,6 +2,13 @@
 
 # What do I need in order to show this off to people?
 
+Alt drag ...
+hm I guess ... yeah ok instead of just changing the
+'selectionstatuses', I do want to modify the cursors.
+yeah. so that once the dragging stops, it's still a thing.
+
+
+
 - maybe record a video of me interacting with the compiler.jaredforsyth.com version, showcasing various things
 - [ ] wrap a selection
   - [ ] BUT FIRST let's do alt+drag?

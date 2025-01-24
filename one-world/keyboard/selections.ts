@@ -1,3 +1,4 @@
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Node, childLocs } from '../shared/cnodes';
 import { isTag } from './handleNav';
 import { SelStart } from './handleShiftNav';
@@ -66,6 +67,39 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
         }
         return { type: 'list', opener, closer };
     }
+};
+
+const leftCursor = (cursor: Cursor): Cursor => {
+    switch (cursor.type) {
+        case 'id':
+            return { type: 'id', end: 0 };
+        case 'text':
+        case 'list':
+            return { type: 'list', where: 'before' };
+        case 'control':
+            return cursor;
+    }
+};
+
+const rightCursor = (cursor: Cursor, node: Node): Cursor => {
+    switch (cursor.type) {
+        case 'id':
+            return { type: 'id', end: node.type === 'id' ? splitGraphemes(node.text).length : 1 };
+        case 'text':
+        case 'list':
+            return { type: 'list', where: 'after' };
+        case 'control':
+            return cursor;
+    }
+};
+
+const leftSide = (sel: SelStart): SelStart => ({ ...sel, cursor: leftCursor(sel.cursor) });
+const rightSide = (sel: SelStart, top: Top): SelStart => ({ ...sel, cursor: rightCursor(sel.cursor, top.nodes[lastChild(sel.path)]) });
+
+export const atomify = (start: SelStart, sel: SelStart, top: Top): [SelStart, SelStart] => {
+    const startLeft = compareSelections(start, sel, top) === -1;
+    if (startLeft) return [leftSide(start), rightSide(sel, top)];
+    return [rightSide(start, top), leftSide(sel)];
 };
 
 export const getSelectionStatuses = (selection: NodeSelection, top: Top): SelectionStatuses => {
@@ -171,6 +205,42 @@ const innerSide = (outer: SelStart, inner: SelStart, top: Top): { side: 'before'
     return { side: 'after', at: -1 };
 };
 
+export const compareSelections = (one: SelStart, two: SelStart, top: Top) => {
+    if (one.path.root.top !== two.path.root.top) throw new Error(`sorry not yettt`);
+    if (one.key === two.key) {
+        if (ltCursor(one.cursor, two.cursor)) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+    for (let i = 1; i < one.path.children.length && i < two.path.children.length; i++) {
+        const o = one.path.children[i];
+        const t = two.path.children[i];
+        if (o === t) continue;
+        const pnode = top.nodes[one.path.children[i - 1]];
+        if (pnode.type === 'text') {
+            const oat = pnode.spans.findIndex((s) => s.type === 'embed' && s.item === o);
+            const tat = pnode.spans.findIndex((s) => s.type === 'embed' && s.item === t);
+            if (oat === -1 || tat === -1) throw new Error(`not innnn`);
+            return oat < tat ? -1 : 1;
+        }
+        const locs = childLocs(pnode);
+        const oat = locs.indexOf(o);
+        const tat = locs.indexOf(t);
+        if (oat === -1 || tat === -1) throw new Error(`not innnn`);
+        return oat < tat ? -1 : 1;
+    }
+
+    const [outer, inner] = one.path.children.length < two.path.children.length ? [one, two] : [two, one];
+    const side = innerSide(outer, inner, top);
+    if (side.side === 'before') {
+        return outer === one ? -1 : 1;
+    } else {
+        return inner === one ? -1 : 1;
+    }
+};
+
 export const orderSelections = (
     one: SelStart,
     two: SelStart,
@@ -237,26 +307,6 @@ export const orderSelections = (
         getNeighbors(inner.path, outer.path.children.length - 1, top, 'after', statuses);
         return [inner, statuses, outer, side];
     }
-    // if (outer.cursor.type === 'list') {
-    //     if (outer.cursor.where === 'before' || outer.cursor.where === 'start') {
-    //         const mid = getNeighbors(inner.path, outer.path.children.length, top, 'before');
-    //         return [outer, mid, inner, 'left'];
-    //     } else {
-    //         const mid = getNeighbors(inner.path, outer.path.children.length, top, 'after');
-    //         return [inner, mid, outer, 'right'];
-    //     }
-    // }
-
-    // // One side is a superset of the other one
-    // if (one.path.children.length < two.path.children.length) {
-    //     // one is outer
-    //     return [one, [], two, 'left'];
-    // } else {
-    //     // two is outer
-    //     return [one, [], two, 'right'];
-    // }
-    // return [one, [], two, false];
-    // throw new Error(`ran out, cant handle yext just yets`);
 };
 
 // const getNeighbors = (path: Path, i: number, top: Top, side: 'before' | 'after'): Path[] => {
