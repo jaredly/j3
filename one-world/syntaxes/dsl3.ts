@@ -531,6 +531,28 @@ export const rules = {
             no: ctx.ref<Stmt[]>('no'),
             src,
         })),
+        tx(
+            seq(
+                kwd('case'),
+                ref('expr', 'target'),
+                group(
+                    'cases',
+                    table(
+                        'curly',
+                        tx(seq(ref('pat', 'pat'), ref('block', 'body')), (ctx, src) => ({
+                            pat: ctx.ref<Pat>('pat'),
+                            body: ctx.ref<Stmt[]>('body'),
+                        })),
+                    ),
+                ),
+            ),
+            (ctx, src) => ({
+                type: 'case',
+                target: ctx.ref<Expr>('target'),
+                src,
+                cases: ctx.ref<{ pat: Pat; body: Stmt[] | Expr }[]>('cases'),
+            }),
+        ),
         ref('expr'),
     ),
     bop: or(...binops.map((m) => kwd(m, 'bop'))),

@@ -1,4 +1,17 @@
 
+
+# What do I need in order to show this off to people?
+
+- maybe record a video of me interacting with the compiler.jaredforsyth.com version, showcasing various things
+- [ ] wrap a selection
+  - [ ] BUT FIRST let's do alt+drag?
+- [ ] cut/copy/paste a selection
+- [ ] alt+select (by word)
+- [ ] ctrl-select (by ... list item?)
+- [ ] peek into execution pls
+- [ ] an example of multiple languages? maybe? hmmm. what is holding me back from self-hosting right nowwwww yall
+
+
 # at popl yay
 
 - [x] made a nice little #examples page, to showcase the concrete syntax tree and such
@@ -15,6 +28,9 @@
   - andd changes to /text/ don't modify the number or type of spans
   - thenn we can join them.
   - alsoo we want to /break/ coalescing if there is a non-updating action
+
+- [ ] shift + down doensn't work over multiple lines, it just finds the line below the cursor (start)
+- [ ] alt + shift + arrow isn't working
 
 
 

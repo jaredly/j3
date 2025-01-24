@@ -376,7 +376,7 @@ export const App = ({ id }: { id: string }) => {
                     padding: 50,
                     paddingBottom: 0,
                     minHeight: 0,
-                    maxHeight: '30vh',
+                    // maxHeight: '30vh',
                     overflow: 'auto',
                     flexShrink: 1,
                 }}
