@@ -1,4 +1,17 @@
 
+# Griveveve
+
+if I want CRDT madness,
+I need
+- [ ] node LOCs need to be UIDs, not integegrs
+- [ ] my (list)s are not crdt-friendly. I would need to ... maintain some sort of data structure
+  well also, I need edges and stuff.
+  Basically, I would want ... a parallel data structure to keep track of the CRDT stuff.
+  the edges, and the vertices.
+  and then a good way to go from one to the other..
+
+
+
 
 # What do I need in order to show this off to people?
 
@@ -8,17 +21,34 @@ hm I guess ... yeah ok instead of just changing the
 yeah. so that once the dragging stops, it's still a thing.
 
 
-
 - maybe record a video of me interacting with the compiler.jaredforsyth.com version, showcasing various things
 - [ ] wrap a selection
   - [x] BUT FIRST let's do alt+drag?
-  - [ ] ctrl-drag for selecting "element of a list"
+  - [x] ctrl-drag for selecting "element of a list"
 - [ ] cut/copy/paste a selection
 - [ ] alt+select (by word)
 - [ ] ctrl-select (by ... list item?)
 - [ ] peek into execution pls
 - [ ] an example of multiple languages? maybe? hmmm. what is holding me back from self-hosting right nowwwww yall
 
+
+((((---))))
+so, with ... switching to Grove/CmRDT compatible representation...
+lists decompose into linked lists,
+which I would have absolutely everywhere
+and I guess tables decompose into 2-deep linked lists
+
+(parent) paths get a lot longer, right? does that have weird implications?
+like
+removing one element changes the parent path of the other elements?
+hmmmmm
+[q] how ~bad would it be to ditch paths altogether?
+like, we already disambiguate by toplevel, and I'm fine asserting that a given
+node can only show up once per toplevel.... (the `root` of the Path)
+so do I really need to hang on to the full path?
+it would make dealing with linked lists rather simpler, I believe.
+>> What this would amount to, is having `top` maintain a map of backreferences, so you can
+determine the (parent) of any given node.
 
 # at popl yay
 

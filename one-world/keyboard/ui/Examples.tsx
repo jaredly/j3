@@ -112,7 +112,7 @@ const Example = ({ text }: { text: string[] }) => {
                 />
             </div>
             <div style={{ flex: 1, overflow: 'auto' }}>
-                <ShowXML root={xmlcst} onClick={() => {}} setHover={() => {}} sel={[]} />
+                <ShowXML root={xmlcst} onClick={() => {}} setHover={() => {}} sel={[]} statuses={{}} />
             </div>
         </div>
     );
@@ -225,7 +225,7 @@ const ExTable = ({ examples, config, dconfig }: { examples: [string, string][]; 
                             />
                         </div>
                         <div style={{ gridColumn: 3 }}>
-                            <ShowXML root={xmls[i]} onClick={() => {}} setHover={() => {}} sel={[]} />
+                            <ShowXML root={xmls[i]} onClick={() => {}} setHover={() => {}} sel={[]} statuses={{}} />
                         </div>
                     </React.Fragment>
                 ))}
