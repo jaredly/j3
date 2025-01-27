@@ -1,6 +1,7 @@
 import { shape } from '../shared/shape';
 import { TestState } from './test-utils';
 import { lastChild, NodeSelection, parentPath, Path, pathWithChildren, selStart, SelUpdate, Update } from './utils';
+import { KeyAction, keyActionToUpdate } from './keyActionToUpdate';
 import { validate } from './validate';
 import { root } from './root';
 import { SelStart } from './handleShiftNav';
@@ -39,8 +40,14 @@ export const applySelUp = (sel: NodeSelection, up: SelUpdate): NodeSelection => 
     }
 };
 
-export function applyUpdate<T extends TestState>(state: T, update: Update | null | void): T {
+export function applyUpdate<T extends TestState>(state: T, update: Update | KeyAction[] | null | void): T {
     if (!update) return state;
+    if (Array.isArray(update)) {
+        for (let sub of update) {
+            state = applyUpdate(state, keyActionToUpdate(state, sub));
+        }
+        return state;
+    }
     const prev = state.sel;
     state = {
         ...state,
@@ -52,19 +59,7 @@ export function applyUpdate<T extends TestState>(state: T, update: Update | null
         },
     };
 
-    // if (update.tmpText) {
-    //     state.top.tmpText = { ...state.top.tmpText };
-    //     Object.keys(update.tmpText).forEach((key) => {
-    //         if (!update.tmpText![key]) {
-    //             delete state.top.tmpText[key];
-    //         } else {
-    //             state.top.tmpText[key] = update.tmpText![key]!;
-    //         }
-    //     });
-    // }
-
     if (Array.isArray(update.selection)) {
-        // sel: update.selection ?? state.sel,
         update.selection.forEach((selup) => {
             state.sel = applySelUp(state.sel, selup);
         });

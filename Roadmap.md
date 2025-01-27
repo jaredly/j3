@@ -1,5 +1,60 @@
 
-# Griveveve
+# Convert `Update` into `KeyAction` pls
+
+keyAction can be `mutli` so I can do `splitIfNeeded` and then `wrapInList`
+
+# What about a `parse` form?
+
+It would look like
+
+```
+let stmts = something => {
+parse something {
+  `(for (init=stmt;cond=expr;update=expr) body=block): For{init, cond, update, body}
+  `(return value=expr): Return{value}
+}
+}
+
+let expr.. = something => {
+parse something {
+  `()
+}
+}
+```
+hmm I think I do want an explicit `seq()`, that is useful.
+maybe what I'm looking for is like a macro?
+THe `parse` construct would want to return something more than just the body of the matched case;
+it would incude info about "how many tokens were consumed", and the `src`, for example....
+
+
+
+
+ALSO, have a pattern form that is `name=fn`, where `fn` would be called on the value,
+and it it returns `Some(x)` then `name` would be bound to `x`. That would be super cool.
+
+
+
+ALSO I want to repalce the `Update`1 return value with a `KeyAction` type, which expresses things better.
+So the () wrap key thing would be a `splitIfNeeded` and then a `wrapWithList`.
+
+
+
+FALLTHROUGH
+that I really want.
+
+switch a {
+  case b:
+    if c {
+      ...
+    } else {
+      // fallthrough to the next case
+    }
+}
+
+
+
+
+# Groveveve
 
 if I want CRDT madness,
 I need
@@ -10,6 +65,10 @@ I need
   the edges, and the vertices.
   and then a good way to go from one to the other..
 
+
+hrmmmmmmm so maybeeee
+converting to the "everything has only two children" style might make some things easier?
+hmm not quite sure.
 
 
 

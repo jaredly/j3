@@ -2,6 +2,7 @@ import equal from 'fast-deep-equal';
 import { Node, Nodes } from '../../shared/cnodes';
 import { shape } from '../../shared/shape';
 import { applyUpdate, applySelUp } from '../applyUpdate';
+import { keyActionToUpdate } from '../keyActionToUpdate';
 import { root } from '../root';
 import { init } from '../test-utils';
 import { Top, NodeSelection } from '../utils';
@@ -218,6 +219,24 @@ export const applyAppUpdate = (state: AppState, action: Action, noJoin = false):
             for (let i = 0; i < selections.length; i++) {
                 const sel = selections[i];
                 const update = keyUpdate({ top, sel }, action.key, action.mods, action.visual, action.config);
+                if (Array.isArray(update)) {
+                    for (let keyAction of update) {
+                        const sub = keyActionToUpdate({ top, sel }, keyAction);
+                        const result = applyUpdate({ top, sel }, sub);
+                        top = result.top;
+                        selections[i] = result.sel;
+                        if (sub && Array.isArray(sub.selection)) {
+                            for (let j = 0; j < selections.length; j++) {
+                                if (j !== i) {
+                                    sub.selection.forEach((up) => {
+                                        selections[j] = applySelUp(selections[i], up);
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    continue;
+                }
                 const result = applyUpdate({ top, sel }, update);
                 top = result.top;
                 selections[i] = result.sel;

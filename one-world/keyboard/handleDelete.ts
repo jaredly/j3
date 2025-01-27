@@ -29,6 +29,7 @@ import {
 } from './utils';
 import { getCurrent } from './selections';
 import { idText } from './cursorSplit';
+import { KeyAction } from './keyActionToUpdate';
 
 type JoinParent =
     | {
@@ -249,7 +250,7 @@ export const rebalanceSmooshed = (update: Update, top: Top) => {
     });
 };
 
-const removeSelf = (state: TestState, current: { path: Path; node: Node }): Update | void => {
+export const removeSelf = (state: TestState, current: { path: Path; node: Node }): Update | void => {
     const pnode = state.top.nodes[parentLoc(current.path)];
     if (pnode && pnode.type === 'list' && pnode.kind === 'smooshed') {
         // removing an item from a smooshed, got to reevaulate it
@@ -319,7 +320,7 @@ const removeSelf = (state: TestState, current: { path: Path; node: Node }): Upda
     return up;
 };
 
-const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
+export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[] | void => {
     const got = joinParent(state.sel.start.path, state.top);
     if (!got) {
         const pnode = state.top.nodes[parentLoc(state.sel.start.path)];
@@ -357,7 +358,7 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
 
     // const tmpText: NonNullable<Update['tmpText']> = {};
 
-    let node = state.top.nodes[lastChild(state.sel.start.path)];
+    const node = state.top.nodes[lastChild(state.sel.start.path)];
     const remap: Nodes = {};
     // "maybe commit text changes"
     // if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
@@ -481,14 +482,14 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
         const start = selectEnd(pathWithChildren(parentPath(state.sel.start.path), prev.loc), state.top);
         if (!start) return;
         const res = handleDelete({ top: { ...state.top, nodes: { ...state.top.nodes, ...remap } }, sel: { start } });
-        res!.nodes[node.loc] = node;
+        // res!.nodes[node.loc] = node;
         return res;
     }
 
     return flatToUpdateNew(flat, { node, cursor }, { isParent: true, node: pnode, path: parent }, {}, state.top);
 };
 
-export const handleDelete = (state: TestState): Update | void => {
+export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
         case 'list': {
@@ -527,10 +528,10 @@ export const handleDelete = (state: TestState): Update | void => {
                         );
                     }
                     if (current.node.type === 'list' && current.node.children.length === 0) {
-                        return removeSelf(state, current);
+                        return [{ type: 'remove-self', path: current.path }]; //removeSelf(state, current);
                     }
                     if (current.node.type === 'table' && current.node.rows.length === 0) {
-                        return removeSelf(state, current);
+                        return [{ type: 'remove-self', path: current.path }]; //removeSelf(state, current);
                     }
                     return selUpdate(selStart(current.path, { type: 'list', where: 'start' }));
                 } else if (current.cursor.where === 'start' && current.node.type === 'list' && current.node.children.length === 0) {

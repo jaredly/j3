@@ -6,6 +6,7 @@ import { Mods, Src, handleShiftNav, handleSpecial, handleTab, shiftExpand, wordN
 import { wrapKind, handleWrap, closerKind, handleClose } from '../handleWrap';
 import { Config, TestState, js } from '../test-utils';
 import { NodeSelection, Update } from '../utils';
+import { KeyAction } from '../keyActionToUpdate';
 
 export type Visual = {
     up: (sel: NodeSelection) => NodeSelection | null;
@@ -13,7 +14,7 @@ export type Visual = {
     spans: Src[];
 };
 
-export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Visual, config: Config = js): Update | void => {
+export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Visual, config: Config = js): Update | KeyAction[] | void => {
     if (key === 'Enter') key = '\n';
     if (key === 'Backspace') {
         return handleDelete(state);
