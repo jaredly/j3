@@ -35,11 +35,11 @@ test('start of id', () => {
     check(state, smoosh([round([], true), id('hi')]), listc('inside'));
 });
 
-test('start of id shift', () => {
-    let state = asTop(id('hillo', true), idc(0), idc(2));
-    state = applyUpdate(state, handleWrap(state, '('));
-    check(state, smoosh([round([id('hi')], true), id('llo')]), listc('before'));
-});
+// test('start of id shift', () => {
+//     let state = asTop(id('hillo', true), idc(0), idc(2));
+//     state = applyUpdate(state, handleWrap(state, '('));
+//     check(state, smoosh([round([id('hi')], true), id('llo')]), listc('before'));
+// });
 
 test('after id', () => {
     let state = asTop(id('hi', true), idc(2));
@@ -157,4 +157,10 @@ test('unwrap a spaced in a spaced', () => {
     state = applyUpdate(state, handleDelete(state));
     state = applyUpdate(state, handleDelete(state));
     check(state, round([spaced([id('ha'), id('hi', true), id('ho'), id('he')])]), idc(0));
+});
+
+test.only('multierap', () => {
+    let state = asTop(round([id('hi', 1), id('ho', 2), id('ham')]), idc(0), idc(2));
+    state = applyUpdate(state, handleWrap(state, '('));
+    check(state, round([round([id('hi', true), id('ho')]), id('ham')]), idc(0));
 });

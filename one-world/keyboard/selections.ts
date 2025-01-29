@@ -278,7 +278,7 @@ export const orderSelections = (one: SelStart, two: SelStart, top: Top): Selecti
     return statuses;
 };
 
-type Neighbor = { path: Path; hl: Highlight };
+export type Neighbor = { path: Path; hl: Highlight };
 
 const getNeighbors = (path: Path, i: number, top: Top, side: 'before' | 'after') => {
     const result: Neighbor[] = [];

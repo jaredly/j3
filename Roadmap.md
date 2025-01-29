@@ -1,4 +1,12 @@
 
+# WRAPPPP
+
+- [x] collectSelectedNodes
+- [ ] divide into ... children of parents
+- [ ] now, some of those children are going to be reparented. but thats fine rightttt
+  ugh but it would be easier if I had already ditched the "full path of parentage" thing for selections and stuff.
+
+
 # Convert `Update` into `KeyAction` pls
 
 keyAction can be `mutli` so I can do `splitIfNeeded` and then `wrapInList`

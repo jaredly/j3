@@ -2,15 +2,15 @@ import { Collection, List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { idText } from './cursorSplit';
 import { findParent } from './flatenate';
-import { justSel } from './handleNav';
+import { justSel, selectStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { handleTextText } from './handleTextText';
 import { KeyAction } from './keyActionToUpdate';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
-import { getCurrent, orderSelections } from './selections';
+import { collectSelectedNodes, getCurrent, Neighbor, orderSelections } from './selections';
 import { TestState } from './test-utils';
-import { CollectionCursor, Current, Cursor, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
+import { CollectionCursor, Current, Cursor, lastChild, parentLoc, parentPath, Path, pathKey, pathWithChildren, selStart, Top, Update } from './utils';
 
 export const wrapKind = (key: string): ListKind<any> | void => {
     switch (key) {
@@ -253,24 +253,130 @@ export const handleClose = (state: TestState, key: string): Update | void => {
 //     // we just do the thing
 // };
 
-export const handleWraps = (state: TestState, kind: ListKind<any>) => {
-    // TODO can I refactor orderSelections and getNeighbors so it doesn't hide the PATHs of the relevant things?
-    // const [left, statuses, right] = orderSelections(state.sel.start, state.sel.end!, state.top);
+const partitionNeighbors = (items: Neighbor[], top: Top) => {
+    const byParent: Record<string, { path: Path; children: number[] }> = {};
+    items.forEach((item) => {
+        if (item.hl.type === 'full') {
+            let path = item.path;
+            while (path.children.length > 1) {
+                const pnode = top.nodes[parentLoc(path)];
+                if (pnode.type === 'list' && pnode.kind !== 'smooshed' && pnode.kind !== 'spaced') {
+                    break;
+                }
+                path = parentPath(path);
+            }
+            if (path.children.length < 2) return;
+            const ppath = parentPath(path);
+            const k = pathKey(ppath);
+            if (!byParent[k]) {
+                byParent[k] = { path: ppath, children: [lastChild(path)] };
+            } else if (!byParent[k].children.includes(lastChild(path))) {
+                byParent[k].children.push(lastChild(path));
+            }
+        }
+    });
+    return Object.values(byParent).sort((a, b) => b.path.children.length - a.path.children.length);
+};
+
+const wrapParent = (one: SelStart, two: SelStart, top: Top): void | { path: Path; min: number; max: number } => {
+    if (one.path.children[0] !== two.path.children[0]) return;
+
+    for (let i = 1; i < one.path.children.length && i < two.path.children.length; i++) {
+        if (one.path.children[i] !== two.path.children[i]) {
+            const node = top.nodes[one.path.children[i - 1]];
+            if (node.type !== 'list') return;
+            const a1 = node.children.indexOf(one.path.children[i]);
+            const a2 = node.children.indexOf(two.path.children[i]);
+            if (a1 === -1 || a2 === -1) return;
+            return { path: { ...one.path, children: one.path.children.slice(0, i) }, min: Math.min(a1, a2), max: Math.max(a1, a2) };
+        }
+    }
+    if (one.path.children.length === two.path.children.length) return; // same path??
+    const [outer, inner] = one.path.children.length < two.path.children.length ? [one, two] : [two, one];
+
+    const node = top.nodes[lastChild(outer.path)];
+    if (node.type !== 'list') return;
+    const at = node.children.indexOf(inner.path.children[outer.path.children.length]);
+    if (at === -1) return;
+    if (outer.cursor.type !== 'list' || outer.cursor.where === 'inside') return;
+    const left = outer.cursor.where === 'before' || outer.cursor.where === 'start';
+    return { path: outer.path, min: left ? 0 : at, max: left ? at : node.children.length - 1 };
+};
+
+export const handleWraps = (state: TestState, kind: ListKind<any>): Update | void => {
+    const found = wrapParent(state.sel.start, state.sel.end!, state.top);
+    if (!found) return;
+
+    let nextLoc = state.top.nextLoc;
+    const nodes: Nodes = {};
+    const node = state.top.nodes[lastChild(found.path)];
+    if (node.type !== 'list') return;
+    const children = node.children.slice();
+    const loc = nextLoc++;
+
+    const taken = children.splice(found.min, found.max - found.min + 1, loc);
+    nodes[node.loc] = { ...node, children };
+
+    let start: SelStart;
+    if (node.kind === 'spaced' || node.kind === 'smooshed') {
+        const inner = nextLoc++;
+        nodes[loc] = { type: 'list', kind, children: [inner], loc };
+        nodes[inner] = { type: 'list', kind: node.kind, children: taken, loc: inner };
+        const got = selectStart(pathWithChildren(found.path, loc, inner, taken[0]), state.top);
+        if (!got) return;
+        start = got;
+    } else {
+        nodes[loc] = { type: 'list', kind, children: taken, loc };
+        const got = selectStart(pathWithChildren(found.path, loc, taken[0]), state.top);
+        if (!got) return;
+        start = got;
+    }
+
+    return { nodes, selection: { start }, nextLoc };
+};
+
+export const handleWrapsTooMuch = (state: TestState, kind: ListKind<any>): Update => {
+    const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, state.top);
+    neighbors.push({ path: left.path, hl: { type: 'full' } });
+    neighbors.push({ path: right.path, hl: { type: 'full' } });
+    const sorted = partitionNeighbors(neighbors, state.top);
+
+    let nextLoc = state.top.nextLoc;
+    let sel: SelStart | null = null;
+    const nodes: Nodes = {};
+    sorted.forEach(({ path, children: selected }) => {
+        const node = state.top.nodes[lastChild(path)];
+        if (node.type !== 'list') return;
+        const children = node.children.slice();
+        const idxs = selected.map((s) => children.indexOf(s)).sort();
+        if (idxs[0] === -1) return;
+        const min = idxs[0];
+        const max = idxs[idxs.length - 1];
+        const loc = nextLoc++;
+
+        const taken = children.splice(min, max - min + 1, loc);
+        nodes[node.loc] = { ...node, children };
+        nodes[loc] = { type: 'list', kind, children: taken, loc };
+        const got = selectStart(pathWithChildren(path, loc, taken[0]), state.top);
+        if (got) sel = got;
+    });
+    console.log(sorted);
+    return { nodes, selection: sel ? { start: sel } : undefined, nextLoc };
 };
 
 export const handleWrap = (state: TestState, key: string): Update | KeyAction[] | void => {
-    // if (state.sel.end) {
-    //     // IF start & end are in the same node,
-    //     // we handle it one way
-    //     // OTHERWISE
-    //     // we might need to split the start or end node.
-    //     // BUT I can probably get away with NOT handling the
-    //     // split case for now, because honestly
-    //     // is it common to want to do that? Iw ould think not.
-    //     const kind = wrapKind(key);
-    //     if (!kind) return;
-    //     return handleWraps(state, kind);
-    // }
+    if (state.sel.end) {
+        // IF start & end are in the same node,
+        // we handle it one way
+        // OTHERWISE
+        // we might need to split the start or end node.
+        // BUT I can probably get away with NOT handling the
+        // split case for now, because honestly
+        // is it common to want to do that? Iw ould think not.
+        const kind = wrapKind(key);
+        if (!kind) return;
+        return handleWraps(state, kind);
+    }
 
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text') {
