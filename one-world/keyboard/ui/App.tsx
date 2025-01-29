@@ -175,9 +175,9 @@ export const App = ({ id }: { id: string }) => {
 
     const [menu, setMenu] = useState(null as null | Menu);
 
-    const [dragMods, setDragMods] = useState({} as Mods);
+    // const [dragMods, setDragMods] = useState({} as Mods);
 
-    const { lastKey, refs } = useKeyHandler(state, parsed, dispatch, parser, menu, setMenu, setDragMods);
+    const { lastKey, refs } = useKeyHandler(state, parsed, dispatch, parser, menu, setMenu);
 
     const cstate = useLatest(state);
 
@@ -340,9 +340,9 @@ export const App = ({ id }: { id: string }) => {
             });
         });
         return statuses;
-    }, [state.selections, state.top, dragMods]);
+    }, [state.selections, state.top]);
 
-    const latestDragMods = useLatest(dragMods);
+    // const latestDragMods = useLatest(dragMods);
 
     const drag = useMemo(() => {
         const up = (evt: MouseEvent) => {
@@ -364,11 +364,11 @@ export const App = ({ id }: { id: string }) => {
                     document.addEventListener('mouseup', up);
                 }
             },
-            move(sel: SelStart) {
+            move(sel: SelStart, ctrl = false, alt = false) {
                 let start = cstate.current.selections[0].start;
-                if (latestDragMods.current.ctrl) {
+                if (ctrl) {
                     [start, sel] = argify(start, sel, cstate.current.top);
-                } else if (latestDragMods.current.alt) {
+                } else if (alt) {
                     [start, sel] = atomify(start, sel, cstate.current.top);
                 }
                 dispatch({ type: 'update', update: { nodes: {}, selection: { start, end: sel } } });
@@ -655,7 +655,7 @@ const useKeyHandler = (
     parser: TestParser,
     menu: Menu | null,
     setMenu: (m: Menu | null) => void,
-    setDragMods: (f: (m: Mods) => Mods) => void,
+    // setDragMods: (f: (m: Mods) => Mods) => void,
 ) => {
     const cstate = useLatest(state);
     const spans: Src[] = parsed.result ? parser.spans(parsed.result) : [];
@@ -671,13 +671,13 @@ const useKeyHandler = (
         const f = (evt: KeyboardEvent) => {
             if (evt.metaKey && (evt.key === 'r' || evt.key === 'l')) return;
 
-            if (evt.key === 'Meta') {
-                return setDragMods((m) => ({ ...m, meta: true }));
-            } else if (evt.key === 'Alt') {
-                return setDragMods((m) => ({ ...m, alt: true }));
-            } else if (evt.key === 'Control') {
-                return setDragMods((m) => ({ ...m, ctrl: true }));
-            }
+            // if (evt.key === 'Meta') {
+            //     return setDragMods((m) => ({ ...m, meta: true }));
+            // } else if (evt.key === 'Alt') {
+            //     return setDragMods((m) => ({ ...m, alt: true }));
+            // } else if (evt.key === 'Control') {
+            //     return setDragMods((m) => ({ ...m, ctrl: true }));
+            // }
 
             console.log('fff', evt.key);
             if (evt.key === 'Dead') {
@@ -746,20 +746,20 @@ const useKeyHandler = (
             evt.preventDefault();
             evt.stopPropagation();
         };
-        const up = (evt: KeyboardEvent) => {
-            if (evt.key === 'Meta') {
-                return setDragMods((m) => ({ ...m, meta: false }));
-            } else if (evt.key === 'Alt') {
-                return setDragMods((m) => ({ ...m, alt: false }));
-            } else if (evt.key === 'Control') {
-                return setDragMods((m) => ({ ...m, ctrl: false }));
-            }
-        };
+        // const up = (evt: KeyboardEvent) => {
+        //     if (evt.key === 'Meta') {
+        //         return setDragMods((m) => ({ ...m, meta: false }));
+        //     } else if (evt.key === 'Alt') {
+        //         return setDragMods((m) => ({ ...m, alt: false }));
+        //     } else if (evt.key === 'Control') {
+        //         return setDragMods((m) => ({ ...m, ctrl: false }));
+        //     }
+        // };
         document.addEventListener('keydown', f);
-        document.addEventListener('keyup', up);
+        // document.addEventListener('keyup', up);
         return () => {
             document.removeEventListener('keydown', f);
-            document.removeEventListener('keyup', up);
+            // document.removeEventListener('keyup', up);
         };
     }, []);
 

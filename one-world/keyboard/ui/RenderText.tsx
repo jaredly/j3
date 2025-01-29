@@ -59,6 +59,8 @@ export const RenderText = (
                                             type: 'text',
                                             end: { index: i, cursor: pos ?? 0 },
                                         }),
+                                        evt.ctrlKey,
+                                        evt.altKey,
                                     );
                                 }
                             }}
@@ -91,7 +93,7 @@ export const RenderText = (
                             evt.stopPropagation();
                             evt.preventDefault();
                             const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(span.text));
-                            ctx.drag.move(selStart(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
+                            ctx.drag.move(selStart(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }), evt.ctrlKey, evt.altKey);
                         }
                     }}
                 >
@@ -155,12 +157,12 @@ export const RenderText = (
                         evt.stopPropagation();
                         evt.preventDefault();
                         if (!evtRight(evt)) {
-                            ctx.drag.move(selStart(nextParent, { type: 'list', where: 'before' }));
+                            ctx.drag.move(selStart(nextParent, { type: 'list', where: 'before' }), evt.ctrlKey, evt.altKey);
                         } else {
                             if (node.spans.length) {
                                 const sel = spanStart(node.spans[0], 0, nextParent, top, false);
                                 if (sel) {
-                                    ctx.drag.move(sel);
+                                    ctx.drag.move(sel, evt.ctrlKey, evt.altKey);
                                 }
                             }
                         }
@@ -196,12 +198,12 @@ export const RenderText = (
                         evt.stopPropagation();
                         evt.preventDefault();
                         if (evtRight(evt)) {
-                            ctx.drag.move(selStart(nextParent, { type: 'list', where: 'after' }));
+                            ctx.drag.move(selStart(nextParent, { type: 'list', where: 'after' }), evt.ctrlKey, evt.altKey);
                         } else {
                             if (node.spans.length) {
                                 const sel = spanEnd(node.spans[node.spans.length - 1], nextParent, node.spans.length - 1, top, false);
                                 if (sel) {
-                                    ctx.drag.move(sel);
+                                    ctx.drag.move(sel, evt.ctrlKey, evt.altKey);
                                 }
                             }
                         }

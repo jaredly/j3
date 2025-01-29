@@ -42,7 +42,7 @@ export type RCtx = {
     drag: {
         dragging: boolean;
         start: (sel: SelStart, meta?: boolean) => void;
-        move: (sel: SelStart) => void;
+        move: (sel: SelStart, ctrl?: boolean, alt?: boolean) => void;
     };
 };
 export const textColor = 'rgb(248 136 0)';

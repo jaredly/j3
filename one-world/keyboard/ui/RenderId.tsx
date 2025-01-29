@@ -35,7 +35,7 @@ export const RenderId = (
                             evt.preventDefault();
                             evt.stopPropagation();
                             const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, text);
-                            ctx.drag.move(selStart(nextParent, { type: 'id', end: pos ?? 0 }));
+                            ctx.drag.move(selStart(nextParent, { type: 'id', end: pos ?? 0 }), evt.ctrlKey, evt.altKey);
                         }
                     }}
                     text={text}
@@ -61,7 +61,7 @@ export const RenderId = (
                     evt.preventDefault();
                     evt.stopPropagation();
                     const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(node.text));
-                    ctx.drag.move(selStart(nextParent, { type: 'id', end: pos ?? 0 }));
+                    ctx.drag.move(selStart(nextParent, { type: 'id', end: pos ?? 0 }), evt.ctrlKey, evt.altKey);
                 }
             }}
         >

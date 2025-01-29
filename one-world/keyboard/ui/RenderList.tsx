@@ -301,7 +301,7 @@ export const RenderList = (
                             evt.stopPropagation();
                             const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                             if (sel) {
-                                ctx.drag.move(sel);
+                                ctx.drag.move(sel, evt.ctrlKey, evt.altKey);
                             }
                         }
                     }}
@@ -331,7 +331,7 @@ export const RenderList = (
                             evt.stopPropagation();
                             const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                             if (sel) {
-                                ctx.drag.move(sel);
+                                ctx.drag.move(sel, evt.ctrlKey, evt.altKey);
                             }
                         }
                     }}

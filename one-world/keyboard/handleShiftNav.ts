@@ -423,7 +423,7 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
                     : undefined;
             }
         }
-        const [left, middle, right] = orderSelections(state.sel.start, state.sel.end, state.top);
+        // const [left, middle, right] = orderSelections(state.sel.start, state.sel.end, state.top);
 
         // TODO: iterate through all middles, and if everything is a text, go to town.
     }
