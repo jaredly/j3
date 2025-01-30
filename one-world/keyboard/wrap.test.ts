@@ -159,8 +159,14 @@ test('unwrap a spaced in a spaced', () => {
     check(state, round([spaced([id('ha'), id('hi', true), id('ho'), id('he')])]), idc(0));
 });
 
-test.only('multierap', () => {
+test('multierap', () => {
     let state = asTop(round([id('hi', 1), id('ho', 2), id('ham')]), idc(0), idc(2));
     state = applyUpdate(state, handleWrap(state, '('));
     check(state, round([round([id('hi', true), id('ho')]), id('ham')]), idc(0));
+});
+
+test('wrap in spaced sorry', () => {
+    let state = asTop(spaced([id('hi', 1), id('ho', 2), id('ham')]), idc(0), idc(2));
+    state = applyUpdate(state, handleWrap(state, '('));
+    check(state, spaced([round([spaced([id('hi', true), id('ho')])]), id('ham')]), idc(0));
 });

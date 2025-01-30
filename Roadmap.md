@@ -1,10 +1,7 @@
 
 # WRAPPPP
 
-- [x] collectSelectedNodes
-- [ ] divide into ... children of parents
-- [ ] now, some of those children are going to be reparented. but thats fine rightttt
-  ugh but it would be easier if I had already ditched the "full path of parentage" thing for selections and stuff.
+- [x] ok lets be simple. pretend you did ctrl-select, and only wrap at one level. great.
 
 
 # Convert `Update` into `KeyAction` pls
