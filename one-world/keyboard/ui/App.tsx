@@ -17,6 +17,7 @@ import { Visual } from './keyUpdate';
 import { RenderNode } from './RenderNode';
 import { posDown, posUp, selectionPos } from './selectionPos';
 import { ShowXML } from './XML';
+import { parser as jsMinusParser } from '../../syntaxes/js--';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -116,7 +117,8 @@ export const App = ({ id }: { id: string }) => {
     //     return keys.concat(extra);
     // }, [msel, state.sel]);
 
-    const parser = state.parser ?? dsl3.parser;
+    const parser = jsMinusParser;
+    // const parser = state.parser ?? dsl3.parser;
     // const parser = state.parser ?? ts.tsParser;
     const rootNode = root(state, (idx) => [{ id: '', idx }]);
     // state.sel.multi ? undefined :

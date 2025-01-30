@@ -1,4 +1,15 @@
 
+# General Game Plan
+of getting something useful working
+
+- [ ] make a JS-- grammar, that is "the minimal amount of javascript to be able to self-host"
+  that'll be the builtin dealio
+- [ ] use that builtin JS-- parser+compiler to define in-situ a more usable javascript, maybe even with some perks idk
+- [ ] then I can use the nicer JS to make some other example grammars
+  - they'd probably all be backed by the same compiler for the moment
+
+
+
 # WRAPPPP
 
 - [x] ok lets be simple. pretend you did ctrl-select, and only wrap at one level. great.
