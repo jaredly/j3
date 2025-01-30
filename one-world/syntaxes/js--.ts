@@ -85,6 +85,7 @@ const rules = {
             src,
         })),
     ),
+    comment: list('smooshed', seq(kwd('//', 'comment'), { type: 'any' })),
     block: list('curly', star(ref('stmt'))),
     ...stmts,
     'expr..': tx<Expr>(
