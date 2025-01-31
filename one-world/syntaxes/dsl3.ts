@@ -107,7 +107,9 @@ export type Rule<T> =
 
 let indent = 0;
 
-export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
+type Result = { value?: any; consumed: number };
+
+export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | Result => {
     if (ctx.rules.comment) {
         const { comment, ...without } = ctx.rules;
         const cm = match_(ctx.rules.comment, { ...ctx, rules: without }, parent, at);
@@ -128,7 +130,7 @@ export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number
 };
 
 // TODO: track a pathhhh
-export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
+export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | Result => {
     const node = parent.nodes[at];
     switch (rule.type) {
         case 'kwd':
@@ -199,6 +201,7 @@ export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: numbe
 
             const res = match(rule.item, ctx, { nodes: node.children, loc: node.loc }, 0);
             if (res && res.consumed < node.children.length) {
+                console.log('list has unparsed items', res.consumed, node.children);
                 for (let i = res.consumed; i < node.children.length; i++) {
                     const child = node.children[i];
                     ctx.meta[child.loc[0].idx] = { kind: 'unparsed' };

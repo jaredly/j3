@@ -57,9 +57,10 @@ test('extra unparsed', () => {
     expect(mctx.meta[1]).toMatchObject({ kind: 'unparsed' });
 });
 
-test('fn args not unparsed', () => {
+test.only('fn args not unparsed', () => {
     const mctx: Ctx = { ...ctx, meta: {} };
-    run('(a,b) => 12', 'stmt', mctx)?.value;
+    run('let x = (a,1) => 12', 'stmt', mctx);
+    console.log(mctx.meta);
     expect(mctx.meta[3]).toMatchObject({ kind: 'punct' });
     expect(mctx.meta[5]).toMatchObject({ kind: 'number' });
 });

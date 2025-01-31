@@ -120,17 +120,17 @@ const rules = {
     ...exprs,
     bop: or(...binops.map((m) => kwd(m, 'bop'))),
     'expr ': or(
+        tx<Expr>(seq(list('round', group('args', star(id(null)))), kwd('=>'), group('body', or(ref('block'), ref('expr ')))), (ctx, src) => ({
+            type: 'arrow',
+            args: ctx.ref<Id<Loc>[]>('args'),
+            body: ctx.ref<Expr | Stmt[]>('body'),
+            src,
+        })),
         tx<Expr>(seq(ref('expr', 'left'), ref('bop', 'op'), ref('expr', 'right')), (ctx, src) => ({
             type: 'bop',
             left: ctx.ref<Expr>('left'),
             op: ctx.ref<Id<Loc>>('op').text,
             right: ctx.ref<Expr>('right'),
-            src,
-        })),
-        tx<Expr>(seq(list('round', group('args', star(id(null)))), kwd('=>'), group('body', or(ref('block'), ref('expr ')))), (ctx, src) => ({
-            type: 'arrow',
-            args: ctx.ref<Id<Loc>[]>('args'),
-            body: ctx.ref<Expr | Stmt[]>('body'),
             src,
         })),
         ref('expr'),
