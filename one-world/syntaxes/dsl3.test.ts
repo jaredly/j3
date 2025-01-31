@@ -31,7 +31,7 @@ const fixes = {
     'pattern constructor': ['Some(body)', 'Once([told,me])'],
     'pattern text': ['"Hi"', '"Hello ${name}"'],
     // how to do ... jsx?
-    'expr jsx': ['<>Hello\tinner', '<>Hello hi\t\tinner'],
+    'expr jsx': ['</Hello\tinner', '</Hello hi\t\tinner'],
     // stmt: ['let x = 2', 'return 12', 'for (let x = 1;x<3;x++) {y}'],
 };
 
@@ -123,14 +123,14 @@ test('pattern text', () => {
 });
 
 test('expr jsx', () => {
-    expect(run('<>Hello\tinner', 'expr jsx')?.value).toMatchObject({
+    expect(run('</Hello\tinner', 'expr jsx')?.value).toMatchObject({
         type: 'jsx',
         tag: { type: 'var', name: 'Hello' },
         attributes: undefined,
         children: [{ type: 'var', name: 'inner' }],
     });
 
-    expect(run('<>Hello hello:folks\t\tinner', 'expr jsx')?.value).toMatchObject({
+    expect(run('</Hello hello:folks\t\tinner', 'expr jsx')?.value).toMatchObject({
         type: 'jsx',
         tag: { type: 'var', name: 'Hello' },
         attributes: [{ type: 'row', name: 'hello', value: { type: 'var', name: 'folks' } }],

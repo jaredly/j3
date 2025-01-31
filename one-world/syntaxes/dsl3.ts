@@ -198,6 +198,12 @@ export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: numbe
             }
 
             const res = match(rule.item, ctx, { nodes: node.children, loc: node.loc }, 0);
+            if (res && res.consumed < node.children.length) {
+                for (let i = res.consumed; i < node.children.length; i++) {
+                    const child = node.children[i];
+                    ctx.meta[child.loc[0].idx] = { kind: 'unparsed' };
+                }
+            }
             return res ? { value: res.value, consumed: 1 } : res;
         }
 

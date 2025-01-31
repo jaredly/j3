@@ -77,7 +77,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
         const pnode = top.nodes[parentLoc(path)];
         const chars = idText(top.tmpText, cursor, node);
         if (
-            pnode.type === 'list' &&
+            pnode?.type === 'list' &&
             pnode.kind === 'smooshed' &&
             pnode.children.length === 2 &&
             pnode.children[1] === node.loc &&

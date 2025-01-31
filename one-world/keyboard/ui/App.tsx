@@ -26,6 +26,7 @@ const styleKinds: Record<string, Style> = {
     bop: { color: { r: 150, g: 0, b: 0 } },
     uop: { color: { r: 150, g: 0, b: 0 } },
     number: { color: { r: 0, g: 166, b: 255 } },
+    unparsed: { color: { r: 255, g: 100, b: 100 }, fontStyle: 'italic' },
 };
 
 const showKey = (evt: KeyboardEvent) => {
