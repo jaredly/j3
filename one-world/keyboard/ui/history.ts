@@ -273,7 +273,7 @@ export const applyAppUpdate = (state: AppState, action: Action, noJoin = false):
 };
 export const reducer = (state: AppState, action: Action) => {
     const result = applyAppUpdate(state, action);
-    console.log(shape(root({ top: result.top })));
+    // console.log(shape(root({ top: result.top })));
     return result;
 };
 export const initialAppState: AppState = { top: init.top, selections: [init.sel], history: [] };

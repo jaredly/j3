@@ -35,10 +35,10 @@ const fixes = {
     // stmt: ['let x = 2', 'return 12', 'for (let x = 1;x<3;x++) {y}'],
 };
 
-const run = (input: string, matcher: string) => {
+const run = (input: string, matcher: string, mctx = ctx) => {
     const state = cread(splitGraphemes(input), js);
     const rt = root(state, (idx) => [{ id: '', idx }]);
-    const res = match({ type: 'ref', name: matcher }, ctx, { nodes: [rt], loc: [] }, 0);
+    const res = match({ type: 'ref', name: matcher }, mctx, { nodes: [rt], loc: [] }, 0);
     return res;
 };
 
@@ -48,6 +48,20 @@ Object.entries(fixes).forEach(([key, values]) => {
             expect(run(value, key)?.consumed).toEqual(1);
         });
     });
+});
+
+test('extra unparsed', () => {
+    const mctx: Ctx = { ...ctx, meta: {} };
+    run('hello folks', 'stmt', mctx)?.value;
+    console.log(mctx.meta);
+    expect(mctx.meta[1]).toMatchObject({ kind: 'unparsed' });
+});
+
+test('fn args not unparsed', () => {
+    const mctx: Ctx = { ...ctx, meta: {} };
+    run('(a,b) => 12', 'stmt', mctx)?.value;
+    expect(mctx.meta[3]).toMatchObject({ kind: 'punct' });
+    expect(mctx.meta[5]).toMatchObject({ kind: 'number' });
 });
 
 test('pattern var', () => {

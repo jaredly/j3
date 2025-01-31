@@ -26,7 +26,7 @@ const styleKinds: Record<string, Style> = {
     bop: { color: { r: 150, g: 0, b: 0 } },
     uop: { color: { r: 150, g: 0, b: 0 } },
     number: { color: { r: 0, g: 166, b: 255 } },
-    unparsed: { color: { r: 255, g: 100, b: 100 }, fontStyle: 'italic' },
+    unparsed: { color: { r: 255, g: 100, b: 100 }, textDecoration: 'underline' },
 };
 
 const showKey = (evt: KeyboardEvent) => {
@@ -674,15 +674,6 @@ const useKeyHandler = (
         const f = (evt: KeyboardEvent) => {
             if (evt.metaKey && (evt.key === 'r' || evt.key === 'l')) return;
 
-            // if (evt.key === 'Meta') {
-            //     return setDragMods((m) => ({ ...m, meta: true }));
-            // } else if (evt.key === 'Alt') {
-            //     return setDragMods((m) => ({ ...m, alt: true }));
-            // } else if (evt.key === 'Control') {
-            //     return setDragMods((m) => ({ ...m, ctrl: true }));
-            // }
-
-            console.log('fff', evt.key);
             if (evt.key === 'Dead') {
                 return;
             }
