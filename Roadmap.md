@@ -5,14 +5,18 @@ of getting something useful working
 - [x] make a JS-- grammar, that is "the minimal amount of javascript to be able to self-host"
   that'll be the builtin dealio
 
-- [ ] make it so that stuff that doesn't get parsed is rendered in italics or something
+- [x] make it so that stuff that doesn't get parsed is rendered in italics or something
 - [x] make comments work
-- [ ]
+
+- [ ] multi DELETE???
 
 - [ ] use that builtin JS-- parser+compiler to define in-situ a more usable javascript, maybe even with some perks idk
 - [ ] then I can use the nicer JS to make some other example grammars
   - they'd probably all be backed by the same compiler for the moment
 
+
+- [ ] in the tests, do a thing where I have all possible selections, and verifyt hat they are stil valid after the update.
+- [ ] I don't think I need to collapse paths, the parent map would be a pain to maintain.
 
 - [ ] multiselect DELETE gotta have it
 - [ ] and copy/paste thanks

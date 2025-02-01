@@ -6,7 +6,7 @@ import { root } from '../keyboard/root';
 import { init, js } from '../keyboard/test-utils';
 import { keyUpdate } from '../keyboard/ui/keyUpdate';
 import { cread } from '../shared/creader';
-import { ctx, Ctx, match, rules } from './dsl3';
+import { ctx, Ctx, id, kwd, list, match, or, rules, seq, star, tx } from './dsl3';
 import { Expr, Stmt } from './ts-types';
 
 /*
@@ -50,17 +50,36 @@ Object.entries(fixes).forEach(([key, values]) => {
     });
 });
 
+test.skip('meta from one path doesnt pollute another', () => {
+    const state = cread(splitGraphemes('(1,2)'), js);
+    const rt = root(state, (idx) => [{ id: '', idx }]);
+    const mctx: Ctx = {
+        meta: {},
+        kwds: [],
+        ref(name) {
+            throw new Error('no');
+        },
+        rules: {
+            top: or(
+                tx(list('round', seq(kwd('1'), kwd('3'))), (ctx, _) => ({ which: 1 })),
+                tx(list('round', star(id(null))), () => ({ which: 2 })),
+            ),
+        },
+    };
+    const res = match({ type: 'ref', name: 'top' }, mctx, { nodes: [rt], loc: [] }, 0);
+    expect(res?.value).toEqual({ which: 2 });
+    expect(mctx.meta).toEqual({});
+});
+
 test('extra unparsed', () => {
     const mctx: Ctx = { ...ctx, meta: {} };
     run('hello folks', 'stmt', mctx)?.value;
-    console.log(mctx.meta);
     expect(mctx.meta[1]).toMatchObject({ kind: 'unparsed' });
 });
 
-test.only('fn args not unparsed', () => {
+test('fn args not unparsed', () => {
     const mctx: Ctx = { ...ctx, meta: {} };
-    run('let x = (a,1) => 12', 'stmt', mctx);
-    console.log(mctx.meta);
+    run('(a,1) => 12', 'stmt', mctx);
     expect(mctx.meta[3]).toMatchObject({ kind: 'punct' });
     expect(mctx.meta[5]).toMatchObject({ kind: 'number' });
 });

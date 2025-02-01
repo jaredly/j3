@@ -201,7 +201,6 @@ export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: numbe
 
             const res = match(rule.item, ctx, { nodes: node.children, loc: node.loc }, 0);
             if (res && res.consumed < node.children.length) {
-                console.log('list has unparsed items', res.consumed, node.children);
                 for (let i = res.consumed; i < node.children.length; i++) {
                     const child = node.children[i];
                     ctx.meta[child.loc[0].idx] = { kind: 'unparsed' };
