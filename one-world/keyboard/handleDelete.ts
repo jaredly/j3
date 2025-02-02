@@ -492,7 +492,11 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
 export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
     if (state.sel.end && state.sel.end.key !== state.sel.start.key) {
         // // // // - // // // //
-        return handleDeleteTooMuch(state);
+        const up = handleDeleteTooMuch(state);
+        rebalanceSmooshed(up, state.top);
+        joinSmooshed(up, state.top);
+        disolveSmooshed(up, state.top);
+        return up;
     }
 
     const current = getCurrent(state.sel, state.top);
