@@ -8,7 +8,10 @@ of getting something useful working
 - [x] make it so that stuff that doesn't get parsed is rendered in italics or something
 - [x] make comments work
 
-- [ ] multi DELETE???
+- [x] multi DELETE???
+- [x] copy I guess
+- [ ] gotta copy, gotta pasta
+- [x] for delete, nudge left & right cursor across boundary lines, if relevant.
 
 - [ ] use that builtin JS-- parser+compiler to define in-situ a more usable javascript, maybe even with some perks idk
 - [ ] then I can use the nicer JS to make some other example grammars
@@ -19,6 +22,7 @@ of getting something useful working
 - [ ] I don't think I need to collapse paths, the parent map would be a pain to maintain.
 
 - [ ] multiselect DELETE gotta have it
+  -
 - [ ] and copy/paste thanks
 
 # WRAPPPP

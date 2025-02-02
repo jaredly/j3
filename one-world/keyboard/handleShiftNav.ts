@@ -23,6 +23,8 @@ import {
 } from './utils';
 import { getCurrent, ltCursor, orderSelections } from './selections';
 import { idText } from './cursorSplit';
+import { handleCopyMulti } from './handleWrap';
+import { shape } from '../shared/shape';
 // import { textCursorSides2 } from './insertId';
 
 export type Src = { left: Loc; right?: Loc };
@@ -384,6 +386,12 @@ export type Mods = { meta?: boolean; ctrl?: boolean; alt?: boolean; shift?: bool
 
 export const handleSpecial = (state: TestState, key: string, mods: Mods): void | Update => {
     const current = getCurrent(state.sel, state.top);
+    if (key === 'c' && mods.meta) {
+        const copied = handleCopyMulti(state);
+        console.log(copied ? shape(copied) : 'nothing to copy');
+        navigator.clipboard.writeText(JSON.stringify(copied));
+        return;
+    }
     if (key === '\n' && mods.meta) {
         let path = current.cursor.type === 'list' && current.cursor.where === 'inside' ? state.sel.start.path : parentPath(state.sel.start.path);
         while (path.children.length) {

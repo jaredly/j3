@@ -493,9 +493,11 @@ export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
     if (state.sel.end && state.sel.end.key !== state.sel.start.key) {
         // // // // - // // // //
         const up = handleDeleteTooMuch(state);
-        rebalanceSmooshed(up, state.top);
-        joinSmooshed(up, state.top);
-        disolveSmooshed(up, state.top);
+        if (up) {
+            rebalanceSmooshed(up, state.top);
+            joinSmooshed(up, state.top);
+            disolveSmooshed(up, state.top);
+        }
         return up;
     }
 

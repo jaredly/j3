@@ -288,3 +288,17 @@ test('spaced idk', () => {
     state = applyUpdate(state, handleDelete(state));
     check(state, spaced([id('one'), id('', true)]), idc(0));
 });
+
+test('smoosh please', () => {
+    let state = asTop(smoosh([id('one'), id('.', 1), id('ho', 2)]), idc(0), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('one', true), idc(3));
+});
+
+test('smoosh please nudge', () => {
+    let state = asTop(smoosh([id('one', 1), id('.'), id('ho', 2)]), idc(3), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('one', true), idc(3));
+});

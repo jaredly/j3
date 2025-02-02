@@ -1,12 +1,15 @@
-import { Collection, List, ListKind, Node, Nodes } from '../shared/cnodes';
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
+import { childLocs, Collection, List, ListKind, Node, Nodes } from '../shared/cnodes';
+import { shape } from '../shared/shape';
 import { cursorSides } from './cursorSides';
 import { idText } from './cursorSplit';
 import { findParent } from './flatenate';
-import { justSel, selectStart } from './handleNav';
+import { justSel, selectEnd, selectStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { handleTextText } from './handleTextText';
 import { KeyAction } from './keyActionToUpdate';
 import { replaceAt } from './replaceAt';
+import { root } from './root';
 import { flatten, flatToUpdateNew } from './rough';
 import { collectSelectedNodes, getCurrent, Neighbor, orderSelections } from './selections';
 import { TestState } from './test-utils';
@@ -335,10 +338,83 @@ export const handleWraps = (state: TestState, kind: ListKind<any>): Update | voi
     return { nodes, selection: { start }, nextLoc };
 };
 
-export const handleDeleteTooMuch = (state: TestState): Update => {
+const shouldNudgeRight = (path: Path, cursor: Cursor, top: Top) => {
+    const node = top.nodes[lastChild(path)];
+    const pnode = top.nodes[parentLoc(path)];
+    if (!pnode) return false;
+    if (node.type === 'id') {
+        if (cursor.type !== 'id' || cursor.end < splitGraphemes(node.text).length) {
+            return false;
+        }
+    }
+    if (node.type === 'list') {
+        if (cursor.type !== 'list' || cursor.where !== 'after') {
+            return false;
+        }
+    }
+    if (pnode.type !== 'list') return false;
+    return true;
+};
+
+const shouldNudgeLeft = (path: Path, cursor: Cursor, top: Top) => {
+    const node = top.nodes[lastChild(path)];
+    const pnode = top.nodes[parentLoc(path)];
+    if (!pnode) return false;
+    if (node.type === 'id') {
+        if (cursor.type !== 'id' || cursor.end > 0) {
+            return false;
+        }
+    }
+    if (node.type === 'list') {
+        if (cursor.type !== 'list' || cursor.where !== 'before') {
+            return false;
+        }
+    }
+    if (pnode.type !== 'list') return false;
+    return true;
+};
+
+const copyDeep = (loc: number, top: Top, dest: Nodes) => {
+    if (dest[loc]) return; // already handled
+    dest[loc] = top.nodes[loc];
+    childLocs(top.nodes[loc]).forEach((child) => copyDeep(child, top, dest));
+};
+
+export const handleCopyMulti = (state: TestState) => {
+    if (!state.sel.end) return;
     const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, state.top);
-    neighbors.push({ path: left.path, hl: { type: 'full' } });
-    neighbors.push({ path: right.path, hl: { type: 'full' } });
+    const lnudge = shouldNudgeRight(left.path, left.cursor, state.top);
+    const rnudge = shouldNudgeLeft(right.path, right.cursor, state.top);
+    if (!lnudge) neighbors.push({ path: left.path, hl: { type: 'full' } });
+    if (!rnudge) neighbors.push({ path: right.path, hl: { type: 'full' } });
+    const sorted = partitionNeighbors(neighbors, state.top, false);
+
+    const allParents: Record<number, true> = {};
+    sorted.forEach(({ path }) => path.children.forEach((loc) => (allParents[loc] = true)));
+
+    const nodes: Nodes = {};
+    sorted.forEach(({ path, children: selected }) => {
+        const node = state.top.nodes[lastChild(path)];
+        if (node.type !== 'list') {
+            console.warn(`not handling ${node.type} well`);
+            return;
+        }
+        const children = node.children.filter((c) => selected.includes(c) || allParents[c]);
+        nodes[node.loc] = { ...node, children };
+        selected.forEach((sel) => copyDeep(sel, state.top, nodes));
+    });
+    const rootLoc = lastChild(sorted[sorted.length - 1].path);
+    const tree = root({ top: { ...state.top, nodes: { ...state.top.nodes, ...nodes }, root: rootLoc } });
+    return tree;
+};
+
+// TODO:
+export const handleDeleteTooMuch = (state: TestState): Update | void => {
+    const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, state.top);
+    const lnudge = shouldNudgeRight(left.path, left.cursor, state.top);
+    const rnudge = shouldNudgeLeft(right.path, right.cursor, state.top);
+    if (!lnudge) neighbors.push({ path: left.path, hl: { type: 'full' } });
+    if (!rnudge) neighbors.push({ path: right.path, hl: { type: 'full' } });
     const sorted = partitionNeighbors(neighbors, state.top, false);
     const lloc = lastChild(left.path);
 
@@ -349,9 +425,11 @@ export const handleDeleteTooMuch = (state: TestState): Update => {
         const children = node.children.slice().filter((c) => !selected.includes(c) || lloc === c);
         nodes[node.loc] = { ...node, children };
     });
-    nodes[lloc] = { type: 'id', text: '', loc: lloc };
+    if (!lnudge) nodes[lloc] = { type: 'id', text: '', loc: lloc };
+    const sel = lnudge ? selectEnd(left.path, state.top) : selStart(left.path, { type: 'id', end: 0 });
+    if (!sel) return;
 
-    return { nodes, selection: { start: selStart(left.path, { type: 'id', end: 0 }) } };
+    return { nodes, selection: { start: sel } };
 };
 
 export const handleWrapsTooMuch = (state: TestState, kind: ListKind<any>): Update => {
