@@ -30,6 +30,7 @@ import {
 import { getCurrent } from './selections';
 import { idText } from './cursorSplit';
 import { KeyAction } from './keyActionToUpdate';
+import { handleDeleteTooMuch } from './handleWrap';
 
 type JoinParent =
     | {
@@ -482,7 +483,6 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
         const start = selectEnd(pathWithChildren(parentPath(state.sel.start.path), prev.loc), state.top);
         if (!start) return;
         const res = handleDelete({ top: { ...state.top, nodes: { ...state.top.nodes, ...remap } }, sel: { start } });
-        // res!.nodes[node.loc] = node;
         return res;
     }
 
@@ -490,6 +490,11 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
 };
 
 export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
+    if (state.sel.end && state.sel.end.key !== state.sel.start.key) {
+        // // // // - // // // //
+        return handleDeleteTooMuch(state);
+    }
+
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
         case 'list': {

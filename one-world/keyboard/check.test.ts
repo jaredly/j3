@@ -4,8 +4,10 @@ import { root } from './root';
 import { atPath, noText, selPath, selPathN, selPaths, TestState } from './test-utils';
 import { Cursor } from './utils';
 import { expect } from 'bun:test';
+import { validate } from './validate';
 
 export const check = (state: TestState, exp: RecNodeT<boolean | number>, cursor: Cursor, endCursor?: Cursor) => {
+    validate(state);
     const { main, paths } = selPaths(exp);
     expect(shape(root(state))).toEqual(shape(exp));
     expect({

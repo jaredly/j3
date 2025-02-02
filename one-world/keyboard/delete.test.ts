@@ -274,3 +274,17 @@ test('inside list', () => {
     state = applyUpdate(state, handleDelete(state));
     check(state, id('', true), idc(0));
 });
+
+test('multi del thanks', () => {
+    let state = asTop(round([id('one'), id('two', 1), id('three', 2)]), idc(0), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([id('one'), id('', true)]), idc(0));
+});
+
+test('spaced idk', () => {
+    let state = asTop(spaced([id('one'), id('two', 1), id('three', 2)]), idc(0), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, spaced([id('one'), id('', true)]), idc(0));
+});

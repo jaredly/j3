@@ -253,14 +253,14 @@ export const handleClose = (state: TestState, key: string): Update | void => {
 //     // we just do the thing
 // };
 
-const partitionNeighbors = (items: Neighbor[], top: Top) => {
+const partitionNeighbors = (items: Neighbor[], top: Top, noSmoosh = true) => {
     const byParent: Record<string, { path: Path; children: number[] }> = {};
     items.forEach((item) => {
         if (item.hl.type === 'full') {
             let path = item.path;
             while (path.children.length > 1) {
                 const pnode = top.nodes[parentLoc(path)];
-                if (pnode.type === 'list' && pnode.kind !== 'smooshed' && pnode.kind !== 'spaced') {
+                if (pnode.type === 'list' && (!noSmoosh || (pnode.kind !== 'smooshed' && pnode.kind !== 'spaced'))) {
                     break;
                 }
                 path = parentPath(path);
@@ -333,6 +333,25 @@ export const handleWraps = (state: TestState, kind: ListKind<any>): Update | voi
     }
 
     return { nodes, selection: { start }, nextLoc };
+};
+
+export const handleDeleteTooMuch = (state: TestState): Update => {
+    const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, state.top);
+    neighbors.push({ path: left.path, hl: { type: 'full' } });
+    neighbors.push({ path: right.path, hl: { type: 'full' } });
+    const sorted = partitionNeighbors(neighbors, state.top, false);
+    const lloc = lastChild(left.path);
+
+    const nodes: Nodes = {};
+    sorted.forEach(({ path, children: selected }) => {
+        const node = state.top.nodes[lastChild(path)];
+        if (node.type !== 'list') return;
+        const children = node.children.slice().filter((c) => !selected.includes(c) || lloc === c);
+        nodes[node.loc] = { ...node, children };
+    });
+    nodes[lloc] = { type: 'id', text: '', loc: lloc };
+
+    return { nodes, selection: { start: selStart(left.path, { type: 'id', end: 0 }) } };
 };
 
 export const handleWrapsTooMuch = (state: TestState, kind: ListKind<any>): Update => {
