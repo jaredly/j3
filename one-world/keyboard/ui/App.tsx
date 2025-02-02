@@ -18,6 +18,7 @@ import { RenderNode } from './RenderNode';
 import { posDown, posUp, selectionPos } from './selectionPos';
 import { ShowXML } from './XML';
 import { parser as jsMinusParser } from '../../syntaxes/js--';
+import { HiddenInput } from './HiddenInput';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -29,7 +30,7 @@ const styleKinds: Record<string, Style> = {
     unparsed: { color: { r: 255, g: 100, b: 100 }, textDecoration: 'underline' },
 };
 
-const showKey = (evt: KeyboardEvent) => {
+const showKey = (evt: React.KeyboardEvent) => {
     let key = evt.key;
     if (key === ' ') key = 'Space';
     if (evt.metaKey) key = 'Meta ' + key;
@@ -56,6 +57,7 @@ export type Action =
     | { type: 'add-sel'; sel: NodeSelection }
     | { type: 'update'; update: Update | null | undefined }
     | { type: 'key'; key: string; mods: Mods; visual?: Visual; config: Config }
+    | { type: 'paste'; data: string }
     | { type: 'undo' }
     | { type: 'redo' };
 
@@ -180,7 +182,8 @@ export const App = ({ id }: { id: string }) => {
 
     // const [dragMods, setDragMods] = useState({} as Mods);
 
-    const { lastKey, refs } = useKeyHandler(state, parsed, dispatch, parser, menu, setMenu);
+    // const { lastKey, refs } = useKeyHandler(state, parsed, dispatch, parser, menu, setMenu);
+    const { keyFns, lastKey, refs } = useKeyFns(state, parsed, dispatch, parser, menu, setMenu);
 
     const cstate = useLatest(state);
 
@@ -382,6 +385,7 @@ export const App = ({ id }: { id: string }) => {
 
     return (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'row', minHeight: 0 }}>
+            <HiddenInput {...keyFns} sel={state.selections} />
             <div
                 style={{
                     whiteSpace: 'pre-wrap',
@@ -651,111 +655,205 @@ const collides = (one: [number, number], two: [number, number]) => {
     );
 };
 
-const useKeyHandler = (
+const useKeyFns = (
     state: AppState,
     parsed: ParseResult<any>,
     dispatch: (s: Action) => void,
     parser: TestParser,
     menu: Menu | null,
     setMenu: (m: Menu | null) => void,
-    // setDragMods: (f: (m: Mods) => Mods) => void,
 ) => {
     const cstate = useLatest(state);
     const spans: Src[] = parsed.result ? parser.spans(parsed.result) : [];
     const cspans = useLatest(spans);
     const [lastKey, setLastKey] = useState(null as null | string);
     const refs: Record<number, HTMLElement> = useMemo(() => ({}), []);
-    // const [autoComplete, setAutocomplete] = useState(null as null | {
-    //     items: string[]
-    // })
     const cmenu = useLatest(menu);
 
-    useEffect(() => {
-        const f = (evt: KeyboardEvent) => {
-            if (evt.metaKey && (evt.key === 'r' || evt.key === 'l')) return;
+    const onKeyDown = (evt: React.KeyboardEvent) => {
+        if (evt.metaKey && (evt.key === 'r' || evt.key === 'l')) return;
 
-            if (evt.key === 'Dead') {
+        if (evt.key === 'Dead') {
+            return;
+        }
+        if (evt.key === 'z' && evt.metaKey) {
+            evt.preventDefault();
+            evt.stopPropagation();
+            console.log('undo');
+            return dispatch({ type: evt.shiftKey ? 'redo' : 'undo' });
+        }
+        if (cmenu.current) {
+            const menu = cmenu.current;
+            if (evt.key === 'Escape') {
+                setMenu(null);
+                evt.preventDefault();
                 return;
             }
-            if (evt.key === 'z' && evt.metaKey) {
+            if (evt.key === 'ArrowUp') {
+                setMenu({
+                    ...menu,
+                    selection: menu.selection <= 0 ? menu.items.length - 1 : menu.selection - 1,
+                });
                 evt.preventDefault();
-                evt.stopPropagation();
-                console.log('undo');
-                return dispatch({ type: evt.shiftKey ? 'redo' : 'undo' });
+                return;
             }
-            if (cmenu.current) {
-                const menu = cmenu.current;
-                if (evt.key === 'Escape') {
+            if (evt.key === 'ArrowDown') {
+                setMenu({
+                    ...menu,
+                    selection: menu.selection >= menu.items.length - 1 ? 0 : menu.selection + 1,
+                });
+                evt.preventDefault();
+                return;
+            }
+            if (evt.key === 'Enter') {
+                const item = menu.items[menu.selection];
+                if (item) {
+                    item.action();
                     setMenu(null);
                     evt.preventDefault();
                     return;
                 }
-                if (evt.key === 'ArrowUp') {
-                    setMenu({
-                        ...menu,
-                        selection: menu.selection <= 0 ? menu.items.length - 1 : menu.selection - 1,
-                    });
-                    evt.preventDefault();
-                    return;
-                }
-                if (evt.key === 'ArrowDown') {
-                    setMenu({
-                        ...menu,
-                        selection: menu.selection >= menu.items.length - 1 ? 0 : menu.selection + 1,
-                    });
-                    evt.preventDefault();
-                    return;
-                }
-                if (evt.key === 'Enter') {
-                    const item = menu.items[menu.selection];
-                    if (item) {
-                        item.action();
-                        setMenu(null);
-                        evt.preventDefault();
-                        return;
-                    }
-                }
             }
+        }
 
-            setLastKey(showKey(evt));
+        setLastKey(showKey(evt));
 
-            dispatch({
-                type: 'key',
-                key: evt.key,
-                mods: { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey },
-                visual: {
-                    up(sel) {
-                        const nxt = posUp(sel, cstate.current.top, refs);
-                        return nxt ? { start: nxt } : null;
-                    },
-                    down(sel) {
-                        const nxt = posDown(sel, cstate.current.top, refs);
-                        return nxt ? { start: nxt } : null;
-                    },
-                    spans: cspans.current,
+        dispatch({
+            type: 'key',
+            key: evt.key,
+            mods: { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey },
+            visual: {
+                up(sel) {
+                    const nxt = posUp(sel, cstate.current.top, refs);
+                    return nxt ? { start: nxt } : null;
                 },
-                config: parser.config,
-            });
+                down(sel) {
+                    const nxt = posDown(sel, cstate.current.top, refs);
+                    return nxt ? { start: nxt } : null;
+                },
+                spans: cspans.current,
+            },
+            config: parser.config,
+        });
 
-            evt.preventDefault();
-            evt.stopPropagation();
-        };
-        // const up = (evt: KeyboardEvent) => {
-        //     if (evt.key === 'Meta') {
-        //         return setDragMods((m) => ({ ...m, meta: false }));
-        //     } else if (evt.key === 'Alt') {
-        //         return setDragMods((m) => ({ ...m, alt: false }));
-        //     } else if (evt.key === 'Control') {
-        //         return setDragMods((m) => ({ ...m, ctrl: false }));
-        //     }
-        // };
-        document.addEventListener('keydown', f);
-        // document.addEventListener('keyup', up);
-        return () => {
-            document.removeEventListener('keydown', f);
-            // document.removeEventListener('keyup', up);
-        };
-    }, []);
+        evt.preventDefault();
+        evt.stopPropagation();
+    };
 
-    return { lastKey, refs };
+    return {
+        keyFns: {
+            onKeyDown,
+            getDataToCopy() {
+                return null;
+            },
+            onPaste(data: { type: 'json'; data: any } | { type: 'plain'; text: string }) {
+                console.log('pasting I guess', data);
+            },
+            onInput(text: string) {
+                //
+            },
+        },
+        lastKey,
+        refs,
+    };
 };
+
+// const useKeyHandler = (
+//     state: AppState,
+//     parsed: ParseResult<any>,
+//     dispatch: (s: Action) => void,
+//     parser: TestParser,
+//     menu: Menu | null,
+//     setMenu: (m: Menu | null) => void,
+//     // setDragMods: (f: (m: Mods) => Mods) => void,
+// ) => {
+//     const cstate = useLatest(state);
+//     const spans: Src[] = parsed.result ? parser.spans(parsed.result) : [];
+//     const cspans = useLatest(spans);
+//     const [lastKey, setLastKey] = useState(null as null | string);
+//     const refs: Record<number, HTMLElement> = useMemo(() => ({}), []);
+//     // const [autoComplete, setAutocomplete] = useState(null as null | {
+//     //     items: string[]
+//     // })
+//     const cmenu = useLatest(menu);
+
+//     useEffect(() => {
+//         const f = (evt: KeyboardEvent) => {
+//             if (evt.metaKey && (evt.key === 'r' || evt.key === 'l')) return;
+
+//             if (evt.key === 'Dead') {
+//                 return;
+//             }
+//             if (evt.key === 'z' && evt.metaKey) {
+//                 evt.preventDefault();
+//                 evt.stopPropagation();
+//                 console.log('undo');
+//                 return dispatch({ type: evt.shiftKey ? 'redo' : 'undo' });
+//             }
+//             if (cmenu.current) {
+//                 const menu = cmenu.current;
+//                 if (evt.key === 'Escape') {
+//                     setMenu(null);
+//                     evt.preventDefault();
+//                     return;
+//                 }
+//                 if (evt.key === 'ArrowUp') {
+//                     setMenu({
+//                         ...menu,
+//                         selection: menu.selection <= 0 ? menu.items.length - 1 : menu.selection - 1,
+//                     });
+//                     evt.preventDefault();
+//                     return;
+//                 }
+//                 if (evt.key === 'ArrowDown') {
+//                     setMenu({
+//                         ...menu,
+//                         selection: menu.selection >= menu.items.length - 1 ? 0 : menu.selection + 1,
+//                     });
+//                     evt.preventDefault();
+//                     return;
+//                 }
+//                 if (evt.key === 'Enter') {
+//                     const item = menu.items[menu.selection];
+//                     if (item) {
+//                         item.action();
+//                         setMenu(null);
+//                         evt.preventDefault();
+//                         return;
+//                     }
+//                 }
+//             }
+
+//             setLastKey(showKey(evt));
+
+//             dispatch({
+//                 type: 'key',
+//                 key: evt.key,
+//                 mods: { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey },
+//                 visual: {
+//                     up(sel) {
+//                         const nxt = posUp(sel, cstate.current.top, refs);
+//                         return nxt ? { start: nxt } : null;
+//                     },
+//                     down(sel) {
+//                         const nxt = posDown(sel, cstate.current.top, refs);
+//                         return nxt ? { start: nxt } : null;
+//                     },
+//                     spans: cspans.current,
+//                 },
+//                 config: parser.config,
+//             });
+
+//             evt.preventDefault();
+//             evt.stopPropagation();
+//         };
+//         document.addEventListener('keydown', f);
+//         // document.addEventListener('keyup', up);
+//         return () => {
+//             document.removeEventListener('keydown', f);
+//             // document.removeEventListener('keyup', up);
+//         };
+//     }, []);
+
+//     return { lastKey, refs };
+// };

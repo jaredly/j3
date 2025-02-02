@@ -213,6 +213,10 @@ export const applyAppUpdate = (state: AppState, action: Action, noJoin = false):
             const result = applyUpdate({ top: state.top, sel: state.selections[0] }, action.update);
             return recordHistory(state, { ...state, top: result.top, selections: [result.sel] }, noJoin);
 
+        case 'paste':
+            console.log('pasting', action.data);
+            return state;
+
         case 'key':
             const selections = state.selections.slice();
             let top = state.top;
