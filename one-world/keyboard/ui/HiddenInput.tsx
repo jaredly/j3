@@ -1,20 +1,4 @@
 import React, { useEffect, useRef } from 'react';
-// import { AutoCompleteResult, Ctx } from '../../src/to-ast/Ctx';
-// import {
-//     type ClipboardItem,
-//     clipboardText,
-//     collectClipboard,
-// } from '../../src/state/clipboard';
-// import { Path } from '../../src/state/path';
-// import { clipboardPrefix, clipboardSuffix } from './ByHand';
-// import { Action, NUIState } from './UIState';
-// import equal from 'fast-deep-equal';
-// import { splitGraphemes } from '../../src/parse/splitGraphemes';
-// import { goRight } from '../../src/state/goRightUntil';
-// import { useGetStore } from './store/StoreCtx';
-// import { Display } from '../../src/to-ast/library';
-// import { AutoCompleteResult } from '../../src/to-ast/Ctx';
-// // import { Ctx } from '../../src/to-ast/library';
 
 const shouldIgnore = (el: Element | null) => {
     if (!el) return false;
@@ -23,7 +7,7 @@ const shouldIgnore = (el: Element | null) => {
     if (el.nodeName === 'INPUT') return true;
 };
 
-export const clipboardPrefix = '<!--""" jerd-clipboard ';
+export const clipboardPrefix = '<!--""" stoa-clipboard ';
 export const clipboardSuffix = ' """-->';
 
 export function HiddenInput({
@@ -103,10 +87,12 @@ export function HiddenInput({
                 ]);
             }}
             onPaste={(evt) => {
+                console.log('paste?', evt);
                 evt.preventDefault();
                 const text = evt.clipboardData.getData('text/html');
                 // TODO: We should do rich copy/paste!
                 if (text) {
+                    console.log('goit', text);
                     const start = text.indexOf(clipboardPrefix);
                     const end = text.indexOf(clipboardSuffix);
                     if (start !== -1 && end !== -1) {

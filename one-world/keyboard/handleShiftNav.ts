@@ -386,6 +386,7 @@ export type Mods = { meta?: boolean; ctrl?: boolean; alt?: boolean; shift?: bool
 
 export const handleSpecial = (state: TestState, key: string, mods: Mods): void | Update => {
     const current = getCurrent(state.sel, state.top);
+    if (key === 'v' && mods.meta) return;
     if (key === 'c' && mods.meta) {
         const copied = handleCopyMulti(state);
         console.log(copied ? shape(copied) : 'nothing to copy');

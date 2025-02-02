@@ -2,7 +2,7 @@ import React, { useEffect, useLayoutEffect, useMemo, useReducer, useState } from
 import { useLatest } from '../../../web/custom/useLatest';
 import { Config, TestParser, TestState } from '../test-utils';
 
-import { Loc, RichKind, Style } from '../../shared/cnodes';
+import { Loc, RecNodeT, RichKind, Style } from '../../shared/cnodes';
 import { ParseResult, show } from '../../syntaxes/dsl';
 import * as dsl3 from '../../syntaxes/dsl3';
 import { nodeToXML, toXML, XML } from '../../syntaxes/xml';
@@ -19,6 +19,8 @@ import { posDown, posUp, selectionPos } from './selectionPos';
 import { ShowXML } from './XML';
 import { parser as jsMinusParser } from '../../syntaxes/js--';
 import { HiddenInput } from './HiddenInput';
+import { handleCopyMulti } from '../handleWrap';
+import { shape } from '../../shared/shape';
 
 const styleKinds: Record<string, Style> = {
     comment: { color: { r: 200, g: 200, b: 200 } },
@@ -672,6 +674,7 @@ const useKeyFns = (
 
     const onKeyDown = (evt: React.KeyboardEvent) => {
         if (evt.metaKey && (evt.key === 'r' || evt.key === 'l')) return;
+        if (evt.metaKey && (evt.key === 'v' || evt.key === 'c')) return;
 
         if (evt.key === 'Dead') {
             return;
@@ -744,7 +747,11 @@ const useKeyFns = (
         keyFns: {
             onKeyDown,
             getDataToCopy() {
-                return null;
+                const state = cstate.current;
+                const copied = state.selections.map((sel) => handleCopyMulti({ top: state.top, sel })).filter(Boolean) as RecNodeT<number>[];
+                if (!copied.length) return null;
+                console.log(copied, copied.map(shape));
+                return { json: copied, display: 'lol thanks' };
             },
             onPaste(data: { type: 'json'; data: any } | { type: 'plain'; text: string }) {
                 console.log('pasting I guess', data);
