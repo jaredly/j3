@@ -672,9 +672,21 @@ const useKeyFns = (
     const refs: Record<number, HTMLElement> = useMemo(() => ({}), []);
     const cmenu = useLatest(menu);
 
+    const visual: Visual = {
+        up(sel) {
+            const nxt = posUp(sel, cstate.current.top, refs);
+            return nxt ? { start: nxt } : null;
+        },
+        down(sel) {
+            const nxt = posDown(sel, cstate.current.top, refs);
+            return nxt ? { start: nxt } : null;
+        },
+        spans: cspans.current,
+    };
+
     const onKeyDown = (evt: React.KeyboardEvent) => {
         if (evt.metaKey && (evt.key === 'r' || evt.key === 'l')) return;
-        if (evt.metaKey && (evt.key === 'v' || evt.key === 'c')) return;
+        if (evt.metaKey && (evt.key === 'v' || evt.key === 'c' || evt.key === 'x')) return;
 
         if (evt.key === 'Dead') {
             return;
@@ -725,17 +737,7 @@ const useKeyFns = (
             type: 'key',
             key: evt.key,
             mods: { meta: evt.metaKey, ctrl: evt.ctrlKey, alt: evt.altKey, shift: evt.shiftKey },
-            visual: {
-                up(sel) {
-                    const nxt = posUp(sel, cstate.current.top, refs);
-                    return nxt ? { start: nxt } : null;
-                },
-                down(sel) {
-                    const nxt = posDown(sel, cstate.current.top, refs);
-                    return nxt ? { start: nxt } : null;
-                },
-                spans: cspans.current,
-            },
+            visual,
             config: parser.config,
         });
 
@@ -763,6 +765,15 @@ const useKeyFns = (
             },
             onInput(text: string) {
                 //
+            },
+            onDelete() {
+                dispatch({
+                    type: 'key',
+                    key: 'Backspace',
+                    mods: {},
+                    visual,
+                    config: parser.config,
+                });
             },
         },
         lastKey,

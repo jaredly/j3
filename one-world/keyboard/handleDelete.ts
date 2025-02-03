@@ -72,6 +72,19 @@ export const removeInPath = ({ root, children }: Path, loc: number): Path => ({
     children: children.filter((f) => f != loc),
 });
 
+export const addInPath = ({ root, children }: Path, loc: number, parent: number): Path => ({
+    root,
+    children: addInChildren(children, loc, parent),
+});
+
+export const addInChildren = (children: number[], loc: number, parent: number): number[] => {
+    if (!children.includes(loc)) return children;
+    children = children.slice();
+    const at = children.indexOf(loc);
+    children.splice(at, 0, parent);
+    return children;
+};
+
 const modSelSideTip = (sel: SelStart, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): SelStart => {
     const res = mod(lastChild(sel.path), sel.cursor);
     if (res) {
@@ -150,7 +163,7 @@ export const disolveSmooshed = (update: Update, top: Top) => {
                     console.warn(`cant collapse smoosh; cant find parent of ${node.loc}`);
                     return;
                 }
-                const pnode = top.nodes[ploc];
+                const pnode = update.nodes[ploc] ?? top.nodes[ploc];
                 const parent = replaceIn(pnode, node.loc, child);
                 update.nodes[parent.loc] = parent;
             }
@@ -173,7 +186,7 @@ export const joinSmooshed = (update: Update, top: Top) => {
 
                 if (prev.type === 'id' && child.type === 'id' && (prev.ccls === child.ccls || child.text === '' || prev.text === '')) {
                     // we delete one of these
-                    update.nodes[prev.loc] = { ...prev, text: prev.text + child.text };
+                    update.nodes[prev.loc] = { ...prev, text: prev.text + child.text, ccls: prev.ccls == null ? child.ccls : prev.ccls };
                     update.nodes[child.loc] = null;
 
                     const children = node.children.slice();

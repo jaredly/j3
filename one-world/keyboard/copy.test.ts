@@ -47,12 +47,11 @@ test('partial id', () => {
     expect(result.single).toBe(true);
 });
 
-// START HERE
-test.only('collapse singleton', () => {
+test('collapse copied singleton', () => {
     let state = asTop(round([id('hi', 1), smoosh([id('hello', 2), id('+'), id('folks')])]), idc(0), idc(5));
     validate(state);
     const result = handleCopyMulti(state);
     if (!result) throw new Error('uynable to copy');
     expect(shape(result.tree)).toEqual(shape(round([id('hi'), id('hello')])));
-    expect(result.single).toBe(true);
+    expect(result.single).toBe(false);
 });

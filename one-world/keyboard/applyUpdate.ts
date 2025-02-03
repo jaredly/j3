@@ -6,8 +6,7 @@ import { validate } from './validate';
 import { root } from './root';
 import { SelStart } from './handleShiftNav';
 import { selUpdate } from './handleNav';
-import { removeInPath } from './handleDelete';
-import { maybeCommitTextChanges } from './maybeCommitTextChanges';
+import { addInPath, removeInPath } from './handleDelete';
 
 export const applySel = (state: TestState, sel: SelStart | void) => applyUpdate(state, selUpdate(sel));
 
@@ -31,7 +30,12 @@ export const applySelUp = (sel: NodeSelection, up: SelUpdate): NodeSelection => 
                 start: selStart(removeInPath(sel.start.path, up.loc), sel.start.cursor),
                 end: sel.end ? selStart(removeInPath(sel.end.path, up.loc), sel.end.cursor) : undefined,
             };
-        // case 'addparent':
+        case 'addparent':
+            return {
+                start: selStart(addInPath(sel.start.path, up.loc, up.parent), sel.start.cursor),
+                end: sel.end ? selStart(addInPath(sel.end.path, up.loc, up.parent), sel.end.cursor) : undefined,
+            };
+
         // case 'unwrapList':
         // case 'delete':
         case 'id': {
@@ -74,11 +78,6 @@ export function applyUpdate<T extends TestState>(state: T, update: Update | KeyA
             state.top.nodes[+key] = update.nodes[+key]!;
         }
     });
-
-    // console.log('maube', update.tmpText);
-    // This is "maybe commit text changes"
-    maybeCommitTextChanges(prev, update, state);
-    // console.log(state.top, update.tmpText);
 
     // if (
     //     prev.start.cursor.type === 'text' &&

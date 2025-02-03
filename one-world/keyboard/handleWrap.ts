@@ -1,19 +1,35 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { childLocs, Collection, List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { shape } from '../shared/shape';
+import { applySelUp } from './applyUpdate';
 import { cursorSides } from './cursorSides';
 import { idText } from './cursorSplit';
 import { findParent } from './flatenate';
+import { disolveSmooshed, joinSmooshed, rebalanceSmooshed } from './handleDelete';
 import { justSel, selectEnd, selectStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { handleTextText } from './handleTextText';
 import { KeyAction } from './keyActionToUpdate';
 import { replaceAt } from './replaceAt';
 import { root } from './root';
-import { flatten, flatToUpdateNew } from './rough';
+import { flatten, flatToUpdateNew, updateNodes } from './rough';
 import { collectSelectedNodes, getCurrent, Neighbor, orderSelections } from './selections';
 import { TestState } from './test-utils';
-import { CollectionCursor, Current, Cursor, lastChild, parentLoc, parentPath, Path, pathKey, pathWithChildren, selStart, Top, Update } from './utils';
+import {
+    CollectionCursor,
+    Current,
+    Cursor,
+    lastChild,
+    NodeSelection,
+    parentLoc,
+    parentPath,
+    Path,
+    pathKey,
+    pathWithChildren,
+    selStart,
+    Top,
+    Update,
+} from './utils';
 
 export const wrapKind = (key: string): ListKind<any> | void => {
     switch (key) {
@@ -441,7 +457,13 @@ export const handleCopyMulti = (state: TestState) => {
     }
 
     const rootLoc = lastChild(sorted[sorted.length - 1].path);
-    const tree = root({ top: { ...state.top, nodes: { ...state.top.nodes, ...nodes }, root: rootLoc } });
+
+    const up: Update = { nodes, root: rootLoc };
+    rebalanceSmooshed(up, state.top);
+    joinSmooshed(up, state.top);
+    disolveSmooshed(up, state.top);
+
+    const tree = root({ top: { ...state.top, nodes: updateNodes(state.top.nodes, up.nodes), root: up.root! } });
     // console.log(left, neighbors, right);
     return { tree, single: left.key === right.key };
 };
@@ -490,7 +512,31 @@ export const handleDeleteTooMuch = (state: TestState): Update | void => {
     const sel = lnudge ? selectEnd(left.path, state.top) : selStart(left.path, { type: 'id', end: leftCursor });
     if (!sel) return;
 
-    return { nodes, selection: { start: sel } };
+    let selection: NodeSelection = { start: sel };
+
+    let nextLoc = undefined as undefined | number;
+
+    const lparent = parentLoc(left.path);
+    const rparent = parentLoc(right.path);
+    if (lparent === rparent) {
+        const pnode = nodes[lparent];
+        if (pnode?.type === 'list' && pnode.kind !== 'smooshed') {
+            const i1 = pnode.children.indexOf(lastChild(left.path));
+            const i2 = pnode.children.indexOf(lastChild(right.path));
+            if (i2 === i1 + 1) {
+                const children = pnode.children.slice();
+                nextLoc = state.top.nextLoc;
+                const loc = nextLoc++;
+                const two = children.splice(i1, 2, loc);
+                nodes[loc] = { type: 'list', kind: 'smooshed', children: two, loc };
+                nodes[pnode.loc] = { ...pnode, children };
+                selection = applySelUp(selection, { type: 'addparent', loc: two[0], parent: loc });
+                selection = applySelUp(selection, { type: 'addparent', loc: two[1], parent: loc });
+            }
+        }
+    }
+
+    return { nodes, selection, nextLoc };
 };
 
 export const handleWrapsTooMuch = (state: TestState, kind: ListKind<any>): Update => {

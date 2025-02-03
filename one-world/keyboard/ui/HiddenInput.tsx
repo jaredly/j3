@@ -15,12 +15,14 @@ export function HiddenInput({
     onPaste,
     onKeyDown,
     onInput,
+    onDelete,
     sel,
 }: {
     onKeyDown(evt: React.KeyboardEvent): void;
     getDataToCopy(): { display: string; json: any } | null;
     onPaste(data: { type: 'plain'; text: string } | { type: 'json'; data: any }): void;
     onInput(text: string): void;
+    onDelete(): void;
     sel: any;
 }) {
     useEffect(() => {
@@ -85,6 +87,23 @@ export function HiddenInput({
                         }),
                     }),
                 ]);
+            }}
+            onCut={(evt) => {
+                evt.preventDefault();
+                const data = getDataToCopy();
+                if (data == null) return;
+
+                navigator.clipboard.write([
+                    new ClipboardItem({
+                        ['text/plain']: new Blob([data.display], {
+                            type: 'text/plain',
+                        }),
+                        ['text/html']: new Blob([clipboardPrefix + JSON.stringify(data.json) + clipboardSuffix + data.display], {
+                            type: 'text/html',
+                        }),
+                    }),
+                ]);
+                onDelete();
             }}
             onPaste={(evt) => {
                 console.log('paste?', evt);

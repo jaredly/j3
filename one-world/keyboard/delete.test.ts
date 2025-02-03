@@ -300,7 +300,7 @@ test('spaced cut off right', () => {
     let state = asTop(spaced([id('one'), id('two', 1), id('three', 2)]), idc(0), idc(3));
     validate(state);
     state = applyUpdate(state, handleDelete(state));
-    check(state, spaced([id('one'), id('', true), id('ee')]), idc(0));
+    check(state, spaced([id('one'), id('ee', true)]), idc(0));
 });
 
 test('smoosh please', () => {
@@ -315,4 +315,11 @@ test('smoosh please nudge', () => {
     validate(state);
     state = applyUpdate(state, handleDelete(state));
     check(state, id('one', true), idc(3));
+});
+
+test('smoooosh', () => {
+    let state = asTop(round([id('hello', 1), id('+'), id('folks', 2)]), idc(2), idc(3));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([id('heks', true)]), idc(2));
 });
