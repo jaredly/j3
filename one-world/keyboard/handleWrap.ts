@@ -386,6 +386,18 @@ export const handleCopyMulti = (state: TestState) => {
     const lnudge = shouldNudgeRight(left.path, left.cursor, state.top);
     const rnudge = shouldNudgeLeft(right.path, right.cursor, state.top);
     if (!lnudge) neighbors.push({ path: left.path, hl: { type: 'full' } });
+
+    let rpartial = null as null | Node;
+    {
+        const rnode = state.top.nodes[lastChild(right.path)];
+        if (rnode.type === 'id' && right.cursor.type === 'id') {
+            const grems = splitGraphemes(rnode.text);
+            if (right.cursor.end < grems.length) {
+                rpartial = { ...rnode, text: grems.slice(0, right.cursor.end).join('') };
+            }
+        }
+    }
+
     if (!rnudge) neighbors.push({ path: right.path, hl: { type: 'full' } });
     const sorted = partitionNeighbors(neighbors, state.top, false);
 
@@ -403,9 +415,23 @@ export const handleCopyMulti = (state: TestState) => {
         nodes[node.loc] = { ...node, children };
         selected.forEach((sel) => copyDeep(sel, state.top, nodes));
     });
+
+    if (!lnudge) {
+        const lloc = lastChild(left.path);
+        const lnode = state.top.nodes[lloc];
+        if (lnode.type === 'id' && left.cursor.type === 'id' && left.cursor.end !== 0) {
+            const text = splitGraphemes(lnode.text).slice(left.cursor.end).join('');
+            nodes[lloc] = { type: 'id', text, loc: lloc, ccls: lnode.ccls };
+        }
+    }
+    if (rpartial) {
+        nodes[rpartial.loc] = rpartial;
+    }
+
     const rootLoc = lastChild(sorted[sorted.length - 1].path);
     const tree = root({ top: { ...state.top, nodes: { ...state.top.nodes, ...nodes }, root: rootLoc } });
-    return tree;
+    console.log(left, neighbors, right);
+    return { tree, single: left.key === right.key };
 };
 
 // TODO:
@@ -435,6 +461,7 @@ export const handleDeleteTooMuch = (state: TestState): Update | void => {
         const children = node.children.slice().filter((c) => !selected.includes(c) || lloc === c);
         nodes[node.loc] = { ...node, children };
     });
+
     let leftCursor = 0;
     if (!lnudge) {
         nodes[lloc] = { type: 'id', text: '', loc: lloc };

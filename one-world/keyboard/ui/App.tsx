@@ -748,9 +748,14 @@ const useKeyFns = (
             onKeyDown,
             getDataToCopy() {
                 const state = cstate.current;
-                const copied = state.selections.map((sel) => handleCopyMulti({ top: state.top, sel })).filter(Boolean) as RecNodeT<number>[];
+                const copied = state.selections.map((sel) => handleCopyMulti({ top: state.top, sel })).filter(Boolean) as {
+                    tree: RecNodeT<number>;
+                }[];
                 if (!copied.length) return null;
-                console.log(copied, copied.map(shape));
+                console.log(
+                    copied,
+                    copied.map((m) => shape(m.tree)),
+                );
                 return { json: copied, display: 'lol thanks' };
             },
             onPaste(data: { type: 'json'; data: any } | { type: 'plain'; text: string }) {

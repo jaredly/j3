@@ -389,7 +389,7 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
     if (key === 'v' && mods.meta) return;
     if (key === 'c' && mods.meta) {
         const copied = handleCopyMulti(state);
-        console.log(copied ? shape(copied) : 'nothing to copy');
+        console.log(copied ? shape(copied.tree) : 'nothing to copy');
         navigator.clipboard.writeText(JSON.stringify(copied));
         return;
     }
