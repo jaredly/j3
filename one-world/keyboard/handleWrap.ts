@@ -414,7 +414,17 @@ export const handleDeleteTooMuch = (state: TestState): Update | void => {
     const lnudge = shouldNudgeRight(left.path, left.cursor, state.top);
     const rnudge = shouldNudgeLeft(right.path, right.cursor, state.top);
     if (!lnudge) neighbors.push({ path: left.path, hl: { type: 'full' } });
-    if (!rnudge) neighbors.push({ path: right.path, hl: { type: 'full' } });
+    let rpartial = null as null | Node;
+    {
+        const rnode = state.top.nodes[lastChild(right.path)];
+        if (rnode.type === 'id' && right.cursor.type === 'id') {
+            const grems = splitGraphemes(rnode.text);
+            if (right.cursor.end < grems.length) {
+                rpartial = { ...rnode, text: grems.slice(right.cursor.end).join('') };
+            }
+        }
+    }
+    if (!rnudge && rpartial == null) neighbors.push({ path: right.path, hl: { type: 'full' } });
     const sorted = partitionNeighbors(neighbors, state.top, false);
     const lloc = lastChild(left.path);
 
@@ -425,8 +435,20 @@ export const handleDeleteTooMuch = (state: TestState): Update | void => {
         const children = node.children.slice().filter((c) => !selected.includes(c) || lloc === c);
         nodes[node.loc] = { ...node, children };
     });
-    if (!lnudge) nodes[lloc] = { type: 'id', text: '', loc: lloc };
-    const sel = lnudge ? selectEnd(left.path, state.top) : selStart(left.path, { type: 'id', end: 0 });
+    let leftCursor = 0;
+    if (!lnudge) {
+        nodes[lloc] = { type: 'id', text: '', loc: lloc };
+        const lnode = state.top.nodes[lloc];
+        if (lnode.type === 'id' && left.cursor.type === 'id' && left.cursor.end !== 0) {
+            const text = splitGraphemes(lnode.text).slice(0, left.cursor.end).join('');
+            nodes[lloc] = { type: 'id', text, loc: lloc, ccls: lnode.ccls };
+            leftCursor = left.cursor.end;
+        }
+    }
+    if (rpartial) {
+        nodes[rpartial.loc] = rpartial;
+    }
+    const sel = lnudge ? selectEnd(left.path, state.top) : selStart(left.path, { type: 'id', end: leftCursor });
     if (!sel) return;
 
     return { nodes, selection: { start: sel } };

@@ -1,4 +1,8 @@
 
+- [x] multi delete - clip partial ids please.
+  - [ ] multi delete - clip partial texts
+- [ ] copy - distinguish between 'entire' vs 'children', where children will splice by default
+
 # General Game Plan
 of getting something useful working
 

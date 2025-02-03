@@ -289,6 +289,20 @@ test('spaced idk', () => {
     check(state, spaced([id('one'), id('', true)]), idc(0));
 });
 
+test('spaced cut off', () => {
+    let state = asTop(spaced([id('one'), id('two', 1), id('three', 2)]), idc(2), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, spaced([id('one'), id('tw', true)]), idc(2));
+});
+
+test('spaced cut off right', () => {
+    let state = asTop(spaced([id('one'), id('two', 1), id('three', 2)]), idc(0), idc(3));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, spaced([id('one'), id('', true), id('ee')]), idc(0));
+});
+
 test('smoosh please', () => {
     let state = asTop(smoosh([id('one'), id('.', 1), id('ho', 2)]), idc(0), idc(5));
     validate(state);
