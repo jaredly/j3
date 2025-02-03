@@ -1,7 +1,10 @@
 
 - [x] multi delete - clip partial ids please.
   - [ ] multi delete - clip partial texts
-- [ ] copy - distinguish between 'entire' vs 'children', where children will splice by default
+- [x] copy - distinguish between 'entire' vs 'children', where children will splice by default
+
+- [x] gotta have some copy tests pleeeease
+- [ ] collapse singleton spaced and smooshed lists in a copied tree thanksss
 
 # General Game Plan
 of getting something useful working

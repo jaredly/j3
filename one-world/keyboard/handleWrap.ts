@@ -387,6 +387,18 @@ export const handleCopyMulti = (state: TestState) => {
     const rnudge = shouldNudgeLeft(right.path, right.cursor, state.top);
     if (!lnudge) neighbors.push({ path: left.path, hl: { type: 'full' } });
 
+    if (left.key === right.key) {
+        const nodes: Nodes = {};
+        const lloc = lastChild(left.path);
+        copyDeep(lloc, state.top, nodes);
+        const node = nodes[lloc];
+        if (node.type === 'id' && left.cursor.type === 'id' && right.cursor.type === 'id') {
+            const grems = splitGraphemes(node.text);
+            nodes[lloc] = { ...node, text: grems.slice(left.cursor.end, right.cursor.end).join('') };
+        }
+        return { tree: root({ top: { ...state.top, nodes: { ...state.top.nodes, ...nodes }, root: lloc } }), single: true };
+    }
+
     let rpartial = null as null | Node;
     {
         const rnode = state.top.nodes[lastChild(right.path)];
@@ -430,7 +442,7 @@ export const handleCopyMulti = (state: TestState) => {
 
     const rootLoc = lastChild(sorted[sorted.length - 1].path);
     const tree = root({ top: { ...state.top, nodes: { ...state.top.nodes, ...nodes }, root: rootLoc } });
-    console.log(left, neighbors, right);
+    // console.log(left, neighbors, right);
     return { tree, single: left.key === right.key };
 };
 
