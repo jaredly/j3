@@ -6,6 +6,11 @@
 - [x] gotta have some copy tests pleeeease
 - [x] collapse singleton spaced and smooshed lists in a copied tree thanksss
 
+# PASTEEEEE
+
+- [ ] if single, drop it in
+- [ ] if not single, splice in if you can
+
 # General Game Plan
 of getting something useful working
 

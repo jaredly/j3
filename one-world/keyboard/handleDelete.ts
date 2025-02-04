@@ -30,7 +30,7 @@ import {
 import { getCurrent } from './selections';
 import { idText } from './cursorSplit';
 import { KeyAction } from './keyActionToUpdate';
-import { handleDeleteTooMuch } from './handleWrap';
+import { handleDeleteTooMuch } from './multi-change';
 
 type JoinParent =
     | {

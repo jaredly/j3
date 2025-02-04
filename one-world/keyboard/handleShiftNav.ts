@@ -23,7 +23,7 @@ import {
 } from './utils';
 import { getCurrent, ltCursor, orderSelections } from './selections';
 import { idText } from './cursorSplit';
-import { handleCopyMulti } from './handleWrap';
+import { handleCopyMulti } from './multi-change';
 import { shape } from '../shared/shape';
 // import { textCursorSides2 } from './insertId';
 

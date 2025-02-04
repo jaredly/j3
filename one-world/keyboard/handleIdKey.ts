@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Collection, Id, Loc, Node, Nodes } from '../shared/cnodes';
+import { Collection, Id, List, Loc, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { cursorSplit, idText, Split } from './cursorSplit';
 import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
@@ -136,7 +136,18 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
     const closeUp = handleTagCloser(top, node, grem, parent, path);
     if (closeUp) return closeUp;
 
-    const flat = parent ? flatten(parent.node, top) : [node];
+    return handleTextInsert(kind, grem, current, path, parent, top);
+};
+
+export const handleTextInsert = (
+    kind: Kind,
+    grem: string,
+    current: { node: Id<number>; cursor: IdCursor; start?: number },
+    path: Path,
+    parent: void | { node: Collection<number>; path: Path },
+    top: Top,
+) => {
+    const flat = parent ? flatten(parent.node, top) : [current.node];
 
     const nodes: Update['nodes'] = {};
 
@@ -146,7 +157,7 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
     const up = flatToUpdateNew(
         flat,
         { node: sel, cursor: ncursor },
-        { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
+        { isParent: parent != null, node: parent?.node ?? current.node, path: parent?.path ?? path },
         nodes,
         top,
     );
@@ -299,7 +310,7 @@ function addNeighbor({
     top,
 }: {
     neighbor: Flat;
-    current: Extract<Current, { type: 'id' }>;
+    current: { cursor: IdCursor; node: Id<number>; start?: number };
     // current: Id<number>;
     // cursor: IdCursor;
     flat: Flat[];

@@ -230,6 +230,8 @@ export type SelUpdate =
     | { type: 'id'; from: { loc: number; offset: number }; to: { loc: number; offset: number } };
 // | { type: 'id'; from: { path: Path; offset: number }; to: { path: Path; offset: number } };
 
+export type JustSelUpdate = Omit<Update, 'selection'> & { selection?: NodeSelection };
+
 export type Update = {
     nodes: Record<number, Node | null>;
     root?: number;

@@ -19,7 +19,7 @@ import { posDown, posUp, selectionPos } from './selectionPos';
 import { ShowXML } from './XML';
 import { parser as jsMinusParser } from '../../syntaxes/js--';
 import { HiddenInput } from './HiddenInput';
-import { handleCopyMulti } from '../handleWrap';
+import { CopiedValues, handleCopyMulti } from '../multi-change';
 import { shape } from '../../shared/shape';
 
 const styleKinds: Record<string, Style> = {
@@ -59,7 +59,7 @@ export type Action =
     | { type: 'add-sel'; sel: NodeSelection }
     | { type: 'update'; update: Update | null | undefined }
     | { type: 'key'; key: string; mods: Mods; visual?: Visual; config: Config }
-    | { type: 'paste'; data: string }
+    | { type: 'paste'; data: { type: 'json'; data: CopiedValues[] } | { type: 'plain'; text: string } }
     | { type: 'undo' }
     | { type: 'redo' };
 
@@ -760,8 +760,9 @@ const useKeyFns = (
                 );
                 return { json: copied, display: 'lol thanks' };
             },
-            onPaste(data: { type: 'json'; data: any } | { type: 'plain'; text: string }) {
+            onPaste(data: { type: 'json'; data: CopiedValues[] } | { type: 'plain'; text: string }) {
                 console.log('pasting I guess', data);
+                dispatch({ type: 'paste', data });
             },
             onInput(text: string) {
                 //

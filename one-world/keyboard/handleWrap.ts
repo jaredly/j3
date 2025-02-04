@@ -1,35 +1,18 @@
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { childLocs, Collection, List, ListKind, Node, Nodes } from '../shared/cnodes';
+import { Collection, List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { shape } from '../shared/shape';
-import { applySelUp } from './applyUpdate';
 import { cursorSides } from './cursorSides';
 import { idText } from './cursorSplit';
 import { findParent } from './flatenate';
-import { disolveSmooshed, joinSmooshed, rebalanceSmooshed } from './handleDelete';
-import { justSel, selectEnd, selectStart } from './handleNav';
+import { justSel, selectStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { handleTextText } from './handleTextText';
 import { KeyAction } from './keyActionToUpdate';
+import { partitionNeighbors } from './multi-change';
 import { replaceAt } from './replaceAt';
-import { root } from './root';
-import { flatten, flatToUpdateNew, updateNodes } from './rough';
-import { collectSelectedNodes, getCurrent, Neighbor, orderSelections } from './selections';
+import { flatten, flatToUpdateNew } from './rough';
+import { collectSelectedNodes, getCurrent, orderSelections } from './selections';
 import { TestState } from './test-utils';
-import {
-    CollectionCursor,
-    Current,
-    Cursor,
-    lastChild,
-    NodeSelection,
-    parentLoc,
-    parentPath,
-    Path,
-    pathKey,
-    pathWithChildren,
-    selStart,
-    Top,
-    Update,
-} from './utils';
+import { CollectionCursor, Current, Cursor, lastChild, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
 export const wrapKind = (key: string): ListKind<any> | void => {
     switch (key) {
@@ -213,90 +196,6 @@ export const handleClose = (state: TestState, key: string): Update | void => {
     return justSel(parent.path, { type: 'list', where: 'after' });
 };
 
-// const handleWrapMulti = (state: TestState, key: string): Update | void => {
-//     const kind = wrapKind(key);
-//     if (!kind) return;
-//     const multi = multiSelChildren(state.sel, state.top);
-//     if (!multi) return;
-//     const parent = state.top.nodes[lastChild(multi.parent)];
-//     if (parent.type !== 'list') {
-//         return; // sorry not yet
-//     }
-//     const first = parent.children.indexOf(multi.children[0]);
-//     const last = parent.children.indexOf(multi.children[multi.children.length - 1]);
-//     if (first === -1 || last === -1) return;
-
-//     // we actually want to wrap the smooshed / spaced
-//     if (first === 0 && last === parent.children.length - 1 && (parent.kind === 'smooshed' || parent.kind === 'spaced')) {
-//         const gpath = parentPath(multi.parent);
-//         let nextLoc = state.top.nextLoc;
-//         const loc = nextLoc++;
-//         const up = replaceAt(gpath.children, state.top, parent.loc, loc);
-//         up.nodes[loc] = { type: 'list', kind, children: [parent.loc], loc };
-//         const start = selectStart(pathWithChildren(gpath, loc, parent.loc, multi.children[0]), state.top);
-//         if (!start) return;
-//         return { ...up, selection: { start }, nextLoc };
-//     }
-
-//     const children = parent.children.slice();
-//     let nextLoc = state.top.nextLoc;
-//     const loc = nextLoc++;
-//     children.splice(first, last + 1 - first, loc);
-
-//     let inner = multi.children;
-
-//     const nodes: Nodes = { [parent.loc]: { ...parent, children } };
-
-//     let sel: SelStart;
-
-//     if ((parent.kind === 'smooshed' || parent.kind === 'spaced') && multi.children.length > 1) {
-//         const wrap = nextLoc++;
-//         nodes[wrap] = { ...parent, children: multi.children, loc: wrap };
-//         inner = [wrap];
-//         const start = selectStart(pathWithChildren(multi.parent, loc, wrap, multi.children[0]), state.top);
-//         if (!start) return;
-//         sel = start;
-//     } else {
-//         const start = selectStart(pathWithChildren(multi.parent, loc, multi.children[0]), state.top);
-//         if (!start) return;
-//         sel = start;
-//     }
-
-//     nodes[loc] = { type: 'list', kind, loc, children: inner };
-
-//     return {
-//         nodes,
-//         selection: { start: sel },
-//         nextLoc,
-//     };
-//     // we just do the thing
-// };
-
-const partitionNeighbors = (items: Neighbor[], top: Top, noSmoosh = true) => {
-    const byParent: Record<string, { path: Path; children: number[] }> = {};
-    items.forEach((item) => {
-        if (item.hl.type === 'full') {
-            let path = item.path;
-            while (path.children.length > 1) {
-                const pnode = top.nodes[parentLoc(path)];
-                if (pnode.type === 'list' && (!noSmoosh || (pnode.kind !== 'smooshed' && pnode.kind !== 'spaced'))) {
-                    break;
-                }
-                path = parentPath(path);
-            }
-            if (path.children.length < 2) return;
-            const ppath = parentPath(path);
-            const k = pathKey(ppath);
-            if (!byParent[k]) {
-                byParent[k] = { path: ppath, children: [lastChild(path)] };
-            } else if (!byParent[k].children.includes(lastChild(path))) {
-                byParent[k].children.push(lastChild(path));
-            }
-        }
-    });
-    return Object.values(byParent).sort((a, b) => b.path.children.length - a.path.children.length);
-};
-
 const wrapParent = (one: SelStart, two: SelStart, top: Top): void | { path: Path; min: number; max: number } => {
     if (one.path.children[0] !== two.path.children[0]) return;
 
@@ -352,191 +251,6 @@ export const handleWraps = (state: TestState, kind: ListKind<any>): Update | voi
     }
 
     return { nodes, selection: { start }, nextLoc };
-};
-
-const shouldNudgeRight = (path: Path, cursor: Cursor, top: Top) => {
-    const node = top.nodes[lastChild(path)];
-    const pnode = top.nodes[parentLoc(path)];
-    if (!pnode) return false;
-    if (node.type === 'id') {
-        if (cursor.type !== 'id' || cursor.end < splitGraphemes(node.text).length) {
-            return false;
-        }
-    }
-    if (node.type === 'list') {
-        if (cursor.type !== 'list' || cursor.where !== 'after') {
-            return false;
-        }
-    }
-    if (pnode.type !== 'list') return false;
-    return true;
-};
-
-const shouldNudgeLeft = (path: Path, cursor: Cursor, top: Top) => {
-    const node = top.nodes[lastChild(path)];
-    const pnode = top.nodes[parentLoc(path)];
-    if (!pnode) return false;
-    if (node.type === 'id') {
-        if (cursor.type !== 'id' || cursor.end > 0) {
-            return false;
-        }
-    }
-    if (node.type === 'list') {
-        if (cursor.type !== 'list' || cursor.where !== 'before') {
-            return false;
-        }
-    }
-    if (pnode.type !== 'list') return false;
-    return true;
-};
-
-const copyDeep = (loc: number, top: Top, dest: Nodes) => {
-    if (dest[loc]) return; // already handled
-    dest[loc] = top.nodes[loc];
-    childLocs(top.nodes[loc]).forEach((child) => copyDeep(child, top, dest));
-};
-
-export const handleCopyMulti = (state: TestState) => {
-    if (!state.sel.end) return;
-    const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, state.top);
-    const lnudge = shouldNudgeRight(left.path, left.cursor, state.top);
-    const rnudge = shouldNudgeLeft(right.path, right.cursor, state.top);
-    if (!lnudge) neighbors.push({ path: left.path, hl: { type: 'full' } });
-
-    if (left.key === right.key) {
-        const nodes: Nodes = {};
-        const lloc = lastChild(left.path);
-        copyDeep(lloc, state.top, nodes);
-        const node = nodes[lloc];
-        if (node.type === 'id' && left.cursor.type === 'id' && right.cursor.type === 'id') {
-            const grems = splitGraphemes(node.text);
-            nodes[lloc] = { ...node, text: grems.slice(left.cursor.end, right.cursor.end).join('') };
-        }
-        return { tree: root({ top: { ...state.top, nodes: { ...state.top.nodes, ...nodes }, root: lloc } }), single: true };
-    }
-
-    let rpartial = null as null | Node;
-    {
-        const rnode = state.top.nodes[lastChild(right.path)];
-        if (rnode.type === 'id' && right.cursor.type === 'id') {
-            const grems = splitGraphemes(rnode.text);
-            if (right.cursor.end < grems.length) {
-                rpartial = { ...rnode, text: grems.slice(0, right.cursor.end).join('') };
-            }
-        }
-    }
-
-    if (!rnudge) neighbors.push({ path: right.path, hl: { type: 'full' } });
-    const sorted = partitionNeighbors(neighbors, state.top, false);
-
-    const allParents: Record<number, true> = {};
-    sorted.forEach(({ path }) => path.children.forEach((loc) => (allParents[loc] = true)));
-
-    const nodes: Nodes = {};
-    sorted.forEach(({ path, children: selected }) => {
-        const node = state.top.nodes[lastChild(path)];
-        if (node.type !== 'list') {
-            console.warn(`not handling ${node.type} well`);
-            return;
-        }
-        const children = node.children.filter((c) => selected.includes(c) || allParents[c]);
-        nodes[node.loc] = { ...node, children };
-        selected.forEach((sel) => copyDeep(sel, state.top, nodes));
-    });
-
-    if (!lnudge) {
-        const lloc = lastChild(left.path);
-        const lnode = state.top.nodes[lloc];
-        if (lnode.type === 'id' && left.cursor.type === 'id' && left.cursor.end !== 0) {
-            const text = splitGraphemes(lnode.text).slice(left.cursor.end).join('');
-            nodes[lloc] = { type: 'id', text, loc: lloc, ccls: lnode.ccls };
-        }
-    }
-    if (rpartial) {
-        nodes[rpartial.loc] = rpartial;
-    }
-
-    const rootLoc = lastChild(sorted[sorted.length - 1].path);
-
-    const up: Update = { nodes, root: rootLoc };
-    rebalanceSmooshed(up, state.top);
-    joinSmooshed(up, state.top);
-    disolveSmooshed(up, state.top);
-
-    const tree = root({ top: { ...state.top, nodes: updateNodes(state.top.nodes, up.nodes), root: up.root! } });
-    // console.log(left, neighbors, right);
-    return { tree, single: left.key === right.key };
-};
-
-// TODO:
-export const handleDeleteTooMuch = (state: TestState): Update | void => {
-    const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, state.top);
-    const lnudge = shouldNudgeRight(left.path, left.cursor, state.top);
-    const rnudge = shouldNudgeLeft(right.path, right.cursor, state.top);
-    if (!lnudge) neighbors.push({ path: left.path, hl: { type: 'full' } });
-    let rpartial = null as null | Node;
-    {
-        const rnode = state.top.nodes[lastChild(right.path)];
-        if (rnode.type === 'id' && right.cursor.type === 'id') {
-            const grems = splitGraphemes(rnode.text);
-            if (right.cursor.end < grems.length) {
-                rpartial = { ...rnode, text: grems.slice(right.cursor.end).join('') };
-            }
-        }
-    }
-    if (!rnudge && rpartial == null) neighbors.push({ path: right.path, hl: { type: 'full' } });
-    const sorted = partitionNeighbors(neighbors, state.top, false);
-    const lloc = lastChild(left.path);
-
-    const nodes: Nodes = {};
-    sorted.forEach(({ path, children: selected }) => {
-        const node = state.top.nodes[lastChild(path)];
-        if (node.type !== 'list') return;
-        const children = node.children.slice().filter((c) => !selected.includes(c) || lloc === c);
-        nodes[node.loc] = { ...node, children };
-    });
-
-    let leftCursor = 0;
-    if (!lnudge) {
-        nodes[lloc] = { type: 'id', text: '', loc: lloc };
-        const lnode = state.top.nodes[lloc];
-        if (lnode.type === 'id' && left.cursor.type === 'id' && left.cursor.end !== 0) {
-            const text = splitGraphemes(lnode.text).slice(0, left.cursor.end).join('');
-            nodes[lloc] = { type: 'id', text, loc: lloc, ccls: lnode.ccls };
-            leftCursor = left.cursor.end;
-        }
-    }
-    if (rpartial) {
-        nodes[rpartial.loc] = rpartial;
-    }
-    const sel = lnudge ? selectEnd(left.path, state.top) : selStart(left.path, { type: 'id', end: leftCursor });
-    if (!sel) return;
-
-    let selection: NodeSelection = { start: sel };
-
-    let nextLoc = undefined as undefined | number;
-
-    const lparent = parentLoc(left.path);
-    const rparent = parentLoc(right.path);
-    if (lparent === rparent) {
-        const pnode = nodes[lparent];
-        if (pnode?.type === 'list' && pnode.kind !== 'smooshed') {
-            const i1 = pnode.children.indexOf(lastChild(left.path));
-            const i2 = pnode.children.indexOf(lastChild(right.path));
-            if (i2 === i1 + 1) {
-                const children = pnode.children.slice();
-                nextLoc = state.top.nextLoc;
-                const loc = nextLoc++;
-                const two = children.splice(i1, 2, loc);
-                nodes[loc] = { type: 'list', kind: 'smooshed', children: two, loc };
-                nodes[pnode.loc] = { ...pnode, children };
-                selection = applySelUp(selection, { type: 'addparent', loc: two[0], parent: loc });
-                selection = applySelUp(selection, { type: 'addparent', loc: two[1], parent: loc });
-            }
-        }
-    }
-
-    return { nodes, selection, nextLoc };
 };
 
 export const handleWrapsTooMuch = (state: TestState, kind: ListKind<any>): Update => {
