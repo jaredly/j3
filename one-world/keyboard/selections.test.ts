@@ -153,7 +153,18 @@ test('smooshed covered after', () => {
     });
 });
 
-test.skip('smooshed covered', () => {
+test('smooshed and spaced', () => {
+    let state = asTop(round([id('before', 1), spaced([id('lol'), smoosh([id('hello'), id('+', 2)])])]), idc(3), idc(1));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses[';;0,2']).toEqual({
+        cursors: [],
+        highlight: {
+            type: 'full',
+        },
+    });
+});
+
+test('smooshed covered', () => {
     let state = asTop(round([id('before', 1), smoosh([id('hello'), id('+', 2)])]), idc(3), idc(1));
     const statuses = getSelectionStatuses(state.sel, state.top);
     expect(statuses).toEqual({
@@ -166,6 +177,9 @@ test.skip('smooshed covered', () => {
         ';;0,1': {
             cursors: [idc(3)],
             highlight: { type: 'id', spans: [{ start: 3 }] },
+        },
+        ';;0,2,4': {
+            cursors: [idc(1)],
         },
     });
 });

@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Node, childLocs } from '../shared/cnodes';
+import { List, Node, childLocs } from '../shared/cnodes';
 import { isTag, selectEnd, selectStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import {
@@ -145,17 +145,17 @@ export const argify = (start: SelStart, sel: SelStart, top: Top): [SelStart, Sel
     return [start1, sel1];
 };
 
-export const isAtStart = (cursor: Cursor, node: Node) => {
-    if (cursor.type === 'id' && node.type === 'id') return cursor.end === 0;
-    if (cursor.type === 'list') return cursor.where === 'before';
-    return false;
-};
+// export const isAtStart = (cursor: Cursor, node: Node) => {
+//     if (cursor.type === 'id' && node.type === 'id') return cursor.end === 0;
+//     if (cursor.type === 'list') return cursor.where === 'before';
+//     return false;
+// };
 
-export const isAtEnd = (cursor: Cursor, node: Node) => {
-    if (cursor.type === 'id' && node.type === 'id') return cursor.end === splitGraphemes(node.text).length;
-    if (cursor.type === 'list') return cursor.where === 'after';
-    return false;
-};
+// export const isAtEnd = (cursor: Cursor, node: Node) => {
+//     if (cursor.type === 'id' && node.type === 'id') return cursor.end === splitGraphemes(node.text).length;
+//     if (cursor.type === 'list') return cursor.where === 'after';
+//     return false;
+// };
 
 export const getSelectionStatuses = (selection: NodeSelection, top: Top): SelectionStatuses => {
     if (!selection.end) {
@@ -283,79 +283,62 @@ export const orderSelections = (one: SelStart, two: SelStart, top: Top): Selecti
     const statuses: SelectionStatuses = {};
     neighbors.forEach((n) => (statuses[pathKey(n.path)] = { cursors: [], highlight: n.hl }));
 
-    let noleft = false;
-    let noright = false;
-    const lnode = top.nodes[lastChild(left.path)];
-    const rnode = top.nodes[lastChild(right.path)];
-
     const lp = parentPath(left.path);
     const rp = parentPath(right.path);
 
-    const sameParent = lastChild(lp) === lastChild(rp);
-
-    if (isAtStart(left.cursor, lnode)) {
-        const lparent = top.nodes[lastChild(lp)];
-        if (lparent.type === 'list' && (lparent.kind === 'smooshed' || lparent.kind === 'spaced') && lparent.children[0] === lastChild(left.path)) {
-            const last = lparent.children[lparent.children.length - 1];
-            if (sameParent) {
-                if (isAtEnd(right.cursor, rnode) && last === lastChild(right.path)) {
-                    noleft = true;
-                    noright = true;
-                    statuses[pathKey(lp)] = { cursors: [], highlight: { type: 'full' } };
-                    lparent.children.forEach((child) => {
-                        const k = pathKey(pathWithChildren(lp, child));
-                        if (statuses[k]) {
-                            if (!statuses[k].cursors.length) {
-                                delete statuses[k];
-                            } else {
-                                statuses[k].highlight = undefined;
-                            }
-                        }
-                    });
-                }
-            } else {
-                if (statuses[pathKey(pathWithChildren(lp, last))]?.highlight?.type === 'full') {
-                    noleft = true;
-                    statuses[pathKey(lp)] = { cursors: [], highlight: { type: 'full' } };
-                    lparent.children.forEach((child) => {
-                        const k = pathKey(pathWithChildren(lp, child));
-                        if (statuses[k]) {
-                            if (!statuses[k].cursors.length) {
-                                delete statuses[k];
-                            } else {
-                                statuses[k].highlight = undefined;
-                            }
-                        }
-                    });
-                }
-            }
-        }
-    }
-
-    if (!noright) {
-        if (isAtEnd(right.cursor, rnode)) {
-            const rparent = top.nodes[lastChild(rp)];
-            if (rparent.type === 'list') {
-                const f = rparent.children[0];
-            }
-        }
-    }
-
     statuses[left.key] = {
         cursors: [left.cursor],
-        highlight: noleft
-            ? undefined
-            : cursorHighlight(top.nodes[lastChild(left.path)], left.cursor, undefined, inside?.side === 'before' ? inside.at : null),
+        highlight: cursorHighlight(top.nodes[lastChild(left.path)], left.cursor, undefined, inside?.side === 'before' ? inside.at : null),
     };
 
     statuses[right.key] = {
         cursors: [right.cursor],
-        highlight: noright
-            ? undefined
-            : cursorHighlight(top.nodes[lastChild(right.path)], undefined, right.cursor, inside?.side === 'after' ? inside.at : null),
+        highlight: cursorHighlight(top.nodes[lastChild(right.path)], undefined, right.cursor, inside?.side === 'after' ? inside.at : null),
     };
 
+    higlightSmooshy(parentPath(left.path), top, statuses);
+    higlightSmooshy(parentPath(right.path), top, statuses);
+
     return statuses;
+};
+
+const checkSmooshy = (path: Path, top: Top, statuses: SelectionStatuses): false | List<number> => {
+    const node = top.nodes[lastChild(path)];
+    if (node && hasNoBraces(node)) {
+        const f = node.children[0];
+        const l = node.children[node.children.length - 1];
+        if (statuses[pathKey(pathWithChildren(path, f))]?.highlight?.type !== 'full') {
+            return false;
+        }
+        if (l !== f && statuses[pathKey(pathWithChildren(path, l))]?.highlight?.type !== 'full') {
+            return false;
+        }
+        return node;
+    }
+    return false;
+};
+
+const higlightSmooshy = (path: Path, top: Top, statuses: SelectionStatuses) => {
+    const k = pathKey(path);
+    if (statuses[k]?.highlight?.type === 'full') return;
+    const node = checkSmooshy(path, top, statuses);
+    if (!node) return;
+    statuses[k] = { cursors: [], highlight: { type: 'full' } };
+    node.children.forEach((child) => {
+        const k = pathKey(pathWithChildren(path, child));
+        if (statuses[k]) {
+            if (!statuses[k].cursors.length) {
+                delete statuses[k];
+            } else {
+                statuses[k].highlight = undefined;
+            }
+        }
+    });
+    higlightSmooshy(parentPath(path), top, statuses);
+};
+
+const hasNoBraces = (node: Node): node is List<number> => {
+    return node.type === 'list' && (node.kind === 'smooshed' || node.kind === 'spaced');
 };
 
 export type Neighbor = { path: Path; hl: Highlight };
