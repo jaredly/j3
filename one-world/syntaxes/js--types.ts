@@ -11,11 +11,13 @@ export type Expr =
     | { type: 'attribute'; target: Expr; attribute: Id<Loc>; src: Src }
     | { type: 'index'; target: Expr; index: Expr; src: Src }
     | { type: 'arrow'; args: Id<Loc>[]; body: Expr | Stmt[]; src: Src }
+    | { type: 'new'; inner: Expr; src: Src }
     | { type: 'bop'; left: Expr; op: string; right: Expr; src: Src };
 
 export type Stmt =
-    | { type: 'if'; cond: Expr; yes: Stmt[]; no: Stmt[]; src: Src }
+    | { type: 'if'; cond: Expr; yes: Stmt[]; no: null | Stmt[]; src: Src }
     | { type: 'return'; value: Expr | null; src: Src }
+    | { type: 'throw'; value: Expr; src: Src }
     | { type: 'let'; name: Id<Loc>; value: Expr; src: Src }
     | { type: 'for'; init: Stmt; cond: Expr; update: Expr; src: Src; body: Stmt[] }
     | { type: 'expr'; expr: Expr; src: Src };

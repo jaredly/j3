@@ -23,6 +23,18 @@ const stmts: Record<string, Rule<Stmt>> = {
         value: ctx.ref<Expr>('value'),
         src,
     })),
+    if: tx(seq(kwd('if'), ref('expr', 'cond'), ref('block', 'yes'), opt(seq(kwd('else'), ref('block', 'no')))), (ctx, src) => ({
+        type: 'if',
+        cond: ctx.ref<Expr>('cond'),
+        yes: ctx.ref<Stmt[]>('yes'),
+        no: ctx.ref<null | Stmt[]>('no'),
+        src,
+    })),
+    throw: tx<Stmt>(seq(kwd('throw'), ref('expr ', 'value')), (ctx, src) => ({
+        type: 'throw',
+        value: ctx.ref<Expr>('value'),
+        src,
+    })),
 };
 
 export type Suffix =
@@ -124,6 +136,11 @@ const rules = {
             type: 'arrow',
             args: ctx.ref<Id<Loc>[]>('args'),
             body: ctx.ref<Expr | Stmt[]>('body'),
+            src,
+        })),
+        tx<Expr>(seq(kwd('new'), ref('expr', 'inner')), (ctx, src) => ({
+            type: 'new',
+            inner: ctx.ref<Expr>('inner'),
             src,
         })),
         tx<Expr>(seq(ref('expr', 'left'), ref('bop', 'op'), ref('expr', 'right')), (ctx, src) => ({
