@@ -101,7 +101,7 @@ test('text simple across spans', () => {
     });
 });
 
-test.only('id covered', () => {
+test('id covered', () => {
     let state = asTop(id('hello', true), idc(0), idc(5));
     const statuses = getSelectionStatuses(state.sel, state.top);
     expect(statuses).toEqual({
@@ -110,6 +110,62 @@ test.only('id covered', () => {
             highlight: {
                 type: 'full',
             },
+        },
+    });
+});
+
+test('smooshed covered', () => {
+    let state = asTop(smoosh([id('hello', 1), id('mid'), id('+', 2)]), idc(0), idc(1));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses).toEqual({
+        ';;0': {
+            cursors: [],
+            highlight: {
+                type: 'full',
+            },
+        },
+        ';;0,1': {
+            cursors: [idc(0)],
+        },
+        ';;0,3': {
+            cursors: [idc(1)],
+        },
+    });
+});
+
+test('smooshed covered after', () => {
+    let state = asTop(round([smoosh([id('hello', 1), id('+')]), id('before', 2)]), idc(0), idc(2));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses).toEqual({
+        ';;0,1': {
+            cursors: [],
+            highlight: {
+                type: 'full',
+            },
+        },
+        ';;0,1,2': {
+            cursors: [idc(0)],
+        },
+        ';;0,4': {
+            cursors: [idc(2)],
+            highlight: { type: 'id', spans: [{ end: 2 }] },
+        },
+    });
+});
+
+test.skip('smooshed covered', () => {
+    let state = asTop(round([id('before', 1), smoosh([id('hello'), id('+', 2)])]), idc(3), idc(1));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses).toEqual({
+        ';;0,2': {
+            cursors: [],
+            highlight: {
+                type: 'full',
+            },
+        },
+        ';;0,1': {
+            cursors: [idc(3)],
+            highlight: { type: 'id', spans: [{ start: 3 }] },
         },
     });
 });

@@ -12,7 +12,10 @@
 - [x] if not single, splice in if you can
 
 - [ ] multiselect, if we're selecting a ~whole "spaced, indicate that. even if the start/end are "inside". we can ~nudge them.
-  - sameeee with an ID, and a smooshed.
+  - [x] sameeee with an ID
+  - [ ] and a smooshed.
+
+- [x] we've got a weird jittery thing
 
 # General Game Plan
 of getting something useful working

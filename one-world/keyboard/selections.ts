@@ -145,6 +145,18 @@ export const argify = (start: SelStart, sel: SelStart, top: Top): [SelStart, Sel
     return [start1, sel1];
 };
 
+export const isAtStart = (cursor: Cursor, node: Node) => {
+    if (cursor.type === 'id' && node.type === 'id') return cursor.end === 0;
+    if (cursor.type === 'list') return cursor.where === 'before';
+    return false;
+};
+
+export const isAtEnd = (cursor: Cursor, node: Node) => {
+    if (cursor.type === 'id' && node.type === 'id') return cursor.end === splitGraphemes(node.text).length;
+    if (cursor.type === 'list') return cursor.where === 'after';
+    return false;
+};
+
 export const getSelectionStatuses = (selection: NodeSelection, top: Top): SelectionStatuses => {
     if (!selection.end) {
         const { cursor, key } = selection.start;
@@ -271,14 +283,76 @@ export const orderSelections = (one: SelStart, two: SelStart, top: Top): Selecti
     const statuses: SelectionStatuses = {};
     neighbors.forEach((n) => (statuses[pathKey(n.path)] = { cursors: [], highlight: n.hl }));
 
+    let noleft = false;
+    let noright = false;
+    const lnode = top.nodes[lastChild(left.path)];
+    const rnode = top.nodes[lastChild(right.path)];
+
+    const lp = parentPath(left.path);
+    const rp = parentPath(right.path);
+
+    const sameParent = lastChild(lp) === lastChild(rp);
+
+    if (isAtStart(left.cursor, lnode)) {
+        const lparent = top.nodes[lastChild(lp)];
+        if (lparent.type === 'list' && (lparent.kind === 'smooshed' || lparent.kind === 'spaced') && lparent.children[0] === lastChild(left.path)) {
+            const last = lparent.children[lparent.children.length - 1];
+            if (sameParent) {
+                if (isAtEnd(right.cursor, rnode) && last === lastChild(right.path)) {
+                    noleft = true;
+                    noright = true;
+                    statuses[pathKey(lp)] = { cursors: [], highlight: { type: 'full' } };
+                    lparent.children.forEach((child) => {
+                        const k = pathKey(pathWithChildren(lp, child));
+                        if (statuses[k]) {
+                            if (!statuses[k].cursors.length) {
+                                delete statuses[k];
+                            } else {
+                                statuses[k].highlight = undefined;
+                            }
+                        }
+                    });
+                }
+            } else {
+                if (statuses[pathKey(pathWithChildren(lp, last))]?.highlight?.type === 'full') {
+                    noleft = true;
+                    statuses[pathKey(lp)] = { cursors: [], highlight: { type: 'full' } };
+                    lparent.children.forEach((child) => {
+                        const k = pathKey(pathWithChildren(lp, child));
+                        if (statuses[k]) {
+                            if (!statuses[k].cursors.length) {
+                                delete statuses[k];
+                            } else {
+                                statuses[k].highlight = undefined;
+                            }
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    if (!noright) {
+        if (isAtEnd(right.cursor, rnode)) {
+            const rparent = top.nodes[lastChild(rp)];
+            if (rparent.type === 'list') {
+                const f = rparent.children[0];
+            }
+        }
+    }
+
     statuses[left.key] = {
         cursors: [left.cursor],
-        highlight: cursorHighlight(top.nodes[lastChild(left.path)], left.cursor, undefined, inside?.side === 'before' ? inside.at : null),
+        highlight: noleft
+            ? undefined
+            : cursorHighlight(top.nodes[lastChild(left.path)], left.cursor, undefined, inside?.side === 'before' ? inside.at : null),
     };
 
     statuses[right.key] = {
         cursors: [right.cursor],
-        highlight: cursorHighlight(top.nodes[lastChild(right.path)], undefined, right.cursor, inside?.side === 'after' ? inside.at : null),
+        highlight: noright
+            ? undefined
+            : cursorHighlight(top.nodes[lastChild(right.path)], undefined, right.cursor, inside?.side === 'after' ? inside.at : null),
     };
 
     return statuses;
