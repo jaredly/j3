@@ -94,3 +94,16 @@ test('splice it up', () => {
     );
     check(state, round([id('hello'), id('a', 1), id('b', 2)]), idc(0), idc(1));
 });
+
+test('pasting spaced...', () => {
+    let state = asTop(round([id('hello'), id('', true)]), idc(0));
+    validate(state);
+    state = applyUpdate(
+        state,
+        handlePaste(state, {
+            single: false,
+            tree: spaced([id('a'), id('b')]),
+        }),
+    );
+    check(state, round([id('hello'), spaced([id('a', 1), id('b', 2)])]), idc(0), idc(1));
+});

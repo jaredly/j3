@@ -161,8 +161,8 @@ export const handlePaste = (state: TestState, values: CopiedValues): void | Upda
     if (node.type === 'id') {
         if (node.text === '') {
             const rootNode = update.nodes[root]!;
-            if (!values.single && rootNode.type === 'list') {
-                const pnode = state.top.nodes[parentLoc(sel.start.path)];
+            const pnode = state.top.nodes[parentLoc(sel.start.path)];
+            if (!values.single && rootNode.type === 'list' && pnode?.type === 'list' && rootNode.kind === pnode.kind) {
                 const upnode = replaceIn(pnode, node.loc, ...rootNode.children);
                 update.nodes[upnode.loc] = upnode;
 
