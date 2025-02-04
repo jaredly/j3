@@ -22,6 +22,12 @@ const cursorHighlight = (node: Node, left?: Cursor, right?: Cursor, inside: numb
     if (node.type === 'id') {
         if (left && left.type !== 'id') throw new Error(`id must have id cursor`);
         if (right && right.type !== 'id') throw new Error(`id must have id cursor`);
+        const start = left?.end ?? 0;
+        const total = splitGraphemes(node.text).length;
+        const end = right?.end ?? total;
+        if (start === 0 && end === total) {
+            return { type: 'full' };
+        }
         return { type: 'id', spans: [{ start: left?.end, end: right?.end }] };
     }
 

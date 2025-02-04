@@ -101,6 +101,19 @@ test('text simple across spans', () => {
     });
 });
 
+test.only('id covered', () => {
+    let state = asTop(id('hello', true), idc(0), idc(5));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses).toEqual({
+        ';;0': {
+            cursors: [idc(0), idc(5)],
+            highlight: {
+                type: 'full',
+            },
+        },
+    });
+});
+
 test('text into', () => {
     let state = asTop(
         text([tspan('before'), { type: 'embed', item: round([id('over'), id('inner', 2), id('yall')]) }, tspan('after')], 1),

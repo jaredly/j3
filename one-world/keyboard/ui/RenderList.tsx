@@ -276,7 +276,7 @@ export const RenderList = (
     switch (node.kind) {
         case 'smooshed':
             return (
-                <span style={style} ref={ref}>
+                <span style={style} ref={ref} onMouseMove={(evt) => evt.stopPropagation()} onMouseDown={(evt) => evt.stopPropagation()}>
                     {children}
                 </span>
             );
