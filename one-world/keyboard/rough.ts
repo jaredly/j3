@@ -167,13 +167,13 @@ export const collapseAdjacentIDs = (flat: Flat[], selection: { node: Node; curso
             if (prev === selection.node) {
                 selection = {
                     ...selection,
-                    cursor: selection.cursor.type === 'id' ? { ...selection.cursor, text: undefined } : selection.cursor,
+                    cursor: selection.cursor.type === 'id' ? { ...selection.cursor } : selection.cursor,
                     node: res[at] as Id<number>,
                 };
             } else if (item === selection.node && selection.cursor.type === 'id') {
                 selection = {
                     node: res[at] as Id<number>,
-                    cursor: { ...selection.cursor, text: undefined, end: selection.cursor.end + splitGraphemes(prev.text).length },
+                    cursor: { ...selection.cursor, end: selection.cursor.end + splitGraphemes(prev.text).length },
                 };
             }
             return;
@@ -304,6 +304,18 @@ export function flatToUpdateNew(
     };
 }
 
+export const updateNodes = (nodes: Nodes, update: Update['nodes']) => {
+    nodes = { ...nodes };
+    Object.entries(update).forEach(([k, v]) => {
+        if (v == null) {
+            delete nodes[+k];
+        } else {
+            nodes[+k] = v;
+        }
+    });
+    return nodes;
+};
+
 export const fixSelection = (sel: SelStart, nodes: Update['nodes'], top: Top): SelStart => {
     if (sel.cursor.type !== 'list' || sel.cursor.where === 'inside') return sel;
     const loc = lastChild(sel.path);
@@ -314,7 +326,7 @@ export const fixSelection = (sel: SelStart, nodes: Update['nodes'], top: Top): S
     const parent = nodes[ploc] ?? top.nodes[ploc];
     if (richNode(parent)) {
         if (node.spans.length === 0) return { ...sel, cursor: { type: 'list', where: 'inside' } };
-        const utop = { ...top, nodes: { ...top.nodes, ...nodes } };
+        const utop: Top = { ...top, nodes: updateNodes(top.nodes, nodes) };
         if (sel.cursor.where === 'before') {
             return spanStart(node.spans[0], 0, sel.path, utop, false) ?? sel;
         } else {

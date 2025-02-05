@@ -1,11 +1,12 @@
 // let's test some operations
 
-import { applyUpdate } from './applyUpdate';
+import { applySel, applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
-import { handleNav } from './handleNav';
-import { asTop, bullet, checks, controlc, id, idc, lisp, list, listc, rich, round, smoosh, text, textc, tspan } from './test-utils';
+import { handleNav, selUpdate } from './handleNav';
+import { SelStart } from './handleShiftNav';
+import { asTop, bullet, checks, controlc, id, idc, lisp, list, listc, rich, round, smoosh, TestState, text, textc, tspan } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 
 test('text before', () => {
@@ -71,7 +72,7 @@ test('text insert', () => {
 test('text insert - commit text changes', () => {
     let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 2));
     state = applyUpdate(state, handleKey(state, 'l', lisp)!);
-    state = applyUpdate(state, handleNav('ArrowRight', state));
+    state = applySel(state, handleNav('ArrowRight', state));
     check(state, text([{ type: 'text', text: 'hil' }], true), listc('after'));
 });
 
@@ -79,19 +80,19 @@ test('text insert - commit text changes', () => {
 
 test('text nav', () => {
     let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 2));
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(state, text([{ type: 'text', text: 'hi' }], true), textc(0, 1));
 });
 
 test('text nav right', () => {
     let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 0));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, text([{ type: 'text', text: 'hi' }], true), textc(0, 1));
 });
 
 test('text nav past end', () => {
     let state = asTop(text([{ type: 'text', text: 'hi' }], true), textc(0, 2));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, text([{ type: 'text', text: 'hi' }], true), listc('after'));
 });
 
@@ -104,7 +105,7 @@ test('text nav past end - rich', () => {
         ]),
         textc(0, 2),
     );
-    state = applyUpdate(state, handleNav('ArrowRight', state));
+    state = applySel(state, handleNav('ArrowRight', state));
     check(
         state,
         list({ type: 'plain' })([
@@ -127,7 +128,7 @@ test('text nav between spans', () => {
         ),
         textc(0, 2),
     );
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(
         state,
         text(
@@ -152,7 +153,7 @@ test('text nav between span and embed', () => {
         ),
         textc(0, 2),
     );
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(
         state,
         text([
@@ -165,19 +166,19 @@ test('text nav between span and embed', () => {
 
 test('back into text', () => {
     let state = asTop(smoosh([text([{ type: 'text', text: 'hi' }]), id('ho', true)]), idc(0));
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(state, smoosh([text([{ type: 'text', text: 'hi' }], true), id('ho')]), textc(0, 2));
 });
 
 test('back into text inside', () => {
     let state = asTop(smoosh([text([]), id('ho', true)]), idc(0));
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(state, smoosh([text([], true), id('ho')]), listc('inside'));
 });
 
 test('back into text embed', () => {
     let state = asTop(smoosh([text([{ type: 'embed', item: id('hi') }]), id('ho', true)]), idc(0));
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(state, smoosh([text([{ type: 'embed', item: id('hi') }], true), id('ho')]), textc(0, 1));
 });
 
@@ -185,31 +186,31 @@ test('back into text embed', () => {
 
 test('nav right text (list) / after', () => {
     let state = asTop(smoosh([text([{ type: 'embed', item: id('hi') }], true), id('ho')]), listc('after'));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, smoosh([text([{ type: 'embed', item: id('hi') }]), id('ho', true)]), idc(1));
 });
 
 test('nav right text (list) / before', () => {
     let state = asTop(text([{ type: 'text', text: 'hi' }], true), listc('before'));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, text([{ type: 'text', text: 'hi' }], true), textc(0, 0));
 });
 
 test('nav right text (list) / before - embed', () => {
     let state = asTop(text([{ type: 'text', text: 'hi' }], true), listc('before'));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, text([{ type: 'text', text: 'hi' }], true), textc(0, 0));
 });
 
 test('nav right text (list) / inside', () => {
     let state = asTop(text([], true), listc('inside'));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, text([], true), listc('after'));
 });
 
 test('nav right text (list) / before / empty', () => {
     let state = asTop(text([], true), listc('before'));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, text([], true), listc('inside'));
 });
 
@@ -217,19 +218,19 @@ test('nav right text (list) / before / empty', () => {
 
 test('nav left text (list) / before', () => {
     let state = asTop(smoosh([id('hi'), text([], true)]), listc('before'));
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(state, smoosh([id('hi', true), text([])]), idc(1));
 });
 
 test('nav left text (list) / after - empty', () => {
     let state = asTop(smoosh([id('hi'), text([], true)]), listc('after'));
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(state, smoosh([id('hi'), text([], true)]), listc('inside'));
 });
 
 test('nav left text (list) / after', () => {
     let state = asTop(text([{ type: 'text', text: 'ho' }], true), listc('after'));
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(state, text([{ type: 'text', text: 'ho' }], true), textc(0, 2));
 });
 
@@ -244,7 +245,7 @@ test('nav left text (text) ', () => {
         ),
         textc(1, 0),
     );
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(
         state,
         text(
@@ -269,7 +270,7 @@ test('nav left text (text) ', () => {
         ),
         textc(1, 0),
     );
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(
         state,
         text([
@@ -282,7 +283,7 @@ test('nav left text (text) ', () => {
 
 test('nav left text (text) first ', () => {
     let state = asTop(text([{ type: 'text', text: 'ho' }], true), textc(0, 0));
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(state, text([{ type: 'text', text: 'ho' }], true), listc('before'));
 });
 
@@ -308,19 +309,19 @@ test('embed at span star', () => {
 
 test('right out of embed', () => {
     let state = asTop(text([tspan('a'), { type: 'embed', item: id('ho') }, tspan('b')], true), textc(1, 1));
-    state = applyUpdate(state, handleNav('ArrowRight', state));
+    state = applyUpdate(state, selUpdate(handleNav('ArrowRight', state)));
     check(state, text([tspan('a'), { type: 'embed', item: id('ho') }, tspan('b')], true), textc(2, 1));
 });
 
 test('right out of embed', () => {
     let state = asTop(text([tspan('a'), { type: 'embed', item: id('ho') }], true), textc(1, 1));
-    state = applyUpdate(state, handleNav('ArrowRight', state));
+    state = applyUpdate(state, selUpdate(handleNav('ArrowRight', state)));
     check(state, text([tspan('a'), { type: 'embed', item: id('ho') }], true), listc('after'));
 });
 
 test('left into embed', () => {
     let state = asTop(text([tspan('a'), { type: 'embed', item: id('ho') }, tspan('b')], true), textc(1, 1));
-    state = applyUpdate(state, handleNav('ArrowLeft', state));
+    state = applyUpdate(state, selUpdate(handleNav('ArrowLeft', state)));
     check(state, text([tspan('a'), { type: 'embed', item: id('ho', true) }, tspan('b')]), idc(2));
 });
 
@@ -460,10 +461,16 @@ test('alt-left in text', () => {
     check(state, text([tspan('one two three')], true), textc(0, 4));
 });
 
-test.only('shift-alt-left in text', () => {
+test('shift-alt-left in text', () => {
     let state = asTop(text([tspan('one two three')], true), textc(0, 8));
     state = applyUpdate(state, keyUpdate(state, 'ArrowLeft', { alt: true, shift: true }));
     check(state, text([tspan('one two three')], true), textc(0, 8), textc(0, 4));
+});
+
+test('getting out of an embed', () => {
+    let state = asTop(text([tspan('hi'), { type: 'embed', item: round([id('a')], true) }, tspan('ho')]), listc('after'));
+    state = applyUpdate(state, keyUpdate(state, '}', {}));
+    check(state, text([tspan('hi'), { type: 'embed', item: round([id('a')]) }, tspan('ho')], true), textc(1, 1));
 });
 
 // TODO delete rich in table

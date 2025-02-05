@@ -3,7 +3,7 @@ import { List, isRich } from '../../shared/cnodes';
 import { selUpdate } from '../handleNav';
 import { interleaveF } from '../interleave';
 import { TestState } from '../test-utils';
-import { SelectionStatuses, Path, ListWhere, parentPath, Top } from '../utils';
+import { SelectionStatuses, Path, ListWhere, parentPath, Top, TmpText } from '../utils';
 import { lightColor } from './colors';
 import { Cursor } from './cursor';
 import { RCtx, closestVisibleList, RenderNode, hlColor, Section, braceColorHl, braceColor, opener, closer } from './RenderNode';
@@ -276,7 +276,7 @@ export const RenderList = (
     switch (node.kind) {
         case 'smooshed':
             return (
-                <span style={style} ref={ref}>
+                <span style={style} ref={ref} onMouseMove={(evt) => evt.stopPropagation()} onMouseDown={(evt) => evt.stopPropagation()}>
                     {children}
                 </span>
             );
@@ -301,7 +301,7 @@ export const RenderList = (
                             evt.stopPropagation();
                             const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                             if (sel) {
-                                ctx.drag.move(sel);
+                                ctx.drag.move(sel, evt.ctrlKey, evt.altKey);
                             }
                         }
                     }}
@@ -331,7 +331,7 @@ export const RenderList = (
                             evt.stopPropagation();
                             const sel = posInList(nextParent, { x: evt.clientX, y: evt.clientY }, ctx.refs, top);
                             if (sel) {
-                                ctx.drag.move(sel);
+                                ctx.drag.move(sel, evt.ctrlKey, evt.altKey);
                             }
                         }
                     }}
@@ -355,7 +355,7 @@ export const RenderList = (
                     {node.forceMultiline ? (
                         <div style={{ ...style, display: 'flex', width: 'fit-content', flexDirection: 'column', marginLeft: 16 }}>{children}</div>
                     ) : (
-                        interleaveF(children, (i) => <span key={'sep' + i}>{node.kind === 'curly' ? ';' : ','}&nbsp;</span>)
+                        interleaveF(children, (i) => <span key={'sep' + i}>{ctx.config.sep[node.kind as 'round'] ?? ', '}</span>)
                     )}
                     {/* {has('end') ? (
                                 <span style={{ backgroundColor: hl }}>{closer[node.kind]}</span>

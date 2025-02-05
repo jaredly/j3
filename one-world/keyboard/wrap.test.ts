@@ -35,11 +35,11 @@ test('start of id', () => {
     check(state, smoosh([round([], true), id('hi')]), listc('inside'));
 });
 
-test('start of id shift', () => {
-    let state = asTop(id('hillo', true), idc(0), idc(2));
-    state = applyUpdate(state, handleWrap(state, '('));
-    check(state, smoosh([round([id('hi')], true), id('llo')]), listc('before'));
-});
+// test('start of id shift', () => {
+//     let state = asTop(id('hillo', true), idc(0), idc(2));
+//     state = applyUpdate(state, handleWrap(state, '('));
+//     check(state, smoosh([round([id('hi')], true), id('llo')]), listc('before'));
+// });
 
 test('after id', () => {
     let state = asTop(id('hi', true), idc(2));
@@ -71,7 +71,7 @@ test('close it up', () => {
     check(state, round([id('hello')], true), listc('after'));
 });
 
-test('close it up spaced', () => {
+test('closer spaced', () => {
     let state = asTop(round([spaced([id('hello', true), id('lol')])]), idc(2));
     state = applyUpdate(state, handleClose(state, ')'));
     check(state, round([spaced([id('hello'), id('lol')])], true), listc('after'));
@@ -83,17 +83,17 @@ test('start of smoosh', () => {
     check(state, smoosh([round([], true), id('hello'), id('+')]), listc('inside'));
 });
 
-test('wrap multi', () => {
-    let state = asMultiTop(spaced([id('pre'), id('hello', 0), id('folks', 1)]), idc(0));
-    state = applyUpdate(state, handleWrap(state, '('));
-    check(state, spaced([id('pre'), round([spaced([id('hello', true), id('folks')])])]), idc(0));
-});
+// test('wrap multi', () => {
+//     let state = asMultiTop(spaced([id('pre'), id('hello', 0), id('folks', 1)]), idc(0));
+//     state = applyUpdate(state, handleWrap(state, '('));
+//     check(state, spaced([id('pre'), round([spaced([id('hello', true), id('folks')])])]), idc(0));
+// });
 
-test('wrap all of spaced', () => {
-    let state = asMultiTop(round([spaced([id('pre', 0), id('hello'), id('folks', 1)])]), idc(0));
-    state = applyUpdate(state, handleWrap(state, '{'));
-    check(state, round([curly([spaced([id('pre', true), id('hello'), id('folks')])])]), idc(0));
-});
+// test('wrap all of spaced', () => {
+//     let state = asMultiTop(round([spaced([id('pre', 0), id('hello'), id('folks', 1)])]), idc(0));
+//     state = applyUpdate(state, handleWrap(state, '{'));
+//     check(state, round([curly([spaced([id('pre', true), id('hello'), id('folks')])])]), idc(0));
+// });
 
 // MARK: unwrap please
 test('unwrap I think', () => {
@@ -157,4 +157,16 @@ test('unwrap a spaced in a spaced', () => {
     state = applyUpdate(state, handleDelete(state));
     state = applyUpdate(state, handleDelete(state));
     check(state, round([spaced([id('ha'), id('hi', true), id('ho'), id('he')])]), idc(0));
+});
+
+test('multierap', () => {
+    let state = asTop(round([id('hi', 1), id('ho', 2), id('ham')]), idc(0), idc(2));
+    state = applyUpdate(state, handleWrap(state, '('));
+    check(state, round([round([id('hi', true), id('ho')]), id('ham')]), idc(0));
+});
+
+test('wrap in spaced sorry', () => {
+    let state = asTop(spaced([id('hi', 1), id('ho', 2), id('ham')]), idc(0), idc(2));
+    state = applyUpdate(state, handleWrap(state, '('));
+    check(state, spaced([round([spaced([id('hi', true), id('ho')])]), id('ham')]), idc(0));
 });

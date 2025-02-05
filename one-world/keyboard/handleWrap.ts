@@ -1,29 +1,18 @@
-import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { change } from '../../web/ide/infer/mini/union_find';
-import { Collection, Id, List, ListKind, Node, Nodes } from '../shared/cnodes';
+import { Collection, List, ListKind, Node, Nodes } from '../shared/cnodes';
+import { shape } from '../shared/shape';
 import { cursorSides } from './cursorSides';
+import { idText } from './cursorSplit';
 import { findParent } from './flatenate';
-import { justSel, selectStart, spanStart } from './handleNav';
-import { multiSelChildren, SelStart } from './handleShiftNav';
+import { justSel, selectStart } from './handleNav';
+import { SelStart } from './handleShiftNav';
 import { handleTextText } from './handleTextText';
+import { KeyAction } from './keyActionToUpdate';
+import { partitionNeighbors } from './multi-change';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
+import { collectSelectedNodes, getCurrent, orderSelections } from './selections';
 import { TestState } from './test-utils';
-import {
-    CollectionCursor,
-    Current,
-    Cursor,
-    IdCursor,
-    lastChild,
-    ListCursor,
-    parentPath,
-    Path,
-    pathWithChildren,
-    selStart,
-    Top,
-    Update,
-} from './utils';
-import { getCurrent } from './selections';
+import { CollectionCursor, Current, Cursor, lastChild, parentPath, Path, pathWithChildren, selStart, Top, Update } from './utils';
 
 export const wrapKind = (key: string): ListKind<any> | void => {
     switch (key) {
@@ -93,7 +82,7 @@ export const handleListWrap = (top: Top, path: Path, node: Collection<number>, c
 
 export const handleIdWrap = (top: Top, current: Extract<Current, { type: 'id' }>, kind: ListKind<number>): Update | void => {
     const { left, right } = cursorSides(current.cursor, current.start);
-    const text = current.cursor.text ?? splitGraphemes(current.node.text);
+    const text = idText(top.tmpText, current.cursor, current.node);
     // Wrap the whole thing
     if (left === 0 && right === text.length) {
         return wrapNode(top, current.path, current.node, kind);
@@ -173,10 +162,11 @@ const findListParent = (kind: ListKind<number>, path: Path, top: Top) => {
     }
 };
 
-const findCurlyClose = (path: Path, top: Top): SelStart | void => {
+const findCurlyClose = (path: Path, top: Top, notListTop: boolean): SelStart | void => {
     for (let i = path.children.length - 1; i >= 0; i--) {
         const node = top.nodes[path.children[i]];
-        if (node.type === 'list' && node.kind === 'curly') {
+        // console.log('at', i, node.loc, path);
+        if (node.type === 'list' && node.kind === 'curly' && (!notListTop || i < path.children.length - 1)) {
             return selStart({ ...path, children: path.children.slice(0, i + 1) }, { type: 'list', where: 'after' });
         }
         if (node.type === 'text' && i < path.children.length - 1) {
@@ -197,7 +187,8 @@ export const handleClose = (state: TestState, key: string): Update | void => {
     const { path, cursor } = current;
     // soooo there's a special case, for text curly
     if (kind === 'curly') {
-        const sel = findCurlyClose(cursor.type === 'list' && cursor.where !== 'inside' ? parentPath(path) : path, state.top);
+        const sel = findCurlyClose(path, state.top, cursor.type === 'list' && cursor.where !== 'inside');
+        // console.log('aaa', sel, cursor, path);
         return sel ? { nodes: {}, selection: { start: sel } } : sel;
     }
     const parent = findListParent(kind, cursor.type === 'list' && cursor.where !== 'inside' ? parentPath(path) : path, state.top);
@@ -205,68 +196,104 @@ export const handleClose = (state: TestState, key: string): Update | void => {
     return justSel(parent.path, { type: 'list', where: 'after' });
 };
 
-const handleWrapMulti = (state: TestState, key: string): Update | void => {
-    const kind = wrapKind(key);
-    if (!kind) return;
-    const multi = multiSelChildren(state.sel, state.top);
-    if (!multi) return;
-    const parent = state.top.nodes[lastChild(multi.parent)];
-    if (parent.type !== 'list') {
-        return; // sorry not yet
+const wrapParent = (one: SelStart, two: SelStart, top: Top): void | { path: Path; min: number; max: number } => {
+    if (one.path.children[0] !== two.path.children[0]) return;
+
+    for (let i = 1; i < one.path.children.length && i < two.path.children.length; i++) {
+        if (one.path.children[i] !== two.path.children[i]) {
+            const node = top.nodes[one.path.children[i - 1]];
+            if (node.type !== 'list') return;
+            const a1 = node.children.indexOf(one.path.children[i]);
+            const a2 = node.children.indexOf(two.path.children[i]);
+            if (a1 === -1 || a2 === -1) return;
+            return { path: { ...one.path, children: one.path.children.slice(0, i) }, min: Math.min(a1, a2), max: Math.max(a1, a2) };
+        }
     }
-    const first = parent.children.indexOf(multi.children[0]);
-    const last = parent.children.indexOf(multi.children[multi.children.length - 1]);
-    if (first === -1 || last === -1) return;
+    if (one.path.children.length === two.path.children.length) return; // same path??
+    const [outer, inner] = one.path.children.length < two.path.children.length ? [one, two] : [two, one];
 
-    // we actually want to wrap the smooshed / spaced
-    if (first === 0 && last === parent.children.length - 1 && (parent.kind === 'smooshed' || parent.kind === 'spaced')) {
-        const gpath = parentPath(multi.parent);
-        let nextLoc = state.top.nextLoc;
-        const loc = nextLoc++;
-        const up = replaceAt(gpath.children, state.top, parent.loc, loc);
-        up.nodes[loc] = { type: 'list', kind, children: [parent.loc], loc };
-        const start = selectStart(pathWithChildren(gpath, loc, parent.loc, multi.children[0]), state.top);
-        if (!start) return;
-        return { ...up, selection: { start }, nextLoc };
-    }
-
-    const children = parent.children.slice();
-    let nextLoc = state.top.nextLoc;
-    const loc = nextLoc++;
-    children.splice(first, last + 1 - first, loc);
-
-    let inner = multi.children;
-
-    const nodes: Nodes = { [parent.loc]: { ...parent, children } };
-
-    let sel: SelStart;
-
-    if ((parent.kind === 'smooshed' || parent.kind === 'spaced') && multi.children.length > 1) {
-        const wrap = nextLoc++;
-        nodes[wrap] = { ...parent, children: multi.children, loc: wrap };
-        inner = [wrap];
-        const start = selectStart(pathWithChildren(multi.parent, loc, wrap, multi.children[0]), state.top);
-        if (!start) return;
-        sel = start;
-    } else {
-        const start = selectStart(pathWithChildren(multi.parent, loc, multi.children[0]), state.top);
-        if (!start) return;
-        sel = start;
-    }
-
-    nodes[loc] = { type: 'list', kind, loc, children: inner };
-
-    return {
-        nodes,
-        selection: { start: sel },
-        nextLoc,
-    };
-    // we just do the thing
+    const node = top.nodes[lastChild(outer.path)];
+    if (node.type !== 'list') return;
+    const at = node.children.indexOf(inner.path.children[outer.path.children.length]);
+    if (at === -1) return;
+    if (outer.cursor.type !== 'list' || outer.cursor.where === 'inside') return;
+    const left = outer.cursor.where === 'before' || outer.cursor.where === 'start';
+    return { path: outer.path, min: left ? 0 : at, max: left ? at : node.children.length - 1 };
 };
 
-export const handleWrap = (state: TestState, key: string): Update | void => {
-    if (state.sel.multi) {
-        return handleWrapMulti(state, key);
+export const handleWraps = (state: TestState, kind: ListKind<any>): Update | void => {
+    const found = wrapParent(state.sel.start, state.sel.end!, state.top);
+    if (!found) return;
+
+    let nextLoc = state.top.nextLoc;
+    const nodes: Nodes = {};
+    const node = state.top.nodes[lastChild(found.path)];
+    if (node.type !== 'list') return;
+    const children = node.children.slice();
+    const loc = nextLoc++;
+
+    const taken = children.splice(found.min, found.max - found.min + 1, loc);
+    nodes[node.loc] = { ...node, children };
+
+    let start: SelStart;
+    if (node.kind === 'spaced' || node.kind === 'smooshed') {
+        const inner = nextLoc++;
+        nodes[loc] = { type: 'list', kind, children: [inner], loc };
+        nodes[inner] = { type: 'list', kind: node.kind, children: taken, loc: inner };
+        const got = selectStart(pathWithChildren(found.path, loc, inner, taken[0]), state.top);
+        if (!got) return;
+        start = got;
+    } else {
+        nodes[loc] = { type: 'list', kind, children: taken, loc };
+        const got = selectStart(pathWithChildren(found.path, loc, taken[0]), state.top);
+        if (!got) return;
+        start = got;
+    }
+
+    return { nodes, selection: { start }, nextLoc };
+};
+
+export const handleWrapsTooMuch = (state: TestState, kind: ListKind<any>): Update => {
+    const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, state.top);
+    neighbors.push({ path: left.path, hl: { type: 'full' } });
+    neighbors.push({ path: right.path, hl: { type: 'full' } });
+    const sorted = partitionNeighbors(neighbors, state.top);
+
+    let nextLoc = state.top.nextLoc;
+    let sel: SelStart | null = null;
+    const nodes: Nodes = {};
+    sorted.forEach(({ path, children: selected }) => {
+        const node = state.top.nodes[lastChild(path)];
+        if (node.type !== 'list') return;
+        const children = node.children.slice();
+        const idxs = selected.map((s) => children.indexOf(s)).sort();
+        if (idxs[0] === -1) return;
+        const min = idxs[0];
+        const max = idxs[idxs.length - 1];
+        const loc = nextLoc++;
+
+        const taken = children.splice(min, max - min + 1, loc);
+        nodes[node.loc] = { ...node, children };
+        nodes[loc] = { type: 'list', kind, children: taken, loc };
+        const got = selectStart(pathWithChildren(path, loc, taken[0]), state.top);
+        if (got) sel = got;
+    });
+    console.log(sorted);
+    return { nodes, selection: sel ? { start: sel } : undefined, nextLoc };
+};
+
+export const handleWrap = (state: TestState, key: string): Update | KeyAction[] | void => {
+    if (state.sel.end) {
+        // IF start & end are in the same node,
+        // we handle it one way
+        // OTHERWISE
+        // we might need to split the start or end node.
+        // BUT I can probably get away with NOT handling the
+        // split case for now, because honestly
+        // is it common to want to do that? Iw ould think not.
+        const kind = wrapKind(key);
+        if (!kind) return;
+        return handleWraps(state, kind);
     }
 
     const current = getCurrent(state.sel, state.top);

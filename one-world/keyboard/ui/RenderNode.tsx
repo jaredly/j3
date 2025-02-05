@@ -24,19 +24,25 @@ export const opener = { round: '(', square: '[', curly: '{', angle: '<' };
 export const closer = { round: ')', square: ']', curly: '}', angle: '>' };
 export const braceColor = 'rgb(100, 200, 200)';
 export const braceColorHl = 'rgb(0, 150, 150)';
+
+export type DisplayConfig = {
+    sep: { curly: string; round: string; square: string };
+};
+
 export type RCtx = {
     errors: Record<number, string>;
     refs: Record<number, HTMLElement>; // -1 gets you 'cursor' b/c why not
+    config: DisplayConfig;
     styles: Record<number, Style>;
     placeholders: Record<number, string>;
     selectionStatuses: SelectionStatuses;
     dispatch: (up: Update) => void;
-    msel: null | string[];
-    mhover: null | string[];
+    // msel: null | string[];
+    // mhover: null | string[];
     drag: {
         dragging: boolean;
-        start: (sel: SelStart) => void;
-        move: (sel: SelStart) => void;
+        start: (sel: SelStart, meta?: boolean) => void;
+        move: (sel: SelStart, ctrl?: boolean, alt?: boolean) => void;
     };
 };
 export const textColor = 'rgb(248 136 0)';
@@ -111,7 +117,7 @@ export const RenderNode = ({
 
     switch (node.type) {
         case 'id':
-            return RenderId(status, readOnly, node, style, ref, ctx, nextParent);
+            return RenderId(status, readOnly, node, top.tmpText, style, ref, ctx, nextParent);
         case 'list':
             return RenderList(status, readOnly, node, style, ref, ctx, nextParent, top, inRich);
         case 'text':
@@ -213,12 +219,12 @@ function nodeStyle(
         style.outline = `2px solid ${lightColor}`;
     }
 
-    if (!readOnly && ctx.mhover?.includes(key)) {
-        const hoverColor = 'rgb(200,230,255)';
-        if (!style) style = {};
-        style.borderRadius = '2px';
-        style.backgroundColor = hoverColor;
-        style.outline = `2px solid ${hoverColor}`;
-    }
+    // if (!readOnly && ctx.mhover?.includes(key)) {
+    //     const hoverColor = 'rgb(200,230,255)';
+    //     if (!style) style = {};
+    //     style.borderRadius = '2px';
+    //     style.backgroundColor = hoverColor;
+    //     style.outline = `2px solid ${hoverColor}`;
+    // }
     return style;
 }

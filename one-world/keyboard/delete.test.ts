@@ -1,6 +1,6 @@
 import { RecNodeT } from '../shared/cnodes';
 import { shape } from '../shared/shape';
-import { applyUpdate } from './applyUpdate';
+import { applySel, applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleDelete, normalizeTextCursorSide } from './handleDelete';
 import { handleKey } from './handleKey';
@@ -140,7 +140,7 @@ test('join why', () => {
     check(state, id('onetwo', true), idc(3));
 });
 
-test('join why', () => {
+test('join why 2', () => {
     let state = asTop(spaced([id('one'), id('t', true)]), idc(1));
     state = applyUpdate(state, handleDelete(state));
     state = applyUpdate(state, handleDelete(state));
@@ -151,10 +151,13 @@ test('join why broked', () => {
     let state = asTop(smoosh([id('a'), id('+', true)]), idc(1));
     state = applyUpdate(state, handleKey(state, 'b', lisp));
     state = applyUpdate(state, handleKey(state, 'c', lisp));
-    state = applyUpdate(state, handleNav('ArrowLeft', state));
+    state = applySel(state, handleNav('ArrowLeft', state));
     state = applyUpdate(state, handleDelete(state));
     check(state, smoosh([id('a'), id('+'), id('c', true)]), idc(0));
+    // console.log(state.top.tmpText, state.sel.start.cursor);
+    // console.log(state.sel.start.cursor, state.top.tmpText, state.top.nodes);
     state = applyUpdate(state, handleDelete(state));
+    // console.log(state.sel.start.cursor, state.top.tmpText, state.top.nodes);
     check(state, id('ac', true), idc(1));
 });
 
@@ -222,7 +225,8 @@ test('text delete prev span', () => {
 });
 
 test('text delete prev span tmp text', () => {
-    let state = asTop(text([tspan('aa'), tspan('bb')], true), textc(1, 0, ['c']));
+    let state = asTop(text([tspan('aa'), tspan('c')], true), textc(1, 0));
+    // state.top.tmpText[`0:1`] = ['c'];
     state = applyUpdate(state, handleDelete(state));
     check(state, text([tspan('a'), tspan('c')], true), textc(0, 1));
 });
@@ -269,4 +273,60 @@ test('inside list', () => {
     validate(state);
     state = applyUpdate(state, handleDelete(state));
     check(state, id('', true), idc(0));
+});
+
+test('multi del thanks', () => {
+    let state = asTop(round([id('one'), id('two', 1), id('three', 2)]), idc(0), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([id('one'), id('', true)]), idc(0));
+});
+
+test('spaced idk', () => {
+    let state = asTop(spaced([id('one'), id('two', 1), id('three', 2)]), idc(0), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, spaced([id('one'), id('', true)]), idc(0));
+});
+
+test('spaced cut off', () => {
+    let state = asTop(spaced([id('one'), id('two', 1), id('three', 2)]), idc(2), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, spaced([id('one'), id('tw', true)]), idc(2));
+});
+
+test('spaced cut off right', () => {
+    let state = asTop(spaced([id('one'), id('two', 1), id('three', 2)]), idc(0), idc(3));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, spaced([id('one'), id('ee', true)]), idc(0));
+});
+
+test('smoosh please', () => {
+    let state = asTop(smoosh([id('one'), id('.', 1), id('ho', 2)]), idc(0), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('one', true), idc(3));
+});
+
+test('smoosh please nudge', () => {
+    let state = asTop(smoosh([id('one', 1), id('.'), id('ho', 2)]), idc(3), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, id('one', true), idc(3));
+});
+
+test('smoooosh', () => {
+    let state = asTop(round([id('hello', 1), id('+'), id('folks', 2)]), idc(2), idc(3));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([id('heks', true)]), idc(2));
+});
+
+test('smoooosh 2', () => {
+    let state = asTop(round([smoosh([id('hello', 1), id('+'), id('folks', 2)])]), idc(0), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([id('', true)]), idc(0));
 });

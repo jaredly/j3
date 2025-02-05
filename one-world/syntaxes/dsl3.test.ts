@@ -6,7 +6,7 @@ import { root } from '../keyboard/root';
 import { init, js } from '../keyboard/test-utils';
 import { keyUpdate } from '../keyboard/ui/keyUpdate';
 import { cread } from '../shared/creader';
-import { ctx, Ctx, match, rules } from './dsl3';
+import { ctx, Ctx, id, kwd, list, match, or, rules, seq, star, tx } from './dsl3';
 import { Expr, Stmt } from './ts-types';
 
 /*
@@ -31,14 +31,14 @@ const fixes = {
     'pattern constructor': ['Some(body)', 'Once([told,me])'],
     'pattern text': ['"Hi"', '"Hello ${name}"'],
     // how to do ... jsx?
-    'expr jsx': ['<>Hello\tinner', '<>Hello hi\t\tinner'],
+    'expr jsx': ['</Hello\tinner', '</Hello hi\t\tinner'],
     // stmt: ['let x = 2', 'return 12', 'for (let x = 1;x<3;x++) {y}'],
 };
 
-const run = (input: string, matcher: string) => {
+const run = (input: string, matcher: string, mctx = ctx) => {
     const state = cread(splitGraphemes(input), js);
     const rt = root(state, (idx) => [{ id: '', idx }]);
-    const res = match({ type: 'ref', name: matcher }, ctx, { nodes: [rt], loc: [] }, 0);
+    const res = match({ type: 'ref', name: matcher }, mctx, { nodes: [rt], loc: [] }, 0);
     return res;
 };
 
@@ -48,6 +48,40 @@ Object.entries(fixes).forEach(([key, values]) => {
             expect(run(value, key)?.consumed).toEqual(1);
         });
     });
+});
+
+test.skip('meta from one path doesnt pollute another', () => {
+    const state = cread(splitGraphemes('(1,2)'), js);
+    const rt = root(state, (idx) => [{ id: '', idx }]);
+    const mctx: Ctx = {
+        meta: {},
+        kwds: [],
+        ref(name) {
+            throw new Error('no');
+        },
+        rules: {
+            top: or(
+                tx(list('round', seq(kwd('1'), kwd('3'))), (ctx, _) => ({ which: 1 })),
+                tx(list('round', star(id(null))), () => ({ which: 2 })),
+            ),
+        },
+    };
+    const res = match({ type: 'ref', name: 'top' }, mctx, { nodes: [rt], loc: [] }, 0);
+    expect(res?.value).toEqual({ which: 2 });
+    expect(mctx.meta).toEqual({});
+});
+
+test('extra unparsed', () => {
+    const mctx: Ctx = { ...ctx, meta: {} };
+    run('hello folks', 'stmt', mctx)?.value;
+    expect(mctx.meta[1]).toMatchObject({ kind: 'unparsed' });
+});
+
+test('fn args not unparsed', () => {
+    const mctx: Ctx = { ...ctx, meta: {} };
+    run('(a,1) => 12', 'stmt', mctx);
+    expect(mctx.meta[3]).toMatchObject({ kind: 'punct' });
+    expect(mctx.meta[5]).toMatchObject({ kind: 'number' });
 });
 
 test('pattern var', () => {
@@ -123,14 +157,14 @@ test('pattern text', () => {
 });
 
 test('expr jsx', () => {
-    expect(run('<>Hello\tinner', 'expr jsx')?.value).toMatchObject({
+    expect(run('</Hello\tinner', 'expr jsx')?.value).toMatchObject({
         type: 'jsx',
         tag: { type: 'var', name: 'Hello' },
         attributes: undefined,
         children: [{ type: 'var', name: 'inner' }],
     });
 
-    expect(run('<>Hello hello:folks\t\tinner', 'expr jsx')?.value).toMatchObject({
+    expect(run('</Hello hello:folks\t\tinner', 'expr jsx')?.value).toMatchObject({
         type: 'jsx',
         tag: { type: 'var', name: 'Hello' },
         attributes: [{ type: 'row', name: 'hello', value: { type: 'var', name: 'folks' } }],

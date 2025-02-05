@@ -25,9 +25,10 @@ export const RenderText = (
     const children = node.spans.map((span, i) => {
         if (span.type === 'text') {
             const style = inRich ? asStyle(span.style) : { color: textColor, ...asStyle(span.style) };
+            const cursorText = null; // top.tmpText[`${node.loc}:${i}`];
             const sc = status?.cursors.filter((c) => c.type === 'text' && c.end.index === i);
             if (sc?.length) {
-                const cursorText = (sc.find((c) => c.type === 'text' && c.end.index === i && c.end.text) as TextCursor)?.end.text;
+                // (sc.find((c) => c.type === 'text' && c.end.index === i && c.end.text) as TextCursor)?.end.text;
                 const text = cursorText ?? splitGraphemes(span.text);
                 // const text = sides.text?.index === i ? sides.text.grems : splitGraphemes(span.text);
                 // const left = i === sides.left.index ? sides.left.cursor : 0;
@@ -44,7 +45,7 @@ export const RenderText = (
                                 ctx.drag.start(
                                     selStart(nextParent, {
                                         type: 'text',
-                                        end: { index: i, cursor: pos ?? 0, text: cursorText },
+                                        end: { index: i, cursor: pos ?? 0 },
                                     }),
                                 );
                             }}
@@ -56,8 +57,10 @@ export const RenderText = (
                                     ctx.drag.move(
                                         selStart(nextParent, {
                                             type: 'text',
-                                            end: { index: i, cursor: pos ?? 0, text: cursorText },
+                                            end: { index: i, cursor: pos ?? 0 },
                                         }),
+                                        evt.ctrlKey,
+                                        evt.altKey,
                                     );
                                 }
                             }}
@@ -68,6 +71,8 @@ export const RenderText = (
                     </span>
                 );
             }
+            // const text = cursorText?.join('') ?? span.text;
+            const text = span.text;
             const hl = status?.highlight?.type === 'text' ? status.highlight.spans[i] : undefined;
             // TODO show cursor here
             return (
@@ -88,16 +93,16 @@ export const RenderText = (
                             evt.stopPropagation();
                             evt.preventDefault();
                             const pos = cursorPositionInSpanForEvt(evt, evt.currentTarget, splitGraphemes(span.text));
-                            ctx.drag.move(selStart(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }));
+                            ctx.drag.move(selStart(nextParent, { type: 'text', end: { index: i, cursor: pos ?? 0 } }), evt.ctrlKey, evt.altKey);
                         }
                     }}
                 >
-                    {span.text === '' ? '\u200B' : span.text}
+                    {text === '' ? '\u200B' : text}
                 </span>
             );
         } else if (span.type === 'embed') {
             const spa = status?.highlight?.type === 'text' ? status.highlight.spans[i] : null;
-            const selected = spa === true || (spa && (spa.start == null || spa.start === 0) && (spa.end == null || spa.end >= 1));
+            const selected = spa === true || (spa && spa.some((spa) => (spa.start == null || spa.start === 0) && (spa.end == null || spa.end >= 1)));
             return (
                 <span
                     style={{
@@ -152,12 +157,12 @@ export const RenderText = (
                         evt.stopPropagation();
                         evt.preventDefault();
                         if (!evtRight(evt)) {
-                            ctx.drag.move(selStart(nextParent, { type: 'list', where: 'before' }));
+                            ctx.drag.move(selStart(nextParent, { type: 'list', where: 'before' }), evt.ctrlKey, evt.altKey);
                         } else {
                             if (node.spans.length) {
                                 const sel = spanStart(node.spans[0], 0, nextParent, top, false);
                                 if (sel) {
-                                    ctx.drag.move(sel);
+                                    ctx.drag.move(sel, evt.ctrlKey, evt.altKey);
                                 }
                             }
                         }
@@ -193,12 +198,12 @@ export const RenderText = (
                         evt.stopPropagation();
                         evt.preventDefault();
                         if (evtRight(evt)) {
-                            ctx.drag.move(selStart(nextParent, { type: 'list', where: 'after' }));
+                            ctx.drag.move(selStart(nextParent, { type: 'list', where: 'after' }), evt.ctrlKey, evt.altKey);
                         } else {
                             if (node.spans.length) {
                                 const sel = spanEnd(node.spans[node.spans.length - 1], nextParent, node.spans.length - 1, top, false);
                                 if (sel) {
-                                    ctx.drag.move(sel);
+                                    ctx.drag.move(sel, evt.ctrlKey, evt.altKey);
                                 }
                             }
                         }

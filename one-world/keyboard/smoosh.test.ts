@@ -4,7 +4,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { fromMap, RecNodeT } from '../shared/cnodes';
 import { cread } from '../shared/creader';
 import { shape } from '../shared/shape';
-import { applyUpdate } from './applyUpdate';
+import { applySel, applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
@@ -101,7 +101,7 @@ test('smoosh to left', () => {
 test('commit text change', () => {
     let state = asTop(round([id('hi', true)]), idc(2));
     state = applyUpdate(state, handleKey(state, 'A', js));
-    state = applyUpdate(state, handleNav('ArrowRight', state));
+    state = applySel(state, handleNav('ArrowRight', state));
     check(state, round([id('hiA')], true), listc('after'));
 });
 
@@ -267,7 +267,8 @@ test('dot to decimal', () => {
 });
 
 test('num and such', () => {
-    let state = asTop(id('2', true), { type: 'id', end: 2, text: ['2', '3'] });
+    let state = asTop(id('23', true), { type: 'id', end: 2 });
+    // state.top.tmpText[0] = ['2', '3'];
     state = applyUpdate(state, handleKey(state, '.', js));
     check(state, id('23.', true), idc(3));
 });
@@ -292,7 +293,8 @@ test('plus decimal', () => {
 });
 
 test('fn(x)', () => {
-    let state = asTop(id('f', true), { type: 'id', end: 2, text: ['f', 'n'] });
+    let state = asTop(id('fn', true), { type: 'id', end: 2 });
+    // state.top.tmpText[0] = ['f', 'n'];
     state = applyUpdate(state, keyUpdate(state, '(', {}, undefined, js));
     check(state, smoosh([id('fn'), round([], true)]), listc('inside'));
 });

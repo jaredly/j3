@@ -1,7 +1,7 @@
 // let's test some operations
 
 import { RecNodeT } from '../shared/cnodes';
-import { applyUpdate } from './applyUpdate';
+import { applySel, applyUpdate } from './applyUpdate';
 import { check } from './check.test';
 import { handleNav, selectEnd, selectStart } from './handleNav';
 import { asTop, asTopAndPath, id, idc, list, listc, round, smoosh, spaced, table, text, textc, tspan } from './test-utils';
@@ -9,7 +9,7 @@ import { Cursor, Path, pathWithChildren, selStart } from './utils';
 
 const run = (node: RecNodeT<boolean>, cursor: Cursor, key: 'ArrowLeft' | 'ArrowRight', exp: RecNodeT<boolean>, ecursor: Cursor) => {
     let state = asTop(node, cursor);
-    state = applyUpdate(state, handleNav(key, state)!);
+    state = applySel(state, handleNav(key, state)!);
     check(state, exp, ecursor);
 };
 
@@ -304,48 +304,48 @@ test('text control in rich', () => {
 
 test('back into list', () => {
     let state = asTop(smoosh([round([]), id('a', true)]), idc(0));
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(state, smoosh([round([], true), id('a')]), listc('inside'));
 });
 
 test('back into list w/ id', () => {
     let state = asTop(smoosh([round([id('b')]), id('a', true)]), idc(0));
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(state, smoosh([round([id('b', true)]), id('a')]), idc(1));
 });
 
 test('over into text - empty', () => {
     let state = asTop(smoosh([id('b', true), text([])]), idc(1));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, smoosh([id('b'), text([], true)]), listc('inside'));
 });
 
 test('over into text', () => {
     let state = asTop(smoosh([id('b', true), text([{ type: 'text', text: 'hi' }])]), idc(1));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, smoosh([id('b'), text([{ type: 'text', text: 'hi' }], true)]), textc(0, 0));
 });
 
 test('between two lists', () => {
     let state = asTop(smoosh([round([], true), round([])]), listc('after'));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, smoosh([round([]), round([], true)]), listc('inside'));
 });
 
 test('out of an embed', () => {
     let state = asTop(text([tspan('a'), { type: 'embed', item: id('b', true) }, tspan('c')]), idc(1));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, text([tspan('a'), { type: 'embed', item: id('b') }, tspan('c')], true), textc(1, 1));
 });
 
 test('left out of an embed', () => {
     let state = asTop(text([tspan('a'), { type: 'embed', item: id('b', true) }, tspan('c')]), idc(0));
-    state = applyUpdate(state, handleNav('ArrowLeft', state)!);
+    state = applySel(state, handleNav('ArrowLeft', state)!);
     check(state, text([tspan('a'), { type: 'embed', item: id('b') }, tspan('c')], true), textc(1, 0));
 });
 
 test('into an embed', () => {
     let state = asTop(text([tspan('a'), { type: 'embed', item: id('b') }, tspan('c')], true), textc(1, 0));
-    state = applyUpdate(state, handleNav('ArrowRight', state)!);
+    state = applySel(state, handleNav('ArrowRight', state)!);
     check(state, text([tspan('a'), { type: 'embed', item: id('b', true) }, tspan('c')]), idc(0));
 });

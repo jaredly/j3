@@ -7,7 +7,6 @@ import { CollectionCursor, Cursor, IdCursor, ListWhere, NodeSelection, Path, sel
 export type TestState = {
     top: Top;
     sel: NodeSelection;
-    parser?: TestParser;
 };
 export type TestParser = {
     config: Config;
@@ -19,6 +18,7 @@ export const initTop: Top = {
     nextLoc: 1,
     nodes: { [0]: { type: 'id', text: '', loc: 0 } },
     root: 0,
+    // tmpText: {},
 };
 export const init: TestState = {
     top: initTop,
@@ -105,10 +105,10 @@ export const asMultiTop = (node: RecNodeT<number>, cursor: Cursor): TestState =>
         top,
         sel: {
             start: selStart({ children: locs[0], root: { ids: [], top: '' } }, cursor),
-            multi: {
-                end: selEnd({ children: locs[1], root: { ids: [], top: '' } }),
-                aux: locs[2] ? selEnd({ children: locs[2], root: { ids: [], top: '' } }) : undefined,
-            },
+            // multi: {
+            //     end: selEnd({ children: locs[1], root: { ids: [], top: '' } }),
+            //     aux: locs[2] ? selEnd({ children: locs[2], root: { ids: [], top: '' } }) : undefined,
+            // },
         },
     };
 };
@@ -260,11 +260,12 @@ const jsId = idkeys(js);
 export const idc = (end: number): IdCursor => ({ type: 'id', end });
 export const listc = (where: ListWhere): CollectionCursor => ({ type: 'list', where });
 export const controlc = (index: number): CollectionCursor => ({ type: 'control', index });
-export const noText = (cursor: Cursor): Cursor =>
-    cursor.type === 'id' ? { ...cursor, text: undefined } : cursor.type === 'text' ? { ...cursor, end: { ...cursor.end, text: undefined } } : cursor;
-export const textc = (index: number, cursor: number, text?: string[]): TextCursor => ({
+export const noText = (cursor: Cursor): Cursor => cursor;
+// cursor.type === 'id' ? { ...cursor } : cursor.type === 'text' ? { ...cursor, end: { ...cursor.end, text: undefined } } : cursor;
+export const textc = (index: number, cursor: number): TextCursor => ({
+    // text?: string[]
     type: 'text',
-    end: { index, cursor, text },
+    end: { index, cursor }, // text
 });
 // export const textcs = (index: number, cursor: number, sindex: number, scursor: number, text?: string[]): TextCursor => ({
 //     type: 'text',

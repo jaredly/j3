@@ -1,13 +1,27 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, Loc, Node, Nodes } from '../shared/cnodes';
+import { Collection, Id, List, Loc, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
-import { cursorSplit, Split } from './cursorSplit';
+import { cursorSplit, idText, Split } from './cursorSplit';
 import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
 import { braced } from './handleListKey';
 import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
 import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, flattenRow, pruneEmptyIds, rough, unflat } from './rough';
-import { Current, Cursor, IdCursor, Path, Top, Update, findTableLoc, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
+import {
+    Current,
+    Cursor,
+    IdCursor,
+    Path,
+    TmpText,
+    Top,
+    Update,
+    findTableLoc,
+    lastChild,
+    parentLoc,
+    parentPath,
+    pathWithChildren,
+    selStart,
+} from './utils';
 import { isTag, justSel, selectStart, selUpdate } from './handleNav';
 
 // const isNumber = (grems: undefined | string[], text: string) => {
@@ -38,7 +52,8 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
     const table = handleTableSplit(grem, config, path, top, splitCell(current));
     if (table) return table;
 
-    if (config.xml && grem === '/' && cursor.end === 1 && (cursor.text ? cursor.text.length === 1 && cursor.text[0] === '<' : node.text === '<')) {
+    const text = idText(top.tmpText, cursor, node);
+    if (config.xml && grem === '/' && cursor.end === 1 && text.length === 1 && text[0] === '<') {
         const pnode = top.nodes[parentLoc(path)];
         if (pnode?.type !== 'list' || pnode.kind !== 'smooshed') {
             return {
@@ -60,9 +75,9 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
 
     if (config.xml && grem === '>') {
         const pnode = top.nodes[parentLoc(path)];
-        const chars = cursor.text ?? splitGraphemes(node.text);
+        const chars = idText(top.tmpText, cursor, node);
         if (
-            pnode.type === 'list' &&
+            pnode?.type === 'list' &&
             pnode.kind === 'smooshed' &&
             pnode.children.length === 2 &&
             pnode.children[1] === node.loc &&
@@ -91,17 +106,21 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
 
         if (node.ccls === kind) {
             // Just update the selection
-            const chars = cursor.text?.slice() ?? splitGraphemes(node.text);
+            const chars = idText(top.tmpText, cursor, node).slice();
             const { left, right } = cursorSides(cursor, current.start);
             chars.splice(left, right - left, grem);
-            return { nodes: {}, selection: { start: selStart(path, { ...cursor, text: chars, end: left + 1 }) } };
+            return {
+                nodes: {
+                    [node.loc]: { ...node, text: chars.join('') },
+                },
+                selection: { start: selStart(path, { ...cursor, end: left + 1 }) },
+            };
         }
     }
 
     const pnode = top.nodes[parentLoc(path)];
     if (grem === '\n' && pnode?.type === 'list' && braced(pnode) && pnode.children.length === 1 && !pnode.forceMultiline) {
-        const chars = cursor.text?.slice() ?? splitGraphemes(node.text);
-        if (chars.length === 0) {
+        if (idText(top.tmpText, cursor, node).length === 0) {
             return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: true } } };
         }
     }
@@ -114,6 +133,44 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
         return; // nope, handle above
     }
 
+    const closeUp = handleTagCloser(top, node, grem, parent, path);
+    if (closeUp) return closeUp;
+
+    return handleTextInsert(kind, grem, current, path, parent, top);
+};
+
+export const handleTextInsert = (
+    kind: Kind,
+    grem: string,
+    current: { node: Id<number>; cursor: IdCursor; start?: number },
+    path: Path,
+    parent: void | { node: Collection<number>; path: Path },
+    top: Top,
+) => {
+    const flat = parent ? flatten(parent.node, top) : [current.node];
+
+    const nodes: Update['nodes'] = {};
+
+    const neighbor = flatNeighbor(kind, grem);
+    const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes, top });
+
+    const up = flatToUpdateNew(
+        flat,
+        { node: sel, cursor: ncursor },
+        { isParent: parent != null, node: parent?.node ?? current.node, path: parent?.path ?? path },
+        nodes,
+        top,
+    );
+    return up;
+};
+
+export const handleTagCloser = (
+    top: Top,
+    node: Node,
+    grem: string,
+    parent: void | { node: Collection<number>; path: Path },
+    path: Path,
+): Update | void => {
     const grand = parentPath(parent ? parent.path : path);
     const gnode = top.nodes[lastChild(grand)];
     if (gnode?.type === 'list' && isTag(gnode.kind) && gnode.kind.node === (parent ? parent.node.loc : node.loc)) {
@@ -138,23 +195,6 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
             }
         }
     }
-
-    const flat = parent ? flatten(parent.node, top) : [node];
-
-    const nodes: Update['nodes'] = {};
-
-    const neighbor = flatNeighbor(kind, grem);
-    const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes });
-
-    // console.log(flat);
-
-    return flatToUpdateNew(
-        flat,
-        { node: sel, cursor: ncursor },
-        { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
-        nodes,
-        top,
-    );
 };
 
 export const handleTableSplit = (grem: string, config: Config, path: Path, top: Top, splitCell: (cell: Node, top: Top, loc: number) => SplitRes) => {
@@ -253,7 +293,7 @@ const splitCell =
         const flat = flatten(cell, top, undefined, 1);
         const nodes: Update['nodes'] = {};
         const neighbor: Flat = { type: 'sep', loc };
-        const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes });
+        const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes, top });
         const one = pruneEmptyIds(flat, { node: sel, cursor: ncursor });
         const two = collapseAdjacentIDs(one.items, one.selection);
         const result = unflat(top, two.items, two.selection.node);
@@ -267,23 +307,32 @@ function addNeighbor({
     // cursor,
     flat,
     nodes,
+    top,
 }: {
     neighbor: Flat;
-    current: Extract<Current, { type: 'id' }>;
+    current: { cursor: IdCursor; node: Id<number>; start?: number };
     // current: Id<number>;
     // cursor: IdCursor;
     flat: Flat[];
     nodes: Record<string, Node | null>;
+    top: Top;
 }) {
     let { node, cursor } = current;
     const at = flat.indexOf(node);
+    // const tmpText: Update['tmpText'] = {};
     if (at === -1) throw new Error(`flatten didnt work I guess`);
-    if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
-        node = nodes[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
-        flat[at] = node;
-    }
+    // if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
+    //     node = nodes[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
+    //     flat[at] = node;
+    // }
+    // if (top.tmpText[node.loc]) {
+    //     const text = top.tmpText[node.loc];
+    //     node = nodes[node.loc] = { ...node, text: text.join(''), ccls: text.length === 0 ? undefined : node.ccls };
+    //     flat[at] = node;
+    //     tmpText[node.loc] = undefined;
+    // }
 
-    const split = cursorSplit(node.text, cursor, current.start);
+    const split = cursorSplit(top.tmpText, node, cursor, current.start);
 
     let sel: Node = node;
     let ncursor: Cursor = { ...cursor };
@@ -299,7 +348,7 @@ function addNeighbor({
         }
         case 'between': {
             flat[at] = nodes[node.loc] = { ...node, text: split.left };
-            flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: split.right, loc: -1, ccls: node.ccls }));
+            flat.splice(at + 1, 0, neighbor, (sel = { type: 'id', text: split.right, loc: -1, ccls: split.right === '' ? undefined : node.ccls }));
             ncursor = { type: 'id', end: 0 };
             break;
         }

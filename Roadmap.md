@@ -1,12 +1,279 @@
 
+# Now that copy and paste and delete are ok
+
+- [ ] drag would be fun, but a bit of a boondoggle
+- [ ] select w/ holes would also be flashy
+- [ ] widgets also sound fun, buttt
+
+- [ ] I think we should dive into execution now.
+
+So, should I go into multi-top right now? Is it the time for it?
+Seems like a reasonable nexty.
+
+###
+
+- [x] the "closest selection" calculation isn't quite right.
+  - should make a mode where you just mouse around and it renders the selection
+
+- [x] multi delete - clip partial ids please.
+  - [ ] multi delete - clip partial texts
+- [x] copy - distinguish between 'entire' vs 'children', where children will splice by default
+
+- [x] gotta have some copy tests pleeeease
+- [x] collapse singleton spaced and smooshed lists in a copied tree thanksss
+
+# PASTEEEEE
+
+- [x] if single, drop it in
+- [x] if not single, splice in if you can
+
+- [x] multiselect, if we're selecting a ~whole "spaced, indicate that. even if the start/end are "inside". we can ~nudge them.
+  - [x] sameeee with an ID
+  - [x] and a smooshed.
+
+- [x] we've got a weird jittery thing
+
+# General Game Plan
+of getting something useful working
+
+- [x] make a JS-- grammar, that is "the minimal amount of javascript to be able to self-host"
+  that'll be the builtin dealio
+
+- [x] make it so that stuff that doesn't get parsed is rendered in italics or something
+- [x] make comments work
+
+- [x] multi DELETE???
+- [x] copy I guess
+- [x] gotta copy, gotta pasta
+- [x] for delete, nudge left & right cursor across boundary lines, if relevant.
+
+- [ ] use that builtin JS-- parser+compiler to define in-situ a more usable javascript, maybe even with some perks idk
+- [ ] then I can use the nicer JS to make some other example grammars
+  - they'd probably all be backed by the same compiler for the moment
+
+
+- [ ] in the tests, do a thing where I have all possible selections, and verifyt hat they are stil valid after the update.
+- [x] I don't think I need to collapse paths, the parent map would be a pain to maintain.
+
+- [x] multiselect DELETE gotta have it
+  -
+- [x] and copy/paste thanks
+
+# WRAPPPP
+
+- [x] ok lets be simple. pretend you did ctrl-select, and only wrap at one level. great.
+
+
+# Convert `Update` into `KeyAction` pls
+
+keyAction can be `mutli` so I can do `splitIfNeeded` and then `wrapInList`
+
+# What about a `parse` form?
+
+It would look like
+
+```
+let stmts = something => {
+parse something {
+  `(for (init=stmt;cond=expr;update=expr) body=block): For{init, cond, update, body}
+  `(return value=expr): Return{value}
+}
+}
+
+let expr.. = something => {
+parse something {
+  `()
+}
+}
+```
+hmm I think I do want an explicit `seq()`, that is useful.
+maybe what I'm looking for is like a macro?
+THe `parse` construct would want to return something more than just the body of the matched case;
+it would incude info about "how many tokens were consumed", and the `src`, for example....
+
+
+
+
+ALSO, have a pattern form that is `name=fn`, where `fn` would be called on the value,
+and it it returns `Some(x)` then `name` would be bound to `x`. That would be super cool.
+
+
+
+ALSO I want to repalce the `Update`1 return value with a `KeyAction` type, which expresses things better.
+So the () wrap key thing would be a `splitIfNeeded` and then a `wrapWithList`.
+
+
+
+FALLTHROUGH
+that I really want.
+
+switch a {
+  case b:
+    if c {
+      ...
+    } else {
+      // fallthrough to the next case
+    }
+}
+
+
+
+
+# Groveveve
+
+if I want CRDT madness,
+I need
+- [ ] node LOCs need to be UIDs, not integegrs
+- [ ] my (list)s are not crdt-friendly. I would need to ... maintain some sort of data structure
+  well also, I need edges and stuff.
+  Basically, I would want ... a parallel data structure to keep track of the CRDT stuff.
+  the edges, and the vertices.
+  and then a good way to go from one to the other..
+
+
+hrmmmmmmm so maybeeee
+converting to the "everything has only two children" style might make some things easier?
+hmm not quite sure.
+
+
+
+# What do I need in order to show this off to people?
+
+Alt drag ...
+hm I guess ... yeah ok instead of just changing the
+'selectionstatuses', I do want to modify the cursors.
+yeah. so that once the dragging stops, it's still a thing.
+
+
+- maybe record a video of me interacting with the compiler.jaredforsyth.com version, showcasing various things
+- [ ] wrap a selection
+  - [x] BUT FIRST let's do alt+drag?
+  - [x] ctrl-drag for selecting "element of a list"
+- [ ] cut/copy/paste a selection
+- [ ] alt+select (by word)
+- [ ] ctrl-select (by ... list item?)
+- [ ] peek into execution pls
+- [ ] an example of multiple languages? maybe? hmmm. what is holding me back from self-hosting right nowwwww yall
+
+
+((((---))))
+so, with ... switching to Grove/CmRDT compatible representation...
+lists decompose into linked lists,
+which I would have absolutely everywhere
+and I guess tables decompose into 2-deep linked lists
+
+(parent) paths get a lot longer, right? does that have weird implications?
+like
+removing one element changes the parent path of the other elements?
+hmmmmm
+[q] how ~bad would it be to ditch paths altogether?
+like, we already disambiguate by toplevel, and I'm fine asserting that a given
+node can only show up once per toplevel.... (the `root` of the Path)
+so do I really need to hang on to the full path?
+it would make dealing with linked lists rather simpler, I believe.
+>> What this would amount to, is having `top` maintain a map of backreferences, so you can
+determine the (parent) of any given node.
+
+# at popl yay
+
+- [x] made a nice little #examples page, to showcase the concrete syntax tree and such
+- [x] undo and redo are still WIP. I think redo isn't working yet
+- [ ] oh, wrap a select needs to come back on the stage.
+- [ ] also (cut/copy/paste) plsss
+- [ ] and thennnn maybe I can get back to actual parsers? can't remember when I left that off.
+  orrr maybe the next step is to allow multiple toplevels?
+
+- [x] 🤔 in the presence of mutlicursor, we want undo (history item joinings) to also make sense.
+  ...
+  Can we say:
+  - iff all changed nodes are of type (id) or (text)
+  - andd changes to /text/ don't modify the number or type of spans
+  - thenn we can join them.
+  - alsoo we want to /break/ coalescing if there is a non-updating action
+
+- [ ] shift + down doensn't work over multiple lines, it just finds the line below the cursor (start)
+- [ ] alt + shift + arrow isn't working
+
+
+
+
+# Thinking about robustness of my CST
+
+we don't yet handle indents. so we can't do python. and like, haskell's "with" or something.
+
+
+# Tmptext
+
+andddd
+ok now
+the story is: collapse history items.
+
+#
+
+Ok next
+
+- [x] ok, so now ... multi cursor, right?
+- [x] multiple highlights in a single text id or span
+- [x] multi UPDATE is broken
+  - ok we're on top of things now. but, I don't know if we're validating...
+- [ ] wrap should end with the cursor just inside, not at the start
+
+- [x] UNDOREDO
+  - [ ] some bug? like, undo + action + undo undo does some redoing. need to skips.
+
+
+thouuught, maybe instead of reverts?:number, I want
+{type: 'do', top: {prev,next}, selection:{prev,next}}
+and
+{type: 'reverts', target: string} // and not have any payload. just be referencing the previous thing?
+--->>> and also, we can do a gut check of the prev/next (do they line up? if not, abort abort)
+
+
+- [ ] multi wrap, I do want it
+
+
+- [ ] one way to test multi-user is to have a button to let you switch userssss
+
+- [ ] yeahhh we have multimultiii
+  - aw shunks not quite uyet.
+    need to (apply first update) and then (calculate second update).
+    otherwise we can't have two edits to the same id, or multiple nextLoc++s happening.
+    ok.
+
+#
+
+Edit text -> centralize...
+
+=> going to put it on `Top`, although it won't live
+in the persisted top, obviously.
+
+- [x] ok reduced the usage of cursor.text
+- [x] now, move over the 'id update' stuff to the top tmpText
+
+- [x] How do we /update/ the tmpText?
+
 
 Major next things
 
 
 - [x] no STATE in RenderNode pls
+- [x] now for dispatchhh
 - [ ] can I hollow out /top/ as well? it looks like `nodes` is the only thing being used...
   - yeah I can
 
+
+- [x] pull back `Updates` wherever they're used too generally, make them into SelStart or NodeSelection if necessary
+  - so that's `justSel` and `selUpdate` all over the place.
+  - and `nodes: {},`
+
+ok now folks
+weeeeeee now do some things, right
+Ok, soooo fo things that didn't make any changes, the `selUpdates` of the world, that can just be a `jump` right?
+
+AH BUT BEFORE we embark on those shenanigans, let's take `.text` off of cursor, and put it somewhere more reasonable.
+likkeeeee on TestState? maybe. like. we'll only have .. one .. active .. at a time, right? well I guess one per cursor.
+I mean ... like one per ... NodeSelection.
+but if both are editing the same ,we dont want it duplicated.
 
 
 - undo/redo

@@ -109,3 +109,9 @@ test('<hello> should make it happen pls', () => {
     state = applyUpdate(state, keyUpdate(state, '>', {})!);
     check(state, list({ type: 'tag', node: id('hello') })([id('', true)]), idc(0));
 });
+
+test('fancier tags', () => {
+    let state = asTop(list({ type: 'tag', node: smoosh([id('hello'), round([id('yes')], true)]) })([]), listc('after'));
+    state = applyUpdate(state, keyUpdate(state, ' ', {})!);
+    check(state, list({ type: 'tag', node: smoosh([id('hello'), round([id('yes')])]), attributes: table('curly', [], true) })([]), listc('inside'));
+});

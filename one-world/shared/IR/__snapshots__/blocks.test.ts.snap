@@ -1380,41 +1380,41 @@ exports[`parsing refs 1`] = `
 "(defn hello [x]
    10          )
 
-(+ x [̲u̲n̲r̲e̲s̲o̲l̲v̲e̲d̲]̲)"
+(+ x [unresolved])"
 `;
 
 exports[`parsing refs with diff name 1`] = `
 "(defn hello [x]
    10          )
 
-(+ x [̲u̲n̲r̲e̲s̲o̲l̲v̲e̲d̲]̲)"
+(+ x [unresolved])"
 `;
 
-exports[`placeholders thanks 1`] = `"(this is a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟)"`;
+exports[`placeholders thanks 1`] = `"(this is a placeholder)"`;
 
 exports[`try a table maybe 2`] = `
 "
 ---------| 10
-(a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 is
+(a placeholder is
     here)
 
 [ # ] {"type":"block","start":[0,0],"width":0,"height":1}
-|(a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 is
+|(a placeholder is
     here)
 [ # ] {"type":"block","start":[1,0],"width":1,"height":1}
-(a̲ 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 is
+(a̲ placeholder is
     here)
 [ # ] {"type":"block","start":[3,0],"width":11,"height":1}
-(a 𝑝̲𝑙̲𝑎̲𝑐̲𝑒̲ℎ̲𝑜̲𝑙̲𝑑̲𝑒̲𝑟̲ is
+(a p̲l̲a̲c̲e̲h̲o̲l̲d̲e̲r̲ is
     here)
 [ # ] {"type":"block","start":[15,0],"width":2,"height":1}
-(a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 i̲s̲
+(a placeholder i̲s̲
     here)
 [ # ] {"type":"block","start":[4,1],"width":4,"height":1}
-(a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 is
+(a placeholder is
     h̲e̲r̲e̲)
 [ # ] {"type":"block","start":[9,1],"width":0,"height":1}
-(a 𝑝𝑙𝑎𝑐𝑒ℎ𝑜𝑙𝑑𝑒𝑟 is
+(a placeholder is
     here)|
 "
 `;

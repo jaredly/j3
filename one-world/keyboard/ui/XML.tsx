@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { XML } from '../../syntaxes/xml';
 import React from 'react';
-import { NodeSelection, Top } from '../utils';
+import { NodeSelection, SelectionStatuses, Top } from '../utils';
 import { allPaths, Src } from '../handleShiftNav';
 import { Loc } from '../../shared/cnodes';
 
@@ -31,6 +31,16 @@ const tagStyle = {
     width: 'fit-content',
 };
 
+const isSelected = (src: Src, statuses: SelectionStatuses) => {
+    const lno = src.left[0]?.idx;
+    const rno = src.right?.[0]?.idx;
+    return Object.keys(statuses).some((key) => {
+        return key.endsWith(';' + lno) || key.endsWith(',' + lno) || key.endsWith(';' + rno) || key.endsWith(',' + rno);
+    });
+    // if (statuses[src.left[0]?.idx]) return true;
+    // if (statuses[src.right?.[0]?.idx!]) return true;
+};
+
 export const XMLNode = ({
     sel,
     parentSelected,
@@ -40,6 +50,7 @@ export const XMLNode = ({
     toggle,
     setHover,
     onClick,
+    statuses,
 }: {
     setHover: (hover: null | Src) => void;
     onClick: (src: null | Src) => void;
@@ -49,11 +60,14 @@ export const XMLNode = ({
     state: State;
     path: Path;
     toggle: (p: Path) => void;
+    statuses: SelectionStatuses;
 }) => {
     const open = state.expanded.some((p) => pstartsWith(path, p, state.extra)) || state.pinned.some((p) => peq(p, path));
     const exact = state.expanded.some((p) => peq(p, path));
 
-    const selected = parentSelected || (node.src && sel.includes(node.src.left[0]?.idx) && (!node.src.right || sel.includes(node.src.right[0]?.idx)));
+    const selected = node.src && isSelected(node.src, statuses);
+    // parentSelected ||
+    // (node.src && sel.includes(node.src.left[0]?.idx) && (!node.src.right || sel.includes(node.src.right[0]?.idx)));
 
     const style = { ...tagStyle, background: 'transparent' };
     if (selected) {
@@ -131,13 +145,14 @@ export const XMLNode = ({
                                           {Array.isArray(value) ? `[${value.length}]` : ''}
                                       </div>
                                   ) : null}
-                                  <div style={key === 'children' ? { gridColumnStart: 1, gridColumnEnd: 2 } : { gridColumn: 2 }}>
+                                  <div style={key === 'children' ? { gridColumnStart: 1, gridColumnEnd: 3 } : { gridColumn: 2 }}>
                                       {Array.isArray(value) ? (
                                           value.map((item, i) => (
                                               <XMLNode
                                                   key={i}
                                                   parentSelected={selected}
                                                   onClick={onClick}
+                                                  statuses={statuses}
                                                   sel={sel}
                                                   setHover={setHover}
                                                   node={item}
@@ -151,6 +166,7 @@ export const XMLNode = ({
                                               node={value}
                                               sel={sel}
                                               onClick={onClick}
+                                              statuses={statuses}
                                               parentSelected={selected}
                                               setHover={setHover}
                                               state={state}
@@ -176,11 +192,13 @@ export const ShowXML = ({
     setHover,
     sel,
     onClick,
+    statuses,
 }: {
     root: XML;
     setHover: (hover: null | Src) => void;
     sel: number[];
     onClick: (src: null | Src) => void;
+    statuses: SelectionStatuses;
 }) => {
     const [state, setState] = useState<State>({ pinned: [], expanded: [[]], extra: Infinity });
 
@@ -193,6 +211,7 @@ export const ShowXML = ({
             state={state}
             setHover={setHover}
             onClick={onClick}
+            statuses={statuses}
             toggle={(p) =>
                 setState((s) => {
                     return s.expanded.some((e) => peq(p, e))

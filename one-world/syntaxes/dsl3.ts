@@ -57,7 +57,7 @@ export type Ctx = {
     };
 };
 
-type Rule<T> =
+export type Rule<T> =
     | { type: 'or'; opts: Rule<T>[] }
     | { type: 'tx'; inner: Rule<any>; f: (ctx: Ctx, src: Src) => T }
     | { type: 'kwd'; kwd: string; meta?: string }
@@ -107,7 +107,9 @@ type Rule<T> =
 
 let indent = 0;
 
-export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
+type Result = { value?: any; consumed: number };
+
+export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | Result => {
     if (ctx.rules.comment) {
         const { comment, ...without } = ctx.rules;
         const cm = match_(ctx.rules.comment, { ...ctx, rules: without }, parent, at);
@@ -128,7 +130,7 @@ export const match = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number
 };
 
 // TODO: track a pathhhh
-export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | { value?: any; consumed: number } => {
+export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: number): undefined | null | Result => {
     const node = parent.nodes[at];
     switch (rule.type) {
         case 'kwd':
@@ -198,6 +200,12 @@ export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: numbe
             }
 
             const res = match(rule.item, ctx, { nodes: node.children, loc: node.loc }, 0);
+            if (res && res.consumed < node.children.length) {
+                for (let i = res.consumed; i < node.children.length; i++) {
+                    const child = node.children[i];
+                    ctx.meta[child.loc[0].idx] = { kind: 'unparsed' };
+                }
+            }
             return res ? { value: res.value, consumed: 1 } : res;
         }
 
@@ -308,14 +316,14 @@ const isBlank = (node: RecNode) => node.type === 'id' && node.text === '';
 // };
 
 // regex stuff
-const or = <T>(...opts: Rule<T>[]): Rule<T> => ({ type: 'or', opts });
-const tx = <T>(inner: Rule<any>, f: (ctx: Ctx, src: Src) => T): Rule<T> => ({ type: 'tx', inner, f });
-const ref = <T>(name: string, bind?: string): Rule<T> => ({ type: 'ref', name, bind });
-const opt = <T>(inner: Rule<T>): Rule<T | null> => ({ type: 'opt', inner });
-const seq = (...rules: Rule<any>[]): Rule<unknown> => ({ type: 'seq', rules });
-const group = <T>(name: string, inner: Rule<T>): Rule<T> => ({ type: 'group', name, inner });
-const star = <T>(inner: Rule<T>): Rule<T[]> => ({ type: 'star', inner });
-const text = <T>(embed: Rule<T>): Rule<TextSpan<T>[]> => ({ type: 'text', embed });
+export const or = <T>(...opts: Rule<T>[]): Rule<T> => ({ type: 'or', opts });
+export const tx = <T>(inner: Rule<any>, f: (ctx: Ctx, src: Src) => T): Rule<T> => ({ type: 'tx', inner, f });
+export const ref = <T>(name: string, bind?: string): Rule<T> => ({ type: 'ref', name, bind });
+export const opt = <T>(inner: Rule<T>): Rule<T | null> => ({ type: 'opt', inner });
+export const seq = (...rules: Rule<any>[]): Rule<unknown> => ({ type: 'seq', rules });
+export const group = <T>(name: string, inner: Rule<T>): Rule<T> => ({ type: 'group', name, inner });
+export const star = <T>(inner: Rule<T>): Rule<T[]> => ({ type: 'star', inner });
+export const text = <T>(embed: Rule<T>): Rule<TextSpan<T>[]> => ({ type: 'text', embed });
 
 // standard intermediate representation
 // intermediate general representation
@@ -323,13 +331,13 @@ const text = <T>(embed: Rule<T>): Rule<TextSpan<T>[]> => ({ type: 'text', embed 
 // - Text
 // - List
 // - Table
-const kwd = (kwd: string, meta?: string): Rule<unknown> => ({ type: 'kwd', kwd, meta });
-const id = (kind?: string | null): Rule<unknown> => ({ type: 'id', kind });
+export const kwd = (kwd: string, meta?: string): Rule<unknown> => ({ type: 'kwd', kwd, meta });
+export const id = (kind?: string | null): Rule<unknown> => ({ type: 'id', kind });
 const int: Rule<number> = { type: 'number', just: 'int' };
 const float: Rule<number> = { type: 'number', just: 'float' };
-const number: Rule<number> = { type: 'number' };
-const list = <T>(kind: ListKind<Rule<unknown>>, item: Rule<T>): Rule<T> => ({ type: 'list', kind, item });
-const table = <T>(kind: TableKind, row: Rule<T>): Rule<T> => ({ type: 'table', kind, row });
+export const number: Rule<number> = { type: 'number' };
+export const list = <T>(kind: ListKind<Rule<unknown>>, item: Rule<T>): Rule<T> => ({ type: 'list', kind, item });
+export const table = <T>(kind: TableKind, row: Rule<T>): Rule<T> => ({ type: 'table', kind, row });
 
 const types: Record<string, Rule<Type>> = {
     'type ref': tx(group('id', id(null)), (ctx, src) => ({ type: 'ref', name: ctx.ref<Id<Loc>>('id').text, src })),
@@ -524,6 +532,35 @@ export const rules = {
             src,
             body: ctx.ref<Expr | Stmt[]>('body'),
         })),
+        tx(seq(kwd('if'), ref('expr', 'cond'), ref('block', 'yes'), kwd('else'), ref('block', 'no')), (ctx, src) => ({
+            type: 'if',
+            cond: ctx.ref<Expr>('cond'),
+            yes: ctx.ref<Stmt[]>('yes'),
+            no: ctx.ref<Stmt[]>('no'),
+            src,
+        })),
+        tx(
+            seq(
+                kwd('case'),
+                ref('expr', 'target'),
+                group(
+                    'cases',
+                    table(
+                        'curly',
+                        tx(seq(ref('pat', 'pat'), ref('block', 'body')), (ctx, src) => ({
+                            pat: ctx.ref<Pat>('pat'),
+                            body: ctx.ref<Stmt[]>('body'),
+                        })),
+                    ),
+                ),
+            ),
+            (ctx, src) => ({
+                type: 'case',
+                target: ctx.ref<Expr>('target'),
+                src,
+                cases: ctx.ref<{ pat: Pat; body: Stmt[] | Expr }[]>('cases'),
+            }),
+        ),
         ref('expr'),
     ),
     bop: or(...binops.map((m) => kwd(m, 'bop'))),

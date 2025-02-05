@@ -41,7 +41,7 @@ test('id sel', () => {
     expect(statuses).toEqual({
         ';;0': {
             cursors: [idc(0), idc(1)],
-            highlight: { type: 'id', start: 0, end: 1 },
+            highlight: { type: 'id', spans: [{ start: 0, end: 1 }] },
         },
     });
 });
@@ -52,12 +52,12 @@ test('list multi', () => {
     expect(statuses).toEqual({
         ';;0,1': {
             cursors: [idc(1)],
-            highlight: { type: 'id', start: 1 },
+            highlight: { type: 'id', spans: [{ start: 1 }] },
         },
         ';;0,2': { cursors: [], highlight: { type: 'full' } },
         ';;0,3': {
             cursors: [idc(1)],
-            highlight: { type: 'id', end: 1 },
+            highlight: { type: 'id', spans: [{ end: 1 }] },
         },
     });
 });
@@ -68,13 +68,13 @@ test('list into', () => {
     expect(statuses).toEqual({
         ';;0,1': {
             cursors: [idc(1)],
-            highlight: { type: 'id', start: 1 },
+            highlight: { type: 'id', spans: [{ start: 1 }] },
         },
         ';;0,2': { cursors: [], highlight: { type: 'list', opener: true, closer: false } },
         ';;0,2,3': { cursors: [], highlight: { type: 'full' } },
         ';;0,2,4': {
             cursors: [idc(1)],
-            highlight: { type: 'id', end: 1 },
+            highlight: { type: 'id', spans: [{ end: 1 }] },
         },
     });
 });
@@ -85,7 +85,7 @@ test('text simple', () => {
     expect(statuses).toEqual({
         ';;0': {
             cursors: [textc(0, 2), textc(0, 4)],
-            highlight: { type: 'text', spans: [{ start: 2, end: 4 }, false], opener: false, closer: false },
+            highlight: { type: 'text', spans: [[{ start: 2, end: 4 }], false], opener: false, closer: false },
         },
     });
 });
@@ -96,7 +96,90 @@ test('text simple across spans', () => {
     expect(statuses).toEqual({
         ';;0': {
             cursors: [textc(0, 2), textc(2, 2)],
-            highlight: { type: 'text', spans: [{ start: 2 }, true, { end: 2 }], opener: false, closer: false },
+            highlight: { type: 'text', spans: [[{ start: 2 }], true, [{ end: 2 }]], opener: false, closer: false },
+        },
+    });
+});
+
+test('id covered', () => {
+    let state = asTop(id('hello', true), idc(0), idc(5));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses).toEqual({
+        ';;0': {
+            cursors: [idc(0), idc(5)],
+            highlight: {
+                type: 'full',
+            },
+        },
+    });
+});
+
+test('smooshed covered', () => {
+    let state = asTop(smoosh([id('hello', 1), id('mid'), id('+', 2)]), idc(0), idc(1));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses).toEqual({
+        ';;0': {
+            cursors: [],
+            highlight: {
+                type: 'full',
+            },
+        },
+        ';;0,1': {
+            cursors: [idc(0)],
+        },
+        ';;0,3': {
+            cursors: [idc(1)],
+        },
+    });
+});
+
+test('smooshed covered after', () => {
+    let state = asTop(round([smoosh([id('hello', 1), id('+')]), id('before', 2)]), idc(0), idc(2));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses).toEqual({
+        ';;0,1': {
+            cursors: [],
+            highlight: {
+                type: 'full',
+            },
+        },
+        ';;0,1,2': {
+            cursors: [idc(0)],
+        },
+        ';;0,4': {
+            cursors: [idc(2)],
+            highlight: { type: 'id', spans: [{ end: 2 }] },
+        },
+    });
+});
+
+test('smooshed and spaced', () => {
+    let state = asTop(round([id('before', 1), spaced([id('lol'), smoosh([id('hello'), id('+', 2)])])]), idc(3), idc(1));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses[';;0,2']).toEqual({
+        cursors: [],
+        highlight: {
+            type: 'full',
+        },
+    });
+});
+
+test('smooshed covered', () => {
+    let state = asTop(round([id('before', 1), smoosh([id('hello'), id('+', 2)])]), idc(3), idc(1));
+    const statuses = getSelectionStatuses(state.sel, state.top);
+    expect(statuses).toEqual({
+        ';;0,2': {
+            cursors: [],
+            highlight: {
+                type: 'full',
+            },
+        },
+        ';;0,1': {
+            cursors: [idc(3)],
+            highlight: { type: 'id', spans: [{ start: 3 }] },
+        },
+        ';;0,2,4': {
+            cursors: [idc(1)],
         },
     });
 });
@@ -113,7 +196,7 @@ test('text into', () => {
             cursors: [textc(0, 2)],
             highlight: {
                 type: 'text',
-                spans: [{ start: 2 }, false, false],
+                spans: [[{ start: 2 }], false, false],
                 opener: false,
                 closer: false,
             },
@@ -123,7 +206,7 @@ test('text into', () => {
             highlight: { type: 'list', opener: true, closer: false },
         },
         ';;0,1,2': { cursors: [], highlight: { type: 'full' } },
-        ';;0,1,3': { cursors: [idc(2)], highlight: { type: 'id', end: 2 } },
+        ';;0,1,3': { cursors: [idc(2)], highlight: { type: 'id', spans: [{ end: 2 }] } },
     });
 });
 
@@ -137,7 +220,7 @@ test('text into more', () => {
     expect(statuses).toEqual({
         ';;0,1': {
             cursors: [idc(3)],
-            highlight: { type: 'id', start: 3 },
+            highlight: { type: 'id', spans: [{ start: 3 }] },
         },
         ';;0,2': {
             cursors: [],
@@ -148,7 +231,7 @@ test('text into more', () => {
             highlight: { type: 'list', opener: true, closer: false },
         },
         ';;0,2,3,4': { cursors: [], highlight: { type: 'full' } },
-        ';;0,2,3,5': { cursors: [idc(2)], highlight: { type: 'id', end: 2 } },
+        ';;0,2,3,5': { cursors: [idc(2)], highlight: { type: 'id', spans: [{ end: 2 }] } },
     });
 });
 
@@ -158,7 +241,7 @@ test('text into start', () => {
     expect(statuses).toEqual({
         ';;0,1': {
             cursors: [idc(1)],
-            highlight: { type: 'id', start: 1 },
+            highlight: { type: 'id', spans: [{ start: 1 }] },
         },
         ';;0,2': {
             cursors: [{ type: 'list', where: 'before' }],
@@ -181,7 +264,7 @@ test('side into a table', () => {
         },
         ';;0,2': {
             cursors: [idc(1)],
-            highlight: { type: 'id', end: 1 },
+            highlight: { type: 'id', spans: [{ end: 1 }] },
         },
     });
 });

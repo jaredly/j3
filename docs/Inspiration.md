@@ -1,4 +1,24 @@
 
+
+Ideas from POPL:
+
+- Grove-like CmRDT for collaborative editing, let's goo
+- "one-hole contexts" sounds so cool, let's allow de-selecting elements within a selection!
+- Can I prove that going from CST to AST is a regular expression?
+- ok now what does type inference look like
+
+
+;;;;;;;;;;;;
+
+Matthew Flat ; Rhombus
+
+Ravi Chugh ; Deuce
+
+
+
+https://tylr.fun/vlhcc23.pdf
+https://www.microsoft.com/en-us/research/wp-content/uploads/2016/02/putting.pdf
+
 # Assembly
 
 https://github.com/dmtrKovalenko/macos-assembly-http-server/blob/main/server.s

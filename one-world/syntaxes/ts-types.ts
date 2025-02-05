@@ -281,7 +281,7 @@ export const foldExpr = <T>(expr: SExpr | Blank, i: T, v: Visitor<T>): T => {
             return i;
         case 'if':
             i = foldExpr(expr.cond, i, v);
-            expr.yes.forEach((stmt) => {
+            expr.yes?.forEach((stmt) => {
                 i = foldStmt(stmt, i, v);
             });
             expr.no?.forEach((stmt) => {

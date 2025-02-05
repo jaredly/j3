@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Collection, Id, isRich, List, Node, Nodes, Table, Text, TextSpan } from '../shared/cnodes';
+import { childLocs, Collection, Id, isRich, List, Node, Nodes, Table, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { isBlank } from './flatenate';
 import { goLeft, isTag, justSel, selectEnd, selectStart, selUpdate, spanEnd, spanStart } from './handleNav';
@@ -15,17 +15,22 @@ import {
     Cursor,
     findTableLoc,
     lastChild,
+    move,
     NodeSelection,
     parentLoc,
     parentPath,
     Path,
     pathWithChildren,
     selStart,
+    SelUpdate,
     TextCursor,
     Top,
     Update,
 } from './utils';
 import { getCurrent } from './selections';
+import { idText } from './cursorSplit';
+import { KeyAction } from './keyActionToUpdate';
+import { handleDeleteTooMuch } from './multi-change';
 
 type JoinParent =
     | {
@@ -62,10 +67,23 @@ export const joinParent = (path: Path, top: Top): void | JoinParent => {
     return up ?? { type: 'list', pnode, parent, at };
 };
 
-const removeInPath = ({ root, children }: Path, loc: number): Path => ({
+export const removeInPath = ({ root, children }: Path, loc: number): Path => ({
     root,
     children: children.filter((f) => f != loc),
 });
+
+export const addInPath = ({ root, children }: Path, loc: number, parent: number): Path => ({
+    root,
+    children: addInChildren(children, loc, parent),
+});
+
+export const addInChildren = (children: number[], loc: number, parent: number): number[] => {
+    if (!children.includes(loc)) return children;
+    children = children.slice();
+    const at = children.indexOf(loc);
+    children.splice(at, 0, parent);
+    return children;
+};
 
 const modSelSideTip = (sel: SelStart, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): SelStart => {
     const res = mod(lastChild(sel.path), sel.cursor);
@@ -77,22 +95,22 @@ const modSelSideTip = (sel: SelStart, mod: (loc: number, cursor: Cursor) => void
 
 const modSelTip = (sel: NodeSelection, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): NodeSelection => ({
     start: modSelSideTip(sel.start, mod),
-    multi: sel.multi
-        ? {
-              end: sel.multi.end.cursor ? modSelSideTip(sel.multi.end as SelStart, mod) : sel.multi.end,
-              aux: sel.multi.aux?.cursor ? modSelSideTip(sel.multi.aux as SelStart, mod) : sel.multi.aux,
-          }
-        : undefined,
+    // multi: sel.multi
+    //     ? {
+    //           end: sel.multi.end.cursor ? modSelSideTip(sel.multi.end as SelStart, mod) : sel.multi.end,
+    //           aux: sel.multi.aux?.cursor ? modSelSideTip(sel.multi.aux as SelStart, mod) : sel.multi.aux,
+    //       }
+    //     : undefined,
 });
 
 const removeParent = (sel: NodeSelection, loc: number): NodeSelection => ({
     start: { ...sel.start, ...selEnd(removeInPath(sel.start.path, loc)) },
-    multi: sel.multi
-        ? {
-              end: { ...sel.multi.end, ...selEnd(removeInPath(sel.multi.end.path, loc)) },
-              aux: sel.multi.aux ? { ...sel.multi.aux, ...selEnd(removeInPath(sel.multi.aux.path, loc)) } : undefined,
-          }
-        : undefined,
+    // multi: sel.multi
+    //     ? {
+    //           end: { ...sel.multi.end, ...selEnd(removeInPath(sel.multi.end.path, loc)) },
+    //           aux: sel.multi.aux ? { ...sel.multi.aux, ...selEnd(removeInPath(sel.multi.aux.path, loc)) } : undefined,
+    //       }
+    //     : undefined,
 });
 
 export const unwrap = (path: Path, top: Top, sel: NodeSelection) => {
@@ -103,11 +121,24 @@ export const unwrap = (path: Path, top: Top, sel: NodeSelection) => {
     }
     if (node.type !== 'list') return; // TODO idk
     const repl = replaceAt(parentPath(path).children, top, lastChild(path), ...node.children);
-    repl.selection = removeParent(sel, lastChild(path));
+    repl.selection = [move(removeParent(sel, lastChild(path)))];
     rebalanceSmooshed(repl, top);
     joinSmooshed(repl, top);
     disolveSmooshed(repl, top);
     return repl;
+};
+
+export const findParent = (nodes: Update['nodes'], loc: number): number | null => {
+    for (let key of Object.keys(nodes)) {
+        const node = nodes[+key];
+        if (node) {
+            const children = childLocs(node);
+            if (children.includes(loc)) {
+                return +key;
+            }
+        }
+    }
+    return null;
 };
 
 // oofs. the horror.
@@ -120,19 +151,24 @@ export const disolveSmooshed = (update: Update, top: Top) => {
         let node = update.nodes[+loc];
         if (node?.type === 'list' && (node.kind === 'smooshed' || node.kind === 'spaced') && node.children.length === 1) {
             const child = node.children[0];
-            const spath = update.selection?.start.path;
-            if (!spath) return;
-            const at = spath.children.indexOf(node.loc);
-            if (at === -1) return;
-            update.nodes[node.loc] = null;
-            if (at === 0) {
+            // const spath = update.selection?.start.path;
+            // if (!spath) return;
+            // const at = spath.children.indexOf(node.loc);
+            // if (at === -1) return;
+            if (top.root === node.loc) {
                 update.root = child;
             } else {
-                const pnode = top.nodes[spath.children[at - 1]];
+                const ploc = findParent(update.nodes, node.loc) ?? findParent(top.nodes, node.loc);
+                if (ploc == null) {
+                    console.warn(`cant collapse smoosh; cant find parent of ${node.loc}`);
+                    return;
+                }
+                const pnode = update.nodes[ploc] ?? top.nodes[ploc];
                 const parent = replaceIn(pnode, node.loc, child);
                 update.nodes[parent.loc] = parent;
             }
-            update.selection = removeParent(update.selection!, node.loc);
+            update.nodes[node.loc] = null;
+            update.selection = addUpdate(update.selection, { type: 'unparent', loc: node.loc });
         }
     });
 };
@@ -150,7 +186,7 @@ export const joinSmooshed = (update: Update, top: Top) => {
 
                 if (prev.type === 'id' && child.type === 'id' && (prev.ccls === child.ccls || child.text === '' || prev.text === '')) {
                     // we delete one of these
-                    update.nodes[prev.loc] = { ...prev, text: prev.text + child.text };
+                    update.nodes[prev.loc] = { ...prev, text: prev.text + child.text, ccls: prev.ccls == null ? child.ccls : prev.ccls };
                     update.nodes[child.loc] = null;
 
                     const children = node.children.slice();
@@ -159,27 +195,35 @@ export const joinSmooshed = (update: Update, top: Top) => {
                     update.nodes[node.loc] = node;
                     i--;
 
-                    if (update.selection) {
-                        update.selection = modSelTip(update.selection, (last, cursor) => {
-                            if (last === cloc) {
-                                if (cursor.type === 'id') {
-                                    return {
-                                        loc: ploc,
-                                        cursor: {
-                                            type: 'id',
-                                            end: cursor.end + splitGraphemes(prev.text).length,
-                                        },
-                                    };
-                                }
-                                return { loc: ploc, cursor };
-                            }
-                        });
-                    }
+                    update.selection = addUpdate(update.selection, {
+                        type: 'id',
+                        from: { loc: cloc, offset: 0 },
+                        to: { loc: ploc, offset: splitGraphemes(prev.text).length },
+                    });
+                    // if (update.selection) {
+                    //     update.selection = modSelTip(update.selection, (last, cursor) => {
+                    //         if (last === cloc) {
+                    //             if (cursor.type === 'id') {
+                    //                 return {
+                    //                     loc: ploc,
+                    //                     cursor: {
+                    //                         type: 'id',
+                    //                         end: cursor.end + splitGraphemes(prev.text).length,
+                    //                     },
+                    //                 };
+                    //             }
+                    //             return { loc: ploc, cursor };
+                    //         }
+                    //     });
+                    // }
                 }
             }
         }
     });
 };
+
+export const addUpdate = (s: NodeSelection | SelUpdate[] | undefined, update: SelUpdate) =>
+    s == null ? [update] : Array.isArray(s) ? [...s, update] : [move(s), update];
 
 export const rebalanceSmooshed = (update: Update, top: Top) => {
     // So, we go through anything that has an update...
@@ -189,6 +233,7 @@ export const rebalanceSmooshed = (update: Update, top: Top) => {
             for (let i = 0; i < node.children.length; i++) {
                 const cloc = node.children[i];
                 const child = update.nodes[cloc] ?? top.nodes[cloc];
+                // We have a spaces within a spaced. splice grandchildren in
                 if (child?.type === 'list' && child.kind === 'spaced') {
                     const children = node.children.slice();
                     children.splice(i, 1, ...child.children);
@@ -196,7 +241,7 @@ export const rebalanceSmooshed = (update: Update, top: Top) => {
                     update.nodes[node.loc] = node;
                     i += child.children.length - 1;
                     // remove the thing
-                    if (update.selection) update.selection = removeParent(update.selection, cloc);
+                    update.selection = addUpdate(update.selection, { type: 'unparent', loc: cloc });
                 }
             }
         }
@@ -212,14 +257,14 @@ export const rebalanceSmooshed = (update: Update, top: Top) => {
                     update.nodes[node.loc] = node;
                     i += child.children.length - 1;
                     // remove the thing
-                    if (update.selection) update.selection = removeParent(update.selection, cloc);
+                    update.selection = addUpdate(update.selection, { type: 'unparent', loc: cloc });
                 }
             }
         }
     });
 };
 
-const removeSelf = (state: TestState, current: { path: Path; node: Node }): Update | void => {
+export const removeSelf = (state: TestState, current: { path: Path; node: Node }): Update | void => {
     const pnode = state.top.nodes[parentLoc(current.path)];
     if (pnode && pnode.type === 'list' && pnode.kind === 'smooshed') {
         // removing an item from a smooshed, got to reevaulate it
@@ -289,7 +334,7 @@ const removeSelf = (state: TestState, current: { path: Path; node: Node }): Upda
     return up;
 };
 
-const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
+export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[] | void => {
     const got = joinParent(state.sel.start.path, state.top);
     if (!got) {
         const pnode = state.top.nodes[parentLoc(state.sel.start.path)];
@@ -299,8 +344,9 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             if (at === -1) return;
             const node = state.top.nodes[loc];
             if (node.type === 'id') {
+                if (cursor.type !== 'id') throw new Error(`invalid cursor for id node`);
                 // check empty cursor
-                const text = (cursor.type === 'id' && cursor.text) || splitGraphemes(node.text);
+                const text = idText(state.top.tmpText, cursor, node);
                 if (text.length === 0) {
                     // remove the span
                     const spans = pnode.spans.slice();
@@ -324,12 +370,19 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
         return; // prolly at the toplevel? or in a text or table, gotta handle tat
     }
 
-    let node = state.top.nodes[lastChild(state.sel.start.path)];
+    // const tmpText: NonNullable<Update['tmpText']> = {};
+
+    const node = state.top.nodes[lastChild(state.sel.start.path)];
     const remap: Nodes = {};
     // "maybe commit text changes"
-    if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
-        node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
-    }
+    // if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
+    //     node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
+    // }
+    // if (node.type === 'id' && state.top.tmpText[node.loc]) {
+    //     tmpText[node.loc] = undefined;
+    //     const text = state.top.tmpText[node.loc];
+    //     node = remap[node.loc] = { ...node, text: text.join(''), ccls: text.length === 0 ? undefined : node.ccls };
+    // }
 
     // Here's the table folks
     if (got.type === 'table') {
@@ -384,6 +437,7 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
             selection: {
                 start: fixSelection(selStart(pathWithChildren(parentPath(parent), ...selPath), cursor), result.nodes, state.top),
             },
+            // tmpText,
         };
 
         rebalanceSmooshed(up, state.top);
@@ -442,14 +496,24 @@ const leftJoin = (state: TestState, cursor: Cursor): Update | void => {
         const start = selectEnd(pathWithChildren(parentPath(state.sel.start.path), prev.loc), state.top);
         if (!start) return;
         const res = handleDelete({ top: { ...state.top, nodes: { ...state.top.nodes, ...remap } }, sel: { start } });
-        res!.nodes[node.loc] = node;
         return res;
     }
 
     return flatToUpdateNew(flat, { node, cursor }, { isParent: true, node: pnode, path: parent }, {}, state.top);
 };
 
-export const handleDelete = (state: TestState): Update | void => {
+export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
+    if (state.sel.end && state.sel.end.key !== state.sel.start.key) {
+        // // // // - // // // //
+        const up = handleDeleteTooMuch(state);
+        if (up) {
+            rebalanceSmooshed(up, state.top);
+            joinSmooshed(up, state.top);
+            disolveSmooshed(up, state.top);
+        }
+        return up;
+    }
+
     const current = getCurrent(state.sel, state.top);
     switch (current.type) {
         case 'list': {
@@ -488,10 +552,10 @@ export const handleDelete = (state: TestState): Update | void => {
                         );
                     }
                     if (current.node.type === 'list' && current.node.children.length === 0) {
-                        return removeSelf(state, current);
+                        return [{ type: 'remove-self', path: current.path }]; //removeSelf(state, current);
                     }
                     if (current.node.type === 'table' && current.node.rows.length === 0) {
-                        return removeSelf(state, current);
+                        return [{ type: 'remove-self', path: current.path }]; //removeSelf(state, current);
                     }
                     return selUpdate(selStart(current.path, { type: 'list', where: 'start' }));
                 } else if (current.cursor.where === 'start' && current.node.type === 'list' && current.node.children.length === 0) {
@@ -516,7 +580,7 @@ export const handleDelete = (state: TestState): Update | void => {
                 if (left === right) {
                     left--;
                 }
-                const text = current.cursor.text?.slice() ?? splitGraphemes(current.node.text);
+                const text = idText(state.top.tmpText, current.cursor, current.node).slice();
                 text.splice(left, right - left);
                 if (text.length === 0) {
                     const ppath = parentPath(state.sel.start.path);
@@ -533,7 +597,11 @@ export const handleDelete = (state: TestState): Update | void => {
                         );
                     }
                 }
-                return { nodes: {}, selection: { start: selStart(state.sel.start.path, { type: 'id', end: left, text }) } };
+                return {
+                    nodes: { [current.node.loc]: { ...current.node, text: text.join(''), ccls: text.length === 0 ? undefined : current.node.ccls } },
+                    // tmpText: { [current.node.loc]: text },
+                    selection: { start: selStart(state.sel.start.path, { type: 'id', end: left }) },
+                };
             }
         }
         case 'text': {
@@ -557,17 +625,14 @@ export const handleDelete = (state: TestState): Update | void => {
             // TODO: gotta do a left/right story here pls
 
             if (current.cursor.type !== 'text') return;
+            // const grems = state.top.tmpText[`${current.node.loc}:${current.cursor.end.index}`];
             return handleTextDelete(
                 state,
                 current,
                 current.cursor.end,
                 current.cursor.end,
-                current.cursor.end.text
-                    ? {
-                          index: current.cursor.end.index,
-                          grems: current.cursor.end.text,
-                      }
-                    : undefined,
+                // grems ? { index: current.cursor.end.index, grems } : undefined,
+                undefined,
             );
         }
 
@@ -623,9 +688,7 @@ export const handleTextDelete = (
     right: Spat,
     text?: { index: number; grems: string[] },
 ): Update | void => {
-    // if (current.cursor.type !== 'text') return;
     const spans = current.node.spans.slice();
-    // let { left, right, text } = textCursorSides2(current.cursor);
 
     if (text) {
         const span = spans[text.index];
@@ -691,11 +754,13 @@ export const handleTextDelete = (
         if (span.type === 'text') {
             const grems = text?.index === left.index ? text.grems : splitGraphemes(span.text);
             grems.splice(left.cursor, right.cursor - left.cursor);
+            spans[left.index] = { ...span, text: grems.join('') };
             return {
-                nodes: {},
+                nodes: { [current.node.loc]: { ...current.node, spans } },
                 selection: {
-                    start: selStart(state.sel.start.path, { type: 'text', end: { index: left.index, text: grems, cursor: left.cursor } }),
+                    start: selStart(state.sel.start.path, { type: 'text', end: { index: left.index, cursor: left.cursor } }),
                 },
+                // tmpText: { [`${current.node.loc}:${left.index}`]: grems },
             };
         }
     }

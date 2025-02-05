@@ -2,7 +2,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Nodes, Id, Collection, Text, Node, TextSpan } from '../shared/cnodes';
 import { SelStart } from './handleShiftNav';
 
-export const spanLength = (span: TextSpan<unknown>, text: undefined | TextCursor['end'], index: number) =>
+export const spanLength = (span: TextSpan<unknown>, text: undefined | { index: number; text?: string[] }, index: number) =>
     index === text?.index && text?.text ? text.text.length : span.type === 'text' ? splitGraphemes(span.text).length : 1;
 
 // import { IRSelection } from "../shared/IR/intermediate";
@@ -52,12 +52,15 @@ export const pathWithChildren = (path: Path, ...children: number[]) => ({
 export type IdCursor = {
     type: 'id';
     end: number;
-    text?: string[];
 };
 
 export type TextCursor = {
     type: 'text';
-    end: { index: number; cursor: number; text?: string[] };
+    end: {
+        index: number;
+        cursor: number;
+        // text?: string[]
+    };
 };
 export type ListWhere = 'before' | 'start' | 'inside' | 'end' | 'after';
 export type CollectionCursor = ListCursor | { type: 'control'; index: number };
@@ -91,10 +94,21 @@ export const singleSelect = (sel: SelStart): NodeSelection => ({ start: sel });
 export type NodeSelection = {
     start: { path: Path; key: string; cursor: Cursor; returnToHoriz?: number; level?: number };
     end?: { path: Path; key: string; cursor: Cursor; level?: number; excel?: number };
-    multi?: { end: { path: Path; key: string; cursor?: Cursor }; aux?: { path: Path; key: string; cursor?: Cursor } };
+    // multi?: { end: { path: Path; key: string; cursor?: Cursor }; aux?: { path: Path; key: string; cursor?: Cursor } };
 };
 
-export type Top = { nodes: Nodes; root: number; nextLoc: number };
+export type TmpText = undefined | never; // Record<string, string[]>;
+
+export const getIdText = (tmp: TmpText, loc: number): string[] | undefined => undefined; // tmp[loc + ''];
+export const getTextText = (tmp: TmpText, loc: number, index: number): string[] | undefined => undefined; //  tmp[`${loc}:${index}`];
+
+// tmpText... on top? yeah ok seems like the right spot for it.
+export type Top = {
+    nodes: Nodes;
+    root: number;
+    nextLoc: number;
+    tmpText?: TmpText;
+};
 
 export const getNode = (path: Path, top: Top) => top.nodes[path.children[path.children.length - 1]];
 
@@ -117,8 +131,7 @@ export type Current =
 
 ok so actually what I want is:
 - cursors[] Cursor
-- highlight ; SelectionHighlight
-
+- highlight : SelectionHighlight
 
 */
 
@@ -132,24 +145,100 @@ export type SelectionStatuses = Record<
 
 export type Highlight =
     | { type: 'full' }
-    | { type: 'id'; start?: number; end?: number }
+    | { type: 'id'; spans: { start?: number; end?: number }[] }
     | { type: 'list'; opener: boolean; closer: boolean; paired?: number }
     // TODO table??
-    | { type: 'text'; spans: (boolean | { start?: number; end?: number })[]; opener: boolean; closer: boolean };
+    | { type: 'text'; spans: (boolean | { start?: number; end?: number }[])[]; opener: boolean; closer: boolean };
 
-export type Update = {
+export const mergeHighlights = (one: Highlight | undefined, two: Highlight | undefined): Highlight | undefined => {
+    if (!one) return two;
+    if (!two) return one;
+    if (one.type === 'full') return one;
+    if (two.type === 'full') return two;
+    if (one.type === 'id' && two.type === 'id') {
+        return { type: 'id', spans: one.spans.concat(two.spans) };
+    }
+    if (one.type === 'text' && two.type === 'text') {
+        return {
+            type: 'text',
+            opener: one.opener || two.opener,
+            closer: one.closer || two.closer,
+            spans: one.spans.map((s, i) =>
+                s === true || two.spans[i] === true ? true : s === false ? two.spans[i] : two.spans[i] === false ? s : [...s, ...two.spans[i]],
+            ),
+        };
+    }
+    if (one.type === 'list' && two.type === 'list') {
+        return { type: 'list', closer: one.closer || two.closer, opener: one.opener || two.opener, paired: one.paired ?? two.paired };
+    }
+    return one; // arbitrary
+};
+
+/*
+
+TopAction = {
+    type: 'update',
     nodes: Record<string, Node | null>;
     root?: number;
     nextLoc?: number;
-    selection?: NodeSelection;
-};
+    // the selectionChange would update the Selection to the new dealio, right?
+    selectionChange?: SelectionChange;
+}
 
-// export const splitOnCursor = (id: Id<number>, cursor: IdCursor): [string[], string[], string[]] => {
-//     const text = cursor.text ?? splitGraphemes(id.text);
-//     const left = cursor.start ? Math.min(cursor.start, cursor.end) : cursor.end;
-//     const right = cursor.start ? Math.max(cursor.start, cursor.end) : cursor.end;
-//     return [text.slice(0, left), text.slice(left, right), text.slice(right)];
-// };
+{
+    type: 'selection',
+}
+
+Action...
+
+ok, so an update should ... also have like a 'selectionDiff'
+
+hrmmmm whattttt about start/enddddd.
+so, for the most part, updates... hm.
+OK So SelectionUpdate is updating a Cursor.
+but a cursor might jump to a different path.
+OK So more concretely, it's updating a SelStart.
+
+? is it possible for an Update action to need multiple SelectionUpdates? might be.
+ooh ok so the /multicursor/ case would be like /dup + update/
+
+
+Multi select:
+selUpdates -
+- move NodeSelection
+- reparent Path -> Path
+- dump (like if a bunch of nodes were deleted, you list the path keys to filter by, and all visits within get dumped on a single spot)
+- if a list was unwrapped, handle before/after
+-
+
+*/
+
+export const move = (to: NodeSelection): SelUpdate => ({ type: 'move', to });
+
+export type SelUpdate =
+    | { type: 'move'; to: NodeSelection }
+    // | { type: 'reparent'; oldPath: Path; newPath: Path }
+    | { type: 'unparent'; loc: number } // remove from a parent list
+    | { type: 'addparent'; loc: number; parent: number }
+    // | { type: 'unwrapList'; path: Path; left: SelStart; right: SelStart }
+    // | { type: 'delete'; paths: Path[]; dest: SelStart }
+    // This assumes:
+    // that for a split, the [right] side is what gets a new path. I think that's fine to
+    // rely on?
+    // How about for a join? Again it would be the Right side that would be subsumed.
+    // Assuming that from and to are siblings. things would break otherwise
+    | { type: 'id'; from: { loc: number; offset: number }; to: { loc: number; offset: number } };
+// | { type: 'id'; from: { path: Path; offset: number }; to: { path: Path; offset: number } };
+
+export type JustSelUpdate = Omit<Update, 'selection'> & { selection?: NodeSelection };
+
+export type Update = {
+    nodes: Record<number, Node | null>;
+    root?: number;
+    nextLoc?: number;
+    selection?: NodeSelection | SelUpdate[];
+    // tmpText?: Record<string, string[] | undefined>;
+};
 
 export const withPartial = (path: Path, sel?: PartialSel) =>
     sel

@@ -18,6 +18,8 @@ import {
     Update,
 } from './utils';
 import { getCurrent } from './selections';
+import { SelStart } from './handleShiftNav';
+import { idText, spanText } from './cursorSplit';
 
 export const justSel = (path: Path, cursor: Cursor, startCursor?: Cursor) => ({
     nodes: {},
@@ -242,7 +244,7 @@ export const goRight = (path: Path, top: Top, tab = false): NodeSelection['start
     }
 };
 
-export const handleNav = (key: 'ArrowLeft' | 'ArrowRight', state: TestState): Update | void => {
+export const handleNav = (key: 'ArrowLeft' | 'ArrowRight', state: TestState): SelStart | void => {
     if (key === 'ArrowLeft') {
         const current = getCurrent(state.sel, state.top);
         return navLeft(current, state);
@@ -256,20 +258,20 @@ export const handleNav = (key: 'ArrowLeft' | 'ArrowRight', state: TestState): Up
 export const sideEqual = (one: { cursor: number; index: number }, two: { cursor: number; index: number }) =>
     one.cursor === two.cursor && one.index === two.index;
 
-export const navRight = (current: Current, state: TestState): Update | void => {
+export const navRight = (current: Current, state: TestState): SelStart | void => {
     switch (current.type) {
         case 'id': {
             if (current.start != null && current.start !== current.cursor.end) {
                 const { right } = cursorSides(current.cursor, current.start);
-                return justSel(current.path, { type: 'id', end: right, text: current.cursor.text });
+                return selStart(current.path, { type: 'id', end: right });
             }
-            const text = current.cursor.text ?? splitGraphemes(current.node.text);
+            const text = idText(state.top.tmpText, current.cursor, current.node);
             if (current.cursor.end < text.length) {
-                return justSel(current.path, { type: 'id', end: current.cursor.end + 1, text: current.cursor.text });
+                return selStart(current.path, { type: 'id', end: current.cursor.end + 1 });
             }
             const sel = goRight(current.path, state.top);
             if (sel) {
-                return { nodes: {}, selection: { start: sel } };
+                return sel;
             }
             break;
         }
@@ -277,57 +279,53 @@ export const navRight = (current: Current, state: TestState): Update | void => {
             if (current.cursor.type === 'text') {
                 // if (current.cursor.start && !sideEqual(current.cursor.start, current.cursor.end)) {
                 //     const { right } = textCursorSides2(current.cursor);
-                //     return justSel(current.path, { type: 'text', end: right });
+                //     return selStart(current.path, { type: 'text', end: right });
                 // }
                 const { end } = current.cursor;
                 const span = current.node.spans[end.index];
                 if (span.type !== 'text') {
                     if (end.cursor === 0) {
-                        return selUpdate(spanStart(span, end.index, current.path, state.top, true));
+                        return spanStart(span, end.index, current.path, state.top, true);
                     }
                     if (end.index < current.node.spans.length - 1) {
-                        return selUpdate(spanStart(current.node.spans[end.index + 1], end.index + 1, current.path, state.top, true));
+                        return spanStart(current.node.spans[end.index + 1], end.index + 1, current.path, state.top, true);
                     }
-                    return justSel(current.path, { type: 'list', where: 'after' });
+                    return selStart(current.path, { type: 'list', where: 'after' });
                 }
-                const text = end.text ?? splitGraphemes(span.text);
+                const text = spanText(state.top.tmpText, current.node.loc, end, span);
                 if (end.cursor < text.length) {
-                    return justSel(current.path, {
+                    return selStart(current.path, {
                         type: 'text',
-                        end: {
-                            index: end.index,
-                            cursor: end.cursor + 1,
-                            text: end.text,
-                        },
+                        end: { index: end.index, cursor: end.cursor + 1 },
                     });
                 }
                 if (end.index >= current.node.spans.length - 1) {
                     const parent = state.top.nodes[parentLoc(current.path)];
                     // Rich Text, we jump to the next item thankx
                     if (richNode(parent)) {
-                        return selUpdate(goRight(current.path, state.top));
+                        return goRight(current.path, state.top);
                     }
-                    return justSel(current.path, { type: 'list', where: 'after' });
+                    return selStart(current.path, { type: 'list', where: 'after' });
                 }
                 const idx = end.index + 1;
-                return selUpdate(spanStart(current.node.spans[idx], idx, current.path, state.top, true));
+                return spanStart(current.node.spans[idx], idx, current.path, state.top, true);
             }
 
             if (current.cursor.type === 'list') {
                 switch (current.cursor.where) {
                     case 'after':
                     case 'end':
-                        return selUpdate(goRight(current.path, state.top));
+                        return goRight(current.path, state.top);
                     case 'before':
                     case 'start':
                         if (current.node.spans.length > 0) {
-                            return selUpdate(spanStart(current.node.spans[0], 0, current.path, state.top, false));
+                            return spanStart(current.node.spans[0], 0, current.path, state.top, false);
                         } else {
-                            return justSel(current.path, { type: 'list', where: 'inside' });
+                            return selStart(current.path, { type: 'list', where: 'inside' });
                         }
                     case 'inside':
                         // TODO isRich
-                        return justSel(current.path, { type: 'list', where: 'after' });
+                        return selStart(current.path, { type: 'list', where: 'after' });
                 }
             }
             return;
@@ -336,32 +334,29 @@ export const navRight = (current: Current, state: TestState): Update | void => {
             if (current.cursor.type === 'list') {
                 switch (current.cursor.where) {
                     case 'after':
-                        return selUpdate(goRight(current.path, state.top));
+                        return goRight(current.path, state.top);
                     case 'before':
                     case 'start':
                         if (current.node.type === 'list') {
                             if (isTag(current.node.kind)) {
-                                const start = selectStart(pathWithChildren(current.path, current.node.kind.node), state.top);
-                                return start ? { nodes: {}, selection: { start } } : undefined;
+                                return selectStart(pathWithChildren(current.path, current.node.kind.node), state.top);
                             }
                             if (current.node.children.length > 0) {
-                                const start = selectStart(pathWithChildren(current.path, current.node.children[0]), state.top);
-                                return start ? { nodes: {}, selection: { start } } : undefined;
+                                return selectStart(pathWithChildren(current.path, current.node.children[0]), state.top);
                             } else {
-                                return justSel(current.path, { type: 'list', where: 'inside' });
+                                return selStart(current.path, { type: 'list', where: 'inside' });
                             }
                         }
                         if (current.node.type === 'table') {
                             if (current.node.rows.length > 0) {
-                                const start = selectStart(pathWithChildren(current.path, current.node.rows[0][0]), state.top);
-                                return start ? { nodes: {}, selection: { start } } : undefined;
+                                return selectStart(pathWithChildren(current.path, current.node.rows[0][0]), state.top);
                             } else {
-                                return justSel(current.path, { type: 'list', where: 'inside' });
+                                return selStart(current.path, { type: 'list', where: 'inside' });
                             }
                         }
                     case 'inside':
                     case 'end':
-                        return justSel(current.path, { type: 'list', where: 'after' });
+                        return selStart(current.path, { type: 'list', where: 'after' });
                 }
             }
         }
@@ -371,19 +366,19 @@ export const navRight = (current: Current, state: TestState): Update | void => {
 export const selUpdate = (sel?: void | NodeSelection['start'], start?: NodeSelection['end']): Update | void =>
     sel ? { nodes: {}, selection: start ? { start, end: sel } : { start: sel } } : undefined;
 
-export const navLeft = (current: Current, state: TestState): Update | void => {
+export const navLeft = (current: Current, state: TestState): SelStart | void => {
     switch (current.type) {
         case 'id': {
             if (current.start != null && current.start !== current.cursor.end) {
                 const { left } = cursorSides(current.cursor, current.start);
-                return justSel(current.path, { type: 'id', end: left, text: current.cursor.text });
+                return selStart(current.path, { type: 'id', end: left });
             }
             if (current.cursor.end > 0) {
-                return justSel(current.path, { type: 'id', end: current.cursor.end - 1, text: current.cursor.text });
+                return selStart(current.path, { type: 'id', end: current.cursor.end - 1 });
             }
             const sel = goLeft(current.path, state.top);
             if (sel) {
-                return { nodes: {}, selection: { start: sel } };
+                return sel;
             }
             break;
         }
@@ -391,97 +386,83 @@ export const navLeft = (current: Current, state: TestState): Update | void => {
             if (current.cursor.type === 'text') {
                 // if (current.cursor.start && !sideEqual(current.cursor.start, current.cursor.end)) {
                 //     const { left } = textCursorSides2(current.cursor);
-                //     return justSel(current.path, { type: 'text', end: left });
+                //     return selStart(current.path, { type: 'text', end: left });
                 // }
                 const { end } = current.cursor;
                 if (end.cursor > 0) {
                     const span = current.node.spans[end.index];
                     if (span.type !== 'text') {
-                        return selUpdate(spanEnd(current.node.spans[end.index], current.path, end.index, state.top, true));
+                        return spanEnd(current.node.spans[end.index], current.path, end.index, state.top, true);
                     }
 
-                    return justSel(current.path, {
+                    return selStart(current.path, {
                         type: 'text',
-                        end: {
-                            index: end.index,
-                            cursor: end.cursor - 1,
-                            text: end.text,
-                        },
+                        end: { index: end.index, cursor: end.cursor - 1 },
                     });
                 }
                 if (end.index > 0) {
                     const idx = end.index - 1;
-                    return selUpdate(spanEnd(current.node.spans[idx], current.path, idx, state.top, true));
+                    return spanEnd(current.node.spans[idx], current.path, idx, state.top, true);
                 }
                 if (richNode(state.top.nodes[parentLoc(current.path)])) {
-                    return selUpdate(goLeft(current.path, state.top));
+                    return goLeft(current.path, state.top);
                 }
-                return justSel(current.path, { type: 'list', where: 'before' });
+                return selStart(current.path, { type: 'list', where: 'before' });
             }
         }
         case 'list': {
             if (current.cursor.type === 'control' && current.node.type === 'list') {
                 if (current.cursor.index === 0) {
-                    return selUpdate(goLeft(current.path, state.top));
+                    return goLeft(current.path, state.top);
                 }
-                const start = selectEnd(pathWithChildren(current.path, current.node.children[current.cursor.index - 1]), state.top);
-                return start ? { nodes: {}, selection: { start } } : undefined;
+                return selectEnd(pathWithChildren(current.path, current.node.children[current.cursor.index - 1]), state.top);
             }
             if (current.cursor.type === 'list') {
                 switch (current.cursor.where) {
                     case 'before':
-                        return selUpdate(goLeft(current.path, state.top));
+                        return goLeft(current.path, state.top);
                     case 'start':
-                        return justSel(current.path, { type: 'list', where: 'before' });
+                        return selStart(current.path, { type: 'list', where: 'before' });
                     case 'after':
                     case 'end':
                         if (current.node.type === 'list') {
                             if (current.node.children.length > 0) {
-                                const start = selectEnd(
-                                    pathWithChildren(current.path, current.node.children[current.node.children.length - 1]),
-                                    state.top,
-                                );
-                                return start ? { nodes: {}, selection: { start } } : undefined;
+                                return selectEnd(pathWithChildren(current.path, current.node.children[current.node.children.length - 1]), state.top);
                             } else {
-                                return justSel(current.path, { type: 'list', where: 'inside' });
+                                return selStart(current.path, { type: 'list', where: 'inside' });
                             }
                         } else if (current.node.type === 'text') {
                             if (current.node.spans.length === 0) {
-                                return justSel(current.path, { type: 'list', where: 'inside' });
+                                return selStart(current.path, { type: 'list', where: 'inside' });
                             } else {
-                                return selUpdate(
-                                    spanEnd(
-                                        current.node.spans[current.node.spans.length - 1],
-                                        current.path,
-                                        current.node.spans.length - 1,
-                                        state.top,
-                                        false,
-                                    ),
+                                return spanEnd(
+                                    current.node.spans[current.node.spans.length - 1],
+                                    current.path,
+                                    current.node.spans.length - 1,
+                                    state.top,
+                                    false,
                                 );
                             }
                         }
                         if (current.node.type === 'table') {
                             if (current.node.rows.length > 0) {
                                 const last = current.node.rows[current.node.rows.length - 1];
-                                const start = selectEnd(pathWithChildren(current.path, last[last.length - 1]), state.top);
-                                return start ? { nodes: {}, selection: { start } } : undefined;
+                                return selectEnd(pathWithChildren(current.path, last[last.length - 1]), state.top);
                             } else {
-                                return justSel(current.path, { type: 'list', where: 'inside' });
+                                return selStart(current.path, { type: 'list', where: 'inside' });
                             }
                         }
                     case 'inside':
                         if (current.node.type === 'list' && isTag(current.node.kind)) {
                             if (current.node.kind.attributes) {
-                                const start = selectEnd(pathWithChildren(current.path, current.node.kind.attributes), state.top);
-                                return start ? { nodes: {}, selection: { start } } : undefined;
+                                return selectEnd(pathWithChildren(current.path, current.node.kind.attributes), state.top);
                             }
-                            const start = selectEnd(pathWithChildren(current.path, current.node.kind.node), state.top);
-                            return start ? { nodes: {}, selection: { start } } : undefined;
+                            return selectEnd(pathWithChildren(current.path, current.node.kind.node), state.top);
                         }
                         if (richNode(current.node)) {
-                            return selUpdate(goLeft(current.path, state.top));
+                            return goLeft(current.path, state.top);
                         }
-                        return justSel(current.path, { type: 'list', where: 'before' });
+                        return selStart(current.path, { type: 'list', where: 'before' });
                 }
             }
         }

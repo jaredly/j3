@@ -22,12 +22,16 @@ import {
     Update,
 } from './utils';
 import { getCurrent, ltCursor, orderSelections } from './selections';
+import { idText } from './cursorSplit';
+import { handleCopyMulti } from './multi-change';
+import { shape } from '../shared/shape';
 // import { textCursorSides2 } from './insertId';
 
 export type Src = { left: Loc; right?: Loc };
 
 export const nextLargerSpan = (sel: NodeSelection, spans: Src[], top: Top) => {
-    const multi = sel.multi ? multiSelChildren(sel, top) : { parent: parentPath(sel.start.path), children: [lastChild(sel.start.path)] };
+    // const multi = sel.multi ? multiSelChildren(sel, top) :
+    const multi = { parent: parentPath(sel.start.path), children: [lastChild(sel.start.path)] };
 
     if (!multi) {
         // console.log('no multi');
@@ -71,32 +75,29 @@ export const nextLargerSpan = (sel: NodeSelection, spans: Src[], top: Top) => {
     return best ? { left: best[1], right: best[2], parent: multi.parent } : null;
 };
 
-export const shiftExpand = (state: TestState, spans?: Src[]): Update | void => {
+export const shiftExpand = (state: TestState, spans?: Src[]): NodeSelection | void => {
     // console.log('hi');
-    if (!state.sel.multi) {
-        return { nodes: {}, selection: { start: state.sel.start, multi: { end: state.sel.start } } };
-    }
-
-    const next = spans ? nextLargerSpan(state.sel, spans, state.top) : null;
-
-    if (next) {
-        const left = pathWithChildren(next.parent, next.left[0].idx);
-        const right = pathWithChildren(next.parent, next.right[0].idx);
-        // TODO.... thissssss meansssss hm. that I'll need to be more fancy in how I store 'selection bounds'
-        return { nodes: {}, selection: { start: state.sel.start, multi: { end: selEnd(left), aux: selEnd(right) } } };
-    }
-
-    const path = state.sel.multi?.end.path ?? state.sel.start.path;
-    // TODO: use the parsed's stufffffff here too
-    const parent = parentPath(path);
-    return { nodes: {}, selection: { start: state.sel.start, multi: { end: selEnd(parent) } } };
+    // if (!state.sel.multi) {
+    //     return { start: state.sel.start, multi: { end: state.sel.start } };
+    // }
+    // const next = spans ? nextLargerSpan(state.sel, spans, state.top) : null;
+    // if (next) {
+    //     const left = pathWithChildren(next.parent, next.left[0].idx);
+    //     const right = pathWithChildren(next.parent, next.right[0].idx);
+    //     // TODO.... thissssss meansssss hm. that I'll need to be more fancy in how I store 'selection bounds'
+    //     return { start: state.sel.start, multi: { end: selEnd(left), aux: selEnd(right) } };
+    // }
+    // const path = state.sel.multi?.end.path ?? state.sel.start.path;
+    // // TODO: use the parsed's stufffffff here too
+    // const parent = parentPath(path);
+    // return { start: state.sel.start, multi: { end: selEnd(parent) } };
 };
 
-export const handleShiftNav = (state: TestState, key: 'ArrowLeft' | 'ArrowRight'): Update | void => {
+export const handleShiftNav = (state: TestState, key: 'ArrowLeft' | 'ArrowRight'): NodeSelection | void => {
     const at = state.sel.end ?? state.sel.start;
     const next = handleNav(key, { ...state, sel: { start: at } });
-    if (next && next.selection) {
-        return { nodes: {}, selection: { start: state.sel.start, end: next.selection.start } };
+    if (next) {
+        return { start: state.sel.start, end: next };
     }
     // if (state.sel.multi) {
     //     const next = nextLateral(state.sel.multi?.end, state.top, key === 'ArrowLeft');
@@ -139,12 +140,12 @@ export const nextLateral = (side: { path: Path }, top: Top, shift: boolean): Sel
     // return shift ? selectStart(npath, top) : selectEnd(npath, top);
 };
 
-export const expandLateral = (side: SelStart, top: Top, shift: boolean): Update | void => {
-    const sel = nextLateral(side, top, shift);
-    return sel ? { nodes: {}, selection: { start: side, multi: { end: sel } } } : undefined;
+export const expandLateral = (side: SelStart, top: Top, shift: boolean): NodeSelection | void => {
+    // const sel = nextLateral(side, top, shift);
+    // return sel ? { start: side, multi: { end: sel } } : undefined;
 };
 
-export type SelSide = NonNullable<NodeSelection['multi']>['end'];
+export type SelSide = { path: Path; key: string };
 export type SelStart = NodeSelection['start'];
 
 export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSelection['start'] | void => {
@@ -202,7 +203,7 @@ export const goTabLateral = (side: SelStart, top: Top, shift: boolean): NodeSele
     }
 
     if (cursor.type === 'id' && node.type === 'id') {
-        const text = cursor.text ?? splitGraphemes(node.text);
+        const text = idText(top.tmpText, cursor, node);
         if (cursor.end === (shift ? 0 : text.length)) {
             const parent = top.nodes[parentLoc(path)];
             if (parent?.type === 'list' && parent.kind === 'smooshed') {
@@ -261,39 +262,32 @@ const wordNext = (node: Text<number>, left: boolean, index: number, cursor: numb
     return { index, cursor: i };
 };
 
-export const wordNav = (state: TestState, left: boolean, shift: boolean | undefined): Update | void => {
+export const wordNav = (state: TestState, left: boolean, shift: boolean | undefined): NodeSelection | void => {
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
-        const { index, cursor, text } = current.cursor.end;
-        const next = wordNext(current.node, left, index, cursor, text);
+        const { index, cursor } = current.cursor.end;
+        const next = wordNext(current.node, left, index, cursor, undefined); // state.top.tmpText[`${current.node.loc}:${index}`]);
         if (next != null) {
-            return selUpdate(
-                selStart(current.path, {
-                    type: 'text',
-                    end: {
-                        cursor: next.cursor,
-                        index: next.index,
-                        text: current.cursor.end.index === next.index ? current.cursor.end.text : undefined,
-                    },
-                }),
-                shift ? state.sel.start : undefined,
-                // state.sel.end,
-            );
+            const start = selStart(current.path, {
+                type: 'text',
+                end: { cursor: next.cursor, index: next.index },
+            });
+            return shift ? { start: state.sel.start, end: start } : { start };
         }
     }
     const next = goTabLateral(state.sel.start, state.top, left);
-    return selUpdate(next);
+    return next ? { start: next } : undefined;
 };
 
-export const handleTab = (state: TestState, shift: boolean): Update | void => {
+export const handleTab = (state: TestState, shift: boolean): SelStart | void => {
     // if (state.sel.end)
     const next = goTabLateral(state.sel.start, state.top, shift);
-    return selUpdate(next);
+    return next;
 };
 
 // TabLeft
 
-export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { type: 'id' }>, top: Top, left: boolean): Update | void => {
+export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { type: 'id' }>, top: Top, left: boolean): NodeSelection | void => {
     if (left && cursor.end === 0) {
         if (start == null || start === cursor.end) {
             const parent = top.nodes[parentLoc(path)];
@@ -313,7 +307,7 @@ export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { 
         return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
     }
 
-    const text = cursor.text ?? splitGraphemes(node.text);
+    const text = idText(top.tmpText, cursor, node);
     if (!left && cursor.end === text.length) {
         if (start == null || start === cursor.end) {
             const parent = top.nodes[parentLoc(path)];
@@ -331,7 +325,11 @@ export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { 
         return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
     }
     // left--
-    return justSel(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }, start ? { ...cursor, end: start } : cursor);
+    return {
+        start: selStart(path, start ? { ...cursor, end: start } : cursor),
+        end: selStart(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }),
+    };
+    // return justSel(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }, start ? { ...cursor, end: start } : cursor);
 };
 
 // export const handleShiftText = (
@@ -388,6 +386,13 @@ export type Mods = { meta?: boolean; ctrl?: boolean; alt?: boolean; shift?: bool
 
 export const handleSpecial = (state: TestState, key: string, mods: Mods): void | Update => {
     const current = getCurrent(state.sel, state.top);
+    if (key === 'v' && mods.meta) return;
+    if (key === 'c' && mods.meta) {
+        const copied = handleCopyMulti(state);
+        console.log(copied ? shape(copied.tree) : 'nothing to copy');
+        navigator.clipboard.writeText(JSON.stringify(copied));
+        return;
+    }
     if (key === '\n' && mods.meta) {
         let path = current.cursor.type === 'list' && current.cursor.where === 'inside' ? state.sel.start.path : parentPath(state.sel.start.path);
         while (path.children.length) {
@@ -407,14 +412,15 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
 
             const [left, right] = ltCursor(sc, ec) ? [sc, ec] : [ec, sc];
 
-            const text = sc.end.text
-                ? { grems: sc.end.text, index: sc.end.index }
-                : ec.end.text
-                ? { grems: ec.end.text, index: ec.end.index }
-                : undefined;
             const node = state.top.nodes[lastChild(state.sel.start.path)];
+            // const grems = state.top.tmpText[`${node.loc}:${cursor.end.index}`]
+            // const text = sc.end.text
+            //     ? { grems: sc.end.text, index: sc.end.index }
+            //     : ec.end.text
+            //     ? { grems: ec.end.text, index: ec.end.index }
+            //     : undefined;
             if (node.type === 'text') {
-                const res = specialTextMod(node, text, left.end, right.end, mod);
+                const res = specialTextMod(node, state.top.tmpText, left.end, right.end, mod);
                 return res
                     ? {
                           nodes: { [node.loc]: res.node },
@@ -426,7 +432,7 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
                     : undefined;
             }
         }
-        const [left, middle, right] = orderSelections(state.sel.start, state.sel.end, state.top);
+        // const [left, middle, right] = orderSelections(state.sel.start, state.sel.end, state.top);
 
         // TODO: iterate through all middles, and if everything is a text, go to town.
     }
@@ -459,29 +465,29 @@ const lastCommonAncestor = (one: number[], two: number[]) => {
 };
 
 export const multiSelChildren = (sel: NodeSelection, top: Top) => {
-    if (!sel.multi) return null;
-    const base = sel.multi.aux ?? sel.start;
-    if (base.path.root.top !== sel.multi.end.path.root.top) return null; // TODO multi-top life
-    if (base.key === sel.multi.end.key) {
-        return { parent: parentPath(base.path), children: [lastChild(base.path)] };
-    }
-    // so, we ... find the least common ancestor
-    let lca = lastCommonAncestor(base.path.children, sel.multi.end.path.children);
-    // console.log('cla', lca);
-    if (!lca.common.length) return null;
-    const parent: Path = { root: base.path.root, children: lca.common };
-    if (lca.one == null || lca.two == null) {
-        // return { parent, children: lca.one == null ? [lca.two] : [lca.one] };
-        throw new Error(`lca didnt work`);
-    }
-    const pnode = top.nodes[lastChild(parent)];
-    const locs = childLocs(pnode);
-    // if (pnode.type !== 'list') return null; // not strings or stuff just yet sry
-    const one = locs.indexOf(lca.one);
-    const two = locs.indexOf(lca.two);
-    const left = one < two ? one : two;
-    const right = one < two ? two : one;
-    return { parent, children: locs.slice(left, right + 1) };
+    // if (!sel.multi) return null;
+    // const base = sel.multi.aux ?? sel.start;
+    // if (base.path.root.top !== sel.multi.end.path.root.top) return null; // TODO multi-top life
+    // if (base.key === sel.multi.end.key) {
+    //     return { parent: parentPath(base.path), children: [lastChild(base.path)] };
+    // }
+    // // so, we ... find the least common ancestor
+    // let lca = lastCommonAncestor(base.path.children, sel.multi.end.path.children);
+    // // console.log('cla', lca);
+    // if (!lca.common.length) return null;
+    // const parent: Path = { root: base.path.root, children: lca.common };
+    // if (lca.one == null || lca.two == null) {
+    //     // return { parent, children: lca.one == null ? [lca.two] : [lca.one] };
+    //     throw new Error(`lca didnt work`);
+    // }
+    // const pnode = top.nodes[lastChild(parent)];
+    // const locs = childLocs(pnode);
+    // // if (pnode.type !== 'list') return null; // not strings or stuff just yet sry
+    // const one = locs.indexOf(lca.one);
+    // const two = locs.indexOf(lca.two);
+    // const left = one < two ? one : two;
+    // const right = one < two ? two : one;
+    // return { parent, children: locs.slice(left, right + 1) };
 };
 
 export const multiSelKeys = (parent: Path, children: number[]) => {

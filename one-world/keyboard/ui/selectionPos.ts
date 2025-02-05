@@ -4,6 +4,8 @@ import { splitGraphemes } from '../../../src/parse/splitGraphemes';
 import { lastChild, NodeSelection, Path, pathWithChildren, selStart, Top } from '../utils';
 import { getCurrent } from '../selections';
 import { goLeft, goRight, handleNav, isTag, selectEnd, selectStart } from '../handleNav';
+import { SelStart } from '../handleShiftNav';
+import { idText, spanText } from '../cursorSplit';
 
 const CLOSE = 10;
 
@@ -22,7 +24,7 @@ const deb = (at: { left: number; top: number; height: number }, color: string) =
 };
 
 export const posUp = (sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>) => {
-    const current = selectionPos(sel, refs, top);
+    const current = selectionPos(sel.start, refs, top);
     if (!current) return;
     if (sel.start.returnToHoriz != null) {
         current.left = sel.start.returnToHoriz;
@@ -37,7 +39,7 @@ export const posUp = (sel: NodeSelection, top: Top, refs: Record<number, HTMLEle
 };
 
 export const posDown = (sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>) => {
-    const current = selectionPos(sel, refs, top);
+    const current = selectionPos(sel.start, refs, top);
     if (!current) return;
     if (sel.start.returnToHoriz != null) {
         current.left = sel.start.returnToHoriz;
@@ -55,11 +57,11 @@ const boxAt = (box: DOMRect): CPos => ({ left: box.left, top: box.top, height: b
 
 // OK I broke down and did. I think its the right call.
 export const selectionPos = (
-    sel: TestState['sel'],
+    sel: SelStart,
     refs: Record<number, HTMLSpanElement>,
     top: Top,
 ): { left: number; top: number; height: number } | null => {
-    const cur = getCurrent(sel, top);
+    const cur = getCurrent({ start: sel }, top);
     const span = refs[cur.node.loc];
     if (!span) {
         console.log('no span for', cur.node.loc);
@@ -68,7 +70,7 @@ export const selectionPos = (
     const range = new Range();
     switch (cur.type) {
         case 'id': {
-            const text = cur.cursor.text ?? splitGraphemes(cur.node.text);
+            const text = idText(top.tmpText, cur.cursor, cur.node);
             if (text.length === 0) {
                 return boxAt(span.getBoundingClientRect());
             }
@@ -162,7 +164,7 @@ export const selectionPos = (
                         first = first.firstChild;
                     }
                     if (!first) return null;
-                    const text = cur.cursor.end.text ?? splitGraphemes(tspan.text);
+                    const text = spanText(top.tmpText, cur.node.loc, cur.cursor.end, tspan);
                     const at = text.slice(0, cur.cursor.end.cursor).join('').length;
                     range.setStart(first, at);
                     range.setEnd(first, at);
@@ -182,24 +184,58 @@ export type CPos = { left: number; top: number; height: number };
 // We only need to check the starts & ends of all children for the closest one.
 // maybe?
 export const posInList = (path: Path, pos: { x: number; y: number }, refs: Record<number, HTMLElement>, top: Top) => {
+    // console.log('pos in list', path, pos, refs, top);
     const node = top.nodes[lastChild(path)];
-    let best = null as [number, NodeSelection['start']] | null;
 
-    const add = (can?: CPos | null, v?: NodeSelection['start'] | void) => {
-        if (!can || !v) return;
-        const dx = can.left - pos.x;
-        const dy = pos.y >= can.top && pos.y <= can.top + can.height ? 0 : pos.y < can.top ? pos.y - can.top : pos.y - (can.top + can.height);
+    let best = null as [Dist, NodeSelection['start']] | null;
+    type Dist = ReturnType<typeof canDist>;
+
+    const canDist = (candidate: CPos) => {
+        const dx = candidate.left - pos.x;
+        const dy =
+            pos.y >= candidate.top && pos.y <= candidate.top + candidate.height
+                ? 0
+                : pos.y < candidate.top
+                ? pos.y - candidate.top
+                : pos.y - (candidate.top + candidate.height);
+        // const d = dx * dx + dy * dy;
+        return { dx, dy };
+    };
+
+    const isBetter = (newD: Dist, oldD: Dist) => {
+        if (oldD.dy === 0 && newD.dy !== 0) return false;
+        if (newD.dy !== 0 && newD.dy === 0) return true;
+        const yd = Math.abs(newD.dy) - Math.abs(oldD.dy);
+        if (yd !== 0) return yd < 0;
+        return Math.abs(newD.dx) < Math.abs(oldD.dx);
+    };
+
+    const isBetter_old = (newD: Dist, oldD: Dist) => newD < oldD;
+    const canDist_old = (candidate: CPos) => {
+        const dx = candidate.left - pos.x;
+        const dy =
+            pos.y >= candidate.top && pos.y <= candidate.top + candidate.height
+                ? 0
+                : pos.y < candidate.top
+                ? pos.y - candidate.top
+                : pos.y - (candidate.top + candidate.height);
         const d = dx * dx + dy * dy;
-        if (!best || best[0] > d) {
-            best = [d, v];
+        return d;
+    };
+
+    const add = (candidate?: CPos | null, value?: SelStart | void) => {
+        if (!candidate || !value) return;
+        const d = canDist(candidate);
+        if (!best || isBetter(d, best[0])) {
+            best = [d, value];
         }
     };
 
     const sides = (path: Path) => {
         const bsel = selectStart(path, top);
-        const before = bsel ? selectionPos({ start: bsel }, refs, top) : null;
+        const before = bsel ? selectionPos(bsel, refs, top) : null;
         const asel = selectEnd(path, top);
-        const after = asel ? selectionPos({ start: asel }, refs, top) : null;
+        const after = asel ? selectionPos(asel, refs, top) : null;
         add(before, bsel);
         add(after, asel);
     };
@@ -228,13 +264,14 @@ export const posInList = (path: Path, pos: { x: number; y: number }, refs: Recor
 
 function above(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, current: CPos) {
     const options = [];
+    let start = sel.start;
     while (true) {
         // const next = goLeft(sel.start.path, top);
-        const next = handleNav('ArrowLeft', { top, sel });
-        if (!next || !next.selection) break;
-        sel = next.selection;
+        const next = handleNav('ArrowLeft', { top, sel: { start } });
+        if (!next) break;
+        start = next;
 
-        const at = selectionPos(sel, refs, top);
+        const at = selectionPos(start, refs, top);
         if (!at) continue; // or break??
 
         if (!options.length) {
@@ -244,7 +281,7 @@ function above(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, 
         }
         options.push({
             at,
-            next: next.selection.start,
+            next: start,
             dx: Math.abs(at.left - current.left),
         });
     }
@@ -253,14 +290,15 @@ function above(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, 
 
 function below(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, current: CPos) {
     const options = [];
+    let start = sel.start;
     while (true) {
-        const next = handleNav('ArrowRight', { top, sel });
-        if (!next || !next.selection) {
+        const next = handleNav('ArrowRight', { top, sel: { start } });
+        if (!next) {
             break;
         }
-        sel = next.selection;
+        start = next;
 
-        const at = selectionPos(sel, refs, top);
+        const at = selectionPos(start, refs, top);
         if (!at) continue; // or break??
 
         if (!options.length) {
@@ -271,7 +309,7 @@ function below(sel: NodeSelection, top: Top, refs: Record<number, HTMLElement>, 
         }
         options.push({
             at,
-            next: next.selection.start,
+            next: start,
             dx: Math.abs(at.left - current.left),
         });
     }
