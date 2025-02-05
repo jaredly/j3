@@ -184,16 +184,50 @@ export type CPos = { left: number; top: number; height: number };
 // We only need to check the starts & ends of all children for the closest one.
 // maybe?
 export const posInList = (path: Path, pos: { x: number; y: number }, refs: Record<number, HTMLElement>, top: Top) => {
+    // console.log('pos in list', path, pos, refs, top);
     const node = top.nodes[lastChild(path)];
-    let best = null as [number, NodeSelection['start']] | null;
 
-    const add = (can?: CPos | null, v?: NodeSelection['start'] | void) => {
-        if (!can || !v) return;
-        const dx = can.left - pos.x;
-        const dy = pos.y >= can.top && pos.y <= can.top + can.height ? 0 : pos.y < can.top ? pos.y - can.top : pos.y - (can.top + can.height);
+    let best = null as [Dist, NodeSelection['start']] | null;
+    type Dist = ReturnType<typeof canDist>;
+
+    const canDist = (candidate: CPos) => {
+        const dx = candidate.left - pos.x;
+        const dy =
+            pos.y >= candidate.top && pos.y <= candidate.top + candidate.height
+                ? 0
+                : pos.y < candidate.top
+                ? pos.y - candidate.top
+                : pos.y - (candidate.top + candidate.height);
+        // const d = dx * dx + dy * dy;
+        return { dx, dy };
+    };
+
+    const isBetter = (newD: Dist, oldD: Dist) => {
+        if (oldD.dy === 0 && newD.dy !== 0) return false;
+        if (newD.dy !== 0 && newD.dy === 0) return true;
+        const yd = Math.abs(newD.dy) - Math.abs(oldD.dy);
+        if (yd !== 0) return yd < 0;
+        return Math.abs(newD.dx) < Math.abs(oldD.dx);
+    };
+
+    const isBetter_old = (newD: Dist, oldD: Dist) => newD < oldD;
+    const canDist_old = (candidate: CPos) => {
+        const dx = candidate.left - pos.x;
+        const dy =
+            pos.y >= candidate.top && pos.y <= candidate.top + candidate.height
+                ? 0
+                : pos.y < candidate.top
+                ? pos.y - candidate.top
+                : pos.y - (candidate.top + candidate.height);
         const d = dx * dx + dy * dy;
-        if (!best || best[0] > d) {
-            best = [d, v];
+        return d;
+    };
+
+    const add = (candidate?: CPos | null, value?: SelStart | void) => {
+        if (!candidate || !value) return;
+        const d = canDist(candidate);
+        if (!best || isBetter(d, best[0])) {
+            best = [d, value];
         }
     };
 

@@ -323,3 +323,10 @@ test('smoooosh', () => {
     state = applyUpdate(state, handleDelete(state));
     check(state, round([id('heks', true)]), idc(2));
 });
+
+test('smoooosh 2', () => {
+    let state = asTop(round([smoosh([id('hello', 1), id('+'), id('folks', 2)])]), idc(0), idc(5));
+    validate(state);
+    state = applyUpdate(state, handleDelete(state));
+    check(state, round([id('', true)]), idc(0));
+});

@@ -1,4 +1,7 @@
 
+- [x] the "closest selection" calculation isn't quite right.
+  - should make a mode where you just mouse around and it renders the selection
+
 - [x] multi delete - clip partial ids please.
   - [ ] multi delete - clip partial texts
 - [x] copy - distinguish between 'entire' vs 'children', where children will splice by default
@@ -11,9 +14,9 @@
 - [x] if single, drop it in
 - [x] if not single, splice in if you can
 
-- [ ] multiselect, if we're selecting a ~whole "spaced, indicate that. even if the start/end are "inside". we can ~nudge them.
+- [x] multiselect, if we're selecting a ~whole "spaced, indicate that. even if the start/end are "inside". we can ~nudge them.
   - [x] sameeee with an ID
-  - [ ] and a smooshed.
+  - [x] and a smooshed.
 
 - [x] we've got a weird jittery thing
 
