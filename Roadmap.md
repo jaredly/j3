@@ -1,4 +1,17 @@
 
+# Now that copy and paste and delete are ok
+
+- [ ] drag would be fun, but a bit of a boondoggle
+- [ ] select w/ holes would also be flashy
+- [ ] widgets also sound fun, buttt
+
+- [ ] I think we should dive into execution now.
+
+So, should I go into multi-top right now? Is it the time for it?
+Seems like a reasonable nexty.
+
+###
+
 - [x] the "closest selection" calculation isn't quite right.
   - should make a mode where you just mouse around and it renders the selection
 
@@ -31,7 +44,7 @@ of getting something useful working
 
 - [x] multi DELETE???
 - [x] copy I guess
-- [ ] gotta copy, gotta pasta
+- [x] gotta copy, gotta pasta
 - [x] for delete, nudge left & right cursor across boundary lines, if relevant.
 
 - [ ] use that builtin JS-- parser+compiler to define in-situ a more usable javascript, maybe even with some perks idk
@@ -40,11 +53,11 @@ of getting something useful working
 
 
 - [ ] in the tests, do a thing where I have all possible selections, and verifyt hat they are stil valid after the update.
-- [ ] I don't think I need to collapse paths, the parent map would be a pain to maintain.
+- [x] I don't think I need to collapse paths, the parent map would be a pain to maintain.
 
-- [ ] multiselect DELETE gotta have it
+- [x] multiselect DELETE gotta have it
   -
-- [ ] and copy/paste thanks
+- [x] and copy/paste thanks
 
 # WRAPPPP
 
