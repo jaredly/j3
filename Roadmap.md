@@ -1,4 +1,22 @@
 
+
+WHAT DO I think about the history change of...
+... when we're adding a top.
+... also a docnode.
+
+ugh ok so heres what I think I want.
+like
+
+I want to be able to transform the `State` into some generic format,
+that an algorithm can do fancy things to.
+
+should I, go whole hog?
+Should I go all the way to automerge?
+
+I do kinda feel like, I want a [domain representation] and a [change representation].
+ugh so first I need to ~remove the `Update` type essentially, because it's gonna get a lot weirder.
+or rather, it's gonna get crdt compatible.
+
 # Now that copy and paste and delete are ok
 
 - [ ] drag would be fun, but a bit of a boondoggle
