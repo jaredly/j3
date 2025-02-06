@@ -1,7 +1,7 @@
 import { js, TestParser } from '../keyboard/test-utils';
 import { Id, Loc, TextSpan } from '../shared/cnodes';
 import { Ctx, list, match, or, Rule, ref, tx, seq, kwd, group, id, star, Src, number, text, table, opt } from './dsl3';
-import { binops, Expr, kwds, Stmt } from './js--types';
+import { binops, Block, Expr, kwds, Stmt } from './js--types';
 import { mergeSrc, nodesSrc } from './ts-types';
 
 const stmts: Record<string, Rule<Stmt>> = {
@@ -12,7 +12,7 @@ const stmts: Record<string, Rule<Stmt>> = {
             init: ctx.ref<Stmt>('init'),
             cond: ctx.ref<Expr>('cond'),
             update: ctx.ref<Expr>('update'),
-            body: ctx.ref<Stmt[]>('body'),
+            body: ctx.ref<Block>('body'),
             src,
         }),
     ),
@@ -23,17 +23,21 @@ const stmts: Record<string, Rule<Stmt>> = {
         value: ctx.ref<Expr>('value'),
         src,
     })),
-    if: tx(seq(kwd('if'), ref('expr', 'cond'), ref('block', 'yes'), opt(seq(kwd('else'), ref('block', 'no')))), (ctx, src) => ({
+    if: tx(seq(kwd('if'), ref('expr', 'cond'), ref('block', 'yes'), opt(seq(kwd('else'), group('no', or(ref('if'), ref('block')))))), (ctx, src) => ({
         type: 'if',
         cond: ctx.ref<Expr>('cond'),
-        yes: ctx.ref<Stmt[]>('yes'),
-        no: ctx.ref<null | Stmt[]>('no'),
+        yes: ctx.ref<Block>('yes'),
+        no: ctx.ref<null | Block>('no'),
         src,
     })),
     throw: tx<Stmt>(seq(kwd('throw'), ref('expr ', 'value')), (ctx, src) => ({
         type: 'throw',
         value: ctx.ref<Expr>('value'),
         src,
+    })),
+    // just for show, not going to be part of js--
+    switch: tx<Stmt>(seq(kwd('switch'), list('round', ref('expr', 'target')), table('curly', seq(ref('expr'), ref('stmt')))), (_, __) => ({
+        type: 'show',
     })),
 };
 
@@ -90,7 +94,9 @@ const exprs: Record<string, Rule<Expr>> = {
 const rules = {
     stmt: or(
         list('spaced', or(...Object.keys(stmts).map((name) => ref(name)))),
+        ref('block'),
         tx(kwd('return'), (_, src) => ({ type: 'return', value: null, src })),
+        kwd('continue'),
         tx(ref('expr', 'expr'), (ctx, src) => ({
             type: 'expr',
             expr: ctx.ref<Expr>('expr'),
@@ -98,7 +104,22 @@ const rules = {
         })),
     ),
     comment: list('smooshed', seq(kwd('//', 'comment'), { type: 'any' })),
-    block: list('curly', star(ref('stmt'))),
+    block: tx(
+        list(
+            'curly',
+            group(
+                'contents',
+                star(
+                    or(
+                        tx(list({ type: 'plain' }, star({ type: 'any' })), (_, __) => true),
+                        ref('stmt'),
+                    ),
+                ),
+            ),
+        ),
+        (ctx, src) => ({ type: 'block', contents: ctx.ref<(Stmt | true)[]>('contents').filter((x) => x !== true), src }),
+    ),
+    // list('curly', star(ref('stmt'))),
     ...stmts,
     'expr..': tx<Expr>(
         seq(
@@ -135,7 +156,7 @@ const rules = {
         tx<Expr>(seq(list('round', group('args', star(id(null)))), kwd('=>'), group('body', or(ref('block'), ref('expr ')))), (ctx, src) => ({
             type: 'arrow',
             args: ctx.ref<Id<Loc>[]>('args'),
-            body: ctx.ref<Expr | Stmt[]>('body'),
+            body: ctx.ref<Expr | Block>('body'),
             src,
         })),
         tx<Expr>(seq(kwd('new'), ref('expr', 'inner')), (ctx, src) => ({

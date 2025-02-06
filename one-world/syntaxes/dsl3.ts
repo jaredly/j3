@@ -1,3 +1,4 @@
+import equal from 'fast-deep-equal';
 import { isTag } from '../keyboard/handleNav';
 import { js, TestParser } from '../keyboard/test-utils';
 import { Id, ListKind, Loc, RecNode, TableKind, Text, TextSpan } from '../shared/cnodes';
@@ -195,7 +196,7 @@ export const match_ = (rule: Rule<any>, ctx: Ctx, parent: MatchParent, at: numbe
                     // attributes not matched? make an 'extra' error
                     return;
                 }
-            } else if (node.kind !== rule.kind) {
+            } else if (!equal(node.kind, rule.kind)) {
                 return;
             }
 

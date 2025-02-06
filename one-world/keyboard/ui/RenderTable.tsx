@@ -88,10 +88,11 @@ export const RenderTable = (
                 <span
                     style={{
                         gridColumn: i * 2 + 2,
+                        marginRight: '1em',
                     }}
                     key={`sep${i}`}
                 >
-                    {': '}
+                    {':'}
                 </span>
             ),
         );
