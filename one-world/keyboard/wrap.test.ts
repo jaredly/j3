@@ -35,6 +35,12 @@ test('start of id', () => {
     check(state, smoosh([round([], true), id('hi')]), listc('inside'));
 });
 
+test('within of id', () => {
+    let state = asTop(id('hello', true), idc(2), idc(4));
+    state = applyUpdate(state, handleWrap(state, '('));
+    check(state, smoosh([id('he'), round([id('ll')], true), id('o')]), listc('before'));
+});
+
 // test('start of id shift', () => {
 //     let state = asTop(id('hillo', true), idc(0), idc(2));
 //     state = applyUpdate(state, handleWrap(state, '('));

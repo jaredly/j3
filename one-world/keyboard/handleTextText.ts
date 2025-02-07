@@ -1,9 +1,9 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { stylesEqual, Nodes, Text, TextSpan, ListKind, childLocs } from '../shared/cnodes';
+import { stylesEqual, Nodes, Text, TextSpan, ListKind, childLocs, RecNodeT, fromRec } from '../shared/cnodes';
 import { idText, spanText } from './cursorSplit';
 import { handleListKey } from './handleListKey';
 import { justSel, richNode } from './handleNav';
-import { Mods } from './handleShiftNav';
+import { Mods, SelStart } from './handleShiftNav';
 import { KeyAction, moveA } from './keyActionToUpdate';
 // import { textCursorSides } from './insertId';
 import { Config } from './test-utils';
@@ -20,17 +20,94 @@ import {
     ListCursor,
     lastChild,
     gparentLoc,
+    Cursor,
 } from './utils';
 
-export const addSpan = (top: Top, path: Path, span: TextSpan<any>, index: number, end: number): void | Update => {
+const maybeJoin = (one?: TextSpan<number>, two?: TextSpan<number>) => {
+    if (one?.type === 'text' && two?.type === 'text' && stylesEqual(one.style, two.style)) {
+        return { joined: { ...one, text: one.text + two.text }, off: splitGraphemes(one.text).length };
+    }
+};
+
+export const addSpan = (
+    top: Top,
+    path: Path,
+    recSpan: TextSpan<RecNodeT<boolean>>,
+    index: number,
+    cursor: number | Cursor,
+    within?: number,
+): void | Update => {
     const node = top.nodes[lastChild(path)];
     if (node.type !== 'text') return;
     const spans = node.spans.slice();
 
-    spans.splice(index, 0, span);
+    const nodes: Nodes = {};
+
+    let sel: SelStart;
+
+    let nextLoc = undefined as undefined | number;
+    let span: TextSpan<number>;
+
+    if (recSpan.type === 'embed') {
+        nextLoc = top.nextLoc;
+        let selPath: number[] = [];
+        const root = fromRec(recSpan.item, nodes, (loc, __, path) => {
+            const nl = nextLoc!++;
+            if (loc === true) {
+                selPath = path.concat([nl]);
+            }
+            return nl;
+        });
+        span = { ...recSpan, item: root };
+
+        sel =
+            selPath.length && typeof cursor !== 'number'
+                ? selStart(pathWithChildren(path, ...selPath), cursor)
+                : selStart(path, { type: 'text', end: { index: index, cursor: 0 } });
+    } else {
+        span = recSpan;
+
+        if (typeof cursor !== 'number') {
+            cursor = 0;
+        }
+
+        sel = selStart(path, { type: 'text', end: { index: index, cursor } });
+    }
+
+    if (within != null) {
+        const current = spans[index];
+        if (current?.type === 'text') {
+            const text = splitGraphemes(current.text);
+            if (within < text.length) {
+                spans[index] = { ...current, text: text.slice(0, within).join('') };
+                spans.splice(index + 1, 0, { ...current, text: text.slice(within).join('') });
+            }
+            index++;
+        }
+    }
+
+    const left = maybeJoin(spans[index - 1], span);
+    if (left) {
+        spans[index - 1] = left.joined;
+        if (sel.cursor.type === 'text') {
+            sel.cursor.end.index--;
+            sel.cursor.end.cursor += left.off;
+        }
+    } else {
+        const right = maybeJoin(span, spans[index]);
+        if (right) {
+            spans[index] = right.joined;
+        } else {
+            spans.splice(index, 0, span);
+        }
+    }
+
+    nodes[node.loc] = { ...node, spans };
+
     return {
-        nodes: { [node.loc]: { ...node, spans } },
-        selection: { start: selStart(path, { type: 'text', end: { index: index, cursor: end } }) },
+        nodes,
+        selection: { start: sel },
+        nextLoc,
     };
 };
 
@@ -61,7 +138,7 @@ export const handleTextText = (
                         ];
                     }
                 }
-                return [{ type: 'add-span', path, span: { type: 'text', text: grem }, index: cursor.end.index, end: 1 }];
+                return [{ type: 'add-span', path, span: { type: 'text', text: grem }, index: cursor.end.index, cursor: 1 }];
             }
 
             if (cursor.end.cursor === 1) {
@@ -71,7 +148,9 @@ export const handleTextText = (
 
                 let next = current.spans[cursor.end.index + 1];
                 if (cursor.end.index === current.spans.length - 1 || next.type !== 'text' || !stylesEqual(span.style, next.style)) {
-                    return [{ type: 'add-span', path, index: cursor.end.index + 1, end: 1, span: { type: 'text', style: span.style, text: grem } }];
+                    return [
+                        { type: 'add-span', path, index: cursor.end.index + 1, cursor: 1, span: { type: 'text', style: span.style, text: grem } },
+                    ];
                 }
                 return moveA(selStart(path, { type: 'text', end: { index: cursor.end.index + 1, cursor: 1 } }));
             }
@@ -132,49 +211,50 @@ export const handleTextText = (
             }
         }
         if (start != null) {
-            const pre = text.slice(0, start);
-            const post = text.slice(left);
-            const mid = text.slice(start + 1, left);
-            const spans = current.spans.slice();
-            const mspan: TextSpan<number> = { type: 'text', style: { ...span.style, format: 'code' }, text: mid.join('') };
-            let at = cursor.end.index;
-            if (pre.length) {
-                spans[at] = { ...span, text: pre.join('') };
-                at++;
-                spans.splice(at, 0, mspan);
-            } else {
-                spans[at] = mspan;
-            }
-            spans.splice(at + 1, 0, { ...span, text: post.join('') });
-            return {
-                nodes: { [current.loc]: { ...current, spans } },
-                selection: { start: selStart(path, { type: 'text', end: { index: at + 1, cursor: 0 } }) },
-            };
+            return [
+                {
+                    type: 'set-text-text',
+                    path,
+                    index: cursor.end.index,
+                    end: left,
+                    text: text
+                        .slice(0, start)
+                        .concat(text.slice(start + 1))
+                        .join(''),
+                },
+                {
+                    type: 'text-format',
+                    format: { format: 'code' },
+                    path,
+                    left: { index: cursor.end.index, cursor: start },
+                    right: { index: cursor.end.index, cursor: left - 1 },
+                },
+                { type: 'add-span', path, cursor: 0, index: 2, span: { type: 'text', text: '' } },
+            ];
         }
     }
 
     if (grem === '{' && left === right && left > 0 && text[left - 1] === '$') {
-        // split the span
-        // and add a new thing
-        let nextLoc = top.nextLoc;
-        const loc = nextLoc++;
-        const spans = current.spans.slice();
-        let index = cursor.end.index;
-        if (left > 1) {
-            spans[cursor.end.index] = { ...span, text: text.slice(0, left - 1).join('') };
-            spans.splice(cursor.end.index + 1, 0, { type: 'embed', item: loc });
-            index = cursor.end.index + 1;
-        } else {
-            spans[cursor.end.index] = { type: 'embed', item: loc };
-        }
-        if (left < text.length) {
-            spans.splice(index + 1, 0, { ...span, text: text.slice(left).join('') });
-        }
-        return {
-            nodes: { [current.loc]: { ...current, spans }, [loc]: { type: 'id', text: '', loc } },
-            selection: { start: selStart(pathWithChildren(path, loc), { type: 'id', end: 0 }) },
-            nextLoc,
-        };
+        return [
+            {
+                type: 'set-text-text',
+                path,
+                index: cursor.end.index,
+                end: left,
+                text: text
+                    .slice(0, left - 1)
+                    .concat(text.slice(left))
+                    .join(''),
+            },
+            {
+                type: 'add-span',
+                span: { type: 'embed', item: { type: 'id', text: '', loc: true } },
+                cursor: { type: 'id', end: 0 },
+                index: cursor.end.index,
+                path,
+                within: left - 1,
+            },
+        ];
     }
 
     if (grem === '\n' && !mods?.shift) {
@@ -263,49 +343,9 @@ export const handleTextText = (
         }
     }
 
-    // Sooo now we come to a choice.
-    // How to do embeds?
-    /*
-    - ${} is tried and true
-    - \ + dropdown would be ... more flexible? idk
-    - some ... ctrl+ key combo? I don't like that quite as much
-    - \() is swift, right? it has the benefit of 'not having a normal meaning',
-      so you don't have to do extra to ~escape it.
-      lol roc uses $() hwyy
-      python uses f"hi {a}"
-      hrm now a downside is that \((a b)) looks silly.
-      does it look /more/ silly than ${(a b)}?
-      eh maybe not.
-
-    So, but here's a question: do I even ~need () brackets?
-    like, it will be visually distinct.
-    The only think brackets would do is make it clear how
-    to type it. which to be fair is a pretty important thing.
-
-    Honestly I think it should be an editor config thing to
-    show/hide.
-
-    And in "display" mode probably hide.
-
-    OK so with that sorted, maybe we just go with ${}. it's fine.
-    */
-    const ntext = text.slice(0, left).concat([grem]).concat(text.slice(right));
-
-    const up = justSel(path, {
-        type: 'text',
-        end: {
-            index: cursor.end.index,
-            cursor: left + 1,
-            // text: ntext,
-        },
-    });
-    const spans = current.spans.slice();
-    spans[cursor.end.index] = { ...span, text: ntext.join('') };
-    return {
-        ...up,
-        nodes: { [current.loc]: { ...current, spans } },
-        //  tmpText: { [`${current.loc}:${cursor.end.index}`]: ntext }
-    };
+    return [
+        { type: 'set-text-text', end: left + 1, index: cursor.end.index, path, text: [...text.slice(0, left), grem, ...text.slice(right)].join('') },
+    ];
 };
 
 export const handleTextKey = (

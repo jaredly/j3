@@ -14,6 +14,7 @@ Ok, so some CRDT thgouths:
 - [x] handleNav
 - [x] handleSpecial
 - [ ] handleWrap
+  - [ ] handleTextText
 - [ ] handleClose
 - [ ] handleKey
 

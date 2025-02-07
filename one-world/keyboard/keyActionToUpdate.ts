@@ -53,7 +53,7 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
         case 'join-text':
             return handleJoinText(state.top, action.path);
         case 'text-format':
-            return handleTextFormat(state.top, action.path, action.format, action.left, action.right);
+            return handleTextFormat(state.top, action.path, action.format, action.left, action.right, action.select);
         case 'wrap':
             return wrapUpdate(state.top, action.path, action.min, action.max, action.kind);
         case 'id-wrap':
@@ -61,7 +61,7 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
         case 'insert-list':
             return handleInsertList(state.top, action.path, action.pos, action.kind);
         case 'add-span': {
-            return addSpan(state.top, action.path, action.span, action.index, action.end);
+            return addSpan(state.top, action.path, action.span, action.index, action.cursor, action.within);
         }
     }
 };
@@ -76,8 +76,8 @@ export type KeyAction =
     | { type: 'join-text'; path: Path }
     | { type: 'remove-span'; index: number; path: Path }
     | { type: 'set-text-text'; path: Path; text: string; index: number; end: number }
-    | { type: 'add-span'; path: Path; span: TextSpan<any>; index: number; end: number }
-    | { type: 'text-format'; format: Partial<Style>; path: Path; left: Spat; right: Spat }
+    | { type: 'add-span'; path: Path; span: TextSpan<RecNodeT<boolean>>; index: number; cursor: number | Cursor; within?: number }
+    | { type: 'text-format'; format: Partial<Style>; path: Path; left: Spat; right: Spat; select?: 'before' | 'after' | 'cover' }
     // some other things
     | { type: 'join-list'; path: Path; child: { loc: number; cursor: Cursor } }
     | { type: 'join-table'; path: Path; child: { loc: number; cursor: Cursor }; at: { row: number; col: number } }

@@ -6,6 +6,7 @@ import { handleDelete } from './handleDelete';
 import { handleKey } from './handleKey';
 import { handleNav, selUpdate } from './handleNav';
 import { SelStart } from './handleShiftNav';
+import { handleWrap } from './handleWrap';
 import { asTop, bullet, checks, controlc, id, idc, lisp, list, listc, rich, round, smoosh, TestState, text, textc, tspan } from './test-utils';
 import { keyUpdate } from './ui/keyUpdate';
 
@@ -55,6 +56,12 @@ test('text inside list', () => {
     let state = asTop(round([], true), listc('inside'));
     state = applyUpdate(state, handleKey(state, '"', lisp)!);
     check(state, round([text([tspan('')], true)]), textc(0, 0));
+});
+
+test('text wrap in empty', () => {
+    let state = asTop(text([], true), listc('inside'));
+    state = applyUpdate(state, handleWrap(state, '(')!);
+    check(state, text([tspan('(')], true), textc(0, 1));
 });
 
 test('text after id', () => {
@@ -287,6 +294,18 @@ test('nav left text (text) first ', () => {
     check(state, text([{ type: 'text', text: 'ho' }], true), listc('before'));
 });
 
+test('text code at end', () => {
+    let state = asTop(text([tspan('a`b')], true), textc(0, 3));
+    state = applyUpdate(state, handleKey(state, '`', lisp)!);
+    check(state, text([tspan('a'), tspan('b', { format: 'code' }), tspan('')], true), textc(2, 0));
+});
+
+test('text code mid', () => {
+    let state = asTop(text([tspan('a`bc')], true), textc(0, 3));
+    state = applyUpdate(state, handleKey(state, '`', lisp)!);
+    check(state, text([tspan('a'), tspan('b', { format: 'code' }), tspan('c')], true), textc(2, 0));
+});
+
 test('text closeeee', () => {
     let state = asTop(text([{ type: 'text', text: 'ho' }], true), textc(0, 2));
     state = applyUpdate(state, handleKey(state, '"', lisp)!);
@@ -302,7 +321,7 @@ test('embed', () => {
 });
 
 test('embed at span star', () => {
-    let state = asTop(text([tspan('a'), tspan('$ho')], true), textc(1, 1));
+    let state = asTop(text([tspan('a$ho')], true), textc(0, 2));
     state = applyUpdate(state, handleKey(state, '{', lisp)!);
     check(state, text([tspan('a'), { type: 'embed', item: id('', true) }, tspan('ho')]), idc(0));
 });

@@ -274,7 +274,14 @@ const toggleFormat = (style: Style, up: Partial<Style>) => {
     }
 };
 
-export const handleTextFormat = (top: Top, path: Path, format: Partial<Style>, left: Spat, right: Spat): Update | undefined => {
+export const handleTextFormat = (
+    top: Top,
+    path: Path,
+    format: Partial<Style>,
+    left: Spat,
+    right: Spat,
+    select?: 'before' | 'after' | 'cover',
+): Update | undefined => {
     const node = top.nodes[lastChild(path)];
     if (node.type !== 'text') return;
 
@@ -282,10 +289,19 @@ export const handleTextFormat = (top: Top, path: Path, format: Partial<Style>, l
     if (!res) return;
     return {
         nodes: { [node.loc]: res.node },
-        selection: {
-            end: selStart(path, { type: 'text', end: res.start }),
-            start: selStart(path, { type: 'text', end: res.end }),
-        },
+        selection:
+            select === 'after'
+                ? {
+                      start: selStart(path, { type: 'text', end: res.start }),
+                  }
+                : select === 'before'
+                ? {
+                      start: selStart(path, { type: 'text', end: res.end }),
+                  }
+                : {
+                      end: selStart(path, { type: 'text', end: res.start }),
+                      start: selStart(path, { type: 'text', end: res.end }),
+                  },
     };
 };
 
