@@ -252,6 +252,102 @@ export const rebalanceSmooshed = (update: Update, top: Top) => {
     });
 };
 
+export const textDelete = (top: Top, path: Path, left: Spat, right: Spat) => {
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'text') return;
+    const spans = node.spans.slice();
+
+    if (left.index === right.index) {
+        const span = spans[left.index];
+        if (span.type === 'text') {
+            const grems = splitGraphemes(span.text);
+            grems.splice(left.cursor, right.cursor - left.cursor);
+            // return [{ type: 'set-text-text', path: state.sel.start.path, index: left.index, text: grems.join(''), end: left.cursor }];
+            return setTextText(top, path, grems.join(''), left.index, left.cursor);
+        }
+    }
+
+    let off = 0;
+    for (let index = left.index; index <= right.index; index++) {
+        const span = spans[index - off];
+        const sl = spanLength(span, undefined, index);
+        const start = left.index === index ? left.cursor : 0;
+        const end = right.index === index ? right.cursor : sl;
+        if (start === 0 && end === sl) {
+            spans.splice(index - off, 1);
+            off++;
+            continue;
+        }
+        if (start === sl || end === 0) continue; // nothing to do here
+        if (span.type !== 'text') {
+            throw new Error(`a non-text span should either be not touched or entirely covered by a text selection`);
+        }
+        const grems = splitGraphemes(span.text);
+        spans[index - off] = { ...span, text: grems.slice(0, start).concat(grems.slice(end)).join('') };
+    }
+
+    return {
+        nodes: { [node.loc]: { ...node, spans } },
+        selection: {
+            start: selStart(
+                path,
+                !spans.length
+                    ? { type: 'list', where: 'inside' }
+                    : {
+                          type: 'text',
+                          end:
+                              left.index >= spans.length
+                                  ? { index: spans.length - 1, cursor: spanLength(spans[spans.length - 1], undefined, 0) }
+                                  : { index: left.index, cursor: left.cursor },
+                      },
+            ),
+        },
+    };
+};
+
+export const setTextText = (top: Top, path: Path, text: string, index: number, end: number) => {
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'text') return;
+    const spans = node.spans.slice();
+    const span = spans[index];
+    if (span.type !== 'text') return;
+
+    spans[index] = { ...span, text };
+    // this is 'set text text'
+    return {
+        nodes: { [node.loc]: { ...node, spans } },
+        selection: {
+            start: selStart(path, { type: 'text', end: { index, cursor: end } }),
+        },
+        // tmpText: { [`${current.node.loc}:${left.index}`]: grems },
+    };
+};
+
+export const setIdText = (top: Top, path: Path, text: string, end: number) => {
+    if (text.length === 0) {
+        const ppath = parentPath(path);
+        const parent = top.nodes[lastChild(ppath)];
+        if (parent?.type === 'list' && parent.kind === 'smooshed') {
+            let node = top.nodes[lastChild(path)] as Id<number>;
+            node = { ...node, text: '', ccls: undefined };
+            return flatToUpdateNew(
+                parent.children.map((loc) => (loc === node.loc ? node : top.nodes[loc])),
+                { node, cursor: { type: 'id', end: 0 } },
+                { isParent: true, node: parent, path: ppath },
+                {},
+                top,
+            );
+        }
+    }
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'id') return;
+    return {
+        nodes: { [node.loc]: { ...node, text, ccls: text.length === 0 ? undefined : node.ccls } },
+        // tmpText: { [current.node.loc]: text },
+        selection: { start: selStart(path, { type: 'id', end }) },
+    };
+};
+
 export const removeSelf = (state: TestState, current: { path: Path; node: Node }): Update | void => {
     const pnode = state.top.nodes[parentLoc(current.path)];
     if (pnode && pnode.type === 'list' && pnode.kind === 'smooshed') {
@@ -546,12 +642,7 @@ export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
                     }
                 } else if (current.cursor.where === 'before') {
                     // left join agains
-                    const up = leftJoin(state, current.cursor);
-                    // if (!up) return;
-                    // rebalanceSmooshed(up, state.top);
-                    // joinSmooshed(up, state.top);
-                    // disolveSmooshed(up, state.top);
-                    return up;
+                    return leftJoin(state, current.cursor);
                 } else if (current.cursor.where === 'inside') {
                     if (current.node.type === 'list' && isTag(current.node.kind)) {
                         return moveA(selectEnd(pathWithChildren(current.path, current.node.kind.attributes ?? current.node.kind.node), state.top));
@@ -588,26 +679,7 @@ export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
                 }
                 const text = idText(state.top.tmpText, current.cursor, current.node).slice();
                 text.splice(left, right - left);
-                if (text.length === 0) {
-                    const ppath = parentPath(state.sel.start.path);
-                    const parent = state.top.nodes[lastChild(ppath)];
-                    if (parent?.type === 'list' && parent.kind === 'smooshed') {
-                        let node = state.top.nodes[lastChild(state.sel.start.path)] as Id<number>;
-                        node = { ...node, text: '', ccls: undefined };
-                        return flatToUpdateNew(
-                            parent.children.map((loc) => (loc === node.loc ? node : state.top.nodes[loc])),
-                            { node, cursor: { type: 'id', end: 0 } },
-                            { isParent: true, node: parent, path: ppath },
-                            {},
-                            state.top,
-                        );
-                    }
-                }
-                return {
-                    nodes: { [current.node.loc]: { ...current.node, text: text.join(''), ccls: text.length === 0 ? undefined : current.node.ccls } },
-                    // tmpText: { [current.node.loc]: text },
-                    selection: { start: selStart(state.sel.start.path, { type: 'id', end: left }) },
-                };
+                return [{ type: 'set-id-text', path: state.sel.start.path, text: text.join(''), end: left }];
             }
         }
         case 'text': {
@@ -632,14 +704,7 @@ export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
 
             if (current.cursor.type !== 'text') return;
             // const grems = state.top.tmpText[`${current.node.loc}:${current.cursor.end.index}`];
-            return handleTextDelete(
-                state,
-                current,
-                current.cursor.end,
-                current.cursor.end,
-                // grems ? { index: current.cursor.end.index, grems } : undefined,
-                undefined,
-            );
+            return handleTextDelete(state, current, current.cursor.end, current.cursor.end);
         }
 
         default:
@@ -692,37 +757,30 @@ export const handleTextDelete = (
     current: { node: Text<number>; path: Path },
     left: Spat,
     right: Spat,
-    text?: { index: number; grems: string[] },
-): Update | void => {
+): Update | KeyAction[] | void => {
     const spans = current.node.spans.slice();
-
-    if (text) {
-        const span = spans[text.index];
-        if (span.type === 'text') {
-            spans[text.index] = { ...span, text: text.grems.join('') };
-        }
-    }
 
     if (left.index === right.index && left.cursor === right.cursor) {
         left = { ...left, cursor: left.cursor - 1 };
 
-        if (spans.length === 1 && spanLength(spans[0], text, 0) === 0) {
-            return removeSelf(state, current);
+        if (spans.length === 1 && spanLength(spans[0], undefined, 0) === 0) {
+            return [{ type: 'remove-self', path: current.path }];
         }
 
-        const loff = normalizeTextCursorSide(spans, left, text);
+        const loff = normalizeTextCursorSide(spans, left, undefined);
         if (loff === 'before') {
             const parent = state.top.nodes[parentLoc(current.path)];
             if (parent?.type === 'list' && isRich(parent.kind)) {
                 // joinn
                 const at = parent.children.indexOf(current.node.loc);
                 if (at === 0) {
-                    return justSel(parentPath(current.path), { type: 'list', where: 'before' });
+                    return moveA(selStart(parentPath(current.path), { type: 'list', where: 'before' }));
                 }
                 const ploc = parent.children[at - 1];
                 const pnode = state.top.nodes[ploc];
                 const children = parent.children.slice();
                 children.splice(at, 1);
+                // This is 'join text in rich'
                 if (pnode.type === 'text') {
                     const spans = pnode.spans.concat(current.node.spans);
                     const cursor: TextCursor = {
@@ -741,70 +799,11 @@ export const handleTextDelete = (
                 }
             }
 
-            if (spans[0].type === 'text' && spans[0].text.length === 0) {
-                // Remove empty spans
-                return {
-                    nodes: { [current.node.loc]: { ...current.node, spans: spans.filter((s) => s.type !== 'text' || s.text !== '') } },
-                    selection: { start: selStart(current.path, { type: 'list', where: 'before' }) },
-                };
-            }
-            // TODO remove empty at the starts
-            return justSel(current.path, { type: 'list', where: 'before' });
+            return moveA(selStart(current.path, { type: 'list', where: 'before' }));
         }
         if (loff === 'after') throw new Error(`cant be after`);
         left = loff;
     }
 
-    if (left.index === right.index) {
-        const span = spans[left.index];
-        if (span.type === 'text') {
-            const grems = text?.index === left.index ? text.grems : splitGraphemes(span.text);
-            grems.splice(left.cursor, right.cursor - left.cursor);
-            spans[left.index] = { ...span, text: grems.join('') };
-            return {
-                nodes: { [current.node.loc]: { ...current.node, spans } },
-                selection: {
-                    start: selStart(state.sel.start.path, { type: 'text', end: { index: left.index, cursor: left.cursor } }),
-                },
-                // tmpText: { [`${current.node.loc}:${left.index}`]: grems },
-            };
-        }
-    }
-
-    let off = 0;
-    for (let index = left.index; index <= right.index; index++) {
-        const span = spans[index - off];
-        const sl = spanLength(span, text, index);
-        const start = left.index === index ? left.cursor : 0;
-        const end = right.index === index ? right.cursor : sl;
-        if (start === 0 && end === sl) {
-            spans.splice(index - off, 1);
-            off++;
-            continue;
-        }
-        if (start === sl || end === 0) continue; // nothing to do here
-        if (span.type !== 'text') {
-            throw new Error(`a non-text span should either be not touched or entirely covered by a text selection`);
-        }
-        const grems = index === text?.index ? text.grems : splitGraphemes(span.text);
-        spans[index - off] = { ...span, text: grems.slice(0, start).concat(grems.slice(end)).join('') };
-    }
-
-    return {
-        nodes: { [current.node.loc]: { ...current.node, spans } },
-        selection: {
-            start: selStart(
-                current.path,
-                !spans.length
-                    ? { type: 'list', where: 'inside' }
-                    : {
-                          type: 'text',
-                          end:
-                              left.index >= spans.length
-                                  ? { index: spans.length - 1, cursor: spanLength(spans[spans.length - 1], undefined, 0) }
-                                  : { index: left.index, cursor: left.cursor },
-                      },
-            ),
-        },
-    };
+    return textDelete(state.top, current.path, left, right);
 };

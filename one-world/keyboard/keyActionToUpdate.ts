@@ -1,6 +1,7 @@
-import { joinInList, joinTable, removeSelf, removeSpan, unwrap } from './handleDelete';
+import { joinInList, joinTable, removeSelf, removeSpan, setIdText, setTextText, unwrap } from './handleDelete';
 import { selUpdate } from './handleNav';
 import { SelStart } from './handleShiftNav';
+import { Spat } from './handleSpecialText';
 import { TestState } from './test-utils';
 import { Cursor, lastChild, Path, Update } from './utils';
 
@@ -25,6 +26,11 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
             }
             return;
         }
+        case 'set-id-text':
+            return setIdText(state.top, action.path, action.text, action.end);
+        case 'set-text-text': {
+            return setTextText(state.top, action.path, action.text, action.index, action.end);
+        }
     }
 };
 export type KeyAction =
@@ -36,6 +42,9 @@ export type KeyAction =
     | { type: 'remove-self'; path: Path }
     | { type: 'remove-span'; index: number; path: Path }
     // things I minght want to ... consolidate or something ... idk
+    | { type: 'set-id-text'; path: Path; text: string; end: number }
+    | { type: 'set-text-text'; path: Path; text: string; index: number; end: number }
+    | { type: 'text-delete'; path: Path; left: Spat; right: Spat }
     | { type: 'toggle-multiline'; loc: number };
 
 export const moveA = (sel?: SelStart | void): KeyAction[] => (sel ? [{ type: 'move', sel }] : []);

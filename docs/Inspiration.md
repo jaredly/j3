@@ -1,4 +1,16 @@
 
+# What aboutt targetting some kind of VM?
+
+https://github.com/toitlang/toit
+https://github.com/koder77/l1vm
+https://github.com/SynchronVM/SynchronVM
+https://bernsteinbear.com/blog/scrapscript-ir/
+- ScrapScript is super cool
+
+
+
+#
+
 
 Ideas from POPL:
 

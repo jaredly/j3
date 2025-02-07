@@ -1,4 +1,13 @@
 
+Ok, so some CRDT thgouths:
+
+- within a document, we'll have all nodes in common. no separation between toplevels.
+  this works because when we 'commit' a toplevel, everything gets hashed and serialized together.
+- try to model a very basic "just list(round) and ids" CRDT setup, where I'm tracking the metadata separate from the Nodes... see how far I get.
+
+
+##
+
 
 WHAT DO I think about the history change of...
 ... when we're adding a top.
