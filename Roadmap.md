@@ -5,6 +5,13 @@ Ok, so some CRDT thgouths:
   this works because when we 'commit' a toplevel, everything gets hashed and serialized together.
 - try to model a very basic "just list(round) and ids" CRDT setup, where I'm tracking the metadata separate from the Nodes... see how far I get.
 
+##
+
+General idea:
+- I'm moving all `Updates` to `KeyActions`
+  then I'll have a single funnel point for changes, and I can do things like CRDT metadata management.
+- thennn at some point I want all `Loc`s to be strings instead of numbers. gotta do it.
+
 
 ##
 

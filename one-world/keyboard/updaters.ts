@@ -1,11 +1,12 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Table, Node, isRich, Id } from '../shared/cnodes';
-import { disolveSmooshed, joinSmooshed, rebalanceSmooshed, simpleSide, spanLength } from './handleDelete';
-import { spanStart, spanEnd, isTag, selectEnd } from './handleNav';
+import { Id, Node, Table, childLocs, isRich } from '../shared/cnodes';
+import { addUpdate, simpleSide, spanLength } from './handleDelete';
+import { isTag, selectEnd, spanEnd, spanStart } from './handleNav';
 import { Spat } from './handleSpecialText';
 import { replaceAt } from './replaceAt';
-import { collapseAdjacentIDs, findPath, fixSelection, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
-import { Top, Path, lastChild, selStart, Cursor, Update, parentPath, pathWithChildren, parentLoc } from './utils';
+import { replaceIn } from './replaceIn';
+import { collapseAdjacentIDs, findPath, fixSelection, flatToUpdateNew, flatten, pruneEmptyIds, unflat } from './rough';
+import { Cursor, Path, Top, Update, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
 
 export const textDelete = (top: Top, path: Path, left: Spat, right: Spat) => {
     const node = top.nodes[lastChild(path)];
@@ -260,4 +261,115 @@ export const setIdText = (top: Top, path: Path, text: string, end: number) => {
         // tmpText: { [current.node.loc]: text },
         selection: { start: selStart(path, { type: 'id', end }) },
     };
+}; // oofs. the horror.
+// like. now I gotta know who the parent issss
+// waittt I can just assert that the relevant thing needs to be in the selection path.
+// good deal.
+
+export const disolveSmooshed = (update: Update, top: Top) => {
+    // So, we go through anything that has an update...
+    Object.keys(update.nodes).forEach((loc) => {
+        let node = update.nodes[+loc];
+        if (node?.type === 'list' && (node.kind === 'smooshed' || node.kind === 'spaced') && node.children.length === 1) {
+            const child = node.children[0];
+            if (top.root === node.loc) {
+                update.root = child;
+            } else {
+                const ploc = findParent(update.nodes, node.loc) ?? findParent(top.nodes, node.loc);
+                if (ploc == null) {
+                    console.warn(`cant collapse smoosh; cant find parent of ${node.loc}`);
+                    return;
+                }
+                const pnode = update.nodes[ploc] ?? top.nodes[ploc];
+                const parent = replaceIn(pnode, node.loc, child);
+                update.nodes[parent.loc] = parent;
+            }
+            update.nodes[node.loc] = null;
+            update.selection = addUpdate(update.selection, { type: 'unparent', loc: node.loc });
+        }
+    });
+};
+
+export const joinSmooshed = (update: Update, top: Top) => {
+    // So, we go through anything that has an update...
+    Object.keys(update.nodes).forEach((loc) => {
+        let node = update.nodes[+loc];
+        if (node?.type === 'list' && node.kind === 'smooshed') {
+            for (let i = 1; i < node.children.length; i++) {
+                const cloc = node.children[i];
+                const ploc = node.children[i - 1];
+                const child = update.nodes[cloc] ?? top.nodes[cloc];
+                const prev = update.nodes[ploc] ?? top.nodes[ploc];
+
+                if (prev.type === 'id' && child.type === 'id' && (prev.ccls === child.ccls || child.text === '' || prev.text === '')) {
+                    // we delete one of these
+                    update.nodes[prev.loc] = { ...prev, text: prev.text + child.text, ccls: prev.ccls == null ? child.ccls : prev.ccls };
+                    update.nodes[child.loc] = null;
+
+                    const children = node.children.slice();
+                    children.splice(i, 1);
+                    node = { ...node, children };
+                    update.nodes[node.loc] = node;
+                    i--;
+
+                    update.selection = addUpdate(update.selection, {
+                        type: 'id',
+                        from: { loc: cloc, offset: 0 },
+                        to: { loc: ploc, offset: splitGraphemes(prev.text).length },
+                    });
+                }
+            }
+        }
+    });
+};
+
+export const rebalanceSmooshed = (update: Update, top: Top) => {
+    // So, we go through anything that has an update...
+    Object.keys(update.nodes).forEach((loc) => {
+        let node = update.nodes[+loc];
+        if (node?.type === 'list' && node.kind === 'spaced') {
+            for (let i = 0; i < node.children.length; i++) {
+                const cloc = node.children[i];
+                const child = update.nodes[cloc] ?? top.nodes[cloc];
+                // We have a spaces within a spaced. splice grandchildren in
+                if (child?.type === 'list' && child.kind === 'spaced') {
+                    const children = node.children.slice();
+                    children.splice(i, 1, ...child.children);
+                    node = { ...node, children };
+                    update.nodes[node.loc] = node;
+                    i += child.children.length - 1;
+                    // remove the thing
+                    update.selection = addUpdate(update.selection, { type: 'unparent', loc: cloc });
+                }
+            }
+        }
+
+        if (node?.type === 'list' && node.kind === 'smooshed') {
+            for (let i = 0; i < node.children.length; i++) {
+                const cloc = node.children[i];
+                const child = update.nodes[cloc] ?? top.nodes[cloc];
+                if (child?.type === 'list' && child.kind === 'smooshed') {
+                    const children = node.children.slice();
+                    children.splice(i, 1, ...child.children);
+                    node = { ...node, children };
+                    update.nodes[node.loc] = node;
+                    i += child.children.length - 1;
+                    // remove the thing
+                    update.selection = addUpdate(update.selection, { type: 'unparent', loc: cloc });
+                }
+            }
+        }
+    });
+};
+export const findParent = (nodes: Update['nodes'], loc: number): number | null => {
+    for (let key of Object.keys(nodes)) {
+        const node = nodes[+key];
+        if (node) {
+            const children = childLocs(node);
+            if (children.includes(loc)) {
+                return +key;
+            }
+        }
+    }
+    return null;
 };

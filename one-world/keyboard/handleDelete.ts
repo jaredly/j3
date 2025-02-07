@@ -1,17 +1,18 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { childLocs, Collection, isRich, List, Node, Nodes, Table, Text, TextSpan } from '../shared/cnodes';
+import { isRich, List, Node, Table, Text, TextSpan } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { isBlank } from './flatenate';
-import { goLeft, isTag, justSel, selectEnd, selectStart, selUpdate, spanEnd } from './handleNav';
-import { selEnd, SelSide, SelStart } from './handleShiftNav';
+import { goLeft, isTag, selectEnd, selectStart, spanEnd } from './handleNav';
 import { mergeAdjacentSpans, Spat } from './handleSpecialText';
 // import { textCursorSides, textCursorSides2 } from './insertId';
+import { idText } from './cursorSplit';
+import { KeyAction, moveA } from './keyActionToUpdate';
 import { replaceAt } from './replaceAt';
-import { replaceIn } from './replaceIn';
 import { flatten, updateNodes } from './rough';
+import { getCurrent } from './selections';
 import { TestState } from './test-utils';
+import { disolveSmooshed, joinSmooshed, rebalanceSmooshed } from './updaters';
 import {
-    Current,
     Cursor,
     findTableLoc,
     lastChild,
@@ -25,13 +26,7 @@ import {
     SelUpdate,
     TextCursor,
     Top,
-    Update,
 } from './utils';
-import { getCurrent } from './selections';
-import { idText } from './cursorSplit';
-import { KeyAction, moveA } from './keyActionToUpdate';
-import { handleDeleteTooMuch } from './multi-change';
-import { textDelete } from './updaters';
 
 type JoinParent =
     | {
@@ -86,33 +81,8 @@ export const addInChildren = (children: number[], loc: number, parent: number): 
     return children;
 };
 
-// const modSelSideTip = (sel: SelStart, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): SelStart => {
-//     const res = mod(lastChild(sel.path), sel.cursor);
-//     if (res) {
-//         return selStart(pathWithChildren(parentPath(sel.path), res.loc), res.cursor);
-//     }
-//     return sel;
-// };
-
-// const modSelTip = (sel: NodeSelection, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): NodeSelection => ({
-//     start: modSelSideTip(sel.start, mod),
-//     // multi: sel.multi
-//     //     ? {
-//     //           end: sel.multi.end.cursor ? modSelSideTip(sel.multi.end as SelStart, mod) : sel.multi.end,
-//     //           aux: sel.multi.aux?.cursor ? modSelSideTip(sel.multi.aux as SelStart, mod) : sel.multi.aux,
-//     //       }
-//     //     : undefined,
-// });
-
-// const removeParent = (sel: NodeSelection, loc: number): NodeSelection => ({
-//     start: { ...sel.start, ...selEnd(removeInPath(sel.start.path, loc)) },
-//     // multi: sel.multi
-//     //     ? {
-//     //           end: { ...sel.multi.end, ...selEnd(removeInPath(sel.multi.end.path, loc)) },
-//     //           aux: sel.multi.aux ? { ...sel.multi.aux, ...selEnd(removeInPath(sel.multi.aux.path, loc)) } : undefined,
-//     //       }
-//     //     : undefined,
-// });
+export const addUpdate = (s: NodeSelection | SelUpdate[] | undefined, ...updates: SelUpdate[]) =>
+    s == null ? updates : Array.isArray(s) ? [...s, ...updates] : [move(s), ...updates];
 
 export const unwrap = (path: Path, top: Top) => {
     // , sel: NodeSelection
@@ -133,127 +103,7 @@ export const unwrap = (path: Path, top: Top) => {
     return repl;
 };
 
-export const findParent = (nodes: Update['nodes'], loc: number): number | null => {
-    for (let key of Object.keys(nodes)) {
-        const node = nodes[+key];
-        if (node) {
-            const children = childLocs(node);
-            if (children.includes(loc)) {
-                return +key;
-            }
-        }
-    }
-    return null;
-};
-
-// oofs. the horror.
-// like. now I gotta know who the parent issss
-// waittt I can just assert that the relevant thing needs to be in the selection path.
-// good deal.
-export const disolveSmooshed = (update: Update, top: Top) => {
-    // So, we go through anything that has an update...
-    Object.keys(update.nodes).forEach((loc) => {
-        let node = update.nodes[+loc];
-        if (node?.type === 'list' && (node.kind === 'smooshed' || node.kind === 'spaced') && node.children.length === 1) {
-            const child = node.children[0];
-            // const spath = update.selection?.start.path;
-            // if (!spath) return;
-            // const at = spath.children.indexOf(node.loc);
-            // if (at === -1) return;
-            if (top.root === node.loc) {
-                update.root = child;
-            } else {
-                const ploc = findParent(update.nodes, node.loc) ?? findParent(top.nodes, node.loc);
-                if (ploc == null) {
-                    console.warn(`cant collapse smoosh; cant find parent of ${node.loc}`);
-                    return;
-                }
-                const pnode = update.nodes[ploc] ?? top.nodes[ploc];
-                const parent = replaceIn(pnode, node.loc, child);
-                update.nodes[parent.loc] = parent;
-            }
-            update.nodes[node.loc] = null;
-            update.selection = addUpdate(update.selection, { type: 'unparent', loc: node.loc });
-        }
-    });
-};
-
-export const joinSmooshed = (update: Update, top: Top) => {
-    // So, we go through anything that has an update...
-    Object.keys(update.nodes).forEach((loc) => {
-        let node = update.nodes[+loc];
-        if (node?.type === 'list' && node.kind === 'smooshed') {
-            for (let i = 1; i < node.children.length; i++) {
-                const cloc = node.children[i];
-                const ploc = node.children[i - 1];
-                const child = update.nodes[cloc] ?? top.nodes[cloc];
-                const prev = update.nodes[ploc] ?? top.nodes[ploc];
-
-                if (prev.type === 'id' && child.type === 'id' && (prev.ccls === child.ccls || child.text === '' || prev.text === '')) {
-                    // we delete one of these
-                    update.nodes[prev.loc] = { ...prev, text: prev.text + child.text, ccls: prev.ccls == null ? child.ccls : prev.ccls };
-                    update.nodes[child.loc] = null;
-
-                    const children = node.children.slice();
-                    children.splice(i, 1);
-                    node = { ...node, children };
-                    update.nodes[node.loc] = node;
-                    i--;
-
-                    update.selection = addUpdate(update.selection, {
-                        type: 'id',
-                        from: { loc: cloc, offset: 0 },
-                        to: { loc: ploc, offset: splitGraphemes(prev.text).length },
-                    });
-                }
-            }
-        }
-    });
-};
-
-export const addUpdate = (s: NodeSelection | SelUpdate[] | undefined, ...updates: SelUpdate[]) =>
-    s == null ? updates : Array.isArray(s) ? [...s, ...updates] : [move(s), ...updates];
-
-export const rebalanceSmooshed = (update: Update, top: Top) => {
-    // So, we go through anything that has an update...
-    Object.keys(update.nodes).forEach((loc) => {
-        let node = update.nodes[+loc];
-        if (node?.type === 'list' && node.kind === 'spaced') {
-            for (let i = 0; i < node.children.length; i++) {
-                const cloc = node.children[i];
-                const child = update.nodes[cloc] ?? top.nodes[cloc];
-                // We have a spaces within a spaced. splice grandchildren in
-                if (child?.type === 'list' && child.kind === 'spaced') {
-                    const children = node.children.slice();
-                    children.splice(i, 1, ...child.children);
-                    node = { ...node, children };
-                    update.nodes[node.loc] = node;
-                    i += child.children.length - 1;
-                    // remove the thing
-                    update.selection = addUpdate(update.selection, { type: 'unparent', loc: cloc });
-                }
-            }
-        }
-
-        if (node?.type === 'list' && node.kind === 'smooshed') {
-            for (let i = 0; i < node.children.length; i++) {
-                const cloc = node.children[i];
-                const child = update.nodes[cloc] ?? top.nodes[cloc];
-                if (child?.type === 'list' && child.kind === 'smooshed') {
-                    const children = node.children.slice();
-                    children.splice(i, 1, ...child.children);
-                    node = { ...node, children };
-                    update.nodes[node.loc] = node;
-                    i += child.children.length - 1;
-                    // remove the thing
-                    update.selection = addUpdate(update.selection, { type: 'unparent', loc: cloc });
-                }
-            }
-        }
-    });
-};
-
-export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[] | void => {
+export const leftJoin = (state: TestState, cursor: Cursor): KeyAction[] | void => {
     const got = joinParent(state.sel.start.path, state.top);
     if (!got) {
         const pnode = state.top.nodes[parentLoc(state.sel.start.path)];
@@ -340,16 +190,9 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
     }
 };
 
-export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
+export const handleDelete = (state: TestState): KeyAction[] | void => {
     if (state.sel.end && state.sel.end.key !== state.sel.start.key) {
-        // // // // - // // // //
-        const up = handleDeleteTooMuch(state);
-        if (up) {
-            rebalanceSmooshed(up, state.top);
-            joinSmooshed(up, state.top);
-            disolveSmooshed(up, state.top);
-        }
-        return up;
+        return [{ type: 'multi-delete', start: state.sel.start, end: state.sel.end }];
     }
 
     const current = getCurrent(state.sel, state.top);
@@ -390,12 +233,6 @@ export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
                 } else if (current.cursor.where === 'start' && current.node.type === 'list' && current.node.children.length === 0) {
                     return [{ type: 'remove-self', path: current.path }];
                 } else if (current.cursor.where === 'start') {
-                    // const sel =
-                    //     current.node.type === 'list' && current.node.children.length
-                    //         ? selectStart(pathWithChildren(current.path, current.node.children[0]), state.top)
-                    //         : state.sel.start;
-                    // if (!sel) return console.warn('cant select start');
-                    // return unwrap(current.path, state.top, { start: sel });
                     return [{ type: 'unwrap', path: current.path }];
                 }
             }
@@ -485,12 +322,36 @@ export const normalizeTextCursorSide = (
     return side;
 };
 
-export const handleTextDelete = (
-    state: TestState,
-    current: { node: Text<number>; path: Path },
-    left: Spat,
-    right: Spat,
-): Update | KeyAction[] | void => {
+export const handleJoinText = (top: Top, path: Path) => {
+    const node = top.nodes[lastChild(path)];
+    const parent = top.nodes[parentLoc(path)];
+    if (parent?.type !== 'list' || !isRich(parent.kind) || node.type !== 'text') {
+        return;
+    }
+    const at = parent.children.indexOf(node.loc);
+    if (at < 1) return;
+    const prev = top.nodes[parent.children[at - 1]];
+    if (prev.type !== 'text') return;
+    const children = parent.children.slice();
+    children.splice(at, 1);
+
+    const spans = prev.spans.concat(node.spans);
+    const cursor: TextCursor = {
+        type: 'text',
+        end: { index: prev.spans.length, cursor: 0 },
+    };
+    return {
+        nodes: {
+            [prev.loc]: { ...prev, spans: mergeAdjacentSpans(spans, cursor) },
+            [parent.loc]: { ...parent, children },
+        },
+        selection: {
+            start: selStart(pathWithChildren(parentPath(path), prev.loc), cursor),
+        },
+    };
+};
+
+export const handleTextDelete = (state: TestState, current: { node: Text<number>; path: Path }, left: Spat, right: Spat): KeyAction[] | void => {
     const spans = current.node.spans.slice();
 
     if (left.index === right.index && left.cursor === right.cursor) {
@@ -511,24 +372,8 @@ export const handleTextDelete = (
                 }
                 const ploc = parent.children[at - 1];
                 const pnode = state.top.nodes[ploc];
-                const children = parent.children.slice();
-                children.splice(at, 1);
-                // This is 'join text in rich'
                 if (pnode.type === 'text') {
-                    const spans = pnode.spans.concat(current.node.spans);
-                    const cursor: TextCursor = {
-                        type: 'text',
-                        end: { index: pnode.spans.length, cursor: 0 },
-                    };
-                    return {
-                        nodes: {
-                            [pnode.loc]: { ...pnode, spans: mergeAdjacentSpans(spans, cursor) },
-                            [parent.loc]: { ...parent, children },
-                        },
-                        selection: {
-                            start: selStart(pathWithChildren(parentPath(current.path), ploc), cursor),
-                        },
-                    };
+                    return [{ type: 'join-text', path: current.path }];
                 }
             }
 

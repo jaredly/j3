@@ -1,7 +1,7 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { childLocs, fromRec, Loc, Node, Nodes, RecNode, RecNodeT } from '../shared/cnodes';
 import { applySelUp } from './applyUpdate';
-import { rebalanceSmooshed, joinSmooshed, disolveSmooshed } from './handleDelete';
+import { rebalanceSmooshed, joinSmooshed, disolveSmooshed } from './updaters';
 import { selectEnd, selectStart } from './handleNav';
 import { replaceAt } from './replaceAt';
 import { replaceIn } from './replaceIn';
@@ -23,6 +23,7 @@ import {
     JustSelUpdate,
     pathWithChildren,
 } from './utils';
+import { SelStart } from './handleShiftNav';
 
 export const shouldNudgeRight = (path: Path, cursor: Cursor, top: Top) => {
     const node = top.nodes[lastChild(path)];
@@ -59,14 +60,14 @@ export const shouldNudgeLeft = (path: Path, cursor: Cursor, top: Top) => {
     return true;
 };
 
-export const handleDeleteTooMuch = (state: TestState): JustSelUpdate | void => {
-    const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, state.top);
-    const lnudge = shouldNudgeRight(left.path, left.cursor, state.top);
-    const rnudge = shouldNudgeLeft(right.path, right.cursor, state.top);
+export const handleDeleteTooMuch = (top: Top, start: SelStart, end: SelStart): JustSelUpdate | void => {
+    const [left, neighbors, right, _] = collectSelectedNodes(start, end, top);
+    const lnudge = shouldNudgeRight(left.path, left.cursor, top);
+    const rnudge = shouldNudgeLeft(right.path, right.cursor, top);
     if (!lnudge) neighbors.push({ path: left.path, hl: { type: 'full' } });
     let rpartial = null as null | Node;
     {
-        const rnode = state.top.nodes[lastChild(right.path)];
+        const rnode = top.nodes[lastChild(right.path)];
         if (rnode.type === 'id' && right.cursor.type === 'id') {
             const grems = splitGraphemes(rnode.text);
             if (right.cursor.end < grems.length) {
@@ -75,12 +76,12 @@ export const handleDeleteTooMuch = (state: TestState): JustSelUpdate | void => {
         }
     }
     if (!rnudge && rpartial == null) neighbors.push({ path: right.path, hl: { type: 'full' } });
-    const sorted = partitionNeighbors(neighbors, state.top, false);
+    const sorted = partitionNeighbors(neighbors, top, false);
     const lloc = lastChild(left.path);
 
     const nodes: Nodes = {};
     sorted.forEach(({ path, children: selected }) => {
-        const node = state.top.nodes[lastChild(path)];
+        const node = top.nodes[lastChild(path)];
         if (node.type !== 'list') return;
         const children = node.children.slice().filter((c) => !selected.includes(c) || lloc === c);
         nodes[node.loc] = { ...node, children };
@@ -89,7 +90,7 @@ export const handleDeleteTooMuch = (state: TestState): JustSelUpdate | void => {
     let leftCursor = 0;
     if (!lnudge) {
         nodes[lloc] = { type: 'id', text: '', loc: lloc };
-        const lnode = state.top.nodes[lloc];
+        const lnode = top.nodes[lloc];
         if (lnode.type === 'id' && left.cursor.type === 'id' && left.cursor.end !== 0) {
             const text = splitGraphemes(lnode.text).slice(0, left.cursor.end).join('');
             nodes[lloc] = { type: 'id', text, loc: lloc, ccls: lnode.ccls };
@@ -99,7 +100,7 @@ export const handleDeleteTooMuch = (state: TestState): JustSelUpdate | void => {
     if (rpartial) {
         nodes[rpartial.loc] = rpartial;
     }
-    const sel = lnudge ? selectEnd(left.path, state.top) : selStart(left.path, { type: 'id', end: leftCursor });
+    const sel = lnudge ? selectEnd(left.path, top) : selStart(left.path, { type: 'id', end: leftCursor });
     if (!sel) return;
 
     let selection: NodeSelection = { start: sel };
@@ -115,7 +116,7 @@ export const handleDeleteTooMuch = (state: TestState): JustSelUpdate | void => {
             const i2 = pnode.children.indexOf(lastChild(right.path));
             if (i2 === i1 + 1) {
                 const children = pnode.children.slice();
-                nextLoc = state.top.nextLoc;
+                nextLoc = top.nextLoc;
                 const loc = nextLoc++;
                 const two = children.splice(i1, 2, loc);
                 nodes[loc] = { type: 'list', kind: 'smooshed', children: two, loc };
@@ -139,7 +140,7 @@ export type CopiedValues = { tree: RecNodeT<number>; single: boolean };
 export const handlePaste = (state: TestState, values: CopiedValues): void | Update => {
     let update: JustSelUpdate = { nodes: {} };
     if (state.sel.end) {
-        const up = handleDeleteTooMuch(state);
+        const up = handleDeleteTooMuch(state.top, state.sel.start, state.sel.end);
         if (!up) return;
         update = up;
     }
