@@ -3,7 +3,7 @@ import { Collection, Id, List, Loc, Node, Nodes } from '../shared/cnodes';
 import { cursorSides } from './cursorSides';
 import { cursorSplit, idText, Split } from './cursorSplit';
 import { Flat, addNeighborAfter, addNeighborBefore, findParent, listKindForKeyKind } from './flatenate';
-import { braced } from './handleListKey';
+import { addNeighbor, braced } from './handleListKey';
 import { Kind, textKind } from './insertId';
 import { Config } from './test-utils';
 import { collapseAdjacentIDs, findPath, flatToUpdateNew, flatten, flattenRow, pruneEmptyIds, rough, unflat } from './rough';
@@ -22,7 +22,9 @@ import {
     pathWithChildren,
     selStart,
 } from './utils';
-import { isTag, justSel, selectStart, selUpdate } from './handleNav';
+import { isTag, justSel, richNode, selectStart, selUpdate } from './handleNav';
+import { KeyAction, KeyWhat, moveA } from './keyActionToUpdate';
+import { Neighbor } from './selections';
 
 // const isNumber = (grems: undefined | string[], text: string) => {
 //     if (grems) {
@@ -34,7 +36,7 @@ import { isTag, justSel, selectStart, selUpdate } from './handleNav';
 //     return grems ? grems.length === 1 && grems[0] === '.' : text === '.';
 // };
 
-export const handleIdKey = (config: Config, top: Top, current: Extract<Current, { type: 'id' }>, grem: string): Update | void => {
+export const handleIdKey = (config: Config, top: Top, current: Extract<Current, { type: 'id' }>, grem: string): KeyAction[] | Update | void => {
     // let node = top.nodes[lastChild(current.path)];
     // if (node.type !== 'id') throw new Error('not id');
     const kind = textKind(grem, config);
@@ -121,7 +123,8 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
     const pnode = top.nodes[parentLoc(path)];
     if (grem === '\n' && pnode?.type === 'list' && braced(pnode) && pnode.children.length === 1 && !pnode.forceMultiline) {
         if (idText(top.tmpText, cursor, node).length === 0) {
-            return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: true } } };
+            // return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: true } } };
+            return [{ type: 'toggle-multiline', loc: pnode.loc }];
         }
     }
 
@@ -136,7 +139,75 @@ export const handleIdKey = (config: Config, top: Top, current: Extract<Current, 
     const closeUp = handleTagCloser(top, node, grem, parent, path);
     if (closeUp) return closeUp;
 
-    return handleTextInsert(kind, grem, current, path, parent, top);
+    // return handleTextInsert(kind, grem, current, path, parent, top);
+    return [
+        {
+            type: 'insert-text',
+            path,
+            pos: current.cursor.end,
+            what:
+                typeof kind === 'number'
+                    ? { type: 'text', ccls: kind, grem }
+                    : kind === 'sep'
+                    ? { type: 'sep', newLine: grem === '\n' }
+                    : { type: kind },
+        },
+    ];
+};
+
+export const whatNeighbor = (what: KeyWhat): Flat => {
+    return what.type === 'sep'
+        ? { type: 'sep', loc: -1, multiLine: what.newLine }
+        : what.type === 'space'
+        ? { type: 'space', loc: -1 }
+        : what.type === 'string'
+        ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: -1 }
+        : { type: 'id', text: what.grem, loc: -1, ccls: what.ccls };
+};
+
+export const handleInsertText = (top: Top, path: Path, pos: 'before' | 'after' | number, what: KeyWhat) => {
+    const node = top.nodes[lastChild(path)];
+    const kind = what.type === 'text' ? what.ccls : what.type;
+
+    const parent = findParent(listKindForKeyKind(kind), parentPath(path), top);
+
+    const flat = parent ? flatten(parent.node, top) : [node];
+
+    const neighbor = whatNeighbor(what);
+    if (typeof pos === 'number' && node.type === 'id') {
+        const nodes: Update['nodes'] = {};
+        const { sel, ncursor } = addIdNeighbor({ neighbor, current: { node, cursor: { type: 'id', end: pos } }, flat, nodes, top });
+
+        return flatToUpdateNew(
+            flat,
+            { node: sel, cursor: ncursor },
+            { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
+            nodes,
+            top,
+        );
+    } else {
+        const pnode = top.nodes[parentLoc(path)];
+        const blank: Node = richNode(pnode) ? { type: 'text', spans: [{ type: 'text', text: '' }], loc: -1 } : { type: 'id', text: '', loc: -1 };
+
+        var { sel, ncursor, nodes } = addNeighbor({
+            flat,
+            current: node,
+            neighbor,
+            cursor: {
+                type: 'list',
+                where: typeof pos === 'number' ? 'inside' : pos,
+            },
+            blank,
+        });
+
+        return flatToUpdateNew(
+            flat,
+            { node: sel, cursor: ncursor },
+            { isParent: parent != null, node: parent?.node ?? node, path: parent?.path ?? path },
+            nodes,
+            top,
+        );
+    }
 };
 
 export const handleTextInsert = (
@@ -152,7 +223,7 @@ export const handleTextInsert = (
     const nodes: Update['nodes'] = {};
 
     const neighbor = flatNeighbor(kind, grem);
-    const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes, top });
+    const { sel, ncursor } = addIdNeighbor({ neighbor, current, flat, nodes, top });
 
     const up = flatToUpdateNew(
         flat,
@@ -170,28 +241,28 @@ export const handleTagCloser = (
     grem: string,
     parent: void | { node: Collection<number>; path: Path },
     path: Path,
-): Update | void => {
+): void | KeyAction[] => {
     const grand = parentPath(parent ? parent.path : path);
     const gnode = top.nodes[lastChild(grand)];
     if (gnode?.type === 'list' && isTag(gnode.kind) && gnode.kind.node === (parent ? parent.node.loc : node.loc)) {
         if (grem === '>') {
-            return selUpdate(
+            return moveA(
                 gnode.children.length
                     ? selectStart(pathWithChildren(grand, gnode.children[0]), top)
                     : selStart(grand, { type: 'list', where: 'after' }),
             );
         } else if (grem === ' ') {
             if (gnode.kind.attributes == null) {
-                return {
-                    nodes: {
-                        [gnode.loc]: { ...gnode, kind: { ...gnode.kind, attributes: top.nextLoc } },
-                        [top.nextLoc]: { type: 'table', kind: 'curly', loc: top.nextLoc, rows: [] },
+                return [
+                    {
+                        type: 'tag-set-attributes',
+                        path: grand,
+                        table: { type: 'table', kind: 'curly', loc: true, rows: [] },
+                        cursor: { type: 'list', where: 'inside' },
                     },
-                    nextLoc: top.nextLoc + 1,
-                    selection: { start: selStart(pathWithChildren(grand, top.nextLoc), { type: 'list', where: 'inside' }) },
-                };
+                ];
             } else {
-                return selUpdate(selectStart(pathWithChildren(grand, gnode.kind.attributes), top));
+                return moveA(selectStart(pathWithChildren(grand, gnode.kind.attributes), top));
             }
         }
     }
@@ -293,7 +364,7 @@ const splitCell =
         const flat = flatten(cell, top, undefined, 1);
         const nodes: Update['nodes'] = {};
         const neighbor: Flat = { type: 'sep', loc };
-        const { sel, ncursor } = addNeighbor({ neighbor, current, flat, nodes, top });
+        const { sel, ncursor } = addIdNeighbor({ neighbor, current, flat, nodes, top });
         const one = pruneEmptyIds(flat, { node: sel, cursor: ncursor });
         const two = collapseAdjacentIDs(one.items, one.selection);
         const result = unflat(top, two.items, two.selection.node);
@@ -301,7 +372,7 @@ const splitCell =
         return { result, two };
     };
 
-function addNeighbor({
+function addIdNeighbor({
     neighbor,
     current,
     // cursor,

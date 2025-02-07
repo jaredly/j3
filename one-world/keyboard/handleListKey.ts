@@ -19,10 +19,11 @@ import {
     parentLoc,
 } from './utils';
 import { flatNeighbor, handleTableSplit, handleTagCloser } from './handleIdKey';
+import { KeyAction } from './keyActionToUpdate';
 
 export const braced = (node: Node) => node.type !== 'list' || (node.kind !== 'smooshed' && node.kind !== 'spaced');
 
-export const handleListKey = (config: Config, top: Top, path: Path, cursor: CollectionCursor, grem: string): Update | void => {
+export const handleListKey = (config: Config, top: Top, path: Path, cursor: CollectionCursor, grem: string): Update | KeyAction[] | void => {
     const current = top.nodes[lastChild(path)];
     const kind = textKind(grem, config);
     if (cursor.type === 'control' && current.type === 'list') {
@@ -220,7 +221,19 @@ export const splitCell = (current: Node, cursor: ListCursor, blank: Node) => (ce
     return { result, two };
 };
 
-function addNeighbor({ flat, current, neighbor, cursor, blank }: { flat: Flat[]; current: Node; neighbor: Flat; cursor: ListCursor; blank: Node }) {
+export function addNeighbor({
+    flat,
+    current,
+    neighbor,
+    cursor,
+    blank,
+}: {
+    flat: Flat[];
+    current: Node;
+    neighbor: Flat;
+    cursor: ListCursor;
+    blank: Node;
+}) {
     let at = flat.indexOf(current);
     if (at === -1) throw new Error(`flatten didnt work I guess`);
     // for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes

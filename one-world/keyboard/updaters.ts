@@ -1,5 +1,5 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { Id, Node, Table, childLocs, isRich } from '../shared/cnodes';
+import { Id, Node, Nodes, RecNodeT, Table, childLocs, fromRec, isRich } from '../shared/cnodes';
 import { addUpdate, simpleSide, spanLength } from './handleDelete';
 import { isTag, selectEnd, spanEnd, spanStart } from './handleNav';
 import { Spat } from './handleSpecialText';
@@ -7,6 +7,32 @@ import { replaceAt } from './replaceAt';
 import { replaceIn } from './replaceIn';
 import { collapseAdjacentIDs, findPath, fixSelection, flatToUpdateNew, flatten, pruneEmptyIds, unflat } from './rough';
 import { Cursor, Path, Top, Update, lastChild, parentLoc, parentPath, pathWithChildren, selStart } from './utils';
+
+export const tagSetAttributes = (top: Top, path: Path, node: RecNodeT<boolean>, cursor: Cursor) => {
+    const tag = top.nodes[lastChild(path)];
+    if (tag.type !== 'list' || !isTag(tag.kind)) {
+        return;
+    }
+    let nextLoc = top.nextLoc;
+    const nodes: Nodes = {};
+    let selPath: number[] = [];
+
+    const root = fromRec(node, nodes, (loc, __, path) => {
+        const nl = nextLoc!++;
+        if (loc === true) {
+            selPath = path.concat([nl]);
+        }
+        return nl;
+    });
+
+    nodes[tag.loc] = { ...tag, kind: { ...tag.kind, attributes: root } };
+
+    return {
+        nodes,
+        nextLoc: top.nextLoc + 1,
+        selection: { start: selStart(pathWithChildren(path, ...selPath), cursor) },
+    };
+};
 
 export const textDelete = (top: Top, path: Path, left: Spat, right: Spat) => {
     const node = top.nodes[lastChild(path)];

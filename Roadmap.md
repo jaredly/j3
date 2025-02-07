@@ -20,6 +20,14 @@ Ok, so some CRDT thgouths:
     - [x] split text in rich (list or table)
 - [x] handleClose
 - [ ] handleKey
+  - [ ] handleIdKey
+    - [x] tag attributes
+    - [ ] list -> tableNew
+    - [ ] </ -> tag
+    - [ ] handleTableSplit
+    - [ ] set-id-text
+    - [ ] handleTagCloser
+    - [ ] handleTextInsert
 
 
 ##

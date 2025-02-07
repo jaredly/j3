@@ -1,5 +1,5 @@
 import { handleJoinText, unwrap } from './handleDelete';
-import { disolveSmooshed, joinSmooshed, rebalanceSmooshed, setIdText, setTextText } from './updaters';
+import { disolveSmooshed, joinSmooshed, rebalanceSmooshed, setIdText, setTextText, tagSetAttributes } from './updaters';
 import { selUpdate } from './handleNav';
 import { handleTextFormat, SelStart } from './handleShiftNav';
 import { Spat } from './handleSpecialText';
@@ -10,6 +10,7 @@ import { handleDeleteTooMuch } from './multi-change';
 import { ListKind, RecNodeT, Style, TextSpan } from '../shared/cnodes';
 import { handleIdWrap, handleInsertList, wrapUpdate } from './handleWrap';
 import { addSpan, dedentOutOfRich, splitTextInRich } from './handleTextText';
+import { handleInsertText } from './handleIdKey';
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
     switch (action.type) {
@@ -66,15 +67,24 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
             return dedentOutOfRich(state.top, action.path);
         case 'split-text-in-rich':
             return splitTextInRich(state.top, action.path, action.at);
+        case 'tag-set-attributes':
+            return tagSetAttributes(state.top, action.path, action.table, action.cursor);
+        case 'insert-text':
+            return handleInsertText(state.top, action.path, action.pos, action.what);
     }
 };
+
+export type KeyWhat = { type: 'space' } | { type: 'string' } | { type: 'sep'; newLine: boolean } | { type: 'text'; grem: string; ccls: number };
 
 export type KeyAction =
     | { type: 'unwrap'; path: Path }
     | { type: 'wrap'; path: Path; min: number; max: number; kind: ListKind<any> }
     | { type: 'id-wrap'; path: Path; left: number; right: number; kind: ListKind<any> }
     | { type: 'insert-list'; path: Path; pos: 'before' | 'after' | number; kind: ListKind<any> }
+    | { type: 'insert-text'; path: Path; pos: 'before' | 'after' | number; what: KeyWhat }
     | { type: 'sub-rich'; path: Path; kind: ListKind<any> }
+    // tag related
+    | { type: 'tag-set-attributes'; path: Path; table: RecNodeT<boolean>; cursor: Cursor }
     // text related
     | { type: 'dedent-out-of-rich'; path: Path }
     | { type: 'split-text-in-rich'; path: Path; at: Spat }
