@@ -2,6 +2,7 @@ import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { linksEqual, Style, stylesEqual, Text, TextSpan } from '../shared/cnodes';
 import { sideEqual } from './handleNav';
 import { Mods } from './handleShiftNav';
+import { KeyAction } from './keyActionToUpdate';
 // import { textCursorSides2 } from './insertId';
 import { Path, TextCursor, ListCursor, Top, Update, selStart, TmpText } from './utils';
 
@@ -134,25 +135,27 @@ export const handleSpecialText = (
     top: Top,
     key: string,
     mods: Mods,
-): Update | void => {
+): KeyAction[] | void => {
     if (cursor.type === 'list') return;
     // const { left, right, text } = textCursorSides2(cursor);
 
     if (!isStyleKey(key) || (!mods.ctrl && !mods.meta)) return;
-    const mod = keyMod(key, mods);
+    const mod = keyFormat(key, mods);
     if (!mod) return;
 
-    // const grems = top.tmpText[`${node.loc}:${cursor.end.index}`];
-    const res = specialTextMod(node, cursor.end, cursor.end, mod);
-    if (!res) return;
+    return [{ type: 'text-format', format: mod, path, left: cursor.end, right: cursor.end }];
 
-    return {
-        nodes: { [node.loc]: res.node },
-        selection: {
-            start: selStart(path, { type: 'text', end: res.end }),
-            end: selStart(path, { type: 'text', end: res.start }),
-        },
-    };
+    // const grems = top.tmpText[`${node.loc}:${cursor.end.index}`];
+    // const res = specialTextMod(node, cursor.end, cursor.end, mod);
+    // if (!res) return;
+
+    // return {
+    //     nodes: { [node.loc]: res.node },
+    //     selection: {
+    //         start: selStart(path, { type: 'text', end: res.end }),
+    //         end: selStart(path, { type: 'text', end: res.start }),
+    //     },
+    // };
 };
 
 export const mergeAdjacentSpans = <T>(spans: TextSpan<T>[], cursor: { start?: Spat; end: Spat }): TextSpan<T>[] => {

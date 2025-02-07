@@ -7,7 +7,8 @@ import { TestState } from './test-utils';
 import { joinInList, joinTable, removeSelf, removeSpan, textDelete } from './updaters';
 import { Cursor, lastChild, Path, Update } from './utils';
 import { handleDeleteTooMuch } from './multi-change';
-import { Style } from '../shared/cnodes';
+import { ListKind, Style } from '../shared/cnodes';
+import { wrapUpdate } from './handleWrap';
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
     switch (action.type) {
@@ -52,10 +53,13 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
             return handleJoinText(state.top, action.path);
         case 'text-format':
             return handleTextFormat(state.top, action.path, action.format, action.left, action.right);
+        case 'wrap':
+            return wrapUpdate(state.top, action.path, action.min, action.max, action.kind);
     }
 };
 export type KeyAction =
     | { type: 'unwrap'; path: Path }
+    | { type: 'wrap'; path: Path; min: number; max: number; kind: ListKind<any> }
     // text related
     | { type: 'join-text'; path: Path }
     | { type: 'remove-span'; index: number; path: Path }

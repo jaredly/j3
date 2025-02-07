@@ -221,18 +221,15 @@ const wrapParent = (one: SelStart, two: SelStart, top: Top): void | { path: Path
     return { path: outer.path, min: left ? 0 : at, max: left ? at : node.children.length - 1 };
 };
 
-export const handleWraps = (state: TestState, kind: ListKind<any>): Update | void => {
-    const found = wrapParent(state.sel.start, state.sel.end!, state.top);
-    if (!found) return;
-
-    let nextLoc = state.top.nextLoc;
+export const wrapUpdate = (top: Top, path: Path, min: number, max: number, kind: ListKind<any>): Update | void => {
+    let nextLoc = top.nextLoc;
     const nodes: Nodes = {};
-    const node = state.top.nodes[lastChild(found.path)];
+    const node = top.nodes[lastChild(path)];
     if (node.type !== 'list') return;
     const children = node.children.slice();
     const loc = nextLoc++;
 
-    const taken = children.splice(found.min, found.max - found.min + 1, loc);
+    const taken = children.splice(min, max - min + 1, loc);
     nodes[node.loc] = { ...node, children };
 
     let start: SelStart;
@@ -240,12 +237,12 @@ export const handleWraps = (state: TestState, kind: ListKind<any>): Update | voi
         const inner = nextLoc++;
         nodes[loc] = { type: 'list', kind, children: [inner], loc };
         nodes[inner] = { type: 'list', kind: node.kind, children: taken, loc: inner };
-        const got = selectStart(pathWithChildren(found.path, loc, inner, taken[0]), state.top);
+        const got = selectStart(pathWithChildren(path, loc, inner, taken[0]), top);
         if (!got) return;
         start = got;
     } else {
         nodes[loc] = { type: 'list', kind, children: taken, loc };
-        const got = selectStart(pathWithChildren(found.path, loc, taken[0]), state.top);
+        const got = selectStart(pathWithChildren(path, loc, taken[0]), top);
         if (!got) return;
         start = got;
     }
@@ -253,44 +250,44 @@ export const handleWraps = (state: TestState, kind: ListKind<any>): Update | voi
     return { nodes, selection: { start }, nextLoc };
 };
 
-export const handleWrapsTooMuch = (state: TestState, kind: ListKind<any>): Update => {
-    const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, state.top);
-    neighbors.push({ path: left.path, hl: { type: 'full' } });
-    neighbors.push({ path: right.path, hl: { type: 'full' } });
-    const sorted = partitionNeighbors(neighbors, state.top);
+export const handleWraps = (state: TestState, kind: ListKind<any>): KeyAction[] | void => {
+    const found = wrapParent(state.sel.start, state.sel.end!, state.top);
+    if (!found) return;
 
-    let nextLoc = state.top.nextLoc;
-    let sel: SelStart | null = null;
-    const nodes: Nodes = {};
-    sorted.forEach(({ path, children: selected }) => {
-        const node = state.top.nodes[lastChild(path)];
-        if (node.type !== 'list') return;
-        const children = node.children.slice();
-        const idxs = selected.map((s) => children.indexOf(s)).sort();
-        if (idxs[0] === -1) return;
-        const min = idxs[0];
-        const max = idxs[idxs.length - 1];
-        const loc = nextLoc++;
-
-        const taken = children.splice(min, max - min + 1, loc);
-        nodes[node.loc] = { ...node, children };
-        nodes[loc] = { type: 'list', kind, children: taken, loc };
-        const got = selectStart(pathWithChildren(path, loc, taken[0]), state.top);
-        if (got) sel = got;
-    });
-    console.log(sorted);
-    return { nodes, selection: sel ? { start: sel } : undefined, nextLoc };
+    return [{ type: 'wrap', path: found.path, min: found.min, max: found.max, kind }];
 };
+
+// export const handleWrapsTooMuch = (state: TestState, kind: ListKind<any>): Update => {
+//     const [left, neighbors, right, _] = collectSelectedNodes(state.sel.start, state.sel.end!, state.top);
+//     neighbors.push({ path: left.path, hl: { type: 'full' } });
+//     neighbors.push({ path: right.path, hl: { type: 'full' } });
+//     const sorted = partitionNeighbors(neighbors, state.top);
+
+//     let nextLoc = state.top.nextLoc;
+//     let sel: SelStart | null = null;
+//     const nodes: Nodes = {};
+//     sorted.forEach(({ path, children: selected }) => {
+//         const node = state.top.nodes[lastChild(path)];
+//         if (node.type !== 'list') return;
+//         const children = node.children.slice();
+//         const idxs = selected.map((s) => children.indexOf(s)).sort();
+//         if (idxs[0] === -1) return;
+//         const min = idxs[0];
+//         const max = idxs[idxs.length - 1];
+//         const loc = nextLoc++;
+
+//         const taken = children.splice(min, max - min + 1, loc);
+//         nodes[node.loc] = { ...node, children };
+//         nodes[loc] = { type: 'list', kind, children: taken, loc };
+//         const got = selectStart(pathWithChildren(path, loc, taken[0]), state.top);
+//         if (got) sel = got;
+//     });
+//     console.log(sorted);
+//     return { nodes, selection: sel ? { start: sel } : undefined, nextLoc };
+// };
 
 export const handleWrap = (state: TestState, key: string): Update | KeyAction[] | void => {
     if (state.sel.end) {
-        // IF start & end are in the same node,
-        // we handle it one way
-        // OTHERWISE
-        // we might need to split the start or end node.
-        // BUT I can probably get away with NOT handling the
-        // split case for now, because honestly
-        // is it common to want to do that? Iw ould think not.
         const kind = wrapKind(key);
         if (!kind) return;
         return handleWraps(state, kind);
@@ -315,8 +312,6 @@ export const handleWrap = (state: TestState, key: string): Update | KeyAction[] 
             return handleIdWrap(state.top, current, kind);
         case 'list':
             return handleListWrap(state.top, state.sel.start.path, current.node, current.cursor, kind);
-        // case 'text':
-        //     return handleTextWrap(state.top, state.sel.start.path, current.cursor, kind);
         default:
             throw new Error('not doing');
     }
