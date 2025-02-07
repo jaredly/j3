@@ -7,8 +7,9 @@ import { TestState } from './test-utils';
 import { joinInList, joinTable, removeSelf, removeSpan, textDelete } from './updaters';
 import { Cursor, lastChild, Path, Update } from './utils';
 import { handleDeleteTooMuch } from './multi-change';
-import { ListKind, Style } from '../shared/cnodes';
-import { wrapUpdate } from './handleWrap';
+import { ListKind, RecNodeT, Style, TextSpan } from '../shared/cnodes';
+import { handleIdWrap, handleInsertList, wrapUpdate } from './handleWrap';
+import { addSpan } from './handleTextText';
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
     switch (action.type) {
@@ -55,15 +56,27 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
             return handleTextFormat(state.top, action.path, action.format, action.left, action.right);
         case 'wrap':
             return wrapUpdate(state.top, action.path, action.min, action.max, action.kind);
+        case 'id-wrap':
+            return handleIdWrap(state.top, action.path, action.left, action.right, action.kind);
+        case 'insert-list':
+            return handleInsertList(state.top, action.path, action.pos, action.kind);
+        case 'add-span': {
+            return addSpan(state.top, action.path, action.span, action.index, action.end);
+        }
     }
 };
+
 export type KeyAction =
     | { type: 'unwrap'; path: Path }
     | { type: 'wrap'; path: Path; min: number; max: number; kind: ListKind<any> }
+    | { type: 'id-wrap'; path: Path; left: number; right: number; kind: ListKind<any> }
+    | { type: 'insert-list'; path: Path; pos: 'before' | 'after' | number; kind: ListKind<any> }
+    | { type: 'sub-rich'; path: Path; kind: ListKind<any> }
     // text related
     | { type: 'join-text'; path: Path }
     | { type: 'remove-span'; index: number; path: Path }
     | { type: 'set-text-text'; path: Path; text: string; index: number; end: number }
+    | { type: 'add-span'; path: Path; span: TextSpan<any>; index: number; end: number }
     | { type: 'text-format'; format: Partial<Style>; path: Path; left: Spat; right: Spat }
     // some other things
     | { type: 'join-list'; path: Path; child: { loc: number; cursor: Cursor } }
@@ -72,6 +85,7 @@ export type KeyAction =
     | { type: 'move'; sel: SelStart }
     | { type: 'sel-expand'; sel: SelStart }
     // Deletion n stuch
+    | { type: 'replace-self'; path: Path; node: RecNodeT<boolean>; cursor: Cursor }
     | { type: 'remove-self'; path: Path }
     | { type: 'multi-delete'; start: SelStart; end: SelStart }
     // things I minght want to ... consolidate or something ... idk

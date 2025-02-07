@@ -1,9 +1,10 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { stylesEqual, Nodes, Text, TextSpan, ListKind } from '../shared/cnodes';
+import { stylesEqual, Nodes, Text, TextSpan, ListKind, childLocs } from '../shared/cnodes';
 import { idText, spanText } from './cursorSplit';
 import { handleListKey } from './handleListKey';
 import { justSel, richNode } from './handleNav';
 import { Mods } from './handleShiftNav';
+import { KeyAction, moveA } from './keyActionToUpdate';
 // import { textCursorSides } from './insertId';
 import { Config } from './test-utils';
 import {
@@ -21,6 +22,18 @@ import {
     gparentLoc,
 } from './utils';
 
+export const addSpan = (top: Top, path: Path, span: TextSpan<any>, index: number, end: number): void | Update => {
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'text') return;
+    const spans = node.spans.slice();
+
+    spans.splice(index, 0, span);
+    return {
+        nodes: { [node.loc]: { ...node, spans } },
+        selection: { start: selStart(path, { type: 'text', end: { index: index, cursor: end } }) },
+    };
+};
+
 export const handleTextText = (
     cursor: TextCursor,
     sel: number | undefined,
@@ -29,10 +42,7 @@ export const handleTextText = (
     path: Path,
     top: Top,
     mods?: Mods,
-): Update | void => {
-    // if (cursor.start && cursor.start.index !== cursor.end.index) {
-    //     throw new Error('not multi yet sry');
-    // }
+): void | KeyAction[] | Update => {
     const span = current.spans[cursor.end.index];
     if (span.type !== 'text') {
         if (span.type === 'embed') {
@@ -46,48 +56,24 @@ export const handleTextText = (
                     if (prev.type === 'text') {
                         const grems = splitGraphemes(prev.text);
                         spans[cursor.end.index - 1] = { ...prev, text: grems.concat([grem]).join('') };
-                        return {
-                            ...justSel(path, {
-                                type: 'text',
-                                end: { index: cursor.end.index - 1, cursor: grems.length + 1 },
-                            }),
-                            nodes: { [current.loc]: { ...current, spans } },
-                            // tmpText: { [`${current.loc}:${cursor.end.index - 1}`]: grems.concat([grem]) },
-                        };
+                        return [
+                            { type: 'set-text-text', path, text: grems.concat([grem]).join(''), index: cursor.end.index - 1, end: grems.length + 1 },
+                        ];
                     }
                 }
-                spans.splice(cursor.end.index, 0, { type: 'text', text: grem });
-                return {
-                    nodes: { [current.loc]: { ...current, spans } },
-                    selection: { start: selStart(path, { type: 'text', end: { index: cursor.end.index, cursor: 1 } }) },
-                };
+                return [{ type: 'add-span', path, span: { type: 'text', text: grem }, index: cursor.end.index, end: 1 }];
             }
 
             if (cursor.end.cursor === 1) {
                 if (grem === '"' && cursor.end.index === current.spans.length - 1) {
-                    return justSel(path, { type: 'list', where: 'after' });
+                    return moveA(selStart(path, { type: 'list', where: 'after' }));
                 }
 
                 let next = current.spans[cursor.end.index + 1];
                 if (cursor.end.index === current.spans.length - 1 || next.type !== 'text' || !stylesEqual(span.style, next.style)) {
-                    const spans = current.spans.slice();
-                    spans.splice(cursor.end.index + 1, 0, { type: 'text', style: span.style, text: grem });
-                    return {
-                        nodes: { [current.loc]: { ...current, spans } },
-                        selection: { start: selStart(path, { type: 'text', end: { index: cursor.end.index + 1, cursor: 1 } }) },
-                    };
+                    return [{ type: 'add-span', path, index: cursor.end.index + 1, end: 1, span: { type: 'text', style: span.style, text: grem } }];
                 }
-                return {
-                    ...justSel(path, {
-                        type: 'text',
-                        end: {
-                            index: cursor.end.index + 1,
-                            cursor: 1,
-                            // text: [grem, ...splitGraphemes(next.text)]
-                        },
-                    }),
-                    // tmpText: { [`${current.loc}:${cursor.end.index + 1}`]: [grem, ...splitGraphemes(next.text)] },
-                };
+                return moveA(selStart(path, { type: 'text', end: { index: cursor.end.index + 1, cursor: 1 } }));
             }
         }
         return;
@@ -96,7 +82,6 @@ export const handleTextText = (
     const text = spanText(top.tmpText, current.loc, cursor.end, span);
     const [left, right] =
         sel == null ? [cursor.end.cursor, cursor.end.cursor] : sel < cursor.end.cursor ? [sel, cursor.end.cursor] : [cursor.end.cursor, sel];
-    // const { left, right } = textCursorSides(cursor);
 
     if (grem === ' ' && current.spans.length === 1 && left === text.length) {
         let parent = top.nodes[parentLoc(path)];
@@ -114,16 +99,19 @@ export const handleTextText = (
                 kind = { type: 'list', ordered: true };
             }
             if (kind != null) {
-                // so, if we're in a [plain], and we start a [bullet], do we want it to be nested?
-                // seems like we might.
-                return {
-                    nodes: {
-                        [current.loc]: { type: 'list', kind, children: [top.nextLoc], loc: current.loc },
-                        [top.nextLoc]: { ...current, spans: [{ type: 'text', text: '' }], loc: top.nextLoc },
+                const locs = childLocs(parent);
+                const at = locs.indexOf(current.loc);
+                if (at === -1) return [];
+                return [
+                    { type: 'set-text-text', end: 0, index: 0, path, text: '' },
+                    {
+                        type: 'wrap',
+                        path: parentPath(path),
+                        min: at,
+                        max: at,
+                        kind,
                     },
-                    nextLoc: top.nextLoc + 1,
-                    selection: { start: selStart(pathWithChildren(path, top.nextLoc), { type: 'text', end: { index: 0, cursor: 0 } }) },
-                };
+                ];
             }
         }
     }
@@ -131,7 +119,7 @@ export const handleTextText = (
     if (grem === '"' && cursor.end.index === current.spans.length - 1 && left === text.length) {
         let parent = top.nodes[parentLoc(path)];
         if (!richNode(parent)) {
-            return justSel(path, { type: 'list', where: 'after' });
+            return moveA(selStart(path, { type: 'list', where: 'after' }));
         }
     }
 
@@ -320,7 +308,14 @@ export const handleTextText = (
     };
 };
 
-export const handleTextKey = (config: Config, top: Top, path: Path, cursor: ListCursor | TextCursor, grem: string, mods?: Mods): Update | void => {
+export const handleTextKey = (
+    config: Config,
+    top: Top,
+    path: Path,
+    cursor: ListCursor | TextCursor,
+    grem: string,
+    mods?: Mods,
+): Update | KeyAction[] | void => {
     const current = top.nodes[lastChild(path)];
     if (current.type !== 'text') throw new Error('not text');
     if (cursor.type === 'list') {

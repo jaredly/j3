@@ -1,3 +1,4 @@
+import { splitGraphemes } from '../../src/parse/splitGraphemes';
 import { Collection, List, ListKind, Node, Nodes } from '../shared/cnodes';
 import { shape } from '../shared/shape';
 import { cursorSides } from './cursorSides';
@@ -40,21 +41,23 @@ export const closerKind = (key: string): ListKind<number> | void => {
     }
 };
 
-export const handleListWrap = (top: Top, path: Path, node: Collection<number>, cursor: CollectionCursor, kind: ListKind<number>): Update | void => {
-    if (cursor.type !== 'list') throw new Error('not');
-    if (cursor.where === 'inside') {
-        return {
-            nodes: {
-                [top.nextLoc]: { type: 'list', kind, children: [], loc: top.nextLoc },
-                [node.loc]: node.type === 'list' ? { ...node, children: [top.nextLoc] } : { ...node, rows: [[top.nextLoc]] },
-            },
-            selection: { start: selStart(pathWithChildren(path, top.nextLoc), { type: 'list', where: 'inside' }) },
-            nextLoc: top.nextLoc + 1,
-        };
-    }
-    if (cursor.where !== 'after') {
-        console.log(cursor);
-        throw new Error('cant wrap a list from ' + cursor.where);
+export const handleInsertList = (top: Top, path: Path, pos: 'before' | 'after' | number, kind: ListKind<any>): Update | void => {
+    const node = top.nodes[lastChild(path)];
+    if (typeof pos === 'number') {
+        if (node.type === 'id') {
+            return handleIdWrap(top, path, pos, pos, kind);
+        }
+        // 'inside'
+        if (node.type === 'list' || node.type === 'table') {
+            return {
+                nodes: {
+                    [top.nextLoc]: { type: 'list', kind, children: [], loc: top.nextLoc },
+                    [node.loc]: node.type === 'list' ? { ...node, children: [top.nextLoc] } : { ...node, rows: [[top.nextLoc]] },
+                },
+                selection: { start: selStart(pathWithChildren(path, top.nextLoc), { type: 'list', where: 'inside' }) },
+                nextLoc: top.nextLoc + 1,
+            };
+        }
     }
 
     let nextLoc = top.nextLoc;
@@ -67,9 +70,8 @@ export const handleListWrap = (top: Top, path: Path, node: Collection<number>, c
     let ncursor: Cursor = { type: 'list', where: 'inside' };
 
     let at = flat.indexOf(node);
-    // for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
 
-    flat.splice(at + 1, 0, nlist);
+    flat.splice(pos === 'after' ? at + 1 : at, 0, nlist);
 
     return flatToUpdateNew(
         flat,
@@ -80,14 +82,15 @@ export const handleListWrap = (top: Top, path: Path, node: Collection<number>, c
     );
 };
 
-export const handleIdWrap = (top: Top, current: Extract<Current, { type: 'id' }>, kind: ListKind<number>): Update | void => {
-    const { left, right } = cursorSides(current.cursor, current.start);
-    const text = idText(top.tmpText, current.cursor, current.node);
+export const handleIdWrap = (top: Top, path: Path, left: number, right: number, kind: ListKind<number>): Update | void => {
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'id') return;
+    const text = splitGraphemes(node.text);
     // Wrap the whole thing
     if (left === 0 && right === text.length) {
-        return wrapNode(top, current.path, current.node, kind);
+        return wrapNode(top, path, node, kind);
     }
-    const { path, node } = current;
+
     const first = text.slice(0, left);
     const mid = text.slice(left, right);
     const end = text.slice(right);
@@ -119,16 +122,7 @@ export const handleIdWrap = (top: Top, current: Extract<Current, { type: 'id' }>
     if (left > 0) {
         flat[at] = nodes[node.loc] = { ...node, text: first.join('') };
     }
-    // honestly not sure what this was abount
-    // for (; at < flat.length - 1 && flat[at + 1].type === 'smoosh'; at++); // skip smooshes
 
-    // If we're at the end of the ID but not the end of the smoosh, we wrap the next thing
-    // if (at < flat.length - 1 && left === text.length) {
-    //     const next = flat[at + 1];
-    //     if (next.type !== 'sep' && next.type !== 'space' && next.type !== 'smoosh') {
-    //         return wrapNode(top, pathWithChildren(parentPath(path), next.loc), next, kind);
-    //     }
-    // }
     flat.splice(at + 1, 0, nlist);
 
     if (end.length) {
@@ -177,7 +171,7 @@ const findCurlyClose = (path: Path, top: Top, notListTop: boolean): SelStart | v
     }
 };
 
-export const handleClose = (state: TestState, key: string): Update | void => {
+export const handleClose = (state: TestState, key: string): Update | KeyAction[] | void => {
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
         return handleTextText(current.cursor, undefined, current.node, key, current.path, state.top);
@@ -242,7 +236,7 @@ export const wrapUpdate = (top: Top, path: Path, min: number, max: number, kind:
         start = got;
     } else {
         nodes[loc] = { type: 'list', kind, children: taken, loc };
-        const got = selectStart(pathWithChildren(path, loc, taken[0]), top);
+        const got = selectStart(pathWithChildren(path, loc, taken[0]), { ...top, nodes: { ...top.nodes, ...nodes } });
         if (!got) return;
         start = got;
     }
@@ -290,6 +284,14 @@ export const handleWrap = (state: TestState, key: string): Update | KeyAction[] 
     if (state.sel.end) {
         const kind = wrapKind(key);
         if (!kind) return;
+        if (state.sel.start.key === state.sel.end.key && state.sel.start.cursor.type === 'id' && state.sel.end.cursor.type === 'id') {
+            const node = state.top.nodes[lastChild(state.sel.start.path)];
+            if (node.type === 'id') {
+                const [start, end] = [state.sel.start.cursor.end, state.sel.end.cursor.end];
+                const [left, right] = start < end ? [start, end] : [end, start];
+                return [{ type: 'id-wrap', left, right, path: state.sel.start.path, kind }];
+            }
+        }
         return handleWraps(state, kind);
     }
 
@@ -309,11 +311,18 @@ export const handleWrap = (state: TestState, key: string): Update | KeyAction[] 
     if (!kind) return;
     switch (current.type) {
         case 'id':
-            return handleIdWrap(state.top, current, kind);
+            const pos = current.cursor.end;
+            return [{ type: 'insert-list', pos, path: current.path, kind }];
         case 'list':
-            return handleListWrap(state.top, state.sel.start.path, current.node, current.cursor, kind);
-        default:
-            throw new Error('not doing');
+            if (current.cursor.type === 'control') return;
+            return [
+                {
+                    type: 'insert-list',
+                    pos: current.cursor.where === 'inside' ? 0 : current.cursor.where === 'after' ? 'after' : 'before',
+                    path: current.path,
+                    kind,
+                },
+            ];
     }
 };
 
