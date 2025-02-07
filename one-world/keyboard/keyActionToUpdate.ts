@@ -1,8 +1,10 @@
-import { joinInList, joinTable, removeSelf, removeSpan, setIdText, setTextText, unwrap } from './handleDelete';
+import { unwrap } from './handleDelete';
+import { setIdText, setTextText } from './updaters';
 import { selUpdate } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { Spat } from './handleSpecialText';
 import { TestState } from './test-utils';
+import { joinInList, joinTable, removeSelf, removeSpan, textDelete } from './updaters';
 import { Cursor, lastChild, Path, Update } from './utils';
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
@@ -16,7 +18,7 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
         case 'move':
             return selUpdate(action.sel);
         case 'remove-self':
-            return removeSelf(state, { path: action.path, node: state.top.nodes[lastChild(action.path)] });
+            return removeSelf(state.top, { path: action.path, node: state.top.nodes[lastChild(action.path)] });
         case 'join-list':
             return joinInList(state.top, action.path, action.child);
         case 'toggle-multiline': {
@@ -31,6 +33,8 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
         case 'set-text-text': {
             return setTextText(state.top, action.path, action.text, action.index, action.end);
         }
+        case 'text-delete':
+            return textDelete(state.top, action.path, action.left, action.right);
     }
 };
 export type KeyAction =
