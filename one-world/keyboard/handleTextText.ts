@@ -4,6 +4,7 @@ import { idText, spanText } from './cursorSplit';
 import { handleListKey } from './handleListKey';
 import { justSel, richNode } from './handleNav';
 import { Mods, SelStart } from './handleShiftNav';
+import { Spat } from './handleSpecialText';
 import { KeyAction, moveA } from './keyActionToUpdate';
 // import { textCursorSides } from './insertId';
 import { Config } from './test-utils';
@@ -27,6 +28,97 @@ const maybeJoin = (one?: TextSpan<number>, two?: TextSpan<number>) => {
     if (one?.type === 'text' && two?.type === 'text' && stylesEqual(one.style, two.style)) {
         return { joined: { ...one, text: one.text + two.text }, off: splitGraphemes(one.text).length };
     }
+};
+
+export const splitTextInRich = (top: Top, path: Path, at: Spat): void | Update => {
+    let parent = top.nodes[parentLoc(path)];
+    if (!richNode(parent)) return;
+    const current = top.nodes[lastChild(path)];
+    if (current.type !== 'text') return;
+    const span = current.spans[at.index];
+    if (span.type !== 'text') return;
+    const text = splitGraphemes(span.text);
+
+    // nowww we split.
+    // hrm but we also need to allow a mods
+    const before = current.spans.slice(0, at.index + 1);
+    before[before.length - 1] = { ...span, text: text.slice(0, at.cursor).join('') };
+    const after = current.spans.slice(at.index);
+    after[0] = { ...span, text: text.slice(at.cursor).join('') };
+
+    let nextLoc = top.nextLoc;
+    const loc = nextLoc++;
+
+    const nodes: Nodes = {};
+
+    if (parent.type === 'list') {
+        const pat = parent.children.indexOf(current.loc);
+        if (pat === -1) throw new Error(`canrt find ${current.loc} in parent ${parent.loc} : ${parent.children}`);
+        const children = parent.children.slice();
+        children.splice(pat + 1, 0, loc);
+        parent = { ...parent, children };
+    } else if (parent.type === 'table') {
+        const { row, col } = findTableLoc(parent.rows, current.loc);
+        const rows = parent.rows.slice();
+        const right = rows[row].slice(col + 1);
+        rows[row] = rows[row].slice(0, col + 1);
+        rows.splice(row + 1, 0, [loc, ...right]);
+        if (!right.length) {
+            for (let i = 1; i < rows[row].length; i++) {
+                const cloc = nextLoc++;
+                nodes[cloc] = { type: 'text', spans: [{ type: 'text', text: '' }], loc: cloc };
+                rows[row + 1].push(cloc);
+            }
+        }
+        parent = { ...parent, rows };
+    }
+
+    return {
+        nodes: {
+            ...nodes,
+            [current.loc]: { ...current, spans: before },
+            [loc]: { type: 'text', loc, spans: after },
+            [parent.loc]: parent,
+        },
+        selection: { start: selStart(pathWithChildren(parentPath(path), loc), { type: 'text', end: { index: 0, cursor: 0 } }) },
+        nextLoc,
+    };
+};
+
+export const dedentOutOfRich = (top: Top, path: Path): void | Update => {
+    const parent = top.nodes[parentLoc(path)];
+    const gparent = top.nodes[gparentLoc(path)];
+    const loc = lastChild(path);
+    if (gparent.type !== 'list' || parent.type !== 'list' || !richNode(parent) || !richNode(gparent)) {
+        return;
+    }
+
+    const gchildren = gparent.children.slice();
+    const children = parent.children.slice();
+    const at = children.indexOf(loc);
+    const gat = gchildren.indexOf(parent.loc);
+    const after = children.slice(at + 1);
+    children.splice(at);
+    gchildren.splice(gat + 1, 0, loc);
+    let nextLoc = top.nextLoc;
+    const nodes: Nodes = {};
+    if (after.length) {
+        const loc = nextLoc++;
+        gchildren.splice(gat + 2, 0, loc);
+        nodes[loc] = { ...parent, children: after, loc };
+    }
+    nodes[gparent.loc] = { ...gparent, children: gchildren };
+    nodes[parent.loc] = { ...parent, children };
+    return {
+        nodes,
+        selection: {
+            start: selStart(pathWithChildren(parentPath(parentPath(path)), loc), {
+                type: 'text',
+                end: { index: 0, cursor: 0 },
+            }),
+        },
+        nextLoc,
+    };
 };
 
 export const addSpan = (
@@ -119,7 +211,7 @@ export const handleTextText = (
     path: Path,
     top: Top,
     mods?: Mods,
-): void | KeyAction[] | Update => {
+): void | KeyAction[] => {
     const span = current.spans[cursor.end.index];
     if (span.type !== 'text') {
         if (span.type === 'embed') {
@@ -264,82 +356,13 @@ export const handleTextText = (
                 // hrm hrm
                 let gparent = top.nodes[gparentLoc(path)];
                 if (parent?.type === 'list' && gparent?.type === 'list' && richNode(gparent)) {
-                    const gchildren = gparent.children.slice();
-                    const children = parent.children.slice();
-                    const at = children.indexOf(current.loc);
-                    const gat = gchildren.indexOf(parent.loc);
-                    const after = children.slice(at + 1);
-                    children.splice(at);
-                    gchildren.splice(gat + 1, 0, current.loc);
-                    let nextLoc = top.nextLoc;
-                    const nodes: Nodes = {};
-                    if (after.length) {
-                        const loc = nextLoc++;
-                        gchildren.splice(gat + 2, 0, loc);
-                        nodes[loc] = { ...parent, children: after, loc };
-                    }
-                    nodes[gparent.loc] = { ...gparent, children: gchildren };
-                    nodes[parent.loc] = { ...parent, children };
-                    return {
-                        nodes,
-                        selection: {
-                            start: selStart(pathWithChildren(parentPath(parentPath(path)), current.loc), {
-                                type: 'text',
-                                end: { index: 0, cursor: 0 },
-                            }),
-                        },
-                        nextLoc,
-                    };
-                    // const gafter = gchildren.slice(gat + 1)
+                    return [{ type: 'dedent-out-of-rich', path }];
                 } else {
-                    // otherwise ... wrap the parent in a rich?
+                    // otherwise ... wrap the parent in a rich? eh.
                 }
             }
 
-            // nowww we split.
-            // hrm but we also need to allow a mods
-            const before = current.spans.slice(0, cursor.end.index + 1);
-            before[before.length - 1] = { ...span, text: text.slice(0, left).join('') };
-            const after = current.spans.slice(cursor.end.index);
-            after[0] = { ...span, text: text.slice(right).join('') };
-
-            let nextLoc = top.nextLoc;
-            const loc = nextLoc++;
-
-            const nodes: Nodes = {};
-
-            if (parent.type === 'list') {
-                const pat = parent.children.indexOf(current.loc);
-                if (pat === -1) throw new Error(`canrt find ${current.loc} in parent ${parent.loc} : ${parent.children}`);
-                const children = parent.children.slice();
-                children.splice(pat + 1, 0, loc);
-                parent = { ...parent, children };
-            } else if (parent.type === 'table') {
-                const { row, col } = findTableLoc(parent.rows, current.loc);
-                const rows = parent.rows.slice();
-                const right = rows[row].slice(col + 1);
-                rows[row] = rows[row].slice(0, col + 1);
-                rows.splice(row + 1, 0, [loc, ...right]);
-                if (!right.length) {
-                    for (let i = 1; i < rows[row].length; i++) {
-                        const cloc = nextLoc++;
-                        nodes[cloc] = { type: 'text', spans: [{ type: 'text', text: '' }], loc: cloc };
-                        rows[row + 1].push(cloc);
-                    }
-                }
-                parent = { ...parent, rows };
-            }
-
-            return {
-                nodes: {
-                    ...nodes,
-                    [current.loc]: { ...current, spans: before },
-                    [loc]: { type: 'text', loc, spans: after },
-                    [parent.loc]: parent,
-                },
-                selection: { start: selStart(pathWithChildren(parentPath(path), loc), { type: 'text', end: { index: 0, cursor: 0 } }) },
-                nextLoc,
-            };
+            return [{ type: 'split-text-in-rich', path, at: { index: cursor.end.index, cursor: left } }];
         }
     }
 

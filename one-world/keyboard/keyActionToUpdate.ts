@@ -9,7 +9,7 @@ import { Cursor, lastChild, Path, Update } from './utils';
 import { handleDeleteTooMuch } from './multi-change';
 import { ListKind, RecNodeT, Style, TextSpan } from '../shared/cnodes';
 import { handleIdWrap, handleInsertList, wrapUpdate } from './handleWrap';
-import { addSpan } from './handleTextText';
+import { addSpan, dedentOutOfRich, splitTextInRich } from './handleTextText';
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
     switch (action.type) {
@@ -60,9 +60,12 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
             return handleIdWrap(state.top, action.path, action.left, action.right, action.kind);
         case 'insert-list':
             return handleInsertList(state.top, action.path, action.pos, action.kind);
-        case 'add-span': {
+        case 'add-span':
             return addSpan(state.top, action.path, action.span, action.index, action.cursor, action.within);
-        }
+        case 'dedent-out-of-rich':
+            return dedentOutOfRich(state.top, action.path);
+        case 'split-text-in-rich':
+            return splitTextInRich(state.top, action.path, action.at);
     }
 };
 
@@ -73,6 +76,8 @@ export type KeyAction =
     | { type: 'insert-list'; path: Path; pos: 'before' | 'after' | number; kind: ListKind<any> }
     | { type: 'sub-rich'; path: Path; kind: ListKind<any> }
     // text related
+    | { type: 'dedent-out-of-rich'; path: Path }
+    | { type: 'split-text-in-rich'; path: Path; at: Spat }
     | { type: 'join-text'; path: Path }
     | { type: 'remove-span'; index: number; path: Path }
     | { type: 'set-text-text'; path: Path; text: string; index: number; end: number }

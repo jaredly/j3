@@ -13,9 +13,12 @@ Ok, so some CRDT thgouths:
 - [x] handleShiftNav
 - [x] handleNav
 - [x] handleSpecial
-- [ ] handleWrap
-  - [ ] handleTextText
-- [ ] handleClose
+- [x] handleWrap
+  - [x] handleTextText
+    - [x] embeds ayy
+    - [x] "dedent current Text out of parent rich-list"
+    - [x] split text in rich (list or table)
+- [x] handleClose
 - [ ] handleKey
 
 

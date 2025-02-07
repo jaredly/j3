@@ -7,7 +7,7 @@ import { findParent } from './flatenate';
 import { justSel, selectStart } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { handleTextText } from './handleTextText';
-import { KeyAction } from './keyActionToUpdate';
+import { KeyAction, moveA } from './keyActionToUpdate';
 import { partitionNeighbors } from './multi-change';
 import { replaceAt } from './replaceAt';
 import { flatten, flatToUpdateNew } from './rough';
@@ -171,7 +171,7 @@ const findCurlyClose = (path: Path, top: Top, notListTop: boolean): SelStart | v
     }
 };
 
-export const handleClose = (state: TestState, key: string): Update | KeyAction[] | void => {
+export const handleClose = (state: TestState, key: string): KeyAction[] | void => {
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
         return handleTextText(current.cursor, undefined, current.node, key, current.path, state.top);
@@ -182,12 +182,11 @@ export const handleClose = (state: TestState, key: string): Update | KeyAction[]
     // soooo there's a special case, for text curly
     if (kind === 'curly') {
         const sel = findCurlyClose(path, state.top, cursor.type === 'list' && cursor.where !== 'inside');
-        // console.log('aaa', sel, cursor, path);
-        return sel ? { nodes: {}, selection: { start: sel } } : sel;
+        return moveA(sel);
     }
     const parent = findListParent(kind, cursor.type === 'list' && cursor.where !== 'inside' ? parentPath(path) : path, state.top);
     if (!parent) return;
-    return justSel(parent.path, { type: 'list', where: 'after' });
+    return moveA(selStart(parent.path, { type: 'list', where: 'after' }));
 };
 
 const wrapParent = (one: SelStart, two: SelStart, top: Top): void | { path: Path; min: number; max: number } => {
@@ -280,7 +279,7 @@ export const handleWraps = (state: TestState, kind: ListKind<any>): KeyAction[] 
 //     return { nodes, selection: sel ? { start: sel } : undefined, nextLoc };
 // };
 
-export const handleWrap = (state: TestState, key: string): Update | KeyAction[] | void => {
+export const handleWrap = (state: TestState, key: string): KeyAction[] | void => {
     if (state.sel.end) {
         const kind = wrapKind(key);
         if (!kind) return;
