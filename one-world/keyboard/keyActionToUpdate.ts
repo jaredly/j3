@@ -1,12 +1,13 @@
 import { handleJoinText, unwrap } from './handleDelete';
 import { disolveSmooshed, joinSmooshed, rebalanceSmooshed, setIdText, setTextText } from './updaters';
 import { selUpdate } from './handleNav';
-import { SelStart } from './handleShiftNav';
+import { handleTextFormat, SelStart } from './handleShiftNav';
 import { Spat } from './handleSpecialText';
 import { TestState } from './test-utils';
 import { joinInList, joinTable, removeSelf, removeSpan, textDelete } from './updaters';
 import { Cursor, lastChild, Path, Update } from './utils';
 import { handleDeleteTooMuch } from './multi-change';
+import { Style } from '../shared/cnodes';
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
     switch (action.type) {
@@ -49,23 +50,29 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
         }
         case 'join-text':
             return handleJoinText(state.top, action.path);
+        case 'text-format':
+            return handleTextFormat(state.top, action.path, action.format, action.left, action.right);
     }
 };
 export type KeyAction =
     | { type: 'unwrap'; path: Path }
-    //
+    // text related
     | { type: 'join-text'; path: Path }
+    | { type: 'remove-span'; index: number; path: Path }
+    | { type: 'set-text-text'; path: Path; text: string; index: number; end: number }
+    | { type: 'text-format'; format: Partial<Style>; path: Path; left: Spat; right: Spat }
+    // some other things
     | { type: 'join-list'; path: Path; child: { loc: number; cursor: Cursor } }
     | { type: 'join-table'; path: Path; child: { loc: number; cursor: Cursor }; at: { row: number; col: number } }
+    // Selections
     | { type: 'move'; sel: SelStart }
     | { type: 'sel-expand'; sel: SelStart }
+    // Deletion n stuch
     | { type: 'remove-self'; path: Path }
-    | { type: 'remove-span'; index: number; path: Path }
     | { type: 'multi-delete'; start: SelStart; end: SelStart }
     // things I minght want to ... consolidate or something ... idk
     | { type: 'set-id-text'; path: Path; text: string; end: number }
-    | { type: 'set-text-text'; path: Path; text: string; index: number; end: number }
     | { type: 'text-delete'; path: Path; left: Spat; right: Spat }
     | { type: 'toggle-multiline'; loc: number };
 
-export const moveA = (sel?: SelStart | void): KeyAction[] => (sel ? [{ type: 'move', sel }] : []);
+export const moveA = (sel?: SelStart | void | null): KeyAction[] => (sel ? [{ type: 'move', sel }] : []);

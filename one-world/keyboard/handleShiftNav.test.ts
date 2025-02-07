@@ -66,6 +66,13 @@ test('bold no shift at end', () => {
     check(state, text([tspan('hello'), tspan('', { fontWeight: 'bold' })], true), textc(1, 0), textc(1, 0));
 });
 
+test('bold', () => {
+    let state = asTop(text([tspan('hello')], true), textc(0, 2));
+    state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));
+    state = applyUpdate(state, handleSpecial(state, 'b', { meta: true }));
+    check(state, text([tspan('he'), tspan('l', { fontWeight: 'bold' }), tspan('lo')], true), textc(1, 1), textc(1, 0));
+});
+
 test('a little bold/underline', () => {
     let state = asTop(text([tspan('hello')], true), textc(0, 2));
     state = applyUpdate(state, handleShiftNav(state, 'ArrowRight'));

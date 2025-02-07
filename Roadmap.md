@@ -12,6 +12,10 @@ Ok, so some CRDT thgouths:
 - [x] wordNav
 - [x] handleShiftNav
 - [x] handleNav
+- [ ] handleSpecial
+- [ ] handleWrap
+- [ ] handleClose
+- [ ] handleKey
 
 
 ##

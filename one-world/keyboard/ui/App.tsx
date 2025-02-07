@@ -674,12 +674,10 @@ const useKeyFns = (
 
     const visual: Visual = {
         up(sel) {
-            const nxt = posUp(sel, cstate.current.top, refs);
-            return nxt ? { start: nxt } : null;
+            return posUp(sel, cstate.current.top, refs);
         },
         down(sel) {
-            const nxt = posDown(sel, cstate.current.top, refs);
-            return nxt ? { start: nxt } : null;
+            return posDown(sel, cstate.current.top, refs);
         },
         spans: cspans.current,
     };

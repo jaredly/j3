@@ -1,8 +1,8 @@
 import { splitGraphemes } from '../../src/parse/splitGraphemes';
-import { childLocs, Id, Loc, Node, Text } from '../shared/cnodes';
+import { childLocs, Id, Loc, Node, Style, Text } from '../shared/cnodes';
 import { spanLength } from './handleDelete';
 import { goLateral, handleNav, justSel, selectEnd, selectStart, selUpdate } from './handleNav';
-import { handleSpecialText, keyMod, specialTextMod } from './handleSpecialText';
+import { handleSpecialText, keyFormat, keyMod, Spat, specialTextMod } from './handleSpecialText';
 import { TestState } from './test-utils';
 import {
     Current,
@@ -26,6 +26,7 @@ import { idText } from './cursorSplit';
 import { handleCopyMulti } from './multi-change';
 import { shape } from '../shared/shape';
 import { KeyAction, moveA } from './keyActionToUpdate';
+import equal from 'fast-deep-equal';
 // import { textCursorSides2 } from './insertId';
 
 export type Src = { left: Loc; right?: Loc };
@@ -263,6 +264,31 @@ const wordNext = (node: Text<number>, left: boolean, index: number, cursor: numb
     return { index, cursor: i };
 };
 
+const toggleFormat = (style: Style, up: Partial<Style>) => {
+    if (Object.keys(up).every((k) => equal(style[k as 'color'], up[k as 'color']))) {
+        Object.keys(up).forEach((k) => {
+            delete style[k as 'color'];
+        });
+    } else {
+        Object.assign(style, up);
+    }
+};
+
+export const handleTextFormat = (top: Top, path: Path, format: Partial<Style>, left: Spat, right: Spat): Update | undefined => {
+    const node = top.nodes[lastChild(path)];
+    if (node.type !== 'text') return;
+
+    const res = specialTextMod(node, left, right, (style) => toggleFormat(style, format));
+    if (!res) return;
+    return {
+        nodes: { [node.loc]: res.node },
+        selection: {
+            end: selStart(path, { type: 'text', end: res.start }),
+            start: selStart(path, { type: 'text', end: res.end }),
+        },
+    };
+};
+
 export const wordNav = (state: TestState, left: boolean, shift: boolean | undefined): KeyAction[] | void => {
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
@@ -385,21 +411,14 @@ export const handleTab = (state: TestState, shift: boolean): SelStart | void => 
 
 export type Mods = { meta?: boolean; ctrl?: boolean; alt?: boolean; shift?: boolean };
 
-export const handleSpecial = (state: TestState, key: string, mods: Mods): void | Update => {
+export const handleSpecial = (state: TestState, key: string, mods: Mods): void | KeyAction[] | Update => {
     const current = getCurrent(state.sel, state.top);
-    if (key === 'v' && mods.meta) return;
-    if (key === 'c' && mods.meta) {
-        const copied = handleCopyMulti(state);
-        console.log(copied ? shape(copied.tree) : 'nothing to copy');
-        navigator.clipboard.writeText(JSON.stringify(copied));
-        return;
-    }
     if (key === '\n' && mods.meta) {
         let path = current.cursor.type === 'list' && current.cursor.where === 'inside' ? state.sel.start.path : parentPath(state.sel.start.path);
         while (path.children.length) {
             const node = state.top.nodes[lastChild(path)];
             if (node.type === 'table' || (node.type === 'list' && node.kind !== 'smooshed' && node.kind !== 'spaced')) {
-                return { nodes: { [node.loc]: { ...node, forceMultiline: !node.forceMultiline } } };
+                return [{ type: 'toggle-multiline', loc: node.loc }];
             }
             path = parentPath(path);
         }
@@ -408,32 +427,16 @@ export const handleSpecial = (state: TestState, key: string, mods: Mods): void |
         const sc = state.sel.start.cursor;
         const ec = state.sel.end.cursor;
         if (state.sel.end.key === state.sel.start.key) {
-            const mod = keyMod(key, mods);
+            const mod = keyFormat(key, mods);
             if (!mod) return;
 
             const [left, right] = ltCursor(sc, ec) ? [sc, ec] : [ec, sc];
 
             const node = state.top.nodes[lastChild(state.sel.start.path)];
-            // const grems = state.top.tmpText[`${node.loc}:${cursor.end.index}`]
-            // const text = sc.end.text
-            //     ? { grems: sc.end.text, index: sc.end.index }
-            //     : ec.end.text
-            //     ? { grems: ec.end.text, index: ec.end.index }
-            //     : undefined;
             if (node.type === 'text') {
-                const res = specialTextMod(node, state.top.tmpText, left.end, right.end, mod);
-                return res
-                    ? {
-                          nodes: { [node.loc]: res.node },
-                          selection: {
-                              end: selStart(current.path, { type: 'text', end: res.start }),
-                              start: selStart(current.path, { type: 'text', end: res.end }),
-                          },
-                      }
-                    : undefined;
+                return [{ type: 'text-format', path: current.path, left: left.end, right: right.end, format: mod }];
             }
         }
-        // const [left, middle, right] = orderSelections(state.sel.start, state.sel.end, state.top);
 
         // TODO: iterate through all middles, and if everything is a text, go to town.
     }

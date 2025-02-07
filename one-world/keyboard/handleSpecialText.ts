@@ -7,6 +7,17 @@ import { Path, TextCursor, ListCursor, Top, Update, selStart, TmpText } from './
 
 const isStyleKey = (key: string) => key === 'b' || key === 'i' || key === 'u';
 
+export const keyFormat = (key: string, mods: Mods): void | Partial<Style> => {
+    if (!mods.ctrl && !mods.meta) return;
+    if (key === 'b') {
+        return { fontWeight: 'bold' };
+    } else if (key === 'u') {
+        return { textDecoration: 'underline' };
+    } else if (key === 'i') {
+        return { fontStyle: 'italic' };
+    }
+};
+
 export const keyMod = (key: string, mods: Mods): void | ((style: Style) => void) => {
     if (!mods.ctrl && !mods.meta) return;
     if (key === 'b') {
@@ -64,14 +75,7 @@ export const keyMod = (key: string, mods: Mods): void | ((style: Style) => void)
 
 export type Spat = { cursor: number; index: number };
 
-export const specialTextMod = (
-    node: Text<number>,
-    // text: undefined | { grems: string[]; index: number },
-    tmpText: TmpText,
-    left: Spat,
-    right: Spat,
-    mod: (style: Style) => void,
-) => {
+export const specialTextMod = (node: Text<number>, left: Spat, right: Spat, mod: (style: Style) => void) => {
     let off = 0;
     let scur: number | null = null;
     let ecur: { cursor: number; index: number } | null = null;
@@ -139,7 +143,7 @@ export const handleSpecialText = (
     if (!mod) return;
 
     // const grems = top.tmpText[`${node.loc}:${cursor.end.index}`];
-    const res = specialTextMod(node, top.tmpText, cursor.end, cursor.end, mod);
+    const res = specialTextMod(node, cursor.end, cursor.end, mod);
     if (!res) return;
 
     return {
