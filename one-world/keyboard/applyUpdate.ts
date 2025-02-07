@@ -1,11 +1,11 @@
 import { shape } from '../shared/shape';
 import { TestState } from './test-utils';
-import { lastChild, NodeSelection, parentPath, Path, pathWithChildren, selStart, SelUpdate, Update } from './utils';
+import { lastChild, NodeSelection, parentPath, Path, pathWithChildren, selStart, SelUpdate, Top, Update } from './utils';
 import { KeyAction, keyActionToUpdate } from './keyActionToUpdate';
 import { validate } from './validate';
 import { root } from './root';
 import { SelStart } from './handleShiftNav';
-import { selUpdate } from './handleNav';
+import { selectEnd, selectStart, selUpdate } from './handleNav';
 import { addInPath, removeInPath } from './handleDelete';
 
 export const applySel = (state: TestState, sel: SelStart | void) => applyUpdate(state, selUpdate(sel));
@@ -65,7 +65,11 @@ export function applyUpdate<T extends TestState>(state: T, update: Update | KeyA
 
     if (Array.isArray(update.selection)) {
         update.selection.forEach((selup) => {
-            state.sel = applySelUp(state.sel, selup);
+            const sel = applySelUp(state.sel, selup);
+            if (sel) state.sel = sel;
+            else {
+                console.warn(`unable to apply selection update`, state.sel, selup);
+            }
         });
     } else if (update.selection) {
         state.sel = update.selection;

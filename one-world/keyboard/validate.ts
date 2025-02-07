@@ -79,7 +79,7 @@ const validateNodes = (top: Top, id: number) => {
             if (!child) throw new Error(`invalid child ${cid}`);
             if (child.type === 'id') {
                 if (child.text === '') {
-                    throw new Error(`blank id in smooshed should not be`);
+                    throw new Error(`blank id ${cid} in smooshed ${node.loc} should not be`);
                 }
                 if (child.ccls != null) {
                     kinds.push(child.ccls);

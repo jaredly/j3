@@ -117,6 +117,24 @@ test('table nav left between rows', () => {
     check(state, table('round', [[id('hi'), id('ho', true)], [id('hm')]]), idc(2));
 });
 
+test('table empty', () => {
+    let state = asTop(table('round', [[id('', true)]]), idc(0));
+    state = applyUpdate(state, handleDelete(state)!);
+    check(state, id('', true), idc(0));
+});
+
+test('table empty mutliine', () => {
+    let state = asTop(table('round', [[id('', true)]], undefined, true), idc(0));
+    state = applyUpdate(state, handleDelete(state)!);
+    check(state, table('round', [[id('', true)]]), idc(0));
+});
+
+test('table start not empty', () => {
+    let state = asTop(table('round', [[id('', true), id('ha')]]), idc(0));
+    state = applyUpdate(state, handleDelete(state)!);
+    check(state, table('round', [[id(''), id('ha')]], true), listc('start'));
+});
+
 test('table del column', () => {
     let state = asTop(table('round', [[id('hi'), id('', true)]]), idc(0));
     state = applyUpdate(state, handleDelete(state)!);

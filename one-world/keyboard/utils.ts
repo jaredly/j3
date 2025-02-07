@@ -220,6 +220,7 @@ export type SelUpdate =
     // | { type: 'reparent'; oldPath: Path; newPath: Path }
     | { type: 'unparent'; loc: number } // remove from a parent list
     | { type: 'addparent'; loc: number; parent: number }
+    // | { type: 'to-sibling'; loc: number; dest: number; at: 'start' | 'end' }
     // | { type: 'unwrapList'; path: Path; left: SelStart; right: SelStart }
     // | { type: 'delete'; paths: Path[]; dest: SelStart }
     // This assumes:

@@ -8,7 +8,7 @@ import { mergeAdjacentSpans, Spat } from './handleSpecialText';
 // import { textCursorSides, textCursorSides2 } from './insertId';
 import { replaceAt } from './replaceAt';
 import { replaceIn } from './replaceIn';
-import { collapseAdjacentIDs, findPath, fixSelection, flatten, flatToUpdateNew, pruneEmptyIds, unflat } from './rough';
+import { collapseAdjacentIDs, findPath, fixSelection, flatten, flatToUpdateNew, pruneEmptyIds, unflat, updateNodes } from './rough';
 import { TestState } from './test-utils';
 import {
     Current,
@@ -29,7 +29,7 @@ import {
 } from './utils';
 import { getCurrent } from './selections';
 import { idText } from './cursorSplit';
-import { KeyAction } from './keyActionToUpdate';
+import { KeyAction, moveA } from './keyActionToUpdate';
 import { handleDeleteTooMuch } from './multi-change';
 
 type JoinParent =
@@ -113,7 +113,8 @@ const removeParent = (sel: NodeSelection, loc: number): NodeSelection => ({
     //     : undefined,
 });
 
-export const unwrap = (path: Path, top: Top, sel: NodeSelection) => {
+export const unwrap = (path: Path, top: Top) => {
+    // , sel: NodeSelection
     const node = top.nodes[lastChild(path)];
     if (node.type === 'table') {
         // TODO
@@ -121,7 +122,10 @@ export const unwrap = (path: Path, top: Top, sel: NodeSelection) => {
     }
     if (node.type !== 'list') return; // TODO idk
     const repl = replaceAt(parentPath(path).children, top, lastChild(path), ...node.children);
-    repl.selection = [move(removeParent(sel, lastChild(path)))];
+    const stop = { ...top, nodes: updateNodes(top.nodes, repl.nodes) };
+    const sel = selectStart(pathWithChildren(parentPath(path), node.children[0]), stop);
+    if (!sel) return;
+    repl.selection = [move({ start: sel })];
     rebalanceSmooshed(repl, top);
     joinSmooshed(repl, top);
     disolveSmooshed(repl, top);
@@ -200,30 +204,14 @@ export const joinSmooshed = (update: Update, top: Top) => {
                         from: { loc: cloc, offset: 0 },
                         to: { loc: ploc, offset: splitGraphemes(prev.text).length },
                     });
-                    // if (update.selection) {
-                    //     update.selection = modSelTip(update.selection, (last, cursor) => {
-                    //         if (last === cloc) {
-                    //             if (cursor.type === 'id') {
-                    //                 return {
-                    //                     loc: ploc,
-                    //                     cursor: {
-                    //                         type: 'id',
-                    //                         end: cursor.end + splitGraphemes(prev.text).length,
-                    //                     },
-                    //                 };
-                    //             }
-                    //             return { loc: ploc, cursor };
-                    //         }
-                    //     });
-                    // }
                 }
             }
         }
     });
 };
 
-export const addUpdate = (s: NodeSelection | SelUpdate[] | undefined, update: SelUpdate) =>
-    s == null ? [update] : Array.isArray(s) ? [...s, update] : [move(s), update];
+export const addUpdate = (s: NodeSelection | SelUpdate[] | undefined, ...updates: SelUpdate[]) =>
+    s == null ? updates : Array.isArray(s) ? [...s, ...updates] : [move(s), ...updates];
 
 export const rebalanceSmooshed = (update: Update, top: Top) => {
     // So, we go through anything that has an update...
@@ -334,6 +322,77 @@ export const removeSelf = (state: TestState, current: { path: Path; node: Node }
     return up;
 };
 
+export const removeSpan = (top: Top, path: Path, index: number) => {
+    const pnode = top.nodes[lastChild(path)];
+    if (pnode.type !== 'text' || index >= pnode.spans.length) return;
+    const spans = pnode.spans.slice();
+    spans.splice(index, 1);
+    const start =
+        spans.length === 0
+            ? selStart(path, { type: 'list', where: 'inside' })
+            : index === 0
+            ? spanStart(spans[0], 0, path, top, false)
+            : spanEnd(spans[index - 1], path, index - 1, top, false);
+    return start ? { nodes: { [pnode.loc]: { ...pnode, spans } }, selection: { start } } : undefined;
+};
+
+export const joinTable = (
+    top: Top,
+    path: Path,
+    node: Node,
+    cursor: Cursor,
+    at: { row: number; col: number },
+    pat: { row: number; col: number },
+): void | Update => {
+    const pnode = top.nodes[lastChild(path)];
+    if (pnode.type !== 'table') return;
+
+    const lloc = at.col === 0 ? pnode.rows[at.row - 1][pnode.rows[at.row - 1].length - 1] : pnode.rows[at.row][at.col - 1];
+    const rloc = pnode.rows[at.row][at.col];
+    const left = flatten(top.nodes[lloc], top, {}, 1);
+    const right = flatten(top.nodes[rloc], top, {}, 1);
+
+    const flat = [...left, ...right];
+
+    const one = pruneEmptyIds(flat, { node, cursor });
+    const two = collapseAdjacentIDs(one.items, one.selection);
+    const result = unflat(top, two.items, two.selection.node);
+    const ncursor = two.selection.cursor;
+    if (result.sloc == null) {
+        throw new Error(`sel node not encountered`);
+    }
+
+    if (result.other.length !== 1) throw new Error(`join should result in 1 top`);
+
+    const rows = pnode.rows.slice();
+    rows[at.row] = rows[at.row].slice();
+    rows[at.row].splice(at.col - 1, 1); // , ...result.other);
+    if (pat.row !== at.row) {
+        rows[pat.row] = rows[pat.row].concat(rows[at.row]);
+        rows.splice(at.row, 1);
+    }
+    rows[pat.row][pat.col] = result.other[0];
+
+    result.nodes[pnode.loc] = { ...pnode, rows };
+
+    const selPath = findPath(pnode.loc, result.nodes, result.sloc);
+    if (!selPath) throw new Error(`can't find sel in selpath.`);
+
+    const up: Update = {
+        nodes: result.nodes,
+        nextLoc: result.nextLoc,
+        selection: {
+            start: fixSelection(selStart(pathWithChildren(parentPath(path), ...selPath), ncursor), result.nodes, top),
+        },
+    };
+
+    rebalanceSmooshed(up, top);
+    joinSmooshed(up, top);
+    disolveSmooshed(up, top);
+
+    return up;
+};
+
 export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[] | void => {
     const got = joinParent(state.sel.start.path, state.top);
     if (!got) {
@@ -348,41 +407,15 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
                 // check empty cursor
                 const text = idText(state.top.tmpText, cursor, node);
                 if (text.length === 0) {
-                    // remove the span
-                    const spans = pnode.spans.slice();
                     const ppath = parentPath(state.sel.start.path);
-                    spans.splice(at, 1);
-                    const start =
-                        spans.length === 0
-                            ? selStart(ppath, { type: 'list', where: 'inside' })
-                            : at === 0
-                            ? spanStart(spans[0], 0, ppath, state.top, false)
-                            : spanEnd(spans[at - 1], ppath, at - 1, state.top, false);
-                    return start
-                        ? {
-                              nodes: { [pnode.loc]: { ...pnode, spans } },
-                              selection: { start },
-                          }
-                        : undefined;
+                    return [{ type: 'remove-span', path: ppath, index: at }];
                 }
             }
         }
         return; // prolly at the toplevel? or in a text or table, gotta handle tat
     }
 
-    // const tmpText: NonNullable<Update['tmpText']> = {};
-
     const node = state.top.nodes[lastChild(state.sel.start.path)];
-    const remap: Nodes = {};
-    // "maybe commit text changes"
-    // if (node.type === 'id' && cursor.type === 'id' && cursor.text) {
-    //     node = remap[node.loc] = { ...node, text: cursor.text.join(''), ccls: cursor.text.length === 0 ? undefined : node.ccls };
-    // }
-    // if (node.type === 'id' && state.top.tmpText[node.loc]) {
-    //     tmpText[node.loc] = undefined;
-    //     const text = state.top.tmpText[node.loc];
-    //     node = remap[node.loc] = { ...node, text: text.join(''), ccls: text.length === 0 ? undefined : node.ccls };
-    // }
 
     // Here's the table folks
     if (got.type === 'table') {
@@ -390,70 +423,24 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
 
         if (node.type === 'id' && node.text === '' && pnode.rows.length === 1 && pnode.rows[0].length === 1) {
             if (pnode.forceMultiline) {
+                // 🤔
                 return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: false } } };
             }
-            return removeSelf(state, { path: parent, node: pnode });
+            return [{ type: 'remove-self', path: parent }];
         } else if (!pat) {
-            return selUpdate(selStart(parent, { type: 'list', where: 'start' }));
+            return moveA(selStart(parent, { type: 'list', where: 'start' }));
         }
 
-        const lloc = at.col === 0 ? pnode.rows[at.row - 1][pnode.rows[at.row - 1].length - 1] : pnode.rows[at.row][at.col - 1];
-        const rloc = pnode.rows[at.row][at.col];
-        const left = flatten(remap[lloc] ?? state.top.nodes[lloc], state.top, remap, 1);
-        const right = flatten(remap[rloc] ?? state.top.nodes[rloc], state.top, remap, 1);
-        // const right = flatten(state.top.nodes[rloc], state.top, remap, 1);
-        // if (rloc !== node.loc) throw new Error('very bad news indeed');
-
-        const flat = [...left, ...right];
-
-        const one = pruneEmptyIds(flat, { node, cursor: state.sel.start.cursor });
-        const two = collapseAdjacentIDs(one.items, one.selection);
-        const result = unflat(state.top, two.items, two.selection.node);
-        const cursor = two.selection.cursor;
-        // const result = unflat(state.top, flat, node);
-        // const cursor = state.sel.start.cursor;
-        if (result.sloc == null) throw new Error(`sel node not encountered`);
-        // Object.assign(result.nodes, remap);
-
-        if (result.other.length !== 1) throw new Error(`join should result in 1 top`);
-
-        const rows = pnode.rows.slice();
-        rows[at.row] = rows[at.row].slice();
-        rows[at.row].splice(at.col - 1, 1); // , ...result.other);
-        if (pat.row !== at.row) {
-            rows[pat.row] = rows[pat.row].concat(rows[at.row]);
-            rows.splice(at.row, 1);
-        }
-        rows[pat.row][pat.col] = result.other[0];
-
-        result.nodes[pnode.loc] = { ...pnode, rows };
-
-        const selPath = findPath(pnode.loc, result.nodes, result.sloc);
-        if (!selPath) throw new Error(`can't find sel in selpath.`);
-
-        const up: Update = {
-            nodes: result.nodes,
-            nextLoc: result.nextLoc,
-            selection: {
-                start: fixSelection(selStart(pathWithChildren(parentPath(parent), ...selPath), cursor), result.nodes, state.top),
-            },
-            // tmpText,
-        };
-
-        rebalanceSmooshed(up, state.top);
-        joinSmooshed(up, state.top);
-        disolveSmooshed(up, state.top);
-
-        return up;
+        return joinTable(state.top, parent, node, state.sel.start.cursor, at, pat);
     }
 
     if (got.type === 'tag') {
         if (node.type === 'id' && node.text === '' && isTag(got.pnode.kind) && got.pnode.kind.node === node.loc) {
             if (got.pnode.children.length === 0 || (got.pnode.children.length === 1 && isBlank(state.top.nodes[got.pnode.children[0]]))) {
-                return removeSelf(state, { path: got.parent, node: got.pnode });
+                return [{ type: 'remove-self', path: got.parent }];
             }
         }
-        return justSel(got.parent, { type: 'list', where: 'start' });
+        return moveA(selStart(got.parent, { type: 'list', where: 'start' }));
     }
 
     // There's the listies
@@ -462,10 +449,11 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
     if (at === 0) {
         if (pnode.kind === 'smooshed' || pnode.kind === 'spaced') {
             const sel = goLeft(parent, state.top);
-            return sel ? { nodes: {}, selection: { start: sel } } : undefined;
+            return moveA(sel);
         }
         if (node.type === 'id' && node.text === '' && pnode.children.length === 1) {
             if (pnode.forceMultiline) {
+                // 🤔
                 return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: false } } };
             }
             if (isTag(pnode.kind)) {
@@ -479,11 +467,10 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
             return removeSelf(state, { path: parent, node: pnode });
         }
         // Select the '(' opener
-        return { nodes: {}, selection: { start: selStart(parent, { type: 'list', where: 'start' }) } };
-        // return unwrap(parent, state.top, state.sel);
+        return moveA(selStart(parent, { type: 'list', where: 'start' }));
     }
 
-    let flat = flatten(pnode, state.top, remap);
+    let flat = flatten(pnode, state.top, {});
     let fat = flat.indexOf(node);
     if (fat === -1) throw new Error(`node not in flattened`);
     if (fat === 0) throw new Error(`node first in flat, should have been handled`);
@@ -495,7 +482,7 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
         // Delete from the prev node actually
         const start = selectEnd(pathWithChildren(parentPath(state.sel.start.path), prev.loc), state.top);
         if (!start) return;
-        const res = handleDelete({ top: { ...state.top, nodes: { ...state.top.nodes, ...remap } }, sel: { start } });
+        const res = handleDelete({ top: state.top, sel: { start } });
         return res;
     }
 
@@ -522,20 +509,18 @@ export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
                     // return { nodes: {}, selection: { start: selStart(current.path, { type: 'list', where: 'end' }) } };
                     if (current.node.type === 'list') {
                         if (current.node.children.length === 0) {
-                            return selUpdate(selStart(current.path, { type: 'list', where: 'inside' }));
+                            return moveA(selStart(current.path, { type: 'list', where: 'inside' }));
                         }
-                        return selUpdate(
-                            selectEnd(pathWithChildren(current.path, current.node.children[current.node.children.length - 1]), state.top),
-                        );
+                        return moveA(selectEnd(pathWithChildren(current.path, current.node.children[current.node.children.length - 1]), state.top));
                     }
                     if (current.node.type === 'table') {
                         if (current.node.rows.length === 0) {
-                            return selUpdate(selStart(current.path, { type: 'list', where: 'inside' }));
+                            return moveA(selStart(current.path, { type: 'list', where: 'inside' }));
                         }
                         const rows = current.node.rows;
                         const last = rows[rows.length - 1];
                         const cell = last[last.length - 1];
-                        return selUpdate(selectEnd(pathWithChildren(current.path, cell), state.top));
+                        return moveA(selectEnd(pathWithChildren(current.path, cell), state.top));
                     }
                 } else if (current.cursor.where === 'before') {
                     // left join agains
@@ -547,9 +532,7 @@ export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
                     return up;
                 } else if (current.cursor.where === 'inside') {
                     if (current.node.type === 'list' && isTag(current.node.kind)) {
-                        return selUpdate(
-                            selectEnd(pathWithChildren(current.path, current.node.kind.attributes ?? current.node.kind.node), state.top),
-                        );
+                        return moveA(selectEnd(pathWithChildren(current.path, current.node.kind.attributes ?? current.node.kind.node), state.top));
                     }
                     if (current.node.type === 'list' && current.node.children.length === 0) {
                         return [{ type: 'remove-self', path: current.path }]; //removeSelf(state, current);
@@ -557,16 +540,17 @@ export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
                     if (current.node.type === 'table' && current.node.rows.length === 0) {
                         return [{ type: 'remove-self', path: current.path }]; //removeSelf(state, current);
                     }
-                    return selUpdate(selStart(current.path, { type: 'list', where: 'start' }));
+                    return moveA(selStart(current.path, { type: 'list', where: 'start' }));
                 } else if (current.cursor.where === 'start' && current.node.type === 'list' && current.node.children.length === 0) {
-                    return removeSelf(state, current);
+                    return [{ type: 'remove-self', path: current.path }];
                 } else if (current.cursor.where === 'start') {
-                    const sel =
-                        current.node.type === 'list' && current.node.children.length
-                            ? selectStart(pathWithChildren(current.path, current.node.children[0]), state.top)
-                            : state.sel.start;
-                    if (!sel) return console.warn('cant select start');
-                    return unwrap(current.path, state.top, { start: sel });
+                    // const sel =
+                    //     current.node.type === 'list' && current.node.children.length
+                    //         ? selectStart(pathWithChildren(current.path, current.node.children[0]), state.top)
+                    //         : state.sel.start;
+                    // if (!sel) return console.warn('cant select start');
+                    // return unwrap(current.path, state.top, { start: sel });
+                    return [{ type: 'unwrap', path: current.path }];
                 }
             }
             return;
@@ -609,10 +593,10 @@ export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
                 if (current.cursor.where === 'after') {
                     // return justSel(current.path, { type: 'list', where: 'end' });
                     if (current.node.spans.length === 0) {
-                        return selUpdate(selStart(current.path, { type: 'list', where: 'inside' }));
+                        return moveA(selStart(current.path, { type: 'list', where: 'inside' }));
                     }
                     const last = current.node.spans[current.node.spans.length - 1];
-                    return selUpdate(spanEnd(last, current.path, current.node.spans.length - 1, state.top, false));
+                    return moveA(spanEnd(last, current.path, current.node.spans.length - 1, state.top, false));
                 } else if (current.cursor.where === 'before') {
                     // left join agains
                     return leftJoin(state, current.cursor);
