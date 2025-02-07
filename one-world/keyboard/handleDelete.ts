@@ -282,14 +282,24 @@ export const removeSelf = (state: TestState, current: { path: Path; node: Node }
         );
     }
 
-    if (pnode?.type === 'list' && isTag(pnode.kind) && pnode.kind.attributes === current.node.loc) {
-        const sel = selectEnd(pathWithChildren(parentPath(current.path), pnode.kind.node), state.top);
-        return sel
-            ? {
-                  nodes: { [pnode.loc]: { ...pnode, kind: { ...pnode.kind, attributes: undefined } } },
-                  selection: { start: sel },
-              }
-            : undefined;
+    if (pnode?.type === 'list' && isTag(pnode.kind)) {
+        if (pnode.kind.attributes === current.node.loc) {
+            const sel = selectEnd(pathWithChildren(parentPath(current.path), pnode.kind.node), state.top);
+            return sel
+                ? {
+                      nodes: { [pnode.loc]: { ...pnode, kind: { ...pnode.kind, attributes: undefined } } },
+                      selection: { start: sel },
+                  }
+                : undefined;
+        }
+        if (pnode.children.length === 1 && pnode.children[0] === current.node.loc) {
+            return {
+                nodes: { [pnode.loc]: { ...pnode, children: [] } },
+                selection: {
+                    start: selStart(parentPath(current.path), { type: 'list', where: 'inside' }),
+                },
+            };
+        }
     }
 
     if (pnode?.type === 'list' && isRich(pnode.kind)) {
@@ -336,16 +346,24 @@ export const removeSpan = (top: Top, path: Path, index: number) => {
     return start ? { nodes: { [pnode.loc]: { ...pnode, spans } }, selection: { start } } : undefined;
 };
 
+const prevTableLoc = (table: Table<unknown>, at: { row: number; col: number }) => {
+    if (at.row === 0 && at.col === 0) return;
+    if (at.col === 0) return { row: at.row - 1, col: table.rows[at.row - 1].length - 1 };
+    return { row: at.row, col: at.col - 1 };
+};
+
 export const joinTable = (
     top: Top,
     path: Path,
     node: Node,
     cursor: Cursor,
     at: { row: number; col: number },
-    pat: { row: number; col: number },
+    // pat: { row: number; col: number },
 ): void | Update => {
     const pnode = top.nodes[lastChild(path)];
     if (pnode.type !== 'table') return;
+    const pat = prevTableLoc(pnode, at);
+    if (!pat) return;
 
     const lloc = at.col === 0 ? pnode.rows[at.row - 1][pnode.rows[at.row - 1].length - 1] : pnode.rows[at.row][at.col - 1];
     const rloc = pnode.rows[at.row][at.col];
@@ -431,7 +449,7 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
             return moveA(selStart(parent, { type: 'list', where: 'start' }));
         }
 
-        return joinTable(state.top, parent, node, state.sel.start.cursor, at, pat);
+        return [{ type: 'join-table', path: parent, child: { loc: node.loc, cursor: state.sel.start.cursor }, at }];
     }
 
     if (got.type === 'tag') {
@@ -457,14 +475,9 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
                 return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: false } } };
             }
             if (isTag(pnode.kind)) {
-                return {
-                    nodes: { [pnode.loc]: { ...pnode, children: [] } },
-                    selection: {
-                        start: selStart(parent, { type: 'list', where: 'inside' }),
-                    },
-                };
+                return [{ type: 'remove-self', path: pathWithChildren(parent, pnode.children[0]) }];
             }
-            return removeSelf(state, { path: parent, node: pnode });
+            return [{ type: 'remove-self', path: parent }];
         }
         // Select the '(' opener
         return moveA(selStart(parent, { type: 'list', where: 'start' }));
@@ -535,10 +548,10 @@ export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
                         return moveA(selectEnd(pathWithChildren(current.path, current.node.kind.attributes ?? current.node.kind.node), state.top));
                     }
                     if (current.node.type === 'list' && current.node.children.length === 0) {
-                        return [{ type: 'remove-self', path: current.path }]; //removeSelf(state, current);
+                        return [{ type: 'remove-self', path: current.path }];
                     }
                     if (current.node.type === 'table' && current.node.rows.length === 0) {
-                        return [{ type: 'remove-self', path: current.path }]; //removeSelf(state, current);
+                        return [{ type: 'remove-self', path: current.path }];
                     }
                     return moveA(selStart(current.path, { type: 'list', where: 'start' }));
                 } else if (current.cursor.where === 'start' && current.node.type === 'list' && current.node.children.length === 0) {
@@ -601,7 +614,7 @@ export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
                     // left join agains
                     return leftJoin(state, current.cursor);
                 } else if (current.cursor.where === 'inside') {
-                    return removeSelf(state, current);
+                    return [{ type: 'remove-self', path: current.path }];
                 }
                 return;
             }

@@ -1,16 +1,13 @@
-import { removeSelf, removeSpan, unwrap } from './handleDelete';
+import { joinTable, removeSelf, removeSpan, unwrap } from './handleDelete';
 import { selUpdate } from './handleNav';
 import { SelStart } from './handleShiftNav';
 import { TestState } from './test-utils';
-import { lastChild, Path, Update } from './utils';
+import { Cursor, lastChild, Path, Update } from './utils';
 
 export const keyActionToUpdate = (state: TestState, action: KeyAction): Update | void => {
     switch (action.type) {
-        // case 'multi':
-        //     for (let item of action.actions) {
-        //         state = applyKeyAction(state, item);
-        //     }
-        //     return state;
+        case 'join-table':
+            return joinTable(state.top, action.path, state.top.nodes[action.child.loc], action.child.cursor, action.at);
         case 'remove-span':
             return removeSpan(state.top, action.path, action.index);
         case 'unwrap':
@@ -24,6 +21,7 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
 export type KeyAction =
     | { type: 'unwrap'; path: Path }
     //
+    | { type: 'join-table'; path: Path; child: { loc: number; cursor: Cursor }; at: { row: number; col: number } }
     | { type: 'move'; sel: SelStart }
     | { type: 'remove-self'; path: Path }
     | { type: 'remove-span'; index: number; path: Path };
