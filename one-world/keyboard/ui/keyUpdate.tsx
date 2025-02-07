@@ -6,7 +6,7 @@ import { Mods, Src, handleShiftNav, handleSpecial, handleTab, shiftExpand, wordN
 import { wrapKind, handleWrap, closerKind, handleClose } from '../handleWrap';
 import { Config, TestState, js } from '../test-utils';
 import { NodeSelection, Update } from '../utils';
-import { KeyAction } from '../keyActionToUpdate';
+import { KeyAction, moveA } from '../keyActionToUpdate';
 
 export type Visual = {
     up: (sel: NodeSelection) => NodeSelection | null;
@@ -20,14 +20,12 @@ export const keyUpdate = (state: TestState, key: string, mods: Mods, visual?: Vi
         return handleDelete(state);
     } else if (key === 'ArrowLeft' || key === 'ArrowRight') {
         if (mods.alt) {
-            const sel = wordNav(state, key === 'ArrowLeft', mods.shift);
-            return sel ? { nodes: {}, selection: sel } : undefined;
+            return wordNav(state, key === 'ArrowLeft', mods.shift);
         }
         if (mods.shift) {
-            const selection = handleShiftNav(state, key);
-            return selection ? { nodes: {}, selection } : undefined;
+            return handleShiftNav(state, key);
         }
-        return selUpdate(handleNav(key, state));
+        return moveA(handleNav(key, state));
     } else if (key === 'ArrowUp' || key === 'ArrowDown') {
         if (visual) {
             const next = (key === 'ArrowDown' ? visual.down : visual.up)(state.sel);

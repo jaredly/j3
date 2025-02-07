@@ -18,6 +18,8 @@ export const keyActionToUpdate = (state: TestState, action: KeyAction): Update |
             return unwrap(action.path, state.top);
         case 'move':
             return selUpdate(action.sel);
+        case 'sel-expand':
+            return { nodes: {}, selection: { start: state.sel.start, end: action.sel } };
         case 'remove-self':
             return removeSelf(state.top, { path: action.path, node: state.top.nodes[lastChild(action.path)] });
         case 'join-list':
@@ -56,6 +58,7 @@ export type KeyAction =
     | { type: 'join-list'; path: Path; child: { loc: number; cursor: Cursor } }
     | { type: 'join-table'; path: Path; child: { loc: number; cursor: Cursor }; at: { row: number; col: number } }
     | { type: 'move'; sel: SelStart }
+    | { type: 'sel-expand'; sel: SelStart }
     | { type: 'remove-self'; path: Path }
     | { type: 'remove-span'; index: number; path: Path }
     | { type: 'multi-delete'; start: SelStart; end: SelStart }

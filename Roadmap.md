@@ -5,6 +5,15 @@ Ok, so some CRDT thgouths:
   this works because when we 'commit' a toplevel, everything gets hashed and serialized together.
 - try to model a very basic "just list(round) and ids" CRDT setup, where I'm tracking the metadata separate from the Nodes... see how far I get.
 
+
+## Remove all Updates from Updates
+
+- [x] handleDelete
+- [x] wordNav
+- [x] handleShiftNav
+- [x] handleNav
+
+
 ##
 
 General idea:

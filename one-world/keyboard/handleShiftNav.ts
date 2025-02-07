@@ -25,6 +25,7 @@ import { getCurrent, ltCursor, orderSelections } from './selections';
 import { idText } from './cursorSplit';
 import { handleCopyMulti } from './multi-change';
 import { shape } from '../shared/shape';
+import { KeyAction, moveA } from './keyActionToUpdate';
 // import { textCursorSides2 } from './insertId';
 
 export type Src = { left: Loc; right?: Loc };
@@ -93,11 +94,11 @@ export const shiftExpand = (state: TestState, spans?: Src[]): NodeSelection | vo
     // return { start: state.sel.start, multi: { end: selEnd(parent) } };
 };
 
-export const handleShiftNav = (state: TestState, key: 'ArrowLeft' | 'ArrowRight'): NodeSelection | void => {
+export const handleShiftNav = (state: TestState, key: 'ArrowLeft' | 'ArrowRight'): KeyAction[] | void => {
     const at = state.sel.end ?? state.sel.start;
     const next = handleNav(key, { ...state, sel: { start: at } });
     if (next) {
-        return { start: state.sel.start, end: next };
+        return [{ type: 'sel-expand', sel: next }];
     }
     // if (state.sel.multi) {
     //     const next = nextLateral(state.sel.multi?.end, state.top, key === 'ArrowLeft');
@@ -140,7 +141,7 @@ export const nextLateral = (side: { path: Path }, top: Top, shift: boolean): Sel
     // return shift ? selectStart(npath, top) : selectEnd(npath, top);
 };
 
-export const expandLateral = (side: SelStart, top: Top, shift: boolean): NodeSelection | void => {
+export const expandLateral = (side: SelStart, top: Top, shift: boolean): KeyAction[] | void => {
     // const sel = nextLateral(side, top, shift);
     // return sel ? { start: side, multi: { end: sel } } : undefined;
 };
@@ -262,7 +263,7 @@ const wordNext = (node: Text<number>, left: boolean, index: number, cursor: numb
     return { index, cursor: i };
 };
 
-export const wordNav = (state: TestState, left: boolean, shift: boolean | undefined): NodeSelection | void => {
+export const wordNav = (state: TestState, left: boolean, shift: boolean | undefined): KeyAction[] | void => {
     const current = getCurrent(state.sel, state.top);
     if (current.type === 'text' && current.cursor.type === 'text') {
         const { index, cursor } = current.cursor.end;
@@ -272,11 +273,11 @@ export const wordNav = (state: TestState, left: boolean, shift: boolean | undefi
                 type: 'text',
                 end: { cursor: next.cursor, index: next.index },
             });
-            return shift ? { start: state.sel.start, end: start } : { start };
+            return [{ type: shift ? 'sel-expand' : 'move', sel: start }];
         }
     }
     const next = goTabLateral(state.sel.start, state.top, left);
-    return next ? { start: next } : undefined;
+    return moveA(next);
 };
 
 export const handleTab = (state: TestState, shift: boolean): SelStart | void => {
@@ -287,50 +288,50 @@ export const handleTab = (state: TestState, shift: boolean): SelStart | void => 
 
 // TabLeft
 
-export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { type: 'id' }>, top: Top, left: boolean): NodeSelection | void => {
-    if (left && cursor.end === 0) {
-        if (start == null || start === cursor.end) {
-            const parent = top.nodes[parentLoc(path)];
-            if (parent.type === 'list' && parent.kind === 'smooshed') {
-                const idx = parent.children.indexOf(node.loc);
-                if (idx === -1) throw new Error(`node ${node.loc} not in parent ${parent.children}`);
-                if (idx > 0) {
-                    const next = parent.children[idx - 1];
-                    const sel = selectEnd(pathWithChildren(parentPath(path), next), top);
-                    if (!sel) return;
-                    return handleShiftNav({ top, sel: { start: sel } }, left ? 'ArrowLeft' : 'ArrowRight');
-                }
-            }
-        }
+// export const handleShiftId = ({ node, path, cursor, start }: Extract<Current, { type: 'id' }>, top: Top, left: boolean): KeyAction[] | void => {
+//     if (left && cursor.end === 0) {
+//         if (start == null || start === cursor.end) {
+//             const parent = top.nodes[parentLoc(path)];
+//             if (parent.type === 'list' && parent.kind === 'smooshed') {
+//                 const idx = parent.children.indexOf(node.loc);
+//                 if (idx === -1) throw new Error(`node ${node.loc} not in parent ${parent.children}`);
+//                 if (idx > 0) {
+//                     const next = parent.children[idx - 1];
+//                     const sel = selectEnd(pathWithChildren(parentPath(path), next), top);
+//                     if (!sel) return;
+//                     return handleShiftNav({ top, sel: { start: sel } }, left ? 'ArrowLeft' : 'ArrowRight');
+//                 }
+//             }
+//         }
 
-        // console.log('lateral');
-        return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
-    }
+//         // console.log('lateral');
+//         return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
+//     }
 
-    const text = idText(top.tmpText, cursor, node);
-    if (!left && cursor.end === text.length) {
-        if (start == null || start === cursor.end) {
-            const parent = top.nodes[parentLoc(path)];
-            if (parent.type === 'list' && parent.kind === 'smooshed') {
-                const idx = parent.children.indexOf(node.loc);
-                if (idx === -1) throw new Error(`node ${node.loc} not in parent ${parent.children}`);
-                if (idx < parent.children.length - 1) {
-                    const next = parent.children[idx + 1];
-                    const sel = selectStart(pathWithChildren(parentPath(path), next), top);
-                    if (!sel) return;
-                    return handleShiftNav({ top, sel: { start: sel } }, left ? 'ArrowLeft' : 'ArrowRight');
-                }
-            }
-        }
-        return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
-    }
-    // left--
-    return {
-        start: selStart(path, start ? { ...cursor, end: start } : cursor),
-        end: selStart(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }),
-    };
-    // return justSel(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }, start ? { ...cursor, end: start } : cursor);
-};
+//     const text = idText(top.tmpText, cursor, node);
+//     if (!left && cursor.end === text.length) {
+//         if (start == null || start === cursor.end) {
+//             const parent = top.nodes[parentLoc(path)];
+//             if (parent.type === 'list' && parent.kind === 'smooshed') {
+//                 const idx = parent.children.indexOf(node.loc);
+//                 if (idx === -1) throw new Error(`node ${node.loc} not in parent ${parent.children}`);
+//                 if (idx < parent.children.length - 1) {
+//                     const next = parent.children[idx + 1];
+//                     const sel = selectStart(pathWithChildren(parentPath(path), next), top);
+//                     if (!sel) return;
+//                     return handleShiftNav({ top, sel: { start: sel } }, left ? 'ArrowLeft' : 'ArrowRight');
+//                 }
+//             }
+//         }
+//         return expandLateral({ path, cursor, key: pathKey(path) }, top, left);
+//     }
+//     // left--
+//     return {
+//         start: selStart(path, start ? { ...cursor, end: start } : cursor),
+//         end: selStart(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }),
+//     };
+//     // return justSel(path, { ...cursor, end: cursor.end + (left ? -1 : 1) }, start ? { ...cursor, end: start } : cursor);
+// };
 
 // export const handleShiftText = (
 //     { node, path, cursor }: { node: Text<number>; path: Path; cursor: TextCursor | ListCursor },
