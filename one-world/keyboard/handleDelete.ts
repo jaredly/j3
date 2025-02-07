@@ -85,33 +85,33 @@ export const addInChildren = (children: number[], loc: number, parent: number): 
     return children;
 };
 
-const modSelSideTip = (sel: SelStart, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): SelStart => {
-    const res = mod(lastChild(sel.path), sel.cursor);
-    if (res) {
-        return selStart(pathWithChildren(parentPath(sel.path), res.loc), res.cursor);
-    }
-    return sel;
-};
+// const modSelSideTip = (sel: SelStart, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): SelStart => {
+//     const res = mod(lastChild(sel.path), sel.cursor);
+//     if (res) {
+//         return selStart(pathWithChildren(parentPath(sel.path), res.loc), res.cursor);
+//     }
+//     return sel;
+// };
 
-const modSelTip = (sel: NodeSelection, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): NodeSelection => ({
-    start: modSelSideTip(sel.start, mod),
-    // multi: sel.multi
-    //     ? {
-    //           end: sel.multi.end.cursor ? modSelSideTip(sel.multi.end as SelStart, mod) : sel.multi.end,
-    //           aux: sel.multi.aux?.cursor ? modSelSideTip(sel.multi.aux as SelStart, mod) : sel.multi.aux,
-    //       }
-    //     : undefined,
-});
+// const modSelTip = (sel: NodeSelection, mod: (loc: number, cursor: Cursor) => void | { loc: number; cursor: Cursor }): NodeSelection => ({
+//     start: modSelSideTip(sel.start, mod),
+//     // multi: sel.multi
+//     //     ? {
+//     //           end: sel.multi.end.cursor ? modSelSideTip(sel.multi.end as SelStart, mod) : sel.multi.end,
+//     //           aux: sel.multi.aux?.cursor ? modSelSideTip(sel.multi.aux as SelStart, mod) : sel.multi.aux,
+//     //       }
+//     //     : undefined,
+// });
 
-const removeParent = (sel: NodeSelection, loc: number): NodeSelection => ({
-    start: { ...sel.start, ...selEnd(removeInPath(sel.start.path, loc)) },
-    // multi: sel.multi
-    //     ? {
-    //           end: { ...sel.multi.end, ...selEnd(removeInPath(sel.multi.end.path, loc)) },
-    //           aux: sel.multi.aux ? { ...sel.multi.aux, ...selEnd(removeInPath(sel.multi.aux.path, loc)) } : undefined,
-    //       }
-    //     : undefined,
-});
+// const removeParent = (sel: NodeSelection, loc: number): NodeSelection => ({
+//     start: { ...sel.start, ...selEnd(removeInPath(sel.start.path, loc)) },
+//     // multi: sel.multi
+//     //     ? {
+//     //           end: { ...sel.multi.end, ...selEnd(removeInPath(sel.multi.end.path, loc)) },
+//     //           aux: sel.multi.aux ? { ...sel.multi.aux, ...selEnd(removeInPath(sel.multi.aux.path, loc)) } : undefined,
+//     //       }
+//     //     : undefined,
+// });
 
 export const unwrap = (path: Path, top: Top) => {
     // , sel: NodeSelection
@@ -441,8 +441,7 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
 
         if (node.type === 'id' && node.text === '' && pnode.rows.length === 1 && pnode.rows[0].length === 1) {
             if (pnode.forceMultiline) {
-                // 🤔
-                return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: false } } };
+                return [{ type: 'toggle-multiline', loc: pnode.loc }];
             }
             return [{ type: 'remove-self', path: parent }];
         } else if (!pat) {
@@ -471,8 +470,7 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
         }
         if (node.type === 'id' && node.text === '' && pnode.children.length === 1) {
             if (pnode.forceMultiline) {
-                // 🤔
-                return { nodes: { [pnode.loc]: { ...pnode, forceMultiline: false } } };
+                return [{ type: 'toggle-multiline', loc: pnode.loc }];
             }
             if (isTag(pnode.kind)) {
                 return [{ type: 'remove-self', path: pathWithChildren(parent, pnode.children[0]) }];
@@ -490,7 +488,7 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
     for (; fat > 0 && flat[fat - 1].type === 'smoosh'; fat--);
     const prev = flat[fat - 1];
     if (prev.type === 'space' || prev.type === 'sep') {
-        flat.splice(fat - 1, 1);
+        return [{ type: 'join-list', path: parent, child: { loc: node.loc, cursor } }];
     } else {
         // Delete from the prev node actually
         const start = selectEnd(pathWithChildren(parentPath(state.sel.start.path), prev.loc), state.top);
@@ -498,8 +496,19 @@ export const leftJoin = (state: TestState, cursor: Cursor): Update | KeyAction[]
         const res = handleDelete({ top: state.top, sel: { start } });
         return res;
     }
+};
 
-    return flatToUpdateNew(flat, { node, cursor }, { isParent: true, node: pnode, path: parent }, {}, state.top);
+export const joinInList = (top: Top, path: Path, child: { loc: number; cursor: Cursor }) => {
+    const pnode = top.nodes[lastChild(path)];
+    const node = top.nodes[child.loc];
+    let flat = flatten(pnode, top, {});
+    let fat = flat.indexOf(node);
+    if (fat === -1) throw new Error(`node not in flattened`);
+    if (fat === 0) throw new Error(`node first in flat, should have been handled`);
+    for (; fat > 0 && flat[fat - 1].type === 'smoosh'; fat--);
+    const prev = flat[fat - 1];
+    flat.splice(fat - 1, 1);
+    return flatToUpdateNew(flat, { node, cursor: child.cursor }, { isParent: true, node: pnode, path }, {}, top);
 };
 
 export const handleDelete = (state: TestState): Update | KeyAction[] | void => {
